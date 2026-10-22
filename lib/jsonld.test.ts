@@ -416,7 +416,7 @@ describe('organizationSchema', () => {
     expect(result.foundingLocation).toEqual({
       '@type': 'Place',
       name: 'North County San Diego',
-      address: { '@type': 'PostalAddress', addressLocality: 'North County San Diego' },
+      address: { '@type': 'PostalAddress', addressRegion: 'CA', addressCountry: 'US' },
     })
     // Privacy contract: the founding location is never a precise street address.
     const place = result.foundingLocation as { address: Record<string, unknown> }

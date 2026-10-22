@@ -199,6 +199,18 @@ export const PERSONAS: Record<PersonaId, Persona> = {
   investor: INVESTOR,
 }
 
+/** The six operator doors (/for/<slug>) as the "who are you" cards on the Frequency /join. Each door maps to an
+ *  existing persona, so the tag, the tour reel and Vera stay as they were; only the cards a visitor sees change.
+ *  Order and labels match the doors on /for. */
+export const DOOR_CHOICES: readonly { slug: string; label: string; pitch: string; persona: PersonaId }[] = [
+  { slug: 'coaches-and-healers', label: 'Coaches and guides', pitch: 'I guide people one on one or in small groups', persona: 'practitioner' },
+  { slug: 'studios', label: 'Studios and instructors', pitch: 'I teach classes and run a studio', persona: 'practitioner' },
+  { slug: 'event-hosts', label: 'Event hosts', pitch: 'I put on gatherings and events', persona: 'builder' },
+  { slug: 'venues', label: 'Venues', pitch: 'I have a space that other groups use', persona: 'partner' },
+  { slug: 'nonprofits', label: 'Nonprofits', pitch: 'I run a nonprofit or a cause', persona: 'builder' },
+  { slug: 'networks', label: 'Networks', pitch: 'I run chapters in more than one place', persona: 'builder' },
+]
+
 /** True for any of the five known persona ids. */
 export function isPersonaId(value: string | null | undefined): value is PersonaId {
   return !!value && value in PERSONAS

@@ -12,6 +12,6 @@ export const WHO_FREQUENCY_IS_FOR: readonly string[] = [
   'People who want to see how it works before they trust it.',
   'People who already bring others together, like the friend who organizes the hike, and want a simple way to host one Circle.',
   'Members who like what this is and back Frequency with Crew. The host kit and a monthly Boost come with it.',
-  'Teachers who work across several studios, practitioners starting a second career, studio owners, and people running many small groups who want one place for their people.',
+  'Instructors who work across several studios, practitioners starting a second career, studio owners, and people running many small groups who want one place for their people.',
 ]
 

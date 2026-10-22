@@ -305,6 +305,11 @@ export const CONTACT_EMAIL = "hello@frequencylocal.com";
 export const SOCIAL_PROOF_FLOOR = 25;
 // Where the first community is taking root — used in founding-stage copy.
 export const FOUNDING_PLACE = "North County San Diego";
+// The public opening day. One constant: copy and structured data read it, nothing types the date.
+export const OPENING_DATE_ISO = "2026-12-01";
+export const OPENING_DATE_LABEL = "December 1, 2026";
+// Cities of the founding region, emitted as areaServed on the Organization node.
+export const FOUNDING_CITIES = ["Oceanside", "Carlsbad", "Encinitas", "Vista", "San Marcos", "Escondido"] as const;
 
 // Canonical social profiles, emitted as the Organization node's `sameAs` (SCAN-205).
 // This is an entity-disambiguation signal: it is how a search or answer engine confirms

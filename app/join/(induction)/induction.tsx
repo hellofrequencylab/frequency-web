@@ -14,7 +14,7 @@ import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 import { VERA as DEFAULT_VERA, HEARD_ABOUT, INDUCTION_BEAT_COUNT, type VeraCopy } from '@/lib/onboarding/funnel-script'
-import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
+import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, DOOR_CHOICES, PERSONAS, type PersonaId } from '@/lib/onboarding/personas'
 import type { FunnelFeature, FunnelCoreFeature, FunnelDestination } from '@/lib/funnels/definitions'
 import { funnelIcon } from '@/lib/funnels/icons'
 import { isSafeInAppPath } from '@/lib/funnels/destination'
@@ -184,6 +184,20 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
     setDecideLater(false)
     setPersonas((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]))
     setReelIndex(0)
+  }
+
+  // The Frequency design asks "who are you" with the six operator doors. Each door stands for one persona, so the
+  // stored persona (tag, tour reel, Vera) is unchanged; a persona stays picked while any door that maps to it does.
+  const [doorSlugs, setDoorSlugs] = useState<string[]>([])
+  function toggleDoor(slug: string) {
+    const door = DOOR_CHOICES.find((d) => d.slug === slug)
+    if (!door) return
+    const next = doorSlugs.includes(slug) ? doorSlugs.filter((s) => s !== slug) : [...doorSlugs, slug]
+    const stillMapped = next.some((s) => DOOR_CHOICES.find((d) => d.slug === s)?.persona === door.persona)
+    setDoorSlugs(next)
+    setDecideLater(false)
+    setReelIndex(0)
+    setPersonas((prev) => (stillMapped ? (prev.includes(door.persona) ? prev : [...prev, door.persona]) : prev.filter((p) => p !== door.persona)))
   }
 
   // Niche-funnel Beat-1 interests (multi-select). Each card maps to a registered
@@ -707,9 +721,15 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
         const key = interestKeyFor(f.title)
         return { key, label: f.title, pitch: f.blurb, Icon: funnelIcon(f.icon), active: interestKeys.includes(key) }
       })
-    : listPersonas().map((p) => ({ key: p.id, label: p.label, pitch: p.pitch, Icon: p.Icon, active: personas.includes(p.id) }))
+    : fq
+      ? [
+          ...DOOR_CHOICES.map((d) => ({ key: d.slug, label: d.label, pitch: d.pitch, Icon: PERSONAS[d.persona].Icon, active: doorSlugs.includes(d.slug) })),
+          { key: 'visitor', label: PERSONAS.visitor.label, pitch: PERSONAS.visitor.pitch, Icon: PERSONAS.visitor.Icon, active: personas.includes('visitor') },
+        ]
+      : listPersonas().map((p) => ({ key: p.id, label: p.label, pitch: p.pitch, Icon: p.Icon, active: personas.includes(p.id) }))
   const chooseLater = () => {
     setDecideLater(true)
+    setDoorSlugs([])
     setPersonas([])
     setInterestKeys([])
     setReelIndex(0)
@@ -825,7 +845,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                 prompt={hasNicheFeatures ? 'First off, what are you into?' : 'First, who are you?'}
                 hint={hasNicheFeatures ? 'Pick all that apply.' : 'Pick all that fit.'}
                 choices={welcomeChoices}
-                onToggle={(key) => (hasNicheFeatures ? toggleInterest(key) : togglePersona(key as PersonaId))}
+                onToggle={(key) => (hasNicheFeatures ? toggleInterest(key) : isPersonaId(key) ? togglePersona(key) : toggleDoor(key))}
                 decideLater={decideLater}
                 onDecideLater={chooseLater}
                 email={email}
