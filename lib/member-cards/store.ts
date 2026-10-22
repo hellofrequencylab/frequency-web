@@ -180,6 +180,21 @@ export async function setMyCardActive(cardId: string, active: boolean): Promise<
   }
 }
 
+/** Switch one card registered to a Space on or off, behind the Space owner gate (LIVE-1297). */
+export async function setSpaceCardActive(spaceId: string, cardId: string, active: boolean): Promise<boolean> {
+  if (!(await loyaltyOwnerGate(spaceId))) return false
+  try {
+    const { error } = await db()
+      .from('member_cards')
+      .update(active ? { active: true, revoked_at: null } : { active: false, revoked_at: new Date().toISOString() })
+      .eq('id', cardId)
+      .eq('face_space_id', spaceId)
+    return !error
+  } catch {
+    return false
+  }
+}
+
 // ── The tap ──────────────────────────────────────────────────────────────────────────────────────
 
 /** A card resolved for a phone tap. */

@@ -149,7 +149,7 @@ function renderTab(
 ) {
   if (tab === 'paid') return <PaidTab space={space} viewerProfileId={viewerProfileId} channels={channels} />
   if (tab === 'checkin') {
-    return <CheckinSection space={space} viewerProfileId={viewerProfileId} staffViewing={staffViewing} />
+    return <CheckinSection space={space} viewerProfileId={viewerProfileId} staffViewing={staffViewing} view={view} />
   }
   const anchor = tab === 'bookings' ? 'availability' : tab
   const meta = SECTION_META[anchor]

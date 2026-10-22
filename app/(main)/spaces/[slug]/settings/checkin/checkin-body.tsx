@@ -10,7 +10,7 @@ import { CheckinSection } from './section'
 // which re-checks the gate (the retired `checkin` key resolves to the `events` switch + min-role; a viewer
 // without it gets the calm FeatureLockedNotice). No em dashes.
 
-export async function CheckinBody({ slug }: { slug: string }) {
+export async function CheckinBody({ slug, view }: { slug: string; view?: string }) {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -24,5 +24,5 @@ export async function CheckinBody({ slug }: { slug: string }) {
   )
   if (!canManage && !staffViewing) return null
 
-  return <CheckinSection space={space} viewerProfileId={viewerProfileId} staffViewing={staffViewing} />
+  return <CheckinSection space={space} viewerProfileId={viewerProfileId} staffViewing={staffViewing} view={view} />
 }

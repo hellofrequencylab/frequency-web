@@ -96,6 +96,20 @@ export function offeringTabForAnchor(anchor: string): OfferingTab | null {
   return OFFERING_TABS.find((t) => t.key === a)?.key ?? null
 }
 
+/** The views inside the Check in tab (owner ask 2026-10-22, LIVE-1297): the door itself, and the
+ *  cards (the viewer's Crew card and the Space card) on their own page. PURE. */
+export const CHECKIN_VIEWS = [
+  { key: 'door', label: 'Check in' },
+  { key: 'card', label: 'Cards' },
+] as const
+
+export type CheckinView = (typeof CHECKIN_VIEWS)[number]['key']
+
+/** Narrow a `?view=` value to a known Check in view, defaulting to the door. PURE. */
+export function asCheckinView(raw: string | null | undefined): CheckinView {
+  return CHECKIN_VIEWS.find((v) => v.key === raw)?.key ?? CHECKIN_VIEWS[0].key
+}
+
 /** The views inside the Memberships tab, so plans, perks, circles, events and the member list are each a
  *  short page of their own instead of one stack. `members` is left out under the Frequency design, where
  *  the members table already leads the Plans view. PURE. */
