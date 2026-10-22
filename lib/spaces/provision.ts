@@ -40,6 +40,7 @@ import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-l
 import { postCreateLanding } from '@/lib/spaces/setup'
 import { parseIntents, parsePlanHint, planWantsBilling } from '@/lib/spaces/create-wizard'
 import { recordEngagementEvent } from '@/lib/engagement/events'
+import { sendOperatorEmailForSpace } from '@/lib/marketing/operator-lifecycle'
 
 /** The fields the create wizard collects. `visibility` defaults to 'network' (discoverable). The
  *  `modeVariant` (the Focus, Space Modes M3) is optional: null resolves to the type's default Focus. */
@@ -288,6 +289,14 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
       heardAbout: heardAbout || null,
     },
   }).catch(() => {})
+
+  // DAY 0 OF THE OPERATOR EMAILS (LIVE-1141): the welcome goes out the moment the Space opens. Best-effort; the daily
+  // lifecycle run sends day 1, 3 and 7 from the same Space row, and the outbox key keeps this one to a single send.
+  void sendOperatorEmailForSpace(
+    createAdminClient(),
+    { id: spaceId, name, slug, type, mode_variant: modeVariant ?? null, owner_profile_id: profileId, created_at: new Date().toISOString() },
+    0,
+  ).catch(() => {})
 
   // Seat the owner as a Space admin (an explicit membership row, alongside owner_profile_id).
   await addSpaceMember({ spaceId, profileId, role: 'admin', status: 'active' })

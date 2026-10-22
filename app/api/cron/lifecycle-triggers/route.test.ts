@@ -82,6 +82,7 @@ vi.mock('@/lib/supabase/admin', () => ({
     },
   }),
 }))
+vi.mock('@/lib/marketing/operator-lifecycle', () => ({ sendOperatorLifecycle: async () => ({ sent: 0, skipped: 0, failed: 0 }) }))
 vi.mock('@/lib/cron-auth', () => ({ rejectUnauthorizedCron: () => null }))
 vi.mock('@/lib/observability/cron-heartbeat', () => ({
   withCronHeartbeat: (_name: string, handler: unknown) => handler,

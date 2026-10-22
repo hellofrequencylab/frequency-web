@@ -340,6 +340,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/terms`, changeFrequency: "yearly", priority: 0.3 },
     // The community guidelines (LIVE-723): the public rule set a report is judged against.
     { url: `${SITE_URL}/guidelines`, changeFrequency: "yearly", priority: 0.3 },
+    // The accessibility statement: a dated, citable page of its own.
+    { url: `${SITE_URL}/accessibility`, changeFrequency: "yearly", priority: 0.3 },
     // The Space email acceptable-use policy, live since LIVE-729 (ADR-1673): public reference like the two above.
     { url: `${SITE_URL}/space-email-policy`, changeFrequency: "yearly", priority: 0.3 },
     // /subscribe is a retention page, not a search landing (SCAN-1017): robots noindex,follow on the

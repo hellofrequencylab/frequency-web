@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1158",
+  "title": "Calendar chips wear the redesign colours, and unbuilt pieces share one Coming soon mark",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/calendar/registry.ts",
+    "ref": "Owner 2026-10-22: Space calendar redesign from Claude Design, plugged into what exists with Coming soon on the rest"
+  },
+  "detail": "FILED 2026-10-22. THE CONSEQUENCE: the calendar chips still wore the old info, broadcast, move and warning tints, so none of the redesign could land. THE FIX: nine calendar tokens (event, in-the-works, to-do and presence) in light and dark, CALENDAR_PRESENTATIONS repainted from them with a 1px hover lift, and one ComingSoonMark (components/ui/coming-soon-mark.tsx) for every piece the design shows that is not built yet. Plan: /mnt/project-files/calendar/calendar-redesign-plan-2026-10-22.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/calendar-redesign-tokens.mjs",
+    "note": "Fails on main (no cal tokens, no mark), passes with this change."
+  },
+  "closed": "2026-10-22",
+  "wave": "W7"
+}

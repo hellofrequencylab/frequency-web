@@ -112,6 +112,15 @@ Send as new rows, not corrections. Values are production's.
 | `--color-on-media` | `var(--color-on-media-light)` | — | Text over **member photography** (profile / space / event covers). The live value, flipped per photo by the content-aware hero (ADR-830). |
 | `--color-on-media-light` | `var(--color-on-ink)` | — | The light copy, for dark imagery. |
 | `--color-on-media-dark` | `var(--color-ink)` | — | The dark copy, for bright imagery. |
+| `--color-cal-event` | `#B0287F` | `#E58CC4` | Calendar: the dot and edge of a live event. Space calendar redesign, 2026-10-22. |
+| `--color-cal-event-bg` | `#F8D7EA` | `#3A1A2E` | Calendar: the fill of a live event chip. Ink text sits on it. |
+| `--color-cal-works` | `#9C86F5` | `#9C86F5` | Calendar: the dashed pencil edge and the in-the-works border. |
+| `--color-cal-works-bg` | `#EBE7FF` | `#26224A` | Calendar: the faint Planning fill. |
+| `--color-cal-works-strong` | `#D9D2FF` | `#342E63` | Calendar: the fuller Production fill. |
+| `--color-cal-todo` | `#9A6200` | `#E0A94A` | Calendar: the to-do dot and dotted edge. |
+| `--color-cal-todo-bg` | `#FFEBC6` | `#3D2E0F` | Calendar: the to-do chip fill. |
+| `--color-presence` | `#17788A` | `#5CC3D6` | Aqua that means another Space is here: partner badges, invites, "On track". |
+| `--color-presence-bg` | `#DDF3F5` | `#0F2E34` | The soft ground for the presence aqua.
 
 The `on-media` family follows the **image**, not the theme, which is why it aliases rather than
 holding hexes. That distinction is the point of the tokens; carry the comment with them.

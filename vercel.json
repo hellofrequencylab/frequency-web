@@ -19,6 +19,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/indexnow",
+      "schedule": "0 14 * * *"
+    },
+    {
       "path": "/api/cron/space-campaigns",
       "schedule": "*/5 * * * *"
     },

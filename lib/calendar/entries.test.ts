@@ -306,7 +306,7 @@ describe('stage presentation is the registry (calendar stage colours)', () => {
     const { ENTRY_STAGES, entryStage: stage } = await import('./registry')
     expect(stage('pencil')!.chipClass).toContain('border-dashed')
     expect(stage('planning')!.chipClass).not.toContain('border')
-    expect(stage('production')!.chipClass).toContain('border-success')
+    expect(stage('production')!.chipClass).toContain('border-cal-works')
     expect(stage('cancelled')!.chipClass).toContain('line-through')
     expect(new Set(ENTRY_STAGES.map((d) => d.chipClass)).size).toBe(4)
   })

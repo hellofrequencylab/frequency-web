@@ -147,6 +147,7 @@ const WEBSITE_LINKS: SiteMapLink[] = [
   { label: 'Terms', href: '/terms' },
   { label: 'Guidelines', href: '/guidelines' },
   { label: 'Space email policy', href: '/space-email-policy' },
+  { label: 'Accessibility', href: '/accessibility' },
 ]
 
 /** The website row for a design: the public pages, plus the Frequency mega menu's site row there. */

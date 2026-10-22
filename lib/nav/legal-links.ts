@@ -17,5 +17,5 @@ export const LEGAL_LINKS: readonly LegalLink[] = [
   { id: 'terms', label: 'Terms', href: '/terms' },
   { id: 'guidelines', label: 'Guidelines', href: '/guidelines' },
   { id: 'space-email-policy', label: 'Space email policy', href: '/space-email-policy' },
-  { id: 'accessibility', label: 'Accessibility', href: '/help#accessibility' },
+  { id: 'accessibility', label: 'Accessibility', href: '/accessibility' },
 ]

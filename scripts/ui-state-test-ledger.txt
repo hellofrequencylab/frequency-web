@@ -32,6 +32,7 @@
 
 components/ui/avatar.tsx
 components/ui/badge.tsx
+components/ui/coming-soon-mark.tsx
 components/ui/counter.tsx
 components/ui/demo-badge.tsx
 components/ui/dialog.tsx

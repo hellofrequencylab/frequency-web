@@ -40,8 +40,8 @@ export const ROUTES = {
   terms: '/terms',
   /** The Network plan's page (SCAN-961), Frequency-only like /vision. */
   networks: '/networks',
-  /** Help.html#accessibility: the plain-language statement on the Help front page (frequency-help.tsx). */
-  accessibility: '/help#accessibility' as string | null,
+  /** The accessibility statement, a page of its own (app/accessibility). */
+  accessibility: '/accessibility' as string | null,
   /** "What we believe" in the footer. */
   about: '/about',
   /** The town calendar, "What's happening". */
