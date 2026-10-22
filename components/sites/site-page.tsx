@@ -19,6 +19,8 @@ import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
 import { mensworkSeason } from '@/lib/theme/menswork'
 import { networkScheme } from '@/lib/theme/network'
 import { NETWORK_FONT_CLASS } from '@/components/sites/network-fonts'
+import { TEMPLE_FONT_CLASS } from '@/components/sites/temple-fonts'
+import { TEMPLE_CSS } from '@/components/sites/temple-css'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
@@ -182,6 +184,9 @@ export async function SitePage({
   // The Network theme (lib/theme/network.ts): light and coastal, one bold color in four schemes. Its faces
   // ride the website root (NETWORK_FONT_CLASS); the scheme follows the owner's accent.
   const netSite = siteStyle.theme === 'network'
+  // The Temple theme (lib/theme/temple.ts): a lime-washed house, plaster and umber with one clay color and
+  // arched shapes. Its faces ride the website root (TEMPLE_FONT_CLASS); the clay follows the owner's accent.
+  const templeSite = siteStyle.theme === 'temple'
   // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
   const theme = render.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
@@ -193,8 +198,10 @@ export async function SitePage({
       ? { theme: 'wildheart' as const, season: seasonOf(new Date()) }
       : netSite
         ? { theme: 'network' as const, season: mensworkSeason(new Date()), scheme: networkScheme(websiteBrand.accent) }
-        : null
-  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : undefined
+        : templeSite
+          ? { theme: 'temple' as const, season: mensworkSeason(new Date()) }
+          : null
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : templeSite ? TEMPLE_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
   const lookOverrides = siteLookOverrides(render.lookStyle)
   const fullFooter = siteLook(render.lookStyle).footer === 'full'
@@ -212,7 +219,7 @@ export async function SitePage({
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
           <div data-house-theme={skin.theme} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
-            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : MENSWORK_CSS}</style>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : templeSite ? TEMPLE_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
@@ -225,7 +232,7 @@ export async function SitePage({
   const { origin, hasContact, booking, pages, homeHref, siteLinks, cta, pageLinks, tagline } = await siteChromeBasics(space, siteBase)
   const websiteChrome = resolveWebsiteChrome(website, { name: brandName, tagline, cta })
   // The reader's own membership in THIS Space, asked for after the cached page is up (LIVE-699).
-  const memberBadge = <SiteMemberBadge endpoint={`${origin}/api/sites/${space.slug}/membership`} href={`${origin}/spaces/${space.slug}/memberships`} pill={wildSite} />
+  const memberBadge = <SiteMemberBadge endpoint={`${origin}/api/sites/${space.slug}/membership`} href={`${origin}/spaces/${space.slug}/memberships`} pill={wildSite || templeSite} label={templeSite ? 'Your house' : undefined} />
   const chromeCta = resolveWebsiteChromeCta(website?.chrome, cta, siteBase)
   // The "Check in with Frequency" door (LIVE-944): only while Regulars is on at this Space. It points at the
   // Space's page in the app, where the member reads the card and the door code does the check-in.
