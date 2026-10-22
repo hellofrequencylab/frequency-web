@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1274",
+  "title": "Client websites page tells non-owners it is owner only, and staff can look (LIVE-1274)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/websites/page.tsx",
+    "ref": "Owner 2026-10-22: opening The Group's client websites page as himself showed 'That space isn't here' (ADR-1816)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-22. The page used notFound() for anyone who was not the Network owner, so a platform admin saw a misleading missing-space screen. Now Frequency staff see the Network's client website list read only, with a note that only the owner can change it, and any other signed-in person sees an owner-only message. A missing Space or a non-Network Space is still not found. Actions stay owner-only.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/spaces/[slug]/settings/websites/page.tsx','utf8');const bad=[];if(!s.includes('isPlatformStaff'))bad.push('staff cannot look');if(!s.includes('Only the owner can manage websites'))bad.push('non-owner gets no clear message');if(bad.length){console.error('LIVE-1274: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when staff lose read access or a non-owner goes back to a bare not-found."
+  },
+  "closed": "2026-10-22",
+  "wave": "W7"
+}
