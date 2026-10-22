@@ -103,11 +103,12 @@ describe('GET /c/<token>', () => {
     expect((await tap()).headers.get('set-cookie') ?? '').not.toContain('fq_ref')
   })
 
-  it('sends the owner tapping their own card to their card settings, uncounted', async () => {
+  it('sends the owner tapping their own new card to their card settings, and counts it', async () => {
     profileId = 'p-owner'
     expect(where(await tap()).pathname).toBe('/crew/card')
-    expect(logTap).not.toHaveBeenCalled()
+    expect(logTap).toHaveBeenCalledTimes(1)
     expect(capture).not.toHaveBeenCalled()
+    expect(payConnect).not.toHaveBeenCalled()
   })
 
   it('keeps the owner as a contact for a signed-in tapper, one way, and pays the connect', async () => {

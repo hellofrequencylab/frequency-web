@@ -114,7 +114,7 @@ export function CardFaceEditor({
           <StatCard bordered size="xs" label={isSpace ? 'Saved us' : 'Saved you'} value={stats.saves} icon={Contact} />
           <StatCard bordered size="xs" label="Swapped" value={stats.swaps} icon={ArrowLeftRight} />
         </div>
-        {!isSpace && <p className="text-meta text-muted">Every tap of your card earns you Zaps.</p>}
+        {!isSpace && <p className="text-meta text-muted">When a member taps your card, you both earn Zaps.</p>}
 
         <SwitchRow
           id={`${ids}-pause`}

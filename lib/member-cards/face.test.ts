@@ -25,9 +25,16 @@ describe('the tap decision', () => {
   it('shows nothing for a paused card, even to its owner', () => {
     expect(tapTarget(member, { ...DEFAULT_FACE, paused: true }, 'p1')).toEqual({ to: 'paused' })
   })
-  it('sends the owner of a member card to their settings', () => {
+  it('sends the owner of a member card to their settings while it is still on its default', () => {
     expect(tapTarget(member, DEFAULT_FACE, 'p1')).toEqual({ to: 'owner_settings' })
     expect(tapTarget(space, DEFAULT_FACE, 'p1')).toEqual({ to: 'page', path: '/spaces/house-of-fates' })
+  })
+  it('lets the owner test a card they have set, like anyone else', () => {
+    expect(tapTarget(member, { ...DEFAULT_FACE, mode: 'link', linkUrl: 'https://example.com/' }, 'p1')).toEqual({
+      to: 'link',
+      url: 'https://example.com/',
+    })
+    expect(tapTarget(member, { ...DEFAULT_FACE, mode: 'card' }, 'p1')).toEqual({ to: 'face' })
   })
   it('follows the chosen mode', () => {
     expect(tapTarget(member, { ...DEFAULT_FACE, mode: 'card' }, 'p2')).toEqual({ to: 'face' })

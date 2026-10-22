@@ -259,8 +259,10 @@ Save contact and Swap contacts), or `link` (one https link). `paused` stops ever
 counter check-in. A member's face never carries a perk.
 
 **The tap decision** (`tapTarget`, run by `app/c/[token]/route.ts`): a paused face shows "This card is
-paused." and nothing about the owner; the owner tapping their own member card lands on `/crew/card`;
-otherwise the mode decides (`link`, `card`, then `page`). A tap checks nobody in.
+paused." and nothing about the owner; the owner tapping their own member card lands on `/crew/card`
+while it is still on `page` (a new card), and follows its link or face once they have set one
+(LIVE-1295); otherwise the mode decides (`link`, `card`, then `page`). Every tap, the owner's own
+included, is counted as an `open`. A tap checks nobody in.
 
 **Member card.** Frequency-wide: `space_id` null, so every Space's counter scanner takes it, and its
 taps read the holder's own face. Getting one is a Crew perk: the console refuses a member who is not

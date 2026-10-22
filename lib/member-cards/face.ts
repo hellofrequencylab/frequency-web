@@ -137,13 +137,15 @@ type TapTarget =
   | { to: 'face' }
 
 /**
- * The tap decision. A paused card shows nothing. The owner tapping their own member card lands on
- * their card settings, the fastest way to set a card. Otherwise the face's mode decides, except that a
- * signed-out tap on a member card in page mode shows the public card face. Pure.
+ * The tap decision. A paused card shows nothing. The owner tapping their own member card while it is
+ * still on its default (page mode) lands on their card settings, the fastest way to set a new card; once
+ * they choose a link or the virtual card, their own tap goes there like anyone's, so they can test it
+ * (owner ruling 2026-10-22). Otherwise the face's mode decides, except that a signed-out tap on a
+ * member card in page mode shows the public card face. Pure.
  */
 export function tapTarget(owner: CardOwner, face: CardFace, tapperProfileId: string | null): TapTarget {
   if (face.paused) return { to: 'paused' }
-  if (owner.kind === 'member' && tapperProfileId && tapperProfileId === owner.profileId) return { to: 'owner_settings' }
+  if (owner.kind === 'member' && face.mode === 'page' && tapperProfileId && tapperProfileId === owner.profileId) return { to: 'owner_settings' }
   if (face.mode === 'link' && face.linkUrl) return { to: 'link', url: face.linkUrl }
   if (face.mode === 'card') return { to: 'face' }
   // A member's profile needs sign-in (proxy.ts), so a signed-out stranger would hit a wall. Their view of

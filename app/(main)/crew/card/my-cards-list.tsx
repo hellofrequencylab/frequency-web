@@ -59,7 +59,7 @@ function CardRow({ card }: { card: OwnedCard }) {
           {number} <span className="font-normal text-muted">· {EDITION[card.edition]}</span>
         </p>
         <p className="text-meta text-muted">
-          {card.spaceName ? `Checks in at ${card.spaceName}` : 'Checks in at every Space'}
+          {card.spaceName ? `Checks in at ${card.spaceName}` : 'Your Frequency card'}
           {card.lastUsedAt ? ` · last tapped ${day(card.lastUsedAt)}` : ` · added ${day(card.createdAt)}`}
           {!on && ' · off'}
         </p>

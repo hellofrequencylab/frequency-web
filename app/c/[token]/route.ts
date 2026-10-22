@@ -12,13 +12,14 @@ export const dynamic = 'force-dynamic'
 // "Member cards"). The chip always holds this one link; the card's FACE, set by its owner on the website,
 // decides where the tap goes (lib/member-cards/face.ts tapTarget):
 //   • paused          → /card/<token>, which says "This card is paused." and nothing about the owner.
-//   • owner_settings  → the owner tapped their own member card: /crew/card, the fastest way to set it.
+//   • owner_settings  → the owner tapped their own member card while it still opens their page: /crew/card,
+//                       the fastest way to set it. A card they have set opens its link or face for them too.
 //   • page            → the owner's own page (/people/<handle>, or /spaces/<slug> for a Space's card).
 //   • link            → the one https link the owner set (a temporary redirect, never cached).
 //   • face            → /card/<token>, the virtual card (Save contact, Swap contacts).
 // It checks NOBODY in: a check-in needs the Space's counter scanner (POST /api/v1/devices/scan) or the
-// door code. A revoked or unknown card lands on /code-unavailable. Every tap but the owner's own is
-// counted as an 'open' for the owner's numbers.
+// door code. A revoked or unknown card lands on /code-unavailable. Every tap, the owner's own included
+// (owner ruling 2026-10-22: "it didn't log my last bump"), is counted as an 'open' for the owner's numbers.
 //
 // A SIGNED-IN member tapping another member's card also keeps the card owner as a private contact in
 // the tapper's My Contacts (the /q scan-to-contact capture, ADR-361) and pays the connect (Zaps, capped
@@ -46,7 +47,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   if (!card) return to('/code-unavailable')
 
   const target = tapTarget(card.owner, card.face, tapper)
-  if (target.to === 'owner_settings') return to('/crew/card')
+  if (target.to === 'owner_settings') {
+    await logCardTap(card, 'open', tapper)
+    return to('/crew/card')
+  }
 
   const memberOwner = card.owner.kind === 'member' ? card.owner.profileId : null
   const sideEffects: Promise<unknown>[] = [logCardTap(card, 'open', tapper)]
