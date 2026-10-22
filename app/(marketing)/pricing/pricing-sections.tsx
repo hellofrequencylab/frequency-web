@@ -263,8 +263,7 @@ export function PricingExtras({ extras }: { extras: PlanExtra[] }) {
 }
 
 export function PricingDoors() {
-  // WHO IT'S FOR: the doors, each to its /for page. Teachers and families matches the /for/teachers
-  // door (PR #3227). Plan names only, no figures: each door prices itself from the catalog.
+  // WHO IT'S FOR: the doors, each to its /for page. Plan names only, no figures: each door prices itself from the catalog.
   return (
     <Section tone="canvas" width="wide">
       <SectionHeading
@@ -402,16 +401,8 @@ const WHO_ITS_FOR: readonly { title: string; body: string; href: string }[] = [
   },
   { title: 'Studios', body: 'Classes, memberships and check-in at the door.', href: '/for/studios' },
   { title: 'Event hosts', body: 'Events, tickets and a way to reach everyone who came.', href: '/for/event-hosts' },
-  {
-    title: 'Community builders',
-    body: 'Circles, gatherings and the people who keep showing up.',
-    href: '/for/community-builders',
-  },
-  {
-    title: 'Teachers and families',
-    body: 'Classes, homeschool groups and family circles. A free Space holds the calendar, the people and the updates.',
-    href: '/for/teachers',
-  },
+  { title: 'Venues', body: 'Your calendar, the groups that use your room, and the people who come.', href: '/for/venues' },
+  { title: 'Networks', body: 'Many chapters, one home, and one view of all of them.', href: '/for/networks' },
   { title: 'Nonprofits', body: 'Donations, supporters and programs, with no network fee.', href: '/for/nonprofits' },
 ]
 

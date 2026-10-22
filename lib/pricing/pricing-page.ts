@@ -402,8 +402,8 @@ interface PersonaLoadout {
   perSeat?: boolean
 }
 
-/** The SIX persona doors (ADR-590; teachers added by the demographic canon, ADR-1715): one system, presented by who they are. Each resolves to Business,
- *  Business + Resonance, or the Nonprofit plan. Coaches/healers and community builders turn the Resonance
+/** The launch doors (ADR-590; six launch doors with the Network door priced on its own page, ADR-1863): one system, presented by who they are. Each resolves to Business,
+ *  Business + Resonance, or the Nonprofit plan. Coaches/healers turn the Resonance
  *  Engine on (Business + Resonance = $49 + $20/mo at list); studios and event hosts run on Business
  *  ($49/mo); nonprofits run the flat Nonprofit plan ($39/mo). The monthly totals come from the catalog,
  *  never hardcoded, so a catalog change reflows every figure — the figures here moved on their own when
@@ -412,8 +412,7 @@ export const PERSONA_LOADOUTS: readonly PersonaLoadout[] = [
   { slug: 'coaches-and-healers', label: 'Coaches and healers', addons: ['ai'], note: 'Packages, scheduling, and a client CRM that suggests who to follow up with.' },
   { slug: 'studios', label: 'Studios', addons: [], note: 'Classes, memberships, and check-in at the door.' },
   { slug: 'event-hosts', label: 'Event hosts', addons: [], note: 'Tickets, check-in, and a message to everyone who has one.' },
-  { slug: 'community-builders', label: 'Community builders', addons: ['ai'], note: 'Circles, memberships, and matches between the right people.' },
-  { slug: 'teachers', label: 'Teachers', addons: [], note: 'Your classes across every studio, one list of students, and bookings in one place.' },
+  { slug: 'venues', label: 'Venues', addons: [], note: 'Your calendar, the groups that use your room, and the people who come.' },
   { slug: 'nonprofits', label: 'Nonprofits', addons: [], note: 'Donations, supporters, and programs.', perSeat: true },
 ]
 

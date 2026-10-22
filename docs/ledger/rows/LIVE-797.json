@@ -1,0 +1,10 @@
+{
+  "id": "LIVE-797",
+  "patch": {
+    "status": "parked",
+    "notes": "Superseded by ADR-1863 (LIVE-1130): the door this row required was retired."
+  },
+  "append": {
+    "detail": " 2026-10-22 LIVE-1130 (ADR-1863): the launch narrowed to four doors and /for/teachers and /for/community-builders were retired, so this row's premise no longer holds. Parked, not edited; LIVE-1130 carries the four-door probe."
+  }
+}

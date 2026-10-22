@@ -1,0 +1,11 @@
+{
+  "id": "LIVE-106",
+  "patch": {
+    "status": "parked",
+    "notes": "Superseded by ADR-1863 (LIVE-1130): its probe pinned the /for/community-builders header link, which ADR-1863 retired.",
+    "title": "13 header destinations had no path on small screens, and operator menu edits never reached the small-screen menu"
+  },
+  "append": {
+    "detail": " 2026-10-22 LIVE-1130 (ADR-1863): parked, not edited; its probe pinned the /for/community-builders header link, which ADR-1863 retired."
+  }
+}

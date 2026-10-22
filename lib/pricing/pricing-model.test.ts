@@ -31,10 +31,8 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
   it('matches the doors: +Vera AI personas $69, Business-only personas $49 (list)', () => {
     const expected: Record<string, string> = {
       'coaches-and-healers': '$69/mo',
-      'community-builders': '$69/mo',
       studios: '$49/mo',
       'event-hosts': '$49/mo',
-      teachers: '$49/mo',
     }
     // Explicitly the closed window, so the row this asserts is the one the owner's decision produces
     // rather than whatever the clock happens to say.

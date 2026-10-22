@@ -71,7 +71,6 @@ describe('the phone sheet reaches everything the desktop bar reaches', () => {
       '/discover/practices',
       '/discover/spaces', // was /spaces/directory, the robots-disallowed app-shell twin
       '/for/coaches-and-healers',
-      '/for/community-builders',
       '/for/event-hosts',
       '/for/nonprofits',
       '/for/studios',
