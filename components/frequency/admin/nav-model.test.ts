@@ -24,8 +24,8 @@ describe('hrefScore', () => {
 describe('the Space console sidebar', () => {
   const items = spaceNavItems('royal-temple', true)
   it('is Home, the two public pages, then the hub tabs in four groups', () => {
-    expect(items.map((i) => i.key)).toEqual(['dashboard', 'editor', 'spotlight', 'resonance', 'programs', 'offerings', 'checkin', 'marketing', 'settings'])
-    expect(items.map((i) => i.group)).toEqual([undefined, 'Your public pages', 'Your public pages', 'Run', 'Run', 'Money and reach', 'Money and reach', 'Money and reach', 'Your Space'])
+    expect(items.map((i) => i.key)).toEqual(['dashboard', 'editor', 'spotlight', 'resonance', 'programs', 'offerings', 'marketing', 'checkin', 'settings'])
+    expect(items.map((i) => i.group)).toEqual([undefined, 'Your public pages', 'Your public pages', 'Run', 'Run', 'Money and reach', 'Money and reach', 'Your Space', 'Your Space'])
   })
   it('puts Spotlight up with the page editor, and lights it on its own page', () => {
     expect(items.find((i) => i.key === 'spotlight')).toMatchObject({ href: '/spaces/royal-temple/manage/spotlight' })
