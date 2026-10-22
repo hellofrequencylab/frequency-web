@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 // Partner-plaque attribution (scan2 L9-04): a redemption names an offer only when the partner has
 // exactly ONE live offer. Zero or several leave offer_id null. Everything around the partner step
@@ -8,6 +8,7 @@ const h = vi.hoisted(() => {
   const state = {
     offers: [] as Array<{ id: string; title: string; valid_until: string | null; active: boolean }>,
     inserts: [] as Array<[string, unknown]>,
+    node: null as Record<string, unknown> | null,
   }
   const builder = (table: string): unknown => {
     const c: Record<string, unknown> = {}
@@ -18,7 +19,10 @@ const h = vi.hoisted(() => {
     }
     c.maybeSingle = async () =>
       table === 'nodes'
-        ? { data: { type: 'qr', zaps_value: 0, partner_id: 'partner-1', kind: 'plaque', space_id: null }, error: null }
+        ? {
+            data: state.node ?? { type: 'qr', zaps_value: 0, partner_id: 'partner-1', kind: 'plaque', space_id: null },
+            error: null,
+          }
         : { data: null, error: null }
     c.then = (resolve: (v: unknown) => void) =>
       resolve({ data: table === 'partner_offers' ? state.offers : null, error: null })
@@ -103,5 +107,30 @@ describe('captureNode medium', () => {
   it('records a counter scanner card as an NFC read with the device medium', async () => {
     await captureNode({ ...attempt, medium: 'device' })
     expect(ledger()).toMatchObject({ source: 'nfc', context: { medium: 'device' } })
+  })
+})
+
+// A Space check-in is presence, not a practice (LIVE-1271): it must not emit practice.verified, which
+// fires the "Nice work! You just logged a practice" automation email. Other captures still do.
+describe('captureNode practice event', () => {
+  beforeEach(() => {
+    h.state.offers = []
+    h.state.inserts = []
+    vi.mocked(recordEngagementEvent).mockClear()
+  })
+  afterEach(() => {
+    h.state.node = null
+  })
+  const practice = () => vi.mocked(recordEngagementEvent).mock.calls.find((c) => c[0].eventType === 'practice.verified')
+
+  it('does not emit practice.verified for a Space check-in node', async () => {
+    h.state.node = { type: 'qr', zaps_value: 0, partner_id: null, kind: 'checkin', space_id: 'space-1' }
+    await captureNode({ ...attempt, medium: 'nfc' })
+    expect(practice()).toBeUndefined()
+  })
+  it('still emits practice.verified for an ordinary non-partner node', async () => {
+    h.state.node = { type: 'qr', zaps_value: 0, partner_id: null, kind: 'ghost', space_id: null }
+    await captureNode(attempt)
+    expect(practice()).toBeDefined()
   })
 })

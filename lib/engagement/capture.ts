@@ -184,14 +184,19 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
   //     Emit the North-Star event once per (node, actor), keyed independently
   //     from the capture above.
   if (!node.partner_id) {
-    await recordEngagementEvent({
-      idempotencyKey: `practice_node:${attempt.nodeId}:${attempt.actorProfileId}`,
-      source,
-      eventType: 'practice.verified',
-      actorProfileId: attempt.actorProfileId,
-      context: { nodeId: attempt.nodeId, kind: 'node_practice' },
-      verifiedAt: new Date(),
-    }).catch(() => {})
+    // A Space check-in is presence, not a practice: it would fire the "Nice work! You just logged a
+    // practice" automation email at someone walking into a venue (LIVE-1271). Check-ins keep their own
+    // node_capture event above and the trust signal below.
+    if ((node.kind as string) !== 'checkin') {
+      await recordEngagementEvent({
+        idempotencyKey: `practice_node:${attempt.nodeId}:${attempt.actorProfileId}`,
+        source,
+        eventType: 'practice.verified',
+        actorProfileId: attempt.actorProfileId,
+        context: { nodeId: attempt.nodeId, kind: 'node_practice' },
+        verifiedAt: new Date(),
+      }).catch(() => {})
+    }
 
     // A proximity-verified, non-commercial capture is genuine in-person presence — a
     // community trust signal (ADR-247). Idempotent per (node, actor); best-effort so it
