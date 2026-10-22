@@ -95,8 +95,8 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
       a: `${PLAN_STORY.lines} ${PLAN_STORY.ladder} ${PLAN_STORY.paid} There are two lines. For you: ${member!.label} is free forever, and ${crew!.label} is ${crew!.monthly}, contribute what you want. For your Space: ${ladder} ${annualDiscountNote(input.values)}`,
     },
     {
-      q: 'Can I run a Space for free?',
-      a: `Yes, and anyone can. A free Space is a real Space, not a trial: your page, Circles, Events, posts, members, contacts, email, bookings and Journeys, with limits sized for a launch. People can tip you, and we take nothing from tips. When you want to charge for something, that is Business. You do not need Crew to run a Space. No card, no clock.`,
+      q: 'Do I need Crew to open a Space?',
+      a: `A Space comes with Crew, which you fund at whatever amount you choose. Until the beta ends, anyone can open one free. After that, hosting stays free: a free Space is a real Space, not a trial: your page, Circles, Events, posts, members, contacts, email, bookings and Journeys, with limits sized for a launch. People can tip you, and we take nothing from tips. When you want to charge for something, that is Business. Crew is what opens it, and a plan is only for when you charge.`,
     },
     {
       q: 'Why does selling start at Business?',

@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1273",
+  "title": "Every pricing surface says a Space comes with Crew; the $99 reads Beta pricing; the Partner bubble is fixed",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "wave": "W7",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const m=[];const ps=fs.readFileSync('lib/pricing/plan-story.ts','utf8');if(!/crewSpace:/.test(ps))m.push('PLAN_STORY.crewSpace missing');const g=fs.readFileSync('lib/pricing/pricing-grid.ts','utf8');if(g.includes('Crew is not required'))m.push('grid still says Crew is not required');const f=fs.readFileSync('app/(marketing)/pricing/pricing-faq.ts','utf8');if(!f.includes('Do I need Crew to open a Space?'))m.push('FAQ lost the Crew question');if(m.length){console.error('LIVE-1273: '+m.join('; '));process.exit(1)}\""
+  },
+  "detail": "Owner 2026-10-22: opening a new Space requires Crew and the upsell is clear site wide (ADR-1818). The gate already exists (ADR-810, bites when the beta ends); this row is the copy: PLAN_STORY.crewSpace, the grid, calculator, plan motion, FAQ, pricing page CTA, help and llms. OPEN: the home hero and the six /for doors still say Businesses host free; they belong to the home and niche-doors work. Same PR (owner 2026-10-22): the pink Partner bubble in the Collective walk-through was a dark disc because the photo-disc test used startsWith(\"P\") and matched the PK orb, painting a broken photo URL over its gradient; the test is now /^P\\\\d$/. The $99 Collective price reads \"Beta pricing\" (FOUNDING_RATE_NOTE, the calculator sub line, the ladder pill) on the owner's word, and two test pins that forbade the word beta were narrowed to that one label. The offer still ends January 1."
+}

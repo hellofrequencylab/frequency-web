@@ -295,8 +295,8 @@ export default async function PricingPage() {
       <PricingFaq faq={faq} />
 
       <BetaCTA
-        heading="Open your Space for free."
-        body="Host free for as long as you like. When you are ready to charge, Business is one step away, and your own people stay yours."
+        heading="Open your Space."
+        body="A Space comes with Crew, and hosting is free after that. When you are ready to charge, Business is one step away, and your own people stay yours."
       />
     </>
   )

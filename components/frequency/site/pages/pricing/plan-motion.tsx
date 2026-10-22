@@ -86,7 +86,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
               <div className="pm-hit" tabIndex={0} role="group" aria-label={`${free.label}: what it adds`} aria-describedby="pm-t-free">
                 <span className="pm-ring" />
                 <Tip id="pm-t-free" title="Host free. The whole thing.">
-                  {`Free forever, no card. Tips only, with no platform fee, ${PLAN_STORY.plusProcessing}.`}
+                  {`Comes with Crew, and hosting is free after that. Tips only, with no platform fee, ${PLAN_STORY.plusProcessing}.`}
                 </Tip>
               </div>
             </div>
@@ -139,7 +139,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
           <div className="pm-cap">
             <span className="ig-k">{collective.label}</span>
             <Price label={collective.monthly} yearly={collective.yearly} anchor={collective.listAnchor} />
-            {collective.listAnchor && <span className="pm-pill">Founding price</span>}
+            {collective.listAnchor && <span className="pm-pill">Beta pricing</span>}
             <em>Collective unites.</em>
           </div>
         </div>
