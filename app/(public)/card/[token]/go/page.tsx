@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { tapTarget } from '@/lib/member-cards/face'
 import { memberCardsEnabled, resolveTappedCard } from '@/lib/member-cards/store'
+import { FocusTemplate } from '@/components/templates'
 import { OutboundHop } from './outbound-hop'
 
 // /card/<token>/go: the hop a member card takes to ANOTHER site (LIVE-1298). /c/<token> counts the tap and
@@ -33,5 +34,10 @@ export default async function CardGoPage({
   const target = tapTarget(card.owner, card.face, await getMyProfileId())
   if (target.to !== 'link') redirect(`/card/${encodeURIComponent(token)}`)
   const nonce = typeof n === 'string' && /^[0-9a-f]{8}$/.test(n) ? n : null
-  return <OutboundHop url={target.url} nonce={nonce} />
+  const host = new URL(target.url).hostname.replace(/^www\./, '')
+  return (
+    <FocusTemplate title={`Opening ${host}`} width="narrow" divider={false}>
+      <OutboundHop url={target.url} nonce={nonce} />
+    </FocusTemplate>
+  )
 }

@@ -42,8 +42,7 @@ export function OutboundHop({ url, nonce }: { url: string; nonce: string | null 
   }, [url, nonce])
 
   return (
-    <div className="mx-auto flex min-h-[50vh] w-full max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
-      <p className="text-body text-text">Opening {host}</p>
+    <div className="text-center">
       <a href={url} className={buttonClasses('primary', 'sm')}>
         Open {host}
       </a>
