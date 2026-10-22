@@ -41,12 +41,11 @@ export default function AccessibilityPage() {
 
       <section>
         <h2 className={LEGAL.h2}>What we know falls short</h2>
-        <p className={LEGAL.p}>As of October 22, 2026, these are open:</p>
+        <p className={LEGAL.p}>As of October 22, 2026, this one is open:</p>
         <ul className={LEGAL.ul}>
           <li>Decorative background motion stops only when your device asks for reduced motion. There is no pause button yet.</li>
-          <li>Some text fields on the help page show a hint inside the box instead of a visible label.</li>
         </ul>
-        <p className={LEGAL.p}>We are working through these in that order.</p>
+        <p className={LEGAL.p}>We are working on it.</p>
       </section>
 
       <section>
