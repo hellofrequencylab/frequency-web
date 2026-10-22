@@ -304,6 +304,7 @@ export const FQ_ABOUT_LINKS: readonly { label: string; href: string }[] = [
   { label: 'Privacy', href: '/privacy' },
   { label: 'Terms', href: '/terms' },
   { label: 'Space email policy', href: '/space-email-policy' },
+  { label: 'Accessibility', href: '/accessibility' },
 ]
 
 /** A hub's long-tail child. Gated like DAWN gates the same destination. */

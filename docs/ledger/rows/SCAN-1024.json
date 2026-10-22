@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1024",
+  "title": "Accessibility has a statement page of its own at /accessibility (SCAN-1024)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/accessibility/page.tsx",
+    "ref": "Public site audit 2026-10-22, finding 3 (/mnt/project-files/audits/site-seo-geo-a11y-2026-10-22.md)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-22. The accessibility promise lived in a card on /help and claimed WCAG 2.2 AA flatly. /accessibility is now a dated, canonical, sitemapped page that states an aim, lists three known gaps (search window focus, no pause control for decorative motion, placeholder-only help fields) and names the contact route. LEGAL_LINKS, the site footer and llms.txt point at it; the /help card links to it. The known-gaps list and the date move together. The reply-time promise is deliberately absent: Daniel decides whether to commit to one.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=f=>fs.readFileSync(f,'utf8');const bad=[];if(!fs.existsSync('app/accessibility/page.tsx'))bad.push('no accessibility page');else if(!r('app/accessibility/page.tsx').includes('/accessibility'))bad.push('page lacks its canonical');if(!r('lib/nav/legal-links.ts').includes(\\\"href: '/accessibility'\\\"))bad.push('legal links still point at the Help card');if(!r('app/sitemap.ts').includes('/accessibility'))bad.push('not in the sitemap');if(bad.length){console.error('SCAN-1024: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the accessibility statement page, its legal link or its sitemap entry goes missing."
+  },
+  "closed": "2026-10-22",
+  "wave": "W7"
+}
