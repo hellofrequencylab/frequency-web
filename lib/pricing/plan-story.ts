@@ -53,7 +53,7 @@ export const PLAN_STORY = {
   /** WHY a plan, in the model's own terms: free hosting is the point, and a plan is what you take when
    *  you start charging. Every surface interpolates this instead of arguing it again. */
   paid:
-    'A Space comes with Crew, which you fund at whatever amount you choose. After that, hosting is free, and that is the point, not a teaser. A free Space runs the whole thing: your page, Circles, Events, contacts, email, bookings and Journeys, with limits sized for a launch. Business is what you take when you start charging. Collective is for separate groups that partner, and Network is for one organization with chapters.',
+    'Hosting is free, and that is the point, not a teaser. A Space comes with Crew, which you fund at whatever amount you choose, and after that a free Space runs the whole thing: your page, Circles, Events, contacts, email, bookings and Journeys, with limits sized for a launch. Business is what you take when you start charging. Collective is for separate groups that partner, and Network is for one organization with chapters.',
   /** The selling line: where taking money starts, and the one kind of money every tier receives. */
   selling:
     'Selling starts at Business. Paid tickets, paid memberships, donations, shop checkout and booking deposits open there. Tips stay open on every tier, with no platform fee, only card processing.',
