@@ -51,6 +51,10 @@ const blocks: HouseBlockModel[] = [
     { n: '1', title: 'Tuesday', body: 'Craft Night or Circles Night, 6 to 9 PM.' },
     { n: '2', title: 'Wednesday', body: 'Meld or Moon Circle.' },
     { n: '3', title: 'Sunday', body: 'Ecstatic Dance, Community Dinner, then a Concert.' },
+  ], week: [
+    { name: 'Mon', slots: [], joiner: 'or', note: 'Quiet hours', tone: 'quiet' },
+    { name: 'Tue', slots: [{ title: 'Craft Night', time: '6–9 PM' }, { title: 'Circles Night', time: '6–9 PM' }], joiner: 'or', note: 'Alternating', tone: 'busy' },
+    { name: 'Fri', slots: [], joiner: 'or', note: 'Retreat and rental', tone: 'held' },
   ] },
   { kind: 'sessions', key: 's1', anchor: 'sessions', eyebrow: 'Next at the house', title: "What's coming up.", cards: [
     { length: null, price: null, title: 'Community Dinner', body: 'A long table, shared plates and the people who made them.', cta: { href: '/gatherings', label: 'RSVP' }, stamp: { day: '25', month: 'Oct' }, when: 'Sun Oct 25 · 5–7 PM' },
@@ -163,6 +167,8 @@ describe('the Temple site, rendered through the real chrome and sections', () =>
     // The design's fact row under the hero buttons and the clay date stamp on an event card.
     expect(html).toContain('hs-hero-facts')
     expect(html).toContain('hs-stamp')
+    // The standing week: busy, quiet and held day cards, the two Tuesday series joined by "or".
+    for (const c of ['hs-week', 'hs-day-busy', 'hs-day-quiet', 'hs-day-held', 'hs-day-join']) expect(html).toContain(c)
     expect(html).toContain('Sun Oct 25 · 5–7 PM')
     expect(html).not.toMatch(/—/)
   })

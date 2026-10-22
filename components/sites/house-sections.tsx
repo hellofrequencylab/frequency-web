@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { accentSegments } from '@/lib/sites/house-theme'
+import type { TempleDay } from '@/lib/sites/temple-week'
 import { ContactFormBlock, type ContactFormBlockProps } from '@/components/spaces/contact-form-block'
 
 // THE HOUSE WEBSITE THEME'S SECTIONS (components/sites, owner ask 2026-10-07). PRESENTATIONAL: every word,
@@ -52,6 +53,8 @@ export type HouseBlockModel =
       title: string | null
       subtitle: string | null
       steps: { n: string; title: string; body: string }[]
+      /** The Temple's standing week: seven days drawn from the Space's recurring series (lib/sites/temple-week.ts). */
+      week?: TempleDay[]
     }
   | {
       kind: 'story'
@@ -289,6 +292,23 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
                 {block.subtitle}
               </p>
             )}
+            {block.week ? (
+              <div className="hs-steps hs-week">
+                {block.week.map((d) => (
+                  <div key={d.name} className={`hs-step hs-day hs-day-${d.tone}`}>
+                    <span className="hs-day-name">{d.name}</span>
+                    {d.slots.map((s, i) => (
+                      <div key={s.title}>
+                        {i > 0 && <span className="hs-day-join">{d.joiner}</span>}
+                        <span className="hs-day-ev">{s.title}</span>
+                        {s.time && <span className="hs-day-time">{s.time}</span>}
+                      </div>
+                    ))}
+                    {d.note && <span className="hs-day-note">{d.note}</span>}
+                  </div>
+                ))}
+              </div>
+            ) : (
             <div className="hs-steps">
               {block.steps.map((s, i) => (
                 <div key={i} className="hs-step">
@@ -298,6 +318,7 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
                 </div>
               ))}
             </div>
+            )}
           </div>
         </section>
       )

@@ -150,6 +150,25 @@ ${N} .hs-step-n{display:flex;align-items:flex-end;justify-content:center;width:5
 ${N} .hs-step:hover .hs-step-n{box-shadow:var(--tp-d2);transform:translateY(-2px)}
 ${N} .hs-step h3{margin:var(--tp-s2) 0 0;font-family:var(--tp-serif);font-weight:var(--tp-weight-regular);font-size:var(--tp-size-lg);letter-spacing:var(--tp-tracking-display)}
 ${N} .hs-step p{color:var(--tp-umber-600);font-size:var(--tp-size-sm)}
+/* The standing week: seven arch-topped day cards (design .tt-day). A quiet day is dashed, a held day is the night card. */
+${N} .hs-panel:has(.hs-week){background:transparent;border:0;box-shadow:none;padding:0}
+${N} .hs-panel:has(.hs-week)::before{display:none}
+${N} .hs-week{grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--tp-s3)}
+${N} .hs-day{display:flex;flex-direction:column;align-items:center;gap:var(--tp-s3);min-height:230px;padding:22px 14px 18px;border-radius:var(--tp-r-arch-soft);background:var(--tp-card);border:var(--tp-b-hair) solid var(--tp-line);box-shadow:var(--tp-d1);text-align:center}
+${N} .hs-day>*{display:block}
+${N} .hs-day-name{font-family:var(--tp-display);font-size:var(--tp-size-xl);line-height:1;color:var(--tp-umber-900)}
+${N} .hs-day-ev{font-family:var(--tp-serif);font-size:var(--tp-size-md);line-height:1.25;color:var(--tp-umber-900)}
+${N} .hs-day-time{margin-top:2px;font-size:var(--tp-size-xs);letter-spacing:.02em;color:var(--tp-muted)}
+${N} .hs-day-join{margin:-2px 0 var(--tp-s1);font-size:var(--tp-size-xs);letter-spacing:.02em;color:var(--tp-muted)}
+${N} .hs-day-note{margin-top:auto;font-size:var(--tp-size-2xs);letter-spacing:var(--tp-tracking-eyebrow);text-transform:uppercase;color:var(--tp-clay-600)}
+${N} .hs-day-quiet{background:transparent;border-style:dashed;box-shadow:none}
+${N} .hs-day-held{background:var(--tp-wash-night);border-color:transparent;color:var(--tp-on-ink);box-shadow:var(--tp-d2)}
+${N} .hs-day-held .hs-day-name{color:var(--tp-plaster-50)}
+${N} .hs-day-held .hs-day-ev{color:var(--tp-plaster-100)}
+${N} .hs-day-held .hs-day-time,${N} .hs-day-held .hs-day-join{color:var(--tp-plaster-300)}
+${N} .hs-day-held .hs-day-note{color:var(--tp-saffron-400)}
+@media (max-width:960px){${N} .hs-week{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:600px){${N} .hs-week{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* Photos are arches with the inner frame; the tall crop is the steeper dome. */
 ${N} .hs-photo{position:relative;aspect-ratio:4 / 4.6;border-radius:var(--tp-r-arch);box-shadow:var(--tp-d3)}
