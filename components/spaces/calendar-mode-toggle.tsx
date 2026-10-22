@@ -2,6 +2,7 @@
 
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Button } from '@/components/ui/button'
+import { ComingSoonMark } from '@/components/ui/coming-soon-mark'
 import {
   CALENDAR_SURFACE_DEFS,
   CALENDAR_SURFACES,
@@ -79,6 +80,13 @@ export function CalendarModeToggle({
           >
             All
           </Button>
+        </span>
+      ) : null}
+      {/* The design's other three views. Not built, so named and marked rather than hidden. */}
+      {surfaces.length > 2 ? (
+        <span className="inline-flex items-center gap-1.5 text-meta text-muted" data-calendar-soon-views>
+          Day, Week, Timeline
+          <ComingSoonMark />
         </span>
       ) : null}
     </span>

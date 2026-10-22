@@ -23,6 +23,7 @@ import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
+import { CalendarSyncSoon } from './calendar-sync-soon'
 import { SpaceEventsManager, type ManagedEvent } from './space-events-manager'
 import { listSpacePlans, listPlaybooks, listPlanPencilEntryIds, listIncomingPlanShareRows, listPlansSharedWith } from '@/lib/calendar/plans-store'
 import { resolveShareSubjects } from '@/lib/calendar/plan-share-subjects'
@@ -259,6 +260,7 @@ export default async function SpaceCalendarConsolePage({
           />
 
           <DayNotesField slug={space.slug} notes={dayNotes} canEdit={canManage} />
+          <CalendarSyncSoon />
           </div>
 
           {canManage && (
