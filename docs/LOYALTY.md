@@ -274,6 +274,14 @@ member holds at most 5 live Frequency-wide cards (`SCANNER_LIMITS.cardsPerMember
 taps open the Space's face and it checks in at that Space only. It goes to someone on the Space's team
 (its owner, or an active member above viewer) and needs no Crew. The cap is the per-Space one.
 
+**Where the editor lives.** One editor (`components/member-cards/card-face-editor.tsx`) in two places.
+A member's own card is on `/crew/card` and, for a Space manager, on the Space's Check in "Cards" view
+(`?view=card`, LIVE-1297) beside the Space card. A member who runs a Space also gets that Space's card
+on `/crew/card` (LIVE-1302), and their public card face lists the Spaces they run with their links. A
+Crew member who runs no Space sees the Crew version only. "Open my link" can be any page on Frequency,
+picked from a search, or any pasted link (LIVE-1301). A link to another site opens through
+`/card/<token>/go`, so closing that site lands back on Frequency (LIVE-1298).
+
 **The number.** Every console card takes the next number from `next_member_card_number()` (one
 sequence for all of Frequency, never reissued, so a discarded mint burns its number). 1 to 100 is the
 Founders edition, every later number a Crew card (`cardEdition`). After a write the console shows the
