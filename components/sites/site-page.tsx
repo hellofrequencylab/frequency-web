@@ -60,7 +60,7 @@ import { publishedWebsitePage, publishedWebsiteSnapshot, resolveWebsiteChrome, r
 import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
 import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
-import { getSpaceContentData } from '@/lib/spaces/content-data'
+import { getSpaceContentData, getSpaceSeriesRows } from '@/lib/spaces/content-data'
 import { WebsiteDocument } from '@/components/sites/website-document'
 import { NetworkAccount, NetworkSearch, type SearchItem } from '@/components/sites/network-header-tools'
 import { siteEntitySchema } from '@/lib/jsonld'
@@ -310,7 +310,13 @@ export async function SitePage({
         })
       : null,
     boundSiteDomain(space),
-    websitePage ? getSpaceContentData(space.id, { name: brandName, type: space.type, logoUrl: websiteBrand.logo, coverUrl: space.coverImageUrl, tagline: space.tagline, slug: space.slug, profile: readProfileData(space.preferences) }) : null,
+    websitePage
+      ? getSpaceContentData(space.id, { name: brandName, type: space.type, logoUrl: websiteBrand.logo, coverUrl: space.coverImageUrl, tagline: space.tagline, slug: space.slug, profile: readProfileData(space.preferences) }).then(async (content) => {
+          // The Temple's week and event cards expand the Space's recurring series themselves, so the page gets the series rows too.
+          const drawsSeries = (websitePage.doc.content ?? []).some((b) => typeof b?.type === 'string' && b.type.startsWith('Temple'))
+          return drawsSeries && content ? { ...content, series: await getSpaceSeriesRows(space.id) } : content
+        })
+      : null,
     websitePage ? loadWebsiteFeatures(space.id, [websitePage.doc]) : {},
   ])
   // Bold's season bar names the module now and the next Circle Night; Wildheart's date line names the sky

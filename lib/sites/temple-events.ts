@@ -20,14 +20,21 @@ function hour(d: Date): { h: number; ap: 'AM' | 'PM'; m: number } {
 
 const clock = (t: { h: number; m: number }) => (t.m ? `${t.h}:${String(t.m).padStart(2, '0')}` : String(t.h))
 
-/** "Sun Oct 25 · 5–7 PM": the day, then the hours, the period once when the start and end share it. */
-export function templeWhen(startsAt: string, endsAt?: string | null): string | null {
+/** "5–7 PM": the hours alone, the period once when the start and end share it. Null for an unreadable start. */
+export function templeSpan(startsAt: string, endsAt?: string | null): string | null {
   const s = storedWallClock(startsAt)
   if (!s) return null
   const e = endsAt ? storedWallClock(endsAt) : null
   const a = hour(s)
-  const day = `${DAYS[s.getUTCDay()]} ${MONTHS[s.getUTCMonth()]} ${s.getUTCDate()}`
-  if (!e || e.getTime() <= s.getTime()) return `${day} · ${clock(a)} ${a.ap}`
+  if (!e || e.getTime() <= s.getTime()) return `${clock(a)} ${a.ap}`
   const b = hour(e)
-  return a.ap === b.ap ? `${day} · ${clock(a)}–${clock(b)} ${b.ap}` : `${day} · ${clock(a)} ${a.ap}–${clock(b)} ${b.ap}`
+  return a.ap === b.ap ? `${clock(a)}–${clock(b)} ${b.ap}` : `${clock(a)} ${a.ap}–${clock(b)} ${b.ap}`
+}
+
+/** "Sun Oct 25 · 5–7 PM": the day, then the hours. */
+export function templeWhen(startsAt: string, endsAt?: string | null): string | null {
+  const s = storedWallClock(startsAt)
+  const span = templeSpan(startsAt, endsAt)
+  if (!s || !span) return null
+  return `${DAYS[s.getUTCDay()]} ${MONTHS[s.getUTCMonth()]} ${s.getUTCDate()} · ${span}`
 }

@@ -12,6 +12,7 @@ import { BlockRender } from '@/lib/page-editor/block-render'
 import { config } from '@/lib/page-editor/config'
 import { categoryKeysForSurface } from '@/lib/page-editor/palette-scope'
 import { TEMPLE_CSS } from '@/components/sites/temple-css'
+import { templeHomeBlocks } from '@/lib/sites/temple-home'
 
 vi.mock('@/components/sites/site-admin-gate', () => ({
   useSiteAdmin: () => true,
@@ -51,6 +52,10 @@ const blocks: HouseBlockModel[] = [
     { n: '1', title: 'Tuesday', body: 'Craft Night or Circles Night, 6 to 9 PM.' },
     { n: '2', title: 'Wednesday', body: 'Meld or Moon Circle.' },
     { n: '3', title: 'Sunday', body: 'Ecstatic Dance, Community Dinner, then a Concert.' },
+  ], week: [
+    { name: 'Mon', slots: [], joiner: 'or', note: 'Quiet hours', tone: 'quiet' },
+    { name: 'Tue', slots: [{ title: 'Craft Night', time: '6–9 PM' }, { title: 'Circles Night', time: '6–9 PM' }], joiner: 'or', note: 'Alternating', tone: 'busy' },
+    { name: 'Fri', slots: [], joiner: 'or', note: 'Retreat and rental', tone: 'held' },
   ] },
   { kind: 'sessions', key: 's1', anchor: 'sessions', eyebrow: 'Next at the house', title: "What's coming up.", cards: [
     { length: null, price: null, title: 'Community Dinner', body: 'A long table, shared plates and the people who made them.', cta: { href: '/gatherings', label: 'RSVP' }, stamp: { day: '25', month: 'Oct' }, when: 'Sun Oct 25 · 5–7 PM' },
@@ -163,6 +168,8 @@ describe('the Temple site, rendered through the real chrome and sections', () =>
     // The design's fact row under the hero buttons and the clay date stamp on an event card.
     expect(html).toContain('hs-hero-facts')
     expect(html).toContain('hs-stamp')
+    // The standing week: busy, quiet and held day cards, the two Tuesday series joined by "or".
+    for (const c of ['hs-week', 'hs-day-busy', 'hs-day-quiet', 'hs-day-held', 'hs-day-join']) expect(html).toContain(c)
     expect(html).toContain('Sun Oct 25 · 5–7 PM')
     expect(html).not.toMatch(/—/)
   })
@@ -185,5 +192,43 @@ describe('the Temple site, rendered through the real chrome and sections', () =>
     }
     expect(failures).toEqual([])
     if (out) write(out, 'blocks', all.join('\n'))
+  })
+  it('renders the design Home from its blocks: the seven sections in order, then the follow band, with live events', () => {
+    const day = (d: string, t: string) => `2026-${d}T${t}:00.000Z`
+    const row = (id: string, title: string, d: string, t: string, e: string, extra: Record<string, unknown> = {}) => ({ id, slug: id, title, startsAt: day(d, t), endsAt: day(d, e), priceLabel: '$22', description: 'A gathering at the house.', ...extra })
+    const series = [
+      { ...row('craft', 'Craft Night', '10-27', '18:00', '21:00'), recurrenceType: 'weekly', recurrenceRule: null },
+      { ...row('circles', 'Circles Night', '11-03', '18:00', '21:00'), recurrenceType: 'weekly', recurrenceRule: null },
+      { ...row('meld', 'Meld', '10-28', '10:00', '17:00'), recurrenceType: 'weekly', recurrenceRule: null },
+      { ...row('dinner', 'Community Dinner', '10-25', '17:00', '19:00'), recurrenceType: 'weekly', recurrenceRule: null },
+      { ...row('concert', 'Concert', '10-25', '19:00', '21:00'), recurrenceType: 'weekly', recurrenceRule: null },
+    ]
+    const events = [row('e-rh', 'Returning Home, A Sacred Embodiment Experience', '10-23', '15:00', '18:00', { priceLabel: null }), ...series]
+    const withEvents = { ...metadata, space: { ...metadata.space, events, series } }
+    const blocksIn = templeHomeBlocks() as MwBlock[]
+    const plan = planMensworkPage(blocksIn)
+    expect(plan.every((p) => p.kind === 'own')).toBe(true)
+    const html = renderToStaticMarkup(
+      chrome(
+        <MensworkPage
+          blocks={blocksIn}
+          plan={plan}
+          live={live}
+          links={links}
+          origin={ORIGIN}
+          pageTitle="Home"
+          now={NOW}
+          renderOther={(b) => <BlockRender config={config} data={{ root: {}, content: [b] }} metadata={withEvents} />}
+        />,
+      ),
+    )
+    if (out) write(out, 'home-blocks', html)
+    const order = ['data-tt="hero"', 'data-tt="sessions"', 'data-tt="steps"', 'data-tt="community"', 'data-tt="seasonal"', 'data-tt="story"', 'data-tt="faq"', 'data-tt="follow"']
+    const main = html.slice(html.indexOf('<main'))
+    const at = order.map((o) => main.indexOf(o))
+    expect(at.every((i) => i > 0)).toBe(true)
+    expect([...at].sort((a, b) => a - b)).toEqual(at)
+    for (const s of ['A house for', 'Next at the house', 'tt-ev-title', 'Same slots, all year.', 'tt-day--hold', 'Follow, belong, hold.', 'Four seasonal events.', 'Fridays and Saturdays are held.', 'Before you come.', 'tt-follow-form']) expect(html).toContain(s)
+    expect(html).not.toMatch(/—/)
   })
 })

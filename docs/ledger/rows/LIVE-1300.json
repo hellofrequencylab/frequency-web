@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1300",
+  "title": "The Temple Home matches the Royal Temple design, built from Temple blocks in the design's order",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/temple-home.mjs"
+  },
+  "detail": "Owner ruling 2026-10-22: the live Royal Temple site did not match the design. Root cause: its Home is a stored page of about twenty blocks drawn by the website document renderer, so the house planner's skinned Home never reached it. Fix: a Temple block family (components/page-editor/blocks/temple.tsx: TempleHero, TempleEvents, TempleWeek, TempleTiers, TempleSeasons, TempleRetreat, TempleFAQ, TempleFollow) in the design's markup and order, skinned by components/sites/temple-blocks-css.ts on tokens only, fed by the Space's own events and recurring series (the site page now loads the series rows for a page that carries a Temple block). The design's copy and photos are the block defaults (lib/sites/temple-home.ts); the Temple Program template opens on them. Royal Temple's Home is switched by scripts/seed-temple-home.mts, which prints one guarded SQL transaction that backs up the old blocks first. Still open: the Gatherings, One gathering, Membership, Visit and Your house pages, the header, sign-in sheet and footer, each one PR against its design screen.",
+  "wave": "W7"
+}

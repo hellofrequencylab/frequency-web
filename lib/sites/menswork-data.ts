@@ -23,6 +23,8 @@ export interface MwEvent {
   startsAt: string
   endsAt: string | null
   location: string | null
+  /** True for a recurring anchor or an occurrence it minted: the Temple's standing week reads these. */
+  recurring?: boolean
 }
 
 export interface MwCircle {
@@ -122,6 +124,7 @@ async function readEvents(spaceId: string, need: MwLiveNeed): Promise<MwEvent[]>
           description: src?.description ?? null,
           startsAt: r.startsAt,
           endsAt: r.endsAt ?? null,
+          recurring: !!r.parentEventId || (!!r.recurrenceType && r.recurrenceType !== 'none'),
           location: src ? (src.hide_address ? (src.city ?? null) : (src.location?.trim() || src.city || null)) : null,
         }
       })

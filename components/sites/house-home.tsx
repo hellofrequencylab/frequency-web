@@ -30,6 +30,7 @@ import {
 import { siteHeroLede } from './site-hero-copy'
 import { readSiteStyle } from '@/lib/theme/site-style'
 import { loadMensworkLive } from '@/lib/sites/menswork-data'
+import { templeWeek, weekdayOfTitle, type TempleDay } from '@/lib/sites/temple-week'
 import { templeStamp, templeWhen } from '@/lib/sites/temple-events'
 
 /** A block photo field's renderable URL: a stored URL string or a Loom AssetRef (ADR-1245), else null. */
@@ -84,7 +85,8 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
   // The events are the Space's own public rows through the one anonymous reader (lib/sites/menswork-data.ts):
   // a site render never touches the visitor's session.
   const temple = readSiteStyle(prefs).theme === 'temple'
-  const upcoming = temple && plan.some((s) => s.kind === 'sessions') ? (await loadMensworkLive(space.id, { events: true, circles: false, journeys: false })).events.slice(0, 3) : []
+  const templeEvents = temple && plan.some((s) => s.kind === 'sessions' || s.kind === 'steps') ? (await loadMensworkLive(space.id, { events: true, circles: false, journeys: false })).events : []
+  const upcoming = templeEvents.slice(0, 3)
 
   const needsFaq = plan.some((s) => s.kind === 'faq')
   const needsTiers = plan.some((s) => s.kind === 'community')
@@ -128,9 +130,21 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
       const steps = cards
         .map((c, n) => ({ n: stepNumber(c.icon, n), title: text(c.title) ?? '', body: text(c.text) ?? '' }))
         .filter((c) => c.title || c.body)
-      if (steps.length === 0) continue
+      // The Temple reads this section as its standing week: the recurring series folded onto the weekdays, with
+      // any card the owner titled with a weekday ("Friday") supplying that day's words.
+      let week: TempleDay[] | undefined
+      if (temple) {
+        const words = new Map<number, string>()
+        for (const c of steps) {
+          const wd = weekdayOfTitle(c.title)
+          if (wd !== null && c.body) words.set(wd, c.body)
+        }
+        const days = templeWeek(templeEvents, new Date(), words)
+        if (days.some((d) => d.slots.length)) week = days
+      }
+      if (steps.length === 0 && !week) continue
       const anchor = anchorFor(s.kind)
-      const m = { kind: s.kind, key, anchor, eyebrow: text(b.eyebrow), title: text(b.title), subtitle: text(b.subtitle), steps }
+      const m = { kind: s.kind, key, anchor, eyebrow: text(b.eyebrow), title: text(b.title), subtitle: text(b.subtitle), steps, week }
       addNav(anchor, m.eyebrow, m.title)
       blocks.push(m)
     } else if (s.kind === 'story') {
