@@ -291,7 +291,7 @@ export const FQ_ACCOUNT_MENU: readonly FqMenuRow[] = [
   { group: 'Account', label: 'Appearance', href: '/settings#appearance', icon: 'sun' },
   { group: 'Account', label: 'Plan & billing', href: '/settings/billing', icon: 'wallet' },
   { group: 'Account', label: 'Drafts', href: '/drafts', icon: 'edit' },
-  { group: 'Account', label: 'Help', href: '/help', icon: 'help' },
+  { group: 'Account', label: 'Help & support', href: '/help', icon: 'help' },
   { group: 'Account', label: 'Report a bug', action: 'bug', icon: 'flag' },
 ]
 

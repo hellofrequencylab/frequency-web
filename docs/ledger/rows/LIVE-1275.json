@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-1275",
+  "title": "Help and Support are in every menu: public header, Space console, platform admin, avatar menu",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "wave": "W7",
+  "status": "done",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/help-support-in-menus.mjs" },
+  "detail": "Owner ask 2026-10-22. Audit found Help already in the member footer, member site menu, phone More sheet and platform admin footer. Gaps closed: the public header row gains Help (DIRECT_LINKS, also the phone sheet), the Space console top bar and phone More sheet gain Contact support (/support), the platform admin top bar gains Support inbox (/admin/support, only when the viewer can see it), and the avatar menu row reads Help & support.",
+  "closed": "2026-10-22"
+}
