@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { OPERATOR_CTA_HREF } from '@/lib/site'
 import { addOnHref, addOnLabel, resolveAddOn } from './addon-links'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 import { pricingAddOns } from './pricing-addons'
@@ -8,7 +7,7 @@ import { PRICING_DEFAULTS } from './settings'
 describe('add-on links', () => {
   it('sends a signed-out visitor to sign-up and back through the route', () => {
     expect(resolveAddOn('network_chapter', { signedIn: false, spaceSlugs: [] })).toBe(
-      `${OPERATOR_CTA_HREF}?next=${encodeURIComponent('/pricing/add/network_chapter')}`,
+      `/sign-in?next=${encodeURIComponent('/pricing/add/network_chapter')}`,
     )
   })
   it('sends a member with no Space to Create a Space', () => {

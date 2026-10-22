@@ -136,8 +136,9 @@ describe('the approved CTA set', () => {
     expect(offenders).toEqual([])
   })
 
-  it('both approved verbs route to the same door, so neither can self-link', () => {
-    expect(OPERATOR_CTA_HREF).toBe(BETA_CTA_HREF)
+  it('the Spaces verb opens Create a Space, not the member sign-up (owner 2026-10-22), and no verb self-links', () => {
+    expect(OPERATOR_CTA_HREF).toBe('/spaces/new')
+    expect(OPERATOR_CTA_HREF).not.toBe(BETA_CTA_HREF)
     expect(BETA_CTA_HREF.startsWith('/')).toBe(true)
   })
 

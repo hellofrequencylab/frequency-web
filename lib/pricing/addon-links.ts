@@ -1,7 +1,7 @@
 // WHERE EACH ADD-ON IS BOUGHT (owner 2026-10-22: "linked paths to addon / purchase"). Every add-on card on
 // /pricing gets one button. This module decides the destination; the route /pricing/add/[key] looks up who is
 // asking and calls it. PURE: no React, no IO, no money.
-import { CONTACT_EMAIL, OPERATOR_CTA_HREF } from '@/lib/site'
+import { CONTACT_EMAIL } from '@/lib/site'
 
 interface AddOnLinkViewer {
   signedIn: boolean
@@ -47,7 +47,7 @@ export function resolveAddOn(key: string, viewer: AddOnLinkViewer): string | nul
   const t = TARGETS[key]
   if (!t || t.contact) return null
   const back = `/pricing/add/${key}`
-  if (!viewer.signedIn) return `${OPERATOR_CTA_HREF}?next=${encodeURIComponent(back)}`
+  if (!viewer.signedIn) return `/sign-in?next=${encodeURIComponent(back)}`
   if (t.noSpace) return t.noSpace
   const slugs = viewer.spaceSlugs
   if (slugs.length === 0) return '/spaces/new'

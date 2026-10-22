@@ -66,7 +66,7 @@ describe('the motion graphics', () => {
     expect(count(html, 'class="pm-fig"')).toBe(1)
     expect(html).toContain('$299 + $59 a chapter, 3 at the least, from $476')
     expect(html).toContain('$30,000 a year plus a $5,000 setup')
-    expect(html).toContain('href="/join?next=%2Fspaces%2Fnew%3Fplan%3Dbusiness"')
+    expect(html).toContain('href="/spaces/new?plan=business"')
     expect(html).not.toMatch(/class="btn[^"]*" href="\/spaces"/)
     expect(html).toContain('mailto:')
   })

@@ -528,8 +528,8 @@ app/(main)/crew/leaderboard/actions.ts
 app/(main)/crew/leaderboard/page.tsx
 app/(main)/crew/store/actions.ts
 app/(main)/edit/actions.ts
-app/(main)/entry-points/entry-points-data.ts
 app/(main)/entry-points/actions.ts
+app/(main)/entry-points/entry-points-data.ts
 app/(main)/events/[slug]/event-member-page.tsx
 app/(main)/events/[slug]/manage/actions.ts
 app/(main)/events/[slug]/manage/attendance-actions.ts
@@ -833,10 +833,10 @@ lib/circles/social-fuel.ts
 lib/circles/store.ts
 lib/circles/templates-data.ts
 lib/circles/transfer.ts
-lib/collective/cross-listing-store.ts
 lib/collective/client-site-billing.ts
 lib/collective/client-sites-actions.ts
 lib/collective/client-sites-store.ts
+lib/collective/cross-listing-store.ts
 lib/collective/extra-space-billing.ts
 lib/collective/member-spaces-actions.ts
 lib/collective/member-spaces-store.ts
@@ -1097,6 +1097,7 @@ lib/notification-preferences.ts
 lib/nurture/enroll.ts
 lib/nurture/runner.ts
 lib/nurture/store.ts
+lib/offers/operator-offer-server.ts
 lib/on-air/session-data.ts
 lib/onboarding/founder-tasks.ts
 lib/onboarding/resolve-onboarding-sequence.ts

@@ -31,8 +31,17 @@ export default async function NewSpacePage({
   searchParams: Promise<{ mode?: string | string[]; plan?: string | string[]; name?: string | string[]; intents?: string | string[] }>
 }) {
   // Gate: only an authenticated member may create a space (the action re-checks server-side).
+  // A signed-out operator makes an account and lands back here with the same hints (door mode, plan).
   const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in')
+  const params = await searchParams
+  if (!profileId) {
+    const back = new URLSearchParams()
+    for (const [k, v] of Object.entries(params)) {
+      const value = Array.isArray(v) ? v[0] : v
+      if (value) back.set(k, value)
+    }
+    redirect(`/sign-in?next=${encodeURIComponent(`/spaces/new${back.size ? `?${back}` : ''}`)}`)
+  }
 
   const choices = listModeChoices()
 
@@ -46,7 +55,6 @@ export default async function NewSpacePage({
   // The id format is `${type}:${variant}`, identical to ModeChoice.id, so the match is a lookup. An
   // unknown or absent value falls back to the first choice exactly as before: this narrows nothing and
   // cannot 404, because a stale funnel link must still land somewhere usable.
-  const params = await searchParams
   const raw = params.mode
   const requested = Array.isArray(raw) ? raw[0] : raw
   const initialChoiceId = choices.find((c) => c.id === requested)?.id
