@@ -1,14 +1,15 @@
-// The operator lifecycle emails (LIVE-1141): what a new Space owner hears from Frequency on day 1, 3 and 7. PURE, so the
+// The operator lifecycle emails (LIVE-1141): what a new Space owner hears from Frequency on day 0 (the moment the Space opens), 1, 3 and 7. PURE, so the
 // stock catalog and the tests render them with fixtures. One sequence, four short variants keyed by what the Space runs
 // (its mode variant), because that is the one thing we know for certain; the six doors fold into those four. The Crew
-// line is PLAN_STORY.crewSpace, stated once, on day 1. Account-adjacent guidance, so the standard footer and its
+// line is PLAN_STORY.crewSpace, stated once, on day 0. Account-adjacent guidance, so the standard footer and its
 // unsubscribe control stay; the cron gates every send through the lifecycle send gate.
 import { emailButton, emailShell, EMAIL_P, escapeHtml, type EmailPayload } from '@/lib/email'
 import { palette } from '@/lib/theme/palette'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 
-export type OperatorDay = 1 | 3 | 7
-export const OPERATOR_DAYS: readonly OperatorDay[] = [1, 3, 7]
+export type OperatorDay = 0 | 1 | 3 | 7
+/** Day 0 goes out the moment the Space is created; the daily cron sends the rest. */
+export const OPERATOR_DAYS: readonly OperatorDay[] = [0, 1, 3, 7]
 
 export type OperatorFocus = 'packages' | 'membership' | 'ticketed' | 'donations' | 'general'
 
@@ -24,7 +25,7 @@ export function operatorFocus(type: string | null | undefined, variant: string |
 
 type Step = { subject: string; lines: string[]; cta: string; path: 'public' | 'manage' }
 
-const DAY_1: Record<OperatorFocus, Step> = {
+const DAY_0: Record<OperatorFocus, Step> = {
   packages: {
     subject: 'Your Space is open. Add your first offer.',
     lines: ['Your page is live. The one thing worth doing today is adding a single offer with a price, so the first person who finds you can book.'],
@@ -55,6 +56,20 @@ const DAY_1: Record<OperatorFocus, Step> = {
     cta: 'Open your Space',
     path: 'manage',
   },
+}
+
+const DAY_1_STEP: Step = {
+  subject: 'Make your page yours.',
+  lines: ['A page with a photo and a few plain sentences about you gets more yeses than a blank one. It takes five minutes: add a photo, say who you help, and say what to do next.'],
+  cta: 'Finish your page',
+  path: 'manage',
+}
+const DAY_1: Record<OperatorFocus, Step> = {
+  packages: DAY_1_STEP,
+  membership: DAY_1_STEP,
+  ticketed: DAY_1_STEP,
+  donations: DAY_1_STEP,
+  general: DAY_1_STEP,
 }
 
 const DAY_3: Record<OperatorFocus, Step> = {
@@ -123,7 +138,7 @@ const DAY_7: Record<OperatorFocus, Step> = {
   },
 }
 
-const STEPS: Record<OperatorDay, Record<OperatorFocus, Step>> = { 1: DAY_1, 3: DAY_3, 7: DAY_7 }
+const STEPS: Record<OperatorDay, Record<OperatorFocus, Step>> = { 0: DAY_0, 1: DAY_1, 3: DAY_3, 7: DAY_7 }
 
 export function buildOperatorEmail(parts: {
   day: OperatorDay
@@ -137,7 +152,7 @@ export function buildOperatorEmail(parts: {
   const step = STEPS[parts.day][parts.focus]
   const greeting = parts.greetingName ? `Hi ${parts.greetingName},` : 'Hi,'
   // The Crew requirement is stated once, on the first email, from the one pricing line.
-  const lines = parts.day === 1 ? [...step.lines, PLAN_STORY.crewSpace] : step.lines
+  const lines = parts.day === 0 ? [...step.lines, PLAN_STORY.crewSpace] : step.lines
   const href = step.path === 'manage' ? `${parts.baseUrl}/spaces/${parts.spaceSlug}/manage` : `${parts.baseUrl}/spaces/${parts.spaceSlug}`
   const why = `You are receiving this because you run ${parts.spaceName} on Frequency.`
   const html = emailShell(

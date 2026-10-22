@@ -1,6 +1,6 @@
 {
   "id": "LIVE-1141",
-  "title": "New Space owners get the day 1, 3 and 7 operator emails",
+  "title": "New Space owners get the day 0, 1, 3 and 7 operator emails",
   "lane": "live",
   "priority": "P1",
   "size": "M",
@@ -9,7 +9,7 @@
     "kind": "cmd",
     "cmd": "node scripts/probes/operator-lifecycle-emails.mjs"
   },
-  "detail": "Owner ask 2026-10-22: tie the funnel into email. Owners of a Space created 1, 3 and 7 days ago get one short email each (lib/marketing/operator-emails.ts), in one of four variants keyed on what the Space runs (packages, membership, ticketed, donations) plus a general one. Day 1 states the Crew requirement from PLAN_STORY.crewSpace. The send (lib/marketing/operator-lifecycle.ts) rides the existing lifecycle-triggers cron with that cron's own client, so there is no new cron, no new admin client and no new screen. Each send passes the lifecycle send gate and dedupes on the Space and the day, in the one day after each mark. Open: a Day 0 welcome at Space creation, and per-door variants for venues and networks (today they read as ticketed and membership).",
+  "detail": "Owner ask 2026-10-22: tie the funnel into email. The owner of a new Space gets a welcome the moment it opens (day 0, sent from createSpace), then owners of a Space created 1, 3 and 7 days ago get one short email each (lib/marketing/operator-emails.ts), in one of four variants keyed on what the Space runs (packages, membership, ticketed, donations) plus a general one. Day 0 states the Crew requirement from PLAN_STORY.crewSpace. The send (lib/marketing/operator-lifecycle.ts) rides the existing lifecycle-triggers cron with that cron's own client, so there is no new cron, no new admin client and no new screen. Each send passes the lifecycle send gate and dedupes on the Space and the day, in the one day after each mark. Open: per-door variants for venues and networks (today they read as ticketed and membership).",
   "closed": "2026-10-22",
   "wave": "W7"
 }

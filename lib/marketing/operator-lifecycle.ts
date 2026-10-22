@@ -14,7 +14,7 @@ const DAY_MS = 86_400_000
  *  and the outbox key stops a re-run inside it. */
 const GRACE_DAYS = 1
 
-type SpaceRow = {
+type OperatorSpaceRow = {
   id: string
   name: string | null
   slug: string | null
@@ -27,12 +27,47 @@ type SpaceRow = {
 /** The one email due for a Space of this age, or null. Pure. */
 export function operatorDayDue(ageDays: number): OperatorDay | null {
   for (const day of [...OPERATOR_DAYS].reverse()) {
+    if (day === 0) continue // day 0 is sent when the Space is created, not by the daily run
     if (ageDays >= day && ageDays < day + GRACE_DAYS) return day
   }
   return null
 }
 
 type OperatorLifecycleResult = { sent: number; skipped: number; failed: number }
+
+/** One email for one Space, through the send gate. 'skipped' when there is nowhere to send or the owner opted out;
+ *  throws only on a real failure, so the caller can count it and move on. */
+export async function sendOperatorEmailForSpace(
+  admin: SupabaseClient,
+  space: OperatorSpaceRow,
+  day: OperatorDay,
+): Promise<'sent' | 'skipped'> {
+  if (!space.owner_profile_id || !space.slug) return 'skipped'
+  const { data: profileData } = await admin
+    .from('profiles')
+    .select('display_name, auth_user_id')
+    .eq('id', space.owner_profile_id)
+    .maybeSingle()
+  const profile = profileData as { display_name: string | null; auth_user_id: string | null } | null
+  if (!profile?.auth_user_id) return 'skipped'
+  const { data: userData } = await admin.auth.admin.getUserById(profile.auth_user_id)
+  const email = userData?.user?.email
+  if (!email) return 'skipped'
+  if (!(await resolveSendGate(space.owner_profile_id, 'email', 'lifecycle', { email })).allowed) return 'skipped'
+  await enqueueEmail(
+    buildOperatorEmail({
+      day,
+      focus: operatorFocus(space.type, space.mode_variant),
+      to: email,
+      greetingName: profile.display_name,
+      spaceName: space.name ?? 'your Space',
+      spaceSlug: space.slug,
+      baseUrl: process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com',
+    }),
+    { dedupeKey: `operator_lifecycle:${space.id}:${day}` },
+  )
+  return 'sent'
+}
 
 export async function sendOperatorLifecycle(
   admin: SupabaseClient,
@@ -54,47 +89,14 @@ export async function sendOperatorLifecycle(
     result.failed++
     return result
   }
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
-  for (const space of (data ?? []) as SpaceRow[]) {
+  for (const space of (data ?? []) as OperatorSpaceRow[]) {
     const day = operatorDayDue((now.getTime() - new Date(space.created_at).getTime()) / DAY_MS)
-    if (!day || !space.owner_profile_id || !space.slug) {
+    if (!day) {
       result.skipped++
       continue
     }
     try {
-      const { data: profileData } = await admin
-        .from('profiles')
-        .select('display_name, auth_user_id')
-        .eq('id', space.owner_profile_id)
-        .maybeSingle()
-      const profile = profileData as { display_name: string | null; auth_user_id: string | null } | null
-      if (!profile?.auth_user_id) {
-        result.skipped++
-        continue
-      }
-      const { data: userData } = await admin.auth.admin.getUserById(profile.auth_user_id)
-      const email = userData?.user?.email
-      if (!email) {
-        result.skipped++
-        continue
-      }
-      if (!(await resolveSendGate(space.owner_profile_id, 'email', 'lifecycle', { email })).allowed) {
-        result.skipped++
-        continue
-      }
-      await enqueueEmail(
-        buildOperatorEmail({
-          day,
-          focus: operatorFocus(space.type, space.mode_variant),
-          to: email,
-          greetingName: profile.display_name,
-          spaceName: space.name ?? 'your Space',
-          spaceSlug: space.slug,
-          baseUrl: appUrl,
-        }),
-        { dedupeKey: `operator_lifecycle:${space.id}:${day}` },
-      )
-      result.sent++
+      result[await sendOperatorEmailForSpace(admin, space, day)]++
     } catch (e) {
       result.failed++
       log.error('cron.operator_lifecycle.send_failed', { space_id: space.id, error: e instanceof Error ? e.message : String(e) })

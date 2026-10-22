@@ -29,14 +29,15 @@ describe('buildOperatorEmail', () => {
     }
   }
 
-  it('states the Crew requirement once, on day 1 only, from the one pricing line', () => {
-    expect(buildOperatorEmail({ day: 1, focus: 'general', ...base }).text).toContain(PLAN_STORY.crewSpace)
+  it('states the Crew requirement once, on day 0 only, from the one pricing line', () => {
+    expect(buildOperatorEmail({ day: 0, focus: 'general', ...base }).text).toContain(PLAN_STORY.crewSpace)
+    expect(buildOperatorEmail({ day: 1, focus: 'general', ...base }).text).not.toContain(PLAN_STORY.crewSpace)
     expect(buildOperatorEmail({ day: 3, focus: 'general', ...base }).text).not.toContain(PLAN_STORY.crewSpace)
     expect(buildOperatorEmail({ day: 7, focus: 'general', ...base }).text).not.toContain(PLAN_STORY.crewSpace)
   })
 
   it('greets without a name', () => {
-    const text = buildOperatorEmail({ day: 1, focus: 'general', ...base, greetingName: null }).text ?? ''
+    const text = buildOperatorEmail({ day: 0, focus: 'general', ...base, greetingName: null }).text ?? ''
     expect(text.startsWith('Hi,')).toBe(true)
   })
 })
