@@ -271,6 +271,24 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
     }).catch(() => {})
   }
 
+  // THE FUNNEL'S "SPACE CREATED" STEP, FIRST-PARTY ONLY (LIVE-1132). One ledger row per Space with the setup
+  // chosen, the plan hint and whether the owner picked Decide later (no goals). Never mirrored to GA4: the
+  // door and the goals are the owner's own. Best-effort; the existing Funnels admin reads the ledger.
+  void recordEngagementEvent({
+    idempotencyKey: `space_created:${spaceId}`,
+    source: 'web',
+    eventType: 'space_created',
+    actorProfileId: profileId,
+    context: {
+      spaceId,
+      type,
+      modeVariant: modeVariant ?? null,
+      plan: input.plan ?? 'free',
+      decideLater: intents.length === 0,
+      heardAbout: heardAbout || null,
+    },
+  }).catch(() => {})
+
   // Seat the owner as a Space admin (an explicit membership row, alongside owner_profile_id).
   await addSpaceMember({ spaceId, profileId, role: 'admin', status: 'active' })
 

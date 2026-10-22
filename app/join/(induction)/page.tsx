@@ -11,6 +11,8 @@ import { getReferrer } from '@/lib/qr/referral'
 import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
 import { isSafeInAppPath, funnelLanding } from '@/lib/funnels/destination'
 import type { FunnelDestination } from '@/lib/funnels/definitions'
+import { getCallerProfile } from '@/lib/auth'
+import { isStaff } from '@/lib/core/roles'
 import { readPendingInduction } from './pending-induction'
 import FunnelInduction from './induction'
 import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
@@ -41,7 +43,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function FunnelInductionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ seq?: string; persona?: string; next?: string }>
+  searchParams: Promise<{ seq?: string; persona?: string; next?: string; preview?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -50,7 +52,7 @@ export default async function FunnelInductionPage({
   // flow, fully merged with the owner's edits: resolveFunnel layers the coded
   // copy, the legacy /admin/vera induction tweaks, and the `beta-default` override
   // saved by the Default Funnel editor (/pages/sequences?tab=default). DB-built versions resolve the same way.
-  const { seq: seqSlug, persona: personaSlug, next: nextParam } = await searchParams
+  const { seq: seqSlug, persona: personaSlug, next: nextParam, preview: previewParam } = await searchParams
   const seq = await resolveFunnel(seqSlug)
   // A `?next=` in-app path (e.g. an event-claim landing) overrides the sequence destination so
   // completion admits the new member (onboarding_completed) and lands them right back where they
@@ -133,6 +135,32 @@ export default async function FunnelInductionPage({
   if (!user) {
     const induction = <FunnelInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...resume} {...funnel} />
     return SITE_DESIGN === 'frequency' ? <SiteShell>{induction}</SiteShell> : induction
+  }
+
+  // STAFF PREVIEW (the Preview buttons on /pages/sequences). A signed-in staff member opening a funnel from
+  // the admin is already onboarded, so the redirect below sent them to the feed instead of the funnel. With
+  // `?preview=1` a staff caller sees the funnel itself, through the same preview mode the sample page uses
+  // (no server writes). Anyone else falls through to the normal behaviour.
+  if (previewParam === '1' && isStaff((await getCallerProfile().catch(() => null))?.webRole)) {
+    if (seq.style === 'feature' && seq.feature) {
+      return <FeatureFunnel deferred sequence={seq.slug} feature={seq.feature} destination={funnel.destination} />
+    }
+    const { data: previewRegions } = await supabase.from('nexus_regions').select('id, name').eq('depth', 0).order('name')
+    const preview = (
+      <FunnelInduction
+        preview
+        userId="preview"
+        userEmail={user.email ?? ''}
+        initialHandle=""
+        regions={previewRegions ?? []}
+        copy={copy}
+        sequence={seq.slug}
+        persona={persona}
+        inviter={inviter}
+        {...funnel}
+      />
+    )
+    return SITE_DESIGN === 'frequency' ? <SiteShell>{preview}</SiteShell> : preview
   }
 
   const { data: profile } = await supabase

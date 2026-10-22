@@ -142,6 +142,7 @@ export default async function SplashFunnelsPage({
     funnels.map(async (f) => {
       const seq = await resolveFunnel(f.slug, { preview: true })
       const inductionPath = `/join?seq=${f.slug}`
+      const previewPath = `${inductionPath}&preview=1`
       const inductionQr = renderStyledQrSvg(toAbsoluteSiteUrl(inductionPath), brandedStyle, 160)
       return {
         slug: f.slug,
@@ -149,6 +150,7 @@ export default async function SplashFunnelsPage({
         source: f.source,
         seq,
         inductionPath,
+        previewPath,
         inductionQr,
         tagDef: getTrait(seq.marketingTag),
       }
@@ -206,7 +208,7 @@ export default async function SplashFunnelsPage({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <a
-              href="/join"
+              href="/join?preview=1"
               target="_blank"
               rel="noreferrer"
               className={VIEW_LINK}
@@ -278,7 +280,7 @@ export default async function SplashFunnelsPage({
           </div>
         ) : (
           <div className="space-y-4">
-            {onboardingCards.map(({ slug, status, seq, inductionPath, inductionQr, tagDef }) => (
+            {onboardingCards.map(({ slug, status, seq, inductionPath, previewPath, inductionQr, tagDef }) => (
               <article
                 key={slug}
                 className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1"
@@ -337,7 +339,7 @@ export default async function SplashFunnelsPage({
                       <Pencil className="h-3.5 w-3.5" /> Edit
                     </Link>
                     <a
-                      href={inductionPath}
+                      href={previewPath}
                       target="_blank"
                       rel="noreferrer"
                       className={VIEW_LINK}
@@ -373,7 +375,7 @@ export default async function SplashFunnelsPage({
             <p className="-mt-1 mb-4 max-w-2xl text-body-sm text-muted">{s.blurb}</p>
             {s.status === 'live' && styleCards.length > 0 ? (
               <div className="space-y-3">
-                {styleCards.map(({ slug, status, source, seq, inductionPath }) => (
+                {styleCards.map(({ slug, status, source, seq, inductionPath, previewPath }) => (
                   <article
                     key={slug}
                     className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 lift-1"
@@ -402,7 +404,7 @@ export default async function SplashFunnelsPage({
                         <UserCheck className="h-3 w-3" />
                         {signupCounts[seq.marketingTag] ?? 0} signed up
                       </span>
-                      <a href={inductionPath} target="_blank" rel="noreferrer" className={VIEW_LINK}>
+                      <a href={previewPath} target="_blank" rel="noreferrer" className={VIEW_LINK}>
                         <ExternalLink className="h-3.5 w-3.5" /> Preview
                       </a>
                       {source === 'code' ? (
