@@ -197,6 +197,7 @@ export function SiteHeader() {
   const panelRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLDivElement>(null)
   const sheetTrigRef = useRef<HTMLButtonElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -286,7 +287,9 @@ export function SiteHeader() {
         if (sheet.isOpen) sheet.hide()
       }
       const t = document.activeElement?.tagName ?? ''
-      if (e.key === '/' && !search.isOpen && !/INPUT|TEXTAREA|SELECT/.test(t)) {
+      // Ctrl or Cmd + K opens search. A bare character key would fire while someone is typing a sentence
+      // into anything that is not an input, which WCAG 2.1.4 asks us not to do.
+      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey) && !search.isOpen && !/INPUT|TEXTAREA|SELECT/.test(t)) {
         e.preventDefault()
         openSearch()
       }
@@ -300,8 +303,35 @@ export function SiteHeader() {
   }, [menu.isOpen, menuKey, hideMenu, search, sheet, openSearch])
 
   // The search box takes focus as it opens; the sheet holds the page still while it is up.
+  // Search is a modal dialog too: Tab wraps inside it, and closing hands focus back to whatever opened it.
   useEffect(() => {
-    if (search.mounted) inputRef.current?.focus()
+    if (!search.mounted) return
+    const opener = document.activeElement as HTMLElement | null
+    inputRef.current?.focus()
+    const box = searchRef.current
+    const onTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !box) return
+      const all = [...box.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input')].filter(
+        (el) => el.getClientRects().length > 0,
+      )
+      if (!all.length) return
+      const first = all[0]
+      const last = all[all.length - 1]
+      const at = document.activeElement
+      if (e.shiftKey && (at === first || !box.contains(at))) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (at === last || !box.contains(at))) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onTab)
+    return () => {
+      document.removeEventListener('keydown', onTab)
+      const at = document.activeElement
+      if (opener?.isConnected && (!at || at === document.body || box?.contains(at))) opener.focus()
+    }
   }, [search.mounted])
   // The sheet is a modal dialog, so it behaves like one: focus lands on Close, Tab wraps inside it, and
   // closing hands focus back to Menu (unless the sheet passed it on, as its Search row does).
@@ -443,7 +473,7 @@ export function SiteHeader() {
         <div className="acct">
           {member ? (
             <>
-              <button type="button" className="acct-ic" aria-label="Search (press /)" onClick={openSearch}>
+              <button type="button" className="acct-ic" aria-label="Search" onClick={openSearch}>
                 <FqIcon name="search" />
               </button>
               <Link className="acct-me" href={ROUTES.feed}>
@@ -453,7 +483,7 @@ export function SiteHeader() {
             </>
           ) : (
             <>
-              <button type="button" className="acct-ic" aria-label="Search (press /)" onClick={openSearch}>
+              <button type="button" className="acct-ic" aria-label="Search" onClick={openSearch}>
                 <FqIcon name="search" />
               </button>
               <Link className="acct-login" href={ROUTES.signIn}>
@@ -491,6 +521,7 @@ export function SiteHeader() {
       <div className={`mm-scrim${menu.on ? ' on' : ''}`} onClick={hideMenu} aria-hidden="true" />
 
       <div
+        ref={searchRef}
         className={`fq-search${search.on ? ' on' : ''}`}
         hidden={!search.mounted}
         role="dialog"
@@ -520,7 +551,7 @@ export function SiteHeader() {
               />
               <kbd>esc</kbd>
             </label>
-            <div className="fq-sres" role="listbox" aria-label="Results">
+            <div className="fq-sres" role="group" aria-label="Results">
               {!query.trim() && <span className="mm-h">Jump to</span>}
               {results.length ? (
                 results.map((r) => <MmLink link={r} key={`${r.href}-${r.label}`} />)
