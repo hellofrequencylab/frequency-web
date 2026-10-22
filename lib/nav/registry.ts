@@ -203,11 +203,9 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
       // header link should point at the public page, not bounce through a noindex twin.
       { label: 'Spaces directory', href: '/discover/spaces', desc: 'Browse every Space in the network' },
       { label: 'For coaches and healers', href: '/for/coaches-and-healers', desc: 'Packages, scheduling, and a client CRM' },
-      { label: 'For community builders', href: '/for/community-builders', desc: 'Circles, memberships, and connections' },
       { label: 'For event hosts', href: '/for/event-hosts', desc: 'Tickets, check-in, and a full room' },
       { label: 'For nonprofits', href: '/for/nonprofits', desc: 'Donations, supporters, and programs' },
       { label: 'For studios', href: '/for/studios', desc: 'Classes, memberships, and check-in' },
-      { label: 'For teachers', href: '/for/teachers', desc: 'Your classes and students across every studio' },
       { label: 'Business pricing', href: '/pricing', desc: 'Plans and what each one includes' },
     ],
   },

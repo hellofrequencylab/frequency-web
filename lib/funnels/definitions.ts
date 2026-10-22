@@ -141,7 +141,7 @@ export function spaceCreatePath(mode: { type: string; variant: string }): string
 }
 
 /** Space-create destination per operator niche funnel (OPERATOR-FUNNELS §5): coaches -> business:packages,
- *  studios -> business:membership, hosts -> business:ticketed, communities -> business:cohort,
+ *  studios -> business:membership, hosts -> business:ticketed,
  *  nonprofits -> nonprofit:donations.
  *
  *  KEYED BY THE FUNNEL SEQUENCE SLUG, the `/join?seq=<slug>` vocabulary (the `sequence_overrides` slug and
@@ -156,10 +156,9 @@ export const NICHE_FUNNEL_DESTINATIONS: Record<string, FunnelDestination> = {
   coaches: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'packages' }) },
   studios: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'membership' }) },
   hosts: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'ticketed' }) },
-  communities: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'cohort' }) },
   nonprofits: { mode: 'direct', url: spaceCreatePath({ type: 'nonprofit', variant: 'donations' }) },
-  // ADR-1715: the Portfolio Teacher door. Paid programs is the Practitioner Focus a workshop runs on.
-  teachers: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'programs' }) },
+  // ADR-1863: communities and teachers were folded into hosts and coaches. A stale ?seq= for either
+  // falls back to the general landing.
 }
 
 /** The funnel destination for a sequence slug: a known niche funnel's Space-create section, else

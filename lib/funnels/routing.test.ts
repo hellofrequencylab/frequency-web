@@ -21,14 +21,12 @@ import {
 // here: the general funnel stays on the waitlist/Beta-list landing, every niche funnel routes to its own
 // Space-create section, and every niche destination is a safe in-app path.
 
-// The six operator niches and the Space Mode each targets (OPERATOR-FUNNELS.md §5 Start-free bridge).
+// The four launch operator niches and the Space Mode each targets (OPERATOR-FUNNELS.md §5 Start-free bridge).
 const EXPECTED_NICHE_MODE: Record<string, string> = {
   coaches: 'business:packages',
   studios: 'business:membership',
   hosts: 'business:ticketed',
-  communities: 'business:cohort',
   nonprofits: 'nonprofit:donations',
-  teachers: 'business:programs',
 }
 
 describe('spaceCreatePath', () => {

@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-1130",
+  "title": "Four launch doors and a Decide later choice in onboarding",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/four-launch-doors.mjs"
+  },
+  "detail": "Owner ask 2026-10-22: scrub the niche pages that are not part of the four-niche launch and tie the funnel into the onboarding choices with a Decide later option. The community-builders and teachers /for doors are retired and redirect to event-hosts and coaches-and-healers (ADR-1863); sign-up and Create a Space gain a Decide later choice. No new admin surfaces.",
+  "closed": "2026-10-22",
+  "wave": "W7"
+}

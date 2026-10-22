@@ -34,7 +34,6 @@ import { NICHE_FUNNEL_DESTINATIONS, type FunnelDestination } from '@/lib/funnels
 import { priceStringsFrom, defaultPricingInput } from '@/lib/pricing/pricing-page'
 import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { formatBps } from '@/lib/pricing/display'
-import { COLLECTIVE_FOUNDING_ENDS_LABEL, FOUNDER_BADGE_ENDS_LABEL } from '@/lib/pricing/beta'
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────
@@ -499,101 +498,6 @@ const EVENTS_FUNNEL: FunnelConfig = {
   },
 }
 
-// ── Config #4: Community builders (business:cohort; the Loop is the product, so it runs prominent) ────
-
-const COMMUNITY_FUNNEL: FunnelConfig = {
-  slug: 'community-builders',
-  niche: 'communities',
-  archetypes: ['host_connector', 'network_steward'],
-  loopProminent: true,
-  hero: {
-    eyebrow: 'For community builders and organizers',
-    h1: 'Hold the community. Connect the people.',
-    seoTitle: 'Membership + community software for organizers',
-    subhead:
-      'Circles, memberships, and the right introductions, together in one place. Frequency holds your community, so members stay and bring the people who belong here next. Start free.',
-    microcopy: 'No card. You pay when you start charging.',
-    trustLine: '0% on your own audience, plus card processing.',
-  },
-  metaDescription:
-    'Frequency gives community builders Circles, memberships, and a member CRM in one place, and connects the right people to each other. Free to start, no card.',
-  problem: {
-    header: 'The community is real. The tools pull it apart.',
-    body: 'Members live in a chat app, the sign-ups in a form, and the notes on who knows who only in your head. The two people who should meet never do, and a quiet member drifts off before anyone notices. The connection is the whole point, and the tools get in its way.',
-    caption: 'One community, five apps.',
-  },
-  howItWorks: {
-    header: 'One place. Ready before your next gathering.',
-    steps: [
-      { title: 'Make your Space.', body: 'Your community page, your Circles, and your memberships, ready in a few minutes. Free to start, always.' },
-      { title: 'Bring your people in.', body: 'Import your list or share your Frequency card. Everyone lands in Contacts.' },
-      { title: 'Open your Circles.', body: 'Run standing Circles and multi-week programs, and let the right members find each other. Paid memberships open on Business.' },
-    ],
-    caption: 'Set up in an afternoon, not a weekend.',
-  },
-  features: [
-    {
-      icon: 'contact',
-      title: 'Circles, programs, and memberships, in one place.',
-      body: "Host standing Circles and programs, add paid memberships with recurring billing on Business, and keep a member list that knows who's who.",
-    },
-    {
-      icon: 'spark',
-      title: 'The right people, introduced.',
-      body: 'Vera AI reads your community signals and turns them into live matches, so the two members who should meet actually do.',
-    },
-    {
-      icon: 'qr',
-      title: 'Your community grows through the members you have.',
-      body: 'Share your Frequency card and every hello becomes a saved contact, and an invitation in. The member who feels at home brings the next person who belongs here.',
-    },
-    {
-      icon: 'envelope',
-      soft: true,
-      title: 'Bring them back the second time they show up.',
-      body: 'Email to bring quiet members back, reminders that send themselves, and a nudge when someone is drifting.',
-    },
-  ],
-  loop: {
-    header: 'Every member, an open door.',
-    intro: 'This is how a community grows here. Not through ads, but through the members who already belong.',
-    payoff: 'A member joins, feels at home, and invites the next person who belongs here. They stay, and they bring the ones after them.',
-  },
-  pricing: {
-    header: 'One honest price.',
-    intro: pricingIntro('When your community starts charging for memberships, that is Business. When separate groups partner, that is Collective, and when one organization runs chapters, that is Network.'),
-    rows: [
-      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
-      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
-    ],
-    breakEvenCaption: breakEvenCaption('the memberships you sell yourself'),
-    note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
-  },
-  faq: [
-    { q: 'Do I need to be technical?', a: 'No. Most organizers have their community running the same afternoon.' },
-    {
-      q: 'What does it actually cost?',
-      a: costAnswer(
-        'the memberships you sell',
-        ` When separate groups partner, Collective links them while each keeps its own Space, members and payouts: ${P.collectiveFounding} a month as a Founding price (the offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}), grandfathered for as long as you keep the plan (with the founder badge if you start before ${FOUNDER_BADGE_ENDS_LABEL}), under the ${P.collectiveList} list.`,
-      ),
-    },
-    { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },
-    {
-      q: 'How does it connect the right people?',
-      a: 'Vera AI reads your community signals and suggests introductions. It is optional, has a 14-day trial, and you can turn it on or off anytime.',
-    },
-    { q: 'Will my members need to download anything?', a: 'No. They join, book, and pay from a link.' },
-    { q: 'Is my member information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
-  ],
-  finalCta: {
-    header: 'Hold your community in one place.',
-    subhead: 'Your Circles, your memberships, and every member, held together, with the right people introduced. Start free, and grow through the people who belong here.',
-    microcopy: 'No card. You pay when you start charging.',
-  },
-}
-
 // ── Config #5: Nonprofits (nonprofit:donations; the assurance bar + pricing swap to the Non Profit plan) ─
 
 const NONPROFITS_FUNNEL: FunnelConfig = {
@@ -687,93 +591,6 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
   },
 }
 
-// ── Config #6: Teachers who work across studios (business:programs; ADR-1715 Portfolio Teacher) ──────
-// The teacher who runs classes at three studios and a workshop on Sundays. Their students follow THEM,
-// not the room, and today that list lives in each studio's software. This door is the one place it
-// stays theirs.
-
-const TEACHERS_FUNNEL: FunnelConfig = {
-  slug: 'teachers',
-  niche: 'teachers',
-  archetypes: ['portfolio_teacher'],
-  hero: {
-    eyebrow: 'For teachers who work across studios',
-    h1: 'Your students follow you. Now your list does too.',
-    seoTitle: 'Student list + workshop software for teachers who work across studios',
-    subhead:
-      'You teach at three rooms and run a workshop on the side. Frequency keeps every student in one list that is yours, so wherever you teach next, they can find you. Start free.',
-    microcopy: 'No card. You pay when you start charging.',
-    trustLine: '0% on your own audience, plus card processing.',
-  },
-  metaDescription:
-    'Frequency gives teachers who work across studios one student list, workshops, and paid programs in one place, wherever they teach. Free to start, no card.',
-  problem: {
-    header: 'You built the following. The studio owns the list.',
-    body: 'Your regulars booked through four different studio apps, so their names live in four places you cannot reach. When a studio changes your slot or closes, the students who came for you have no way to follow. The work is yours. The relationships should be too.',
-    caption: 'Four studios, zero lists.',
-  },
-  howItWorks: {
-    header: 'One place. Ready before your next class.',
-    steps: [
-      { title: 'Make your Space.', body: 'Your page, your schedule across every studio, and your workshops, ready in a few minutes. Free to start, always.' },
-      { title: 'Bring your students in.', body: 'Share your Frequency card at the end of class. Everyone who scans lands in your Contacts.' },
-      { title: 'Open a workshop.', body: 'Put a workshop or a short program on your own page the same day, and sell seats when you go Business.' },
-    ],
-    caption: 'Set up between classes.',
-  },
-  features: [
-    {
-      icon: 'contact',
-      title: 'One student list, wherever you teach.',
-      body: 'Every student you meet, at any studio, in one list that is yours. When your schedule changes, you tell them yourself.',
-    },
-    {
-      icon: 'calendar',
-      title: 'Workshops and programs, booked and paid.',
-      body: "Sell a Sunday workshop or a four-week program from your own page on Business. Students pay up front, and a student who's already yours carries no network fee, only card processing.",
-    },
-    {
-      icon: 'qr',
-      title: 'Your following grows through the people in the room.',
-      body: 'Share your Frequency card after class and every hello becomes a saved contact. The student who loved your class brings a friend to the next one.',
-    },
-    {
-      icon: 'spark',
-      soft: true,
-      title: 'Reach the student who drifts.',
-      body: 'Email to bring quiet students back, reminders that send themselves, and a nudge when a regular stops showing up.',
-    },
-  ],
-  loop: {
-    header: 'Every class, an open door.',
-    intro: 'This is how a teaching practice grows here. Not through one studio, but through the students who follow you.',
-    payoff: 'A student takes your class, saves you with a scan, and comes to your workshop. They stay with you, and they bring the next one.',
-  },
-  pricing: {
-    header: 'One honest price.',
-    intro: pricingIntro("When your teaching starts selling workshops and programs, that's Business."),
-    rows: [
-      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
-      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
-      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
-    ],
-    breakEvenCaption: breakEvenCaption('the workshops you sell yourself'),
-    note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you're never locked in.",
-  },
-  faq: [
-    { q: 'I already teach at studios that use other software. Does this replace it?', a: 'No. Keep booking through the studios. Frequency is the list and the page that stay yours, wherever you teach.' },
-    { q: 'What does it actually cost?', a: costAnswer('your own workshops') },
-    { q: 'Can I take my students with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
-    { q: 'Will my students need to download anything?', a: 'No. They save you, book, and pay from a link.' },
-    { q: 'Is my student information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
-  ],
-  finalCta: {
-    header: 'Keep the people who come for you.',
-    subhead: 'Your students, your workshops, and your schedule across every studio, held together. Start free, and take your following wherever you teach.',
-    microcopy: 'No card. You pay when you start charging.',
-  },
-}
-
 // ── The registry (ADR-591): one config per persona door, keyed by the SAME canonical slug the pricing
 // "by who you are" strip and the persona registry use, so every strip card lands on a real, on-topic page
 // (never a 404). Adding a door = one config + one row here. ────────────────────────────────────────────
@@ -781,9 +598,7 @@ return {
   'coaches-and-healers': COACHES_FUNNEL,
   studios: STUDIOS_FUNNEL,
   'event-hosts': EVENTS_FUNNEL,
-  'community-builders': COMMUNITY_FUNNEL,
   nonprofits: NONPROFITS_FUNNEL,
-  teachers: TEACHERS_FUNNEL,
 }
 }
 

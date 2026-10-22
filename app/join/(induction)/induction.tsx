@@ -170,7 +170,11 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
   // completion in its own cookie by ArrivalFollowUp. Never logged to analytics.
   const [archetype, setArchetype] = useState<ArchetypeId | null>(null)
   const reel = getPersona(primaryPersona).reel
+  // "Decide later": an explicit, visible way to pass on the fork. It clears the picks; with none, the
+  // member keeps the default persona (DEFAULT_PERSONA) and the general tour, and can change it in settings.
+  const [decideLater, setDecideLater] = useState(false)
   function togglePersona(id: PersonaId) {
+    setDecideLater(false)
     setPersonas((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]))
     setReelIndex(0)
   }
@@ -182,6 +186,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
     return `interest_${title.toLowerCase().replace(/[^a-z0-9]+/g, '')}`
   }
   function toggleInterest(key: string) {
+    setDecideLater(false)
     setInterestKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
   }
 
@@ -826,6 +831,21 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                         )
                       })}
                     </div>
+                    <div className="mt-3 text-center">
+                      <button
+                        type="button"
+                        aria-pressed={decideLater}
+                        onClick={() => {
+                          setDecideLater(true)
+                          setPersonas([])
+                          setInterestKeys([])
+                          setReelIndex(0)
+                        }}
+                        className={`text-body-sm font-semibold underline-offset-4 hover:underline ${decideLater ? 'text-text' : 'text-muted'}`}
+                      >
+                        {decideLater ? 'Deciding later. You can change this any time.' : 'Decide later'}
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -861,6 +881,21 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                           </button>
                         )
                       })}
+                    </div>
+                    <div className="mt-3 text-center">
+                      <button
+                        type="button"
+                        aria-pressed={decideLater}
+                        onClick={() => {
+                          setDecideLater(true)
+                          setPersonas([])
+                          setInterestKeys([])
+                          setReelIndex(0)
+                        }}
+                        className={`text-body-sm font-semibold underline-offset-4 hover:underline ${decideLater ? 'text-text' : 'text-muted'}`}
+                      >
+                        {decideLater ? 'Deciding later. You can change this any time.' : 'Decide later'}
+                      </button>
                     </div>
                     {personas.length > 0 && (
                       <ArrivalFollowUp persona={personas[0]} value={archetype} onChange={setArchetype} persist={!preview} />

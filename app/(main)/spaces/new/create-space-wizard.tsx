@@ -104,6 +104,8 @@ export function CreateSpaceWizard({
     initialChoiceId ?? planChoice ?? choices.find((c) => c.id === 'business:service')?.id ?? choices[0]?.id ?? '',
   )
   const [choiceTouched, setChoiceTouched] = useState(false)
+  // "Decide later" on the goals step: no picks, the general setup, switchable any time.
+  const [decideLater, setDecideLater] = useState(false)
   const [name, setName] = useState(initialName)
   const [slug, setSlug] = useState(initialName ? slugify(initialName) : '')
   const [slugTouched, setSlugTouched] = useState(false)
@@ -190,13 +192,28 @@ export function CreateSpaceWizard({
                 className={on ? 'chip on' : 'chip'}
                 aria-pressed={on}
                 title={i.hint}
-                onClick={() => setIntents(on ? intents.filter((x) => x !== i.id) : [...intents, i.id])}
+                onClick={() => {
+                  setDecideLater(false)
+                  setIntents(on ? intents.filter((x) => x !== i.id) : [...intents, i.id])
+                }}
               >
                 <FqIcon name={INTENT_ICON[i.id] ?? 'plus'} size={16} />
                 {i.label}
               </button>
             )
           })}
+          <button
+            type="button"
+            className={decideLater ? 'chip on' : 'chip'}
+            aria-pressed={decideLater}
+            title="Skip this. We start you on the general setup, and you can change it any time."
+            onClick={() => {
+              setDecideLater(true)
+              setIntents([])
+            }}
+          >
+            Decide later
+          </button>
         </div>
       )}
 
