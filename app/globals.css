@@ -173,6 +173,18 @@
   --color-info:             #2C6AA8;
   --color-info-bg:          #E3EDF7;
 
+  /* Calendar (Space calendar redesign, 2026-10-22). The stage and kind fills the calendar chips wear,
+     plus the aqua that means "another Space is here". Ink text sits on every one of them. */
+  --color-cal-event:        #B0287F;
+  --color-cal-event-bg:     #F8D7EA;
+  --color-cal-works:        #9C86F5;
+  --color-cal-works-bg:     #EBE7FF;
+  --color-cal-works-strong: #D9D2FF;
+  --color-cal-todo:         #9A6200;
+  --color-cal-todo-bg:      #FFEBC6;
+  --color-presence:         #17788A;
+  --color-presence-bg:      #DDF3F5;
+
   /* Focus */
   --color-focus-ring:       #B86A15;
 
@@ -732,6 +744,14 @@
   /* Tracks :root — same pairing, same 4.407 -> 4.746 correction (ADR-1317). */
   --color-info:              #2C6AA8;
   --color-info-bg:           #E3EDF7;
+  --color-cal-event:         #B0287F;
+  --color-cal-event-bg:      #F8D7EA;
+  --color-cal-works-bg:      #EBE7FF;
+  --color-cal-works-strong:  #D9D2FF;
+  --color-cal-todo:          #9A6200;
+  --color-cal-todo-bg:       #FFEBC6;
+  --color-presence:          #17788A;
+  --color-presence-bg:       #DDF3F5;
   --color-focus-ring:        #B86A15;
   --brand-mark:              #6E4A2A;
   --brand-emboss-light:      rgba(255, 248, 235, 0.85);
@@ -894,6 +914,16 @@
   --color-text-on-success:  #1A1206;
   --color-info:             #6FA8DC;
   --color-info-bg:          #15212E;
+
+  --color-cal-event:        #E58CC4;
+  --color-cal-event-bg:     #3A1A2E;
+  --color-cal-works:        #9C86F5;
+  --color-cal-works-bg:     #26224A;
+  --color-cal-works-strong: #342E63;
+  --color-cal-todo:         #E0A94A;
+  --color-cal-todo-bg:      #3D2E0F;
+  --color-presence:         #5CC3D6;
+  --color-presence-bg:      #0F2E34;
 
   --color-focus-ring:       #F2B14E;
   /* rank primitives inherited from :root */
@@ -1543,6 +1573,15 @@
   --color-danger-bg:        var(--color-danger-bg);
   --color-info:             var(--color-info);
   --color-info-bg:          var(--color-info-bg);
+  --color-cal-event: var(--color-cal-event);
+  --color-cal-event-bg: var(--color-cal-event-bg);
+  --color-cal-works: var(--color-cal-works);
+  --color-cal-works-bg: var(--color-cal-works-bg);
+  --color-cal-works-strong: var(--color-cal-works-strong);
+  --color-cal-todo: var(--color-cal-todo);
+  --color-cal-todo-bg: var(--color-cal-todo-bg);
+  --color-presence: var(--color-presence);
+  --color-presence-bg: var(--color-presence-bg);
 
   /* Rank palette. Exposes the static primitives as utility classes:
      bg-rank-stone, text-rank-jade, border-rank-gold, etc. These give callers

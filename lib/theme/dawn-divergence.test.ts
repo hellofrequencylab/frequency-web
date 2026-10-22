@@ -224,14 +224,28 @@ const DECLARED: Divergence[] = [
   },
 ]
 
+const CALENDAR_TOKENS = [
+  '--color-cal-event',
+  '--color-cal-event-bg',
+  '--color-cal-todo',
+  '--color-cal-todo-bg',
+  '--color-cal-works',
+  '--color-cal-works-bg',
+  '--color-cal-works-strong',
+  '--color-presence',
+  '--color-presence-bg',
+]
+
 /** Tokens production has and DAWN does not. Sent as ADDITIONS, not as corrections. */
 const DECLARED_PROD_ONLY: Record<Mode, string[]> = {
   // Empty for the same reason as DECLARED, and closed in the same change: the twelve additions
   // CHANGES.md §2 lists were transcribed into the vendored sheet on 2026-08-26, so there is no
   // colour token production declares that DAWN has no row for. A NEW prod-only token fails this
   // the moment it appears, which is the only job this list has.
-  light: [],
-  dark: [],
+  // The Space calendar redesign (2026-10-22) adds nine calendar tokens, declared in both modes in
+  // app/globals.css. DAWN's sheet has no row for them yet, so they go back on the next outbound round.
+  light: CALENDAR_TOKENS,
+  dark: CALENDAR_TOKENS,
 }
 
 const key = (d: Divergence) => `${d.mode} ${d.token} DAWN ${d.dawn} → prod ${d.prod}`

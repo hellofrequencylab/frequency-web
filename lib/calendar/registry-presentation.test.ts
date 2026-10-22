@@ -39,7 +39,7 @@ describe('the one stage presentation', () => {
     expect(new Set(colours).size, `these three still share a colour: ${colours.join(' | ')}`).toBe(3)
     expect(new Set([planning.tone, priv.tone, todos.tone]).size).toBe(3)
     // And each still carries a form of its own, so the grid reads before any word does.
-    expect(priv.chipClass).toContain('border-broadcast-strong')
+    expect(priv.chipClass).toContain('border-border-strong')
     expect(todos.chipClass).toContain('border-dotted')
     expect(planning.chipClass).not.toContain('border')
   })

@@ -17,7 +17,7 @@
 // A state is never a hue alone (WCAG 1.4.1, whose own failure example is a colour-coded calendar):
 // each stage is FORM + colour + its word.
 //   Pencil      dashed border on a neutral ground: a date being held, nothing decided.
-//   Planning    a solid info tint: decided, being put together.
+//   Planning    a faint pastel tint: decided, being put together.
 //   Production  a solid success tint with a solid edge: ready to run.
 //   Cancelled   muted, struck through, on the neutral ground. Never the brand accent and never
 //               danger red on the chip itself; danger is for the badge that says the word.
@@ -77,10 +77,10 @@ interface CalendarLayer {
 
 /** Cancelled anywhere it is written: muted and struck through. The brand fill never wins over it. */
 export const CANCELLED_TEXT_CLASS = 'text-muted line-through'
-const PENCIL_CHIP_CLASS = 'border border-dashed border-border-strong bg-surface text-text hover:bg-surface-elevated'
-/** The lift a chip takes under the pointer. A ring, not an opacity step, so the contrast gate can
+/** The lift a chip takes under the pointer: 1px up, never an opacity step, so the contrast gate can
  *  still read the pair underneath it. */
-const CHIP_HOVER = 'hover:ring-1 hover:ring-current'
+const CHIP_HOVER = 'hover:-translate-y-px'
+const PENCIL_CHIP_CLASS = `border border-dashed border-cal-works bg-surface text-text ${CHIP_HOVER}`
 
 /** One row of CALENDAR_PRESENTATIONS. A stage where the item has one, otherwise its layer. */
 type CalendarPresentationKey =
@@ -112,7 +112,7 @@ export interface CalendarPresentation {
 export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPresentation> = {
   event: {
     key: 'event',
-    chipClass: `bg-primary-bg text-primary-strong ${CHIP_HOVER}`,
+    chipClass: `bg-cal-event-bg text-text ${CHIP_HOVER}`,
     word: 'Event',
     shortWord: 'Evt',
     tone: 'brand',
@@ -136,7 +136,7 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
   },
   planning: {
     key: 'planning',
-    chipClass: `bg-info-bg text-info ${CHIP_HOVER}`,
+    chipClass: `bg-cal-works-bg text-text ${CHIP_HOVER}`,
     word: 'Planning',
     shortWord: 'Plng',
     tone: 'info',
@@ -144,7 +144,7 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
   },
   production: {
     key: 'production',
-    chipClass: `border border-success bg-success-bg text-success ${CHIP_HOVER}`,
+    chipClass: `border border-cal-works bg-cal-works-strong text-text ${CHIP_HOVER}`,
     word: 'Production',
     shortWord: 'Prod',
     tone: 'success',
@@ -160,7 +160,7 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
   },
   private: {
     key: 'private',
-    chipClass: `border border-broadcast-strong bg-broadcast-bg text-broadcast-strong ${CHIP_HOVER}`,
+    chipClass: `border border-border-strong bg-surface text-text ${CHIP_HOVER}`,
     word: 'Private',
     shortWord: 'Priv',
     tone: 'broadcast',
@@ -168,7 +168,7 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
   },
   unavailable: {
     key: 'unavailable',
-    chipClass: `bg-warning-bg text-warning ${CHIP_HOVER}`,
+    chipClass: `border border-border bg-surface-elevated text-text ${CHIP_HOVER}`,
     word: 'Unavailable',
     shortWord: 'Unav',
     tone: 'warning',
@@ -176,7 +176,7 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
   },
   todos: {
     key: 'todos',
-    chipClass: `border border-dotted border-move-strong bg-move-bg text-move-strong ${CHIP_HOVER}`,
+    chipClass: `border border-dotted border-cal-todo bg-cal-todo-bg text-text ${CHIP_HOVER}`,
     word: 'To-do',
     shortWord: 'To-do',
     tone: 'move',
