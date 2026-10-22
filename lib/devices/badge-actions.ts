@@ -16,6 +16,9 @@ export async function requestBadge(spaceId: string): Promise<ActionResult> {
   if (!scannerDevicesEnabled()) return fail('Badges are not open yet.')
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to get a badge.')
+  // Every request is answered with a Frequency member card now, and a card is a Crew perk (LIVE-1282).
+  const { isCrewMember } = await import('@/lib/member-cards/store')
+  if (!(await isCrewMember(profileId))) return fail('Member cards come with Crew.')
   const space = typeof spaceId === 'string' ? await getSpaceById(spaceId) : null
   if (!space) return fail('That Space is not here anymore.')
   if (!(await fileBadgeRequest(space.id, profileId))) return fail('Could not send that. Try again.')

@@ -7,9 +7,15 @@
 // Owner rulings 2026-10-22: getting a card is a Crew perk; a card with no face set opens its owner's
 // own page (a member's profile, or the Space's page); any Space may offer a cardholder perk.
 
-type CardMode = 'page' | 'card' | 'link'
+export type CardMode = 'page' | 'card' | 'link'
 
-const CARD_LIMITS = { linkMax: 500, perkMax: 120, foundersEdition: 100 } as const
+export const CARD_MODES: readonly { key: CardMode; label: string; hint: string }[] = [
+  { key: 'page', label: 'Open my page', hint: 'Your Frequency page. This is where a new card goes.' },
+  { key: 'card', label: 'Show my card', hint: 'Photo, title, links and Save contact.' },
+  { key: 'link', label: 'Open my link', hint: 'Your site, your event, your offer.' },
+]
+
+export const CARD_LIMITS = { linkMax: 500, perkMax: 120, foundersEdition: 100 } as const
 
 /** What the owner set. A missing row reads as DEFAULT_FACE. */
 export interface CardFace {

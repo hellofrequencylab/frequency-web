@@ -346,7 +346,7 @@ type CheckIn = { at: number; name: string; ok: boolean; detail: string }
 type Mode = 'placards' | 'badges' | 'scanner' | 'remote' | 'update'
 const MODE_TITLE: Record<Mode, string> = {
   placards: 'NFC TAGS',
-  badges: 'MEMBER BADGES',
+  badges: 'MEMBER CARDS',
   scanner: 'COUNTER SCANNER',
   remote: 'WI-FI REMOTE',
   update: 'UPDATE FIRMWARE',
@@ -363,16 +363,26 @@ type LogLine = { dir: string; text: string }
 type Placard = { nodeId: string | null; codeId: string | null; since: string; label: string; chip: string; spaceName: string }
 /** What a placard-mode tag opens: the chosen Space's door check-in, or any page. */
 type TagFor = 'checkin' | 'page'
+/** Which card the Cards job writes (LIVE-1282): a Frequency-wide member card (Crew only, checks in at
+ *  every Space), or a Space card registered to the chosen Space (opens its page, for its team). */
+type CardKind = 'member' | 'space'
 type NavKey = 'prev' | 'next' | 'sel' | 'esc'
 
 /** One check-in line from the server's answer. */
 function checkInFrom(answer: RelayAnswer | ScanResult, viaCable: boolean): CheckIn {
-  const b = ('body' in answer ? answer.body : answer) as { ok?: unknown; reason?: unknown; member?: { display_name?: unknown } | null; loyalty?: { stamps?: unknown; required?: unknown; earned?: unknown } | null }
+  const b = ('body' in answer ? answer.body : answer) as {
+    ok?: unknown
+    reason?: unknown
+    member?: { display_name?: unknown } | null
+    loyalty?: { stamps?: unknown; required?: unknown; earned?: unknown } | null
+    perk?: unknown
+  }
   const name = typeof b.member?.display_name === 'string' ? b.member.display_name : 'A card'
   const ok = 'body' in answer ? b.ok === true : !('relay' in answer) && b.member != null
   const l = b.loyalty
   const stamps = l && typeof l.stamps === 'number' && typeof l.required === 'number' ? `${l.stamps} of ${l.required} stamps${l.earned ? ', reward earned' : ''}` : 'Checked in'
-  return { at: Date.now(), name, ok, detail: ok ? `${stamps}${viaCable ? ' (through this computer)' : ''}` : scanReasonText(b.reason) }
+  const perk = typeof b.perk === 'string' && b.perk ? `. ${b.perk}` : ''
+  return { at: Date.now(), name, ok, detail: ok ? `${stamps}${perk}${viaCable ? ' (through this computer)' : ''}` : b.reason === 'card_paused' ? 'This card is paused by its owner' : scanReasonText(b.reason) }
 }
 
 function chipText(tag: TagRead): string {
@@ -454,6 +464,7 @@ export function CyberUnicornConsole({
   const [placardLabel, setPlacardLabel] = useState('')
   const [placard, setPlacard] = useState<Placard | null>(null)
   const [tagFor, setTagFor] = useState<TagFor>('checkin')
+  const [cardKind, setCardKind] = useState<CardKind>('member')
   const [pageQuery, setPageQuery] = useState('')
   const [pageResults, setPageResults] = useState<TagTarget[] | null>(null)
   const [pageTarget, setPageTarget] = useState<TagTarget | null>(null)
@@ -967,7 +978,7 @@ export function CyberUnicornConsole({
       if (previous && previous !== out.data.deviceId) await retireConsoleScanner(previous)
       setConfig(cfg)
       setScanner({ spaceId: target.spaceId, spaceName: target.spaceName, label: 'CyberUnicorn 5000', active: true })
-      setNotice(`This board is now ${target.spaceName}'s counter scanner. Members tap their badge on its Frequency screen to check in.`)
+      setNotice(`This board is now ${target.spaceName}'s counter scanner. Members tap their card on its Frequency screen to check in.`)
       router.refresh()
     })
   }
@@ -1054,10 +1065,12 @@ export function CyberUnicornConsole({
   }
 
   // A request in the queue fills in who and where; Program then writes it.
+  // Every request is answered with a member card now: it checks in at the Space they asked at too.
   function pick(r: BadgeRequestRow) {
     setProblem(null)
     setDone(null)
-    chooseSpace({ spaceId: r.spaceId, spaceName: r.spaceName })
+    if (!r.frequencyWide) chooseSpace({ spaceId: r.spaceId, spaceName: r.spaceName })
+    setCardKind('member')
     setHandle(r.memberHandle ? `@${r.memberHandle}` : '')
     setMode('badges')
   }
@@ -1219,18 +1232,19 @@ export function CyberUnicornConsole({
 
   async function program() {
     const c = clientRef.current
-    if (!c || !target) return
-    const { spaceId, spaceName } = target
+    if (!c || (cardKind === 'space' && !target)) return
+    const kind = cardKind
+    const spaceName = target?.spaceName ?? null
     setProblem(null)
     setDone(null)
     setPhase('minting')
-    const minted = await startConsoleCard(spaceId, handle)
+    const minted = await startConsoleCard(kind, kind === 'space' ? (target?.spaceId ?? null) : null, handle)
     if (isError(minted)) {
       setProblem(minted.error)
       setPhase('ready')
       return
     }
-    const { cardId, url, memberName } = minted.data
+    const { cardId, spaceId, url, memberName, printed } = minted.data
     setCardFor(memberName)
     setPhase('tap')
     setTapStarted(Date.now())
@@ -1257,13 +1271,16 @@ export function CyberUnicornConsole({
       title: 'NAILED IT',
       lines: [
         { label: 'Member', value: memberName, tone: 'ok' },
-        { label: 'Space', value: spaceName },
+        { label: 'Card', value: printed, tone: 'ok' },
+        { label: kind === 'space' ? 'Opens' : 'Works at', value: kind === 'space' ? (spaceName ?? 'This Space') : 'Every Space' },
         { label: 'Chip', value: chipText(tag) },
         { label: 'Link', value: tag.written ?? url.replace(/^https?:\/\//, '').replace(/\/c\/.*/, '/c/...'), tone: 'secondary' },
       ],
       note: isError(bound)
         ? bound.error
-        : `${memberName}'s card is ready. Tap it on any phone to open their rewards, or at your counter scanner to check in.`,
+        : kind === 'space'
+          ? `Write ${printed} on the card. A phone tap opens ${spaceName ?? 'the Space'}'s card, and it checks in at ${spaceName ?? 'that Space'}'s counter scanner.`
+          : `Write ${printed} on the card. A phone tap opens what ${memberName} set on their card, and it checks in at every Space's counter scanner.`,
     })
     setPhase('done')
     router.refresh()
@@ -1294,8 +1311,8 @@ export function CyberUnicornConsole({
           : venue
             ? 'This tag carries a Space check-in link. A phone tap checks the member in.'
             : tag.uri
-              ? 'Not a Frequency tag. Write a placard or a badge onto it to make it one.'
-              : 'Blank. Write a placard or a badge onto it.',
+              ? 'Not a Frequency tag. Write a placard or a member card onto it to make it one.'
+              : 'Blank. Write a placard or a member card onto it.',
       })
       setPhase('done')
     } catch (e) {
@@ -1525,7 +1542,7 @@ export function CyberUnicornConsole({
   const live = connected && link === 'usb' && mirror && client !== null
   const allFeatures: { mode: Mode; Icon: LucideIcon; label: string; count?: number }[] = [
     { mode: 'placards', Icon: Nfc, label: 'Tags' },
-    { mode: 'badges', Icon: IdCard, label: 'Badges', count: requests.length },
+    { mode: 'badges', Icon: IdCard, label: 'Cards', count: requests.length },
     { mode: 'scanner', Icon: ScanLine, label: 'Scanner' },
     { mode: 'remote', Icon: Wifi, label: 'Wi-Fi remote' },
     { mode: 'update', Icon: Download, label: 'Update' },
@@ -1735,7 +1752,7 @@ export function CyberUnicornConsole({
                   setPhase('ready')
                 }}
               >
-                {mode === 'placards' ? 'Write another' : mode === 'badges' ? 'Program another' : 'Done'}
+                {mode === 'placards' ? 'Write another' : mode === 'badges' ? 'Write another card' : 'Done'}
               </CuButton>
             </div>
           </Screen>
@@ -1752,7 +1769,7 @@ export function CyberUnicornConsole({
 
       {showModes && CABLE_MODES.includes(mode) && connected && link === 'wifi' && (
         <Screen icon="rfid" title="USE THE CABLE FOR THIS">
-          <p>Writing placards and badges and setting up a scanner only work over USB. Disconnect, plug the CyberUnicorn into this computer, and connect over USB.</p>
+          <p>Writing placards and cards and setting up a scanner only work over USB. Disconnect, plug the CyberUnicorn into this computer, and connect over USB.</p>
         </Screen>
       )}
 
@@ -1872,11 +1889,24 @@ export function CyberUnicornConsole({
 
           {mode === 'badges' && (
             <div className="space-y-4">
+              <div role="group" aria-label="Which card" className="flex flex-wrap gap-2">
+                <CuButton tone={cardKind === 'member' ? 'primary' : 'secondary'} pressed={cardKind === 'member'} onClick={() => setCardKind('member')}>
+                  Member card (every Space)
+                </CuButton>
+                <CuButton tone={cardKind === 'space' ? 'primary' : 'secondary'} pressed={cardKind === 'space'} onClick={() => setCardKind('space')}>
+                  Space card (opens this Space)
+                </CuButton>
+              </div>
+              <p className="text-[var(--cu-muted)]">
+                {cardKind === 'member'
+                  ? 'Member cards come with Crew. It checks in at every Space, and a phone tap opens what the member set on their card.'
+                  : 'For someone on the Space’s team. A phone tap opens the Space’s card, and it checks in at this Space only.'}
+              </p>
               <form
                 className="flex flex-col gap-3 sm:flex-row sm:items-end"
                 onSubmit={(e) => {
                   e.preventDefault()
-                  if (handle.trim() && readerOk && target && ready) void program()
+                  if (handle.trim() && readerOk && (cardKind === 'member' || target) && ready) void program()
                 }}
               >
                 <label className="flex-1 space-y-1">
@@ -1894,10 +1924,11 @@ export function CyberUnicornConsole({
                     className={FIELD_CLASS}
                   />
                 </label>
-                <CuButton type="submit" disabled={!handle.trim() || !readerOk || !target || !ready}>
+                <CuButton type="submit" disabled={!handle.trim() || !readerOk || (cardKind === 'space' && !target) || !ready}>
                   Program card
                 </CuButton>
               </form>
+              {cardKind === 'space' && !target && <p className="text-[var(--cu-dim)]">Choose a Space above first.</p>}
               {memberHits.length > 0 && (
                 <ul aria-label="Members" className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
                   {memberHits.map((m) => (
@@ -1919,7 +1950,7 @@ export function CyberUnicornConsole({
               )}
               <section aria-labelledby="cu5k-queue" className="space-y-2">
                 <h4 id="cu5k-queue" className={LABEL_CLASS}>
-                  Asked for a badge ({requests.length})
+                  Asked for a card ({requests.length})
                 </h4>
                 {requests.length === 0 ? (
                   <p className="text-[var(--cu-dim)]">Nobody is waiting. Members ask from a Space&apos;s page.</p>
@@ -1931,7 +1962,7 @@ export function CyberUnicornConsole({
                           <span className="text-[var(--cu-text)]">{r.memberName}</span>
                           {r.memberHandle && <span className="text-[var(--cu-secondary)]"> @{r.memberHandle}</span>}
                           <span className="block text-[var(--cu-muted)]">
-                            {r.spaceName} · {new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            {r.frequencyWide ? 'Member card' : r.spaceName} · {new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                           </span>
                         </span>
                         <CuButton tone="secondary" onClick={() => pick(r)}>
@@ -1971,7 +2002,7 @@ export function CyberUnicornConsole({
                   onTest={() => void testCheckIn()}
                 />
               ) : (
-                <p className="text-[var(--cu-dim)]">Connect the Unicorn to make it a Space&apos;s counter scanner. Members then tap their badge on the Unicorn itself to check in.</p>
+                <p className="text-[var(--cu-dim)]">Connect the Unicorn to make it a Space&apos;s counter scanner. Members then tap their card on the Unicorn itself to check in.</p>
               )}
               {connected && checkIns.length > 0 && (
                 <section aria-labelledby="cu5k-checkins" className="space-y-2">

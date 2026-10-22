@@ -11,6 +11,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
+import { getSpaceMembership } from '@/lib/spaces/membership'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor, isStaff } from '@/lib/core/roles'
@@ -25,7 +26,8 @@ export function scannerDevicesEnabled(): boolean {
   return envFlag('SCANNER_DEVICES_ENABLED')
 }
 
-/** A Space may hold this many live scanners, and a member this many live cards at one Space. */
+/** A Space may hold this many live scanners, and a member this many live cards at one Space (and as
+ *  many Frequency-wide member cards). */
 export const SCANNER_LIMITS = { devicesPerSpace: 10, cardsPerMember: 5, labelMax: 60 } as const
 
 /** An authenticated device, as the routes consume it. */
@@ -104,6 +106,20 @@ interface CardRow {
   profileId: string
   spaceId: string | null
   uidHash: string | null
+  /** The printed number (LIVE-1282), null on a card minted before numbering. */
+  cardNumber: number | null
+  /** The Space a Space card is registered to, else null. */
+  faceSpaceId: string | null
+}
+
+type CardSelect = {
+  id: string
+  profile_id: string
+  space_id: string | null
+  uid_hash: string | null
+  active: boolean
+  card_number?: number | null
+  face_space_id?: string | null
 }
 
 /** The live card whose token hashes to `tokenHash`, or null. */
@@ -111,11 +127,20 @@ export async function findActiveCard(tokenHash: string): Promise<CardRow | null>
   try {
     const { data } = await createAdminClient()
       .from('member_cards')
-      .select('id, profile_id, space_id, uid_hash, active')
+      .select('id, profile_id, space_id, uid_hash, active, card_number, face_space_id')
       .eq('token_hash', tokenHash)
       .maybeSingle()
-    if (!data || !data.active) return null
-    return { id: data.id, profileId: data.profile_id, spaceId: data.space_id, uidHash: data.uid_hash }
+    // card_number and face_space_id are newer than the generated types.
+    const row = data as unknown as CardSelect | null
+    if (!row || !row.active) return null
+    return {
+      id: row.id,
+      profileId: row.profile_id,
+      spaceId: row.space_id,
+      uidHash: row.uid_hash,
+      cardNumber: row.card_number ?? null,
+      faceSpaceId: row.face_space_id ?? null,
+    }
   } catch {
     return null
   }
@@ -197,6 +222,7 @@ export async function issueCardForHandle(device: ScannerDevice, handle: string):
     return { ok: false, reason: 'failed' }
   }
 }
+
 
 // ── The owner side ───────────────────────────────────────────────────────────────────────────────
 
@@ -329,54 +355,79 @@ export async function registerScannerDevice(
   }
 }
 
+/** What the console writes (LIVE-1282, docs/LOYALTY.md "Member cards"). A MEMBER card is Frequency-wide
+ *  (space_id null: it checks in at every Space's counter scanner) and opens its holder's own face. A SPACE
+ *  card is registered to one Space (face_space_id): it opens that Space's face, checks in there only, and
+ *  goes to someone on that Space's team. Both carry a printed number. */
+export type ConsoleCardKind = 'member' | 'space'
+
+type ConsoleCardOutcome =
+  | { ok: true; cardId: string; token: string; displayName: string; cardNumber: number; spaceId: string | null }
+  | { ok: false; reason: 'forbidden' | 'unknown_member' | 'not_crew' | 'no_space' | 'not_space_staff' | 'too_many_cards' | 'failed' }
+
+/** Whether the profile is on the Space's team: its owner, or an active member above viewer. */
+async function onSpaceTeam(spaceId: string, profileId: string): Promise<boolean> {
+  const space = await getSpaceById(spaceId)
+  if (!space) return false
+  if (space.ownerProfileId === profileId) return true
+  const m = await getSpaceMembership(spaceId, profileId)
+  return !!m && m.status === 'active' && m.role !== 'viewer'
+}
+
 /**
- * Mint a card from the CyberUnicorn console (plugged into a staff member's computer over USB), for the
- * member with `handle`, valid at THIS Space only. Same token, hash and per-member cap as a scanner-issued
- * card; `issued_by` stays null because no registered scanner minted it. Staff only (consoleStaffGate).
- * The browser writes `SITE_URL/c/<token>` to the card, then binds the chip UID (bindConsoleCard) or, if
- * the write failed, discards the row (discardConsoleCard), so a card that never left the reader is not
- * left live.
+ * Mint a card from the CyberUnicorn console (plugged into a staff member's computer over USB) for the
+ * member with `handle`. Staff only (consoleStaffGate). A member card needs the holder to be Crew (owner
+ * ruling 2026-10-22, isCrewMember) and is minted with space_id null; a Space card needs a Space and a
+ * holder on its team, and is minted with space_id and face_space_id both set to it. Either one takes the
+ * next Frequency-wide number from next_member_card_number() (never reissued, so a discarded mint burns
+ * its number). The per-member cap (SCANNER_LIMITS.cardsPerMember) counts live cards in the same scope:
+ * the Frequency-wide ones together, or one Space's. `issued_by` stays null because no registered scanner
+ * minted it. The browser writes `SITE_URL/c/<token>` to the card, then binds the chip UID
+ * (bindConsoleCard) or, if the write failed, discards the row (discardConsoleCard), so a card that never
+ * left the reader is not left live.
  */
-export async function issueCardFromConsole(
-  spaceId: string,
-  handle: string,
-): Promise<{ ok: true; cardId: string; token: string; displayName: string } | { ok: false; reason: 'forbidden' | 'unknown_member' | 'too_many_cards' | 'failed' }> {
+export async function issueCardFromConsole(kind: ConsoleCardKind, spaceId: string | null, handle: string): Promise<ConsoleCardOutcome> {
   if (!(await consoleStaffGate())) return { ok: false, reason: 'forbidden' }
+  if (kind === 'space' && !spaceId) return { ok: false, reason: 'no_space' }
+  const scope = kind === 'space' ? spaceId : null
   try {
     const db = createAdminClient()
     const { data: profile } = await db.from('profiles').select('id, display_name').eq('handle', handle).maybeSingle()
     if (!profile) return { ok: false, reason: 'unknown_member' }
-    const { count } = await db
-      .from('member_cards')
-      .select('id', { count: 'exact', head: true })
-      .eq('profile_id', profile.id)
-      .eq('space_id', spaceId)
-      .eq('active', true)
+    if (kind === 'member') {
+      // Imported here: lib/member-cards/store imports this file, so a static import would be a cycle.
+      const { isCrewMember } = await import('@/lib/member-cards/store')
+      if (!(await isCrewMember(profile.id))) return { ok: false, reason: 'not_crew' }
+    }
+    if (scope && !(await onSpaceTeam(scope, profile.id))) return { ok: false, reason: 'not_space_staff' }
+    const live = db.from('member_cards').select('id', { count: 'exact', head: true }).eq('profile_id', profile.id).eq('active', true)
+    const { count } = await (scope ? live.eq('space_id', scope) : live.is('space_id', null))
     if ((count ?? 0) >= SCANNER_LIMITS.cardsPerMember) return { ok: false, reason: 'too_many_cards' }
+    // The one numbering writer (migration 20270346024000).
+    const { data: num, error: numError } = await db.rpc('next_member_card_number')
+    const cardNumber = Number(num)
+    if (numError || !Number.isInteger(cardNumber) || cardNumber < 1) return { ok: false, reason: 'failed' }
     const token = newCardToken()
+    const row = { profile_id: profile.id, space_id: scope, face_space_id: scope, card_number: cardNumber, token_hash: sha256Hex(token), issued_by: null }
     const { data, error } = await db
       .from('member_cards')
-      .insert({ profile_id: profile.id, space_id: spaceId, token_hash: sha256Hex(token), issued_by: null })
+      .insert(row as never)
       .select('id')
       .maybeSingle()
     if (error || !data) return { ok: false, reason: 'failed' }
-    return { ok: true, cardId: data.id, token, displayName: profile.display_name?.trim() || 'Member' }
+    return { ok: true, cardId: data.id, token, displayName: profile.display_name?.trim() || 'Member', cardNumber, spaceId: scope }
   } catch {
     return { ok: false, reason: 'failed' }
   }
 }
 
 /** Bind the chip the console just wrote to its card, so a copy on another chip is refused at the
- *  counter. Fills an empty uid_hash only, scoped by space_id. */
-export async function bindConsoleCard(spaceId: string, cardId: string, uidHash: string): Promise<boolean> {
+ *  counter. Fills an empty uid_hash only, scoped by the card's space_id (null for a member card). */
+export async function bindConsoleCard(spaceId: string | null, cardId: string, uidHash: string): Promise<boolean> {
   if (!(await consoleStaffGate())) return false
   try {
-    const { error } = await createAdminClient()
-      .from('member_cards')
-      .update({ uid_hash: uidHash })
-      .eq('id', cardId)
-      .eq('space_id', spaceId)
-      .is('uid_hash', null)
+    const q = createAdminClient().from('member_cards').update({ uid_hash: uidHash }).eq('id', cardId).is('uid_hash', null)
+    const { error } = await (spaceId ? q.eq('space_id', spaceId) : q.is('space_id', null))
     return !error
   } catch {
     return false
@@ -384,18 +435,18 @@ export async function bindConsoleCard(spaceId: string, cardId: string, uidHash: 
 }
 
 /** Remove a console-minted card whose write never landed. Only an unbound, never-used, console-minted
- *  row goes, so this can never delete a card that is out in the world. */
-export async function discardConsoleCard(spaceId: string, cardId: string): Promise<boolean> {
+ *  row goes, so this can never delete a card that is out in the world. Scoped like bindConsoleCard. */
+export async function discardConsoleCard(spaceId: string | null, cardId: string): Promise<boolean> {
   if (!(await consoleStaffGate())) return false
   try {
-    const { error } = await createAdminClient()
+    const q = createAdminClient()
       .from('member_cards')
       .delete()
       .eq('id', cardId)
-      .eq('space_id', spaceId)
       .is('issued_by', null)
       .is('uid_hash', null)
       .is('last_used_at', null)
+    const { error } = await (spaceId ? q.eq('space_id', spaceId) : q.is('space_id', null))
     return !error
   } catch {
     return false
