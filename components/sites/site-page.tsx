@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
 import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
-import { HOUSE_NAV, SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteServesContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
+import { HOUSE_NAV, SITE_ACCOUNT_SLUG, SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteServesContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { readSiteBooking } from '@/lib/sites/site-booking'
 import { SiteBooking } from '@/components/sites/site-booking'
@@ -66,6 +66,7 @@ import { NetworkAccount, NetworkSearch, type SearchItem } from '@/components/sit
 import { siteEntitySchema } from '@/lib/jsonld'
 import { resolveSiteHeaderBrand } from '@/lib/sites/site-brand'
 import { SiteMemberBadge } from '@/components/sites/site-member-badge'
+import { SiteAccount } from '@/components/sites/site-account'
 import { isLocalSiteProjection, projectLocalSiteSpace } from '@/lib/sites/local-site-projection'
 import { readSiteFooter, siteFooterFor } from '@/lib/sites/site-footer'
 import { badgeRemovalHeld, effectiveFooterBadge, readFooterBadge } from '@/lib/sites/site-badge'
@@ -119,8 +120,11 @@ export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): 
   const page = websitePage ??
     readProfilePages(space.preferences).find((p) => p.slug === pageSlug) ??
     (pageSlug === SITE_CONTACT_SLUG && siteServesContactPage(space.preferences) ? { slug: SITE_CONTACT_SLUG, label: 'Contact' } : null) ??
-    (pageSlug === SITE_BOOK_SLUG && (await readSiteBooking(space.id)).takesBookings ? { slug: SITE_BOOK_SLUG, label: 'Book' } : null)
+    (pageSlug === SITE_BOOK_SLUG && (await readSiteBooking(space.id)).takesBookings ? { slug: SITE_BOOK_SLUG, label: 'Book' } : null) ??
+    (pageSlug === SITE_ACCOUNT_SLUG && readSitePageStyle(space.preferences, pageSlug).theme === 'temple' ? { slug: SITE_ACCOUNT_SLUG, label: 'Your house' } : null)
   if (!page) return { title: { absolute: brandName }, robots: { index: false } }
+  // The account page is the reader's own: never indexed.
+  if (page.slug === SITE_ACCOUNT_SLUG) return { title: { absolute: `Your house | ${brandName}` }, robots: { index: false, follow: false } }
   const title = websitePage?.seo.title.trim() || (page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`)
   const description = websitePage?.seo.description.trim() || siteDescription(space, brandName, page.slug)
   const siteBase = siteBaseUrl(space.slug, await boundSiteDomain(space), appOrigin())
@@ -232,7 +236,7 @@ export async function SitePage({
   const { origin, hasContact, booking, pages, homeHref, siteLinks, cta, pageLinks, tagline } = await siteChromeBasics(space, siteBase)
   const websiteChrome = resolveWebsiteChrome(website, { name: brandName, tagline, cta })
   // The reader's own membership in THIS Space, asked for after the cached page is up (LIVE-699).
-  const memberBadge = <SiteMemberBadge endpoint={`${origin}/api/sites/${space.slug}/membership`} href={`${origin}/spaces/${space.slug}/memberships`} pill={wildSite || templeSite} label={templeSite ? 'Your house' : undefined} showName={templeSite} />
+  const memberBadge = <SiteMemberBadge endpoint={`${origin}/api/sites/${space.slug}/membership`} href={templeSite ? siteHref(siteBase, SITE_ACCOUNT_SLUG) : `${origin}/spaces/${space.slug}/memberships`} pill={wildSite || templeSite} label={templeSite ? 'Your house' : undefined} showName={templeSite} />
   const chromeCta = resolveWebsiteChromeCta(website?.chrome, cta, siteBase)
   // The "Check in with Frequency" door (LIVE-944): only while Regulars is on at this Space. It points at the
   // Space's page in the app, where the member reads the card and the door code does the check-in.
@@ -240,7 +244,8 @@ export async function SitePage({
   const checkIn = regulars?.status === 'on' ? { href: `${origin}/spaces/${space.slug}`, line: nearbyLine(regulars) } : null
   const contactPage = pageSlug === SITE_CONTACT_SLUG && hasContact
   const bookPage = pageSlug === SITE_BOOK_SLUG && booking.takesBookings
-  if (!contactPage && !bookPage && !websitePage && !hasPage(space.preferences, pageSlug)) notFound()
+  const accountPage = pageSlug === SITE_ACCOUNT_SLUG && templeSite
+  if (!contactPage && !bookPage && !accountPage && !websitePage && !hasPage(space.preferences, pageSlug)) notFound()
 
   // Stamp the tenant so any block that resolves its rows from the active Space reads THIS one, the same
   // line the public page carries.
@@ -286,7 +291,7 @@ export async function SitePage({
   // LIVE-869: a site's `calendar` page (listed among its pages, so the owner places it in the menu) is the
   // public yearly calendar, not a page doc.
   const calendarPage = pageSlug === SITE_CALENDAR_SLUG
-  const customPage = (!home || wildHome || netHome) && !contactPage && !bookPage && !calendarPage
+  const customPage = (!home || wildHome || netHome) && !contactPage && !bookPage && !accountPage && !calendarPage
   const mwBlocks: MwBlock[] | null =
     customPage
       ? ((withVisibleBlocks(await loadSpacePageDoc(space.preferences, brandName, pageSlug)).content ?? []) as MwBlock[])
@@ -413,6 +418,17 @@ export async function SitePage({
               <HouseBlock key={b.key} block={b} first={i === 0} />
             ))}
           </>
+        ) : accountPage ? (
+          <div className={`${SITE_CONTAINER} pb-16 pt-28 sm:pb-24`}>
+          <SiteAccount
+            membershipEndpoint={`${origin}/api/sites/${space.slug}/membership`}
+            rsvpsEndpoint={`${origin}/api/sites/${space.slug}/rsvps`}
+            signInHref={`${origin}/sign-in`}
+            plansHref={`${origin}/spaces/${space.slug}/memberships`}
+            eventsHref={`${origin}/events`}
+            brandName={brandName}
+          />
+          </div>
         ) : bookPage && booking ? (
           <div className={`${SITE_CONTAINER} pb-16 pt-28 sm:pb-24`}>
             <h1 className="hs-h2">Book a time with {brandName}</h1>

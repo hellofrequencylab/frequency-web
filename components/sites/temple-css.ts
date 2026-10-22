@@ -189,6 +189,12 @@ ${N} .hs-stamp b{font-family:var(--tp-display);font-weight:var(--tp-weight-regul
 ${N} .hs-stamp span{${LABEL};margin-top:3px;font-size:var(--tp-size-2xs)}
 ${N} .hs-when{${LABEL};color:var(--tp-clay-700)}
 
+/* Your house: the reader's plan card beside their gatherings. */
+${N} .hs-account-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:var(--tp-s8);align-items:start;margin-top:var(--tp-s10)}
+${N} .hs-account-list{display:flex;flex-direction:column;gap:var(--tp-s4)}
+${N} .hs-account-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--tp-s5);padding:var(--tp-s5) var(--tp-s6)}
+@media (max-width:760px){${N} .hs-account-grid{grid-template-columns:minmax(0,1fr)}${N} .hs-account-row{grid-template-columns:auto minmax(0,1fr)}${N} .hs-account-row .hs-btn{grid-column:1 / -1}}
+
 /* The night band: the community section as the design's membership band, rungs as arch-soft cards on the night wash. */
 ${N} .hs-section[data-hs="community"]{max-width:none;padding-top:var(--tp-section-y);background:var(--tp-wash-night);color:var(--tp-on-ink);padding-inline:max(var(--tp-gutter),calc((100% - 1160px) / 2 + var(--tp-s6)));position:relative;isolation:isolate;overflow:hidden}
 ${N} .hs-section[data-hs="community"]::before{content:"";position:absolute;inset:0;background-image:var(--tp-grit);background-size:220px;opacity:calc(var(--tp-o-grit) * .85);mix-blend-mode:soft-light;pointer-events:none;z-index:-1}

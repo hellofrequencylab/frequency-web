@@ -132,6 +132,10 @@ export function siteServesContactPage(preferences: unknown): boolean {
 /** The Book page's path on a website (LIVE-835). `book` is a reserved page slug (lib/spaces/profile-pages), so
  *  no custom page can take it. Owner ask 2026-10-07: "If someone clicks book, that happens through the site." */
 export const SITE_BOOK_SLUG = 'book'
+/** The Temple's account page (`/account`, "Your house"): the signed-in reader's plan and upcoming gatherings,
+ *  read after the cached page is up (components/sites/site-account.tsx). Reserved like `book`; served only on a
+ *  Temple website, and never indexed. */
+export const SITE_ACCOUNT_SLUG = 'account'
 /** SCAN-834: the page a website guest's confirmation link opens (`/confirm-booking?token=...`). Served by
  *  app/hosted/[host]/confirm-booking, a static sibling of the `[page]` route, so no site page may take
  *  this slug. */
