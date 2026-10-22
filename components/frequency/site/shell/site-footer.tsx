@@ -46,7 +46,7 @@ export function SiteFooter() {
           <nav className="ft2-cols" aria-label="Footer">
             {FOOTER_COLUMNS.map((col) => (
               <div key={col.heading}>
-                <b>{col.heading}</b>
+                <b role="heading" aria-level={2}>{col.heading}</b>
                 {col.links
                   .filter((l) => l.href)
                   .map((l) => (
