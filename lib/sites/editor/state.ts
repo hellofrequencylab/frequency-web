@@ -20,7 +20,7 @@ export interface WebsiteEditorState {
   v: 1; revision: number; draft: WebsiteSnapshot
   published: WebsiteSnapshot | null; scheduled?: { at: string; author: string; snapshot: WebsiteSnapshot } | null; versions: WebsiteVersion[]
 }
-export const RESERVED_WEBSITE_SLUGS = new Set(['admin', 'book', 'contact', 'spotlight', 'api', 'opengraph-image', 'robots', 'sitemap'])
+export const RESERVED_WEBSITE_SLUGS = new Set(['account', 'admin', 'book', 'contact', 'spotlight', 'api', 'opengraph-image', 'robots', 'sitemap'])
 export const WEBSITE_THEMES: WebsiteTheme[] = ['Menswork', 'DAWN', 'Midnight', 'Wildheart', 'Network', 'Temple']
 const MAX_WEBSITE_BYTES = 700_000
 const MAX_VERSIONS = 8
