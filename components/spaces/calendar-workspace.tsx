@@ -624,7 +624,7 @@ export function CalendarWorkspace({
           "Calendar" — see the comment on it in lib/spaces/profile-nav.ts — because the URL, the
           `.ics` feed and every operator deep link say calendar, and a menu word that disagreed with
           all of them would be a second name for one thing. */}
-      <h2 className="text-lead font-bold text-text">Calendar &amp; Events</h2>
+      <h2 className="text-lead font-bold text-text">{adminAllowed ? 'Calendar & Events' : 'What\u2019s happening'}</h2>
       <p className="text-body-sm text-muted">{calendarViewBlurb(view, brandName)}</p>
     </div>
   )

@@ -179,7 +179,9 @@ describe('CalendarWorkspace', () => {
     // instead of the panel list, whose "List" meant the all-time index while a second control in
     // the same bar said "List" for this month's agenda.
     const labels = [...el.querySelectorAll('[aria-label="How to see the calendar"] button')].map((n) => n.textContent)
-    expect(labels).toEqual(['Grid', 'List', 'Workflow'])
+    expect(labels).toEqual(['Month', 'Agenda', 'Board'])
+    // The old words are gone from the bar (Month, Agenda, Board replaced Grid, List, Workflow).
+    expect(labels).not.toContain('Grid')
     expect(el.querySelector('[data-calendar-view="admin"]')).not.toBeNull()
     expect(el.querySelector('[data-calendar-admin-grid]')).not.toBeNull()
     expect(el.querySelector('[data-calendar-pm-console]')).toBeNull()
@@ -255,7 +257,7 @@ describe('CalendarWorkspace', () => {
     const box = el.querySelector('[aria-label="How to see the calendar"]')
     expect(box).not.toBeNull()
     const labels = [...box!.querySelectorAll('button')].map((n) => n.textContent)
-    expect(labels).toEqual(['Grid', 'List'])
+    expect(labels).toEqual(['Month', 'Agenda'])
     expect(labels).not.toContain('Workflow')
     // The marker the host/control contract checks is on markup that RENDERS for this audience.
     expect(el.querySelector('[data-calendar-page-view-switch]')).not.toBeNull()
@@ -264,7 +266,7 @@ describe('CalendarWorkspace', () => {
     expect(el.querySelector('[data-calendar-list]')).toBeNull()
     act(() => {
       ;[...box!.querySelectorAll('button')]
-        .find((b) => b.textContent === 'List')
+        .find((b) => b.textContent === 'Agenda')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(el.querySelector('[data-calendar-view="guest"]')).not.toBeNull()
@@ -639,7 +641,7 @@ describe('CalendarWorkspace', () => {
     expect(bar.querySelector('[aria-label="Next month"]')).not.toBeNull()
     const how = bar.querySelector('[aria-label="How to see the calendar"]')
     expect(how).not.toBeNull()
-    expect([...how!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Grid', 'List'])
+    expect([...how!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Month', 'Agenda'])
     expect(bar.querySelector('[aria-label="Show on the calendar"]')).toBeNull()
     expect(bar.querySelector('[data-calendar-console-open]')).toBeNull()
     // And the grid it steers draws none of them itself, so there is exactly one of each.
@@ -792,7 +794,7 @@ describe('CalendarWorkspace', () => {
     original({ __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: ['x'] } as never, '', window.location.href)
     try {
       const el = mount(<CalendarWorkspace {...operatorProps({ initialView: 'admin' })} />)
-      const list = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'List')!
+      const list = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Agenda')!
       await act(async () => {
         list.click()
         await Promise.resolve()
@@ -922,9 +924,9 @@ describe('CalendarWorkspace', () => {
       [...console_().querySelectorAll<HTMLButtonElement>('[aria-label="How to see the calendar"] button')].find(
         (b) => b.textContent?.trim() === label,
       )!
-    act(() => surfaceBtn('List').click())
+    act(() => surfaceBtn('Agenda').click())
     expect(grid().querySelector('[data-calendar-list]')).not.toBeNull()
-    act(() => surfaceBtn('Grid').click())
+    act(() => surfaceBtn('Month').click())
     expect(grid().querySelector('[data-calendar-list]')).toBeNull()
   })
 
@@ -962,7 +964,7 @@ describe('CalendarWorkspace', () => {
     const views = el.querySelector('[data-segmented][aria-label="How to see the calendar"]')
     expect(views).not.toBeNull()
     expect(views!.getAttribute('data-segmented')).toBe('buttons')
-    expect([...views!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Grid', 'List', 'Workflow'])
+    expect([...views!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Month', 'Agenda', 'Board'])
     // The List rail's own row switcher, in the panel that is mounted beside the grid.
     const railBoxes = [...el.querySelectorAll('[data-calendar-panel="list"] [data-segmented]')]
     expect(railBoxes.length).toBeGreaterThan(0)
@@ -981,7 +983,7 @@ describe('CalendarWorkspace', () => {
     const header = console_.querySelector<HTMLElement>('[data-calendar-console-header]')!
 
     // Exactly ONE control in the bar offers "List"; there is no second one meaning something else.
-    const listButtons = [...header.querySelectorAll('button')].filter((b) => b.textContent?.trim() === 'List')
+    const listButtons = [...header.querySelectorAll('button')].filter((b) => b.textContent?.trim() === 'Agenda')
     expect(listButtons.length).toBe(1)
     expect(console_.querySelector('[aria-label="Calendar view"]')).toBeNull()
 
@@ -1021,7 +1023,7 @@ describe('CalendarWorkspace', () => {
       [...el.querySelectorAll<HTMLButtonElement>('[aria-label="How to see the calendar"] button')].find(
         (b) => b.textContent?.trim() === label,
       )!
-    act(() => pageSurface('List').click())
+    act(() => pageSurface('Agenda').click())
     expect(pageGrid.querySelector('[data-calendar-list]')).not.toBeNull()
 
     act(() => el.querySelector<HTMLButtonElement>('[data-calendar-console-open]')!.click())
@@ -1031,7 +1033,7 @@ describe('CalendarWorkspace', () => {
     expect(inConsole.querySelector('[data-calendar-list]')).not.toBeNull()
     const header = console_.querySelector<HTMLElement>('[data-calendar-console-header]')!
     const back = [...header.querySelectorAll<HTMLButtonElement>('[aria-label="How to see the calendar"] button')].find(
-      (b) => b.textContent?.trim() === 'Grid',
+      (b) => b.textContent?.trim() === 'Month',
     )
     expect(back).not.toBeNull()
     // And the month jump, the other half of the dead end: more than one month, from in here. The

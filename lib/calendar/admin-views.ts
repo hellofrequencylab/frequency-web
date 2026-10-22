@@ -138,9 +138,9 @@ export type CalendarSurface = (typeof CALENDAR_SURFACES)[number]
 export type CalendarListScope = 'month' | 'all'
 
 export const CALENDAR_SURFACE_DEFS: readonly { surface: CalendarSurface; label: string }[] = [
-  { surface: 'grid', label: 'Grid' },
-  { surface: 'list', label: 'List' },
-  { surface: 'workflow', label: 'Workflow' },
+  { surface: 'grid', label: 'Month' },
+  { surface: 'list', label: 'Agenda' },
+  { surface: 'workflow', label: 'Board' },
 ] as const
 
 /** The surface a (panel, grid-view) pair is showing. The all-time List panel and a Calendar panel
