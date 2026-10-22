@@ -14,6 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
+      card_faces: {
+        Row: {
+          cardholder_perk: string | null
+          id: string
+          link_url: string | null
+          mode: string
+          paused: boolean
+          profile_id: string | null
+          show_email: boolean
+          show_links: boolean
+          show_phone: boolean
+          space_id: string | null
+          swap_back: boolean
+          updated_at: string
+        }
+        Insert: {
+          cardholder_perk?: string | null
+          id?: string
+          link_url?: string | null
+          mode?: string
+          paused?: boolean
+          profile_id?: string | null
+          show_email?: boolean
+          show_links?: boolean
+          show_phone?: boolean
+          space_id?: string | null
+          swap_back?: boolean
+          updated_at?: string
+        }
+        Update: {
+          cardholder_perk?: string | null
+          id?: string
+          link_url?: string | null
+          mode?: string
+          paused?: boolean
+          profile_id?: string | null
+          show_email?: boolean
+          show_links?: boolean
+          show_phone?: boolean
+          space_id?: string | null
+          swap_back?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_faces_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_faces_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_taps: {
+        Row: {
+          card_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          owner_profile_id: string | null
+          owner_space_id: string | null
+          tapper_profile_id: string | null
+        }
+        Insert: {
+          card_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          owner_profile_id?: string | null
+          owner_space_id?: string | null
+          tapper_profile_id?: string | null
+        }
+        Update: {
+          card_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          owner_profile_id?: string | null
+          owner_space_id?: string | null
+          tapper_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_taps_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "member_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_taps_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_taps_owner_space_id_fkey"
+            columns: ["owner_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_taps_tapper_profile_id_fkey"
+            columns: ["tapper_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_email_reply_aliases: {
         Row: {
           alias_key: string
@@ -537,7 +656,9 @@ export type Database = {
       member_cards: {
         Row: {
           active: boolean
+          card_number: number | null
           created_at: string
+          face_space_id: string | null
           id: string
           issued_by: string | null
           last_used_at: string | null
@@ -549,7 +670,9 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          card_number?: number | null
           created_at?: string
+          face_space_id?: string | null
           id?: string
           issued_by?: string | null
           last_used_at?: string | null
@@ -561,7 +684,9 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          card_number?: number | null
           created_at?: string
+          face_space_id?: string | null
           id?: string
           issued_by?: string | null
           last_used_at?: string | null
@@ -572,6 +697,20 @@ export type Database = {
           uid_hash?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "member_cards_face_space_id_fkey"
+            columns: ["face_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_cards_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "scanner_devices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "member_cards_profile_id_fkey"
             columns: ["profile_id"]
@@ -584,13 +723,6 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_cards_issued_by_fkey"
-            columns: ["issued_by"]
-            isOneToOne: false
-            referencedRelation: "scanner_devices"
             referencedColumns: ["id"]
           },
         ]
@@ -747,6 +879,7 @@ export type Database = {
           created_at: string
           id: string
           met_day: string
+          via: string
           week_start: string
         }
         Insert: {
@@ -756,6 +889,7 @@ export type Database = {
           created_at?: string
           id?: string
           met_day: string
+          via?: string
           week_start: string
         }
         Update: {
@@ -765,6 +899,7 @@ export type Database = {
           created_at?: string
           id?: string
           met_day?: string
+          via?: string
           week_start?: string
         }
         Relationships: [
@@ -18639,10 +18774,15 @@ export type Database = {
       }
     }
     Functions: {
+      card_meet: {
+        Args: { _day: string; _owner: string; _tapper: string }
+        Returns: Json
+      }
       claim_space_email_domain_operation: {
         Args: { p_id: string }
         Returns: Json
       }
+      next_member_card_number: { Args: never; Returns: number }
       read_accepted_email_provider_attempt: {
         Args: {
           p_queue_job_id: string

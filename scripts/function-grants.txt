@@ -328,3 +328,5 @@ loyalty_hunt_progress internal
 set_space_preferences                internal
 auth_email_exists                    internal
 meet_tap                             internal
+next_member_card_number              internal
+card_meet                            internal

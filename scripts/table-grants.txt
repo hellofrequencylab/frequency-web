@@ -357,6 +357,8 @@ loyalty_hunt_stops                   internal
 loyalty_hunt_completions             internal
 scanner_devices                      internal
 member_cards                         internal
+card_faces                           internal
+card_taps                            internal
 badge_requests                       internal
 space_tags                           internal
 device_relay_settings                internal

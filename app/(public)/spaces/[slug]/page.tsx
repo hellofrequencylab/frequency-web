@@ -25,6 +25,7 @@ import { buildPublicSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
 import { FeaturedCheckin } from '@/components/spaces/featured-checkin'
+import { CardholderPerkNote } from '@/components/spaces/cardholder-perk-note'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
@@ -224,6 +225,11 @@ export default async function PublicSpacePage({
           own Suspense, so the static HTML crawlers read is unchanged (the note on `menu` above). */}
       <Suspense fallback={null}>
         <FeaturedCheckin spaceName={brandName} />
+      </Suspense>
+      {/* The cardholder perk line (LIVE-1282): what this Space offers Frequency card holders. A
+          service-role read of Space data with no viewer, so ISR is untouched. Empty unless set. */}
+      <Suspense fallback={null}>
+        <CardholderPerkNote spaceId={space.id} />
       </Suspense>
       <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
       {/* THE VISITOR'S FRONT DOOR (LIVE-524), and it sits BELOW the operator's blocks on purpose.

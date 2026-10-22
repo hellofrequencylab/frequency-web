@@ -32,6 +32,7 @@ import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
 import { RegularsNote } from '@/components/spaces/regulars-note'
 import { BadgeNote } from '@/components/spaces/badge-note'
+import { CardholderPerkNote } from '@/components/spaces/cardholder-perk-note'
 import { FeaturedCheckin } from '@/components/spaces/featured-checkin'
 import { isFollowing } from '@/lib/spaces/follows'
 import { SpaceShareButton } from '@/components/spaces/space-share-button'
@@ -822,6 +823,10 @@ export default async function SpaceProfileChromeLayout({
           <Suspense fallback={null}>
             <RegularsNote spaceId={space.id} />
           </Suspense>
+          {/* The cardholder perk line (LIVE-1282): what this Space offers Frequency card holders. Empty unless set. */}
+          <Suspense fallback={null}>
+            <CardholderPerkNote spaceId={space.id} />
+          </Suspense>
           {/* The badge line (LIVE-1180): ask this Space for a scannable badge. Empty unless scanners are on. */}
           <Suspense fallback={null}>
             <BadgeNote spaceId={space.id} slug={space.slug} viewerProfileId={viewerProfileId} />
@@ -844,6 +849,9 @@ export default async function SpaceProfileChromeLayout({
         </Suspense>
         <Suspense fallback={null}>
           <RegularsNote spaceId={space.id} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <CardholderPerkNote spaceId={space.id} />
         </Suspense>
         <Suspense fallback={null}>
           <BadgeNote spaceId={space.id} slug={space.slug} viewerProfileId={viewerProfileId} />

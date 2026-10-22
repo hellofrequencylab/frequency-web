@@ -47,6 +47,8 @@ const ZAP_CRITERIA_TYPES = new Set<string>([
   'node_capture',   // ghost-node / plaque capture
   'practice_verified', // logged a real-world practice (personal or circle)
   'practice_streak',   // daily practice-streak milestone — real-world consistency
+  'card_connects',  // met another member by tapping their member card (LIVE-1282)
+  'card_swaps',     // swapped contacts on your member card (LIVE-1282)
   'circle_start',   // founded a real circle
   'circle_activate',// activated a circle so it stands on its own
   'event_posted',     // published a town event captured from a poster — outreach

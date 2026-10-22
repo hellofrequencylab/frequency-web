@@ -47,6 +47,10 @@ export const ZAP_AMOUNTS = {
   // Tap to meet (LIVE-946): two members who met in person, once per pair a week; zap_config caps it at
   // 45 a day (three meets). Paid to both by lib/meet/store.ts.
   meetup_tap: 15,
+  // Member cards (LIVE-1282): someone pressed Swap contacts on a member's card; pays the owner,
+  // zap_config caps it at 25 a day (five swaps). A card CONNECT pays meetup_tap above (one way of
+  // meeting, one economy). Paid by lib/member-cards/rewards.ts.
+  card_swap: 5,
   program_run: 30,
   // Entry Points (ADR-126): reward setting up a funnel (capped in app to the first
   // few per member) + the activate bonus when a member you brought in shows up.

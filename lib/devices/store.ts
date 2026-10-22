@@ -198,11 +198,6 @@ export async function issueCardForHandle(device: ScannerDevice, handle: string):
   }
 }
 
-/** Whether a card token names a live card. The /c/<token> landing reads only this. */
-export async function cardTokenIsLive(tokenHash: string): Promise<boolean> {
-  return (await findActiveCard(tokenHash)) !== null
-}
-
 // ── The owner side ───────────────────────────────────────────────────────────────────────────────
 
 /**

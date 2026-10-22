@@ -53,7 +53,7 @@ type FacetFilter = (typeof FACET_TABS)[number]['key']
 const SORTS: ContactSortValue[] = ['recent', 'last_contacted', 'follow_up', 'name']
 
 const SOURCE_LABEL: Record<string, string> = {
-  card_scan: 'Scanned', poster: 'Poster', manual: 'Manual', import: 'Imported', qr_scan: 'QR scan',
+  card_scan: 'Scanned', poster: 'Poster', manual: 'Manual', import: 'Imported', qr_scan: 'QR scan', nfc_card: 'Member card',
 }
 
 function matches(c: NetworkContactListItem, facet: FacetFilter, q: string): boolean {

@@ -3,7 +3,8 @@
 // actions, the store, and the AI module can all share one vocabulary.
 
 export type Visibility = 'private' | 'shared' | 'network'
-export type ContactSource = 'manual' | 'card_scan' | 'poster' | 'import' | 'qr_scan'
+// 'nfc_card' (LIVE-1282, ADR-1874): a contact made by tapping a member card (Swap contacts on its face).
+export type ContactSource = 'manual' | 'card_scan' | 'poster' | 'import' | 'qr_scan' | 'nfc_card'
 export type ContactStatus = 'new' | 'active' | 'archived'
 export type NoteKind = 'note' | 'connection' | 'ai'
 export type TagSource = 'manual' | 'ai'
@@ -58,8 +59,9 @@ export interface ContactOtherDetail {
 /** Where and when two members met, stamped onto a QR-scan capture (CRM-STRATEGY
  *  §4). Lives in the `details` jsonb so it needs no migration. */
 export interface MetContext {
-  /** How the capture happened. Today always `'qr'` (an in-person QR scan). */
-  via: 'qr'
+  /** How the capture happened: `'qr'` (an in-person QR scan) or `'nfc_card'` (Swap contacts on a
+   *  tapped member card, LIVE-1282). */
+  via: 'qr' | 'nfc_card'
   /** Where they met: the event/Space name, else the city, else null. */
   at: string | null
   /** The day they met, ISO date (yyyy-mm-dd). */

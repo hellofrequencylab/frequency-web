@@ -178,6 +178,8 @@ function captureTouch(src: ContactSource): {
       return { channel: 'in_person', direction: 'inbound', summary: 'Met, scanned their card' }
     case 'qr_scan':
       return { channel: 'in_person', direction: 'inbound', summary: 'Met via QR' }
+    case 'nfc_card':
+      return { channel: 'in_person', direction: 'inbound', summary: 'Met by member card' }
     case 'poster':
       return { channel: 'in_person', direction: 'inbound', summary: 'Added from a poster' }
     case 'import':
