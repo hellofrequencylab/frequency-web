@@ -380,7 +380,7 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
       )
     case 'community':
       return (
-        <section id={block.anchor ?? undefined} className={`hs-section${top}`}>
+        <section id={block.anchor ?? undefined} className={`hs-section${top}`} data-hs="community">
           <div className="hs-split" style={{ alignItems: 'center', gap: 'clamp(40px,6vw,88px)' }}>
             <div className="hs-stack">
               <Heading

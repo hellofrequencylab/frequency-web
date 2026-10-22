@@ -88,7 +88,7 @@ const TEMPLE_VARS = `
 --tp-fig-700:${P.fig700};--tp-fig-500:${P.fig500};--tp-fig-300:${P.fig300};
 --tp-danger:${P.danger};--tp-danger-bg:${P.dangerBg};--tp-focus:${P.saffron500};
 --tp-on-clay:${TEMPLE_ACCENT.on};--tp-on-ink:${P.plaster100};
---tp-line:rgba(35,23,16,.12);--tp-rule:rgba(35,23,16,.22);--tp-line-on-ink:rgba(246,239,228,.24);--tp-veil:rgba(35,23,16,.06);
+--tp-line:rgba(35,23,16,.12);--tp-rule:rgba(35,23,16,.22);--tp-line-on-ink:rgba(246,239,228,.24);--tp-veil:rgba(35,23,16,.06);--tp-veil-ink:rgba(253,250,243,.06);
 --tp-glass:rgba(251,247,240,.72);--tp-glass-ink:rgba(35,23,16,.44);--tp-frame-on-photo:rgba(251,247,240,.5);--tp-row-hover:rgba(255,252,244,.72);--tp-field:rgba(255,252,244,.5);
 --tp-link-line:rgba(156,74,44,.35);--tp-dashed:rgba(35,23,16,.14);--tp-gloss:rgba(255,246,238,.28);--tp-gloss-ink:rgba(246,239,228,.16);
 --tp-d1:0 1px 1px rgba(74,53,39,.04),0 2px 6px -2px rgba(74,53,39,.09);

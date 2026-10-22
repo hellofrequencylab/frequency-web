@@ -178,6 +178,31 @@ ${N} .hs-tier:hover{transform:translateY(var(--tp-lift));box-shadow:var(--tp-d3)
 ${N} .hs-tier .hs-serif{font-size:var(--tp-size-lg)}
 ${N} .hs-chip{padding:5px 10px 4px;border-radius:var(--tp-r-xs);background:var(--tp-clay-100);color:var(--tp-clay-700);${LABEL}}
 
+/* The night band: the community section as the design's membership band, rungs as arch-soft cards on the night wash. */
+${N} .hs-section[data-hs="community"]{max-width:none;padding-top:var(--tp-section-y);background:var(--tp-wash-night);color:var(--tp-on-ink);padding-inline:max(var(--tp-gutter),calc((100% - 1160px) / 2 + var(--tp-s6)));position:relative;isolation:isolate;overflow:hidden}
+${N} .hs-section[data-hs="community"]::before{content:"";position:absolute;inset:0;background-image:var(--tp-grit);background-size:220px;opacity:calc(var(--tp-o-grit) * .85);mix-blend-mode:soft-light;pointer-events:none;z-index:-1}
+${N} .hs-section[data-hs="community"] .hs-split{grid-template-columns:minmax(0,1fr);gap:var(--tp-s12)}
+${N} .hs-section[data-hs="community"] :is(h2,.hs-serif,.hs-lead){color:var(--tp-plaster-50)}
+${N} .hs-section[data-hs="community"] .hs-lead{color:var(--tp-plaster-200)}
+${N} .hs-section[data-hs="community"] .hs-eyebrow{color:var(--tp-saffron-400)!important}
+${N} .hs-section[data-hs="community"] .hs-btn{background:transparent;color:var(--tp-plaster-50);border-color:var(--tp-line-on-ink)}
+${N} .hs-section[data-hs="community"] .hs-split>:last-child{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--tp-s6);align-items:stretch}
+${N} .hs-section[data-hs="community"] .hs-split>:last-child>:not(a){grid-column:1 / -1}
+${N} .hs-section[data-hs="community"] .hs-split>:last-child>p{font-family:var(--tp-quote);font-weight:var(--tp-weight-light);color:var(--tp-plaster-200)}
+${N} .hs-section[data-hs="community"] .hs-split>:last-child>span{color:var(--tp-plaster-300)!important}
+${N} .hs-section[data-hs="community"] .hs-tier{flex-direction:column;align-items:flex-start;padding:var(--tp-s8);border-radius:var(--tp-r-arch-soft);background:var(--tp-veil-ink);border-color:var(--tp-line-on-ink);box-shadow:none;color:var(--tp-plaster-200)}
+${N} .hs-section[data-hs="community"] .hs-tier>svg{display:none}
+${N} .hs-section[data-hs="community"] .hs-tier>span{width:100%}
+${N} .hs-section[data-hs="community"] .hs-tier>span>span:first-child{flex-direction:column;align-items:flex-start!important;gap:var(--tp-s3)!important}
+${N} .hs-section[data-hs="community"] .hs-tier .hs-muted{color:var(--tp-plaster-300)}
+${N} .hs-section[data-hs="community"] .hs-tier .hs-serif{color:var(--tp-plaster-50);font-size:var(--tp-size-xl)}
+${N} .hs-section[data-hs="community"] .hs-tier .hs-chip{order:2;padding:0;background:transparent;color:var(--tp-plaster-50);font-family:var(--tp-display);font-size:var(--tp-size-3xl);letter-spacing:var(--tp-tracking-display);text-transform:none;line-height:1}
+${N} .hs-section[data-hs="community"] .hs-tier:nth-of-type(2){background:var(--tp-plaster-50);border-color:var(--tp-line);box-shadow:var(--tp-d3);color:var(--tp-umber-800)}
+${N} .hs-section[data-hs="community"] .hs-tier:nth-of-type(2) .hs-serif,${N} .hs-section[data-hs="community"] .hs-tier:nth-of-type(2) .hs-chip{color:var(--tp-umber-900)}
+${N} .hs-section[data-hs="community"] .hs-tier:nth-of-type(2) .hs-muted{color:var(--tp-umber-600)}
+@media (max-width:960px){${N} .hs-section[data-hs="community"] .hs-split>:last-child{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:600px){${N} .hs-section[data-hs="community"] .hs-split>:last-child{grid-template-columns:minmax(0,1fr)}}
+
 /* Questions: the design's hairline accordion, Marcellus questions and a clay plus. */
 ${N} .hs-faq{border-radius:0;background:transparent;border-bottom:var(--tp-b-hair) solid var(--tp-line);box-shadow:none}
 ${N} .hs-faq[open]{background:transparent;box-shadow:none}
