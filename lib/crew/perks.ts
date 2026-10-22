@@ -11,19 +11,23 @@
 //   · flair: not built. The Vault Store sells flair for Gems, so a Crew flair needs its own render
 //     value first (lib/store/cosmetics.ts FLAIR_RENDERS), never a free copy of a bought one.
 //   · early_access: not built. No feature is in an early-access window yet.
+//   · member_card: live (LIVE-1282, ADR-1874). A numbered NTAG215 card whose tap face the member sets
+//     at /crew/card. Getting one is the perk (lib/member-cards/store.ts isCrewMember); holding and
+//     controlling a card needs no tier, so a lapsed member can still pause theirs.
 //
 // Who holds the perks: the REAL effective tier (effectiveTierFor, lib/billing/crew-grants.ts: the
 // billed column union an active Space-membership grant), never the Beta grant, the same rule caps and
 // the Crew Boost use. The callers read it; this module stays PURE because the profile skin list that
 // imports it is also imported by client components.
 
-type CrewPerk = 'themes' | 'flair' | 'early_access'
+type CrewPerk = 'themes' | 'flair' | 'early_access' | 'member_card'
 
 /** Every Crew perk beyond hosting, in the order /upgrade lists them. */
 export const CREW_PERKS: readonly { key: CrewPerk; label: string; live: boolean }[] = [
   { key: 'themes', label: 'Crew themes for your profile', live: false },
   { key: 'flair', label: 'Crew flair beside your name', live: false },
   { key: 'early_access', label: 'Early access to new features', live: false },
+  { key: 'member_card', label: 'A numbered Frequency member card', live: true },
 ]
 
 /** Profile skins only Crew may pick. Empty until a Crew theme is authored (see the header). */

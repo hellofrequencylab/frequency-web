@@ -12,6 +12,7 @@ import { CheckinCodeCard } from '@/components/spaces/checkin-code-card'
 import { CheckinRoster } from '@/components/spaces/checkin-roster'
 import { RegularsSection } from './regulars-section'
 import { ScannersSection } from './scanners-section'
+import { MemberCardsSection } from './member-cards-section'
 import { Users } from 'lucide-react'
 import type { Space } from '@/lib/spaces/types'
 
@@ -106,6 +107,11 @@ export async function CheckinSection({
       {/* COUNTER SCANNERS (LIVE-1125): NFC card readers that check members in on this same door node. */}
       <Suspense fallback={<RosterSkeleton />}>
         <ScannersSection space={space} staffViewing={staffViewing} />
+      </Suspense>
+
+      {/* MEMBER CARDS (LIVE-1282): the Space's card face and the cards registered to it. */}
+      <Suspense fallback={<RosterSkeleton />}>
+        <MemberCardsSection space={space} staffViewing={staffViewing} />
       </Suspense>
     </div>
   )

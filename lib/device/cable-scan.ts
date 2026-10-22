@@ -9,7 +9,7 @@ import type { ScanRelay } from './types'
 /** The server's answer, trimmed to the fields the board reads so the reply line stays under 512 bytes. */
 export type RelayAnswer = { status: number; body: Record<string, unknown> }
 
-const KEEP = ['ok', 'reason', 'member', 'zapsAwarded', 'loyalty'] as const
+const KEEP = ['ok', 'reason', 'member', 'zapsAwarded', 'loyalty', 'greeting', 'perk'] as const
 
 export async function forwardScan(relay: ScanRelay, endpoint = '/api/v1/devices/scan', fetcher: typeof fetch = fetch): Promise<RelayAnswer> {
   if (!relay.body || !relay.device_id || !relay.signature) return { status: 0, body: { ok: false, reason: 'bad_relay' } }
@@ -43,6 +43,8 @@ export function scanReasonText(reason: unknown): string {
       return 'Not a card for this Space'
     case 'card_mismatch':
       return 'That card was copied onto another chip'
+    case 'card_paused':
+      return 'Its owner paused this card'
     case 'already_captured':
       return 'Already checked in today'
     case 'checkin_not_set_up':

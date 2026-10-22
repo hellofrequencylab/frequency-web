@@ -1,5 +1,6 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { QrCode, ScanLine } from 'lucide-react'
+import { ChevronRight, Nfc, QrCode, ScanLine } from 'lucide-react'
 import { requireProfileId, getCallerProfile } from '@/lib/auth'
 import { resolveQrStudio, type QrStudioConfig } from '@/lib/elements/qr-studio'
 import { createClient } from '@/lib/supabase/server'
@@ -83,6 +84,21 @@ export default async function CodesPage() {
         <MemberCodes cards={cards} referralCount={referralCount ?? 0} walletEnabled={isGoogleWalletConfigured()} qrConfig={qrConfig} />
 
         <VcardEditor config={parseVcard(me.vcard)} handle={me.handle} onSave={updateMyVcard} />
+
+        {/* The door to the member card (LIVE-1282). Its contact face reads the Save contact fields above. */}
+        <Link
+          href="/crew/card"
+          className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 lift-1 press transition-[background-color,transform] hover:bg-surface-elevated motion-reduce:transition-none"
+        >
+          <Nfc className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
+          <span className="min-w-0 grow">
+            <span className="block text-body-sm font-bold text-text">Your member card</span>
+            <span className="block text-body-sm text-muted">
+              Choose what a tap of your Frequency card opens. Its contact card uses the Save contact details above.
+            </span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+        </Link>
 
         <MarketingCodesSection profileId={profileId} qrConfig={qrConfig} />
 

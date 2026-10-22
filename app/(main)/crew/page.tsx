@@ -1,4 +1,7 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { Nfc } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { DashboardTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 import { getCrewContext } from '@/lib/quest/crew-context'
@@ -33,6 +36,14 @@ export default async function CrewPage() {
 
   return (
     <DashboardTemplate
+      // The door to the member card editor (LIVE-1282): one quiet header action, not a module.
+      actions={
+        <Button asChild size="sm" variant="secondary">
+          <Link href="/crew/card">
+            <Nfc className="h-4 w-4" aria-hidden /> My card
+          </Link>
+        </Button>
+      }
       banner={
         headerImage && (
           // Intrinsic sizing (w-full h-auto, no fixed height / object-cover): the WHOLE
