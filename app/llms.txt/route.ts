@@ -53,7 +53,7 @@ function takeRateStory(input: PricingGridInput, offerings: Offering[]): string {
   // a lower rate plus the tools that build the list which takes that rate to zero", which is the
   // inverse of docs/CORE-MODEL.md. The reason and the rate are both PLAN_STORY now, one sentence
   // each, shared with /pricing so the corpus and the page cannot argue different models.
-  return `People join free, businesses host free, and you pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} Tips only, with no platform fee, plus card processing: ${tipsOnly}. ${PLAN_STORY.rate} The network fee applies ONLY to a customer the network introduced, once: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.${walls === 'nothing' ? '' : ` What needs a paid plan: ${walls}.`}`
+  return `People join free, hosting is free with Crew, and you pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} Tips only, with no platform fee, plus card processing: ${tipsOnly}. ${PLAN_STORY.rate} The network fee applies ONLY to a customer the network introduced, once: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.${walls === 'nothing' ? '' : ` What needs a paid plan: ${walls}.`}`
 }
 
 /** The plain "the ladder is X, then Y" sentence, priced from the same offerings. It states the price
@@ -82,7 +82,7 @@ const abs = (path: string) => `${SITE_URL}${path}`
 const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; label: string; desc: string }[] => [
   { path: '/', label: 'Home', desc: `${SITE_NAME}. ${CATEGORY_LINE} The short version of who it is for and how it works.` },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
-  { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, businesses host free, and you pay when you start charging. You keep 100% of your own bookings, after card processing. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
+  { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, hosting is free with Crew, and you pay when you start charging. You keep 100% of your own bookings, after card processing. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
   // /features and /vision are Frequency-design routes (they 404 under DAWN, and app/sitemap.ts lists
   // them only under Frequency), so this list names them only when the deploy serves them.
   ...(SITE_DESIGN === 'frequency'
@@ -308,7 +308,7 @@ export async function GET() {
     ...help,
     ...cities,
     '## Pricing for Spaces (not a tax on your work)',
-    `The core promise: people join free, businesses host free, and you pay when you start charging. Selling starts at Business. Your own people are always free, on every tier, forever, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective). ${PLAN_STORY.rate} The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
+    `The core promise: people join free, hosting is free with Crew, and you pay when you start charging. Selling starts at Business. Your own people are always free, on every tier, forever, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective). ${PLAN_STORY.rate} The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
     ...pricingLadderSummary(input),
     takeRateStory(input, offerings),
     '',

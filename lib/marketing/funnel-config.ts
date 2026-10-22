@@ -210,7 +210,7 @@ function breakEvenCaption(keep: string): string {
  *  is the point; Business is what a Space takes when it starts charging (ADR-1709). The per-niche
  *  clause names the moment a door's reader would actually step up. */
 function pricingIntro(stepUp: string): string {
-  return `People join free, businesses host free, and you pay when you start charging. A free Space runs the whole thing and takes tips with no platform fee, plus card processing, and your own people are always free. ${stepUp} One price, and the fee is only on the customers we introduce.`
+  return `People join free, hosting is free with Crew, and you pay when you start charging. A free Space runs the whole thing and takes tips with no platform fee, plus card processing, and your own people are always free. ${stepUp} One price, and the fee is only on the customers we introduce.`
 }
 
 /** The shared what-does-it-cost FAQ answer, with the per-niche "no network fee on ..." clause and an
