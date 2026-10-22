@@ -101,7 +101,8 @@ describe('the scroll-through calculator', () => {
     expect(html).toContain('<b>$4.99</b>')
     expect(html).not.toContain('$599')
     const calc = html.slice(html.indexOf('id="path"'), html.indexOf('</section>', html.indexOf('id="path"')))
-    expect(calc).not.toMatch(/beta/i)
+    // The one place the word appears is the Collective's $99 label (owner 2026-10-22: "Make sure $99 is Beta Pricing").
+    expect(calc.replace(/Beta pricing/g, '')).not.toMatch(/beta/i)
   })
   it('sends each button to a real door', () => {
     expect(html).toContain('href="/discover"')

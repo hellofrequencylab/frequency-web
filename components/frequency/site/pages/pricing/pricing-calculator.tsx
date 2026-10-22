@@ -257,7 +257,7 @@ function buildLayouts(): Record<CalcStepId, Layout> {
         o,
         id,
         pt(c[0], c[1], 13, off + i * 72),
-        id.startsWith("P") ? 6.5 : 2.2,
+        /^P\d$/.test(id) ? 6.5 : 2.2,
         1,
         c,
       ),
@@ -930,7 +930,7 @@ export function PricingCalculator({ model }: { model: CalcModel }) {
                       data-node={i}
                       className={nodeClass(id)}
                       style={
-                        id.startsWith("P")
+                        /^P\d$/.test(id)
                           ? {
                               backgroundImage: `url(/brand/frequency/photos/${PHOTOS[Number(id.slice(1)) - 1]})`,
                             }

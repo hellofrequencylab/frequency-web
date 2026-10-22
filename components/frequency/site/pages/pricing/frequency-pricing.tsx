@@ -388,7 +388,7 @@ export function FrequencyPricing({
 
       <KeepGoing
         title="Open your Space."
-        body={`Free until you charge. Your regulars stay at 0% ${PLAN_STORY.plusProcessing}.`}
+        body={`Your Space comes with Crew. Your regulars stay at 0% ${PLAN_STORY.plusProcessing}.`}
         primary={{ href: OPERATOR_START_HREF, label: 'Open your Space →' }}
         secondary={{ href: '#features', label: 'Compare features' }}
       />

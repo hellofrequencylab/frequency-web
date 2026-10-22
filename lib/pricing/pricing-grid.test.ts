@@ -243,7 +243,7 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
     // rate, is a false claim on the page that sells the plan. Swept across EVERY offering, not just the
     // two that moved, so the idiom cannot come back on a column nobody thought to check.
     // Collective is the one exception: its Founding intro is held open by FOUNDING_OPEN_ITEMS (ADR-1760),
-    // so it keeps the $149 anchor over $99 and the FOUNDING_RATE_NOTE, which says "Founding", never "beta".
+    // so it keeps the $149 anchor over $99 and the FOUNDING_RATE_NOTE. The owner (2026-10-22: "Make sure $99 is Beta Pricing") has that note say "Beta pricing"; no other price may.
     for (const o of allOfferings(closed)) {
       if (o.id === 'collective') {
         expect(o.listAnchor).not.toBeNull()
@@ -258,7 +258,8 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
       }
       const copy = `${o.monthly} ${o.yearly ?? ''} ${o.billing} ${o.tagline} ${o.forWho} ${o.takeRate} ${o.betaNote ?? ''}`
       expect(copy, `${o.id}`).not.toContain(BETA_RATE_NOTE)
-      expect(copy, `${o.id} must not frame its price as a beta rate`).not.toMatch(/beta/i)
+      const withoutCollectiveNote = o.id === 'collective' ? copy.replace(FOUNDING_RATE_NOTE, '') : copy
+      expect(withoutCollectiveNote, `${o.id} must not frame its price as a beta rate`).not.toMatch(/beta/i)
     }
     // And no cell of either rendered comparison grid mentions one either.
     for (const grid of [spaceFeatureGrid(closed), memberFeatureGrid(closed)]) {
