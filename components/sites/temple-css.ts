@@ -269,5 +269,53 @@ ${M} .mw-closing{border-radius:0;background:var(--tp-wash-night);color:var(--tp-
 ${M} .mw-fact-v{font-family:var(--tp-display);font-weight:var(--tp-weight-regular)}
 ${M} .mw-quote{font-family:var(--tp-quote);font-style:italic;font-weight:var(--tp-weight-light)}
 
+/* THE DESIGN'S TEXTURE, PATTERN, MOTIF AND SHAPE UTILITIES (tokens/textures.css) as tp-* classes, each at its approved opacity. */
+${N} :is(.tp-sand,.tp-grit,.tp-grain,.tp-stucco,.tp-contour,.tp-linen,.tp-terrazzo,.tp-lattice,.tp-archrow,.tp-star,.tp-scallop,.tp-wave){position:relative;isolation:isolate}
+${N} :is(.tp-sand,.tp-grit,.tp-grain,.tp-stucco,.tp-contour,.tp-linen,.tp-terrazzo,.tp-lattice,.tp-archrow,.tp-star,.tp-scallop,.tp-wave)::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1}
+${N} .tp-grain::before{background-image:var(--tp-tex-plaster);background-size:240px;opacity:var(--tp-o-grain);mix-blend-mode:multiply}
+${N} .tp-sand::before{background-image:var(--tp-sand);background-size:200px;opacity:var(--tp-o-sand);mix-blend-mode:multiply}
+${N} .tp-grit::before{background-image:var(--tp-grit);background-size:300px;opacity:var(--tp-o-grit);mix-blend-mode:overlay}
+${N} .tp-grit--ink::before{mix-blend-mode:soft-light;opacity:calc(var(--tp-o-grit) * .85);background-size:220px}
+${N} .tp-stucco::before{background-image:var(--tp-stucco);background-size:cover;opacity:var(--tp-o-stucco);mix-blend-mode:multiply}
+${N} .tp-contour::before{background-image:var(--tp-tex-contour);background-size:320px;opacity:var(--tp-o-line)}
+${N} .tp-linen::before{background-image:var(--tp-tex-linen);background-size:24px;opacity:var(--tp-o-tile)}
+${N} .tp-terrazzo::before{background-image:var(--tp-tex-terrazzo);background-size:180px;opacity:.5}
+${N} .tp-lattice::before{background-image:var(--tp-pat-arch);background-size:120px 160px;opacity:var(--tp-o-line)}
+${N} .tp-archrow::before{background-image:var(--tp-pat-arch-row);background-size:72px 96px;opacity:var(--tp-o-tile)}
+${N} .tp-star::before{background-image:var(--tp-pat-star);background-size:80px;opacity:var(--tp-o-tile)}
+${N} .tp-scallop::before{background-image:var(--tp-pat-scallop);background-size:96px 48px;background-repeat:repeat-x;background-position:top center;opacity:var(--tp-o-line)}
+${N} .tp-wave::before{background-image:var(--tp-pat-wave);background-size:120px 36px;opacity:var(--tp-o-line)}
+${N} .tp-edge-top::before{inset:0 0 auto 0;height:var(--tp-s24)}
+${N} .tp-edge-bottom::before{inset:auto 0 0 0;height:var(--tp-s24)}
+${N} .tp-motif{position:relative;overflow:hidden;isolation:isolate}
+${N} .tp-motif::after{content:"";position:absolute;top:-8%;right:-6%;width:42%;height:116%;background-image:var(--tp-motif-palm);background-repeat:no-repeat;background-position:top right;background-size:contain;opacity:var(--tp-o-motif);mix-blend-mode:multiply;pointer-events:none;z-index:-1}
+${N} .tp-motif--left::after{right:auto;left:-6%;background-position:top left;transform:scaleX(-1)}
+${N} .tp-motif--fan::after{background-image:var(--tp-palm-fan);width:48%;top:auto;bottom:-24%;height:120%;background-position:bottom right}
+${N} .tp-motif--olive::after{background-image:var(--tp-motif-olive)}
+${N} .tp-motif--fig::after{background-image:var(--tp-motif-fig);width:34%}
+${N} .tp-motif--agave::after{background-image:var(--tp-motif-agave);width:46%;top:auto;bottom:-16%;height:78%;background-position:bottom right}
+${N} .tp-motif--laurel::after{background-image:var(--tp-motif-laurel);width:58%;right:50%;transform:translateX(50%);top:-10%;height:60%;background-position:top center}
+${N} .tp-motif--rays::after{top:auto;bottom:-26%;right:50%;transform:translateX(50%);width:56%;height:46%;background-position:bottom center;background-image:var(--tp-rays)}
+${N} .tp-motif--sun::after{top:-14%;right:50%;transform:translateX(50%);width:76%;height:62%;background-position:top center;background-image:var(--tp-motif-sun-arc)}
+${N} .tp-motif--on-ink::after{mix-blend-mode:screen;filter:brightness(0) invert(1)}
+${N} .tp-motif--bold::after{width:60%;top:-16%;height:132%;opacity:calc(var(--tp-o-motif) * 1.25)}
+${N} .tp-blob{position:relative;overflow:hidden;isolation:isolate}
+${N} .tp-blob::before{content:"";position:absolute;top:-22%;left:-12%;width:58%;height:140%;background-image:var(--tp-blob);background-repeat:no-repeat;background-size:contain;pointer-events:none;z-index:-1}
+${N} .tp-blob--leaf::before{background-image:var(--tp-blob-leaf);left:auto;right:-14%}
+${N} .tp-blob--pebble::before{background-image:var(--tp-blob-pebble);top:auto;bottom:-28%;left:-16%;width:64%;height:120%;background-position:bottom left}
+${N} .tp-blob--arch::before{background-image:var(--tp-blob-arch);left:auto;right:-8%;top:-10%;width:40%;height:130%;background-position:top right}
+/* The ten line icons draw in the text colour: the SVG is a mask over currentColor. */
+${N} .tp-icon{display:inline-block;width:var(--tp-s6);height:var(--tp-s6);background:currentColor;-webkit-mask:var(--tp-icon) center/contain no-repeat;mask:var(--tp-icon) center/contain no-repeat;flex:none}
+${N} .tp-icon--arch-door{--tp-icon:var(--tp-icon-arch-door)}
+${N} .tp-icon--candle{--tp-icon:var(--tp-icon-candle)}
+${N} .tp-icon--incense{--tp-icon:var(--tp-icon-incense)}
+${N} .tp-icon--long-table{--tp-icon:var(--tp-icon-long-table)}
+${N} .tp-icon--moon-phase{--tp-icon:var(--tp-icon-moon-phase)}
+${N} .tp-icon--olive-branch{--tp-icon:var(--tp-icon-olive-branch)}
+${N} .tp-icon--palm{--tp-icon:var(--tp-icon-palm)}
+${N} .tp-icon--stone-stack{--tp-icon:var(--tp-icon-stone-stack)}
+${N} .tp-icon--sun-crescent{--tp-icon:var(--tp-icon-sun-crescent)}
+${N} .tp-icon--water-ripple{--tp-icon:var(--tp-icon-water-ripple)}
+
 @media (prefers-reduced-motion:reduce){${N} .hs-btn,${N} .hs-btn svg,${N} .hs-card,${N} .hs-tier,${N} .hs-start,${N} .hs-step-n,${N} .hs-photo img,${N} .hs-logo-image{transition:none}${N} .hs-btn:hover,${N} .hs-btn:active,${N} .hs-btn:hover svg,${N} .hs-card:hover,${N} .hs-tier:hover,${N} .hs-start:hover{transform:none}${N} .hs-header{animation:none}}
 `

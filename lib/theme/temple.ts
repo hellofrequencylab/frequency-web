@@ -113,6 +113,11 @@ const TEMPLE_VARS = `
 --tp-blur:saturate(120%) blur(14px);
 --tp-sand:url("${T}/textures/sand-fine.svg");--tp-grit:url("${T}/textures/grit-speck.svg");--tp-stucco:url("${T}/textures/stucco-wash.svg");
 --tp-palm-fan:url("${T}/textures/palm-fan.svg");--tp-rays:url("${T}/textures/ray-fan.svg");
+--tp-tex-plaster:url("${T}/textures/plaster-grain.svg");--tp-tex-contour:url("${T}/textures/contour-lines.svg");--tp-tex-linen:url("${T}/textures/tile-linen.svg");--tp-tex-terrazzo:url("${T}/textures/tile-terrazzo.svg");
+--tp-pat-arch:url("${T}/textures/arch-lattice.svg");--tp-pat-arch-row:url("${T}/textures/tile-arch-row.svg");--tp-pat-star:url("${T}/textures/tile-star.svg");--tp-pat-scallop:url("${T}/textures/tile-scallop.svg");--tp-pat-wave:url("${T}/textures/tile-wave.svg");
+--tp-motif-palm:url("${T}/textures/palm-frond.svg");--tp-motif-olive:url("${T}/textures/olive-sprig.svg");--tp-motif-fig:url("${T}/textures/fig-leaf.svg");--tp-motif-agave:url("${T}/textures/agave.svg");--tp-motif-sun-arc:url("${T}/textures/sun-arc.svg");--tp-motif-laurel:url("${T}/textures/laurel-arc.svg");
+--tp-blob:url("${T}/textures/blob-soft.svg");--tp-blob-leaf:url("${T}/textures/blob-leaf.svg");--tp-blob-pebble:url("${T}/textures/blob-pebble.svg");--tp-blob-arch:url("${T}/textures/blob-arch.svg");
+--tp-icon-arch-door:url("${T}/icons/arch-door.svg");--tp-icon-candle:url("${T}/icons/candle.svg");--tp-icon-incense:url("${T}/icons/incense.svg");--tp-icon-long-table:url("${T}/icons/long-table.svg");--tp-icon-moon-phase:url("${T}/icons/moon-phase.svg");--tp-icon-olive-branch:url("${T}/icons/olive-branch.svg");--tp-icon-palm:url("${T}/icons/palm.svg");--tp-icon-stone-stack:url("${T}/icons/stone-stack.svg");--tp-icon-sun-crescent:url("${T}/icons/sun-crescent.svg");--tp-icon-water-ripple:url("${T}/icons/water-ripple.svg");
 --tp-o-grain:.055;--tp-o-sand:.09;--tp-o-grit:.16;--tp-o-stucco:.08;--tp-o-line:.11;--tp-o-tile:.09;--tp-o-motif:.2;
 --tp-size-2xs:12px;--tp-size-xs:13px;--tp-size-sm:15px;--tp-size-base:clamp(16px,1.05vw,19px);--tp-size-md:clamp(18px,1.2vw,21px);--tp-size-lg:clamp(21px,1.5vw,26px);--tp-size-xl:clamp(25px,1.9vw,32px);
 --tp-size-2xl:clamp(30px,2.4vw,42px);--tp-size-3xl:clamp(36px,3vw,52px);--tp-size-4xl:clamp(42px,3.8vw,66px);--tp-size-5xl:clamp(48px,5vw,86px);--tp-size-6xl:clamp(60px,6.4vw,110px);
