@@ -53,7 +53,7 @@ export const PLAN_STORY = {
   /** WHY a plan, in the model's own terms: free hosting is the point, and a plan is what you take when
    *  you start charging. Every surface interpolates this instead of arguing it again. */
   paid:
-    'Hosting is free, and that is the point, not a teaser. A free Space runs the whole thing: your page, Circles, Events, contacts, email, bookings and Journeys, with limits sized for a launch. Business is what you take when you start charging. Collective is for separate groups that partner, and Network is for one organization with chapters.',
+    'Hosting is free, and that is the point, not a teaser. A Space comes with Crew, which you fund at whatever amount you choose, and after that a free Space runs the whole thing: your page, Circles, Events, contacts, email, bookings and Journeys, with limits sized for a launch. Business is what you take when you start charging. Collective is for separate groups that partner, and Network is for one organization with chapters.',
   /** The selling line: where taking money starts, and the one kind of money every tier receives. */
   selling:
     'Selling starts at Business. Paid tickets, paid memberships, donations, shop checkout and booking deposits open there. Tips stay open on every tier, with no platform fee, only card processing.',
@@ -64,9 +64,13 @@ export const PLAN_STORY = {
   /** The meter framing: a full meter stops new writes and takes nothing away. */
   meters:
     'Every business tool is on every Space plan. The free limits are sized for a launch, and a full meter only stops new writes. It never hides, deletes, or locks what is already there.',
+  /** The Space and Crew upsell in one line, for any surface that opens a Space: the page, the doors, the
+   *  emails. The requirement is ADR-810's creation gate, which bites when the beta ends. */
+  crewSpace:
+    'A Space comes with Crew, which you fund at whatever amount you choose. Until the beta ends, anyone can open one free.',
   /** Crew in one breath: support plus a host kit, in the canon's words (ADR-1084). */
   crew:
-    'Crew is how a member backs the community and hosts a little more. You contribute what you want, and every amount buys the same Crew: more Circles, Events and Journeys, and a monthly Boost for a Circle or Space you love.',
+    'Crew is how a member backs the community and hosts more, and a Space comes with it. You contribute what you want, and every amount buys the same Crew: more Circles, Events and Journeys, and a monthly Boost for a Circle or Space you love.',
   /** Collective in one breath: separate groups that partner (the 2026-10-16 split; Network is the
    *  one-owner-with-chapters plan). */
   collective:

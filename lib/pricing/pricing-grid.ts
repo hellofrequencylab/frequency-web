@@ -181,7 +181,7 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   free: {
     tagline: 'Host free. The whole thing.',
     forWho:
-      'Anyone opening a Space, for as long as they want. Every business tool, with limits sized for a launch, and tips with no platform fee, only card processing. No card, no clock.',
+      'Anyone opening a Space. It comes with Crew, which you fund at whatever amount you choose. Every business tool, with limits sized for a launch, and tips with no platform fee, only card processing.',
   },
   business: {
     tagline: 'Selling starts here.',
@@ -566,7 +566,7 @@ function resolveCell(source: RowSource, column: GridColumn, input: PricingGridIn
       return addonCell(source.addon, column, input)
     case 'trial': {
       const note = trialNote(input.values)
-      if (!isPaidColumn(column) || column.axis !== 'plan') return { kind: 'value', text: 'No card, no clock' }
+      if (!isPaidColumn(column) || column.axis !== 'plan') return { kind: 'value', text: 'Comes with Crew' }
       return note ? { kind: 'value', text: note.replace(/\.$/, '') } : NO
     }
     case 'always':
@@ -908,7 +908,7 @@ const MEMBER_GROUPS: GroupDef[] = [
       {
         key: 'space',
         label: 'A Space of your own',
-        detail: 'A free Space is open to anyone. Crew is not required to run one.',
+        detail: 'A Space comes with Crew. Until the beta ends, anyone can open one free.',
         source: { from: 'always' },
       },
     ],
