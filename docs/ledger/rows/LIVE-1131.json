@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-1131",
+  "title": "Door names: Coaches and guides, Studios and instructors",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/four-launch-doors.mjs"
+  },
+  "detail": "Owner ask 2026-10-22: name the first two launch doors Coaches and Guides and Studios and instructors. Labels, eyebrows and meta copy change; addresses stay; /for/teachers now redirects to /for/studios (ADR-1864).",
+  "closed": "2026-10-22",
+  "wave": "W7"
+}

@@ -227,16 +227,16 @@ const COACHES_FUNNEL: FunnelConfig = {
   niche: 'coaches',
   archetypes: ['second_act'],
   hero: {
-    eyebrow: 'For coaches, healers, and guides',
+    eyebrow: 'For coaches and guides',
     h1: 'Your practice, without the six tabs.',
-    seoTitle: 'Booking + contacts software for coaches and healers',
+    seoTitle: 'Booking + contacts software for coaches and guides',
     subhead:
       "Bookings, payments, and every person you've met, together in one place. Frequency keeps your relationships close, so the people you meet come back, and bring the next ones. Start free.",
     microcopy: 'No card. You pay when you start charging.',
     trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
-    'Frequency gives coaches and healers bookings, payments, and one contact list in one place, so clients rebook and refer. Free to start, no card.',
+    'Frequency gives coaches and guides bookings, payments, and one contact list in one place, so clients rebook and refer. Free to start, no card.',
   problem: {
     header: 'The work is the calling. The admin is the tax.',
     body: 'Your calendar lives in one app, payments in another, client notes in a notebook and in your head. You mean to follow up, and the day gets away from you. So the client who came once never books again, and you never quite know why. None of it is why you started.',
@@ -323,16 +323,16 @@ const STUDIOS_FUNNEL: FunnelConfig = {
   niche: 'studios',
   archetypes: ['studio_keeper'],
   hero: {
-    eyebrow: 'For studios and class-based spaces',
+    eyebrow: 'For studios and instructors',
     h1: 'Every class, every member, one place.',
-    seoTitle: 'Membership + class booking software for studios',
+    seoTitle: 'Membership + class booking software for studios and instructors',
     subhead:
-      "Recurring classes, memberships, and check-in at the door, together in one place. Frequency keeps your members close, so the regulars come back and bring the next ones. Start free.",
+      "Recurring classes, memberships, and check-in at the door, together in one place, whether you run the room or teach in several. Frequency keeps your students close, so the regulars come back and bring the next ones. Start free.",
     microcopy: 'No card. You pay when you start charging.',
     trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
-    'Frequency gives studios recurring classes, memberships, and door check-in in one place, so members rebook and refer. Free to start, no card.',
+    'Frequency gives studios and instructors recurring classes, memberships, and door check-in in one place, so students rebook and refer. Free to start, no card.',
   problem: {
     header: 'The classes are full. The back office is a mess.',
     body: 'Your schedule lives in one app, memberships in another, and the front desk keeps a paper list. A member lapses and you catch it a month later. The regular who could bring three friends never gets asked. None of that is why you opened the doors.',

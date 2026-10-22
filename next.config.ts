@@ -437,7 +437,7 @@ const nextConfig: NextConfig = {
       // the guard in lib/marketing/funnel-redirects.test.ts now fails if one does.
       // ADR-1863: the launch has six doors. The two retired ones land on the closest survivor.
       { source: '/for/community-builders', destination: '/for/venues', permanent: true },
-      { source: '/for/teachers', destination: '/for/coaches-and-healers', permanent: true },
+      { source: '/for/teachers', destination: '/for/studios', permanent: true },
       { source: '/for/event-spaces', destination: '/pricing', permanent: false },
       { source: '/for/service-businesses', destination: '/pricing', permanent: false },
       { source: '/for/product-businesses', destination: '/pricing', permanent: false },
