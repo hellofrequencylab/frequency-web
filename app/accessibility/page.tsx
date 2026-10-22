@@ -43,7 +43,6 @@ export default function AccessibilityPage() {
         <h2 className={LEGAL.h2}>What we know falls short</h2>
         <p className={LEGAL.p}>As of October 22, 2026, these are open:</p>
         <ul className={LEGAL.ul}>
-          <li>The site search window does not yet hold keyboard focus inside it while it is open.</li>
           <li>Decorative background motion stops only when your device asks for reduced motion. There is no pause button yet.</li>
           <li>Some text fields on the help page show a hint inside the box instead of a visible label.</li>
         </ul>
