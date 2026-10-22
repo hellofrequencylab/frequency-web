@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1028",
+  "title": "The header search window holds focus, returns it, and has valid roles (SCAN-1028)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/site/shell/site-header.tsx",
+    "ref": "Public site audit 2026-10-22, finding 9 (/mnt/project-files/audits/site-seo-geo-a11y-2026-10-22.md)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-22. The search dialog declared aria-modal but let Tab leave it and never gave focus back; its results wrapped plain links in role listbox (invalid); and a bare slash key opened it, which WCAG 2.1.4 asks us not to do. Tab now wraps inside the window, closing returns focus to the opener, the results are a labelled group, and the shortcut is Ctrl or Cmd + K with a plain Search label on the buttons.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/frequency/site/shell/site-header.tsx','utf8');const bad=[];if(s.includes('role=\\\"listbox\\\"'))bad.push('results still claim listbox');if(s.includes(\\\"e.key === '/'\\\"))bad.push('bare slash shortcut is back');if(!s.includes('searchRef'))bad.push('search window has no focus trap');if(bad.length){console.error('SCAN-1028: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the search window loses its focus trap, regains an invalid listbox role, or opens on a bare key."
+  },
+  "closed": "2026-10-22",
+  "wave": "W7"
+}
