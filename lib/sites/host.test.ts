@@ -4,7 +4,9 @@ import {
   APP_HOST_PATTERN,
   RESERVED_SITE_SUBDOMAINS,
   SITE_BASE_DOMAIN,
+  chapterHostParts,
   isAppHost,
+  networkChapterHost,
   normalizeHost,
   parseAppHosts,
   routeSiteHost,
@@ -310,5 +312,38 @@ describe('subdomainSiteRedirect (SCAN-896)', () => {
     for (const path of ['/admin', '/admin/', '/admin/editor', '/admin/enter', '/api/anything', '/robots.txt', '/sitemap.xml', '/llms.txt', '/spotlight-click', '/confirm-booking', '/opengraph-image']) {
       expect(subdomainSiteRedirect(sub, path, '?token=t', 'danieltyack.com')).toBeNull()
     }
+  })
+})
+
+describe('chapter subdomains on a Network domain', () => {
+  it('spells a chapter host under the Network domain', () => {
+    expect(networkChapterHost('encinitas', 'thegrouplocal.com')).toBe('encinitas.thegrouplocal.com')
+    expect(networkChapterHost(' Oceanside ', 'TheGroupLocal.com')).toBe('oceanside.thegrouplocal.com')
+  })
+
+  it('refuses a reserved or invalid slug, a missing domain and a Frequency domain', () => {
+    expect(networkChapterHost('www', 'thegrouplocal.com')).toBeNull()
+    expect(networkChapterHost('spotlight', 'thegrouplocal.com')).toBeNull()
+    expect(networkChapterHost('not a label', 'thegrouplocal.com')).toBeNull()
+    expect(networkChapterHost('encinitas', null)).toBeNull()
+    expect(networkChapterHost('encinitas', 'frequencylocal.com')).toBeNull()
+  })
+
+  it('reads the label and Network domain off a chapter host', () => {
+    expect(chapterHostParts('encinitas.thegrouplocal.com')).toEqual({ label: 'encinitas', networkDomain: 'thegrouplocal.com' })
+    expect(chapterHostParts('Oceanside.TheGroupLocal.com:443')).toEqual({ label: 'oceanside', networkDomain: 'thegrouplocal.com' })
+  })
+
+  it('is not a chapter host: an apex, a Frequency host, a spotlight host, a reserved label, a deeper host', () => {
+    expect(chapterHostParts('thegrouplocal.com')).toBeNull()
+    expect(chapterHostParts('danieltyack.frequencylocal.com')).toBeNull()
+    expect(chapterHostParts('spotlight.thegrouplocal.com')).toBeNull()
+    expect(chapterHostParts('www.thegrouplocal.com')).toBeNull()
+    expect(chapterHostParts('a.b.thegrouplocal.com')).toEqual({ label: 'a', networkDomain: 'b.thegrouplocal.com' })
+  })
+
+  it('routes a chapter host to the site route like any custom-domain site', () => {
+    expect(routeSiteHost('encinitas.thegrouplocal.com', '/', '')).toEqual({ kind: 'rewrite', pathname: '/hosted/encinitas.thegrouplocal.com' })
+    expect(routeSiteHost('encinitas.thegrouplocal.com', '/sitemap.xml', '')).toEqual({ kind: 'rewrite', pathname: '/hosted/encinitas.thegrouplocal.com/site-sitemap' })
   })
 })

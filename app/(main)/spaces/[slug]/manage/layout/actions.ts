@@ -34,6 +34,7 @@ import {
   type DomainStatus,
 } from '@/lib/sites/vercel-domains'
 import { appOrigin } from '@/lib/sites/host'
+import { attachChapterHostFor, attachChapterHosts } from '@/lib/sites/chapter-hosts'
 import { DC_RETURN_PATH } from '@/lib/sites/domain-connect/constants'
 import { findOneClickConnect, type OneClickConnect } from '@/lib/sites/domain-connect/discovery'
 import { signDomainConnectState } from '@/lib/sites/domain-connect/state'
@@ -485,6 +486,9 @@ export async function setWebsitePublished(slug: string, published: boolean): Pro
     }
   }
 
+  // A chapter of a Network on its own domain also lives at `<slug>.<that domain>` (lib/sites/chapter-hosts.ts).
+  if (published) await attachChapterHostFor(auth.spaceId)
+
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -553,6 +557,8 @@ export async function connectSiteDomain(slug: string, input: string): Promise<Ac
         return fail('That domain is already in use on another Vercel account. Remove it there first, then connect it here.')
       }
       // The domain stays saved; Check again retries the attach.
+    } else {
+      await attachChapterHosts(auth.spaceId)
     }
   }
 
@@ -573,6 +579,7 @@ export async function checkSiteDomain(slug: string): Promise<ActionResult<Domain
     await addSiteDomain(auth.domain)
     status = await siteDomainStatus(auth.domain)
   }
+  if (vercelDomainsConfigured()) await attachChapterHosts(auth.spaceId)
   return ok({ domain: auth.domain, ...status })
 }
 

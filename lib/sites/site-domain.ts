@@ -1,6 +1,7 @@
-import { getSpaceByDomain } from '@/lib/spaces/store'
+import { getSpaceByDomain, getSpaceHostRow } from '@/lib/spaces/store'
 import { briefError, log } from '@/lib/log'
-import { isAppHost, normalizeHost } from '@/lib/sites/host'
+import { isAppHost, networkChapterHost, normalizeHost } from '@/lib/sites/host'
+import { isNetworkPlan } from '@/lib/collective/member-spaces'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import type { Space } from '@/lib/spaces/types'
 
@@ -12,10 +13,33 @@ import type { Space } from '@/lib/spaces/types'
 // so a Space that lost the gate stops claiming a domain it no longer serves). Anything else is the
 // /sites/<slug> origin. The domain read only runs when spaces.domain is set, which is rare.
 
-/** The bound domain of a Space's website, or null when the site lives at /sites/<slug>. */
-export async function boundSiteDomain(space: Pick<Space, 'id' | 'domain'>): Promise<string | null> {
+/** What a Space needs to say whether it is a chapter on its Network's domain. A caller with only
+ *  `{ id, domain }` simply never gets a chapter address. */
+type ChapterFields = Partial<Pick<Space, 'slug' | 'parentId' | 'ownerProfileId'>>
+
+/** A chapter's address on its Network's domain (`encinitas.thegrouplocal.com`), or null. A Space with a
+ *  domain of its own keeps it. Otherwise: it is a same-owner child of an active Network whose own domain
+ *  is bound and served (boundSiteDomain), and its slug can be a label. One read of the parent, only for
+ *  a Space that has one. */
+export async function chapterSiteHost(space: Pick<Space, 'domain'> & ChapterFields): Promise<string | null> {
+  if (space.domain || !space.parentId || !space.slug) return null
+  try {
+    const parent = await getSpaceHostRow(space.parentId)
+    if (!parent || parent.status !== 'active' || !parent.domain || !isNetworkPlan(parent.plan)) return null
+    if (space.ownerProfileId && parent.owner_profile_id !== space.ownerProfileId) return null
+    return networkChapterHost(space.slug, await boundSiteDomain({ id: parent.id, domain: parent.domain }))
+  } catch (err) {
+    log.warn('chapter_site_host_failed', { slug: space.slug, message: briefError(err) })
+    return null
+  }
+}
+
+/** The bound domain of a Space's website, or null when the site lives at /sites/<slug>. A chapter of a
+ *  Network that holds a domain is bound to its address on that domain (chapterSiteHost). */
+export async function boundSiteDomain(space: Pick<Space, 'id' | 'domain'> & ChapterFields): Promise<string | null> {
   const domain = normalizeHost(space.domain)
-  if (!domain || isAppHost(domain)) return null
+  if (!domain) return chapterSiteHost(space)
+  if (isAppHost(domain)) return null
   try {
     const served = await getSpaceByDomain(domain)
     return served?.id === space.id ? domain : null
@@ -30,7 +54,7 @@ export async function boundSiteDomain(space: Pick<Space, 'id' | 'domain'>): Prom
 /** The custom domain a Space's website is LIVE on: bound (boundSiteDomain) and published, the same test
  *  the Space profile's canonical uses (lib/spaces/profile-metadata.ts siteTwinCanonical). Null otherwise.
  *  No database read unless spaces.domain is set. The free subdomain redirects here (SCAN-896). */
-export async function liveSiteDomain(space: Pick<Space, 'id' | 'domain' | 'preferences'>): Promise<string | null> {
-  if (!space.domain || !readWebsitePublished(space.preferences)) return null
+export async function liveSiteDomain(space: Pick<Space, 'id' | 'domain' | 'preferences'> & ChapterFields): Promise<string | null> {
+  if ((!space.domain && !space.parentId) || !readWebsitePublished(space.preferences)) return null
   return boundSiteDomain(space)
 }
