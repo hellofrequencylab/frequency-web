@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1295",
+  "title": "Member cards count the owner's own taps, and a card the owner has set opens its link for them too",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/member-card-own-taps.mjs"
+  },
+  "detail": "Owner report 2026-10-22, after LIVE-1282 shipped: his card opened his Spotlight but \"it didn't log my last bump\", and My card said \"Checks in at every Space\" on a card that no longer checks in anywhere. Three changes. /c/<token> now logs the owner's own tap as an 'open'; it still pays no Zaps and files no contact. The owner goes to /crew/card only while the card is on its default (page mode); once they have set a link or the virtual card, their own tap goes there like anyone's, so they can test it. The My card list calls a Frequency-wide card \"Your Frequency card\", and the editor says Zaps come when a member taps your card, not on every tap. Follows LIVE-1282 and ADR-1874; no migration.",
+  "wave": "W7"
+}
