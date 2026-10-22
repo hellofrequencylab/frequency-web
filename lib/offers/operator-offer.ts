@@ -7,7 +7,7 @@
 //   - once it has passed, checkout stops charging the Beta price for this person
 //     (lib/billing/space-plan-checkout.ts), so the deadline is real.
 
-export const OFFER_HOURS = 72
+const OFFER_HOURS = 72
 
 const HOUR_MS = 3_600_000
 

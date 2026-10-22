@@ -10,7 +10,7 @@ import { offerEndsAtMs, readOperatorOffer, type OperatorOffer } from './operator
 /** When the first full-screen offer is due: the owner has a Space and either added a real thing to it
  *  (an event or a contact) or 24 hours have passed since they created it. Fail-quiet: any read error
  *  means "not yet", never a wrong offer. */
-export async function offerIsDue(profileId: string): Promise<boolean> {
+async function offerIsDue(profileId: string): Promise<boolean> {
   try {
     const db = createAdminClient()
     const { data: spaces } = await db

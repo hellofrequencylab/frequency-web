@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { startOperatorOffer } from '@/lib/offers/operator-offer-server'
 import { BETA_ENDS_LABEL } from '@/lib/core/beta-notices'
 import { BillingBody } from '../spaces/[slug]/settings/billing/billing-body'
@@ -22,7 +22,7 @@ export default async function OfferPage({ searchParams }: { searchParams: Promis
   if (!caller) redirect('/sign-in?next=/offer')
 
   const { space: requested } = await searchParams
-  const db = createAdminClient()
+  const db = await createClient()
   const { data: spaces } = await db
     .from('spaces')
     .select('slug, name')

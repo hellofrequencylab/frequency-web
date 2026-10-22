@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { OFFER_HOURS, formatRemaining, offerEndsAtMs, readOperatorOffer } from './operator-offer'
+import { formatRemaining, offerEndsAtMs, readOperatorOffer } from './operator-offer'
 
 const HOUR = 3_600_000
 
 describe('timed Beta offer', () => {
   it('runs 72 hours', () => {
-    expect(offerEndsAtMs(0, null)).toBe(OFFER_HOURS * HOUR)
+    expect(offerEndsAtMs(0, null)).toBe(72 * HOUR)
   })
   it('never runs past the Beta end', () => {
     expect(offerEndsAtMs(0, 10 * HOUR)).toBe(10 * HOUR)
