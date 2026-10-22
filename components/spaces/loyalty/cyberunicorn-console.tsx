@@ -1117,7 +1117,7 @@ export function CyberUnicornConsole({
     const q = pageQuery.trim()
     if (!q) return
     // A pasted link is the page itself: no search needed.
-    if (q.startsWith('/') || /^(https?:\/\/)?(www\.)?frequencylocal\.com/i.test(q)) {
+    if (q.startsWith('/') || /^(https?:\/\/)?(www\.)?frequencylocal\.com(\/|$)/i.test(q)) {
       setPageResults(null)
       setPageTarget({ kind: 'page', label: q.replace(/^https?:\/\/(www\.)?/i, ''), detail: null, path: q })
       return
