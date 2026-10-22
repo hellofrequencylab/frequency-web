@@ -11,7 +11,8 @@ const check = process.argv[2]
 const bad = []
 
 if (check === 'profiles') {
-  const site = r('lib/site.ts')
+  // Only the SOCIAL_PROFILES array counts; the label map beside it names hosts without listing a profile.
+  const site = (r('lib/site.ts').match(/export const SOCIAL_PROFILES = \[[\s\S]*?\]/) ?? [''])[0]
   for (const host of ['linkedin.com', 'youtube.com', 'facebook.com']) {
     if (!site.includes(host)) bad.push(`SOCIAL_PROFILES in lib/site.ts has no ${host} profile`)
   }
