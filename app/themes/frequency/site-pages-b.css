@@ -761,6 +761,7 @@ position:relative;background:var(--pc-void);color:var(--pc-body);font-family:var
 [data-design="frequency"] [data-kit="site"] .pa-detail{margin:0;font:400 14px/1.5 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="site"] .pa-who{margin:auto 0 0;padding-top:8px;display:flex;flex-direction:column;gap:2px;font:500 14px/1.35 var(--fq-font-sans);color:var(--fq-text-body)}
 [data-design="frequency"] [data-kit="site"] .pa-who span{font:500 13px/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="site"] .pa-cta{margin:0;padding-top:12px}
 [data-design="frequency"] [data-kit="site"] .pa-fees{list-style:none;margin:0;padding:0;display:grid;gap:0;max-width:720px}
 [data-design="frequency"] [data-kit="site"] .pa-fees li{display:grid;grid-template-columns:minmax(0,9rem) minmax(0,1fr);gap:16px;align-items:baseline;padding:14px 0;border-top:1px solid var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="site"] .pa-fees li:last-child{border-bottom:1px solid var(--fq-border-hair)}
