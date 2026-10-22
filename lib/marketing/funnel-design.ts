@@ -12,14 +12,14 @@ export const NICHE_PHOTO_DIR = '/brand/frequency/photos'
 export type StepScreen = 'page' | 'list' | 'cal' | 'pay' | 'invite' | 'check' | 'verify' | 'gift'
 
 /** The H1 as the design sets it: a lead, then the iridescent italic part on its own lines. */
-export interface NicheH1 {
+interface NicheH1 {
   lead: string
   em: readonly string[]
   /** Break the line between the lead and the italic part (the Coaches door). */
   br?: boolean
 }
 
-export interface NicheDesign {
+interface NicheDesign {
   /** The breadcrumb name and the example Space's subtitle. */
   short: string
   photo: string
@@ -55,9 +55,9 @@ export type ToolId =
   | 'donations'
 
 /** One row of a tool preview: icon, title, line, and an optional status pill (on = the highlighted one). */
-export type ToolRow = readonly [icon: FqIconName, title: string, line: string, pill?: string, on?: boolean]
+type ToolRow = readonly [icon: FqIconName, title: string, line: string, pill?: string, on?: boolean]
 
-export interface ToolPreview {
+interface ToolPreview {
   icon: FqIconName
   name: string
   sub: string
