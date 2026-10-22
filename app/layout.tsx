@@ -13,6 +13,7 @@ import "./themes/active/members-ui";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE, SOCIAL_PROFILES } from "@/lib/site";
 import { THEME_BOOTSTRAP_SCRIPT, THEME_COLOR_LIGHT } from '@/lib/theme/mode'
 import { SITE_DESIGN } from '@/lib/theme/design'
+import { siteVerification } from '@/lib/seo/verification'
 // The ACTIVE design's own faces (lib/theme/design-fonts/). `./active` is one static re-export written by
 // scripts/write-design-assets.mjs before the build, so only that design's next/font module is in this
 // graph: under DAWN it is lib/theme/design-fonts/dawn.ts, which registers nothing. DAWN's faces below
@@ -136,6 +137,8 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   manifest: "/manifest.json",
+  // Search Console / Bing Webmaster verification by tag; unset unless the env values are set (LIVE-1136).
+  verification: siteVerification(),
   // Search + answer-engine presentation limits. Without these, every indexable page is served
   // at Google's defaults: a THUMBNAIL image and a capped snippet. The whole per-entity OG card
   // investment (events, spaces, circles, spotlight, help) only reaches a result page at full

@@ -152,7 +152,7 @@ export const MODEL_CLAIMS = [
   },
   {
     name: 'businesses host free',
-    re: /\b(businesses host free|hosting on it is free|opening (a|one) Space is free|open a Space that stays free)\b/i,
+    re: /\b(businesses host free|host free with Crew|hosting on it is free|opening (a|one) Space is free|open a Space that stays free)\b/i,
     why: 'CORE-MODEL §1 line two, and the only line addressed to the reader who brings other people with them.',
   },
   {

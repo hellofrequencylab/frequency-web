@@ -10,7 +10,7 @@ featureKeys: [billing]
 status: published
 ---
 
-People join free. Businesses host free. You pay when you start charging.
+People join free. Host free with Crew. You pay when you start charging.
 
 A Space comes with Crew, which you fund at whatever amount you choose. Until the beta ends, anyone can open one free. After that, every Space stays a real Space: your page, your events, your posts, your members.
 Hosting is free, and that is the point, not a teaser. A plan is what you take when you start charging. This page covers what each plan is for

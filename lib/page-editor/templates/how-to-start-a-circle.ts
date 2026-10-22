@@ -124,7 +124,7 @@ export const spec: ArticleSpec = {
     {
       question: 'What does it cost to start a Circle?',
       answer: 'Nothing. Starting a Circle and gathering a few people is free, and it stays free.',
-      body: 'Frequency is built to support every community effort and help everyone in it succeed. People join free and hosts host free, so you never pay to hold a Circle and we never take a cut of your own bookings. You pay when you start charging: if your Circle later grows into something you sell tickets or services through, that is when a Space on Business comes in, at one honest [price](/pricing), and you see exactly what the network earned you.',
+      body: 'Frequency is built to support every community effort and help everyone in it succeed. People join free and hosting is free with Crew, so you never pay to hold a Circle and we never take a cut of your own bookings. You pay when you start charging: if your Circle later grows into something you sell tickets or services through, that is when a Space on Business comes in, at one honest [price](/pricing), and you see exactly what the network earned you.',
     },
     {
       question: 'Where to start',
@@ -192,7 +192,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'What does it cost to start a Circle?',
-      a: 'Nothing. Starting a Circle and gathering a few people is free, and it stays free. People join free and hosts host free, so you never pay to hold a Circle and we never take a cut of your own bookings. You pay when you start charging: if your Circle grows into something you sell tickets or services through, that is when a Space on Business comes in, at one honest price, and you see exactly what the network earned you.',
+      a: 'Nothing. Starting a Circle and gathering a few people is free, and it stays free. People join free and hosting is free with Crew, so you never pay to hold a Circle and we never take a cut of your own bookings. You pay when you start charging: if your Circle grows into something you sell tickets or services through, that is when a Space on Business comes in, at one honest price, and you see exactly what the network earned you.',
     },
   ],
 

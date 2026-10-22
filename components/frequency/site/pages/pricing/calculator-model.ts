@@ -177,7 +177,7 @@ export function calculatorModel(
       sub: business.monthly.replace(/\/mo$/, ''),
       idea: 'It pays for itself.',
       line: 'Tickets, memberships and a shop keep the lights on. Your regulars never cost you a platform fee.',
-      who: ['Studios', 'Venues', 'Teachers and coaches'],
+      who: ['Studios', 'Venues', 'Instructors and coaches'],
       badge: `0% on your regulars, ${PLAN_STORY.plusProcessing}`,
       price: {
         month: fromLabel(business.monthly),

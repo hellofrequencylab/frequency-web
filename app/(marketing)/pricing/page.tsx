@@ -113,7 +113,7 @@ export async function generateMetadata(): Promise<Metadata> {
   // here, and it is right to: a typed figure in this file is exactly the drift the derivation work
   // removed, and "0%" typed by hand is indistinguishable to the guard from "8%" typed by hand. Saying
   // it in words costs nothing and keeps the rule absolute rather than carved with an exception.
-  const description = `People join free. Businesses host free. You pay when you start charging, and never on your own people. ${ladder}.`
+  const description = `People join free. Host free with Crew. You pay when you start charging, and never on your own people. ${ladder}.`
   return {
     title: TITLE,
     description,

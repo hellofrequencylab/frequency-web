@@ -1,5 +1,5 @@
 import { getAllCategories, helpHref } from '@/lib/help/content'
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CATEGORY_LINE, CONTACT_EMAIL, FOUNDING_PLACE } from '@/lib/site'
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CATEGORY_LINE, CONTACT_EMAIL, FOUNDING_PLACE, OPENING_DATE_LABEL } from '@/lib/site'
 import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { allOfferings, type Offering } from '@/lib/pricing/pricing-grid'
 import { offeringLadderLabel, paidWallsPhrase, PLAN_STORY } from '@/lib/pricing/pricing-page'
@@ -97,7 +97,7 @@ export async function GET() {
   const out: string[] = [
     `# ${SITE_NAME}: full content for language models`,
     '',
-    `> ${SITE_DESCRIPTION} ${SITE_TAGLINE}. Taking root in ${FOUNDING_PLACE}. Contact: ${CONTACT_EMAIL}.`,
+    `> ${SITE_DESCRIPTION} ${SITE_TAGLINE}. Opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. Contact: ${CONTACT_EMAIL}.`,
     '',
     `Curated short version: ${SITE_URL}/llms.txt`,
     '',
@@ -124,7 +124,7 @@ export async function GET() {
     // LIVE-253: "a paid plan buys a lower rate, not permission" got the second half right and the
     // first half backwards, and the paragraph then closed on "that rate drops as your plan rises",
     // so the corpus argued the fee ladder twice. Both halves are PLAN_STORY now.
-    `People join free. Businesses host free. You pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} ${PLAN_STORY.rate} You keep 100% of your own bookings, ${PLAN_STORY.afterProcessing}, always, and tips carry no platform fee on any rung, only card processing. We earn only a small fee on a customer the network introduces, once, never on what you bring in yourself. Where each rung lands:`,
+    `People join free. Host free with Crew. You pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} ${PLAN_STORY.rate} You keep 100% of your own bookings, ${PLAN_STORY.afterProcessing}, always, and tips carry no platform fee on any rung, only card processing. We earn only a small fee on a customer the network introduces, once, never on what you bring in yourself. Where each rung lands:`,
     ...takeRateLines(offerings),
     '',
     // The walls and the plan each opens at are READ off the gate map (paidWallsPhrase), the same
