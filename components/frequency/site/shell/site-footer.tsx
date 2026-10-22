@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { FOOTER_COLUMNS, FOOTER_LEGAL, ROUTES, SIDE_CTA } from '@/lib/frequency/site-nav'
 import { JsonLd } from '@/components/json-ld'
 import { siteNavigationSchema } from '@/lib/jsonld'
-import { CONTACT_EMAIL } from '@/lib/site'
+import { CONTACT_EMAIL, SOCIAL_PROFILES, socialLabel } from '@/lib/site'
 
 const WORDMARK = '/brand/frequency/frequency-wordmark.png'
 
@@ -67,6 +67,11 @@ export function SiteFooter() {
               </Link>
             ))}
             <a href={`mailto:${CONTACT_EMAIL}`}>Contact</a>
+            {SOCIAL_PROFILES.map((url) => (
+              <a key={url} href={url} rel="me noopener" target="_blank">
+                {socialLabel(url)}
+              </a>
+            ))}
           </span>
           <span className="ft2-sign">
             <span className="fq-logo-icon fq-iridescent ft2-roundel" aria-hidden="true" />
