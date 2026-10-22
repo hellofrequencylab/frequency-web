@@ -36,6 +36,7 @@ export function FqSpaceChrome({
   name,
   badges,
   coverBadge,
+  coverAction,
   tagline,
   actions,
   nav,
@@ -60,6 +61,8 @@ export function FqSpaceChrome({
   badges?: ReactNode
   /** Marks drawn inside the cover photo's top-left corner (both sizes). */
   coverBadge?: ReactNode
+  /** The control drawn inside the cover photo's top-right corner (both sizes): the Check In button. */
+  coverAction?: ReactNode
   /** The tagline, or the owner's "add a tagline" prompt. */
   tagline?: ReactNode
   /** The cover's buttons: the primary action, QR and Connect, the owner's Edit. */
@@ -114,6 +117,7 @@ export function FqSpaceChrome({
           style={{ backgroundImage: `url('${coverImage}')`, backgroundPosition: coverFocus }}
         >
           {coverBadge && <div className="fqs-cover-badge">{coverBadge}</div>}
+          {coverAction && <div className="fqs-cover-action">{coverAction}</div>}
           <div className="fqs-hero-in">
             {identity}
             {actions && <div className="fqs-acts">{actions}</div>}
@@ -131,6 +135,7 @@ export function FqSpaceChrome({
               style={{ backgroundImage: `url('${coverImage}')`, backgroundPosition: coverFocus }}
             />
             {coverBadge && <div className="fqs-cover-badge">{coverBadge}</div>}
+            {coverAction && <div className="fqs-cover-action">{coverAction}</div>}
             {logo && <div className="fqs-cover-logo">{logo}</div>}
           </div>
           <div className={logo ? 'fqs-ident has-logo' : 'fqs-ident'}>

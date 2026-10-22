@@ -387,6 +387,9 @@
 [data-design="frequency"] [data-kit="members"] .fqs-cover-img{height:clamp(176px,24vw,260px);border-radius:28px;background-size:cover;background-position:center;background-color:var(--fq-surface-raised);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .fqs-cover-logo{position:absolute;left:24px;bottom:-44px;z-index:1}
 [data-design="frequency"] [data-kit="members"] .fqs-cover-badge{position:absolute;top:16px;left:16px;z-index:1;display:flex;gap:6px;flex-wrap:wrap}
+[data-design="frequency"] [data-kit="members"] .fqs-cover-action{position:absolute;top:16px;right:16px;z-index:1}
+/* Not activated: the Check In pill reads as off (the kit's disabled look) but stays focusable for its tooltip. */
+[data-design="frequency"] [data-kit="members"] .fqs-cover-action .btn[aria-disabled="true"]{opacity:.4;cursor:default;box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .fqs-ident{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;padding-top:var(--fq-space-3)}
 [data-design="frequency"] [data-kit="members"] .fqs-ident.has-logo{padding-top:56px}
 [data-design="frequency"] [data-kit="members"] .fqs-ident .fqs-id{align-items:flex-start}

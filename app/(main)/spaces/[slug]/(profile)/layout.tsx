@@ -9,7 +9,7 @@ import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { getSpaceClaimToken } from '@/lib/spaces/claim'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { usableSpaceFunctions, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { spaceFunctionAccess, usableSpaceFunctions, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
@@ -749,6 +749,18 @@ export default async function SpaceProfileChromeLayout({
           name={heroHeading}
           // The Founding mark rides INSIDE the cover photo (LIVE-1019); Boosted stays beside the name.
           coverBadge={isFoundingBusiness ? <FounderMark /> : null}
+          // The Check In button (LIVE-1180): top right of the cover; greyed out until the Space turns badge check-in on.
+          coverAction={
+            <Suspense fallback={null}>
+              <BadgeNote
+                spaceId={space.id}
+                slug={space.slug}
+                viewerProfileId={viewerProfileId}
+                variant="cover"
+                checkinOn={spaceFunctionAccess(space, 'checkin', 'admin')}
+              />
+            </Suspense>
+          }
           badges={
             isBoosted ? (
               <div className="fqs-badges">
@@ -826,10 +838,6 @@ export default async function SpaceProfileChromeLayout({
           {/* The cardholder perk line (LIVE-1282): what this Space offers Frequency card holders. Empty unless set. */}
           <Suspense fallback={null}>
             <CardholderPerkNote spaceId={space.id} />
-          </Suspense>
-          {/* The badge line (LIVE-1180): ask this Space for a scannable badge. Empty unless scanners are on. */}
-          <Suspense fallback={null}>
-            <BadgeNote spaceId={space.id} slug={space.slug} viewerProfileId={viewerProfileId} />
           </Suspense>
           {children}
         </FqSpaceChrome>
