@@ -3,7 +3,10 @@
 // reader is a member of THIS Space (components/sites/site-member-badge.tsx). The answer is the tier name
 // and its status, or null: nothing about any other Space, and nothing a signed-out reader could not get.
 //
-//   GET /api/sites/<slug>/membership   →  { membership: { tierName, status } | null }
+//   GET /api/sites/<slug>/membership   →  { membership: { tierName, status } | null, firstName: string | null }
+//
+// firstName is the reader's OWN first name (their display name's first word), for a site's account pill;
+// null when signed out.
 //
 // Answered only to the Space's own website hosts (its free subdomain and its bound domain), with the
 // one Origin echoed back and credentials allowed; any other Origin gets no CORS grant, so a page elsewhere
@@ -11,7 +14,7 @@
 // page, so a custom domain reads "no membership" by construction. Private, never cached.
 
 import { NextResponse } from 'next/server'
-import { getMyProfileId } from '@/lib/auth'
+import { getCachedViewerProfile, getMyProfileId } from '@/lib/auth'
 import { getSiteSpace } from '@/lib/sites/site-cache'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { siteSubdomainHost } from '@/lib/sites/host'
@@ -33,7 +36,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   // THE GATE: the reader's own session, or nothing. A signed-out call answers null before any membership
   // read; a signed-in one only ever reads the caller's own row in this Space (getMyMembership).
   const profileId = await getMyProfileId()
-  if (!profileId) return NextResponse.json({ membership: null }, { headers })
+  if (!profileId) return NextResponse.json({ membership: null, firstName: null }, { headers })
   const mine = await getMyMembership(space.id)
-  return NextResponse.json({ membership: mine ? { tierName: mine.tierName, status: mine.status } : null }, { headers })
+  const viewer = await getCachedViewerProfile()
+  const firstName = viewer?.display_name?.trim().split(/\s+/)[0]?.slice(0, 40) || null
+  return NextResponse.json({ membership: mine ? { tierName: mine.tierName, status: mine.status } : null, firstName }, { headers })
 }

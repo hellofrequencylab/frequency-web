@@ -42,6 +42,7 @@ const hero: HouseHeroModel = {
   cta: { href: '/gatherings', label: "See what's happening" },
   secondary: { href: '/membership', label: 'Membership' },
   pill: null,
+  facts: [{ value: '6–7', label: 'Gatherings a month' }, { value: '4', label: 'Seasonal events' }, { value: '$44', label: 'Membership, monthly' }],
   start: { eyebrow: 'Next at the house', name: 'Community Dinner', role: 'Sun Oct 25 · 5–7 PM', logo: null, body: 'Members come to every house gathering. Guests pay at the door.', cta: { href: '/gatherings', label: 'RSVP' } },
 }
 
@@ -52,7 +53,7 @@ const blocks: HouseBlockModel[] = [
     { n: '3', title: 'Sunday', body: 'Ecstatic Dance, Community Dinner, then a Concert.' },
   ] },
   { kind: 'sessions', key: 's1', anchor: 'sessions', eyebrow: 'Next at the house', title: "What's coming up.", cards: [
-    { length: '2 hours', price: '$22', title: 'Community Dinner', body: 'A long table, shared plates and the people who made them.', cta: { href: '/gatherings', label: 'RSVP' } },
+    { length: null, price: null, title: 'Community Dinner', body: 'A long table, shared plates and the people who made them.', cta: { href: '/gatherings', label: 'RSVP' }, stamp: { day: '25', month: 'Oct' }, when: 'Sun Oct 25 · 5–7 PM' },
     { length: '3 hours', price: '$33', title: 'Circles Night', body: 'Fire, a circle and a question worth sitting with.', cta: { href: '/gatherings', label: 'RSVP' } },
     { length: '2 hours', price: '$25', title: 'Ecstatic Dance', body: 'Barefoot, no talking on the floor, all bodies welcome.', cta: { href: '/gatherings', label: 'RSVP' } },
   ] },
@@ -159,6 +160,10 @@ describe('the Temple site, rendered through the real chrome and sections', () =>
     // The Space's logo is drawn alone as the one-colour seal, header and footer.
     expect(html).toContain('hs-logo-image')
     expect(html).toContain('tp-footer-seal')
+    // The design's fact row under the hero buttons and the clay date stamp on an event card.
+    expect(html).toContain('hs-hero-facts')
+    expect(html).toContain('hs-stamp')
+    expect(html).toContain('Sun Oct 25 · 5–7 PM')
     expect(html).not.toMatch(/—/)
   })
 

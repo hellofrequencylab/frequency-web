@@ -232,7 +232,7 @@ export async function SitePage({
   const { origin, hasContact, booking, pages, homeHref, siteLinks, cta, pageLinks, tagline } = await siteChromeBasics(space, siteBase)
   const websiteChrome = resolveWebsiteChrome(website, { name: brandName, tagline, cta })
   // The reader's own membership in THIS Space, asked for after the cached page is up (LIVE-699).
-  const memberBadge = <SiteMemberBadge endpoint={`${origin}/api/sites/${space.slug}/membership`} href={`${origin}/spaces/${space.slug}/memberships`} pill={wildSite || templeSite} label={templeSite ? 'Your house' : undefined} />
+  const memberBadge = <SiteMemberBadge endpoint={`${origin}/api/sites/${space.slug}/membership`} href={`${origin}/spaces/${space.slug}/memberships`} pill={wildSite || templeSite} label={templeSite ? 'Your house' : undefined} showName={templeSite} />
   const chromeCta = resolveWebsiteChromeCta(website?.chrome, cta, siteBase)
   // The "Check in with Frequency" door (LIVE-944): only while Regulars is on at this Space. It points at the
   // Space's page in the app, where the member reads the card and the door code does the check-in.
