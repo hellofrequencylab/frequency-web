@@ -123,7 +123,7 @@ export function HelpContact({ email }: { email: string }) {
   if (sent)
     return (
       <div className="hp-c" role="status">
-        <p className="hp-ok">Thanks. Your email app should be open with your message, ready to send.</p>
+        <p className="hp-ok">Your email app should open with your message ready to send. Nothing has been sent until you send it there.</p>
         <small>
           If it didn’t open, write to <a href={`mailto:${email}`}>{email}</a>.{' '}
           <button type="button" className="hp-again" onClick={() => setSent(false)}>
@@ -142,23 +142,27 @@ export function HelpContact({ email }: { email: string }) {
         setSent(true)
       }}
     >
-      <Input
-        required
-        type="email"
-        placeholder="Your email"
-        aria-label="Your email"
-        autoComplete="email"
-        value={from}
-        onChange={(e) => setFrom(e.target.value)}
-      />
-      <Textarea
-        required
-        placeholder="What’s going on?"
-        aria-label="Message"
-        rows={3}
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-      />
+      <label className="st-lab">
+        Your email
+        <Input
+          required
+          type="email"
+          placeholder="you@example.com"
+          autoComplete="email"
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
+        />
+      </label>
+      <label className="st-lab">
+        Message
+        <Textarea
+          required
+          placeholder="What’s going on?"
+          rows={3}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+      </label>
       <button className="btn fq-iri-btn" type="submit">
         Send
       </button>
