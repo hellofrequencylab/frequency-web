@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1276",
+  "title": "Every paid add-on on /pricing has a button to where it is added",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "wave": "W7",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const m=[];for(const f of ['lib/pricing/addon-links.ts','app/(marketing)/pricing/add/[key]/route.ts','lib/pricing/addon-links.test.ts'])if(!fs.existsSync(f))m.push(f+' missing');const c=fs.readFileSync('components/frequency/site/pages/pricing/pricing-addons.tsx','utf8');if(!c.includes('addOnHref'))m.push('AddOnCard lost its button');if(m.length){console.error('LIVE-1276: '+m.join('; '));process.exit(1)}\""
+  },
+  "detail": "Owner 2026-10-22: the add-on cards need linked paths to add or buy. Each card gets a button to /pricing/add/<key>, a redirect route that sends a signed-out visitor to sign-up and back, a member with no Space to Create a Space, one Space to the page inside it (billing, chapters, websites, manage/layout), several Spaces to Spaces you run, Crew to /upgrade, and the Independent Network to email. OPEN: Vera AI and the custom domain have no standalone purchase screen; their buttons land on the Space's billing and layout pages where the plan and domain are set."
+}
