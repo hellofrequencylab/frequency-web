@@ -284,6 +284,10 @@ function run(root: HTMLElement): () => void {
       else pio.observe(el)
     })
   }
+  // Cards are hidden by the stylesheet only while this attribute is on the root, so they are never
+  // stranded invisible by a script that did not run (site audit 2026-10-22, finding 8).
+  // It stays on across client navigations: removing it in the cleanup would flash the next page's cards.
+  if (!RM) root.setAttribute('data-pop', '')
   pops()
   offs.push(() => pio.disconnect())
 

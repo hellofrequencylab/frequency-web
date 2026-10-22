@@ -522,7 +522,9 @@
 [data-design="frequency"] [data-kit="site"] .pkbar a.on svg{color:#0C1424}
 [data-design="frequency"] [data-kit="site"] .sh{display:flex;flex-direction:column;gap:20px;margin-bottom:44px}
 [data-design="frequency"] [data-kit="site"] .sh .h-l{max-width:20ch}
-[data-design="frequency"] [data-kit="site"] .pop{position:relative;opacity:0;transform:translateY(56px) scale(.9);transition:opacity .2s,transform .2s}
+[data-design="frequency"] [data-kit="site"] .pop{position:relative;transition:opacity .2s,transform .2s}
+/* Cards are hidden only once site-fx has taken charge (it sets data-pop on the kit root), so with scripts blocked, failing or still loading the cards are simply there. */
+[data-design="frequency"] [data-kit="site"][data-pop] .pop{opacity:0;transform:translateY(56px) scale(.9)}
 [data-design="frequency"] [data-kit="site"] .pop.in{opacity:1;transform:none;transition:opacity .3s ease-out,transform .9s cubic-bezier(.18,1.5,.4,1)}
 [data-design="frequency"] [data-kit="site"] .pop>.pglow{position:absolute;inset:-12% -6%;border-radius:48px;pointer-events:none;background:radial-gradient(closest-side,var(--fq-pc,var(--fq-side)),transparent);filter:blur(34px);opacity:0;z-index:0}
 [data-design="frequency"] [data-kit="site"] .pop>.pglow::after{content:"";position:absolute;inset:20%;border-radius:50%;background:radial-gradient(closest-side,#fff,transparent);opacity:0}
@@ -612,6 +614,7 @@
 @media (min-width:561px) and (max-width:860px){
 [data-design="frequency"] [data-kit="site"] .g5>:last-child:nth-child(odd){grid-column:1/-1}
 }
+@media print{[data-design="frequency"] [data-kit="site"] .pop{opacity:1!important;transform:none!important}}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .pop{opacity:1!important;transform:none!important}
 [data-design="frequency"] [data-kit="site"] .pop>.pglow{animation:none!important;opacity:.2!important}}
 [data-design="frequency"] [data-kit="site"] .g4f{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
