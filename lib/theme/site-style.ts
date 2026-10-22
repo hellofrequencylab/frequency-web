@@ -1,6 +1,7 @@
 import { MENSWORK_PALETTE } from '@/lib/theme/menswork'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { NETWORK_SCHEMES } from '@/lib/theme/network'
+import { TEMPLE_ACCENT } from '@/lib/theme/temple'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteFacesId } from '@/lib/theme/site-faces'
 
@@ -14,6 +15,9 @@ import type { SiteFacesId } from '@/lib/theme/site-faces'
 //   · Network (2026-10-13): coastal and warm for community and business groups; butter-cream grounds, deep
 //     ink, one solid hero color in four schemes (Marigold, Ocean, Lagoon, Coral), pill buttons and soft
 //     28px cards (components/sites/network-css.ts, lib/theme/network.ts). A stock theme, first worn by The Group.
+//   · Temple (2026-10-22): a lime-washed Mediterranean house; plaster grounds, umber ink, one clay hero color,
+//     arch-shaped photos and cards, Branch and Marcellus type (components/sites/temple-css.ts,
+//     lib/theme/temple.ts). A stock theme, first worn by Royal Temple.
 //
 // Inside a theme the owner picks a FONT SET (lib/theme/space-themes.ts: Frequency, Editorial, Classic,
 // Playful, Accessible, Modern, Bold). The website's style leads: the Space page follows it unless the
@@ -35,7 +39,7 @@ import type { SiteFacesId } from '@/lib/theme/site-faces'
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
-export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network'
+export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'temple'
 
 interface SiteThemeDef {
   id: SiteThemeId
@@ -76,6 +80,14 @@ export const SITE_THEMES: readonly SiteThemeDef[] = [
     description: 'Coastal and warm: butter-cream grounds, one bold color, pill buttons and real photos up front.',
     defaultFonts: 'modern',
   },
+  {
+    // Typography-only on the Space page too (ADR-578): Branch and Marcellus load on the website alone, so a
+    // synced Space page wears Classic (a serif headline over a quiet body).
+    id: 'temple',
+    label: 'Temple',
+    description: 'A lime-washed house: plaster and umber, one clay color, arched photos and cards, warm and unhurried.',
+    defaultFonts: 'classic',
+  },
 ]
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
@@ -115,6 +127,7 @@ export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
   bold: { corners: 'square', spacing: 'balanced', header: 'bar', footer: 'full' },
   wildheart: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   network: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  temple: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
 }
 
 export interface SiteLook {
@@ -145,7 +158,7 @@ const MAX_PAGE_THEMES = 30
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 export function isSiteThemeId(v: unknown): v is SiteThemeId {
-  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network'
+  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'temple'
 }
 
 export function readSiteStyle(preferences: unknown): SiteStyle {
@@ -252,12 +265,13 @@ export function withSiteStyle(preferences: unknown, patch: Partial<SiteStyle>): 
 
 /** The accent a Space page falls back to when the owner picked none. A synced Space page on a Bold
  *  website wears Bold's fonts and Bold's teal, on a Wildheart website Wildheart's violet, on a Network
- *  website Network's marigold, but keeps the
+ *  website Network's marigold, on a Temple website Temple's clay, but keeps the
  *  app's own surfaces and layout so member pages stay readable (ADR-1728); any other Space page keeps its
  *  type's default. */
 export function spacePageDefaultAccent(preferences: unknown, typeDefault: string): string {
   const style = readSiteStyle(preferences)
   if (!style.synced) return typeDefault
   if (style.theme === 'network') return NETWORK_SCHEMES.marigold.accent
+  if (style.theme === 'temple') return TEMPLE_ACCENT.accent
   return style.theme === 'bold' ? MENSWORK_PALETTE.teal : style.theme === 'wildheart' ? WILDHEART_PALETTE.violet : typeDefault
 }
