@@ -15,7 +15,7 @@ const WINDOW_DAYS = 28
 /** A quiet day the owner words as a closure reads as held (the night card). */
 const HELD = /\b(held|retreat|rental|private|closed|reserved)\b/i
 
-export interface TempleWeekEvent {
+interface TempleWeekEvent {
   title: string
   startsAt: string
   endsAt?: string | null
