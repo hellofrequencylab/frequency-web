@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1284",
+  "title": "The Temple, part two: every texture, pattern, motif, shape and icon, and the membership night band",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const t=fs.readFileSync('lib/theme/temple.ts','utf8');const c=fs.readFileSync('components/sites/temple-css.ts','utf8');const bad=[];for(const f of ['icons/palm','icons/arch-door','textures/tile-star','textures/blob-arch','textures/agave'])if(!fs.existsSync('public/sites/temple/'+f+'.svg'))bad.push('missing '+f);if(!t.includes('--tp-icon-water-ripple'))bad.push('icon tokens');if(!c.includes('.tp-motif--rays')||!c.includes('.tp-icon'))bad.push('utilities');if(!c.includes('data-hs=\\\"community\\\"'))bad.push('night band');if(bad.length){console.error('LIVE-1284: '+bad.join('; '));process.exit(1)}\""
+  },
+  "detail": "Follows LIVE-1285. Ships the 19 remaining textures, patterns, motifs and blobs and the 10 line icons from the Royal Temple design system (metadata stripped), their --tp-* tokens, the tp-* utility classes (texture layers, edge bands, watermark motifs, blobs, mask icons) and the membership section as the design's night band with arch-soft rung cards, the middle rung lifted. Still open and needing data work, not skin work: the hero fact row and the event date stamp (the house hero and offering models carry no facts or dates), the signed-in member menu with first name (the membership endpoint returns only the tier name), the Your house account page, the RSVP island and the week-strip arches.",
+  "wave": "W7"
+}
