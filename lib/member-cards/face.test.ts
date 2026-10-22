@@ -4,6 +4,7 @@ import {
   cardEdition,
   faceRow,
   formatCardNumber,
+  isOwnSiteLink,
   normalizeCardLink,
   normalizeFaceInput,
   readFace,
@@ -87,5 +88,15 @@ describe('the printed card', () => {
     expect(cardEdition(100)).toBe('founders')
     expect(cardEdition(101)).toBe('crew')
     expect(cardEdition(null)).toBe('crew')
+  })
+})
+
+describe('isOwnSiteLink', () => {
+  it('treats the apex and www as Frequency, and any other host as another site', () => {
+    expect(isOwnSiteLink('https://www.frequencylocal.com/events', 'https://frequencylocal.com')).toBe(true)
+    expect(isOwnSiteLink('https://frequencylocal.com/', 'https://frequencylocal.com')).toBe(true)
+    expect(isOwnSiteLink('https://thegrouplocal.com/', 'https://frequencylocal.com')).toBe(false)
+    expect(isOwnSiteLink('https://frequencylocal.com.evil.example/', 'https://frequencylocal.com')).toBe(false)
+    expect(isOwnSiteLink('not a url', 'https://frequencylocal.com')).toBe(false)
   })
 })

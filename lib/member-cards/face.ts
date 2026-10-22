@@ -61,6 +61,17 @@ export function normalizeCardLink(raw: unknown): string | null {
   }
 }
 
+/** True when `url` opens a page on `origin`'s own site (the apex or www). A tap to anywhere else goes
+ *  through /card/<token>/go, so closing that site lands back on Frequency (LIVE-1298). Pure. */
+export function isOwnSiteLink(url: string, origin: string): boolean {
+  try {
+    const bare = (h: string) => h.replace(/^www\./, '')
+    return bare(new URL(url).hostname) === bare(new URL(origin).hostname)
+  } catch {
+    return false
+  }
+}
+
 /** Read a stored row (snake_case) back to a face. Unknown values fall back to the default. Pure. */
 export function readFace(row: Record<string, unknown> | null | undefined): CardFace {
   if (!row) return { ...DEFAULT_FACE }
