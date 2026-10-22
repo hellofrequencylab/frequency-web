@@ -40,7 +40,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       ...OG_SITE,
       title: article.title,
       description: article.description,
-      url: helpHref(category, slug),
+      // og:url follows the canonical so a share of a twin credits the guide, not the twin.
+      url: canonical,
       type: 'article',
       siteName: SITE_NAME,
       locale: 'en_US',
