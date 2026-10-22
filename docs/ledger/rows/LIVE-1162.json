@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1162",
+  "title": "Space calendar page answers first and carries event markup for search and AI answers",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/(profile)/calendar/page.tsx",
+    "ref": "Owner 2026-10-22: the calendar redesign must be SEO/GEO dominant"
+  },
+  "detail": "FILED 2026-10-22. THE CONSEQUENCE: the Space calendar page carried no structured data and a generic description, so a search or answer engine asking what is happening at a Space had a client-drawn grid to guess from. THE FIX: a plain first sentence (count, next event, time with its zone), an ItemList of the upcoming events and a breadcrumb as JSON-LD, a description that names dates and times, and a text/calendar alternate pointing at the Space's .ics feed. Every row comes from the same gated reader the Up next band uses, so pencil, planning, private and cancelled dates cannot reach the markup. Plan: /mnt/project-files/calendar/calendar-redesign-plan-2026-10-22.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/calendar-seo.mjs",
+    "note": "Fails on main (no markup, no alternate), passes with this change."
+  },
+  "closed": "2026-10-22",
+  "wave": "W7"
+}
