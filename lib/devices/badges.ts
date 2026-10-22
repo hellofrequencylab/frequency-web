@@ -55,6 +55,22 @@ export async function readBadgeState(spaceId: string, profileId: string): Promis
   }
 }
 
+/** Has this Space turned badge check-in on? The Space's check in function is enabled AND at least one
+ *  counter scanner is live (Check in settings > Counter scanners). Public read, no caller gate: it
+ *  answers one yes/no for the header's Check In button. FAIL-SAFE to false. */
+export async function readCheckinActivated(spaceId: string): Promise<boolean> {
+  try {
+    const { count } = await createAdminClient()
+      .from('scanner_devices')
+      .select('id', { count: 'exact', head: true })
+      .eq('space_id', spaceId)
+      .eq('active', true)
+    return (count ?? 0) > 0
+  } catch {
+    return false
+  }
+}
+
 /** File the caller's request. A second tap while one is pending is a no-op. */
 export async function fileBadgeRequest(spaceId: string, profileId: string): Promise<boolean> {
   try {
