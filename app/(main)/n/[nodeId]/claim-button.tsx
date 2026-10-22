@@ -71,6 +71,19 @@ export function ClaimButton({ nodeId, secret, medium }: { nodeId: string; secret
     )
   }
 
+  // Signed out: send them to sign in and straight back here, so the tap still ends in a check-in.
+  if (result && !result.ok && result.reason === 'not_signed_in') {
+    const back = typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : '/'
+    return (
+      <a
+        href={`/sign-in?next=${encodeURIComponent(back)}`}
+        className="inline-flex items-center gap-2 rounded-control bg-primary hover:bg-primary-hover text-on-primary text-body-sm font-semibold px-5 py-3 lift-1 transition-colors"
+      >
+        Sign in to claim
+      </a>
+    )
+  }
+
   if (result && !result.ok) {
     const isDone = result.reason === 'already_captured'
     return (

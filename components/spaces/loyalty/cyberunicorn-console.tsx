@@ -17,7 +17,8 @@ import {
 } from '@/lib/devices/actions'
 import { dismissBadgeRequest, lookupConsoleSpace } from '@/lib/devices/badge-actions'
 import type { BadgeRequestRow } from '@/lib/devices/badges'
-import { checkPlacardTap, dropSpaceTag, finishSpaceTag, readSpaceTags, startSpaceTag } from '@/lib/devices/tag-actions'
+import { checkPlacardTap, checkTagScan, dropSpaceTag, findTagTargets, finishSpaceTag, readSpaceTags, startPageTag, startSpaceTag } from '@/lib/devices/tag-actions'
+import { TAG_KIND_LABEL, type TagTarget } from '@/lib/devices/tag-target-kinds'
 import type { SpaceTagRow } from '@/lib/devices/space-tags'
 import { listRelayDevicesForConsole, setConsoleRelay } from '@/lib/devices/relay-actions'
 import { reportConsoleLog } from '@/lib/devices/log-actions'
@@ -239,6 +240,7 @@ function CuButton({
   tone = 'primary',
   type = 'button',
   wide,
+  pressed,
 }: {
   children: ReactNode
   onClick?: () => void
@@ -247,6 +249,8 @@ function CuButton({
   type?: 'button' | 'submit'
   /** Fill the column (the controls beside the screen). */
   wide?: boolean
+  /** A toggle in a pair: announces which one is on. */
+  pressed?: boolean
 }) {
   const tones = {
     primary: 'bg-[var(--cu-primary)] text-[var(--cu-screen)] hover:bg-[var(--cu-attention)]',
@@ -258,6 +262,7 @@ function CuButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={pressed}
       className={`${wide ? 'w-full' : ''} min-h-11 px-4 py-2 font-[family-name:var(--cu-font-display)] text-[length:var(--cu-type-1)] uppercase leading-none tracking-normal outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cu-secondary)] disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[var(--cu-muted)] disabled:opacity-60 ${tones[tone]}`}
     >
       {children}
@@ -351,8 +356,12 @@ type Link = 'usb' | 'wifi'
 /** Where a firmware install is: downloading the checked image, writing it, or finished either way. */
 type Flash = { stage: 'download' | 'write' | 'done' | 'failed'; progress: number; version: string; message?: string }
 type LogLine = { dir: string; text: string }
-/** A placard just written, waiting for its phone tap. `since` is when the write started. */
-type Placard = { nodeId: string; since: string; label: string; chip: string; spaceName: string }
+/** A tag just written, waiting for its phone tap. `since` is when the write started. A Space's door
+ *  placard carries its check-in `nodeId`; a page tag carries its `/q/` code instead, and `spaceName`
+ *  then names the page it opens. */
+type Placard = { nodeId: string | null; codeId: string | null; since: string; label: string; chip: string; spaceName: string }
+/** What a placard-mode tag opens: the chosen Space's door check-in, or any page. */
+type TagFor = 'checkin' | 'page'
 type NavKey = 'prev' | 'next' | 'sel' | 'esc'
 
 /** One check-in line from the server's answer. */
@@ -426,6 +435,10 @@ export function CyberUnicornConsole({
   const [notice, setNotice] = useState<string | null>(null)
   const [placardLabel, setPlacardLabel] = useState('')
   const [placard, setPlacard] = useState<Placard | null>(null)
+  const [tagFor, setTagFor] = useState<TagFor>('checkin')
+  const [pageQuery, setPageQuery] = useState('')
+  const [pageResults, setPageResults] = useState<TagTarget[] | null>(null)
+  const [pageTarget, setPageTarget] = useState<TagTarget | null>(null)
   const [tags, setTags] = useState<SpaceTagRow[] | null>(null)
   // A Space handed in by the link: load its placards once.
   const initialLoad = useRef(false)
@@ -535,6 +548,24 @@ export function CyberUnicornConsole({
     const id = setInterval(() => {
       if (Date.now() - started > VERIFY_MAX_MS) {
         clearInterval(id)
+        return
+      }
+      if (!placard.nodeId) {
+        if (!placard.codeId) return
+        void checkTagScan(placard.codeId, placard.since).then((out) => {
+          if (!live || isError(out) || !out.data) return
+          clearInterval(id)
+          setDone({
+            title: 'IT WORKS',
+            lines: [
+              { label: 'Opens', value: placard.spaceName, tone: 'ok' },
+              { label: 'Tag', value: placard.label, tone: 'secondary' },
+              { label: 'Time', value: new Date(out.data.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) },
+            ],
+            note: `A phone just opened ${placard.spaceName} from the tag. Every tap counts in that page's scan activity, apart from its printed QR.`,
+          })
+          setPhase('done')
+        })
         return
       }
       void checkPlacardTap(placard.nodeId, placard.since).then((out) => {
@@ -1076,9 +1107,66 @@ export function CyberUnicornConsole({
     setTapStarted(null)
     const listed = await finishSpaceTag(spaceId, link.data.nodeId, tag.uid ?? null, tag.type ?? null, label)
     if (isError(listed)) setNotice(listed.error)
-    setPlacard({ nodeId: link.data.nodeId, since, label: label || 'Check-in placard', chip: chipText(tag), spaceName })
+    setPlacard({ nodeId: link.data.nodeId, codeId: null, since, label: label || 'Check-in placard', chip: chipText(tag), spaceName })
     setPhase('verify')
     void loadTags(spaceId)
+  }
+
+  // ANY PAGE: find the page (or take a pasted link), get its tag link, write it, then wait for a phone.
+  async function findPages() {
+    const q = pageQuery.trim()
+    if (!q) return
+    // A pasted link is the page itself: no search needed.
+    if (q.startsWith('/') || /^(https?:\/\/)?(www\.)?frequencylocal\.com/i.test(q)) {
+      setPageResults(null)
+      setPageTarget({ kind: 'page', label: q.replace(/^https?:\/\/(www\.)?/i, ''), detail: null, path: q })
+      return
+    }
+    setPageResults(null)
+    const out = await findTagTargets(q)
+    if (isError(out)) {
+      setProblem(out.error)
+      setPageResults([])
+      return
+    }
+    setPageResults(out.data)
+  }
+
+  async function writePageTag() {
+    const c = clientRef.current
+    if (!c || !pageTarget) return
+    const label = placardLabel.trim().slice(0, PLACARD_LABEL_MAX)
+    setProblem(null)
+    setNotice(null)
+    setDone(null)
+    setPlacard(null)
+    setPhase('minting')
+    const link = await startPageTag(pageTarget.path, pageTarget.label)
+    if (isError(link)) {
+      setProblem(link.error)
+      setPhase('ready')
+      return
+    }
+    const since = new Date(Date.now() - 60000).toISOString()
+    setPhase('tap')
+    setTapStarted(Date.now())
+    setNow(Date.now())
+    let tag: TagWritten
+    try {
+      tag = await c.call<TagWritten>(
+        'frequency.write_tag',
+        { url: link.data.url, label: (label || pageTarget.label).slice(0, PLACARD_LABEL_MAX), timeout_ms: TAP_MS },
+        { timeoutMs: TAP_REPLY_MS },
+      )
+    } catch (e) {
+      setTapStarted(null)
+      setProblem(tagProblem(e))
+      if (clientRef.current) setPhase('ready')
+      return
+    }
+    setTapStarted(null)
+    setPlacard({ nodeId: null, codeId: link.data.codeId, since, label: label || 'Tag', chip: chipText(tag), spaceName: pageTarget.label })
+    setPhase('verify')
   }
 
   function skipVerify() {
@@ -1086,11 +1174,13 @@ export function CyberUnicornConsole({
     setDone({
       title: 'PLACARD READY',
       lines: [
-        { label: 'Space', value: placard.spaceName, tone: 'ok' },
-        { label: 'Placard', value: placard.label, tone: 'secondary' },
+        { label: placard.nodeId ? 'Space' : 'Opens', value: placard.spaceName, tone: 'ok' },
+        { label: placard.nodeId ? 'Placard' : 'Tag', value: placard.label, tone: 'secondary' },
         { label: 'Chip', value: placard.chip },
       ],
-      note: 'Stick it where members walk in. A tap with any phone opens the check-in for this Space.',
+      note: placard.nodeId
+        ? 'Stick it where members walk in. A tap with any phone opens the check-in for this Space.'
+        : `Stick it where people will see it. A tap with any phone opens ${placard.spaceName}.`,
     })
     setPhase('done')
   }
@@ -1562,11 +1652,15 @@ export function CyberUnicornConsole({
             <p>
               {phase === 'minting'
                 ? mode === 'placards'
-                  ? `Getting ${target?.spaceName ?? 'the Space'}'s check-in link...`
+                  ? tagFor === 'page'
+                    ? `Getting the link for ${pageTarget?.label ?? 'that page'}...`
+                    : `Getting ${target?.spaceName ?? 'the Space'}'s check-in link...`
                   : 'Making a card link for this member...'
                 : phase === 'tap'
                   ? mode === 'placards'
-                    ? `Hold the NTAG sticker flat ${readerSpot} and keep it still ${readerDone}. It becomes ${target?.spaceName ?? 'this Space'}'s check-in placard.`
+                    ? tagFor === 'page'
+                      ? `Hold the NTAG sticker flat ${readerSpot} and keep it still ${readerDone}. A tap will open ${pageTarget?.label ?? 'the page'}.`
+                      : `Hold the NTAG sticker flat ${readerSpot} and keep it still ${readerDone}. It becomes ${target?.spaceName ?? 'this Space'}'s check-in placard.`
                     : `This card is for ${cardFor ?? 'this member'}. Hold it flat ${readerSpot} and keep it still ${readerDone}.`
                   : phase === 'scanning'
                     ? 'Hold a member card on the reader to check them in.'
@@ -1577,14 +1671,16 @@ export function CyberUnicornConsole({
         ) : phase === 'verify' && placard ? (
           <Screen icon="frequency" title="NOW TAP IT WITH A PHONE" big>
             <p>
-              The placard is written. Tap it with a phone that is signed in to Frequency. The check-in for {placard.spaceName} opens, and it shows up here the moment it lands.
+              {placard.nodeId
+                ? `The placard is written. Tap it with a phone that is signed in to Frequency. The check-in for ${placard.spaceName} opens, and it shows up here the moment it lands.`
+                : `The tag is written. Tap it with any phone. ${placard.spaceName} opens, and the tap shows up here the moment it lands.`}
             </p>
             <WaitingBar />
             <dl className="space-y-1">
-              <Row label="Placard" value={placard.label} tone="secondary" />
+              <Row label={placard.nodeId ? 'Placard' : 'Tag'} value={placard.label} tone="secondary" />
               <Row label="Chip" value={placard.chip} />
             </dl>
-            <p className="text-[var(--cu-dim)]">A phone that already checked in here today will not count again until tomorrow.</p>
+            {placard.nodeId && <p className="text-[var(--cu-dim)]">A phone that already checked in here today will not count again until tomorrow.</p>}
             <div className="flex flex-wrap gap-3">
               <CuButton tone="secondary" onClick={skipVerify}>
                 Skip the phone test
@@ -1681,14 +1777,43 @@ export function CyberUnicornConsole({
 
           {mode === 'placards' && (
             <div className="space-y-4">
-              <p className="text-[var(--cu-muted)]">
-                A placard is an NFC sticker with the Space&apos;s check-in link on it. Members tap it with their phone to check in and earn their Regulars stamp. NTAG213, 215 or 216 stickers work.
-              </p>
+              <div role="group" aria-label="What the tag opens" className="flex flex-wrap gap-2">
+                <CuButton tone={tagFor === 'checkin' ? 'primary' : 'secondary'} pressed={tagFor === 'checkin'} onClick={() => setTagFor('checkin')}>
+                  Space check-in
+                </CuButton>
+                <CuButton tone={tagFor === 'page' ? 'primary' : 'secondary'} pressed={tagFor === 'page'} onClick={() => setTagFor('page')}>
+                  Any page
+                </CuButton>
+              </div>
+              {tagFor === 'checkin' ? (
+                <p className="text-[var(--cu-muted)]">
+                  A placard is an NFC sticker with the Space&apos;s check-in link on it. Members tap it with their phone, land on the Space&apos;s page, and check in to earn their Regulars stamp. NTAG213, 215 or 216 stickers work.
+                </p>
+              ) : (
+                <PageTagPicker
+                  query={pageQuery}
+                  onQuery={(q) => {
+                    setPageQuery(q)
+                    setPageResults(null)
+                  }}
+                  onFind={() => void findPages()}
+                  results={pageResults}
+                  chosen={pageTarget}
+                  onChoose={(t) => {
+                    setPageTarget(t)
+                    setPageResults(null)
+                  }}
+                  onClear={() => setPageTarget(null)}
+                />
+              )}
               <form
                 className="flex flex-col gap-3 sm:flex-row sm:items-end"
                 onSubmit={(e) => {
                   e.preventDefault()
-                  if (ready && readerOk && target) void writePlacard()
+                  if (!ready || !readerOk) return
+                  if (tagFor === 'page') {
+                    if (pageTarget) void writePageTag()
+                  } else if (target) void writePlacard()
                 }}
               >
                 <label className="flex-1 space-y-1">
@@ -1702,13 +1827,14 @@ export function CyberUnicornConsole({
                     className={FIELD_CLASS}
                   />
                 </label>
-                <CuButton type="submit" disabled={!ready || !readerOk || !target}>
-                  Write placard
+                <CuButton type="submit" disabled={!ready || !readerOk || (tagFor === 'page' ? !pageTarget : !target)}>
+                  {tagFor === 'page' ? 'Write tag' : 'Write placard'}
                 </CuButton>
               </form>
-              {!target && <p className="text-[var(--cu-dim)]">Choose a Space above first.</p>}
-              {target && !connected && <p className="text-[var(--cu-dim)]">Connect the Unicorn to write.</p>}
-              {target && <PlacardList tags={tags} spaceName={target.spaceName} onRemove={(id) => void removeTag(id)} />}
+              {tagFor === 'checkin' && !target && <p className="text-[var(--cu-dim)]">Choose a Space above first.</p>}
+              {tagFor === 'page' && !pageTarget && <p className="text-[var(--cu-dim)]">Find the page above first.</p>}
+              {(tagFor === 'page' ? pageTarget : target) && !connected && <p className="text-[var(--cu-dim)]">Connect the Unicorn to write.</p>}
+              {tagFor === 'checkin' && target && <PlacardList tags={tags} spaceName={target.spaceName} onRemove={(id) => void removeTag(id)} />}
             </div>
           )}
 
@@ -2067,6 +2193,88 @@ function WaitingBar() {
 }
 
 /** The chosen Space's placards, newest first. Removing one takes it off the list; the sticker keeps working. */
+/** "Any page": search for what the tag should open, or paste a Frequency link. */
+function PageTagPicker({
+  query,
+  onQuery,
+  onFind,
+  results,
+  chosen,
+  onChoose,
+  onClear,
+}: {
+  query: string
+  onQuery: (q: string) => void
+  onFind: () => void
+  results: TagTarget[] | null
+  chosen: TagTarget | null
+  onChoose: (t: TagTarget) => void
+  onClear: () => void
+}) {
+  if (chosen) {
+    return (
+      <div className="flex flex-wrap items-center gap-3 border border-[var(--cu-secondary)] px-3 py-2">
+        <span className={LABEL_CLASS}>{TAG_KIND_LABEL[chosen.kind]}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[var(--cu-secondary)]">{chosen.label}</span>
+          {chosen.detail && <span className="block truncate text-[var(--cu-muted)]">{chosen.detail}</span>}
+        </span>
+        <CuButton tone="quiet" onClick={onClear}>
+          Change
+        </CuButton>
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-3">
+      <p className="text-[var(--cu-muted)]">
+        A tag can open any page: an event, a Journey, a practice, a Space, a Circle, a partner offer. Search for it, or paste its link. Taps count in that page&apos;s scan activity.
+      </p>
+      <form
+        className="flex flex-col gap-3 sm:flex-row sm:items-end"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (query.trim()) onFind()
+        }}
+      >
+        <label className="flex-1 space-y-1">
+          <span className={LABEL_CLASS}>What should it open?</span>
+          <Input
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="Search, or paste a frequencylocal.com link"
+            autoComplete="off"
+            spellCheck={false}
+            maxLength={300}
+            className={FIELD_CLASS}
+          />
+        </label>
+        <CuButton type="submit" tone="secondary" disabled={!query.trim()}>
+          Find
+        </CuButton>
+      </form>
+      {results !== null &&
+        (results.length === 0 ? (
+          <p className="text-[var(--cu-dim)]">Nothing matches. Try another word, or paste the page&apos;s link.</p>
+        ) : (
+          <ul className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
+            {results.map((t) => (
+              <li key={`${t.kind}:${t.path}:${t.label}`}>
+                <button type="button" onClick={() => onChoose(t)} className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--cu-panel)]">
+                  <span className={`${LABEL_CLASS} w-20 shrink-0`}>{TAG_KIND_LABEL[t.kind]}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[var(--cu-text)]">{t.label}</span>
+                    {t.detail && <span className="block truncate text-[var(--cu-muted)]">{t.detail}</span>}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ))}
+    </div>
+  )
+}
+
 function PlacardList({ tags, spaceName, onRemove }: { tags: SpaceTagRow[] | null; spaceName: string; onRemove: (id: string) => void }) {
   return (
     <section aria-labelledby="cu5k-placards" className="space-y-2">
