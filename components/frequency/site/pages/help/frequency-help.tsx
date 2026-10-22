@@ -33,7 +33,7 @@ export function FrequencyHelp({ topics }: { topics: HelpTopic[] }) {
             <div className="pop" id="privacy">
               <span className="pglow" />
               <article className="pc">
-                <span className="v">Privacy</span>
+                <span className="v" role="heading" aria-level={2}>Privacy</span>
                 <p>
                   Your contacts and your members are yours. We never sell them, and we only email you about things
                   you asked for.
@@ -46,7 +46,7 @@ export function FrequencyHelp({ topics }: { topics: HelpTopic[] }) {
             <div className="pop" id="terms">
               <span className="pglow" />
               <article className="pc">
-                <span className="v">Terms</span>
+                <span className="v" role="heading" aria-level={2}>Terms</span>
                 <p>
                   Show up, be kind, and host honestly. Spaces set their own prices and refunds. We take a small
                   share only on people we bring you.
@@ -59,7 +59,7 @@ export function FrequencyHelp({ topics }: { topics: HelpTopic[] }) {
             <div className="pop" id="accessibility">
               <span className="pglow" />
               <article className="pc">
-                <span className="v">Accessibility</span>
+                <span className="v" role="heading" aria-level={2}>Accessibility</span>
                 <p>
                   We aim for WCAG 2.2 AA: keyboard navigation, readable contrast and reduced motion when you ask
                   for it. The full statement lists what we know falls short.
