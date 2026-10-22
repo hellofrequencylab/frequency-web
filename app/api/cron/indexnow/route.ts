@@ -33,8 +33,8 @@ async function handler(request: Request) {
     const budget = cronBudget(10000)
     const entries = await sitemap()
     const recent = recentSitemapUrls(entries, Date.now() - WINDOW_MS)
-    const urls = budget.take(recent)
-    const summary = budget.summary(urls.length, recent.length - urls.length)
+    const { batch: urls, remaining } = budget.take(recent)
+    const summary = budget.summary(urls.length, remaining)
     if (urls.length === 0) return NextResponse.json({ submitted: 0, budget: summary })
     const status = dry ? 0 : await submitIndexNow(urls)
     const ok = dry || status === 200 || status === 202
