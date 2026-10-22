@@ -46,7 +46,7 @@ export async function attachChapterHostFor(spaceId: string): Promise<void> {
   }
 }
 
-/** A chapter joins a Network whose website is live: its starter site goes live too (LIVE-1283). The chapter's
+/** A chapter joins a Network whose website is live: its starter site goes live too (LIVE-1288). The chapter's
  *  site wears the Network's look, footer and pages (lib/sites/network-inheritance.ts) until the chapter writes
  *  its own, and its address attaches. A Network whose own site is not published starts nothing, and a chapter
  *  already published is left as it was. BEST EFFORT and NEVER THROWS. */

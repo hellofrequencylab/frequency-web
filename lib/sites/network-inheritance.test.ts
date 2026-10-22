@@ -15,7 +15,7 @@ const network = space({
   },
 })
 
-describe('a chapter inherits its Network (LIVE-1283)', () => {
+describe('a chapter inherits its Network (LIVE-1288)', () => {
   it('takes the logo, accent, footer, look and pages it did not set', () => {
     const out = inheritFromNetwork(space({ id: 'c', slug: 'the-group-encinitas', parentId: 'n' }), network)
     expect(out.brandLogoUrl).toBe('https://x.test/net.png')

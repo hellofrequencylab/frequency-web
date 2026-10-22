@@ -32,7 +32,7 @@ async function readSiteSpace(slug: string): Promise<Space | null> {
 
 /** The Space behind a website, as an anonymous visitor sees it (active and network-visible), cached
  *  across requests under `site:<slug>`. Null for a missing, inactive or Private Space. A chapter of a
- *  Network comes back with its Network's look, footer and pages laid under its own (LIVE-1283); the
+ *  Network comes back with its Network's look, footer and pages laid under its own (LIVE-1288); the
  *  Network is read under ITS tag too, so refreshing the Network's site refreshes every chapter's page. */
 export async function getSiteSpace(slug: string): Promise<Space | null> {
   const norm = slug.trim().toLowerCase()

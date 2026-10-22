@@ -2,7 +2,7 @@ import type { Space } from '@/lib/spaces/types'
 import { HOME_SLUG, MAX_PROFILE_PAGES, isValidPageSlug, readProfilePages } from '@/lib/spaces/profile-pages'
 import { publishedWebsiteSnapshot } from '@/lib/sites/editor/state'
 
-// A NETWORK'S SITE FLOWS DOWN TO ITS CHAPTER SITES (LIVE-1283). A chapter is a child Space of a Network, and
+// A NETWORK'S SITE FLOWS DOWN TO ITS CHAPTER SITES (LIVE-1288). A chapter is a child Space of a Network, and
 // the Network's look, footer and pages are the chapter's defaults: edit them once on the Network and every
 // chapter site shows them on its next render, with nothing to copy by hand. PURE: the caller reads the
 // Network (and decides it is the chapter's own, active, same-owner Network) and this lays it under the chapter.

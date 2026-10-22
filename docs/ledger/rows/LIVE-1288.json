@@ -1,6 +1,6 @@
 {
-  "id": "LIVE-1283",
-  "title": "A Network's look, footer and pages flow down to its chapter sites (LIVE-1283)",
+  "id": "LIVE-1288",
+  "title": "A Network's look, footer and pages flow down to its chapter sites (LIVE-1288)",
   "status": "done",
   "priority": "P1",
   "lane": "live",
@@ -12,7 +12,7 @@
   "detail": "FILED AND CLOSED 2026-10-22. getSiteSpace now lays the chapter's Network under the chapter (inheritFromNetwork): logo, accent, footer, site look and any Network page whose address the chapter does not use, in the page list and in a published website. The chapter's own value always wins and Home, Contact, Book and Calendar never come down. The Network is read under its own site tag, so refreshing the Network refreshes every chapter page with no copying. Attaching a chapter to a Network whose site is live publishes the chapter's starter site and attaches its address (startChapterSite).",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('lib/sites/site-cache.ts','utf8');const a=fs.readFileSync('lib/collective/member-spaces-actions.ts','utf8');const bad=[];if(!c.includes('inheritFromNetwork'))bad.push('chapter site no longer inherits its Network');if(!a.includes('startChapterSite'))bad.push('a new chapter no longer starts its site');if(bad.length){console.error('LIVE-1283: '+bad.join('; '));process.exit(1)}\"",
+    "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('lib/sites/site-cache.ts','utf8');const a=fs.readFileSync('lib/collective/member-spaces-actions.ts','utf8');const bad=[];if(!c.includes('inheritFromNetwork'))bad.push('chapter site no longer inherits its Network');if(!a.includes('startChapterSite'))bad.push('a new chapter no longer starts its site');if(bad.length){console.error('LIVE-1288: '+bad.join('; '));process.exit(1)}\"",
     "note": "Fails when a chapter's site stops inheriting its Network or attaching a chapter stops starting its site."
   },
   "closed": "2026-10-22",
