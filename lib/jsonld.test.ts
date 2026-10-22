@@ -86,15 +86,23 @@ describe('breadcrumbSchema', () => {
 
   it('each item has ListItem type, name, and absolute item URL', () => {
     const result = breadcrumbSchema([{ name: 'Discover', path: '/discover' }])
-    const item = result.itemListElement[0]
+    const item = result.itemListElement[1]
     expect(item['@type']).toBe('ListItem')
     expect(item.name).toBe('Discover')
     expect(item.item).toBe(`${SITE_URL}/discover`)
   })
 
+  it('starts at Home when the caller passes only the current page, and never doubles Home', () => {
+    const only = breadcrumbSchema([{ name: 'Discover', path: '/discover' }])
+    expect(only.itemListElement.map((i) => i.name)).toEqual(['Home', 'Discover'])
+    expect(only.itemListElement[0].item).toBe(`${SITE_URL}/`)
+    const full = breadcrumbSchema([{ name: 'Home', path: '/' }, { name: 'Discover', path: '/discover' }])
+    expect(full.itemListElement).toHaveLength(2)
+  })
+
   it('handles a path that already starts with /', () => {
     const result = breadcrumbSchema([{ name: 'X', path: '/foo/bar' }])
-    expect(result.itemListElement[0].item).toBe(`${SITE_URL}/foo/bar`)
+    expect(result.itemListElement[1].item).toBe(`${SITE_URL}/foo/bar`)
   })
 
   it('handles an empty list', () => {

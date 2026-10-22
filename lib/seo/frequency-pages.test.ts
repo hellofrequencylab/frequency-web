@@ -128,7 +128,7 @@ describe('frequencyPageJsonLd', () => {
     const nodes = frequencyPageJsonLd(FREQUENCY_PAGE_SEO.spaces)
     expect(nodes.map((n) => n['@type'])).toEqual(['BreadcrumbList', 'WebPage'])
     const crumbs = nodes[0].itemListElement as { name: string }[]
-    expect(crumbs.map((c) => c.name)).toEqual(['For spaces'])
+    expect(crumbs.map((c) => c.name)).toEqual(['Home', 'For spaces'])
     expect(nodes[1].headline).toBe(FREQUENCY_PAGE_SEO.spaces.headline)
   })
 
