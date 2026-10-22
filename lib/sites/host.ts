@@ -72,6 +72,36 @@ export function siteSubdomainHost(slug: string, baseDomain: string = SITE_BASE_D
   return siteLabelOk(label) ? `${label}.${baseDomain}` : null
 }
 
+/** CHAPTER SUBDOMAINS (owner ask 2026-10-22: "encinitas.thegrouplocal.com and oceanside.thegrouplocal.com").
+ *  A Network that holds a custom domain gives each chapter the address `<chapter slug>.<that domain>`.
+ *  The host reaches the deployment once it is attached to the Vercel project, and the proxy already
+ *  sends any non-Frequency host to the site route, so only the resolve changes (lib/sites/hosted.ts).
+ *  The host for a chapter slug, or null when the slug cannot be a label (reserved, invalid) or the
+ *  domain is one of Frequency's own. */
+export function networkChapterHost(slug: string, networkDomain: string | null | undefined): string | null {
+  const label = slug.trim().toLowerCase()
+  const domain = normalizeHost(networkDomain)
+  if (!domain || !domain.includes('.') || isAppHost(domain) || label === 'spotlight' || !siteLabelOk(label)) return null
+  return `${label}.${domain}`
+}
+
+/** The chapter label and Network domain a host could mean (`encinitas.thegrouplocal.com` is `encinitas` of
+ *  `thegrouplocal.com`), or null for one of Frequency's own hosts, a `spotlight.` host, or a host that is
+ *  not label-plus-domain. Only a candidate: the resolve checks the Network really holds the domain. */
+export function chapterHostParts(
+  host: string | null | undefined,
+  appHosts: Set<string> = new Set(),
+): { label: string; networkDomain: string } | null {
+  const h = normalizeHost(host)
+  if (isAppHost(h, appHosts)) return null
+  const dot = h.indexOf('.')
+  if (dot < 1) return null
+  const label = h.slice(0, dot)
+  const networkDomain = h.slice(dot + 1)
+  if (label === 'spotlight' || !networkDomain.includes('.') || !siteLabelOk(label) || isAppHost(networkDomain, appHosts)) return null
+  return { label, networkDomain }
+}
+
 /** Frequency's own apex domains. Every subdomain of these is the app too. */
 const APP_APEXES = ['frequencylocal.com', 'vercel.app', 'localhost']
 

@@ -1,12 +1,20 @@
 {
   "id": "LIVE-1275",
-  "title": "Help and Support are in every menu: public header, Space console, platform admin, avatar menu",
-  "lane": "live",
-  "priority": "P2",
-  "size": "S",
-  "wave": "W7",
+  "title": "A Network's chapters live at their own subdomain of the Network's domain (LIVE-1275)",
   "status": "done",
-  "verify": { "kind": "cmd", "cmd": "node scripts/probes/help-support-in-menus.mjs" },
-  "detail": "Owner ask 2026-10-22. Audit found Help already in the member footer, member site menu, phone More sheet and platform admin footer. Gaps closed: the public header row gains Help (DIRECT_LINKS, also the phone sheet), the Space console top bar and phone More sheet gain Contact support (/support), the platform admin top bar gains Support inbox (/admin/support, only when the viewer can see it), and the avatar menu row reads Help & support.",
-  "closed": "2026-10-22"
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/sites/hosted.ts",
+    "ref": "Owner 2026-10-22: 'For network members, I want their chapters to have a subdomain, like encinitas.thegrouplocal.com and oceanside.thegrouplocal.com.'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-22. A Network that holds a custom domain gives each chapter <chapter slug>.<domain>. The proxy already sends any non-Frequency host to the site route, so only the resolve changed: resolveHostedSpace falls back to resolveChapterSpace, which needs the Network to hold the domain (the custom_domain gate applies), the chapter to be its same-owner child, and the slug to be a valid unreserved label. boundSiteDomain returns the chapter host for a chapter without a domain of its own, so canonical URLs, sitemap.xml, robots.txt, llms.txt, booking links and the free <slug>.frequencylocal.com redirect all name the one address. Hosts are attached to the Vercel project one by one (lib/sites/chapter-hosts.ts) when the Network connects or rechecks its domain and when a chapter publishes; never a wildcard domain, which needs Vercel nameservers. The owner adds one wildcard CNAME record (* to Vercel) at the Network domain's DNS. Sites stay standalone and ISR.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const h=fs.readFileSync('lib/sites/hosted.ts','utf8');const d=fs.readFileSync('lib/sites/site-domain.ts','utf8');const c=fs.readFileSync('lib/sites/chapter-hosts.ts','utf8');const bad=[];if(!h.includes('resolveChapterSpace')||!h.includes('chapter.parentId !== network.id'))bad.push('a chapter host does not resolve to its own Network chapter');if(!d.includes('chapterSiteHost'))bad.push('canonical ignores the chapter address');if(!c.includes('addSiteSubdomain'))bad.push('chapter hosts are not attached to hosting');if(bad.length){console.error('LIVE-1275: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when a chapter host stops resolving to the Network's own chapter, canonical stops naming the chapter address, or chapter hosts are no longer attached."
+  },
+  "closed": "2026-10-22",
+  "wave": "W7"
 }

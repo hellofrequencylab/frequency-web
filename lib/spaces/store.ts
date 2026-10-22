@@ -92,6 +92,7 @@ function mapSpace(r: SpaceRow, live: ReadonlyMap<string, string> = new Map()): S
     entityId: r.entity_id,
     skin: r.skin,
     domain: r.domain,
+    parentId: r.parent_id ?? null,
     networkConnected: r.network_connected,
     enabledVerticals: r.enabled_verticals ?? [],
     ownerProfileId: r.owner_profile_id,
