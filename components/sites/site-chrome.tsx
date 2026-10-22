@@ -9,6 +9,7 @@ import { MENSWORK_PAGE_CSS } from './menswork-page-css'
 import { FREQUENCY_PAGE_CSS } from './frequency-page-css'
 import { WILDHEART_CSS } from './wildheart-css'
 import { NETWORK_CSS } from './network-css'
+import { TEMPLE_CSS } from './temple-css'
 import type { NetworkSchemeId } from '@/lib/theme/network'
 import { WildheartSubBar } from './wildheart-now-line'
 import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
@@ -61,12 +62,12 @@ export function siteHref(base: string, pageSlug: string): string {
 /** A header menu item: a plain link, or (with `mega`) a dropdown panel of links and a feature card. */
 export type SiteLink = HouseHeaderLink
 
-/** A full website skin: Bold (the Menswork skin), Wildheart or Network, each with the season now. The
+/** A full website skin: Bold (the Menswork skin), Wildheart, Network or Temple, each with the season now. The
  *  Wildheart skin layers over the house look AND the Frequency page sections (light grounds, DAWN tokens
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart' | 'network'
+  theme: 'menswork' | 'wildheart' | 'network' | 'temple'
   season: MensworkSeason
   /** Network only: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
@@ -76,6 +77,7 @@ function skinCss(skin: SiteSkin | null): string {
   if (!skin) return HOUSE_CSS
   if (skin.theme === 'wildheart') return HOUSE_CSS + FREQUENCY_PAGE_CSS + WILDHEART_CSS
   if (skin.theme === 'network') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NETWORK_CSS
+  if (skin.theme === 'temple') return HOUSE_CSS + FREQUENCY_PAGE_CSS + TEMPLE_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
 
@@ -151,6 +153,8 @@ export function SiteChrome({
   const wild = skin?.theme === 'wildheart'
   // Network keeps the house logo slot (the round badge beside the name); the other skins draw the name alone.
   const net = skin?.theme === 'network'
+  // Temple draws the Space's logo alone as a one-colour seal (the design's arch lockup), in the header and the footer.
+  const temple = skin?.theme === 'temple'
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
   // that reserves its height, so nothing shifts when the date line folds away on scroll.
   const header = (
@@ -162,7 +166,7 @@ export function SiteChrome({
       adminCheck={adminLinks?.check ?? null}
       cta={cta}
       logoUrl={logoUrl}
-      logoMode={skin && !net ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
+      logoMode={temple ? (logoUrl ? 'logo' : 'name') : skin && !net ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
       skinned={!!skin}
       fadeOnPause={fadeOnPause}
       member={member}
@@ -202,13 +206,20 @@ export function SiteChrome({
 
       <main id="top">{children}</main>
 
-      <div className={wild ? 'wh-footer-ground' : undefined}>
+      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : undefined}>
       {(showBrandFooter ?? !!skin) && (
         <div className="hs-footer-top" data-columns={footer?.columns.length ? '' : undefined}>
           <div className="hs-footer-brand">
             <a href={homeHref} className="hs-brand">
               {/* A Wildheart footer leads with the mark (the handoff's LogoMark at 170px). */}
-              {wild ? <WhLogoMark name={brandName} size={170} className="hs-footer-logo" /> : brandName}
+              {wild ? (
+                <WhLogoMark name={brandName} size={170} className="hs-footer-logo" />
+              ) : temple && logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- operator logo on an arbitrary host
+                <img src={logoUrl} alt={brandName} className="tp-footer-seal" />
+              ) : (
+                brandName
+              )}
             </a>
             {(footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
           </div>

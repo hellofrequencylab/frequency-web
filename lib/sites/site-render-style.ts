@@ -3,6 +3,7 @@ import { resolveAccentVars, type AccentVars } from '@/lib/spaces/accent'
 import { mensworkAccentVars } from '@/lib/theme/menswork'
 import { wildheartAccentVars } from '@/lib/theme/wildheart'
 import { networkAccentVars } from '@/lib/theme/network'
+import { templeAccentVars } from '@/lib/theme/temple'
 import { SPACE_THEMES, SPACE_THEME_FONT_VARS, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteStyle, SiteThemeId } from '@/lib/theme/site-style'
 import { websiteThemeVars } from '@/lib/sites/editor/theme'
@@ -18,14 +19,14 @@ import type { WebsiteTheme } from '@/lib/sites/editor/state'
 // default accent.
 
 /** The editor's stored theme id for each site theme (ADR-1726): Bold is Menswork, Frequency is DAWN. */
-export const EDITOR_THEME_OF: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network' }
+export const EDITOR_THEME_OF: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', temple: 'Temple' }
 
 interface SiteRenderStyle {
   /** The site theme this page wears. */
   theme: SiteThemeId
   /** The same theme under the editor's id (the `data-website-theme` value and websiteThemeVars key). */
   editorTheme: WebsiteTheme
-  /** Bold, Wildheart and Network dress the page in their own skin; Frequency wears the house sheets. */
+  /** Bold, Wildheart, Network and Temple dress the page in their own skin; Frequency wears the house sheets. */
   skinned: boolean
   /** The font set the page wears (the AccentScope `data-space-theme`): Bold always its own, otherwise the
    *  owner's website font set (ADR-1726). */
@@ -48,7 +49,9 @@ export function siteRenderStyle(pageStyle: SiteStyle, accent: string | null | un
         ? wildheartAccentVars(brandAccent)
         : theme === 'network'
           ? networkAccentVars(brandAccent)
-          : resolveAccentVars(brandAccent, typeDefaultAccent)
+          : theme === 'temple'
+            ? templeAccentVars(brandAccent)
+            : resolveAccentVars(brandAccent, typeDefaultAccent)
   return {
     theme,
     editorTheme: EDITOR_THEME_OF[theme],

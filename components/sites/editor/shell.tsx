@@ -70,7 +70,7 @@ export interface WebsiteEditorShellProps {
   onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>>; pages?: Record<string, SiteThemeId | null> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
   /** The Space type's default accent (defaultAccentForType): what the live site paints when no brand accent is set. */
   defaultAccent?: string | null
-  /** The `--font-*` classes of the theme faces the canvas may wear (Network, Wildheart), set on the editor root so
+  /** The `--font-*` classes of the theme faces the canvas may wear (Network, Wildheart, Temple), set on the editor root so
    *  the canvas frame copies them; the editor's own chrome wears the Frequency design system. */
   fontClass?: string
   /** The Space's own domain when it has one (spaces.domain); the Frequency Site tab shows it. */
@@ -103,10 +103,10 @@ function subscribeViewport(callback: () => void) {
 
 /** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. Midnight
  *  is retired (ADR-1728): a draft that still carries it is offered the two themes. */
-const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network' }
+const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', Temple: 'Temple' }
 const EDITOR_THEME = EDITOR_THEME_OF
 /** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
-const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : 'frequency')
+const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'Temple' ? 'temple' : 'frequency')
 /** A page's publish state in the design's words (Pages tab and page menu dots). */
 type PageState = 'live' | 'changed' | 'draft'
 const PAGE_STATE_LABEL: Record<PageState, string> = { live: 'Published', changed: 'Draft changes', draft: 'Not published yet' }
