@@ -34,6 +34,7 @@ import { NICHE_FUNNEL_DESTINATIONS, type FunnelDestination } from '@/lib/funnels
 import { priceStringsFrom, defaultPricingInput } from '@/lib/pricing/pricing-page'
 import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { formatBps } from '@/lib/pricing/display'
+import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────
@@ -215,7 +216,7 @@ function pricingIntro(stepUp: string): string {
 /** The shared what-does-it-cost FAQ answer, with the per-niche "no network fee on ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `Free to start, and free to host. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings, donations and your shop. Frequency takes ${RATE.business} on a customer the network introduces, once, and 0% on the people already yours. There's no network fee on ${keep}, only card processing.${extra} A free Space runs your page, contacts, bookings and events, and takes tips with no platform fee, plus card processing. You always see the full number, nothing hidden.`
+  return `${PLAN_STORY.crewSpace} You pay for Business when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings, donations and your shop. Frequency takes ${RATE.business} on a customer the network introduces, once, and 0% on the people already yours. There's no network fee on ${keep}, only card processing.${extra} A free Space runs your page, contacts, bookings and events, and takes tips with no platform fee, plus card processing. You always see the full number, nothing hidden.`
 }
 
 
@@ -233,7 +234,7 @@ const COACHES_FUNNEL: FunnelConfig = {
     seoTitle: 'Booking + contacts software for coaches, healers and guides',
     subhead:
       "Bookings, payments, and every person you've met, together in one place. Frequency keeps your relationships close, so the people you meet come back, and bring the next ones. Start free.",
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
     trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
@@ -303,7 +304,7 @@ const COACHES_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Come home to one place.',
     subhead: "Your bookings, your payments, and every person you've met, held together. Start free, and grow through the people you meet.",
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
   },
 }
 
@@ -319,7 +320,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
     seoTitle: 'Membership + class booking software for studios and instructors',
     subhead:
       'Recurring classes, memberships, and check-in at the door, together in one place. Frequency keeps your members close, so the regulars come back and bring the next ones. Start free.',
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
     trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
@@ -389,7 +390,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Run the studio, not the back office.',
     subhead: 'Your classes, your memberships, and every member, held together in one place. Start free, and grow through the members you already have.',
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
   },
 }
 
@@ -405,7 +406,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
     seoTitle: 'Ticketing + check-in software for event hosts',
     subhead:
       'Tickets, check-in, and everyone who has one, together in one place. Frequency keeps the people who showed up, so your next event fills from the last. Start free.',
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
     trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
@@ -475,7 +476,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Keep the room you filled.',
     subhead: 'Your tickets, your door, and everyone who came, held together in one place. Start free, and let each event fill the next.',
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
   },
 }
 
@@ -491,7 +492,7 @@ const VENUES_FUNNEL: FunnelConfig = {
     seoTitle: 'Booking + events software for venues and community rooms',
     subhead:
       'Your calendar, the groups that use your room, and the people who show up, held together in one place. Start free, and let every group that meets there bring people to you.',
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
     trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
@@ -560,7 +561,7 @@ const VENUES_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Know who fills your room.',
     subhead: 'Your calendar, the groups that use it, and everyone who comes through the door, held together. Start free.',
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
   },
 }
 
@@ -577,7 +578,7 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
     seoTitle: 'Donations + supporter software for Non Profits',
     subhead:
       'Donations, supporters, and your programs, together in one place. Frequency holds your supporters, so giving repeats and the word travels to the next donor. Start free.',
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
     trustLine: 'No network fee on what you raise, plus card processing.',
   },
   metaDescription:
@@ -637,7 +638,7 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
   },
   faq: [
     { q: 'Do I need to be technical?', a: 'No. Most organizations have their Space running the same afternoon.' },
-    { q: 'What does it actually cost?', a: `Free to start and free to host. Taking donations is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no network fee on what you raise. You always see the full number, nothing hidden.` },
+    { q: 'What does it actually cost?', a: `${PLAN_STORY.crewSpace} Taking donations is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no network fee on what you raise. You always see the full number, nothing hidden.` },
     { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on December 1, 2026. You can open your Space before then, free, and it is ready when the town opens.` },
     { q: 'Do you take a cut of donations?', a: 'No. We never take a share of a donation. Card processing is the only fee on a gift, and it goes to the card processor, not to us.' },
     { q: 'Can I take my supporters with me?', a: 'Yes, any time. Export your whole supporter list whenever you want.' },
@@ -647,7 +648,7 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Put the money where the mission is.',
     subhead: 'Your donations, your supporters, and your programs, held together in one place, with nothing taken on what you raise. Start free.',
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
   },
 }
 
@@ -665,7 +666,7 @@ const NETWORKS_FUNNEL: FunnelConfig = {
     seoTitle: 'Chapter and member software for groups with many locations',
     subhead:
       'Each chapter keeps its own page, calendar and people. You see all of it together, and members move between chapters without starting over. Start free.',
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
     trustLine: 'Each chapter runs on its own Space.',
   },
   metaDescription:
@@ -732,7 +733,7 @@ const NETWORKS_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Bring every chapter home.',
     subhead: 'Your chapters, your members and one view of all of it. Start free, and add the Network when you are ready.',
-    microcopy: 'No card. You pay when you start charging.',
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
   },
 }
 
