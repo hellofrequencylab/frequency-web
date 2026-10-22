@@ -25,3 +25,13 @@ describe('tagPathFromLink', () => {
     expect(tagPathFromLink('/discover')).toBe('/discover')
   })
 })
+
+describe('featureTargets', () => {
+  it('lists every curated feature as a pickable target', async () => {
+    const { featureTargets } = await import('./tag-target-kinds')
+    const { SITE_DESTINATIONS } = await import('@/lib/qr/destinations')
+    const all = featureTargets(SITE_DESTINATIONS)
+    expect(all).toHaveLength(SITE_DESTINATIONS.length)
+    expect(all.every((t) => t.kind === 'page' && t.path.startsWith('/'))).toBe(true)
+  })
+})

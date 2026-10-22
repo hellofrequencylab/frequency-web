@@ -15,8 +15,12 @@ if (!/<FeaturedCheckin /.test(r('app/(public)/spaces/[slug]/page.tsx'))) bad.pus
 if (!/<ClaimButton /.test(r('components/spaces/featured-checkin.tsx'))) bad.push('the featured check-in has no claim button')
 const actions = r('lib/devices/tag-actions.ts')
 if (!/export async function startPageTag\(/.test(actions) || !/generateSlug\(7\)/.test(actions)) bad.push('the console cannot make a page tag link the Unicorn will write')
+const targets = r('lib/devices/tag-targets.ts')
+if (!/from\('profiles'\)/.test(targets) || !/isListableInDirectory/.test(targets)) bad.push('the tag search cannot find people (or skips their directory privacy)')
+if (!/from\('topical_channels'\)/.test(targets)) bad.push('the tag search cannot find Channels')
 const consoleSrc = r('components/spaces/loyalty/cyberunicorn-console.tsx')
 if (!/startPageTag\(/.test(consoleSrc) || !/Any page/.test(consoleSrc)) bad.push('the console has no "Any page" tag')
+if (!/FEATURE_GROUPS/.test(consoleSrc)) bad.push('the console no longer lists the site features to pick from')
 if (bad.length) {
   console.error('LIVE-1272 probe failed:\n- ' + bad.join('\n- '))
   process.exit(1)

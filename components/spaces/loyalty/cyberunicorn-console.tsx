@@ -17,8 +17,9 @@ import {
 } from '@/lib/devices/actions'
 import { dismissBadgeRequest, lookupConsoleSpace } from '@/lib/devices/badge-actions'
 import type { BadgeRequestRow } from '@/lib/devices/badges'
-import { checkPlacardTap, checkTagScan, dropSpaceTag, findTagTargets, finishSpaceTag, readSpaceTags, startPageTag, startSpaceTag } from '@/lib/devices/tag-actions'
-import { TAG_KIND_LABEL, type TagTarget } from '@/lib/devices/tag-target-kinds'
+import { checkPlacardTap, checkTagScan, dropSpaceTag, findConsoleMembers, findTagTargets, finishSpaceTag, readSpaceTags, startPageTag, startSpaceTag } from '@/lib/devices/tag-actions'
+import { TAG_KIND_LABEL, featureTargets, type TagTarget } from '@/lib/devices/tag-target-kinds'
+import { groupedDestinations } from '@/lib/qr/destinations'
 import type { SpaceTagRow } from '@/lib/devices/space-tags'
 import { listRelayDevicesForConsole, setConsoleRelay } from '@/lib/devices/relay-actions'
 import { reportConsoleLog } from '@/lib/devices/log-actions'
@@ -344,7 +345,7 @@ type Scanner = { spaceId: string; spaceName: string; label: string; active: bool
 type CheckIn = { at: number; name: string; ok: boolean; detail: string }
 type Mode = 'placards' | 'badges' | 'scanner' | 'remote' | 'update'
 const MODE_TITLE: Record<Mode, string> = {
-  placards: 'CHECK-IN PLACARDS',
+  placards: 'NFC TAGS',
   badges: 'MEMBER BADGES',
   scanner: 'COUNTER SCANNER',
   remote: 'WI-FI REMOTE',
@@ -403,6 +404,23 @@ export function CyberUnicornConsole({
   const [status, setStatus] = useState<SystemStatus | null>(null)
   const [hat, setHat] = useState<HatProbe | null>(null)
   const [handle, setHandle] = useState('')
+  const [memberHits, setMemberHits] = useState<{ name: string; handle: string }[]>([])
+  // Badge box: suggest members by name or handle as you type. Choosing one fills the handle.
+  const memberSearchSeq = useRef(0)
+  useEffect(() => {
+    const q = handle.trim().replace(/^@/, '')
+    if (mode !== 'badges' || q.length < 2) return
+    const seq = ++memberSearchSeq.current
+    const t = window.setTimeout(() => {
+      void findConsoleMembers(q).then((out) => {
+        if (seq !== memberSearchSeq.current) return
+        const hits = isError(out) ? [] : out.data
+        // Already the exact handle: nothing to suggest.
+        setMemberHits(hits.length === 1 && hits[0]!.handle.toLowerCase() === q.toLowerCase() ? [] : hits)
+      })
+    }, 250)
+    return () => window.clearTimeout(t)
+  }, [handle, mode])
   const [problem, setProblem] = useState<string | null>(null)
   const [done, setDone] = useState<Done | null>(null)
   const [tapStarted, setTapStarted] = useState<number | null>(null)
@@ -439,6 +457,20 @@ export function CyberUnicornConsole({
   const [pageQuery, setPageQuery] = useState('')
   const [pageResults, setPageResults] = useState<TagTarget[] | null>(null)
   const [pageTarget, setPageTarget] = useState<TagTarget | null>(null)
+  // Search as you type: a short pause after the last key, and only the newest answer is kept.
+  const pageSearchSeq = useRef(0)
+  useEffect(() => {
+    const q = pageQuery.trim()
+    if (tagFor !== 'page' || pageTarget || q.length < 2 || isPastedLink(q)) return
+    const seq = ++pageSearchSeq.current
+    const t = window.setTimeout(() => {
+      void findTagTargets(q).then((out) => {
+        if (seq !== pageSearchSeq.current) return
+        setPageResults(isError(out) ? [] : out.data)
+      })
+    }, 300)
+    return () => window.clearTimeout(t)
+  }, [pageQuery, tagFor, pageTarget])
   const [tags, setTags] = useState<SpaceTagRow[] | null>(null)
   // A Space handed in by the link: load its placards once.
   const initialLoad = useRef(false)
@@ -1117,9 +1149,9 @@ export function CyberUnicornConsole({
     const q = pageQuery.trim()
     if (!q) return
     // A pasted link is the page itself: no search needed.
-    if (q.startsWith('/') || /^(https?:\/\/)?(www\.)?frequencylocal\.com(\/|$)/i.test(q)) {
+    if (isPastedLink(q)) {
       setPageResults(null)
-      setPageTarget({ kind: 'page', label: q.replace(/^https?:\/\/(www\.)?/i, ''), detail: null, path: q })
+      setPageTarget({ kind: 'link', label: q.replace(/^https?:\/\/(www\.)?/i, ''), detail: null, path: q })
       return
     }
     setPageResults(null)
@@ -1492,7 +1524,7 @@ export function CyberUnicornConsole({
   })
   const live = connected && link === 'usb' && mirror && client !== null
   const allFeatures: { mode: Mode; Icon: LucideIcon; label: string; count?: number }[] = [
-    { mode: 'placards', Icon: Nfc, label: 'Placards' },
+    { mode: 'placards', Icon: Nfc, label: 'Tags' },
     { mode: 'badges', Icon: IdCard, label: 'Badges', count: requests.length },
     { mode: 'scanner', Icon: ScanLine, label: 'Scanner' },
     { mode: 'remote', Icon: Wifi, label: 'Wi-Fi remote' },
@@ -1782,7 +1814,7 @@ export function CyberUnicornConsole({
                   Space check-in
                 </CuButton>
                 <CuButton tone={tagFor === 'page' ? 'primary' : 'secondary'} pressed={tagFor === 'page'} onClick={() => setTagFor('page')}>
-                  Any page
+                  Any page or person
                 </CuButton>
               </div>
               {tagFor === 'checkin' ? (
@@ -1851,8 +1883,11 @@ export function CyberUnicornConsole({
                   <span className={LABEL_CLASS}>Who is this card for?</span>
                   <Input
                     value={handle}
-                    onChange={(e) => setHandle(e.target.value)}
-                    placeholder="Their handle, like @maya"
+                    onChange={(e) => {
+                      setHandle(e.target.value)
+                      if (e.target.value.trim().replace(/^@/, '').length < 2) setMemberHits([])
+                    }}
+                    placeholder="Type their name or handle"
                     autoComplete="off"
                     spellCheck={false}
                     maxLength={41}
@@ -1863,6 +1898,25 @@ export function CyberUnicornConsole({
                   Program card
                 </CuButton>
               </form>
+              {memberHits.length > 0 && (
+                <ul aria-label="Members" className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
+                  {memberHits.map((m) => (
+                    <li key={m.handle}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHandle(`@${m.handle}`)
+                          setMemberHits([])
+                        }}
+                        className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--cu-panel)]"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-[var(--cu-text)]">{m.name}</span>
+                        <span className="text-[var(--cu-secondary)]">@{m.handle}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <section aria-labelledby="cu5k-queue" className="space-y-2">
                 <h4 id="cu5k-queue" className={LABEL_CLASS}>
                   Asked for a badge ({requests.length})
@@ -2193,6 +2247,29 @@ function WaitingBar() {
 }
 
 /** The chosen Space's placards, newest first. Removing one takes it off the list; the sticker keeps working. */
+/** A frequencylocal.com link or a site path: the tag opens it as is, no search. */
+function isPastedLink(q: string): boolean {
+  return q.startsWith('/') || /^(https?:\/\/)?(www\.)?frequencylocal\.com(\/|$)/i.test(q)
+}
+
+/** Every site feature, grouped, for the list shown before anything is typed. Built once: pure data. */
+const FEATURE_GROUPS = groupedDestinations().map((g) => ({ group: g.group, items: featureTargets(g.items) }))
+
+/** One pickable row: the kind, the name, and a second line. */
+function TargetRow({ target, onChoose }: { target: TagTarget; onChoose: (t: TagTarget) => void }) {
+  return (
+    <li>
+      <button type="button" onClick={() => onChoose(target)} className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--cu-panel)]">
+        <span className={`${LABEL_CLASS} w-20 shrink-0`}>{TAG_KIND_LABEL[target.kind]}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[var(--cu-text)]">{target.label}</span>
+          {target.detail && <span className="block truncate text-[var(--cu-muted)]">{target.detail}</span>}
+        </span>
+      </button>
+    </li>
+  )
+}
+
 /** "Any page": search for what the tag should open, or paste a Frequency link. */
 function PageTagPicker({
   query,
@@ -2228,7 +2305,7 @@ function PageTagPicker({
   return (
     <div className="space-y-3">
       <p className="text-[var(--cu-muted)]">
-        A tag can open any page: an event, a Journey, a practice, a Space, a Circle, a partner offer. Search for it, or paste its link. Taps count in that page&apos;s scan activity.
+        A tag can open anything on Frequency: an event, a Journey, a practice, a Space, a Circle, a Channel, a person, a partner offer, or a feature like Discover or the Quest. Start typing to search, pick a feature below, or paste any frequencylocal.com link. Taps count in that page&apos;s scan activity.
       </p>
       <form
         className="flex flex-col gap-3 sm:flex-row sm:items-end"
@@ -2242,7 +2319,7 @@ function PageTagPicker({
           <Input
             value={query}
             onChange={(e) => onQuery(e.target.value)}
-            placeholder="Search, or paste a frequencylocal.com link"
+            placeholder="Type a name, or paste a frequencylocal.com link"
             autoComplete="off"
             spellCheck={false}
             maxLength={300}
@@ -2253,24 +2330,32 @@ function PageTagPicker({
           Find
         </CuButton>
       </form>
-      {results !== null &&
-        (results.length === 0 ? (
+      {results !== null && query.trim().length >= 2 ? (
+        results.length === 0 ? (
           <p className="text-[var(--cu-dim)]">Nothing matches. Try another word, or paste the page&apos;s link.</p>
         ) : (
           <ul className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
             {results.map((t) => (
-              <li key={`${t.kind}:${t.path}:${t.label}`}>
-                <button type="button" onClick={() => onChoose(t)} className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--cu-panel)]">
-                  <span className={`${LABEL_CLASS} w-20 shrink-0`}>{TAG_KIND_LABEL[t.kind]}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[var(--cu-text)]">{t.label}</span>
-                    {t.detail && <span className="block truncate text-[var(--cu-muted)]">{t.detail}</span>}
-                  </span>
-                </button>
-              </li>
+              <TargetRow key={`${t.kind}:${t.path}:${t.label}`} target={t} onChoose={onChoose} />
             ))}
           </ul>
-        ))}
+        )
+      ) : (
+        !query.trim() && (
+          <div className="space-y-3">
+            {FEATURE_GROUPS.map((g) => (
+              <section key={g.group} aria-label={g.group} className="space-y-1">
+                <h4 className={LABEL_CLASS}>{g.group}</h4>
+                <ul className="divide-y divide-[var(--cu-panel)] border border-[var(--cu-panel)]">
+                  {g.items.map((t) => (
+                    <TargetRow key={`${t.path}:${t.label}`} target={t} onChoose={onChoose} />
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )
+      )}
     </div>
   )
 }
