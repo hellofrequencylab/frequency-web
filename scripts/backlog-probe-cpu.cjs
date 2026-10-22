@@ -1,5 +1,5 @@
 // PROBE SELF-REPORT (HYG-062, ADR-1226). check-backlog.mjs preloads this into every `node` a cmd
-// probe starts, through NODE_OPTIONS=--import. On exit the probe writes its own CPU cost to fd 3,
+// probe starts, through NODE_OPTIONS=--require. On exit the probe writes its own CPU cost to fd 3,
 // the pipe the guard opened for exactly this line, so attribution comes from the PROBE rather than
 // from the parent reading its reaped-children counters — which only worked while probes ran one at
 // a time. A probe that spawned work of its own (a tsc, a shell) adds the CPU of the children it
@@ -8,7 +8,10 @@
 //
 // It must never break a probe: no fd 3 (the probe was run by hand), no /proc (not Linux) — every
 // failure is swallowed and the probe's verdict stands.
-import { readFileSync, writeSync } from 'node:fs'
+// CommonJS and loaded with --require, not --import: it runs in every probe's node, and the ESM loader
+// costs ~15ms of startup there, which across the whole sweep is most of what a preload can waste.
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- a --require preload has no import
+const { readFileSync, writeSync } = require('node:fs')
 
 function reapedChildrenMs() {
   try {
