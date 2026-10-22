@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1283 (ADR-1875): The Temple is a registered, fully tokened site theme.
+// LIVE-1285 (ADR-1875): The Temple is a registered, fully tokened site theme.
 //
 // Fails when 'temple' leaves the site theme registry or the editor theme list, when the contract loses its
 // entry, when the skin or token sheet carries a raw color, when the four faces are loaded from the root
@@ -26,7 +26,7 @@ const iHouse = chrome.indexOf('HOUSE_CSS'), iTemple = chrome.indexOf('TEMPLE_CSS
 if (iTemple < 0 || iHouse < 0) bad.push('site-chrome.tsx does not layer the Temple skin')
 
 if (bad.length) {
-  console.error('LIVE-1283: ' + bad.join('; '))
+  console.error('LIVE-1285: ' + bad.join('; '))
   process.exit(1)
 }
 console.log('temple-theme: registered, tokened, faces on the site page only')

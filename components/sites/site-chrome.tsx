@@ -212,7 +212,14 @@ export function SiteChrome({
           <div className="hs-footer-brand">
             <a href={homeHref} className="hs-brand">
               {/* A Wildheart footer leads with the mark (the handoff's LogoMark at 170px). */}
-              {wild ? <WhLogoMark name={brandName} size={170} className="hs-footer-logo" /> : temple && logoUrl ? <img src={logoUrl} alt={brandName} className="tp-footer-seal" /> : brandName}
+              {wild ? (
+                <WhLogoMark name={brandName} size={170} className="hs-footer-logo" />
+              ) : temple && logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- operator logo on an arbitrary host
+                <img src={logoUrl} alt={brandName} className="tp-footer-seal" />
+              ) : (
+                brandName
+              )}
             </a>
             {(footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
           </div>
