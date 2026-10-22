@@ -20,6 +20,7 @@ import {
   type SpacePlanKey,
 } from './pricing-keys'
 import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-items'
+import { operatorOfferClosed } from '@/lib/offers/operator-offer-server'
 import { foundingOpenFor, isBetaPricingActive, loadoutChargeArm, loadoutChargePriceKey, networkFoundingOpen } from '@/lib/pricing/beta'
 import { spaceHasBetaPriceGrant } from './space-beta-grant'
 import { receiptEmailFor } from './receipt-address'
@@ -160,6 +161,7 @@ async function resolveLoadoutPriceId(
   catalogKey: CatalogItemKey,
   interval: BillingInterval,
   hasBetaGrant: boolean,
+  offerClosed = false,
 ): Promise<string | null> {
   const itemKey = itemKeyForCatalogKey(catalogKey)
   const locked = itemKey ? await readLockedPriceId(spaceId, itemKey) : null
@@ -167,7 +169,8 @@ async function resolveLoadoutPriceId(
   // Collective bills the founding key while every other item follows the beta window alone.
   const arm = loadoutChargeArm({
     lockedPriceId: locked,
-    betaActive: foundingOpenFor(catalogKey, isBetaPricingActive()),
+    // A person whose timed Beta offer has run out is charged list (lib/offers/operator-offer.ts).
+    betaActive: !offerClosed && foundingOpenFor(catalogKey, isBetaPricingActive()),
     spaceHasBetaGrant: hasBetaGrant,
   })
   // The lock is a concrete price id, not a catalog key, so it returns straight out.
@@ -295,6 +298,8 @@ export async function createSpaceLoadoutCheckout(
   // request with 42703 and take every checkout down — the exact bug the `profiles.email` comment above
   // records. FAIL-SAFE FALSE: unreadable means charge list, never under-charge.
   const hasBetaGrant = await spaceHasBetaPriceGrant(spaceId)
+  // THE TIMED BETA OFFER: once this owner's clock has run out the Beta price is gone for them.
+  const offerClosed = await operatorOfferClosed(space.owner_profile_id)
   // THE NON PROFIT NETWORK RATE (SCAN-1008). Read from the verification record, never from the caller:
   // the loadout is client-chosen, and a verified status is the only thing that earns the lower base.
   // FAIL-SAFE to the full rate: an unreadable record charges network_base, never under-charges.
@@ -305,7 +310,7 @@ export async function createSpaceLoadoutCheckout(
   // An item with no synced price is skipped (never charged at the wrong price).
   const lineItems: { price: string; quantity: number }[] = []
   for (const { key } of catalogKeysForLoadout(loadout, { nonprofitVerified })) {
-    const priceId = await resolveLoadoutPriceId(spaceId, key, interval, hasBetaGrant)
+    const priceId = await resolveLoadoutPriceId(spaceId, key, interval, hasBetaGrant, offerClosed)
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
       // that add-on from the loadout rather than blocking the whole checkout.
@@ -336,11 +341,11 @@ export async function createSpaceLoadoutCheckout(
   if (loadout.plan === 'network' && interval === 'year') {
     if (loadout.networkPackage === true) {
       const chapterKey: CatalogItemKey = nonprofitVerified ? 'nonprofit_network_chapter' : 'network_chapter'
-      const chapterPrice = await resolveLoadoutPriceId(spaceId, chapterKey, interval, hasBetaGrant)
+      const chapterPrice = await resolveLoadoutPriceId(spaceId, chapterKey, interval, hasBetaGrant, offerClosed)
       if (!chapterPrice) return null
       lineItems.push({ price: chapterPrice, quantity: NETWORK_PLAN.packageChapters - NETWORK_PLAN.includedChapters })
       networkCoupon = nonprofitVerified ? NETWORK_PLAN.couponNonprofitPackage : NETWORK_PLAN.couponPackage
-    } else if (networkFoundingOpen()) {
+    } else if (networkFoundingOpen() && !offerClosed) {
       networkCoupon = nonprofitVerified ? NETWORK_PLAN.couponNonprofitFounding : NETWORK_PLAN.couponFounding
     }
   }

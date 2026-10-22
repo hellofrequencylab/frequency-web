@@ -804,5 +804,6 @@ export function funnelStartDestination(config: FunnelConfig): FunnelDestination 
  *  sent straight to the same path. A door whose niche has NO row falls back to the Space directory, because
  *  the induction would otherwise end on the general Beta waitlist. PURE. */
 export function funnelStartHref(config: FunnelConfig): string {
-  return funnelStartDestination(config) ? `/join?seq=${encodeURIComponent(config.niche)}` : FUNNEL_START_FALLBACK_HREF
+  const destination = funnelStartDestination(config)
+  return destination?.mode === 'direct' ? destination.url : FUNNEL_START_FALLBACK_HREF
 }

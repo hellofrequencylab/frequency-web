@@ -112,7 +112,7 @@ describe('marketing door destinations agree with the onboarding side (one source
     // The consequence the row measured: the button must produce the URL whose completion reads the map.
     for (const slug of funnelSlugs()) {
       const config = getFunnelConfig(slug)!
-      expect(funnelStartHref(config)).toBe(`/join?seq=${config.niche}`)
+      expect(funnelStartHref(config)).toBe((nicheFunnelDestination(config.niche) as { url: string }).url)
       expect(funnelStartHref(config)).not.toBe(FUNNEL_START_FALLBACK_HREF)
     }
   })

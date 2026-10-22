@@ -236,11 +236,13 @@ export const HOST_CTA_LABEL = "Host a Circle";
 // a Space, so both readers walk through /join. What differs is the WORD, because the word is what
 // tells a reader the page was written for them. Routing the two verbs to two destinations sounds
 // tidier and produces self-links on exactly the pages that carry the operator verb.
-export const OPERATOR_CTA_HREF = BETA_CTA_HREF;
+// 2026-10-22 (owner): operator buttons skip the member sign-up. They open Create a Space; a signed-out
+// visitor makes an account there and comes straight back (app/(main)/spaces/new/page.tsx).
+export const OPERATOR_CTA_HREF = "/spaces/new";
 /** A plan button's door: signup first, then straight into Create a Space. A signed-in member skips the
  *  sign-up and lands on the same form (app/join/(induction)/page.tsx honours `next`). Plan buttons used to
  *  point at the /spaces explainer, one more page between a visitor and the thing they asked for. */
-export const OPERATOR_START_HREF = `${OPERATOR_CTA_HREF}?next=/spaces/new`;
+export const OPERATOR_START_HREF = OPERATOR_CTA_HREF;
 /** The same door with the plan the visitor clicked riding along as `?plan=<id>` on Create a Space (ids: free,
  *  business, collective, nonprofit, network). Create a Space may read it; nothing may depend on it. */
 export function operatorStartHref(plan: string, extra: Record<string, string> = {}): string {
@@ -248,7 +250,7 @@ export function operatorStartHref(plan: string, extra: Record<string, string> = 
   // Hints the pricing calculator collects (the Space's name, what it will do). Create a Space reads them as
   // starting values only; an empty one is dropped so the link stays as short as the plain plan link.
   for (const [k, v] of Object.entries(extra)) if (v) query.set(k, v)
-  return `${OPERATOR_CTA_HREF}?next=${encodeURIComponent(`/spaces/new?${query.toString()}`)}`
+  return `${OPERATOR_CTA_HREF}?${query.toString()}`
 }
 
 /** THE NARROW-HEADER FORM, and the reason it exists (ADR-1197).

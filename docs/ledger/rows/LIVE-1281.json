@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-1281",
+  "title": "Operator buttons open Create a Space, then a timed Beta offer with a countdown that really expires",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "wave": "W7",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=f=>fs.readFileSync(f,'utf8');const bad=[];if(!r('lib/site.ts').includes('OPERATOR_CTA_HREF = \\\"/spaces/new\\\"'))bad.push('operator CTA does not open Create a Space');if(!r('lib/billing/space-plan-checkout.ts').includes('operatorOfferClosed'))bad.push('checkout ignores an expired offer');if(!r('app/(main)/layout.tsx').includes('OfferBar'))bad.push('countdown strip not mounted');if(!fs.existsSync('app/(main)/offer/page.tsx'))bad.push('offer page missing');if(bad.length){console.error('LIVE-1281: '+bad.join('; '));process.exit(1)}\""
+  },
+  "detail": "Owner 2026-10-22 (try-first funnel). Every operator CTA (six doors, pricing plan buttons, home, marketing) opens /spaces/new; a signed-out visitor makes an account there and returns with the door's mode and plan hint. /join stays the member sign-up. Once a Space owner has an event or contact in their Space, or 24 hours after creating it, they are taken once to /offer, which starts a single 72 hour clock (capped at the Beta end) kept on profiles.meta.operator_offer and shows the Space's plan ladder. A countdown strip stays under the header; when the clock ends the strip goes, /offer redirects to the plain plan page, and checkout charges the list price (lib/billing/space-plan-checkout.ts). No migration, no new Stripe objects. Strategy: /mnt/project-files/funnel/try-first-strategy.md.",
+  "closed": "2026-10-22"
+}

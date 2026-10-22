@@ -9,6 +9,8 @@ import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import { announcementBannerState, countdownLabel } from '@/components/layout/announcement-banner'
 import { AnnouncementBar } from '@/components/layout/announcement-bar'
+import { OfferBar } from '@/components/offers/offer-bar'
+import { offerBarState } from '@/lib/offers/operator-offer-server'
 import { matchPublicTwin } from '@/lib/nav/public-twin'
 import { getPublicCircles, getTopicalChannels } from '@/lib/discover'
 import { isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
@@ -486,6 +488,11 @@ export default async function MainLayout({
   // preview so a steward's "view as" faithfully drops the operator entry too, matching staffRole.
   const operatesSpaces = previewingDown ? false : operatesSpacesRaw
 
+  // The timed Beta offer (try-first funnel): a live countdown strip, or a one-time nudge to the offer
+  // page once a new Space owner has something built. Null for everyone else, at no query.
+  const offerState = previewingDown ? null : await offerBarState(profile.id, profile.meta, operatesSpaces)
+  const offerBanner = offerState ? <OfferBar href="/offer" endsAtMs={offerState.endsAtMs} pending={offerState.pending} /> : null
+
   // Payouts eligibility for the account menu's "Receive payments" item. Suppressed under a
   // downgrade / visitor preview so a steward's "view as" faithfully drops the earner item too,
   // exactly like operatesSpaces + staffRole above (view-as is downgrade-only, so realRole is the
@@ -862,9 +869,9 @@ export default async function MainLayout({
         }
         sidebarMicro={<FrequencyRightMicro profileId={profile.id} stats={fqStats ?? Promise.resolve(null)} />}
         banner={
-          announcement ? (
+  offerBanner ?? (announcement ? (
             <AnnouncementBar message={announcement.message} countLabel={countdownLabel(announcement.ends)} />
-          ) : null
+          ) : null)
         }
         unreadCount={unreadCount}
         messagesUnread={messagesUnread}
@@ -907,9 +914,9 @@ export default async function MainLayout({
       dock={dock}
       ticker={ticker}
       banner={
-        announcement ? (
+offerBanner ?? (announcement ? (
           <AnnouncementBar message={announcement.message} countLabel={countdownLabel(announcement.ends)} />
-        ) : null
+        ) : null)
       }
       unreadCount={unreadCount}
       messagesUnread={messagesUnread}
