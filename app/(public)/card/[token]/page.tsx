@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Gift, Globe, Mail, PauseCircle, Phone } from 'lucide-react'
+import { Gift, Globe, Mail, PauseCircle, Phone, Store } from 'lucide-react'
 import { getCachedUser, getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseVcard } from '@/lib/vcard'
@@ -66,7 +66,8 @@ interface MemberFace {
   title: string | null
   phone: string | null
   email: string | null
-  links: { href: string; label: string }[]
+  /** Websites, then the Spaces the member runs (`space`, opened in place). */
+  links: { href: string; label: string; space?: boolean }[]
   canSave: boolean
 }
 
@@ -88,12 +89,24 @@ async function loadMemberFace(card: TappedCard & { owner: { kind: 'member' } }):
       .maybeSingle()
     if (!p || p.is_active === false || p.is_system) return null
     const vcard = parseVcard(p.vcard)
-    const links: { href: string; label: string }[] = []
+    const links: MemberFace['links'] = []
     if (card.face.showLinks) {
       for (const raw of [p.website, vcard.website]) {
         const site = safeWebsite(raw)
         if (site && !links.some((l) => l.href === site.href)) links.push(site)
       }
+      // THE BUSINESS HALF (LIVE-1302): a member who runs a Space shows it with their links, so one card
+      // carries the business too. Only a public, active Space; its page is already public.
+      const { data: spaces } = await createAdminClient()
+        .from('spaces')
+        .select('slug, name, brand_name')
+        .eq('owner_profile_id', card.owner.profileId)
+        .eq('status', 'active')
+        .neq('visibility', 'private')
+        .neq('type', 'root')
+        .order('name')
+        .limit(3)
+      for (const sp of spaces ?? []) links.push({ href: `/spaces/${sp.slug}`, label: sp.brand_name || sp.name, space: true })
     }
     return {
       kind: 'member',
@@ -219,10 +232,17 @@ async function CardFace({ params }: { params: Promise<{ token: string }> }) {
             )}
             {face.links.map((l) => (
               <li key={l.href}>
-                <a href={l.href} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-2 text-text hover:underline">
-                  <Globe className="h-4 w-4 shrink-0 text-muted" aria-hidden />
-                  {l.label}
-                </a>
+                {l.space ? (
+                  <Link href={l.href} className="flex items-center gap-2 text-text hover:underline">
+                    <Store className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+                    {l.label}
+                  </Link>
+                ) : (
+                  <a href={l.href} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-2 text-text hover:underline">
+                    <Globe className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+                    {l.label}
+                  </a>
+                )}
               </li>
             ))}
           </ul>

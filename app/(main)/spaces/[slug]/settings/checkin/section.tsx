@@ -75,7 +75,7 @@ export async function CheckinSection({
         {ownCard ? (
           <section className="space-y-3">
             <SectionHeader title="Your Crew card" />
-            <p className="text-body-sm text-muted">The same card as on your profile.</p>
+            <p className="text-body-sm text-muted">The same card and editor as on My card.</p>
             <Suspense fallback={<RosterSkeleton />}>
               <MyCardSection profileId={viewerProfileId} />
             </Suspense>
