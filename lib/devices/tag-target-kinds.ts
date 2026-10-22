@@ -2,7 +2,7 @@
 // import-free module so the console (a client component) can read the labels without pulling in the
 // server-only search.
 
-type TagTargetKind = 'space' | 'event' | 'journey' | 'practice' | 'circle' | 'partner' | 'offer' | 'page'
+type TagTargetKind = 'space' | 'event' | 'journey' | 'practice' | 'circle' | 'channel' | 'person' | 'partner' | 'offer' | 'page' | 'link'
 
 export interface TagTarget {
   kind: TagTargetKind
@@ -21,7 +21,16 @@ export const TAG_KIND_LABEL: Record<TagTargetKind, string> = {
   journey: 'Journey',
   practice: 'Practice',
   circle: 'Circle',
+  channel: 'Channel',
+  person: 'Person',
   partner: 'Partner',
   offer: 'Offer',
-  page: 'Page',
+  page: 'Feature',
+  link: 'Link',
+}
+
+/** Every curated site feature (lib/qr/destinations.ts) as a pickable target, for the console's
+ *  browse list before anything is typed. */
+export function featureTargets(destinations: readonly { label: string; path: string; value: string; group: string }[]): TagTarget[] {
+  return destinations.map((d) => ({ kind: 'page', label: d.label, detail: `${d.group} · ${d.value}`, path: d.path }))
 }

@@ -11,6 +11,7 @@ import { signedPlacardUrl } from '@/lib/qr/node-code'
 import { shortLinkUrl, withMedium } from '@/lib/qr/links'
 import { generateSlug } from '@/lib/qr/codes'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { applySearchTerms } from '@/lib/search/query'
 import { normalizeUid } from './credentials'
 import { consoleStaffGate } from './store'
 import { latestCheckinSince, listSpaceTags, recordSpaceTag, removeSpaceTag, type SpaceTagRow } from './space-tags'
@@ -137,5 +138,27 @@ export async function checkTagScan(codeId: unknown, sinceIso: unknown): Promise<
     return ok(row ? { at: row.scanned_at, count: count ?? 1 } : null)
   } catch {
     return ok(null)
+  }
+}
+
+/** Members by name or handle, for the console's badge box. Staff only: a badge is written for a
+ *  member who asked at a Space, so this finds any active member, the way the admin member list does. */
+export async function findConsoleMembers(query: unknown): Promise<ActionResult<{ name: string; handle: string }[]>> {
+  if (!(await consoleStaffGate())) return fail('Only Frequency staff can program badges.')
+  const q = typeof query === 'string' ? query.replace(/^@/, '').trim().slice(0, 60) : ''
+  if (q.length < 2) return ok([])
+  try {
+    const { data } = await applySearchTerms(
+      createAdminClient().from('profiles').select('display_name, handle'),
+      ['display_name', 'handle'],
+      q,
+    )
+      .eq('is_active', true)
+      .not('handle', 'is', null)
+      .order('display_name')
+      .limit(8)
+    return ok((data ?? []).filter((p) => p.handle).map((p) => ({ name: p.display_name?.trim() || `@${p.handle}`, handle: p.handle! })))
+  } catch {
+    return ok([])
   }
 }
