@@ -118,10 +118,12 @@ export function webPageSchema(page: {
 // ── Breadcrumbs ───────────────────────────────────────────────────────────────
 
 export function breadcrumbSchema(items: { name: string; path: string }[]) {
+  // The visible trail always starts at Home, so the markup does too (site audit 2026-10-22, finding 11).
+  const trail = items.length === 0 || items[0].path === '/' ? items : [{ name: 'Home', path: '/' }, ...items]
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
-    itemListElement: items.map((item, i) => ({
+    itemListElement: trail.map((item, i) => ({
       '@type': 'ListItem',
       position: i + 1,
       name: item.name,
