@@ -26,7 +26,7 @@ if (!/closeBadgeRequestForCard\(/.test(r('lib/devices/actions.ts'))) bad.push('w
 
 const layout = r('app/(main)/spaces/[slug]/(profile)/layout.tsx')
 if ((layout.match(/<BadgeNote /g) ?? []).length < 2) bad.push('the Space page does not show the badge line on both branches')
-if (!/Get a scannable badge/.test(r('components/spaces/badge-request-button.tsx'))) bad.push('no Get a scannable badge button')
+if (!/Get a (scannable badge|member card)/.test(r('components/spaces/badge-request-button.tsx'))) bad.push('no Get a scannable badge button')
 
 const mig = r('supabase/migrations/20270346018000_badge_requests.sql')
 if (!/revoke all on table public\.badge_requests from public, anon, authenticated/.test(mig)) bad.push('badge_requests is not service-role only')

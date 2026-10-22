@@ -1,12 +1,15 @@
 // BADGE REQUESTS (LIVE-1180, docs/LOYALTY.md "Counter scanners"). A member taps "Get a scannable badge"
 // on a Space's page and files one pending badge_requests row; the CyberUnicorn console in the admin menu
-// lists the pending rows, and writing that member's card for that Space closes the row. The table is
+// lists the pending rows, and writing that member's card closes the rows it answers. A request filed
+// against the Frequency root Space (loadRootSpaceId) asks for a Frequency-wide member card (LIVE-1282).
+// The table is
 // service-role only (scripts/table-grants.txt `internal`), so this file is its tenancy wall:
 //   • the MEMBER side files and reads only the caller's own row (profile id from the session);
 //   • the STAFF side (the queue, closing a row) runs behind consoleStaffGate.
 // Reads FAIL-SAFE (null / []); writes FAIL-CLOSED. No 'use server' here; the actions are ./badge-actions.ts.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { consoleStaffGate } from './store'
 
 /** Where a member stands on a badge at one Space. */
@@ -21,9 +24,12 @@ export interface BadgeRequestRow {
   memberName: string
   memberHandle: string | null
   createdAt: string
+  /** Filed against the Frequency root Space: a request for a Frequency-wide member card. */
+  frequencyWide: boolean
 }
 
-/** The caller's badge state at a Space: a live card here wins, then a pending request. */
+/** The caller's badge state at a Space: a live card that checks in here (this Space's, or a
+ *  Frequency-wide member card) wins, then a pending request. */
 export async function readBadgeState(spaceId: string, profileId: string): Promise<BadgeState> {
   try {
     const db = createAdminClient()
@@ -32,7 +38,7 @@ export async function readBadgeState(spaceId: string, profileId: string): Promis
         .from('member_cards')
         .select('id', { count: 'exact', head: true })
         .eq('profile_id', profileId)
-        .eq('space_id', spaceId)
+        .or(`space_id.eq.${spaceId},space_id.is.null`)
         .eq('active', true),
       db
         .from('badge_requests')
@@ -64,12 +70,15 @@ export async function fileBadgeRequest(spaceId: string, profileId: string): Prom
 export async function listBadgeRequests(limit = 50): Promise<BadgeRequestRow[]> {
   if (!(await consoleStaffGate())) return []
   try {
-    const { data } = await createAdminClient()
-      .from('badge_requests')
-      .select('id, space_id, created_at, spaces(name, brand_name, slug), profiles(display_name, handle)')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true })
-      .limit(limit)
+    const [rootId, { data }] = await Promise.all([
+      loadRootSpaceId(),
+      createAdminClient()
+        .from('badge_requests')
+        .select('id, space_id, created_at, spaces(name, brand_name, slug), profiles(display_name, handle)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true })
+        .limit(limit),
+    ])
     type Row = {
       id: string
       space_id: string
@@ -85,26 +94,29 @@ export async function listBadgeRequests(limit = 50): Promise<BadgeRequestRow[]> 
       memberName: r.profiles?.display_name?.trim() || 'Member',
       memberHandle: r.profiles?.handle ?? null,
       createdAt: r.created_at,
+      frequencyWide: !!rootId && r.space_id === rootId,
     }))
   } catch {
     return []
   }
 }
 
-/** The card was written and bound: close the member's pending request at that Space and point it at
- *  the card. Staff only. No pending row is fine (the card was written without a request). */
-export async function closeBadgeRequestForCard(spaceId: string, cardId: string): Promise<void> {
+/** The card was written and bound: close the member's pending requests the card answers and point
+ *  them at it. A Frequency-wide member card (space_id null) checks in everywhere, so it closes every
+ *  request the member has pending, the root Space's included; a Space card closes the one at its Space.
+ *  Staff only. No pending row is fine (the card was written without a request). */
+export async function closeBadgeRequestForCard(cardId: string): Promise<void> {
   if (!(await consoleStaffGate())) return
   try {
     const db = createAdminClient()
-    const { data: card } = await db.from('member_cards').select('profile_id').eq('id', cardId).eq('space_id', spaceId).maybeSingle()
+    const { data: card } = await db.from('member_cards').select('profile_id, space_id').eq('id', cardId).maybeSingle()
     if (!card) return
-    await db
+    const q = db
       .from('badge_requests')
       .update({ status: 'done', card_id: cardId, closed_at: new Date().toISOString() })
-      .eq('space_id', spaceId)
       .eq('profile_id', card.profile_id)
       .eq('status', 'pending')
+    await (card.space_id ? q.eq('space_id', card.space_id) : q)
   } catch {
     /* the card is good either way; the row stays pending and staff can clear it */
   }

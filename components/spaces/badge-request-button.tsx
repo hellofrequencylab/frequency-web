@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { isError } from '@/lib/action-result'
 import { requestBadge } from '@/lib/devices/badge-actions'
 
-/** The "Get a scannable badge" button (LIVE-1180): files the member's request, then the line re-renders. */
+/** The "Get a member card" button (LIVE-1180, renamed by LIVE-1282): files the member's request, then the line re-renders. */
 export function BadgeRequestButton({ spaceId }: { spaceId: string }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -25,7 +25,7 @@ export function BadgeRequestButton({ spaceId }: { spaceId: string }) {
           })
         }
       >
-        {pending ? 'Sending...' : 'Get a scannable badge'}
+        {pending ? 'Sending...' : 'Get a member card'}
       </button>
       {problem && (
         <span role="alert" className="w-full text-meta text-danger">

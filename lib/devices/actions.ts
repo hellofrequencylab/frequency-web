@@ -3,17 +3,20 @@
 // COUNTER SCANNER owner actions (LIVE-1125, docs/LOYALTY.md "Counter scanners"). Every write runs
 // behind scannerOwnerGate(spaceId, 'write') inside ./store.ts (canEditProfile and the per-Space
 // check-in function). The device secret is returned ONCE, by registerScanner, and never again.
-// The last three are the USB console's card flow (cyberunicorn-console.tsx, in the admin menu): mint,
-// then bind the chip the CyberUnicorn wrote, or discard the mint if the write never landed. Those run
-// behind consoleStaffGate (platform staff) instead, and binding closes the member's badge request.
+// The last three are the USB console's card flow (cyberunicorn-console.tsx, in the admin menu): mint a
+// member card (Frequency-wide, Crew only) or a Space card (LIVE-1282), then bind the chip the
+// CyberUnicorn wrote, or discard the mint if the write never landed. Those run behind consoleStaffGate
+// (platform staff) instead, and binding closes the badge requests the card answers.
 
 import { revalidatePath } from 'next/cache'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { getSpaceById } from '@/lib/spaces/store'
 import { SITE_URL } from '@/lib/site'
 import { closeBadgeRequestForCard } from './badges'
+import { cardEdition, formatCardNumber } from '@/lib/member-cards/face'
 import { hashUid, normalizeHandle, normalizeUid } from './credentials'
 import {
+  type ConsoleCardKind,
   SCANNER_LIMITS,
   bindConsoleCard,
   describeScannerForConsole,
@@ -26,6 +29,11 @@ import {
   revokeScannerDevice,
   scannerDevicesEnabled,
 } from './store'
+
+/** "No. 0042 · Founders edition", the line staff print or write on the card. */
+function printedCardLine(cardNumber: number): string {
+  return `${formatCardNumber(cardNumber) ?? 'No number'} · ${cardEdition(cardNumber) === 'founders' ? 'Founders' : 'Crew'} edition`
+}
 
 async function refresh(spaceId: string) {
   const space = await getSpaceById(spaceId)
@@ -59,37 +67,60 @@ export async function revokeCard(spaceId: string, cardId: string): Promise<Actio
   return ok()
 }
 
-/** Mint a member card for the console to write. Returns the URL the CyberUnicorn writes to the card. */
+/** Mint a card for the console to write: a Frequency-wide member card (`kind` 'member', the default), or
+ *  a Space card registered to `spaceId` ('space'). Returns the URL the CyberUnicorn writes, the scope to
+ *  hand back to finish/cancel (null for a member card), and the number to print on the card. */
 export async function startConsoleCard(
-  spaceId: string,
+  rawKind: unknown,
+  spaceId: string | null,
   rawHandle: unknown,
-): Promise<ActionResult<{ cardId: string; url: string; memberName: string }>> {
+): Promise<ActionResult<{ cardId: string; spaceId: string | null; url: string; memberName: string; cardNumber: number; printed: string }>> {
   if (!scannerDevicesEnabled()) return fail('Counter scanners are not open yet.')
+  const kind: ConsoleCardKind = rawKind === 'space' ? 'space' : 'member'
   const handle = normalizeHandle(rawHandle)
   if (!handle) return fail('Type the member’s handle, like @maya.')
-  const out = await issueCardFromConsole(spaceId, handle)
+  const scope = kind === 'space' && typeof spaceId === 'string' ? spaceId : null
+  if (kind === 'space' && !scope) return fail('Choose the Space this card opens first.')
+  const out = await issueCardFromConsole(kind, scope, handle)
   if (!out.ok) {
     if (out.reason === 'unknown_member') return fail(`No member has the handle @${handle}.`)
-    if (out.reason === 'too_many_cards') return fail(`@${handle} already has ${SCANNER_LIMITS.cardsPerMember} cards here. Revoke one first.`)
+    if (out.reason === 'not_crew') return fail('Member cards come with Crew. Ask them to join Crew first.')
+    if (out.reason === 'not_space_staff') return fail(`@${handle} is not on this Space’s team. A Space card goes to someone who works there.`)
+    if (out.reason === 'no_space') return fail('Choose the Space this card opens first.')
+    if (out.reason === 'too_many_cards') {
+      return fail(
+        kind === 'space'
+          ? `@${handle} already has ${SCANNER_LIMITS.cardsPerMember} cards for this Space. Revoke one first.`
+          : `@${handle} already has ${SCANNER_LIMITS.cardsPerMember} member cards. Pause or revoke one first.`,
+      )
+    }
     if (out.reason === 'forbidden') return fail('Only Frequency staff can write cards.')
     return fail('Could not make that card. Try again.')
   }
-  return ok({ cardId: out.cardId, url: `${SITE_URL}/c/${out.token}`, memberName: out.displayName })
+  return ok({
+    cardId: out.cardId,
+    spaceId: out.spaceId,
+    url: `${SITE_URL}/c/${out.token}`,
+    memberName: out.displayName,
+    cardNumber: out.cardNumber,
+    printed: printedCardLine(out.cardNumber),
+  })
 }
 
-/** The card is written: bind the chip's UID to it so a copied card is refused. */
-export async function finishConsoleCard(spaceId: string, cardId: string, rawUid: unknown): Promise<ActionResult> {
+/** The card is written: bind the chip's UID to it so a copied card is refused. `spaceId` is the scope
+ *  startConsoleCard returned (null for a member card). */
+export async function finishConsoleCard(spaceId: string | null, cardId: string, rawUid: unknown): Promise<ActionResult> {
   const uid = normalizeUid(rawUid)
   if (typeof cardId !== 'string' || !uid) return fail('The card was written but its chip ID did not come back.')
   if (!(await bindConsoleCard(spaceId, cardId, hashUid(uid)))) return fail('The card was written but could not be locked to its chip.')
-  await closeBadgeRequestForCard(spaceId, cardId)
-  await refresh(spaceId)
+  await closeBadgeRequestForCard(cardId)
+  if (spaceId) await refresh(spaceId)
   revalidatePath('/admin/cyberunicorn')
   return ok()
 }
 
 /** The write never landed: drop the card that was minted for it. */
-export async function cancelConsoleCard(spaceId: string, cardId: string): Promise<ActionResult> {
+export async function cancelConsoleCard(spaceId: string | null, cardId: string): Promise<ActionResult> {
   if (typeof cardId !== 'string' || !(await discardConsoleCard(spaceId, cardId))) return fail('Could not clear that card.')
   return ok()
 }

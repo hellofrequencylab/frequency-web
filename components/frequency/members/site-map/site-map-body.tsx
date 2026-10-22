@@ -107,6 +107,7 @@ export const SITE_MAP: SiteMapColumn[] = [
       { label: 'Challenges', href: '/crew/challenges' },
       { label: 'Leaderboard', href: '/crew/leaderboard', gate: MEMBER },
       { label: 'The Vault', href: '/crew/store', gate: MEMBER },
+      { label: 'My card', href: '/crew/card', gate: MEMBER },
     ],
   },
   {

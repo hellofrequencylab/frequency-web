@@ -351,6 +351,7 @@ export const HUB_LINKS: Readonly<Record<string, readonly FqHubLink[]>> = {
     { label: 'Challenges', href: '/crew/challenges', navKey: 'quest' },
     { label: 'Leaderboard', href: '/crew/leaderboard', navKey: 'quest' },
     { label: 'The Vault', href: '/crew/store', navKey: 'vault' },
+    { label: 'My card', href: '/crew/card', navKey: 'quest' },
   ],
   '/settings': [
     { label: 'Edit profile', href: '/settings/profile' },

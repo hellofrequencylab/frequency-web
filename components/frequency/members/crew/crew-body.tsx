@@ -317,6 +317,7 @@ const EXPLORE: { href: string; icon: FqIconName; label: string; sub: string }[] 
   { href: '/practices', icon: 'practice', label: 'Practices', sub: 'Log today' },
   { href: '/crew/challenges', icon: 'goal', label: 'Challenges', sub: 'Capstones and more' },
   { href: '/crew/store', icon: 'vault', label: 'The Vault', sub: 'Gems, Awards, standing' },
+  { href: '/crew/card', icon: 'membership', label: 'My card', sub: 'Your member card' },
 ]
 
 function Explore() {
