@@ -73,7 +73,7 @@ import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs'
 import { spawn, spawnSync } from 'node:child_process'
 import { availableParallelism } from 'node:os'
 import { dirname, join } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { waveToken, readBacklogView, fragmentCount, COMPACT_AT, ROWS_DIR } from './lib/ledger.mjs'
 
 const FILE = 'docs/BUILD-BACKLOG.json'
@@ -282,7 +282,7 @@ function validate(entries) {
       // way, ran clean, mutation-fired on all five arms, and was still rejected here. Derive the
       // delimiter from the `-e ` that opens the body and complain about THAT character only.
       // 🔴 A cmd PROBE MUST RUN UNDER node (HYG-062). Per-probe cost is reported by the probe itself
-      // (scripts/backlog-probe-cpu.mjs, preloaded into every node the probe starts), which is what
+      // (scripts/backlog-probe-cpu.cjs, preloaded into every node the probe starts), which is what
       // lets the probes run in parallel without going blind on which one is expensive. A plain
       // grep pipeline reports nothing, so the per-probe ceiling could not see it — and the probes
       // most likely to be expensive are exactly the ones that shell out. Refused here rather than
@@ -413,14 +413,14 @@ function patternMatches(pattern, paths) {
 }
 
 /** The self-report preload every cmd probe's node process carries (HYG-062, ADR-1226). */
-const PROBE_CPU_PRELOAD = pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), 'backlog-probe-cpu.mjs')).href
+const PROBE_CPU_PRELOAD = join(dirname(fileURLToPath(import.meta.url)), 'backlog-probe-cpu.cjs')
 
 /** The environment a cmd probe runs in: the caller's, plus the preload (`--import` takes a file
  *  URL, so the path survives whatever the checkout directory is called). Appended rather than
  *  replaced so a NODE_OPTIONS the runner already set keeps working. */
 function probeEnv() {
   const inherited = process.env.NODE_OPTIONS ? `${process.env.NODE_OPTIONS} ` : ''
-  return { ...process.env, NODE_OPTIONS: `${inherited}--import ${PROBE_CPU_PRELOAD}` }
+  return { ...process.env, NODE_OPTIONS: `${inherited}--require ${JSON.stringify(PROBE_CPU_PRELOAD)}` }
 }
 
 /** The probe's own cost, summed from every `probe-cpu <ms>` line it (and any node it started that
@@ -517,7 +517,10 @@ async function runPool(tasks, width) {
   await Promise.all(lanes)
 }
 
-const PROBE_PARALLELISM = Math.min(4, availableParallelism())
+// Twice the cores: a probe is mostly a node start and a tree read, and at one lane per core the box
+// sat at ~2.8 of 4 cores busy (86s wall for the full sweep; 64s at 2x). Probe CPU is unchanged, so
+// the CPU budget in backlog-contract.test.ts is unaffected; only the wall clock shrinks.
+const PROBE_PARALLELISM = Math.min(8, availableParallelism() * 2)
 
 function daysSince(iso) {
   const then = Date.parse(iso)
