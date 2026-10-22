@@ -26,6 +26,7 @@ import type { ArchetypeId } from '@/lib/audience/archetypes'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
 import { SITE_DESIGN } from '@/lib/theme/design'
+import { InductionWelcome } from '@/components/frequency/site/pages/funnel/induction-welcome'
 import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
 
 // Avatar can't ride the auth-redirect in a cookie, so the deferred (signed-out)
@@ -125,6 +126,12 @@ const BEAT_LABELS = ['Who you are', 'A quick tour', 'Your profile', 'Step in']
 // No separator — "Daniel Tyack" → "danieltyack".
 function suggestHandle(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
+}
+
+function accentFq(text: string): React.ReactNode {
+  return text.split(/(\*[^*]+\*)/g).map((part, i) =>
+    part.startsWith('*') && part.endsWith('*') && part.length > 2 ? <em key={i}>{part.slice(1, -1)}</em> : <span key={i}>{part}</span>,
+  )
 }
 
 function ArrowRight() {
@@ -683,17 +690,36 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
   const backLink = 'text-body-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   // Primary action — the shared Wizard button (app register), used across the beats.
   const btnPrimary = wizardPrimaryClass
-  const eyebrow = 'eyebrow text-primary-strong'
+  const fq = SITE_DESIGN === 'frequency'
+  const eyebrow = fq ? 'iw-k' : 'eyebrow text-primary-strong'
   const heading = 'font-display uppercase leading-none text-text'
+  const h1c = (size: string) => (fq ? 'iw-h1' : `text-balance ${size} ${heading}`)
 
   const slide = reel[reelIndex]
   const isLastSlide = reelIndex >= reel.length - 1
 
+  // The Frequency design wears the public site's chrome (the page renders this inside <SiteShell>), so the
+  // induction drops its own wordmark, Welcome pill and full-screen canvas there and draws beat 0 as one
+  // compact screen (InductionWelcome). DAWN keeps the cinematic walk exactly as it was.
+  const Root = fq ? 'div' : 'main'
+  const welcomeChoices = hasNicheFeatures
+    ? slide2Features!.map((f) => {
+        const key = interestKeyFor(f.title)
+        return { key, label: f.title, pitch: f.blurb, Icon: funnelIcon(f.icon), active: interestKeys.includes(key) }
+      })
+    : listPersonas().map((p) => ({ key: p.id, label: p.label, pitch: p.pitch, Icon: p.Icon, active: personas.includes(p.id) }))
+  const chooseLater = () => {
+    setDecideLater(true)
+    setPersonas([])
+    setInterestKeys([])
+    setReelIndex(0)
+  }
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-canvas">
+    <Root className={fq ? 'relative' : 'relative min-h-screen overflow-hidden bg-canvas'}>
 
       {/* Preview-only badge (subtle; public /preview route; ADR-068). */}
-      {preview && (
+      {preview && !fq && (
         <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center">
           <span className="rounded-pill bg-ink/5 px-3 py-1 text-2xs font-medium text-muted backdrop-blur-sm">
             Preview · nothing is saved
@@ -739,7 +765,8 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
       </Dialog>
 
       {/* Stage: one centered column — logo, content, progress — with tight, consistent gaps. */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
+      <div className={fq ? (beat === 0 ? 'iw-stage' : 'iw-step relative z-10 flex flex-col items-center px-6 pb-12 pt-10') : 'relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12'}>
+        {!fq && (
         <div className="flex shrink-0 flex-col items-center">
           <span className="animate-wiggle inline-block rounded-pill bg-primary px-3 py-1 text-meta font-bold uppercase tracking-[0.35em] text-on-primary shadow-glow-primary-sm">
             Welcome
@@ -776,6 +803,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
             </div>
           )}
         </div>
+        )}
 
         <div
           key={beat}
@@ -783,10 +811,37 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
           tabIndex={-1}
           role="group"
           aria-label={`Step ${beat + 1} of ${BEAT_COUNT}: ${BEAT_LABELS[beat]}`}
-          className="mt-10 w-full motion-safe:animate-[slideUp_0.5s_ease-out] text-center outline-none"
+          className={`${fq ? (beat === 0 ? 'w-full' : 'mt-0 w-full') : 'mt-10 w-full'} motion-safe:animate-[slideUp_0.5s_ease-out] text-center outline-none`}
         >
+            {fq && beat > 0 && preview && <p className="iw-preview">Preview · nothing is saved</p>}
+            {beat === 0 && fq && (
+              <InductionWelcome
+                preview={preview}
+                invited={inviter ? <p className="jx-fine iw-note">Invited by {inviter.displayName}</p> : undefined}
+                eyebrow={VERA.intro.eyebrow}
+                title={accentFq(VERA.intro.heading)}
+                lede={VERA.intro.body}
+                prompt={hasNicheFeatures ? 'First off, what are you into?' : 'First, who are you?'}
+                hint={hasNicheFeatures ? 'Pick all that apply.' : 'Pick all that fit.'}
+                choices={welcomeChoices}
+                onToggle={(key) => (hasNicheFeatures ? toggleInterest(key) : togglePersona(key as PersonaId))}
+                decideLater={decideLater}
+                onDecideLater={chooseLater}
+                email={email}
+                onEmail={(v) => {
+                  setEmail(v)
+                  if (emailError) setEmailError('')
+                }}
+                onSubmit={advanceFromIntro}
+                emailError={emailError}
+                note="Your email saves your spot so you can finish later. It does not put you on a mailing list."
+                cta={VERA.intro.cta}
+                busy={capturing}
+                followUp={!hasNicheFeatures && personas.length > 0 ? <ArrivalFollowUp persona={personas[0]} value={archetype} onChange={setArchetype} persist={!preview} /> : undefined}
+              />
+            )}
             {/* ── Beat 0: Intro ── */}
-            {beat === 0 && (
+            {beat === 0 && !fq && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.intro.eyebrow}</p>
                 <h1 className={`mx-auto mt-3 max-w-3xl text-balance text-display-hero ${heading}`}>
@@ -941,7 +996,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
             {beat === 1 && (
               <div className="mx-auto max-w-5xl">
                 <p className={eyebrow}>{VERA.tour.eyebrow}</p>
-                <h1 className={`mt-3 text-balance text-display-h2 ${heading}`}>{accent(VERA.tour.heading)}</h1>
+                <h1 className={`mt-3 ${h1c('text-display-h2')}`}>{accent(VERA.tour.heading)}</h1>
 
                 {/* Beat-1 fork. NICHE funnel: pick one of 3 core features; the mockup shows the
                     SELECTED card's art. GENERAL funnel: the auto-playing tour reel, unchanged. */}
@@ -1029,11 +1084,11 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
             {/* ── Beat 2: Identity ── */}
             {beat === 2 && (
               <div className="mx-auto max-w-4xl">
-                <h1 className={`text-balance text-display-h1 ${heading}`}>{accent(VERA.identity.heading)}</h1>
+                <h1 className={`${h1c('text-display-h1')}`}>{accent(VERA.identity.heading)}</h1>
 
                 <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* left: form card */}
-                  <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 lift-1">
+                  <div className={`w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 lift-1${fq ? ' jx-f' : ''}`}>
                     {/* TWO FIELDS, ONE NAME. Asking for "Display name" got handles-as-names and
                         initials, and the CRM then had no first name to greet anyone by. Splitting
                         it asks the question people already know how to answer, and the display
@@ -1219,7 +1274,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
             {beat === 3 && !deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-                <h1 className={`mt-3 text-balance text-display-h1 ${heading}`}>{accent(VERA.enter.heading)}</h1>
+                <h1 className={`mt-3 ${h1c('text-display-h1')}`}>{accent(VERA.enter.heading)}</h1>
 
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card with blank slots */}
@@ -1251,7 +1306,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
             {beat === 3 && deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-                <h1 className={`mt-3 text-balance text-display-h1 ${heading}`}>{accent(VERA.enter.heading)}</h1>
+                <h1 className={`mt-3 ${h1c('text-display-h1')}`}>{accent(VERA.enter.heading)}</h1>
 
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card — everything they just built */}
@@ -1316,6 +1371,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
           </div>
 
         {/* Progress — tight under the content, the shared staged-flow cue. */}
+        {!(fq && beat === 0) && (<>
         <div className="mt-9 w-full max-w-sm shrink-0">
           <WizardProgress current={beat + 1} total={BEAT_COUNT} label={BEAT_LABELS[beat]} />
         </div>
@@ -1331,8 +1387,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
             Log in to account
           </Link>
         </p>
+        </>)}
       </div>
-    </main>
+    </Root>
   )
 }
 
