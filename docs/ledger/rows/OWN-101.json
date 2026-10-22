@@ -1,0 +1,20 @@
+{
+  "id": "OWN-101",
+  "title": "Create LinkedIn, YouTube and Facebook pages with one name, description, logo and link, and hand the URLs to a build thread",
+  "lane": "owner",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "ownerAction": "account",
+  "source": {
+    "file": "docs/marketing/off-site-seo-worksheet.md",
+    "ref": "Owner ask 2026-10-22 (thread Off-site SEO worksheet)"
+  },
+  "detail": "Worksheet item 4. The URLs unblock LIVE-1134 (profile links in the site's structured data) and LIVE-1135 (footer). Steps and links: docs/marketing/off-site-seo-worksheet.md.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Checked 2026-10-22: only Instagram and TikTok are listed in lib/site.ts SOCIAL_PROFILES.",
+    "checked": "2026-10-22"
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,20 @@
+{
+  "id": "OWN-104",
+  "title": "Ask partners for a link to the matching /for door, one list per door, and hand every Space owner the get-found guide",
+  "lane": "owner",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "ownerAction": "account",
+  "source": {
+    "file": "docs/marketing/off-site-seo-worksheet.md",
+    "ref": "Owner ask 2026-10-22 (thread Off-site SEO worksheet)"
+  },
+  "detail": "Worksheet items 7 and 14. Use the tagged-link pattern in OWN-108. The guide itself is LIVE-1138. Steps and links: docs/marketing/off-site-seo-worksheet.md.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Checked 2026-10-22: outreach leaves no repo trace.",
+    "checked": "2026-10-22"
+  },
+  "wave": "W7"
+}
