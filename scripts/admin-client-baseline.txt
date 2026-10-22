@@ -412,6 +412,10 @@
 # lib/devices/space-tags.ts (added 2026-10-20, LIVE-1182): Space check-in placards. space_tags is service-role
 # only, and the CyberUnicorn portal is a cross-tenant platform staff surface (any Space). Every read and write runs
 # behind consoleStaffGate (web_role admin or janitor); the check-in poll reads one node's captures since a write.
+# lib/devices/tag-actions.ts, lib/devices/tag-targets.ts (added 2026-10-22, LIVE-1272): CyberUnicorn tags for any
+# page. qr_codes and qr_scans are service-role only, and the portal is the same cross-tenant staff surface. Every
+# action runs behind consoleStaffGate; the page search keeps universal search's public filters (no private Space,
+# draft event, private Journey or unlisted Circle is offered).
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -929,6 +933,8 @@ lib/devices/badges.ts
 lib/devices/relay-store.ts
 lib/devices/space-tags.ts
 lib/devices/store.ts
+lib/devices/tag-actions.ts
+lib/devices/tag-targets.ts
 lib/digest.ts
 lib/dispatches.ts
 lib/elements/store.ts
