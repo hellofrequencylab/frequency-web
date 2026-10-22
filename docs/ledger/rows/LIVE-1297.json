@@ -1,14 +1,14 @@
 {
   "id": "LIVE-1297",
-  "title": "The Temple, part five: the standing week drawn from the recurring series",
+  "title": "The cards get their own view under Check in, and the Space's cards get My card's on/off switches",
   "lane": "live",
   "priority": "P2",
   "size": "S",
   "status": "done",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const r=f=>fs.readFileSync(f,'utf8');const bad=[];const w=r('lib/sites/temple-week.ts'),h=r('components/sites/house-home.tsx'),s=r('components/sites/house-sections.tsx'),c=r('components/sites/temple-css.ts'),d=r('lib/sites/menswork-data.ts');if(!w.includes('export function templeWeek'))bad.push('templeWeek');if(/day-notes-store|listDayNotes|space_calendar_day_notes/.test(w+h))bad.push('the week reads the team-only day notes');if(!h.includes('templeWeek(')||!h.includes('weekdayOfTitle'))bad.push('house-home does not draw the week');if(!s.includes('hs-week')||!s.includes('hs-day-'))bad.push('no week markup');if(!c.includes('.hs-week')||!c.includes('.hs-day-held'))bad.push('no week skin');if(!d.includes('recurring'))bad.push('events do not say which are recurring');if(bad.length){console.error('LIVE-1297: '+bad.join('; '));process.exit(1)}\""
+    "cmd": "node scripts/probes/space-card-view.mjs"
   },
-  "detail": "Follows LIVE-1296. On a Temple site the Home's steps section draws the design's standing week: seven arch-topped day cards, Monday first, derived from the Space's recurring series for the next four weeks (loadMensworkLive now marks each event recurring). Two series on one weekday that never share a date read 'or' and 'Alternating'; series that land on the same date read 'then' and 'Most Sundays'; one-off events are never drawn. A day with no series is a quiet dashed card; its words come only from the owner's own step cards titled with a weekday ('Friday'), and wording like retreat, rental or held draws the night card. Day notes are NOT read: they are team-only by owner ruling (ADR-1387, migration 20270345005400), which supersedes the 'visibility public' line in the design handoff's IMPLEMENTATION.md.",
+  "detail": "Owner ask 2026-10-22: move the Card section to its own sub menu item under Check in, with the same controls as the Crew card. Menu nesting is one level (ADR-846), so Check in gains an in-page view bar (`?view=door` default, `?view=card` labelled Cards), the pattern Membership uses. The Cards view holds the viewer's one Crew card (MyCardSection, from #3860) and the Space's own card; the door view no longer mounts either. The Space's registered cards render through the shared MyCardsList with a spaceId, so each has the same on/off switch; setSpaceCardOn writes behind the loyalty owner gate, scoped by face_space_id. Follows LIVE-1282 and ADR-1874; no migration.",
   "wave": "W7"
 }

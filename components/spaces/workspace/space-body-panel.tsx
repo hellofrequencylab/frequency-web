@@ -61,6 +61,8 @@ export function SpaceBodyPanel({ slug, panel, area, tab, view }: { slug: string;
     ? <ManageDashboard slug={slug} area={area} />
     : panel === 'offerings'
     ? <OfferingsBody slug={slug} tab={tab} view={view} />
+    : panel === 'checkin'
+    ? <CheckinBody slug={slug} view={view} />
     : Body ? <Body slug={slug} /> : null
   if (!body) return null
 

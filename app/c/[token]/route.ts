@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getMyProfileId } from '@/lib/auth'
-import { tapTarget } from '@/lib/member-cards/face'
+import { isOwnSiteLink, tapTarget } from '@/lib/member-cards/face'
 import { logCardTap, memberCardsEnabled, resolveTappedCard } from '@/lib/member-cards/store'
 import { payCardConnect } from '@/lib/member-cards/rewards'
 import { captureQrContact } from '@/lib/connections/qr-capture'
@@ -15,7 +15,8 @@ export const dynamic = 'force-dynamic'
 //   • owner_settings  → the owner tapped their own member card while it still opens their page: /crew/card,
 //                       the fastest way to set it. A card they have set opens its link or face for them too.
 //   • page            → the owner's own page (/people/<handle>, or /spaces/<slug> for a Space's card).
-//   • link            → the one https link the owner set (a temporary redirect, never cached).
+//   • link            → the one https link the owner set: a temporary redirect, never cached, for a
+//                       Frequency page; another site opens through /card/<token>/go (LIVE-1298).
 //   • face            → /card/<token>, the virtual card (Save contact, Swap contacts).
 // It checks NOBODY in: a check-in needs the Space's counter scanner (POST /api/v1/devices/scan) or the
 // door code. A revoked or unknown card lands on /code-unavailable. Every tap, the owner's own included
@@ -64,7 +65,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
 
   let res: NextResponse
   if (target.to === 'page') res = to(target.path)
-  else if (target.to === 'link') res = NextResponse.redirect(target.url, 307)
+  else if (target.to === 'link' && isOwnSiteLink(target.url, origin)) res = NextResponse.redirect(target.url, 307)
+  // Another site opens from Frequency's own /card/<token>/go page, so closing it (the app's in-app window,
+  // or Back in a browser) lands on Frequency, not on nothing (owner ask 2026-10-22, LIVE-1298). The
+  // nonce marks this one tap, so the next tap in the same tab opens the site again.
+  else if (target.to === 'link') res = to(`/card/${encodeURIComponent(token)}/go?n=${crypto.randomUUID().slice(0, 8)}`)
   else res = to(`/card/${encodeURIComponent(token)}`)
 
   if (creditOwner && memberOwner) {
