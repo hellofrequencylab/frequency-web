@@ -79,34 +79,34 @@ export const REEL: ReelSlide[] = [
  *  Keep the beat structure; the copy stays plain prompts, no em dashes. */
 export const VERA = {
   intro: {
-    eyebrow: 'Write the welcome kicker',
+    eyebrow: 'Founding beta · Free',
     // Headings support a light accent markup in the induction: a word wrapped in
     // *asterisks* renders in the brand accent (same convention as splash statements).
-    heading: 'Write the welcome line new members see first',
-    body: 'Write the two lines that say what Frequency is',
-    cta: 'Write the button label that moves them on',
+    heading: "You're early. That makes you a *Founder.*",
+    body: 'Frequency is where people near you gather on purpose: Circles, events and places worth coming back to. Free to join, and the first people in help shape it.',
+    cta: 'Save my spot',
   },
   identity: {
-    heading: 'Write the prompt that asks for their name and face',
-    body: 'Write the line that explains why you ask',
+    heading: 'Put a name and a face to it',
+    body: 'Your people will know you by this. A real name and a photo make the first hello easy.',
   },
   place: {
-    heading: 'Write the prompt that asks where they are',
-    body: 'Write the line that explains why location helps',
-    intentLabel: 'Write the question that asks what they want here',
-    intentPlaceholder: 'Write the hint text for their answer',
+    heading: 'Where are you?',
+    body: 'We open in North County San Diego on December 1. Tell us your town and we will show you what is near you first.',
+    intentLabel: 'What are you hoping to find here?',
+    intentPlaceholder: 'A running group, a place to teach, people to hang with. Say it plainly.',
   },
   tour: {
-    eyebrow: 'Write the tour kicker',
-    heading: 'Write the headline for the three-room tour',
-    body: 'Write the line under the tour headline',
-    cta: 'Write the button label after the tour',
+    eyebrow: 'Three rooms',
+    heading: 'Here is where *your people* live',
+    body: 'The Feed shows what is happening near you. Circles are small rooms around what you care about. Events are where you show up.',
+    cta: 'Next',
   },
   enter: {
-    eyebrow: 'Write the final-step kicker',
-    heading: 'Write the last line before the feed',
-    body: 'Write the short send-off that points them to Vera',
-    cta: 'Write the final button label',
+    eyebrow: 'Last step',
+    heading: 'Step in. We saved you a *seat.*',
+    body: 'Confirm your email and you are in. Vera, your guide, will point you to a Circle worth joining, then step aside.',
+    cta: 'Step in',
   },
 } as const
 

@@ -765,7 +765,8 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
       </Dialog>
 
       {/* Stage: one centered column — logo, content, progress — with tight, consistent gaps. */}
-      <div className={fq ? (beat === 0 ? 'iw-stage' : 'iw-step relative z-10 flex flex-col items-center px-6 pb-12 pt-10') : 'relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12'}>
+      <div className={fq ? (beat === 0 ? 'jx-panel iw-stage' : 'jx-panel iw-step relative z-10 flex flex-col items-center px-6 pb-12 pt-10') : 'relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12'}>
+        {fq && <span className="rings" aria-hidden />}
         {!fq && (
         <div className="flex shrink-0 flex-col items-center">
           <span className="animate-wiggle inline-block rounded-pill bg-primary px-3 py-1 text-meta font-bold uppercase tracking-[0.35em] text-on-primary shadow-glow-primary-sm">
