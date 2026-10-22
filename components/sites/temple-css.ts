@@ -178,6 +178,17 @@ ${N} .hs-tier:hover{transform:translateY(var(--tp-lift));box-shadow:var(--tp-d3)
 ${N} .hs-tier .hs-serif{font-size:var(--tp-size-lg)}
 ${N} .hs-chip{padding:5px 10px 4px;border-radius:var(--tp-r-xs);background:var(--tp-clay-100);color:var(--tp-clay-700);${LABEL}}
 
+/* The hero's fact row and an event card's clay date stamp (design: tt-facts, tt-stamp). */
+${N} .hs-hero-facts{display:flex;margin:var(--tp-s12) 0 0;padding:0;border-top:var(--tp-b-hair) solid var(--tp-rule);max-width:520px}
+${N} .hs-hero-facts>div{flex:1;padding:18px 18px 0 0}
+${N} .hs-hero-facts>div+div{padding-left:18px;border-left:var(--tp-b-hair) solid var(--tp-line)}
+${N} .hs-hero-facts dt{font-family:var(--tp-display);font-weight:var(--tp-weight-regular);font-size:var(--tp-size-2xl);line-height:1;color:var(--tp-umber-900)}
+${N} .hs-hero-facts dd{margin:var(--tp-s2) 0 0;${LABEL};color:var(--tp-muted)}
+${N} .hs-stamp{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:62px;height:74px;padding-bottom:10px;box-sizing:border-box;border-radius:var(--tp-r-arch);background:var(--tp-wash-clay);box-shadow:var(--tp-d2);color:var(--tp-on-clay)}
+${N} .hs-stamp b{font-family:var(--tp-display);font-weight:var(--tp-weight-regular);font-size:var(--tp-size-xl);line-height:1}
+${N} .hs-stamp span{${LABEL};margin-top:3px;font-size:var(--tp-size-2xs)}
+${N} .hs-when{${LABEL};color:var(--tp-clay-700)}
+
 /* The night band: the community section as the design's membership band, rungs as arch-soft cards on the night wash. */
 ${N} .hs-section[data-hs="community"]{max-width:none;padding-top:var(--tp-section-y);background:var(--tp-wash-night);color:var(--tp-on-ink);padding-inline:max(var(--tp-gutter),calc((100% - 1160px) / 2 + var(--tp-s6)));position:relative;isolation:isolate;overflow:hidden}
 ${N} .hs-section[data-hs="community"]::before{content:"";position:absolute;inset:0;background-image:var(--tp-grit);background-size:220px;opacity:calc(var(--tp-o-grit) * .85);mix-blend-mode:soft-light;pointer-events:none;z-index:-1}

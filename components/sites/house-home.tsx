@@ -28,6 +28,9 @@ import {
   type SiteLinkMap,
 } from '@/lib/sites/house-theme'
 import { siteHeroLede } from './site-hero-copy'
+import { readSiteStyle } from '@/lib/theme/site-style'
+import { loadMensworkLive } from '@/lib/sites/menswork-data'
+import { templeStamp, templeWhen } from '@/lib/sites/temple-events'
 
 /** A block photo field's renderable URL: a stored URL string or a Loom AssetRef (ADR-1245), else null. */
 const blockImage = (v: unknown) => safeImageSrc(safeImageUrl(v) || null)
@@ -77,6 +80,12 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
   const book = siteLocalHref(`/spaces/${space.slug}/book`, links)
   const profile = readProfileData(prefs)
 
+  // THE TEMPLE draws the house's next gatherings, not its offerings, and lifts the facts into the hero (design).
+  // The events are the Space's own public rows through the one anonymous reader (lib/sites/menswork-data.ts):
+  // a site render never touches the visitor's session.
+  const temple = readSiteStyle(prefs).theme === 'temple'
+  const upcoming = temple && plan.some((s) => s.kind === 'sessions') ? (await loadMensworkLive(space.id, { events: true, circles: false, journeys: false })).events.slice(0, 3) : []
+
   const needsFaq = plan.some((s) => s.kind === 'faq')
   const needsTiers = plan.some((s) => s.kind === 'community')
   const [faqs, tiers] = await Promise.all([
@@ -104,6 +113,7 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
     if (anchor && label) nav.push({ anchor, href: `#${anchor}`, label: label.replace(/\*/g, '') })
   }
   let communityButton: HouseLink | null = null
+  let heroFacts: { value: string; label: string }[] | null = null
 
   for (const [i, s] of plan.entries()) {
     const key = `s${i}`
@@ -146,9 +156,10 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
       blocks.push(m)
     } else if (s.kind === 'facts') {
       const f = factsOf(bag(s.id))
-      if (f.items.length) blocks.push({ kind: s.kind, key, ...f })
+      if (temple && f.items.length && !heroFacts) heroFacts = f.items.slice(0, 4)
+      else if (f.items.length) blocks.push({ kind: s.kind, key, ...f })
     } else if (s.kind === 'sessions') {
-      if (offerings.length === 0) continue
+      if (offerings.length === 0 && upcoming.length === 0) continue
       const b = bag(s.id)
       const label = text(b.ctaLabel) ?? cta?.label ?? null
       const anchor = anchorFor(s.kind)
@@ -158,7 +169,17 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
         anchor,
         eyebrow: text(b.eyebrow),
         title: text(b.title),
-        cards: offerings.map((o) => ({
+        cards: upcoming.length
+          ? upcoming.map((e) => ({
+              length: null,
+              price: null,
+              title: e.title,
+              body: e.description?.trim().slice(0, 160) || null,
+              cta: { label: 'RSVP', href: `${origin}/events/${e.slug}`, external: true },
+              stamp: templeStamp(e.startsAt),
+              when: templeWhen(e.startsAt, e.endsAt),
+            }))
+          : offerings.map((o) => ({
           length: formatDuration(o.durationMinutes),
           price: formatOfferingPrice(o),
           title: o.title,
@@ -253,6 +274,7 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
       ownButton(siteHero.secondary) ??
       (steps && steps.kind === 'steps' && steps.anchor ? { label: (steps.eyebrow ?? steps.title ?? '').replace(/\*/g, ''), href: `#${steps.anchor}` } : null),
     pill: communityButton,
+    ...(heroFacts ? { facts: heroFacts } : {}),
     start: first && !menswork
       ? {
           eyebrow: text(content.offerings?.eyebrow),

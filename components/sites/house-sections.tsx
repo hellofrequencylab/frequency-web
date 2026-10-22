@@ -24,6 +24,8 @@ export interface HouseHeroModel {
   cta: HouseLink | null
   secondary: HouseLink | null
   pill: HouseLink | null
+  /** The numbers under the buttons (Temple: the house's facts moved up into the hero). */
+  facts?: { value: string; label: string }[]
   start: {
     eyebrow: string | null
     name: string
@@ -72,7 +74,7 @@ export type HouseBlockModel =
       anchor: string | null
       eyebrow: string | null
       title: string | null
-      cards: { length: string | null; price: string | null; title: string; body: string | null; cta: HouseLink | null }[]
+      cards: { length: string | null; price: string | null; title: string; body: string | null; cta: HouseLink | null; /** An event card (Temple): the clay date stamp and the day-and-hours line. */ stamp?: { day: string; month: string } | null; when?: string | null }[]
     }
   | {
       kind: 'community'
@@ -193,6 +195,16 @@ export function HouseHero({ hero }: { hero: HouseHeroModel }) {
                 </a>
               )}
             </div>
+          )}
+          {hero.facts && hero.facts.length > 0 && (
+            <dl className="hs-hero-facts">
+              {hero.facts.map((f, i) => (
+                <div key={i}>
+                  <dt>{f.value}</dt>
+                  <dd>{f.label}</dd>
+                </div>
+              ))}
+            </dl>
           )}
         </div>
         {hero.start && (
@@ -358,6 +370,13 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
           <div className="hs-cards">
             {block.cards.map((c, i) => (
               <div key={i} className="hs-card">
+                {c.stamp && (
+                  <span className="hs-stamp" aria-hidden>
+                    <b>{c.stamp.day}</b>
+                    <span>{c.stamp.month}</span>
+                  </span>
+                )}
+                {c.when && <span className="hs-when">{c.when}</span>}
                 {(c.length || c.price) && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                     <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text-subtle)' }}>{c.length}</span>

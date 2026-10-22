@@ -10,19 +10,21 @@ import { siteMembershipLine, type SiteMembershipView } from '@/lib/sites/site-me
 // not a member, or not signed in, or reading on a custom domain the session does not reach, sees nothing:
 // the header stays exactly as the cached page drew it.
 
-export function SiteMemberBadge({ endpoint, href, pill = false, label = 'Your circle' }: { endpoint: string; href: string; /** The account pill (Wildheart, Temple): a label over the line, and the tier's initial in a disc. */ pill?: boolean; /** The pill's label: "Your circle" on Wildheart, "Your house" on Temple. */ label?: string }) {
+export function SiteMemberBadge({ endpoint, href, pill = false, label = 'Your circle', showName = false }: { endpoint: string; href: string; /** The account pill (Wildheart, Temple): a label over the line, and the tier's initial in a disc. */ pill?: boolean; /** The pill's label: "Your circle" on Wildheart, "Your house" on Temple. */ label?: string; /** Lead the line with the reader's first name (Temple). */ showName?: boolean }) {
   const [membership, setMembership] = useState<SiteMembershipView | null>(null)
+  const [firstName, setFirstName] = useState<string | null>(null)
   useEffect(() => {
     const controller = new AbortController()
     fetch(endpoint, { credentials: 'include', signal: controller.signal, headers: { Accept: 'application/json' } })
       .then((r) => (r.ok ? r.json() : null))
-      .then((body: { membership?: SiteMembershipView | null } | null) => {
+      .then((body: { membership?: SiteMembershipView | null; firstName?: string | null } | null) => {
+        if (showName && typeof body?.firstName === 'string' && body.firstName) setFirstName(body.firstName)
         const m = body?.membership
         if (m && typeof m.tierName === 'string' && (m.status === 'active' || m.status === 'waitlist')) setMembership({ tierName: m.tierName, status: m.status })
       })
       .catch(() => {})
     return () => controller.abort()
-  }, [endpoint])
+  }, [endpoint, showName])
   const line = siteMembershipLine(membership)
   if (!line) return null
   if (pill) {
@@ -30,9 +32,9 @@ export function SiteMemberBadge({ endpoint, href, pill = false, label = 'Your ci
       <a href={href} className="hs-member hs-member-pill" aria-label={`${line}. Your membership on Frequency`}>
         <span className="hs-member-text">
           <span className="hs-member-label">{label}</span>
-          <span className="hs-member-line">{line}</span>
+          <span className="hs-member-line">{firstName ? `${firstName} · ${line}` : line}</span>
         </span>
-        <span className="hs-member-avatar" aria-hidden>{(membership?.tierName.trim()[0] ?? 'M').toUpperCase()}</span>
+        <span className="hs-member-avatar" aria-hidden>{(firstName?.[0] ?? membership?.tierName.trim()[0] ?? 'M').toUpperCase()}</span>
       </a>
     )
   }
