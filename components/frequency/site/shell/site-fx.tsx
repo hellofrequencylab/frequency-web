@@ -513,7 +513,18 @@ export function SiteFx() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>('[data-kit="site"]')
     if (!root) return
-    return run(root)
+    let stop = run(root)
+    // Switching reduced motion on or off mid-visit takes effect now, not on the next page load.
+    const mq = matchMedia('(prefers-reduced-motion:reduce)')
+    const onChange = () => {
+      stop()
+      stop = run(root)
+    }
+    mq.addEventListener('change', onChange)
+    return () => {
+      mq.removeEventListener('change', onChange)
+      stop()
+    }
   }, [pathname])
   return null
 }
