@@ -12,7 +12,7 @@ export type CardMode = 'page' | 'card' | 'link'
 export const CARD_MODES: readonly { key: CardMode; label: string; hint: string }[] = [
   { key: 'page', label: 'Open my page', hint: 'Your Frequency page. This is where a new card goes.' },
   { key: 'card', label: 'Show my card', hint: 'Photo, title, links and Save contact.' },
-  { key: 'link', label: 'Open my link', hint: 'Your site, your event, your offer.' },
+  { key: 'link', label: 'Open my link', hint: 'Any page on Frequency, or any link.' },
 ]
 
 export const CARD_LIMITS = { linkMax: 500, perkMax: 120, foundersEdition: 100 } as const

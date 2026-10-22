@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1301",
+  "title": "A member card's link can be any page on Frequency, picked from a search, or any pasted link",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/card-page-search.mjs"
+  },
+  "detail": "Owner ask 2026-10-22: the one personal card should be assignable to anywhere on the site, or any link. Open my link now has a search box above the link field that finds any public page (Spaces, events, Journeys, practices, Circles, Channels, people, partners, offers and site features) with the same public-only search the CyberUnicorn console's page tags use (lib/devices/tag-targets.ts searchTagTargets), so nothing private, draft or removed is offered. Picking a result fills the link with the page's full address; anything else is still pasted. findCardPages is open to any signed-in member. Follows LIVE-1282 and ADR-1874; no migration.",
+  "wave": "W7"
+}
