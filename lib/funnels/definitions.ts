@@ -157,6 +157,9 @@ export const NICHE_FUNNEL_DESTINATIONS: Record<string, FunnelDestination> = {
   studios: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'membership' }) },
   hosts: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'ticketed' }) },
   nonprofits: { mode: 'direct', url: spaceCreatePath({ type: 'nonprofit', variant: 'donations' }) },
+  // ADR-1863: venues are a ticketed Space; a Network starts as a membership Space, and the Network plan is chosen in its billing.
+  venues: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'ticketed' }) },
+  networks: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'membership' }) },
   // ADR-1863: communities and teachers were folded into hosts and coaches. A stale ?seq= for either
   // falls back to the general landing.
 }

@@ -271,7 +271,7 @@ export function PricingDoors() {
         title="Find your door."
         kicker="The same plans, explained for the people who use them."
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {WHO_ITS_FOR.map((door) => (
           <Link
             key={door.href}
@@ -401,6 +401,8 @@ const WHO_ITS_FOR: readonly { title: string; body: string; href: string }[] = [
   },
   { title: 'Studios', body: 'Classes, memberships and check-in at the door.', href: '/for/studios' },
   { title: 'Event hosts', body: 'Events, tickets and a way to reach everyone who came.', href: '/for/event-hosts' },
+  { title: 'Venues', body: 'Your calendar, the groups that use your room, and the people who come.', href: '/for/venues' },
+  { title: 'Networks', body: 'Many chapters, one home, and one view of all of them.', href: '/for/networks' },
   { title: 'Nonprofits', body: 'Donations, supporters and programs, with no network fee.', href: '/for/nonprofits' },
 ]
 

@@ -498,6 +498,90 @@ const EVENTS_FUNNEL: FunnelConfig = {
   },
 }
 
+// ── Config #4: Venues (business:ticketed; a room that hosts other people's gatherings, ADR-1863) ─────
+
+const VENUES_FUNNEL: FunnelConfig = {
+  slug: 'venues',
+  niche: 'venues',
+  archetypes: ['studio_keeper'],
+  hero: {
+    eyebrow: 'For venues and rooms that host',
+    h1: 'Fill the room, and know who filled it.',
+    seoTitle: 'Booking + events software for venues and community rooms',
+    subhead:
+      'Your calendar, the groups that use your room, and the people who show up, held together in one place. Start free, and let every group that meets there bring people to you.',
+    microcopy: 'No card. You pay when you start charging.',
+    trustLine: '0% on your own audience, plus card processing.',
+  },
+  metaDescription:
+    'Frequency gives venues and community rooms one calendar, one contact list and ticketing for the groups that meet there. Free to start, no card.',
+  problem: {
+    header: 'The room is busy. You still do not know who is in it.',
+    body: 'Groups book through texts, the calendar lives in a shared sheet, and the people who walk in belong to whoever hosted. A good night leaves you with a full room and nothing to follow up on.',
+    caption: 'A busy room, and no list.',
+  },
+  howItWorks: {
+    header: 'One place for the room and the groups in it.',
+    steps: [
+      { title: 'Make your Space.', body: 'Your room, your hours and your upcoming nights on one page. Free to host, always.' },
+      { title: 'Bring the groups in.', body: 'Hosts list their gatherings at your room, and each one shows on your calendar.' },
+      { title: 'Keep the people.', body: 'Everyone who comes through the door lands in Contacts, so the next night starts with a list.' },
+    ],
+    caption: 'Set up in an afternoon.',
+  },
+  features: [
+    {
+      icon: 'calendar',
+      title: 'One calendar for every group.',
+      body: 'Every gathering at your room in one place, with each host on their own page and your room on all of them.',
+    },
+    {
+      icon: 'qr',
+      title: 'Check people in at the door.',
+      body: 'A QR code checks guests in, and turns every attendee into someone you can invite back.',
+    },
+    {
+      icon: 'contact',
+      title: 'A list that stays with the room.',
+      body: 'Contacts holds everyone who came, however they found you, so the room keeps its own regulars.',
+    },
+    {
+      icon: 'spark',
+      soft: true,
+      title: 'Sell tickets and passes when you are ready.',
+      body: 'Paid tickets, passes and rentals open on Business. A guest who is already yours carries no network fee, only card processing.',
+    },
+  ],
+  loop: {
+    header: 'Every gathering, an open door.',
+    intro: 'This is how a room fills here. Not through ads, but through the groups that already meet there.',
+    payoff: 'A host fills a night, a guest has a good time, and next week they bring a friend. The room fills from itself.',
+  },
+  pricing: {
+    header: 'One honest price.',
+    intro: pricingIntro('When the room starts selling tickets or passes, that is Business.'),
+    rows: [
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
+    ],
+    breakEvenCaption: breakEvenCaption('the tickets and passes you sell yourself'),
+    note: 'We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.',
+  },
+  faq: [
+    { q: 'Do I need to be technical?', a: 'No. Most rooms have their calendar up the same afternoon.' },
+    { q: 'What does it actually cost?', a: costAnswer('the tickets and passes you sell') },
+    { q: 'Do the groups that use my room need accounts?', a: 'Hosts do, and it is free. Their guests only need a link.' },
+    { q: 'Can I take my list with me?', a: 'Yes, any time. Export your whole list whenever you want.' },
+    { q: 'Is my guest information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
+  ],
+  finalCta: {
+    header: 'Know who fills your room.',
+    subhead: 'Your calendar, the groups that use it, and everyone who comes through the door, held together. Start free.',
+    microcopy: 'No card. You pay when you start charging.',
+  },
+}
+
 // ── Config #5: Nonprofits (nonprofit:donations; the assurance bar + pricing swap to the Non Profit plan) ─
 
 const NONPROFITS_FUNNEL: FunnelConfig = {
@@ -591,6 +675,90 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
   },
 }
 
+// ── Config #6: The Network (chapters under one owner, ADR-1863) ──────────────────────────────────────
+// A group with chapters in several towns. Each chapter runs its own Space; the Network ties them together.
+// The Network plan's number lives on /pricing, never here.
+
+const NETWORKS_FUNNEL: FunnelConfig = {
+  slug: 'networks',
+  niche: 'networks',
+  archetypes: ['network_steward'],
+  hero: {
+    eyebrow: 'For groups with chapters',
+    h1: 'Many chapters. One home.',
+    seoTitle: 'Chapter and member software for groups with many locations',
+    subhead:
+      'Each chapter keeps its own page, calendar and people. You see all of it together, and members move between chapters without starting over. Start free.',
+    microcopy: 'No card. You pay when you start charging.',
+    trustLine: 'Each chapter runs on its own Space.',
+  },
+  metaDescription:
+    'Frequency gives groups with several chapters one home: every chapter has its own page and calendar, and you see the whole network together.',
+  problem: {
+    header: 'Every chapter runs on its own tools.',
+    body: 'One town uses a spreadsheet, another a group chat, a third a sign-up form. Nobody sees the whole picture, and a member who moves has to start over.',
+    caption: 'Many chapters, no overview.',
+  },
+  howItWorks: {
+    header: 'Start with one chapter. Add the rest.',
+    steps: [
+      { title: 'Make your home Space.', body: 'Your Network page, with your story and your chapters listed. Free to start.' },
+      { title: 'Open a chapter.', body: 'Each chapter gets its own Space, calendar and organizers, under your name.' },
+      { title: 'See it together.', body: 'One report across every chapter, and one membership that works in all of them.' },
+    ],
+    caption: 'One chapter today, ten next year.',
+  },
+  features: [
+    {
+      icon: 'calendar',
+      title: 'A calendar for every chapter, and one for all.',
+      body: 'Each chapter runs its own events. The Network page shows them together.',
+    },
+    {
+      icon: 'contact',
+      title: 'Members who can move.',
+      body: 'One membership, honored in every chapter, so a member who relocates keeps their place.',
+    },
+    {
+      icon: 'spark',
+      soft: true,
+      title: 'One report across the network.',
+      body: 'Who came, where, and how it is growing, for every chapter in one view.',
+    },
+    {
+      icon: 'qr',
+      title: 'A shared site for every chapter.',
+      body: 'Each chapter can have its own website, billed to the Network. Pricing is on the pricing page.',
+    },
+  ],
+  loop: {
+    header: 'Each chapter, an open door.',
+    intro: 'This is how a network grows here. Not through ads, but through the chapters people already love.',
+    payoff: 'A member finds one chapter, loves it, and tells the next town. The network grows from the inside.',
+  },
+  pricing: {
+    header: 'Start free. Add the Network when you are ready.',
+    intro: pricingIntro('When your chapters start charging, each one is Business.'),
+    rows: [
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
+    ],
+    breakEvenCaption: breakEvenCaption('what your chapters sell to their own people'),
+    note: 'The Network plan joins your chapters under one home. Its price is on the pricing page, and you always see the full number.',
+  },
+  faq: [
+    { q: 'Do I need all my chapters to start?', a: 'No. Start with one and add the rest as they are ready.' },
+    { q: 'What does it cost?', a: costAnswer('what your chapters sell') },
+    { q: 'Can a chapter leave with its people?', a: 'Yes. Contacts export any time, so nothing is locked in.' },
+    { q: 'Is member information private?', a: 'Yes. Contacts are held securely and never sold.' },
+  ],
+  finalCta: {
+    header: 'Bring every chapter home.',
+    subhead: 'Your chapters, your members and one view of all of it. Start free, and add the Network when you are ready.',
+    microcopy: 'No card. You pay when you start charging.',
+  },
+}
+
 // ── The registry (ADR-591): one config per persona door, keyed by the SAME canonical slug the pricing
 // "by who you are" strip and the persona registry use, so every strip card lands on a real, on-topic page
 // (never a 404). Adding a door = one config + one row here. ────────────────────────────────────────────
@@ -598,7 +766,9 @@ return {
   'coaches-and-healers': COACHES_FUNNEL,
   studios: STUDIOS_FUNNEL,
   'event-hosts': EVENTS_FUNNEL,
+  venues: VENUES_FUNNEL,
   nonprofits: NONPROFITS_FUNNEL,
+  networks: NETWORKS_FUNNEL,
 }
 }
 

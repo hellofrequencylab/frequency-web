@@ -1,6 +1,6 @@
 {
   "id": "LIVE-1130",
-  "title": "Four launch doors and a Decide later choice in onboarding",
+  "title": "Six launch doors and a Decide later choice in onboarding",
   "lane": "live",
   "priority": "P1",
   "size": "M",
@@ -9,7 +9,7 @@
     "kind": "cmd",
     "cmd": "node scripts/probes/four-launch-doors.mjs"
   },
-  "detail": "Owner ask 2026-10-22: scrub the niche pages that are not part of the four-niche launch and tie the funnel into the onboarding choices with a Decide later option. The community-builders and teachers /for doors are retired and redirect to event-hosts and coaches-and-healers (ADR-1863); sign-up and Create a Space gain a Decide later choice. No new admin surfaces.",
+  "detail": "Owner ask 2026-10-22: scrub the niche pages that are not part of the launch and tie the funnel into onboarding with a Decide later option. Owner chose six doors (coaches and healers, studios, event hosts, venues, nonprofits, The Network). Adds the venues and networks doors, retires community builders and teachers with redirects (ADR-1863), and adds Decide later to sign-up and Create a Space. Parks LIVE-797 and LIVE-911, whose premises were the retired doors. No new admin surfaces.",
   "closed": "2026-10-22",
   "wave": "W7"
 }
