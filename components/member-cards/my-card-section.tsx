@@ -10,6 +10,7 @@ import { isCrewMember, listMyCards, readCardStats, readMemberFace } from '@/lib/
 import { readBadgeState } from '@/lib/devices/badges'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { parseVcard } from '@/lib/vcard'
+import { SITE_URL } from '@/lib/site'
 
 // THE ONE CREW CARD (LIVE-1282, ADR-1874). A member has a single card: its face editor, its cards and the
 // ask for one. It renders the same on My card (/crew/card) and at the top of a Space's Check in page, so a
@@ -26,12 +27,15 @@ export async function MyCardSection({ profileId }: { profileId: string }) {
     .maybeSingle()
   if (!me?.handle) return null
 
-  const [face, stats, cards, stageLabel] = await Promise.all([
+  const [face, stats, cards, stageLabel, owned] = await Promise.all([
     readMemberFace(profileId),
     readCardStats({ kind: 'member', profileId }),
     listMyCards(profileId),
     readCardStage(profileId),
+    supabase.from('spaces').select('slug, name, brand_name').eq('owner_profile_id', profileId).order('name').limit(5),
   ])
+  // One card, so a Space owner points the same tap at their Space: a button per Space fills the link.
+  const spaceLinks = (owned.data ?? []).map((s) => ({ name: s.brand_name || s.name, url: `${SITE_URL}/spaces/${s.slug}` }))
   const vcard = parseVcard(me.vcard)
   const name = me.display_name || me.handle
   // The preview draws the newest card that is on, or the newest at all.
@@ -47,6 +51,7 @@ export async function MyCardSection({ profileId }: { profileId: string }) {
         cardNumber={shown?.cardNumber ?? null}
         initialFace={face}
         stats={stats}
+        spaceLinks={spaceLinks}
         contact={{ title: vcard.title, phone: vcard.phone, email: vcard.email, website: vcard.website }}
       />
 

@@ -55,6 +55,7 @@ export function CardFaceEditor({
   initialFace,
   stats,
   contact,
+  spaceLinks = [],
   readOnly = false,
 }: {
   owner: Owner
@@ -68,6 +69,8 @@ export function CardFaceEditor({
   initialFace: CardFace
   stats: CardStats
   contact?: CardContactPreview
+  /** A member who runs Spaces: one tap fills the link with that Space's page. Empty for a Space owner. */
+  spaceLinks?: { name: string; url: string }[]
   /** A staff previewer sees the editor but cannot save. */
   readOnly?: boolean
 }) {
@@ -161,6 +164,7 @@ export function CardFaceEditor({
         </div>
 
         {face.mode === 'link' && (
+          <div>
           <Field label="The link it opens" hint="A full https:// address. A bare domain works too." error={linkError}>
             <Input
               type="url"
@@ -172,6 +176,16 @@ export function CardFaceEditor({
               onChange={(e) => set('linkUrl', e.target.value || null)}
             />
           </Field>
+            {spaceLinks.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {spaceLinks.map((l) => (
+                  <Button key={l.url} type="button" size="sm" variant="secondary" disabled={readOnly} onClick={() => set('linkUrl', l.url)}>
+                    Use {l.name} page
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {face.mode === 'card' && (
