@@ -278,7 +278,7 @@ export function AdminPhoneBar({ items, label, space, links }: AdminPhoneBarProps
             l.external ? (
               <a key={l.key} className="ad-pm-row" href={l.href} target="_blank" rel="noopener noreferrer"><FqIcon name="globe" size={20} /><span>{l.label}</span><FqIcon name="arrow" size={16} /><span className="sr-only"> (opens in a new tab)</span></a>
             ) : (
-              <Link key={l.key} className="ad-pm-row" href={l.href}><FqIcon name={l.key === 'help' ? 'help' : l.key === 'events' ? 'event' : 'home'} size={20} /><span>{l.label}</span></Link>
+              <Link key={l.key} className="ad-pm-row" href={l.href}><FqIcon name={l.key === 'help' || l.key === 'support' ? 'help' : l.key === 'events' ? 'event' : 'home'} size={20} /><span>{l.label}</span></Link>
             ),
           )}
           <Link className="ad-pm-row" href="/feed"><FqIcon name="arrow" size={20} /><span>Back to Frequency</span></Link>

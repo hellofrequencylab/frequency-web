@@ -136,6 +136,7 @@ export async function FrequencySpaceConsole({ slug, children }: { slug: string; 
         { key: 'feed', label: 'Feed', href: '/feed' },
         { key: 'events', label: 'Events', href: '/events' },
         { key: 'help', label: 'Help', href: '/help' },
+        { key: 'support', label: 'Contact support', href: '/support' },
       ]}
       search={{ href: `/spaces/${space.slug}/manage?section=resonance`, label: 'Search people, events' }}
       alerts={{ href: '/notifications', unread }}

@@ -115,6 +115,7 @@ export async function FrequencyAdminConsole({ profileId, role, webRole, staffRol
         { key: 'feed', label: 'Feed', href: '/feed' },
         { key: 'site', label: 'Site home', href: '/?home' },
         { key: 'help', label: 'Help', href: '/help' },
+        ...(items.some((i) => i.href === '/admin/support' || i.children?.some((c) => c.href === '/admin/support')) ? [{ key: 'support', label: 'Support inbox', href: '/admin/support' }] : []),
       ]}
       search={{ href: '/search', label: 'Search people, events' }}
       alerts={{ href: '/notifications', unread }}

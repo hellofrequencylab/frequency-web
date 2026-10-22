@@ -258,6 +258,7 @@ export const DIRECT_LINKS: SiteLink[] = [
   { href: ROUTES.directory, label: 'Business Spaces' },
   { href: ROUTES.pricing, label: 'Pricing' },
   { href: ROUTES.stories, label: 'Stories' },
+  { href: ROUTES.help, label: 'Help' },
 ]
 
 /** The side's primary action (CTA desk, messaging.md §6). */
