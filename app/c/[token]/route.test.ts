@@ -82,11 +82,20 @@ describe('GET /c/<token>', () => {
     expect(payConnect).not.toHaveBeenCalled()
   })
 
-  it('opens the owner’s link as a temporary redirect', async () => {
+  it('opens a Frequency link as a temporary redirect', async () => {
+    card = memberCard({ mode: 'link', linkUrl: 'https://www.frequencylocal.com/events' })
+    const res = await tap()
+    expect(res.status).toBe(307)
+    expect(res.headers.get('location')).toBe('https://www.frequencylocal.com/events')
+  })
+
+  it('opens another site through /card/<token>/go, so closing it lands on Frequency', async () => {
     card = memberCard({ mode: 'link', linkUrl: 'https://maya.example.com/' })
     const res = await tap()
     expect(res.status).toBe(307)
-    expect(res.headers.get('location')).toBe('https://maya.example.com/')
+    const url = where(res)
+    expect(url.pathname).toBe(`/card/${TOKEN}/go`)
+    expect(url.searchParams.get('n')).toMatch(/^[0-9a-f]{8}$/)
   })
 
   it('opens the virtual card on /card/<token>', async () => {
