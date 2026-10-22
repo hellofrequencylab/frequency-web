@@ -295,7 +295,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(SITE_DESIGN === "frequency"
       ? [{ url: `${SITE_URL}/features`, changeFrequency: "monthly" as const, priority: 0.7 }]
       : []),
-    { url: `${SITE_URL}/for`, changeFrequency: "monthly" as const, priority: 0.7 },
+    ...(SITE_DESIGN === "frequency"
+      ? [{ url: `${SITE_URL}/for`, changeFrequency: "monthly" as const, priority: 0.7 }]
+      : []),
     // Operator funnel doors, /for/<niche> (ADR-591). A static registry (lib/marketing/funnel-config), so
     // the per-page URLs are safe to advertise here directly.
     ...funnelSlugs().map((slug) => ({
