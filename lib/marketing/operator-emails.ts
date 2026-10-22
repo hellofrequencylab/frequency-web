@@ -11,10 +11,17 @@ export type OperatorDay = 0 | 1 | 3 | 7
 /** Day 0 goes out the moment the Space is created; the daily cron sends the rest. */
 export const OPERATOR_DAYS: readonly OperatorDay[] = [0, 1, 3, 7]
 
-export type OperatorFocus = 'packages' | 'membership' | 'ticketed' | 'donations' | 'general'
+export type OperatorFocus = 'packages' | 'membership' | 'ticketed' | 'donations' | 'venue' | 'network' | 'general'
 
 /** What a Space runs, from its type and Focus. Anything unknown reads as general. */
-export function operatorFocus(type: string | null | undefined, variant: string | null | undefined): OperatorFocus {
+export function operatorFocus(
+  type: string | null | undefined,
+  variant: string | null | undefined,
+  /** The Space's kind (preferences.profileData.kind) and whether it has member Spaces; both optional. */
+  extra: { kind?: string | null; hasChapters?: boolean } = {},
+): OperatorFocus {
+  if (extra.hasChapters) return 'network'
+  if (extra.kind === 'venue') return 'venue'
   if (type === 'nonprofit') return 'donations'
   if (variant === 'packages' || variant === 'appointments' || variant === 'cohort' || variant === 'service') return 'packages'
   if (variant === 'membership') return 'membership'
@@ -50,6 +57,18 @@ const DAY_0: Record<OperatorFocus, Step> = {
     cta: 'Finish your page',
     path: 'manage',
   },
+  venue: {
+    subject: 'Your Space is open. Show people the room.',
+    lines: ['Your page is live. Add a photo of the space, its capacity and how to ask for a date, so a host can picture an event there.'],
+    cta: 'Finish your venue page',
+    path: 'manage',
+  },
+  network: {
+    subject: 'Your Space is open. Add your first chapter.',
+    lines: ['Your page is live. Add your first chapter and its lead, so the network has a home people can find by city.'],
+    cta: 'Add a chapter',
+    path: 'manage',
+  },
   general: {
     subject: 'Your Space is open. Here is the first step.',
     lines: ['Your page is live. Start by adding what you offer, with a date or a price, so the first visitor knows what to do.'],
@@ -69,6 +88,18 @@ const DAY_1: Record<OperatorFocus, Step> = {
   membership: DAY_1_STEP,
   ticketed: DAY_1_STEP,
   donations: DAY_1_STEP,
+  venue: {
+    subject: 'Make your venue easy to picture.',
+    lines: ['Hosts choose a room they can see. Add two or three photos, the capacity, and the plain details: parking, hours, what is included.'],
+    cta: 'Finish your venue page',
+    path: 'manage',
+  },
+  network: {
+    subject: 'Give each chapter a clear page.',
+    lines: ['Each chapter needs a city, a lead and a line on what it does. Fill in the first one fully, then copy the pattern for the rest.'],
+    cta: 'Open your chapters',
+    path: 'manage',
+  },
   general: DAY_1_STEP,
 }
 
@@ -94,6 +125,18 @@ const DAY_3: Record<OperatorFocus, Step> = {
   donations: {
     subject: 'Three days in. Ask one supporter.',
     lines: ['Send your page to one person who already cares about your work, with a plain note on what a gift does. One real ask teaches you more than ten posts.'],
+    cta: 'Copy your page link',
+    path: 'public',
+  },
+  venue: {
+    subject: 'Three days in. Tell hosts you are open.',
+    lines: ['Send your page to three people who run events: a teacher, a promoter, a group leader. Ask which dates they would want.'],
+    cta: 'Copy your page link',
+    path: 'public',
+  },
+  network: {
+    subject: 'Three days in. Invite a chapter lead.',
+    lines: ['Pick one person in another city who already runs gatherings and send them your network page. One lead who says yes is worth more than a list.'],
     cta: 'Copy your page link',
     path: 'public',
   },
@@ -127,6 +170,18 @@ const DAY_7: Record<OperatorFocus, Step> = {
   donations: {
     subject: 'A week in. Thank your first supporters.',
     lines: ['Open your Space and look at who gave or signed up. A short personal thank you now is what turns a first gift into a second.'],
+    cta: 'Open your Space',
+    path: 'manage',
+  },
+  venue: {
+    subject: 'A week in. Check your requests.',
+    lines: ['Open your Space and look at the date requests. Answer each one the same day, and offer a second date if the first is taken.'],
+    cta: 'Open your Space',
+    path: 'manage',
+  },
+  network: {
+    subject: 'A week in. See your chapters.',
+    lines: ['Open your Space and look at which chapters are set up and which have a lead. Message the ones that are stuck and ask what they need.'],
     cta: 'Open your Space',
     path: 'manage',
   },
