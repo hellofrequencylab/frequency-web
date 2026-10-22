@@ -55,7 +55,7 @@ export function organizationSchema(opts?: {
           foundingLocation: {
             '@type': 'Place',
             name: opts.foundingLocation,
-            address: { '@type': 'PostalAddress', addressLocality: opts.foundingLocation },
+            address: { '@type': 'PostalAddress', addressRegion: 'CA', addressCountry: 'US' },
           },
         }
       : {}),
