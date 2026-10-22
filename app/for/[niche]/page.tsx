@@ -62,17 +62,23 @@ export default async function FunnelDoorPage({ params }: { params: Promise<{ nic
             { name: config.hero.eyebrow, path },
           ]),
           faqSchema(config.faq.map((f) => ({ q: f.q, a: f.a }))),
-          productSchema({
-            title: `Frequency ${config.nonprofit ? 'Non Profit' : 'Business'}`,
-            description: config.hero.subhead,
-            priceCents,
-            currency: 'usd',
-            // A founding MONTHLY rate: without the period code the Offer reads as a one-off
-            // purchase — the exact lie productSchema's own doc warns about. /pricing passes it.
-            billingPeriodCode: 'MON',
-            path,
-            sellerName: 'Frequency',
-          }),
+          // The Network door quotes no price (the Network plan's number lives on /pricing), so it carries no
+          // Offer: a Business rate on a Network page would be a wrong price in search and AI answers (LIVE-1132).
+          ...(config.slug === 'networks'
+            ? []
+            : [
+                productSchema({
+                  title: `Frequency ${config.nonprofit ? 'Non Profit' : 'Business'}`,
+                  description: config.hero.subhead,
+                  priceCents,
+                  currency: 'usd',
+                  // A founding MONTHLY rate: without the period code the Offer reads as a one-off
+                  // purchase — the exact lie productSchema's own doc warns about. /pricing passes it.
+                  billingPeriodCode: 'MON',
+                  path,
+                  sellerName: 'Frequency',
+                }),
+              ]),
         ]}
       />
       {/* The Frequency design (ADR-1737): the same config, prices, Start href and schema, in its body. */}

@@ -47,6 +47,7 @@ import { promotedSeatHtml, promotedSeatText, PROMOTED_SEAT_LINE } from '@/lib/ev
 import { briefHtml, briefText, ownerBriefEmailHtml } from '@/lib/ai/vera/owner-brief'
 import type { TodayCard } from '@/lib/ai/vera/today'
 import { buildRenewalNoticeEmail } from '@/lib/billing/renewal-notice-email'
+import { buildTrialEndingEmail } from '@/lib/billing/trial-ending-email'
 import { saleEmailHtml, saleEmailText } from '@/lib/billing/ticket-sale-notify'
 import { tipEmailHtml, tipEmailText } from '@/lib/billing/tips-notify'
 import { shippedNoticeContent } from '@/lib/commerce/shipped-notice'
@@ -245,6 +246,7 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'ticket-sale-host', group: 'Owner notices', run: () => { const c = { hostName: 'Jordan', buyerName: 'Maya', countLabel: '2 tickets', eventTitle: 'Sunrise sound bath', tierName: 'General', grossLabel: '$40', feeLabel: '$2.40', feeIsZero: false, overage: null, eventUrl: EVENT_URL }; return { to: TO, subject: 'You sold 2 tickets to Sunrise sound bath', html: saleEmailHtml(c), text: saleEmailText(c) } } },
   { id: 'tip-received', group: 'Owner notices', run: () => { const p = { recipientName: 'Jordan', tipperName: 'Maya', amount: '$10', note: 'Thank you for the extra time after class.' }; return { to: TO, subject: 'Maya sent you a $10 tip', html: tipEmailHtml(p), text: tipEmailText(p) } } },
   { id: 'renewal-reminder', group: 'Owner notices', run: () => buildRenewalNoticeEmail({ to: TO, touch: 'reminder_30', planLabel: 'Collective', spaceName: SAMPLE_SPACE_NAME, dateLabel: 'November 19, 2026', rateLabel: '$99 a month', greetingName: 'Jordan', billingUrl: `${SITE}/spaces/north-light/settings/billing` }) },
+  { id: 'trial-ending', group: 'Owner notices', run: () => buildTrialEndingEmail({ to: TO, planLabel: 'Business', spaceName: SAMPLE_SPACE_NAME, trialEndLabel: 'November 19, 2026', greetingName: 'Jordan', billingUrl: `${SITE}/spaces/north-light/settings/billing` }) },
   { id: 'renewal-overdue', group: 'Owner notices', run: () => buildRenewalNoticeEmail({ to: TO, touch: 'overdue', planLabel: 'Collective', spaceName: SAMPLE_SPACE_NAME, dateLabel: 'October 19, 2026', rateLabel: '$99 a month', greetingName: null, billingUrl: `${SITE}/spaces/north-light/settings/billing` }) },
   { id: 'owner-brief', group: 'Owner notices', run: () => { const intro = 'Two people are worth a note today, and the rest can wait.'; return { to: TO, subject: 'Your Frequency brief: 2 moves today', html: ownerBriefEmailHtml(briefHtml(intro, BRIEF_CARDS, 3), UNSUB), text: briefText(intro, BRIEF_CARDS, 3) + `\nUnsubscribe or manage emails: ${UNSUB}\n` } } },
 ]

@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-1132",
+  "title": "Trial-ending notice, Space-created funnel event, and no wrong price on the Network door",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/trial-ending-notice.mjs"
+  },
+  "detail": "Funnel plumbing on the existing systems, no new admin surface. (1) customer.subscription.trial_will_end now emails the Space owner three days before a trial turns into a charge (lib/billing/trial-ending-email.ts, trial-ending-notify.ts; outbox-deduped per subscription; sample in the stock catalog). The live Stripe webhook endpoint must also have the event enabled; as of 2026-10-22 it did not. (2) createSpace records a first-party space_created engagement row with the setup, plan hint and decideLater flag; never mirrored to GA4. (3) The Network door emits no product Offer in its structured data, because the Business rate would be a wrong price there (ADR-1868).",
+  "closed": "2026-10-22",
+  "wave": "W7"
+}
