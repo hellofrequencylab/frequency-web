@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Button, Section } from '@/components/marketing/marketing-ui'
 import { catalogItem } from '@/lib/billing/pricing-keys'
 import { formatLoadoutCents } from '@/lib/pricing/loadout'
+import { NETWORK_PLAN } from '@/lib/pricing/plans'
 import {
   type FunnelConfig,
   type FunnelPriceRow,
@@ -240,6 +241,8 @@ export function priceForRow(row: FunnelPriceRow): { price: string; anchor: strin
   if (row.kind === 'resonance') {
     return { price: `+${formatLoadoutCents(catalogItem('addon_ai').month.foundingCents)}`, anchor: null }
   }
+  // The Network plan's starting price (three chapters), from the plan itself, never typed here.
+  if (row.kind === 'network') return { price: `From ${formatLoadoutCents(NETWORK_PLAN.monthlyCents)}`, anchor: null }
   if (row.kind === 'nonprofit') {
     return { price: formatLoadoutCents(catalogItem('nonprofit_seat').month.foundingCents), anchor: null }
   }

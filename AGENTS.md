@@ -20,7 +20,7 @@ Orientation for a human: [`docs/START-HERE.md`](docs/START-HERE.md).
 | Respond to an incident (a cron, the queue, a webhook, the database, AI, a bad deploy) | [`docs/RUNBOOKS.md`](docs/RUNBOOKS.md) |
 | Pick up work, file a finding, or close a row | [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) · `pnpm backlog` · `pnpm packets` |
 | Name something a human will read | [`docs/NAMING.md`](docs/NAMING.md) then [`docs/CONTENT-VOICE.md`](docs/CONTENT-VOICE.md) |
-| Change a page layout | [`docs/PAGE-FRAMEWORK.md`](docs/PAGE-FRAMEWORK.md) |
+| Change a page layout, or add a public marketing page (kit components only, `check:marketing-kit`) | [`docs/PAGE-FRAMEWORK.md`](docs/PAGE-FRAMEWORK.md) |
 | Add or change a create/edit field | [`docs/STUDIO.md`](docs/STUDIO.md) |
 | Touch a payment button | [`docs/CHECKOUT.md`](docs/CHECKOUT.md) |
 | Add an admin / Space menu item | [`docs/MENU-CONTRACT.md`](docs/MENU-CONTRACT.md) |

@@ -75,6 +75,19 @@
 @container (min-width:900px){
 [data-design="frequency"] [data-kit="site"] .tg-row.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+@media (min-width:1000px){
+[data-design="frequency"] [data-kit="site"] .tg-row.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (min-width:600px) and (max-width:999px){
+[data-design="frequency"] [data-kit="site"] .tg-row.three{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+/* A door card on /for: the card is one link, a photo on top, the eyebrow, headline, line and a go cue. */
+[data-design="frequency"] [data-kit="site"] .tg-door{display:flex;flex-direction:column;gap:6px;color:inherit;text-decoration:none;transition:border-color var(--fq-dur-fast) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="site"] .tg-door:hover{border-color:var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="site"] .tg-door .photo{aspect-ratio:16/10;margin-bottom:12px}
+[data-design="frequency"] [data-kit="site"] .tg-door-k{font-size:var(--fq-text-body-size);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .tg-door p{flex:1}
+[data-design="frequency"] [data-kit="site"] .tg-door-go{font-weight:600;color:var(--fq-side)}
 
 /* The plan card: the kit's `.pop > .pc`, in five rows (head, price, points, detail, CTA). Equal heights
    and a pinned CTA come from the flex column; where subgrid exists the five rows are shared across the
@@ -250,7 +263,7 @@
 [data-design="frequency"] [data-kit="site"] .jb-steps{display:inline-flex;gap:4px}
 [data-design="frequency"] [data-kit="site"] .jb-steps i{width:16px;height:4px;border-radius:var(--fq-radius-orb);background:color-mix(in srgb,var(--fq-text-strong) 12%,transparent);transition:background var(--fq-dur-slow) var(--fq-ease-out),box-shadow var(--fq-dur-slow)}
 [data-design="frequency"] [data-kit="site"] .jb-steps i[data-on]{background:var(--fq-side);box-shadow:0 0 8px var(--fq-side)}
-[data-design="frequency"] [data-kit="site"] .jb-slide{display:flex;flex-direction:column;gap:14px;animation:jbIn var(--fq-dur-slow) var(--fq-ease-out) both}
+[data-design="frequency"] [data-kit="site"] .jb-slide{overflow:visible;display:flex;flex-direction:column;gap:14px;animation:jbIn var(--fq-dur-slow) var(--fq-ease-out) both}
 [data-design="frequency"] [data-kit="site"] .jb-slide h1{margin:0;font:600 clamp(24px,3vw,var(--fq-text-h2))/1.08 var(--fq-font-display);letter-spacing:-0.035em;color:var(--fq-text-strong);text-wrap:balance}
 [data-design="frequency"] [data-kit="site"] .jb-sub{margin:0;font-size:var(--fq-text-body-size);line-height:1.5;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="site"] .jb-sub b{color:var(--fq-text-strong);font-weight:600;overflow-wrap:anywhere}

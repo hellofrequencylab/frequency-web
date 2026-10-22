@@ -28,7 +28,7 @@
 // the caps are never typed here, they live in lib/pricing/feature-meters.ts (ADR-837) and the copy
 // stays qualitative.
 
-import { OPERATOR_CTA_LABEL } from '@/lib/site'
+import { FOUNDING_PLACE, OPERATOR_CTA_LABEL } from '@/lib/site'
 import type { ArchetypeId } from '@/lib/audience/archetypes'
 import { NICHE_FUNNEL_DESTINATIONS, type FunnelDestination } from '@/lib/funnels/definitions'
 import { priceStringsFrom, defaultPricingInput } from '@/lib/pricing/pricing-page'
@@ -72,7 +72,7 @@ export interface FunnelFeature {
  *  (lib/pricing/pricing-page.ts) so they never drift; the config carries only the row's identity + the
  *  take-rate / value wording. `kind` selects which catalog figure the component reads. */
 export interface FunnelPriceRow {
-  kind: 'free' | 'business' | 'nonprofit' | 'resonance'
+  kind: 'free' | 'business' | 'nonprofit' | 'network' | 'resonance'
   /** The plan name shown, e.g. "Free", "Business", "+ Vera AI" (the add-on's public name; `kind`
    *  stays `resonance`, the machinery's id, ADR-590). */
   name: string
@@ -198,6 +198,7 @@ const RATE = {
 /** The free-tier row's honest descriptor: a free Space hosts, and takes tips with no platform fee, plus card processing. */
 const FREE_ROW_DETAIL = 'Host free, and tips carry no platform fee, plus card processing'
 /** The business row's descriptor: selling opens here, with the introduction fee beside it. */
+const NETWORK_ROW_DETAIL = 'One home for every chapter, each with its own page, calendar and leaders'
 const BUSINESS_ROW_DETAIL = `Selling starts here, ${RATE.business} once per introduced customer`
 /** The break-even proof, stated once: the fee only ever applies to a NEW person the network brought. */
 function breakEvenCaption(keep: string): string {
@@ -214,7 +215,7 @@ function pricingIntro(stepUp: string): string {
 /** The shared what-does-it-cost FAQ answer, with the per-niche "no network fee on ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `Nothing to be here, and nothing to host. A free Space runs your page, contacts, bookings and events, and takes tips with no platform fee, plus card processing. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings, donations and your shop, with ${RATE.business} on a customer the network introduces, once, and 0% on the people already yours. There's no network fee on ${keep}, only card processing.${extra} You always see the full number, nothing hidden.`
+  return `Free to start, and free to host. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings, donations and your shop. Frequency takes ${RATE.business} on a customer the network introduces, once, and 0% on the people already yours. There's no network fee on ${keep}, only card processing.${extra} A free Space runs your page, contacts, bookings and events, and takes tips with no platform fee, plus card processing. You always see the full number, nothing hidden.`
 }
 
 
@@ -228,39 +229,34 @@ const COACHES_FUNNEL: FunnelConfig = {
   archetypes: ['second_act'],
   hero: {
     eyebrow: 'For coaches and guides',
-    h1: 'Your practice, without the six tabs.',
-    seoTitle: 'Booking + contacts software for coaches and guides',
+    h1: 'Your practice without six logins',
+    seoTitle: 'Booking + contacts software for coaches, healers and guides',
     subhead:
       "Bookings, payments, and every person you've met, together in one place. Frequency keeps your relationships close, so the people you meet come back, and bring the next ones. Start free.",
     microcopy: 'No card. You pay when you start charging.',
     trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
-    'Frequency gives coaches and guides bookings, payments, and one contact list in one place, so clients rebook and refer. Free to start, no card.',
+    'Bookings, payments and one client list in one place, for coaches and guides in North County San Diego. Free to start, no card. Opens December 1.',
   problem: {
-    header: 'The work is the calling. The admin is the tax.',
-    body: 'Your calendar lives in one app, payments in another, client notes in a notebook and in your head. You mean to follow up, and the day gets away from you. So the client who came once never books again, and you never quite know why. None of it is why you started.',
-    caption: 'Six tabs, one you.',
+    header: 'Everything you run, circling you.',
+    body: 'Bookings, payments, client notes and your list live in one Space, and each one knows the others.',
+    caption: 'One Space, one you.',
   },
   howItWorks: {
     header: 'One place. Ready before your next session.',
     steps: [
-      { title: 'Make your Space.', body: 'Your page, your name, and your work, ready in a few minutes. Free to start, always.' },
-      {
-        title: 'Bring your people in.',
-        body: 'Scan a card, import a list, or share your Frequency card. Everyone lands in Contacts.',
-      },
-      { title: 'Open your calendar.', body: "Take bookings the same day, right from the page clients already see. Paid sessions open when you go Business." },
+      { title: 'Create your Space', body: 'Your page, your name, and your work, ready in a few minutes. Free to start, always.' },
+      { title: 'Bring your People', body: 'Scan a card, import a list, or share your Frequency card. Everyone lands in Contacts.' },
+      { title: 'Open your Calendar', body: 'Take bookings the same day, right from the page clients already see. Paid sessions open when you go Business.' },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
   },
-  // The order ESCALATES to the growth engine: get paid -> remember everyone -> grow through them, which
-  // sets up the Loop. The third block is the page's unique idea, not a feature.
   features: [
     {
       icon: 'calendar',
       title: 'Booked and paid, without the chase.',
-      body: "Clients pick a time, and on Business they pay up front. No back and forth, no chasing invoices. Your calendar fills, and your evenings come back.",
+      body: 'Clients pick a time, and on Business they pay up front. No back and forth, no chasing invoices. Your calendar fills, and your evenings come back.',
     },
     {
       icon: 'contact',
@@ -297,16 +293,11 @@ const COACHES_FUNNEL: FunnelConfig = {
   },
   faq: [
     { q: 'Do I need to be technical?', a: 'No. Most practitioners are taking bookings the same afternoon.' },
-    {
-      q: 'What does it actually cost?',
-      a: costAnswer('your own bookings'),
-    },
+    { q: 'What does it actually cost?', a: costAnswer('your own bookings') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on December 1, 2026. You can open your Space before then, free, and it is ready when the town opens.` },
     { q: 'Can I take my contacts with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
     { q: 'Will my clients need to download anything?', a: 'No. They book and pay from a link.' },
-    {
-      q: 'What if I also run classes or events?',
-      a: "It grows with you. The same Space handles memberships, tickets, and check-in when you're ready.",
-    },
+    { q: 'What if I also run classes or events?', a: "It grows with you. The same Space handles memberships, tickets, and check-in when you're ready." },
     { q: 'Is my client information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
   ],
   finalCta: {
@@ -327,16 +318,16 @@ const STUDIOS_FUNNEL: FunnelConfig = {
     h1: 'Every class, every member, one place.',
     seoTitle: 'Membership + class booking software for studios and instructors',
     subhead:
-      "Recurring classes, memberships, and check-in at the door, together in one place, whether you run the room or teach in several. Frequency keeps your students close, so the regulars come back and bring the next ones. Start free.",
+      'Recurring classes, memberships, and check-in at the door, together in one place. Frequency keeps your members close, so the regulars come back and bring the next ones. Start free.',
     microcopy: 'No card. You pay when you start charging.',
     trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
-    'Frequency gives studios and instructors recurring classes, memberships, and door check-in in one place, so students rebook and refer. Free to start, no card.',
+    'Memberships, class booking and door check-in for studios and instructors in North County San Diego. Free to start, no card. Opens December 1.',
   problem: {
-    header: 'The classes are full. The back office is a mess.',
-    body: 'Your schedule lives in one app, memberships in another, and the front desk keeps a paper list. A member lapses and you catch it a month later. The regular who could bring three friends never gets asked. None of that is why you opened the doors.',
-    caption: 'Six tabs, one front desk.',
+    header: 'Your whole room, in one view.',
+    body: 'Classes, dues, check-ins and member history sit together, so you see who is thriving and who has gone quiet.',
+    caption: 'One room, one list.',
   },
   howItWorks: {
     header: 'One place. Ready before your next class.',
@@ -384,20 +375,15 @@ const STUDIOS_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the memberships you sell yourself'),
-    note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
+    note: 'We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: 'No. Most studios are taking bookings the same afternoon.' },
-    {
-      q: 'What does it actually cost?',
-      a: costAnswer('the memberships you sell'),
-    },
+    { q: 'What does it actually cost?', a: costAnswer('the memberships you sell') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on December 1, 2026. You can open your Space before then, free, and it is ready when the town opens.` },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },
     { q: 'Will my members need to download anything?', a: 'No. They book and pay from a link, and check in with a QR code.' },
-    {
-      q: 'What if I also run workshops or events?',
-      a: 'It grows with you. The same Space handles tickets, one-off workshops, and check-in when you are ready.',
-    },
+    { q: 'What if I also run workshops or events?', a: 'It grows with you. The same Space handles tickets, one-off workshops, and check-in when you are ready.' },
     { q: 'Is my member information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
   ],
   finalCta: {
@@ -423,17 +409,17 @@ const EVENTS_FUNNEL: FunnelConfig = {
     trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
-    'Frequency gives event hosts ticketing, door check-in, and one contact list in one place, so guests come back and bring friends. Free to start, no card.',
+    'Tickets, check-in and a guest list you keep, for event hosts in North County San Diego. Free to start, no card. Opens December 1.',
   problem: {
-    header: 'The event sells out. The list disappears the next day.',
-    body: 'Tickets live in one tool, the guest list in a spreadsheet, and the door is a name check on a phone. The room was full, and a week later you cannot reach the people who filled it. So the next event starts from zero.',
-    caption: 'A full room, then silence.',
+    header: 'Everything your night needs, around you.',
+    body: 'Tickets, the door and everyone who came live in one Space, ready for the next date.',
+    caption: 'One room, one list.',
   },
   howItWorks: {
     header: 'One place. Ready before doors open.',
     steps: [
       { title: 'Make your Space.', body: 'Your event page and your dates, ready in a few minutes. Free to host, always.' },
-      { title: 'Open your tickets.', body: "Free RSVPs on any Space, and paid tickets when you go Business, from the page guests already see. Everyone lands in Contacts." },
+      { title: 'Open your tickets.', body: 'Free RSVPs on any Space, and paid tickets when you go Business, from the page guests already see. Everyone lands in Contacts.' },
       { title: 'Open the door.', body: 'Check people in with a QR code, and keep everyone who came for the next one.' },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
@@ -475,20 +461,15 @@ const EVENTS_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the tickets you sell yourself'),
-    note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
+    note: 'We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: 'No. Most hosts have their first event up the same afternoon.' },
-    {
-      q: 'What does it actually cost?',
-      a: costAnswer('the tickets you sell'),
-    },
+    { q: 'What does it actually cost?', a: costAnswer('the tickets you sell') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on December 1, 2026. You can open your Space before then, free, and it is ready when the town opens.` },
     { q: 'Can I take my guest list with me?', a: 'Yes, any time. Export your whole list whenever you want.' },
     { q: 'Will my guests need to download anything?', a: 'No. They buy and check in from a link and a QR code.' },
-    {
-      q: 'What if I also run memberships or classes?',
-      a: 'It grows with you. The same Space handles memberships and recurring classes when you are ready.',
-    },
+    { q: 'What if I also run memberships or classes?', a: 'It grows with you. The same Space handles memberships and recurring classes when you are ready.' },
     { q: 'Is my guest information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
   ],
   finalCta: {
@@ -514,11 +495,11 @@ const VENUES_FUNNEL: FunnelConfig = {
     trustLine: '0% on your own audience, plus card processing.',
   },
   metaDescription:
-    'Frequency gives venues and community rooms one calendar, one contact list and ticketing for the groups that meet there. Free to start, no card.',
+    'One calendar for every group in your room, with check-in and a list that stays with the venue, in North County San Diego. Free to start.',
   problem: {
-    header: 'The room is busy. You still do not know who is in it.',
-    body: 'Groups book through texts, the calendar lives in a shared sheet, and the people who walk in belong to whoever hosted. A good night leaves you with a full room and nothing to follow up on.',
-    caption: 'A busy room, and no list.',
+    header: 'Every group, one room, one list.',
+    body: 'Your calendar, the hosts who use your room and everyone who walks in live in one Space.',
+    caption: 'One room, one list.',
   },
   howItWorks: {
     header: 'One place for the room and the groups in it.',
@@ -546,7 +527,7 @@ const VENUES_FUNNEL: FunnelConfig = {
       body: 'Contacts holds everyone who came, however they found you, so the room keeps its own regulars.',
     },
     {
-      icon: 'spark',
+      icon: 'calendar',
       soft: true,
       title: 'Sell tickets and passes when you are ready.',
       body: 'Paid tickets, passes and rentals open on Business. A guest who is already yours carries no network fee, only card processing.',
@@ -571,6 +552,7 @@ const VENUES_FUNNEL: FunnelConfig = {
   faq: [
     { q: 'Do I need to be technical?', a: 'No. Most rooms have their calendar up the same afternoon.' },
     { q: 'What does it actually cost?', a: costAnswer('the tickets and passes you sell') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on December 1, 2026. You can open your Space before then, free, and it is ready when the town opens.` },
     { q: 'Do the groups that use my room need accounts?', a: 'Hosts do, and it is free. Their guests only need a link.' },
     { q: 'Can I take my list with me?', a: 'Yes, any time. Export your whole list whenever you want.' },
     { q: 'Is my guest information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
@@ -599,11 +581,11 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
     trustLine: 'No network fee on what you raise, plus card processing.',
   },
   metaDescription:
-    'Frequency gives Non Profits donations, a supporter list, and program enrollment in one place, with no network fee on what you raise. Free to start, no card.',
+    'Donations, supporters and programs for Non Profits in North County San Diego, with no network fee on what you raise. Free to start.',
   problem: {
-    header: 'The mission is clear. The tools take a cut and a toll.',
-    body: 'Donations run through one processor, supporters live in a spreadsheet, and program sign-ups in a form. Every tool takes a fee, and the recurring donor who lapsed slips by unnoticed. The money and the hours belong with the mission, not the software.',
-    caption: 'Five tools, one mission.',
+    header: 'Your mission, with everything in reach.',
+    body: 'Gifts, supporters, programs and receipts in one list, at a flat price.',
+    caption: 'One team, one list.',
   },
   howItWorks: {
     header: 'One place. Ready before your next campaign.',
@@ -616,7 +598,7 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
   },
   features: [
     {
-      icon: 'contact',
+      icon: 'spark',
       title: 'Donations and a supporter list, together.',
       body: "On the Non Profit plan, take one-time and recurring gifts, and keep a supporter list that tracks every donor and flags who's lapsed.",
     },
@@ -650,22 +632,16 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
       { kind: 'nonprofit', name: 'Non Profit', detail: '0% on what you raise', featured: true },
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
-    breakEvenCaption:
-      'No network fee on what you raise, only card processing. Verified 501(c)(3) organizations pay no network take-rate on the Non Profit plan.',
+    breakEvenCaption: 'No network fee on what you raise, only card processing. Verified 501(c)(3) organizations pay no network take-rate on the Non Profit plan.',
     note: 'We never take a share of your donations. Your supporters export any time, so you are never locked in.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: 'No. Most organizations have their Space running the same afternoon.' },
-    {
-      q: 'What does it actually cost?',
-      a: `Free to start and free to host. Taking donations is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no network fee on what you raise. You always see the full number, nothing hidden.`,
-    },
-    { q: 'Do you take a cut of donations?', a: "No. We never take a share of a donation. Card processing is the only fee on a gift, and it goes to the card processor, not to us." },
+    { q: 'What does it actually cost?', a: `Free to start and free to host. Taking donations is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no network fee on what you raise. You always see the full number, nothing hidden.` },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on December 1, 2026. You can open your Space before then, free, and it is ready when the town opens.` },
+    { q: 'Do you take a cut of donations?', a: 'No. We never take a share of a donation. Card processing is the only fee on a gift, and it goes to the card processor, not to us.' },
     { q: 'Can I take my supporters with me?', a: 'Yes, any time. Export your whole supporter list whenever you want.' },
-    {
-      q: 'How do we get the Non Profit plan?',
-      a: 'Verify your 501(c)(3) status and the flat Non Profit plan opens, with the full toolkit and donations built in.',
-    },
+    { q: 'How do we get the Non Profit plan?', a: 'Verify your 501(c)(3) status and the flat Non Profit plan opens, with the full toolkit and donations built in.' },
     { q: 'Is my supporter information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
   ],
   finalCta: {
@@ -693,11 +669,11 @@ const NETWORKS_FUNNEL: FunnelConfig = {
     trustLine: 'Each chapter runs on its own Space.',
   },
   metaDescription:
-    'Frequency gives groups with several chapters one home: every chapter has its own page and calendar, and you see the whole network together.',
+    'Chapter pages, one membership and one report across every chapter, for networks in North County San Diego and beyond. Free to start.',
   problem: {
-    header: 'Every chapter runs on its own tools.',
-    body: 'One town uses a spreadsheet, another a group chat, a third a sign-up form. Nobody sees the whole picture, and a member who moves has to start over.',
-    caption: 'Many chapters, no overview.',
+    header: 'Every chapter, in one view.',
+    body: 'Each chapter keeps its own page, calendar and people, and you see all of it together.',
+    caption: 'Many chapters, one home.',
   },
   howItWorks: {
     header: 'Start with one chapter. Add the rest.',
@@ -721,14 +697,14 @@ const NETWORKS_FUNNEL: FunnelConfig = {
     },
     {
       icon: 'spark',
+      title: 'A shared site for every chapter.',
+      body: 'Each chapter can have its own website, billed to the Network. Pricing is on the pricing page.',
+    },
+    {
+      icon: 'spark',
       soft: true,
       title: 'One report across the network.',
       body: 'Who came, where, and how it is growing, for every chapter in one view.',
-    },
-    {
-      icon: 'qr',
-      title: 'A shared site for every chapter.',
-      body: 'Each chapter can have its own website, billed to the Network. Pricing is on the pricing page.',
     },
   ],
   loop: {
@@ -741,7 +717,7 @@ const NETWORKS_FUNNEL: FunnelConfig = {
     intro: pricingIntro('When your chapters start charging, each one is Business.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
-      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
+      { kind: 'network', name: 'Network', detail: NETWORK_ROW_DETAIL, featured: true },
     ],
     breakEvenCaption: breakEvenCaption('what your chapters sell to their own people'),
     note: 'The Network plan joins your chapters under one home. Its price is on the pricing page, and you always see the full number.',
@@ -749,6 +725,7 @@ const NETWORKS_FUNNEL: FunnelConfig = {
   faq: [
     { q: 'Do I need all my chapters to start?', a: 'No. Start with one and add the rest as they are ready.' },
     { q: 'What does it cost?', a: costAnswer('what your chapters sell') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on December 1, 2026. You can open your Space before then, free, and it is ready when the town opens.` },
     { q: 'Can a chapter leave with its people?', a: 'Yes. Contacts export any time, so nothing is locked in.' },
     { q: 'Is member information private?', a: 'Yes. Contacts are held securely and never sold.' },
   ],

@@ -451,7 +451,7 @@ function run(root: HTMLElement): () => void {
   }
 
   // Card light: a spot that follows a fine pointer.
-  q('.fx,.half,.block,.door,.ledger>div,.panel,.stub,.next,.wv-cap').forEach((c) => {
+  q('.fx,.half,div.block,.door,.ledger>div,.panel,.stub,.next,.wv-cap').forEach((c) => {
     if (c.querySelector(':scope>.tx-spot')) return
     addClass(c, 'tx-lit')
     mk('span', 'tx-spot', c, c.firstChild)
