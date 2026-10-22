@@ -3,6 +3,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBetaGrace } from '@/lib/pricing/settings'
 import { betaGraceEndsAtMs } from '@/lib/pricing/beta'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { offerEndsAtMs, readOperatorOffer, type OperatorOffer } from './operator-offer'
 
 // Server half of the timed Beta offer. See ./operator-offer.ts for the rules.
@@ -43,8 +44,8 @@ export async function startOperatorOffer(profileId: string): Promise<OperatorOff
   const startedAtMs = Date.now()
   const betaEnds = betaGraceEndsAtMs((await getBetaGrace()).until)
   const endsAtMs = offerEndsAtMs(startedAtMs, betaEnds)
-  const next = { ...meta, operator_offer: { startedAt: new Date(startedAtMs).toISOString(), endsAt: new Date(endsAtMs).toISOString() } }
-  const { error } = await db.from('profiles').update({ meta: next }).eq('id', profileId)
+  const patch = { operator_offer: { startedAt: new Date(startedAtMs).toISOString(), endsAt: new Date(endsAtMs).toISOString() } }
+  const { meta: next, error } = await mergeProfileMeta(db, profileId, patch)
   if (error) return { status: 'none' }
   return readOperatorOffer(next, Date.now())
 }

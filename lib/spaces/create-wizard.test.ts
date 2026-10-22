@@ -36,8 +36,7 @@ describe('createWizardSteps', () => {
 describe('the /pricing hand-off', () => {
   it('every link /pricing builds is a plan the wizard reads back', () => {
     for (const p of WIZARD_PLANS) {
-      const next = new URL(operatorStartHref(p), 'https://x.test').searchParams.get('next') ?? ''
-      expect(parsePlanHint(new URL(next, 'https://x.test').searchParams.get('plan'))).toBe(p)
+      expect(parsePlanHint(new URL(operatorStartHref(p), 'https://x.test').searchParams.get('plan'))).toBe(p)
     }
   })
 })

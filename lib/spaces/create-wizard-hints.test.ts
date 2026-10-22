@@ -5,9 +5,8 @@ import { parseWizardHints } from './create-wizard'
 describe('the pricing calculator hand-off', () => {
   it('carries the plan, the name and the goals through signup as one safe in-app path', () => {
     const href = operatorStartHref('business', { name: 'Sunrise Yoga', intents: 'classes,events' })
-    const next = new URL(href, 'https://x.test').searchParams.get('next') ?? ''
-    expect(next.startsWith('/spaces/new?')).toBe(true)
-    const params = new URL(next, 'https://x.test').searchParams
+    expect(href.startsWith('/spaces/new?')).toBe(true)
+    const params = new URL(href, 'https://x.test').searchParams
     expect(params.get('plan')).toBe('business')
     expect(params.get('name')).toBe('Sunrise Yoga')
     expect(params.get('intents')).toBe('classes,events')
