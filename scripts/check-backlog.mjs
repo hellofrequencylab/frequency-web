@@ -73,7 +73,7 @@ import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs'
 import { spawn, spawnSync } from 'node:child_process'
 import { availableParallelism } from 'node:os'
 import { dirname, join } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { waveToken, readBacklogView, fragmentCount, COMPACT_AT, ROWS_DIR } from './lib/ledger.mjs'
 
 const FILE = 'docs/BUILD-BACKLOG.json'

@@ -10,6 +10,7 @@
 // failure is swallowed and the probe's verdict stands.
 // CommonJS and loaded with --require, not --import: it runs in every probe's node, and the ESM loader
 // costs ~15ms of startup there, which across the whole sweep is most of what a preload can waste.
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- a --require preload has no import
 const { readFileSync, writeSync } = require('node:fs')
 
 function reapedChildrenMs() {
