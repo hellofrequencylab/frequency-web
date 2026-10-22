@@ -45,8 +45,9 @@ async function readPublicProfile(profileId: string): Promise<PublicProfile | nul
 }
 
 /** Compose the human-readable "Met via QR" connection note from the context. */
-function metNote(at: string | null): string {
+function metNote(at: string | null, via: MetContext['via']): string {
   // No em dashes in brand copy (CONTENT-VOICE). Plain, factual.
+  if (via === 'nfc_card') return at ? `Tapped their member card at ${at}.` : 'Tapped their member card.'
   return at ? `Met via QR at ${at}.` : 'Met via QR.'
 }
 
@@ -55,6 +56,8 @@ interface MetContextInput {
   at?: string | null
   /** The day they met (defaults to today). */
   on?: string | null
+  /** How they met: a scanned QR (the default) or a tapped member card (LIVE-1282). */
+  via?: MetContext['via']
 }
 
 /**
@@ -82,7 +85,8 @@ export async function captureQrContact(
 
     const at = (metContext.at ?? '').trim() || null
     const on = (metContext.on ?? '').trim() || new Date().toISOString().slice(0, 10)
-    const met: MetContext = { via: 'qr', at, on }
+    const via: MetContext['via'] = metContext.via === 'nfc_card' ? 'nfc_card' : 'qr'
+    const met: MetContext = { via, at, on }
 
     // Dedupe: one contact per (scanner, linked member). Refresh, don't duplicate.
     const { data: existing } = await db()
@@ -118,7 +122,7 @@ export async function captureQrContact(
       .from('network_contacts')
       .insert({
         owner_id: scannerId,
-        source: 'qr_scan',
+        source: via === 'nfc_card' ? 'nfc_card' : 'qr_scan',
         visibility: 'private',
         linked_profile_id: ownerProfileId,
         display_name: profile?.displayName ?? null,
@@ -136,7 +140,7 @@ export async function captureQrContact(
     const id = created.id
 
     // The "Met via QR ..." line, through the existing note path (kind = connection).
-    await addNote(scannerId, id, metNote(at), 'connection', scannerId)
+    await addNote(scannerId, id, metNote(at, via), 'connection', scannerId)
 
     return id
   } catch {

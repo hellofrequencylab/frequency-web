@@ -78,6 +78,10 @@ const DISALLOW = [
   // noindex meta (lib/qr/splash-render.ts), matching the belt-and-suspenders pattern above.
   "/q/",
   "/u/",
+  // Member cards (LIVE-1282): the tap link a card holds (/c/<token>, a redirect) and the card face it
+  // opens (/card/<token>, which carries its own noindex). Token-addressed, one person's card each.
+  "/c/",
+  "/card/",
 ];
 
 // AI answer engines and their crawlers. We name each one explicitly (allow "/",

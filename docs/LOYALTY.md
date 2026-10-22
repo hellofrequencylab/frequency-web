@@ -119,8 +119,8 @@ workspace); "Counter scanners" sits under Regulars (`scanners-section.tsx`).
   Its secret (32 random bytes, base64url) is shown once; only `sha256(secret)` is stored. Revoking
   sets `active = false` and the next request is a 401.
 - A card is an opaque token (16 random bytes, base64url); only `sha256(token)` is stored. A card
-  minted by a device works at that device's Space only. `space_id null` (a Frequency-wide card) is
-  allowed by the schema and the scan, with no issuer yet.
+  minted by a device works at that device's Space only. `space_id null` is a Frequency-wide member
+  card, which the console writes (see "Member cards" below) and every Space's scanner takes.
 - The chip UID is bound on the card's first scan, or straight after the write when the owner's USB
   console wrote it (an HMAC under the server signing key, never the raw UID). After that, the token on another chip, or with no UID, is refused as `card_mismatch`.
   A token copied before its first scan is the one gap: the owner revokes the card.
@@ -162,15 +162,20 @@ is credited on the member's day as the server resolves it.
   "ok": true,
   "member": { "display_name": "Maya" },
   "zapsAwarded": 25,
-  "loyalty": { "stamps": 6, "required": 6, "earned": true, "reward_code": "K7Q2MX" }
+  "loyalty": { "stamps": 6, "required": 6, "earned": true, "reward_code": "K7Q2MX" },
+  "greeting": "Welcome back, Maya",
+  "perk": "Cardholder perk: free oat milk upgrade"
 }
 ```
 
 `loyalty` is `null` when the Space does not run Regulars (or `LOYALTY_ENABLED` is off).
-`reward_code` is present only when this scan filled the card. On `ok: false`, `member` is the card
+`reward_code` is present only when this scan filled the card. `greeting` and `perk` are optional
+(`LIVE-1282`): `greeting` is on every check-in, and `perk` only when a numbered member card checks in at
+a Space that set a cardholder perk. A client must ignore any field it does not know; fields are only
+ever added. On `ok: false`, `member` is the card
 holder when the card was recognized, else `null`; `zapsAwarded` is 0 and `loyalty` is `null`.
 Reasons: `unknown_card` (no such live card, or one for another Space), `card_mismatch` (the token on
-the wrong chip), `checkin_not_set_up` (the Space has never opened its Check-in panel, so it has no
+the wrong chip), `card_paused` (the card's face is paused, `LIVE-1282`), `checkin_not_set_up` (the Space has never opened its Check-in panel, so it has no
 door node), `already_captured` (already checked in today), and the verifier's own: `inactive`,
 `not_yet_valid`, `expired`, `too_far`, `location_required`, `capacity_reached`, `bad_signature`,
 `unknown_node`.
@@ -212,13 +217,15 @@ it. Setting the board up as a counter scanner is below (`LIVE-1181`).
 2. Pick who. A request from the queue (below) fills in the Space and the member; otherwise staff type
    the Space's link name and the member's handle. Program and Check a card stay off until `hat.probe`
    finds the PN532, and "Look for the reader" probes again without a reconnect.
-3. Program. `startConsoleCard(spaceId, handle)` mints a card for that Space (same token, hash and
-   5-per-member cap as a scanner-issued one, `issued_by` null). The page sends
+3. Program. Staff pick **Member card (every Space)** (the default) or **Space card (opens this Space)**,
+   and `startConsoleCard(kind, spaceId, handle)` mints it (same token and hash as a scanner-issued one,
+   `issued_by` null, numbered; see "Member cards" below). The page sends
    `frequency.write_tag { url, label, timeout_ms: 30000 }`; the device emits `frequency.waiting_for_tag`,
    writes the NDEF URI to the NTAG and reads it back.
 4. Bind or discard. On success `finishConsoleCard` binds the chip UID at once and closes the member's
    badge request. On a definite device
-   failure (no card in time, not an NTAG, write failed) `cancelConsoleCard` deletes the mint, and it
+   failure (no card in time, not an NTAG, write failed) `cancelConsoleCard` deletes the mint (its number
+   is not reissued), and it
    deletes only an unbound, never-used, console-minted row. When the outcome is unknown (cable pulled,
    no reply) the mint is kept: the card may be good, and its first counter scan binds it.
 
@@ -233,7 +240,53 @@ A member asks a Space for a scannable badge from the Space's page: a line under 
 The button files one `badge_requests` row (migration `20270346018000_badge_requests.sql`, service role
 only, one pending row per member per Space, so a second tap is a no-op). The console lists pending
 requests oldest first; **Use** fills in the Space and the member, **Clear** cancels the request, and a
-written card marks it done and points it at the card. Behind `SCANNER_DEVICES_ENABLED` like the rest.
+written card marks it done and points it at the card. A request filed against the Frequency root Space
+(`loadRootSpaceId`) is a request for a member card and the queue labels it **Member card**. A member
+card closes every pending request the member filed, since it checks in at each of those Spaces; a Space
+card closes the one at its Space. A live Frequency-wide card reads as **Your badge works here** on every
+Space's page. Behind `SCANNER_DEVICES_ENABLED` like the rest.
+
+### Member cards (`LIVE-1282`)
+
+Decision: [ADR-1874](DECISIONS.md). Schema: migration `20270346024000_member_card_faces.sql`. Rules
+with no IO: `lib/member-cards/face.ts`; reads and writes: `lib/member-cards/store.ts`. Rides
+`SCANNER_DEVICES_ENABLED`.
+
+**The face.** A card always holds the same `/c/<token>` link. What a phone tap opens is the card's
+face, one `card_faces` row per owner (a member, or a Space), set on the website: `page` (the owner's
+own page, and the default when there is no row), `card` (the virtual card at `/card/<token>`, with
+Save contact and Swap contacts), or `link` (one https link). `paused` stops every tap and every
+counter check-in. A member's face never carries a perk.
+
+**The tap decision** (`tapTarget`, run by `app/c/[token]/route.ts`): a paused face shows "This card is
+paused." and nothing about the owner; the owner tapping their own member card lands on `/crew/card`;
+otherwise the mode decides (`link`, `card`, then `page`). A tap checks nobody in.
+
+**Member card.** Frequency-wide: `space_id` null, so every Space's counter scanner takes it, and its
+taps read the holder's own face. Getting one is a Crew perk: the console refuses a member who is not
+Crew (`isCrewMember`, the real effective tier) with "Member cards come with Crew. Ask them to join Crew
+first." Holding and controlling a card needs no tier, so a lapsed member can still pause theirs. A
+member holds at most 5 live Frequency-wide cards (`SCANNER_LIMITS.cardsPerMember`).
+
+**Space card.** Registered to one Space: `face_space_id` and `space_id` are both that Space, so its
+taps open the Space's face and it checks in at that Space only. It goes to someone on the Space's team
+(its owner, or an active member above viewer) and needs no Crew. The cap is the per-Space one.
+
+**The number.** Every console card takes the next number from `next_member_card_number()` (one
+sequence for all of Frequency, never reissued, so a discarded mint burns its number). 1 to 100 is the
+Founders edition, every later number a Crew card (`cardEdition`). After a write the console shows the
+line to print or write on the card, like `No. 0042 · Founders edition` (`formatCardNumber`). Cards
+written before numbering have no number and keep working.
+
+**The perk.** A Space may set one cardholder perk (`card_faces.cardholder_perk`, up to 120
+characters, any plan). When a numbered member card checks in at that Space, the scan reply carries it
+as `perk`. A Space card, or an unnumbered card, gets no perk line.
+
+**At the counter** (`lib/devices/scan.ts`). After the chip check, a Space card reads its Space's face
+and every other card its holder's; a paused face refuses with `card_paused`. A check-in adds
+`greeting` ("Welcome back, Maya", or "Welcome back" with no display name) and, as above, `perk`
+("Cardholder perk: free oat milk upgrade"). Both are optional fields: the firmware reads the reply by
+name and skips anything it does not know.
 
 ### Setup and scans over the cable (`LIVE-1181`)
 

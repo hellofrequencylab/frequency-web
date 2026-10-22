@@ -114,6 +114,17 @@ export type GamificationEvent =
   // This member greeted a newcomer and the `welcomes` row landed (ADR-186 P3b,
   // lib/connections/welcomes.ts). Drives The Welcomer (welcome_member criterion).
   | { type: 'welcome_member'; profileId: string }
+  // Member cards (LIVE-1282, lib/member-cards/rewards.ts): this member met another by a card tap
+  // (fires for both sides), or someone swapped contacts from this member's card and it paid.
+  | { type: 'card_connect'; profileId: string }
+  | { type: 'card_swap'; profileId: string }
+
+// The member-card criteria (LIVE-1282). Read alongside AchievementCriteria at the one place the
+// catalogue's jsonb is narrowed, so the shared union in lib/gamification.ts stays untouched.
+//   card_connects  meet_taps rows with via = 'card' on either side (once per pair per week)
+//   card_swaps     this member's paid 'card_swap' ledger rows (capped at five a day)
+type CardCriteria = { type: 'card_connects'; count: number } | { type: 'card_swaps'; count: number }
+type CatalogueCriteria = AchievementCriteria | CardCriteria
 
 interface NewAchievement {
   id: string
@@ -205,13 +216,17 @@ async function evaluateAchievements(admin: AdminClient, event: GamificationEvent
 
   const earnedIds = new Set((userAchievements ?? []).map(ua => ua.achievement_id))
   // The welcome count costs two reads and only a welcome can move it, so read it only then.
-  const stats = await getUserStats(admin, event.profileId, { welcomes: event.type === 'welcome_member' })
+  // The card counts likewise move only on a card event.
+  const stats = await getUserStats(admin, event.profileId, {
+    welcomes: event.type === 'welcome_member',
+    cards: event.type === 'card_connect' || event.type === 'card_swap',
+  })
   const newlyUnlocked: NewAchievement[] = []
 
   for (const achievement of allAchievements) {
     if (earnedIds.has(achievement.id)) continue
 
-    const criteria = achievement.criteria as AchievementCriteria
+    const criteria = achievement.criteria as CatalogueCriteria
     if (criteria.type === 'manual') continue
 
     if (isRelevantEvent(criteria, event) && isCriteriaMet(criteria, stats, event)) {
@@ -246,7 +261,7 @@ async function evaluateAchievements(admin: AdminClient, event: GamificationEvent
   return newlyUnlocked
 }
 
-function isRelevantEvent(criteria: AchievementCriteria, event: GamificationEvent): boolean {
+function isRelevantEvent(criteria: CatalogueCriteria, event: GamificationEvent): boolean {
   switch (criteria.type) {
     case 'circle_join':    return event.type === 'circle_join'
     case 'referral':       return event.type === 'referral'
@@ -266,11 +281,15 @@ function isRelevantEvent(criteria: AchievementCriteria, event: GamificationEvent
     case 'playbook_complete': return event.type === 'playbook_complete'
     // Connector (ADR-154): the event-invite real-connection milestone.
     case 'connections':    return event.type === 'connector_connection'
+    // Member cards (LIVE-1282).
+    case 'card_connects':  return event.type === 'card_connect'
+    case 'card_swaps':     return event.type === 'card_swap'
     // Amplitude moves on every zap-paying act — check it wherever zaps flow.
     case 'amplitude':
       return event.type === 'practice_log' || event.type === 'task_complete' ||
              event.type === 'event_attend' || event.type === 'event_host' ||
-             event.type === 'qr_scan' || event.type === 'referral'
+             event.type === 'qr_scan' || event.type === 'referral' ||
+             event.type === 'card_connect' || event.type === 'card_swap'
     default:               return false
   }
 }
@@ -297,6 +316,10 @@ interface UserStats {
   connectionCount: number
   /** Newcomers this member was the FIRST to welcome (the `welcomes` table, ADR-186). */
   firstWelcomeCount: number
+  /** Members met by a member card tap (meet_taps via 'card', either side). Read on card events only. */
+  cardConnectCount: number
+  /** Paid contact swaps from this member's card ('card_swap' ledger rows). Read on card events only. */
+  cardSwapCount: number
 }
 
 type WelcomeRow = { welcomer_id: string; newcomer_id: string; created_at: string }
@@ -347,7 +370,7 @@ async function getFirstWelcomeCount(admin: AdminClient, profileId: string): Prom
 async function getUserStats(
   admin: AdminClient,
   profileId: string,
-  opts: { welcomes?: boolean } = {},
+  opts: { welcomes?: boolean; cards?: boolean } = {},
 ): Promise<UserStats> {
   const [profile, memberships, rsvps, hostedEvents, posts, topPost, completions, streaks, inviteLinks] =
     await Promise.all([
@@ -434,6 +457,9 @@ async function getUserStats(
   }
 
   const firstWelcomeCount = opts.welcomes ? await getFirstWelcomeCount(admin, profileId) : 0
+  const { connects: cardConnectCount, swaps: cardSwapCount } = opts.cards
+    ? await getCardCounts(admin, profileId)
+    : { connects: 0, swaps: 0 }
 
   type InviteLinkRow = { used_count: number | null }
   const totalReferrals = (inviteLinks.data ?? []).reduce(
@@ -462,11 +488,48 @@ async function getUserStats(
     playbooksCompleted,
     connectionCount,
     firstWelcomeCount,
+    cardConnectCount,
+    cardSwapCount,
+  }
+}
+
+// The two member-card counts (LIVE-1282). meet_taps.via is newer than the generated types, so the
+// read is untyped (repo convention). FAIL-SAFE to 0 so a failed read never breaks evaluation.
+async function getCardCounts(admin: AdminClient, profileId: string): Promise<{ connects: number; swaps: number }> {
+  const untyped = admin as unknown as {
+    from: (t: string) => {
+      select: (c: string, o: { count: 'exact'; head: true }) => {
+        eq: (col: string, val: string) => {
+          or: (f: string) => Promise<{ count: number | null }>
+          eq: (col: string, val: string) => { gt: (col: string, val: number) => Promise<{ count: number | null }> }
+        }
+      }
+    }
+  }
+  try {
+    const [connects, swaps] = await Promise.all([
+      untyped
+        .from('meet_taps')
+        .select('id', { count: 'exact', head: true })
+        .eq('via', 'card')
+        .or(`a_profile_id.eq.${profileId},b_profile_id.eq.${profileId}`)
+        .then((r) => r.count ?? 0, () => 0),
+      untyped
+        .from('zap_transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', profileId)
+        .eq('action_type', 'card_swap')
+        .gt('amount', 0)
+        .then((r) => r.count ?? 0, () => 0),
+    ])
+    return { connects, swaps }
+  } catch {
+    return { connects: 0, swaps: 0 }
   }
 }
 
 function isCriteriaMet(
-  criteria: AchievementCriteria,
+  criteria: CatalogueCriteria,
   stats: UserStats,
   event: GamificationEvent,
 ): boolean {
@@ -509,6 +572,10 @@ function isCriteriaMet(
       return stats.playbooksCompleted >= criteria.count
     case 'connections':
       return stats.connectionCount >= criteria.count
+    case 'card_connects':
+      return stats.cardConnectCount >= criteria.count
+    case 'card_swaps':
+      return stats.cardSwapCount >= criteria.count
     default:
       return false
   }

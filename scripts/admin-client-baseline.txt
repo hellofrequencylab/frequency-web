@@ -416,6 +416,15 @@
 # page. qr_codes and qr_scans are service-role only, and the portal is the same cross-tenant staff surface. Every
 # action runs behind consoleStaffGate; the page search keeps universal search's public filters (no private Space,
 # draft event, private Journey or unlisted Circle is offered).
+# app/(public)/card/[token]/page.tsx + lib/member-cards/swap.ts (added 2026-10-22, LIVE-1282): member card faces. The
+# face page is reached by a stranger holding an opaque card token, with no session: it reads one card owner's
+# opted-in public fields (name, photo, vCard title, and phone/email/links only when the face switched them on).
+# swap.ts writes the consent-given Swap contacts row into the resolved card owner's own network_contacts (owner_id
+# pinned from the server-side token lookup, never the form), or a sealed Space lead through lead-capture.ts.
+# lib/member-cards/store.ts + lib/member-cards/rewards.ts (added 2026-10-22, LIVE-1282): card_faces, card_taps and
+# member_cards are service-role only. store.ts scopes every read and write to the signed-in member's own profile id
+# or runs behind the Space owner gate (loyaltyOwnerGate); the tap lookup reads one card by its token hash.
+# rewards.ts calls card_meet() and the capped award_zaps_atomic for the two members of one verified tap.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -632,6 +641,7 @@ app/(marketing)/rsvp/[token]/page.tsx
 app/(marketing)/spaces/page.tsx
 app/(marketing)/start/actions.ts
 app/(marketing)/the-community/page.tsx
+app/(public)/card/[token]/page.tsx
 app/(public)/events/[slug]/opengraph-image.tsx
 app/api/cron/billing-renewals/route.ts
 app/api/cron/event-followups/route.ts
@@ -1084,6 +1094,9 @@ lib/marketplace/visibility.ts
 lib/match/prefs.ts
 lib/match/romance.ts
 lib/meet/store.ts
+lib/member-cards/rewards.ts
+lib/member-cards/store.ts
+lib/member-cards/swap.ts
 lib/member-day.ts
 lib/member-progress.ts
 lib/menus/db.ts
