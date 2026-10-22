@@ -86,9 +86,8 @@ export default async function FunnelInductionPage({
   // + signup are one client component; a signed-out visitor runs it deferred and creates the account
   // at the end through the same stash + /complete pipeline.
   if (seq.style === 'feature' && seq.feature && !user) {
-    return (
-      <FeatureFunnel deferred sequence={seq.slug} feature={seq.feature} destination={funnel.destination} />
-    )
+    const demo = <FeatureFunnel deferred sequence={seq.slug} feature={seq.feature} destination={funnel.destination} />
+    return SITE_DESIGN === 'frequency' ? <SiteShell>{demo}</SiteShell> : demo
   }
 
   // RESUME (2026-09-11). Whatever this browser had already answered, and the beat it stopped on.
@@ -143,7 +142,8 @@ export default async function FunnelInductionPage({
   // (no server writes). Anyone else falls through to the normal behaviour.
   if (previewParam === '1' && isStaff((await getCallerProfile().catch(() => null))?.webRole)) {
     if (seq.style === 'feature' && seq.feature) {
-      return <FeatureFunnel deferred sequence={seq.slug} feature={seq.feature} destination={funnel.destination} />
+      const demo = <FeatureFunnel deferred sequence={seq.slug} feature={seq.feature} destination={funnel.destination} />
+      return SITE_DESIGN === 'frequency' ? <SiteShell>{demo}</SiteShell> : demo
     }
     const { data: previewRegions } = await supabase.from('nexus_regions').select('id, name').eq('depth', 0).order('name')
     const preview = (
@@ -186,7 +186,7 @@ export default async function FunnelInductionPage({
 
   // Signed-in (not yet onboarded) visitor on a feature funnel: play the demo, then land in the app.
   if (seq.style === 'feature' && seq.feature) {
-    return (
+    const demo = (
       <FeatureFunnel
         sequence={seq.slug}
         feature={seq.feature}
@@ -194,6 +194,7 @@ export default async function FunnelInductionPage({
         userEmail={user.email ?? ''}
       />
     )
+    return SITE_DESIGN === 'frequency' ? <SiteShell>{demo}</SiteShell> : demo
   }
 
   const { data: regions } = await supabase

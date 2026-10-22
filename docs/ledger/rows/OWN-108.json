@@ -1,0 +1,20 @@
+{
+  "id": "OWN-108",
+  "title": "Keep one tagged-link sheet and a Monday check of what ChatGPT, Perplexity and Gemini say about Frequency",
+  "lane": "owner",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "ownerAction": "account",
+  "source": {
+    "file": "docs/marketing/off-site-seo-worksheet.md",
+    "ref": "Owner ask 2026-10-22 (thread Off-site SEO worksheet)"
+  },
+  "detail": "Worksheet items 10 and 20. Mediums that land in the right channel: referral, social, email, video. Partner QR codes point at the /for page with tags, never /go or /q. First-touch records only after tracking consent, so counts are a floor. Steps and links: docs/marketing/off-site-seo-worksheet.md.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Checked 2026-10-22: the first-touch cookie reads utm_source, utm_medium, utm_campaign, utm_content and utm_term (lib/attribution/first-touch.ts, confirmed by another thread).",
+    "checked": "2026-10-22"
+  },
+  "wave": "W7"
+}

@@ -35,17 +35,17 @@ export async function readSiteBooking(spaceId: string): Promise<SiteBooking> {
 
 /** The absolute URL of a Space website's Book page, on the site's one canonical origin (its bound domain,
  *  else its free subdomain). */
-export async function siteBookUrl(space: Pick<Space, 'id' | 'slug'> & { domain?: string | null }): Promise<string> {
-  const base = siteBaseUrl(space.slug, await boundSiteDomain({ id: space.id, domain: space.domain ?? null }), appOrigin())
+export async function siteBookUrl(space: Pick<Space, 'id' | 'slug'> & { domain?: string | null; parentId?: string | null; ownerProfileId?: string | null }): Promise<string> {
+  const base = siteBaseUrl(space.slug, await boundSiteDomain({ id: space.id, slug: space.slug, domain: space.domain ?? null, parentId: space.parentId, ownerProfileId: space.ownerProfileId }), appOrigin())
   return sitePageUrl(base, SITE_BOOK_SLUG)
 }
 
 /** The link in a website guest's "Confirm your booking" email (SCAN-834): the site's own confirm page,
  *  on the same origin as its Book page, carrying the hold's one-time token. */
 export async function siteConfirmBookingUrl(
-  space: Pick<Space, 'id' | 'slug'> & { domain?: string | null },
+  space: Pick<Space, 'id' | 'slug'> & { domain?: string | null; parentId?: string | null; ownerProfileId?: string | null },
   token: string,
 ): Promise<string> {
-  const base = siteBaseUrl(space.slug, await boundSiteDomain({ id: space.id, domain: space.domain ?? null }), appOrigin())
+  const base = siteBaseUrl(space.slug, await boundSiteDomain({ id: space.id, slug: space.slug, domain: space.domain ?? null, parentId: space.parentId, ownerProfileId: space.ownerProfileId }), appOrigin())
   return `${sitePageUrl(base, SITE_CONFIRM_BOOKING_SLUG)}?token=${encodeURIComponent(token)}`
 }

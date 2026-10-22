@@ -1,0 +1,20 @@
+{
+  "id": "OWN-106",
+  "title": "Run the social and short-video rhythm (one clip per door) and answer in North County Reddit threads and Connectively",
+  "lane": "owner",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "ownerAction": "account",
+  "source": {
+    "file": "docs/marketing/off-site-seo-worksheet.md",
+    "ref": "Owner ask 2026-10-22 (thread Off-site SEO worksheet)"
+  },
+  "detail": "Worksheet items 9 and 12. Disclose who is posting; no repeated posts. Steps and links: docs/marketing/off-site-seo-worksheet.md.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Checked 2026-10-22: off-site activity leaves no repo trace.",
+    "checked": "2026-10-22"
+  },
+  "wave": "W7"
+}

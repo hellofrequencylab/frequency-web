@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1134",
+  "title": "The site's structured data lists the LinkedIn, YouTube and Facebook profiles beside Instagram and TikTok",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/marketing/off-site-seo-worksheet.md",
+    "ref": "Owner ask 2026-10-22 (thread Off-site SEO worksheet)"
+  },
+  "detail": "Add the three URLs to SOCIAL_PROFILES in lib/site.ts once OWN-101 supplies them, so Organization sameAs ties the entity together. Waits on the URLs. Context: docs/marketing/off-site-seo-worksheet.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/off-site-seo.mjs profiles"
+  },
+  "ownerAction": "content",
+  "wave": "W7"
+}

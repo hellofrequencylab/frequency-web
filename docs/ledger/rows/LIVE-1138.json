@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1138",
+  "title": "A help article tells Space owners how to get found: claim a Google Business Profile, link the Frequency page from it, and from their own site and social profiles",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/marketing/off-site-seo-worksheet.md",
+    "ref": "Owner ask 2026-10-22 (thread Off-site SEO worksheet)"
+  },
+  "detail": "Feeds OWN-104. Member how-to goes in content/help per docs/DOCS-PROTOCOL.md; plain voice, no hype words. Context: docs/marketing/off-site-seo-worksheet.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/off-site-seo.mjs get-found"
+  },
+  "wave": "W7"
+}

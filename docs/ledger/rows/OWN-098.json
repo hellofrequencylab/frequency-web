@@ -1,0 +1,20 @@
+{
+  "id": "OWN-098",
+  "title": "Verify frequencylocal.com in Google Search Console, submit the sitemap and request indexing of the six /for doors",
+  "lane": "owner",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "ownerAction": "account",
+  "source": {
+    "file": "docs/marketing/off-site-seo-worksheet.md",
+    "ref": "Owner ask 2026-10-22 (thread Off-site SEO worksheet)"
+  },
+  "detail": "Worksheet item 1. Domain property, DNS TXT record, sitemap.xml, request indexing for the six doors and /pricing. Check first whether it is already verified by DNS (the repo carries no tag). Steps and links: docs/marketing/off-site-seo-worksheet.md.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Checked 2026-10-22: no google-site-verification tag in app/layout.tsx; a DNS verification would not show in the repo. Owner confirms in Search Console.",
+    "checked": "2026-10-22"
+  },
+  "wave": "W7"
+}

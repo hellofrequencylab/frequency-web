@@ -168,7 +168,7 @@ const MODEL_DOC = {
         title: 'Frequency is where your local community happens',
         subtitle:
           'Start a Circle where you live, host Events your neighbors can find, and open a Space that stays free. ' +
-          'People join free. Businesses host free. You pay when you start charging, and never for access to people.',
+          'People join free. Host free with Crew. You pay when you start charging, and never for access to people.',
       },
     },
     {

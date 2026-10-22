@@ -67,6 +67,8 @@ export interface Space {
   skin: string
   /** Custom domain / subdomain, or null when served under the root. */
   domain: string | null
+  /** The Network this Space is a chapter of (spaces.parent_id), or null/absent. Reads only: chapter subdomains. */
+  parentId?: string | null
   /** The switch (ADR-249 §3): on = ported into the shared network. */
   networkConnected: boolean
   /** Registered vertical ids ('market', …) this Space exposes (root exposes all). */

@@ -1,6 +1,7 @@
 import { permanentRedirect } from 'next/navigation'
 import { getSpaceByDomain } from '@/lib/spaces/store'
-import { normalizeHost, siteSlugFromSubdomain, spotlightHostDomain, subdomainSiteRedirect } from '@/lib/sites/host'
+import { chapterHostParts, normalizeHost, siteSlugFromSubdomain, spotlightHostDomain, subdomainSiteRedirect } from '@/lib/sites/host'
+import { isNetworkPlan } from '@/lib/collective/member-spaces'
 import { getSiteSpace } from '@/lib/sites/site-cache'
 import { liveSiteDomain } from '@/lib/sites/site-domain'
 import type { Space } from '@/lib/spaces/types'
@@ -24,7 +25,24 @@ export async function resolveHostedSpace(hostParam: string): Promise<Space | nul
   const slug = siteSlugFromSubdomain(host)
   if (slug) return getSiteSpace(slug)
   // `spotlight.<domain>` (LIVE-855) is the Space that holds <domain>, behind the same custom_domain gate.
-  return getSpaceByDomain(spotlightHostDomain(host) ?? host)
+  const spotlightOf = spotlightHostDomain(host)
+  const direct = await getSpaceByDomain(spotlightOf ?? host)
+  if (direct || spotlightOf) return direct
+  return resolveChapterSpace(host)
+}
+
+/** A Network's chapter on `<chapter slug>.<the Network's domain>` (lib/sites/host.ts networkChapterHost).
+ *  The Network must hold the domain (getSpaceByDomain, behind the custom_domain gate) and the chapter must
+ *  be one of its own same-owner children, so a slug on someone else's domain, or another Network's
+ *  chapter, resolves to nothing. The chapter is the same anonymous cached read /sites/<slug> uses. */
+async function resolveChapterSpace(host: string): Promise<Space | null> {
+  const parts = chapterHostParts(host)
+  if (!parts) return null
+  const network = await getSpaceByDomain(parts.networkDomain)
+  if (!network || !isNetworkPlan(network.plan)) return null
+  const chapter = await getSiteSpace(parts.label)
+  if (!chapter || chapter.parentId !== network.id || chapter.ownerProfileId !== network.ownerProfileId) return null
+  return chapter
 }
 
 /** ONE SITE, ONE ADDRESS (SCAN-896). On a Space's free subdomain whose website is live on its own
