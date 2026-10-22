@@ -7,7 +7,9 @@ import { getFunnelConfig, funnelSlugs } from '@/lib/marketing/funnel-config'
 import { NicheFunnel } from '@/components/marketing/funnel/niche-funnel'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 import { SITE_DESIGN } from '@/lib/theme/design'
-import { FrequencyNiche } from '@/components/frequency/site/pages/funnel/frequency-niche'
+import { NicheDoor } from '@/components/frequency/site/pages/funnel/niche/niche-door'
+import { getWhatsOn } from '@/components/frequency/site/pages/shared/data'
+import { ROUTES as SITE_PATHS } from '@/lib/frequency/site-nav'
 
 // THE OPERATOR FUNNEL DOOR (ADR-591). One chrome-free conversion template, one config per niche. STATIC:
 // generated at build from the funnel registry; `dynamicParams=false` so an unknown niche 404s. ISR: the
@@ -52,6 +54,8 @@ export default async function FunnelDoorPage({ params }: { params: Promise<{ nic
   // the same resolved catalog the copy interpolates.
   const planKey = config.nonprofit ? 'nonprofit_seat' : 'business_base'
   const priceCents = input.catalog[planKey].month.foundingCents
+  // The town's week for the door's calendar strip (hidden when nothing is on). Anonymous read, ISR-safe.
+  const week = SITE_DESIGN === 'frequency' ? (await getWhatsOn(3)).events : []
 
   return (
     <>
@@ -59,6 +63,8 @@ export default async function FunnelDoorPage({ params }: { params: Promise<{ nic
         data={[
           breadcrumbSchema([
             { name: 'Frequency', path: '/' },
+            // The visible breadcrumb on the Frequency body: Home, For spaces, the door.
+            { name: 'For spaces', path: SITE_PATHS.spaces },
             { name: config.hero.eyebrow, path },
           ]),
           faqSchema(config.faq.map((f) => ({ q: f.q, a: f.a }))),
@@ -82,7 +88,7 @@ export default async function FunnelDoorPage({ params }: { params: Promise<{ nic
         ]}
       />
       {/* The Frequency design (ADR-1737): the same config, prices, Start href and schema, in its body. */}
-      {SITE_DESIGN === 'frequency' ? <FrequencyNiche config={config} /> : <NicheFunnel config={config} />}
+      {SITE_DESIGN === 'frequency' ? <NicheDoor config={config} week={week} /> : <NicheFunnel config={config} />}
     </>
   )
 }

@@ -957,6 +957,10 @@ only; the action is the authority, since the admin client bypasses RLS).
 
 ---
 
+## 8.7 Public marketing pages compose the kit (rule, owner 2026-10-22)
+
+Every public marketing page (`app/(marketing)`, `app/for`, `app/privacy`, `app/terms`) wears the standard site header, footer and rail through the `(marketing)` layout, and its body is a kit component under `components/frequency/site/pages` built from kit sections (`phero`, `sec`, `tg-row`, `tg-card`, `KeepGoing`) with design tokens only: no hex, no raw Tailwind layout, no hand-rolled header or footer. A `page.tsx` loads data, sets metadata and renders that component. `pnpm check:marketing-kit` fails a page that carries its own Tailwind layout classes; the seven pages on `scripts/marketing-kit-baseline.txt` predate it (their Tailwind is the DAWN fallback) and the list may only shrink. The six operator doors under `app/for/[niche]` wear the same header and footer under Frequency (their layout wraps them in `SiteShell`); only a DAWN build keeps the chrome-free door of ADR-591.
+
 ## 9. The Studio: the shared *creation* surface (ADR-142)
 
 Pages are for *reading*; the **Studio** is the one window for *making*. Anywhere

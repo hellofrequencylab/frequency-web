@@ -49,6 +49,7 @@
     "check:nested-radius": "node scripts/check-nested-radius.mjs",
     "check:link-truncate": "node scripts/check-link-truncate.mjs",
     "check:templates": "node scripts/check-templates.mjs",
+    "check:marketing-kit": "node scripts/check-marketing-kit.mjs",
     "check:phantom": "node scripts/check-phantom-classes.mjs",
     "check:schema-contract": "node scripts/check-schema-contract.mjs",
     "check:bridge": "node scripts/check-bridge.mjs",
