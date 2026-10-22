@@ -12,6 +12,7 @@ import { Field, Input, labelClasses } from '@/components/ui/field'
 import { StatCard } from '@/components/ui/stat-card'
 import { Switch } from '@/components/ui/switch'
 import { CardPreview } from './card-preview'
+import { CardLinkPicker } from './card-link-picker'
 import { CARD_LIMITS, CARD_MODES, normalizeCardLink, type CardFace, type CardMode } from '@/lib/member-cards/face'
 import { saveMyCardFace, saveSpaceCardFace } from '@/lib/member-cards/actions'
 import type { CardStats } from '@/lib/member-cards/store'
@@ -20,8 +21,8 @@ import type { CardStats } from '@/lib/member-cards/store'
 // owners of a face: a member on /crew/card, and a Space in its Check-in workspace's Member cards
 // section. Left column: the card itself (./card-preview.tsx), the owner's three numbers and the Pause
 // switch. Right column: "When someone taps my card", the three CARD_MODES as big choices, the link
-// field (link only), the field switches (card only), a Space's cardholder perk, and a live "What they
-// see" preview that follows the choice. Saving runs the pure normalizer on the server
+// field (link only, with a search for any page on the site, LIVE-1301), the field switches (card
+// only), a Space's cardholder perk, and a live "What they see" preview that follows the choice. Saving runs the pure normalizer on the server
 // (lib/member-cards/actions.ts), whose error line prints here as is.
 //
 // Tokens and the shared primitives only (Switch, Field, StatCard, Button, Avatar), so both designs
@@ -43,7 +44,7 @@ const MODE_ICON: Record<CardMode, LucideIcon> = { page: UserRound, card: Contact
 const SPACE_MODE_COPY: Record<CardMode, { label: string; hint: string }> = {
   page: { label: 'Open our page', hint: 'Your Space page. This is where a new card goes.' },
   card: { label: 'Show our card', hint: 'Logo, links and Save contact.' },
-  link: { label: 'Open our link', hint: 'Your site, your event, your offer.' },
+  link: { label: 'Open our link', hint: 'Any page on Frequency, or any link.' },
 }
 
 export function CardFaceEditor({
@@ -163,9 +164,11 @@ export function CardFaceEditor({
           </div>
         </div>
 
+        {face.mode === 'link' && <CardLinkPicker onPick={(url) => set('linkUrl', url)} disabled={readOnly} />}
+
         {face.mode === 'link' && (
           <div>
-          <Field label="The link it opens" hint="A full https:// address. A bare domain works too." error={linkError}>
+          <Field label="The link it opens" hint="Pick a page above, or paste any https:// address. A bare domain works too." error={linkError}>
             <Input
               type="url"
               inputMode="url"
