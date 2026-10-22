@@ -744,6 +744,14 @@
   /* Tracks :root — same pairing, same 4.407 -> 4.746 correction (ADR-1317). */
   --color-info:              #2C6AA8;
   --color-info-bg:           #E3EDF7;
+  --color-cal-event:         #B0287F;
+  --color-cal-event-bg:      #F8D7EA;
+  --color-cal-works-bg:      #EBE7FF;
+  --color-cal-works-strong:  #D9D2FF;
+  --color-cal-todo:          #9A6200;
+  --color-cal-todo-bg:       #FFEBC6;
+  --color-presence:          #17788A;
+  --color-presence-bg:       #DDF3F5;
   --color-focus-ring:        #B86A15;
   --brand-mark:              #6E4A2A;
   --brand-emboss-light:      rgba(255, 248, 235, 0.85);
