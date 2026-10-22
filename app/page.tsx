@@ -11,7 +11,7 @@ import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 import { resolvePageContent } from '@/lib/page-content'
-import { OG_SITE, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
+import { OG_SITE, SITE_DESCRIPTION } from '@/lib/site'
 import { FrequencyHome } from '@/components/frequency/site/pages/home/frequency-home'
 import { JsonLd } from '@/components/json-ld'
 import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd } from '@/lib/seo/frequency-pages'
@@ -20,7 +20,7 @@ import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd } from '@/lib/seo/frequency-pag
 // system (edited at /pages/home; the coded strings below are the fallback).
 export async function generateMetadata(): Promise<Metadata> {
   const { title, description } = await resolvePageContent('/', {
-    title: `${SITE_NAME} · ${SITE_TAGLINE}`,
+    title: FREQUENCY_PAGE_SEO.home.title,
     description: SITE_DESCRIPTION,
   })
   return {
@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { absolute: title },
     description,
     alternates: { canonical: '/' },
-    openGraph: { ...OG_SITE, title, description, url: '/' },
+    openGraph: { ...OG_SITE, type: 'website', title, description, url: '/' },
     // Metadata merges per TOP-LEVEL KEY, so a page that sets only `openGraph` inherits the ROOT
     // `twitter` block verbatim — which meant the operator-edited home title/description never
     // reached the X/Slack card. Mirror the OG values so both cards read the same live copy.

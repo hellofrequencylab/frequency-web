@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1026",
+  "title": "Home title carries the search words and every breadcrumb trail starts at Home (SCAN-1026)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/page.tsx",
+    "ref": "Public site audit 2026-10-22, findings 7 and 11 (/mnt/project-files/audits/site-seo-geo-a11y-2026-10-22.md)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-22. The home title fallback still read the tagline although the 2026-10-19 owner ruling (SCAN-1017) says the title tag carries the search words; it now reads FREQUENCY_PAGE_SEO.home.title, and the Open Graph block gains type website. An operator-edited title at /pages/home still wins. breadcrumbSchema prepends Home when the caller passes only the current page, so the markup matches the visible trail.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('app/page.tsx','utf8');const j=fs.readFileSync('lib/jsonld.ts','utf8');const bad=[];if(!p.includes('FREQUENCY_PAGE_SEO.home.title'))bad.push('home title fallback is not the ruled title');if(!/type: 'website'/.test(p))bad.push('home has no og:type');if(!/name: 'Home', path: '\\\\/'/.test(j))bad.push('breadcrumbs do not start at Home');if(bad.length){console.error('SCAN-1026: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when the home title falls back to the tagline, og:type disappears, or breadcrumb markup stops starting at Home."
+  },
+  "closed": "2026-10-22",
+  "wave": "W7"
+}
