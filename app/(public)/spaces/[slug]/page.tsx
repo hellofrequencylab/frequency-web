@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { DetailTemplate } from '@/components/templates'
@@ -23,6 +24,7 @@ import { SpaceProfileMenuView } from '@/components/spaces/space-profile-menu-vie
 import { buildPublicSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
+import { FeaturedCheckin } from '@/components/spaces/featured-checkin'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
@@ -218,6 +220,11 @@ export default async function PublicSpacePage({
 
   const body = (
     <>
+      {/* A tapped placard lands here with ?checkin=: the check-in goes first. A client island inside its
+          own Suspense, so the static HTML crawlers read is unchanged (the note on `menu` above). */}
+      <Suspense fallback={null}>
+        <FeaturedCheckin spaceName={brandName} />
+      </Suspense>
       <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
       {/* THE VISITOR'S FRONT DOOR (LIVE-524), and it sits BELOW the operator's blocks on purpose.
           LIVE-500's probe fails if `<SpaceProfileModules` appears after `<SignInCta` in this

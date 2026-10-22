@@ -32,6 +32,7 @@ import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
 import { RegularsNote } from '@/components/spaces/regulars-note'
 import { BadgeNote } from '@/components/spaces/badge-note'
+import { FeaturedCheckin } from '@/components/spaces/featured-checkin'
 import { isFollowing } from '@/lib/spaces/follows'
 import { SpaceShareButton } from '@/components/spaces/space-share-button'
 import { SpacePrivateNotice } from '@/components/spaces/space-private-notice'
@@ -813,6 +814,10 @@ export default async function SpaceProfileChromeLayout({
           }
           notices={manage.canManage && !isNetwork ? <SpacePrivateNotice spaceId={space.id} /> : null}
         >
+          {/* A tapped placard lands here with ?checkin=: the check-in goes first. Empty otherwise. */}
+          <Suspense fallback={null}>
+            <FeaturedCheckin spaceName={brandName} />
+          </Suspense>
           {/* The Regulars line (LIVE-944): what a full card here earns. Empty unless the program is on. */}
           <Suspense fallback={null}>
             <RegularsNote spaceId={space.id} />
@@ -834,6 +839,9 @@ export default async function SpaceProfileChromeLayout({
         {/* Owner guardrail: a private Space is hidden from the directory, search, and shared links, so a
             manager viewing their own private page gets a one-click Make public assist (server re-gates). */}
         {manage.canManage && !isNetwork && <SpacePrivateNotice spaceId={space.id} />}
+        <Suspense fallback={null}>
+          <FeaturedCheckin spaceName={brandName} />
+        </Suspense>
         <Suspense fallback={null}>
           <RegularsNote spaceId={space.id} />
         </Suspense>

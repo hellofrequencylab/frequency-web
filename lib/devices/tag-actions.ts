@@ -8,8 +8,14 @@
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { ensureCheckinNodeForStaff } from '@/lib/spaces/checkin'
 import { signedPlacardUrl } from '@/lib/qr/node-code'
+import { shortLinkUrl, withMedium } from '@/lib/qr/links'
+import { generateSlug } from '@/lib/qr/codes'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizeUid } from './credentials'
+import { consoleStaffGate } from './store'
 import { latestCheckinSince, listSpaceTags, recordSpaceTag, removeSpaceTag, type SpaceTagRow } from './space-tags'
+import { searchTagTargets, tagPathFromLink } from './tag-targets'
+import type { TagTarget } from './tag-target-kinds'
 
 const LABEL_MAX = 60
 
@@ -58,4 +64,78 @@ export async function dropSpaceTag(tagId: unknown): Promise<ActionResult> {
 export async function checkPlacardTap(nodeId: unknown, sinceIso: unknown): Promise<ActionResult<{ name: string; at: string; count: number } | null>> {
   if (typeof nodeId !== 'string' || typeof sinceIso !== 'string' || !Number.isFinite(Date.parse(sinceIso))) return ok(null)
   return ok(await latestCheckinSince(nodeId, new Date(Date.parse(sinceIso)).toISOString()))
+}
+
+// ── ANY-PAGE TAGS ───────────────────────────────────────────────────────────────────────────────────
+// A tag that opens a page instead of a Space's door check-in. It is written as a managed /q/<slug>
+// code filed under the page's QR folder (lib/devices/tag-targets.ts), so taps land in the page's
+// Scan activity as `medium = nfc`. One tag code per page: every sticker for that page shares it, and
+// retargeting it in the QR Studio moves them all.
+
+/** The source tag that marks a console-made tag code, so the next sticker for the page reuses it. */
+const TAG_SOURCE = 'nfc-tag'
+const UNIQUE_VIOLATION = '23505'
+
+/** Pages a tag can open, for the console's search box. */
+export async function findTagTargets(query: unknown): Promise<ActionResult<TagTarget[]>> {
+  if (!(await consoleStaffGate())) return fail('Only Frequency staff can program tags.')
+  if (typeof query !== 'string') return ok([])
+  return ok(await searchTagTargets(query.slice(0, 120)))
+}
+
+/** The link to write for a page tag: the page's tag code, made the first time a page gets a tag. */
+export async function startPageTag(rawPath: unknown, rawTitle: unknown): Promise<ActionResult<{ codeId: string; path: string; url: string }>> {
+  const gate = await consoleStaffGate()
+  if (!gate) return fail('Only Frequency staff can program tags.')
+  const path = typeof rawPath === 'string' ? tagPathFromLink(rawPath) : null
+  if (!path) return fail('That is not a Frequency page a tag can open. Paste a link from frequencylocal.com or search for the page.')
+  const title = `NFC tag: ${(typeof rawTitle === 'string' && rawTitle.trim() ? rawTitle.trim() : path).slice(0, LABEL_MAX)}`
+  const db = createAdminClient()
+  try {
+    const { data: existing } = await db
+      .from('qr_codes')
+      .select('id, slug')
+      .eq('page_path', path)
+      .eq('source_tag', TAG_SOURCE)
+      .eq('destination_type', 'url')
+      .eq('active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (existing) return ok({ codeId: existing.id, path, url: withMedium(shortLinkUrl(existing.slug), 'nfc') })
+    for (let attempt = 0; attempt < 6; attempt++) {
+      // Seven characters: the length CyberUnicorn OS checks a /q/ link against before it writes.
+      const slug = generateSlug(7)
+      const { data, error } = await db
+        .from('qr_codes')
+        .insert({ slug, title, destination_type: 'url', target_url: path, page_path: path, source_tag: TAG_SOURCE, created_by: gate.callerId })
+        .select('id, slug')
+        .single()
+      if (data) return ok({ codeId: data.id, path, url: withMedium(shortLinkUrl(data.slug), 'nfc') })
+      if (error?.code !== UNIQUE_VIOLATION) break
+    }
+  } catch {
+    // Fall through to the one message below.
+  }
+  return fail('Could not make the link for that page. Try again.')
+}
+
+/** Has a phone tapped this page tag since it was written? Polled by the console's verify step. */
+export async function checkTagScan(codeId: unknown, sinceIso: unknown): Promise<ActionResult<{ at: string; count: number } | null>> {
+  if (!(await consoleStaffGate())) return ok(null)
+  if (typeof codeId !== 'string' || typeof sinceIso !== 'string' || !Number.isFinite(Date.parse(sinceIso))) return ok(null)
+  try {
+    const { data, count } = await createAdminClient()
+      .from('qr_scans')
+      .select('scanned_at', { count: 'exact' })
+      .eq('qr_code_id', codeId)
+      .eq('medium', 'nfc')
+      .gte('scanned_at', new Date(Date.parse(sinceIso)).toISOString())
+      .order('scanned_at', { ascending: false })
+      .limit(1)
+    const row = data?.[0]
+    return ok(row ? { at: row.scanned_at, count: count ?? 1 } : null)
+  } catch {
+    return ok(null)
+  }
 }

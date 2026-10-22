@@ -1,8 +1,9 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { FocusTemplate } from '@/components/templates'
 import { ClaimButton } from './claim-button'
+import { spaceCheckinHref } from '@/lib/spaces/checkin-landing'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,10 +38,25 @@ export default async function NodePage({
 
   const { data: node } = await admin
     .from('nodes')
-    .select('id, label, type, zaps_value, active, partner_id')
+    .select('id, label, type, kind, space_id, zaps_value, active, partner_id')
     .eq('id', nodeId)
     .maybeSingle()
   if (!node || !node.active) notFound()
+
+  // A Space's door check-in (its placard or printed code) lands on the Space's OWN page, with the
+  // check-in featured at the top (components/spaces/featured-checkin.tsx). The signed `s` and the
+  // medium ride along, so the claim there runs the same verified pipeline as the button below. A
+  // private Space keeps this page: a visitor who is not a member would get a 404 there.
+  if (node.kind === 'checkin' && node.space_id) {
+    const { data: space } = (await admin
+      .from('spaces')
+      .select('slug, visibility')
+      .eq('id', node.space_id)
+      .maybeSingle()) as { data: { slug: string | null; visibility?: string | null } | null }
+    if (space?.slug && space.visibility !== 'private') {
+      redirect(spaceCheckinHref(space.slug, node.id, secret ?? null, medium ?? null))
+    }
+  }
 
   let partnerName: string | null = null
   if (node.partner_id) {
