@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1025",
+  "title": "The public footer and llms.txt stop advertising members-only marketplace pages (SCAN-1025)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/frequency/site-nav.ts",
+    "ref": "Public site audit 2026-10-22, findings 5 and 44 (/mnt/project-files/audits/site-seo-geo-a11y-2026-10-22.md)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-22. /market, /classifieds, /housing and /store redirect an anonymous visitor and are noindex, yet the public footer linked them on every page, in its navigation JSON-LD, and llms.txt told answer engines to crawl them. The Marketplace footer column and the llms.txt Marketplace section are gone; they return when the indexes are public. The Guides column now also links how-to-be-more-social and calm-down-fast, which had no inbound link.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const n=fs.readFileSync('lib/frequency/site-nav.ts','utf8');const l=fs.readFileSync('app/llms.txt/route.ts','utf8');const bad=[];if(n.includes(\\\"heading: 'Marketplace'\\\"))bad.push('footer still has a Marketplace column');if(l.includes('## Marketplace'))bad.push('llms.txt still lists the marketplace');if(!n.includes('/calm-down-fast')||!n.includes('/how-to-be-more-social'))bad.push('guides missing from the footer');if(bad.length){console.error('SCAN-1025: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when members-only marketplace indexes return to the public footer or llms.txt, or the two guides lose their footer link."
+  },
+  "closed": "2026-10-22",
+  "wave": "W7"
+}
