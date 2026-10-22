@@ -1,5 +1,5 @@
 {
-  "id": "LIVE-1277",
+  "id": "LIVE-1278",
   "title": "The home hero and the three-line model say Host free with Crew, not Businesses host free",
   "lane": "live",
   "priority": "P1",
@@ -8,7 +8,7 @@
   "status": "done",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require(\\\"fs\\\");const m=[];for(const f of [\\\"lib/page-editor/templates/home.ts\\\",\\\"lib/pricing/plan-story.ts\\\"])if(fs.readFileSync(f,\\\"utf8\\\").includes(\\\"Businesses host free\\\"))m.push(f+\\\" still says Businesses host free\\\");if(!fs.existsSync(\\\"supabase/migrations/20270346023000_home_hero_host_free_with_crew.sql\\\"))m.push(\\\"home migration missing\\\");if(m.length){console.error(\\\"LIVE-1277: \\\"+m.join(\\\"; \\\"));process.exit(1)}\""
+    "cmd": "node -e \"const fs=require(\\\"fs\\\");const m=[];for(const f of [\\\"lib/page-editor/templates/home.ts\\\",\\\"lib/pricing/plan-story.ts\\\"])if(fs.readFileSync(f,\\\"utf8\\\").includes(\\\"Businesses host free\\\"))m.push(f+\\\" still says Businesses host free\\\");if(!fs.existsSync(\\\"supabase/migrations/20270346023000_home_hero_host_free_with_crew.sql\\\"))m.push(\\\"home migration missing\\\");if(m.length){console.error(\\\"LIVE-1278: \\\"+m.join(\\\"; \\\"));process.exit(1)}\""
   },
   "detail": "Owner 2026-10-22 (decision card): the home hero reads Join free. Host free with Crew. PLAN_STORY.spine and .lines, the pricing meta description, llms text, the help article, the what-is-frequency and how-to pages follow. The home copy canon test fixture is updated on the owner pick and its regex keeps the old alternatives and adds host free with Crew. The published home document changes by migration 20270346023000 (OWN: apply when this PR is next in line)."
 }
