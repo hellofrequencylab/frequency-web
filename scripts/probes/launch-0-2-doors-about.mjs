@@ -39,7 +39,7 @@ for (const [file, rules] of Object.entries(BANNED)) {
 // The doors: every hero trustLine carries "plus card processing" (six doors, six lines).
 const funnel = read('lib/marketing/funnel-config.ts')
 const trustLines = [...funnel.matchAll(/trustLine:\s*(['"`])(.*?)\1/g)].map((m) => m[2])
-if (trustLines.length < 4) failures.push(`funnel-config.ts: expected 4 door trustLines, found ${trustLines.length}`)
+if (trustLines.length < 6) failures.push(`funnel-config.ts: expected 6 door trustLines, found ${trustLines.length}`)
 for (const t of trustLines) {
   if (!/plus card processing/.test(t)) failures.push(`funnel-config.ts: trustLine without "plus card processing": "${t}"`)
 }

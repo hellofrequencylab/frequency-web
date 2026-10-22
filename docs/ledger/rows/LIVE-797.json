@@ -1,13 +1,10 @@
 {
   "id": "LIVE-797",
   "patch": {
-    "verify": {
-      "kind": "cmd",
-      "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};const f=r(\"lib/marketing/funnel-config.ts\");for(const a of [\"second_act\",\"studio_keeper\",\"network_steward\"])if(!f.includes(a))fail(\"no funnel door is keyed to the \"+a+\" archetype\");if(!/Who Frequency is for/.test(r(\"app/llms.txt/route.ts\")))fail(\"llms.txt has no Who Frequency is for section\");const w=r(\"lib/page-editor/templates/what-is-frequency.ts\");for(const x of [/just moved/i,/run club/i,/timer/i,/teacher/i,/studio/i])if(!x.test(w))fail(\"the Who is Frequency for answer leaves out a family: \"+x)'",
-      "note": "Fails while a Builder archetype has no door, llms.txt lacks the section, or the Who is Frequency for answer leaves out a family. The /for/teachers door and its Portfolio Teacher archetype were retired by ADR-1863."
-    }
+    "status": "parked",
+    "notes": "Superseded by ADR-1863 (LIVE-1130): the door this row required was retired."
   },
   "append": {
-    "detail": " 2026-10-22 LIVE-1130 (ADR-1863): the launch narrowed to four doors, so /for/teachers and /for/community-builders were retired with redirects. The probe no longer requires the teachers door or the portfolio_teacher archetype; every other check is unchanged."
+    "detail": " 2026-10-22 LIVE-1130 (ADR-1863): the launch narrowed to four doors and /for/teachers and /for/community-builders were retired, so this row's premise no longer holds. Parked, not edited; LIVE-1130 carries the four-door probe."
   }
 }
