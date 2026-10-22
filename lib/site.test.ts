@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { NAV_REGISTRY } from '@/lib/nav/registry'
 import {
   SITE_URL,
+  SOCIAL_PROFILES,
+  socialLabel,
   SITE_NAME,
   SITE_TAGLINE,
   SITE_DESCRIPTION,
@@ -155,5 +157,15 @@ describe('FOUNDING_PLACE', () => {
   it('is a non-empty string', () => {
     expect(typeof FOUNDING_PLACE).toBe('string')
     expect(FOUNDING_PLACE.length).toBeGreaterThan(0)
+  })
+})
+
+describe('socialLabel (LIVE-1135)', () => {
+  it('names every brand profile in SOCIAL_PROFILES for the footer', () => {
+    expect(SOCIAL_PROFILES.map(socialLabel)).toEqual(['Instagram', 'TikTok'])
+  })
+
+  it('falls back to the bare hostname for a host it does not know', () => {
+    expect(socialLabel('https://www.example.org/frequency')).toBe('example.org')
   })
 })

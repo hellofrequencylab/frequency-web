@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MARKETING_NAV, ORG_LEGAL_NAME, CONTACT_EMAIL } from '@/lib/site'
+import { MARKETING_NAV, ORG_LEGAL_NAME, CONTACT_EMAIL, SOCIAL_PROFILES, socialLabel } from '@/lib/site'
 import { effectiveMode } from '@/components/layout/menu-role'
 import type { ResolvedMenu } from '@/lib/menus/types'
 import { Wordmark } from '@/components/layout/wordmark'
@@ -73,6 +73,11 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
             <Link href="/terms" className="hover:text-text transition-colors">Terms</Link>
             <Link href="/guidelines" className="hover:text-text transition-colors">Guidelines</Link>
             <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-text transition-colors">Contact</a>
+            {SOCIAL_PROFILES.map((url) => (
+              <a key={url} href={url} rel="me noopener" target="_blank" className="hover:text-text transition-colors">
+                {socialLabel(url)}
+              </a>
+            ))}
           </div>
         </div>
       </div>
