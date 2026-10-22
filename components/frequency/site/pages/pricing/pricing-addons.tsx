@@ -1,6 +1,8 @@
 // THE ADD-ONS AND FEES (owner 2026-10-21): every extra a plan can be topped up with and every rule about what
 // Frequency earns on a sale, listed plainly under the plan cards. Server Component. Every figure arrives
 // from lib/pricing/pricing-addons.ts and the Offering model; there is no typed money in this file.
+import Link from 'next/link'
+import { addOnHref, addOnLabel } from '@/lib/pricing/addon-links'
 import { formatBps } from '@/lib/pricing/display'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import type { AddOnGroups, AddOnRow } from '@/lib/pricing/pricing-addons'
@@ -9,6 +11,8 @@ import { splitPrice } from './split-price'
 
 function AddOnCard({ row }: { row: AddOnRow }) {
   const { lead, amount, per } = splitPrice(row.price)
+  const href = addOnHref(row.key)
+  const label = addOnLabel(row.key)
   return (
     <li className="pa-card">
       <h4>{row.name}</h4>
@@ -23,6 +27,13 @@ function AddOnCard({ row }: { row: AddOnRow }) {
         <span>Who</span>
         {row.who}
       </p>
+      {href && label && (
+        <p className="pa-cta">
+          <Link href={href} className="btn btn-ghost">
+            {label}
+          </Link>
+        </p>
+      )}
     </li>
   )
 }

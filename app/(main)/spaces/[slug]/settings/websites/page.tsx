@@ -27,7 +27,7 @@ export default async function ClientWebsitesPage({ params }: { params: Promise<{
         <ConsoleFocusTemplate title="Client websites" back={{ href: `/spaces/${slug}/network`, label: 'Network home' }}
           description="You are looking at this Network as Frequency staff. Only its owner can add, hand off or remove websites.">
           {sites.length ? (
-            <ul className="divide-y divide-border rounded-lg border border-border">
+            <ul className="divide-y divide-border rounded-card border border-border">
               {sites.map((s) => <li key={s.id} className="px-4 py-3 text-body-sm">{s.name}</li>)}
             </ul>
           ) : <EmptyState variant="first-use" title="No client websites yet" description="This Network has not added any." />}
