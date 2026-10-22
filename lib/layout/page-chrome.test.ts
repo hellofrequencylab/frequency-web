@@ -155,6 +155,11 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/spaces/demo-business/settings/email')).toBe('global')
   })
 
+  it('drops the rail on the full-screen Beta offer only (owner ruling 2026-10-22)', () => {
+    expect(railFor('/offer')).toBe('none')
+    expect(railFor('/spaces/new')).toBe('global')
+  })
+
   it('ALWAYS keeps the global rail on the event detail page (and every events route)', () => {
     // The global community rail is a fixed part of the member chrome. The event detail
     // page keeps it like every other member surface — a doubled-column feeling is fixed
