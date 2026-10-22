@@ -238,6 +238,18 @@ export async function getSpaceHostRow(id: string): Promise<SpaceHostRow | null> 
   return (data as unknown as SpaceHostRow | null) ?? null
 }
 
+/** Turn a Space's website on (preferences.websitePublished), leaving every other preference alone. True only
+ *  when this call changed it: a site already published, or a Space that is missing, comes back false. */
+export async function publishSpaceWebsite(id: string): Promise<boolean> {
+  const db = createAdminClient()
+  const { data } = await db.from('spaces').select('preferences').eq('id', id).maybeSingle()
+  if (!data) return false
+  const prefs = (data.preferences && typeof data.preferences === 'object' && !Array.isArray(data.preferences) ? data.preferences : {}) as Record<string, unknown>
+  if (prefs.websitePublished === true) return false
+  const { error } = await db.from('spaces').update({ preferences: { ...prefs, websitePublished: true } as never }).eq('id', id)
+  return !error
+}
+
 /** The active children of a Network (its chapters), host columns only. */
 export async function listChapterHostRows(networkId: string): Promise<SpaceHostRow[]> {
   const { data } = await createAdminClient().from('spaces').select(HOST_COLS).eq('parent_id', networkId).eq('status', 'active')
