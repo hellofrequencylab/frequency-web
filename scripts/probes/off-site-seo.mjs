@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // Off-site SEO worksheet probes (docs/marketing/off-site-seo-worksheet.md). One row per check:
 //   node scripts/probes/off-site-seo.mjs <profiles|footer|verification|indexnow|get-found>
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const r = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')
-const walk = (d) => (existsSync(d) ? readdirSync(d).flatMap((n) => (statSync(join(d, n)).isDirectory() ? walk(join(d, n)) : [join(d, n)])) : [])
+const walk = (d) =>
+  existsSync(d) ? readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : [join(d, e.name)])) : []
 const check = process.argv[2]
 const bad = []
 
