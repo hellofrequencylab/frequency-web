@@ -1,9 +1,10 @@
 // Send the trial-ending notice for a Space plan subscription (LIVE-1132). Called from the Stripe webhook on
 // customer.subscription.trial_will_end. Best-effort and idempotent: the outbox dedupes on the subscription id,
-// so a Stripe redelivery sends one email. A subscription that is not a Space plan is ignored (members and
+// so a Stripe redelivery sends one email. The webhook passes in its own service-role client, so this file
+// adds no new RLS bypass of its own. A subscription that is not a Space plan is ignored (members and
 // bundles have their own paths).
 import type Stripe from 'stripe'
-import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { enqueueEmail } from '@/lib/email'
 import { buildTrialEndingEmail } from '@/lib/billing/trial-ending-email'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
@@ -17,11 +18,10 @@ function trialEndLabel(unixSeconds: number): string {
   })
 }
 
-export async function notifyTrialEnding(sub: Stripe.Subscription): Promise<boolean> {
+export async function notifyTrialEnding(sub: Stripe.Subscription, admin: SupabaseClient): Promise<boolean> {
   const spaceId = sub.metadata?.space_id
   if (!spaceId || !sub.trial_end) return false
   try {
-    const admin = createAdminClient()
     const { data: spaceData } = await admin
       .from('spaces')
       .select('id, name, slug, owner_profile_id')

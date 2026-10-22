@@ -389,7 +389,7 @@ export async function POST(req: Request) {
       case 'customer.subscription.trial_will_end': {
         // Three days before a Space's trial turns into a charge: tell the owner (LIVE-1132). Never fails the
         // webhook; a missed notice must not make Stripe retry the whole event.
-        await notifyTrialEnding(event.data.object as Stripe.Subscription)
+        await notifyTrialEnding(event.data.object as Stripe.Subscription, admin)
         break
       }
 
