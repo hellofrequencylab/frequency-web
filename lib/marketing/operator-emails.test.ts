@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildOperatorEmail, operatorFocus, OPERATOR_DAYS, type OperatorFocus } from './operator-emails'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 
-const FOCI: OperatorFocus[] = ['packages', 'membership', 'ticketed', 'donations', 'general']
+const FOCI: OperatorFocus[] = ['packages', 'membership', 'ticketed', 'donations', 'venue', 'network', 'general']
 const base = { to: 'a@example.com', greetingName: 'Sam', spaceName: 'Dune Yoga', spaceSlug: 'dune-yoga', baseUrl: 'https://frequencylocal.com' }
 
 describe('operatorFocus', () => {
@@ -13,6 +13,8 @@ describe('operatorFocus', () => {
     expect(operatorFocus('business', 'ticketed')).toBe('ticketed')
     expect(operatorFocus('business', null)).toBe('general')
     expect(operatorFocus(null, 'nope')).toBe('general')
+    expect(operatorFocus('business', null, { kind: 'venue' })).toBe('venue')
+    expect(operatorFocus('business', null, { hasChapters: true })).toBe('network')
   })
 })
 

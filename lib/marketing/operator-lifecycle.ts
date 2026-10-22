@@ -20,6 +20,7 @@ type OperatorSpaceRow = {
   slug: string | null
   type: string | null
   mode_variant: string | null
+  preferences?: { profileData?: { kind?: string | null; category?: string | null } | null } | null
   owner_profile_id: string | null
   created_at: string
 }
@@ -54,10 +55,14 @@ export async function sendOperatorEmailForSpace(
   const email = userData?.user?.email
   if (!email) return 'skipped'
   if (!(await resolveSendGate(space.owner_profile_id, 'email', 'lifecycle', { email })).allowed) return 'skipped'
+  const pd = space.preferences?.profileData
+  const kind = pd?.kind ?? pd?.category
+  // A Network is a Space with member Spaces; only the later emails care, so the count is read just for them.
+  const hasChapters = day === 0 ? false : ((await admin.from('spaces').select('id', { count: 'exact', head: true }).eq('parent_id', space.id)).count ?? 0) > 0
   await enqueueEmail(
     buildOperatorEmail({
       day,
-      focus: operatorFocus(space.type, space.mode_variant),
+      focus: operatorFocus(space.type, space.mode_variant, { kind: kind ?? null, hasChapters }),
       to: email,
       greetingName: profile.display_name,
       spaceName: space.name ?? 'your Space',
@@ -78,7 +83,7 @@ export async function sendOperatorLifecycle(
   const result: OperatorLifecycleResult = { sent: 0, skipped: 0, failed: 0 }
   const { data, error } = await admin
     .from('spaces')
-    .select('id, name, slug, type, mode_variant, owner_profile_id, created_at')
+    .select('id, name, slug, type, mode_variant, preferences, owner_profile_id, created_at')
     .eq('status', 'active')
     .neq('type', 'root')
     .gte('created_at', since)
