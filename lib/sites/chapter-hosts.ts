@@ -1,6 +1,6 @@
 import { briefError, log } from '@/lib/log'
 import { isNetworkPlan } from '@/lib/collective/member-spaces'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getSpaceHostRow, listChapterHostRows } from '@/lib/spaces/store'
 import { networkChapterHost } from '@/lib/sites/host'
 import { chapterSiteHost } from '@/lib/sites/site-domain'
 import { addSiteSubdomain } from '@/lib/sites/vercel-domains'
@@ -12,18 +12,6 @@ import { addSiteSubdomain } from '@/lib/sites/vercel-domains'
 // the owner's DNS stays where it is (one `*` CNAME record sends every chapter host to Vercel).
 // BEST EFFORT and NEVER THROWS, like addSiteSubdomain: a failure only logs.
 
-interface SpaceRow {
-  id: string
-  slug: string
-  domain: string | null
-  plan: string | null
-  status: string | null
-  owner_profile_id: string | null
-  parent_id: string | null
-}
-
-const COLS = 'id, slug, domain, plan, status, owner_profile_id, parent_id'
-
 async function attach(host: string, why: string): Promise<void> {
   const attached = await addSiteSubdomain(host)
   if (!attached.ok) log.warn('chapter_host_attach_failed', { host, why, error: attached.error })
@@ -32,12 +20,9 @@ async function attach(host: string, why: string): Promise<void> {
 /** Attach every active chapter's host for the Network `networkId` that holds `networkDomain`. */
 export async function attachChapterHosts(networkId: string): Promise<void> {
   try {
-    const db = createAdminClient()
-    const { data: parent } = await db.from('spaces').select(COLS).eq('id', networkId).maybeSingle()
-    const network = parent as unknown as SpaceRow | null
+    const network = await getSpaceHostRow(networkId)
     if (!network?.domain || network.status !== 'active' || !isNetworkPlan(network.plan)) return
-    const { data } = await db.from('spaces').select(COLS).eq('parent_id', network.id).eq('status', 'active')
-    for (const row of (data ?? []) as unknown as SpaceRow[]) {
+    for (const row of await listChapterHostRows(network.id)) {
       if (row.owner_profile_id !== network.owner_profile_id) continue
       const host = networkChapterHost(row.slug, network.domain)
       if (host) await attach(host, 'network-domain')
@@ -50,8 +35,7 @@ export async function attachChapterHosts(networkId: string): Promise<void> {
 /** Attach one Space's chapter host, when it is a chapter of a Network that holds a domain. */
 export async function attachChapterHostFor(spaceId: string): Promise<void> {
   try {
-    const { data } = await createAdminClient().from('spaces').select(COLS).eq('id', spaceId).maybeSingle()
-    const row = data as unknown as SpaceRow | null
+    const row = await getSpaceHostRow(spaceId)
     if (!row) return
     const host = await chapterSiteHost({ slug: row.slug, domain: row.domain, parentId: row.parent_id, ownerProfileId: row.owner_profile_id })
     if (host) await attach(host, 'chapter-publish')

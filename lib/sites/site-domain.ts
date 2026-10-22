@@ -1,8 +1,7 @@
-import { getSpaceByDomain } from '@/lib/spaces/store'
+import { getSpaceByDomain, getSpaceHostRow } from '@/lib/spaces/store'
 import { briefError, log } from '@/lib/log'
 import { isAppHost, networkChapterHost, normalizeHost } from '@/lib/sites/host'
 import { isNetworkPlan } from '@/lib/collective/member-spaces'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import type { Space } from '@/lib/spaces/types'
 
@@ -25,12 +24,7 @@ type ChapterFields = Partial<Pick<Space, 'slug' | 'parentId' | 'ownerProfileId'>
 export async function chapterSiteHost(space: Pick<Space, 'domain'> & ChapterFields): Promise<string | null> {
   if (space.domain || !space.parentId || !space.slug) return null
   try {
-    const { data } = await createAdminClient()
-      .from('spaces')
-      .select('id, domain, plan, status, owner_profile_id')
-      .eq('id', space.parentId)
-      .maybeSingle()
-    const parent = data as unknown as { id: string; domain: string | null; plan: string | null; status: string | null; owner_profile_id: string | null } | null
+    const parent = await getSpaceHostRow(space.parentId)
     if (!parent || parent.status !== 'active' || !parent.domain || !isNetworkPlan(parent.plan)) return null
     if (space.ownerProfileId && parent.owner_profile_id !== space.ownerProfileId) return null
     return networkChapterHost(space.slug, await boundSiteDomain({ id: parent.id, domain: parent.domain }))

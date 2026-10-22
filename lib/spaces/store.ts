@@ -220,6 +220,30 @@ export async function getSpaceByDomain(domain: string): Promise<Space | null> {
   return (await spaceLimitsWaived(space.id)) ? space : null
 }
 
+/** The columns the chapter-subdomain code reads (lib/sites/site-domain.ts, lib/sites/chapter-hosts.ts). */
+export interface SpaceHostRow {
+  id: string
+  slug: string
+  domain: string | null
+  plan: string | null
+  status: string | null
+  owner_profile_id: string | null
+  parent_id: string | null
+}
+const HOST_COLS = 'id, slug, domain, plan, status, owner_profile_id, parent_id'
+
+/** One Space's host columns by id, or null. Service-role read: it only feeds hosting decisions. */
+export async function getSpaceHostRow(id: string): Promise<SpaceHostRow | null> {
+  const { data } = await createAdminClient().from('spaces').select(HOST_COLS).eq('id', id).maybeSingle()
+  return (data as unknown as SpaceHostRow | null) ?? null
+}
+
+/** The active children of a Network (its chapters), host columns only. */
+export async function listChapterHostRows(networkId: string): Promise<SpaceHostRow[]> {
+  const { data } = await createAdminClient().from('spaces').select(HOST_COLS).eq('parent_id', networkId).eq('status', 'active')
+  return (data ?? []) as unknown as SpaceHostRow[]
+}
+
 /** The Space with this slug, or null. REQUEST-CACHED (React.cache) keyed on the normalized slug so
  *  the profile layout + each tab page resolve it at most once per request. The brand/visibility
  *  columns the profile needs ride the typed COLS plus the untyped `visibility` field below. */
