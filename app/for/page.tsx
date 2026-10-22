@@ -40,7 +40,7 @@ export default async function ForIndexPage() {
           <li key={c.slug}>
             <Link
               href={`/for/${c.slug}`}
-              className="block h-full rounded-lg border border-border bg-surface p-5 transition-colors hover:bg-surface-elevated"
+              className="block h-full rounded-card border border-border bg-surface p-5 transition-colors hover:bg-surface-elevated"
             >
               <span className="text-sm text-muted">{c.hero.eyebrow}</span>
               <span className="mt-1 block text-lg font-medium text-text">{c.hero.h1}</span>
