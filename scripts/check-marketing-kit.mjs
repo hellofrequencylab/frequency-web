@@ -10,7 +10,7 @@
 //
 // The seven pages below predate the rule: their Tailwind markup is the DAWN fallback of a page that
 // already renders a Frequency kit component. The baseline may only shrink.
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOTS = ['app/(marketing)', 'app/for', 'app/privacy', 'app/terms']
@@ -18,10 +18,10 @@ const BASELINE = new Set(readFileSync('scripts/marketing-kit-baseline.txt', 'utf
 const UTILITY = /className="[^"]*\b(p[xytblr]?-\d|m[xytblr]?-(auto|\d)|max-w-|bg-|text-[a-z]|grid|flex|gap-|rounded|border|space-[xy]-)/
 
 function pages(dir) {
-  return readdirSync(dir).flatMap((name) => {
-    const p = join(dir, name)
-    if (statSync(p).isDirectory()) return pages(p)
-    return name === 'page.tsx' ? [p] : []
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = join(dir, e.name)
+    if (e.isDirectory()) return pages(p)
+    return e.name === 'page.tsx' ? [p] : []
   })
 }
 
