@@ -719,6 +719,7 @@ export default async function SpaceProfileChromeLayout({
   // keeps Boost), then the body. SITE_DESIGN is build-time, so a deploy ships one branch.
   if (SITE_DESIGN === 'frequency') {
     const frost = 'btn fqs-frost'
+    const checkinOn = spaceFunctionAccess(space, 'checkin', 'admin')
     // SIGNED OUT (SCAN-883): a visitor on a Space tab reads this chrome under the public site shell
     // (app/(main)/layout.tsx publicChrome), which has no centred column and no right rail. `public` opens
     // the same frame the share root (app/(public)/spaces/[slug]/page.tsx) does, and the side column
@@ -752,13 +753,7 @@ export default async function SpaceProfileChromeLayout({
           // The Check In button (LIVE-1180): top right of the cover; greyed out until the Space turns badge check-in on.
           coverAction={
             <Suspense fallback={null}>
-              <BadgeNote
-                spaceId={space.id}
-                slug={space.slug}
-                viewerProfileId={viewerProfileId}
-                variant="cover"
-                checkinOn={spaceFunctionAccess(space, 'checkin', 'admin')}
-              />
+              <BadgeNote spaceId={space.id} slug={space.slug} viewerProfileId={viewerProfileId} variant="cover" checkinOn={checkinOn} />
             </Suspense>
           }
           badges={
