@@ -1,7 +1,8 @@
 import 'server-only'
 import { revalidatePath } from 'next/cache'
 import { crossRequestCached, invalidateCacheTag, siteCacheTag } from '@/lib/cross-request-cache'
-import { getPublicSpaceBySlugOrThrow } from '@/lib/spaces/store'
+import { getPublicSpaceBySlugOrThrow, getSpaceHostRow } from '@/lib/spaces/store'
+import { isNetworkPlan } from '@/lib/collective/member-spaces'
 import type { Space } from '@/lib/spaces/types'
 
 // A SPACE WEBSITE IS CACHED, AND ITS OWNER'S SAVE REFRESHES IT (PROG-E10 phase 5, LIVE-784).
@@ -24,13 +25,27 @@ import type { Space } from '@/lib/spaces/types'
 // A write that does not call it (an operator's SQL, a surface outside the Page panel) is bounded by
 // the seam's ten-minute ceiling, which also caps the page's own ISR window.
 
+async function readSiteSpace(norm: string): Promise<Space | null> {
+  const read = crossRequestCached(getPublicSpaceBySlugOrThrow, ['site-space'], { tags: [siteCacheTag(norm)] })
+  return read(norm)
+}
+
 /** The Space behind a website, as an anonymous visitor sees it (active and network-visible), cached
- *  across requests under `site:<slug>`. Null for a missing, inactive or Private Space. */
+ *  across requests under `site:<slug>`. Null for a missing, inactive or Private Space. A chapter of a
+ *  Network comes back with its Network's look, footer and pages laid under its own (LIVE-1288); the
+ *  Network is read under ITS tag too, so refreshing the Network's site refreshes every chapter's page. */
 export async function getSiteSpace(slug: string): Promise<Space | null> {
   const norm = slug.trim().toLowerCase()
   if (!norm) return null
-  const read = crossRequestCached(getPublicSpaceBySlugOrThrow, ['site-space'], { tags: [siteCacheTag(norm)] })
-  return read(norm)
+  const space = await readSiteSpace(norm)
+  if (!space?.parentId) return space
+  const parent = await getSpaceHostRow(space.parentId)
+  if (!parent || parent.status !== 'active' || !isNetworkPlan(parent.plan) || parent.owner_profile_id !== space.ownerProfileId) return space
+  const network = await readSiteSpace(parent.slug)
+  if (!network) return space
+  // Loaded here, not at the top: only a chapter pays for the inheritance module's page-model imports.
+  const { inheritFromNetwork } = await import('@/lib/sites/network-inheritance')
+  return inheritFromNetwork(space, network)
 }
 
 /** Expire a Space website's cached row and pages. Call it beside any owner write the site shows. */

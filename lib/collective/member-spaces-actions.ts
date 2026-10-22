@@ -23,6 +23,10 @@ export async function setCollectiveMemberSpace(parentId: string, childId: string
       : 'Your Collective is full. Add another Space to your plan before attaching one.')
     return fail('Could not update this member Space. Check that you own both Spaces and try again.')
   }
+  if (attach && parent.plan === 'network') {
+    const { startChapterSite } = await import('@/lib/sites/chapter-hosts')
+    await startChapterSite(childId)
+  }
   revalidatePath('/spaces', 'layout')
   return ok()
 }
