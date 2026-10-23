@@ -26,6 +26,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { safeNextPath } from '@/lib/auth/safe-next'
 import {
   DRAFT_TTL_MS,
   DRAFT_VERSION,
@@ -67,9 +68,8 @@ const MAX_LABEL_CHARS = 80
 function safeRoute(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
   const route = raw.trim()
-  if (!route.startsWith('/') || route.startsWith('//')) return null
   if (route.length > MAX_ROUTE_CHARS) return null
-  return route
+  return safeNextPath(route) || null
 }
 
 function safeLabel(raw: unknown): string | null {

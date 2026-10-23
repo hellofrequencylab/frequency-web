@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1035",
+  "title": "Apply the canonical same-origin path check to saved draft resume routes",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "XS",
+  "source": {
+    "file": "lib/studio/draft-store.ts",
+    "ref": "Comprehensive create/edit navigation audit, 2026-10-23"
+  },
+  "detail": "The local safeRoute check refused // but accepted slash-backslash and slash/control/slash forms that URL normalization resolves to another origin. Drafts uses the stored route in router.push. Reuse the pure lib/auth/safe-next.ts validator instead of maintaining a weaker copy, while retaining the existing trim, 300-character limit and null fallback. The same seam validates writes, individual loads and the draft list, so legacy unsafe stored routes are suppressed without a data migration. Three behavioral regressions prove the sample paths resolve off-site under URL parsing and must be rejected at every store boundary; all three failed on the previous code. This is owner-scoped resume-path hardening: no cross-user injection or live exploitation was demonstrated. Final focused validation: 126 tests in eight suites passed, including canonical path validation, draft sync/recovery and the bin action. No production data or schema changes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node node_modules/vitest/vitest.mjs run --cache=false --fsModuleCachePath .next/cache/audit-vitest --maxWorkers=2 lib/studio/draft-store.test.ts lib/auth/safe-next.test.ts",
+    "note": "Three URL-normalization cases must be null on staged writes, individual resume reads and list reads. Existing valid paths, owner scoping, draft save failures and canonical auth destination rules remain covered."
+  },
+  "closed": "2026-10-23"
+}

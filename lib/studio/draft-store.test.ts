@@ -249,6 +249,18 @@ describe('what is allowed in', () => {
     expect(payload.label).toBe('New Journey')
   })
 
+  it.each(['/\\example.invalid', '/\t/example.invalid', '/\n/example.invalid'])(
+    'refuses browser-normalized off-site route %j on write, resume and listing', async (route) => {
+      expect(new URL(route, 'https://frequencylocal.com').origin).not.toBe('https://frequencylocal.com')
+      await saveStagedDraft('me', 's', { step: 1, values: { 'f.a': 'draft' }, route }, NOW)
+      const payload = calls.find((c) => c.op === 'upsert')?.payload as { route: unknown }
+      expect(payload.route).toBeNull()
+      state.rows = [row({ route })]
+      expect((await loadStagedDraft('me', 's', NOW))?.route).toBeNull()
+      expect((await listStagedDrafts('me', NOW))[0]?.route).toBeNull()
+    },
+  )
+
   it('stamps the version and a sane step', async () => {
     await saveStagedDraft('me', 's', { step: -4, values: { 'f.a': 'x' } }, NOW)
     const payload = calls.find((c) => c.op === 'upsert')?.payload as { version: number; step: number }
