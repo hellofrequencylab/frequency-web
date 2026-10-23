@@ -59,12 +59,21 @@ Use it. It is what people search for and what our audience calls themselves. Rul
 
 Research note: web searches returned no usable volume figures, so the intent phrases above come from existing pages and judgement. Confirm in Search Console (already verified) before betting a headline on one.
 
-## 5. Spiritual register: grounded
+## 5. Spiritual register: rhythm first, energy in the right room
 
-**Welcome:** gather, practice, heart, belonging, love, presence, ritual (when real), circle, together, meaningful, intention, purpose, rooted.
-**Avoid on the surface:** energy, vibration, sacred, manifest, awaken, activate, hold space, tap into, drop into, tribe, high vibe, unlock, elevate, transform your life. Deep pages may use practice vocabulary after a plain entry.
+Frequency is rooted in rhythm: programs follow seasons, moons and astrological moments, with consistent meetups, and the practice includes energetics, nervous system care and heart healing. The voice is grounded and the content is not shy. Two layers:
 
-Test: a yoga teacher nods, and a neighbor who has never done yoga does not roll their eyes.
+**Front door (home, the six doors, pricing, headlines, meta, emails):** lead with rhythm and plain results. Rhythm is our most ownable word: it is spiritual, concrete and true to the product.
+- Use: rhythm, season, cycle, new moon, equinox, gather, practice, heart, belonging, together, regular, every Thursday, steady, rooted, nervous system, calm, settle, energy (once, in context, never as a headline).
+- Pattern: pair one rhythm word with one plain action. "Gather with the season. Same people, same time." "A rhythm you can keep."
+
+**Program and practice pages (heal your heart, energetics, astrology, breathwork):** the full vocabulary is welcome, said plainly and explained in one line the first time: energy, vibe, nervous system regulation, energetic healing, ritual, intention, moon phases. Offer, do not prescribe: "Some people find...", "Try it and see."
+
+**Still out everywhere (vague, hype or narrated):** unlock, elevate, transform your life, manifest your dreams, awaken, activate your, high vibe as a pitch, tap into, drop into, hold space (as filler), tribe, ascend. Also no promises of healing outcomes and no claims about astrology or energy as fact; write them as practice and tradition ("many traditions mark the equinox").
+
+Test: a yogi, an astrologer and a skeptical neighbor can all read the front door aloud. The program page can go deeper because the reader chose to come in.
+
+*This amends [`CONTENT-VOICE.md`](../CONTENT-VOICE.md) §5c (energetic, nervous system, sacred) to allow that vocabulary on program pages, and adds rhythm and season as house words.*
 
 ## 6. Headlines: who they talk to
 
