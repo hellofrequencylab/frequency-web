@@ -162,7 +162,7 @@ export function LocPill({ href, city, line }: { href: string; city: string | nul
       <FqIcon name="pin" />
       <b>{city}</b>
       {line && <span>{line}</span>}
-      <em>Change</em>
+      <em>{href === '/join' ? 'Join to change' : 'Change'}</em>
     </Link>
   )
 }

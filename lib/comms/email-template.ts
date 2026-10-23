@@ -1,5 +1,5 @@
 import 'server-only'
-import { SITE_NAME, SITE_TAGLINE } from '@/lib/site'
+import { SITE_NAME, SITE_TAGLINE, SITE_SIGNOFF } from '@/lib/site'
 import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 import type { EmailBrand, EmailOrigin } from '@/lib/comms/email-brand'
 import { palette } from '@/lib/theme/palette'
@@ -103,7 +103,7 @@ function footerHtml(brand?: EmailBrand | null, origin?: EmailOrigin | null): str
     : ''
   const sentWith = brand
     ? `${link(APP, `Sent with ${SITE_NAME}`)}${dot}${link(brand.url, esc(brand.name))}`
-    : `${SITE_TAGLINE}. ${link(APP, 'frequencylocal.com')}`
+    : `${SITE_SIGNOFF} ${SITE_TAGLINE}. ${link(APP, 'frequencylocal.com')}`
   return `<div style="padding:22px 4px 0;color:${palette.emailSubtle};font-size:13px;line-height:1.6;text-align:center">
     ${back}
     <a href="${APP}" style="display:inline-block;text-decoration:none">${wordmarkImg(0.55)}</a>
@@ -138,7 +138,7 @@ export function wrapEmailHtml(innerHtml: string, brand?: EmailBrand | null, orig
 // "A place to be human" and shipped in the footer of every branded reply and digest --
 // scripts/check-canon.mjs bans that string, but lib/comms/ is outside the gate's SRC_DIRS,
 // so nothing caught it. Sourcing it means the ban and the ship cannot drift again.
-const TEXT_FOOTER = `\n\n${SITE_TAGLINE} · ${APP}`
+const TEXT_FOOTER = `\n\n${SITE_SIGNOFF}\n${SITE_TAGLINE} · ${APP}`
 
 /** The plain-text footer: the platform line, or the brand's "Sent with Frequency" line. */
 function textFooter(brand?: EmailBrand | null, origin?: EmailOrigin | null): string {

@@ -46,6 +46,8 @@ export const OG_SITE = { siteName: SITE_NAME, locale: "en_US" } as const;
 // NOT to be confused with "The Community Collective" the TIER LADDER (also ADR-811) — that is a
 // billing surface heading, a different name that keeps its article.
 export const SITE_TAGLINE = "Community Collective";
+// The plain sign-off; the logo descriptor above stays unchanged.
+export const SITE_SIGNOFF = "Get people together. Do things on purpose.";
 // The category line, one everywhere (owner ruling R1, LIVE-912). What Frequency IS in one breath,
 // where SITE_TAGLINE is only the words under the mark. SITE_DESCRIPTION and llms.txt read it.
 export const CATEGORY_LINE = "Local groups that keep meeting.";
