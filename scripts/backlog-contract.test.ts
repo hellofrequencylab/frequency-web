@@ -317,10 +317,13 @@ describe('check:backlog — the probe/status contract', () => {
     // The merged view (HYG-145): a probe written in a fragment has to parse too.
     const real = loadBacklog(ROOT)
     const broken: string[] = []
-    const commands = real.entries.filter(e => e.verify?.kind === 'cmd' && e.verify.cmd)
-    const errors = parseShellCommands(commands.map(e => e.verify.cmd!))
+    const commands: { id: string; cmd: string }[] = []
+    for (const e of real.entries) {
+      if (e.verify?.kind === 'cmd' && e.verify.cmd) commands.push({ id: e.id, cmd: e.verify.cmd })
+    }
+    const errors = parseShellCommands(commands.map(e => e.cmd))
     for (const e of commands) {
-      const error = errors.get(e.verify.cmd!)
+      const error = errors.get(e.cmd)
       if (error) broken.push(`${e.id}: ${error}`)
     }
     expect(broken, `these probes cannot be parsed by the shell, so they can never answer:\n${broken.join('\n')}`).toEqual([])
