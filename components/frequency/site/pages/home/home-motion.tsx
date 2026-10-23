@@ -21,35 +21,12 @@ const clamp = (v: number) => Math.max(0, Math.min(1, v))
 const range = (p: number, a: number, b: number) => clamp((p - a) / (b - a))
 const ease = (x: number) => 1 - Math.pow(1 - x, 3)
 
-function fitSignatureViewport(signature: HTMLElement) {
-  // CSS vw includes a desktop scrollbar; use the actual content viewport.
-  const half = `${document.documentElement.clientWidth / 2}px`
-  if (signature.style.getPropertyValue('--home-viewport-half') !== half) {
-    signature.style.setProperty('--home-viewport-half', half)
-  }
-}
-
 export function HomeMotion() {
   const ref = useRef<HTMLSpanElement>(null)
   useEffect(() => {
     const scope: ParentNode = ref.current?.closest('[data-motion-scope]') ?? document
     const rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const cleanups: (() => void)[] = []
-
-    const signature = scope.querySelector<HTMLElement>('.h-sig')
-    if (signature) {
-      const sizeSignature = () => fitSignatureViewport(signature)
-      sizeSignature()
-      // Scrollbars can appear after streamed content or disclosures without a window resize.
-      const viewportObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(sizeSignature)
-      viewportObserver?.observe(document.documentElement)
-      window.addEventListener('resize', sizeSignature, { passive: true })
-      cleanups.push(() => {
-        window.removeEventListener('resize', sizeSignature)
-        viewportObserver?.disconnect()
-        signature.style.removeProperty('--home-viewport-half')
-      })
-    }
 
     const fold = scope.querySelector<HTMLElement>('#fold')
     if (!rm) {
