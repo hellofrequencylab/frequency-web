@@ -8,6 +8,27 @@ Frequency is a collective where people boldly create together in a meaningful sp
 
 It is not about filling a room. It is about meaningful connection. Marketing copy talks to a person who cares about people, not to someone managing a business.
 
+## 1a. What the research says (outside our own copy)
+
+Sources are linked at the end of this section. Strength is marked: **solid** (large survey or named study), **directional** (single case, vendor blog), **thin** (little usable evidence).
+
+| Finding | Strength | What it means for the voice |
+|---|---|---|
+| 41% of US adults feel lonely at least occasionally; 39% have two or fewer close relationships; over half took part in no club, religious, volunteer or neighborly activity in a year. Younger adults have frequent contact but the highest loneliness. | Solid (Stanford Lifestyle Medicine, 10,000+ adults, 2025) | Sell depth, not volume. "Meet more people" misses it. The promise is a few real relationships and somewhere to belong. Frame disconnection as common and systemic, never as the reader's failing. |
+| Wellness branding has collapsed into sameness: "empower your journey," "optimize," "unlock your potential," "what if...," a calm hush. Transformation lines tested lowest with buyers; permission-based lines tested highest; about three quarters prefer small steady routines to dramatic change. | Solid-ish (Beardwood study, via LBB) | Bold must mean conviction, not hype. Give permission ("come as you are," "start small," "missed a week? Come Thursday"). Drop transform, unlock, journey, empower. |
+| Gen Z and millennials are 36% of US adults and 41% of wellness spending; they want results and value, and "hype fades fast, but results don't." | Solid (McKinsey) | Specifics beat adjectives. Show what happens: who came, what you made, how often. |
+| Studios that sell belonging and identity over class schedules report much higher fill and retention (one case: 90%+ fill at half the ad spend). Recommends "Is this for you?" identity statements, naming the offer, and members' own words. | Directional (vendor blog, anecdotes) | Lead the member pages with who you will be with and what it feels like in the room, with an explicit "this is for you if..." block. |
+| For buyers, outcomes outrank features at the awareness stage; features serve as proof. Method: before state, change, result. One rewrite lifted hero conversion 27%. | Directional (single case) | Host and operator headlines state the outcome in their terms (a regular crowd, an afternoon back, a list they own). The feature appears one line down as the proof. |
+| Studio owners praise human support, simple booking for clients, hours saved (about five a week), smooth migration and transparent pricing. | Directional (vendor testimonials) | Operator proof points are time back, a real person to talk to, one honest price, easy to leave. Our four brand promises already fit; lead with them. |
+| Community-led brands grow by personal invitation, a fixed weekly ritual, recognition of contributors, specific asks with a reason, and by making membership feel like a privilege. Broadcast-heavy calendars and being "processed" feel bad. | Directional (vendor guides) | Invite, do not broadcast. Name rituals ("Thursday walk"). Thank people by name. Write like a person, never like a system notice. |
+| Spiritual and secular-spiritual preferences among younger adults | Thin (searches returned mostly blogs) | We rely on judgement here: grounded words, warmth, no jargon, and a quiet nod to practice. Test with real readers. |
+
+Gaps: this session has no access to Frequency's own analytics, Search Console data or member surveys, so nothing above is calibrated to our numbers. Before the sweep we should read our top-page conversion, search queries and `/join` drop-off and adjust.
+
+Sources: [Stanford Social Connection in America](https://lifestylemedicine.stanford.edu/social-connection-america-report/) · [McKinsey Gen Z wellness](https://www.mckinsey.com/~/media/mckinsey/email/genz/2025/06/2025-06-03b.html) · [Beardwood wellness sameness study](https://lbbonline.com/news/Wellness-Branding-is-Collapsing-into-Sameness-Beardwood-Study) · [Slamdot on yoga studios](https://www.slamdot.com/blog/why-top-yoga-studios-stopped-advertising-classes-and-what-they-sell-instead/) · [GTM Playbook on outcomes](https://discover.gtmplaybook.co/features-vs-benefits-messaging) · [OfferingTree on studio community](https://www.offeringtree.com/?p=37899) · [Loudscale on community-led marketing](https://www.loudscale.com/guides/community-led-marketing-2026/)
+
+**Two readers, two jobs.** The member wants to belong (depth, permission, an invitation). The host wants an outcome (a regular crowd, time back, a list they keep). Headlines for each speak in that reader's terms.
+
 ## 2. Two lines, two jobs
 
 | Line | Job | Where |
@@ -21,7 +42,8 @@ Proposed pairing, to confirm: the footer carries "Get people together. Do things
 
 Bold and inspiring, like the new way to do things. Inviting and casual, like a friend who hosts. Grounded in specifics (a Thursday walk, a potluck, a folding chair). Any yogi or spiritual person should feel at home; a skeptic should not flinch.
 
-- **Bold:** short declarative sentences. Say the thing. "Build circles, not walls."
+- **Bold in conviction, soft in the ask.** Take a stand ("Build circles, not walls"), then invite with permission ("Come as you are. Start with one Thursday."). Bold never means hype or urgency.
+- **Specific over inspirational.** One real detail per block (a chair, a walk, a number).
 - **Inviting:** "you," "we," "come as you are." Never "users," "leads," "customers" in marketing.
 - **Love, quietly:** love is allowed as a plain word ("a space of love," "people who love what they do"). It is never decorated.
 - **Casual:** contractions, plain verbs. Sentence case. No em dashes.
