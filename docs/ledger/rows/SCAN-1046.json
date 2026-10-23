@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1046",
+  "title": "Exercise owner boundaries for Space member directory and native data export",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "scripts/probes/private-read-boundaries.mjs",
+    "ref": "Actual privileged-read functions with synthetic cross-owner records, 2026-10-23"
+  },
+  "detail": "The admin-client ratchet freezes 868 importers; that is not evidence of safe reads. Execute actual listSpaceMemberDirectory and native account-export GET with explicit synthetic dependencies and a query recorder that applies eq/in predicates. Outsiders, signed-out callers, waitlisted members and root requests are denied before privileged roster reads. Authorized A callers see only active visible A members, never B or ghost records; failed reads fail closed. The actual export route ignores query/header target-profile injection, refuses cookie act-as and unsigned callers, and rate-limits before auth. Its actual contract/respond helper keeps exports/errors no-store/private with Authorization/Cookie Vary and hides untyped exception details. Eleven assertion-level reintroduced-bug controls fail; one first attempt timed out and its unchanged isolated rerun fails the intended no-store assertion. Fifty-four existing directory/privacy-export/Loom-download tests and lint pass. No app bug reproduced or app behavior changed in this batch. This is actual-function synthetic evidence, not live RLS/JWT/account/provider proof or coverage of all 868 privileged importers.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/private-read-boundaries.mjs",
+    "note": "Actual-function synthetic cross-owner, target-injection, cache and sanitized-error consequences. No database, Auth or provider calls."
+  },
+  "wave": "W0"
+}
