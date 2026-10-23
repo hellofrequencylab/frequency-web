@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Animated, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native'
-import { fonts, radius, useTheme } from '@/theme'
+import { fonts, radius, shadow, useTheme } from '@/theme'
 import { ease, useDuration } from './motion'
 
 // Field (components/ui/field.tsx, kit-members.css `.field` / `.input` / `.sw`).
@@ -72,7 +72,7 @@ export function Switch({ value, onChange, label, disabled }: { value: boolean; o
         value ? { backgroundImage: `linear-gradient(120deg, ${c.pa[0]}, ${c.pa[1]} 60%, ${c.pa[2]})` } : { backgroundColor: c.track },
       ]}
     >
-      <Animated.View style={[styles.knob, { transform: [{ translateX: x }] }]} />
+      <Animated.View style={[styles.knob, { backgroundColor: c.switchThumb, boxShadow: shadow.switchThumb, transform: [{ translateX: x }] }]} />
     </Pressable>
   )
 }
@@ -82,5 +82,5 @@ const styles = StyleSheet.create({
   input: { flex: 1, height: 48, borderRadius: radius.m, paddingHorizontal: 18, fontFamily: fonts.sans, fontSize: 16 },
   textarea: { height: undefined, minHeight: 110, paddingVertical: 14, lineHeight: 24, textAlignVertical: 'top' },
   sw: { width: 46, height: 28, borderRadius: radius.orb, justifyContent: 'center' },
-  knob: { width: 22, height: 22, borderRadius: 11, marginLeft: 3, backgroundColor: '#FFFFFF', boxShadow: '0px 1px 3px rgba(30,27,24,0.25)' },
+  knob: { width: 22, height: 22, borderRadius: 11, marginLeft: 3 },
 })
