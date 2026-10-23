@@ -73,7 +73,7 @@ export const ROOT_OG_IMAGES = [
 // docs/LAUNCH-MARKETING-PLAN.md §3.2, amends ADR-944). "Community Collective" stays the logo lockup
 // (SITE_TAGLINE above) and is no longer the category claim here.
 export const SITE_DESCRIPTION =
-  `${CATEGORY_LINE} Start a Circle, host Events, grow a Space. ${PLAN_STORY.lines}`;
+  `${CATEGORY_LINE} Build community around Circles and Events. ${PLAN_STORY.lines}`;
 
 // ── Unified site navigation ───────────────────────────────────────────────────
 // One nav, used by every header (the in-app AppShell top bar, the marketing
