@@ -1,0 +1,20 @@
+{
+  "id": "PERF-002",
+  "title": "Index the two composite email foreign keys and evaluate email owner identity once per statement",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "ownerAction": "ruling",
+  "source": {
+    "file": "supabase/migrations/20270346007500_space_email_identity_registry.sql",
+    "ref": "Live Supabase performance advisor, 2026-10-22"
+  },
+  "detail": "Live performance advisor flags space_email_identities_domain_id_space_id_fkey on space_email_identities(domain_id, space_id) and space_email_reply_aliases_conversation_id_space_id_fkey on space_email_reply_aliases(conversation_id, space_id) as lacking covering indexes. It also flags owner-read policies on space_email_domains, space_email_identities and space_email_identity_defaults for direct per-row auth.uid() evaluation. Prepare ordered composite indexes and change only auth.uid() to (select auth.uid()) in the existing predicates, preserving the ownership join and grants. Verify actual index definitions and policy expressions before writing a migration; never add indexes for every unused-index advisory or relax ownership gates. Production schema changes require approval in this chat. These are advisor-confirmed opportunities, not measured end-user latency or an application outage.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-22",
+    "evidence": "Open: live performance advisors report two unindexed_foreign_keys and three auth_rls_initplan findings for the email registry. Close after approved migration, focused cross-owner policy tests and catalog inspection show the FK key columns covered in order and the same ownership predicates using initplans; rerun advisors and compare EXPLAIN where safe."
+  },
+  "wave": "W7"
+}

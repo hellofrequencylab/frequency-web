@@ -1,0 +1,20 @@
+{
+  "id": "SEC-002",
+  "title": "Restrict browser grants on the two untracked production backup tables; Temple backup also has RLS off",
+  "status": "open",
+  "priority": "P0",
+  "lane": "live",
+  "size": "S",
+  "ownerAction": "ruling",
+  "source": {
+    "file": "scripts/check-rls.mjs",
+    "ref": "Live Supabase security advisor and read-only catalog probes, 2026-10-22, Frequency Community azsqfeonabsbmemvddqd"
+  },
+  "detail": "Live schema-confirmed 2026-10-22: public.zz_backup_temple_home_20261022 has relrowsecurity=false, no policies, and anon/authenticated grants for SELECT, INSERT, UPDATE, DELETE and TRUNCATE. Catalog column names include space_id, public_pages, private_state and saved_at. No backup row contents were read and no exploit write was attempted. The table is absent from the repository migration history; all 855 tracked migrations match the live ledger on version AND name, so ledger parity alone misses this out-of-band table. The other no-RLS advisor item is PostGIS spatial_ref_sys and must be assessed separately rather than blanket-revoked. Prepared a local transaction that enables RLS and revokes table/column browser grants without deleting the backup; it has NOT run against production. Owner approval is needed under this chat's shared-database boundary. Source checks do not close this incident; recheck live effective table and column privileges and RLS after an approved repair. Add an operator backup creation rule or live schema sweep so out-of-band backups cannot silently regain browser grants. Full catalog comparison: 336 live public tables versus 333 replayed tables; the three extra names are PostGIS spatial_ref_sys and two operational backups. The second is zz_backup_group_event_owner_20261020: RLS is enabled but anon and authenticated still hold SELECT/INSERT/UPDATE/DELETE/TRUNCATE grants. RLS is not a substitute for revoking backup grants (including TRUNCATE). No browser/API exploitation was attempted; these are effective database-role permission findings. The prepared repair now covers both exact backup names, including column-level grants, and aborts the transaction if effective browser grants remain.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-22",
+    "evidence": "FAIL/open: Temple backup has RLS off; both zz_backup_temple_home_20261022 and zz_backup_group_event_owner_20261020 have effective anon/authenticated SELECT/INSERT/UPDATE/DELETE/TRUNCATE grants. Close only after both backups are absent or have RLS enabled and neither browser role has table or column privileges. Keep operator/service-role access. Rerun live catalog probes and security advisors after approved repair; no row reads or exploit writes are required."
+  },
+  "wave": "W0"
+}
