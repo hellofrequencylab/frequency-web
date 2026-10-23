@@ -1,0 +1,19 @@
+{
+  "id": "HYG-179",
+  "title": "Retire unused Nunito loader and two forced share-card fonts",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "lib/og/load-stage-fonts.ts",
+    "ref": "Two-design module graph and runtime font tracing audit, 2026-10-23"
+  },
+  "detail": "The Stage loader directly owns all five active share-card faces, including full Nunito Bold for missing glyphs. The old Nunito loader has no runtime importers; only its tests and forced trace config keep Black and Liberation Bold alive (539,944 source bytes total). Remove that obsolete loader and those two unused faces, migrate byte-detachment/cache/retry and trace-scope tests to the active loader, retain Nunito Bold and license, and correct historical LIVE-216 preservation premise. Twenty-two focused tests pass, including real 1200x630 JPEG rendering and non-Latin fallback. Whole-tree typecheck, merged-Home focused verification and a new Frequency artifact build must pass before closure; no production performance claim or deployment.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-23",
+    "evidence": "Open pending whole-tree TypeScript and Frequency compile/artifact gates after removing obsolete loader and forced tracing entries. Focused 22 tests and lint pass."
+  },
+  "wave": "W0"
+}

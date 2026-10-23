@@ -72,7 +72,7 @@ export const ICON_GLYPHS = ['flower-lotus', 'a-arrow-down']
 /** Everything a function is allowed to carry out of public/, and the reason it may. */
 export function sanctionedPublic(f) {
   return (
-    // the OG faces (lib/og/load-nunito.ts + the narrowed next.config.ts include keys)
+    // the OG faces (lib/og/load-stage-fonts.ts + the narrowed next.config.ts include keys)
     f.includes('/public/fonts/') ||
     // the help + root card's photo, read by a literal path in both
     f.endsWith('/public/images/hero.jpg') ||
