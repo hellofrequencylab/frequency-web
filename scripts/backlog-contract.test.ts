@@ -26,7 +26,7 @@ const ONE_LIST_GUARD = path.join(ROOT, 'scripts/check-one-list.mjs')
 /** CPU milliseconds burned by this process's REAPED CHILDREN so far, or null where that cannot be
  *  read honestly (anything but Linux).
  *
- *  `/proc/self/stat` fields 15 and 16 (1-based) are cutime and cstime: the user and system time of
+ *  `/proc/self/stat` fields 16 and 17 (1-based) are cutime and cstime: the user and system time of
  *  children that have been waited for. execFileSync waits, so every probe the guard spawns lands
  *  here. That is the quantity a "did a probe get expensive?" gate wants, and unlike elapsed time it
  *  does not move when the box is busy.
