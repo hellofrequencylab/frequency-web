@@ -25,7 +25,7 @@ import {
   funnelStartHref,
   type FunnelConfig,
 } from '@/lib/marketing/funnel-config'
-import { FOUNDING_PLACE } from '@/lib/site'
+import { FOUNDING_PLACE, OPENING_DATE_LABEL } from '@/lib/site'
 import { ROUTES as SITE } from '@/lib/frequency/site-nav'
 import '@/app/themes/active/site-niche'
 import { NicheGalaxy } from './galaxy'
@@ -35,8 +35,8 @@ import { NicheLoopRing } from './loop-ring'
 import { NicheStartPill } from './start-pill'
 import { NicheTools } from './tools'
 
-const TAP = 'Tap any of them to see what it does for you.'
-const OPENING = 'Opening December 1, 2026'
+const TAP = 'Tap a tool to read what you can do with it.'
+const OPENING = `Opening ${OPENING_DATE_LABEL}`
 const PX_STEPS = ['.05', '.16', '.27']
 const PX_FEATURES = ['.04', '.14', '.08', '.18']
 
@@ -53,7 +53,7 @@ function StepScreenView({ kind }: { kind: StepScreen }) {
     case 'page':
       return (
         <>
-          <span className="k">Your page</span>
+          <span className="k">Example page</span>
           <div className="r">
             <i className="av" />
             <span>Your Space name</span>
@@ -67,7 +67,7 @@ function StepScreenView({ kind }: { kind: StepScreen }) {
     case 'list':
       return (
         <>
-          <span className="k">Contacts</span>
+          <span className="k">Example contacts</span>
           {r('Imported from a list', 'New', true)}
           {r('Joined from your link', 'New', true)}
           {r('Added at the door')}
@@ -76,7 +76,7 @@ function StepScreenView({ kind }: { kind: StepScreen }) {
     case 'cal':
       return (
         <>
-          <span className="k">This week</span>
+          <span className="k">Example schedule</span>
           {r('Tue · 10:00', 'Booked', true)}
           {r('Tue · 14:00', 'Open')}
           {r('Thu · 09:00', 'Open')}
@@ -85,7 +85,7 @@ function StepScreenView({ kind }: { kind: StepScreen }) {
     case 'pay':
       return (
         <>
-          <span className="k">Dues</span>
+          <span className="k">Memberships on Business</span>
           {r('Turn on dues', 'Ready', true)}
           {r('Unlimited plan', 'Draft')}
           {r('Class pack', 'Draft')}
@@ -94,7 +94,7 @@ function StepScreenView({ kind }: { kind: StepScreen }) {
     case 'invite':
       return (
         <>
-          <span className="k">Invite three</span>
+          <span className="k">Example invitations</span>
           {r('Invite sent', 'Yes', true)}
           {r('Invite sent', 'Maybe')}
           {r('Invite sent')}
@@ -103,7 +103,7 @@ function StepScreenView({ kind }: { kind: StepScreen }) {
     case 'check':
       return (
         <>
-          <span className="k">Who came</span>
+          <span className="k">Example check-ins</span>
           {r('Checked in', 'First visit', true)}
           {r('Checked in')}
           {r('Checked in')}
@@ -112,7 +112,7 @@ function StepScreenView({ kind }: { kind: StepScreen }) {
     case 'verify':
       return (
         <>
-          <span className="k">Verification</span>
+          <span className="k">Example verification</span>
           {r('Organization details', 'Done', true)}
           {r('501(c)(3) status', 'Checking')}
           {r('Your Space', 'Works now', true)}
@@ -121,7 +121,7 @@ function StepScreenView({ kind }: { kind: StepScreen }) {
     default:
       return (
         <>
-          <span className="k">Give</span>
+          <span className="k">Donations on Non Profit</span>
           {r('One-time gift', 'Received', true)}
           {r('Receipt', 'Sent', true)}
           {r('Thank-you note', 'On')}
@@ -185,7 +185,7 @@ export function NicheDoor({ config, week }: { config: FunnelConfig; week: readon
               <FqIcon name="pin" />
               <b>{FOUNDING_PLACE}</b>
               <span>{OPENING}</span>
-              <em>{hasWeek ? 'See this week' : 'See it working'}</em>
+              <em>{hasWeek ? 'See this week' : 'See example tools'}</em>
             </a>
             <span className="nk-eb">{hero.eyebrow}</span>
             <h1 className="h-xl nk-h1">
@@ -307,9 +307,9 @@ export function NicheDoor({ config, week }: { config: FunnelConfig; week: readon
             head={
               <div className="sh" style={{ marginBottom: 0 }}>
                 <div className="label">
-                  <b>See it working</b>Tap a tool
+                  <b>Explore the tools</b>Example previews
                 </div>
-                <h2 className="h-l">See it at work.</h2>
+                <h2 className="h-l">See what you can do.</h2>
               </div>
             }
           />
@@ -349,7 +349,7 @@ export function NicheDoor({ config, week }: { config: FunnelConfig; week: readon
           <div>
             <div className="sh" style={{ marginBottom: 28 }}>
               <div className="label">
-                <b>How people come back</b>The loop
+                <b>Keep in touch</b>Meet, remember, invite
               </div>
               <h2 className="h-l">{loop.header}</h2>
             </div>
