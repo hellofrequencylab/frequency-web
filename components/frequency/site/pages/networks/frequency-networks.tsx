@@ -26,7 +26,7 @@ export function networkIncludes(): { title: string; body: string }[] {
     { title: 'A chapter tree', body: `Your organization's Space at the top and up to ${NETWORK_PLAN.maxChapters} chapters beneath it (${NETWORK_PLAN.includedChapters} to start), each with its own page, Circles, events and Business tools.` },
     { title: 'Chapter leaders', body: 'Each chapter has its own leaders. They run their chapter day to day and only see their own chapter.' },
     { title: 'Central admins', body: `Up to ${NETWORK_PLAN.centralAdmins} people on your central team see the whole network and set the standards.` },
-    { title: 'One membership', body: 'A member who joins the network is a member in every chapter. They pay once and belong everywhere.' },
+    { title: 'One membership', body: 'Network membership applies across its chapters. Check the listed benefits and access rules for each activity.' },
     { title: 'One calendar and home', body: 'Every chapter event shows on one network calendar and one public network home, so people find the chapter near them.' },
     { title: 'A roll-up report', body: 'Members, events and earnings across every chapter in one private report, with nobody counted twice.' },
     { title: 'Vera AI and your domain', body: 'Vera AI and a custom domain are included, the same as Collective.' },
@@ -56,9 +56,9 @@ export function FrequencyNetworks() {
             <span aria-current="page">Networks</span>
           </nav>
           <h1 className="h-xl">
-            Run every chapter as <em className="fq-iri-text">one organization.</em>
+            Every chapter has its own day. <em className="fq-iri-text">Keep them connected.</em>
           </h1>
-          <p>For organizations with chapters, circles or local teams. Each chapter runs its own day. You see the whole network.</p>
+          <p>For community groups with chapters or local teams. Share a calendar, give chapter leaders their own tools, and see the network together.</p>
           <div className="ctas">
             <a className="btn fq-iri-btn" href={cta.href}>
               {cta.label}
@@ -103,7 +103,7 @@ export function FrequencyNetworks() {
             <div className="label">
               <b>Included</b>Everything in Collective, plus
             </div>
-            <h2 className="h-l">Built for chapters.</h2>
+            <h2 className="h-l">Connect community gatherings across your chapters.</h2>
           </div>
           <div className="tg-row two">
             {networkIncludes().map((item) => (

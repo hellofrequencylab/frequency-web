@@ -164,7 +164,7 @@ export function HelpContact({ email }: { email: string }) {
         />
       </label>
       <button className="btn fq-iri-btn" type="submit">
-        Send
+        Open email draft
       </button>
       <small>
         Opens your email app, addressed to <a href={`mailto:${email}`}>{email}</a>.

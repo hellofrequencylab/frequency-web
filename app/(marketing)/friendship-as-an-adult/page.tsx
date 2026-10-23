@@ -22,10 +22,10 @@ export const revalidate = 3600
 
 const SLUG = 'friendship-as-an-adult'
 const PATH = '/friendship-as-an-adult'
-const TITLE = 'How to make friends as an adult'
+const TITLE = "How to make friends as an adult"
 // Meta description carries the primary keyword and stays under ~155 chars.
 const DESCRIPTION =
-  'How to make friends as an adult: the built-in ways to meet people vanish after 30. Pick one thing that meets on a rhythm, and go back more than once.'
+  "Making friends as an adult can be hard. Explore ways to try a local Circle, meet through a shared activity and build community at your own pace."
 
 // Real-gathering photos double as the multimodal AIO signal (CONTENT-VOICE §8b)
 // and the E-E-A-T proof (§8e): images of real Frequency gatherings. These five are
@@ -49,7 +49,7 @@ const UPDATED = '2026-07-24'
 // Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
 const OG_TITLE = 'How to make friends as an adult · Frequency'
 const OG_DESCRIPTION =
-  'Why friendship gets harder after 30, plus how to meet people in a new city, find like-minded people, and reconnect with old friends. One repeatable move: the same room, more than once.'
+  "Making friends as an adult can be hard. Explore ways to try a local Circle, meet through a shared activity and build community at your own pace."
 
 export function generateMetadata(): Metadata {
   return {

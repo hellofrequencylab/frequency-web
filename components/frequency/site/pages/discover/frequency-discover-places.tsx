@@ -37,7 +37,7 @@ export function FrequencyCitiesIndex({ cities, towns }: { cities: { city: string
             Where Frequency is <em className="fq-iri-text">taking root.</em>
           </>
         }
-        lede="The cities with real momentum: Circles meeting and events happening near you. Pick yours to see what’s happening, then show up in person."
+        lede="Looking for community gatherings in your town? Browse places with listed Circles and upcoming events, then check the details before you go."
       />
       <section className="dx-sec" data-screen-label="02 Cities">
         <div className="wrap">
@@ -71,7 +71,7 @@ export function FrequencyCitiesIndex({ cities, towns }: { cities: { city: string
         </section>
       )}
       <KeepGoing
-        title="Your city is built one room at a time."
+        title="Start with a gathering in your town."
         body="Frequency is free to join, and it stays free. Find a Circle near you, or start the first one."
         primary={{ href: BETA_CTA_HREF, label: `${BETA_CTA_LABEL} →` }}
         secondary={{ href: '/how-to-start-a-circle', label: 'Start a Circle' }}
@@ -112,7 +112,7 @@ export function FrequencyTown({
             Find your people in <em className="fq-iri-text">{city}.</em>
           </>
         }
-        lede={`Circles are meeting and events are happening in ${city}. Browse them free, then sign up to join one, RSVP, or start your own. Keep coming back and the faces get familiar.`}
+        lede={`Explore the Circles and upcoming events listed in ${city}. Open a listing to check availability and how to take part.`}
       >
         <div className="ctas">
           <a className="btn fq-iri-btn" href="#calendar">
@@ -161,7 +161,7 @@ export function FrequencyTown({
 
       <section className="dx-sec" data-screen-label="04 Circles">
         <div className="wrap">
-          <DxHead label="Find your people" sub="Circles" title={`Circles in ${city}.`} lede="Up to fifty neighbors, small enough to know everyone." />
+          <DxHead label="Find your people" sub="Circles" title={`Circles in ${city}.`} lede="Small groups with a regular time to meet." />
           {circles.length > 0 ? (
             <DxCircleCards circles={circles} />
           ) : (
@@ -226,8 +226,8 @@ export function FrequencyTown({
       </section>
 
       <KeepGoing
-        title={`Your people are already gathering in ${city}.`}
-        body="Frequency is free to join, and it stays free. Find a Circle near you and start showing up this week."
+        title={`Find a community gathering in ${city}.`}
+        body="Frequency is free to join. Browse the listings to see what is available near you, or explore hosting a gathering."
         primary={{ href: BETA_CTA_HREF, label: `${BETA_CTA_LABEL} →` }}
         secondary={{ href: base.href, label: `Browse ${base.label.toLowerCase()}` }}
       />

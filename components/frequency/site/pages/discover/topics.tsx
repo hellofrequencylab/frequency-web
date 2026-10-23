@@ -38,7 +38,7 @@ export function FrequencyTopics({
             Find what you <em className="fq-iri-text">practice.</em>
           </>
         }
-        lede="A Channel is the thing neighbors already gather around. Pick the one you’d show up for, and on the other side of it is a Circle practicing it near you."
+        lede="Looking for people who share an interest? Choose a Channel to explore a topic, its Practices and the community Circles listed under it."
       >
         <Link className="btn fq-iri-btn" href="/discover/circles">
           Browse Circles instead
@@ -49,7 +49,7 @@ export function FrequencyTopics({
         label="The Channels"
         meta="Sorted by Pillar"
         title="One name that finds your people."
-        lede="Say what you practice and you skip the small talk."
+        lede="Browse groups around something you like doing."
       >
         {sections.length === 0 ? (
           <DirEmpty title="No Channels yet." body="The first Channels are being set up. Check back soon, or browse the Circles already meeting.">
@@ -85,7 +85,7 @@ export function FrequencyTopics({
 
       <KeepGoing
         title="Find your people."
-        body="Claim your spot and find the Circle practicing what you love."
+        body="Browse Circles around something you like doing, or start one and invite a few people."
         primary={{ href: BETA_CTA_HREF, label: BETA_CTA_LABEL }}
         secondary={{ href: '/discover/circles', label: 'Browse Circles' }}
       />
@@ -115,7 +115,7 @@ export function FrequencyTopic({
         title={channel.name}
         lede={
           channel.description ??
-          `One doorway into a room of people. Name ${lower} as the thing you practice and you land among neighbors who lit up the same way you did.`
+          `Explore ${lower} Practices and community Circles. Read each listing for the activity, location and how to take part.`
         }
       />
       <DirSection
@@ -126,7 +126,7 @@ export function FrequencyTopic({
         {circles.length === 0 ? (
           <DirEmpty
             title={`No Circles in ${channel.name} yet.`}
-            body={`Every Circle begins with one person and a standing time. Gather your neighbors around ${lower}, and the next person who comes looking finds your room already warm.`}
+            body={`Start a Circle around ${lower}. Choose an activity and a regular time, then invite a few people.`}
           >
             <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
               Start a Circle
@@ -150,7 +150,7 @@ export function FrequencyTopic({
       </DirSection>
       <KeepGoing
         title={`Join the ${channel.name} community.`}
-        body={`Sign up free to tune in to ${lower}, find a Circle living it near you, and start showing up.`}
+        body={`Sign up free to follow ${lower} and explore the Circles listed here. Check each group’s details before you join.`}
         primary={{ href: '/sign-in', label: 'Sign up free' }}
         secondary={{ href: '/discover/topics', label: 'All Channels' }}
       />

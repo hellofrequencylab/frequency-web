@@ -96,7 +96,7 @@ export function FrequencyPractices({
         {practices.length === 0 ? (
           <DirEmpty
             title="The library’s still filling in."
-            body="New Practices land as the community writes them. Check back soon, or find a Circle doing one near you now."
+            body="Browse the available Practices, check back later or explore local Circle listings."
           >
             <Link className="btn fq-iri-btn" href="/discover/circles">
               Browse Circles
@@ -108,7 +108,7 @@ export function FrequencyPractices({
       </DirSection>
       <KeepGoing
         title="Practices are better with people."
-        body="A Practice sticks when a few neighbors are doing it with you. Join free and find your Circle."
+        body="Try a Practice at your own pace, or look for a Circle where you can do it with others. Joining is free."
         {...CLOSER}
       />
     </DirPage>
@@ -147,7 +147,7 @@ export function FrequencyPillarPractices({
       >
         <DirChips label="Browse practices by Pillar" chips={pillarChips(pillars, pillar.slug)} />
         {rows.length === 0 ? (
-          <DirEmpty title={`No ${pillar.name} practices yet.`} body="This Pillar is still filling in. The full library has plenty to start with.">
+          <DirEmpty title={`No ${pillar.name} practices yet.`} body="This Pillar is still filling in. Browse the library to see what is available.">
             <Link className="btn fq-iri-btn" href="/discover/practices">
               Browse the full library
             </Link>
@@ -157,8 +157,8 @@ export function FrequencyPillarPractices({
         )}
       </DirSection>
       <KeepGoing
-        title="Practices stick when people are counting on you."
-        body={`Pick a ${pillar.name} practice, then find a Circle near you doing it on a standing rhythm. Join free and start showing up.`}
+        title="Choose a Practice to try with others."
+        body={`Choose a ${pillar.name} Practice to try, or browse Circles that share your interest. Check what is listed near you.`}
         {...CLOSER}
       />
     </DirPage>
@@ -199,7 +199,7 @@ export function FrequencyPractice({ practice, image }: { practice: PracticeDetai
               <h2>How it goes</h2>
               <p className="dd-prose">
                 {practice.body ??
-                  'Start small, on a rhythm you can keep. It gets easier, and it sticks, when a few people near you are doing it too.'}
+                  'Read the steps and try this Practice at your own pace. You can also look for a Circle where people share the activity.'}
               </p>
             </section>
             {practice.tags.length > 0 && (
@@ -217,8 +217,7 @@ export function FrequencyPractice({ practice, image }: { practice: PracticeDetai
         side={
           <ActionPanel title="Start this practice">
             <p>
-              Join {SITE_NAME} to adopt {practice.title}, log it with people near you, and earn Zaps for showing up. Free
-              to join.
+              Join {SITE_NAME} to adopt {practice.title} and record eligible activity. Read the Practice’s steps and reward details before you begin. Free to join.
             </p>
             <Link className="btn fq-iri-btn" href="/sign-in">
               Get started
@@ -234,7 +233,7 @@ export function FrequencyPractice({ practice, image }: { practice: PracticeDetai
       />
       <KeepGoing
         title="Practices are better with people."
-        body="Find a Circle near you doing this on a standing rhythm."
+        body="Browse Circle listings to see who shares this activity."
         {...CLOSER}
       />
     </DirPage>
