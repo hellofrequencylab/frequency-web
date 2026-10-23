@@ -2189,7 +2189,7 @@
   /* Timer setup artwork: each design supplies its own paint through the semantic layer. */
   --design-practice-orb: var(--color-primary-bg);
 
-  /* Map paint (lib/maps/css-color.ts): MapLibre layers and popups on the Circle, Discover and scan maps. */
+  /* Map paint (lib/maps/pin-kinds.ts): shared by both map engines and their popups. */
   --design-map-pin:          #E2912F;
   --design-map-pin-ring:     #FFFFFF;
   --design-map-count:        #2A1B06;
