@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1032",
+  "title": "Complete the full-app audit with route-family and Frequency visual evidence, beyond structural checks",
+  "status": "open",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "L",
+  "source": {
+    "file": "app/layout.tsx",
+    "ref": "Owner comprehensive audit request, 2026-10-22"
+  },
+  "detail": "Audit main 4410c0944 in an isolated checkout; do not disturb concurrent work. Physical inventory: 535 tracked page/route entrypoints grouped into 120 audit buckets (groupings are not resolved public URLs); includes 112 API handlers, 107 admin and 62 main Space entrypoints. Metadata routes and the separate mobile app require additional inventory, so this count is not a whole-repo completeness claim. Initial 26 source checks passed and live parity proved all 855 migrations match version/name; two out-of-band backups are separately tracked by SEC-002. P2 email DB opportunities are PERF-002. Cache verification timeouts repaired under HYG-173; 404 local tests across 27 suites pass for SEO/AI-search, site caching, commerce, CRM privacy/consent and recovery, plus 79 earlier timer/token tests. Most data behavior is mocked, not production-proven. Continue per-area source tracing and meaningful behavioral tests, Frequency light/dark/mobile rendering and accessibility, anonymous cache/latency proof, build artifact budgets, orphan-module reachability, all create/edit/navigation flows and mobile integration where present. Existing owner-dependent payment/backup/search-provider proof stays on its own canonical rows. Publication and production mutations still need explicit human authorization in this chat.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-22",
+    "evidence": "Open: inventory and structural checks are complete for the stated snapshot, but no complete route-family runtime/visual evidence exists yet. Close only when each inventoried area has evidence for its user journeys and failure paths, Frequency tokens/visuals and accessibility, security ownership boundaries, public SEO/AI visibility, performance and orphan wiring; clearly identify blocked or owner-dependent proof rather than counting it as passed."
+  },
+  "wave": "W0"
+}
