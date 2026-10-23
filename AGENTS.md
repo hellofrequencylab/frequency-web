@@ -19,7 +19,7 @@ Orientation for a human: [`docs/START-HERE.md`](docs/START-HERE.md).
 | Merge, debug a deploy, touch a `postbuild` gate, or add a route | [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAFETY.md) |
 | Respond to an incident (a cron, the queue, a webhook, the database, AI, a bad deploy) | [`docs/RUNBOOKS.md`](docs/RUNBOOKS.md) |
 | Pick up work, file a finding, or close a row | [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) · `pnpm backlog` · `pnpm packets` |
-| Name something a human will read | [`docs/NAMING.md`](docs/NAMING.md) then [`docs/CONTENT-VOICE.md`](docs/CONTENT-VOICE.md) |
+| Name something a human will read | [`docs/NAMING.md`](docs/NAMING.md) then [`docs/CONTENT-VOICE.md`](docs/CONTENT-VOICE.md) ; web copy follows [`docs/marketing/voice-and-language-guide.md`](docs/marketing/voice-and-language-guide.md) (the language authority) |
 | Change a page layout, or add a public marketing page (kit components only, `check:marketing-kit`) | [`docs/PAGE-FRAMEWORK.md`](docs/PAGE-FRAMEWORK.md) |
 | Add or change a create/edit field | [`docs/STUDIO.md`](docs/STUDIO.md) |
 | Touch a payment button | [`docs/CHECKOUT.md`](docs/CHECKOUT.md) |
