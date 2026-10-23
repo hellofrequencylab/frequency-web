@@ -1,4 +1,5 @@
-import type { Metadata } from 'next'
+import type { Metadata, ResolvingMetadata } from 'next'
+import { helpPageMetadata } from '@/lib/help/metadata'
 import { SITE_NAME } from '@/lib/site'
 import Link from 'next/link'
 import { LifeBuoy } from 'lucide-react'
@@ -11,7 +12,7 @@ import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { FrequencyHelp } from '@/components/frequency/site/pages/help/frequency-help'
 
-export const metadata: Metadata = {
+const HELP_METADATA: Metadata = {
   title: 'Help Center',
   description:
     'Guides and answers for using Frequency: finding Circles, going to gatherings, and how the Quest works.',
@@ -27,6 +28,13 @@ export const metadata: Metadata = {
       'Guides and answers for using Frequency: finding Circles, going to gatherings, and how the Quest works.',
     url: '/help',
   },
+}
+
+export async function generateMetadata(
+  _props: { params: Promise<Record<string, never>> },
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  return helpPageMetadata(HELP_METADATA, parent)
 }
 
 export default async function HelpHomePage() {
