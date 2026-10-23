@@ -1,6 +1,6 @@
 {
   "id": "PERF-002",
-  "title": "Index the two composite email foreign keys and evaluate email owner identity once per statement",
+  "title": "Cover the email identity foreign key and evaluate owner identity once per statement",
   "status": "open",
   "priority": "P2",
   "lane": "live",
@@ -10,11 +10,11 @@
     "file": "supabase/migrations/20270346007500_space_email_identity_registry.sql",
     "ref": "Live Supabase performance advisor, 2026-10-22"
   },
-  "detail": "Live performance advisor flags space_email_identities_domain_id_space_id_fkey on space_email_identities(domain_id, space_id) and space_email_reply_aliases_conversation_id_space_id_fkey on space_email_reply_aliases(conversation_id, space_id) as lacking covering indexes. It also flags owner-read policies on space_email_domains, space_email_identities and space_email_identity_defaults for direct per-row auth.uid() evaluation. Prepare ordered composite indexes and change only auth.uid() to (select auth.uid()) in the existing predicates, preserving the ownership join and grants. Verify actual index definitions and policy expressions before writing a migration; never add indexes for every unused-index advisory or relax ownership gates. Production schema changes require approval in this chat. These are advisor-confirmed opportunities, not measured end-user latency or an application outage.",
+  "detail": "Live performance advisor flags space_email_identities_domain_id_space_id_fkey on space_email_identities(domain_id, space_id) and space_email_reply_aliases_conversation_id_space_id_fkey on space_email_reply_aliases(conversation_id, space_id) as lacking covering indexes. It also flags owner-read policies on space_email_domains, space_email_identities and space_email_identity_defaults for direct per-row auth.uid() evaluation. Prepare ordered composite indexes and change only auth.uid() to (select auth.uid()) in the existing predicates, preserving the ownership join and grants. Verify actual index definitions and policy expressions before writing a migration; never add indexes for every unused-index advisory or relax ownership gates. Production schema changes require approval in this chat. These are advisor-confirmed opportunities, not measured end-user latency or an application outage.\n\n2026-10-23 catalog refinement: reply aliases already have UNIQUE(conversation_id), limiting the composite FK lookup to one candidate; do not add the redundant second index solely to silence the advisor. The prepared output proposal adds only identities(domain_id, space_id) and changes the three existing owner policies to scalar identity subqueries, with ownership joins and grants intact. Synthetic disposable PostgreSQL tests prove both owners see only their own rows across all three policies, missing identity/anon see none, and each EXPLAIN contains an InitPlan. This is local proposal evidence, not production performance proof. Canonical migration registration, independent review and approved rollout remain required.",
   "verify": {
     "kind": "manual",
-    "checked": "2026-10-22",
-    "evidence": "Open: live performance advisors report two unindexed_foreign_keys and three auth_rls_initplan findings for the email registry. Close after approved migration, focused cross-owner policy tests and catalog inspection show the FK key columns covered in order and the same ownership predicates using initplans; rerun advisors and compare EXPLAIN where safe."
+    "checked": "2026-10-23",
+    "evidence": "Open: one covering identity index plus three policy initplans have a tested local proposal. Reply-alias UNIQUE(conversation_id) already bounds the other lookup; retain it unless measured EXPLAIN warrants another index. Close only after approved migration/catalog and advisor recheck preserve cross-owner denial and show intended plans."
   },
   "wave": "W7"
 }
