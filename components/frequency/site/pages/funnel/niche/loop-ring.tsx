@@ -8,7 +8,7 @@ const NODES: readonly { label: string; left: string; top: string }[] = [
   { label: 'Meet', left: '50%', top: '0' },
   { label: 'Save', left: '100%', top: '50%' },
   { label: 'Invite', left: '50%', top: '100%' },
-  { label: 'Return', left: '0', top: '50%' },
+  { label: 'Plan again', left: '0', top: '50%' },
 ]
 
 export function NicheLoopRing() {
@@ -26,8 +26,8 @@ export function NicheLoopRing() {
         </span>
       ))}
       <div className="core">
-        <b>Familiar faces</b>
-        <small>Each pass round the loop adds one.</small>
+        <b>Keep in touch</b>
+        <small>Share another date when you have one.</small>
       </div>
     </div>
   )

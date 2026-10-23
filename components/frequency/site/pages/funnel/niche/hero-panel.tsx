@@ -168,7 +168,7 @@ export function NicheHeroCard({ you, items }: { you: string; items: readonly Ite
             <b>{you}</b>
             <small>
               <i className="nk-livedot" />
-              Working for you
+              Example activity
             </small>
           </span>
         </span>
@@ -176,7 +176,7 @@ export function NicheHeroCard({ you, items }: { you: string; items: readonly Ite
           <div className="nk-msgw">
             <span className="nk-orb" />
             <b>{message}</b>
-            <small>Watch it work</small>
+            <small>Example Space preview</small>
           </div>
           <div ref={feed} className="nk-feed" />
         </div>
