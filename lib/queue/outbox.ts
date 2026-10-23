@@ -357,6 +357,10 @@ export async function processQueue(
   limit = 25,
 ): Promise<ProcessResult> {
   const client = db()
+  const persistStatus = async (id: string, patch: Database['public']['Tables']['notification_queue']['Update']): Promise<void> => {
+    const { error } = await client.from('notification_queue').update(patch).eq('id', id)
+    if (error) throw new Error(`[outbox] failed to persist ${patch.status} for job ${id}: ${error.message}`)
+  }
 
   // Atomic claim: flip up to `limit` due jobs to 'processing' under FOR UPDATE SKIP LOCKED so
   // two overlapping drains never grab the same job -> no double-send (also reclaims jobs stranded
@@ -403,15 +407,12 @@ export async function processQueue(
     // The lane trip: a bulk job behind a known-closed quota never touches the provider. It keeps
     // its attempts, keeps its place, and comes back when the window does.
     if (quotaClosedForMs !== null && lane === 'bulk') {
-      await client
-        .from('notification_queue')
-        .update({
-          status: 'pending',
-          run_after: new Date(Date.now() + quotaClosedForMs).toISOString(),
-          last_error: '[outbox] deferred: send quota closed earlier in this drain',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', job.id)
+      await persistStatus(job.id, {
+        status: 'pending',
+        run_after: new Date(Date.now() + quotaClosedForMs).toISOString(),
+        last_error: '[outbox] deferred: send quota closed earlier in this drain',
+        updated_at: new Date().toISOString(),
+      })
       deferred++
       continue
     }
@@ -422,11 +423,6 @@ export async function processQueue(
       if (job.kind === 'email' || job.kind === 'space-campaign-email') {
         await handler(job.payload, Object.freeze({ queueJobId: job.id, ...(job.payload.__providerAcceptanceRequired === true ? { providerAcceptanceRequired: true } : {}) }))
       } else await handler(job.payload)
-      await client
-        .from('notification_queue')
-        .update({ status: 'done', attempts, last_error: null, updated_at: new Date().toISOString() })
-        .eq('id', job.id)
-      done++
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       // Ask the ERROR, not just the counter. A closed window is a wait, not a failure.
@@ -442,10 +438,7 @@ export async function processQueue(
         console.error(
           `[outbox] dead-lettered job ${job.id} kind=${job.kind} after ${attempts} attempts: ${msg}`,
         )
-        await client
-          .from('notification_queue')
-          .update({ status: DEAD_LETTER_STATUS, attempts, last_error: msg, updated_at: new Date().toISOString() })
-          .eq('id', job.id)
+        await persistStatus(job.id, { status: DEAD_LETTER_STATUS, attempts, last_error: msg, updated_at: new Date().toISOString() })
         failed++
       } else if (!retry.countsAsAttempt) {
         // Deferral: the provider told us WHEN, not no. Leave `attempts` alone — writing it here is
@@ -453,33 +446,32 @@ export async function processQueue(
         console.warn(
           `[outbox] deferring job ${job.id} kind=${job.kind} lane=${lane} (${retry.reason}) by ${retry.delayMs}ms, attempt ${job.attempts}/${job.max_attempts} unspent: ${msg}`,
         )
-        await client
-          .from('notification_queue')
-          .update({
-            status: 'pending',
-            last_error: msg,
-            run_after: new Date(Date.now() + retry.delayMs).toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', job.id)
+        await persistStatus(job.id, {
+          status: 'pending',
+          last_error: msg,
+          run_after: new Date(Date.now() + retry.delayMs).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
         deferred++
       } else {
         console.warn(
           `[outbox] retrying job ${job.id} kind=${job.kind} attempt ${attempts}/${job.max_attempts} in ${retry.delayMs}ms: ${msg}`,
         )
-        await client
-          .from('notification_queue')
-          .update({
-            status: 'pending',
-            attempts,
-            last_error: msg,
-            run_after: new Date(Date.now() + retry.delayMs).toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', job.id)
+        await persistStatus(job.id, {
+          status: 'pending',
+          attempts,
+          last_error: msg,
+          run_after: new Date(Date.now() + retry.delayMs).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
         retried++
       }
+      continue
     }
+    // A failed acknowledgement is a drain/storage failure, not a handler failure. Surface it
+    // without scheduling a handler that already completed. The existing stale-claim recovery applies.
+    await persistStatus(job.id, { status: 'done', attempts, last_error: null, updated_at: new Date().toISOString() })
+    done++
   }
 
   return { processed: list.length, done, failed, retried, deferred }
