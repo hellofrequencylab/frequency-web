@@ -92,7 +92,7 @@ export function NicheTools({
             <span className="logo-s" />
             <span>
               <b>{you}</b>
-              <small>{kind}</small>
+              <small>Example preview · {kind}</small>
             </span>
           </div>
           {previews.map((t, i) => (
