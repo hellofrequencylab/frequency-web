@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1040",
+  "title": "Repair public discovery and event accessibility and phone footer overflow",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/frequency/members/events/around-you-live.tsx",
+    "ref": "Anonymous production browser audit and local CSS/DOM preview, 2026-10-23"
+  },
+  "detail": "Anonymous production scan at 320/1280 found low-contrast accent labels on Discover/Events, Around you list items under an ol whose tabpanel role erased list semantics, focusable map attribution inside an aria-hidden button backdrop, and an undistinguished inline email link on Help. The shared footer legal row also remained nowrap: at 320px the document was 533px wide and links escaped the dark footer onto light canvas. Wrap that row; use the existing stronger accent role for small text in Discover/Events; keep a real ol inside a separate tabpanel div; mark the decorative basemap inert; underline Help contact links. Two actual component SSR regressions verify panel/list relationships and the inert backdrop even when the map mock renders a link; ten focused tests in three suites and changed-file lint pass. Browser local preview applies the actual changed stylesheet files and the corresponding DOM corrections to anonymous production HTML, not a deployed local route. All four measured pages at 320 and 1280 have zero WCAG A/AA axe violations and no document overflow after preview. This does not establish cold local routing or production release. Token/adoption guards pass without adding paint literals or raising allowances.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-23",
+    "evidence": "Repeat anonymous /, /discover, /events and /help at 320x900 and 1280x900. Apply the locally repaired styles and source-equivalent tabpanel/inert structure in a clearly labelled preview, or test the built repair. Require no WCAG2A/2AA/2.1AA axe violations, document scrollWidth <= innerWidth, preserved map-opening button and tab controls, and working list links. Eight local preview cases passed; the initial production scan separately records the pre-repair failures. Normal CI includes accessibility.render.test.tsx; no per-row nested test runner."
+  },
+  "closed": "2026-10-23"
+}
