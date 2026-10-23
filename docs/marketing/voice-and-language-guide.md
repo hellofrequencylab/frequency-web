@@ -1,6 +1,6 @@
-# Frequency voice and language system (DRAFT for owner approval)
+# Frequency voice and language system
 
-> **Status: DRAFT, not adopted.** Written 2026-10-23 with Daniel. No site copy changes until he approves. On approval it amends [`CONTENT-VOICE.md`](../CONTENT-VOICE.md) (§1, §5c, §5d) and a copy sweep is scoped as its own backlog row. No status lives here; see [`BUILD-BACKLOG.json`](../BUILD-BACKLOG.json).
+> **Status: LOCKED (2026-10-23, owner-approved by Daniel). This is the language authority for all written web content:** marketing pages, the six doors, home, pricing, emails, page-editor templates, meta descriptions and social. Where this guide and [`CONTENT-VOICE.md`](../CONTENT-VOICE.md) disagree on voice, word choice or claims, **this guide wins**; naming still defers to [`NAMING.md`](../NAMING.md). Amends CONTENT-VOICE §1 (positioning), §5c (energetic and nervous system words allowed in context) and §5d ("community" allowed next to something concrete). Existing pages move to it through a scoped copy sweep, not all at once. No status lives here; see [`BUILD-BACKLOG.json`](../BUILD-BACKLOG.json).
 
 ## 1. The idea
 
@@ -78,7 +78,7 @@ Use it. People search for it, and our audience calls themselves community builde
 
 ## 7. Headlines by door (pain-point first, no hard claims)
 
-Formula: **name the difficulty or the person, then the way through, in one line.** Drafts, current line first:
+Formula: **name the difficulty or the person, then the way through, in one line.** Approved direction (final wording is set in the sweep), current line first:
 
 | Door | Today | Draft |
 |---|---|---|
@@ -112,7 +112,7 @@ Name a feature only inside the story of what someone gets to do. Product names (
 - **Plain verbs:** meet, sit, walk, make, share, host, invite, thank.
 - **Retire:** fill the room, full house, packed, software-for headlines, back office, logins, "one list" lines, and the hype list in §5.
 
-## 10. Where it lands (scope of a later sweep, not started)
+## 10. Where it lands (scope of the copy sweep)
 
 `lib/marketing/funnel-config.ts` (six doors), `components/frequency/site/pages/home/frequency-home.tsx`, `features/features-data.ts`, `lib/marketing/operator-emails.ts`, the page-editor templates in `lib/page-editor/templates/`, and the footer. Copy changes to marketing pages need the guard phrases kept (LIVE-253), visual baselines recaptured and `pnpm gen:visual-fingerprints` in the same PR; every page stays on the kit components, fully tokened. This guide amends `CONTENT-VOICE.md` §1 (positioning), §5c (energetic and nervous system words allowed in context) and §5d (community allowed with a concrete partner).
 

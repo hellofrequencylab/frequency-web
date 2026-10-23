@@ -7,6 +7,8 @@
 > Naming always defers to `docs/NAMING.md`. If this guide and the naming canon
 > ever conflict, the naming canon wins.
 
+> **Voice authority (2026-10-23):** [`docs/marketing/voice-and-language-guide.md`](marketing/voice-and-language-guide.md) is the language authority for web content. On voice, word choice, claims, seasons and the word "community" it overrides §1, §5c and §5d below. The rest of this file (demographics, SEO/AIO, frameworks, checklist) stays in force.
+
 > **Punctuation hard rule (read first):** do not use em dashes (the `—` character)
 > anywhere in brand/member-facing copy. Use periods, commas, parentheses, or
 > rewrite the sentence. Hyphens in compound words (post-breakup, third-place) are
