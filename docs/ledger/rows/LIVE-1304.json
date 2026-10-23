@@ -1,6 +1,6 @@
 {
   "id": "LIVE-1304",
-  "title": "Rewrite Home and shared platform copy in the approved voice",
+  "title": "Rewrite Home invitations and correct shared public presentation",
   "lane": "live",
   "priority": "P1",
   "size": "S",
@@ -10,7 +10,7 @@
     "cmd": "node scripts/probes/home-voice.mjs && node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/shared-voice.mjs",
     "note": "Rejects old Home promises and metadata drift; renders platform and Space-branded mail to verify sign-off placement without losing client identity."
   },
-  "detail": "Owner authorized full copy sweep. Rewrites coded Frequency Home Browse and Host, preserves layout, links and locked title, uses BETA_ENDS_LABEL. Defaults to Build circles, not walls as idea and Get people together. Do things on purpose as footer tagline for later shared-chrome slice. No published DAWN documents or customer content changed. Includes the shared site/footer sign-off, preserves Community Collective as logo descriptor, and labels the signup-gated location action literally. Daniel explicitly authorized updating SCAN-885\u2019s two protected expectations for the shared beta date and approved invitation wording; all other detector consequences remain.",
+  "detail": "Owner authorized full copy sweep. Rewrites coded Frequency Home Browse and Host, preserves layout, links and locked title, uses BETA_ENDS_LABEL. Defaults to Build circles, not walls as idea and Get people together. Do things on purpose as footer tagline for later shared-chrome slice. No published DAWN documents or customer content changed. Includes the shared site/footer sign-off, preserves Community Collective as logo descriptor, and labels the signup-gated location action literally. Daniel explicitly authorized updating SCAN-885\u2019s two protected expectations for the shared beta date and approved invitation wording; all other detector consequences remain. Final preview checks exposed a non-wrapping footer legal row that expanded phone layouts, insufficient secondary text contrast on Pricing/Discover, and a mismatched calculator button label. The same scoped public presentation pass corrects these through existing tokens and wrapping, with no clipping or relaxed checks. The email attribution probe uses direct rendered assertions instead of HTML stripping.",
   "wave": "W7",
   "closed": "2026-10-22"
 }

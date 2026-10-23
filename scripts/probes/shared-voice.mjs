@@ -18,7 +18,7 @@ const branded = renderReplyEmail('Hello', null, { name: 'Example Studio', logoUr
 for (const output of [branded.html, branded.text]) {
   assert.ok(!output.includes(SITE_SIGNOFF), 'Platform marketing replaced a client-branded footer')
   assert.ok(output.includes('Example Studio'), 'Client identity was lost')
-  assert.ok(output.replace(/<[^>]+>/g, '').includes('Sent with Frequency'), 'Client mail lost its transport attribution')
+  assert.ok(output.includes('Sent with Frequency'), 'Client mail lost its transport attribution')
 }
 for (const file of ['components/layout/marketing-footer.tsx', 'components/frequency/site/shell/site-footer.tsx']) {
   assert.ok(readFileSync(file, 'utf8').includes('{SITE_SIGNOFF}'), `${file} no longer renders the sign-off`)

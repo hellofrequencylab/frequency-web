@@ -590,7 +590,7 @@
 --pc-ink:#F6F0FF; /* token-ok: handoff ink strong */
 --pc-body:#DDD6E4; /* token-ok: handoff ink body */
 --pc-muted:#A89BC2; /* token-ok: handoff ink muted */
---pc-faint:#7A6E93; /* token-ok: handoff ink faint */
+--pc-faint:var(--pc-muted); /* small secondary labels must remain readable on the calculator ground */
 --pc-hue-visitor:#A89BC2; /* token-ok: handoff tier hue */
 --pc-hue-member:#DDD6E4; /* token-ok: handoff tier hue */
 --pc-hue-crew:#FFE7A3; /* token-ok: handoff tier hue */

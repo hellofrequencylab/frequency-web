@@ -900,7 +900,7 @@ export function PricingCalculator({ model }: { model: CalcModel }) {
                     disabled={p === 0}
                     aria-label="Previous step"
                   >
-                    <span aria-hidden="true">‹</span>Back
+                    <span aria-hidden="true">‹</span>Previous
                   </button>
                   <span aria-hidden="true" />
                   <button
