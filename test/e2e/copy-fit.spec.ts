@@ -504,16 +504,7 @@ for (const width of [320, 390, 1280]) {
         expect(report.primary.visible, 'Primary hero action is visible').toBe(true)
         expect(report.primary.horizontallyReachable, 'Primary hero action fits the viewport').toBe(true)
       }
-      if (route === '/') {
-        const homeStates = await reviewHomeCopyStates(page, async state => {
-          const name = `home-${state.mode}-${state.kind}-${state.stage ?? 'all'}`
-          await info.attach(`${name}-copy-fit`, { body: JSON.stringify({ requestedUrl: target.href, finalUrl: page.url(), ...state }, null, 2), contentType: 'application/json' })
-          await info.attach(`${name}-painted-copy`, { body: state.kind === 'overview' ? await page.screenshot({ fullPage: true, animations: 'disabled' }) : await page.locator(state.scope).screenshot({ animations: 'disabled' }), contentType: 'image/png' })
-        })
-        expect(homeStates).toHaveLength(14)
-        await assertPublicTarget(page, target)
-        assertNoServerErrors(serverErrors, `${width}px Home both sides and Weave states`)
-      }
+
     })
   }
 }
@@ -883,7 +874,7 @@ function collectPaintedCopy(selector: string) {
   return result
 }
 
-async function reviewHomeCopyStates(page: Page, capture: (state: HomeCopyState) => Promise<void>) {
+async function reviewHomeCopyStates(page: Page, capture: (state: HomeCopyState) => Promise<void>, selected: { mode: 'p' | 'e'; stage: number | null }) {
   const root = page.locator('[data-kit="site"]')
   await expect(root).toHaveCount(1)
   const middle = page.locator('#weave #wv .wv-grid button.wn[type="button"][data-r="m"]')
@@ -903,7 +894,7 @@ async function reviewHomeCopyStates(page: Page, capture: (state: HomeCopyState) 
     expect.soft(state.report.boxesOutsideViewport, `${label}: meaningful boxes fit`).toEqual([])
     if (kind === 'overview') expect.soft(state.report.overflow, `${label}: document fits`).toBe(false)
   }
-  for (const mode of ['p', 'e'] as const) {
+  for (const mode of [selected.mode]) {
     const side = page.locator(`.pa-home .hero .h-top .sw[role="group"][aria-label="Browse or host"] button[type="button"][data-set="${mode}"]`)
     await expect(side).toHaveCount(1)
     expect(await side.evaluate(el => !!el.closest('form, a')), 'Side controls are local buttons').toBe(false)
@@ -916,8 +907,14 @@ async function reviewHomeCopyStates(page: Page, capture: (state: HomeCopyState) 
     await expect(page.locator(`.pa-home .hero .lede .${mode === 'p' ? 'e' : 'p'}-only`)).toBeHidden()
     await revealPublicCopy(page)
     await settlePublicCopyGeometry(page)
-    await record(mode, 'overview', null, mode === 'p' ? 'Browse Home' : 'Host Home', '[data-kit="site"]')
-    for (let index = 0; index < WEAVE.length; index++) {
+    if (selected.stage === null) await record(mode, 'overview', null, mode === 'p' ? 'Browse Home' : 'Host Home', '[data-kit="site"]')
+    // Replay every preceding click in the original mode sequence. Their
+    // measurements and captures remain in their own registered cases.
+    for (let previous = 0; previous < (selected.stage ?? 0); previous++) {
+      await page.locator(`#weave #wv .wv-grid button.wn[type="button"][data-r="m"][data-c="${previous}"]`).press('Space')
+      await expect(page.locator(`#weave .wn.hot[data-c="${previous}"]`)).toHaveCount(3)
+    }
+    for (const index of selected.stage === null ? [] : [selected.stage]) {
       // Exact column + middle row: People/Spaces buttons intentionally also change side.
       const button = page.locator(`#weave #wv .wv-grid button.wn[type="button"][data-r="m"][data-c="${index}"]`)
       await expect(button).toHaveCount(1)
@@ -953,3 +950,58 @@ test('copy-fit rejects overlapping plan labels and cropped placeholders @visual 
   expect(corrected.measured).toContain('Name your organization')
   expect(corrected.issues).toEqual([])
 })
+
+const HOME_COPY_STATE_CASES = (['p', 'e'] as const).flatMap(mode => [null, ...WEAVE.map((_, stage) => stage)].map(stage => ({ mode, stage })))
+const HOME_COPY_CASES = [320, 390, 1280].flatMap(width => HOME_COPY_STATE_CASES.map(state => ({ width, ...state })))
+test('Home copy-fit registers every side, stage and width @visual @copyfit', () => {
+  const expected = [320, 390, 1280].flatMap(width => (['p', 'e'] as const).flatMap(mode =>
+    [null, 0, 1, 2, 3, 4, 5].map(stage => `${width}:${mode}:${stage ?? 'overview'}`)))
+  const actual = HOME_COPY_CASES.map(({ width, mode, stage }) => `${width}:${mode}:${stage ?? 'overview'}`)
+  expect(WEAVE).toHaveLength(6)
+  expect(HOME_COPY_STATE_CASES).toHaveLength(14)
+  expect(actual).toHaveLength(42)
+  expect(new Set(actual).size).toBe(42)
+  expect([...actual].sort()).toEqual([...expected].sort())
+})
+// Each Home state has an independent unchanged test budget. The ordinary
+// route case above still measures initial/expanded disclosures and full-page copy.
+for (const selected of HOME_COPY_CASES) {
+    const { width, mode, stage } = selected
+    test(`@visual @copyfit Home ${mode === 'p' ? 'Browse' : 'Host'} ${stage === null ? 'overview' : `Weave ${stage + 1}`} ${width}px`, async ({ page, serverErrors }, info) => {
+      test.skip(process.env.COPY_FIT_RUN !== '1' || info.project.name !== 'desktop', 'Explicit copy-fit run uses its own three viewport widths')
+      test.skip(!base || !routes.includes('/'), 'Existing preview and selected Home route required')
+      await page.setViewportSize({ width, height: width === 320 ? 568 : 844 })
+      const target = new URL('/', base)
+      const response = await page.goto(target.href, { waitUntil: 'domcontentloaded' })
+      expect(response?.status(), 'Public route response').toBeLessThan(400)
+      await assertPublicTarget(page, target)
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page.locator('h1').first()).toBeVisible()
+      await revealPublicCopy(page)
+      await settlePublicCopyGeometry(page)
+      // Preserve the old lifecycle: Home states were measured after expanding
+      // read-only disclosures. The ordinary route case asserts their geometry.
+      await reviewReadOnlyCopyDisclosures(page)
+      await page.evaluate(() => window.scrollTo(0, 0))
+      if (mode === 'e') {
+        // Recreate the predecessor of Host in the original combined sequence:
+        // Browse selected, all six Weave selections replayed. Its assertions
+        // and captures remain in the independent Browse case.
+        const browse = page.locator('.pa-home .hero .h-top .sw[role="group"][aria-label="Browse or host"] button[data-set="p"]')
+        await browse.press('Space')
+        await expect(page.locator('[data-kit="site"]')).toHaveAttribute('data-side', 'p')
+        for (let previous = 0; previous < WEAVE.length; previous++) {
+          await page.locator(`#weave #wv .wv-grid button.wn[type="button"][data-r="m"][data-c="${previous}"]`).press('Space')
+          await expect(page.locator(`#weave .wn.hot[data-c="${previous}"]`)).toHaveCount(3)
+        }
+      }
+      const homeStates = await reviewHomeCopyStates(page, async state => {
+        const name = `home-${state.mode}-${state.kind}-${state.stage ?? 'all'}`
+        await info.attach(`${name}-copy-fit`, { body: JSON.stringify({ requestedUrl: target.href, finalUrl: page.url(), ...state }, null, 2), contentType: 'application/json' })
+        await info.attach(`${name}-painted-copy`, { body: state.kind === 'overview' ? await page.screenshot({ fullPage: true, animations: 'disabled' }) : await page.locator(state.scope).screenshot({ animations: 'disabled' }), contentType: 'image/png' })
+      }, selected)
+      expect(homeStates).toHaveLength(1)
+      await assertPublicTarget(page, target)
+      assertNoServerErrors(serverErrors, `${width}px Home ${mode} state ${stage ?? 'overview'}`)
+    })
+}
