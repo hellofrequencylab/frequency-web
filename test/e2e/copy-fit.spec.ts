@@ -746,6 +746,7 @@ async function reviewReadOnlyPricingStates(page: Page, capture: (name: string, s
   }
   const states: { period: string; nonprofit: boolean; kind: string; label: string; scope: string; report: ReturnType<typeof inspectCopyGeometry> }[] = []
   const record = async (period: string, nonprofit: boolean, kind: string, label: string, scope: string) => {
+    await waitForPaintedCopy(page, scope)
     await settlePublicCopyGeometry(page)
     const report = {
       ...await page.evaluate(inspectCopyGeometry, scope),
@@ -902,8 +903,8 @@ async function reviewHomeCopyStates(page: Page, capture: (state: HomeCopyState) 
     await expect(root).toHaveAttribute('data-side', mode)
     await expect(side).toHaveAttribute('aria-pressed', 'true')
     expect(new URL(page.url()).hash, 'Shell writes its documented local side hash').toBe(mode === 'p' ? '#people' : '#experiences')
-    const selected = page.locator(`.pa-home .hero .lede .${mode === 'p' ? 'p' : 'e'}-only`)
-    await expect(selected).toBeVisible()
+    const selectedLede = page.locator(`.pa-home .hero .lede .${mode === 'p' ? 'p' : 'e'}-only`)
+    await expect(selectedLede).toBeVisible()
     await expect(page.locator(`.pa-home .hero .lede .${mode === 'p' ? 'e' : 'p'}-only`)).toBeHidden()
     await revealPublicCopy(page)
     await settlePublicCopyGeometry(page)
@@ -1005,3 +1006,20 @@ for (const selected of HOME_COPY_CASES) {
       assertNoServerErrors(serverErrors, `${width}px Home ${mode} state ${stage ?? 'overview'}`)
     })
 }
+
+// Stable geometry can still belong to a zero-opacity outgoing panel. Wait for
+// actual painted text in the requested scope before sampling that state's copy.
+async function waitForPaintedCopy(page: Page, scope: string, timeout = 8_000) {
+  await expect.poll(async () => (await page.evaluate(collectPaintedCopy, scope)).length,
+    { timeout, message: `${scope}: requested copy must be painted before measurement` }).toBeGreaterThan(0)
+}
+
+test('copy-fit waits for painted panel text and rejects permanent zero opacity @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'One deterministic fixture project is sufficient')
+  await page.setContent('<main data-kit="site"><section id="panel" style="opacity:0"><p>Actual plan copy</p></section></main><script>setTimeout(()=>document.querySelector("#panel").style.opacity="1",150)</script>')
+  await waitForPaintedCopy(page, '#panel')
+  expect((await page.evaluate(inspectCopyGeometry, '#panel')).visibleTextNodes).toBeGreaterThan(0)
+  await page.locator('#panel').evaluate(el => (el as HTMLElement).style.opacity = '0')
+  await expect(waitForPaintedCopy(page, '#panel', 300)).rejects.toThrow()
+  expect((await page.evaluate(inspectCopyGeometry, '#panel')).visibleTextNodes).toBe(0)
+})
