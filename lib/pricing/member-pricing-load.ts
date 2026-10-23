@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { getPricingValues, billingLive, memberTierSellable } from '@/lib/pricing/settings'
 import { resolvedNetworkRate } from '@/lib/billing/fees'
@@ -47,7 +47,7 @@ export async function loadPersonalContext(membershipTier: string | null | undefi
 
 /** The first Space a member owns, as the box's buying context, or null when they own none. */
 export async function loadOwnedSpaceContext(profileId: string): Promise<PricingSpaceContext | null> {
-  const db = createAdminClient()
+  const db = await createClient()
   const { data } = (await db
     .from('spaces')
     .select('id, slug, name, plan')
