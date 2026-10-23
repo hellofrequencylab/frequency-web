@@ -57,10 +57,8 @@ const ACTIONS = [
 ] as const
 
 const DOORS = [
-  'app/(main)/upgrade/pwyw-picker.tsx',
+  'components/pricing/member-pricing-box.tsx',
   'app/(main)/settings/billing/bundle-offer-controls.tsx',
-  'app/(main)/spaces/[slug]/settings/billing/choose-plan.tsx',
-  'app/(main)/spaces/[slug]/settings/billing/go-business.tsx',
 ] as const
 
 describe('the remaining subscription creators issue an on-page session (LIVE-359)', () => {
