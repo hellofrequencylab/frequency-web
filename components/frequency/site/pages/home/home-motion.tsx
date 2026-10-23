@@ -21,12 +21,28 @@ const clamp = (v: number) => Math.max(0, Math.min(1, v))
 const range = (p: number, a: number, b: number) => clamp((p - a) / (b - a))
 const ease = (x: number) => 1 - Math.pow(1 - x, 3)
 
+function fitSignatureViewport(signature: HTMLElement) {
+  // CSS vw includes a desktop scrollbar; use the actual content viewport.
+  signature.style.setProperty('--home-viewport-half', `${document.documentElement.clientWidth / 2}px`)
+}
+
 export function HomeMotion() {
   const ref = useRef<HTMLSpanElement>(null)
   useEffect(() => {
     const scope: ParentNode = ref.current?.closest('[data-motion-scope]') ?? document
     const rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const cleanups: (() => void)[] = []
+
+    const signature = scope.querySelector<HTMLElement>('.h-sig')
+    if (signature) {
+      const sizeSignature = () => fitSignatureViewport(signature)
+      sizeSignature()
+      window.addEventListener('resize', sizeSignature, { passive: true })
+      cleanups.push(() => {
+        window.removeEventListener('resize', sizeSignature)
+        signature.style.removeProperty('--home-viewport-half')
+      })
+    }
 
     const fold = scope.querySelector<HTMLElement>('#fold')
     if (!rm) {
