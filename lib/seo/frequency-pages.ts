@@ -45,8 +45,8 @@ export const FREQUENCY_PAGE_SEO = {
     title: 'Frequency · Local groups and events near you',
     description: SITE_DESCRIPTION,
     shareTitle: 'Frequency · Local groups and events near you',
-    headline: 'Find local groups and events near you.',
-    lede: 'A hundred contacts. No one to call on a Tuesday. Frequency is where you find the people near you, and keep finding them, around something you like doing. Free to join, and built to get you off your phone.',
+    headline: 'Making friends as an adult is hard. Start with one Thursday.',
+    lede: 'Find local groups and community events near you. Try a walk, a class or a regular Circle. Pick something you like doing and a time you’re free. Free to join.',
     crumbs: [],
   },
   // components/frequency/site/pages/people/frequency-people.tsx ("Home / For people").
