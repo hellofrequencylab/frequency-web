@@ -19,7 +19,7 @@ need('components/frequency/site/pages/discover/spaces.tsx', /<BoostedBadge/, 'th
 need('app/(main)/spaces/[slug]/manage/modules/module-manager.tsx', /<TierChip/, 'the Menu and features index shows no plan chip')
 need('components/people/contact-card.tsx', /<MemberTierMarks/, 'the member directory card draws its own role tag')
 need('app/(main)/people/[handle]/page.tsx', /<TierChip tier="crew"/, 'the profile header draws its own Crew text')
-need('app/(main)/spaces/[slug]/settings/billing/plan-ladder-rungs.tsx', /<TierChip/, 'the plan ladder draws plain plan names')
+need('components/pricing/member-pricing-box.tsx', /<TierChip/, 'the pricing box draws plain plan names')
 
 if (bad.length) {
   console.error('TierChip probe failed:\n- ' + bad.join('\n- '))

@@ -12,7 +12,6 @@ import { getDeals, countOpenTasks, computeMetrics, formatMoney, ensureSpaceStage
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SpaceContactDetail, SpaceStageList, CrmViewTabs, crmConversationsHref, type CrmView } from '@/modules/crm'
-import { FeatureMeterUpsell } from '@/components/pricing/feature-meter-upsell'
 import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { resolveSpaceTeaseGate } from '@/lib/pricing/tease-gate'
@@ -80,17 +79,12 @@ export default async function SpaceCrmBoardPage({
 
   // GATE: a viewer whose role is too low, OR a space whose plan lacks CRM, gets the locked state.
   if (!canUseCrm) {
-    // The live usage read for the meter (ADR-837): the pipeline count is the established proxy for
-    // contacts (ADR-520 P2), fail-safe ([] on error). Read only for a manager who will see the meter.
-    const usage = !hasCrm && caps.canManageMembers ? (await getDeals(space.id)).length : undefined
     return (
       <LockedCrm
         brandName={brandName}
         slug={space.slug}
         type={space.type}
-        plan={space.plan}
         canManage={caps.canManageMembers}
-        usage={usage}
         // Tailor the message: an admin on a plan without CRM sees an upgrade nudge; a viewer whose role
         // is too low sees a "this is for the team" note. Both are calm next steps, never a dead end. The
         // entitlement (hasCrm) decides which: no entitlement -> upgrade; entitlement present but role
@@ -266,20 +260,14 @@ function LockedCrm({
   slug,
   type,
   reason,
-  plan,
   canManage,
-  usage,
 }: {
   brandName: string
   slug: string
   type: SpaceType
   reason: 'not-admin' | 'no-entitlement'
-  /** The Space's current plan, for the meter range highlight (ADR-519). */
-  plan?: string | null
-  /** Whether the viewer can act on the plan (owner / admin), so the range only shows to them. */
+  /** Whether the viewer can act on the plan (owner / admin), so the plans link only shows to them. */
   canManage?: boolean
-  /** The live contacts-proxy count (pipeline size), when cheaply read. Display-only (ADR-837). */
-  usage?: number
 }) {
   const description =
     reason === 'not-admin'
@@ -317,15 +305,15 @@ function LockedCrm({
         }
       />
       {reason === 'no-entitlement' && canManage && (
-        // ADR-519 (metered model): the reusable usage-meter range + placeholder allowances (an "upgrade
-        // for more" CTA that only navigates, never charges). Shown only to a manager who can change the
-        // plan. Nothing is locked; higher tiers just raise the allowance.
-        <FeatureMeterUpsell
-          featureKey="space_crm"
-          currentTier={plan}
-          upgradeHref={`/spaces/${slug}/settings/billing`}
-          usage={usage}
-        />
+        // The comparison of plans is the member pricing box on the billing page. Nothing is locked; a higher
+        // plan just raises the allowance.
+        <p className="mt-4 text-body-sm text-muted">
+          Need more room? Compare plans on{' '}
+          <Link href={`/spaces/${slug}/settings/billing`} className="font-semibold text-primary-strong underline">
+            the plans page
+          </Link>
+          .
+        </p>
       )}
     </ConsoleDashboardTemplate>
   )

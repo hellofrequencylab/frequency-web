@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-1303",
+  "title": "One pricing box for the whole member area, replacing every plan ladder and per-allowance comparison box",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/member-pricing-box.mjs",
+    "note": "Fails when an old plan ladder or per-allowance box comes back, when /offer, Space billing or /upgrade stop mounting the pricing box, or when a price is typed into it instead of read from the catalog."
+  },
+  "detail": "Owner 2026-10-22: the long run of Free / Business / Collective allowance boxes on /offer and the plan cards above them read as hand-rolled, and the new design (design_handoff_member_pricing, Claude Design) replaces them everywhere. BUILT: components/pricing/member-pricing-box.tsx, six rungs on one ladder (Member, Crew, Space, Business, Collective, Network), a detail panel, a side-by-side grid, a Non Profit switch and an inline checkout; lib/pricing/member-pricing.ts builds every figure from the catalog (prices, allowances from the meter map, the operator's network fee) and lib/pricing/member-pricing-load.ts resolves the IO. Checkout is the existing one: startSpaceLoadoutCheckout and startMembershipCheckout rendered by CheckoutPanel; a Space that already pays changes plan in the Stripe portal. MOUNTED on Space billing (and /offer, which renders it, countdown and offer clock untouched) and /upgrade. REMOVED: PlanLadder and its rungs, GoBusinessCta, ChoosePlanButton, the interval switch, FeatureMeterRange, FeatureTierRange, the two upsell wrappers, PwywPicker and UpgradeToggle; the 19 limit-reached notices and the locked CRM now point at the box through See plans. FACTS CORRECTED from the design before building: Crew amounts are the catalog's $5, $10 and $25 (the design had $12 and $50) with a $4.99 floor; a free Space has no funnel (limit 0) and gets 250 contacts, 1,000 emails and one active automation; Business and Collective seats and QR codes are read from the meter map; the network fee reads 5%, 3% and 2% from the operator vector; Non Profit Collective is $119; checkout says free for 14 days then the price, because the Space plan trial means nothing is due today; Collective shows the Beta price under its $149 list. PROBE RETARGET: scripts/probes/tier-chip.mjs (LIVE-1190) checked a TierChip in the deleted plan-ladder-rungs.tsx; the same check now reads the box, which draws the viewer's plan as a TierChip. No migration.",
+  "wave": "W7",
+  "closed": "2026-10-23"
+}
