@@ -31,6 +31,8 @@
     isolation: isolate;
     display: flow-root;
     flex: 1 0 auto;
+    min-width: 0;
+    width: 100%;
     min-height: 100dvh;
     background: var(--fq-bg-canvas);
     color: var(--fq-text-body);
@@ -202,6 +204,14 @@
     display: inline-flex;
     align-items: center;
     min-height: var(--fq-hit-min);
+  }
+  /* Legal links are a wrapping group, including the optional social links. A no-wrap row
+     established a 521px intrinsic floor and pushed the fixed header and dock off a phone. */
+  [data-design="frequency"] [data-kit="site"] .ft2-legal {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    row-gap: 0;
   }
   [data-design="frequency"] [data-kit="site"] .ft2-cols div {
     gap: 0;

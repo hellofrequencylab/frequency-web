@@ -167,13 +167,13 @@ export function Weave({ stages }: { stages: WeaveStage[] }) {
             </span>
           ))}
         <span className="wv-loop top" style={loopTops ? { top: loopTops.top } : undefined}>
-          ↺ Regulars host new Circles, and new people find them
+          ↺ Invite a regular to host a Circle of their own
         </span>
         <span
           className="wv-loop bot"
           style={loopTops ? { top: loopTops.bot, bottom: 'auto', transform: 'translate(-50%,-50%)' } : undefined}
         >
-          ↺ The more you gather, the higher you rank on the calendar
+          ↺ Post the next gathering so people can find the date
         </span>
         <div className="wv-grid" onMouseOver={(e) => {
           const b = (e.target as HTMLElement).closest<HTMLElement>('.wn')

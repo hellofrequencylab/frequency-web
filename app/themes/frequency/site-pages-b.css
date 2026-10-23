@@ -590,7 +590,7 @@
 --pc-ink:#F6F0FF; /* token-ok: handoff ink strong */
 --pc-body:#DDD6E4; /* token-ok: handoff ink body */
 --pc-muted:#A89BC2; /* token-ok: handoff ink muted */
---pc-faint:#7A6E93; /* token-ok: handoff ink faint */
+--pc-faint:var(--pc-muted); /* small secondary labels must remain readable on the calculator ground */
 --pc-hue-visitor:#A89BC2; /* token-ok: handoff tier hue */
 --pc-hue-member:#DDD6E4; /* token-ok: handoff tier hue */
 --pc-hue-crew:#FFE7A3; /* token-ok: handoff tier hue */
@@ -797,3 +797,36 @@ position:relative;background:var(--pc-void);color:var(--pc-body);font-family:var
 [data-design="frequency"] [data-kit="site"] .pc-skip:hover{color:var(--pc-ink)}
 [data-design="frequency"] [data-kit="site"] .pc-end{display:block;height:0}
 @media (max-height:759px){[data-design="frequency"] [data-kit="site"] .pc-panel[data-final] .pc-idea{display:none}}
+
+/* Keep rotated Network chapter boxes inside their card at narrow widths. A square's
+   diagonal can reach sqrt(2) times its width, even when its visible ring is round. */
+@media (max-width:900px){
+[data-design="frequency"] [data-kit="site"] .pm-net{width:min(350px,calc(100% / 1.414214))}
+}
+/* The 152px Network motif needs room for its rotation, focus scale and bobbing.
+   Stack the plans where two columns cannot accommodate that visual envelope. */
+@media (max-width:540px){
+[data-design="frequency"] [data-kit="site"] .pm-ladder{grid-template-columns:minmax(0,1fr)}
+}
+
+/* Phones need natural page height so every plan and its controls remain
+   readable, including larger type and the final selection. */
+@media (max-width:760px){
+[data-design="frequency"] [data-kit="site"] .pc-wrap{height:auto}
+[data-design="frequency"] [data-kit="site"] .pc-sticky{height:auto;overflow:visible}
+[data-design="frequency"] [data-kit="site"] .pc-stage{height:auto;min-height:100dvh;grid-template-rows:auto auto auto}
+[data-design="frequency"] [data-kit="site"] .pc-main{grid-template-rows:auto auto}
+[data-design="frequency"] [data-kit="site"] .pc-copy{flex:none}
+[data-design="frequency"] [data-kit="site"] .pc-panel{position:relative;inset:auto;overflow:visible}
+[data-design="frequency"] [data-kit="site"] .pc-panel[aria-hidden="true"]{display:none}
+[data-design="frequency"] [data-kit="site"] .pc-vis{min-height:180px}
+}
+
+@media (max-width:760px){
+[data-design="frequency"] [data-kit="site"] .pc-picks{grid-template-columns:repeat(2,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="site"] .pc-pick span{min-width:0}
+[data-design="frequency"] [data-kit="site"] .pc-pick i{flex:none}
+[data-design="frequency"] [data-kit="site"] .pc-form{flex-wrap:wrap}
+[data-design="frequency"] [data-kit="site"] .pc-form input{flex-basis:100%}
+[data-design="frequency"] [data-kit="site"] .pc-form .pc-cta{width:100%}
+}

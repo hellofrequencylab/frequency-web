@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { FOOTER_COLUMNS, FOOTER_LEGAL, ROUTES, SIDE_CTA } from '@/lib/frequency/site-nav'
 import { JsonLd } from '@/components/json-ld'
 import { siteNavigationSchema } from '@/lib/jsonld'
-import { CONTACT_EMAIL, SOCIAL_PROFILES, socialLabel } from '@/lib/site'
+import { CONTACT_EMAIL, SOCIAL_PROFILES, SITE_SIGNOFF, socialLabel } from '@/lib/site'
 
 const WORDMARK = '/brand/frequency/frequency-wordmark.png'
 
@@ -31,8 +31,7 @@ export function SiteFooter() {
               <span className="lg-sheen" aria-hidden="true" style={{ '--fq-lg': `url("${WORDMARK}")` } as React.CSSProperties} />
             </Link>
             <p>
-              Build circles, not walls. A community network where people find groups near them and keep coming back,
-              and Spaces host experiences people come back to.
+              {SITE_SIGNOFF} Find community around a walk, a class or a gathering near you.
             </p>
             <div className="ctas">
               <Link className="btn fq-iri-btn" href={SIDE_CTA.p.href!}>

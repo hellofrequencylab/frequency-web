@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MARKETING_NAV, ORG_LEGAL_NAME, CONTACT_EMAIL, SOCIAL_PROFILES, socialLabel } from '@/lib/site'
+import { MARKETING_NAV, ORG_LEGAL_NAME, CONTACT_EMAIL, SITE_SIGNOFF, SOCIAL_PROFILES, socialLabel } from '@/lib/site'
 import { effectiveMode } from '@/components/layout/menu-role'
 import type { ResolvedMenu } from '@/lib/menus/types'
 import { Wordmark } from '@/components/layout/wordmark'
@@ -44,9 +44,7 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
                 4.5:1 in every skin (5.21 DAWN light · 6.37 DAWN dark · 6.41 Midnight light). */}
             <Wordmark tagline mark="2rem" className="[&>img]:opacity-50 mb-3" />
             <p className="text-body-sm text-muted leading-relaxed">
-              Frequency is local groups that keep meeting. Find local Circles and Events
-              near you, keep a private book of the Contacts you meet, and stay in touch. Not home,
-              not work. Your community, together.
+              {SITE_SIGNOFF} Find local Circles and community events, or invite people to a gathering of your own.
             </p>
           </div>
 

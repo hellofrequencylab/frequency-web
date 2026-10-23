@@ -353,3 +353,9 @@
 [data-design="frequency"] [data-kit="site"] .nk-wk-h{margin:0;font:inherit}
 [data-design="frequency"] [data-kit="site"] .nk-doors .door>.fq-aura, [data-design="frequency"] [data-kit="site"] .nk-doors .door>.rings{position:absolute}
 }
+
+/* Price rows retain their labels and complete price at narrow widths. */
+@media (max-width:560px){
+[data-design="frequency"] [data-kit="site"] .nk-rows>div{flex-wrap:wrap}
+[data-design="frequency"] [data-kit="site"] .nk-rows .pv{white-space:normal;text-wrap:balance}
+}
