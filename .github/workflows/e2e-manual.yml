@@ -175,6 +175,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_pricing_copy_states:
+        description: 'Check every safe pricing panel and both billing switches; requires run_visual and run_copy_fit'
+        required: false
+        default: false
+        type: boolean
       copy_fit_routes:
         description: 'Optional comma-separated public paths for this copy batch (e.g. /,/pricing). Empty checks every public route; full coverage is required after all batches.'
         required: false
@@ -1466,6 +1471,7 @@ jobs:
         env:
           COPY_FIT_RUN: ${{ inputs.run_copy_fit && '1' || '' }}
           COPY_FIT_ROUTES: ${{ inputs.copy_fit_routes }}
+          COPY_FIT_PRICING_STATES: ${{ inputs.run_pricing_copy_states && '1' || '' }}
           PW_BASE_URL: ${{ inputs.base_url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}

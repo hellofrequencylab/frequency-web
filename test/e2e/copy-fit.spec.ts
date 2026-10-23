@@ -14,7 +14,7 @@ async function assertPublicTarget(page: Page, target: URL) {
 }
 
 /** Runs in the page; classifications remain in the artifact for editorial review. */
-function inspectCopyGeometry(scopeSelector?: string) {
+function inspectCopyGeometry(scopeSelector?: string | void) {
   const scopedRoot = scopeSelector ? document.querySelector(scopeSelector) : null
   if (scopeSelector && !scopedRoot) throw new Error(`Missing copy-fit scope: ${scopeSelector}`)
   const root = scopedRoot ?? document.querySelector('[data-kit="site"]') ?? document.querySelector('main') ?? document.body
@@ -327,7 +327,8 @@ async function reviewReadOnlyCopyDisclosures(page: Page) {
       await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
       const finite = el.getAnimations({ subtree: true }).filter(a => {
         const timing = a.effect?.getComputedTiming()
-        return timing && Number.isFinite(timing.endTime) && timing.endTime <= 4000
+        const endTime = timing?.endTime
+        return typeof endTime === 'number' && Number.isFinite(endTime) && endTime <= 4000
       })
       await Promise.all(finite.map(a => a.finished.catch(() => undefined)))
     })
@@ -412,7 +413,8 @@ async function settleViewportReveals(page: Page) {
       const box = target.getBoundingClientRect()
       if (box.bottom <= 0 || box.top >= innerHeight || box.right <= 0 || box.left >= innerWidth) return false
       const timing = animation.effect?.getComputedTiming()
-      return timing && Number.isFinite(timing.endTime) && timing.endTime <= 4000
+      const endTime = timing?.endTime
+        return typeof endTime === 'number' && Number.isFinite(endTime) && endTime <= 4000
     })
     await Promise.all(finite.map(animation => animation.finished.catch(() => undefined)))
   })
@@ -542,7 +544,7 @@ test('copy-fit detector rejects clipped callouts and wrong destinations @visual 
   await expect(assertPublicTarget(page, new URL(page.url()))).rejects.toThrow()
   await page.setContent(fixture('<h1>Plans and pricing</h1>'))
   await assertPublicTarget(page, new URL(page.url()))
-  await assertPublicTarget({ url: () => 'https://example.test/the-community', title: async () => 'The community', locator: selector => page.locator(selector) } as unknown as Page, new URL('https://example.test/stories'))
+  await assertPublicTarget({ url: () => 'https://example.test/the-community', title: async () => 'The community', locator: (selector: string) => page.locator(selector) } as unknown as Page, new URL('https://example.test/stories'))
   expect(parseCopyFitRoutes('')).toHaveLength(34)
   expect(parseCopyFitRoutes('  ')).toHaveLength(34)
   expect(parseCopyFitRoutes('/,/pricing')).toEqual(['/', '/pricing'])
@@ -652,3 +654,107 @@ test('copy-fit distinguishes inert decoration from meaningful boxes @visual @cop
     if (inert) expect(report.decorativeBoxes.length, name).toBeGreaterThan(0)
   }
 })
+
+// Append after the final copy-fit suite in a later QA slice. Uses its validated
+// geometry/settling/route guards. Local selectors were checked against pricing-calculator.tsx.
+async function reviewReadOnlyPricingStates(page: Page, capture: (name: string, scope: string, report: ReturnType<typeof inspectCopyGeometry>) => Promise<void>) {
+  const calculator = page.locator('#path.pcx[role="region"][aria-label="Walk through every plan"]')
+  await expect(calculator).toBeVisible()
+  await expect(calculator).toHaveCount(1)
+  await expect(calculator.locator('.pc-seg button[type="button"][role="radio"]')).toHaveCount(2)
+  await expect(calculator.locator('button.pc-np[type="button"][role="switch"]')).toHaveCount(1)
+  await expect(calculator.locator('.pc-dock')).toHaveCount(1)
+  await expect(calculator.locator('.pc-picks button.pc-pick[type="button"]')).toHaveCount(6)
+  await expect(page.locator('.pb-scope')).toHaveCount(1)
+  await expect(page.locator('#people .pb-period[role="radiogroup"], #spaces .pb-period[role="radiogroup"]')).toHaveCount(2)
+  const initialInputs = await calculator.locator('input').evaluateAll(els => els.map(el => (el as HTMLInputElement).value))
+  const rail = calculator.locator('.pc-rail button.pc-rail-btn[type="button"]')
+  const panels = calculator.locator('.pc-copy > section.pc-panel')
+  const count = await rail.count()
+  expect(count, 'All seven current tiers and the final selection have rail controls').toBe(8)
+  expect(await panels.count(), 'Each rail control has one copy panel').toBe(count)
+  const states: { period: string; nonprofit: boolean; kind: string; label: string; scope: string; report: ReturnType<typeof inspectCopyGeometry> }[] = []
+  const record = async (period: string, nonprofit: boolean, kind: string, label: string, scope: string) => {
+    await settlePublicCopyGeometry(page)
+    const report = await page.evaluate(inspectCopyGeometry, scope)
+    states.push({ period, nonprofit, kind, label, scope, report })
+    await capture(`${period}-${nonprofit ? 'nonprofit' : 'standard'}-${kind}-${states.length}`, scope, report)
+    expect.soft(report.visibleTextNodes, `${label}: visible copy was measured`).toBeGreaterThan(0)
+    expect.soft(report.clipped, `${label}: visible copy fits`).toEqual([])
+    expect.soft(report.hiddenExpandedAnswers, `${label}: open copy is painted`).toEqual([])
+    expect.soft(report.boxesOutsideViewport, `${label}: meaningful boxes fit`).toEqual([])
+  }
+  for (const period of ['Monthly', 'Yearly']) {
+    const radio = calculator.locator('.pc-seg button[type="button"][role="radio"]').filter({ hasText: period })
+    await radio.press('Space')
+    await expect(radio).toHaveAttribute('aria-checked', 'true')
+    for (const nonprofit of [false, true]) {
+      const np = calculator.locator('button.pc-np[type="button"][role="switch"]')
+      if ((await np.getAttribute('aria-checked') === 'true') !== nonprofit) await np.press('Space')
+      await expect(np).toHaveAttribute('aria-checked', String(nonprofit))
+      for (let index = 0; index < count; index++) {
+        const control = rail.nth(index)
+        expect(await control.evaluate(el => !!el.closest('form')), 'Only local plan controls are exercised').toBe(false)
+        const label = (await control.locator('.pc-rail-t b').textContent())?.trim() ?? `Step ${index + 1}`
+        await control.press('Space')
+        await expect(control).toHaveAttribute('aria-current', 'step')
+        await expect(panels.nth(index)).not.toHaveAttribute('aria-hidden', 'true')
+        await expect(calculator.locator('.pc-panel:not([aria-hidden="true"])')).toHaveCount(1)
+        await record(period, nonprofit, 'panel', label, `#path .pc-copy > section.pc-panel:nth-child(${index + 1})`)
+        // Dock plan name, fee note, CTA labels and input labels change with the tier.
+        await record(period, nonprofit, 'dock', label, '#path .pc-dock')
+      }
+      const picks = calculator.locator('.pc-picks button.pc-pick[type="button"]')
+      for (let index = 0; index < await picks.count(); index++) {
+        const pick = picks.nth(index)
+        expect(await pick.evaluate(el => !!el.closest('form')), 'Plan selection remains local').toBe(false)
+        const label = (await pick.locator('b').textContent())?.trim() ?? `Choice ${index + 1}`
+        await pick.press('Space')
+        await expect(pick).toHaveAttribute('aria-pressed', 'true')
+        await record(period, nonprofit, 'final-choice', label, '#path .pc-panel[data-final="1"]')
+        await record(period, nonprofit, 'final-dock', label, '#path .pc-dock')
+      }
+    }
+  }
+  // Both visible period switches share one PlanPeriodScope. Exercise each
+  // independently, and require the other switch and scope to synchronize.
+  for (const section of ['people', 'spaces']) {
+    for (const period of ['Monthly', 'Yearly']) {
+      const radio = page.locator(`#${section} .pb-period[role="radiogroup"] button[type="button"][role="radio"]`).filter({ hasText: period })
+      await expect(radio).toHaveCount(1)
+      expect(await radio.evaluate(el => !!el.closest('form')), 'Billing period control is outside forms').toBe(false)
+      await radio.press('Space')
+      for (const peer of ['people', 'spaces']) {
+        await expect(page.locator(`#${peer} .pb-period button[role="radio"]`).filter({ hasText: period })).toHaveAttribute('aria-checked', 'true')
+      }
+      await expect(page.locator('.pb-scope')).toHaveAttribute('data-period', period === 'Monthly' ? 'month' : 'year')
+      await expect(calculator.locator('.pc-seg button[role="radio"]').filter({ hasText: 'Yearly' })).toHaveAttribute('aria-checked', 'true')
+      await record(period, false, 'shared-plan-tables', `${section}: synchronized plan rows`, '.pb-scope')
+    }
+  }
+  expect(await calculator.locator('input').evaluateAll(els => els.map(el => (el as HTMLInputElement).value)), 'Plan review preserves all input values').toEqual(initialInputs)
+  return states
+}
+
+for (const width of [320, 390, 1280]) {
+  test(`copy-fit every pricing presentation state ${width}px @visual @copyfit`, async ({ page, serverErrors }, info) => {
+    test.skip(process.env.COPY_FIT_RUN !== '1' || process.env.COPY_FIT_PRICING_STATES !== '1' || info.project.name !== 'desktop', 'Explicit phase2 pricing-state review')
+    test.skip(!base, 'Existing preview required')
+    test.setTimeout(600_000)
+    await page.setViewportSize({ width, height: width === 320 ? 568 : 844 })
+    const target = new URL('/pricing', base)
+    const response = await page.goto(target.href, { waitUntil: 'domcontentloaded' })
+    expect(response?.status()).toBeLessThan(400)
+    await assertPublicTarget(page, target)
+    await page.evaluate(() => document.fonts.ready)
+    await revealPublicCopy(page)
+    await settlePublicCopyGeometry(page)
+    const states = await reviewReadOnlyPricingStates(page, async (name, scope, report) => {
+      await info.attach(`${name}-geometry`, { body: JSON.stringify(report, null, 2), contentType: 'application/json' })
+      await info.attach(`${name}-painted-copy`, { body: await page.locator(scope).screenshot({ animations: 'disabled' }), contentType: 'image/png' })
+    })
+    await info.attach('pricing-state-inventory', { body: JSON.stringify(states, null, 2), contentType: 'application/json' })
+    await assertPublicTarget(page, target)
+    assertNoServerErrors(serverErrors, `pricing states ${width}px`)
+  })
+}
