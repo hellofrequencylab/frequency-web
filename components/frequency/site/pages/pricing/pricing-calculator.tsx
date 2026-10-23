@@ -417,7 +417,11 @@ export function PricingCalculator({ model }: { model: CalcModel }) {
     const leaves = (dir: number) =>
       (dir < 0 && target === 0) || (dir > 0 && target === N - 1);
 
+    // Phones use the flowing layout; swipes and keys scroll its content.
+    const naturalFlow = () =>
+      matchMedia("(max-width: 760px)").matches;
     const onWheel = (ev: WheelEvent) => {
+      if (naturalFlow()) return;
       if (Math.abs(ev.deltaY) < Math.abs(ev.deltaX)) return;
       const dir = ev.deltaY > 0 ? 1 : -1;
       if (leaves(dir)) return;
@@ -442,6 +446,7 @@ export function PricingCalculator({ model }: { model: CalcModel }) {
       touchY = ev.touches[0]!.clientY;
     };
     const onTouchMove = (ev: TouchEvent) => {
+      if (naturalFlow()) return;
       if (
         touchY == null ||
         (ev.target instanceof HTMLElement &&
@@ -452,6 +457,10 @@ export function PricingCalculator({ model }: { model: CalcModel }) {
       if (!leaves(dir) && place() !== "away") ev.preventDefault();
     };
     const onTouchEnd = (ev: TouchEvent) => {
+      if (naturalFlow()) {
+        touchY = null;
+        return;
+      }
       if (touchY == null) return;
       const dy = touchY - ev.changedTouches[0]!.clientY;
       touchY = null;
@@ -466,6 +475,7 @@ export function PricingCalculator({ model }: { model: CalcModel }) {
       else if (where === "aligned") stepTo(target + (dy > 0 ? 1 : -1));
     };
     const onKey = (ev: KeyboardEvent) => {
+      if (naturalFlow()) return;
       const tag = ev.target instanceof HTMLElement ? ev.target.tagName : "";
       if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
       if (ev.key === " " && /BUTTON|A/.test(tag)) return;

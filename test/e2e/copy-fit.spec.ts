@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures'
 import type { Page } from '@playwright/test'
+import { WEAVE } from '../../components/frequency/site/pages/home/weave-data'
 
 import { assertNoServerErrors, assertNotProtectionWall } from './surfaces'
 
@@ -372,7 +373,7 @@ async function settlePublicCopyGeometry(page: Page) {
   let stable = 0
   for (let sample = 0; sample < 80; sample++) {
     const signature = await page.evaluate(() => {
-      const selectors = 'h1, .hero .ctas a, .hero .ctas button, .phero .ctas a, #nk-hero .ctas a, [data-screen-label="01 Hero"] .ctas a, .pc-panel:not([aria-hidden="true"])'
+      const selectors = 'h1, .hero .ctas a, .hero .ctas button, .phero .ctas a, #nk-hero .ctas a, [data-screen-label="01 Hero"] .ctas a, .pc-panel:not([aria-hidden="true"]), .pc-fold[data-open]'
       return JSON.stringify([...document.querySelectorAll(selectors)].flatMap(el => {
         const box = el.getBoundingClientRect()
         if (box.width <= 0 || box.height <= 0) return []
@@ -502,6 +503,16 @@ for (const width of [320, 390, 1280]) {
       if (report.primary) {
         expect(report.primary.visible, 'Primary hero action is visible').toBe(true)
         expect(report.primary.horizontallyReachable, 'Primary hero action fits the viewport').toBe(true)
+      }
+      if (route === '/') {
+        const homeStates = await reviewHomeCopyStates(page, async state => {
+          const name = `home-${state.mode}-${state.kind}-${state.stage ?? 'all'}`
+          await info.attach(`${name}-copy-fit`, { body: JSON.stringify({ requestedUrl: target.href, finalUrl: page.url(), ...state }, null, 2), contentType: 'application/json' })
+          await info.attach(`${name}-painted-copy`, { body: state.kind === 'overview' ? await page.screenshot({ fullPage: true, animations: 'disabled' }) : await page.locator(state.scope).screenshot({ animations: 'disabled' }), contentType: 'image/png' })
+        })
+        expect(homeStates).toHaveLength(14)
+        await assertPublicTarget(page, target)
+        assertNoServerErrors(serverErrors, `${width}px Home both sides and Weave states`)
       }
     })
   }
@@ -657,6 +668,48 @@ test('copy-fit distinguishes inert decoration from meaningful boxes @visual @cop
 
 // Append after the final copy-fit suite in a later QA slice. Uses its validated
 // geometry/settling/route guards. Local selectors were checked against pricing-calculator.tsx.
+function inspectPlanControlText() {
+  const issues: { text: string; reason: string }[] = []
+  const measured: string[] = []
+  const visible = (el: Element) => {
+    for (let parent: Element | null = el; parent; parent = parent.parentElement) {
+      const style = getComputedStyle(parent)
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false
+    }
+    return el.getBoundingClientRect().width > 0
+  }
+  for (const el of document.querySelectorAll('#path .pc-pick b, #path .pc-pick small')) {
+    if (!visible(el)) continue
+    const card = el.closest('button')!
+    const bounds = card.getBoundingClientRect()
+    const style = getComputedStyle(card)
+    const left = bounds.left + parseFloat(style.paddingLeft)
+    const right = bounds.right - parseFloat(style.paddingRight)
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    while (walk.nextNode()) {
+      const text = walk.currentNode.textContent?.trim()
+      if (!text) continue
+      measured.push(text)
+      const range = document.createRange()
+      range.selectNodeContents(walk.currentNode)
+      if ([...range.getClientRects()].some(rect => rect.left < left - 2 || rect.right > right + 2)) issues.push({ text, reason: 'Plan choice text exceeds its own card content width' })
+    }
+  }
+  for (const input of document.querySelectorAll<HTMLInputElement>('#path .pc-form input[placeholder]')) {
+    if (!visible(input) || input.value) continue
+    const text = input.placeholder
+    const style = getComputedStyle(input)
+    const context = document.createElement('canvas').getContext('2d')
+    if (!context) throw new Error('Canvas metrics required to check a visible placeholder')
+    context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+    const spacing = style.letterSpacing === 'normal' ? 0 : parseFloat(style.letterSpacing)
+    const width = context.measureText(text).width + Math.max(0, text.length - 1) * spacing
+    measured.push(text)
+    if (width > input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) + 2) issues.push({ text, reason: 'Plan name placeholder exceeds its visible input content width' })
+  }
+  return { measured, issues }
+}
+
 async function reviewReadOnlyPricingStates(page: Page, capture: (name: string, scope: string, report: ReturnType<typeof inspectCopyGeometry>) => Promise<void>) {
   const calculator = page.locator('#path.pcx[role="region"][aria-label="Walk through every plan"]')
   await expect(calculator).toBeVisible()
@@ -667,18 +720,56 @@ async function reviewReadOnlyPricingStates(page: Page, capture: (name: string, s
   await expect(calculator.locator('.pc-picks button.pc-pick[type="button"]')).toHaveCount(6)
   await expect(page.locator('.pb-scope')).toHaveCount(1)
   await expect(page.locator('#people .pb-period[role="radiogroup"], #spaces .pb-period[role="radiogroup"]')).toHaveCount(2)
-  const initialInputs = await calculator.locator('input').evaluateAll(els => els.map(el => (el as HTMLInputElement).value))
+  const initialInputs = await calculator.locator('input').evaluateAll(els => els.map(el => ({ key: (el as HTMLInputElement).name || el.id || (el as HTMLInputElement).type, value: (el as HTMLInputElement).value })))
   const rail = calculator.locator('.pc-rail button.pc-rail-btn[type="button"]')
   const panels = calculator.locator('.pc-copy > section.pc-panel')
   const count = await rail.count()
   expect(count, 'All seven current tiers and the final selection have rail controls').toBe(8)
   expect(await panels.count(), 'Each rail control has one copy panel').toBe(count)
+  const selectPanel = async (index: number) => {
+    const control = rail.nth(index)
+    if (await control.isVisible()) {
+      await control.press('Space', { timeout: 15_000 })
+    } else {
+      // The canonical mobile layout hides the desktop rail. Use its visible,
+      // local step navigation; never force an action against a hidden control.
+      for (let attempt = 0; attempt < count; attempt++) {
+        const current = await panels.evaluateAll(els => els.findIndex(el => el.getAttribute('aria-hidden') !== 'true'))
+        expect(current, 'Exactly one current pricing panel is available').toBeGreaterThanOrEqual(0)
+        if (current === index) break
+        const next = current < index ? current + 1 : current - 1
+        const direction = current < index ? 'Next step' : 'Previous step'
+        const nav = calculator.locator(`.pc-nav button[type="button"][aria-label="${direction}"]`)
+        await expect(nav).toHaveCount(1)
+        await expect(nav).toBeVisible({ timeout: 15_000 })
+        await expect(nav).toBeEnabled({ timeout: 15_000 })
+        expect(await nav.evaluate(el => !!el.closest('form')), 'Step navigation is local and outside forms').toBe(false)
+        await nav.press('Space', { timeout: 15_000 })
+        await expect(rail.nth(next)).toHaveAttribute('aria-current', 'step', { timeout: 15_000 })
+        await expect(panels.nth(next)).not.toHaveAttribute('aria-hidden', 'true', { timeout: 15_000 })
+      }
+    }
+    await expect(control).toHaveAttribute('aria-current', 'step', { timeout: 15_000 })
+    await expect(panels.nth(index)).not.toHaveAttribute('aria-hidden', 'true', { timeout: 15_000 })
+    await expect(calculator.locator('.pc-panel:not([aria-hidden="true"]), .pc-fold[data-open]')).toHaveCount(1)
+  }
   const states: { period: string; nonprofit: boolean; kind: string; label: string; scope: string; report: ReturnType<typeof inspectCopyGeometry> }[] = []
   const record = async (period: string, nonprofit: boolean, kind: string, label: string, scope: string) => {
     await settlePublicCopyGeometry(page)
-    const report = await page.evaluate(inspectCopyGeometry, scope)
+    const report = {
+      ...await page.evaluate(inspectCopyGeometry, scope),
+      fullCalculator: await page.evaluate(inspectCopyGeometry, '#path'),
+      planControls: await page.evaluate(inspectPlanControlText),
+      foldedSetup: await page.locator('#path .pc-fold').evaluateAll(els => els.map(el => ({ open: el.hasAttribute('data-open'), text: el.textContent?.trim() ?? '' }))),
+    }
+    expect.soft(report.fullCalculator.visibleTextNodes, `${label}: actual calculator copy was measured`).toBeGreaterThan(0)
+    expect.soft(report.fullCalculator.overflow, `${label}: full calculator document fits`).toBe(false)
+    expect.soft(report.fullCalculator.hiddenExpandedAnswers, `${label}: all open calculator copy is painted`).toEqual([])
+    expect.soft(report.fullCalculator.clipped, `${label}: all visible calculator text fits`).toEqual([])
+    expect.soft(report.fullCalculator.boxesOutsideViewport, `${label}: all visible calculator boxes fit`).toEqual([])
+    expect.soft(report.planControls.issues, `${label}: every plan label and placeholder fits its own control`).toEqual([])
     states.push({ period, nonprofit, kind, label, scope, report })
-    await capture(`${period}-${nonprofit ? 'nonprofit' : 'standard'}-${kind}-${states.length}`, scope, report)
+    await capture(`${period}-${nonprofit ? 'nonprofit' : 'standard'}-${kind}-${states.length}`, kind === 'panel' || kind === 'final-choice' ? '#path' : scope, report)
     expect.soft(report.visibleTextNodes, `${label}: visible copy was measured`).toBeGreaterThan(0)
     expect.soft(report.clipped, `${label}: visible copy fits`).toEqual([])
     expect.soft(report.hiddenExpandedAnswers, `${label}: open copy is painted`).toEqual([])
@@ -686,20 +777,20 @@ async function reviewReadOnlyPricingStates(page: Page, capture: (name: string, s
   }
   for (const period of ['Monthly', 'Yearly']) {
     const radio = calculator.locator('.pc-seg button[type="button"][role="radio"]').filter({ hasText: period })
-    await radio.press('Space')
+    await radio.press('Space', { timeout: 15_000 })
     await expect(radio).toHaveAttribute('aria-checked', 'true')
     for (const nonprofit of [false, true]) {
       const np = calculator.locator('button.pc-np[type="button"][role="switch"]')
-      if ((await np.getAttribute('aria-checked') === 'true') !== nonprofit) await np.press('Space')
+      if ((await np.getAttribute('aria-checked') === 'true') !== nonprofit) await np.press('Space', { timeout: 15_000 })
       await expect(np).toHaveAttribute('aria-checked', String(nonprofit))
       for (let index = 0; index < count; index++) {
         const control = rail.nth(index)
         expect(await control.evaluate(el => !!el.closest('form')), 'Only local plan controls are exercised').toBe(false)
         const label = (await control.locator('.pc-rail-t b').textContent())?.trim() ?? `Step ${index + 1}`
-        await control.press('Space')
+        await selectPanel(index)
         await expect(control).toHaveAttribute('aria-current', 'step')
         await expect(panels.nth(index)).not.toHaveAttribute('aria-hidden', 'true')
-        await expect(calculator.locator('.pc-panel:not([aria-hidden="true"])')).toHaveCount(1)
+        await expect(calculator.locator('.pc-panel:not([aria-hidden="true"]), .pc-fold[data-open]')).toHaveCount(1)
         await record(period, nonprofit, 'panel', label, `#path .pc-copy > section.pc-panel:nth-child(${index + 1})`)
         // Dock plan name, fee note, CTA labels and input labels change with the tier.
         await record(period, nonprofit, 'dock', label, '#path .pc-dock')
@@ -709,7 +800,7 @@ async function reviewReadOnlyPricingStates(page: Page, capture: (name: string, s
         const pick = picks.nth(index)
         expect(await pick.evaluate(el => !!el.closest('form')), 'Plan selection remains local').toBe(false)
         const label = (await pick.locator('b').textContent())?.trim() ?? `Choice ${index + 1}`
-        await pick.press('Space')
+        await pick.press('Space', { timeout: 15_000 })
         await expect(pick).toHaveAttribute('aria-pressed', 'true')
         await record(period, nonprofit, 'final-choice', label, '#path .pc-panel[data-final="1"]')
         await record(period, nonprofit, 'final-dock', label, '#path .pc-dock')
@@ -723,7 +814,7 @@ async function reviewReadOnlyPricingStates(page: Page, capture: (name: string, s
       const radio = page.locator(`#${section} .pb-period[role="radiogroup"] button[type="button"][role="radio"]`).filter({ hasText: period })
       await expect(radio).toHaveCount(1)
       expect(await radio.evaluate(el => !!el.closest('form')), 'Billing period control is outside forms').toBe(false)
-      await radio.press('Space')
+      await radio.press('Space', { timeout: 15_000 })
       for (const peer of ['people', 'spaces']) {
         await expect(page.locator(`#${peer} .pb-period button[role="radio"]`).filter({ hasText: period })).toHaveAttribute('aria-checked', 'true')
       }
@@ -732,7 +823,11 @@ async function reviewReadOnlyPricingStates(page: Page, capture: (name: string, s
       await record(period, false, 'shared-plan-tables', `${section}: synchronized plan rows`, '.pb-scope')
     }
   }
-  expect(await calculator.locator('input').evaluateAll(els => els.map(el => (el as HTMLInputElement).value)), 'Plan review preserves all input values').toEqual(initialInputs)
+  const finalInputs = await calculator.locator('input').evaluateAll(els => els.map(el => ({ key: (el as HTMLInputElement).name || el.id || (el as HTMLInputElement).type, value: (el as HTMLInputElement).value })))
+  for (const input of finalInputs) {
+    const initial = initialInputs.find(candidate => candidate.key === input.key)
+    expect(input.value, `Plan review preserves entered value for ${input.key}; newly mounted inputs remain empty`).toBe(initial?.value ?? '')
+  }
   return states
 }
 
@@ -758,3 +853,103 @@ for (const width of [320, 390, 1280]) {
     assertNoServerErrors(serverErrors, `pricing states ${width}px`)
   })
 }
+
+type HomeCopyState = {
+  mode: 'p' | 'e'; actualSide: string | null; kind: 'overview' | 'weave'; stage: number | null
+  label: string; scope: string; paintedCopy: string[]; report: ReturnType<typeof inspectCopyGeometry>
+}
+
+function collectPaintedCopy(selector: string) {
+  const root = document.querySelector(selector)
+  if (!root) throw new Error(`Missing painted-copy scope: ${selector}`)
+  const result: string[] = []
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  while (walk.nextNode()) {
+    const node = walk.currentNode
+    const text = node.textContent?.replace(/\s+/g, ' ').trim()
+    const el = node.parentElement
+    if (!text || !el || el.closest('script, style, svg, .sr-only, .visually-hidden')) continue
+    let painted = true
+    for (let parent: Element | null = el; parent; parent = parent.parentElement) {
+      const style = getComputedStyle(parent)
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) { painted = false; break }
+      if (parent instanceof HTMLDetailsElement && !parent.open && !parent.querySelector(':scope > summary')?.contains(el)) { painted = false; break }
+    }
+    if (!painted) continue
+    const range = document.createRange()
+    range.selectNodeContents(node)
+    if ([...range.getClientRects()].some(box => box.width > 0 && box.height > 0)) result.push(text)
+  }
+  return result
+}
+
+async function reviewHomeCopyStates(page: Page, capture: (state: HomeCopyState) => Promise<void>) {
+  const root = page.locator('[data-kit="site"]')
+  await expect(root).toHaveCount(1)
+  const middle = page.locator('#weave #wv .wv-grid button.wn[type="button"][data-r="m"]')
+  await expect(middle, 'Six Together controls select all Weave stages without switching side').toHaveCount(6)
+  await expect(page.locator('#weave #wv .wv-grid button.wn[type="button"]')).toHaveCount(18)
+  expect(WEAVE, 'Expected copy comes from the same six source stages the page renders').toHaveLength(6)
+  const states: HomeCopyState[] = []
+  const record = async (mode: 'p' | 'e', kind: HomeCopyState['kind'], stage: number | null, label: string, scope: string) => {
+    const state: HomeCopyState = { mode, actualSide: await root.getAttribute('data-side'), kind, stage, label, scope,
+      paintedCopy: await page.evaluate(collectPaintedCopy, scope), report: await page.evaluate(inspectCopyGeometry, scope) }
+    states.push(state)
+    await capture(state)
+    expect.soft(state.actualSide, `${label}: requested mode is active`).toBe(mode)
+    expect.soft(state.paintedCopy.length, `${label}: actual visible copy is recorded`).toBeGreaterThan(0)
+    expect.soft(state.report.clipped, `${label}: visible text fits`).toEqual([])
+    expect.soft(state.report.hiddenExpandedAnswers, `${label}: open text is painted`).toEqual([])
+    expect.soft(state.report.boxesOutsideViewport, `${label}: meaningful boxes fit`).toEqual([])
+    if (kind === 'overview') expect.soft(state.report.overflow, `${label}: document fits`).toBe(false)
+  }
+  for (const mode of ['p', 'e'] as const) {
+    const side = page.locator(`.pa-home .hero .h-top .sw[role="group"][aria-label="Browse or host"] button[type="button"][data-set="${mode}"]`)
+    await expect(side).toHaveCount(1)
+    expect(await side.evaluate(el => !!el.closest('form, a')), 'Side controls are local buttons').toBe(false)
+    await side.press('Space')
+    await expect(root).toHaveAttribute('data-side', mode)
+    await expect(side).toHaveAttribute('aria-pressed', 'true')
+    expect(new URL(page.url()).hash, 'Shell writes its documented local side hash').toBe(mode === 'p' ? '#people' : '#experiences')
+    const selected = page.locator(`.pa-home .hero .lede .${mode === 'p' ? 'p' : 'e'}-only`)
+    await expect(selected).toBeVisible()
+    await expect(page.locator(`.pa-home .hero .lede .${mode === 'p' ? 'e' : 'p'}-only`)).toBeHidden()
+    await revealPublicCopy(page)
+    await settlePublicCopyGeometry(page)
+    await record(mode, 'overview', null, mode === 'p' ? 'Browse Home' : 'Host Home', '[data-kit="site"]')
+    for (let index = 0; index < WEAVE.length; index++) {
+      // Exact column + middle row: People/Spaces buttons intentionally also change side.
+      const button = page.locator(`#weave #wv .wv-grid button.wn[type="button"][data-r="m"][data-c="${index}"]`)
+      await expect(button).toHaveCount(1)
+      expect(await button.getAttribute('data-set')).toBeNull()
+      expect(await button.evaluate(el => !!el.closest('form, a'))).toBe(false)
+      await button.press('Space')
+      await expect(page.locator(`#weave .wn.hot[data-c="${index}"]`)).toHaveCount(3)
+      await expect(root).toHaveAttribute('data-side', mode)
+      const expected = WEAVE[index]
+      await expect(page.locator('#weave .wv-cap .k')).toHaveText(`${String(index + 1).padStart(2, '0')} · ${mode === 'p' ? expected.s : expected.se}`)
+      await expect(page.locator('#weave .wv-cap p')).toHaveText(mode === 'p' ? expected.cp : expected.ce)
+      const action = mode === 'p' ? expected.ap : expected.ae
+      await expect(page.locator('#weave .wv-cap a')).toHaveText(action[0])
+      await expect(page.locator('#weave .wv-cap a')).toHaveAttribute('href', action[1])
+      await settleViewportReveals(page)
+      await settlePublicCopyGeometry(page)
+      await record(mode, 'weave', index, `${mode === 'p' ? 'Browse' : 'Host'} Weave ${index + 1}`, '#weave .wv-cap')
+    }
+  }
+  return states
+}
+
+test('copy-fit rejects overlapping plan labels and cropped placeholders @visual @copyfit', async ({ page }) => {
+  await page.setContent(`<style>*{box-sizing:border-box}html,body{margin:0;width:320px}#path{padding:16px}.pc-picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.pc-pick{min-width:0;padding:10px 12px;border:0;text-align:left}.pc-pick b{font:16px/1.15 Arial;min-width:0}.pc-form{display:flex;gap:8px;margin-top:16px}.pc-form input{font:16px Arial;width:110px;padding:12px}.pc-cta{width:140px}</style><main data-kit="site"><div id="path"><div class="pc-picks"><button class="pc-pick"><b>Member</b></button><button class="pc-pick"><b>Non Profit Collective</b></button><button class="pc-pick"><b>Non Profit Network</b></button></div><form class="pc-form"><input placeholder="Name your organization"><button class="pc-cta" type="button">Start a Network</button></form></div></main>`)
+  const original = await page.evaluate(inspectPlanControlText)
+  expect(original.issues).toEqual(expect.arrayContaining([
+    { text: 'Non Profit Collective', reason: 'Plan choice text exceeds its own card content width' },
+    { text: 'Name your organization', reason: 'Plan name placeholder exceeds its visible input content width' },
+  ]))
+  await page.addStyleTag({ content: '.pc-picks{grid-template-columns:repeat(2,minmax(0,1fr))}.pc-form{flex-wrap:wrap}.pc-form input,.pc-cta{width:100%}' })
+  const corrected = await page.evaluate(inspectPlanControlText)
+  expect(corrected.measured).toContain('Non Profit Collective')
+  expect(corrected.measured).toContain('Name your organization')
+  expect(corrected.issues).toEqual([])
+})

@@ -23,7 +23,10 @@ const ease = (x: number) => 1 - Math.pow(1 - x, 3)
 
 function fitSignatureViewport(signature: HTMLElement) {
   // CSS vw includes a desktop scrollbar; use the actual content viewport.
-  signature.style.setProperty('--home-viewport-half', `${document.documentElement.clientWidth / 2}px`)
+  const half = `${document.documentElement.clientWidth / 2}px`
+  if (signature.style.getPropertyValue('--home-viewport-half') !== half) {
+    signature.style.setProperty('--home-viewport-half', half)
+  }
 }
 
 export function HomeMotion() {
@@ -37,9 +40,13 @@ export function HomeMotion() {
     if (signature) {
       const sizeSignature = () => fitSignatureViewport(signature)
       sizeSignature()
+      // Scrollbars can appear after streamed content or disclosures without a window resize.
+      const viewportObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(sizeSignature)
+      viewportObserver?.observe(document.documentElement)
       window.addEventListener('resize', sizeSignature, { passive: true })
       cleanups.push(() => {
         window.removeEventListener('resize', sizeSignature)
+        viewportObserver?.disconnect()
         signature.style.removeProperty('--home-viewport-half')
       })
     }
