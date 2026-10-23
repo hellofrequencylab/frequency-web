@@ -1482,7 +1482,7 @@ jobs:
           PW_REQUIRE_OPERATOR: ${{ inputs.capture_shell && (vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR) || '' }}
         run: pnpm test:e2e:visual
       - name: Upload report + diffs
-        if: failure()
+        if: failure() || inputs.run_copy_fit
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-visual
