@@ -367,7 +367,7 @@ interface FeatureTierStep {
 
 /** A feature's full tier ladder: the axis it ranks on, the minimum unlock tier, the plain feature title,
  *  and the ascending rungs with their placeholder price points. Plain data (serializable). */
-export interface FeatureTierLadder {
+interface FeatureTierLadder {
   featureKey: string
   axis: GateAxis
   minTier: string

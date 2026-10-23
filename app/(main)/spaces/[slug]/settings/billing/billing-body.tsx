@@ -5,23 +5,15 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
-import { getPricingValues, billingLive } from '@/lib/pricing/settings'
-import { ChoosePlanButton } from './choose-plan'
-import { spaceLoadoutSellable } from '@/lib/billing/space-plan-checkout'
+import { getPricingValues } from '@/lib/pricing/settings'
+import { MemberPricingBox } from '@/components/pricing/member-pricing-box'
+import { loadPricingBoxData, loadPersonalContext, loadSellable } from '@/lib/pricing/member-pricing-load'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { TierChip } from '@/components/pricing/tier-chip'
 import { activeAgreementForSpace, type AgreementMethod } from '@/lib/billing/manual-agreements'
 import { formatAgreementRate } from '@/lib/billing/manual-agreement-dates'
-import { getSeatUsage } from '@/lib/spaces/seats'
-import { SeatCounter } from '@/components/spaces/seat-counter'
-import { SectionHeader } from '@/components/ui/section-header'
-import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
-import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
-import { countContacts } from '@/lib/crm/pipeline'
 import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { spaceEarningsSummary } from '@/lib/commerce/orders'
-import { GoBusinessCta } from './go-business'
-import { PlanLadder } from './plan-ladder'
 import { NetworkReceipt } from './network-receipt'
 import { ManageSubscriptionButton } from './manage-subscription'
 import { loadExtraSpaceQuote } from '@/lib/collective/extra-space-billing'
@@ -40,10 +32,6 @@ import { MemberSpaceEditor } from './member-space-editor'
 // surface is: the current plan, the usage-meter ladder, the seat counter, a single "Go Business" CTA,
 // and a small Non Profit link. The CTA is GATED: spaceLoadoutSellable('business') is false while billing
 // is OFF, so it renders a disabled "Available soon" preview. STAFF PREVIEW is read-only. No em dashes.
-
-// The plan-axis usage meters (ADR-519 / ADR-520 P3): every metered Space feature, so the Plan and usage
-// hub is the single "where am I on the ladder" answer. Personal (tier-axis) meters are excluded.
-const PLAN_USAGE_METERS = Object.values(FEATURE_METERS).filter((m) => m.axis === 'plan')
 
 // Operator-facing labels for how a manual agreement settles (ADR-872). Plain words, no jargon.
 const AGREEMENT_METHOD_LABEL: Record<AgreementMethod, string> = {
@@ -93,46 +81,20 @@ export async function BillingBody({ slug }: { slug: string }) {
   const effectivePlan = asSpacePlan(space.plan)
   const hasInheritedBusiness = currentPlan === 'free' && effectivePlan === 'business'
 
-  // The Business checkout gate (billingLive AND the per-plan switch — both false while billing is OFF, so
-  // the CTA renders as a disabled "Available soon" preview), plus the seat usage + billing-live flag.
-  // Seats are included per tier (ADR-1810): nothing on this surface sells a seat.
-  const [
-    values,
-    businessSellable,
-    seatUsage,
-    billingIsLive,
-    verification,
-    earnings,
-    contactCount,
-    manualAgreement,
-    collectiveSellable,
-    networkSellable,
-    nonprofitSellable,
-  ] = await Promise.all([
+  // The pricing box's inputs: the catalog (prices, copy, fees), which plans sell right now, the viewer's own
+  // tier, and the Space's verification. Seats are included per tier (ADR-1810), so nothing here sells one.
+  const [values, pricingData, sellable, personal, verification, earnings, manualAgreement] = await Promise.all([
     getPricingValues(),
-    spaceLoadoutSellable('business'),
-    getSeatUsage(space.id),
-    billingLive(),
+    loadPricingBoxData(),
+    loadSellable(),
+    loadPersonalContext(caller?.realMembershipTier),
     getSpaceVerification(space.id),
     // The honest receipt (Phase 5): trailing 30-day earnings, split network-sourced vs self.
     spaceEarningsSummary(space.id, 30),
-    // The CRM usage read for the contacts meter (ADR-837). This counts CONTACTS, which is what the
-    // meter's dimension says and what the 250-on-free allowance is denominated in. It previously
-    // passed the DEAL count as a "proxy", which is off by whatever the ratio of contacts to open
-    // pipeline deals happens to be — for an imported list that is two or three orders of magnitude.
-    // Head-only count, so it also stops loading every deal row (select('*') + a people hydrate) just
-    // to take .length. Fail-safe 0; display-only, nothing blocks.
-    countContacts(space.id),
     // A MANUAL billing agreement (ADR-872): an off-Stripe cash/check deal the crew recorded. When
     // one is active, the surface shows its receipt card and hides the Stripe portal button (there
     // is no Stripe subscription behind a cash deal). Fail-safe null: no agreement, nothing shown.
     activeAgreementForSpace(space.id),
-    // Collective reads its own sell switch (plan_collective_enabled), for the ladder chip only.
-    spaceLoadoutSellable('collective'),
-    // Network (SCAN-980): sells once its Stripe price exists, on the Collective switch.
-    spaceLoadoutSellable('network'),
-    // Non Profit checkout opens for a verified 501(c)(3) (LIVE-994): approval no longer grants it free.
-    spaceLoadoutSellable('nonprofit'),
   ])
 
   const memberSpaces = !staffViewing && viewerProfileId ? await loadMemberSpaceManagement(space.id, viewerProfileId) : null
@@ -197,74 +159,29 @@ export async function BillingBody({ slug }: { slug: string }) {
           </div>
         )}
 
-        {/* The Community Collective ladder (ADR-1709): where this Space sits + the promise (hosting is
-            free, selling starts at Business). A free Space gets a one-click Choose on Business; Business
-            keeps its richer CTA below. Collective reads its sell switch. Each action is gated
-            server-side. Independent is sold by hand and is not offered here (LIVE-227). */}
-        {!hasInheritedBusiness && <PlanLadder
-          currentPlan={currentPlan}
-          slug={space.slug}
-          isFree={!isPaid && !staffViewing}
-          sellable={{ business: businessSellable, collective: collectiveSellable, network: networkSellable }}
-        />}
+        {/* THE PRICING BOX: where this Space sits on the six-rung ladder, and the one place to compare, buy or
+            change a plan. A free Space buys inline; a Space that already pays changes plan in the Stripe
+            portal, so a second checkout can never bill it twice. Staff preview and non-owners see it read-only. */}
+        <MemberPricingBox
+          data={pricingData}
+          focus="space"
+          personal={personal}
+          space={{
+            slug: space.slug,
+            name: brandName,
+            plan: hasInheritedBusiness ? effectivePlan : currentPlan,
+            canBuy: caps.isOwner && !staffViewing && !hasInheritedBusiness,
+            paid: isPaid,
+            verified: verification?.status === 'verified',
+            inherited: hasInheritedBusiness,
+            managed: !!manualAgreement,
+            sellable,
+          }}
+        />
 
         {/* The honest receipt (Phase 5, ADR-811 §A): the real dollars the network sourced, proving promise
             #4. Renders nothing until there is network-sourced business, so it never brags about zero. */}
         <NetworkReceipt earnings={earnings} />
-
-        {/* USAGE METERS (ADR-519 / ADR-520 P3): the ladder for every metered tool in one place, the
-            current plan highlighted. Nothing charges or blocks (billing is on hold); the meters are
-            informational. This is the single "where am I on the ladder" answer. Where a real count is
-            already cheaply in scope (contacts via a head-only count, operator seats) it renders as an
-            "X of Y used" readout (ADR-837); every other meter shows the allowance alone. */}
-        <section>
-          <SectionHeader title="Usage" />
-          <div className="space-y-4">
-            {PLAN_USAGE_METERS.map((ladder) => (
-              <FeatureMeterRange
-                key={ladder.featureKey}
-                ladder={ladder}
-                currentTier={effectivePlan}
-                upgradeHref={`/spaces/${space.slug}/settings/billing`}
-                live={billingIsLive}
-                usage={
-                  ladder.featureKey === 'space_crm'
-                    ? contactCount
-                    : ladder.featureKey === 'space_team'
-                      ? seatUsage.used
-                      : undefined
-                }
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* The seat counter (Phase D, ADR-465): X of Y operator seats used. A preview while billing is
-            OFF; reflects the real allowance + enforcement when live. */}
-        <SeatCounter
-          usage={seatUsage}
-          billingHref={`/spaces/${space.slug}/settings/members`}
-          enforced={billingIsLive}
-          canManage={false}
-        />
-
-        {/* The single upgrade CTA. A free Space goes Business (the one paid tier). Staff preview is
-            read-only (the fieldset disables it). Already-paid Business spaces do not see the CTA. */}
-        {!isPaid && !hasInheritedBusiness && (
-          <fieldset disabled={staffViewing} className="contents">
-            <GoBusinessCta
-              slug={space.slug}
-              sellable={businessSellable}
-              trialDays={values.trial.days}
-            />
-            {/* The per-city Founding BUSINESS cohort door was here. Removed 2026-08-10: the cohort was
-                withdrawn by owner directive on 2026-07-31 and its route was deleted with it, but this
-                CTA survived a later edit to the file (#2017, 2026-08-03). Every unpaid Space owner who
-                opened Settings → Billing saw "See if a founding spot is left" and got a 404.
-                `lib/pricing/founding.ts:24` is the record of the retirement; the `business_*` config
-                fields it names still exist as fields only. Do not re-add a door without a room. */}
-          </fieldset>
-        )}
 
         {/* Already paying: the self-serve subscription control. Opens the Stripe billing portal (payment
             method, plan change/cancel). Owner action; hidden in staff
@@ -285,13 +202,8 @@ export async function BillingBody({ slug }: { slug: string }) {
               <p className="mt-0.5 text-meta leading-relaxed text-muted">
                 {currentPlan === 'nonprofit'
                   ? 'Verified 501(c)(3). This space is on the Non Profit plan: everything Business does, with no network fee, at one flat monthly price, never per seat.'
-                  : `Verified 501(c)(3). Choose the Non Profit plan: everything Business does, with no network fee, at one flat monthly price, never per seat. Starts with a ${values.trial.days}-day free trial.`}
+                  : `Verified 501(c)(3). Switch on Verified nonprofit in the plans above to choose Non Profit pricing: everything Business does, with no network fee, at one flat monthly price, never per seat. Starts with a ${values.trial.days}-day free trial.`}
               </p>
-              {!isPaid && !staffViewing && nonprofitSellable && (
-                <div className="mt-3">
-                  <ChoosePlanButton slug={space.slug} plan="nonprofit" label="Choose Non Profit" />
-                </div>
-              )}
             </>
           ) : verification?.status === 'pending' ? (
             <p className="mt-0.5 text-meta leading-relaxed text-muted">

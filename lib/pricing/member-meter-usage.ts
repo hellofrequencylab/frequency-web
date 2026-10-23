@@ -28,7 +28,6 @@
 //     create-path allowance in app/(main)/events/actions.ts.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { veraMessagesToday } from '@/lib/ai/vera/usage-gate'
 import { eventInstant, resolveZone } from '@/lib/time/zone'
 import { SERIES_COLUMNS, countSeries, type SeriesRow } from '@/lib/events/series'
 
@@ -73,78 +72,6 @@ export function isUpcomingByInstant(row: UpcomingEventRow, now: Date = new Date(
   return !!inst && inst.getTime() >= now.getTime()
 }
 
-/** The real usage behind each personal (tier-axis) meter, keyed by feature key. A key is absent when
- *  its count could not be resolved, so the surface shows the ladder without inventing a number. */
-type MemberMeterUsage = Partial<Record<string, number>>
-
-/** Published Journeys this member owns, counted the way the live publish cap counts them: anything
- *  past 'private' (unlisted is live to a space, public is live to the library). Fail-safe null. */
-async function memberPublishedJourneys(profileId: string): Promise<number | null> {
-  try {
-    const { count } = await createAdminClient()
-      .from('journey_plans')
-      .select('id', { count: 'exact', head: true })
-      .eq('author_id', profileId)
-      .neq('visibility', 'private')
-    return typeof count === 'number' ? count : null
-  } catch {
-    return null
-  }
-}
-
-/** ACTIVE enrollees across every Journey this member authored (an enrollment with no completed_at).
- *  Two reads on purpose: the plan-id list is small, and an embedded filter join is the kind of query
- *  that silently returns everything when it is wrong. Fail-safe null. */
-async function memberJourneyEnrollees(profileId: string): Promise<number | null> {
-  try {
-    const admin = createAdminClient()
-    const { data } = await admin.from('journey_plans').select('id').eq('author_id', profileId)
-    const planIds = (data ?? []).map((p) => p.id)
-    if (planIds.length === 0) return 0
-    const { count } = await admin
-      .from('journey_enrollments')
-      .select('id', { count: 'exact', head: true })
-      .in('plan_id', planIds)
-      .is('completed_at', null)
-    return typeof count === 'number' ? count : null
-  } catch {
-    return null
-  }
-}
-
-/** Circles this member hosts (host_id), excluding archived ones (the same clause lib/circles/store.ts
- *  uses). Fail-safe null. */
-async function memberHostedCircles(profileId: string): Promise<number | null> {
-  try {
-    const { count } = await createAdminClient()
-      .from('circles')
-      .select('id', { count: 'exact', head: true })
-      .eq('host_id', profileId)
-      .neq('status', 'archived')
-      // A Space Circle is the Space's, not a Circle this member chose to host, so it never uses one of
-      // their personal hosting slots (ADR-1391).
-      .eq('is_space_primary', false)
-    return typeof count === 'number' ? count : null
-  } catch {
-    return null
-  }
-}
-
-/** Practices this member published: created by them and public, so others can adopt them. Archiving a
- *  practice clears is_public, so this clause alone is the published set. Fail-safe null. */
-async function memberPublishedPractices(profileId: string): Promise<number | null> {
-  try {
-    const { count } = await createAdminClient()
-      .from('practices')
-      .select('id', { count: 'exact', head: true })
-      .eq('created_by', profileId)
-      .eq('is_public', true)
-    return typeof count === 'number' ? count : null
-  } catch {
-    return null
-  }
-}
-
 /**
  * ACTIVE events this member hosts: published, still upcoming, not cancelled, not removed. The
  * event_create meter counts how many run AT ONCE, never whether they may charge (selling is free on
@@ -177,29 +104,4 @@ export async function memberActiveEvents(profileId: string, now: Date = new Date
   } catch {
     return null
   }
-}
-
-/**
- * Every personal meter's real usage for one member, resolved in parallel. Keys map 1:1 onto the
- * tier-axis rows of PLACEHOLDER_METER_LIMITS. A key is OMITTED (not zeroed) when its read failed.
- * Never throws.
- */
-export async function memberMeterUsage(profileId: string | null | undefined): Promise<MemberMeterUsage> {
-  if (!profileId) return {}
-  const [vera, journeys, enrollees, circles, practices, events] = await Promise.all([
-    veraMessagesToday(profileId).catch(() => null),
-    memberPublishedJourneys(profileId),
-    memberJourneyEnrollees(profileId),
-    memberHostedCircles(profileId),
-    memberPublishedPractices(profileId),
-    memberActiveEvents(profileId),
-  ])
-  const usage: MemberMeterUsage = {}
-  if (typeof vera === 'number') usage.vera_unlimited = vera
-  if (typeof journeys === 'number') usage.journey_publish = journeys
-  if (typeof enrollees === 'number') usage.journey_enrollees = enrollees
-  if (typeof circles === 'number') usage.circle_host = circles
-  if (typeof practices === 'number') usage.practice_publish = practices
-  if (typeof events === 'number') usage.event_create = events
-  return usage
 }

@@ -535,7 +535,7 @@ export interface FeatureMeterStep {
 
 /** A feature's full usage-meter ladder: the axis it ranks on, the plain title + dimension, the reset
  *  period, and the ascending rungs with their placeholder allowance + price. Plain data (serializable). */
-export interface FeatureMeterLadder {
+interface FeatureMeterLadder {
   featureKey: string
   axis: GateAxis
   title: string

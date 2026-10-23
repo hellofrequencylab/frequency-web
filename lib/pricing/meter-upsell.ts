@@ -217,8 +217,9 @@ export function buildMeterUpsell(input: MeterUpsellInput): MeterUpsellCopy | nul
 type MeterUpsellKind =
   /** A dedicated surface at the point of use: the member sees it while doing the thing being metered. */
   | 'in-context'
-  /** The axis-wide allowance ladder (the Space plan-and-usage hub, or the member upgrade page), which
-   *  renders every meter on that axis with its own 80% nudge. The honest fallback for a meter whose
+  /** The axis-wide allowance comparison (the member pricing box, built in lib/pricing/member-pricing.ts
+   *  and mounted on the Space billing page and the member upgrade page), which compares every meter on
+   *  that axis across the six plans. The honest fallback for a meter whose
    *  real count is not cheaply in scope at the authoring surface. */
   | 'ladder'
 
@@ -248,22 +249,22 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
     note: 'The composer, on the WORKING path, against this calendar month of sends (the window the meter names).',
   },
   space_bookings: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Bookings-per-month has no cheap count on the availability editor; the plan hub carries the ladder.',
   },
   space_journey: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Active enrollees are counted per Journey, not per Space; the plan hub carries the ladder.',
   },
   space_journey_publish: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'The live publish cap already refuses at the publish action; the plan hub carries the ladder.',
   },
   space_tickets: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Tickets sold are an order-level count, not in scope on the tier editor; the plan hub carries the ladder.',
   },
@@ -283,27 +284,27 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
     note: 'Where seats are actually added, not only on the billing page. Seat usage is already read here.',
   },
   space_multi_pipeline: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Pipelines are a Collective on/off in practice; the plan hub carries the ladder.',
   },
   space_vera: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Space Vera turns are counted on the personal ledger, not per Space; the plan hub carries the ladder.',
   },
   space_crm_playbooks: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Playbook runs are a background rollup with no console of their own; the plan hub carries the ladder.',
   },
   space_crm_resonance_ai: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Resonance matches are a background rollup; the plan hub carries the ladder.',
   },
   space_collaborators: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Hosted collaborators span the venue and event grains, so no single surface holds the count; the plan hub carries the ladder.',
   },
@@ -313,52 +314,52 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
     note: 'The tier editor already holds the full tier list, so the real count is free.',
   },
   space_member_benefits: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Free allowance is zero, so the 80% prompt never applies below the Business wall; the plan hub carries the ladder, and a Business Space near 6 benefits is prompted there. Move this row to in-context once the benefits editor renders the count it already loads.',
   },
   space_circles: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Circles are created from several surfaces; the plan hub carries the ladder (LIVE-750).',
   },
   space_events: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Upcoming events are created from the events flow; the plan hub carries the ladder (LIVE-750).',
   },
   space_event_guests: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Guests are counted per event at RSVP; the plan hub carries the ladder (LIVE-750).',
   },
   space_practice_publish: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Space Practices publish from the editor; the plan hub carries the ladder (LIVE-750).',
   },
   space_services: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Bookable services are added on the booking settings; the plan hub carries the ladder (LIVE-750).',
   },
   space_shop_listings: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Shop listings are created in the shop flow; the plan hub carries the ladder (LIVE-750).',
   },
   space_campaigns_month: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Campaigns a month are counted at schedule and send; the plan hub carries the ladder (LIVE-751).',
   },
   space_funnels: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Live splash pages are counted when one is set; the plan hub carries the ladder (LIVE-751).',
   },
   space_automations_active: {
-    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Enabled sequences are counted when one is switched on; the plan hub carries the ladder (LIVE-751).',
   },
@@ -366,7 +367,7 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
   // member upgrade page mounted no meter at all. /upgrade is now the tier-axis ladder, and the two
   // authoring surfaces that already hold a real count carry the 80% prompt as well.
   vera_unlimited: {
-    mount: 'app/(main)/upgrade/page.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'The member upgrade page, with today real Vera turn count from the ai_usage ledger.',
   },
@@ -376,27 +377,27 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
     note: 'Your Journeys, which already separates published from drafts, so the real count is free.',
   },
   journey_enrollees: {
-    mount: 'app/(main)/upgrade/page.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Active enrollees span every Journey a member runs; the upgrade page carries the ladder.',
   },
   circle_host: {
-    mount: 'app/(main)/upgrade/page.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'The Circles index is a Puck template and /lead is module-driven, so neither holds a hosted count; the upgrade page carries the ladder.',
   },
   practice_publish: {
-    mount: 'app/(main)/upgrade/page.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Published Practices are not counted on the practice index; the upgrade page carries the ladder.',
   },
   event_create: {
-    mount: 'app/(main)/upgrade/page.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Active events span circles and Spaces; the upgrade page carries the ladder.',
   },
   event_guests: {
-    mount: 'app/(main)/upgrade/page.tsx',
+    mount: 'lib/pricing/member-pricing.ts',
     kind: 'ladder',
     note: 'Guests are counted per personal event at RSVP; the upgrade page carries the ladder (LIVE-750).',
   },

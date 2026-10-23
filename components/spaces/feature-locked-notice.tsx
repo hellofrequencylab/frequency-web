@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { CreditCard, Gauge, Lock, SlidersHorizontal } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { spaceManageHref, type SpaceType } from '@/lib/spaces/types'
-import { FeatureMeterUpsell } from '@/components/pricing/feature-meter-upsell'
 
 // FEATURE LOCKED notice (per-space-roles Phase 2; metered reframe ADR-519). The calm state a Space
 // settings surface renders when the per-Space function gate says the viewer cannot use the tool. It is a
@@ -24,8 +23,6 @@ export function FeatureLockedNotice({
   label,
   reason,
   canManageMembers,
-  featureKey,
-  currentPlan,
   planLine,
 }: {
   brandName: string
@@ -39,10 +36,10 @@ export function FeatureLockedNotice({
   reason: 'disabled' | 'plan' | 'role'
   /** Whether THIS viewer (owner / admin) can open Features and access / billing to change it. */
   canManageMembers: boolean
-  /** The pricing feature key (e.g. 'space_email'). When set on a PLAN-allowance gap for a manager, the
-   *  reusable FeatureMeterRange (ADR-519) shows the usage-meter ladder + placeholder allowances. */
+  /** The pricing feature key (e.g. 'space_email'). Callers still pass it; the plan comparison now lives in
+   *  one place, the member pricing box on the billing page, which "See plans" opens. */
   featureKey?: string
-  /** The Space's current plan, for the meter range highlight. */
+  /** The Space's current plan. Kept for callers, for the same reason. */
   currentPlan?: string | null
   /** Optional override for the 'plan' description: one plain sentence naming the plan that carries the
    *  feature (e.g. "Automations come with Business."). Use it for an on/off tier unlock,
@@ -93,28 +90,15 @@ export function FeatureLockedNotice({
     </Link>
   )
 
-  // Metered model (ADR-519): on a PLAN-allowance gap, a manager who can act sees the reusable usage-meter
-  // range (the allowance ladder + placeholder numbers + an "upgrade for more" CTA that only navigates,
-  // never charges). It is a no-op for a feature with no meter or ladder. A non-manager is not shown it
-  // (they cannot change the plan). Nothing is locked, so a plan gap uses the Gauge icon, not the padlock.
-  const showRange = reason === 'plan' && canManageMembers && !!featureKey
-
+  // Nothing is locked on a plan gap, so it uses the Gauge icon, not the padlock. The comparison of plans is
+  // the member pricing box on the billing page, one click away through "See plans".
   return (
-    <>
-      <EmptyState
-        icon={reason === 'plan' ? Gauge : Lock}
-        variant="permission"
-        title={title}
-        description={description}
-        action={action}
-      />
-      {showRange && (
-        <FeatureMeterUpsell
-          featureKey={featureKey!}
-          currentTier={currentPlan}
-          upgradeHref={`/spaces/${slug}/settings/billing`}
-        />
-      )}
-    </>
+    <EmptyState
+      icon={reason === 'plan' ? Gauge : Lock}
+      variant="permission"
+      title={title}
+      description={description}
+      action={action}
+    />
   )
 }
