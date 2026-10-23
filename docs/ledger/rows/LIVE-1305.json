@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-1305",
+  "title": "Rewrite the six audience doors around their people and actual work",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audience-voice.mjs",
+    "note": "Rejects retired setup and growth claims and verifies concrete route-specific tasks remain."
+  },
+  "detail": "Owner authorized full copy sweep with independent editorial layers. Six distinct audience stories replace unsupported reach, attendance and setup-time claims. Pricing interpolation, routing, plan eligibility and CTA identity remain. Default footer sign-off is Get people together. Do things on purpose.",
+  "wave": "W7",
+  "closed": "2026-10-22"
+}
