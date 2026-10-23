@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1036",
+  "title": "Resolve event expiry and crawl eligibility against the host timezone",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/events/end-time.ts",
+    "ref": "Calendar and booking audit, 2026-10-23"
+  },
+  "detail": "Source-confirmed mismatch requiring scoped follow-up: lib/events/datetime.ts stores host wall-clock parts as UTC-naive values, but eventHasEnded compares those values directly with now. lib/discover.ts uses it for public-event expiry and lib/events/series-seo.ts for sitemap eligibility, without passing time_zone. For an America/Los_Angeles event ending 2026-06-26T19:00:00Z in storage, at 2026-06-27T00:00:00Z the helper reports ended although host time is only 17:00. The canonical lib/time/zone.ts eventInstant seam interprets the wall-clock correctly. Trace public RPC/listing filters and zone enrichment before repairing so page, metadata and sitemap agree without adding expensive imports across public build roots. Prior LIVE-199 fixed JSON-LD zone enrichment, not this expiry seam. No production event rows were inspected and no live impact was asserted.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-23",
+    "evidence": "Open: prove public page index eligibility and sitemap retention for a Pacific 19:00 stored wall-clock end at 17:00 host time, then removal after its true instant; cover London DST, missing-zone fallback and explicit cancellation. Require route/RPC zone plumbing evidence rather than a helper-only mock."
+  },
+  "wave": "W0"
+}

@@ -24,7 +24,8 @@ export function wallClockToIso(local: string | null | undefined): string | null 
   if (!local || !LOCAL_DATETIME.test(local)) return null
   const withSeconds = /:\d{2}:\d{2}$/.test(local) ? local : `${local}:00`
   const d = new Date(`${withSeconds}Z`)
-  return Number.isNaN(d.getTime()) ? null : d.toISOString()
+  return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 19) !== withSeconds
+    ? null : d.toISOString()
 }
 
 /** A date-only value (`YYYY-MM-DD`, e.g. a recurrence end) → midnight-UTC ISO, so a
@@ -32,12 +33,13 @@ export function wallClockToIso(local: string | null | undefined): string | null 
 export function dateToWallClockIso(date: string | null | undefined): string | null {
   if (!date || !DATE_ONLY.test(date)) return null
   const d = new Date(`${date}T00:00:00Z`)
-  return Number.isNaN(d.getTime()) ? null : d.toISOString()
+  return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== date
+    ? null : d.toISOString()
 }
 
 // An explicit-offset suffix (Z or ±hh[:]mm): the string names its own zone, so parsing it
 // is runtime-zone-independent and `new Date(...)` is safe.
-const EXPLICIT_OFFSET = /(?:Z|[+-]\d{2}:?\d{2})$/
+const EXPLICIT_OFFSET = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/
 
 /** A caller-supplied start time that is EITHER a `datetime-local` wall-clock (kept literally,
  *  the storage convention above) OR an ISO string carrying its own offset (already an exact
@@ -47,7 +49,11 @@ const EXPLICIT_OFFSET = /(?:Z|[+-]\d{2}:?\d{2})$/
 export function eventStartInputToIso(input: string | null | undefined): string | null {
   const wall = wallClockToIso(input)
   if (wall) return wall
-  if (!input || !EXPLICIT_OFFSET.test(input)) return null
+  if (!input) return null
+  const explicit = EXPLICIT_OFFSET.exec(input)
+  // Validate the caller's calendar parts before applying its offset. Date otherwise
+  // normalizes February 30 and 24:00 into a different day without reporting an error.
+  if (!explicit || !wallClockToIso(explicit[1])) return null
   const d = new Date(input)
   return Number.isNaN(d.getTime()) ? null : d.toISOString()
 }
