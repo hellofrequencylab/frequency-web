@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1047",
+  "title": "Page complete Dispatch and place-tree audiences beyond the Data API row ceiling",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/(main)/nearby/actions.ts",
+    "ref": "Actual resolver reproduction returned 1000 of 1205 synthetic Circle members; API max_rows=1000, 2026-10-23"
+  },
+  "detail": "Global Dispatch selected profiles without paging; scoped recipient hydration used one unbounded ID query. Shared place-tree selectors also stopped at the Data API ceiling at hubs, circles or memberships. A real-function synthetic reproduction returned only 1000 of 1205 Circle members before repair. A shared SDK-free cursor reader now walks stable id-ordered pages of 500, rejects failed/stalled/oversized reads, and preserves the existing 20000-row bound explicitly rather than clipping. Place-tree reads page each layer and batch ID filters in groups of 100; Dispatch pages global IDs and hydrates details in 100-ID queries before any sends. Existing scope authorization, global active/non-demo filters, send gates, platform after registration and fanout concurrency=12 remain. Actual action/resolver fixtures cover 1205 global/scoped/Circle/Hub/Nexus recipients with a realistic 1000-row response cap, later-read failure sends nothing, and denied scope writes nothing. Fifty-eight existing/expanded focused tests, lint and six assertion-level regression controls pass. One old audience fixture lacked the new query modifiers; it now models stable ordering, limit and cursor while preserving its original cross-Space assertion. No production rows, emails or push deliveries were touched. Whole-tree type/build integration remains to be checked; no production throughput, durable completion or provider acceptance is inferred.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/dispatch-audience-pages.mjs",
+    "note": "Execute actual action, shared pager and place-tree resolver with synthetic capped query builders and provider recorders; no database/Auth/provider calls."
+  },
+  "wave": "W0"
+}
