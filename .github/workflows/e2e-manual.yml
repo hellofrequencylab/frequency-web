@@ -170,6 +170,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_copy_fit:
+        description: 'Check public copy geometry, destinations and metadata at phone and desktop widths; requires run_visual'
+        required: false
+        default: false
+        type: boolean
       update_baselines:
         description: 'CAPTURE fresh @visual baselines against base_url and commit them to the branch'
         required: false
@@ -1454,6 +1459,7 @@ jobs:
 
       - name: Visual suite
         env:
+          COPY_FIT_RUN: ${{ inputs.run_copy_fit && '1' || '' }}
           PW_BASE_URL: ${{ inputs.base_url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
