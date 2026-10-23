@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -35,6 +35,11 @@ vi.mock('@/components/sites/site-admin-gate', () => ({
 // writes each page as a static HTML file for scripts/probes/wildheart-shots.mjs to screenshot.
 
 const NOW = new Date(Date.UTC(2026, 9, 12, 20))
+
+// Components default `now` to the real clock (the Now line, the sub bar, the live data); pin it so the
+// handoff's "until Oct 22" strings do not expire with the calendar.
+beforeAll(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(NOW) })
+afterAll(() => { vi.useRealTimers() })
 const ORIGIN = 'https://frequency.example'
 const SITE_BASE = ''
 
