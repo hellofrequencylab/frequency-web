@@ -123,6 +123,7 @@
 
   /* ── The design layer: what rounded-*, shadow-*, font-* and the type steps mean ── */
   --design-font-body: var(--fq-font-sans);
+  --design-practice-orb: var(--fq-pa-orb);
   --design-font-display: var(--fq-font-display);
   --design-font-display-fallback: var(--fq-font-sans);
   --design-heading-weight: 600;
