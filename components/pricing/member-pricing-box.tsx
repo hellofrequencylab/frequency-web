@@ -129,6 +129,15 @@ export function MemberPricingBox({
   const per = tier.pwyw || !price ? '' : yearly ? '/yr' : '/mo'
   const listCents = nonprofit ? null : yearly ? tier.listYearlyCents : tier.listMonthlyCents
 
+  // On a narrow screen the ladder scrolls sideways: keep the selected rung in view, sideways only.
+  const ladderRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const lad = ladderRef.current
+    const el = lad?.querySelector<HTMLElement>('[aria-selected="true"]')
+    if (!lad || !el || lad.scrollWidth <= lad.clientWidth) return
+    lad.scrollTo({ left: el.offsetLeft - (lad.clientWidth - el.offsetWidth) / 2, behavior: 'smooth' })
+  }, [selected])
+
   // Entrance: once, when 15% of the box is in view. prefers-reduced-motion is honoured in the sheet, which
   // shows everything at once and drops every transition.
   useEffect(() => {
@@ -434,7 +443,7 @@ export function MemberPricingBox({
         </div>
       </div>
 
-      <div className="pbx-ladder pbx-rise" style={{ '--pbx-dy': '24px', '--pbx-delay': '120ms' } as CSSProperties} role="tablist" aria-label="Plans" tabIndex={0} onKeyDown={onKey}>
+      <div ref={ladderRef} className="pbx-ladder pbx-rise" style={{ '--pbx-dy': '24px', '--pbx-delay': '120ms' } as CSSProperties} role="tablist" aria-label="Plans" tabIndex={0} onKeyDown={onKey}>
         <div className="pbx-rungs">
           <div className="pbx-track" aria-hidden="true" />
           <div className="pbx-fill" aria-hidden="true" style={{ width: entered ? `${((selectedIndex / 5) * 83.33).toFixed(2)}%` : '0%' }} />

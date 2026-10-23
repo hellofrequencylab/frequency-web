@@ -10,6 +10,7 @@
 [data-design="frequency"] .pbx.is-in .pbx-rise{opacity:1;transform:none}
 [data-design="frequency"] .pbx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 [data-design="frequency"] .pbx-head-copy{display:flex;flex-direction:column;gap:12px}
+[data-design="frequency"] .pbx-title,[data-design="frequency"] .pbx-sub{margin:0}
 [data-design="frequency"] .pbx-title{font:500 28px/1.1 var(--fq-font-display);letter-spacing:-.05em;color:var(--fq-text-strong)}
 [data-design="frequency"] .pbx-sub{font:400 15px/1.55 var(--fq-font-sans);color:var(--fq-text-body)}
 [data-design="frequency"] .pbx-period{display:flex;gap:4px;padding:4px;border-radius:999px;background:color-mix(in oklab,var(--fq-surface-raised) 55%,transparent);box-shadow:inset 0 0 0 1px var(--fq-surface-raised),0 8px 22px -12px color-mix(in oklab,var(--pbx-shadow) 40%,transparent)}
