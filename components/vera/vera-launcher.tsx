@@ -21,7 +21,6 @@ import {
   stripDockParams,
   type DockOpenDetail,
 } from '@/lib/messages/dock-open'
-import { EdgePill } from '@/components/layout/edge-pill'
 import {
   DOCK_CHAT_SLOT_ID,
   RAIL_END_OPENS,
@@ -310,7 +309,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
     // 🔴 EXISTS IS NOT THE QUESTION — RENDERED IS. DockBar is `hidden … md:flex`, so below md it
     // is in the DOM and merely display:none. `getElementById` returns it anyway, so this used to
     // find a slot on every phone, take the portal branch, and mount the chat trigger INSIDE a
-    // display:none container. The EdgePill fallback never fired because it keys off `!slot`.
+    // display:none container. The phone tab fallback never fired because it keys off `!slot`.
     // Net effect: no visible way to reach Messages, Vera or help on a phone at all, on every
     // route with a rail — reachable only by deep link or an in-page "Ask Vera" button.
     //
@@ -608,7 +607,7 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
           // not paint over it. Below md there is no bar, and the sheet keeps its z-50 so the
           // mobile tab bar cannot cover it.
           // The `md:` box here is now only the FALLBACK for surfaces that have no bar at all
-          // ((marketing), (help), /discover — the EdgePill's neighbours). Wherever a bar exists,
+          // ((marketing), (help), /discover). Wherever a bar exists,
           // `panelBox` above overrides left/width/right/bottom with the bar's own measurement.
           // `fqd-wrap` is the Frequency hook that lifts the fallback box with the open mega footer
           // (members-shell.css, LIVE-1043); DAWN has no rule for it.
@@ -894,16 +893,15 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 // (main) layout and persists across navigation. A portal lets the button sit in the bar's
 // geometry without either component having to own the other's state.
 //
-// The EdgePill stays as the fallback, and it is not dead code: (marketing), (help) and
-// /discover mount this launcher with no Vault and therefore no dock slot. `slotChecked` gates
-// the decision so the pill never flashes on a surface that does have a dock.
+// With no dock slot the only fallback is the phone tab below. There is no floating edge tab on
+// desktop (owner, 2026-10-24): the dock in the rail footer is the one way in. `slotChecked` gates
+// the decision so nothing flashes on a surface that does have a dock.
 //
 // A FOLDED RAIL IS NOT ONE OF THOSE SURFACES, and nothing here has to know that — for a better
 // reason than before. DockBar used to hide the whole bar on a fold; the owner has since amended
 // that (2026-08-05) so the VAULT segment goes and this tab STAYS, with the bar shrinking to fit
 // it. Either way the slot is in the document and this keeps portalling into it, so the tab needs
-// no fold input at all. Falling back to the EdgePill would answer a fold by re-planting the
-// floating edge launcher this bar was built to retire.
+// no fold input at all. The floating edge launcher this bar was built to retire is gone.
 //
 // TONE. The tile is MUTED at rest and full-strength only when something is actually waiting.
 // A solid amber block that is always solid amber says "act on me" on every page of the app,
@@ -966,7 +964,7 @@ function ChatTrigger({
     return (
       <>
         {/* ── PHONE: a tab peeling out from behind the bottom rail (owner, 2026-08-06) ──────────
-            It used to be the EdgePill at `top-1/2` on the right edge — a 29.75px disc floating
+            It used to be a floating edge tab at `top-1/2` on the right edge — a 29.75px disc floating
             halfway down the screen, under the touch floor and nowhere near the thumb. This is the
             same trigger parked where the other bottom furniture lives.
 
@@ -1034,21 +1032,6 @@ function ChatTrigger({
           )}
           {unread === 0 && waiting && <span aria-hidden className={WAITING_DOT} />}
         </button>
-
-        {/* Tablet and up with no dock (marketing, /help, /discover, /admin) keep the edge pill:
-            there is no bottom rail on those surfaces to peel out from. */}
-        <span className="hidden md:block">
-          <EdgePill
-            side="right"
-            glow="orange"
-            label="Chat"
-            icon={<MessageSquare className="h-4.5 w-4.5" aria-hidden />}
-            waiting={waiting}
-            badgeCount={unread}
-            onOpen={onOpen}
-            ariaLabel="Open messages, Vera, and help"
-          />
-        </span>
       </>
     )
   }
