@@ -52,7 +52,9 @@ const csp = [
   // was the stale allowlist ADR-922 said should go rather than grow a third collector.
   // Stripe: api.stripe.com is every XHR the on-page checkout makes from our origin;
   // merchant-ui-api.stripe.com is audited (with its caveat) in the Stripe block below.
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co https://api.stripe.com https://merchant-ui-api.stripe.com",
+  // Browser error envelopes use this exact configured organization ingest origin.
+  // No Sentry wildcard: keep unrelated organizations outside the connection policy.
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co https://api.stripe.com https://merchant-ui-api.stripe.com https://o4512171150934016.ingest.us.sentry.io",
   // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
   // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
   // Bandcamp, Apple Music and Twitch (two player hosts: clips have their own) joined on
