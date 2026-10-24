@@ -283,7 +283,7 @@ function inspectCopyGeometry(scopeSelector?: string | void) {
     const box = el.getBoundingClientRect(), image = img.getBoundingClientRect()
     if (image.width !== 256 || image.height !== 256 ||
       (['left', 'right', 'top', 'bottom'] as const).some(key => box[key] !== image[key])) return null
-    let painted = { left: image.left, right: image.right, top: image.top, bottom: image.bottom }
+    const painted = { left: image.left, right: image.right, top: image.top, bottom: image.bottom }
     for (let parent = el.parentElement; parent; parent = parent.parentElement) {
       const s = getComputedStyle(parent), b = parent.getBoundingClientRect()
       // A rotated/skewed/filter clip is outside this rectangular proof, never silently admitted.
@@ -465,17 +465,33 @@ async function settlePublicCopyGeometry(page: Page) {
 }
 
 async function settleViewportReveals(page: Page) {
-  // site-fx.tsx staggers .pop.in by170ms. Wait for the same20% intersection
-  // threshold/root margin before advancing, rather than outrunning its queue.
-  await page.waitForFunction(() => [...document.querySelectorAll('.pop:not(.in)')].every(el => {
-    const box = el.getBoundingClientRect()
-    const area = box.width * box.height
-    if (area <= 0) return true
-    const intersect = Math.max(0, Math.min(box.right, innerWidth) - Math.max(box.left, 0)) *
-      Math.max(0, Math.min(box.bottom, innerHeight * 0.94) - Math.max(box.top, 0))
-    return intersect / area < 0.2
-  }), undefined, { timeout: 6000 })
+  // SiteFx uses this exact observer configuration and reveals on isIntersecting.
+  // Native entries include ancestor clips and resolve percentage root margins correctly.
+  // Poll delivered native intersection state synchronously before declaring readiness.
+  const native = await page.evaluateHandle(() => {
+    const intersections = new Map<Element, boolean>()
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) intersections.set(entry.target, entry.isIntersecting)
+    }, { threshold: 0.2, rootMargin: '0px 0px -6% 0px' })
+    return { observer, intersections, observed: new Set<Element>() }
+  })
+  try {
+    await page.waitForFunction(state => {
+      const pending = [...document.querySelectorAll('.pop:not(.in)')]
+      for (const el of pending) if (!state.observed.has(el)) {
+        state.observed.add(el)
+        state.observer.observe(el)
+      }
+      return pending.every(el => state.intersections.get(el) === false)
+    }, native, { timeout: 6000 })
+  } finally {
+    await native.evaluate(state => state.observer.disconnect())
+    await native.dispose()
+  }
   await page.evaluate(async () => {
+    // An IO callback can observe .in in the same frame it is added. Allow the browser
+    // to register/paint its CSS transition before collecting the existing finite waits.
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
     const finite = document.getAnimations().filter(animation => {
       const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null
       if (!(target instanceof Element) || !target.closest('.pop.in')) return false
@@ -554,7 +570,8 @@ for (const width of [320, 390, 1280]) {
       await info.attach('full-page', { body: await page.screenshot({ fullPage: true, animations: 'disabled' }), contentType: 'image/png' })
       const disclosures = await reviewReadOnlyCopyDisclosures(page)
       await info.attach('expanded-disclosure-report', { body: JSON.stringify(disclosures, null, 2), contentType: 'application/json' })
-      await page.evaluate(() => window.scrollTo(0, 0))
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+      await settlePublicCopyGeometry(page)
       const expanded = await page.evaluate(inspectCopyGeometry)
       await info.attach('expanded-copy-fit-report', { body: JSON.stringify(expanded, null, 2), contentType: 'application/json' })
       await info.attach('expanded-full-page', { body: await page.screenshot({ fullPage: true, animations: 'disabled' }), contentType: 'image/png' })
@@ -1141,4 +1158,46 @@ test('copy-fit measures only proved raster paint inside the source-owned map vie
       expect(report.boxesOutsideViewport.length, name).toBeGreaterThan(0)
     }
   }
+})
+
+test('copy-fit native reveal intersection ignores a clipped inactive pending element @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'One offline fixture project')
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.setContent('<main data-kit="site"><h1>Visible heading</h1><div style="position:relative;height:20px;overflow:hidden"><div class="pop" style="position:absolute;top:100px;width:200px;height:100px;opacity:0">Inactive clipped panel</div></div></main>')
+  await settleViewportReveals(page)
+  expect(await page.locator('.pop').getAttribute('class')).toBe('pop')
+})
+
+test('copy-fit native reveal intersection rejects an intersecting permanently pending element @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'One offline fixture project')
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.setContent('<main data-kit="site"><div class="pop" style="width:200px;height:100px;opacity:0">Never revealed despite intersecting</div></main>')
+  await expect(settleViewportReveals(page)).rejects.toThrow(/Timeout 6000ms exceeded/)
+  expect(await page.locator('.pop').getAttribute('class')).toBe('pop')
+})
+
+test('copy-fit expanded instant reset waits for delayed scroll geometry @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'One offline fixture project')
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.setContent(`<style>html{scroll-behavior:smooth}body{margin:0}h1{margin:0;width:200px;font:20px/24px monospace;transform:translateX(40px)}</style><main data-kit="site" style="height:1800px"><div style="overflow:hidden;width:190px"><h1>Delayed heading</h1></div></main><script>
+    window.addEventListener('scroll', () => { if (scrollY === 0) setTimeout(() => {
+      const h = document.querySelector('h1'); h.style.transition = 'transform 600ms linear'; h.style.transform = 'translateX(0px)';
+    }, 100); });
+  </script>`)
+  await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }))
+  await page.waitForFunction(() => scrollY > 0)
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+  expect((await page.evaluate(inspectCopyGeometry)).clipped.some(row => row.text === 'Delayed heading')).toBe(true)
+  await settlePublicCopyGeometry(page)
+  expect(await page.evaluate(() => scrollY)).toBe(0)
+  expect(await page.locator('h1').evaluate(el => getComputedStyle(el).transform)).toBe('matrix(1, 0, 0, 1, 0, 0)')
+  expect((await page.evaluate(inspectCopyGeometry)).clipped).toEqual([])
+})
+
+test('copy-fit stable readiness still rejects permanently clipped copy @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'One offline fixture project')
+  await page.setContent('<main data-kit="site"><div style="width:12px;overflow:hidden"><h1 style="margin:0;width:220px;font:20px/24px Arial">Permanently clipped heading</h1></div></main>')
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+  await settlePublicCopyGeometry(page)
+  expect((await page.evaluate(inspectCopyGeometry)).clipped.some(row => row.text === 'Permanently clipped heading')).toBe(true)
 })
