@@ -131,8 +131,8 @@ function SpaceGrid({ spaces, label }: { spaces: readonly NetworkedSpace[]; label
 }
 
 const CLOSER = {
-  title: 'Run your whole business in the network people already browse.',
-  body: 'Your own page, a shop, bookings, memberships, events, and a CRM for your people. Getting listed is getting discovered. Free to start.',
+  title: 'Give your community a place to find your work.',
+  body: 'Share your work on your Space page. Add dates and contacts, then see the plans for paid bookings, shop items and memberships.',
   primary: { href: '/spaces/new', label: 'List your business' },
   secondary: { href: '/spaces', label: 'How Spaces work' },
 }
@@ -176,7 +176,7 @@ export function FrequencySpacesDirectory({
         crumbs={[{ label: 'Discover', href: '/discover' }, { label: 'Business Spaces' }]}
         image={image || photo('gathering-04.jpg')}
         title="Find a business or nonprofit near you"
-        lede="Find a business or nonprofit near you. Or list your own and get discovered by everyone browsing the network."
+        lede="Browse businesses and Non Profits near you, including studios, shops and community groups. Or learn about listing your own Space."
       >
         <Link className="btn fq-iri-btn" href="/spaces/new">
           List your business
@@ -315,7 +315,7 @@ export function FrequencySpaceTypeHub({
         title={`Every ${label} in the network.`}
       >
         {spaces.length === 0 ? (
-          <DirEmpty title={`No ${hub.plural.toLowerCase()} here yet.`} body="Be the first to claim one. A profile is free and gets found on search and AI.">
+          <DirEmpty title={`No ${hub.plural.toLowerCase()} here yet.`} body="Create a profile so people can read about your work and find your page.">
             <Link className="btn fq-iri-btn" href="/spaces/new">
               List yours
             </Link>
@@ -339,7 +339,7 @@ export function FrequencySpaceTypeHub({
       </DirSection>
       <KeepGoing
         title={`Run your ${label.toLowerCase()} on ${SITE_NAME}.`}
-        body="Start with a free profile that gets found on search and AI, then grow into the full toolkit when you are ready."
+        body="Start with a profile that describes your work. Share your page, then explore the tools and plan details as you need them."
         primary={{ href: BETA_CTA_HREF, label: BETA_CTA_LABEL }}
         secondary={{ href: '/spaces', label: 'How Spaces work' }}
       />

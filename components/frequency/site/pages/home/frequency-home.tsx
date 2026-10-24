@@ -58,12 +58,12 @@ const FOLD_PHOTOS: [string, number, CSSProperties][] = [
 ]
 
 const FEATS: { icon: FqIconName; name: string; vp: string; ve: string; pp: string; pe: string }[] = [
-  { icon: 'circle', name: 'Circle', vp: 'You join', ve: 'You run', pp: 'A small group around one thing, at the same time each week.', pe: 'Choose a time and invite people to meet regularly.' },
-  { icon: 'event', name: 'Event', vp: 'You go', ve: 'You throw', pp: 'Find a one-off gathering you’d like to try.', pe: 'Sell tickets, greet guests and handle refunds.' },
-  { icon: 'program', name: 'Program', vp: 'You move through', ve: 'You design', pp: 'A few weeks with the same group, start to finish.', pe: 'A path your Circle walks together, step by step.' },
+  { icon: 'circle', name: 'Circle', vp: 'You join', ve: 'You run', pp: 'A small group around one activity, with its own meeting times.', pe: 'Choose a time and invite people to meet regularly.' },
+  { icon: 'event', name: 'Event', vp: 'You go', ve: 'You throw', pp: 'Find a one-off gathering you’d like to try.', pe: 'Greet guests and manage tickets. Paid tickets start at Business.' },
+  { icon: 'program', name: 'Program', vp: 'You move through', ve: 'You design', pp: 'Follow the program’s sessions and meeting dates.', pe: 'A path your Circle walks together, step by step.' },
   { icon: 'host', name: 'Experience', vp: 'You host', ve: 'You hand off', pp: 'Open your living room, garden or local park.', pe: 'Regulars running gatherings under your Space.' },
-  { icon: 'checkin', name: 'Check-in', vp: 'You arrive', ve: 'You remember', pp: 'Scan at the door. Zaps for being there.', pe: 'See who checked in and welcome them by name.' },
-  { icon: 'membership', name: 'Membership', vp: 'You belong', ve: 'You sustain', pp: 'Join a group with a recurring membership.', pe: 'Recurring support that drops people into their Circle.' },
+  { icon: 'checkin', name: 'Check-in', vp: 'You arrive', ve: 'You remember', pp: 'Follow the check-in instructions at the door.', pe: 'See who checked in and welcome them by name.' },
+  { icon: 'membership', name: 'Membership', vp: 'You belong', ve: 'You sustain', pp: 'Join a Space with a recurring membership.', pe: 'Offer a recurring membership with clearly listed benefits.' },
 ]
 
 /** Both halves of a two-sided line. */
@@ -290,7 +290,7 @@ export async function FrequencyHome() {
               items={[
                 { href: SITE.join, icon: 'pin', title: 'Join to set your town', sub: 'See what meets near you' },
                 { href: SITE.join, icon: 'event', title: 'Join to browse this week', sub: 'Circles, events, programs' },
-                { href: SITE.join, icon: 'circle', title: 'Join to pick a Circle', sub: 'Same people, same time' },
+                { href: SITE.join, icon: 'circle', title: 'Join to pick a Circle', sub: 'Check the group’s meeting times' },
               ]}
             />
             <Acts
@@ -334,7 +334,7 @@ export async function FrequencyHome() {
               <Sided p="Walk in. Check in." e="Know who came." />
             </h2>
             <p className="body-l p-only">
-              Scan the QR code when you arrive to check in. Earn Zaps for taking part.
+              Scan an eligible QR code when you arrive and follow the check-in confirmation.
             </p>
             <p className="body-l e-only">
               Invite people to scan your QR code when they arrive. See who checked in and who’s new, so you can
@@ -343,8 +343,8 @@ export async function FrequencyHome() {
             <Acts
               className="p-only"
               items={[
-                { href: SITE.join, icon: 'ticket', title: 'Join to RSVP to an event', sub: 'Or just turn up' },
-                { href: SITE.join, icon: 'checkin', title: 'Join to check in at the door', sub: '+25 Zaps for being there' },
+                { href: SITE.join, icon: 'ticket', title: 'Join to RSVP to an event', sub: 'Check the entry details' },
+                { href: SITE.join, icon: 'checkin', title: 'Join to check in at the door', sub: 'See your check-in record' },
                 { href: SITE.join, icon: 'contacts', title: 'Join to meet your Circle', sub: 'Find a time to meet again' },
               ]}
             />
@@ -352,8 +352,8 @@ export async function FrequencyHome() {
               className="e-only"
               items={[
                 { href: SITE.join, icon: 'qr', title: 'Join to print your door QR', sub: 'One code for every experience' },
-                { href: SITE.join, icon: 'ticket', title: 'Join to run your guest list', sub: 'Tickets, refunds, walk-ins' },
-                { href: SITE.join, icon: 'nudge', title: 'Join to greet first-timers', sub: 'Nudges while they’re still in the room' },
+                { href: SITE.join, icon: 'ticket', title: 'Join to run your guest list', sub: 'Paid tickets start at Business' },
+                { href: SITE.join, icon: 'nudge', title: 'Join to greet first-timers', sub: 'Read their check-in history' },
               ]}
             />
           </div>
@@ -378,7 +378,7 @@ export async function FrequencyHome() {
                   }
                   e={
                     <>
-                      What your town is <em className="fq-iri-text">looking for.</em>
+                      Gatherings on <em className="fq-iri-text">your local calendar.</em>
                     </>
                   }
                 />
@@ -431,7 +431,7 @@ export async function FrequencyHome() {
               03 · <Sided p="Come back" e="Bring them back" />
             </span>
             <h2 className="h-l">
-              <Sided p="Same people, same time." e="Give them a rhythm." />
+              <Sided p="A regular time to gather." e="Give them a rhythm." />
             </h2>
             <p className="body-l p-only">
               A regular Circle gives you a time and place to meet again. Try a Thursday walk or a weekly class,
@@ -445,8 +445,8 @@ export async function FrequencyHome() {
               className="p-only"
               items={[
                 { href: SITE.join, icon: 'circle', title: 'Join to find a Circle', sub: 'A place to keep coming back' },
-                { href: SITE.join, icon: 'program', title: 'Join to start a program', sub: 'Six weeks, same group' },
-                { href: SITE.join, icon: 'zap', title: 'Join to follow your Circle', sub: 'Zaps for showing up again' },
+                { href: SITE.join, icon: 'program', title: 'Join to start a program', sub: 'Check the sessions and dates' },
+                { href: SITE.join, icon: 'zap', title: 'Join to follow your Circle', sub: 'See activity through the season' },
               ]}
             />
             <Acts
@@ -454,7 +454,7 @@ export async function FrequencyHome() {
               items={[
                 { href: SITE.join, icon: 'circle', title: 'Join to run a Circle', sub: 'The heartbeat of a Space' },
                 { href: SITE.join, icon: 'program', title: 'Join to build a program', sub: 'A path your Circle walks together' },
-                { href: SITE.join, icon: 'membership', title: 'Join to sell memberships', sub: 'Members land in their Circle' },
+                { href: SITE.join, icon: 'membership', title: 'Join to sell memberships', sub: 'Set out the included benefits' },
               ]}
             />
           </div>
@@ -485,8 +485,8 @@ export async function FrequencyHome() {
               a walk, a shared meal or a Circle of your own.
             </p>
             <p className="body-l e-only">
-              Share the hosting with a regular, or invite another local group to gather with you. When someone we
-              bring you buys, we take a small share. Your own regulars, you keep all of it, after card processing.
+              Share the hosting with a regular, or invite another local group to gather with you. Paid Space plans
+              and introduction fees are separate. Your own bookings carry no network fee, plus card processing.
             </p>
             <Acts
               className="p-only"
@@ -522,8 +522,7 @@ export async function FrequencyHome() {
                 Frequency is in beta. <em className="fq-iri-text">Help us build it.</em>
               </h2>
               <p className="body-l">
-                Free until {BETA_UNTIL}. Founding members set the rhythm here, and what we build next comes from the people
-                who show up.
+                Free until {BETA_UNTIL}. Founding members set the rhythm here, and you can tell us what you notice as you try the Circles and tools.
               </p>
             </div>
             <div className="bb-side">
@@ -534,7 +533,7 @@ export async function FrequencyHome() {
                 </li>
                 <li>
                   <b>3</b>
-                  <span>steps to get in</span>
+                  <span>sign-up steps</span>
                 </li>
               </ul>
               <Link className="btn fq-iri-btn" href={SITE.join}>

@@ -237,7 +237,6 @@ an attribute with no registry row fails), so a mask cannot go stale in silence.
 | `rail-panel` | every right-rail panel (`WidgetCard`), the activity chart, the Signature dial, the demo notice, the streaming skeleton | live | Every panel in the rail is a database reading: upcoming events, who is online, the newest circles, the member's own logs. |
 | `vault-head` | the desktop dock's Vault head | live | Zaps, Gems and streak at rest. |
 | `dock-chat-trigger`, `dock-chat-tab` | the chat trigger in the dock, and its phone tab | live | Unread badge, waiting dot, waiting peek. |
-| `edge-pill` | the edge tab (Vera's fallback, Next Steps) | route | Renders only where no dock slot exists; its label and badge are live. |
 
 What stays in the picture, deliberately: the rail's two static rows (Report a bug,
 Invite a friend), the dock bar's own crest and geometry, the tab bar, the header. A

@@ -17,9 +17,9 @@ export const revalidate = 3600
 
 const SLUG = 'how-to-start-a-circle'
 const PATH = '/how-to-start-a-circle'
-const TITLE = 'How to start a Circle (a group that lasts)'
+const TITLE = "How to start a Circle with people near you"
 const DESCRIPTION =
-  'How to start a Circle: pick one thing, set a standing time, invite a few people, and run the same simple format until the same faces come back.'
+  "Start a community Circle around one activity. Pick a regular time and place, invite a few people and plan what to do at your first gathering."
 
 // Real-gathering photos double as the multimodal AIO signal (CONTENT-VOICE §8b)
 // and the E-E-A-T proof (§8e). All three are on the page (the hero and the two
@@ -35,7 +35,7 @@ const UPDATED = '2026-07-24'
 // Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
 const OG_TITLE = 'How to start a Circle · Frequency'
 const OG_DESCRIPTION =
-  'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format each time you meet.'
+  "Start a community Circle around one activity. Pick a regular time and place, invite a few people and plan what to do at your first gathering."
 
 export function generateMetadata(): Metadata {
   return {

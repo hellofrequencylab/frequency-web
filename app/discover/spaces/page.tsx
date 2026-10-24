@@ -34,11 +34,11 @@ import { emptyUnlessTransient } from '@/lib/discover'
 // type words (practitioner / organization / coaching / studio / shop) never appear in public copy.
 const TITLE = 'Businesses and nonprofits near you'
 const DESCRIPTION =
-  'Browse the businesses and nonprofits in the Frequency network. See what each one offers, from classes to services to events, then follow or reach out.'
+  'Browse businesses, Non Profits and community groups on Frequency. Read about their classes, services and events, then follow or reach out.'
 // The marketing header invitation: a plain, two-part welcome (browse what is here, or add your own), sized
 // for the on-photo hero. Voice canon: plain, no em dashes, never narrate the reader's feelings.
 const HERO_INVITE =
-  'Find a business or nonprofit near you. Or list your own and get discovered by everyone browsing the network.'
+  'Browse local businesses, Non Profits and community groups. Or learn about listing your own Space.'
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -176,7 +176,7 @@ export default async function PublicSpacesDirectoryPage({
       <div className="mt-16">
         <BetaCTA
           heading="Run your whole business in the network people already browse."
-          body="Your own branded page, a shop, bookings, memberships, events, and a CRM for your people. Getting listed is getting discovered. Free to start."
+          body="Describe your work on your Space page, share dates and keep in touch with contacts. Check the plans for paid shop items, bookings and memberships."
         />
       </div>
       </div>

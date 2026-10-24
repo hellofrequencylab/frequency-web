@@ -8,7 +8,8 @@
 // THE RULE: every string here is what the visible Frequency page says (its h1, its lede, its breadcrumb
 // labels), so the search result, the share card and the structured data describe the page a visitor
 // lands on. Nothing is dated, rated, priced or counted: a landing page has none of those facts.
-// Descriptions stay under the ~160 characters a search result shows (scripts/check-seo.mjs Scan E),
+// Descriptions follow the editorial length budget (scripts/check-seo.mjs Scan E);
+// search engines may choose or rewrite their own snippets, with no fixed display limit.
 // titles never re-append the site name the root template adds, and no copy uses an em dash.
 
 import type { Metadata } from 'next'
@@ -52,12 +53,12 @@ export const FREQUENCY_PAGE_SEO = {
   // components/frequency/site/pages/people/frequency-people.tsx ("Home / For people").
   community: {
     path: '/the-community',
-    title: 'For people: find your Circle near you',
+    title: 'Find community groups and Circles near you',
     description:
-      'A hundred contacts, no one to call on a Tuesday. Find the people near you around something you like doing. Free to join, built to get you off your phone.',
+      'Find community groups, local Circles and events around something you like doing. Try a walk, a class or a regular gathering. Free to join.',
     shareTitle: 'For people · Frequency',
     headline: 'A hundred contacts. No one to call on a Tuesday.',
-    lede: 'Frequency is where you find the people near you, and keep finding them, around something you like doing. Free to join, and built to get you off your phone.',
+    lede: 'Find local groups and community events around something you like doing. Try a walk, a class or a regular Circle. Free to join.',
     crumbs: [{ name: 'For people', path: '/the-community' }],
   },
   // components/frequency/site/pages/spaces/frequency-spaces.tsx ("Home / For spaces").
@@ -65,10 +66,10 @@ export const FREQUENCY_PAGE_SEO = {
     path: '/spaces',
     title: 'Spaces for businesses, studios and organizations',
     description:
-      'Put your Circles, events and programs on the calendar your town reads. Frequency remembers who came and gives them a reason to come back. Free to start.',
+      'Give your community a place to find your next class, Circle or event. Share dates on the local calendar and keep in touch with people who come.',
     shareTitle: 'For spaces · Frequency',
     headline: 'You’ve built a community. Let the people looking for one find it.',
-    lede: 'Every Circle, event and program you run is an experience. Frequency puts them on the calendar your town reads, remembers who came, and gives them a reason to come back.',
+    lede: 'Give your community a place to find the next class, Circle or event. Share your dates on the local calendar and keep in touch with people who come.',
     crumbs: [{ name: 'For spaces', path: '/spaces' }],
   },
   // The three Frequency-only routes (DAWN answers 404 on each). /features and /vision keep the titles
@@ -76,12 +77,12 @@ export const FREQUENCY_PAGE_SEO = {
   features: {
     path: '/features',
     // Not the bare word (SCAN-678): 'Features · Frequency' names nothing a query contains.
-    title: 'Features: everything it takes to gather',
+    title: 'Features for community gatherings and local groups',
     description:
-      'Everything Frequency does for people and Spaces: the town calendar, Circles, Events, door check-in, programs, tickets and memberships.',
+      'Find community gatherings or host one with Frequency. Explore local Circles, events, check-in and paid tickets and memberships.',
     shareTitle: 'Features · Frequency',
-    headline: 'Everything it takes to gather.',
-    lede: 'Every feature, for both sides of the door. Open one to see how it works.',
+    headline: 'Want to gather? Start with the next date.',
+    lede: 'Find a community gathering or host one yourself. Open a feature to see the steps, from choosing a Circle to welcoming guests.',
     crumbs: [{ name: 'Features', path: '/features' }],
   },
   // /stories has no published story yet: the page is an empty state and an invitation ("No stories
@@ -94,16 +95,16 @@ export const FREQUENCY_PAGE_SEO = {
       'The first Frequency stories are being written now. Run a Circle or a Space? Tell us what happened, in your own words, and we may feature it.',
     shareTitle: 'Stories: tell us yours · Frequency',
     headline: 'Hosts and Spaces, in their own words.',
-    lede: 'We only publish stories from real Hosts and Spaces, told in their own words, with photos from their rooms.',
+    lede: 'Host a Circle or run a community Space? Tell us what happened. We have no published stories here yet.',
     crumbs: [{ name: 'Stories', path: '/stories' }],
   },
   vision: {
     path: '/vision',
-    title: 'Vision: when a community is ready, it earns a home',
+    title: 'Vision: plans for community spaces where people can meet',
     description:
-      'For partners, investors, civic leaders and press: the vision for Frequency third spaces. The first is planned for 2028, and nothing is bookable yet.',
-    shareTitle: 'Vision: when a community is ready, it earns a home',
-    headline: 'When a community is ready, it earns a home.',
+      'Plans for community groups to meet in shared Frequency third spaces. The first Lab is planned for 2028. No building is open or bookable yet.',
+    shareTitle: 'Vision: plans for community spaces where people can meet',
+    headline: 'A community needs places to meet. Here’s what we’re planning.',
     lede: 'For partners, investors, civic leaders and press. The vision for Frequency third spaces: the first is planned to open in 2028, and nothing is bookable yet.',
     crumbs: [{ name: 'Vision', path: '/vision' }],
   },
@@ -111,10 +112,10 @@ export const FREQUENCY_PAGE_SEO = {
     path: '/networks',
     title: 'Networks: run every chapter as one organization',
     description:
-      'For organizations with chapters: one membership in every chapter, central admins, chapter leaders, one calendar and a roll-up report.',
+      'For organizations with chapters: shared membership, central admins, chapter leaders, one calendar and a roll-up report. Check plan and access details.',
     shareTitle: 'Frequency Networks: run every chapter as one organization',
-    headline: 'Run every chapter as one organization.',
-    lede: 'For organizations with chapters, circles or local teams. Each chapter runs its own day. You see the whole network.',
+    headline: 'Every chapter has its own day. Keep them connected.',
+    lede: 'For community groups with chapters or local teams. Share a calendar, give chapter leaders their own tools, and see the network together.',
     crumbs: [
       { name: 'Pricing', path: '/pricing' },
       { name: 'Networks', path: '/networks' },

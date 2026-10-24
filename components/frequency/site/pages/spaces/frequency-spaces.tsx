@@ -27,11 +27,11 @@ import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../
 /** Each kind links to its door (SCAN-1017): under the Frequency design nothing else on the site reached
  *  the /for pages. Venues have no door of their own, so their card opens the Spaces directory. */
 const TYPES: { icon: FqIconName; kind: string; line: string; href: string }[] = [
-  { icon: 'breath', kind: 'Studios', line: 'Fill the 7pm class.', href: '/for/studios' },
+  { icon: 'breath', kind: 'Studios', line: 'Share your next class.', href: '/for/studios' },
   { icon: 'contacts', kind: 'Coaches + practitioners', line: 'A client list you keep.', href: '/for/coaches-and-healers' },
-  { icon: 'ticket', kind: 'Event hosts', line: 'A guest list that comes back.', href: '/for/event-hosts' },
-  { icon: 'space', kind: 'Cafés + venues', line: 'Your slow night, full.', href: '/discover/spaces' },
-  { icon: 'gem', kind: 'Non Profits', line: 'Every tool, nothing taken.', href: '/for/nonprofits' },
+  { icon: 'ticket', kind: 'Event hosts', line: 'Invite guests to the next date.', href: '/for/event-hosts' },
+  { icon: 'space', kind: 'Cafés + venues', line: 'A place for local groups to meet.', href: '/discover/spaces' },
+  { icon: 'gem', kind: 'Non Profits', line: 'Supporters, programs and donations.', href: '/for/nonprofits' },
 ]
 
 const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] = [
@@ -41,7 +41,7 @@ const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] 
   { id: 'f-events-s', icon: 'ticket', title: 'Events', body: 'Post a one-off to the town calendar.' },
   { id: 'f-doorqr', icon: 'qr', title: 'Door QR', body: 'One code for every experience you run.' },
   { id: 'f-contacts', icon: 'contacts', title: 'Contacts', body: 'Who came, who’s new, who hasn’t been back.' },
-  { id: 'f-firsttimers', icon: 'nudge', title: 'First-timer nudges', body: 'A heads-up while they’re still in the room.' },
+  { id: 'f-firsttimers', icon: 'nudge', title: 'First-timer nudges', body: 'A notification after an eligible first check-in.' },
   { id: 'f-programs-s', icon: 'program', title: 'Programs', body: 'A path your Circle walks together.' },
 ]
 
@@ -50,13 +50,13 @@ const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] 
 const GUIDES: { href: string; icon: FqIconName; title: string; body: string }[] = [
   { href: '/loneliness', icon: 'space', title: 'What a third space is', body: 'The definition, why they got rare, and how to build one today.' },
   { href: '/how-to-build-community', icon: 'circle', title: 'How to run a community space', body: 'The operator playbook: a rhythm, a room, a few regulars, light tooling.' },
-  { href: '/networks', icon: 'page', title: 'Run every chapter as one', body: 'For organizations with chapters: one membership everywhere, one calendar, one report.' },
+  { href: '/networks', icon: 'page', title: 'Run every chapter as one', body: 'For organizations with chapters: shared membership, one calendar and one report.' },
   { href: '/how-to-start-a-circle', icon: 'host', title: 'How to start a Circle', body: 'Pick one thing, set a standing time, invite a few people, keep the format simple.' },
 ]
 
 const QUESTIONS: [string, string][] = [
-  ['Another tool?', 'It replaces the six you’re juggling: calendar, door list, contacts, email, tickets and memberships.'],
-  ['What does it cost?', 'Nothing until you charge. Your regulars are 0%, plus card processing. When someone we bring you buys, we take a small share. Selling starts at Business. Separate groups that partner take Collective, and one organization with chapters takes Network. The full ladder is on the Pricing page.'],
+  ['Another tool?', 'Your Space brings together your calendar, guest list, contacts and invitations. Paid options include tickets and memberships.'],
+  ['What does it cost?', 'Hosting has free options within the published allowances. Selling starts at Business. Paid Space plans and introduction fees are separate. Your own bookings carry no network fee, plus card processing. Compare Collective for separate groups on the Pricing page. One organization with chapters takes Network.'],
   ['Will you sell my members?', 'Never. Your contacts are yours.'],
   ['How do I rank higher?', 'Gather more often. Standing comes from how often you meet and who’s in the room, never from money.'],
 ]
@@ -81,12 +81,11 @@ export async function FrequencySpaces() {
             You’ve built a community. <em className="fq-iri-text">Let the people looking for one find it.</em>
           </h1>
           <p>
-            Every Circle, event and program you run is an experience. Frequency puts them on the calendar your town
-            reads, remembers who came, and gives them a reason to come back.
+            Give your community a place to find the next class, Circle or event. Share your dates on the local calendar and keep in touch with people who come.
           </p>
           <div className="ctas">
             <Link className="btn fq-iri-btn" href={SITE.join}>
-              Open your Space
+              Join to open your Space
             </Link>
             <Link className="btn btn-ghost fq-iri-rim" href={SITE.people}>
               I’m looking for a community →
@@ -101,17 +100,16 @@ export async function FrequencySpaces() {
             <div className="label">
               <b>Your path</b>Four steps
             </div>
-            <h2 className="h-l">From an empty Tuesday to a full one.</h2>
+            <h2 className="h-l">Build community around the next gathering.</h2>
           </div>
         </div>
 
         <Chapter label="02a Be found">
           <div>
             <span className="n">01 · Be found</span>
-            <h2 className="h-l">Land where your town looks.</h2>
+            <h2 className="h-l">Help people find your next gathering.</h2>
             <p className="body-l">
-              Open a Space for free and post what you run. It lands on the calendar your whole town reads, ranked by
-              how often you gather, never by who paid.
+              Open your Space and add your next gathering. People can find the date on the local calendar and visit your page to learn more.
             </p>
             <Acts
               items={[
@@ -129,13 +127,12 @@ export async function FrequencySpaces() {
             <span className="n">02 · Open the door</span>
             <h2 className="h-l">Know who came.</h2>
             <p className="body-l">
-              One QR at the door remembers everyone who walked in. First-timers get flagged, so you can say hi before
-              they slip out.
+              Invite people to scan your QR code when they arrive. See who checked in and who is new, so you can welcome first-timers by name.
             </p>
             <Acts
               items={[
                 { href: feature('f-doorqr'), icon: 'qr', title: 'Print your door QR', sub: 'One code for every experience' },
-                { href: feature('f-firsttimers'), icon: 'nudge', title: 'Greet first-timers', sub: 'Nudges while they’re in the room' },
+                { href: feature('f-firsttimers'), icon: 'nudge', title: 'Greet first-timers', sub: 'See eligible first-time check-ins' },
               ]}
             />
           </div>
@@ -146,13 +143,12 @@ export async function FrequencySpaces() {
             <span className="n">03 · Bring them back</span>
             <h2 className="h-l">Give them a rhythm.</h2>
             <p className="body-l">
-              Ongoing Circles, programs people move through together, memberships that drop them straight into their
-              group.
+              Plan regular Circles and programs, or offer a recurring Space membership. Check the membership’s included benefits and linked Circle.
             </p>
             <Acts
               items={[
                 { href: feature('f-programs-s'), icon: 'program', title: 'Build a program', sub: 'A path your Circle walks together' },
-                { href: feature('f-memberships'), icon: 'membership', title: 'Sell memberships', sub: 'Members land in their Circle' },
+                { href: feature('f-memberships'), icon: 'membership', title: 'Sell memberships', sub: 'Set out membership benefits' },
               ]}
             />
           </div>
@@ -160,13 +156,12 @@ export async function FrequencySpaces() {
         </Chapter>
 
         <Chapter label="02d Grow" rev>
-          <ChapPhoto src={photo('night-yoga-rave-web.jpg')} alt="A full room at night" />
+          <ChapPhoto src={photo('night-yoga-rave-web.jpg')} alt="People gathering at night" />
           <div>
             <span className="n">04 · Grow</span>
-            <h2 className="h-l">Rise by how often you gather.</h2>
+            <h2 className="h-l">Share the hosting with a regular.</h2>
             <p className="body-l">
-              Your standing climbs every time your community meets. Hand a Circle to a regular and you’re running two
-              experiences.
+              Invite a regular to host under your Space. Keep a way to see the gatherings you run together.
             </p>
             <Acts
               items={[
@@ -184,7 +179,7 @@ export async function FrequencySpaces() {
             <div className="label">
               <b>On the map</b>Standing, not ads
             </div>
-            <h2 className="h-l">Where your town looks for something to do.</h2>
+            <h2 className="h-l">Find Spaces sharing local gatherings.</h2>
           </div>
           <WhatsOnList
             mode="spaces"
@@ -304,7 +299,7 @@ export async function FrequencySpaces() {
 
       <KeepGoing
         title="Open your Space. It’s free."
-        body="It takes a few minutes, and you pay nothing until you charge."
+        body="Start with your name and next gathering. See the plan details before you start charging."
         primary={{ href: SITE.join, label: 'Open your Space →' }}
         secondary={{ href: SITE.pricing, label: 'See pricing' }}
       />

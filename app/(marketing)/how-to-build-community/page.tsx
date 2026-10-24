@@ -17,9 +17,9 @@ export const revalidate = 3600
 
 const SLUG = 'how-to-build-community'
 const PATH = '/how-to-build-community'
-const TITLE = 'How to build community (and keep it going)'
+const TITLE = "How to build community around a regular gathering"
 const DESCRIPTION =
-  'How to build community: pick one thing, set a standing time and place, keep it small, and meet again. The full builder guide to starting a group, hosting a recurring gathering, and running a community space.'
+  "Building community takes a place to begin. Choose a shared activity, invite a few people and plan a regular time to meet. A practical guide for hosts."
 
 // Real-gathering photos double as the multimodal AIO signal (CONTENT-VOICE §8b)
 // and the E-E-A-T proof (§8e). All three are on the page (as media beats — the
@@ -36,7 +36,7 @@ const UPDATED = '2026-07-24'
 // Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
 const OG_TITLE = 'How to build community · Frequency'
 const OG_DESCRIPTION =
-  'You do not have to build a whole community. Host one small group, on a regular rhythm, with a format that already works. The builder guide, start to lasting.'
+  "Building community takes a place to begin. Choose a shared activity, invite a few people and plan a regular time to meet. A practical guide for hosts."
 
 export function generateMetadata(): Metadata {
   return {

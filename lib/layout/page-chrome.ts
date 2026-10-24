@@ -55,11 +55,7 @@ export function isFullTakeover(pathname: string): boolean {
 // Empty since the Growth OS Engine 3 surfaces (/apply, /apply/<track>, /waitlist) were
 // retired: they were its only entries. Kept rather than deleted because the mechanism is
 // the contract — the next Focus flow adds one prefix here instead of editing the shell.
-//
-// /offer (owner ruling 2026-10-22, "take the right rail off", the full-screen Beta offer): the one
-// route named here. It is a single-purpose sales page with a countdown, so the rail is dropped on
-// purpose and the exception is this one prefix, not the shell.
-const FOCUS_NONE_PREFIXES: readonly string[] = ['/offer']
+const FOCUS_NONE_PREFIXES: readonly string[] = []
 
 // SCOPED — entity-detail sections that render their OWN in-body scope rail
 // (the double-rail trap is avoided by suppressing the global rail).

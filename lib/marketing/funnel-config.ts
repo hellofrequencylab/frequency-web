@@ -203,14 +203,14 @@ const NETWORK_ROW_DETAIL = 'One home for every chapter, each with its own page, 
 const BUSINESS_ROW_DETAIL = `Selling starts here, ${RATE.business} once per introduced customer`
 /** The break-even proof, stated once: the fee only ever applies to a NEW person the network brought. */
 function breakEvenCaption(keep: string): string {
-  return `No network fee on ${keep}, ever, only card processing. Frequency earns only when the network introduces someone new, once, and after that it's 0% for good.`
+  return `No network fee on ${keep}, ever, only card processing. Introduction fees apply to eligible purchases the network introduces. Your plan subscription and card processing are separate.`
 }
 
 /** The shared pricing-beat intro. It leads with the promise, not the plan: hosting is free, and that
  *  is the point; Business is what a Space takes when it starts charging (ADR-1709). The per-niche
  *  clause names the moment a door's reader would actually step up. */
 function pricingIntro(stepUp: string): string {
-  return `People join free, hosting is free with Crew, and you pay when you start charging. A free Space runs the whole thing and takes tips with no platform fee, plus card processing, and your own people are always free. ${stepUp} One price, and the fee is only on the customers we introduce.`
+  return `People join free, hosting is free with Crew, and you pay when you start charging. A free Space includes hosting tools within its allowances and tips with no platform fee, plus card processing. Selling starts at Business. ${stepUp} Paid Space plans and introduction fees are separate.`
 }
 
 /** The shared what-does-it-cost FAQ answer, with the per-niche "no network fee on ..." clause and an
@@ -290,7 +290,7 @@ const COACHES_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the bookings you bring in yourself'),
-    note: "Your plan subscription is separate from card processing and introduction fees. We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you're never locked in.",
+    note: "Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
@@ -316,7 +316,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
   archetypes: ['studio_keeper'],
   hero: {
     eyebrow: 'For studios and instructors',
-    h1: "You teach the class. There are bookings and member messages to handle too.",
+    h1: "You teach the class. Keep the bookings close.",
     seoTitle: "Classes and community for studios and instructors",
     subhead:
       "Share your schedule, greet people at the door and invite them to the next class. Give your studio community a place to find the details.",
@@ -376,7 +376,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the memberships you sell yourself'),
-    note: 'Your plan subscription is separate from card processing and introduction fees. We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.',
+    note: 'Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
@@ -462,7 +462,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the tickets you sell yourself'),
-    note: 'Your plan subscription is separate from card processing and introduction fees. We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.',
+    note: 'Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
@@ -548,7 +548,7 @@ const VENUES_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the tickets and passes you sell yourself'),
-    note: 'Your plan subscription is separate from card processing and introduction fees. We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.',
+    note: 'Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
@@ -694,7 +694,7 @@ const NETWORKS_FUNNEL: FunnelConfig = {
     {
       icon: 'contact',
       title: 'Members who can move.',
-      body: 'One membership, honored in every chapter, so a member who relocates keeps their place.',
+      body: 'Offer a network membership across chapters. Check its listed benefits and access.',
     },
     {
       icon: 'spark',

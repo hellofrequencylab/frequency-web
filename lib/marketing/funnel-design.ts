@@ -289,7 +289,7 @@ export const PLANET_NOTES: Record<string, readonly [note: string, tool: string]>
   Supporters: ['Keep supporter contacts and look back at their involvement.', 'Contacts'],
   Receipts: ['Sent on their own, with a thank-you.', 'Donations'],
   Chapters: ['Each chapter with its own page, calendar and people.', 'Chapters'],
-  Members: ['One membership, honored in every chapter.', 'Contacts'],
+  Members: ['A network membership across its chapters.', 'Contacts'],
   Reports: ['Review participation across your chapters.', 'Reports'],
   Organizers: ['Chapter leads with their own sign-in.', 'Collaborators'],
 }
@@ -336,7 +336,7 @@ export const NICHE_DESIGN: Record<string, NicheDesign> = {
     photo: 'gathering-05.jpg',
     interlude: 'gathering-12.jpg',
     you: 'Your studio',
-    h1: { lead: 'You teach the class.', em: ['There are bookings and member messages to handle too.'] },
+    h1: { lead: 'You teach the class.', em: ['Keep the bookings close.'] },
     events: [
       ['checkin', 'Checked in', 'The 6:00 class'],
       ['membership', 'Dues paid', 'Unlimited plan renewed'],

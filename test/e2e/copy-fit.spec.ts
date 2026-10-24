@@ -447,7 +447,7 @@ async function revealPublicCopy(page: Page) {
 // Standalone, read-only public copy review. Run against an existing preview.
 const base = process.env.PW_BASE_URL
 function parseCopyFitRoutes(input?: string) {
-  const full = '/,/the-community,/spaces,/features,/pricing,/networks,/vision,/stories,/for,/for/coaches-and-healers,/for/studios,/for/event-hosts,/for/venues,/for/nonprofits,/for/networks,/discover,/discover/events,/discover/circles,/discover/spaces,/discover/topics,/discover/practices,/discover/journeys,/about,/friendship-as-an-adult,/how-to-start-a-circle,/how-to-build-community,/how-to-be-more-social,/loneliness,/mindless,/vs/partiful,/vs/eventbrite,/vs/mighty-networks,/vs/meetup,/vs/facebook-groups'.split(',')
+  const full = '/,/the-community,/spaces,/features,/pricing,/networks,/vision,/stories,/for,/for/coaches-and-healers,/for/studios,/for/event-hosts,/for/venues,/for/nonprofits,/for/networks,/discover,/discover/events,/discover/circles,/discover/spaces,/discover/topics,/discover/practices,/discover/journeys,/about,/friendship-as-an-adult,/how-to-start-a-circle,/how-to-build-community,/how-to-be-more-social,/loneliness,/calm-down-fast,/mindless,/vs/partiful,/vs/eventbrite,/vs/mighty-networks,/vs/meetup,/vs/facebook-groups'.split(',')
   if (!input?.trim()) return full
   const selected = input.split(',').map(route => route.trim())
   // Validate before constructing URLs or navigating with any preview credentials.
@@ -458,6 +458,13 @@ function parseCopyFitRoutes(input?: string) {
   return [...new Set(selected)]
 }
 const routes = parseCopyFitRoutes(process.env.COPY_FIT_ROUTES)
+test('copy-fit includes the changed Calm down guide in its public route scope @visual @copyfit', () => {
+  const defaults = parseCopyFitRoutes()
+  expect(defaults).toHaveLength(35)
+  expect(defaults.filter(route => route === '/calm-down-fast')).toEqual(['/calm-down-fast'])
+  expect(parseCopyFitRoutes('/calm-down-fast')).toEqual(['/calm-down-fast'])
+  expect(parseCopyFitRoutes('/,/calm-down-fast')).toEqual(['/', '/calm-down-fast'])
+})
 for (const width of [320, 390, 1280]) {
   for (const route of routes) {
     test(`@visual @copyfit ${width}px ${route}`, async ({ page, serverErrors }, info) => {
@@ -547,8 +554,8 @@ test('copy-fit detector rejects clipped callouts and wrong destinations @visual 
   await page.setContent(fixture('<h1>Plans and pricing</h1>'))
   await assertPublicTarget(page, new URL(page.url()))
   await assertPublicTarget({ url: () => 'https://example.test/the-community', title: async () => 'The community', locator: (selector: string) => page.locator(selector) } as unknown as Page, new URL('https://example.test/stories'))
-  expect(parseCopyFitRoutes('')).toHaveLength(34)
-  expect(parseCopyFitRoutes('  ')).toHaveLength(34)
+  expect(parseCopyFitRoutes('')).toHaveLength(35)
+  expect(parseCopyFitRoutes('  ')).toHaveLength(35)
   expect(parseCopyFitRoutes('/,/pricing')).toEqual(['/', '/pricing'])
   for (const unsafe of ['https://evil.example/', '//evil.example/', '/pricing?next=bad', '/pricing#bad', '/%2f%2fevil.example', '/unknown', '/,']) {
     expect(() => parseCopyFitRoutes(unsafe)).toThrow('Unsupported COPY_FIT_ROUTES path')
