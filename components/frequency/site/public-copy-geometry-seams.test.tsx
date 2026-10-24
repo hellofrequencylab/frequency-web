@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { JSDOM } from 'jsdom'
 import { Band, DisplayHeading, Eyebrow, Kicker, headingComponents } from '@/components/page-editor/blocks/kit'
 import { NicheDoor } from '@/components/frequency/site/pages/funnel/niche/niche-door'
 import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
@@ -20,6 +19,10 @@ type CssRule = {
   nodes: { type: string; prop?: string; value?: string }[]
 }
 const requireFromHere = createRequire(import.meta.url)
+// jsdom ships no declaration here; keep its runtime boundary narrow and explicit.
+const { JSDOM } = requireFromHere('jsdom') as {
+  JSDOM: new (html: string) => { window: { document: Document } }
+}
 // Resolve the same parser used by the installed canonical PostCSS pipeline.
 const requireFromPipeline = createRequire(requireFromHere.resolve('@tailwindcss/postcss'))
 const postcss = requireFromPipeline('postcss') as {
