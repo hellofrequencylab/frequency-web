@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1050",
+  "title": "Stop breathing animation frame work while the timer is idle or paused",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/on-air/visualizer.tsx",
+    "ref": "Actual visualizer retained a queued frame both initially paused and after pause in pre-repair resource tests, 2026-10-24"
+  },
+  "detail": "The breathing visualizer skipped its paint while paused but immediately queued another animation frame, keeping a live callback chain on ready/paused timer surfaces. Paused is now an effect dependency: the effect acquires no frame when paused and its cleanup cancels the outstanding frame when pause changes. The last rendered frame is retained; resume recomputes from the parent-shifted session clock, and reduced motion still uses opacity. Resource tests reproduce the old queued-frame defect and verify idle, pause, resume, reduced-motion and unmount behavior. The related timer/movement/setup/recovery/action batch passes 188 tests across 15 files. Cheap actual-component probes pass; all seven combined completion/animation mutation controls fail at their intended assertions. Interactive DAWN and canonical Frequency Stage fixtures show zero pending visualizer frames while ready or ended, one while running, and zero remaining session intervals after early/natural completion. Browser contexts cover phone/desktop and light/dark root modes without measured horizontal overflow. Fixture clock controls and combined preview CSS are explicit; this is not deployed-route, battery, FPS, production latency or native-device acceptance. The first missing-Stage fixture was corrected before final captures. React checklist and focused lint pass. No new library, raw color, backend call or production mutation; whole-tree integration of this later timer batch remains pending.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/timer-runtime.mjs animation",
+    "note": "Execute actual breathing component effects with real React, local DOM and frame/clock recorders; assert zero idle/paused/unmounted frame work and correct resume/reduced-motion behavior."
+  },
+  "wave": "W0"
+}
