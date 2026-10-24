@@ -90,7 +90,8 @@ if (mode === 'freshness') {
   const block = findNode(await about.default(), BlockDocJsonLd)
   const schema = BlockDocJsonLd(block.props).props.data
   assert.equal(schema['@type'], 'AboutPage')
-  assert.equal(schema.headline, 'About Frequency')
+  assert.equal(schema.headline, about.generateMetadata().title, 'About structured data must use the current canonical page title')
+  assert.notEqual(schema.headline, document.content[0].props.title, 'Published hero copy must not replace the canonical page headline')
   assert.equal(schema.dateModified, '2099-12-31')
   assert.match(schema.datePublished, /^\d{4}-\d{2}-\d{2}$/)
   assertAlias('/the-lab', '/vision')
