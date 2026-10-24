@@ -6,6 +6,25 @@ import {
   eventStartInputToIso,
 } from './datetime'
 
+describe('calendar validity', () => {
+  it.each(['2026-02-30', '2026-02-29', '2100-02-29', '2026-04-31'])('rejects impossible day %s across event inputs', (day) => {
+    expect(dateToWallClockIso(day)).toBeNull()
+    expect(wallClockToIso(`${day}T19:00`)).toBeNull()
+    expect(eventStartInputToIso(`${day}T19:00:00Z`)).toBeNull()
+    expect(eventStartInputToIso(`${day}T19:00:00+02:00`)).toBeNull()
+  })
+
+  it('preserves valid leap days and offset crossings', () => {
+    expect(dateToWallClockIso('2000-02-29')).toBe('2000-02-29T00:00:00.000Z')
+    expect(eventStartInputToIso('2028-02-29T00:30:00+02:00')).toBe('2028-02-28T22:30:00.000Z')
+  })
+
+  it('rejects midnight rollover instead of moving the event to tomorrow', () => {
+    expect(wallClockToIso('2026-06-26T24:00')).toBeNull()
+    expect(eventStartInputToIso('2026-06-26T24:00:00Z')).toBeNull()
+  })
+})
+
 describe('wallClockToIso', () => {
   it('keeps the wall-clock literally as UTC (no offset shift)', () => {
     // 7:00 PM stays 19:00, regardless of the runtime timezone.
@@ -44,6 +63,7 @@ describe('eventStartInputToIso', () => {
   it('passes an explicit-offset ISO through unchanged (already an exact instant)', () => {
     expect(eventStartInputToIso('2026-06-26T19:00:00.000Z')).toBe('2026-06-26T19:00:00.000Z')
     expect(eventStartInputToIso('2026-06-26T19:00:00+02:00')).toBe('2026-06-26T17:00:00.000Z')
+    expect(eventStartInputToIso('2026-06-26T19:00:00.125+0200')).toBe('2026-06-26T17:00:00.125Z')
   })
 
   it('rejects any OTHER tz-less shape instead of parsing it in the server zone', () => {

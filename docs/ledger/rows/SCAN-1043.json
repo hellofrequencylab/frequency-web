@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1043",
+  "title": "Match event instants to PostgreSQL at timezone transitions",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/time/zone.ts",
+    "ref": "Disposable PostgreSQL comparison, 2026-10-23"
+  },
+  "detail": "Canonical JavaScript event conversion disagreed with the existing PostgreSQL guest RSVP gate by one hour at spring gaps and autumn folds. Resolve oscillating gap offsets and the later fold occurrence using PostgreSQL-compatible policy; cache timezone formatters with a 64-entry bound. Seven regression assertions failed before repair. After repair 1,999 tests in 134 time/calendar/events/JSON-LD/booking suites pass, plus lint. Independent disposable PGlite comparison across 2,719 cases in ten zones found nine baseline disagreements and zero candidate disagreements. Local 1,000-call microbenchmark improved from 19.28s to 1.41s; this is not a production latency claim. No production data, event timestamps or database policy changed. Public-events SQL expiry repair remains separately open under SCAN-1037.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/event-zone-postgres.mjs",
+    "note": "Execute actual conversion against independently measured PostgreSQL gap, fold, skipped-day and ordinary-time fixtures."
+  },
+  "closed": "2026-10-23",
+  "wave": "W0"
+}
