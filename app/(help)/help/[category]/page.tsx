@@ -1,4 +1,5 @@
-import type { Metadata } from 'next'
+import type { Metadata, ResolvingMetadata } from 'next'
+import { helpPageMetadata } from '@/lib/help/metadata'
 import { SITE_NAME } from '@/lib/site'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -17,11 +18,11 @@ export async function generateStaticParams() {
   return categories.map((c) => ({ category: c.slug }))
 }
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({ params }: Params, parent: ResolvingMetadata): Promise<Metadata> {
   const { category } = await params
   const cat = (await getAllCategories()).find((c) => c.slug === category)
   if (!cat) return {}
-  return {
+  return helpPageMetadata({
     title: `${cat.title} · Help`,
     description: cat.description,
     alternates: { canonical: `/help/${cat.slug}` },
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: cat.description,
       url: `/help/${cat.slug}`,
     },
-  }
+  }, parent)
 }
 
 export default async function HelpCategoryPage({ params }: Params) {
