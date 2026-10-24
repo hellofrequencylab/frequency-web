@@ -46,6 +46,10 @@ export type Palette = {
   paSoft: readonly [string, string, string]
   onPa: string
   paGlow: string
+  paRim: string
+  switchThumb: string
+  /** Physical white centre of the device RGB wheel, independent of room theme. */
+  colorWheelNeutral: string
   /** The glass panel (`--fq-glass-panel`): gradient stops and its inset rim. */
   glass: readonly [string, string]
   glassRim: string
@@ -91,6 +95,9 @@ const commons: Palette = {
   paSoft: ['rgba(163,212,255,0.24)', 'rgba(143,233,255,0.2)', 'rgba(163,232,212,0.2)'],
   onPa: '#34312E',
   paGlow: 'rgba(120,150,225,0.55)',
+  paRim: 'rgba(255,255,255,0.5)',
+  switchThumb: '#FFFFFF',
+  colorWheelNeutral: '#FFFFFF',
   glass: ['rgba(255,252,246,0.7)', 'rgba(255,248,238,0.34)'],
   glassRim: 'rgba(255,255,255,0.8)',
   wash: [
@@ -137,6 +144,9 @@ const commonsNight: Palette = {
   paSoft: ['rgba(163,212,255,0.14)', 'rgba(143,233,255,0.12)', 'rgba(163,232,212,0.12)'],
   onPa: '#1E1B18',
   paGlow: 'rgba(163,212,255,0.35)',
+  paRim: 'rgba(255,255,255,0.5)',
+  switchThumb: '#FFFFFF',
+  colorWheelNeutral: '#FFFFFF',
   glass: ['rgba(34,26,20,0.7)', 'rgba(34,26,20,0.45)'],
   glassRim: 'rgba(251,242,230,0.08)',
   wash: [
@@ -209,6 +219,7 @@ export const type = {
 
 /** `--shadow-1|2|float` as React Native shadows (boxShadow strings, RN 0.76+ with the new arch). */
 export const shadow = {
+  switchThumb: '0px 1px 3px rgba(30,27,24,0.25)',
   1: '0px 1px 2px rgba(30,27,24,0.06), 0px 4px 14px -6px rgba(30,27,24,0.12)',
   2: '0px 2px 6px rgba(30,27,24,0.06), 0px 18px 40px -18px rgba(30,27,24,0.28)',
   float: '0px 30px 80px -30px rgba(30,27,24,0.45)',

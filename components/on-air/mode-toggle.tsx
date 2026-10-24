@@ -86,7 +86,7 @@ export function MindlessMasthead({
       {/* Comfortable top margin so the lotus + MINDLESS wordmark breathe from the overlay top
           instead of sitting squished against it (item #7). */}
       <div className="relative flex items-center justify-center pb-2 pt-[max(1.5rem,env(safe-area-inset-top))] lg:pt-8">
-        <p className={`flex items-center gap-2.5 text-body font-bold uppercase tracking-[0.35em] lg:text-body-lg ${wordmarkAccent}`}>
+        <p className={`flex items-center gap-2.5 text-body-lg font-bold uppercase tracking-[0.35em] ${wordmarkAccent}`}>
           <LotusIcon className="h-6 w-6 lg:h-7 lg:w-7" /> Mindless
         </p>
         <button

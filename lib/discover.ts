@@ -39,6 +39,8 @@ export type PublicEvent = {
   description: string | null
   starts_at: string
   ends_at: string | null
+  /** Optional enrichment: the legacy public RPC does not project the host zone. */
+  time_zone?: string | null
   city: string | null
   circle_id: string | null
   circle_name: string | null

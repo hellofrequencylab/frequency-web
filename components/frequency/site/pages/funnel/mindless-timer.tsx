@@ -14,7 +14,7 @@ import { FnOutcome } from './parts'
 
 const PATTERN = BREATH_PATTERNS.find((p) => p.slug === 'cohere') ?? BREATH_PATTERNS[0]
 
-type Phase = { kind: 'ready' } | { kind: 'running'; startedAt: number } | { kind: 'done' }
+type Phase = { kind: 'ready' } | { kind: 'running'; startedAt: number } | { kind: 'done'; completed: boolean }
 
 function clock(seconds: number): string {
   const s = Math.max(0, Math.ceil(seconds))
@@ -31,7 +31,7 @@ export function FrequencyMindlessTimer() {
       const remaining = PUBLIC_SESSION_SECONDS - (Date.now() - phase.startedAt) / 1000
       if (remaining <= 0) {
         setLeft(0)
-        setPhase({ kind: 'done' })
+        setPhase({ kind: 'done', completed: true })
       } else {
         setLeft(remaining)
       }
@@ -43,7 +43,7 @@ export function FrequencyMindlessTimer() {
     return (
       <FnOutcome
         role="status"
-        tone="success"
+        tone={phase.completed ? 'success' : 'side'}
         icon="breath"
         title="Same time tomorrow?"
         action={
@@ -64,7 +64,7 @@ export function FrequencyMindlessTimer() {
           </div>
         }
       >
-        Five minutes, done. Make a free account and tomorrow&apos;s session is one tap away, with every one after
+        {phase.completed ? 'Five minutes, done.' : 'Session ended.'} Make a free account and tomorrow&apos;s session is one tap away, with every one after
         it counted toward your streak.
       </FnOutcome>
     )
@@ -85,7 +85,7 @@ export function FrequencyMindlessTimer() {
       <p>{PATTERN.blurb} A 5-minute practice. No account needed.</p>
       <div className="ctas">
         {phase.kind === 'running' ? (
-          <button className="btn btn-ghost" type="button" onClick={() => setPhase({ kind: 'done' })}>
+          <button className="btn btn-ghost" type="button" onClick={() => setPhase({ kind: 'done', completed: Date.now() - phase.startedAt >= PUBLIC_SESSION_SECONDS * 1000 })}>
             End early
           </button>
         ) : (
