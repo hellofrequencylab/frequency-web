@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 725,
+      "baseline": 717,
       "frozen": {
-        "at": "2026-10-20",
-        "value": 725,
+        "at": "2026-10-24",
+        "value": 717,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Nurture step editor (#3637) button moved from rounded-md to rounded-control, retiring one literal-radius site",
-        "from": 726
+        "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 8 literal radii",
+        "from": 725
       },
       "history": [
         {
@@ -357,6 +357,13 @@
           "to": 725,
           "direction": "lowered",
           "reason": "Nurture step editor (#3637) button moved from rounded-md to rounded-control, retiring one literal-radius site"
+        },
+        {
+          "at": "2026-10-24",
+          "from": 725,
+          "to": 717,
+          "direction": "lowered",
+          "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 8 literal radii"
         }
       ]
     },
@@ -702,14 +709,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 299,
+      "baseline": 291,
       "frozen": {
-        "at": "2026-10-20",
-        "value": 299,
+        "at": "2026-10-24",
+        "value": 291,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Re-freeze to the current lower count: a landed sweep retired sites without re-freezing (owner approved, found on #3747)",
-        "from": 308
+        "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 8 raw button fills",
+        "from": 299
       },
       "history": [
         {
@@ -907,6 +914,13 @@
           "to": 299,
           "direction": "lowered",
           "reason": "Re-freeze to the current lower count: a landed sweep retired sites without re-freezing (owner approved, found on #3747)"
+        },
+        {
+          "at": "2026-10-24",
+          "from": 299,
+          "to": 291,
+          "direction": "lowered",
+          "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 8 raw button fills"
         }
       ]
     },
@@ -1270,14 +1284,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 86,
+      "baseline": 85,
       "frozen": {
-        "at": "2026-10-14",
-        "value": 86,
+        "at": "2026-10-24",
+        "value": 85,
         "direction": "lowered",
         "basis": "8afdfcd88c01",
-        "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN",
-        "from": 112
+        "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 1 arbitrary pixel size",
+        "from": 86
       },
       "history": [
         {
@@ -1349,6 +1363,13 @@
           "to": 86,
           "direction": "lowered",
           "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN"
+        },
+        {
+          "at": "2026-10-24",
+          "from": 86,
+          "to": 85,
+          "direction": "lowered",
+          "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 1 arbitrary pixel size"
         }
       ]
     },
@@ -1854,14 +1875,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 228,
+      "baseline": 225,
       "frozen": {
-        "at": "2026-10-20",
-        "value": 228,
+        "at": "2026-10-24",
+        "value": 225,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "Re-freeze 230 to 228: a landed sweep shrank it without re-freezing (owner approved, found on #3747)",
-        "from": 230
+        "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 3 hand-rolled eyebrows",
+        "from": 228
       },
       "history": [
         {
@@ -1961,6 +1982,13 @@
           "to": 228,
           "direction": "lowered",
           "reason": "Re-freeze 230 to 228: a landed sweep shrank it without re-freezing (owner approved, found on #3747)"
+        },
+        {
+          "at": "2026-10-24",
+          "from": 228,
+          "to": 225,
+          "direction": "lowered",
+          "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 3 hand-rolled eyebrows"
         }
       ]
     }
