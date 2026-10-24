@@ -24,19 +24,19 @@ import { FrequencyCircles } from '@/components/frequency/site/pages/discover/cir
 export const metadata: Metadata = {
   title: 'Local Circles',
   description:
-    'Browse the local Circles forming on Frequency: small groups of up to 50 neighbors meeting in person around something they share.',
+    'Browse local Circles and community groups around a shared activity. Check each listing for meeting times, location and how to join.',
   alternates: { canonical: '/discover/circles' },
   openGraph: {
     ...OG_SITE,
     images: ROOT_OG_IMAGES,
     title: `Local Circles · ${SITE_NAME}`,
-    description: 'Browse the local Circles forming on Frequency and find your people.',
+    description: 'Browse local Circles and community groups around a shared activity. Check each listing for meeting times, location and how to join.',
     url: '/discover/circles',
   },
   twitter: {
     card: 'summary_large_image',
     title: `Local Circles · ${SITE_NAME}`,
-    description: 'Browse the local Circles forming on Frequency and find your people.',
+    description: 'Browse local Circles and community groups around a shared activity. Check each listing for meeting times, location and how to join.',
   },
 }
 
@@ -77,7 +77,7 @@ export default async function DiscoverCirclesPage() {
         focal="object-center"
         eyebrow="Find your people"
         title={<>Circles forming <span className="text-primary">now</span></>}
-        subtitle="Somewhere close to you, a handful of neighbors already have a standing time and a saved seat. A Circle is up to fifty of them, gathered around one thing they share: a practice, a place, a love. Browse freely. A free account is all it takes to step inside."
+        subtitle="Want a regular time to meet people? Browse community Circles around an activity or interest. Read each group’s meeting times, location and how to join."
       >
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
           <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
@@ -98,13 +98,10 @@ export default async function DiscoverCirclesPage() {
           <SectionHeading
             eyebrow="Why a Circle"
             title={<>A crowd can&apos;t miss you. A <span className="text-primary-strong">Circle</span> can.</>}
-            kicker="Small enough to learn every name, big enough to always have plans."
+            kicker="Small groups with their own activities and meeting times."
           />
           <p className="mt-5 text-body-lg text-muted leading-relaxed max-w-prose mx-auto">
-            You can have a thousand followers and still walk to the car alone. A Circle is
-            the opposite shape: a few faces that light up when you arrive, a seat that gets
-            noticed the week it&apos;s empty, a near-stranger who texts to ask where you&apos;ve
-            been. That&apos;s what&apos;s waiting on the other side of a browse.
+            It can be hard to find a regular time to meet people. A Circle gathers around an activity, from a walk to a shared meal. Read the details and ask the Host what your first visit involves.
           </p>
         </div>
       </section>
@@ -120,9 +117,7 @@ export default async function DiscoverCirclesPage() {
           <div className="mb-9 max-w-prose">
             <SectionHeading eyebrow="Near you" title="Browse the Circles" />
             <p className="mt-5 text-body-lg text-muted leading-relaxed">
-              Every Circle here is real and forming in North County San Diego. Read the rooms,
-              the practices, the standing times. Find one that sounds like your people, or a
-              reason to gather your own. Drop in once and see how it feels. Come back if it fits.
+              Browse the Circles listed here. Read each group’s activity, meeting format, location and access details, then ask the Host how to take part.
             </p>
           </div>
           {circles.length === 0 ? (
@@ -163,21 +158,16 @@ export default async function DiscoverCirclesPage() {
         imgAspect="natural"
         eyebrow="How Circles grow"
         title="A Circle divides to stay close"
-        kicker="Fifty isn't a limit. It's the edge of knowing everyone."
+        kicker="Small groups with their own meeting times."
       >
         <p>
-          Circles gather around something small and true: a sunrise swim, a guitar, a grief.
-          They stay where you can still learn everyone&apos;s name, where your empty chair gets
-          noticed before the night is over.
+          Circles gather around a shared activity or interest: a sunrise swim, a guitar, a conversation. Check the listing for the group size, meeting time and how to take part.
         </p>
         <p>
-          When a Circle outgrows that closeness, it doesn&apos;t sprawl. It divides, like a cell,
-          like a family at a long table, so the warmth carries into two rooms instead of thinning
-          across one. Nobody gets left at the edge of a room that&apos;s already full.
+          If a group needs another gathering, a regular can host a second Circle. Choose a time, share the invitation and let people know which gathering they can join.
         </p>
         <p>
-          That&apos;s how a single standing time becomes a neighborhood: one seat at a time, grown
-          rather than built, led by whoever was ready to be the next to say see you next week.
+          Start with one activity and a time you can keep. You can ask someone to share the hosting as the group develops.
         </p>
       </ZigZag>
 
@@ -190,18 +180,14 @@ export default async function DiscoverCirclesPage() {
         imgPosition="center"
         reverse
         eyebrow="The third time"
-        title="By the third time, they know your order"
-        kicker="No audition. Two words and you're in the room."
+        title="Try one gathering, then decide"
+        kicker="Check how to join before you come."
       >
         <p>
-          Something shifts the third or fourth time you walk into the same room. Nobody
-          explains the rules. Somebody just says your name, slides over to make space, and
-          the evening carries you.
+          A regular gathering gives people a time and place to meet again. You can try one date and take your time getting to know the people there.
         </p>
         <p>
-          You stop rehearsing the small talk in the car. You stop being a guest. A Circle is
-          sized so it can&apos;t help but notice you, and that noticing is the whole point:
-          being plainly glad-to-see-you to a handful of people who live close enough to walk to.
+          Ask the Host about the activity, access and arrival details if you have a question. Choose a group and a location that work for you.
         </p>
       </ZigZag>
 
@@ -213,13 +199,13 @@ export default async function DiscoverCirclesPage() {
           className="pointer-events-none absolute -bottom-24 -left-16 w-[30rem] max-w-none text-primary opacity-[0.04]"
         />
         <Statement tone="canvas">
-          Your people are already gathering.{' '}
+          Find a gathering you would like to try.{' '}
           <span className="text-primary-strong">Pull up a chair.</span>
         </Statement>
       </div>
 
       <BetaCTA
-        heading="Your people are already gathering"
+        heading="Find a gathering you would like to try"
         body="Joining is free, and it stays free. Step inside a Circle near you, or start one of your own."
       />
     </>

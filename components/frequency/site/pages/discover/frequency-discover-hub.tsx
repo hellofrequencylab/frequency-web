@@ -55,7 +55,7 @@ export function FrequencyDiscoverHub({
             Real community, <em className="fq-iri-text">near you.</em>
           </>
         }
-        lede="Somewhere close to you, your people are already meeting this week. A standing time, a handful of regulars, a seat that gets noticed when it’s empty. Browse for free; sign up to join a Circle, RSVP, or post."
+        lede="Looking for people to do something with? Browse local Circles and community events. Read the details, choose a date, and sign up when you want to take part."
       >
         {proven ? (
           // Members and Circles only: the hub reads just the next four events, so `events.length` is a page
@@ -82,7 +82,7 @@ export function FrequencyDiscoverHub({
             label="What’s happening"
             sub="Coming up"
             title="Show up this week."
-            lede="Real plans, on real days, with room for you. Pick one, RSVP, and you’re expected."
+            lede="Browse the dates and activities listed here. Open a gathering to check availability and RSVP."
           />
           <DxCalendar
             events={events}
@@ -91,8 +91,7 @@ export function FrequencyDiscoverHub({
               <>
                 <b>The calendar is quiet for now.</b>
                 <p>
-                  Every standing time starts with one gathering someone put on the calendar. Join free and you’ll
-                  hear when the first one near you lands.
+                  Check back for new dates, or explore the Circle listings and how to start a gathering of your own.
                 </p>
                 <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
                   {BETA_CTA_LABEL}
@@ -116,7 +115,7 @@ export function FrequencyDiscoverHub({
             label="Where it’s happening"
             sub="Towns"
             title="Find your area."
-            lede="Each town here has real Circles meeting or events coming up. Close enough to walk to, small enough that you’re missed when you don’t come."
+            lede="Browse towns with listed Circles or upcoming events. Check the location and travel details before you choose one."
           />
           {towns.length > 0 ? (
             <>
@@ -149,7 +148,7 @@ export function FrequencyDiscoverHub({
               label="Explore by Channel"
               sub="What you love"
               title="Find what you practice."
-              lede="Movement, spirituality, creative. Pick the Channel that’s calling you, and on the other side of it is a Circle living it near you."
+              lede="Movement, spirituality, creative. Choose a Channel to explore its Practices and listed Circles."
             />
             <div className="g3 dx-cards">
               {channels.map(({ channel, circles: n }) => (
@@ -179,17 +178,15 @@ export function FrequencyDiscoverHub({
       <DxChapter
         label="Why we show up"
         sub="In person"
-        title="Somewhere that keeps a seat for you."
+        title="A place to try gathering in person."
         photo={dxPhoto('night-string-lights-web.jpg')}
         alt="Friends gathered at a long table under string lights at night"
       >
         <p className="body-l">
-          People are steadier and more themselves when they belong to a group that knows them. Not a follower
-          count. A handful of faces that light up when you walk in.
+          A walk, a class, a shared meal. Start with something you like doing and a time you can make. Take your time getting to know the people there.
         </p>
         <p className="body-l">
-          Every Circle and every event here is a standing invitation to show up in person, next to neighbors who
-          notice the week you go quiet.
+          Read the gathering details and ask the Host if you have a question before you come. You can try one date and decide whether to return.
         </p>
       </DxChapter>
 
@@ -199,7 +196,7 @@ export function FrequencyDiscoverHub({
             <DxHead
               label="Find your people"
               sub="Circles forming now"
-              title="Up to fifty neighbors, small enough to know everyone."
+              title="Small groups with a regular time to meet."
             />
             <DxCircleCards circles={circles} />
             <div className="dx-foot">

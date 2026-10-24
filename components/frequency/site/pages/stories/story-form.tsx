@@ -46,7 +46,7 @@ export function StoryForm({ email }: { email: string }) {
         />
       </label>
       <button className="btn fq-iri-btn" type="submit">
-        Send your story
+        Open story email
       </button>
       <small>
         Opens your email app, addressed to <a href={`mailto:${email}`}>{email}</a>. Add a photo from your room if

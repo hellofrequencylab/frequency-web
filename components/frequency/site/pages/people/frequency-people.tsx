@@ -24,27 +24,27 @@ import { faqSchema } from '@/lib/jsonld'
 import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
 
 const FIRST_GATHERING: { icon: FqIconName; title: string; body: string }[] = [
-  { icon: 'host', title: 'The Host at the door', body: 'Someone is there to say hi and show you where to put your things.' },
-  { icon: 'contacts', title: 'Join in, or just watch', body: 'Circles are small and nobody is put on the spot. Sitting back counts.' },
-  { icon: 'event', title: 'About an hour', body: 'Most run an hour or so. Leave when you need to, or stay after if you like.' },
+  { icon: 'host', title: 'The Host at the door', body: 'Check the listing for arrival details, and ask the Host if you have a question.' },
+  { icon: 'contacts', title: 'Join in, or just watch', body: 'Ask the Host what taking part involves. You can tell them if you would rather watch first.' },
+  { icon: 'event', title: 'Check the time', body: 'Look at the listing for the start and finish times so you can plan your visit.' },
 ]
 
 const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] = [
-  { id: 'f-calendar', icon: 'event', title: 'What’s happening', body: 'Everything meeting near you this week, in one place.' },
-  { id: 'f-circles', icon: 'circle', title: 'Circles', body: 'Small groups around one thing, with familiar faces when you return.' },
+  { id: 'f-calendar', icon: 'event', title: 'What’s happening', body: 'Listed gatherings near you this week.' },
+  { id: 'f-circles', icon: 'circle', title: 'Circles', body: 'Small groups around a shared activity and a regular time.' },
   { id: 'f-events', icon: 'ticket', title: 'Events', body: 'One-off gatherings worth going out for.' },
-  { id: 'f-programs', icon: 'program', title: 'Programs', body: 'A few weeks with the same group, start to finish.' },
-  { id: 'f-checkin', icon: 'checkin', title: 'Check-in', body: 'Scan at the door and you’re in.' },
-  { id: 'f-reminders', icon: 'nudge', title: 'Reminders', body: 'A nudge before your Circle or event.' },
-  { id: 'f-zaps', icon: 'zap', title: 'Zaps', body: 'Points for real-world acts, nothing else.' },
-  { id: 'f-seasons', icon: 'event', title: 'Seasons', body: 'Thirteen weeks, then a fresh start.' },
+  { id: 'f-programs', icon: 'program', title: 'Programs', body: 'A sequence of gatherings with its own schedule.' },
+  { id: 'f-checkin', icon: 'checkin', title: 'Check-in', body: 'Follow the check-in confirmation at the door.' },
+  { id: 'f-reminders', icon: 'nudge', title: 'Reminders', body: 'Reminders follow your notification preferences.' },
+  { id: 'f-zaps', icon: 'zap', title: 'Zaps', body: 'Points for taking part in eligible Frequency activities.' },
+  { id: 'f-seasons', icon: 'event', title: 'Seasons', body: 'Follow the current season and its dates.' },
 ]
 
 const QUESTIONS: [string, string][] = [
-  ['I don’t know anyone.', 'That’s most people the first time. Circles are small on purpose, and the Host will say hi. Nobody expects you to know anyone.'],
+  ['I don’t know anyone.', 'You can come without knowing anyone. Check the listing, and message the Host if you want to ask about your first visit.'],
   ['I’m not spiritual.', 'You don’t need to be. Circles run around anything: moving, making, eating, sitting still, going out.'],
-  ['I’m not fit.', 'Plenty of Circles don’t involve exercise at all. The ones that do say so up front.'],
-  ['Is it free?', 'Yes. Joining, checking in, playing and hosting are free. Some Spaces sell tickets or memberships, and that money goes to them.'],
+  ['I’m not fit.', 'You can look for gatherings around making, eating or sitting together. Read the details and ask the Host about any access or activity requirements.'],
+  ['Is it free?', 'Joining Frequency is free. Hosts can charge for tickets or membership benefits. Read the listing’s price, access details and applicable fees before you pay.'],
 ]
 
 export async function FrequencyPeople() {
@@ -68,8 +68,7 @@ export async function FrequencyPeople() {
             A hundred contacts. <em className="fq-iri-text">No one to call on a Tuesday.</em>
           </h1>
           <p>
-            Frequency is where you find the people near you, and keep finding them, around something you like
-            doing. Free to join, and built to get you off your phone.
+            Find local groups and community events around something you like doing. Try a walk, a class or a regular Circle. Free to join.
           </p>
           <div className="ctas">
             <a className="btn fq-iri-btn" href="#near">
@@ -88,7 +87,7 @@ export async function FrequencyPeople() {
             <div className="label">
               <b>Your path</b>Four steps
             </div>
-            <h2 className="h-l">From a stranger to a regular.</h2>
+            <h2 className="h-l">Find community around a walk, a class, a shared meal.</h2>
           </div>
         </div>
 
@@ -123,11 +122,11 @@ export async function FrequencyPeople() {
           <div>
             <span className="n">02 · Show up</span>
             <h2 className="h-l">Walk in. Check in.</h2>
-            <p className="body-l">Scan at the door and you’re counted. Being in the room is the only thing that earns Zaps here.</p>
+            <p className="body-l">Scan an eligible QR code when you arrive and follow the check-in confirmation.</p>
             <Acts
               items={[
                 { href: '#first-night', icon: 'ticket', title: 'Your first gathering', sub: 'What to expect' },
-                { href: feature('f-zaps'), icon: 'checkin', title: 'Why check-in counts', sub: '+25 Zaps for being there' },
+                { href: feature('f-zaps'), icon: 'checkin', title: 'Why check-in counts', sub: 'Rewards for eligible check-ins' },
               ]}
             />
           </div>
@@ -138,8 +137,7 @@ export async function FrequencyPeople() {
             <span className="n">03 · Come back</span>
             <h2 className="h-l">Same people, same time.</h2>
             <p className="body-l">
-              Keep coming and the faces start to know yours. One week you’re new, a month later someone saves you a
-              spot.
+              A regular Circle gives you a time and place to meet again. Take your time getting to know the people there.
             </p>
             <Acts items={[{ href: feature('f-zaps'), icon: 'zap', title: 'Play the season', sub: 'Zaps for showing up again' }]} />
           </div>
@@ -152,7 +150,7 @@ export async function FrequencyPeople() {
             <span className="n">04 · Pass it on</span>
             <h2 className="h-l">Bring someone. Then host.</h2>
             <p className="body-l">
-              Keep coming and someone will ask you to host. That’s how a town gets a scene it didn’t have last year.
+              Send a friend an invitation. If you want to host, start with a walk, a shared meal or a Circle of your own.
             </p>
             <Acts
               items={[
@@ -209,7 +207,7 @@ export async function FrequencyPeople() {
           />
           <div className="ctas" style={{ marginTop: 20 }}>
             <Link className="btn fq-iri-btn" href={SITE.join}>
-              Set your town
+              Join to set your town
             </Link>
             <a className="btn btn-ghost fq-iri-rim" href="#first-night">
               What your first gathering is like

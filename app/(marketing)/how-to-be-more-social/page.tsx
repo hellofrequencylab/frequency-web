@@ -19,9 +19,9 @@ export const revalidate = 3600
 
 const SLUG = 'how-to-be-more-social'
 const PATH = '/how-to-be-more-social'
-const TITLE = 'How to be more social'
+const TITLE = "How to be more social at your own pace"
 const DESCRIPTION =
-  'How to be more social when you keep staying home: pick one recurring thing, put it on the calendar, and go back until the room knows your name.'
+  "Want to meet people without forcing it? Explore small ways to start a conversation and try community gatherings around something you like doing."
 
 // Real-gathering photos double as the multimodal AIO signal (CONTENT-VOICE §8b)
 // and the E-E-A-T proof (§8e). Fed into the Article schema below so answer engines
@@ -43,7 +43,7 @@ const UPDATED = '2026-07-24'
 // Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
 const OG_TITLE = 'How to be more social · Frequency'
 const OG_DESCRIPTION =
-  'You want to be more social and still end up home alone. The fix is not a new personality. Pick one recurring thing, put it on the calendar, and become a regular.'
+  "Want to meet people without forcing it? Explore small ways to start a conversation and try community gatherings around something you like doing."
 
 export function generateMetadata(): Metadata {
   return {

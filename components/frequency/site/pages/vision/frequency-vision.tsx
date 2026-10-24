@@ -46,39 +46,39 @@ const CONCEPTS: { file: string; room: string; alt: string; wide?: boolean }[] = 
 ]
 
 const DENSITY = [
-  { step: '01', title: 'The network finds the people.', body: 'Circles and Events in Community Spaces that already exist: studios, cafés, living rooms and parks.' },
-  { step: '02', title: 'The people find each other.', body: 'The same faces keep showing up, and the town’s communities start to know one another.' },
-  { step: '03', title: 'The community earns a home.', body: 'When a town’s communities are dense enough, they will earn a third space of their own.' },
+  { step: '01', title: 'Start where people already meet.', body: 'Circles and Events in Community Spaces that already exist: studios, cafés, living rooms and parks.' },
+  { step: '02', title: 'Make room for people to meet.', body: 'Regular Circles give people a time and place to meet again, and a way to invite their neighbors.' },
+  { step: '03', title: 'Plan a home with the community.', body: 'We want to plan a shared third space around the people and groups already meeting in a town.' },
 ]
 
 /** The dated plan, from the retired /the-lab page: the community first, the building second. */
 const PLAN = [
-  { step: 'Now', title: 'Circles, in borrowed rooms.', body: 'Circles meet in parks, living rooms and rented studios. The community is real; the building is not.' },
-  { step: '2027', title: 'Site and permits.', body: `A shortlist in ${FOUNDING_PLACE}, then the slow part: a site, zoning, and the plumbing a sauna and a cold pool need.` },
-  { step: '2028', title: 'The first Lab opens.', body: 'One building, built from day one to be repeatable. If the first room works, the second is a template, not an experiment.' },
+  { step: 'Now', title: 'Circles, in borrowed rooms.', body: 'Circles can meet in parks, living rooms and rented studios. Check a Circle’s own plans for its location and schedule.' },
+  { step: '2027', title: 'Site and permits.', body: `The plan includes finding a site in ${FOUNDING_PLACE}, reviewing zoning, and planning the facilities.` },
+  { step: '2028', title: 'The first Lab is planned.', body: 'The first building is planned for 2028. Future locations would depend on what we learn and what each town needs.' },
 ]
 
 /** The Lab's short answers, from the retired /the-lab page. They carry the FAQPage node below. */
 export const LAB_QUESTIONS: { q: string; a: string }[] = [
   {
     q: 'What is The Lab?',
-    a: `The Lab is a third space the Frequency community is building: not home, not work, a real room to move, warm up in the sauna, cool down in the plunge, and switch off in person. The first one is planned for 2028 in ${FOUNDING_PLACE}. It is not open yet.`,
+    a: `The Lab is a third space the Frequency community is planning: not home, not work, a real room to move, warm up in the sauna, cool down in the plunge, and switch off in person. The first one is planned for 2028 in ${FOUNDING_PLACE}. It is not open yet.`,
   },
   {
     q: 'Can I visit The Lab yet?',
-    a: 'Not yet, and nothing at The Lab is bookable. The first Lab is planned to open in 2028. Until then the community meets in rooms we borrow: parks, living rooms, and rented studios. You can join a Circle near you today.',
+    a: 'Not yet, and nothing at The Lab is bookable. The first Lab is planned to open in 2028. You can browse Circles and Events separately and check what is available near you.',
   },
   {
     q: 'What will be inside The Lab?',
-    a: 'Movement studios, a cedar thermal circuit, a cold plunge pool, a no-alcohol connection bar, and a flexible events floor. One building, tuned room by room.',
+    a: 'The plan includes movement studios, a cedar thermal circuit, a cold plunge pool, a no-alcohol connection bar, and a flexible events floor. Details may change as the site is planned.',
   },
   {
     q: 'When will The Lab open?',
-    a: 'The plan is dated: Circles meeting in borrowed rooms now, a site and permits through 2027, and the first Lab opening in 2028. There are no membership rates published because there is nothing to sell yet.',
+    a: 'The first Lab is planned for 2028, with site and permit work planned for 2027. Those are planning dates. The Lab is not open or taking bookings.',
   },
   {
     q: 'Where will the first Lab be?',
-    a: `The first Lab is planned for ${FOUNDING_PLACE}, where the founding community is already meeting, and it is built to repeat in other cities once the community is there.`,
+    a: `The first Lab is planned for ${FOUNDING_PLACE}, with the aim of learning from that site before considering other cities.`,
   },
 ]
 
@@ -98,7 +98,7 @@ export function FrequencyVision() {
           </nav>
           <span className="wingtag">Frequency</span>
           <h1 className="h-xl" style={{ marginTop: 18 }}>
-            When a community is ready, <em className="fq-iri-text">it earns a home.</em>
+            A community needs places to meet. <em className="fq-iri-text">Here’s what we’re planning.</em>
           </h1>
           <p>
             For partners, investors, civic leaders and press. The vision for Frequency third spaces: the first is
@@ -120,8 +120,7 @@ export function FrequencyVision() {
               <span className="wingtag">The density story</span>
               <h3>The density story</h3>
               <p>
-                The network finds the people. The people find each other. When a town’s communities are dense
-                enough, they will earn a home of their own.
+                Start with the people and community groups already meeting in studios, cafés and parks. Plan a shared place around what they need.
               </p>
               <ol className="vz-steps">
                 {DENSITY.map((d) => (
@@ -166,7 +165,7 @@ export function FrequencyVision() {
             <h2 className="h-l">What a home could feel like.</h2>
             <p className="pb-note">
               These are concept renders, not photographs. No building exists yet, nothing is bookable, and every
-              detail will change with the town that earns it.{' '}
+              detail may change as we work with the people who would use it.{' '}
               <a href="#plan">Read the plan for The Lab →</a>
             </p>
           </div>
@@ -193,7 +192,7 @@ export function FrequencyVision() {
             </div>
             <h2 className="h-l">Where this actually is.</h2>
             <p className="pb-note">
-              Most third places sign a lease, then go looking for the people. We’re doing it the other way round.
+              We want to understand the people and groups who would use a place before planning the building.
               There are no membership rates here because there’s nothing to sell yet. When there is, the price will
               be published before anybody is asked for a card.
             </p>
@@ -236,7 +235,7 @@ export function FrequencyVision() {
             <div>
               <span className="k">Partner with us</span>
               <h3>Tell us about your town or your building.</h3>
-              <p>For partners, investors, civic leaders and press. A real person reads every note.</p>
+              <p>For partners, investors, civic leaders and press. Email us about your town or your building.</p>
             </div>
             <PartnerForm email={CONTACT_EMAIL} />
           </div>
@@ -248,7 +247,7 @@ export function FrequencyVision() {
           <KeepGoing
             variant="row"
             title="Back to today"
-            body="Frequency works in Community Spaces now."
+            body="See how to use Frequency for Circles and Events."
             primary={{ href: '/', label: 'Back to today →' }}
           />
         </div>

@@ -34,7 +34,7 @@ function proofLine(counts: { members: number; circles: number }, events: number)
   if (counts.members < SOCIAL_PROOF_FLOOR) {
     return `The first Circles are taking root in ${FOUNDING_PLACE}. The founding members are shaping what this becomes. Come be one of them.`
   }
-  return `Already happening in ${FOUNDING_PLACE}: ${count(counts.members, 'member', 'members')}, ${count(counts.circles, 'Circle', 'Circles')} and ${count(events, 'upcoming event', 'upcoming events')}.`
+  return `Across Frequency: ${count(counts.members, 'member', 'members')}, ${count(counts.circles, 'Circle', 'Circles')} and ${count(events, 'upcoming event', 'upcoming events')}.`
 }
 
 export function FrequencyCircles({
@@ -61,7 +61,7 @@ export function FrequencyCircles({
             Circles forming <em className="fq-iri-text">near you.</em>
           </>
         }
-        lede="A Circle is up to fifty neighbors with a standing time and one thing they share: a practice, a place, a love. Browse freely. A free account is all it takes to step inside."
+        lede="Want a regular time to meet people? A Circle gathers around a practice, a place or something people like doing. Browse the community groups listed here, then check how to join."
       >
         <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL}
@@ -76,7 +76,7 @@ export function FrequencyCircles({
         label="Near you"
         meta={circles.length > 0 ? count(circles.length, 'Circle', 'Circles') : null}
         title="Find the one you’d show up to."
-        lede="Read the rooms, the practices, the standing times. Drop in once and see how it feels. Come back if it fits."
+        lede="Read each Circle’s activity, meeting times and access details. Ask the Host how to take part before you go."
       >
         {channels.size > 1 && (
           <DirChips
@@ -87,7 +87,7 @@ export function FrequencyCircles({
         {circles.length === 0 ? (
           <DirEmpty
             title="No public Circles yet."
-            body="Every Circle starts with one person and a standing time. Gather a few neighbors around the thing you love and yours is the first one people find here."
+            body="You can start with one activity and a regular time. Sign up to create a Circle and invite a few people."
           >
             <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
               Start a Circle
@@ -119,22 +119,20 @@ export function FrequencyCircles({
           <div className="block">
             <h3>Small on purpose.</h3>
             <p>
-              Up to fifty people, so everyone’s name gets learned and an empty chair gets noticed before the night is
-              over.
+              Circles have up to fifty people. A regular time and shared activity give members a place to meet again.
             </p>
           </div>
           <div className="block">
             <h3>Two rooms, not one crowded one.</h3>
             <p>
-              When a Circle outgrows that closeness it splits, and a regular hosts the second one. That’s how one
-              standing time becomes a neighborhood.
+              If a group needs another gathering, a regular can host a second Circle. Choose a time and share the invitation.
             </p>
           </div>
         </div>
       </DirSection>
 
       <KeepGoing
-        title="Your people are already gathering."
+        title="Find a Circle you would like to try."
         body="Joining is free, and it stays free. Step inside a Circle near you, or start one of your own."
         primary={{ href: BETA_CTA_HREF, label: BETA_CTA_LABEL }}
         secondary={{ href: '/discover/topics', label: 'Browse by Channel' }}
@@ -175,15 +173,14 @@ export function FrequencyCircle({ circle, image }: { circle: PublicCircle; image
             <h2>About this Circle</h2>
             <p className="dd-prose">
               {circle.about ??
-                'A small standing group of neighbors gathering in person around what they share. Up to fifty people, close enough to walk to, small enough that the regulars learn your name and notice the week you go missing.'}
+                'A Circle around a shared activity. Read the listing for its format, meeting time, location and how to join.'}
             </p>
           </section>
         }
         side={
           <ActionPanel title={`Want in on ${circle.name}?`}>
             <p>
-              Circles are small on purpose: up to 50 neighbors, no audition, two words to belong. Request a spot, see
-              the standing times, and start showing up.
+              Read this Circle’s details and standing times. Sign up to request a place, and ask the Host if you have a question before you come.
             </p>
             <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
               {BETA_CTA_LABEL}

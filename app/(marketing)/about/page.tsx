@@ -15,7 +15,7 @@ export const revalidate = 3600
 
 // Not the bare word (SCAN-678): the template appends the site name, and 'About · Frequency' names
 // nothing a query contains. Shared with the AboutPage headline below so the two cannot drift.
-const TITLE = 'About Frequency'
+const TITLE = "About Frequency and local community gatherings"
 
 export function generateMetadata(): Metadata {
   return {
@@ -26,13 +26,13 @@ export function generateMetadata(): Metadata {
     // model was being written to an audience that never saw it. That paragraph
     // lives on the page and on /pricing, where a reader can actually read it.
     description:
-      'The story behind Frequency, born on a cliff at Moonlight Beach in 2020. We hand ordinary people the tools to rebuild the third place where they live.',
+      'The story behind Frequency and a place for community groups to share local Circles, classes and events. Read about the idea and the people behind it.',
     alternates: { canonical: '/about' },
     openGraph: {
       ...OG_SITE,
       images: ROOT_OG_IMAGES,
       title: 'About Frequency',
-      description: 'The third place is gone. We hand ordinary people the tools to bring it back.',
+      description: 'The story behind Frequency and a place for community groups to share local Circles, classes and events. Read about the idea and the people behind it.',
       url: '/about',
     },
     // Metadata merges per TOP-LEVEL KEY, so a page that sets only `openGraph` inherits the ROOT
@@ -40,7 +40,7 @@ export function generateMetadata(): Metadata {
     twitter: {
       card: 'summary_large_image',
       title: 'About Frequency',
-      description: 'The third place is gone. We hand ordinary people the tools to bring it back.',
+      description: 'The story behind Frequency and a place for community groups to share local Circles, classes and events. Read about the idea and the people behind it.',
     },
   }
 }

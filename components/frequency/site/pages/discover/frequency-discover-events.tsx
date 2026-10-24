@@ -50,7 +50,7 @@ export function FrequencyDiscoverEvents({
             Show up <em className="fq-iri-text">this week.</em>
           </>
         }
-        lede={`A sunrise on the bluff. A cold plunge. A supper table with a seat saved for you. Real plans, on real days, with neighbors who notice if you don’t come. ${PRIVACY_LINE}`}
+        lede={`Looking for something to do with people nearby? Browse community events, check the date and activity, and choose one to try. ${PRIVACY_LINE}`}
       >
         <div className="ctas">
           <a className="btn fq-iri-btn" href="#calendar">
@@ -67,10 +67,10 @@ export function FrequencyDiscoverEvents({
           <DxHead
             label="What’s happening"
             sub={events.length > 0 ? `${events.length} coming up` : 'Founding chapter'}
-            title={events.length > 0 ? 'Pick one, RSVP, and you’re expected.' : 'The first gathering hasn’t happened yet.'}
+            title={events.length > 0 ? 'Choose a gathering and check the details.' : 'The first gathering hasn’t happened yet.'}
             lede={
               events.length > 0
-                ? 'The kind of plan that pulls you off the couch and into a room. Find the one that sounds like your morning, and let a few neighbors start to know your face.'
+                ? 'Find an activity you would like to try. Read the listing for the time, access details and how to take part.'
                 : undefined
             }
           />
@@ -81,9 +81,7 @@ export function FrequencyDiscoverEvents({
               <>
                 <b>The calendar is quiet for now.</b>
                 <p>
-                  We’re just getting started in {FOUNDING_PLACE}. Every standing time starts the same way: one
-                  sunrise, one cold plunge, one supper that someone put on the calendar. Join free and you’ll be
-                  among the first to know when the first one lands.
+                  We’re just getting started in {FOUNDING_PLACE}. Check back for new dates, or start with a Circle around an activity you like doing.
                 </p>
                 <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
                   {BETA_CTA_LABEL}
@@ -96,7 +94,7 @@ export function FrequencyDiscoverEvents({
               <DxProof members={counts.members} circles={counts.circles} events={events.length} />
               <DxAsk
                 title="Want to be at one of these?"
-                body="RSVP, see the exact venue, and let a few neighbors start to know your face."
+                body="Sign up to RSVP and see the exact venue before you go."
                 href={BETA_CTA_HREF}
                 label={BETA_CTA_LABEL}
               />
@@ -118,18 +116,16 @@ export function FrequencyDiscoverEvents({
         <DxChapter
           label="Why in person"
           sub="The room"
-          title="The room does what the feed can’t."
+          title="Try a gathering in person."
           photo={dxPhoto('day-park-yoga.jpg')}
           alt="An outdoor class on the grass, mats laid out in rows"
           rev
         >
           <p className="body-l">
-            Mats laid out in rows on the grass. A circuit that runs you from heat to cold and hands you back calmer
-            than you arrived. None of it survives a screen. You have to be in the room.
+            Mats laid out on the grass. A walk with neighbors. A table where people bring something to share. Choose an activity that interests you, and check what taking part involves.
           </p>
           <p className="body-l">
-            The second time you come, you’re not a stranger anymore. Friendship happens in person, and the faces you
-            half-recognize are already there, saving you a spot.
+            You can try one date before deciding whether to return. Ask the Host about future gatherings if you want a regular time to meet.
           </p>
         </DxChapter>
       )}
@@ -176,7 +172,7 @@ export function FrequencyEventHub({
             {label} in <em className="fq-iri-text">{city}.</em>
           </>
         }
-        lede={`Every ${nounSingular} coming up in ${city}. Pick one, RSVP, and you’re expected. ${PRIVACY_LINE}`}
+        lede={`Every ${nounSingular} coming up in ${city}. Choose a gathering and check the details. ${PRIVACY_LINE}`}
       >
         <div className="ctas">
           <a className="btn fq-iri-btn" href="#calendar">
@@ -271,7 +267,7 @@ export function FrequencyOrganizer({
           <DxHead
             label="What’s happening"
             sub="Coming up"
-            title={upcoming.length > 0 ? 'Pick one, RSVP, and you’re expected.' : 'Nothing on the public calendar right now.'}
+            title={upcoming.length > 0 ? 'Choose a gathering and check the details.' : 'Nothing on the public calendar right now.'}
           />
           {/* The host RPC carries no price, so the cards make no price claim (price={false}). */}
           <DxCalendar
