@@ -359,3 +359,8 @@
 [data-design="frequency"] [data-kit="site"] .nk-rows>div{flex-wrap:wrap}
 [data-design="frequency"] [data-kit="site"] .nk-rows .pv{white-space:normal;text-wrap:balance}
 }
+
+/* Keep the three-step grid inside the phone column rather than its sample-row min-content width. */
+[data-design="frequency"] [data-kit="site"] #how-it-works .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="site"] #how-it-works .g3>.pop{min-width:0}
+@media (max-width:860px){[data-design="frequency"] [data-kit="site"] #how-it-works .g3{grid-template-columns:minmax(0,1fr)}}
