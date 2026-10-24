@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1041",
+  "title": "Allow the configured Sentry ingest origin through the enforced browser policy",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "next.config.ts",
+    "ref": "Anonymous production browser audit CSP violation, 2026-10-23"
+  },
+  "detail": "Production browser reported Sentry envelope requests blocked by connect-src: the client SDK was configured but the enforced policy omitted its ingest origin. Derive the exact HTTPS origin from the same public/server DSN fallback as the SDK; include only that origin, without userinfo, project path or vendor wildcard. Malformed or non-HTTPS values add nothing. A real config.headers() regression failed before repair; focused telemetry, CSP and instrumentation batch passes 91 tests in seven suites, with a final 13-test CSP rerun after mock isolation. A standalone low-cost probe evaluates actual config declarations and the actual pure helper without loading the build plugin or spawning another runner. Existing Stripe hosts, object/base/frame restrictions and production eval exclusion remain tested. No synthetic event was sent to production Sentry; provider ingestion acceptance remains unproven until deployment and controlled validation. Official Sentry CSP guidance confirms the configured regional ingest endpoint is the required connection source.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/sentry-csp.mjs",
+    "note": "Evaluate the real CSP assembly against configured regional/self-hosted HTTPS endpoints and absent/malformed/HTTP configuration; reject credentials/path/wildcard leakage and preserve production restrictions."
+  },
+  "closed": "2026-10-23"
+}
