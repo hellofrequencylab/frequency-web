@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { sourceWithoutComments } from '@/test/source-shape'
+import { sourceWithoutComments, stripImports } from '@/test/source-shape'
 import {
   CHROME_CACHE_TAGS,
   CROSS_REQUEST_CEILING_SECONDS,
@@ -22,7 +22,18 @@ import {
 // tree that adds a cross-request read without putting it in this census.
 
 const ROOT = path.join(import.meta.dirname, '..')
-const src = (rel: string) => sourceWithoutComments(path.join(ROOT, rel))
+// This suite never edits source files. Read and strip each file once for its census;
+// every writer query must inspect the same snapshot without repeating the entire tree read.
+const sourceSnapshot = new Map<string, string>()
+function sourceFor(file: string, opts: { imports?: boolean } = {}): string {
+  let source = sourceSnapshot.get(file)
+  if (source === undefined) {
+    source = sourceWithoutComments(file)
+    sourceSnapshot.set(file, source)
+  }
+  return opts.imports ? stripImports(source) : source
+}
+const src = (rel: string) => sourceFor(path.join(ROOT, rel))
 
 const READ = 'lib/menus/read.ts'
 const SOURCES = 'lib/layout/chrome-sources.ts'
@@ -98,12 +109,12 @@ describe('crossRequestCached: the runtime seam', () => {
 
 describe('the census: what is cached, at which scope, under which tag', () => {
   it('unstable_cache has exactly one call site in the tree, the seam', () => {
-    const callers = TREE.filter((f) => /\bunstable_cache\(/.test(sourceWithoutComments(f))).map(rel)
+    const callers = TREE.filter((f) => /\bunstable_cache\(/.test(sourceFor(f))).map(rel)
     expect(callers).toEqual([SEAM])
   })
 
   it('exactly six row sources are cached across requests, each under its own tag', () => {
-    const sites = TREE.filter((f) => /\bcrossRequestCached\(/.test(sourceWithoutComments(f, { imports: true })))
+    const sites = TREE.filter((f) => /\bcrossRequestCached\(/.test(sourceFor(f, { imports: true })))
       .map(rel)
       .sort()
     expect(sites).toEqual([SOURCES, READ, FLAGS, SITE].sort())
@@ -234,7 +245,7 @@ describe('every writer of a cached table expires its tag beside the write', () =
   function writersOf(table: string): string[] {
     const from = new RegExp(`\\.from(?:<[^>]*>)?\\(\\s*'${table}'\\s*\\)`, 'g')
     return TREE.filter((f) => {
-      const s = sourceWithoutComments(f)
+      const s = sourceFor(f)
       let m: RegExpExecArray | null
       while ((m = from.exec(s))) {
         const next = s.indexOf('.from(', m.index + m[0].length)

@@ -1,0 +1,20 @@
+{
+  "id": "HYG-178",
+  "title": "Remove the superseded map colour helper after cross-design reachability review",
+  "status": "done",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "lib/maps/pin-kinds.ts",
+    "ref": "Whole-source static import scan and compiled Frequency review, 2026-10-23"
+  },
+  "detail": "A broader tracked-source graph parses 7,256 JS/TS modules and finds 4,708 of 4,835 application modules reachable from framework entrypoints. Of 127 outside runtime reachability, 25 are type-reachable and most others have test/tool use; these are candidates requiring classification, not 127 proven orphans. Only css-color.ts and the inactive design-font module have no importer/test/tool edge. A second graph over the actual Frequency generated stubs flips the font candidate from Frequency to DAWN, proving generated design selection rather than orphaning. The standalone lib/maps/css-color.ts mapColor function has no callers under either design, has no compiled Frequency reference, and was superseded by pin-kinds.ts plus each canvas container token reader. Remove it, repoint current comments to the active seam and remove its obsolete violet exemption. Historical ADR text remains history. Forty existing map capability/basemap tests, design-switch and violet-family guards pass; no tests or active map behavior removed. Remaining graph candidates include deliberately unintegrated editor contracts/renderers and require their canonical program work rather than deletion merely to improve a count.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-23",
+    "evidence": "Retain before/after static graph evidence for both generated font selections. Verify no source imports or compiled Frequency references point to removed mapColor; both active canvases continue through resolvePinPaint. Existing 40 map tests and design-switch/violet guards pass. Scope is this proven superseded helper, not blanket absence of orphans."
+  },
+  "closed": "2026-10-23",
+  "wave": "W0"
+}

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { execFileSync, spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs'
+import { afterEach, describe, it, expect } from 'vitest'
+import { spawnSync } from 'node:child_process'
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, copyFileSync, truncateSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -24,10 +24,31 @@ import { join } from 'node:path'
 const SCRIPT = 'scripts/check-cache-budget.mjs'
 const SRC = readFileSync(SCRIPT, 'utf8')
 
-/** Write a mutated copy of the script into a temp dir and run it from the repo root. */
-function runMutant(mutate: (src: string) => string, args: string[] = []): number {
+const fixtures: string[] = []
+afterEach(() => {
+  for (const dir of fixtures.splice(0)) rmSync(dir, { recursive: true, force: true })
+})
+
+/** A real measured tree, isolated from the shared install and its orphan-pruning side effects. */
+function runScript(source: string, args: string[] = []) {
   const dir = mkdtempSync(join(tmpdir(), 'cache-budget-'))
+  fixtures.push(dir)
+  mkdirSync(join(dir, 'node_modules'))
+  const payload = join(dir, 'node_modules', 'payload.bin')
+  writeFileSync(payload, '')
+  // Sparse on disk, but lstat reports its real logical size to the production measurement.
+  truncateSync(payload, 12 * 1024 * 1024)
+  mkdirSync(join(dir, 'scripts', 'lib'), { recursive: true })
+  copyFileSync('scripts/lib/pnpm-orphans.mjs', join(dir, 'scripts', 'lib', 'pnpm-orphans.mjs'))
   const file = join(dir, 'mutant.mjs')
+  writeFileSync(file, source)
+  const res = spawnSync(process.execPath, [file, ...args], { cwd: dir, encoding: 'utf8', timeout: 15_000 })
+  if (res.error) throw res.error
+  return res
+}
+
+/** Run a mutated script against the same measured tree as its unmodified control. */
+function runMutant(mutate: (src: string) => string, args: string[] = []): number {
   const mutated = mutate(SRC)
   // A MUTATION THAT NO LONGER APPLIES PASSES EVERY ASSERTION BELOW, for the wrong reason: the
   // unmutated script exits 0 in warn-only because that is exactly what it promises. So the mutators
@@ -36,14 +57,12 @@ function runMutant(mutate: (src: string) => string, args: string[] = []): number
   // forcing a crash and the test asserting "it says CRASHED out loud" was the only thing that caught
   // it. This makes the mutation itself the assertion rather than relying on that.
   if (mutated === SRC) throw new Error('mutation did not apply — this test would pass vacuously')
-  writeFileSync(file, mutated)
-  // cwd stays the repo root so the script measures the real node_modules, which is the point:
-  // these assertions are about the exit code under a real measurement, not a mocked one.
-  const res = spawnSync(process.execPath, [file, ...args], { cwd: process.cwd(), encoding: 'utf8' })
+  const res = runScript(mutated, args)
+  if (mutate === breachFloor) expect(res.stderr).toContain('floor budget')
   return res.status ?? -1
 }
 
-/** Force the node_modules floor arm to fire by shrinking the budget below the real tree. */
+/** Force the floor arm by shrinking the budget below the fixture's measured 12 MiB. */
 const breachFloor = (src: string) =>
   src.replace(/const NODE_MODULES_BUDGET_GIB = [\d.]+/, 'const NODE_MODULES_BUDGET_GIB = 0.01')
 
@@ -73,10 +92,7 @@ describe('check:cache-budget warn-only cannot fail a build', () => {
   })
 
   it('says so out loud when it swallows a crash, rather than looking absent', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'cache-budget-'))
-    const file = join(dir, 'mutant.mjs')
-    writeFileSync(file, forceCrash(SRC))
-    const res = spawnSync(process.execPath, [file, '--warn-only'], { cwd: process.cwd(), encoding: 'utf8' })
+    const res = runScript(forceCrash(SRC), ['--warn-only'])
     expect(res.stdout).toContain('CRASHED')
     expect(res.stdout).toContain('LIVE-035')
   })
@@ -107,9 +123,11 @@ describe('check:cache-budget warn-only cannot fail a build', () => {
     ).toBeLessThan(firstWork)
   })
 
-  it('runs a real measurement on this repo and exits 0', () => {
+  it('measures the fixture with the unmodified script and exits 0', () => {
     // The control. If this fails, the cases above pass for the wrong reason.
-    execFileSync(process.execPath, [SCRIPT, '--warn-only'], { cwd: process.cwd() })
+    const res = runScript(SRC, ['--warn-only'])
+    expect(res.status).toBe(0)
+    expect(res.stdout).toContain('12 MiB')
   })
 })
 
