@@ -4,9 +4,10 @@ import { loadStageFonts } from './load-stage-fonts'
 
 // The Stage faces fail SILENTLY: Satori throws at request time on a face it cannot parse, on a route
 // nobody opens in development, and the symptom is a missing preview in someone else's mail client.
-// Same guard as og-fonts.test.ts, for the second set of faces.
+// The active loader also keeps the full Nunito glyph fallback.
 
 const FACES = [
+  'public/fonts/Nunito-Bold.ttf',
   'public/fonts/stage/Unbounded-Bold.ttf',
   'public/fonts/stage/HankenGrotesk-Medium.ttf',
   'public/fonts/stage/HankenGrotesk-Bold.ttf',
