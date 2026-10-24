@@ -243,6 +243,68 @@ function inspectCopyGeometry(scopeSelector?: string | void) {
    return true;
   }
   const decorativeBoxes: Finding[] = []
+  // Narrow source contract: WhatsOnMap -> non-expandable MapCanvas -> GoogleCanvas's direct
+  // DIV mount. Only the independently observed maps/vt 256px empty-alt raster tile and its
+  // otherwise empty single-image wrapper can use painted intersection; map text/controls cannot.
+  function mapTranslationOnly(value: string) {
+    if (value === 'none') return true
+    try { const m = new DOMMatrixReadOnly(value); return m.is2D && m.a === 1 && m.b === 0 && m.c === 0 && m.d === 1 && Number.isFinite(m.e) && Number.isFinite(m.f) } catch { return false }
+  }
+  function boundedRasterMapPaint(el: Element) {
+    const mount = el.closest('.fqm-live-map')
+    const viewport = mount && [...mount.children].find(child => child.tagName === 'DIV' && child.contains(el))
+    if (!viewport || el === viewport) return null
+    const clip = getComputedStyle(viewport), v = viewport.getBoundingClientRect()
+    if (!['hidden', 'clip'].includes(clip.overflowX) || !['hidden', 'clip'].includes(clip.overflowY) ||
+      clip.transform !== 'none' || clip.clipPath !== 'none' || v.width <= 0 || v.height <= 0 ||
+      v.left < 0 || v.right > innerWidth || viewport.clientWidth <= 0 || viewport.clientHeight <= 0) return null
+    const images = el instanceof HTMLImageElement ? [el] : [...el.querySelectorAll('img')]
+    if (images.length !== 1) return null
+    const img = images[0]
+    if (!(img instanceof HTMLImageElement) || img.getAttribute('alt') !== '' || !img.complete ||
+      img.naturalWidth !== 256 || img.naturalHeight !== 256) return null
+    let url: URL
+    try { url = new URL(img.currentSrc || img.src, location.href) } catch { return null }
+    if (url.origin !== 'https://maps.googleapis.com' || url.pathname !== '/maps/vt') return null
+    const nodes = [el, ...el.querySelectorAll('*')]
+    const meaningful = 'a[href],button,input,select,textarea,summary,[tabindex],[contenteditable],'+
+      '[role],[aria-label],[aria-labelledby],[aria-describedby],[title],svg,video,audio,canvas,object,embed,iframe'
+    if (el.textContent?.trim()) return null
+    for (const node of nodes) {
+      if (node !== img && node.tagName !== 'DIV') return null
+      if ((node !== img && node.hasAttribute('alt')) || node.matches(meaningful) || [...node.attributes].some(attr => /^on/i.test(attr.name))) return null
+      const s = getComputedStyle(node)
+      if (!mapTranslationOnly(s.transform) || s.filter !== 'none' || s.clipPath !== 'none' || s.opacity !== '1') return null
+      for (const pseudo of ['::before', '::after']) {
+        const content = getComputedStyle(node, pseudo).content
+        if (content && !['none', 'normal', '""', "''"].includes(content)) return null
+      }
+    }
+    const box = el.getBoundingClientRect(), image = img.getBoundingClientRect()
+    if (image.width !== 256 || image.height !== 256 ||
+      (['left', 'right', 'top', 'bottom'] as const).some(key => box[key] !== image[key])) return null
+    let painted = { left: image.left, right: image.right, top: image.top, bottom: image.bottom }
+    for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+      const s = getComputedStyle(parent), b = parent.getBoundingClientRect()
+      // A rotated/skewed/filter clip is outside this rectangular proof, never silently admitted.
+      if (!mapTranslationOnly(s.transform) || s.filter !== 'none' || s.clipPath !== 'none') return null
+      const left = b.left + parent.clientLeft, top = b.top + parent.clientTop
+      if (['hidden', 'clip'].includes(s.overflowX)) {
+        painted.left = Math.max(painted.left, left)
+        painted.right = Math.min(painted.right, left + parent.clientWidth)
+      }
+      if (['hidden', 'clip'].includes(s.overflowY)) {
+        painted.top = Math.max(painted.top, top)
+        painted.bottom = Math.min(painted.bottom, top + parent.clientHeight)
+      }
+      if (parent === viewport) break
+    }
+    if (painted.right <= painted.left || painted.bottom <= painted.top ||
+      painted.left < 0 || painted.right > innerWidth) return null
+    return { raw: { left: box.left, right: box.right, top: box.top, bottom: box.bottom },
+      viewport: { left: v.left, right: v.right, top: v.top, bottom: v.bottom }, painted }
+  }
+  const boundedRasterMapBoxes: Finding[] = []
   const boxesOutsideViewport: Finding[] = []
   for (const el of [root, ...root.querySelectorAll('*')]) {
     if (!visible(el) || el.closest('script, style, [role="tooltip"]')) continue
@@ -267,6 +329,12 @@ function inspectCopyGeometry(scopeSelector?: string | void) {
       decorativeBoxes.push({ tag: el.tagName, text: '', reason: 'Semantically inert empty subtree extends beyond viewport; no text/control/label/media/pseudo content' })
       continue
     }
+    const rasterPaint = boundedRasterMapPaint(el)
+    if (rasterPaint) {
+      boundedRasterMapBoxes.push({ tag: el.tagName, text: '',
+        reason: `Verified empty-alt Google raster tile/single-image wrapper: ${JSON.stringify(rasterPaint)}` })
+      continue
+    }
     boxesOutsideViewport.push({ tag: el.tagName, text: el.textContent?.trim().slice(0, 180) ?? '',
       reason: `Box outside viewport: ${el.className} (${Math.round(box.left)}→${Math.round(box.right)})` })
   }
@@ -276,7 +344,7 @@ function inspectCopyGeometry(scopeSelector?: string | void) {
     url: location.href, width: innerWidth,
     documentWidth: document.documentElement.scrollWidth,
     overflow: document.documentElement.scrollWidth > innerWidth + 2,
-    clipped, fontBoxOnlyText, fontInkUnverified, intentionalTruncation, reachableScroll, repeatedTicker, accessibleOnlyTextNodes, boxesOutsideViewport, repeatedTickerBoxes, decorativeBoxes,
+    clipped, fontBoxOnlyText, fontInkUnverified, intentionalTruncation, reachableScroll, repeatedTicker, accessibleOnlyTextNodes, boxesOutsideViewport, repeatedTickerBoxes, decorativeBoxes, boundedRasterMapBoxes,
     visibleTextNodes, closedDisclosureTextNodes, expectedClosedDisclosures, hiddenExpandedAnswers,
     primary: primary ? {
       text: primary.textContent?.trim(), visible: visible(primary),
@@ -1029,4 +1097,48 @@ test('copy-fit waits for painted panel text and rejects permanent zero opacity @
   await page.locator('#panel').evaluate(el => (el as HTMLElement).style.opacity = '0')
   await expect(waitForPaintedCopy(page, '#panel', 300)).rejects.toThrow()
   expect((await page.evaluate(inspectCopyGeometry, '#panel')).visibleTextNodes).toBe(0)
+})
+
+// Append after the existing offline geometry controls. No live map/provider calls.
+test('copy-fit measures only proved raster paint inside the source-owned map viewport @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'Viewport is controlled inside this offline fixture')
+  await page.setViewportSize({ width: 320, height: 600 })
+  // Generated solid 256×256 PNG fixture, served at the original observed raster URL.
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAACwUlEQVR4nO3TMQ0AMAzAsPK/BmEQBnEwesSSAeTJnPsga9YLYJEBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5D2AYkNHCEjLZ+mAAAAAElFTkSuQmCC', 'base64')
+  await page.route('**/*', route => {
+    const url = new URL(route.request().url())
+    return url.origin === 'https://maps.googleapis.com' && url.pathname === '/maps/vt' && !url.searchParams.has('unloaded')
+      ? route.fulfill({ contentType: 'image/png', body: png }) : route.abort()
+  })
+  const tile = (alt = '') => `<img alt="${alt}" src="https://maps.googleapis.com/maps/vt?fixture=1" width="256" height="256">`
+  const fixture = (inside: string, clip = 'hidden', left = 20, mount = 'fqm-live-map', sibling = '', tileStyle = '') => `<style>html,body{margin:0}*{box-sizing:border-box}</style><main data-kit="site"><div class="${mount}" style="position:relative;margin-left:${left}px;width:280px"><div style="position:relative;width:280px;height:256px;overflow:${clip}"><div style="position:absolute;left:230px;top:0;width:256px;height:256px;${tileStyle}">${inside}</div>${sibling}</div></div></main>`
+  const cases = [
+    ['verified raster', fixture(tile()), true],
+    ['labelled media', fixture(tile('Important map information')), false],
+    ['control', fixture('<button style="width:256px">Choose location</button>'), false],
+    ['text', fixture('<p>Unique location details</p>'), false],
+    ['absent clip', fixture(tile(), 'visible'), false],
+    ['map viewport outside page', fixture(tile(), 'hidden', 250), false],
+    ['mixed wrapper', fixture(tile() + '<span>Unique map label</span>'), false],
+    ['unverified mount', fixture(tile(), 'hidden', 20, 'other-map'), false],
+    ['scaled ancestor', fixture(tile(), 'hidden', 20, 'fqm-live-map', '', 'transform:scale(1.1);transform-origin:left top'), false],
+    ['rotated ancestor', fixture(tile(), 'hidden', 20, 'fqm-live-map', '', 'transform:rotate(5deg);transform-origin:left top'), false],
+    ['filtered ancestor', fixture(tile(), 'hidden', 20, 'fqm-live-map', '', 'filter:blur(2px)'), false],
+    ['non-256 image', fixture(tile().replace('width="256"', 'width="255"')), false],
+    ['unloaded image', fixture(tile().replace('fixture=1', 'unloaded=1')), false],
+    ['outside map control sibling', fixture(tile(), 'hidden', 20, 'fqm-live-map', '<button style="position:absolute;left:300px;width:160px">Choose map location</button>'), false],
+    ['outside map label sibling', fixture(tile(), 'hidden', 20, 'fqm-live-map', '<span style="position:absolute;left:300px;width:160px">Map attribution label</span>'), false],
+  ] as const
+  for (const [name, html, admitted] of cases) {
+    await page.setContent(html)
+    await page.locator('img').evaluateAll(images => Promise.all(images.map(image => (image as HTMLImageElement).decode().catch(() => undefined))))
+    const report = await page.evaluate(inspectCopyGeometry)
+    if (admitted) {
+      expect(report.boundedRasterMapBoxes.length, name).toBe(2)
+      expect(report.boxesOutsideViewport, name).toEqual([])
+      expect(report.overflow, name).toBe(false)
+    } else {
+      expect(report.boxesOutsideViewport.length, name).toBeGreaterThan(0)
+    }
+  }
 })

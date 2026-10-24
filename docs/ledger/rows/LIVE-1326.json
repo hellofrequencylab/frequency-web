@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-1326",
+  "title": "Keep public copy within its visual frame",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/public-copy-geometry.mjs",
+    "note": "Exercises the actual Heading and niche renderers, canonical CSS bindings, unchanged ordinary Band output and actual pricing measurement callback, including restoration from the observed smaller mobile state. Deployment browser checks remain a separate gate."
+  },
+  "detail": "Daniel requested every rewritten block fit visually and required a fresh final sweep. Final public preview checks exposed intrinsic-width overflow in narrow audience steps and a pricing ResizeObserver feedback loop with two stable mobile illustration sizes. Existing Frequency primitives now contain the step grid and size the mobile illustration by available width; desktop sizing and all plan facts remain unchanged. Heading-only renderer bands retain their requested spacing and no longer introduce an unnecessary clipping boundary; local painted ink already fit before this change, so no local baseline ink-loss claim is made. The copy-fit suite separately records strictly bounded raster-map paint using the observed empty-alt tile contract, retaining failures for meaningful media, labels, controls and unverified geometry. No customer content, DAWN styling, prices or transaction behavior changes. Focused and exact-preview verification must pass before release.",
+  "wave": "W7"
+}
