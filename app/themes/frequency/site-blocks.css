@@ -475,4 +475,4 @@
 
 /* A heading-only continuation band has no artwork to crop. Preserve its zero-gap rhythm
    while letting display glyphs paint beyond the line box at the band edge. */
-[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.pe-heading-band{overflow:visible}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section:has(> div.mx-auto:only-child > :is(h1,h2,h3).font-display):not(:has(> :not(div.mx-auto))):not(:has(> div.mx-auto > :not(:is(h1,h2,h3).font-display,p[data-text-role="eyebrow"],p.text-lead.italic))):not(:has(img,picture,svg,video,audio,canvas,iframe,object,embed)){overflow:visible}

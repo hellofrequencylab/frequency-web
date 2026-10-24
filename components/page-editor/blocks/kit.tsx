@@ -69,18 +69,16 @@ export type BandProps = {
   width?: string
   align?: string
   layout?: LayoutValue
-  /** Renderer-owned presentation hook; never persisted as customer copy. */
-  className?: string
   /** Override the default vertical rhythm (e.g. tighter CTA bands). */
   defaultPad?: string
   children: React.ReactNode
 }
 
 // Universal section wrapper.
-export function Band({ tone, width, align, layout, defaultPad, className = '', children }: BandProps) {
+export function Band({ tone, width, align, layout, defaultPad, children }: BandProps) {
   return (
     <section
-      className={`px-6 ${padClass(layout) ?? defaultPad ?? 'py-16 sm:py-20'} ${toneBg(tone)} ${visClass(layout)}${className ? ` ${className}` : ''}`}
+      className={`px-6 ${padClass(layout) ?? defaultPad ?? 'py-16 sm:py-20'} ${toneBg(tone)} ${visClass(layout)}`}
     >
       <div className={`${widthClass(width)} mx-auto ${alignClass(align)}`}>{children}</div>
     </section>
@@ -207,7 +205,7 @@ export const headingComponents: Record<string, ComponentConfig> = {
       const ink = isInk(tone)
       const { scale, accent } = emphasisClasses(emphasis as EmphasisValue)
       return (
-        <Band tone={tone} width={width} align={align} layout={layout as LayoutValue} className="pe-heading-band">
+        <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
           <h2
             className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}
