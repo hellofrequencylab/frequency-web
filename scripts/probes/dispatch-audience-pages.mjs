@@ -4,7 +4,8 @@ import { loadProbeModule } from '../lib/probe-module.mjs'
 const paging = loadProbeModule('lib/messaging/audience-pages.ts')
 const people = Array.from({ length: 1205 }, (_, i) => ({ id: String(i).padStart(8, '0'), display_name: `Fixture ${i}`, auth_user_id: `auth-${i}`, is_active: true, is_demo: false }))
 const profileRows = [...people, { id: 'zz-demo', display_name: 'Demo', auth_user_id: 'auth-demo', is_active: true, is_demo: true }, { id: 'zz-inactive', display_name: 'Inactive', auth_user_id: 'auth-inactive', is_active: false, is_demo: false }]
-let scheduled, sent = [], logs = [], failPage = false, failDetails = false, refused = false, writes = 0
+let scheduled, sent = [], logs = [], failPage = false, failDetails = false, refused = false, writes = 0, allowEmail = false
+const emails = []
 function profiles(rows = profileRows) {
   const filters = []; let limit = 1000, after = null, columns
   const q = {
@@ -33,8 +34,8 @@ const admin = {
 const action = loadProbeModule('app/(main)/nearby/actions.ts', {
   'next/cache': { revalidatePath: () => {} }, 'next/server': { after: work => { scheduled = work } },
   '@/lib/supabase/admin': { createAdminClient: () => admin }, '@/lib/auth': { getCallerProfile: async () => ({ id: 'author', community_role: 'host' }) },
-  '@/lib/email': { sendDispatchNotificationEmail: async () => { throw Error('Never send real email in the probe') } },
-  '@/lib/comms/send-gate': { resolveSendGate: async () => ({ allowed: false, reason: 'pref_off' }) },
+  '@/lib/email': { sendDispatchNotificationEmail: async params => { assert.ok(allowEmail, 'Email remains suppressed outside the explicit synthetic case'); emails.push(params) } },
+  '@/lib/comms/send-gate': { resolveSendGate: async () => ({ allowed: allowEmail, reason: 'pref_off' }) },
   '@/lib/push': { sendPushToProfile: async id => { sent.push(id); return 0 } },
   '@/lib/core/roles': { atLeastRole: () => true },
   '@/lib/messaging/place-tree': { resolvePlaceTreeProfileIds: async () => people.map(person => person.id) },
@@ -54,6 +55,16 @@ for (const scope of ['global', 'circle']) {
   assert.equal(new Set(sent).size, 1205, `${scope}: every selected profile reaches the synthetic send gate`)
   assert.equal(sent.length, 1205); assert.equal(logs.length, 2410)
 }
+// Hydration permits an absent name; the email template requires a string greeting.
+const firstName = people[0].display_name
+people[0].display_name = null
+allowEmail = true
+try {
+  await run('global')
+  assert.equal(emails.length, 1205)
+  assert.equal(emails.find(email => email.recipientProfileId === people[0].id).recipientName, 'there')
+  assert.equal(emails.find(email => email.recipientProfileId === people[1].id).recipientName, people[1].display_name)
+} finally { people[0].display_name = firstName; allowEmail = false }
 const memberships = people.flatMap(person => [
   { id: `a-${person.id}`, circle_id: 'fixture-circle', profile_id: person.id, status: 'active' },
   { id: `b-${person.id}`, circle_id: `a-circle-${person.id}`, profile_id: person.id, status: 'active' },

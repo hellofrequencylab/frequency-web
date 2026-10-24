@@ -135,7 +135,7 @@ export async function createAndPublishDispatch(fd: FormData) {
         const gate = await resolveSendGate(profile.id, 'email', 'dispatches', { email, subject })
         if (gate.allowed && email) {
           try {
-            await sendDispatchNotificationEmail({ to: email, recipientName: profile.display_name, recipientProfileId: profile.id, authorName, dispatchTitle: title, excerpt, dispatchUrl })
+            await sendDispatchNotificationEmail({ to: email, recipientName: profile.display_name ?? 'there', recipientProfileId: profile.id, authorName, dispatchTitle: title, excerpt, dispatchUrl })
             recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'email', status: 'sent', reason: null, email })
           } catch (sendErr) {
             recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'email', status: 'failed', reason: sendErr instanceof Error ? sendErr.message.slice(0, 200) : 'send failed', email })
