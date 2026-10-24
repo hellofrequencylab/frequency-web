@@ -48,7 +48,7 @@ function TileBasemap({ items }: { items: AyMapItem[] }) {
     [items],
   )
   return (
-    <span className="evm-tile-live" aria-hidden="true">
+    <span className="evm-tile-live" aria-hidden="true" inert>
       <MapCanvas
         interactive={false}
         center={center}

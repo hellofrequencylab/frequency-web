@@ -31,13 +31,8 @@ export function BreathVisualizer({
   const [label, setLabel] = useState(pattern.phases[0]?.label ?? 'Breathe in')
   const [count, setCount] = useState<number | null>(null)
   const reduceMotion = useRef(false)
-  const pausedRef = useRef(paused)
-
   useEffect(() => {
-    pausedRef.current = paused
-  }, [paused])
-
-  useEffect(() => {
+    if (paused) return
     reduceMotion.current =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -46,10 +41,6 @@ export function BreathVisualizer({
     let lastLabel = ''
     let lastCount = -1
     const tick = () => {
-      if (pausedRef.current) {
-        frame = requestAnimationFrame(tick)
-        return
-      }
       const elapsed = (Date.now() - startedAt) / 1000
       const scale = ringScaleAt(pattern, elapsed)
       const pos = breathPositionAt(pattern, elapsed)
@@ -85,7 +76,7 @@ export function BreathVisualizer({
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [pattern, startedAt])
+  }, [pattern, startedAt, paused])
 
   return (
     <div className="flex w-full min-w-0 flex-col items-center gap-6">

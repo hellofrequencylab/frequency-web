@@ -25,13 +25,13 @@
 [data-design="frequency"] [data-kit="site"] .nk-prob p{font:400 clamp(18px,1.6vw,21px)/1.6 var(--fq-font-sans);letter-spacing:0;color:var(--fq-text-body);max-width:46ch;margin:0 0 14px}
 /* steps */
 /* token-ok */ [data-design="frequency"] [data-kit="site"] .nk-step .num{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font:600 15px/1 var(--fq-font-display);color:#0A0612;background:var(--fq-nk);box-shadow:0 0 22px -4px var(--fq-nk)}
-/* token-ok */ [data-design="frequency"] [data-kit="site"] .nk-scr{margin-top:8px;border-radius:16px;background:#FFFFFF;color:#4D4945;padding:14px;display:flex;flex-direction:column;gap:8px;min-height:150px;box-shadow:0 20px 40px -24px rgba(0,0,0,.9)}
+/* token-ok */ [data-design="frequency"] [data-kit="site"] .nk-scr{--fq-nk-screen-caption:var(--fq-ink-3);margin-top:8px;border-radius:16px;background:#FFFFFF;color:#4D4945;padding:14px;display:flex;flex-direction:column;gap:8px;min-height:150px;box-shadow:0 20px 40px -24px rgba(0,0,0,.9)}
 /* token-ok */ [data-design="frequency"] [data-kit="site"] .nk-scr .r{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;background:#F6F5F3;font:500 13px/1.2 var(--fq-font-sans);color:#34312E}
 [data-design="frequency"] [data-kit="site"] .nk-scr .r span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* token-ok */ [data-design="frequency"] [data-kit="site"] .nk-scr .r em{font-style:normal;font:600 11px/1 var(--fq-font-sans);padding:5px 8px;border-radius:999px;background:#EDEBE8;color:#4D4945}
 /* token-ok */ [data-design="frequency"] [data-kit="site"] .nk-scr .r em.on{background:var(--fq-pa,var(--fq-pa));color:#1E1B18}
 /* token-ok */ [data-design="frequency"] [data-kit="site"] .nk-scr .av{width:26px;height:26px;border-radius:50%;flex:none;background:linear-gradient(135deg,#EEC1EC,#8FE9FF)}
-/* token-ok */ [data-design="frequency"] [data-kit="site"] .nk-scr .k{font:600 10px/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:#7C766F}
+[data-design="frequency"] [data-kit="site"] .nk-scr .k{font:600 var(--fq-text-meta)/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-nk-screen-caption)}
 /* token-ok */ [data-design="frequency"] [data-kit="site"] .nk-scr .ln{height:8px;border-radius:4px;background:#EDEBE8}
 [data-design="frequency"] [data-kit="site"] .nk-close{margin-top:40px!important;font:400 italic clamp(24px,2.6vw,34px)/1.2 var(--fq-font-serif)!important;color:var(--fq-text-strong)!important}
 /* kit */
@@ -280,7 +280,7 @@
 [data-design="frequency"] [data-kit="site"] .nk-loop .ring .core small{font:400 italic 14px/1.2 var(--fq-font-serif)!important;color:var(--fq-ig-sub)!important}
 /* breath for live only: the message orb holds still; live dots keep breathing */
 [data-design="frequency"] [data-kit="site"] .nk-orb{animation:none!important}
-[data-design="frequency"] [data-kit="site"] .nk-scr .k,[data-design="frequency"] [data-kit="site"] .nk-app .sub{font-size:13px}
+[data-design="frequency"] [data-kit="site"] .nk-app .sub{font-size:var(--fq-text-meta)}
 /* ===== Galaxy v3: still planets around You, nothing passes behind the orb, click for a note ===== */
 [data-design="frequency"] [data-kit="site"] .nk-gal3{position:absolute;inset:0;display:block}
 [data-design="frequency"] [data-kit="site"] .nk-rg{position:absolute;left:50%;top:50%;translate:-50% -50%;border-radius:50%;border:1px dashed var(--fq-ig-dash);pointer-events:none}
