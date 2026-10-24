@@ -1,14 +1,17 @@
 {
   "id": "LIVE-484",
   "patch": {
-    "status": "parked",
-    "notes": "Superseded 2026-10-24: the floating edge chat tab (components/layout/edge-pill.tsx) was deleted at the owner's direction, so the wiggle timer this row guarded no longer exists.",
     "source": {
       "file": "components/vera/vera-launcher.tsx",
       "ref": "found enumerating timers for LIVE-482, 2026-09-23; the edge tab was deleted 2026-10-24"
+    },
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const l=fs.readFileSync(\"components/vera/vera-launcher.tsx\",\"utf8\");if(fs.existsSync(\"components/layout/edge-pill.tsx\")||/<EdgePill\\b/.test(l)||/<span className=\"hidden md:block\">/.test(l)){console.error(\"the floating edge chat tab is back: its wiggle timer runs again on every member page\");process.exit(1)}'",
+      "note": "Retargeted 2026-10-24 after the owner had the floating edge chat tab deleted. The wiggle timer this row removed lived in that tab, so the consequence now measured is that the tab, its fallback mount and its hidden wrapper stay gone. A plain file read, no runner (LIVE-034)."
     }
   },
   "append": {
-    "detail": " 2026-10-24: parked, not edited. The owner had the floating edge chat tab deleted (components/layout/edge-pill.tsx, its render test and its fallback in vera-launcher.tsx), so the timer, the hidden wrapper and this probe's subject are gone."
+    "detail": " 2026-10-24: the owner had the floating edge chat tab deleted (components/layout/edge-pill.tsx, its render test and its fallback in vera-launcher.tsx), so the timer this row guarded is gone. The row stays done; its probe now pins that the tab stays gone."
   }
 }
