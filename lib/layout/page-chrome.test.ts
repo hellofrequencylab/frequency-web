@@ -155,8 +155,8 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/spaces/demo-business/settings/email')).toBe('global')
   })
 
-  it('drops the rail on the full-screen Beta offer only (owner ruling 2026-10-22)', () => {
-    expect(railFor('/offer')).toBe('none')
+  it('keeps the standard rail on the Beta offer (owner, 2026-10-24)', () => {
+    expect(railFor('/offer')).toBe('global')
     expect(railFor('/spaces/new')).toBe('global')
   })
 

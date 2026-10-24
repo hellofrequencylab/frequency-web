@@ -1103,12 +1103,6 @@ export const VISUAL_MASK_SITES: readonly {
     why: 'Mounts only where SUPPORT_CHAT=1: Production, and Preview since 2026-09-29 (LIVE-213).',
   },
   {
-    value: 'edge-pill',
-    file: 'components/layout/edge-pill.tsx',
-    kind: 'route',
-    why: 'The fallback launcher where no dock slot exists; its label and badge are live.',
-  },
-  {
     value: 'dock-chat-tab',
     file: 'components/vera/vera-launcher.tsx',
     kind: 'live',

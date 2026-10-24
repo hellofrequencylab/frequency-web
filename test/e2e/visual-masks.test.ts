@@ -151,13 +151,10 @@ describe('visual masks (LIVE-213)', () => {
     expect(source).not.toMatch(/<ModuleCard\b/)
   })
 
-  it('a mask paints a box and moves nothing: no site is a zero-size wrapper', () => {
-    // A `<span className="hidden md:block">` around a fixed child has a zero box, so masking
-    // it paints nothing. Every registered site must sit on an element that draws.
+  it('the floating edge chat tab is gone, so no mask sits on a zero-size wrapper', () => {
     const source = readFileSync('components/vera/vera-launcher.tsx', 'utf8')
-    const wrapper = source.indexOf('<span className="hidden md:block">')
-    expect(wrapper).toBeGreaterThan(-1)
-    expect(source.slice(wrapper, wrapper + 40)).not.toContain('data-visual-mask')
+    expect(source).not.toContain('<span className="hidden md:block">')
+    expect(source).not.toMatch(/<EdgePill\b/)
   })
 
   it('Playwright declines the Vercel preview toolbar on every run', () => {
