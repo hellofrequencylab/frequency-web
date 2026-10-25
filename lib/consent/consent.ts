@@ -43,7 +43,7 @@ export async function recordConsent(
  *  when they've never recorded a choice. Fail-closed on error. */
 export async function hasConsent(profileId: string, scope: string): Promise<boolean> {
   try {
-    const { data } = await db()
+    const { data, error } = await db()
       .from('consent_records')
       .select('scope, granted, created_at')
       .eq('profile_id', profileId)
@@ -51,6 +51,7 @@ export async function hasConsent(profileId: string, scope: string): Promise<bool
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
+    if (error) return false
     if (!data) return defaultGranted(scope)
     return (data as ConsentRecord).granted
   } catch {

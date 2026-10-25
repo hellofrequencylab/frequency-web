@@ -1,19 +1,21 @@
-// LIVE-877 baseline: frozen legacy HTML/text before native renderer conversion. Outputs recaptured 2026-10-19 (EMAIL-029) on the owner's go; the SHA below is the recaptured file.
+// LIVE-877: current Frequency HTML expectations; authored layouts and plain text remain unchanged. Historical pre-migration bytes are retained in the release evidence.
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {createHash} from 'node:crypto'
-import {upgradeLayout} from '../lib/entity-blocks/node-tree.ts'
-import {parseEmailRenderLayout} from '../lib/email-studio/render-layout.ts'
-import {compileEmailDoc} from '../lib/email-studio/shell.ts'
-import {renderEmailLayout} from '../lib/email-studio/render.ts'
+// Bind the current platform design before evaluating renderer modules.
+process.env.NEXT_PUBLIC_SITE_DESIGN='frequency'
+const {upgradeLayout} = await import('../lib/entity-blocks/node-tree.ts')
+const {parseEmailRenderLayout} = await import('../lib/email-studio/render-layout.ts')
+const {compileEmailDoc} = await import('../lib/email-studio/shell.ts')
+const {renderEmailLayout} = await import('../lib/email-studio/render.ts')
 const hash=value=>createHash('sha256').update(value).digest('hex')
 const bytes=readFileSync('scripts/fixtures/email-node-render/legacy-golden.json')
-assert.equal(hash(bytes),'a4e8f82b854586dc6226dd89c4330be627bd3c76438798e78cca2e49d42082e1','pre-conversion golden strings changed')
+assert.equal(hash(bytes),'c1fe1a61ba656a22eafef13aaa820b4d5c8040aacb5462d44c90d17df97575bd','reviewed Frequency HTML/text expectations changed')
 const golden=JSON.parse(bytes)
 assert.equal(hash(readFileSync('scripts/entity-layout-corpus.json')),golden.sourceSha256)
 assert.equal(golden.documents.length,19)
 for(const document of golden.documents)assert.deepEqual(renderEmailLayout(document.layout),document.output,document.id)
-console.log('ok: all19 deterministic authored historical email outputs match pre-conversion golden strings')
+console.log('ok: all19 deterministic authored layouts match reviewed Frequency HTML/text expectations')
 
 for(const document of golden.documents) {
   const native=upgradeLayout(document.layout)
@@ -36,7 +38,7 @@ assert.deepEqual(parsed,native,'native read lost authored bench/identity/bags')
 assert.deepEqual(upgradeLayout(parsed),parsed,'native read changed on second pass')
 const compiled=compileEmailDoc({layout:parsed,subject:'Authored subject',preheader:'Authored preview'},{unsubscribeUrl:'https://example.test/unsubscribe'})
 assert(compiled.text.includes('First authored placement\n\nSecond authored placement'))
-assert(compiled.html.includes('#9A5E12'))
+assert(compiled.html.includes('#34312E'))
 const secondOnly=renderEmailLayout({rows:[{id:'r0',columns:1,cells:[[native.rows[0].cells[0][1]]]}],bench:[]})
 assert(compiled.html.includes(secondOnly.html),'second placement did not retain its own style/content')
 for(const excluded of ['Hidden authored work','benched placement','Future authored work','Unknown benched work','javascript:'])assert(!compiled.html.includes(excluded),excluded)

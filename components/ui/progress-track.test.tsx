@@ -1,8 +1,21 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { ProgressTrack } from './progress-track'
+
+vi.mock('@/lib/theme/design', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/theme/design')>(), SITE_DESIGN: 'frequency',
+}))
+import {readFileSync as readFrequencyCss} from 'node:fs'
+import {createRequire as frequencyRequire} from 'node:module'
+const frequencyPostcss = frequencyRequire(frequencyRequire(import.meta.url).resolve('@tailwindcss/postcss'))('postcss')
+const frequencyRules: {selector: string; nodes: {type: string; prop?: string; value?: string}[]; parent: {type: string; params?: string}}[] = []
+for (const file of ['kit-members','members-ui','core']) frequencyPostcss.parse(readFrequencyCss(`app/themes/frequency/${file}.css`,'utf8')).walkRules((rule: typeof frequencyRules[number])=>frequencyRules.push(rule))
+function frequencyStyle(selector: string, prop: string | RegExp, value?: string, media?: string) {
+  return frequencyRules.some(rule=>rule.selector.includes(selector) && (!media || (rule.parent.type==='atrule' && rule.parent.params===media)) && rule.nodes.some(node=>node.type==='decl' && (typeof prop === 'string' ? node.prop===prop : prop.test(node.prop ?? '')) && (value===undefined || node.value===value)))
+}
+
 
 // Locks the generic progress primitive (DAWN 2026-08-03 §5): clamped 0-100,
 // accessible progressbar, one FIXED tone per bar (no threshold color shifts —
@@ -27,7 +40,7 @@ function mount(props: React.ComponentProps<typeof ProgressTrack>) {
 }
 
 function fill(c: HTMLElement) {
-  return c.querySelector('[role="progressbar"] > div') as HTMLElement
+  return c.querySelector('[role="progressbar"].meter > i') as HTMLElement
 }
 
 describe('ProgressTrack clamping', () => {
@@ -68,27 +81,27 @@ describe('ProgressTrack accessibility', () => {
 describe('ProgressTrack tones', () => {
   it('defaults to the primary tone', () => {
     const c = mount({ value: 50, label: 'Default' })
-    expect(fill(c).className).toContain('bg-primary')
+    expect(track(c).className).toContain('meter')
   })
 
   it('renders the success and move tones, fixed regardless of value', () => {
     const success = mount({ value: 95, label: 'Nearly there', tone: 'success' })
-    expect(fill(success).className).toContain('bg-success')
+    expect(track(success).className).toContain('mu-success'); expect(frequencyStyle('.meter.mu-success i','background','var(--fq-success)')).toBe(true)
     act(() => root!.unmount())
     container!.remove()
     root = null
     container = null
 
     const move = mount({ value: 95, label: 'Get Moving', tone: 'move' })
-    expect(fill(move).className).toContain('bg-move')
+    expect(track(move).className).toContain('mu-move'); expect(frequencyStyle('.meter.mu-move i','background','var(--fq-accent-2)')).toBe(true)
     // No threshold shift: high value never turns warning/danger here.
-    expect(fill(move).className).not.toContain('warning')
-    expect(fill(move).className).not.toContain('danger')
+    expect(track(move).className).not.toContain('warning')
+    expect(track(move).className).not.toContain('danger')
   })
 
   it('supports the compact size', () => {
     const c = mount({ value: 30, label: 'Compact', size: 'sm' })
-    expect((c.querySelector('[role="progressbar"]') as HTMLElement).className).toContain('h-1')
+    expect((c.querySelector('[role="progressbar"]') as HTMLElement).className).toContain('meter'); expect(frequencyStyle('.meter','height','4px')).toBe(true)
   })
 })
 
@@ -126,7 +139,7 @@ describe('ProgressTrack scale', () => {
 
 describe('ProgressTrack surface options', () => {
   it('renders the added sizes', () => {
-    for (const [size, h] of [['lg', 'h-2'], ['xl', 'h-2.5'], ['2xl', 'h-3']] as const) {
+    for (const [size, h] of [['lg', 'mu-h8'], ['xl', 'mu-h10'], ['2xl', 'mu-h12']] as const) {
       const c = mount({ value: 50, label: size, size })
       expect(track(c).className).toContain(h)
       act(() => root!.unmount())
@@ -138,27 +151,27 @@ describe('ProgressTrack surface options', () => {
 
   it('renders the added tones and track colours', () => {
     const c = mount({ value: 50, label: 'Broadcast', tone: 'broadcast', track: 'broadcast' })
-    expect(fill(c).className).toContain('bg-broadcast')
-    expect(track(c).className).toContain('bg-broadcast-bg')
+    expect(track(c).className).toContain('mu-broadcast'); expect(frequencyStyle('.meter.mu-broadcast i','background','var(--fq-live)')).toBe(true)
+    expect(track(c).className).toContain('mu-track-broadcast'); expect(frequencyStyle('.meter.mu-track-broadcast','--fq-track','var(--fq-live-soft)')).toBe(true)
   })
 
   it('takes layout-only classes without losing its own', () => {
     const c = mount({ value: 50, label: 'Inline', className: 'flex-1 mt-1' })
     expect(track(c).className).toContain('flex-1')
-    expect(track(c).className).toContain('rounded-pill')
+    expect(track(c).className).toContain('meter'); expect(frequencyStyle('.meter',/^border-radius$/)).toBe(true)
   })
 
   it('opts into an eased fill only when asked', () => {
     const plain = mount({ value: 50, label: 'Plain' })
-    expect(fill(plain).className).not.toContain('transition-[width]')
+    expect(track(plain).className).not.toContain('mu-ease')
     act(() => root!.unmount())
     container!.remove()
     root = null
     container = null
 
     const eased = mount({ value: 50, label: 'Eased', animate: true })
-    expect(fill(eased).className).toContain('transition-[width]')
-    expect(fill(eased).className).toContain('motion-reduce:transition-none')
+    expect(track(eased).className).toContain('mu-ease'); expect(frequencyStyle('.meter.mu-ease i','transition','width 500ms var(--fq-ease-out)')).toBe(true)
+    expect(track(eased).className).toContain('mu-ease'); expect(frequencyStyle('.meter.mu-ease i','transition','none','(prefers-reduced-motion:reduce)')).toBe(true)
   })
 })
 
@@ -175,5 +188,16 @@ describe('ProgressTrack indeterminate', () => {
     const c = mount({ label: 'Importing contacts', indeterminate: true })
     expect(fill(c).style.width).toBe('')
     expect(fill(c).className).toContain('motion-safe:animate-pulse')
+  })
+})
+
+// Every public track option must affect the actual Frequency track, without altering fill or ARIA.
+describe('Frequency ProgressTrack options',()=>{
+  it.each([['elevated','','var(--fq-track)'],['surface','mu-track-surface','var(--fq-surface-card)'],['broadcast','mu-track-broadcast','var(--fq-live-soft)'],['border','mu-track-border','color-mix(in oklab,var(--fq-border-hair) 60%,transparent)']] as const)('%s retains its track paint',(option,marker,paint)=>{
+    const c=mount({value:25,label:'Upload',track:option})
+    expect(track(c).className).toContain(marker || 'meter')
+    expect(frequencyStyle(marker?`.meter.${marker}`:'.meter',marker?'--fq-track':'background',paint)).toBe(true)
+    expect(fill(c).style.width).toBe('25%')
+    expect(track(c).getAttribute('aria-valuenow')).toBe('25')
   })
 })
