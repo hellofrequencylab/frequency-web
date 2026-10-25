@@ -74,7 +74,7 @@ export function ManageEmailsForm({
     <div className="space-y-4">
       <p className="text-body-sm text-muted leading-relaxed">
         Pick which emails you want from Frequency. Turn one off to stop that kind of email, or back on to
-        start again. Changes save right away.
+        start again. Changes save automatically.
       </p>
 
       <div className="rounded-card border border-border bg-surface divide-y divide-border overflow-hidden">
@@ -114,7 +114,7 @@ export function ManageEmailsForm({
             <Check className="w-3 h-3" /> Saved
           </span>
         ) : (
-          'Changes save instantly.'
+          'Changes save automatically.'
         )}
       </div>
     </div>
