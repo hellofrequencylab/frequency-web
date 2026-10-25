@@ -7,7 +7,7 @@ import {
   type CampaignMetrics,
   type CampaignTimeline,
 } from '@/lib/email-studio/analytics'
-import { analyzeCampaignOpenRate, type CampaignCoachResult } from '@/lib/ai/campaign-coach'
+import { analyzeCampaignOutcome, type CampaignCoachResult } from '@/lib/ai/campaign-coach'
 
 // The read-only bridge that lets the CLIENT Email Studio workspace show per-campaign analytics
 // (Phase 6) for the currently selected campaign. The analytics lib is server-only; this gated action
@@ -31,12 +31,12 @@ export async function campaignTimelineAction(campaignId: string): Promise<Campai
   }
 }
 
-/** Vera's open-rate analysis for one sent campaign. Spends AI budget, so it takes the WRITE gate (not
+/** Vera's outcome coaching for one sent campaign. Spends AI budget, so it takes the WRITE gate (not
  *  read-only) and passes the operator's profile for the usage ledger. Fail-soft to `{ ok:false }`. */
-export async function campaignCoachAction(campaignId: string): Promise<CampaignCoachResult> {
+export async function campaignCoachAction(campaignId: string, goal: unknown = 'attendance'): Promise<CampaignCoachResult> {
   const { profileId } = await requireAdmin('admin', { staff: 'marketing' })
   try {
-    return await analyzeCampaignOpenRate(campaignId, profileId)
+    return await analyzeCampaignOutcome(campaignId, profileId, goal)
   } catch {
     return { ok: false, reason: 'Vera could not run the analysis just now. The stats above are still live.' }
   }
