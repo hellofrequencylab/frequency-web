@@ -1143,3 +1143,30 @@ describe('the real tree', () => {
     expect(missing.map((e: { id: string }) => e.id)).toEqual([])
   })
 })
+
+
+describe('command probe diagnostics', () => {
+  it('keeps bounded stderr for a regressed done row without publishing stdout', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'backlog-diagnostics-'))
+    try {
+      writeBacklog(dir, [...ballast(), { id: 'DIAG-1', title: 'regressed fixture', status: 'done', lane: 'live', size: 'S',
+        verify: { kind: 'cmd', cmd: `node -e 'process.stdout.write("stdout-"+"payload"); process.stderr.write("fixture-stderr-marker\\n" + "x".repeat(20000)); process.exit(1)'` } }])
+      const result = run(BACKLOG_GUARD, dir, SWEEP)
+      expect(result.code).toBe(1)
+      expect(result.out).toContain('fixture-stderr-marker')
+      expect(result.out).not.toContain('stdout-payload')
+      expect(result.out.length).toBeLessThan(12000)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+
+  it('does not print expected stderr when an open row correctly remains open', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'backlog-diagnostics-'))
+    try {
+      writeBacklog(dir, [...ballast(), { id: 'DIAG-1', title: 'open fixture', status: 'open', priority: 'P2', lane: 'live', size: 'S',
+        verify: { kind: 'cmd', cmd: `node -e 'process.stderr.write("expected-pending-detail"); process.exit(1)'` } }])
+      const result = run(BACKLOG_GUARD, dir, SWEEP)
+      expect(result.code, result.out).toBe(0)
+      expect(result.out).not.toContain('expected-pending-detail')
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+})
