@@ -69,7 +69,7 @@ import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 // refresh. The fix: the chrome lives in THIS layout, which wraps ONLY the public profile routes (the
 // `(profile)` route group). Owner surfaces (manage/settings/crm/edit-page) are siblings OUTSIDE the
 // group, so they never inherit the chrome and no path-branching is needed. The active tab is resolved
-// client-side (SpaceProfileTabs → usePathname), the only signal that stays correct across soft nav.
+// client-side (SpaceProfileMenu → usePathname), the only signal that stays correct across soft nav.
 //
 // The Space itself is resolved + stamped once by the parent [slug]/layout.tsx; we read it back from the
 // request-scoped active-space context (getActiveSpace), falling back to a re-resolve defensively.
@@ -240,7 +240,7 @@ export default async function SpaceProfileChromeLayout({
   // The profile sub-nav (Home + section anchors + custom pages, plus the operator's Manage/CRM links)
   // is built by the shared helper — the SAME menu the owner shell layouts (manage / crm) render, so the
   // sticky bar reads as one persistent nav across profile ↔ Manage ↔ CRM. Active state stays client-side
-  // (SpaceProfileTabs → usePathname), so nothing here goes stale across soft navigation.
+  // (SpaceProfileMenu → usePathname), so nothing here goes stale across soft navigation.
   const { tabs, adminTabs } = await buildSpaceProfileNav(space)
 
   // THE HEADER LOGO (lib/spaces/site-menu.ts, shared with the website): the round image beside the name
