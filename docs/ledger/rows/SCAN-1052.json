@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-1052",
+  "title": "Preserve sitemap sections when the five remaining legacy readers fail on transport",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "M",
+  "source": { "file": "app/sitemap.ts", "ref": "Five remaining swallowed reads named in LIVE-331 and revalidated during SCAN-1051" },
+  "detail": "After the scoped organizer repair, getTopicalChannels,getPublicCircles,listSitemapEventEntries,listPublicJourneys and getSpotlightRoutes/listPublishedSpotlightHandles still discard resolved transport failures or catch them as empty. LIVE331 explicitly named these as outside its closed repair. A sectionRead wrapper alone cannot help a lower reader that resolves[]; change the actual reporting boundary deliberately, preserving other callers' documented behavior and the public visibility/publish/privacy gates. Use the existing transient classifier so real PostgREST codes remain deterministic even at5xx. Keep intentional sitemap caps and their observability separate; no pagination scope expansion is inferred. Tests must drive each actual reader through a scripted SDK and the sitemap, proving healthy empty, deterministic errors and transport preservation. No migration, public privilege expansion, production outage injection or release is authorized.",
+  "verify": { "kind": "manual", "checked": "2026-10-25", "evidence": "OPEN: source-confirmed swallowed paths remain in the five named reader chains. Close only with actual-reader and sitemap failure-path tests and compatible caller behavior, not added wrappers/comments or a green source scan. Production cache/search acceptance must stay separately identified." },
+  "wave": "W0"
+}
