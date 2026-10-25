@@ -4,8 +4,8 @@ import { DESIGNS } from '../design'
 
 // FONTS PER DESIGN (ADR-1737). app/layout.tsx imports ./active, and ./active is ONE static re-export
 // that scripts/write-design-assets.mjs points at the build's design. These hold the three ways that
-// can go wrong: a design with no font module, a committed ./active left pointing at a non-DAWN design
-// after a local Frequency build, and the layout reaching past ./active to a design module directly
+// can go wrong: a design with no font module, a committed ./active left pointing at a legacy design
+// after a local build, and the layout reaching past ./active to a design module directly
 // (which would put that design's faces into every deploy's graph).
 
 const active = readFileSync('lib/theme/design-fonts/active.ts', 'utf8')
@@ -20,9 +20,9 @@ describe('fonts per design', () => {
     }
   })
 
-  it("commits ./active pointing at DAWN, as one static re-export", () => {
+  it("commits ./active pointing at Frequency, as one static re-export", () => {
     const exports = active.split('\n').filter((l) => /^(import|export)\b/.test(l))
-    expect(exports).toEqual(["export { DESIGN_FONT_CLASS, FONTS_DESIGN } from './dawn'"])
+    expect(exports).toEqual(["export { DESIGN_FONT_CLASS, FONTS_DESIGN } from './frequency'"])
   })
 
   it('the root layout reads only ./active, never a design module directly', () => {

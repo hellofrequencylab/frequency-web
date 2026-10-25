@@ -1,13 +1,7 @@
-// LIVE-922 (ADR-1737): production wears the Frequency design, switched by the one setting, while the
-// committed tree stays DAWN so a rollback is unsetting a variable and redeploying.
-//
-// Two halves, both consequences:
-//   1. THE TREE (holds before and after go-live). The committed per-design stubs are DAWN's, so a build
-//      without the variable is DAWN; the switch reads one env setting and an unknown value is DAWN; the
-//      go-live and rollback steps are written in docs/RUNBOOKS.md. Any of these failing is exit 1.
-//   2. PRODUCTION (fails until the owner flips the switch). The live home page's <html> carries
-//      data-design="frequency". A network failure is exit 79 (could not look), never a verdict.
+// LIVE-922: Frequency is the platform default and the public deployment must wear it.
+// Tree failures exit 1; unavailable public evidence exits 79.
 import { readFileSync, readdirSync } from 'node:fs'
+import { renderStubs } from '../lib/design-styles.mjs'
 
 const fail = (m) => {
   console.error(`LIVE-922: ${m}`)
@@ -16,19 +10,21 @@ const fail = (m) => {
 const read = (f) => readFileSync(f, 'utf8')
 
 // 1. The tree.
-const stubs = readdirSync('app/themes/active').filter((f) => f.endsWith('.ts'))
-if (stubs.length === 0) fail('app/themes/active holds no design stubs')
-for (const f of stubs) {
-  const code = read(`app/themes/active/${f}`).replace(/^\s*\/\/.*$/gm, '').trim()
-  if (code !== 'export {}') fail(`app/themes/active/${f} is committed in a non-DAWN state (run pnpm design:use dawn)`)
+const expectedStubs = renderStubs('frequency', ['dawn', 'frequency'])
+const stubs = readdirSync('app/themes/active').filter((f) => f.endsWith('.ts')).sort()
+if (JSON.stringify(stubs) !== JSON.stringify(Object.keys(expectedStubs).map((name) => `${name}.ts`).sort()))
+  fail('active stylesheet coverage differs from the Frequency source files')
+for (const [name, source] of Object.entries(expectedStubs)) {
+  if (read(`app/themes/active/${name}.ts`) !== source) fail(`${name}: active stylesheet does not load Frequency`)
 }
-if (!/export \{[^}]*\} from '\.\/dawn'/.test(read('lib/theme/design-fonts/active.ts')))
-  fail('lib/theme/design-fonts/active.ts is committed pointing at another design')
+if (!/export \{[^}]*\} from '\.\/frequency'/.test(read('lib/theme/design-fonts/active.ts')))
+  fail('active fonts do not load Frequency')
 const design = read('lib/theme/design.ts')
-if (!/DEFAULT_DESIGN: DesignId = 'dawn'/.test(design)) fail('an unset or unknown switch no longer reads as DAWN')
-if (!/resolveDesign\(process\.env\.NEXT_PUBLIC_SITE_DESIGN\)/.test(design)) fail('the design no longer comes from NEXT_PUBLIC_SITE_DESIGN')
+if (!/DEFAULT_DESIGN: DesignId = 'frequency'/.test(design)) fail('the platform default is not Frequency')
+if (!/resolveDesign\(process\.env\.NEXT_PUBLIC_SITE_DESIGN\)/.test(design)) fail('the design no longer uses the canonical resolver')
 const manifest = JSON.parse(read('public/manifest.json'))
-if (manifest.theme_color !== '#FBFAF6') fail('public/manifest.json is committed with another design\'s chrome colour')
+if (manifest.theme_color !== '#F4F6F7' || manifest.background_color !== '#F4F6F7')
+  fail('manifest chrome does not match Frequency')
 const runbook = read('docs/RUNBOOKS.md')
 if (!/## 8\. Design switch/.test(runbook) || !/NEXT_PUBLIC_SITE_DESIGN/.test(runbook) || !/Roll back/.test(runbook))
   fail('docs/RUNBOOKS.md has no design switch section with go-live and roll-back steps')
@@ -52,5 +48,5 @@ if (!m) {
   console.error(`LIVE-922: ${url}/ carries no data-design on <html>; cannot tell`)
   process.exit(79)
 }
-if (m[1] !== 'frequency') fail(`${url}/ still wears ${m[1]}; set NEXT_PUBLIC_SITE_DESIGN=frequency in Vercel Production and redeploy (docs/RUNBOOKS.md §8)`)
-console.log(`ok: ${url}/ wears Frequency, and the committed tree is DAWN so a rollback is one variable and a redeploy`)
+if (m[1] !== 'frequency') fail(`${url}/ still wears ${m[1]}; deploy the Frequency platform source (docs/RUNBOOKS.md §8)`)
+console.log(`ok: ${url}/ wears Frequency, and the committed tree loads Frequency`)
