@@ -455,3 +455,26 @@
 [data-design="frequency"] [data-kit="members"] .fqm-join-login{margin:4px 0 0;font:400 var(--fq-text-meta)/1.4 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fqm-join-login a{color:var(--fq-text-strong);text-decoration:underline;text-underline-offset:3px}
 }
+
+/* Shared native Switch states: root-loaded members-ui reaches every platform shell.
+   Restrict to the native shared control, not the site's unrelated .sw tab wrapper. */
+[data-design="frequency"] button.sw[role="switch"]{transition:background var(--fq-dur-base),filter var(--fq-dur-fast),transform var(--fq-dur-fast) var(--fq-ease-out)}
+@media (hover:hover){
+  [data-design="frequency"] button.sw[role="switch"]:not(:disabled):not([aria-busy="true"]):not(.on):hover{background:color-mix(in oklab,var(--fq-track) 85%,var(--fq-text-strong))}
+  [data-design="frequency"] button.sw[role="switch"].on:not(:disabled):not([aria-busy="true"]):hover{filter:brightness(1.08)}
+}
+[data-design="frequency"] button.sw[role="switch"]:not(:disabled):not([aria-busy="true"]):active{transform:scale(.97)}
+[data-design="frequency"] button.sw[role="switch"]:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:3px}
+[data-design="frequency"] button.sw[role="switch"]:disabled,[data-design="frequency"] button.sw[role="switch"][aria-busy="true"]{filter:none;transform:none}
+@media (prefers-reduced-motion:reduce){
+  [data-design="frequency"] button.sw[role="switch"],
+  [data-design="frequency"] button.sw[role="switch"]::after,
+  [data-design="frequency"] .meter.mu-ease i{transition:none}
+  [data-design="frequency"] button.sw[role="switch"]:not(:disabled):not([aria-busy="true"]):active{transform:none}
+}
+
+/* Native select and progress options retain their meaning in Frequency. */
+[data-design="frequency"] .mu-select.mu-active>svg{--fq-text-muted:var(--fq-accent)}
+[data-design="frequency"] .meter.mu-track-surface{--fq-track:var(--fq-surface-card)}
+[data-design="frequency"] .meter.mu-track-broadcast{--fq-track:var(--fq-live-soft)}
+[data-design="frequency"] .meter.mu-track-border{--fq-track:color-mix(in oklab,var(--fq-border-hair) 60%,transparent)}

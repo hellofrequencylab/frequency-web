@@ -257,7 +257,9 @@ function run(root: HTMLElement): () => void {
         if (!en.isIntersecting) return
         const el = en.target
         const now = performance.now()
-        const delay = Math.max(0, lastPop + 170 - now)
+        // Keep the ordinary cadence, but coalesce excess entries in a large burst.
+        // Copy must not wait behind an arbitrarily long global reveal queue.
+        const delay = Math.min(1020, Math.max(0, lastPop + 170 - now))
         lastPop = now + delay
         setTimeout(() => el.classList.add('in'), delay)
         pio.unobserve(el)

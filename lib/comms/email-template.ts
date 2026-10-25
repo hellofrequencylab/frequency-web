@@ -95,7 +95,7 @@ function headerMarkHtml(): string {
  *  carries no one-click Unsubscribe (it is not bulk mail); Manage emails opens the preference page. */
 function footerHtml(brand?: EmailBrand | null, origin?: EmailOrigin | null): string {
   const link = (href: string, label: string, strong = false): string =>
-    `<a href="${esc(href)}" style="color:${strong ? palette.emailHeading : palette.emailSubtle};${strong ? 'font-weight:600;' : ''}text-decoration:underline">${label}</a>`
+    `<a href="${esc(href)}" style="color:${strong ? palette.emailHeading : palette.textMuted};${strong ? 'font-weight:600;' : ''}text-decoration:underline">${label}</a>`
   const dot = ' &middot; '
   const target = origin ?? (brand ? { label: brand.name, url: brand.url } : null)
   const back = target
@@ -104,7 +104,7 @@ function footerHtml(brand?: EmailBrand | null, origin?: EmailOrigin | null): str
   const sentWith = brand
     ? `${link(APP, `Sent with ${SITE_NAME}`)}${dot}${link(brand.url, esc(brand.name))}`
     : `${SITE_SIGNOFF} ${SITE_TAGLINE}. ${link(APP, 'frequencylocal.com')}`
-  return `<div style="padding:22px 4px 0;color:${palette.emailSubtle};font-size:13px;line-height:1.6;text-align:center">
+  return `<div style="padding:22px 4px 0;color:${palette.textMuted};font-size:13px;line-height:1.6;text-align:center">
     ${back}
     <a href="${APP}" style="display:inline-block;text-decoration:none">${wordmarkImg(0.55)}</a>
     <div style="margin-top:12px">${link(`${APP}/privacy`, 'Privacy')}${dot}${link(`${APP}/terms`, 'Terms')}${dot}${link(`${APP}/help`, 'Help')}</div>

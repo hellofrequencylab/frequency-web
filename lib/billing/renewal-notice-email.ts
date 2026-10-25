@@ -40,7 +40,7 @@ export function renewalTouchCopy(
     inapp: `Payment for your ${planLabel} plan came due on ${dateLabel}. Reach out to the crew to settle up.`,
     body: [
       `Payment for the ${planLabel} plan on ${spaceName} came due on ${dateLabel}.`,
-      `Your rate stays locked at ${rateLabel}. Reach out to the crew to settle up and everything keeps running as usual.`,
+      `Your rate stays locked at ${rateLabel}. Contact the Frequency team to arrange payment.`,
     ],
   }
 }
@@ -63,8 +63,8 @@ export function buildRenewalNoticeEmail(parts: {
   const why = `You are receiving this because you run ${parts.spaceName} on Frequency.`
   const html = emailShell(
     [
-      `<p style="${EMAIL_P}color:${palette.text};">${escapeHtml(greeting)}</p>`,
-      ...copy.body.map((p) => `<p style="${EMAIL_P}color:${palette.text};">${escapeHtml(p)}</p>`),
+      `<p data-fq="fq-p" style="${EMAIL_P}color:${palette.text};">${escapeHtml(greeting)}</p>`,
+      ...copy.body.map((p) => `<p data-fq="fq-p" style="${EMAIL_P}color:${palette.text};">${escapeHtml(p)}</p>`),
       `${emailButton(`View plan and billing`, parts.billingUrl)}`,
     ].join('\n'),
     { text: escapeHtml(why), unsubscribe: false },
