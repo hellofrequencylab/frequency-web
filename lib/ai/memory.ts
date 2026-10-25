@@ -6,6 +6,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasConsent } from '@/lib/consent/consent'
 
 export interface MemberFacts {
   interests?: string[]
@@ -65,6 +66,7 @@ function db(): SupabaseClient {
 
 /** Read a member's context (service role). Null if none yet. Never throws. */
 export async function getMemberContext(profileId: string): Promise<MemberContext | null> {
+  if (!(await hasConsent(profileId, 'ai_memory'))) return null
   try {
     const { data } = await db()
       .from('ai_member_context')
@@ -87,8 +89,10 @@ export async function getMemberContext(profileId: string): Promise<MemberContext
 /** Merge newly-learned facts into the member's memory (backs the remember_fact
  *  tool). Read-merge-upsert; bumps interaction_count. Best-effort. */
 export async function rememberFacts(profileId: string, incoming: Partial<MemberFacts>): Promise<void> {
+  if (!(await hasConsent(profileId, 'ai_memory'))) return
   try {
     const current = await getMemberContext(profileId)
+    if (!(await hasConsent(profileId, 'ai_memory'))) return
     const facts = mergeFacts(current?.facts ?? {}, incoming)
     await db()
       .from('ai_member_context')
@@ -146,7 +150,9 @@ export async function claimMembersDueForSummary(limit: number): Promise<MemberCo
       // Oldest summarize first; NULLs (never summarized) sort first by default.
       .order('last_summarized_at', { ascending: true, nullsFirst: true })
       .limit(limit)
-    return ((data ?? []) as ContextRow[]).map(rowToSummaryContext)
+    const candidates = ((data ?? []) as ContextRow[]).map(rowToSummaryContext)
+    const consent = await Promise.all(candidates.map(member => hasConsent(member.profileId, 'ai_memory')))
+    return candidates.filter((_, index) => consent[index])
   } catch {
     return []
   }
@@ -165,6 +171,7 @@ export async function writeDigest(
   digest: { summary: string; facts: MemberFacts },
   opts: { interactionCount: number; milestones?: Record<string, unknown>; now?: Date } = { interactionCount: 0 },
 ): Promise<void> {
+  if (!(await hasConsent(profileId, 'ai_memory'))) return
   try {
     const now = opts.now ?? new Date()
     const milestones = {
