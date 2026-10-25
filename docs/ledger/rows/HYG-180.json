@@ -1,0 +1,19 @@
+{
+  "id": "HYG-180",
+  "title": "Remove retired event and Space UI implementations while preserving shared types",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "lib/events/catalog-types.ts",
+    "ref": "Four dormant components identified by whole-tree import graph and manual runtime/registry tracing"
+  },
+  "detail": "The old EventsFilterBar/EventsSort, EventFactPanel and SpaceProfileTabs implementations have no live runtime importers; their remaining callers use CatalogFacet/SortOption, FactGuest and SpaceProfileTab types only. Current events render Frequency/marketplace surfaces; event-facts was retired into the RSVP box and its saved-layout compatibility registration must remain; Space profiles render SpaceProfileMenu. Move only these still-used types to type-only lib seams and update all callers, then remove the four dormant implementations. Preserve saved layout ids, current live components, intentional type-only modules and staged editor/entity-block contracts. This is source hygiene, not measured client bundle or production speed improvement: the removed implementations were already unreachable at runtime. Whole-codebase orphan-free status is not claimed. Validation2026-10-25: route type generation and whole-tree typing pass with the established6144MB heap after an initial default4096MB run exhausted memory (diagnostic retained). Focused lint and canonical merged backlog static validation pass;102existing tests across6files pass. Baseline/three assertion-level retirement controls prove the absence/type-only/saved-registration gate is not vacuous. No app/provider/browser write or new artifact measurement is claimed.",
+  "closed": "2026-10-25",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/retired-profile-event-ui.mjs",
+    "note": "Assert retired implementations stay absent, shared type seams remain type-only, and saved event-facts/live Space menu wiring remains. Whole-tree typing and existing surface/registry tests validate callers separately."
+  }
+}

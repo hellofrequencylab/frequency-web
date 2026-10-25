@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
+import type { SpaceProfileTab } from '@/lib/spaces/profile-tab'
 
 // A DROPDOWN in the Space page menu (lib/spaces/site-menu.ts): the website header's mega panel in the
 // app's look. The child links (each with its line of description) beside an optional photo card.
