@@ -105,7 +105,7 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
   // PROMINENT links: the marketing/nav row reads in body ink at a clear size so members actually click through.
   const link = (href: string, label: string): string =>
     `<a href="${escapeHtml(href)}" data-fq="fq-foot" style="color:${colors.text};text-decoration:none;font-weight:600;">${label}</a>`
-  const sep = `<span style="color:${colors.subtle};">&nbsp;&middot;&nbsp;</span>`
+  const sep = `<span data-fq="fq-muted" style="color:${colors.subtle};">&nbsp;&middot;&nbsp;</span>`
   const links = [link(`${base}/privacy`, 'Privacy'), link(`${base}/terms`, 'Terms'), link(`${base}/help`, 'Help')].join(sep)
   // SUBTLE fine print, but the two account links ALWAYS resolve to a live destination. "Unsubscribe" links to
   // the per-recipient one-click token the send injects; "Manage emails" links to the preference page (kept
@@ -124,7 +124,7 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
       ${desc ? `<p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>`}
       <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${links}</p>
       <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${mutedLink(unsubscribeHref, 'Unsubscribe')}${sep}${mutedLink(manageHref, 'Manage emails')}</p>
-      <p style="margin:0;font-size:12px;color:${colors.subtle};line-height:1.6;">&copy; ${year} ${escapeHtml(ORG_LEGAL_NAME)}${sep}${addr}</p>
+      <p style="margin:0;font-size:12px;color:${colors.subtle};line-height:1.6;">&copy; ${year} ${brand.address ? `${escapeHtml(ORG_LEGAL_NAME)}${sep}` : ''}${addr}</p>
       ${input.sentWithFrequency ? `<p style="margin:10px 0 0;font-size:12px;color:${colors.subtle};line-height:1.6;">Sent with <a href="${escapeHtml(base)}" style="color:${colors.subtle};text-decoration:underline;">Frequency</a>.</p>` : ''}
     </td></tr>
   </table>`
@@ -192,8 +192,9 @@ export function emailDocumentShell(input: EmailDocumentShellInput): string {
 body,[data-fq=fq-bg]{background:${palette.emailNightCanvas}!important}
 [data-fq=fq-card],[data-fq=fq-panel]{background:${palette.emailNightSurface}!important;border-color:${palette.emailNightBorder}!important}
 [data-fq=fq-h1],[data-fq=fq-strong],[data-fq=fq-logo]{color:${palette.emailNightStrong}!important}
+img[data-fq=fq-logo][src="${DEFAULT_BASE_URL}${emailType.wordmark.path}"]{filter:brightness(0) invert(1)!important}
 [data-fq=fq-p],[data-fq=fq-body]{color:${palette.emailNightBody}!important}
-[data-fq=fq-muted],[data-fq=fq-foot],[data-fq=fq-foot] a{color:${palette.emailNightMuted}!important}
+[data-fq=fq-muted],[data-fq=fq-foot],[data-fq=fq-foot] a,[data-fq=fq-foot] p:not([data-fq]){color:${palette.emailNightMuted}!important}
 [data-fq=fq-rule]{border-color:${palette.emailNightBorder}!important}
 [data-fq=fq-btn]{background:${palette.emailNightAction}!important;background-image:none!important;box-shadow:none!important}
 [data-fq=fq-btn] a{color:${palette.emailNightOnAction}!important}
@@ -267,6 +268,7 @@ export function compileEmailDoc(
   if (opts.unsubscribeUrl) footerLines.push(`Unsubscribe: ${opts.unsubscribeUrl}`)
   if (opts.manageUrl) footerLines.push(`Manage emails: ${opts.manageUrl}`)
   if (opts.sentWithFrequency) footerLines.push('Sent with Frequency.')
+  footerLines.push(opts.brand?.address || PLATFORM_POSTAL_LINE)
   const footerText = footerLines.length ? `\n\n---\n${footerLines.join('\n')}` : ''
   return { html, text: `${text}${footerText}`, subject: doc.subject, preheader: doc.preheader }
 }
@@ -299,6 +301,6 @@ export function plainTextEmail(body: string, opts: PlainTextEmailOptions = {}): 
   if (opts.unsubscribeUrl) footerLines.push(`Unsubscribe: ${opts.unsubscribeUrl}`)
   if (opts.manageUrl) footerLines.push(`Manage emails: ${opts.manageUrl}`)
   if (opts.sentWithFrequency) footerLines.push('Sent with Frequency.')
-  footerLines.push(opts.brand?.address ?? PLATFORM_POSTAL_LINE)
+  footerLines.push(opts.brand?.address || PLATFORM_POSTAL_LINE)
   return { html, text: `${(body ?? '').trim()}\n\n---\n${footerLines.join('\n')}` }
 }

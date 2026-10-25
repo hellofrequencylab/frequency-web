@@ -3,6 +3,19 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { Avatar } from './avatar'
+
+vi.mock('@/lib/theme/design', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/theme/design')>(), SITE_DESIGN: 'frequency',
+}))
+import {readFileSync as readFrequencyCss} from 'node:fs'
+import {createRequire as frequencyRequire} from 'node:module'
+const frequencyPostcss = frequencyRequire(frequencyRequire(import.meta.url).resolve('@tailwindcss/postcss'))('postcss')
+const frequencyRules: {selector: string; nodes: {type: string; prop?: string; value?: string}[]; parent: {type: string; params?: string}}[] = []
+for (const file of ['kit-members','members-ui','core']) frequencyPostcss.parse(readFrequencyCss(`app/themes/frequency/${file}.css`,'utf8')).walkRules((rule: typeof frequencyRules[number])=>frequencyRules.push(rule))
+function frequencyStyle(selector: string, prop: string | RegExp, value?: string, media?: string) {
+  return frequencyRules.some(rule=>rule.selector.includes(selector) && (!media || (rule.parent.type==='atrule' && rule.parent.params===media)) && rule.nodes.some(node=>node.type==='decl' && (typeof prop === 'string' ? node.prop===prop : prop.test(node.prop ?? '')) && (value===undefined || node.value===value)))
+}
+
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { PulseAvatar } from '@/components/connections/pulse-avatar'
 
@@ -53,8 +66,8 @@ describe('Avatar', () => {
     expect(c.querySelector('img')).toBeNull()
     const disc = c.firstElementChild!
     expect(disc.textContent).toBe('MO')
-    expect(disc.className).toContain('bg-primary-bg')
-    expect(disc.className).toContain('text-primary-strong')
+    expect(disc.className).toContain('av'); expect(frequencyStyle('.av',/^border-radius$/,'50%')).toBe(true); expect(frequencyStyle('.av','background-color')).toBe(true)
+    expect(disc.className).toContain('text-text')
     expect(disc.className).toContain('rounded-pill')
   })
 

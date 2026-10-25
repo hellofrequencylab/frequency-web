@@ -1,9 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderEmailLayout, applyMergeTags } from './render'
 import { emailDocumentShell, compileEmailDoc } from './shell'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import { emailPalette, EMAIL_PALETTE_BLOCK_IDS } from '@/lib/entity-blocks/registry'
 import { SITE_TAGLINE } from '@/lib/site'
+
+import { PALETTES } from '@/lib/theme/palette'
+vi.mock('@/lib/theme/design', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/theme/design')>(),
+  SITE_DESIGN: 'frequency',
+}))
+const frequency = PALETTES.frequency
 
 // A one-column email layout with three authored blocks (the single-column email stack).
 function sampleLayout(): EntityLayout {
@@ -23,13 +30,13 @@ describe('renderEmailLayout', () => {
     // Heading as an <h2> with an inline font-size + the lifted-charcoal heading ink at the unified semibold.
     expect(html).toContain('<h2')
     expect(html).toContain('Welcome aboard')
-    expect(html).toContain('#4A4234') // heading ink (a touch lighter than the #3D352A body ink)
+    expect(html).toContain(frequency.emailHeading) // heading ink (a touch lighter than the #3D352A body ink)
     expect(html).toContain('font-weight:600') // unified heading-family semibold
     // Paragraph preserves the authored line break as <br>.
     expect(html).toContain('A short paragraph.<br>With a break.')
     // Button is a bulletproof inline-block link with the primary hex + the safe href.
     expect(html).toContain('href="https://example.com/join"')
-    expect(html).toContain('#E2912F')
+    expect(html).toContain(frequency.emailAction)
     // Table-based layout, no CSS classes, no next/image.
     expect(html).toContain('<table')
     expect(html).not.toContain('class=')
@@ -45,7 +52,7 @@ describe('renderEmailLayout', () => {
       content: { heading: { text: 'Accent' } },
       style: { heading: { text: { color: 'accent' } } },
     }
-    expect(renderEmailLayout(layout).html).toContain('#9A5E12')
+    expect(renderEmailLayout(layout).html).toContain(frequency.emailPrimaryStrong)
   })
 
   it('applies a card background + padding from BlockStyle', () => {
@@ -56,8 +63,8 @@ describe('renderEmailLayout', () => {
     }
     const html = renderEmailLayout(layout).html
     expect(html).toContain('padding:32px')
-    expect(html).toContain('#FFFFFF')
-    expect(html).toContain('border:1px solid #E9E1D4')
+    expect(html).toContain(frequency.surface)
+    expect(html).toContain(`border:1px solid ${frequency.emailBorder}`)
   })
 
   it('renders a quote and a divider from the email palette', () => {
@@ -259,7 +266,7 @@ describe('shell + compileEmailDoc', () => {
     expect(html).toContain('<p>hi</p>')
     expect(html).toContain('A preview')
     expect(html).toContain('href="https://x/u"')
-    expect(html).toContain('#FBF8F1') // canvas
+    expect(html).toContain(frequency.emailCanvas) // canvas
   })
 
   it('compileEmailDoc composes render + shell + carries subject/preheader', () => {

@@ -279,7 +279,7 @@ function hostLine(hostName: string | null, circleName: string | null): string | 
 export function promotedSeatHtml(p: PromotedSeatEmailParts): string {
   const host = hostLine(p.hostName, p.circleName)
   return emailShell(`
-  <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:0 0 8px;">You're in</p>
+  <p data-fq="fq-muted" style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.textMuted};margin:0 0 8px;">You're in</p>
   <h1 data-fq="fq-h1" style="${EMAIL_H1}">${escapeHtml(p.eventTitle)}</h1>
   <p style="font-size:16px;line-height:1.5;margin:0 0 16px;">Hi ${escapeHtml(p.recipientName)}, ${escapeHtml(PROMOTED_SEAT_LINE)} You were on the waitlist for this one and a seat just freed up, so it is yours. We'll send a reminder as it gets close.</p>
   <p style="font-size:15px;line-height:1.6;margin:0 0 4px;"><strong>When:</strong> ${escapeHtml(p.whenAbsolute)}</p>
@@ -288,13 +288,13 @@ export function promotedSeatHtml(p: PromotedSeatEmailParts): string {
   <p style="margin:24px 0;">
     <a href="${p.eventUrl}" style="display:inline-block;background:${palette.text};color:${palette.emailSurfaceElevated};font-size:15px;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:8px;">Open the event</a>
   </p>
-  <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.emailSubtle};margin:24px 0 8px;">Add to your calendar</p>
+  <p data-fq="fq-muted" style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${palette.textMuted};margin:24px 0 8px;">Add to your calendar</p>
   <p style="margin:0 0 8px;">
-    <a href="${p.googleCalUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>
-    <a href="${p.icsUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>
+    <a data-fq="fq-soft" href="${p.googleCalUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>
+    <a data-fq="fq-soft" href="${p.icsUrl}" style="display:inline-block;background:${palette.emailSurfaceElevated};color:${palette.text};font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>
   </p>
-  <p style="font-size:14px;line-height:1.5;color:${palette.textMuted};margin:24px 0 0;">Plans changed? Open the event and tap Going again to give the seat back.</p>
-  <p style="font-size:12px;color:${palette.emailSubtle};margin:32px 0 0;"><a href="${p.unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a></p>
+  <p data-fq="fq-p" style="font-size:14px;line-height:1.5;color:${palette.textMuted};margin:24px 0 0;">Plans changed? Open the event and tap Going again to give the seat back.</p>
+  <p data-fq="fq-muted" style="font-size:12px;color:${palette.textMuted};margin:32px 0 0;"><a href="${p.unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from event emails</a></p>
 `, { text: "You're receiving this because you joined the waitlist for this event.", unsubscribe: false })
 }
 
