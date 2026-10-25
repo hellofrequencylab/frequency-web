@@ -238,15 +238,15 @@ export function renderThisWeek(input: RenderThisWeekInput): RenderedThisWeek {
 
   const bodyHtml = `
     ${emailKicker(`${escapeHtml(subject)}`)}
-    <h1 style="font-family:${emailType.display};font-size:34px;font-weight:${emailType.displayWeight};letter-spacing:${emailType.displayTracking};color:${palette.emailHeading};margin:0 0 16px;line-height:1.05;">Hi ${escapeHtml(recipientName)},</h1>
-    <p style="font-size:15px;color:${palette.textMuted};line-height:1.65;margin:0 0 20px;">${escapeHtml(lead)}</p>
+    <h1 data-fq="fq-h1" style="font-family:${emailType.display};font-size:34px;font-weight:${emailType.displayWeight};letter-spacing:${emailType.displayTracking};color:${palette.emailHeading};margin:0 0 16px;line-height:1.05;">Hi ${escapeHtml(recipientName)},</h1>
+    <p data-fq="fq-p" style="font-size:15px;color:${palette.textMuted};line-height:1.65;margin:0 0 20px;">${escapeHtml(lead)}</p>
     ${rowsHtml}
     ${emailButton(`See the whole calendar`, calendarUrl)}
     <hr style="border:none;border-top:1px solid ${palette.emailBorder};margin:26px 0;">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       You get this on Thursdays because ${escapeHtml(regionName)} is your home region on Frequency.
-      <a href="${baseUrl}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from weekly emails</a>.
+      <a href="${baseUrl}/settings/notifications" style="color:${palette.textMuted};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from weekly emails</a>.
     </p>
   `
 

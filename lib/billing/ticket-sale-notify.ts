@@ -258,8 +258,8 @@ export function saleSentence(c: Pick<SaleCopy, 'buyerName' | 'countLabel' | 'eve
  *  Stripe Connect, in anything a member or operator reads. */
 export function payoutSentence(c: Pick<SaleCopy, 'feeLabel' | 'feeIsZero'>): string {
   return c.feeIsZero
-    ? 'Frequency took nothing on this sale. The full amount goes to your payout account on your usual payout schedule.'
-    : `Frequency's fee on this sale was ${c.feeLabel}. The rest goes to your payout account on your usual payout schedule.`
+    ? 'Frequency took nothing on this sale. Card processing still applies. Check the payment and payout status in your connected payout account.'
+    : `Frequency's fee on this sale was ${c.feeLabel}. Card processing also applies. Check the payment and payout status in your connected payout account.`
 }
 
 // Email HTML, not UI chrome: mail clients read no design tokens, so the palette is literal hex,
@@ -268,13 +268,13 @@ export function payoutSentence(c: Pick<SaleCopy, 'feeLabel' | 'feeIsZero'>): str
 
 export function saleEmailHtml(c: SaleCopy): string {
   const overageBlock = c.overage
-    ? `<p style="${EMAIL_P}color:${EMAIL_INK};border-left:3px solid ${EMAIL_RULE};padding-left:12px;">${escapeHtml(c.overage)}</p>`
+    ? `<p data-fq="fq-p" style="${EMAIL_P}color:${EMAIL_INK};border-left:3px solid ${EMAIL_RULE};padding-left:12px;">${escapeHtml(c.overage)}</p>`
     : ''
   return emailShell(`
-<p style="${EMAIL_P}color:${EMAIL_INK};">Hi ${escapeHtml(c.hostName)},</p>
-<p style="${EMAIL_P}color:${EMAIL_INK};">${escapeHtml(saleSentence(c))}</p>
+<p data-fq="fq-p" style="${EMAIL_P}color:${EMAIL_INK};">Hi ${escapeHtml(c.hostName)},</p>
+<p data-fq="fq-p" style="${EMAIL_P}color:${EMAIL_INK};">${escapeHtml(saleSentence(c))}</p>
 ${overageBlock}
-<p style="${EMAIL_P}color:${EMAIL_MUTED};">${escapeHtml(payoutSentence(c))}</p>
+<p data-fq="fq-muted" style="${EMAIL_P}color:${EMAIL_MUTED};">${escapeHtml(payoutSentence(c))}</p>
 <p style="${EMAIL_P}color:${EMAIL_INK};"><a href="${c.eventUrl}" style="color:${EMAIL_INK};">See who’s coming</a></p>
 `)
 }

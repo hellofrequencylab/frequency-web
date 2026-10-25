@@ -70,7 +70,7 @@ export const DEFAULT_EMAIL_COLORS: EmailColors = {
   // near-black slab, while staying well past WCAG AA on the cream/white email background (~9:1 on #FFFFFF).
   heading: palette.emailHeading,
   muted: palette.textMuted,
-  subtle: palette.emailSubtle,
+  subtle: palette.textMuted,
   primary: palette.emailAction,
   primaryStrong: palette.emailPrimaryStrong,
   primaryBg: palette.emailAccentSoft,
@@ -303,7 +303,7 @@ export function plainTextBodyHtml(body: string, colors: EmailColors): string {
 /** One muted line under a plain-text body saying why the reader got the email (EMAIL-024). PURE. */
 export function audienceLineHtml(text: string, colors: EmailColors): string {
   if (!text) return ''
-  return `<p${styleAttr([`margin:24px 0 0`, `font-family:${FONT_STACK}`, `font-size:12px`, `line-height:1.6`, `color:${colors.subtle}`])}>${escapeHtml(text)}</p>`
+  return `<p data-fq="fq-muted"${styleAttr([`margin:24px 0 0`, `font-family:${FONT_STACK}`, `font-size:12px`, `line-height:1.6`, `color:${colors.subtle}`])}>${escapeHtml(text)}</p>`
 }
 
 function eyebrow(text: string, colors: EmailColors): string {
@@ -611,7 +611,7 @@ function callout(props: Record<string, unknown>, style: BlockStyle | undefined, 
   const inner = `${imgHtml}${h}${b}${btn}`
   const wrapped = forceFlat
     ? inner
-    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td${styleAttr([`padding:24px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:24px`, emailType.cardShadow && `box-shadow:${emailType.cardShadow}`])}>${inner}</td></tr></table>`
+    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td data-fq="fq-panel"${styleAttr([`padding:24px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:24px`, emailType.cardShadow && `box-shadow:${emailType.cardShadow}`])}>${inner}</td></tr></table>`
   // `title` is a plain `text` field; `body` is a rich `textarea` field.
   const text = [title, richToText(body), hasButton && `${buttonLabel}: ${safeUrl(s(props, 'buttonUrl'))}`].filter(Boolean).join('\n')
   return { html: wrapped, text }
@@ -686,7 +686,7 @@ function renderBlockInner(id: string, props: Record<string, unknown>, style: Blo
       const by = s(props, 'by')
       // The quote body is a rich `textarea` field; the attribution is a plain `text` field.
       const q = `<blockquote data-fq="fq-strong"${styleAttr([`margin:0`, `padding:0 0 0 18px`, `border-left:2px solid ${colors.primary}`, `font-family:${emailType.serif}`, `font-size:24px`, `font-style:italic`, `letter-spacing:-0.01em`, `color:${colors.heading ?? colors.text}`, `line-height:1.3`])}>${renderInlineRich(text)}</blockquote>`
-      const cite = by ? `<p${styleAttr([`margin:8px 0 0 0`, `font-family:${FONT_STACK}`, `font-size:14px`, `color:${colors.muted}`])}>${escapeHtml(by)}</p>` : ''
+      const cite = by ? `<p data-fq="fq-muted"${styleAttr([`margin:8px 0 0 0`, `font-family:${FONT_STACK}`, `font-size:14px`, `color:${colors.muted}`])}>${escapeHtml(by)}</p>` : ''
       const plain = richToText(text)
       return { html: `${q}${cite}`, text: by ? `"${plain}" - ${by}` : `"${plain}"` }
     }

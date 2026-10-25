@@ -16,7 +16,7 @@ import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 //   who receives    canEmailContact: a marketing send needs consent_state 'subscribed' in THIS
 //                   Space; an import lands 'unknown' (lib/crm/import/commit.ts); the one relaxed
 //                   lane is an event host mailing that event's guests (consentPurposeForLane);
-//   how it goes out the shared sender with the Space's name, no per-Space Reply-To, and the
+//   how it goes out the chosen verified identity or shared sender, verified Space Inbox Reply-To, and the
 //                   platform postal line in every footer (lib/email-studio/postal.ts, LIVE-728);
 //   limits          DAILY_SEND_CAP (500 a day, UTC; skipped recipients do not count) and the plan's
 //                   monthly `space_email` allowance;
@@ -88,10 +88,12 @@ export default function SpaceEmailPolicyPage() {
         <Section n={2} title="How your email goes out">
           <ul className={UL}>
             <li>
-              We send it through our email provider from Frequency&apos;s shared sending address, with
-              your Space&apos;s name as the sender name.
+              We send it through our email provider. By default, the sender shows your Space&apos;s name
+              on Frequency&apos;s shared sending address. A Space can use its own verified sending
+              identity when its plan and settings allow it.
             </li>
-            <li>Replies go to that shared address, not to your Space.</li>
+            <li>When your Space has a verified inbox address, replies go to that inbox in Conversations.
+              Otherwise, replies use the sending address.</li>
             <li>Every email ends with Frequency Labs Holdings&apos; postal address.</li>
             <li>
               Every email carries a one-click unsubscribe link, both in the email itself and in the
