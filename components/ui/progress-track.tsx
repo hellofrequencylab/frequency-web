@@ -36,6 +36,8 @@ const FQ_TONE = {
   neutral: ' mu-neutral',
 } as const
 
+const FQ_TRACK = { elevated: '', surface: ' mu-track-surface', broadcast: ' mu-track-broadcast', border: ' mu-track-border' } as const
+
 const TONE = {
   primary: 'bg-primary',
   'primary-strong': 'bg-primary-strong',
@@ -115,7 +117,7 @@ export function ProgressTrack({
         aria-valuemax={indeterminate ? undefined : span}
         aria-valuenow={indeterminate ? undefined : now}
         aria-label={label}
-        className={`meter${FQ_HEIGHT[size]}${FQ_TONE[tone]}${animate ? ' mu-ease' : ''} ${className}`.trimEnd()}
+        className={`meter${FQ_HEIGHT[size]}${FQ_TONE[tone]}${FQ_TRACK[track]}${animate ? ' mu-ease' : ''} ${className}`.trimEnd()}
       >
         {indeterminate ? (
           <i className="w-full opacity-60 motion-safe:animate-pulse" />
