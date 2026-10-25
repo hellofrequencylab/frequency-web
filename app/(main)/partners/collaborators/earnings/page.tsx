@@ -32,7 +32,7 @@ export default async function CollaboratorEarningsPage() {
     <DashboardTemplate
       back={{ href: '/partners/collaborators', label: 'Collaborators' }}
       title="Your Journey earnings"
-      description="What your paid Journeys settled, after the platform fee and any refunds. Payouts go to your payout account on your usual schedule."
+      description="What your paid Journeys settled, after the platform fee and any refunds. Check your connected payout account for applicable fees, payout status and timing."
       stats={
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard label="Earned" value={money(e.netCents)} detail="after the platform fee" bordered />

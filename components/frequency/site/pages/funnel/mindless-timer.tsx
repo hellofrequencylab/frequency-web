@@ -64,8 +64,7 @@ export function FrequencyMindlessTimer() {
           </div>
         }
       >
-        Five minutes, done. Make a free account and tomorrow&apos;s session is one tap away, with every one after
-        it counted toward your streak.
+        Five minutes, done. Create a free account to explore Practices and record eligible sessions. Choose what to try next.
       </FnOutcome>
     )
   }

@@ -50,7 +50,7 @@ function Tier({ y, name, price, sold, accent }: { y: number; name: string; price
 export function TicketsRender({ animate = true }: { animate?: boolean }) {
   return (
     <RenderFrame label="A preview of Frequency tickets" title="Tickets" active={2} animate={animate}>
-      <Label x={140} y={96} size={9} weight={600} tone="text-subtle">SUNSET SOUND BATH · SAT</Label>
+      <Label x={140} y={96} size={9} weight={600} tone="text-subtle">EXAMPLE TICKETS · SAT</Label>
 
       {/* Tiers, left */}
       <Tier y={106} name="General" price="$20" sold={0.8} accent />
@@ -61,7 +61,7 @@ export function TicketsRender({ animate = true }: { animate?: boolean }) {
       <g className="text-success-bg">
         <rect x={140} y={250} width={176} height={34} rx={12} fill="currentColor" />
       </g>
-      <Label x={228} y={271} size={11} weight={700} tone="text-success" anchor="middle">Payout $1,240 · low fees</Label>
+      <Label x={228} y={271} size={11} weight={700} tone="text-success" anchor="middle">Example payout summary</Label>
 
       {/* QR pass, right */}
       <InnerCard x={336} y={106} w={180} h={180} />

@@ -149,7 +149,7 @@ export async function sendDonationReceipts(gift: SettledDonation): Promise<void>
           { label: 'Their note', value: note ?? '' },
         ],
         closing: [
-          'The gift goes to your payout account on your usual payout schedule.',
+          'Check the payment and any applicable fees in your connected payout account. Your account dashboard shows payout status and timing.',
           'Nothing is owed in return. A gift buys nothing, so there is no order to fill.',
         ],
         actionLabel: `Go to ${space.name}`,

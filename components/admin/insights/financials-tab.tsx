@@ -45,7 +45,7 @@ export async function FinancialsTab() {
     <>
       <AdminSection
         title="Finances"
-        description="Money by legal entity. Foundation (nonprofit) and Labs (for-profit) funds are hard-partitioned and never commingle; each is reported on its own here. The ledger fills as ticketing, dues, donations, commerce, and payouts are wired to record into it."
+        description="Recorded money grouped by legal entity: Foundation (nonprofit) and Labs (for-profit). Totals reflect the entries recorded in this ledger; review the underlying accounts and records for a complete financial picture."
       >
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard bordered icon={Wallet} label="Total recorded" value={formatLedgerCents(summary.grandTotalCents)} detail={`${summary.txnCount.toLocaleString()} transactions`} />

@@ -341,7 +341,7 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
     ...HINTS,
     journeyId: 'Attaching or detaching a Journey never moves the event. Only Journeys you run are offered.',
     priceCents: verdict.allowed
-      ? `${priceLine} Your payout account is ready, so ticket money lands in your bank.`
+      ? `${priceLine} Your connected account is ready. Check Stripe for payout status and timing.`
       : `${priceLine} ${verdict.reason} Set that up under Settings, then Billing, before or after you publish.`,
   }
 

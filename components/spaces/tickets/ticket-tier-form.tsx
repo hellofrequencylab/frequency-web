@@ -271,8 +271,7 @@ export function TicketTierForm({
       </div>
 
       <p className="text-meta text-subtle">
-        Tickets are free or RSVP only for now. We do not take a payment, so paid ticketing is coming
-        later. An RSVP reserves a spot up to the tier capacity.
+        These Space ticket tiers are free-entry or RSVP-only. No payment is collected through this form. An RSVP reserves a spot up to the tier capacity.
       </p>
 
       {error && (

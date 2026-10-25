@@ -167,7 +167,7 @@ export const COLLECTIVE_PARTNER_CAP = 10
  *  offering is read from the config below. */
 const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   member: {
-    tagline: 'Join everything, free.',
+    tagline: 'Join Frequency free.',
     forWho:
       'Anyone who wants to find their people, go to things, and join Circles. You can host a Circle and a couple of free Events of your own, and take tips.',
   },
@@ -179,19 +179,19 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
       'Designed for people who want to support the cause of community and host their own Circles and Spaces: more Circles, Events and Journeys, and a monthly Boost. You contribute what you want, and every amount buys the same Crew.',
   },
   free: {
-    tagline: 'Host free. The whole thing.',
+    tagline: 'Host a Circle or free Event.',
     forWho:
-      'Anyone opening a Space. It comes with Crew, which you fund at whatever amount you choose. Every business tool, with limits sized for a launch, and tips with no platform fee, only card processing.',
+      'Anyone opening a Space. It comes with Crew, which you fund at whatever amount you choose. Hosting tools within the published allowances, and tips with no platform fee, plus card processing. Selling starts at Business.',
   },
   business: {
     tagline: 'Selling starts here.',
     forWho:
-      'Practitioners, teachers who work across studios, studio owners, and community leaders ready to charge: paid tickets, memberships, donations, a shop and booking deposits, with the limits lifted.',
+      'Practitioners, teachers who work across studios, studio owners, and community leaders ready to charge: paid tickets, memberships, donations, a shop and booking deposits, with the allowances shown for your plan.',
   },
   // The split (owner ruling 2026-10-15, SCAN-961): Collective is many owners working together, Network
   // is one owner running many groups. The cards say which one a reader is.
   collective: {
-    tagline: 'Grow together without giving anything up.',
+    tagline: 'Link partner Spaces and share a calendar.',
     // The "existing Collectives keep their member Spaces" note is a grandfathering fact, so it lives in
     // the FAQ (pricing-faq.ts), not on the card a new buyer reads.
     forWho: `Separate groups that partner: a hub that links up to ${COLLECTIVE_PARTNER_CAP} partner Spaces, cross-listed Circles and Journeys, a shared calendar and Vera AI included. Each partner keeps its own members and payouts.`,
@@ -902,7 +902,7 @@ const MEMBER_GROUPS: GroupDef[] = [
       {
         key: 'join',
         label: 'Circles, events, and messaging',
-        detail: 'Joining, belonging to Circles, going to events, following Spaces, and messaging. Always free.',
+        detail: 'Joining Frequency, following Spaces and messaging carry no membership charge. Hosts can charge for events or membership benefits.',
         source: { from: 'always' },
       },
       {
@@ -986,7 +986,7 @@ const MEMBER_GROUPS: GroupDef[] = [
       {
         key: 'tips',
         label: 'Tips',
-        detail: 'People can tip you for what you host, and we take nothing from it. Add a payout account once.',
+        detail: 'People can tip you for what you host, with no Frequency platform fee, plus card processing. Connect an eligible account to receive payments.',
         source: { from: 'always', text: `Included, no platform fee, ${PLAN_STORY.plusProcessing}` },
       },
       {

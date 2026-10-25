@@ -297,9 +297,9 @@ export function PricingValue() {
   return (
     <Section tone="surface" width="wide">
       <SectionHeading
-        eyebrow="What it replaces"
-        title="One price. The whole toolbox."
-        kicker="Every tool a growing business stitches together, and what each one costs on its own. On Frequency it is one login, one bill, one flat price."
+        eyebrow="Compare your tools"
+        title="Choose tools for the work you do."
+        kicker="Compare selected products for the work your Space needs. Features, allowances and billing terms differ. Check each provider’s current plans."
       />
       <PricingComparison />
       {/* 🔴 THE ORPHAN FIX (LIVE-256): the one internal link into /vs from a page whose readers are
@@ -331,7 +331,7 @@ export function PricingPromises() {
         {[
           {
             title: 'We never take a cut of your own people.',
-            body: `You keep 100% of the business you bring in yourself, and every tip, ${PLAN_STORY.afterProcessing}. We earn only on a customer the network introduces, once.`,
+            body: `You keep 100% of the business you bring in yourself, and every tip, ${PLAN_STORY.afterProcessing}. Paid Space plans and introduction fees are separate. The introduction fee applies to eligible purchases the network introduces.`,
           },
           {
             title: 'One honest price, no surprise invoices.',

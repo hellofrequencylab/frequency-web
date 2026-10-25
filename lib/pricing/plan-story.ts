@@ -25,8 +25,8 @@
 // VOICE NOTE (CONTENT-VOICE §10): every string here is plain, honest, skeptic-proof, names what the
 // thing is, never narrates the reader's feelings, makes no health claim, and uses NO em dashes.
 
-/** The one narrative spine every pricing/marketing surface can reuse verbatim: what is free, WHY a
- *  plan, and how the network fee works, stated so a skeptic believes it. No em dashes.
+/** The one narrative spine every pricing/marketing surface can reuse verbatim: free entry, hosting,
+ *  paid tools and capacity, and separate fees, stated so a skeptic believes it. No em dashes.
  *
  *  🔴 THE FIVE-TIER LADDER (ADR-1709, LIVE-759). Members join, Crew hosts, a Space runs, Business
  *  sells, Collective connects. Selling is what Business is for: a free Space keeps every business tool
@@ -39,21 +39,21 @@
  *  Plan NAMES may appear here (they are the canon in docs/NAMING.md); prices and percentages never do.
  *  A surface that needs a figure reads it from the catalog or the rate vector beside this sentence. */
 export const PLAN_STORY = {
-  /** The whole spine in one breath. */
+  /** The concrete account, hosting and fee distinctions in one breath. */
   spine:
-    'Frequency is where your local community happens. People join free. Host free with Crew. You pay when you start charging, and never for access to people.',
+    'Frequency is where your local community happens. People join free. Host a Circle or free Event. Paid plans add tools and capacity. Introduction fees and card processing are separate.',
   /** The three lines on their own (CORE-MODEL §1), for a surface that already has its own first
    *  sentence: the site description, the llms.txt header. PROG-R8 (ADR-1499) added this so the
    *  <meta> description and the crawler corpus READ the lines rather than retype them; the spine
    *  above keeps them too, because the home document's hero is the spine verbatim. */
-  lines: 'People join free. Host free with Crew. You pay when you start charging.',
+  lines: 'People join free. Host a Circle or free Event. Paid plans add tools and capacity.',
   /** The ladder in one line: six tiers, one verb each (ADR-1709; Network added by the 2026-10-16 split). */
   ladder:
     'Six tiers, one verb each. Members join. Crew hosts. A Space runs. Business sells. Collective connects. Network unites.',
-  /** WHY a plan, in the model's own terms: free hosting is the point, and a plan is what you take when
-   *  you start charging. Every surface interpolates this instead of arguing it again. */
+  /** A plan adds tools and capacity; selling eligibility is a separate stated capability.
+   *  Keep subscription fees distinct from processing and any introduction fee. */
   paid:
-    'Hosting is free, and that is the point, not a teaser. A Space comes with Crew, which you fund at whatever amount you choose, and after that a free Space runs the whole thing: your page, Circles, Events, contacts, email, bookings and Journeys, with limits sized for a launch. Business is what you take when you start charging. Collective is for separate groups that partner, and Network is for one organization with chapters.',
+    'A free Space includes tools for hosting within its published allowances. Crew supports the community and adds hosting allowances. Selling through a Space starts at Business. Paid plans have subscription fees, separate from card processing and any network introduction fee. Collective is for separate groups that partner, and Network is for one organization with chapters.',
   /** The selling line: where taking money starts, and the one kind of money every tier receives. */
   selling:
     'Selling starts at Business. Paid tickets, paid memberships, donations, shop checkout and booking deposits open there. Tips stay open on every tier, with no platform fee, only card processing.',
@@ -63,7 +63,7 @@ export const PLAN_STORY = {
     'The network fee applies only to a customer the network introduced, once, at their first purchase. After that they are your people. Your own audience and your tips are free of it on every plan (card processing still applies), and Non Profit pays none at all.',
   /** The meter framing: a full meter stops new writes and takes nothing away. */
   meters:
-    'Every business tool is on every Space plan. The free limits are sized for a launch, and a full meter only stops new writes. It never hides, deletes, or locks what is already there.',
+    'Check the published plan details for included tools, selling features and allowances. A full usage meter stops new writes; existing content remains subject to the feature’s access settings.',
   /** The Space and Crew upsell in one line, for any surface that opens a Space: the page, the doors, the
    *  emails. The requirement is ADR-810's creation gate, which bites when the beta ends. */
   crewSpace:

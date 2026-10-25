@@ -184,7 +184,7 @@ function ComparisonDawn({ comparison, slug }: { comparison: Comparison; slug: st
           part it does not do, the small group that keeps meeting, look at the Circles
           already gathering near you, then join one or start your own.
           {comparison.moneyBeat
-            ? ' And hosting is free. When you start charging, that is Business, with 0% on your own bookings. That is the whole deal.'
+            ? ' Hosting is free. Selling starts at Business. Your own bookings carry no network fee, plus card processing. Paid Space plans and introduction fees are separate.'
             : ''}
         </Body>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">

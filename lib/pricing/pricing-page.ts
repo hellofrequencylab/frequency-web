@@ -239,7 +239,7 @@ const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free' | 'network'>, CatalogI
  *  below, so a rewrite of this prose can never move a price and a price change can never leave this
  *  prose stale. The lines that used to carry rate literals ("5% on network-sourced sales") are gone. */
 const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
-  free: 'Every business tool with launch-sized limits: your page, Circles, Events, contacts, email, bookings, Journeys, a free membership tier, tips, and being a Collaborator on other Spaces’ events.',
+  free: 'Hosting tools within the published allowances: your page, Circles, Events, contacts, email, bookings, Journeys, a free membership tier, tips, and being a Collaborator on other Spaces’ events.',
   business:
     'Selling opens: paid tickets, paid memberships, donations, shop checkout and booking deposits. The limits lift, and you get your own website, team seats, automations, Programs, and hosting Collaborator Spaces.',
   collective:

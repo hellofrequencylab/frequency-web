@@ -201,7 +201,7 @@ function buildLayouts(): Record<CalcStepId, Layout> {
   ring(o, 50, 50, 17, 0.35);
   o.lb.push(
     { t: "You", x: 50, y: 50, k: "in" },
-    { t: "keeping Circles free", x: 50, y: 64.5, k: "u" },
+    { t: "backing the community", x: 50, y: 64.5, k: "u" },
   );
   L.crew = o;
 

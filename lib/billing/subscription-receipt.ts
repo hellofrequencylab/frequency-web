@@ -172,7 +172,7 @@ export async function sendSpaceMembershipReceipts(opts: {
           { label: 'Started', value: when },
         ],
         closing: [
-          'It renews on its own. The money goes to your payout account on your usual payout schedule.',
+          'It renews according to its billing terms. Check the payment, fees and payout status in your connected payout account.',
           'Anything the tier unlocks is already open to them.',
         ],
         actionLabel: `Go to ${space.name}`,

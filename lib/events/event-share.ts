@@ -157,7 +157,7 @@ export function memberHostedCollaboratorError(
   pendingPlacement: { targetName: string } | null,
 ): string {
   if (pendingPlacement) {
-    return `${pendingPlacement.targetName} hasn't approved hosting this event yet. Collaborators unlock once that placement is approved.`
+    return `${pendingPlacement.targetName} hasn't approved hosting this event yet. You can add collaborators once that placement is approved.`
   }
   return 'A member-hosted event can have Cohosts, not Collaborators. Run this event under a Space to bring Collaborators on.'
 }
@@ -447,7 +447,7 @@ export async function describeMissingShareTarget(id: string): Promise<string> {
       admin.from('circles').select('id').eq('id', id).maybeSingle(),
     ])
     if (profileRes.data) {
-      return 'That result is a member, not a Space. A member cannot co-host an event, but a Space they run can. Search for that Space by name. Run a business? Put it on the map with a free Business Space.'
+      return 'That result is a member, not a Space. A member cannot co-host an event, but a Space they run can. Search for that Space by name. Run a business? Open a free Space and add your business. Selling features start at Business.'
     }
     if (circleRes.data) {
       return 'That result is a Circle, not a Space. An event can only be co-hosted with a Space.'

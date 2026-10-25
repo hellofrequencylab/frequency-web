@@ -52,7 +52,7 @@ export function PublicTimer() {
         <p className="eyebrow text-primary-strong">Five minutes, done</p>
         <h2 className="text-display-h3 font-semibold text-text">Same time tomorrow?</h2>
         <p className="text-body text-muted">
-          Make a free account and tomorrow&apos;s session is one tap away, with every one after it counted toward your streak.
+          Create a free account to explore Practices and record eligible sessions. You can choose what to try next.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link href={SAME_TIME_TOMORROW_HREF} className={buttonClasses('primary', 'md')}>

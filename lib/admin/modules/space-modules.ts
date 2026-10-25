@@ -143,7 +143,7 @@ export interface SpaceModule {
    *  level deep: a parent may never itself carry a `parent`. */
   parent?: string
   /** The free-tier LEVER shown as a sublabel on the console card (ADR-784): the cap a free Space hits or
-   *  the take-rate story, e.g. "200 contacts free" / "0% on your own people, always".
+   *  the take-rate story, e.g. "200 contacts free" / "No network fee on your own audience, plus card processing".
    *  This makes the upgrade motivation legible instead of a bare Freemium/Premium badge. The numbers mirror
    *  lib/pricing/feature-meters.ts (RAW_METERS) + lib/pricing/settings.ts (take_rate); it is presentation
    *  only and never gates. Omit for a plain Included shell with no cap. */
@@ -183,7 +183,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Automation / Leads / Doors / Shared nest directly under this box too. Hub tabs stay split
   // (Team on Settings, CRM on Resonance); that divergence is named in space-hub.test.ts.
   { id: 'space.people', label: 'Your people', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', hub: 'settings', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary', priority: 10, access: 'freemium', freeNote: peopleCatalogNote() },
-  { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium', freeNote: '200 contacts free, then unlimited', parent: 'space.people' },
+  { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15, access: 'freemium', freeNote: 'Contact allowance follows your plan', parent: 'space.people' },
   // The flat Inbox (ADR-786) is RETIRED (ADR-820): folded into Conversations; /crm/inbox redirects.
   // Conversations (ADR-812): the ticketed workspace over the comms_* spine, scoped to THIS space. Support,
   // outreach, and replies as one assignable, status-tracked thread with a per-thread reply address, so a
@@ -227,16 +227,16 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // anchored section or `?panel=` workspace. A shell box (gate `always`): the box is the AREA, and the
   // per-service function gates live on the tools inside it.
   { id: 'space.offerings', label: 'Money', desc: 'Everything your space charges for: booking, memberships, and donations.', Icon: HandCoins, family: 'offerings', hub: 'none', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings`, order: 39.9, tier: 'primary', priority: 29.5, access: 'included' },
-  { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30, access: 'freemium', freeNote: '15 bookings/mo free, then unlimited', parent: 'space.offerings' },
-  { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31, access: 'freemium', freeNote: '1 membership tier on a free Space · 0% on your own people, always', parent: 'space.offerings' },
-  { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32, access: 'included', freeNote: '0% on your own people, always', parent: 'space.offerings' },
+  { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30, access: 'freemium', freeNote: 'Booking allowance follows your plan', parent: 'space.offerings' },
+  { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31, access: 'freemium', freeNote: 'Free-to-join tiers within your allowance; paid tiers start at Business', parent: 'space.offerings' },
+  { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32, access: 'included', freeNote: 'No network fee on your own audience, plus card processing', parent: 'space.offerings' },
   // Get paid (ADR-1313): the payout surface. `/settings/billing` is money the operator PAYS Frequency and
   // this is money Frequency PAYS the operator, which is the pair of near-identical names that made the
   // missing Connect link unsearchable. A TOOL inside the Offerings and money box (`parent` is load-bearing:
   // without it this is a fourteenth top-level box). UNGATED on purpose — the page exists to repair a payout
   // dead end, so a switch that could hide it would recreate exactly what it fixes, the same reasoning
   // `space.reachreceipt` carries.
-  { id: 'space.payments', label: 'Get paid', desc: 'Where your money lands, which of your money paths are live, and the rate the network takes.', Icon: Wallet, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/payments`, order: 50.5, tier: 'primary', priority: 32.5, access: 'included', freeNote: '0% on your own people, always', parent: 'space.offerings' },
+  { id: 'space.payments', label: 'Get paid', desc: 'Where your money lands, which of your money paths are live, and the rate the network takes.', Icon: Wallet, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/payments`, order: 50.5, tier: 'primary', priority: 32.5, access: 'included', freeNote: 'No network fee on your own audience, plus card processing', parent: 'space.offerings' },
   // Enrollment, Tickets and Check in used to be three more rows in this box. All three were retired
   // (LIVE-226): each named a second door onto a tool the space already had, so the box listed six products
   // where there were three. Enrollment is a Journey plus the Memberships roster; tickets are the EVENT
@@ -273,7 +273,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Shop is now a first-class GATEABLE feature keyed on the `shop` function (SpaceFunctionKey), so it can
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
   // offering — it is no longer the always-on outlier. Free Spaces can sell; a paid plan lowers fees.
-  { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40, access: 'freemium', freeNote: 'Full store · 0% on your own people, always', parent: 'space.offerings' },
+  { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', hub: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40, access: 'freemium', freeNote: 'Inquiries on Free; checkout starts at Business', parent: 'space.offerings' },
   // Check-in & scanners (LIVE-1125): the door code, the check-in roster, Regulars and the counter scanners all live in
   // the `?panel=checkin` workspace, which lost its only menu door when space.checkin was retired (LIVE-226). This
   // is that door again under a new id, as a TOOL inside the Money box (Regulars is what a check-in earns). Gated on

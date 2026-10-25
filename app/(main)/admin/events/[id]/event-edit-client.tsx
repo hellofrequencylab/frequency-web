@@ -234,7 +234,7 @@ export function EventEditClient({
             />
           </div>
           <p className="mt-1 text-meta text-subtle">
-            Paid events require the host to have payouts set up. Frequency takes a small platform fee.
+            Paid events require a connected account and an eligible selling plan. Card processing applies; any introduction fee depends on the sale.
           </p>
         </div>
 

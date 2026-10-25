@@ -26,7 +26,7 @@ export const betaOpen = BETA_OPEN_ACCESS
  *  point the surface shows only its live permission + safety copy). One sentence, no em dashes. */
 export function betaLeadLine(): string | null {
   return BETA_OPEN_ACCESS
-    ? `Beta is open through ${BETA_ENDS_LABEL}. Right now everyone can build and publish everything, free. Here is what changes after.`
+    ? `Beta is open through ${BETA_ENDS_LABEL}. Check the current plan details for included features, publishing allowances and selling requirements. Here is what changes after.`
     : null
 }
 

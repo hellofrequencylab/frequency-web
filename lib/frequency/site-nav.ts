@@ -245,7 +245,7 @@ export const WING_MENUS: WingMenu[] = [
       { href: featureHref('doorqr'), photo: `${PHOTO}gathering-04.jpg`, kicker: 'Door QR', title: 'Remember everyone who walked in' },
       { href: featureHref('standing'), photo: `${PHOTO}day-park-yoga.jpg`, kicker: 'Standing', title: 'Nobody can buy their way up' },
     ],
-    foot: { line: 'Host free. We only earn when we help your community grow.', cta: { href: ROUTES.spaces, label: 'Open your Space' } },
+    foot: { line: 'Compare hosting plans, allowances and introduction fees.', cta: { href: ROUTES.spaces, label: 'Open your Space' } },
   },
 ]
 

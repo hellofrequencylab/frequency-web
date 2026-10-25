@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-1313",
+  "title": "Clarify public financial claims and payment status copy",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/financial-copy-consequences.mjs",
+    "note": "Four representative actual-source cases passed: actual PricingPromises React SSR with real PLAN_STORY, Offering adapter price/yearly/checkout forwarding and actual buying-note render. Immutable donor-parent baseline and six mutations rejected by their expected assertions. Guard-equivalent attributed CPU1055.859ms is below unchanged4500ms ceiling (Darwin attribution limits retained). Not full pricing/capability/browser proof. Original full financial-public-claims suite and full CI remain mandatory separately."
+  },
+  "detail": "Owner authorized full copy rollout. Unprotected financial copy and five operational contexts use grounded price/fee and transaction-status language. Owner has separately approved the protected payout prompt, seller order-receipt closing and pricing-addons wording expectations. Those authorized sources and paired checks belong to the separate pending protected30 batch; no bank-arrival or live-provider proof inferred. Thirty-five selected runtime sources, with one identical to preceding public batch, and one actual-render consequence suite. Public predecessor LIVE-1312 is required; rebase onto merged Home/public before release. Proposed bounded in-process row verification only; original focused suite and all existing assertions stay unchanged and required separately. Replacement probe now passed current four cases, immutable donor-parent baseline rejection, six expected mutation rejections and actual attributed CPU1055.859ms at exit0. Original Vitest command passed but cost6396.653ms exceeded4500ms; preserved as historical evidence. Full suites/CI and remaining release guards are separate gates, not replaced by this bounded probe. Fresh-main application after merged LIVE-1326 uses actual main d81c5a441c8ded7bac678452cabf085c6e4a0f4a. The financial packet contains 39 authored paths, including separately approved PROG-R8 wording expectation only. All 76 assertions in the three affected focused suites and selected-root strict types passed on the composed candidate; calculator preserves the merged foundation sizing and original Home gestures. Representative four-case actual-source probe passed again. Release guards and full CI remain required; no provider or bank-arrival verification claimed.",
+  "wave": "W7",
+  "closed": "2026-10-25"
+}

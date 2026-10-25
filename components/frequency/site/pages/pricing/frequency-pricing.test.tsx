@@ -34,7 +34,7 @@ const count = (html: string, needle: string) => html.split(needle).length - 1
 describe('the Frequency pricing body', () => {
   it('renders every section heading once', () => {
     const html = render()
-    expect(count(html, 'Every feature, every plan.</h2>')).toBe(1)
+    expect(count(html, 'Compare features by plan.</h2>')).toBe(1)
     expect(count(html, 'Before you ask.</h2>')).toBe(1)
     expect(count(html, 'Join free. Do more with Crew.</h2>')).toBe(1)
     expect(count(html, '<table')).toBe(1)

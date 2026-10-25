@@ -15,7 +15,7 @@ function Amount({ x, value, accent }: { x: number; value: string; accent?: boole
 export function DonateRender({ animate = true }: { animate?: boolean }) {
   return (
     <RenderFrame label="A preview of Frequency fundraising" title="Fundraiser" active={3} animate={animate}>
-      <Label x={140} y={96} size={9} weight={600} tone="text-subtle">FUNDRAISER · JUNE</Label>
+      <Label x={140} y={96} size={9} weight={600} tone="text-subtle">EXAMPLE FUNDRAISER</Label>
 
       {/* Progress card */}
       <InnerCard x={140} y={106} w={376} h={90} />

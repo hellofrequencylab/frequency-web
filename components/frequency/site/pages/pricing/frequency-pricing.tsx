@@ -85,7 +85,7 @@ function offeringView(o: Offering, hue: string): PlanCardView {
 /** What buying costs a member, as a note under the two people cards (the reference drew it as a third
  *  card). Copy only, no figure. */
 const BUYING_NOTE =
-  'Buying: tickets, memberships and tips are priced by the Space and paid straight to the host. Hosts can refund a ticket.'
+  'Buying: the Space sets its ticket and membership prices. Review the price and applicable fees before paying. Hosts can refund a ticket.'
 
 /** A card's price row. With `show`, it is one of the card's two periods and the kit CSS shows it only
  *  while the switch is on that period; without it the figure stands for both. */
@@ -217,15 +217,15 @@ export function FrequencyPricing({
             <span aria-current="page">Pricing</span>
           </nav>
           <h1 className="h-xl">
-            We only earn when we help <em className="fq-iri-text">your community grow.</em>
+            You’re bringing people together. <em className="fq-iri-text">Here’s what it costs.</em>
           </h1>
-          <p>{`Your regulars: 0% ${PLAN_STORY.plusProcessing}. People we bring you: a small share. Non Profits: nothing.`}</p>
+          <p>{`Choose a Space plan for your community gatherings. Introduction fees are separate. Your regulars: 0% ${PLAN_STORY.plusProcessing}. Verified organizations on the Non Profit plan pay no introduction fee.`}</p>
           <div className="ctas">
             <Link className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
               Open your Space
             </Link>
             <a className="btn btn-ghost fq-iri-rim" href="#path">
-              Walk the path
+              Explore the plans
             </a>
           </div>
         </div>
@@ -320,7 +320,7 @@ export function FrequencyPricing({
             <div className="label">
               <b>Features</b>By plan
             </div>
-            <h2 className="h-l">Every feature, every plan.</h2>
+            <h2 className="h-l">Compare features by plan.</h2>
             <p className="pb-note">{PLAN_STORY.meters}</p>
           </div>
           <div className="mxw pb-mxw" role="region" aria-label="Features by plan" tabIndex={0}>

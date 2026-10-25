@@ -406,8 +406,7 @@ export function MembershipTierForm({
       </div>
 
       <p className="text-meta text-subtle">
-        The price is what membership will cost. We do not take a payment when someone joins yet, so
-        paid billing is coming later. Set a yearly price and members can pick monthly or yearly on
+        Set each tier’s price and billing interval. Paid membership checkout depends on your Space’s selling plan and payment setup. Set a yearly price and members can pick monthly or yearly on
         that same tier. Leave it blank and the tier stays monthly only.
       </p>
 

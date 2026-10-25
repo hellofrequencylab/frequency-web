@@ -213,8 +213,7 @@ export function ProgramForm({
       </div>
 
       <p className="text-meta text-subtle">
-        Enrolling reserves a seat. We do not take a payment when someone enrolls yet, so paid
-        enrollment is coming later.
+        Enrolling reserves a seat. This enrollment form does not collect a payment.
       </p>
 
       {error && (

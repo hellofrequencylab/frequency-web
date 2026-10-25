@@ -34,7 +34,7 @@ export default async function AdminPaymentsPage() {
         )}
         <FormSection
           title="Host payouts"
-          description="When on, hosts can set up payouts and members can pay them (tips, paid event tickets, and future store/membership sales). When off, none of those controls appear anywhere."
+          description="Controls host payment setup for supported selling paths, including tips and eligible paid tickets, store purchases and memberships. Availability also depends on the payment keys, Space plan and setup for each path."
         >
           <PayoutsToggle enabled={enabled} stripeConfigured={stripeConfigured} />
         </FormSection>

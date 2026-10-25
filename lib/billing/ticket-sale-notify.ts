@@ -258,8 +258,8 @@ export function saleSentence(c: Pick<SaleCopy, 'buyerName' | 'countLabel' | 'eve
  *  Stripe Connect, in anything a member or operator reads. */
 export function payoutSentence(c: Pick<SaleCopy, 'feeLabel' | 'feeIsZero'>): string {
   return c.feeIsZero
-    ? 'Frequency took nothing on this sale. The full amount goes to your payout account on your usual payout schedule.'
-    : `Frequency's fee on this sale was ${c.feeLabel}. The rest goes to your payout account on your usual payout schedule.`
+    ? 'Frequency took nothing on this sale. Card processing still applies. Check the payment and payout status in your connected payout account.'
+    : `Frequency's fee on this sale was ${c.feeLabel}. Card processing also applies. Check the payment and payout status in your connected payout account.`
 }
 
 // Email HTML, not UI chrome: mail clients read no design tokens, so the palette is literal hex,

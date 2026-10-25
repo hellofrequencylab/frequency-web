@@ -23,7 +23,7 @@ export function FrequencyCompareIndex() {
             How Frequency <em className="fq-iri-text">compares.</em>
           </>
         }
-        lede="Most tools help you throw one event, share one link, or sell one ticket. Frequency is the standing room underneath: a small Circle that keeps meeting in person. Hosting is free, selling starts at Business, and your own people are always free. Here is how it stacks up against the tools you already know."
+        lede="Frequency brings Circles, gatherings and conversation into one place. Host a Circle or free Event, and selling through a Space starts at Business. Paid plans have subscription fees. Your own audience carries no network introduction fee; card processing still applies. Compare the tools and billing details below."
       >
         <div className="ctas">
           <Link className="btn fq-iri-btn" href="/discover">
@@ -74,7 +74,7 @@ export function FrequencyCompare({ comparison, image }: { comparison: Comparison
         image={image}
         kicker={`Alternative to ${comparison.name}`}
         title={copy.h1}
-        lede={`${comparison.name} is a great ${comparison.category}. Frequency is a different shape: a free local Circle that keeps meeting in person. Here is how they compare.`}
+        lede={`${comparison.name} is a great ${comparison.category}. Frequency is a different shape: a local Circle for meeting in person. Here is how they compare.`}
       >
         <div className="ctas">
           <Link className="btn fq-iri-btn" href="/discover">
@@ -134,7 +134,7 @@ export function FrequencyCompare({ comparison, image }: { comparison: Comparison
               <p>
                 {`If you want the part it does not do, the small group that keeps meeting, look at the Circles already gathering near you, then join one or start your own.`}
                 {comparison.moneyBeat
-                  ? ` And hosting is free. When you start charging, that is Business, with 0% on your own bookings, ${PLAN_STORY.plusProcessing}. That is the whole deal.`
+                  ? ` And hosting is free. When you start charging, that is Business, with 0% on your own bookings, ${PLAN_STORY.plusProcessing}. Paid Space plans and introduction fees are separate.`
                   : ''}
               </p>
             </div>

@@ -138,7 +138,7 @@ export async function EnrollMember({
 
       {!mine && (
         <p className="text-2xs text-muted">
-          Enrolling reserves your seat. We do not take a payment yet, so paid enrollment comes later.
+          Enrolling reserves your seat. This enrollment form does not collect a payment.
         </p>
       )}
     </div>

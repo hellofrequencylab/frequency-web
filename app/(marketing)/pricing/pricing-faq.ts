@@ -96,7 +96,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'Do I need Crew to open a Space?',
-      a: `A Space comes with Crew, which you fund at whatever amount you choose. Until the beta ends, anyone can open one free. After that, hosting stays free: a free Space is a real Space, not a trial: your page, Circles, Events, posts, members, contacts, email, bookings and Journeys, with limits sized for a launch. People can tip you, and we take nothing from tips. When you want to charge for something, that is Business. Crew is what opens it, and a plan is only for when you charge.`,
+      a: `A Space comes with Crew, which you fund at whatever amount you choose. Until the beta ends, anyone can open one free. After that, hosting stays free: a free Space is a real Space, not a trial: your page, Circles, Events, posts, members, contacts, email, bookings and Journeys, with limits sized for a launch. People can tip you with no Frequency platform fee; card processing still applies. When you want to charge for something, that is Business. Check the current Crew requirement, Space allowances and selling features on this page before you choose a plan.`,
     },
     {
       q: 'Why does selling start at Business?',
@@ -112,7 +112,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'What stays free forever?',
-      a: 'The people part, hosting, and tips. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. Opening a Space and running it is free. Tips carry no platform fee on any tier, only card processing. A business never pays for access to people.',
+      a: 'The people part, hosting, and tips. Joining Frequency, belonging to Circles, following Spaces, and messaging carry no membership charge. Event organizers can charge for tickets, and hosts can price their own offers. Opening a Space and running it is free. Tips carry no platform fee on any tier, only card processing. A business never pays for access to people.',
     },
     ...betaFaq,
     {
@@ -145,7 +145,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'What happens if I downgrade?',
-      a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours, and you go back to the free limits. What stops is selling: new paid tickets, memberships and orders need Business again, and tips keep working. You can export your contacts and your data before, during, or after, anytime.',
+      a: 'The Free plan’s allowances and access settings apply. New paid tickets, memberships and orders need an eligible selling plan; tips keep working. Check the included tools before downgrading. You can use the available contact and account-data exports before changing your plan.',
     },
     {
       q: 'Can I leave and take my people with me?',

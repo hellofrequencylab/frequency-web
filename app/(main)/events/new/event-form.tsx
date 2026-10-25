@@ -1020,7 +1020,7 @@ export function EventForm({
             ) : priceMode === 'paid' ? (
               ticketSellerVerdict({ payoutsReady: payoutsReadyByScope?.[payoutScopeKey(scopeId)] }).allowed ? (
                 <p className="mt-1.5 text-2xs leading-relaxed text-muted">
-                  Sets a ticket price. Your payout account is ready, so ticket money lands in your bank.
+                  Sets a ticket price. Your connected account is ready. Check Stripe for payout status and timing.
                 </p>
               ) : payoutSelfByScope?.[payoutScopeKey(scopeId)] ? (
                 // The payee is the caller, so the button can only ever onboard the right account.

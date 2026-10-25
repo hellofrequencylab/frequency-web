@@ -767,7 +767,7 @@ function PlanCta({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
 function PlanCard({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
   return (
     <Reveal as="article" className={planCardClasses({ featured: plan.featured, ink })}>
-      {plan.featured && <PlanRibbon>Most chosen</PlanRibbon>}
+      {plan.featured && <PlanRibbon>Featured plan</PlanRibbon>}
       <h3
         className={`font-display uppercase ${plan.featured ? 'text-3xl' : 'text-page-title'} ${
           ink ? 'text-on-ink' : 'text-text'
@@ -1190,7 +1190,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
       eyebrow: 'Why we exist',
       line: 'Somewhere to belong, near you.',
       lineAccent: 'near you',
-      note: "We think the answer to the loneliest era in history is a folding chair with your name on it. We're not building a following. We're building infrastructure.",
+      note: "A place to gather, and tools for the people who make the plans.",
       focal: 'center',
       layout: layoutDefault,
     },
@@ -1252,7 +1252,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
       eyebrow: 'The arc',
       title: 'From a beach to your city.',
       titleAccent: '',
-      kicker: 'One circle at a time, the way it always spread.',
+      kicker: 'People making plans, one Circle at a time.',
       intro: '',
       items: [
         {
@@ -1265,16 +1265,16 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         {
           image: '/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg',
           alt: 'People in a quiet moment of breathwork together outdoors at golden hour',
-          title: '2021 · A thousand people, no home',
+          title: '2021 · The gathering grows',
           caption:
-            "Word of mouth carries it to nearly a thousand. It proves the hunger is real, and proves that without a home, even the most beautiful thing can't hold.",
+            "People bring others to the gathering. As it grows, the practical work grows too: making plans, welcoming people, and finding places to meet.",
         },
         {
           image: '/images/site/lab-storefront.jpg',
-          alt: 'The storefront of the first Frequency Lab taking shape',
+          alt: 'Reference storefront image for a planned Frequency Lab',
           title: 'Today · The first Circles',
           caption:
-            'The blueprint becomes real: the tools handed to anyone who wants to start a Circle, and a model that keeps the doors open to everyone.',
+            'Frequency is being built for people who organize Circles and gatherings. A physical Lab is planned for 2028.',
         },
       ],
       footnote: '',
@@ -1329,11 +1329,11 @@ export const dawnComponents: Record<string, ComponentConfig> = {
     },
     defaultProps: {
       eyebrow: 'Where it comes from',
-      kicker: 'Most of a generation feels it. Almost nobody has a word for it.',
+      kicker: 'A reason to meet became a reason to build.',
       items: [
         {
-          title: 'A hunger nobody could name.',
-          body: "We didn't set out to start a company. We set out to find each other, and discovered that the places built to hold people had quietly disappeared.",
+          title: 'A reason to meet.',
+          body: "We started by looking for people to gather with. That led to building tools for community builders to make plans and share the work.",
         },
       ],
       flow: 'beat',
@@ -1396,17 +1396,17 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         {
           icon: 'Users',
           title: 'Leaderful, not leader-dependent',
-          body: 'Everyone holds a piece of it. Leaders rise from the people who keep showing up. Designed to outlast any one person.',
+          body: 'People can choose to help with a gathering, host a Circle, or support other Hosts. Roles give willing members ways to share the work.',
         },
         {
           icon: 'HandHeart',
-          title: 'One honest price',
-          body: 'Zero percent on your own bookings, plus card processing. Hosting is free and selling starts at Business. One price, no surprise invoices.',
+          title: 'Plans and payment fees',
+          body: 'Zero percent network fee on your own bookings, plus card processing. Hosting is free and selling starts at Business. Paid Space plans and introduction fees are separate.',
         },
         {
           icon: 'Home',
           title: 'A third place',
-          body: "Not home, not work: a real place to exhale, reset, and be missed when you don't show up.",
+          body: "A place outside home and work to walk, sit, make something, or share a meal.",
         },
       ],
       layout: layoutDefault,
@@ -1477,25 +1477,25 @@ export const dawnComponents: Record<string, ComponentConfig> = {
       eyebrow: 'Where this actually is',
       title: 'Community first, building second.',
       titleAccent: '',
-      kicker: "Most third places sign a lease, then go looking for the people. We're doing it the other way round.",
+      kicker: "Start with people and their plans. The physical Lab is a later part of the build.",
       intro: '',
       items: [
         {
           label: 'Now',
           title: 'Circles, in borrowed rooms',
-          body: 'Circles are meeting weekly in parks, living rooms, and rented studios. The community is real; the building is not.',
+          body: 'Circles can meet in parks, living rooms, and rented studios. Check a Circle’s own plans for its location and schedule.',
           highlight: 'normal',
         },
         {
           label: '2027',
           title: 'Site and permits',
-          body: 'A shortlist, then the slow unglamorous part: a site, zoning, and the plumbing a sauna and a cold pool need.',
+          body: 'The plan includes finding a site, reviewing zoning, and planning the facilities.',
           highlight: 'normal',
         },
         {
           label: '2028',
-          title: 'The first Lab opens',
-          body: 'One building, built from day one to be repeatable. If the first room works, the second is a template instead of an experiment.',
+          title: 'The first Lab is planned to open',
+          body: 'The aim is to learn from the first Lab before considering spaces in other cities.',
           highlight: 'chosen',
         },
       ],
@@ -1559,21 +1559,21 @@ export const dawnComponents: Record<string, ComponentConfig> = {
           alt: 'Reference photograph: low amber light across a cedar sauna',
           label: '01',
           title: 'The thermal circuit',
-          body: 'Cedar sauna and steam, hot enough to quiet the mind. The first half of the loop that resets you to baseline.',
+          body: 'A cedar sauna and steam room are part of the plan. These images are references for the space we want to build.',
         },
         {
           image: '/images/site/lab-pool.jpg',
           alt: 'Reference photograph: a cold plunge pool, still water under low light',
           label: '02',
           title: 'The cold pool',
-          body: 'A plunge that shocks everything loose. Do it alone and it’s a habit; do it with your Circle and it’s a ritual.',
+          body: 'A cold plunge pool is part of the plan, for people who choose to take part.',
         },
         {
           image: '/images/site/lab-concept.jpg',
           alt: 'Reference photograph: a warm, plant-filled movement studio lit for an evening class',
           label: '03',
           title: 'Movement studios',
-          body: 'Breathwork at sunrise, ecstatic dance after dark, strength in between. Programmed to help you calm down, not to chase a mirror.',
+          body: 'The plan includes rooms for breathwork, dance, strength, and other group activities.',
         },
       ],
       tone: 'ink',
@@ -1675,13 +1675,13 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         {
           livePriceKey: 'free',
           name: 'Space',
-          tagline: 'Host free. The whole thing.',
+          tagline: 'Host a Circle or free Event.',
           price: 'Free',
           strikePrice: '',
           yearly: '',
           billing: 'Free forever. No card.',
           trial: '',
-          forWho: 'Anyone opening a Space: every business tool with launch-sized limits, and tips with no platform fee, plus card processing. Selling starts at Business.',
+          forWho: 'Anyone opening a Space: hosting tools within the published allowances, and tips with no platform fee, plus card processing. Selling starts at Business.',
           rate: '',
           featured: 'featured',
           ctaLabel: 'Start a Space',
@@ -1778,7 +1778,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
       name: 'How to start a Circle',
       nameAccent: '',
       kicker: '',
-      intro: 'Four steps, a standing time, and a few people. That is the whole thing.',
+      intro: 'Start with an activity, a time, and a few invitations. These four steps give you a first plan.',
       totalTimeLabel: '',
       totalTime: '',
       steps: [
@@ -1790,19 +1790,19 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         },
         {
           name: 'Pick a standing time',
-          text: 'Same day, same hour, on repeat. A standing time is what turns a plan into a habit.',
+          text: 'Choose a day and time you can host, then share the next date before people leave.',
           image: '',
           alt: '',
         },
         {
           name: 'Invite the few you already know',
-          text: 'Three people is a Circle. Ask them directly, not with a post, and tell them the time.',
+          text: 'Invite a few people directly. Say what you plan to do, when it is, and how they can reply.',
           image: '',
           alt: '',
         },
         {
           name: 'Hold the door, week after week',
-          text: 'Show up even on the quiet weeks. The room is built by the people who keep coming back.',
+          text: 'Confirm the next gathering and let people know if the plan changes.',
           image: '',
           alt: '',
         },

@@ -85,7 +85,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
             <div className="pm-float" style={vars({ '--pm-d': '6s' })}>
               <div className="pm-hit" tabIndex={0} role="group" aria-label={`${free.label}: what it adds`} aria-describedby="pm-t-free">
                 <span className="pm-ring" />
-                <Tip id="pm-t-free" title="Host free. The whole thing.">
+                <Tip id="pm-t-free" title="Host a Circle or free Event.">
                   {`Comes with Crew, and hosting is free after that. Tips only, with no platform fee, ${PLAN_STORY.plusProcessing}.`}
                 </Tip>
               </div>
@@ -104,7 +104,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
               <div className="pm-hit" tabIndex={0} role="group" aria-label={`${business.label}: what it adds`} aria-describedby="pm-t-business">
                 <span className="pm-orb pm-orb-lg" />
                 <Tip id="pm-t-business" title="Selling starts here.">
-                  {`Paid tickets, memberships, donations, a shop and booking deposits, with the limits lifted. ${business.trial ?? ''}`}
+                  {`Paid tickets, memberships, donations, a shop and booking deposits, with the allowances shown for your plan. ${business.trial ?? ''}`}
                 </Tip>
               </div>
             </div>
@@ -130,7 +130,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
                   <span className="pm-orb pm-orb-a" />
                   <span className="pm-orb pm-orb-b" />
                 </span>
-                <Tip id="pm-t-collective" title="Grow together without giving anything up.">
+                <Tip id="pm-t-collective" title="Link partner Spaces and share a calendar.">
                   {`A hub that links up to ${partnerCap} partner Spaces, a shared calendar and Vera AI included. ${collective.betaNote ?? ''}`}
                 </Tip>
               </div>
