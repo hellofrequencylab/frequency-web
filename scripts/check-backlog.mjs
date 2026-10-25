@@ -456,9 +456,12 @@ function spawnProbe(cmd) {
     const report = []
     child.stdio[3].on('data', (c) => report.push(c))
     child.stdout.resume()
-    child.stderr.resume()
+    let stderr = Buffer.alloc(0)
+    child.stderr.on('data', chunk => {
+      if (stderr.length < 8192) stderr = Buffer.concat([stderr, chunk.subarray(0, 8192 - stderr.length)])
+    })
     child.on('error', (error) => resolve({ error }))
-    child.on('close', (status, signal) => resolve({ status, signal, cpuMs: parseProbeReport(Buffer.concat(report)) }))
+    child.on('close', (status, signal) => resolve({ status, signal, cpuMs: parseProbeReport(Buffer.concat(report)), stderr: stderr.toString('utf8') }))
   })
 }
 
@@ -487,7 +490,7 @@ async function runProbe(p) {
     if (r.error || r.signal !== null || r.status === null) return { result: null, cpuMs } // killed, timed out, unspawnable
     if (r.status === 127) return { result: null, cpuMs } // the shell could not find the command — not an answer
     if (r.status === PROBE_INDETERMINATE) return { result: null, cpuMs } // the probe told us it could not look
-    return { result: r.status === 0, cpuMs }
+    return { result: r.status === 0, cpuMs, diagnostic: r.stderr }
   }
 
   // Paths that do not exist count as "no match" — a deleted file cannot contain the thing.
@@ -764,7 +767,7 @@ await runPool(
 
 for (const [i, e] of toProbe.entries()) {
   const p = e.verify
-  const { result, cpuMs } = outcomes[i]
+  const { result, cpuMs, diagnostic } = outcomes[i]
   if (p.kind === 'cmd') {
     if (cpuMs === null) unattributed++
     else probeCosts.push({ id: e.id, kind: p.kind, cpuMs })
@@ -791,6 +794,7 @@ for (const [i, e] of toProbe.entries()) {
         says: 'done',
         found: 'NOT DONE',
         why: 'Either this regressed, or the row was closed without the probe ever passing.',
+        diagnostic,
       })
     }
   }
@@ -880,6 +884,10 @@ if (contradictions.length) {
     console.error(`      ${dim(c.why)}`)
     if (c.e.verify.pattern) console.error(`      ${dim(`probe: ${c.e.verify.kind} /${c.e.verify.pattern}/ in ${c.e.verify.paths.join(', ')}`)}`)
     if (c.e.verify.cmd) console.error(`      ${dim(`probe: ${c.e.verify.cmd}`)}`)
+    if (c.diagnostic?.trim()) {
+      console.error('      stderr (first 8 KiB, at most 16 lines):')
+      for (const line of c.diagnostic.trim().split('\n').slice(0, 16)) console.error(`      ${line}`)
+    }
     console.error('')
   }
   console.error(dim(`   Fix the ROW (change its status) or the PROBE (if it measures the wrong thing).`))
