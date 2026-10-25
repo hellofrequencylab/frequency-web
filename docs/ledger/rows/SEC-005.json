@@ -1,0 +1,20 @@
+{
+  "id": "SEC-005",
+  "title": "Patch the mobile xcode UUID dependency with actual consumer compatibility checks",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "mobile/package.json",
+    "ref": "Scoped xcode3.0.1>uuid11.1.1 override and mobile/scripts/xcode-uuid.test.cjs"
+  },
+  "detail": "The mobile lock carried uuid7.0.3 through xcode3.0.1, inside GHSA-w5hq-g745-h8pq's reported range. The actual xcode source calls v4() without an external buffer, so production exploitation of the advisory's v3/v5/v6 buffer issue was not demonstrated. Pin only this consumer to the reviewed CommonJS-compatible11.1.1 patch rather than forcing the latest ESM major across Expo. Regenerated with pnpm10.33.0; direct app dependencies unchanged. Tests resolve the actual Expo -> config-plugins -> xcode UUID instance, reject malformed output buffers without partial writes, generate1000 valid xcode IDs and round-trip a synthetic PBX file/group. These tests run in the existing mobile CI via pnpm check. This closes only the UUID instance; Zod3 and node-forge advisories remain separately open in the audit. No native prebuild, APK, hardware, production exploitability or provider proof is claimed.",
+  "closed": "2026-10-25",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-25",
+    "evidence": "Task-owned frozen mobile install, whole mobile typing, lint and pure tests pass including actual Expo xcode consumer and synthetic PBX round-trip. Pin/lock regression probe rejects removed override and downgraded UUID lock. Limits and production schema unchanged.",
+    "cmd": "node scripts/probes/mobile-xcode-uuid.mjs"
+  }
+}
