@@ -89,7 +89,7 @@ describe('Field, Input, Select and Switch are the kit form controls', () => {
   })
   it('wraps a select in the chevron frame and tints the active one', () => {
     const wrap = doc(<Select options={['A']} tone="active" />).firstElementChild!
-    expect(wrap.className).toBe('mu-select')
+    expect(wrap.className).toBe('mu-select mu-active')
     expect(wrap.querySelector('select')?.className).toBe('input mu-active')
   })
   it('draws the switch as the kit .sw', () => {

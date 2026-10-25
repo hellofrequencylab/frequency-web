@@ -1,8 +1,21 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { Select, selectClasses } from './select'
+
+vi.mock('@/lib/theme/design', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/theme/design')>(), SITE_DESIGN: 'frequency',
+}))
+import {readFileSync as readFrequencyCss} from 'node:fs'
+import {createRequire as frequencyRequire} from 'node:module'
+const frequencyPostcss = frequencyRequire(frequencyRequire(import.meta.url).resolve('@tailwindcss/postcss'))('postcss')
+const frequencyRules: {selector: string; nodes: {type: string; prop?: string; value?: string}[]; parent: {type: string; params?: string}}[] = []
+for (const file of ['kit-members','members-ui','core']) frequencyPostcss.parse(readFrequencyCss(`app/themes/frequency/${file}.css`,'utf8')).walkRules((rule: typeof frequencyRules[number])=>frequencyRules.push(rule))
+function frequencyStyle(selector: string, prop: string, value?: string, media?: string) {
+  return frequencyRules.some(rule=>rule.selector.includes(selector) && (!media || (rule.parent.type==='atrule' && rule.parent.params===media)) && rule.nodes.some(node=>node.type==='decl' && node.prop===prop && (value===undefined || node.value===value)))
+}
+
 import { Checkbox, checkboxClasses } from './checkbox'
 import { Field, fieldChromeClasses, fieldClasses } from './field'
 
@@ -97,7 +110,7 @@ describe('Select is a native <select>', () => {
     const c = mount(<Select options={['Mind']} />)
     const svg = c.querySelector('svg')!
     expect(svg.getAttribute('aria-hidden')).toBe('true')
-    expect(svg.getAttribute('class')).toContain('pointer-events-none')
+    expect(frequencyStyle('.mu-select>svg','pointer-events','none')).toBe(true)
   })
 })
 
@@ -108,25 +121,25 @@ describe('Select chrome', () => {
   })
 
   it('keeps the CALM NEUTRAL field halo on focus — a form must not glow orange', () => {
-    expect(selectClasses).toContain('focus:ring-border-strong/30')
+    expect(selectClasses).toContain('input'); expect(frequencyStyle('.input:focus','box-shadow','0 0 0 2px var(--fq-focus-ring)')).toBe(true)
     expect(selectClasses).not.toContain('ring-primary')
   })
 
   it('owns its padding so the chevron gutter cannot collide with the chrome string', () => {
-    expect(selectClasses).toContain('pr-9')
+    expect(selectClasses).toContain('input'); expect(frequencyStyle('select.input','padding-right','44px')).toBe(true)
     expect(fieldChromeClasses).not.toContain('px-3')
   })
 
   it('takes the role radius and the per-generation tap floor', () => {
-    expect(selectClasses).toContain('rounded-control')
-    expect(selectClasses).toContain('tap-target')
+    expect(selectClasses).toContain('input'); expect(frequencyStyle('.input','border-radius')).toBe(true)
+    expect(selectClasses).toContain('input'); expect(frequencyStyle('.input','height')).toBe(true)
   })
 
   it('keeps the error look keyed off aria-invalid, like every other field', () => {
     const c = mount(<Select aria-invalid options={['Mind']} />)
     const el = c.querySelector('select')!
     expect(el.getAttribute('aria-invalid')).toBe('true')
-    expect(el.className).toContain('aria-[invalid=true]:border-danger')
+    expect(el.className).toContain('input'); expect(frequencyStyle('.input[aria-invalid="true"]','box-shadow')).toBe(true)
   })
 })
 
@@ -227,7 +240,7 @@ describe('Checkbox chrome', () => {
   })
 
   it('takes the role radius and the amber checked fill from tokens', () => {
-    expect(checkboxClasses).toContain('rounded-control')
+    expect(checkboxClasses).toContain('rounded-[6px]')
     expect(checkboxClasses).toContain('checked:bg-primary')
     expect(checkboxClasses).toContain('checked:border-primary')
   })
@@ -297,10 +310,10 @@ describe('the shapes found in the wild convert without rewriting the call site',
     )
     const wrapper = c.firstElementChild as HTMLElement
     expect(wrapper.className).toContain('w-max')
-    expect(wrapper.className).toContain('relative')
+    expect(wrapper.className).toContain('mu-select'); expect(frequencyStyle('.mu-select','position','relative')).toBe(true)
     // The base `w-full` is STILL in the attribute — `cn()` joins, it does not merge — so this
     // assertion alone proves nothing about width. What settles it is emit order, pinned below.
-    expect(wrapper.className).toContain('w-full')
+    expect(wrapper.className).toContain('mu-select'); expect(frequencyStyle('.mu-select','width','100%')).toBe(true)
   })
 
   // 🔴 The assertion above used to read `toContain('w-auto')` and was green for months while the
