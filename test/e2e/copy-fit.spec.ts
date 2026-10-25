@@ -243,6 +243,70 @@ function inspectCopyGeometry(scopeSelector?: string | void) {
    return true;
   }
   const decorativeBoxes: Finding[] = []
+  // Narrow source contract: WhatsOnMap -> non-expandable MapCanvas -> GoogleCanvas's direct
+  // DIV mount. Only the independently observed maps/vt square 256/512px empty-alt raster tile rendered at 256px and its
+  // otherwise empty single-image wrapper can use painted intersection; map text/controls cannot.
+  function mapTranslationOnly(value: string) {
+    if (value === 'none') return true
+    try { const m = new DOMMatrixReadOnly(value); return m.is2D && m.a === 1 && m.b === 0 && m.c === 0 && m.d === 1 && Number.isFinite(m.e) && Number.isFinite(m.f) } catch { return false }
+  }
+  function boundedRasterMapPaint(el: Element) {
+    const mount = el.closest('.fqm-live-map')
+    const viewport = mount && [...mount.children].find(child => child.tagName === 'DIV' && child.contains(el))
+    if (!viewport || el === viewport) return null
+    const clip = getComputedStyle(viewport), v = viewport.getBoundingClientRect()
+    if (!['hidden', 'clip'].includes(clip.overflowX) || !['hidden', 'clip'].includes(clip.overflowY) ||
+      clip.transform !== 'none' || clip.clipPath !== 'none' || v.width <= 0 || v.height <= 0 ||
+      v.left < 0 || v.right > innerWidth || viewport.clientWidth <= 0 || viewport.clientHeight <= 0) return null
+    const images = el instanceof HTMLImageElement ? [el] : [...el.querySelectorAll('img')]
+    if (images.length !== 1) return null
+    const img = images[0]
+    if (!(img instanceof HTMLImageElement) || img.getAttribute('alt') !== '' || !img.complete ||
+      img.naturalWidth !== img.naturalHeight || ![256, 512].includes(img.naturalWidth)) return null
+    let url: URL
+    try { url = new URL(img.currentSrc || img.src, location.href) } catch { return null }
+    if (url.origin !== 'https://maps.googleapis.com' || url.pathname !== '/maps/vt') return null
+    const nodes = [el, ...el.querySelectorAll('*')]
+    const meaningful = 'a[href],button,input,select,textarea,summary,[tabindex],[contenteditable],'+
+      '[aria-label],[aria-labelledby],[aria-describedby],[title],svg,video,audio,canvas,object,embed,iframe'
+    if (el.textContent?.trim()) return null
+    for (const node of nodes) {
+      const role = node.getAttribute('role')
+      if (role !== null && (node !== img || role !== 'presentation')) return null
+      if (node !== img && node.tagName !== 'DIV') return null
+      if ((node !== img && node.hasAttribute('alt')) || node.matches(meaningful) || [...node.attributes].some(attr => /^on/i.test(attr.name))) return null
+      const s = getComputedStyle(node)
+      if (!mapTranslationOnly(s.transform) || s.filter !== 'none' || s.clipPath !== 'none' || s.opacity !== '1') return null
+      for (const pseudo of ['::before', '::after']) {
+        const content = getComputedStyle(node, pseudo).content
+        if (content && !['none', 'normal', '""', "''"].includes(content)) return null
+      }
+    }
+    const box = el.getBoundingClientRect(), image = img.getBoundingClientRect()
+    if (image.width !== 256 || image.height !== 256 ||
+      (['left', 'right', 'top', 'bottom'] as const).some(key => box[key] !== image[key])) return null
+    const painted = { left: image.left, right: image.right, top: image.top, bottom: image.bottom }
+    for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+      const s = getComputedStyle(parent), b = parent.getBoundingClientRect()
+      // A rotated/skewed/filter clip is outside this rectangular proof, never silently admitted.
+      if (!mapTranslationOnly(s.transform) || s.filter !== 'none' || s.clipPath !== 'none') return null
+      const left = b.left + parent.clientLeft, top = b.top + parent.clientTop
+      if (['hidden', 'clip'].includes(s.overflowX)) {
+        painted.left = Math.max(painted.left, left)
+        painted.right = Math.min(painted.right, left + parent.clientWidth)
+      }
+      if (['hidden', 'clip'].includes(s.overflowY)) {
+        painted.top = Math.max(painted.top, top)
+        painted.bottom = Math.min(painted.bottom, top + parent.clientHeight)
+      }
+      if (parent === viewport) break
+    }
+    if (painted.right <= painted.left || painted.bottom <= painted.top ||
+      painted.left < 0 || painted.right > innerWidth) return null
+    return { raw: { left: box.left, right: box.right, top: box.top, bottom: box.bottom },
+      viewport: { left: v.left, right: v.right, top: v.top, bottom: v.bottom }, painted }
+  }
+  const boundedRasterMapBoxes: Finding[] = []
   const boxesOutsideViewport: Finding[] = []
   for (const el of [root, ...root.querySelectorAll('*')]) {
     if (!visible(el) || el.closest('script, style, [role="tooltip"]')) continue
@@ -267,6 +331,12 @@ function inspectCopyGeometry(scopeSelector?: string | void) {
       decorativeBoxes.push({ tag: el.tagName, text: '', reason: 'Semantically inert empty subtree extends beyond viewport; no text/control/label/media/pseudo content' })
       continue
     }
+    const rasterPaint = boundedRasterMapPaint(el)
+    if (rasterPaint) {
+      boundedRasterMapBoxes.push({ tag: el.tagName, text: '',
+        reason: `Verified empty-alt Google raster tile/single-image wrapper: ${JSON.stringify(rasterPaint)}` })
+      continue
+    }
     boxesOutsideViewport.push({ tag: el.tagName, text: el.textContent?.trim().slice(0, 180) ?? '',
       reason: `Box outside viewport: ${el.className} (${Math.round(box.left)}→${Math.round(box.right)})` })
   }
@@ -276,7 +346,7 @@ function inspectCopyGeometry(scopeSelector?: string | void) {
     url: location.href, width: innerWidth,
     documentWidth: document.documentElement.scrollWidth,
     overflow: document.documentElement.scrollWidth > innerWidth + 2,
-    clipped, fontBoxOnlyText, fontInkUnverified, intentionalTruncation, reachableScroll, repeatedTicker, accessibleOnlyTextNodes, boxesOutsideViewport, repeatedTickerBoxes, decorativeBoxes,
+    clipped, fontBoxOnlyText, fontInkUnverified, intentionalTruncation, reachableScroll, repeatedTicker, accessibleOnlyTextNodes, boxesOutsideViewport, repeatedTickerBoxes, decorativeBoxes, boundedRasterMapBoxes,
     visibleTextNodes, closedDisclosureTextNodes, expectedClosedDisclosures, hiddenExpandedAnswers,
     primary: primary ? {
       text: primary.textContent?.trim(), visible: visible(primary),
@@ -397,17 +467,76 @@ async function settlePublicCopyGeometry(page: Page) {
 }
 
 async function settleViewportReveals(page: Page) {
-  // site-fx.tsx staggers .pop.in by170ms. Wait for the same20% intersection
-  // threshold/root margin before advancing, rather than outrunning its queue.
-  await page.waitForFunction(() => [...document.querySelectorAll('.pop:not(.in)')].every(el => {
-    const box = el.getBoundingClientRect()
-    const area = box.width * box.height
-    if (area <= 0) return true
-    const intersect = Math.max(0, Math.min(box.right, innerWidth) - Math.max(box.left, 0)) *
-      Math.max(0, Math.min(box.bottom, innerHeight * 0.94) - Math.max(box.top, 0))
-    return intersect / area < 0.2
-  }), undefined, { timeout: 6000 })
+  // SiteFx uses this exact observer configuration and reveals on isIntersecting.
+  // Native entries include ancestor clips and resolve percentage root margins correctly.
+  // Poll delivered native intersection state synchronously before declaring readiness.
+  const native = await page.evaluateHandle(() => {
+    const intersections = new Map<Element, boolean>()
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) intersections.set(entry.target, entry.isIntersecting)
+    }, { threshold: 0.2, rootMargin: '0px 0px -6% 0px' })
+    return { observer, intersections, observed: new Set<Element>(), startedAt: performance.now() }
+  })
+  try {
+    await page.waitForFunction(state => {
+      const pending = [...document.querySelectorAll('.pop:not(.in)')]
+      for (const el of pending) if (!state.observed.has(el)) {
+        state.observed.add(el)
+        state.observer.observe(el)
+      }
+      return pending.every(el => state.intersections.get(el) === false)
+    }, native, { timeout: 6000 })
+  } catch (error) {
+    // Public-route diagnostic only. Never collect text, query values or private-route IDs.
+    // Keep the same native observer alive until this bounded snapshot is collected.
+    try {
+      const current = new URL(page.url())
+      const publicRoute = current.href === 'about:blank' || parseCopyFitRoutes(undefined).includes(current.pathname)
+      if (publicRoute) {
+        const diagnostic = await native.evaluate(state => {
+          const pending = [...document.querySelectorAll('.pop:not(.in)')]
+          const counts = { pending: pending.length, intersecting: 0, nonIntersecting: 0, undelivered: 0 }
+          for (const el of pending) {
+            const value = state.intersections.get(el)
+            if (value === true) counts.intersecting++
+            else if (value === false) counts.nonIntersecting++
+            else counts.undelivered++
+          }
+          const short = (value: string | null) => value?.slice(0, 120) ?? null
+          return {
+            counts, observer: { threshold: 0.2, rootMargin: '0px 0px -6% 0px' },
+            performanceMs: performance.now(), elapsedMs: performance.now() - state.startedAt,
+            viewport: { width: innerWidth, height: innerHeight, scrollX, scrollY },
+            samples: pending.slice(0, 20).map(el => {
+              const rect = el.getBoundingClientRect(), style = getComputedStyle(el)
+              const root = el.closest('[data-pop]')
+              return { tag: el.tagName, id: short(el.getAttribute('id')),
+                sectionId: short(el.closest('section')?.getAttribute('id') ?? null),
+                nativeIntersection: state.intersections.get(el) ?? null, hasIn: el.classList.contains('in'),
+                rect: [rect.left, rect.top, rect.width, rect.height].map(value => Math.round(value)),
+                opacity: style.opacity, display: style.display, visibility: style.visibility,
+                dataPopRoot: root ? { tag: root.tagName, id: short(root.getAttribute('id')) } : null }
+            }),
+            siteFxTimerSchedule: null,
+            limitation: 'Snapshot of checker native observer only. Actual SiteFx timer schedules and causal delivery timeline are not collected.',
+          }
+        })
+        await test.info().attach('public-reveal-timeout-diagnostic', {
+          body: JSON.stringify({ path: current.pathname, ...diagnostic }, null, 2), contentType: 'application/json',
+        })
+      }
+    } catch {
+      // Diagnostic collection must never replace the original readiness failure.
+    }
+    throw error
+  } finally {
+    await native.evaluate(state => state.observer.disconnect())
+    await native.dispose()
+  }
   await page.evaluate(async () => {
+    // An IO callback can observe .in in the same frame it is added. Allow the browser
+    // to register/paint its CSS transition before collecting the existing finite waits.
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
     const finite = document.getAnimations().filter(animation => {
       const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null
       if (!(target instanceof Element) || !target.closest('.pop.in')) return false
@@ -486,7 +615,8 @@ for (const width of [320, 390, 1280]) {
       await info.attach('full-page', { body: await page.screenshot({ fullPage: true, animations: 'disabled' }), contentType: 'image/png' })
       const disclosures = await reviewReadOnlyCopyDisclosures(page)
       await info.attach('expanded-disclosure-report', { body: JSON.stringify(disclosures, null, 2), contentType: 'application/json' })
-      await page.evaluate(() => window.scrollTo(0, 0))
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+      await settlePublicCopyGeometry(page)
       const expanded = await page.evaluate(inspectCopyGeometry)
       await info.attach('expanded-copy-fit-report', { body: JSON.stringify(expanded, null, 2), contentType: 'application/json' })
       await info.attach('expanded-full-page', { body: await page.screenshot({ fullPage: true, animations: 'disabled' }), contentType: 'image/png' })
@@ -1029,4 +1159,122 @@ test('copy-fit waits for painted panel text and rejects permanent zero opacity @
   await page.locator('#panel').evaluate(el => (el as HTMLElement).style.opacity = '0')
   await expect(waitForPaintedCopy(page, '#panel', 300)).rejects.toThrow()
   expect((await page.evaluate(inspectCopyGeometry, '#panel')).visibleTextNodes).toBe(0)
+})
+
+// Append after the existing offline geometry controls. No live map/provider calls.
+test('copy-fit measures only proved raster paint inside the source-owned map viewport @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'Viewport is controlled inside this offline fixture')
+  await page.setViewportSize({ width: 320, height: 600 })
+  // Generated solid 256×256 PNG fixture, served at the original observed raster URL.
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAACwUlEQVR4nO3TMQ0AMAzAsPK/BmEQBnEwesSSAeTJnPsga9YLYJEBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5D2AYkNHCEjLZ+mAAAAAElFTkSuQmCC', 'base64')
+  const pngBySize = new Map<string, Buffer>([['256x256', png]])
+  for (const [width, height] of [[512, 512], [512, 256], [256, 512], [1024, 1024]]) {
+    const data = await page.evaluate(([w, h]) => {
+      const canvas = document.createElement('canvas')
+      canvas.width = w; canvas.height = h
+      const context = canvas.getContext('2d')!
+      context.fillStyle = '#778899'; context.fillRect(0, 0, w, h)
+      return canvas.toDataURL('image/png').split(',')[1]
+    }, [width, height])
+    pngBySize.set(`${width}x${height}`, Buffer.from(data, 'base64'))
+  }
+  await page.route('**/*', route => {
+    const url = new URL(route.request().url())
+    return url.origin === 'https://maps.googleapis.com' && url.pathname === '/maps/vt' && !url.searchParams.has('unloaded')
+      ? route.fulfill({ contentType: 'image/png', body: pngBySize.get(url.searchParams.get('native') || '256x256') ?? png }) : route.abort()
+  })
+  const tile = (alt = '', native = '256x256', role = '') => `<img alt="${alt}"${role ? ` role="${role}"` : ''} src="https://maps.googleapis.com/maps/vt?fixture=1&native=${native}" width="256" height="256">`
+  const fixture = (inside: string, clip = 'hidden', left = 20, mount = 'fqm-live-map', sibling = '', tileStyle = '') => `<style>html,body{margin:0}*{box-sizing:border-box}</style><main data-kit="site"><div class="${mount}" style="position:relative;margin-left:${left}px;width:280px"><div style="position:relative;width:280px;height:256px;overflow:${clip}"><div style="position:absolute;left:230px;top:0;width:256px;height:256px;${tileStyle}">${inside}</div>${sibling}</div></div></main>`
+  const cases = [
+    ['verified raster', fixture(tile()), true],
+    ['labelled media', fixture(tile('Important map information')), false],
+    ['control', fixture('<button style="width:256px">Choose location</button>'), false],
+    ['text', fixture('<p>Unique location details</p>'), false],
+    ['absent clip', fixture(tile(), 'visible'), false],
+    ['map viewport outside page', fixture(tile(), 'hidden', 250), false],
+    ['mixed wrapper', fixture(tile() + '<span>Unique map label</span>'), false],
+    ['unverified mount', fixture(tile(), 'hidden', 20, 'other-map'), false],
+    ['scaled ancestor', fixture(tile(), 'hidden', 20, 'fqm-live-map', '', 'transform:scale(1.1);transform-origin:left top'), false],
+    ['rotated ancestor', fixture(tile(), 'hidden', 20, 'fqm-live-map', '', 'transform:rotate(5deg);transform-origin:left top'), false],
+    ['filtered ancestor', fixture(tile(), 'hidden', 20, 'fqm-live-map', '', 'filter:blur(2px)'), false],
+    ['non-256 image', fixture(tile().replace('width="256"', 'width="255"')), false],
+    ['unloaded image', fixture(tile().replace('fixture=1', 'unloaded=1')), false],
+    ['outside map control sibling', fixture(tile(), 'hidden', 20, 'fqm-live-map', '<button style="position:absolute;left:300px;width:160px">Choose map location</button>'), false],
+    ['outside map label sibling', fixture(tile(), 'hidden', 20, 'fqm-live-map', '<span style="position:absolute;left:300px;width:160px">Map attribution label</span>'), false],
+    ['retina raster', fixture(tile('', '512x512')), true],
+    ['presentational 256 raster', fixture(tile('', '256x256', 'presentation')), true],
+    ['presentational retina raster', fixture(tile('', '512x512', 'presentation')), true],
+    ['mismatched natural width', fixture(tile('', '512x256', 'presentation')), false],
+    ['mismatched natural height', fixture(tile('', '256x512', 'presentation')), false],
+    ['unobserved native resolution', fixture(tile('', '1024x1024', 'presentation')), false],
+    ['semantic image role', fixture(tile('', '512x512', 'img')), false],
+    ['wrapper presentation role', fixture(tile('', '512x512', 'presentation')).replace('<div style="position:absolute;', '<div role="presentation" style="position:absolute;'), false],
+    ['labelled presentational retina', fixture(tile('', '512x512', 'presentation').replace(' alt=""', ' alt="" aria-label="Unique map information"')), false],
+  ] as const
+  for (const [name, html, admitted] of cases) {
+    await page.setContent(html)
+    await page.locator('img').evaluateAll(images => Promise.all(images.map(image => (image as HTMLImageElement).decode().catch(() => undefined))))
+    const report = await page.evaluate(inspectCopyGeometry)
+    if (admitted) {
+      expect(report.boundedRasterMapBoxes.length, name).toBe(2)
+      expect(report.boxesOutsideViewport, name).toEqual([])
+      expect(report.overflow, name).toBe(false)
+    } else {
+      expect(report.boxesOutsideViewport.length, name).toBeGreaterThan(0)
+    }
+  }
+})
+
+test('copy-fit native reveal intersection ignores a clipped inactive pending element @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'One offline fixture project')
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.setContent('<main data-kit="site"><h1>Visible heading</h1><div style="position:relative;height:20px;overflow:hidden"><div class="pop" style="position:absolute;top:100px;width:200px;height:100px;opacity:0">Inactive clipped panel</div></div></main>')
+  await settleViewportReveals(page)
+  expect(await page.locator('.pop').getAttribute('class')).toBe('pop')
+})
+
+test('copy-fit native reveal intersection rejects an intersecting permanently pending element @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'One offline fixture project')
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.setContent('<main data-kit="site"><div class="pop" style="width:200px;height:100px;opacity:0">Never revealed despite intersecting</div></main>')
+  const attachmentCount = test.info().attachments.length
+  await expect(settleViewportReveals(page)).rejects.toThrow(/Timeout 6000ms exceeded/)
+  expect(await page.locator('.pop').getAttribute('class')).toBe('pop')
+  const attached = test.info().attachments.slice(attachmentCount)
+    .find(attachment => attachment.name === 'public-reveal-timeout-diagnostic')
+  expect(attached?.body).toBeTruthy()
+  const diagnostic = JSON.parse(attached!.body!.toString())
+  expect(diagnostic.counts).toEqual({ pending: 1, intersecting: 1, nonIntersecting: 0, undelivered: 0 })
+  expect(diagnostic.observer).toEqual({ threshold: 0.2, rootMargin: '0px 0px -6% 0px' })
+  expect(diagnostic.samples).toHaveLength(1)
+  expect(diagnostic.samples[0].nativeIntersection).toBe(true)
+  expect(diagnostic.samples[0].hasIn).toBe(false)
+  expect(diagnostic.samples[0]).not.toHaveProperty('text')
+  expect(diagnostic.siteFxTimerSchedule).toBeNull()
+})
+
+test('copy-fit expanded instant reset waits for delayed scroll geometry @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'One offline fixture project')
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.setContent(`<style>html{scroll-behavior:smooth}body{margin:0}h1{margin:0;width:200px;font:20px/24px monospace;transform:translateX(40px)}</style><main data-kit="site" style="height:1800px"><div style="overflow:hidden;width:190px"><h1>Delayed heading</h1></div></main><script>
+    window.addEventListener('scroll', () => { if (scrollY === 0) setTimeout(() => {
+      const h = document.querySelector('h1'); h.style.transition = 'transform 600ms linear'; h.style.transform = 'translateX(0px)';
+    }, 100); });
+  </script>`)
+  await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }))
+  await page.waitForFunction(() => scrollY > 0)
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+  expect((await page.evaluate(inspectCopyGeometry)).clipped.some(row => row.text === 'Delayed heading')).toBe(true)
+  await settlePublicCopyGeometry(page)
+  expect(await page.evaluate(() => scrollY)).toBe(0)
+  expect(await page.locator('h1').evaluate(el => getComputedStyle(el).transform)).toBe('matrix(1, 0, 0, 1, 0, 0)')
+  expect((await page.evaluate(inspectCopyGeometry)).clipped).toEqual([])
+})
+
+test('copy-fit stable readiness still rejects permanently clipped copy @visual @copyfit', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'One offline fixture project')
+  await page.setContent('<main data-kit="site"><div style="width:12px;overflow:hidden"><h1 style="margin:0;width:220px;font:20px/24px Arial">Permanently clipped heading</h1></div></main>')
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+  await settlePublicCopyGeometry(page)
+  expect((await page.evaluate(inspectCopyGeometry)).clipped.some(row => row.text === 'Permanently clipped heading')).toBe(true)
 })
