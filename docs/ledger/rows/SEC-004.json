@@ -14,5 +14,6 @@
     "kind": "manual",
     "checked": "2026-10-25",
     "evidence": "OPEN: current mobile lock still contains Expo-transitiveZod3.25.76,node-forge1.4.0anduuid7.0.3matching the reported vulnerable ranges. DirectZod4.6.7is already outside its range. Close only with supported patched resolutions plus actual consumer compatibility evidence, or independently verified scoped mitigations/upstream applicability evidence for each affected instance. Raw alert counts alone are not closure."
-  }
+  },
+  "wave": "WM"
 }
