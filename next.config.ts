@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { resolveDesign } from "./lib/theme/design";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 // An ENFORCED Content-Security-Policy (P8 hardening, ADR-170). Graduated from
@@ -17,10 +18,9 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 // would break hydration site-wide. The full inline-script XSS mile is the tracked
 // follow-up; everything around it is enforced today.
 const isDev = process.env.NODE_ENV === 'development'
-// The deploy's design (ADR-1737), read the way lib/theme/design.ts reads it: only the exact id
-// 'frequency' is Frequency. Two merged pages land on Frequency-only routes (/features, /vision), so
+// The deploy's design follows the canonical resolver (ADR-1737). Two merged pages land on Frequency-only routes (/features, /vision), so
 // their redirects split on it (lib/marketing/merged-routes.ts keeps the in-app links on the same split).
-const FREQUENCY_DESIGN = process.env.NEXT_PUBLIC_SITE_DESIGN === 'frequency'
+const FREQUENCY_DESIGN = resolveDesign(process.env.NEXT_PUBLIC_SITE_DESIGN) === 'frequency'
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",

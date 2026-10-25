@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-1329",
+  "title": "Keep platform design selection and email verification aligned",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/platform-design-selection.mjs",
+    "note": "Five actual resolver/redirect selection consequences PASS; fd3 CPU1170.635ms.13 affected suites232 assertions and unchanged phantom guard suite6 assertions PASS; actual phantomCLI289 classesPASS. Exact-head CI remains required."
+  },
+  "detail": "Fresh actual-main199a authored19-path composition uses resolveDesign for Next redirect selection before the separate platform-default batch. Existing route objects remain unchanged; hosted customer website theme compatibility remains separate.13 actual affected Frequency primitive,redirect and email verification suites pass232 assertions. Six structural guards, changed-file lint and the bounded actual resolver/redirect probe pass locally. Existing switch states and reduced-motion progress rules remain scoped to Frequency; customer branding and email runtime/checksum bytes are unchanged. Current Sentry/CSP configuration is inherited with only the resolver import/expression added. Normal default and exact-head remote CI/publication remain separately required; these are local-source results. Replacement preparation preserves failed3900 CI evidence: CSS-property assertions were mistaken for utility names by the unchanged scanner. Six existing owned test helpers now match exact PostCSS declaration properties with RegExp while preserving values, radius semantics and all assertions. Actual unchanged phantom CLI and six-case suite pass; no guard, ignore, budget or product behavior changed.",
+  "wave": "W7",
+  "closed": "2026-10-25"
+}
