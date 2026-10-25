@@ -1,6 +1,14 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
+vi.mock('@/lib/theme/design', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/theme/design')>(),
+  SITE_DESIGN: 'frequency',
+}))
+
+beforeEach(() => { vi.spyOn(Math, 'random') })
+afterEach(() => { vi.restoreAllMocks() })
 
 // GOLDEN RECEIPTS (LIVE-695). The receipt family renders through React Email
 // (lib/email-react/receipt.tsx). These goldens pin what a member receives, so a change to the
@@ -79,7 +87,10 @@ function golden(file: string, actual: string, writeVar: string): void {
 describe('the receipt family renders exactly what it rendered before', () => {
   for (const [id, content] of Object.entries(FIXTURES)) {
     it(id, async () => {
+      const selection = { 'order-buyer': 0.6, 'seller-notice': 0.2, 'donation-guest': 0.4 }[id]!
+      vi.mocked(Math.random).mockReturnValue(selection)
       const html = await receiptHtml(content)
+      expect(await receiptHtml(content)).toBe(html)
       golden(`${id}.visible.txt`, visibleText(html) + '\n', 'GOLDEN_VISIBLE_WRITE')
       golden(`${id}.txt`, receiptText(content), 'GOLDEN_WRITE')
       golden(`${id}.html`, html, 'GOLDEN_WRITE')

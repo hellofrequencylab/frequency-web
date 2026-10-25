@@ -102,7 +102,7 @@ export function EmailShell({ children, footer, hero: pick }: { children: ReactNo
                           </p>
                         )}
                         {/* token-ok: an email document, rendered in mail clients where no token resolves */}
-                        <p style={{ margin: 0, fontSize: '12px', color: palette.emailFaint }}>{emailPostalAddress()}</p>
+                        <p style={{ margin: 0, fontSize: '12px', color: palette.textMuted }}>{emailPostalAddress()}</p>
                       </td>
                     </tr>
                   </tbody>

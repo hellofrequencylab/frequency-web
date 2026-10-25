@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
+import { resolveDesign } from "./lib/theme/design";
 import { withSentryConfig } from "@sentry/nextjs/config";
-import { sentryCspSource } from './lib/observability/sentry-csp'
 
 // An ENFORCED Content-Security-Policy (P8 hardening, ADR-170). Graduated from
 // report-only after the report-only pass confirmed the real source set.
@@ -18,11 +18,9 @@ import { sentryCspSource } from './lib/observability/sentry-csp'
 // would break hydration site-wide. The full inline-script XSS mile is the tracked
 // follow-up; everything around it is enforced today.
 const isDev = process.env.NODE_ENV === 'development'
-// The deploy's design (ADR-1737), read the way lib/theme/design.ts reads it: only the exact id
-// 'frequency' is Frequency. Two merged pages land on Frequency-only routes (/features, /vision), so
+// The deploy's design follows the canonical resolver (ADR-1737). Two merged pages land on Frequency-only routes (/features, /vision), so
 // their redirects split on it (lib/marketing/merged-routes.ts keeps the in-app links on the same split).
-const FREQUENCY_DESIGN = process.env.NEXT_PUBLIC_SITE_DESIGN === 'frequency'
-const sentryConnectSource = sentryCspSource(process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN)
+const FREQUENCY_DESIGN = resolveDesign(process.env.NEXT_PUBLIC_SITE_DESIGN) === 'frequency'
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -46,8 +44,6 @@ const csp = [
   "img-src 'self' data: blob: https:",
   // fonts.gstatic.com serves the font files that stylesheet references.
   "font-src 'self' data: https://fonts.gstatic.com",
-  // The configured Sentry HTTPS ingest origin is included without credentials/path;
-  // browser error reports otherwise violate this policy and never reach telemetry.
   // connect-src is the exfiltration gate — every runtime fetch/XHR/WS target is listed:
   // Supabase (REST + realtime), GA (incl. GA4's region-routed /g/collect endpoint), Vercel
   // live (preview toolbar), OpenFreeMap tiles (maplibre), Google Maps tiles/metadata (the
@@ -56,7 +52,9 @@ const csp = [
   // was the stale allowlist ADR-922 said should go rather than grow a third collector.
   // Stripe: api.stripe.com is every XHR the on-page checkout makes from our origin;
   // merchant-ui-api.stripe.com is audited (with its caveat) in the Stripe block below.
-  `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co https://api.stripe.com https://merchant-ui-api.stripe.com ${sentryConnectSource}`,
+  // Browser error envelopes use this exact configured organization ingest origin.
+  // No Sentry wildcard: keep unrelated organizations outside the connection policy.
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co https://api.stripe.com https://merchant-ui-api.stripe.com https://o4512171150934016.ingest.us.sentry.io",
   // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
   // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
   // Bandcamp, Apple Music and Twitch (two player hosts: clips have their own) joined on

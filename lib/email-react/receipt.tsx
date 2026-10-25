@@ -42,8 +42,8 @@ export function ReceiptEmail({ greeting, lead, lines, closing, action, madeWith 
   // "you joined Frequency" would be false there, and a receipt carries no unsubscribe (LIVE-365).
   return (
     <EmailShell footer={RECEIPT_FOOTER}>
-      <p style={P_INK}>{greeting}</p>
-      <p style={P_INK}>{lead}</p>
+      <p data-fq="fq-p" style={P_INK}>{greeting}</p>
+      <p data-fq="fq-p" style={P_INK}>{lead}</p>
       {lines.length > 0 && (
         <table role="presentation" cellPadding={0} cellSpacing={0} style={DETAIL}>
           <tbody>
@@ -70,12 +70,12 @@ export function ReceiptEmail({ greeting, lead, lines, closing, action, madeWith 
         </table>
       )}
       {closing.map((p, i) => (
-        <p key={i} style={P_MUTED}>
+        <p data-fq="fq-muted" key={i} style={P_MUTED}>
           {p}
         </p>
       ))}
       {madeWith && (
-        <p style={MADE_WITH}>
+        <p data-fq="fq-muted" style={MADE_WITH}>
           <a href={madeWith.url} style={MADE_WITH}>
             {madeWith.label}
           </a>

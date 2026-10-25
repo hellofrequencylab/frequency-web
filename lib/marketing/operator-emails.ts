@@ -34,44 +34,44 @@ type Step = { subject: string; lines: string[]; cta: string; path: 'public' | 'm
 
 const DAY_0: Record<OperatorFocus, Step> = {
   packages: {
-    subject: 'Your Space is open. Add your first offer.',
-    lines: ['Your page is live. The one thing worth doing today is adding a single offer with a price, so the first person who finds you can book.'],
+    subject: 'Your Space is ready. Add your first offer.',
+    lines: ['Start by drafting a single offer with a price. Before accepting paid bookings, check that your plan and payout setup allow them.'],
     cta: 'Add your first offer',
     path: 'manage',
   },
   membership: {
-    subject: 'Your Space is open. Set up your first membership.',
-    lines: ['Your page is live. Start with one membership or class so the first person who finds you has something to join.'],
+    subject: 'Your Space is ready. Set up your first membership.',
+    lines: ['Start with one membership or class so the first person who finds you has something to join.'],
     cta: 'Set up a membership',
     path: 'manage',
   },
   ticketed: {
-    subject: 'Your Space is open. Put your first event on it.',
-    lines: ['Your page is live. Add your next event with a date and a ticket, and people can start saying yes.'],
+    subject: 'Your Space is ready. Add your first event.',
+    lines: ['Add your next event with a date and a ticket, and people can start saying yes.'],
     cta: 'Add your first event',
     path: 'manage',
   },
   donations: {
-    subject: 'Your Space is open. Tell your story.',
-    lines: ['Your page is live. Start with two or three sentences on what you do and who it helps, then turn on giving.'],
+    subject: 'Your Space is ready. Tell your story.',
+    lines: ['Draft two or three sentences on what you do and who it helps. Before accepting donations, check that your plan and payout setup allow them.'],
     cta: 'Finish your page',
     path: 'manage',
   },
   venue: {
-    subject: 'Your Space is open. Show people the room.',
-    lines: ['Your page is live. Add a photo of the space, its capacity and how to ask for a date, so a host can picture an event there.'],
+    subject: 'Your Space is ready. Show people the room.',
+    lines: ['Add a photo of the space, its capacity and how to ask for a date, so a host can picture an event there.'],
     cta: 'Finish your venue page',
     path: 'manage',
   },
   network: {
-    subject: 'Your Space is open. Add your first chapter.',
-    lines: ['Your page is live. Add your first chapter and its lead, so the network has a home people can find by city.'],
+    subject: 'Your Space is ready. Review your chapters.',
+    lines: ['Add your first chapter and its lead, so the network has a home people can find by city.'],
     cta: 'Add a chapter',
     path: 'manage',
   },
   general: {
-    subject: 'Your Space is open. Here is the first step.',
-    lines: ['Your page is live. Start by adding what you offer, with a date or a price, so the first visitor knows what to do.'],
+    subject: 'Your Space is ready. Here is the first step.',
+    lines: ['Start by adding what you offer, with a date or a price, so the first visitor knows what to do.'],
     cta: 'Open your Space',
     path: 'manage',
   },
@@ -79,7 +79,7 @@ const DAY_0: Record<OperatorFocus, Step> = {
 
 const DAY_1_STEP: Step = {
   subject: 'Make your page yours.',
-  lines: ['A page with a photo and a few plain sentences about you gets more yeses than a blank one. It takes five minutes: add a photo, say who you help, and say what to do next.'],
+  lines: ['Add a photo and a few plain sentences about your work. Say who you help and what someone can do next.'],
   cta: 'Finish your page',
   path: 'manage',
 }
@@ -106,14 +106,14 @@ const DAY_1: Record<OperatorFocus, Step> = {
 const DAY_3: Record<OperatorFocus, Step> = {
   packages: {
     subject: 'Three days in. Share your page once.',
-    lines: ['Send your page link to five people who already know your work. Ask them to book or share it. Five warm messages beat any amount of posting.'],
-    cta: 'Copy your page link',
+    lines: ['Send your page link to someone who already knows your work. Invite them to take a look, book, or share it.'],
+    cta: 'View your Space page',
     path: 'public',
   },
   membership: {
     subject: 'Three days in. Invite your regulars.',
-    lines: ['Your regulars are your first members. Send each of them your page link and tell them why you moved your schedule here.'],
-    cta: 'Copy your page link',
+    lines: ['Invite your regulars to look at your page. Share the next class or membership they can join.'],
+    cta: 'View your Space page',
     path: 'public',
   },
   ticketed: {
@@ -124,26 +124,26 @@ const DAY_3: Record<OperatorFocus, Step> = {
   },
   donations: {
     subject: 'Three days in. Ask one supporter.',
-    lines: ['Send your page to one person who already cares about your work, with a plain note on what a gift does. One real ask teaches you more than ten posts.'],
-    cta: 'Copy your page link',
+    lines: ['Send your page to one person who already cares about your work, with a plain note on what a gift does. Invite them to ask a question or share the page.'],
+    cta: 'View your Space page',
     path: 'public',
   },
   venue: {
     subject: 'Three days in. Tell hosts you are open.',
     lines: ['Send your page to three people who run events: a teacher, a promoter, a group leader. Ask which dates they would want.'],
-    cta: 'Copy your page link',
+    cta: 'View your Space page',
     path: 'public',
   },
   network: {
     subject: 'Three days in. Invite a chapter lead.',
-    lines: ['Pick one person in another city who already runs gatherings and send them your network page. One lead who says yes is worth more than a list.'],
-    cta: 'Copy your page link',
+    lines: ['Pick one person in another city who already runs gatherings and send them your network page. Ask whether they would like to talk about starting a chapter.'],
+    cta: 'View your Space page',
     path: 'public',
   },
   general: {
     subject: 'Three days in. Share your page once.',
     lines: ['Send your page link to five people who already know your work, and ask them to take one step on it.'],
-    cta: 'Copy your page link',
+    cta: 'View your Space page',
     path: 'public',
   },
 }
@@ -151,13 +151,13 @@ const DAY_3: Record<OperatorFocus, Step> = {
 const DAY_7: Record<OperatorFocus, Step> = {
   packages: {
     subject: 'A week in. See what happened.',
-    lines: ['Open your Space and look at who visited and who booked. If nobody booked yet, change one thing on your offer and share the link again.'],
+    lines: ['Open your Space and review your bookings. Check the offer details and the next available dates before you share it again.'],
     cta: 'Open your Space',
     path: 'manage',
   },
   membership: {
     subject: 'A week in. See who joined.',
-    lines: ['Open your Space and look at who joined and who came to a class. Message the people who looked and did not join. Most only needed a nudge.'],
+    lines: ['Open your Space and review your members and class registrations. Share the next class with people who asked to hear from you.'],
     cta: 'Open your Space',
     path: 'manage',
   },
@@ -169,7 +169,7 @@ const DAY_7: Record<OperatorFocus, Step> = {
   },
   donations: {
     subject: 'A week in. Thank your first supporters.',
-    lines: ['Open your Space and look at who gave or signed up. A short personal thank you now is what turns a first gift into a second.'],
+    lines: ['Open your Space and look at who gave or signed up. Send a short personal thank you and share what their support helps you do.'],
     cta: 'Open your Space',
     path: 'manage',
   },
@@ -187,7 +187,7 @@ const DAY_7: Record<OperatorFocus, Step> = {
   },
   general: {
     subject: 'A week in. See what happened.',
-    lines: ['Open your Space and look at who visited and what they did. Change one thing, then share your link again.'],
+    lines: ['Open your Space and review what you have published. Check the dates, prices, and next step before you share your link again.'],
     cta: 'Open your Space',
     path: 'manage',
   },
@@ -212,8 +212,8 @@ export function buildOperatorEmail(parts: {
   const why = `You are receiving this because you run ${parts.spaceName} on Frequency.`
   const html = emailShell(
     [
-      `<p style="${EMAIL_P}color:${palette.text};">${escapeHtml(greeting)}</p>`,
-      ...lines.map((p) => `<p style="${EMAIL_P}color:${palette.text};">${escapeHtml(p)}</p>`),
+      `<p data-fq="fq-p" style="${EMAIL_P}color:${palette.text};">${escapeHtml(greeting)}</p>`,
+      ...lines.map((p) => `<p data-fq="fq-p" style="${EMAIL_P}color:${palette.text};">${escapeHtml(p)}</p>`),
       emailButton(step.cta, href),
     ].join('\n'),
     { text: escapeHtml(why), unsubscribe: true },

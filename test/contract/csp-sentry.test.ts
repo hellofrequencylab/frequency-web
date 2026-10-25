@@ -14,10 +14,10 @@ async function policy(dsn: string) {
   return rules.flatMap(rule => rule.headers).find(header => header.key === 'Content-Security-Policy')!.value
 }
 
-it('permits only the configured ingest origin without leaking its credentials or project path', async () => {
-  const csp = await policy('https://public-key@o123.ingest.us.sentry.io/456')
+it('permits only the canonical audited ingest origin without leaking its credentials or project path', async () => {
+  const csp = await policy('https://public-key@o4512171150934016.ingest.us.sentry.io/456')
   const connect = csp.split(';').find(rule => rule.trim().startsWith('connect-src '))!
-  expect(connect.split(/\s+/)).toContain('https://o123.ingest.us.sentry.io')
+  expect(connect.split(/\s+/)).toContain('https://o4512171150934016.ingest.us.sentry.io')
   expect(csp).not.toContain('public-key')
   expect(csp).not.toContain('/456')
   expect(csp).not.toContain('*.sentry.io')
@@ -26,10 +26,11 @@ it('permits only the configured ingest origin without leaking its credentials or
   expect(csp).not.toContain("'unsafe-eval'")
 })
 
-it.each(['', 'not-a-dsn', 'javascript:alert(1)', 'http://example.test/1'])('keeps unsafe or absent telemetry configuration out of the policy: %s', async dsn => {
+it.each(['', 'not-a-dsn', 'javascript:alert(1)', 'http://example.test/1', 'https://public-key@unrelated.ingest.us.sentry.io/456'])('does not expand the audited policy with unrelated or unsafe configuration: %s', async dsn => {
   const csp = await policy(dsn)
   expect(csp).not.toContain('example.test')
   expect(csp).not.toContain('javascript:')
   expect(csp).not.toContain('not-a-dsn')
-  expect(csp).not.toContain('sentry.io')
+  expect(csp).not.toContain('unrelated.ingest.us.sentry.io')
+  expect(csp).toContain('https://o4512171150934016.ingest.us.sentry.io')
 })

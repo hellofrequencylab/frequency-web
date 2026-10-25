@@ -112,7 +112,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   ref,
 ) {
   return (
-    <span className={cn(FREQUENCY ? 'mu-select' : 'relative block w-full', wrapperClassName)}>
+    <span className={cn(FREQUENCY ? cn('mu-select', tone === 'active' && 'mu-active') : 'relative block w-full', wrapperClassName)}>
       <select ref={ref} className={cn(selectWithTone(tone), className)} {...props}>
         {emptyLabel !== undefined ? <option value="">{emptyLabel}</option> : null}
         {options?.map((option) => {
