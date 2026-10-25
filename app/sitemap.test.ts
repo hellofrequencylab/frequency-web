@@ -176,7 +176,14 @@ vi.mock('@/app/discover/events/_data', () => ({ getCityCategoryHubs: async () =>
 const cityReads = vi.hoisted(() => ({ places: [] as { slug: string; eventCount?: number }[], density: [] as { slug: string }[] }))
 vi.mock('@/app/discover/cities/_towns', () => ({ listDiscoverCities: async () => cityReads.places }))
 vi.mock('@/app/discover/cities/_data', () => ({ listDensityCities: async () => cityReads.density }))
-vi.mock('@/lib/supabase/public', () => ({ createPublicClient: () => ({ rpc: async () => ({ data: [] }) }) }))
+const organizerRead = vi.hoisted(() => ({
+  rpc: vi.fn(async (_name: string, _args: unknown) => ({
+    data: [] as { handle: string; next_starts: string | null }[],
+    error: null as { message: string; code?: string } | null,
+    status: 200,
+  })),
+}))
+vi.mock('@/lib/supabase/public', () => ({ createPublicClient: () => ({ rpc: organizerRead.rpc }) }))
 // The admin client answers per TABLE, so a LIVE-331 test can hand the real practices reader the
 // exact resolved shape supabase-js produces under a database window, while every other read this
 // route makes through the admin client keeps resolving the healthy empty it always did.
@@ -211,6 +218,8 @@ vi.mock('@/lib/supabase/admin', () => ({
 import sitemap from './sitemap'
 
 beforeEach(() => {
+  organizerRead.rpc.mockReset()
+  organizerRead.rpc.mockResolvedValue({ data: [], error: null, status: 200 })
   showsBatch.mockClear()
   profileTabs.rows = []
   readers.journeys = async () => []
@@ -716,5 +725,48 @@ describe('app/sitemap section read failures', () => {
     // The row's own probe, kept beside the behaviour it measures: the silent form must be gone.
     const src = readFileSync('app/sitemap.ts', 'utf8')
     expect(src.match(/\.catch\(\(\) => \[\]\)/g)).toBeNull()
+  })
+})
+
+
+describe('organizer sitemap read failures', () => {
+  it('keeps the public organizer RPC and emits returned handles without invented lastmod', async () => {
+    organizerRead.rpc.mockResolvedValueOnce({ data: [{ handle: 'public-host', next_starts: '2026-12-01' }], error: null, status: 200 })
+    const entry = (await sitemap()).find(e => e.url.endsWith('/organizer/public-host'))
+    expect(entry).toMatchObject({ url: `${SITE}/discover/events/organizer/public-host` })
+    expect(entry?.lastModified).toBeUndefined()
+    expect(organizerRead.rpc).toHaveBeenCalledWith('public_organizer_handles', { _limit: 500 })
+  })
+
+  it('treats a healthy empty organizer read as empty without an error log', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      expect((await sitemap()).some(e => e.url.includes('/organizer/'))).toBe(false)
+      expect(log).not.toHaveBeenCalled()
+    } finally { log.mockRestore() }
+  })
+
+  it.each(['resolved HTTP 503', 'thrown fetch failure'])('abandons regeneration for organizer transport: %s', async kind => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      if (kind === 'resolved HTTP 503') organizerRead.rpc.mockResolvedValueOnce({ data: [], error: { message: 'edge unavailable', code: '' }, status: 503 })
+      else organizerRead.rpc.mockRejectedValueOnce(new TypeError('fetch failed'))
+      await expect(sitemap()).rejects.toMatchObject({ name: 'SitemapTransientReadError' })
+      expect(log).toHaveBeenCalledTimes(1)
+      expect(String(log.mock.calls[0][0])).toContain('organizers read failed on TRANSPORT')
+    } finally { log.mockRestore() }
+  })
+
+  it.each([403, 503])('keeps a real PostgREST error deterministic even at organizer HTTP %s', async status => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      organizerRead.rpc.mockResolvedValueOnce({ data: [], error: { message: 'permission denied', code: '42501' }, status })
+      const entries = await sitemap()
+      expect(entries.some(e => e.url.includes('/organizer/'))).toBe(false)
+      expect(entries.map(e => e.url)).toContain(`${SITE}/spaces/alpha`)
+      expect(log).toHaveBeenCalledTimes(1)
+      expect(String(log.mock.calls[0][0])).toContain('organizers read failed')
+      expect(String(log.mock.calls[0][0])).not.toContain('TRANSPORT')
+    } finally { log.mockRestore() }
   })
 })

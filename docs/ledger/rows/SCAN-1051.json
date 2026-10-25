@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-1051",
+  "title": "Preserve organizer sitemap URLs across transient database failures",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": { "file": "app/sitemap.ts", "ref": "getOrganizerRoutes; resolved RPC error/status and existing failSection classifier" },
+  "detail": "The public_organizer_handles sitemap reader previously ignored resolved RPC errors and caught all thrown failures as an empty list. A regeneration during an edge outage could therefore publish an organizer-free sitemap for the cache interval. Preserve both HTTP status and PostgREST error code, and route the reader's catch through the existing failSection policy: transport throws SitemapTransientReadError to abandon regeneration; deterministic database answers log and empty only that section; healthy empty results remain quiet. The existing public RPC,500cap,privacy boundary and absence of invented lastmod remain unchanged. No new retry policy, query privilege, schema or production data change. Six new cases drive the actual sitemap route with a scripted public SDK;36sitemap cases pass. A cheap probe evaluates actual reader and shared classifier bodies against scripted RPC answers with no SDK/network fallback. Two controls restoring silent catch or ignoring resolved errors fail at the intended rejection assertion. This is source/mocked route proof; deployed cache preservation or search indexing is not claimed. The other five legacy sitemap readers remain separately open underSCAN1052.",
+  "closed": "2026-10-25",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/sitemap-organizer-failure.mjs", "note": "Actual organizer reader/classifier code: public RPC and500cap preserved; healthy empty is quiet; resolved503 and thrown fetch fail regeneration;42501 remains deterministic even at503." }
+}
