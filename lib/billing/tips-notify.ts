@@ -103,13 +103,13 @@ export async function notifyTipRecipient(tip: SucceededTip): Promise<void> {
 
 export function tipEmailHtml(p: { recipientName: string; tipperName: string; amount: string; note: string | null }): string {
   const noteBlock = p.note
-    ? `<p style="${EMAIL_P}color:${EMAIL_MUTED};border-left:3px solid ${EMAIL_RULE};padding-left:12px;">${escapeHtml(p.note)}</p>`
+    ? `<p data-fq="fq-muted" style="${EMAIL_P}color:${EMAIL_MUTED};border-left:3px solid ${EMAIL_RULE};padding-left:12px;">${escapeHtml(p.note)}</p>`
     : ''
   return emailShell(`
-<p style="${EMAIL_P}color:${EMAIL_INK};">Hi ${escapeHtml(p.recipientName)},</p>
-<p style="${EMAIL_P}color:${EMAIL_INK};"><strong>${escapeHtml(p.tipperName)}</strong> sent you a <strong>${escapeHtml(p.amount)}</strong> tip on Frequency.</p>
+<p data-fq="fq-p" style="${EMAIL_P}color:${EMAIL_INK};">Hi ${escapeHtml(p.recipientName)},</p>
+<p data-fq="fq-p" style="${EMAIL_P}color:${EMAIL_INK};"><strong>${escapeHtml(p.tipperName)}</strong> sent you a <strong>${escapeHtml(p.amount)}</strong> tip on Frequency.</p>
 ${noteBlock}
-<p style="${EMAIL_P}color:${EMAIL_MUTED};">Frequency takes nothing from a tip. The full amount goes to your connected payout account and lands on your usual payout schedule.</p>
+<p data-fq="fq-muted" style="${EMAIL_P}color:${EMAIL_MUTED};">Frequency charges no platform fee on tips. Card processing still applies. Stripe manages payouts to your bank.</p>
 `)
 }
 
@@ -122,7 +122,7 @@ export function tipEmailText(p: { recipientName: string; tipperName: string; amo
   if (p.note) lines.push('', `"${p.note}"`)
   lines.push(
     '',
-    'Frequency takes nothing from a tip. The full amount goes to your connected payout account and lands on your usual payout schedule.',
+    'Frequency charges no platform fee on tips. Card processing still applies. Stripe manages payouts to your bank.',
   )
   return lines.join('\n')
 }

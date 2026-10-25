@@ -626,7 +626,10 @@ export function PricingCalculator({ model }: { model: CalcModel }) {
         v.clientHeight -
         parseFloat(cs.paddingTop) -
         parseFloat(cs.paddingBottom);
-      setVisS(Math.max(120, Math.floor(Math.min(wd, ht))));
+      // A phone's illustration contributes to this flowing row's own height.
+      // Fit its width directly so a transient small viewport cannot leave the
+      // child and its parent locked into a second, smaller fixed point.
+      setVisS(Math.max(120, Math.floor(naturalFlow() ? wd : Math.min(wd, ht))));
     };
     const ro = new ResizeObserver(() => measure());
     if (visRef.current) ro.observe(visRef.current);

@@ -125,7 +125,7 @@ export function ProductCardEditor({
     <div className="space-y-3">
       <p className="text-2xs leading-relaxed text-muted">
         Search a maker or Space, then pick one of their products. The card pulls its photo, title, price, and
-        link from the live catalog when the email sends, so it never goes stale.
+        link from the live catalog when the email sends. Review the selected item before sending.
       </p>
 
       {/* Current selection summary, or the search flow. */}

@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+vi.mock('@/lib/theme/design', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/theme/design')>(),
+  SITE_DESIGN: 'frequency',
+}))
+
+import { palette } from '@/lib/theme/palette'
+
 // THE RECEIPT SEAM (lib/billing/receipt-email.ts, LIVE-344). Every money path's receipt is composed
 // and sent here, so the guarantees are pinned once:
 //   1. sendMoneyReceipt enqueues EXACTLY ONE email, through the outbox, for a payer with an address.
@@ -292,7 +299,8 @@ describe('the rendered message', () => {
     const html = await receiptHtml(content)
     expect(html).not.toContain('Unsubscribe or manage emails')
     expect(html).not.toContain('/settings/notifications')
-    expect(html).toMatch(/color:#A89E8C;?">[^<]+</)
+    expect(html).toContain(`color:${palette.textMuted}`)
+    expect(html).toContain('802 Caminito Azul, Carlsbad, CA 92011')
   })
 
   it('greets a payer with no name plainly', () => {

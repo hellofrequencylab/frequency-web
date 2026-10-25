@@ -166,22 +166,22 @@ export function buildContactLeadEmail(parts: {
   const safeName = escapeHtml(parts.ownerName)
   const safeSpace = escapeHtml(parts.spaceName)
   const consentLine = parts.optedIn
-    ? 'They ticked the box to hear from you, so they are on your list.'
+    ? 'They ticked the box to hear from you.'
     : 'They did not opt in to your list, so reply to them directly.'
   const bodyHtml = parts.preview
-    ? `<p style="${EMAIL_P}color:${palette.text};white-space:pre-wrap;border-left:3px solid ${palette.emailBorder};padding-left:12px;">${escapeHtml(parts.preview)}</p>`
-    : `<p style="${EMAIL_P}color:${palette.textMuted};">They did not leave a message.</p>`
+    ? `<p data-fq="fq-p" style="${EMAIL_P}color:${palette.text};white-space:pre-wrap;border-left:3px solid ${palette.emailBorder};padding-left:12px;">${escapeHtml(parts.preview)}</p>`
+    : `<p data-fq="fq-muted" style="${EMAIL_P}color:${palette.textMuted};">They did not leave a message.</p>`
   // A message the contact allowance kept out of the CRM still reaches the owner, with the reason.
   const limitLine = parts.keptOutOfCrm
-    ? 'Your CRM is at its contact limit, so they were not added to it. Reply to this email to answer them.'
+    ? 'We could not confirm a contact record for this message. Reply to this email to answer them.'
     : null
   const html = emailShell(
     [
-      `<p style="${EMAIL_P}color:${palette.text};">Hi ${safeName},</p>`,
-      `<p style="${EMAIL_P}color:${palette.text};"><strong>${safeWho}</strong> just sent a message through the contact form on ${safeSpace}.</p>`,
+      `<p data-fq="fq-p" style="${EMAIL_P}color:${palette.text};">Hi ${safeName},</p>`,
+      `<p data-fq="fq-p" style="${EMAIL_P}color:${palette.text};"><strong>${safeWho}</strong> just sent a message through the contact form on ${safeSpace}.</p>`,
       bodyHtml,
-      `<p style="${EMAIL_P}color:${palette.textMuted};">${escapeHtml(consentLine)}</p>`,
-      ...(limitLine ? [`<p style="${EMAIL_P}color:${palette.textMuted};">${escapeHtml(limitLine)}</p>`] : []),
+      `<p data-fq="fq-muted" style="${EMAIL_P}color:${palette.textMuted};">${escapeHtml(consentLine)}</p>`,
+      ...(limitLine ? [`<p data-fq="fq-muted" style="${EMAIL_P}color:${palette.textMuted};">${escapeHtml(limitLine)}</p>`] : []),
       `${emailButton(`Open your CRM`, parts.crmUrl)}`,
     ].join('\n'),
     // Account mail about the owner's own Space: no membership claim and no unsubscribe control.

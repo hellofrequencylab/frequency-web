@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 // ── The three states, as standalone HTML (no shell: this is reached from an email) ──────────────
 
 const DONE = `<h1 style="font-size:22px;margin:0 0 12px;">You're unsubscribed</h1>
-       <p style="color:#555;line-height:1.6;margin:0;">We won't email you again from Frequency. Sorry for the interruption.</p>`
+       <p style="color:#555;line-height:1.6;margin:0;">You are unsubscribed from these follow-up emails.</p>`
 
 const INVALID = `<h1 style="font-size:22px;margin:0 0 12px;">Link expired</h1>
        <p style="color:#555;line-height:1.6;margin:0;">This unsubscribe link isn't valid. If you keep receiving emails, reply to one and we'll remove you.</p>`
@@ -75,8 +75,8 @@ const INVALID = `<h1 style="font-size:22px;margin:0 0 12px;">Link expired</h1>
  *  click does (CONTENT-VOICE §10, no em dashes). */
 function confirm(contactId: string, token: string): string {
   const action = `/u/scan?c=${encodeURIComponent(contactId)}&t=${encodeURIComponent(token)}`
-  return `<h1 style="font-size:22px;margin:0 0 12px;">Unsubscribe from Frequency email?</h1>
-       <p style="color:#555;line-height:1.6;margin:0 0 20px;">We will stop emailing you at this address.</p>
+  return `<h1 style="font-size:22px;margin:0 0 12px;">Stop these follow-up emails?</h1>
+       <p style="color:#555;line-height:1.6;margin:0 0 20px;">This stops these follow-up emails. It does not change other email preferences.</p>
        <form method="post" action="${escapeAttr(action)}">
          <button type="submit" style="font:inherit;font-weight:600;background:#1a1a1a;color:#fff;border:0;border-radius:8px;padding:10px 18px;cursor:pointer;">Unsubscribe</button>
        </form>

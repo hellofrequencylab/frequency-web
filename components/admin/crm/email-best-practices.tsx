@@ -82,12 +82,12 @@ interface Practice {
 }
 
 const PLAYBOOK: Practice[] = [
-  { icon: Type, title: 'Write the subject like a text', body: 'Keep it under ~50 characters, specific, and human. Curiosity plus a clear benefit beats hype and spammy words.' },
+  { icon: Type, title: 'Write the subject like a text', body: 'Keep it under ~50 characters, specific, and human. Say what the email contains without hype or spammy words.' },
   { icon: AlignLeft, title: 'Use the preheader', body: 'The preheader is a second subject line in the inbox. Extend the hook, do not repeat the subject or leave it blank.' },
-  { icon: UserRound, title: 'Send from a real person', body: 'A named human (like Daniel Tyack) opens better than a brand or a noreply. Replies reaching a real inbox builds trust.' },
-  { icon: Clock, title: 'Time it well', body: 'Mid-morning on Tuesday through Thursday tends to open best. Watch your own numbers and repeat what works.' },
-  { icon: Target, title: 'One clear call to action', body: 'Give each email a single job. One primary button, repeated if needed, beats a wall of competing links.' },
-  { icon: Sparkles, title: 'Keep the list warm', body: 'Email people who asked to hear from you, on a steady cadence. A warm, engaged list is the biggest lever on open rate.' },
+  { icon: UserRound, title: 'Send from a real person', body: 'Choose a sender people recognize. Use a monitored reply address when you invite replies.' },
+  { icon: Clock, title: 'Time it well', body: 'Choose a time that suits your audience. Compare your own results before changing the schedule.' },
+  { icon: Target, title: 'One clear call to action', body: 'Give each email a single job. Use one primary button, repeated if needed, so the next step is clear.' },
+  { icon: Sparkles, title: 'Keep the list warm', body: 'Email people who asked to hear from you, on a steady cadence. Review engagement and respect people’s preferences.' },
 ]
 
 export function EmailBestPractices({ overview }: { overview: MarketingEmailOverview }) {

@@ -6,6 +6,19 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { SegmentedControl, SegmentedLinks } from './segmented-control'
 
+vi.mock('@/lib/theme/design', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/theme/design')>(), SITE_DESIGN: 'frequency',
+}))
+import {readFileSync as readFrequencyCss} from 'node:fs'
+import {createRequire as frequencyRequire} from 'node:module'
+const frequencyPostcss = frequencyRequire(frequencyRequire(import.meta.url).resolve('@tailwindcss/postcss'))('postcss')
+const frequencyRules: {selector: string; nodes: {type: string; prop?: string; value?: string}[]; parent: {type: string; params?: string}}[] = []
+for (const file of ['kit-members','members-ui','core']) frequencyPostcss.parse(readFrequencyCss(`app/themes/frequency/${file}.css`,'utf8')).walkRules((rule: typeof frequencyRules[number])=>frequencyRules.push(rule))
+function frequencyStyle(selector: string, prop: string, value?: string, media?: string) {
+  return frequencyRules.some(rule=>rule.selector.includes(selector) && (!media || (rule.parent.type==='atrule' && rule.parent.params===media)) && rule.nodes.some(node=>node.type==='decl' && node.prop===prop && (value===undefined || node.value===value)))
+}
+
+
 vi.mock('next/link', () => ({
   default: ({ href, children, scroll: _scroll, ...rest }: { href: string; children: React.ReactNode; scroll?: boolean }) => (
     <a href={href} {...rest}>
@@ -49,7 +62,7 @@ describe('SegmentedControl (buttons)', () => {
     const el = mount(<SegmentedControl label="Calendar views" value="list" onChange={() => {}} segments={VIEWS} />)
     const group = el.querySelector('[role="group"]')
     expect(group?.getAttribute('aria-label')).toBe('Calendar views')
-    expect(group?.className).toContain('border-border')
+    expect(group?.className).toContain('mu-seg'); expect(frequencyStyle('.mu-seg','background')).toBe(true)
     // THE KIT'S OWN MARKER (LIVE-475): what a caller's render test reads to tell a real adoption
     // from an import that is still spelled correctly over a hand-rolled row.
     expect(group?.getAttribute('data-segmented')).toBe('buttons')
@@ -59,9 +72,9 @@ describe('SegmentedControl (buttons)', () => {
     expect(buttons.map((b) => b.getAttribute('type'))).toEqual(['button', 'button', 'button'])
     // Ordinary buttons: Tab reaches each one, no roving tabindex.
     expect(buttons.every((b) => !b.hasAttribute('tabindex'))).toBe(true)
-    expect(buttons[1].className).toContain('bg-primary')
-    expect(buttons[1].className).toContain('text-on-primary')
-    expect(buttons[0].className).not.toContain('bg-primary')
+    expect(buttons[1].className).toContain('on')
+    expect(buttons[1].className).toContain('on'); expect(frequencyStyle('.mu-seg>.on','color','var(--fq-surface-card)')).toBe(true)
+    expect(buttons[0].className).not.toContain('on')
     // Segments respect --tap-min the way Button does, and no segment carries its own border.
     expect(buttons[0].className).toContain('tap-target')
     expect(buttons[0].className).not.toMatch(/(^|\s)border(\s|$)/)
@@ -92,7 +105,7 @@ describe('SegmentedControl (buttons)', () => {
     const row = el.querySelector('[data-row="cancelled"]') as HTMLButtonElement
     expect(row.getAttribute('aria-pressed')).toBe('true')
     expect(row.className).toContain('line-through')
-    expect(row.className).not.toContain('bg-primary')
+    expect(row.className).not.toContain('on')
     expect(el.querySelector('[role="group"]')?.className).toContain('flex-col')
   })
 })
@@ -116,8 +129,8 @@ describe('SegmentedLinks (navigation)', () => {
     expect(links.map((a) => a.textContent)).toEqual(['Classifieds', 'Housing'])
     expect(links.map((a) => a.getAttribute('href'))).toEqual(['/classifieds', '/housing'])
     expect(links.map((a) => a.getAttribute('aria-current'))).toEqual([null, 'page'])
-    expect(links[1].className).toContain('bg-primary')
-    expect(links[0].className).not.toContain('bg-primary')
+    expect(links[1].className).toContain('on')
+    expect(links[0].className).not.toContain('on')
     expect(el.querySelectorAll('button')).toHaveLength(0)
     // The pill row is retired: no segment is a pill.
     expect(links.every((a) => !a.className.includes('rounded-pill'))).toBe(true)
@@ -133,16 +146,16 @@ describe('SegmentedControl rest, hover and focus-visible', () => {
     const el = mount(<SegmentedControl label="Calendar views" value="admin" onChange={() => {}} segments={VIEWS} />)
     const idle = el.querySelectorAll('button')[1]!
     expect(idle.getAttribute('aria-pressed')).toBe('false')
-    expect(idle.className).toContain('text-muted')
-    expect(idle.className).not.toContain('bg-primary')
+    expect(idle.className).not.toContain('on'); expect(frequencyStyle('.mu-seg>*','color','var(--fq-text-muted)')).toBe(true)
+    expect(idle.className).not.toContain('on')
   })
 
   it('hover: only the unselected segments answer the pointer, and the filled one does not move', () => {
     const el = mount(<SegmentedControl label="Calendar views" value="admin" onChange={() => {}} segments={VIEWS} />)
     const [selected, idle] = Array.from(el.querySelectorAll('button'))
-    expect(idle!.className).toContain('hover:bg-surface-elevated')
-    expect(idle!.className).toContain('hover:text-text')
-    expect(selected!.className).not.toContain('hover:bg-surface-elevated')
+    expect(idle!.className).not.toContain('on'); expect(frequencyStyle('.mu-seg>*:hover','background')).toBe(true)
+    expect(idle!.className).not.toContain('on'); expect(frequencyStyle('.mu-seg>*:hover','color','var(--fq-text-strong)')).toBe(true)
+    expect(selected!.className).toContain('on'); expect(frequencyStyle('.mu-seg>.on:hover','background','var(--fq-text-strong)')).toBe(true)
   })
 
   it('focus-visible: every segment is a real focusable control and its ring is never clipped', () => {
