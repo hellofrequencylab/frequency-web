@@ -306,13 +306,13 @@ function orgContactLine(): string {
 function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: {
   recipientName: string | null; inviterName: string; joinUrl: string; unsubscribeUrl: string
 }): string {
-  const who = escapeHtml(inviterName || 'A friend')
+  const who = escapeHtml(inviterName || 'Someone on Frequency')
   const hey = recipientName ? `Hey ${escapeHtml(recipientName)}` : 'Hey'
-  const footer = `A one-time invite from ${who}, we won't add you to any marketing list. Not interested? <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe</a> and you won't hear from us again.<br>Frequency™ · ${orgContactLine()}`
+  const footer = `A one-time invitation from ${who}. This invitation does not subscribe you to marketing emails. <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from these follow-up emails</a>.<br>Frequency™ · ${orgContactLine()}`
   return emailShell(`
     <h1 data-fq="fq-h1" style="${h1Style}">${hey}</h1>
     <p data-fq="fq-p" style="${pStyle}">
-      Your friend <strong>${who}</strong> invited you to join <strong>The Quest</strong>. Hopefully they
+      <strong>${who}</strong> invited you to join <strong>The Quest</strong>. Hopefully they
       told you a little about our mission to create and connect community.
     </p>
     <p data-fq="fq-p" style="${pStyle}">
@@ -322,22 +322,22 @@ function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
     <p style="margin:0 0 28px;">
       ${emailButton(`Join us here`, `${joinUrl}`)}
     </p>
-    <p style="${pStyle}margin-bottom:8px;">Frequency™</p>
-    <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-p" style="${pStyle}margin-bottom:8px;">Frequency™</p>
+    <p data-fq="fq-muted" style="${pStyle}font-size:13px;color:${palette.textMuted};">
       Button not working? Paste this into your browser:<br>
-      <a href="${joinUrl}" style="color:${palette.emailSubtle};">${joinUrl}</a>
+      <a href="${joinUrl}" style="color:${palette.textMuted};overflow-wrap:anywhere;word-break:break-all;">${joinUrl}</a>
     </p>
-  `, footer)
+  `, { text: footer, unsubscribe: false })
 }
 
 function scanIntroText({ recipientName, inviterName, joinUrl, unsubscribeUrl }: {
   recipientName: string | null; inviterName: string; joinUrl: string; unsubscribeUrl: string
 }): string {
-  const who = inviterName || 'A friend'
+  const who = inviterName || 'Someone on Frequency'
   const hey = recipientName ? `Hey ${recipientName}` : 'Hey'
   return `${hey}
 
-Your friend ${who} invited you to join The Quest. Hopefully they told you a little about our mission to create and connect community.
+${who} invited you to join The Quest. Hopefully they told you a little about our mission to create and connect community.
 
 We won't send a bunch of marketing emails, but we're happy to send you Quest reminders on your Journey once you're in.
 
@@ -345,7 +345,7 @@ Join us here: ${joinUrl}
 
 Frequency™
 
-A one-time invite from ${who}; we won't add you to any marketing list. To opt out so you never hear from us: ${unsubscribeUrl}
+A one-time invitation from ${who}. This invitation does not subscribe you to marketing emails. Unsubscribe from these follow-up emails: ${unsubscribeUrl}
 ${postalAddress()}`
 }
 
@@ -373,30 +373,29 @@ export async function sendSignupRecoveryEmail(params: {
 
 function signupRecoveryHtml({ firstName, resumeUrl }: { firstName: string | null; resumeUrl: string }): string {
   const heading = firstName
-    ? `${escapeHtml(firstName)}, your account is one step from done.`
-    : 'Your account is one step from done.'
+    ? `${escapeHtml(firstName)}, you can finish setting up your account.`
+    : 'Finish setting up your account.'
   const footer = `One note, sent once, because this address was used to start an account at Frequency. We will not add you to any list. If that was not you, ignore this and nothing happens.<br>Frequency™ · ${orgContactLine()}`
   return emailShell(`
     <h1 data-fq="fq-h1" style="${h1Style}">${heading}</h1>
     <p data-fq="fq-p" style="${pStyle}">
-      You started setting up a Frequency account and stopped partway. Picking it back up takes
-      about two minutes, and the same door at /join is still open.
+      You started setting up a Frequency account and stopped partway. Use the link below to pick up where you left off.
     </p>
     <p style="margin:0 0 28px;">
       ${emailButton(`Finish signing up`, `${resumeUrl}`)}
     </p>
-    <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="${pStyle}font-size:13px;color:${palette.textMuted};">
       Button not working? Paste this into your browser:<br>
-      <a href="${resumeUrl}" style="color:${palette.emailSubtle};">${resumeUrl}</a>
+      <a href="${resumeUrl}" style="color:${palette.textMuted};overflow-wrap:anywhere;word-break:break-all;">${resumeUrl}</a>
     </p>
-  `, footer)
+  `, { text: footer, unsubscribe: false })
 }
 
 function signupRecoveryText({ firstName, resumeUrl }: { firstName: string | null; resumeUrl: string }): string {
-  const heading = firstName ? `${firstName}, your account is one step from done.` : 'Your account is one step from done.'
+  const heading = firstName ? `${firstName}, you can finish setting up your account.` : 'Finish setting up your account.'
   return `${heading}
 
-You started setting up a Frequency account and stopped partway. Picking it back up takes about two minutes, and the same door at /join is still open.
+You started setting up a Frequency account and stopped partway. Use the link below to pick up where you left off.
 
 Finish signing up: ${resumeUrl}
 
@@ -573,10 +572,10 @@ function spaceFollowerReminderHtml({ recipientName, spaceName, eventTitle, whenL
     ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }, { label: 'Where', html: location ? `${escapeHtml(location)}` : '' }])}
     ${emailButton(`See the event`, `${eventUrl}`)}
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       You're getting this because you follow ${escapeHtml(spaceName)} and asked to hear about their events.
-      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a>.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.textMuted};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from event emails</a>.
     </p>
   `)
 }
@@ -860,7 +859,7 @@ function eventCancelledHtml({ recipientName, eventTitle, whenAbsolute, eventUrl,
   recipientName: string; eventTitle: string; whenAbsolute: string; eventUrl: string; refunded: boolean; unsubscribeUrl: string
 }): string {
   const refundLine = refunded
-    ? `<p data-fq="fq-p" style="${pStyle}"><strong>You've been fully refunded.</strong> The charge for your ticket has been reversed, it can take a few business days to land back on your original payment method.</p>`
+    ? `<p data-fq="fq-p" style="${pStyle}"><strong>A full refund has been requested for your ticket.</strong> Check your original payment method for the refund.</p>`
     : ''
   return emailShell(`
     ${emailKicker(`Event cancelled`)}
@@ -873,10 +872,10 @@ function eventCancelledHtml({ recipientName, eventTitle, whenAbsolute, eventUrl,
     ${refundLine}
     ${emailButton(`View event`, `${eventUrl}`)}
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       You're receiving this because you RSVP'd or held a ticket.
-      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a>.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.textMuted};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from event emails</a>.
     </p>
   `)
 }
@@ -885,7 +884,7 @@ function eventCancelledText({ recipientName, eventTitle, whenAbsolute, eventUrl,
   recipientName: string; eventTitle: string; whenAbsolute: string; eventUrl: string; refunded: boolean; unsubscribeUrl: string
 }): string {
   const refundLine = refunded
-    ? `\nYou've been fully refunded. The charge for your ticket has been reversed, it can take a few business days to land back on your original payment method.\n`
+    ? `\nA full refund has been requested for your ticket. Check your original payment method for the refund.\n`
     : ''
   return `Event cancelled: ${eventTitle}
 
@@ -930,12 +929,12 @@ export async function sendGuestEventCancelledEmail(params: {
   const refunded = params.refunded === true
   const greeting = guestGreeting(guestName)
   const releasedHtml = refunded
-    ? `<p data-fq="fq-p" style="${pStyle}"><strong>Your ticket has been refunded in full.</strong> The charge is being reversed, and it can take a few business days to land back on your original payment method.</p>`
+    ? `<p data-fq="fq-p" style="${pStyle}"><strong>A full refund has been requested for your ticket.</strong> Check your original payment method for the refund.</p>`
     : ''
   const releasedText = refunded
-    ? `\nYour ticket has been refunded in full. The charge is being reversed, and it can take a few business days to land back on your original payment method.\n`
+    ? `\nA full refund has been requested for your ticket. Check your original payment method for the refund.\n`
     : ''
-  const reason = refunded ? 'buy a ticket to' : 'RSVP to'
+  const reason = refunded ? 'buy a ticket to' : 'hold a place at'
 
   await enqueueEmail({
     to,
@@ -945,19 +944,19 @@ export async function sendGuestEventCancelledEmail(params: {
       <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
       <p data-fq="fq-p" style="${pStyle}">
         ${escapeHtml(greeting)}this event has been cancelled and will not be going ahead.
-        ${refunded ? 'Your ticket has been released' : 'Your RSVP has been released'}, so there is nothing you need to do.
+        You do not need to attend.
       </p>
       ${releasedHtml}
       ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }])}
       ${emailButton(`View event`, `${eventUrl}`)}
       <hr data-fq="fq-rule" style="${dividerStyle}">
-      <p style="font-size:13px;color:${palette.emailSubtle};">
+      <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
         You are getting this because this address was used to ${reason} ${escapeHtml(eventTitle)}.
       </p>
-    `),
+    `, { text: `This email is about your place at ${escapeHtml(eventTitle)}.`, unsubscribe: false }),
     text: `Event cancelled: ${eventTitle}
 
-${greeting}this event has been cancelled and will not be going ahead. ${refunded ? 'Your ticket has been released' : 'Your RSVP has been released'}, so there is nothing you need to do.
+${greeting}this event has been cancelled and will not be going ahead. You do not need to attend.
 ${releasedText}
 When: ${whenAbsolute}
 
@@ -1053,10 +1052,10 @@ Add this ticket to an account: ${claimUrl}
       ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }, { label: 'Where', html: location ? `${escapeHtml(location)}` : '' }])}
       ${emailButton(`View event`, `${eventUrl}`)}${accountOfferHtml}
       <hr data-fq="fq-rule" style="${dividerStyle}">
-      <p style="font-size:13px;color:${palette.emailSubtle};">
+      <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
         ${footerHtml}
       </p>
-    `),
+    `, { text: `This email is about your place at ${escapeHtml(eventTitle)}.`, unsubscribe: false }),
     text: `${whenLabel}: ${eventTitle}
 
 ${greeting}${intro}
@@ -1105,10 +1104,10 @@ export async function sendMadeItEmail(params: {
   const nextLine = next ? `It meets next on ${next.whenAbsolute}: ${next.title}.` : null
   const friendLine = next ? 'Know someone who would like it? Send them this link and come together.' : null
   const offer = joinUrl
-    ? 'Join Frequency, free, and this RSVP moves into your account, with the next date on your calendar.'
+    ? 'Keep your event plans in one account. Use the link below to sign in or create an account.'
     : null
   const footer = joinUrl
-    ? `You are getting this once because this address was used to RSVP to ${eventTitle}. We will not email it again unless you join.`
+    ? `You are receiving this follow-up because this address was used for ${eventTitle}.`
     : `You are getting this because you said yes to ${eventTitle}.`
 
   await enqueueEmail({
@@ -1119,17 +1118,17 @@ export async function sendMadeItEmail(params: {
       <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
       <p data-fq="fq-p" style="${pStyle}">${escapeHtml(greeting)}${escapeHtml(intro)}</p>
       ${emailButton(`Yes, I made it`, `${madeItUrl}`)}
-      <p style="${pStyle}margin-top:16px;"><a href="${eventUrl}" style="color:${palette.emailPrimaryStrong};">Not this time</a></p>${next ? `
+      <p data-fq="fq-p" style="${pStyle}margin-top:16px;"><a href="${eventUrl}" style="color:${palette.emailPrimaryStrong};">Not this time</a></p>${next ? `
       <hr data-fq="fq-rule" style="${dividerStyle}">
       <p data-fq="fq-p" style="${pStyle}">${escapeHtml(nextLine ?? '')}</p>
       <p data-fq="fq-p" style="${pStyle}"><a href="${next.url}" style="color:${palette.emailPrimaryStrong};font-weight:700;">See the next one</a></p>
-      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(friendLine ?? '')}<br><a href="${next.shareUrl}" style="color:${palette.emailPrimaryStrong};">${escapeHtml(next.shareUrl)}</a></p>` : ''}${offer ? `
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(friendLine ?? '')}<br><a href="${next.shareUrl}" style="color:${palette.emailPrimaryStrong};overflow-wrap:anywhere;word-break:break-all;">${escapeHtml(next.shareUrl)}</a></p>` : ''}${offer ? `
       <hr data-fq="fq-rule" style="${dividerStyle}">
       <p data-fq="fq-p" style="${pStyle}">${escapeHtml(offer)}</p>
-      ${emailButton(`Find your Circle`, `${joinUrl}`)}` : ''}
+      ${emailButton(`Set up your account`, `${joinUrl}`)}` : ''}
       <hr data-fq="fq-rule" style="${dividerStyle}">
-      <p style="font-size:13px;color:${palette.emailSubtle};">${escapeHtml(footer)}${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event emails</a>` : ''}</p>
-    `),
+      <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">${escapeHtml(footer)}${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from event emails</a>` : ''}</p>
+    `, { text: escapeHtml(footer), unsubscribe: !joinUrl }),
     text: `Did you make it to ${eventTitle}?
 
 ${greeting}${intro}
@@ -1143,7 +1142,7 @@ ${friendLine}
 ${next.shareUrl}
 ` : ''}${offer ? `
 ${offer}
-Find your Circle: ${joinUrl}
+Set up your account: ${joinUrl}
 ` : ''}
 ${footer}${unsubscribeUrl ? `
 Unsubscribe from event emails: ${unsubscribeUrl}` : ''}
@@ -1182,12 +1181,12 @@ export async function sendGuestEventUpdateEmail(params: {
       <p data-fq="fq-p" style="${pStyle}">${escapeHtml(body).replace(/\n/g, '<br>')}</p>
       ${emailButton(`View event`, `${eventUrl}`)}
       <hr data-fq="fq-rule" style="${dividerStyle}">
-      <p style="font-size:13px;color:${palette.emailSubtle};">
+      <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
         You are getting this because this address was used to buy a ticket to ${escapeHtml(eventTitle)},
         and the host sent an update to everyone holding one. If that was not you, or you would rather
         not hear from this event again, reply to this email and we will sort it out.
       </p>
-    `),
+    `, { text: `This email is about your ticket to ${escapeHtml(eventTitle)}.`, unsubscribe: false }),
     text: `Event update: ${updateTitle ? `${eventTitle}: ${updateTitle}` : eventTitle}
 
 Hi,
@@ -1247,10 +1246,10 @@ function eventUpdateHtml({ recipientName, eventTitle, updateTitle, body, eventUr
     <p data-fq="fq-p" style="${pStyle}">${escapeHtml(body).replace(/\n/g, '<br>')}</p>
     ${emailButton(`View event`, `${eventUrl}`)}
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       You're receiving this because you RSVP'd to this event.
-      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from dispatch emails</a>.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.textMuted};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from dispatch emails</a>.
     </p>
   `)
 }
@@ -1284,6 +1283,7 @@ export async function sendBookingConfirmationEmail(params: {
   to: string
   recipientName: string
   audience: 'member' | 'owner'
+  recipientIsGuest?: boolean
   spaceName: string
   serviceName: string | null
   whenAbsolute: string
@@ -1357,15 +1357,15 @@ function guestBookingConfirmHtml(p: {
     <p data-fq="fq-p" style="${pStyle}">Hi ${escapeHtml(p.guestName)}, we are holding this time for you. Confirm it below and it is yours.</p>
     <p data-fq="fq-p" style="${pStyle}">
       <strong>${escapeHtml(p.whenAbsolute)}</strong><br>
-      <span style="color:${palette.emailSubtle};">${p.durationMinutes} minute session with ${escapeHtml(p.spaceName)}</span>
+      <span data-fq="fq-muted" style="color:${palette.textMuted};">${p.durationMinutes} minute session with ${escapeHtml(p.spaceName)}</span>
     </p>
     <p style="margin:0 0 28px;">
       ${emailButton(`Confirm my booking`, `${p.confirmUrl}`)}
     </p>
-    <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="${pStyle}font-size:13px;color:${palette.textMuted};">
       The hold lasts ${p.holdMinutes} minutes. After that the time opens up again and you can book a fresh one.<br>
       If the button doesn't work, paste this into your browser:<br>
-      <a href="${p.confirmUrl}" style="color:${palette.emailSubtle};">${p.confirmUrl}</a>
+      <a href="${p.confirmUrl}" style="color:${palette.textMuted};overflow-wrap:anywhere;word-break:break-all;">${p.confirmUrl}</a>
     </p>
   `, guestBookingFooter(p.spaceName))
 }
@@ -1396,6 +1396,7 @@ If that was not you, ignore this email and nothing happens.`
 function bookingConfirmationHtml(p: {
   recipientName: string
   audience: 'member' | 'owner'
+  recipientIsGuest?: boolean
   spaceName: string
   serviceName: string | null
   whenAbsolute: string
@@ -1405,26 +1406,26 @@ function bookingConfirmationHtml(p: {
   madeWith?: { label: string; url: string } | null
 }): string {
   const eyebrow = p.audience === 'owner' ? 'New booking' : "You're booked"
-  const title = p.serviceName ?? `Session with ${escapeHtml(p.spaceName)}`
+  const title = p.serviceName ?? `Session with ${p.spaceName}`
   const intro =
     p.audience === 'owner'
       ? `Hi ${escapeHtml(p.recipientName)}, ${escapeHtml(p.otherPartyName ?? 'a member')} just booked a time with you.`
-      : `Hi ${escapeHtml(p.recipientName)}, your time with ${escapeHtml(p.spaceName)} is set. We added a calendar file to this email.`
+      : `Hi ${escapeHtml(p.recipientName)}, your time with ${escapeHtml(p.spaceName)} is set. Your booking details are below.`
   return emailShell(`
     ${emailKicker(`${eyebrow}`)}
     <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(String(title))}</h1>
     <p data-fq="fq-p" style="${pStyle}">${intro}</p>
     <p data-fq="fq-p" style="${pStyle}">
       <strong>${escapeHtml(p.whenAbsolute)}</strong><br>
-      <span style="color:${palette.emailSubtle};">${p.durationMinutes} minute session</span>
+      <span data-fq="fq-muted" style="color:${palette.textMuted};">${p.durationMinutes} minute session</span>
     </p>
     ${emailButton(`View booking`, `${p.manageUrl}`)}
     ${
       p.madeWith
-        ? `<p style="font-size:12px;color:${palette.emailFaint};margin:28px 0 0;"><a href="${p.madeWith.url}" style="color:${palette.emailFaint};">${escapeHtml(p.madeWith.label)}</a></p>`
+        ? `<p data-fq="fq-muted" style="font-size:12px;color:${palette.textMuted};margin:28px 0 0;"><a href="${p.madeWith.url}" style="color:${palette.textMuted};">${escapeHtml(p.madeWith.label)}</a></p>`
         : ''
     }
-  `)
+  `, p.recipientIsGuest ? { text: `This email is about your booking with ${escapeHtml(p.spaceName)}.`, unsubscribe: false } : undefined)
 }
 
 function bookingConfirmationText(p: {
@@ -1603,6 +1604,7 @@ export async function sendBookingCancelledEmail(params: {
   to: string
   recipientName: string
   audience: 'member' | 'owner'
+  recipientIsGuest?: boolean
   spaceName: string
   serviceName: string | null
   whenAbsolute: string
@@ -1622,7 +1624,7 @@ export async function sendBookingCancelledEmail(params: {
       <p data-fq="fq-p" style="${pStyle}"><strong>${escapeHtml(params.whenAbsolute)}</strong></p>
       ${reasonLine}
       ${emailButton(`Book another time`, `${params.bookUrl}`)}
-    `),
+    `, params.recipientIsGuest ? { text: `This email is about your booking with ${escapeHtml(params.spaceName)}.`, unsubscribe: false } : undefined),
     text: `Booking cancelled: ${params.serviceName ?? params.spaceName}
 
 Hi ${params.recipientName}, this booking has been cancelled.
@@ -1702,11 +1704,11 @@ function outreachNoteHtml({ recipientName, authorName, body, unsubscribeUrl }: {
     ${emailKicker(`A note from ${escapeHtml(authorName)}`)}
     ${paragraphs}
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       Hi ${escapeHtml(recipientName)}, you are getting this because ${escapeHtml(authorName)} leads your Circle on Frequency.
-      <a href="${BASE_URL}/notifications" style="color:${palette.emailSubtle};">See it in your notifications</a>
-      · <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from notes like this</a>.
+      <a href="${BASE_URL}/notifications" style="color:${palette.textMuted};">See it in your notifications</a>
+      · <a href="${BASE_URL}/settings/notifications" style="color:${palette.textMuted};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from notes like this</a>.
     </p>
   `)
 }
@@ -1749,20 +1751,20 @@ function optinConfirmHtml({ confirmUrl, firstName }: { confirmUrl: string; first
     <p data-fq="fq-p" style="${pStyle}">
       Someone entered this email to hear from Daniel Tyack, through Frequency. If that was
       you, confirm it below and you're on the list. Notes on Circles, practices, and events,
-      a few times a month. No spam.
+      a few times a month. You can unsubscribe from these notes anytime.
     </p>
     <p style="margin:0 0 28px;">
       ${emailButton(`Confirm my email`, `${confirmUrl}`)}
     </p>
-    <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="${pStyle}font-size:13px;color:${palette.textMuted};">
       If the button doesn't work, paste this into your browser:<br>
-      <a href="${confirmUrl}" style="color:${palette.emailSubtle};">${confirmUrl}</a>
+      <a href="${confirmUrl}" style="color:${palette.textMuted};overflow-wrap:anywhere;word-break:break-all;">${confirmUrl}</a>
     </p>
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="${pStyle}font-size:13px;color:${palette.emailSubtle};margin-bottom:0;">
-      Didn't do this? Ignore this email and nothing happens. You won't hear from us again.
+    <p data-fq="fq-muted" style="${pStyle}font-size:13px;color:${palette.textMuted};margin-bottom:0;">
+      Did not request this? You can ignore this email. Confirmation is required to join this list.
     </p>
-  `)
+  `, { text: `You are receiving this because this address was used to request Frequency notes.`, unsubscribe: false })
 }
 
 function optinConfirmText({ confirmUrl, firstName }: { confirmUrl: string; firstName: string | null }): string {
@@ -1773,9 +1775,9 @@ Someone entered this email to hear from Daniel Tyack, through Frequency. If that
 
 ${confirmUrl}
 
-Notes on Circles, practices, and events, a few times a month. No spam.
+Notes on Circles, practices, and events, a few times a month. You can unsubscribe from these notes anytime.
 
-Didn't do this? Ignore this email and nothing happens. You won't hear from us again.`
+Did not request this? You can ignore this email. Confirmation is required to join this list.`
 }
 
 // ── Subscribe welcome ("you're in") ───────────────────────────────────────────
@@ -1795,7 +1797,7 @@ export async function sendOptinWelcomeEmail(params: { to: string; firstName?: st
 
 function optinWelcomeHtml({ firstName, unsubscribeUrl }: { firstName: string | null; unsubscribeUrl: string }): string {
   const hi = firstName ? `You're in, ${escapeHtml(firstName)}.` : "You're in."
-  const footer = `You're getting this because you confirmed your email at Frequency. <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe</a> any time.<br>${orgContactLine()}`
+  const footer = `You're getting this because you confirmed your email at Frequency. <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe</a> any time.<br>${orgContactLine()}`
   return emailShell(`
     <h1 data-fq="fq-h1" style="${h1Style}">${hi}</h1>
     <p data-fq="fq-p" style="${pStyle}">
@@ -1803,10 +1805,9 @@ function optinWelcomeHtml({ firstName, unsubscribeUrl }: { firstName: string | n
       in the Circles, a practice worth trying, and the odd invite when something opens near you.
     </p>
     <p data-fq="fq-p" style="${pStyle}">
-      That's it. Real notes from a real person. If it ever stops being worth your inbox, the
-      unsubscribe link below always works.
+      That is it. Real notes from a real person. You can unsubscribe from these notes below.
     </p>
-  `, footer)
+  `, { text: footer, unsubscribe: false })
 }
 
 function optinWelcomeText({ firstName, unsubscribeUrl }: { firstName: string | null; unsubscribeUrl: string }): string {
@@ -1839,13 +1840,13 @@ const cardBodyStyle  = `padding:40px 40px 36px;font-family:${emailType.sans};`
 /** The stock hero crowning the card (emailType.hero): the photo, the wash and the wordmark in one image. */
 const heroStyle      = `display:block;border:0;width:100%;max-width:600px;height:auto;border-radius:23px 23px 0 0;font-family:${emailType.display};font-size:16px;font-weight:600;color:${palette.emailHeading};`
 const logoStyle      = `display:block;border:0;width:${emailType.wordmark.width}px;height:auto;font-family:${emailType.display};font-size:16px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;color:${palette.emailHeading};text-decoration:none;`
-const taglineStyle   = `font-family:${emailType.display};font-size:11px;font-weight:500;color:${palette.emailSubtle};letter-spacing:0.14em;text-transform:uppercase;margin:0 0 12px;line-height:1;`
+const taglineStyle   = `font-family:${emailType.display};font-size:11px;font-weight:500;color:${palette.textMuted};letter-spacing:0.14em;text-transform:uppercase;margin:0 0 12px;line-height:1;`
 const h1Style        = `font-family:${emailType.display};font-size:38px;font-weight:${emailType.displayWeight};color:${palette.emailHeading};margin:0 0 18px;line-height:1.04;letter-spacing:${emailType.displayTracking};`
 const pStyle         = `font-family:${emailType.sans};font-size:16px;color:${palette.emailBody};line-height:1.55;margin:0 0 20px;`
 const leadStyle      = `font-family:${emailType.display};font-size:17px;font-weight:${emailType.displayWeight};color:${palette.emailHeading};margin:0 0 10px;line-height:1.2;letter-spacing:-0.025em;`
 const btnStyle       = `display:inline-block;color:${palette.emailActionInk};font-family:${emailType.sans};font-size:15px;font-weight:600;line-height:1;text-decoration:none;padding:16px 24px;border-radius:999px;`
-const footerStyle    = `font-family:${emailType.sans};font-size:13px;color:${palette.emailSubtle};padding:28px 20px 0;text-align:center;line-height:1.6;`
-const unsubBtnStyle  = `color:${palette.emailSubtle};text-decoration:underline;`
+const footerStyle    = `font-family:${emailType.sans};font-size:13px;color:${palette.textMuted};padding:28px 20px 0;text-align:center;line-height:1.6;`
+const unsubBtnStyle  = `color:${palette.textMuted};text-decoration:underline;`
 const dividerStyle   = `border:none;border-top:1px solid ${palette.emailBorder};margin:28px 0;`
 
 /** The label style (.k in the member kit): an eyebrow over a headline, a section kicker. */
@@ -1887,7 +1888,7 @@ export function emailFacts(rows: { label: string; html: string }[]): string {
 
 /** One list row: a title and a quiet line, with a round pastel go on the right. Values are trusted HTML. */
 export function emailRow(title: string, meta: string, href: string): string {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" data-fq="fq-panel" style="width:100%;border-collapse:separate;background:${palette.emailSurfaceElevated};border:1px solid ${palette.emailBorder};border-radius:18px;margin:0 0 10px;"><tr><td style="padding:16px 8px 16px 20px;"><p data-fq="fq-strong" style="margin:0 0 3px;font-family:${emailType.sans};font-size:16px;font-weight:600;line-height:1.3;color:${palette.emailHeading};">${title}</p><p data-fq="fq-muted" style="margin:0;font-family:${emailType.sans};font-size:14px;line-height:1.4;color:${palette.emailSubtle};">${meta}</p></td><td width="64" align="center" style="padding:0 16px 0 8px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;"><tr><td data-fq="fq-btn" bgcolor="${palette.emailAction}" width="36" height="36" align="center" style="width:36px;height:36px;border-radius:18px;background:${palette.emailAction};${emailType.actionBackground ? `background-image:${emailType.actionBackground};` : ''}"><a href="${href}" style="display:block;width:36px;height:36px;line-height:36px;text-align:center;color:${palette.emailActionInk};font-family:${emailType.sans};font-size:16px;font-weight:600;text-decoration:none;">&rarr;</a></td></tr></table></td></tr></table>`
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" data-fq="fq-panel" style="width:100%;border-collapse:separate;background:${palette.emailSurfaceElevated};border:1px solid ${palette.emailBorder};border-radius:18px;margin:0 0 10px;"><tr><td style="padding:16px 8px 16px 20px;"><p data-fq="fq-strong" style="margin:0 0 3px;font-family:${emailType.sans};font-size:16px;font-weight:600;line-height:1.3;color:${palette.emailHeading};">${title}</p><p data-fq="fq-muted" style="margin:0;font-family:${emailType.sans};font-size:14px;line-height:1.4;color:${palette.textMuted};">${meta}</p></td><td width="64" align="center" style="padding:0 16px 0 8px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;"><tr><td data-fq="fq-btn" bgcolor="${palette.emailAction}" width="36" height="36" align="center" style="width:36px;height:36px;border-radius:18px;background:${palette.emailAction};${emailType.actionBackground ? `background-image:${emailType.actionBackground};` : ''}"><a href="${href}" style="display:block;width:36px;height:36px;line-height:36px;text-align:center;color:${palette.emailActionInk};font-family:${emailType.sans};font-size:16px;font-weight:600;text-decoration:none;">&rarr;</a></td></tr></table></td></tr></table>`
 }
 
 /** The head every shell shares: charset, viewport, both colour-scheme metas, the web fonts for the clients
@@ -1904,12 +1905,13 @@ body{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
 body,[data-fq=fq-bg]{background:${palette.emailNightCanvas}!important}
 [data-fq=fq-card],[data-fq=fq-panel]{background:${palette.emailNightSurface}!important;border-color:${palette.emailNightBorder}!important}
 [data-fq=fq-h1],[data-fq=fq-strong],[data-fq=fq-logo]{color:${palette.emailNightStrong}!important}
+img[data-fq=fq-logo][src="${BASE_URL}${emailType.wordmark.path}"]{filter:brightness(0) invert(1)!important}
 [data-fq=fq-p],[data-fq=fq-body]{color:${palette.emailNightBody}!important}
-[data-fq=fq-muted],[data-fq=fq-foot],[data-fq=fq-foot] a{color:${palette.emailNightMuted}!important}
+[data-fq=fq-muted],[data-fq=fq-foot],[data-fq=fq-foot] a,[data-fq=fq-foot] p:not([data-fq]){color:${palette.emailNightMuted}!important}
 [data-fq=fq-rule]{border-color:${palette.emailNightBorder}!important}
 [data-fq=fq-btn]{background:${palette.emailNightAction}!important;background-image:none!important;box-shadow:none!important}
-[data-fq=fq-btn] a{color:${palette.emailNightOnAction}!important}
 [data-fq=fq-link],[data-fq=fq-body] a{color:${palette.emailNightLink}!important}
+[data-fq=fq-btn] a{color:${palette.emailNightOnAction}!important}
 [data-fq=fq-soft]{background:${palette.emailNightBorder}!important;background-image:none!important;color:${palette.emailNightStrong}!important}
 [data-fq=fq-outline]{border-color:${palette.emailNightMuted}!important}
 [data-fq=fq-outline] a{color:${palette.emailNightStrong}!important}
@@ -2058,7 +2060,7 @@ ${emailHead(opts.title)}
         <tr><td data-fq="fq-foot" style="${footerStyle}">
           <p style="margin:0 0 10px;">${foot}</p>
           ${showUnsub ? `<p style="margin:0 0 10px;"><a href="${BASE_URL}/settings/notifications" style="${unsubBtnStyle}">Unsubscribe or manage emails</a></p>` : ''}
-          <p style="margin:0;font-size:12px;color:${palette.emailFaint};">${orgContactLine()}</p>
+          <p data-fq="fq-muted" style="margin:0;font-size:12px;color:${palette.textMuted};">${orgContactLine()}</p>
         </td></tr>
       </table>
       <!--[if mso]></td></tr></table><![endif]-->
@@ -2087,11 +2089,11 @@ function welcomeHtml({ displayName, inviterName }: { displayName: string; invite
     <hr data-fq="fq-rule" style="${dividerStyle}">
 
     <p data-fq="fq-strong" style="${leadStyle}">Find your people</p>
-    <ul style="font-size:15px;color:${palette.textMuted};line-height:1.75;padding-left:20px;margin:0 0 4px;">
-      <li><a href="${BASE_URL}/circles" style="${link}">Circles</a>: your local group, where it actually happens.</li>
-      <li><a href="${BASE_URL}/events" style="${link}">Events</a>: what's happening near you this week.</li>
-      <li><a href="${BASE_URL}/practices" style="${link}">Practices</a>: pick one small thing to do for yourself.</li>
-      <li><a href="${BASE_URL}/crew" style="${link}">The Quest</a>: show up, earn Zaps, climb the ranks.</li>
+    <ul data-fq="fq-muted" style="font-size:15px;color:${palette.textMuted};line-height:1.75;padding-left:20px;margin:0 0 4px;">
+      <li><a href="${BASE_URL}/circles" style="${link}">Circles</a>: find a group around something you want to do.</li>
+      <li><a href="${BASE_URL}/events" style="${link}">Events</a>: choose a gathering and check the time and place.</li>
+      <li><a href="${BASE_URL}/practices" style="${link}">Practices</a>: try a walk, a sit, or another small activity.</li>
+      <li><a href="${BASE_URL}/crew" style="${link}">The Quest</a>: log practices and follow the season with your Circle.</li>
     </ul>
 
     <hr data-fq="fq-rule" style="${dividerStyle}">
@@ -2114,10 +2116,10 @@ You're in. Your profile is live and the whole place is yours to explore.
 Open your feed: ${BASE_URL}/feed
 
 Find your people:
-- Circles (your local group): ${BASE_URL}/circles
-- Events (what's happening near you): ${BASE_URL}/events
-- Practices (one small thing for yourself): ${BASE_URL}/practices
-- The Quest (earn Zaps, climb the ranks): ${BASE_URL}/crew
+- Circles (find a group around something you want to do): ${BASE_URL}/circles
+- Events (choose a gathering and check the time and place): ${BASE_URL}/events
+- Practices (try a walk, a sit, or another small activity): ${BASE_URL}/practices
+- The Quest (log practices and follow the season with your Circle): ${BASE_URL}/crew
 
 Bring a friend along: a friend who joins with your personal code gets a few Zaps to start, and you earn Zaps once they join a Circle or pick up a Practice. Find yours at ${BASE_URL}/codes
 
@@ -2132,13 +2134,13 @@ The Frequency Team
  *  a team. Plain, no em dashes, proper nouns doing the work (CONTENT-VOICE §10). */
 function inviteDescriptor(contextName: string, kind: 'circle' | 'space'): string {
   return kind === 'space'
-    ? `You've been added to the team for <strong>${contextName}</strong> on Frequency. Accept the invite to jump in and help run it.`
+    ? `You've been invited to help run <strong>${contextName}</strong> on Frequency. Accept the invite to join the team.`
     : `You've been invited to join <strong>${contextName}</strong> on Frequency, a place to get together and do things on purpose.`
 }
 
 function inviteDescriptorText(contextName: string, kind: 'circle' | 'space'): string {
   return kind === 'space'
-    ? `You've been added to the team for ${contextName} on Frequency. Accept the invite to jump in and help run it.`
+    ? `You've been invited to help run ${contextName} on Frequency. Accept the invite to join the team.`
     : `You've been invited to join ${contextName} on Frequency, a place to get together and do things on purpose.`
 }
 
@@ -2154,11 +2156,11 @@ function inviteHtml({ inviterName, contextName, inviteUrl, contextKind }: {
     </p>
     ${emailButton(`Accept invite`, `${inviteUrl}`)}
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       Or paste this link in your browser:<br>
-      <span style="font-family:monospace;color:${palette.textMuted};">${inviteUrl}</span>
+      <span data-fq="fq-p" style="font-family:monospace;color:${palette.textMuted};overflow-wrap:anywhere;word-break:break-all;">${inviteUrl}</span>
     </p>
-  `)
+  `, { text: `${who} invited this address to ${name} on Frequency.`, unsubscribe: false })
 }
 
 function inviteText({ inviterName, contextName, inviteUrl, contextKind }: {
@@ -2218,12 +2220,12 @@ function claimInviteHtml({ organizerName, posterName, eventTitle, whenLine, loca
     </p>
     ${emailButton(`Claim your event`, `${claimUrl}`)}
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       Want to see it first? <a href="${eventUrl}" style="color:${palette.emailPrimaryStrong};text-decoration:none;font-weight:600;">View the event</a>.
     </p>
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       Or paste this link in your browser:<br>
-      <span style="font-family:monospace;color:${palette.textMuted};">${claimUrl}</span>
+      <span data-fq="fq-p" style="font-family:monospace;color:${palette.textMuted};overflow-wrap:anywhere;word-break:break-all;">${claimUrl}</span>
     </p>
   `, footer)
 }
@@ -2291,15 +2293,15 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
   const statusHtml = (topStreak || rank) ? `
     <div data-fq="fq-soft" style="${EMAIL_SOFT}margin:24px 0;">
       <p data-fq="fq-muted" style="${EMAIL_LABEL}margin:0 0 4px;">Your standing</p>
-      ${rank ? `<p style="margin:6px 0 0;font-size:14px;color:${palette.text};">⚡ <strong>${rank.zaps} Zaps</strong> · ${rank.name}</p>` : ''}
-      ${topStreak ? `<p style="margin:4px 0 0;font-size:14px;color:${palette.text};">🔥 <strong>${topStreak.count}-day ${topStreak.type} streak</strong></p>` : ''}
+      ${rank ? `<p data-fq="fq-p" style="margin:6px 0 0;font-size:14px;color:${palette.text};"><strong>${rank.zaps} Zaps</strong> · ${rank.name}</p>` : ''}
+      ${topStreak ? `<p data-fq="fq-p" style="margin:4px 0 0;font-size:14px;color:${palette.text};"><strong>${topStreak.count}-day ${topStreak.type} streak</strong></p>` : ''}
     </div>
   ` : ''
 
   const goAgainHtml = goAgain.length ? `
     ${emailSection(`Go again?`, 32)}
     ${goAgain.map((g) => `
-      <p style="margin:0 0 10px;font-size:14px;color:${palette.text};">
+      <p data-fq="fq-p" style="margin:0 0 10px;font-size:14px;color:${palette.text};">
         You finished your run of <strong>${escapeHtml(g.title)}</strong>.
         <a href="${g.url}" style="font-weight:600;color:${palette.emailPrimaryStrong};text-decoration:none;">Take it on again →</a>
       </p>
@@ -2316,12 +2318,12 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
     ${dispatchesHtml}
     ${eventsHtml}
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       ${emailButton(`Open Frequency`, `${BASE_URL}/feed`)}
     </p>
-    <p style="font-size:13px;color:${palette.emailSubtle};">
-      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from weekly digest</a>.
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.textMuted};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from weekly digest</a>.
     </p>
   `)
 }
@@ -2339,7 +2341,7 @@ function digestText({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
   const lines: string[] = [`Hi ${recipientName}, here's your week on Frequency.\n`]
 
   if (nearbyEvents.length) {
-    lines.push('ON NEAR YOU THIS WEEK')
+    lines.push('Near you this week')
     for (const e of nearbyEvents) {
       lines.push(`  · ${e.title}, ${formatDigestDate(e.startsAt)} ${formatDigestTime(e.startsAt)}${e.location ? ` · ${e.location}` : ''}`)
       lines.push(`    ${e.url}`)
@@ -2348,14 +2350,14 @@ function digestText({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
   }
 
   if (rank || topStreak) {
-    lines.push('YOUR STANDING')
-    if (rank)      lines.push(`  ⚡ ${rank.zaps} Zaps · ${rank.name}`)
-    if (topStreak) lines.push(`  🔥 ${topStreak.count}-day ${topStreak.type} streak`)
+    lines.push('Your standing')
+    if (rank)      lines.push(`  ${rank.zaps} Zaps · ${rank.name}`)
+    if (topStreak) lines.push(`  ${topStreak.count}-day ${topStreak.type} streak`)
     lines.push('')
   }
 
   if (goAgain.length) {
-    lines.push('GO AGAIN?')
+    lines.push('Go again?')
     for (const g of goAgain) {
       lines.push(`  · You finished your run of ${g.title}. Take it on again: ${g.url}`)
     }
@@ -2363,7 +2365,7 @@ function digestText({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
   }
 
   if (dispatches.length) {
-    lines.push('THIS WEEK\'S DISPATCHES')
+    lines.push('This week\'s dispatches')
     for (const d of dispatches) {
       lines.push(`  · ${d.title} (${d.authorName})`)
       if (d.excerpt) lines.push(`    ${d.excerpt}`)
@@ -2373,7 +2375,7 @@ function digestText({ recipientName, dispatches, upcomingEvents, nearbyEvents = 
   }
 
   if (upcomingEvents.length) {
-    lines.push('THIS WEEK ON YOUR CALENDAR')
+    lines.push('This week on your calendar')
     for (const e of upcomingEvents) {
       lines.push(`  · ${e.title}, ${formatDigestDate(e.startsAt)} ${formatDigestTime(e.startsAt)}${e.location ? ` · ${e.location}` : ''}`)
       lines.push(`    ${e.url}`)
@@ -2405,10 +2407,10 @@ function eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute,
     ${emailFacts([{ label: 'When', html: escapeHtml(whenAbsolute) }, { label: 'Where', html: location ? `${escapeHtml(location)}` : '' }])}
     ${emailButton(`View event`, `${eventUrl}`)}
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       You're receiving this because you RSVP'd to attend.
-      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event reminders</a>.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.textMuted};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from event reminders</a>.
     </p>
   `)
 }
@@ -2474,11 +2476,11 @@ function rsvpConfirmationHtml({
     ${calendarBlock}
     ${emailButton(`View event`, `${eventUrl}`)}
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       You're receiving this because you RSVP'd to attend. Plans change, and that's okay,
-      <a href="${eventUrl}" style="color:${palette.emailSubtle};">update your RSVP</a> any time.
-      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from event reminders</a>.
+      <a href="${eventUrl}" style="color:${palette.textMuted};">update your RSVP</a> any time.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.textMuted};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from event reminders</a>.
     </p>
   `)
 }
@@ -2560,7 +2562,7 @@ function guestRsvpConfirmationHtml({
       ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
       : status === 'waitlist'
         ? `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
-        : `${greeting}the host approves each person for this one, so your request is with them now. We will email you the moment they reply. You do not have a spot until then.`
+        : `${greeting}the host approves each person for this one, so your request is with them now. You do not have a spot until the host approves your request.`
   const hostLine = rsvpHostLine(hostName, circleName)
 
   const calendarBlock = status === 'going' && (icsUrl || googleCalUrl) ? `
@@ -2602,11 +2604,11 @@ function guestRsvpConfirmationHtml({
       ${emailButton(`Set up your account`, `${signUpUrl}`)}
     </p>
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       You are getting this because this address was used to RSVP to ${escapeHtml(eventTitle)}.
-      If that was not you, ignore this email and nothing further will be sent.
+      If that was not you, you can ignore this confirmation.
     </p>
-  `)
+  `, { text: `This email confirms a request or place for ${escapeHtml(eventTitle)}.`, unsubscribe: false })
 }
 
 function guestRsvpConfirmationText({
@@ -2628,7 +2630,7 @@ function guestRsvpConfirmationText({
       ? `${greeting}your spot is saved. No account needed to come along, just turn up.`
       : status === 'waitlist'
         ? `${greeting}this one is full, so you are on the waitlist. If a spot opens we will move you in and let you know. Nothing for you to do.`
-        : `${greeting}the host approves each person for this one, so your request is with them now. We will email you the moment they reply. You do not have a spot until then.`
+        : `${greeting}the host approves each person for this one, so your request is with them now. You do not have a spot until the host approves your request.`
 
   const hostPlain =
     hostName && circleName ? `Hosted by ${hostName} · ${circleName}` :
@@ -2670,7 +2672,7 @@ function guestRsvpConfirmationText({
     `Set up your account: ${signUpUrl}`,
     '',
     `You are getting this because this address was used to RSVP to ${eventTitle}.`,
-    'If that was not you, ignore this email and nothing further will be sent.',
+    'If that was not you, you can ignore this confirmation.',
   )
 
   return lines.join('\n') + '\n'
@@ -2827,10 +2829,10 @@ function dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispa
     <p data-fq="fq-p" style="${pStyle}">${escapeHtml(excerpt)}</p>
     ${emailButton(`Read dispatch`, `${dispatchUrl}`)}
     <hr data-fq="fq-rule" style="${dividerStyle}">
-    <p style="font-size:13px;color:${palette.emailSubtle};">
+    <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">
       Hi ${escapeHtml(recipientName)}, this dispatch was posted to your community on Frequency.
-      <a href="${BASE_URL}/settings/notifications" style="color:${palette.emailSubtle};">Manage preferences</a>
-      · <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from dispatches</a>.
+      <a href="${BASE_URL}/settings/notifications" style="color:${palette.textMuted};">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from dispatches</a>.
     </p>
   `)
 }

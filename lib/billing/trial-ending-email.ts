@@ -22,8 +22,8 @@ export function buildTrialEndingEmail(parts: {
   const why = `You are receiving this because you run ${parts.spaceName} on Frequency.`
   const html = emailShell(
     [
-      `<p style="${EMAIL_P}color:${palette.text};">${escapeHtml(greeting)}</p>`,
-      ...body.map((p) => `<p style="${EMAIL_P}color:${palette.text};">${escapeHtml(p)}</p>`),
+      `<p data-fq="fq-p" style="${EMAIL_P}color:${palette.text};">${escapeHtml(greeting)}</p>`,
+      ...body.map((p) => `<p data-fq="fq-p" style="${EMAIL_P}color:${palette.text};">${escapeHtml(p)}</p>`),
       emailButton('View plan and billing', parts.billingUrl),
     ].join('\n'),
     { text: escapeHtml(why), unsubscribe: false },
