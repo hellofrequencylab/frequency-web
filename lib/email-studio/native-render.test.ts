@@ -5,6 +5,11 @@ import { renderEmailLayout } from './render'
 import { compileEmailDoc } from './shell'
 import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
 
+vi.mock('@/lib/theme/design', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/theme/design')>(),
+  SITE_DESIGN: 'frequency',
+}))
+
 vi.mock('@/lib/commerce/products', () => ({ getProduct: vi.fn(async (id: string) => id === 'gone' ? null : ({ id, title: `Fresh ${id}`, priceCents: 1200, images: [`https://example.test/${id}.png`], productKind: 'physical' })) }))
 vi.mock('@/lib/journeys/paid', () => ({ journeySlugsByPlanId: vi.fn(async () => new Map()) }))
 import { resolveProductRefs, productVarsFromLayout } from './product-block'
@@ -34,7 +39,7 @@ describe('native email compilation reads', () => {
     const parsed = parseEmailRenderLayout(native)!
     const compiled = compileEmailDoc({ layout: parsed, subject: 'Subject', preheader: 'Preview' }, { unsubscribeUrl: 'https://example.test/unsubscribe' })
     expect(compiled.text).toContain('First authored placement\n\nSecond authored placement')
-    expect(compiled.html).toContain('#9A5E12')
+    expect(compiled.html).toContain('#34312E')
     expect(compiled.html).toContain('Second authored placement')
     const secondOnly = renderEmailLayout({ rows: [{ id: 'r0', columns: 1, cells: [[native.rows[0].cells[0][1]]] }], bench: [] })
     expect(compiled.html).toContain(secondOnly.html)
