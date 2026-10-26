@@ -6,8 +6,8 @@
   "lane": "live",
   "size": "M",
   "source": {
-    "file": "/mnt/project-files/audits/meta-scan-2026-10-26.md",
-    "ref": "Stream L, follow-up: help articles"
+    "file": "content/help/spaces/take-bookings.md",
+    "ref": "2026-10-26 meta scan, Stream L: help articles"
   },
   "detail": "Five host-facing help articles in content/help/spaces/ close the help gaps the 2026-10-26 meta scan listed. North County seed content waits on real Circles and events from Daniel (city pages are built from live rows).",
   "closed": "2026-10-26",
