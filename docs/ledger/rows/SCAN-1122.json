@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1122",
+  "title": "Anonymous requests to public pages skip the Supabase auth call in the proxy",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "proxy.ts",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "proxy.ts:143 runs supabase.auth.getUser() on every request including ISR marketing and crawlers. Exit early when no auth cookie is present. Estimated 50-150 ms TTFB; measure first.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs proxy-anon",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}
