@@ -10,14 +10,14 @@ let root: Root; let container: HTMLDivElement
 afterEach(() => { act(() => root?.unmount()); container?.remove(); vi.clearAllMocks() })
 it('renders advice separately, never applying hostile content to human fields or autosave', async () => {
   const onContent = vi.fn()
-  mocks.coach.mockResolvedValue({ questions: ['What would help someone decide?'], content: {body:'INVENTED'} })
+  mocks.coach.mockResolvedValue({ questions: ['What would help someone decide whether this fits their needs?'], content: {body:'INVENTED'} })
   container = document.createElement('div'); document.body.append(container); root = createRoot(container)
   await act(async () => root.render(<BlockEditPanel id="text" content={{text:'HUMAN WORDS'}} style={{}} hidden={false} editHref={null} reseedSlug="space-a" onContent={onContent} onStyle={vi.fn()} onToggleHide={vi.fn()} />))
   const button = [...container.querySelectorAll('button')].find(b => b.textContent === 'Get writing prompts')!
   expect(button).toBeDefined()
   await act(async () => button.click())
   expect(mocks.coach).toHaveBeenCalledExactlyOnceWith('space-a','text',{text:'HUMAN WORDS'})
-  expect(container.textContent).toContain('What would help someone decide?')
+  expect(container.textContent).toContain('What would help someone decide whether this fits their needs?')
   expect(container.textContent).not.toContain('INVENTED')
   expect(onContent).not.toHaveBeenCalled()
   expect([...container.querySelectorAll('textarea,input')].some(el => (el as HTMLInputElement).value === 'HUMAN WORDS')).toBe(true)

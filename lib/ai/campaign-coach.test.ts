@@ -20,7 +20,7 @@ beforeEach(() => {
   mocks.available.mockResolvedValue(true)
   mocks.budget.mockResolvedValue(false)
   mocks.limited.mockResolvedValue(false)
-  mocks.complete.mockResolvedValue({ text: JSON.stringify({ questions: ['What might make this gathering easier to attend?', 'How will you record attendance separately from clicks?'] }) })
+  mocks.complete.mockResolvedValue({ text: JSON.stringify({ questionIds: ['attendance', 'attendance_measurement'] }) })
 })
 
 describe('campaign outcome coaching', () => {

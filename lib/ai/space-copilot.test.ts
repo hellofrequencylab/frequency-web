@@ -117,7 +117,7 @@ describe('spaceId flows into the cost ledger (no network)', () => {
         completeText: vi.fn(async (p) => {
           inserts.push(p.accounting)
           return ({
-          text: '["Who would you most like to welcome?"]',
+          text: '{"questionIds":["welcome"]}',
           usage: { inputTokens: 10, outputTokens: 20 },
           costUsd: 0.0001,
           tier: 'haiku' as const,
@@ -165,7 +165,7 @@ describe('spaceId flows into the cost ledger (no network)', () => {
 
 describe('coaching response boundary', () => {
   it('accepts short coaching questions', () => {
-    expect(parseCoachingQuestions('["Who is this for?", "What should a newcomer expect?"]'))
+    expect(parseCoachingQuestions('{"questionIds":["audience","newcomer"]}'))
       .toBe('Who is this for? What should a newcomer expect?')
   })
   it.each([

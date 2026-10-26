@@ -3,7 +3,7 @@ const state=vi.hoisted(()=>({limited:true,throttle:vi.fn(),complete:vi.fn()}))
 vi.mock('@/lib/ai/client',()=>({aiEnabled:()=>true}))
 vi.mock('@/lib/ai/usage',()=>({featureOverBudget:async()=>false}))
 vi.mock('@/lib/ai/rate-limit',()=>({aiRateLimited:async(feature:string,profileId?:string|null)=>{state.throttle(feature,profileId);return state.limited}}))
-vi.mock('@/lib/ai/complete',()=>({completeText:async(input:unknown)=>{state.complete(input);return{text:'{"questions":["Who needs this detail?"]}'}}}))
+vi.mock('@/lib/ai/complete',()=>({completeText:async(input:unknown)=>{state.complete(input);return{text:'{"questionIds":["detail"]}'}}}))
 import { reseedBlockCopy } from './compose'
 import { coachBusinessWriting } from './reframe/run'
 import { WRITING_QUESTIONS } from '@/lib/ai/writing-questions'
