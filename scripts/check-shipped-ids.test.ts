@@ -12,6 +12,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import {
   EXCEPTIONS,
   MIN_COMMITS,
@@ -373,5 +374,32 @@ describe('the CLI on THIS repository', () => {
       expect(r.code, `${victim} removed and the gate still passed:\n${r.out}`).toBe(1)
       expect(r.out).toContain(victim)
     }
+  })
+})
+
+
+describe('manual CI checkout history', () => {
+  it('deepens the checked-out branch as well as main using the actual workflow step', () => {
+    const { dir, seed } = repo([], LISTED)
+    git(dir, 'branch', '-M', 'main')
+    git(dir, 'checkout', '-q', '-b', 'manual-audit')
+    writeFileSync(path.join(dir, 'f'), 'manual branch tip')
+    git(dir, 'commit', '-q', '-am', 'manual audit tip')
+    const sha = git(dir, 'rev-parse', 'HEAD').trim()
+    const shallow = mkdtempSync(path.join(tmpdir(), 'shipped-ids-manual-'))
+    temps.push(shallow)
+    git(dir, 'clone', '-q', '--depth=1', '--branch', 'manual-audit', pathToFileURL(dir).href, shallow)
+    // The previous workflow fetched only main: that does not remove HEAD's shallow boundary.
+    git(shallow, 'fetch', '-q', '--shallow-since=2026-08-16', 'origin', '+refs/heads/main:refs/remotes/origin/main')
+    const before = run(shallow, ['--seed', seed])
+    expect(before.code).toBe(1)
+    expect(before.out).toContain('under the floors')
+    const workflow = readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8')
+    const step = workflow.split('- name: Fetch base history for check:shipped-ids')[1].split('\n      - name:')[0]
+    const body = step.split('run: |\n')[1]?.split('\n').map(line => line.replace(/^          /, '')).join('\n')
+    expect(body, 'The actual history fetch must remain testable').toBeTruthy()
+    execFileSync('bash', ['-e', '-c', body!], { cwd: shallow, env: { ...process.env, GITHUB_BASE_REF: '', GITHUB_SHA: sha }, stdio: 'pipe' })
+    const after = run(shallow, ['--seed', seed])
+    expect(after.code, after.out).toBe(0)
   })
 })

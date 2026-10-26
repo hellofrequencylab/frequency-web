@@ -58,7 +58,11 @@ async function getSpotlightRoutes(): Promise<MetadataRoute.Sitemap> {
 async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
   try {
     const supabase = createPublicClient();
-    const { data } = await supabase.rpc("public_organizer_handles", { _limit: 500 });
+    const { data, error, status } = await supabase.rpc("public_organizer_handles", { _limit: 500 });
+    if (error) {
+      // Preserve both HTTP status and the PostgREST code for the shared classifier.
+      throw Object.assign(new Error(error.message), error, { status });
+    }
     if (!Array.isArray(data)) return [];
     return (data as { handle: string; next_starts: string | null }[]).map((h) => ({
       url: `${SITE_URL}/discover/events/organizer/${h.handle}`,
@@ -67,8 +71,8 @@ async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.6,
     }));
-  } catch {
-    return [];
+  } catch (err) {
+    return failSection("organizers", err);
   }
 }
 
@@ -413,20 +417,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       listPublicJourneys(),
       getOrganizerRoutes(),
       getSpotlightRoutes(),
-      // ⚠️ THE ASYMMETRY ABOVE THIS LINE IS DELIBERATE AND UNCHANGED (LIVE-329). The six reads
-      // above (channels, circles, events, journeys, organizers, spotlights) are NOT wrapped in
-      // `sectionRead`, and the reason is that a throw from them was never possible on a failed
-      // read: each swallows its own failure. listSitemapEventEntries, getOrganizerRoutes and
-      // getSpotlightRoutes carry a try/catch that returns []; getPublicCircles reads through the
-      // discover layer's `listRead`, which retries transport and returns [] with its own log line;
-      // getTopicalChannels and listPublicJourneys destructure `{ data }` and return `data ?? []`.
-      // The row that filed this said they "throw, so a failure there keeps the previous copy";
-      // measured, they do not throw, so nothing about them keeps anything, and wrapping them would
-      // be a no-op that reads as coverage. What a genuine THROW from one of them does (a bug, a
-      // client that cannot be constructed) is reach the catch at the bottom of this block, which
-      // now logs and applies the same transient-or-deterministic rule. LIVE-331 changed the TEN
-      // readers below, not these six; they are the same shape one level down and are named in
-      // its CLOSED note as what is still swallowed.
+      // Five legacy readers above still swallow failures: channels, circles, events,
+      // journeys and spotlights. LIVE-331 explicitly left these outside its repair;
+      // adding sectionRead around a reader that returns [] on error would not help.
+      // SCAN-1051 now makes the organizer reader report failures through failSection
+      // inside its own catch, preserving status/code and abandoning regeneration on
+      // transport. This does not repair the other five. Any genuine throw reaches
+      // the dynamic block's transient-or-deterministic catch below.
       //
       // Every read below goes through `sectionRead`, which logs a failure by section and lets a
       // transport failure abandon the regeneration (see the note above the helper). Since LIVE-331

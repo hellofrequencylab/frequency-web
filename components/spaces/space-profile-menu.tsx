@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from 'next/navigation'
 import { SpaceProfileMenuView } from '@/components/spaces/space-profile-menu-view'
-import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
+import type { SpaceProfileTab } from '@/lib/spaces/profile-tab'
 
 // THE PERSISTENT SPACE MENU, for a surface that HAS a viewer. Rendered as a direct child of the
 // profile page root (DetailTemplate's `stickyNav` slot), so the menu bar pins under the global header

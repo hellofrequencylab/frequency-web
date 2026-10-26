@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { ArrowUpDown, Check } from 'lucide-react'
 
-// The Spaces catalog sort control — the same URL-driven idiom as the Events sort (events-sort.tsx):
+// The Spaces catalog sort control uses the URL-driven catalog filter idiom:
 // a single-select menu that writes the `sort` search param and preserves the rest, so the catalog
 // stays a Server Component and a sorted view is shareable. The trigger reads "Sort: Standing" rather
 // than swapping to the chosen value. Options are fixed here; the lister (lib/spaces/discovery) owns

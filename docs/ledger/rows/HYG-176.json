@@ -1,0 +1,20 @@
+{
+  "id": "HYG-176",
+  "title": "Parse backlog shell syntax in bounded workers without copying large test parents",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "scripts/lib/shell-parse.mjs",
+    "ref": "Full-app test census and local shell parser measurements, 2026-10-23"
+  },
+  "detail": "The guard and real-backlog syntax test each forked sh synchronously from Node/Vitest for every command. On this macOS host 1,666 commands took 45.98s in an isolated serial parser, and the real syntax test exceeded its unchanged 30s timeout. Keep one independent sh -n per unique command, but start them from eight small shell workers; missing/interrupted parsers fail closed and all temporary inputs/results are removed. No probe body or substitution executes, and quotes cannot close across probe boundaries. The prototype parses the same 1,666 commands in 6.62s locally. Existing guard fixture/parity/syntax tests pass; full execution cost and normalized CI evidence remain separate from this structural-parser repair. No wall/CPU budgets or assertions raised. New controls cover side effects, cross-probe quote masking, lane attribution, duplicate commands and unavailable parser.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/shell-parse.mjs",
+    "note": "Execute the actual parser on independent broken quotes and a valid side-effect command; invalid probes must fail and the side effect must never execute."
+  },
+  "closed": "2026-10-23",
+  "wave": "W0"
+}

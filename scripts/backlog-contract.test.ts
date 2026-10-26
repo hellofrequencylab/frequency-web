@@ -11,11 +11,12 @@
 // reason: the thing under test is the exit code a workflow will read.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { execFileSync, execSync, spawnSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, statSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { loadBacklog } from './lib/ledger.mjs'
+import { parseShellCommands } from './lib/shell-parse.mjs'
 
 const ROOT = process.cwd()
 const BACKLOG_GUARD = path.join(ROOT, 'scripts/check-backlog.mjs')
@@ -25,7 +26,7 @@ const ONE_LIST_GUARD = path.join(ROOT, 'scripts/check-one-list.mjs')
 /** CPU milliseconds burned by this process's REAPED CHILDREN so far, or null where that cannot be
  *  read honestly (anything but Linux).
  *
- *  `/proc/self/stat` fields 15 and 16 (1-based) are cutime and cstime: the user and system time of
+ *  `/proc/self/stat` fields 16 and 17 (1-based) are cutime and cstime: the user and system time of
  *  children that have been waited for. execFileSync waits, so every probe the guard spawns lands
  *  here. That is the quantity a "did a probe get expensive?" gate wants, and unlike elapsed time it
  *  does not move when the box is busy.
@@ -316,10 +317,14 @@ describe('check:backlog — the probe/status contract', () => {
     // The merged view (HYG-145): a probe written in a fragment has to parse too.
     const real = loadBacklog(ROOT)
     const broken: string[] = []
+    const commands: { id: string; cmd: string }[] = []
     for (const e of real.entries) {
-      if (e.verify?.kind !== 'cmd' || !e.verify.cmd) continue
-      const r = spawnSync('sh', ['-n'], { input: e.verify.cmd, encoding: 'utf8' })
-      if (r.status !== 0) broken.push(`${e.id}: ${(r.stderr || '').trim().split('\n')[0]}`)
+      if (e.verify?.kind === 'cmd' && e.verify.cmd) commands.push({ id: e.id, cmd: e.verify.cmd })
+    }
+    const errors = parseShellCommands(commands.map(e => e.cmd))
+    for (const e of commands) {
+      const error = errors.get(e.cmd)
+      if (error) broken.push(`${e.id}: ${error}`)
     }
     expect(broken, `these probes cannot be parsed by the shell, so they can never answer:\n${broken.join('\n')}`).toEqual([])
   })
@@ -1136,5 +1141,32 @@ describe('the real tree', () => {
         }
       })
     expect(missing.map((e: { id: string }) => e.id)).toEqual([])
+  })
+})
+
+
+describe('command probe diagnostics', () => {
+  it('keeps bounded stderr for a regressed done row without publishing stdout', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'backlog-diagnostics-'))
+    try {
+      writeBacklog(dir, [...ballast(), { id: 'DIAG-1', title: 'regressed fixture', status: 'done', lane: 'live', size: 'S',
+        verify: { kind: 'cmd', cmd: `node -e 'process.stdout.write("stdout-"+"payload"); process.stderr.write("fixture-stderr-marker\\n" + "x".repeat(20000)); process.exit(1)'` } }])
+      const result = run(BACKLOG_GUARD, dir, SWEEP)
+      expect(result.code).toBe(1)
+      expect(result.out).toContain('fixture-stderr-marker')
+      expect(result.out).not.toContain('stdout-payload')
+      expect(result.out.length).toBeLessThan(12000)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+
+  it('does not print expected stderr when an open row correctly remains open', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'backlog-diagnostics-'))
+    try {
+      writeBacklog(dir, [...ballast(), { id: 'DIAG-1', title: 'open fixture', status: 'open', priority: 'P2', lane: 'live', size: 'S',
+        verify: { kind: 'cmd', cmd: `node -e 'process.stderr.write("expected-pending-detail"); process.exit(1)'` } }])
+      const result = run(BACKLOG_GUARD, dir, SWEEP)
+      expect(result.code, result.out).toBe(0)
+      expect(result.out).not.toContain('expected-pending-detail')
+    } finally { rmSync(dir, { recursive: true, force: true }) }
   })
 })
