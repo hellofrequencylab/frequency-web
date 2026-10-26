@@ -1,13 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { Mail, MousePointerClick, Inbox } from 'lucide-react'
-import { PageHero, Section, FaqList } from '@/components/marketing/marketing-ui'
-import { SubscribeForm } from '@/components/marketing/subscribe-form'
-import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencySubscribe } from '@/components/frequency/site/pages/funnel/frequency-subscribe'
 
 export const metadata: Metadata = {
@@ -37,9 +31,9 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 const HOW_IT_WORKS = [
-  { Icon: Mail, t: 'Leave your email', b: 'Enter your address below. First name is optional. It takes ten seconds.' },
-  { Icon: MousePointerClick, t: 'Confirm it’s you', b: 'We send one email with a link. Click it and you’re on the list. No link, no list.' },
-  { Icon: Inbox, t: 'Hear from Daniel', b: 'A few notes a month on Circles, practices, and events. Unsubscribe any time, one click.' },
+  { t: 'Leave your email', b: 'Enter your address below. First name is optional. It takes ten seconds.' },
+  { t: 'Confirm it’s you', b: 'We send one email with a link. Click it and you’re on the list. No link, no list.' },
+  { t: 'Hear from Daniel', b: 'A few notes a month on Circles, practices, and events. Unsubscribe any time, one click.' },
 ]
 
 const FAQS = [
@@ -70,77 +64,10 @@ export default function SubscribePage() {
       ]}
     />
   )
-  // The Frequency design (ADR-1737): the same form action, steps, questions and schema, in its body.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        {schema}
-        <FrequencySubscribe steps={HOW_IT_WORKS.map(({ t, b }) => ({ t, b }))} faq={FAQS} />
-      </>
-    )
-  }
   return (
     <>
       {schema}
-
-      <PageHero
-        eyebrow="Stay in the loop"
-        title="Get notes from Frequency."
-        subtitle="A few notes a month from Daniel, the founder: Circles, practices, and what's happening near you. Nothing more."
-      />
-
-      {/* ── The form (the whole point of the page) ─────────────────────────── */}
-      <Section tone="surface" role="cont">
-        <div className="max-w-md mx-auto">
-          <SubscribeForm />
-          <p className="mt-4 text-center text-meta text-subtle leading-relaxed">
-            We email you to confirm first, so you only hear from us if you actually want to.
-          </p>
-        </div>
-      </Section>
-
-      {/* ── How it works ───────────────────────────────────────────────────── */}
-      <Section tone="canvas">
-        <div className="text-center mb-10">
-          <p className="eyebrow text-primary-strong mb-4">
-            How it works
-          </p>
-          <h2 className={`font-display uppercase text-text ${DISPLAY_TYPE.section}`}>
-            Three steps. No surprises.
-          </h2>
-        </div>
-        <ol className="grid sm:grid-cols-3 gap-5">
-          {HOW_IT_WORKS.map(({ Icon, t, b }) => (
-            <li key={t} className="rounded-card border border-border bg-surface p-7 lift-1">
-              <span className="inline-flex w-10 h-10 rounded-card bg-primary-bg items-center justify-center mb-4">
-                <Icon className="w-5 h-5 text-primary-strong" aria-hidden />
-              </span>
-              <p className="text-body-lg font-bold text-text">{t}</p>
-              <p className="mt-1.5 text-body-sm text-muted leading-relaxed">{b}</p>
-            </li>
-          ))}
-        </ol>
-      </Section>
-
-      {/* ── FAQ ────────────────────────────────────────────────────────────── */}
-      <Section tone="surface">
-        <div className="mb-8">
-          <p className="eyebrow text-primary-strong mb-4">
-            Straight answers
-          </p>
-          <h2 className={`font-display uppercase text-text ${DISPLAY_TYPE.section}`}>
-            Questions before you sign up.
-          </h2>
-        </div>
-        <FaqList items={FAQS} />
-        <p className="mt-10 text-body-sm text-muted">
-          Want the bigger picture first?{' '}
-          <Link href="/the-community" className="font-semibold text-primary-strong hover:underline">
-            See what Frequency is
-          </Link>
-          .
-        </p>
-      </Section>
+      <FrequencySubscribe steps={HOW_IT_WORKS} faq={FAQS} />
     </>
   )
 }

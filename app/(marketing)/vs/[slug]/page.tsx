@@ -4,19 +4,7 @@
 // JSON-LD. Voice + naming locked (CONTENT-VOICE, NAMING): plain, honest, no em
 // dashes, no health claims, the skeptic test. We never knock the other tool.
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowRight, Check } from 'lucide-react'
-import {
-  PhotoHero,
-  Section,
-  Lead,
-  Body,
-  PullQuote,
-  FaqList,
-  BetaCTA,
-  Button,
-} from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { articleSchema, faqSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
@@ -25,9 +13,7 @@ import {
   getComparison,
   comparisonCopy,
   comparisonPath,
-  type Comparison,
 } from '@/lib/marketing/comparisons'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyCompare } from '@/components/frequency/site/pages/funnel/frequency-compare'
 
 export const revalidate = 3600
@@ -106,140 +92,7 @@ export default async function ComparisonPage({
         ]}
       />
 
-      {/* The Frequency design (ADR-1737): the same registry rows, links and schema, in its body. */}
-      {SITE_DESIGN === 'frequency' ? (
-        <FrequencyCompare comparison={comparison} image={HERO_IMAGE} />
-      ) : (
-        <ComparisonDawn comparison={comparison} slug={slug} />
-      )}
-    </>
-  )
-}
-
-function ComparisonDawn({ comparison, slug }: { comparison: Comparison; slug: string }) {
-  const copy = comparisonCopy(comparison)
-  return (
-    <>
-      <PhotoHero
-        image={HERO_IMAGE}
-        alt="Friends gathered around a long table at night, talking and laughing"
-        focal="object-center"
-        eyebrow={`Alternative to ${comparison.name}`}
-        title={copy.h1}
-        subtitle={`${comparison.name} is a great ${comparison.category}. Frequency is a different shape: a free local Circle that keeps meeting in person. Here is how they compare.`}
-      >
-        <Button href="/discover">
-          Find a Circle near you <ArrowRight className="h-5 w-5" />
-        </Button>
-      </PhotoHero>
-
-      {/* Answer-first opening: the honest difference, in the first lines. */}
-      <Section tone="canvas">
-        <Lead>{copy.lede}</Lead>
-        <Body>{comparison.forReader}</Body>
-      </Section>
-
-      <PullQuote tone="surface">
-        The invite is the easy part.{' '}
-        <span className="text-primary-strong">The standing room is the thing.</span>
-      </PullQuote>
-
-      {/* The scannable contrast. One concept per row; honest about both sides. */}
-      <Section tone="surface">
-        <h2 className="mb-6 font-display text-display-h3 uppercase text-text">
-          {comparison.name} vs Frequency, side by side
-        </h2>
-        <div className="overflow-hidden rounded-card border border-border">
-          {/* Header row */}
-          <div className="grid grid-cols-3 border-b border-border bg-surface-elevated text-body-sm font-semibold text-text">
-            <div className="px-4 py-3" />
-            <div className="px-4 py-3">{comparison.name}</div>
-            <div className="px-4 py-3 text-primary-strong">Frequency</div>
-          </div>
-          {comparison.contrast.map((row, i) => (
-            <div
-              key={row.dimension}
-              className={`grid grid-cols-3 text-body-sm ${
-                i % 2 === 0 ? 'bg-surface' : 'bg-surface-elevated'
-              }`}
-            >
-              <div className="px-4 py-4 font-semibold text-text">{row.dimension}</div>
-              <div className="px-4 py-4 text-muted">{row.them}</div>
-              <div className="flex items-start gap-2 px-4 py-4 text-text">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-                <span>{row.us}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      {/* Soft, honest hand-off into the product. Two doors. */}
-      <Section tone="canvas">
-        <h2 className="mb-5 font-display text-display-h3 uppercase text-text">
-          Where to start
-        </h2>
-        <Body>
-          You can keep using {comparison.name} for what it does well. If you want the
-          part it does not do, the small group that keeps meeting, look at the Circles
-          already gathering near you, then join one or start your own.
-          {comparison.moneyBeat
-            ? ' And hosting is free. When you start charging, that is Business, with 0% on your own bookings. That is the whole deal.'
-            : ''}
-        </Body>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Button href="/discover">
-            Find a Circle near you <ArrowRight className="h-5 w-5" />
-          </Button>
-          {comparison.moneyBeat ? (
-            <Button href="/pricing" variant="secondary">
-              See the honest pricing
-            </Button>
-          ) : (
-            <Button href="/the-community" variant="secondary">
-              See how Circles work
-            </Button>
-          )}
-        </div>
-      </Section>
-
-      {/* FAQ: answer-first pairs, mirrored into the FAQPage schema above. */}
-      <Section tone="surface">
-        <h2 className="mb-7 font-display text-display-h3 uppercase text-text">
-          Common questions
-        </h2>
-        <FaqList items={copy.faq.map((f) => ({ q: f.q, a: f.a }))} />
-      </Section>
-
-      {/* The other comparisons and the hub, as links a visitor and a crawler can follow.
-          Without this the breadcrumb JSON-LD was the only route back to /vs (SCAN-801). */}
-      <Section tone="canvas">
-        <h2 className="mb-5 font-display text-display-h3 uppercase text-text">
-          More comparisons
-        </h2>
-        <ul className="flex flex-col gap-2 text-body-lg">
-          {COMPARISONS.filter((c) => c.slug !== slug).map((c) => (
-            <li key={c.slug}>
-              <Link
-                href={comparisonPath(c.slug)}
-                className="font-semibold text-primary-strong hover:underline"
-              >
-                Frequency vs {c.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-6 text-body-sm text-muted">
-          <Link href="/vs" className="font-semibold text-primary-strong hover:underline">
-            Every comparison
-          </Link>
-        </p>
-      </Section>
-
-      <BetaCTA
-        heading="Skip the one-off. Find the room that meets again."
-        body="Frequency is free to join, and it stays free. Find a Circle near you, show up, and come back."
-      />
+      <FrequencyCompare comparison={comparison} image={HERO_IMAGE} />
     </>
   )
 }

@@ -1,12 +1,8 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
-import { CalendarX } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyEventInviteToken } from '@/lib/qr/event-invite'
 import { formatEventDateTime } from '@/lib/utils'
-import { Button, Outcome, OutcomeSkeleton } from '@/components/marketing/marketing-ui'
-import { RsvpForm } from './form'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FnColumn, FnHero, FnOutcomePage, FnOutcomeSkeleton } from '@/components/frequency/site/pages/funnel/parts'
 import { FrequencyRsvpForm } from '@/components/frequency/site/pages/funnel/rsvp-form'
 
@@ -82,7 +78,7 @@ async function loadInvite(token: string): Promise<InvitePublic | null> {
 
 export default function EventRsvpPage({ params }: { params: Promise<{ token: string }> }) {
   return (
-    <Suspense fallback={SITE_DESIGN === 'frequency' ? <FnOutcomeSkeleton /> : <OutcomeSkeleton />}>
+    <Suspense fallback={<FnOutcomeSkeleton />}>
       <RsvpInvite params={params} />
     </Suspense>
   )
@@ -92,69 +88,32 @@ async function RsvpInvite({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const invite = await loadInvite(token)
 
-  // The Frequency design (ADR-1737): the same token read, the same two failure states and the same
-  // capture action, in the design's hero and form box. PUBLIC-SAFE fields only, as below.
-  if (SITE_DESIGN === 'frequency') {
-    if (!invite || invite.cancelled) {
-      return (
-        <FnOutcomePage
-          tone="danger"
-          icon="event"
-          title={invite?.cancelled ? 'This event is off.' : 'This link didn’t work.'}
-          action={{ href: '/', label: 'See what Frequency is' }}
-        >
-          {invite?.cancelled
-            ? 'The host called this one off. Ask whoever invited you for the next one.'
-            : 'It may have expired. Ask the person who invited you to share a fresh one.'}
-        </FnOutcomePage>
-      )
-    }
-    return (
-      <>
-        <FnHero
-          center
-          kicker={invite.inviterName ? `${invite.inviterName} invited you` : undefined}
-          title={invite.eventTitle}
-          lede={invite.eventWhen ?? undefined}
-          meta={invite.eventLocation ?? undefined}
-        />
-        <FnColumn label="02 RSVP">
-          <FrequencyRsvpForm token={token} />
-        </FnColumn>
-      </>
-    )
-  }
-
   if (!invite || invite.cancelled) {
     return (
-      <Outcome
+      <FnOutcomePage
         tone="danger"
-        icon={CalendarX}
+        icon="event"
         title={invite?.cancelled ? 'This event is off.' : 'This link didn’t work.'}
-        action={<Button href="/">See what Frequency is</Button>}
+        action={{ href: '/', label: 'See what Frequency is' }}
       >
         {invite?.cancelled
           ? 'The host called this one off. Ask whoever invited you for the next one.'
           : 'It may have expired. Ask the person who invited you to share a fresh one.'}
-      </Outcome>
+      </FnOutcomePage>
     )
   }
-
   return (
-    <section className="mk-band">
-      <div className="mx-auto max-w-md">
-        <div className="mb-8">
-          {invite.inviterName && (
-            <p className="mb-3 eyebrow text-primary-strong">
-              {invite.inviterName} invited you
-            </p>
-          )}
-          <h1 className="mb-3 font-display uppercase text-text text-display-h2">{invite.eventTitle}</h1>
-          {invite.eventWhen && <p className="text-body-lg leading-relaxed text-muted">{invite.eventWhen}</p>}
-          {invite.eventLocation && <p className="text-body leading-relaxed text-muted">{invite.eventLocation}</p>}
-        </div>
-        <RsvpForm token={token} />
-      </div>
-    </section>
+    <>
+      <FnHero
+        center
+        kicker={invite.inviterName ? `${invite.inviterName} invited you` : undefined}
+        title={invite.eventTitle}
+        lede={invite.eventWhen ?? undefined}
+        meta={invite.eventLocation ?? undefined}
+      />
+      <FnColumn label="02 RSVP">
+        <FrequencyRsvpForm token={token} />
+      </FnColumn>
+    </>
   )
 }

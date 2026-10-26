@@ -1,10 +1,6 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
-import { X } from 'lucide-react'
 import { verifyOptinToken } from '@/lib/crm/optin/tokens'
-import { Button, Outcome, OutcomeSkeleton } from '@/components/marketing/marketing-ui'
-import { ConfirmSubscribeButton } from './confirm-button'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FnOutcomePage, FnOutcomeSkeleton, FnStage } from '@/components/frequency/site/pages/funnel/parts'
 import { FrequencyConfirmSubscribe } from '@/components/frequency/site/pages/funnel/confirm-subscribe'
 
@@ -23,7 +19,7 @@ export default function SubscribeConfirmPage({
   searchParams: Promise<{ e?: string; x?: string; t?: string }>
 }) {
   return (
-    <Suspense fallback={SITE_DESIGN === 'frequency' ? <FnOutcomeSkeleton /> : <OutcomeSkeleton />}>
+    <Suspense fallback={<FnOutcomeSkeleton />}>
       <SubscribeConfirmOutcome searchParams={searchParams} />
     </Suspense>
   )
@@ -44,38 +40,21 @@ async function SubscribeConfirmOutcome({
   const exp = Number(x)
   const tokenOk = !!email && !!t && verifyOptinToken(email, exp, t)
 
-  // The Frequency design (ADR-1737): the same verify-on-load, confirm-on-click split, in its outcome box.
-  if (SITE_DESIGN === 'frequency') {
     if (tokenOk) {
-      return (
-        <FnStage>
-          <FrequencyConfirmSubscribe e={email} x={x as string} t={t as string} />
-        </FnStage>
-      )
-    }
     return (
-      <FnOutcomePage
-        tone="danger"
-        icon="close"
-        title="This link didn't work."
-        action={{ href: '/subscribe', label: 'Send a new link' }}
-      >
-        It may have expired or been mistyped. Enter your email again and we&apos;ll send a fresh confirm link.
-      </FnOutcomePage>
+      <FnStage>
+        <FrequencyConfirmSubscribe e={email} x={x as string} t={t as string} />
+      </FnStage>
     )
   }
-
-  if (tokenOk) return <ConfirmSubscribeButton e={email} x={x as string} t={t as string} />
-
   return (
-    <Outcome
+    <FnOutcomePage
       tone="danger"
-      icon={X}
-      title={<>This link didn&apos;t work.</>}
-      action={<Button href="/subscribe">Send a new link</Button>}
+      icon="close"
+      title="This link didn't work."
+      action={{ href: '/subscribe', label: 'Send a new link' }}
     >
-      It may have expired or been mistyped. Enter your email again and we&apos;ll send a fresh confirm
-      link.
-    </Outcome>
+      It may have expired or been mistyped. Enter your email again and we&apos;ll send a fresh confirm link.
+    </FnOutcomePage>
   )
 }

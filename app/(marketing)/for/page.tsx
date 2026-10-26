@@ -1,16 +1,14 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { getFunnelConfig, funnelSlugs } from '@/lib/marketing/funnel-config'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyForIndex } from '@/components/frequency/site/pages/funnel/frequency-for-index'
 
 // The index of the six operator doors, so /for is a real page. It sits in the (marketing) group, so it
 // wears the standard site header and footer (the doors themselves stay chrome-free, ADR-591). A Frequency
-// route, like /networks: a DAWN build answers 404 and the sitemap lists it only under Frequency.
+// route, like /networks, and the sitemap lists it.
 export const revalidate = 3600
 
 const TITLE = 'Software for coaches, studios, hosts, venues, Non Profits and networks'
@@ -26,7 +24,6 @@ export const metadata: Metadata = {
 }
 
 export default async function ForIndexPage() {
-  if (SITE_DESIGN !== 'frequency') notFound()
   const input = await loadPricingInput()
   const doors = funnelSlugs()
     .map((slug) => getFunnelConfig(slug, input))
