@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1142",
+  "title": "Drag-only reorder screens have a keyboard and button alternative",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/admin/menu/menu-arrange-board.tsx",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "WCAG 2.5.7. Admin walkthroughs editor (editor.tsx:289), menu-arrange-board.tsx:182,253, menu-groups-editor, image-cropper, and the mobile page-editor block list (suspected).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs drag-alt",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}

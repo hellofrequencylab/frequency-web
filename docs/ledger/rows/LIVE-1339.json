@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1339",
+  "title": "Count a sit the member started but never finished",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/on-air/timer-session-actions.ts",
+    "ref": "getActiveTimerSession stale-row branch"
+  },
+  "detail": "A timer left running past the six hour window was deleted on the next page load with no log, so a reflection the member really did left the day empty and broke a 132 day streak (2026-10-25). The stale row now banks a partial log first (clears the day, ticks the streak, 1 Zap, Finish Practice can still top it up), attributed to the day the sit started under the existing one day clamp. An armed pre-roll that never began still earns nothing.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "evidence": "Test banks the aged out sit as a partial with the started_at day, and banks nothing for an armed pre-roll that never began.",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/on-air/timer-session-actions.ts','utf8');if(!s.includes('bankUnfinishedSit(profileId, data, armedNeverBegun)'))process.exit(1)\""
+  }
+}
