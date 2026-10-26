@@ -20,6 +20,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { logPractice } from '@/lib/practices'
+import { log as serverLog } from '@/lib/log'
 import { LIVE_SESSION_MAX_AGE_MS, type LiveSessionRecord, type LiveTimerKind } from '@/lib/on-air/live-session'
 
 // The untyped active-timer query builder (practice_timer_sessions is not in the
@@ -142,6 +144,35 @@ export async function cancelTimerSession(): Promise<ActionResult<true>> {
  *  survive a slow network and short enough that a dead row never outlives one page visit. */
 const ARMED_PREROLL_MAX_AGE_MS = 5 * 60 * 1000
 
+/** A sit the member began and never finished is still a sit they did. When its row ages out
+ *  unfinished, bank it as a PARTIAL log (clears the day, ticks the streak, 1 Zap; "Finish
+ *  Practice" can still top it up) instead of dropping it silently. Only a sit that actually
+ *  began counts: an armed pre-roll that never handed over (the abandoned-tab case) earns nothing.
+ *  Attribution rides on the server-stamped started_at (the same ADR-801 clamp: at most one day
+ *  back), so a forged row can never backdate further. Best-effort: never blocks the read. */
+async function bankUnfinishedSit(profileId: string, row: TimerRow, armedNeverBegun: boolean): Promise<void> {
+  if (armedNeverBegun || !row.practice_id) return
+  try {
+    const { data } = await createAdminClient()
+      .from('practices')
+      .select('duration_min')
+      .eq('id', row.practice_id)
+      .maybeSingle()
+    const durationMin = (data as { duration_min: number | null } | null)?.duration_min ?? 0
+    const target = row.seconds_target ?? Math.round(durationMin * 60)
+    await logPractice({
+      profileId,
+      practiceId: row.practice_id,
+      secondsDone: 0,
+      secondsTarget: target > 0 ? target : 300,
+      attended: false,
+      startedAt: row.started_at,
+    })
+  } catch (e) {
+    serverLog.warn('on_air.unfinished_sit_bank_failed', { profileId, error: e instanceof Error ? e.message : String(e) })
+  }
+}
+
 export async function getActiveTimerSession(): Promise<ActionResult<LiveSessionRecord | null>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
@@ -180,6 +211,7 @@ export async function getActiveTimerSession(): Promise<ActionResult<LiveSessionR
     //     cross-device resume this table exists for still works across a normal day.
     const stale = armedNeverBegun ? age > ARMED_PREROLL_MAX_AGE_MS : age > LIVE_SESSION_MAX_AGE_MS
     if (stale) {
+      await bankUnfinishedSit(profileId, data, armedNeverBegun)
       // Clear it so the next read is clean, and so a member who never opens a support
       // channel is not stuck behind a row only an operator could see. Best-effort: a failed
       // delete still returns null, which is the behaviour that matters.
