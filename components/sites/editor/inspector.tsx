@@ -13,6 +13,7 @@ import { FQ_EDITOR, k, on } from './skin'
 import { sectionDeviceLayout, sectionLayoutPreset, SECTION_SPACING_STEPS, snapSectionSpacing } from '@/lib/sites/editor/layout'
 import { cleanSectionAnchor, resolveWebsiteChrome, validWebsiteChrome, type WebsiteChrome, type Device, type SectionDisplay, type SectionTone, type SectionWidth } from '@/lib/sites/editor/state'
 import { slugify } from '@/lib/utils'
+import { bindSlots, keepSlotTokens, readSlots } from '@/lib/spaces/content-slots'
 import { inspectorTarget, type FieldFocus } from '@/lib/sites/editor/field-sync'
 
 // THE FREQUENCY DESIGN AND ADVANCED TABS (design_handoff/frequency/templates/admin/editor/editor.js renderInsp):
@@ -32,7 +33,7 @@ function AnchorField({ value, fallback, onCommit }: { value?: string; fallback: 
   return <div className="fld"><label htmlFor="we-anchor">Anchor link <em>#{cleanSectionAnchor(shown) ?? fallback}</em></label><Input id="we-anchor" className="in" value={shown} placeholder={fallback} maxLength={60} onChange={(e) => setBuffer(e.target.value)} onBlur={() => { if (buffer === null) return; onCommit(cleanSectionAnchor(buffer)); setBuffer(null) }} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setBuffer(null) }} /></div>
 }
 
-export function WebsiteInspector({ config, block, doc, device, metadata, sourceSettingsHref, focus, onFieldFocus, onChange, onDisplay, tab, part, live: liveOverride, visibility, onVisibility, onBase }: {
+export function WebsiteInspector({ config, block, doc, device, metadata, sourceSettingsHref, focus, onFieldFocus, onChange: emitChange, onDisplay, tab, part, live: liveOverride, visibility, onVisibility, onBase }: {
   /** The Site Editor's inspector sub-tab. Without one, every group shows (the inspector stands alone). */
   tab?: 'content' | 'design' | 'advanced'
   config: Config; block: ContentItem; doc: Data; device: Device; metadata?: Metadata; sourceSettingsHref?: string
@@ -55,7 +56,11 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
   const [screens, setScreens] = useState<PushRequest[]>([])
   const root = useRef<HTMLDivElement>(null)
   const [lit, setLit] = useState<string | null>(null)
-  const editableProps = normalizeWebsiteFields(block).props
+  // The fields show the words the owner SEES: a kit's `{{slot|sample}}` token resolves against the Space's shared
+  // content (lib/spaces/content-slots.ts). What is saved keeps the token unless the owner changed that field.
+  const storedProps = normalizeWebsiteFields(block).props
+  const editableProps = bindSlots(storedProps, readSlots(metadata?.space))
+  const onChange = (next: Record<string, unknown>) => emitChange(keepSlotTokens(storedProps, editableProps, next))
   const { load, error: sourceError } = useWebsiteFeatureSource()
   const schema = config.components[block.type]?.fields ?? {}
   // Match SpaceOfferings' canonical catalog precedence, including its listed-only public filter.

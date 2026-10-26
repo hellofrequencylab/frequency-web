@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bindSlots, readSlots, type SlotValues } from './content-slots'
+import { bindSlots, keepSlotTokens, readSlots, type SlotValues } from './content-slots'
 
 const resolveSlotText = (value: string, slots: SlotValues) => bindSlots(value, slots)
 const resolveSlot = (saved: string | undefined, kit: string | undefined) => {
@@ -61,5 +61,19 @@ describe('bindSlots', () => {
   })
   it('keeps text an owner typed over a token', () => {
     expect(bindSlots({ lead: 'My own words.' }, { story: 'Saved story' })).toEqual({ lead: 'My own words.' })
+  })
+})
+
+describe('keepSlotTokens', () => {
+  const stored = { title: '{{name|Your name}}', body: '{{story|Sample}}', cards: [{ t: '{{tagline|x}}' }, { t: 'Own' }] }
+  const slots = { name: 'Salt', story: 'Saved story', tagline: 'Slow down' }
+  const bound = bindSlots(stored, slots)
+  it('keeps every token when nothing changed', () => expect(keepSlotTokens(stored, bound, structuredClone(bound))).toEqual(stored))
+  it('replaces only the field the owner changed', () => {
+    expect(keepSlotTokens(stored, bound, { ...bound, title: 'My title' })).toEqual({ ...stored, title: 'My title' })
+  })
+  it('keeps the other cards tokens when one card changes', () => {
+    const next = { ...bound, cards: [{ t: 'Slow down' }, { t: 'Edited' }] }
+    expect(keepSlotTokens(stored, bound, next)).toEqual({ ...stored, cards: [{ t: '{{tagline|x}}' }, { t: 'Edited' }] })
   })
 })
