@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1150",
+  "title": "A Journey leader can push a Dispatch to the people enrolled in it",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/journeys/[slug]/launch/page.tsx",
+    "ref": "Meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md), Phase 4 follow-up: Dispatch to a cohort was a disabled chip"
+  },
+  "detail": "The Dispatch chip in Message enrollees on /journeys/[slug]/launch was disabled. It now sends a push to each picked enrollee through routeNotification('event.dispatch'), the same Dispatch category the Space and Event fan-outs use, so each member's own push preference and their per-Space mute decide who hears it. The sender is never pushed, the list is capped at 500 and rate limited, and the result line counts only people the router actually enqueued. No row is written to the Dispatch feed: a feed row is scoped to a Space or an Event, and a Journey cohort is neither, so a feed copy would need a schema change and is left out on purpose.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));const t=f.readFileSync(\"app/(main)/journeys/[slug]/launch/actions.ts\",\"utf8\");process.exit(/sendCohortDispatch\\(/.test(t)&&/event\\.dispatch/.test(t)?0:1)'",
+    "note": "Exits 0 once the launch action pushes a Dispatch to enrollees through the notification router."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}

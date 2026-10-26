@@ -158,7 +158,7 @@ export function NicheDoor({ config, week }: { config: FunnelConfig; week: readon
 
       {/* 01 Hero */}
       <section className="phero big" id="nk-hero" data-energy="flow" data-screen-label="01 Hero">
-        <div className="bg" data-px=".9">
+        <div className="bg" data-px=".9" aria-hidden="true">
           <Image
             className="nk-bgimg"
             src={`${NICHE_PHOTO_DIR}/${d.photo}`}
@@ -362,7 +362,7 @@ export function NicheDoor({ config, week }: { config: FunnelConfig; week: readon
 
       {/* 06b Interlude */}
       <section className="nk-inter" data-screen-label="06b Interlude">
-        <div className="bg" data-px="2.2">
+        <div className="bg" data-px="2.2" aria-hidden="true">
           <Image
             className="nk-bgimg"
             src={`${NICHE_PHOTO_DIR}/${d.interlude}`}

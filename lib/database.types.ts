@@ -259,18 +259,21 @@ export type Database = {
       space_private_state: {
         Row: {
           space_id: string
+          coach_profile: Json | null
           website_editor: Json | null
           program_overview: string | null
           updated_at: string
         }
         Insert: {
           space_id: string
+          coach_profile?: Json | null
           website_editor?: Json | null
           program_overview?: string | null
           updated_at?: string
         }
         Update: {
           space_id?: string
+          coach_profile?: Json | null
           website_editor?: Json | null
           program_overview?: string | null
           updated_at?: string

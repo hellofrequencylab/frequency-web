@@ -1,0 +1,16 @@
+{
+  "id": "OWN-109",
+  "patch": {
+    "title": "Verify authenticated private Space coach settings acceptance",
+    "status": "open",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-10-26",
+      "evidence": "Release owner verified production25000/schema ledger857 and anon/auth private-column privileges false. Source/mocked two-tenant storage, gated settings page and action tests pass separately. Authenticated production UI and public-page non-disclosure acceptance remain pending."
+    }
+  },
+  "append": {
+    "detail": "2026-10-26 production receipt from the release owner: migrations20270346024600 and20270346025000 are applied and the ledger reconciles at857; anonymous and authenticated roles cannot select private coach context. Storage prerequisite is satisfied. Keep this row open for authenticated editor save/clear/read across two Spaces, unrelated-owner denial and public-page non-disclosure after the separate Space coaching UI is published. Applying storage does not establish UI acceptance."
+  },
+  "wave": "W7"
+}

@@ -6,7 +6,7 @@ const failures = []
 for (const phrase of ['Land where your town looks', 'Rise by how often you gather', 'A full room at night', 'your whole town reads', 'someone saves you a spot', 'Grow without burning out']) {
   if (home.includes(phrase)) failures.push(`Home still publishes unsupported or retired copy: ${phrase}`)
 }
-if (!home.includes('BETA_ENDS_LABEL')) failures.push('Home beta copy no longer reads the shared date')
+if (!home.includes('OPENING_DATE_LABEL')) failures.push('Home beta copy no longer reads the shared date')
 const visible = home.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').replace(/ ([.,:])/g, '$1')
 for (const key of ['headline', 'lede']) {
   const match = seo.match(new RegExp(`${key}: '([^']*(?:’[^']*)*)'`))

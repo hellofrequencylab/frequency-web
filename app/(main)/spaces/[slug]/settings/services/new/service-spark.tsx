@@ -75,7 +75,7 @@ export function ServiceSpark({
         title: 'What do you do for someone?',
         description:
           'A session, a class, a job. It lands in your catalog, and you publish it when it is ready.',
-        veraHint: 'Say roughly what the work is and Vera writes the name and the details for you to edit.',
+        veraHint: 'Get questions to help you explain this in your own words.',
         manualHint: 'Go straight to the form: photos, how you price it, and how long it runs.',
         aside: <PayoutPromptCard prompt={payoutPrompt} />,
       }}

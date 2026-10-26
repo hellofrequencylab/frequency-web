@@ -55,7 +55,7 @@ const SHARED_IMPORTS = [
 // ── Logic that must live in EXACTLY ONE file (re-inlining it elsewhere = drift). Each sentinel is a stable
 // substring of the shared implementation; `owner` is the only file allowed to contain it. ──
 const SINGLE_SOURCE = [
-  { sentinel: 'You draft a reply to a member on behalf of a Frequency team member', owner: 'lib/comms/vera-conversation.ts', what: 'Vera draft prompt' },
+  { sentinel: 'Coach the human replying to this conversation. Do not write or rewrite a reply.', owner: 'lib/comms/vera-conversation.ts', what: 'Vera reply coaching prompt' },
   { sentinel: 'You summarize a support/CRM conversation', owner: 'lib/comms/vera-conversation.ts', what: 'Vera summary prompt' },
   { sentinel: "You classify a conversation's priority", owner: 'lib/comms/vera-conversation.ts', what: 'Vera triage prompt' },
   { sentinel: 'sentinel:conversation-compose-pipeline', owner: 'lib/comms/conversation-compose.ts', what: 'conversation-compose pipeline (ADR-821)' },
@@ -144,8 +144,11 @@ export function checkCrmParity(root = ROOT) {
 
   // 2) Single-source logic isn't re-inlined anywhere else.
   const files = walkCodeFiles(root)
+  // Read each source once. Re-reading the whole tree for every sentinel multiplied disk IO
+  // and could time out the parity test while other validation was running.
+  const sources = files.map(abs => ({ path: relative(root, abs).replace(/\\/g, '/'), text: readFileSync(abs, 'utf8') }))
   for (const { sentinel, owner, what } of SINGLE_SOURCE) {
-    const hits = files.filter((abs) => (readFileSync(abs, 'utf8')).includes(sentinel)).map((abs) => relative(root, abs).replace(/\\/g, '/'))
+    const hits = sources.filter(source => source.text.includes(sentinel)).map(source => source.path)
     const ownerHit = hits.includes(owner)
     const strays = hits.filter((h) => h !== owner)
     if (!ownerHit) {

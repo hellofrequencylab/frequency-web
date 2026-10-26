@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-885",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const b=fs.readFileSync('components/frequency/site/pages/home/frequency-home.tsx','utf8');const c=fs.readFileSync('app/themes/frequency/site-pages-a.css','utf8');const site=fs.readFileSync('lib/site.ts','utf8');const bad=[];if(!b.includes('className=\\\"beta-pill\\\"'))bad.push('no beta pill in the hero');if(!b.includes('id=\\\"beta\\\"'))bad.push('no beta band');if(!/import\\\\s*\\\\{[^}]*\\\\bOPENING_DATE_LABEL\\\\b[^}]*\\\\}\\\\s*from\\\\s*['\\\"]@\\\\/lib\\\\/site['\\\"]/.test(b)||!/\\\\bconst\\\\s+BETA_UNTIL\\\\s*=\\\\s*OPENING_DATE_LABEL\\\\b/.test(b)||!/\\\\bexport\\\\s+const\\\\s+OPENING_DATE_LABEL\\\\s*=\\\\s*['\\\"]December 1, 2026['\\\"]/.test(site))bad.push('Home does not read the shared opening date with its year');if(!b.includes(\\\"BETA_CTA = 'Join the beta'\\\"))bad.push('no Join the beta CTA');const acts=b.match(/[{] href: [^,]+, icon:/g)||[];if(acts.length<24||acts.some(a=>!a.includes('SITE.join')))bad.push('a chapter Acts link skips /join');if(/className=\\\"pd [lr]\\\" data-set/.test(b)||!/<Link className=\\\"pd l\\\" href=[{]SITE.join[}]/.test(b))bad.push('path doors do not lead to /join');if(!/<div className=\\\"dock\\\">[\\\\s\\\\S]*href=[{]SITE.join[}]/.test(b))bad.push('dock has no beta button');if(/href=[{]SITE.(people|spaces)[}]>/.test(b))bad.push('a feature CTA still points past /join');if(!b.includes('Find a gathering near you. Try a Thursday.')||!b.includes('Come back if it feels right.')||!b.includes('Founding members set the rhythm here'))bad.push('approved invitation and founding rhythm copy missing');if(!c.includes('.pa-home .bb{'))bad.push('beta band unstyled');if(bad.length){console.error('SCAN-885: '+bad.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "RE-PINNED 2026-10-26 (SCAN-1113): Daniel answered 6A (show December 1, 2026 with the year on the home beta band). BETA_UNTIL now reads OPENING_DATE_LABEL from lib/site.ts, so the probe pins that constant and its year. The CTA, door and copy checks are unchanged."
+  },
+  "wave": "W7"
+}

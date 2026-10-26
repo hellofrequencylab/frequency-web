@@ -1,7 +1,7 @@
 'use client'
 
 // The docked composer for one conversation (ADR-812 Phase 3): a Reply / Note segmented toggle, the body
-// field, an optional "Draft with Vera" affordance (Phase 5), and the gated Send. A public reply enqueues
+// field, an optional "Coach my reply" affordance (Phase 5), and the gated Send. A public reply enqueues
 // an outbound email that threads back to this conversation; an internal note is staff-only. The reply +
 // draft actions are INJECTED (default to the operator actions) so the same composer serves the operator
 // inbox and the leader inbox.
@@ -27,7 +27,7 @@ export function ConversationComposer({
   counterpartName: string | null
   /** The gated reply action (defaults to the operator action; the leader inbox injects its own). */
   sendAction?: SendAction
-  /** Optional "Draft with Vera" action; the button only shows when it is provided. */
+  /** Optional "Coach my reply" action; the button only shows when it is provided. */
   draftAction?: DraftAction
 }) {
   const router = useRouter()
@@ -36,7 +36,7 @@ export function ConversationComposer({
   const [body, setBody] = useState('')
   const [internal, setInternal] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [aiDrafted, setAiDrafted] = useState(false)
+  const [guidance, setGuidance] = useState<string | null>(null)
 
   function submit() {
     const text = body.trim()
@@ -62,7 +62,7 @@ export function ConversationComposer({
         return
       }
       setBody('')
-      setAiDrafted(false)
+      setGuidance(null)
       router.refresh()
     })
   }
@@ -77,16 +77,14 @@ export function ConversationComposer({
       try {
         res = await draftAction(conversationId)
       } catch {
-        setError('Vera could not draft a reply right now. The thread is fine. Try again in a moment.')
+        setError('Vera could not review this thread right now. The thread is fine. Try again in a moment.')
         return
       }
       if (isError(res)) {
         setError(res.error)
         return
       }
-      setBody(res.data.draft)
-      setInternal(false)
-      setAiDrafted(true)
+      setGuidance(res.data.draft)
     })
   }
 
@@ -119,7 +117,7 @@ export function ConversationComposer({
         value={body}
         onChange={(e) => {
           setBody(e.target.value)
-          setAiDrafted(false)
+          setGuidance(null)
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit()
@@ -129,7 +127,7 @@ export function ConversationComposer({
         aria-label={internal ? 'Internal note' : 'Reply'}
         className="resize-none leading-relaxed"
       />
-      {aiDrafted && <p className="mt-1 text-2xs text-muted">Vera drafted this. Read it and edit before you send.</p>}
+      {guidance && <aside aria-label="Reply coaching" className="mt-2 whitespace-pre-line rounded-control border border-border p-3 text-meta">{guidance}<p className="mt-2 text-muted">Your reply is unchanged. Write and send it in your own words.</p></aside>}
       {error && (
         <p role="alert" className="mt-1 text-meta text-danger">
           {error}
@@ -141,11 +139,11 @@ export function ConversationComposer({
             type="button"
             onClick={draft}
             disabled={drafting || pending}
-            title="Draft a reply with Vera (you review before sending)"
+            title="Get questions to help you write your reply"
             className="inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Draft with Vera
+            Coach my reply
           </button>
         ) : (
           <p className="text-2xs text-muted">

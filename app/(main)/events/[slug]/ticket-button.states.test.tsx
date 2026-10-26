@@ -211,7 +211,7 @@ describe('the drawer opens between the button and everything under it', () => {
   // stacked buttons for one act is the confusion, and a quieter fill does not remove it.
   it('replaces the CTA with a one-line control, leaving no second button', async () => {
     mount(<TicketButton eventId="e1" priceLabel="$44.00" />)
-    expect(cta().className, 'closed, it is the primary call to action').toContain('bg-primary')
+    expect(cta().className, 'closed, it is the primary call to action').toContain('btn pa')
     const closedButtons = container!.querySelectorAll('button').length
 
     startTicket.mockResolvedValue({ data: { clientSecret: 'cs_1_secret_x', sessionId: 'cs_1' } })
