@@ -361,8 +361,8 @@ export async function updatePracticeAction(id: string, patch: PracticeEdit): Pro
 // ── Vera Practice composer (ADR-358) ──────────────────────────────────────────────────────────
 //
 // The Practice builder's "Build with Vera" / "Edit with Vera" box, the atom-level twin of the
-// Journey composer. A Practice is one act (no block tree), so Vera drafts (or rewrites) its FIELDS
-// in place: name, hook, one-line description, full guide, cadence, and the Pillar it fits. Both
+// Journey composer. A Practice is one act (no block tree). Coaching returns questions
+// beside the author's fields and never writes names, hooks, guides or cadence. Both
 // actions are owner-gated like every edit, route through the shared Vera infra (voice primer +
 // usage ledger + budget cap), and degrade cleanly when Vera is off so the author can type by hand.
 

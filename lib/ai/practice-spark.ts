@@ -29,9 +29,8 @@ export const CADENCE_LABEL: Record<PracticeCadenceHint, string> = {
   weekly: 'Weekly',
 }
 
-/** The timer half of the draft (ADR-920 Phase 5): how the Practice is DONE. Every field is
- *  re-validated server-side (sanitizeMovementConfig / the builder's clamps) before storage —
- *  Vera proposes, the schema disposes. */
+/** Manual Practice timer configuration. Existing server sanitizers validate every field
+ * before storage; coaching never supplies timer settings. */
 export interface PracticeSparkTimer {
   /** 'mindless' (Be Still), 'movement' (Get Moving), or 'none' (Just Log a real-world act). */
   timerKind: 'mindless' | 'movement' | 'none'

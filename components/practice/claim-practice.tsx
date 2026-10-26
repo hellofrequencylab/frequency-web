@@ -11,8 +11,8 @@ import { Button } from '@/components/ui/button'
 
 // Claim a starter TEMPLATE → your own practice, via a short Vera-guided wizard
 // (ADR-116). Mirrors the demo-circle claim (components/circles/claim-circle.tsx):
-// a prominent button opens a modal — (1) your goal + schedule, (2) Vera tailors
-// the title / cadence / steps (editable; falls back to the template if AI is off),
+// a prominent button opens a modal: (1) your goal + schedule, (2) separate coaching
+// questions while the author edits the original template fields,
 // (3) Claim → creates your private, adopted copy and drops you on it.
 
 type Fallback = { title: string; cadence: string; why: string; steps: string[] }
