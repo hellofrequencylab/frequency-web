@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1373",
+  "title": "One About for every surface: typing About in the Spotlight or publishing the Space page saves it to the Space",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/spaces/promote-about.ts",
+    "ref": "Daniel 2026-10-26: content blocks synced across Spotlight, Space page and website; follow-up to LIVE-1372"
+  },
+  "detail": "An About body typed into one page was saved as that page's own copy, which beats the Space's intro, so the other pages never saw it. The Spotlight save, and the Space page when it is published, now lift the typed body out of the layout, write it to the Space (spaces.about) and leave the page on the shared intro. Both actions already gate on canManage. Story and the website editor are not changed here.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/spaces/[slug]/manage/spotlight/actions.ts','utf8');process.exit(s.includes('takeAboutBody')&&fs.existsSync('lib/spaces/promote-about.ts')?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Vitest promote-about and the Space profile action suites pass; check:authz passes."
+  },
+  "closed": "2026-10-26"
+}
