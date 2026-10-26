@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1144",
+  "title": "A gate asserts CSP, HSTS and Permissions-Policy are present",
+  "status": "open",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "next.config.ts",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "check-headers is not a header gate and no script asserts security headers. Tiny gate over next.config.ts headers().",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs headers-gate",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}

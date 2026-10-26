@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1130",
+  "title": "Retire the legacy skin, generation, occasion and Theme Studio axes and the DAWN blocks in globals.css",
+  "status": "open",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "L",
+  "source": {
+    "file": "lib/theme/design.ts",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "Last, once nothing consumes them: LEGACY_THEME_AXES readers, skins, generations, occasions, design-fonts/dawn, app/globals.css lines 15-1054 (161 hex literals).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs legacy-axes",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}

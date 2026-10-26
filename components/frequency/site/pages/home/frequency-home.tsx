@@ -10,7 +10,7 @@
 //   06 Manifesto  "Sacred, not serious."
 //   Dock          the Browse / Host switch and Join the beta, pinned once the hero has gone
 //
-// THE BETA (owner, 2026-10-14): "We're in beta until January 1, let's announce that and do clear calls to
+// THE BETA (owner, 2026-10-14, since moved to December 1 by the 2026-10-19 ruling; BETA_ENDS_LABEL is the one date): "We're in beta until January 1, let's announce that and do clear calls to
 // action into our beta sign up. Each feature CTA leads to the same beta intake flow." So the hero carries
 // the beta pill and ONE primary (Join the beta), a band after the story says it again, and every feature
 // CTA on this page (the chapter Acts, the path doors, the "Live this week" host button, the closer, the
@@ -33,6 +33,7 @@ import '@/app/themes/active/site-pages-a'
 import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
 import { BETA_ENDS_LABEL } from '@/lib/core/beta-notices'
+import { homeFaq } from '@/lib/marketing/quick-answers'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getActiveCircleCount, getRankedSpaces, getWhatsOn, type SiteEvent } from '../shared/data'
 import { SITE } from '../shared/links'
@@ -586,6 +587,26 @@ export async function FrequencyHome() {
             Choose a step to follow the thread. Switch sides to see the host’s view.
           </p>
           <Weave stages={WEAVE} />
+        </div>
+      </section>
+
+      {/* 07 Questions: the same answers the page's FAQPage markup carries (SCAN-1112), in the kit's .qa rows. */}
+      <section className="sec" id="questions" data-screen-label="07 Questions">
+        <div className="wrap">
+          <div className="sh">
+            <div className="label">
+              <b>Questions</b>Asked and answered
+            </div>
+            <h2 className="h-l">Before you jump in.</h2>
+          </div>
+          <div className="qa">
+            {homeFaq().map((f) => (
+              <details key={f.q}>
+                <summary>{f.q}</summary>
+                <p>{f.a}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 

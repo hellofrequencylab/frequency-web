@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1124",
+  "title": "Cron auth fails closed off Vercel and the vitals endpoint is rate limited",
+  "status": "open",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/cron-auth.ts",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "An unset CRON_SECRET outside production lets 40+ cron routes through; /api/vitals is an unauthenticated service-role insert with no per-IP limit. Also add a header presence gate (see headers-gate).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs small-hardening",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}
