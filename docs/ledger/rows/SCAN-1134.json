@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1134",
+  "title": "Day, Week and Timeline calendar views exist and two-way calendar sync has a connect button",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "components/spaces/calendar-mode-toggle.tsx",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "The three views are a label plus a Coming soon mark; Google, Apple, Outlook and Notion sync are four rows with no button. Calendar redesign plan lives in /mnt/project-files/calendar/.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs calendar-views",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}
