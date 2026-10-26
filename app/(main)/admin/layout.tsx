@@ -1,107 +1,17 @@
-import { Suspense } from 'react'
 import { requireAdminFloor } from '@/lib/admin/guard'
-import { AdminSearchBar } from '@/components/admin/admin-search-bar'
-import { AdminSubNav } from '@/components/admin/admin-sub-nav'
-import { AdminInfoRail } from '@/components/admin/admin-info-rail'
-import { AdminRailDrawerColumn } from '@/components/admin/admin-rail-drawer-column'
-import { DockBar } from '@/components/layout/dock-bar'
-import { AdminPageDock } from '@/components/admin/admin-page-dock'
-import { AdminFooter } from '@/components/admin/admin-footer'
-import { getMenu } from '@/lib/menus/read'
-import { viewerRoleFor } from '@/components/layout/menu-role'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyAdminConsole } from '@/components/frequency/admin/admin-console'
 
 // Admin route group. The guard is the single entry gate (host+); a viewer without
 // access is redirected home rather than shown a dead-end 404. Pages re-assert their
-// own minimum via requireAdmin(min).
-//
-// Chrome (owner directive: one menu site-wide): the admin area rides the SAME global
-// left menu as the rest of the site (the app shell's nav; leftRailFor → 'global'). The
-// admin MENU is now a full-width secondary sub-header that the app shell renders itself
-// (sticky just under the main header, full viewport width, pushing content down). On top
-// of the shared shell this layout keeps the operator extras: the Ask-Vera/search command
-// bar (its own sticky band below the sub-header), the live info rail on the right (xl+),
-// and the bottom-right page-admin dock. The operator's profile card is the shell's own
-// ProfileCard (one card everywhere). The app-shell's member RIGHT rail stays suppressed
-// (railFor → 'none'). The info rail streams behind Suspense.
+// own minimum via requireAdmin(min). The console wears the Frequency admin shell (the glass sidebar
+// over the admin_header menu, the sticky top bar), ADR-1737.
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { profileId, role, webRole, staffRole } = await requireAdminFloor()
 
-  // THE DESIGN SWITCH (ADR-1737): under Frequency the console wears the design's admin shell (the glass
-  // sidebar over the same admin_header menu, the sticky top bar) and nothing below renders. SITE_DESIGN is
-  // build-time, so a DAWN build never takes this branch and renders exactly as before.
-  if (SITE_DESIGN === 'frequency') {
-    return <FrequencyAdminConsole profileId={profileId} role={role} webRole={webRole} staffRole={staffRole}>{children}</FrequencyAdminConsole>
-  }
-
-  // The admin sub-nav (§6): the ACTIVE Studio world's sub-pages render as a flat horizontal row of
-  // text links at the TOP of this sticky band, directly above the search bar — the MegaBar's second
-  // dropdown layer is gone (removed from the shell). The active world + active leaf are resolved
-  // client-side (usePathname) inside AdminSubNav; here we just read the admin_header surface (DB
-  // override, code default on any miss) and collapse the viewer to the MenuAccess token + staff role
-  // the two-axis gate consumes. Gates are unchanged: canSeeMenuItem unions the same axes as before.
-  const adminHeaderMenu = await getMenu('admin_header')
-  const menuViewer = {
-    viewerRole: viewerRoleFor({ loggedIn: true, communityRole: role, webRole }),
-    staffRole,
-  }
-
   return (
-    <div>
-      {/* No row gap: the rail column carries its own left gap at xl (w-72 = rail + gap), and a
-          gap on a zero-width column would push the center in at lg. */}
-      <div className="flex w-full">
-        {/* Center — the admin chrome block: the flat sub-nav link row + the Ask-Vera/search command
-            bar, in ONE sticky band that stays visible on scroll. */}
-        <main className="min-w-0 flex-1">
-          {/* The admin chrome block (§6a): the Ask-Vera/search bar and the sub-nav text-link row live
-              in ONE opaque sticky container (search on top since ADR-790 swapped the two — the comment
-              here used to describe the old order), so page content scrolls cleanly UNDERNEATH
-              the whole band like header chrome — nothing bleeds through the padding (the old bug was a
-              transparent gap above the input). `bg-canvas` at FULL opacity spans the whole
-              band height; a hairline border-b reads the scroll seam as chrome. The old shell-rendered
-              admin sub-header is gone, so this band now pins directly under the main header (3.5rem) at
-              EVERY breakpoint — the sub-nav row it absorbed is inside this same container. */}
-          {/* Owner directive (ADR-790): the search command bar sits ON TOP, the world sub-nav menu BELOW
-              it — so the Resonance CRM (and every world) reads "search, then the tab menu under it". */}
-          <div className="sticky top-[var(--app-header-h)] z-20 mb-6 border-b border-border bg-canvas">
-            <div className="py-2.5">
-              <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
-            </div>
-            <AdminSubNav sections={adminHeaderMenu.categories} viewer={menuViewer} />
-          </div>
-
-          {children}
-        </main>
-
-        {/* Right — the live operator info rail (xl+), in the column the shell-level Settings
-            drawer slides OVER. The drawer mounts inside this column (not the shell's) so it
-            covers the rail and compresses the center as its grab handle widens it. */}
-        <AdminRailDrawerColumn>
-          <Suspense fallback={<div className="h-40 animate-pulse rounded-card border border-border bg-surface" />}>
-            <AdminInfoRail role={role} webRole={webRole} staffRole={staffRole} />
-          </Suspense>
-        </AdminRailDrawerColumn>
-      </div>
-
-      {/* The page-admin dock — the SAME bar as the member Vault, populated with operator
-          elements. It used to be a second hand-rolled corner tab with its own skin string, no
-          chat segment and no ride-up, so the operator corner and the member corner were two
-          different objects pretending to be one pattern. Now both mount DockBar: left segment
-          is the page dock, right segment is the chat, one crest across the rail. `railFor`
-          returns 'none' on /admin, so the member dock never renders here and the two can never
-          collide. */}
-      {/* `folded` is FALSE here, and it is a statement rather than a placeholder: the operator
-          info rail (AdminRailDrawerColumn) is not on DAWN's fold ladder at all — it carries no
-          RailFoldControl, so there is no press that could fold it and nothing for the bar to
-          react to. The member rail's fold cannot reach this bar either; `railFor` returns 'none'
-          on /admin, so the two bars never co-exist. If the operator rail ever joins the ladder,
-          this is where its resolved fold goes — one prop, same behaviour. */}
-      <DockBar folded={false} vault={<AdminPageDock role={role} webRole={webRole} staffRole={staffRole} />} />
-
-      <AdminFooter role={role} webRole={webRole} staffRole={staffRole} />
-    </div>
+    <FrequencyAdminConsole profileId={profileId} role={role} webRole={webRole} staffRole={staffRole}>
+      {children}
+    </FrequencyAdminConsole>
   )
 }

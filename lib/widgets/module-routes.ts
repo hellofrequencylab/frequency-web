@@ -29,11 +29,9 @@ export const MODULE_ROUTES: readonly string[] = [
   '/admin/operations',
   '/admin/growth',
   '/admin/crm/members',
-  '/admin/gamification',
   '/admin/audit',
   '/admin/hubs',
   '/admin/nexuses',
-  '/admin/moderation',
   '/journeys',
   // The page that renders <PageModules> lives at /network/friends. Keyed as '/friends'
   // this list never matched it, so isModuleRoute() was false on the one page that mounts
