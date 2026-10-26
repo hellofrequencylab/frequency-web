@@ -8,6 +8,7 @@ import type { WebsiteTheme } from '@/lib/sites/editor/state'
 import { normalizeWebsiteFields } from '@/lib/sites/website-fields'
 import { safeDataAttributes } from '@/lib/sites/editor/layout'
 import { cleanSectionAnchor } from '@/lib/sites/editor/state'
+import { bindSlots, readSlots } from '@/lib/spaces/content-slots'
 
 /** Each tone as the site theme's own colours (DAWN aliases the website theme maps onto, WEBSITE_TOKEN_CSS),
  *  never a literal: White is the raised surface, Sand the theme's surface, Pastel a wash of its accent and
@@ -32,9 +33,12 @@ export function WebsiteDocument({ doc, config, metadata, live, links, origin, ti
 }) {
   // SpaceFAQ is a live block: resolve its rows at render time so fresh Space
   // questions appear in both the website and canvas without entering the draft.
+  // The Space's shared content slots (lib/spaces/content-slots.ts): a kit's `{{tagline|sample words}}` draws the
+  // saved value here, so the website follows the same facts as the Space page and Spotlight. Render-time only.
+  const slots = readSlots(metadata?.space)
   function resolveBlock(block: ContentItem, depth = 0): ContentItem {
     if (depth > 20) return block
-    const props = { ...normalizeWebsiteFields(block).props }
+    const props = { ...bindSlots(normalizeWebsiteFields(block).props, slots) }
     for (const [key, field] of Object.entries(config.components[block.type]?.fields ?? {})) {
       if (field.type === 'slot' && Array.isArray(props[key])) props[key] = props[key].map((child: ContentItem) => resolveBlock(child, depth + 1))
     }
