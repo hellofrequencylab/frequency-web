@@ -306,6 +306,20 @@ it('lists the session change log in the publish modal and clears it on publish',
   expect(node.querySelector('.toast')?.textContent).toBe('Published to hearts.example')
 })
 
+it('opens Change theme from the Theme tab and switches the draft theme as one undo step', () => {
+  const { node, click, button } = mount({ start: clean })
+  click('Theme')
+  act(() => (Array.from(node.querySelectorAll('.rail .row')).find((b) => b.textContent?.startsWith('Change theme')) as HTMLButtonElement).click())
+  const dialog = node.querySelector('[role=dialog]')!
+  expect(dialog.getAttribute('aria-label')).toBe('Change theme')
+  expect(dialog.textContent).toContain('Bold · Current')
+  expect(dialog.textContent).not.toContain('Starter kits')
+  act(() => (Array.from(dialog.querySelectorAll('.theme')).find((b) => b.querySelector('b')?.textContent === 'Midnight') as HTMLButtonElement).click())
+  expect(node.querySelector('[role=dialog]')?.textContent).toContain('Midnight · Current')
+  expect(node.querySelector('[role=dialog]')?.textContent).toContain('Starter kits')
+  expect(button('Close dialog')).toBeTruthy()
+})
+
 it('maps the Theme and Site tabs onto the real site settings', () => {
   const { node } = mount({ start: clean })
   act(() => (Array.from(node.querySelectorAll('.rail .tabs button')).find((b) => b.textContent === 'Theme') as HTMLButtonElement).click())
