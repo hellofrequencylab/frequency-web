@@ -1,28 +1,14 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { EventRow } from '@/components/discover/cards'
-import {
-  FrequencyArcs,
-  OrganicBlob,
-} from '@/components/marketing/vector-art'
-import {
-  Statement,
-  BetaCTA,
-  Button,
-} from '@/components/marketing/marketing-ui'
-import { DetailTemplate } from '@/components/templates'
-import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, cityEventListSchema } from '@/lib/jsonld'
 import { meetsIndexFloor } from '@/lib/seo/index-floor'
-import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import {
   getCategoryBySlug,
   getCityCategoryHub,
   getCityCategoryHubs,
 } from '../../../_data'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { FrequencyEventHub } from '@/components/frequency/site/pages/discover/frequency-discover-events'
 
@@ -92,50 +78,8 @@ export default async function CityCategoryHubPage({ params }: Params) {
   const siblings = (await getCityCategoryHubs()).filter(
     (h) => h.citySlug === hub.citySlug && h.category.slug !== cat.slug,
   )
-
-  // The Frequency design (ADR-1737): the same hub, siblings and JSON-LD, in the design's body. The
-  // operator cover below is a DAWN Detail-template input, so this branch returns before reading it.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd
-          data={[
-            breadcrumbSchema([
-              { name: 'Discover', path: '/discover' },
-              { name: 'Events', path: '/discover/events' },
-              { name: `${cat.label} in ${hub.city}`, path },
-            ]),
-            cityEventListSchema(hub.events, `${cat.label} in ${hub.city}`),
-          ]}
-        />
-        <FrequencyEventHub
-          city={hub.city}
-          label={cat.label}
-          noun={cat.noun}
-          nounSingular={cat.nounSingular}
-          events={hub.events}
-          today={dayInZone(new Date(), HOME_TZ)}
-          siblings={siblings.map((s) => ({
-            href: `/discover/events/in/${s.citySlug}/${s.category.slug}`,
-            label: s.category.label,
-            count: s.events.length,
-          }))}
-        />
-      </>
-    )
-  }
-
-  // The standard entity cover (PROG-P5, ADR-1136): the operator's /discover/events Settings
-  // image stands behind every city-category hub; a hub has no cover of its own.
-  const hero = await resolveDetailHero(path)
-
   return (
-    <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
-      <FrequencyArcs
-        aria-hidden
-        className="pointer-events-none absolute -top-10 right-0 w-[28rem] max-w-none text-primary opacity-[0.05]"
-      />
-
+    <>
       <JsonLd
         data={[
           breadcrumbSchema([
@@ -146,71 +90,19 @@ export default async function CityCategoryHubPage({ params }: Params) {
           cityEventListSchema(hub.events, `${cat.label} in ${hub.city}`),
         ]}
       />
-
-      <DetailTemplate
-        {...hero}
-        back={{ href: '/discover/events', label: 'Events' }}
-        title={
-          <>
-            {cat.label} in <span className="text-primary-strong">{hub.city}</span>
-          </>
-        }
-        subtitle={
-          <span>
-            Here&rsquo;s every {cat.nounSingular} coming up in {hub.city}. Pick one, RSVP, and
-            you&rsquo;re expected. Public pages show the city only; the exact venue is shared with
-            members who RSVP.
-          </span>
-        }
-      >
-        <div className="mt-2 space-y-3">
-          {hub.events.map((e) => (
-            <div key={e.id} className="transition-transform hover:-translate-y-0.5">
-              <EventRow event={e} />
-            </div>
-          ))}
-        </div>
-
-        {siblings.length > 0 && (
-          <section className="mt-14">
-            <h2 className="text-body-sm font-semibold uppercase tracking-wide text-subtle">
-              More in {hub.city}
-            </h2>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {siblings.map((s) => (
-                <Link
-                  key={s.category.slug}
-                  href={`/discover/events/in/${s.citySlug}/${s.category.slug}`}
-                  className="rounded-pill border border-border bg-surface px-4 py-2 text-body-sm font-medium text-text transition-colors hover:border-border-strong"
-                >
-                  {s.category.label} ({s.events.length})
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-      </DetailTemplate>
-
-      <div className="relative mt-16 overflow-hidden">
-        <OrganicBlob
-          aria-hidden
-          className="pointer-events-none absolute -bottom-24 -right-16 w-[26rem] max-w-none text-primary opacity-[0.04]"
-        />
-        <Statement tone="ink">
-          Friendship happens <span className="text-primary">in person</span>.
-        </Statement>
-      </div>
-
-      <div className="mt-12">
-        <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
-      </div>
-
-      <div className="mt-16">
-        <BetaCTA
-          heading="See you there"
-          body={`Joining is free. RSVP to ${cat.noun} in ${hub.city}, meet your neighbors, and get the exact venue.`}
-        />
-      </div>
-    </div>
+      <FrequencyEventHub
+        city={hub.city}
+        label={cat.label}
+        noun={cat.noun}
+        nounSingular={cat.nounSingular}
+        events={hub.events}
+        today={dayInZone(new Date(), HOME_TZ)}
+        siblings={siblings.map((s) => ({
+          href: `/discover/events/in/${s.citySlug}/${s.category.slug}`,
+          label: s.category.label,
+          count: s.events.length,
+        }))}
+      />
+    </>
   )
 }

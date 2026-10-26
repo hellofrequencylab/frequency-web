@@ -229,6 +229,9 @@ export function compositionDrift(read = (f) => readFileSync(f, 'utf8'), exists =
     .map(([name, file]) => `${name} (${file})`)
 }
 
+/** The route roots whose layout is the public Frequency site frame. */
+const PUBLIC_SITE_ROOTS = ['discover', 'for', '(marketing)', '(help)', '(public)']
+
 /** Walk up from a page to app/, asking each layout.tsx whether it composes a shell.
  *  @param {string} pagePath
  *  @param {(f: string) => string} [read] repo-relative reader (the default hits the filesystem)
@@ -238,6 +241,9 @@ export function ancestorComposes(pagePath, read = (f) => readFileSync(f, 'utf8')
   for (;;) {
     const layout = join(dir, 'layout.tsx')
     if (exists(layout) && composesShell(read(layout))) return true
+    // The public site's own frame (ADR-1880): under these roots the layout's <SiteShell> is the page shell.
+    // Scoped, not a SHELLS entry, because app/(main) renders a SiteShell too and that is not its page frame.
+    if (PUBLIC_SITE_ROOTS.some((r) => dir === join(ROOT, r)) && exists(layout) && /<SiteShell\b/.test(stripComments(read(layout)))) return true
     if (dir === ROOT || dir === '.' || dir === '') return false
     const up = dirname(dir)
     if (up === dir) return false

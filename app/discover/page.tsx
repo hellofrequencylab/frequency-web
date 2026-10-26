@@ -1,6 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
 import {
   getTopicalChannels,
   getPublicCircles,
@@ -9,24 +7,7 @@ import {
   getPublicCounts,
   getPublicCityClusters,
 } from '@/lib/discover'
-import { ChannelCard, CircleCard, EventRow, PostPreview, SignInCta } from '@/components/discover/cards'
-import {
-  Statement,
-  ZigZag,
-  BetaCTA,
-  PhotoHero,
-  SectionHeading,
-  Button,
-  FaqList,
-} from '@/components/marketing/marketing-ui'
-import { DiscoverLocator } from '@/components/discover/discover-locator'
-import {
-  FrequencyArcs,
-  RippleRings,
-  CircleConstellation,
-  OrganicBlob,
-} from '@/components/marketing/vector-art'
-import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import {
   breadcrumbSchema,
@@ -35,7 +16,6 @@ import {
   eventListSchema,
   faqSchema,
 } from '@/lib/jsonld'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { FrequencyDiscoverHub } from '@/components/frequency/site/pages/discover/frequency-discover-hub'
 
@@ -128,35 +108,6 @@ export default async function DiscoverHubPage() {
     if (c.channel_slug) countByChannel.set(c.channel_slug, (countByChannel.get(c.channel_slug) ?? 0) + 1)
   }
   const liveChannels = channels.filter((ch) => (countByChannel.get(ch.slug) ?? 0) > 0)
-
-  // The Frequency design (ADR-1737): the same six reads, the same JSON-LD and the same FAQ, in the
-  // design's body. SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd
-          data={[
-            breadcrumbSchema([{ name: 'Discover', path: '/discover' }]),
-            topicListSchema(channels, 'Topics on Frequency'),
-            eventListSchema(events, 'Upcoming events'),
-            circleListSchema(circles, 'Circles forming now'),
-            faqSchema(DISCOVER_FAQS),
-          ]}
-        />
-        <FrequencyDiscoverHub
-          counts={counts}
-          events={events}
-          circles={circles}
-          channels={liveChannels.map((channel) => ({ channel, circles: countByChannel.get(channel.slug) ?? 0 }))}
-          towns={cityClusters.map((c) => ({ city: c.city, circles: c.circles, events: c.events }))}
-          posts={posts}
-          faqs={DISCOVER_FAQS}
-          today={dayInZone(new Date(), HOME_TZ)}
-        />
-      </>
-    )
-  }
-
   return (
     <>
       <JsonLd
@@ -168,287 +119,15 @@ export default async function DiscoverHubPage() {
           faqSchema(DISCOVER_FAQS),
         ]}
       />
-
-      {/* ── Hero ──────────────────────────────────────────────── */}
-      <PhotoHero
-        image="/images/site/meditation-circle-outdoor.jpg"
-        alt="A small circle sitting together outdoors, close enough to know everyone"
-        focal="object-center"
-        eyebrow="Discover Frequency"
-        title="Real community, near you"
-        subtitle="Somewhere close to you, your people are already meeting this week. A standing time, a handful of regulars, a seat that gets noticed when it's empty. Browse the Circles, events, and Channels for free; sign up to join one, RSVP, or post."
-      >
-        {/* 🔴 THREE LIVE TALLIES, so the camera paints over them (`data-visual-mask`, ADR-1277,
-            LIVE-301). `counts.members` and `counts.circles` are the `public_member_count` /
-            `public_active_circle_count` RPCs, and `events.length` is the folded
-            `public_events` read whose window slides with the clock. The `<p>` on the other
-            branch is NOT masked: it is fixed copy, and which branch renders is a HEIGHT, not a
-            pixel (see the note in test/e2e/surfaces.ts). */}
-        {counts.members >= SOCIAL_PROOF_FLOOR ? (
-          <div
-            data-visual-mask="discover-hero-stats"
-            className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-body-sm text-on-ink/80"
-          >
-            <span><strong className="text-on-ink">{counts.members}</strong> members</span>
-            <span className="text-on-ink/30">|</span>
-            <span><strong className="text-on-ink">{counts.circles}</strong> circles</span>
-            <span className="text-on-ink/30">|</span>
-            <span><strong className="text-on-ink">{events.length}</strong> upcoming events</span>
-          </div>
-        ) : (
-          <p className="text-body-sm text-on-ink/80">
-            Forming now in {FOUNDING_PLACE}: explore the first Circles, Channels, and events below.
-          </p>
-        )}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <Button href={BETA_CTA_HREF}>
-            {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
-          </Button>
-          <Link href="/discover/circles" className="text-body-sm font-semibold text-on-ink/80 hover:text-on-ink transition-colors">
-            or just browse, no account needed →
-          </Link>
-        </div>
-      </PhotoHero>
-
-      {/* ── Locator map (privacy-safe: city centroids only) ──────── */}
-      <section className="relative overflow-hidden bg-surface mk-beat border-b border-border/60">
-        {/* Frequency motif radiating up from the map, tying the discover hero to place. */}
-        <FrequencyArcs
-          aria-hidden
-          className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-[40rem] max-w-none text-primary opacity-[0.05]"
-        />
-        <div className="relative max-w-4xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto">
-            <SectionHeading
-              eyebrow="Where it's happening"
-              title="Find your area"
-              kicker="Every dot is neighbors already gathering."
-            />
-            <p className="mt-5 text-body-lg text-muted leading-relaxed">
-              Start with the map. Each marker is a real Circle taking root nearby. Close
-              enough to walk to, small enough that you&apos;re missed when you don&apos;t come.
-            </p>
-          </div>
-          {cityClusters.length > 0 ? (
-            <DiscoverLocator
-              cities={cityClusters}
-              circles={allCircles.map((c) => ({
-                slug: c.slug,
-                name: c.name,
-                city: c.city,
-                interest: c.channel_name,
-                memberCount: c.member_count,
-              }))}
-             
-            />
-          ) : (
-            <div className="mx-auto max-w-2xl rounded-card border border-border bg-marketing-canvas p-8 text-center">
-              <p className="mb-1 text-body-lg font-semibold text-text">We&apos;re starting in {FOUNDING_PLACE}.</p>
-              <p className="mb-5 text-body-sm text-muted leading-relaxed">
-                The first Circles are forming now. Be one of the first in your neighborhood.
-              </p>
-              <Button href={BETA_CTA_HREF}>
-                {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-          {cityClusters.length > 0 && (
-            <div className="text-center mt-8">
-              <Link href="/discover/cities#towns" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
-                Browse every town <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── Channels ──────────────────────────────────────────── */}
-      {liveChannels.length > 0 && (
-        <section className="relative overflow-hidden bg-marketing-canvas mk-beat">
-          {/* A loose constellation of people, the network a Channel opens onto. */}
-          <CircleConstellation
-            aria-hidden
-            className="pointer-events-none absolute top-12 right-0 w-72 max-w-none text-primary opacity-[0.06]"
-          />
-          <div className="relative max-w-4xl mx-auto">
-            <div className="text-center max-w-2xl mx-auto">
-              <SectionHeading
-                eyebrow="Explore by Channel"
-                title={<>Find what you <span className="text-primary-strong">practice</span></>}
-                kicker="The thing you already love is a doorway to a room of people."
-              />
-              <p className="mt-5 text-body-lg text-muted leading-relaxed">
-                Movement, spirituality, creative. Pick the Channel that&apos;s calling you,
-                and on the other side of it is a Circle living it near you this week.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {liveChannels.map((ch) => (
-                <ChannelCard key={ch.id} channel={ch} circleCount={countByChannel.get(ch.slug) ?? 0} />
-              ))}
-            </div>
-            <div className="text-center mt-8">
-              <Link href="/discover/topics" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
-                Browse all Channels <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Dark beat ─────────────────────────────────────────── */}
-      <Statement tone="ink">
-        Not a someday idea.{' '}
-        <span className="text-primary">It&apos;s already happening.</span>
-      </Statement>
-
-      {/* ── Upcoming events ───────────────────────────────────── */}
-      {events.length > 0 && (
-        <section className="bg-surface mk-beat">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center max-w-2xl mx-auto">
-              <SectionHeading
-                eyebrow="Coming up"
-                title={<>Show up <span className="text-primary-strong">this week</span></>}
-                kicker="These are real plans, on real days, with room for you."
-              />
-              <p className="mt-5 text-body-lg text-muted leading-relaxed">
-                A sunrise on the bluff, a thermal circuit, a supper table. Pick one, RSVP, and
-                you&apos;re expected. The kind of plan that pulls you off the couch and into a room.
-              </p>
-            </div>
-            {/* The four upcoming gatherings, from `public_events WHERE starts_at >= now()`: the
-                window slides continuously, so a row falls off the top of this list without a
-                deploy and every row below it moves up. The SectionHeading above is NOT masked —
-                unlike `/nearby`'s "Coming up", it carries no count, so nothing in it can move. */}
-            <div data-visual-mask="discover-upcoming-events" className="mt-9 space-y-3">
-              {events.map((e) => (
-                <EventRow key={e.id} event={e} />
-              ))}
-            </div>
-            <div className="text-center mt-8">
-              <Link href="/discover/events" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
-                Browse all events <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Featured circles ──────────────────────────────────── */}
-      {circles.length > 0 && (
-        <section className="relative overflow-hidden bg-marketing-canvas mk-beat">
-          {/* Ripple rings: a Circle widening out, the core motif for this beat. */}
-          <RippleRings
-            aria-hidden
-            className="pointer-events-none absolute -bottom-16 -left-16 w-96 max-w-none text-primary opacity-[0.06]"
-          />
-          <div className="relative max-w-4xl mx-auto">
-            <div className="text-center max-w-2xl mx-auto">
-              <SectionHeading
-                eyebrow="Find your people"
-                title={<>Circles forming <span className="text-primary-strong">now</span></>}
-                kicker="Up to fifty neighbors, small enough to know everyone."
-              />
-              <p className="mt-5 text-body-lg text-muted leading-relaxed">
-                Each one started with a few people, a standing time, and someone willing to say
-                see you next week. Find one that sounds like your people, or a reason to start your own.
-              </p>
-            </div>
-            {/* The featured six, from `public_circles ORDER BY member_count DESC`: ONE join
-                reorders the top of this grid, and each card also prints its own live member
-                count and its `forming` badge. The heading, the kicker and the browse link
-                beneath are fixed copy and stay in the picture. */}
-            <div
-              data-visual-mask="discover-featured-circles"
-              className="mt-9 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-            >
-              {circles.map((c) => (
-                <CircleCard key={c.id} circle={c} />
-              ))}
-            </div>
-            <div className="text-center mt-8">
-              <Link href="/discover/circles" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
-                Browse all circles <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Human accent ──────────────────────────────────────── */}
-      <ZigZag
-        tone="surface"
-        img="/images/site/community-dinner.jpg"
-        alt="A long-table outdoor dinner at night under string lights and a patio heater, friends gathered around the lit table"
-        imgAspect="landscape"
-        imgPosition="center"
-        eyebrow="Why we show up"
-        title="Somewhere that keeps a seat for you"
-        kicker="Not an audience. A few people who know your name."
-      >
-        <p>
-          Frequency runs on a plain idea: people are steadier, healthier, and more themselves
-          when they belong to a group that knows them. Not a follower count. A handful of faces
-          that light up when you walk in.
-        </p>
-        <p>
-          Every Circle and every event here is a standing invitation to show up in person. To
-          trade the scroll for a real morning on the grass, next to neighbors who notice the
-          week you go quiet and text to ask if you&apos;re alright.
-        </p>
-        <p>
-          That&apos;s what&apos;s waiting on the other side of a browse: somewhere to belong,
-          close enough to walk to, with people who keep a seat warm for you.
-        </p>
-      </ZigZag>
-
-      {/* ── Feed preview ──────────────────────────────────────── */}
-      {posts.length > 0 && (
-        <section className="bg-marketing-canvas mk-beat">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center">
-              <SectionHeading eyebrow="What people are saying" title="From the community" />
-            </div>
-            {/* The newest three, from `public_posts ORDER BY created_at DESC`: one post replaces
-                the newest of three and pushes the other two down. Each card also carries an
-                author, an avatar and a `relativeTime()` stamp — plain text, not a `<time>`
-                element, so the global `time, [datetime]` selector never reached it. The
-                SignInCta below is NOT masked: it is fixed copy on a fixed card. */}
-            <div data-visual-mask="discover-community-posts" className="space-y-3 mb-3">
-              {posts.map((p) => (
-                <PostPreview key={p.id} post={p} />
-              ))}
-            </div>
-            <SignInCta
-              title="Join to see more"
-              body="The full feed, the events, and your local Circle."
-              action={BETA_CTA_LABEL}
-              href={BETA_CTA_HREF}
-            />
-          </div>
-        </section>
-      )}
-
-      {/* ── FAQ ───────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-surface mk-beat border-t border-border/60">
-        {/* A soft warm blob behind the FAQ, easing the page toward the closing CTA. */}
-        <OrganicBlob
-          aria-hidden
-          className="pointer-events-none absolute -bottom-28 -right-20 w-[34rem] max-w-none text-primary opacity-[0.04]"
-        />
-        <div className="relative max-w-3xl mx-auto">
-          <div className="text-center">
-            <SectionHeading eyebrow="Good to know" title="Frequently asked" />
-          </div>
-          <FaqList items={DISCOVER_FAQS.map((f) => ({ q: f.q, a: f.a }))} />
-        </div>
-      </section>
-
-      {/* ── Final CTA ─────────────────────────────────────────── */}
-      <BetaCTA
-        heading="Ready to find your people?"
-        body="Frequency is free to join. Sign up, find a Circle near you, and start showing up this week."
+      <FrequencyDiscoverHub
+        counts={counts}
+        events={events}
+        circles={circles}
+        channels={liveChannels.map((channel) => ({ channel, circles: countByChannel.get(channel.slug) ?? 0 }))}
+        towns={cityClusters.map((c) => ({ city: c.city, circles: c.circles, events: c.events }))}
+        posts={posts}
+        faqs={DISCOVER_FAQS}
+        today={dayInZone(new Date(), HOME_TZ)}
       />
     </>
   )
