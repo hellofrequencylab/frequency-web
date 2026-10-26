@@ -1,0 +1,6 @@
+{
+  "id": "SCAN-1133",
+  "append": {
+    "detail": "2026-10-26 bounded timer action pass: seated and movement session primary Pause/Resume/Begin now/Finish controls now render the shared Frequency Button (large) instead of duplicating primary palette, padding and pill geometry. Existing labels, click handlers, type and minimum width remain. This retires two raw primary-button sites only; the app-wide row remains open. Adoption and setup accessibility contract checks pass; full rendered timer and app-wide adoption acceptance are not claimed."
+  }
+}

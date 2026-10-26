@@ -1252,7 +1252,7 @@ export function MovementSession({
         {/* Docked action bar — always visible, even as the screen scrolls. Opaque canvas so
             the content above never shows through / overlaps it. */}
         <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-canvas px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
-          <button
+          <Button
             type="button"
             onClick={() => {
               if (warming) { begin(); return } // skip the warm-up, begin now
@@ -1262,10 +1262,11 @@ export function MovementSession({
               }
               togglePause()
             }}
-            className="min-w-44 rounded-pill bg-primary px-10 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            size="lg"
+            className="min-w-44"
           >
             {warming ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => void finish()}
