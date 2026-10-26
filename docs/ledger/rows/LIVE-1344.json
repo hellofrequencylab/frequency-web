@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1344",
+  "title": "Coach Journey authors without replacing their names, weeks or participant prompts",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-26",
+  "source": {
+    "file": "lib/ai/journey-edit.ts",
+    "ref": "Owner-directed remaining generator conversion"
+  },
+  "detail": "Journey Spark keeps model prose and arcs out of author fields, carries supplied source text directly for review, and retains optional explicitly stated settings/meeting extraction. Editing, guided redraw, composition, week planning and slot tools return separate questions with existing feature accounting and tiers. Server actions do not insert/update/delete content, save steering or autosave participant prompts; creation no longer launches model week population. Manual create/edit, library selection, document extraction and deterministic operational/framework templates remain. Practice typed Spark coaching seam is inherited from the separate packet. Focused inert model/server/rendered consequences and bounded source probe; no live provider or authenticated production acceptance claimed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/journey-coaching-boundaries.mjs",
+    "note": "Executes actual question planning/coercion with inert model and checks gated no-write action boundaries; separate server and rendered tests cover resulting behavior."
+  }
+}

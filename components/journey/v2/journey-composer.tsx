@@ -11,9 +11,8 @@ import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 
 // The Vera composer in the editor (ADR-302). It has two modes, by whether the Journey has content:
-//   • EMPTY  — a few SPECIFIC questions (who / about / outcome); Vera fills a balanced opening week.
-//   • FILLED — a single "tell Vera what to change" line; Vera reads the whole Journey and applies the
-//              edit in place. No open "describe it" box anywhere. Collapsed on load.
+//   • EMPTY  — a few SPECIFIC questions (who / about / outcome); Vera asks planning questions.
+//   • FILLED — a single "tell Vera what to change" line; Vera asks questions beside the unchanged draft. No open "describe it" box anywhere. Collapsed on load.
 const PREVIEW: { tag: string; text: string }[] = [
   { tag: 'Mind', text: 'A practice to steady attention.' },
   { tag: 'Body', text: 'A physical, doable practice.' },
@@ -41,9 +40,7 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
     start(async () => {
       const res = await composeJourneyAction(slug, description)
       if (isError(res)) { setError(res.error); return }
-      setWho(''); setTopic(''); setOutcome('')
-      if (!res.data.aiUsed) setNote('Vera is offline right now, so I laid down the empty shape for you to fill.')
-      router.refresh()
+      setNote(res.data.questions.join(' '))
     })
   }
 
@@ -75,9 +72,7 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
     start(async () => {
       const res = await applyVeraChangeAction(slug, change)
       if (isError(res)) { setError(res.error); return }
-      setChange('')
-      setNote(res.data.applied > 0 ? `Vera made ${res.data.applied} ${res.data.applied === 1 ? 'change' : 'changes'}.` : 'Nothing to change there.')
-      router.refresh()
+      setNote(res.data.questions.join(' '))
     })
   }
 
@@ -85,18 +80,18 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
     <section className="rounded-card border border-primary/30 bg-primary-bg/20 p-4">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-2 text-left">
         <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" />
-        <h2 className="flex-1 text-body font-bold text-text">{isEmpty ? 'Build with Vera' : 'Edit with Vera'}</h2>
+        <h2 className="flex-1 text-body font-bold text-text">{isEmpty ? 'Plan with Vera' : 'Coach my writing'}</h2>
         <ChevronDown className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
       </button>
       {!open && (
         <p className="mt-1 text-body-sm text-muted">
-          {isEmpty ? 'Answer a few specifics and Vera fills a balanced four-Pillar week.' : 'Tell Vera what to change and she updates the Journey.'}
+          {isEmpty ? 'Answer a few specifics for questions about your plan.' : 'Ask for questions about clarity while keeping your writing intact.'}
         </p>
       )}
 
       {open && isEmpty && (
         <>
-          <p className="mt-1 text-body-sm text-muted">A few specifics and Vera fills one practice per Pillar (new or from the library). Edit anything after.</p>
+          <p className="mt-1 text-body-sm text-muted">Vera asks questions about your plan. Add practices or write steps yourself.</p>
           <div className="mt-3 space-y-2.5">
             <label className="block">
               <span className={capsLabel('mb-1 block text-2xs font-semibold text-muted')}>Who is it for</span>
@@ -112,10 +107,10 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
             </label>
           </div>
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
-          {note && <p className="mt-1 text-meta text-muted">{note}</p>}
+          {note && <p role="status" className="mt-1 text-meta text-muted">{note}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button type="button" disabled={pending || !topic.trim()} onClick={build}>
-              <Wand2 className="h-4 w-4" /> {pending ? 'Building…' : 'Build with Vera'}
+              <Wand2 className="h-4 w-4" /> {pending ? 'Thinking…' : 'Get coaching questions'}
             </Button>
             <button type="button" disabled={pending} onClick={framework} className="inline-flex items-center gap-1.5 rounded-control border border-primary/40 bg-primary-bg/40 px-3 py-2 text-body-sm font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60">
               <Compass className="h-4 w-4" /> Start from the recommended framework
@@ -125,7 +120,7 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
             </button>
           </div>
           <div className="mt-4">
-            <p className={capsLabel('text-2xs font-semibold text-muted')}>What you&apos;ll get</p>
+            <p className={capsLabel('text-2xs font-semibold text-muted')}>Areas to consider</p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {PREVIEW.map((p, i) => (
                 <li key={i} className="flex items-start gap-2 rounded-lg border border-border bg-surface px-3 py-2">
@@ -140,21 +135,21 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
 
       {open && !isEmpty && (
         <>
-          <p className="mt-1 text-body-sm text-muted">Tell Vera what to change in plain words. She reads the whole Journey and applies it. You can undo by editing any field by hand.</p>
+          <p className="mt-1 text-body-sm text-muted">Tell Vera where you want help. Read the questions, then make any changes yourself.</p>
           <Textarea
             value={change}
             disabled={pending}
             onChange={(e) => setChange(e.target.value)}
             rows={2}
-            aria-label="Tell Vera what to change"
+            aria-label="Where would you like writing help?"
             placeholder="e.g. Make week 2 about breathing. Or: swap the Spirit practice for gratitude. Or: shorten the intro."
             className="mt-3 resize-y"
           />
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
-          {note && <p className="mt-1 text-meta text-muted">{note}</p>}
+          {note && <p role="status" className="mt-1 text-meta text-muted">{note}</p>}
           <div className="mt-3">
             <Button type="button" disabled={pending || !change.trim()} onClick={apply}>
-              <Wand2 className="h-4 w-4" /> {pending ? 'Applying…' : 'Apply with Vera'}
+              <Wand2 className="h-4 w-4" /> {pending ? 'Thinking…' : 'Get coaching questions'}
             </Button>
           </div>
         </>
