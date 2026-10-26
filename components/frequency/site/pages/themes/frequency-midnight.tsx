@@ -6,7 +6,10 @@ import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { OPERATOR_START_HREF } from '@/lib/site'
+import { midnightKit } from '@/lib/sites/kits/midnight-variants'
+import type { KitNiche } from '@/lib/sites/kits/types'
 import { MidnightPreview } from './midnight-preview'
+import { MidnightKitPicker, type MidnightKitChoice } from './midnight-kit-picker'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
@@ -78,6 +81,23 @@ export const MIDNIGHT_CARRIES: { what: string; where: string }[] = [
   { what: 'Headlines and copy', where: 'Spotlight and website' },
   { what: 'Page frame', where: 'Midnight on Spotlight and website; Frequency on your Space' },
 ]
+
+const KIT_NICHES: KitNiche[] = ['coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks']
+
+/** One choice per niche kit, read from the kit data so the picker never drifts from what a site is given. */
+export const MIDNIGHT_KIT_CHOICES: MidnightKitChoice[] = KIT_NICHES.map((niche) => {
+  const kit = midnightKit(niche)
+  const home = kit.pages.find((p) => p.slug === 'home') ?? kit.pages[0]
+  const hero = home.blocks.find((b) => b.type === 'MidnightHero')
+  const title = typeof hero?.props?.title === 'string' ? hero.props.title : kit.label
+  return {
+    niche,
+    label: kit.label,
+    description: kit.description,
+    headline: title.replace(/\*/g, '').replace(/\s*\n\s*/g, ' '),
+    pages: kit.pages.map((p) => p.label),
+  }
+})
 
 export const MIDNIGHT_STEPS: { n: string; title: string; body: string }[] = [
   { n: '01', title: 'Your practice', body: 'Pick the closest kit. The preview updates as you choose.' },
@@ -203,6 +223,19 @@ export function FrequencyMidnight() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="sec pb-sec" id="kits" data-screen-label="04b Pick a kit">
+        <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
+        <div className="wrap">
+          <div className="sh">
+            <div className="label">
+              <b>Pick a kit</b>Watch all three change together
+            </div>
+            <h2 className="h-l">Start from the closest fit.</h2>
+          </div>
+          <MidnightKitPicker choices={MIDNIGHT_KIT_CHOICES} />
         </div>
       </section>
 

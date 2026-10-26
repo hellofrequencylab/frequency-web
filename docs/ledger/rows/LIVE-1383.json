@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1383",
+  "title": "Midnight feature page kit picker: pick a niche kit and see Spotlight, Space and Website change together",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/midnight-kit-picker.mjs"
+  },
+  "detail": "Follow-up to LIVE-1380 from the design's Templates page. A 'Pick a kit' section on /themes/midnight: six buttons, one per Midnight niche kit, and three cards (Spotlight, Space, Website) that show the chosen kit's headline and pages. Choices are computed on the server from lib/sites/kits/midnight-variants.ts and passed as plain data to components/frequency/site/pages/themes/midnight-kit-picker.tsx, so no kit code reaches the browser.",
+  "wave": "W7"
+}
