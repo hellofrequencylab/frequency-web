@@ -67,3 +67,33 @@ describe('kit block defaults', () => {
     }
   })
 })
+
+describe('Midnight niche variants', () => {
+  it('there is one for each niche door, all wearing Midnight', async () => {
+    const mid = KIT_INDEX.filter((k) => k.theme === 'Midnight')
+    expect(mid.map((k) => k.niche).sort()).toEqual(['coaches', 'hosts', 'networks', 'nonprofits', 'studios', 'venues'])
+  })
+  it('every kit block is a registered block, and the applied site is valid with registry defaults', async () => {
+    const { config } = await import('@/lib/page-editor/config')
+    for (const s of KIT_INDEX) {
+      const kit = (await loadKit(s.id))!
+      for (const p of kit.pages) for (const b of p.blocks) expect(config.components[b.type], `${s.id}/${p.slug}: ${b.type}`).toBeTruthy()
+      const r = applyKit(site(['home']), kit, 'replace', (type) => config.components[type]?.defaultProps)
+      expect(r.ok && validWebsiteSnapshot(r.snapshot), s.id).toBe(true)
+    }
+  })
+  it('kit copy holds no prices, photos or real names', async () => {
+    for (const s of KIT_INDEX.filter((k) => k.theme === 'Midnight')) {
+      const json = JSON.stringify(await loadKit(s.id))
+      expect(json, s.id).not.toMatch(/\$\d|\.jpg|\.png|Nocturne|—/)
+    }
+  })
+  it('every link points at a page of the same kit or a platform page', async () => {
+    for (const s of KIT_INDEX.filter((k) => k.theme === 'Midnight')) {
+      const kit = (await loadKit(s.id))!
+      const own = new Set([...kit.pages.map((p) => p.slug), 'book', 'contact'])
+      const links = [...JSON.stringify(kit).matchAll(/~\/([a-z-]+)/g)].map((m) => m[1])
+      expect(links.filter((l) => !own.has(l)), s.id).toEqual([])
+    }
+  })
+})
