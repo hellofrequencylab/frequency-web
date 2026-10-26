@@ -19,7 +19,7 @@ it('drops adversarial names, intros, arcs, steps and edit operations across all 
   expect(m.complete.mock.calls[1][0].messages[0].content).toContain(JSON.stringify(original.intro))
   expect(await draftJourneyComposition({ description: 'Mine', library: { mind: [], body: [], spirit: [], expression: [] }, profileId: 'author' })).toEqual({ questions: attack.questions })
   expect(await draftSlotCoaching({ journeyTitle: 'Mine', practiceTitle: 'Mine', profileId: 'author' })).toEqual({ questions: attack.questions })
-  expect(m.complete.mock.calls.map(([r]) => [r.accounting.feature, r.tier])).toEqual([['journey-spark', 'sonnet'], ['journey-edit', 'opus'], ['journey-composition', 'opus'], ['journey-slot-coaching', 'haiku']])
+  expect(m.complete.mock.calls.map(([r]) => [r.accounting.feature, r.tier])).toEqual([['journey-spark', 'sonnet'], ['journey-edit', 'sonnet'], ['journey-composition', 'sonnet'], ['journey-slot-coaching', 'haiku']])
 })
 it('rejects malformed prose-shaped replies and makes no provider call when disabled', async () => {
   expect(JOURNEY_SPARK.coerce({ title: 'Attack', overview: 'Attack' }, 4)).toBeNull()
