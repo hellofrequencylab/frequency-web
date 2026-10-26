@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { quickAnswers, quickAnswerLines } from './quick-answers'
+import { quickAnswers, quickAnswerLines, homeFaq } from './quick-answers'
 import { FOUNDING_PLACE } from '@/lib/site'
 
 const abs = (p: string) => `https://example.test${p}`
@@ -40,5 +40,14 @@ describe('quickAnswers', () => {
   it('drops the theme sentence when a build offers one look', () => {
     const one = quickAnswers({ ladder: 'x', abs, memberThemes: ['Default'] })
     expect(one.map((a) => a.a).join(' ')).not.toContain('Settings, Appearance')
+  })
+})
+
+describe('homeFaq', () => {
+  it('is the quick answers with site-relative links and no priced ladder', () => {
+    const text = quickAnswerLines(homeFaq()).join('\n')
+    expect(text).toContain('(/discover/events)')
+    expect(text).not.toContain('The ladder:')
+    expect(text).not.toContain('—')
   })
 })
