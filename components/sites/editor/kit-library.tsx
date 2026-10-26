@@ -14,6 +14,9 @@ const MODES: { mode: KitApplyMode; label: string; help: string }[] = [
 
 /** The Theme tab's starter kits. A kit is a starting point written into the draft once: it is one undo step,
  *  its words are placeholders, and nothing reaches the live site until the owner publishes. */
+/** The editor stores Bold as Menswork and Default as DAWN; owners know them by the names they pick in the Theme tab. */
+const THEME_NAME: Record<string, string> = { Menswork: 'Bold', DAWN: 'Default' }
+
 export function KitLibrary({ onApply, onPreview, suggestedNiche }: { onApply: (id: string, mode: KitApplyMode) => Promise<string>; onPreview?: (id: string) => Promise<KitChanges | string>; suggestedNiche?: KitNiche | null }) {
   const [open, setOpen] = useState<string | null>(null)
   const [confirm, setConfirm] = useState(false)
@@ -33,12 +36,13 @@ export function KitLibrary({ onApply, onPreview, suggestedNiche }: { onApply: (i
 
   // The kit for the door this Space came in through (its saved niche) leads the list; the rest keep their order.
   const kits = [...KIT_INDEX].sort((a, b) => Number(b.niche === suggestedNiche) - Number(a.niche === suggestedNiche))
+  const suggestedId = kits.find((x) => x.niche === suggestedNiche)?.id
 
   return <>
     <div className={k('we-caption')}>Starter kits</div>
     <p className={k('we-note')}>A kit gives you pages with sample words to rewrite. Nothing goes live until you publish, and undo takes it back.</p>
     {kits.map((kit) => <div key={kit.id}>
-      <button type="button" className={k('we-row')} aria-expanded={open === kit.id} onClick={() => { setOpen(open === kit.id ? null : kit.id); setConfirm(false); setChanges(null) }}><span>{kit.label}{kit.niche === suggestedNiche && <em> · Suggested for your Space</em>}<small>{kit.description}</small></span></button>
+      <button type="button" className={k('we-row')} aria-expanded={open === kit.id} onClick={() => { setOpen(open === kit.id ? null : kit.id); setConfirm(false); setChanges(null) }}><span>{kit.label}<em> · {THEME_NAME[kit.theme] ?? kit.theme}{kit.id === suggestedId && ' · Suggested for your Space'}</em><small>{kit.description}</small></span></button>
       {open === kit.id && onPreview && <button type="button" className={k('we-action secondary')} onClick={() => void look(kit.id)}>See what changes</button>}
       {open === kit.id && changes && (typeof changes === 'string' ? <p className={k('we-note')}>{changes}</p> : <div className={k('we-note')}>
         <p><strong>Now:</strong> {list(changes.now)}</p>
