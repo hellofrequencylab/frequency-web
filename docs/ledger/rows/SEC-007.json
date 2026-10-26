@@ -1,0 +1,15 @@
+{
+  "id": "SEC-007",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-10-26",
+      "evidence": "PASS/production-catalog: public.spatial_ref_sys carries the enabled triggers sec007_rows (BEFORE INSERT/UPDATE/DELETE, per row) and sec007_truncate (BEFORE TRUNCATE) running sec007_block_browser_writes(), so browser writes are blocked while SELECT and extension ownership are unchanged. The table grants themselves stay because supabase_admin issued them and postgres cannot revoke them. Reopen if either trigger is dropped or disabled."
+    }
+  },
+  "append": {
+    "detail": "2026-10-26: closed by production triggers sec007_rows and sec007_truncate (verified enabled). The revoke SQL in scripts/ops/secure-postgis-reference-table.sql was never applied; PR #3918 was closed unmerged. Effective INSERT/UPDATE/DELETE/TRUNCATE privileges still show in the catalog but are blocked at the trigger. SQL and a Supabase support request draft: /mnt/project-files/security/sec-007-postgis-sql-and-steps.md."
+  }
+}
