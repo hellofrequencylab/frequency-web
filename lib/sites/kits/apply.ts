@@ -55,3 +55,19 @@ export function applyKit(draft: WebsiteSnapshot, kit: SiteKit, mode: KitApplyMod
   if (!validWebsiteSnapshot(next)) return { ok: false, error: 'This kit could not be applied to your website. Nothing was changed.' }
   return { ok: true, snapshot: next, added, renamed }
 }
+
+export interface KitChanges {
+  /** Page names the site has now. */
+  now: string[]
+  /** Page names after "Add its pages" and after "Replace my pages", or why that mode cannot run. */
+  add: string[] | string
+  replace: string[] | string
+  /** The theme the kit would switch the site to (the same for all three modes). */
+  theme: string
+}
+
+/** Pure: what each mode would leave the page list as, for the side-by-side beside a kit. Words stay unread. */
+export function kitChanges(draft: WebsiteSnapshot, kit: SiteKit): KitChanges {
+  const names = (mode: KitApplyMode) => { const r = applyKit(draft, kit, mode); return r.ok ? r.snapshot.pages.map((p) => p.label) : r.error }
+  return { now: draft.pages.map((p) => p.label), add: names('add'), replace: names('replace'), theme: kit.theme }
+}

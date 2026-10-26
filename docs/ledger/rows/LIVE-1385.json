@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1385",
+  "title": "The starter kit for a Space's niche leads the kit list in the site editor",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "components/sites/editor/kit-library.tsx",
+    "ref": "Mega Theme lead 2026-10-26: /for doors pre-select their kit, the third follow-up after the Starter kits panel (LIVE-1373)."
+  },
+  "detail": "A visitor who came in through a /for door already has a niche saved on the Space (preferences.megaTheme.niche, written when the Space is created). The editor now passes that niche to the Theme tab, and the kit for it moves to the top of the list marked 'Suggested for your Space'. Nothing is applied for the owner: the kit still needs a click and still adds or replaces nothing until chosen. No new storage and no change to the doors. A Space with no saved niche sees the list as before.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/sites/editor/kit-library.tsx','utf8');const e=fs.readFileSync('components/sites/editor/editor-page.tsx','utf8');process.exit(s.includes('suggestedNiche')&&e.includes('readMegaTheme')?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Panel tests pass with the new ordering case."
+  },
+  "closed": "2026-10-26"
+}
