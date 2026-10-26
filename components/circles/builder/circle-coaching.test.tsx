@@ -20,6 +20,17 @@ it('renders coaching without merging or autosaving even malicious returned secti
   expect(container.textContent).toContain('What belongs in your About?')
   expect([...container.querySelectorAll('input')].some(i => i.value === 'Human Circle')).toBe(true)
   expect([...container.querySelectorAll('textarea')].some(i => i.value === 'Human About')).toBe(true)
+  const request = container.querySelector('textarea[placeholder^="e.g."]') as HTMLTextAreaElement
+  expect(request).not.toBeNull()
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(request, 'Help me clarify this')
+    request.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  await click('Get writing prompts')
+  expect(state.edit).toHaveBeenCalledExactlyOnceWith({ circleId: 'a', request: 'Help me clarify this' })
+  expect(container.textContent).toContain('What do you want to clarify?')
+  expect([...container.querySelectorAll('input')].some(i => i.value === 'Human Circle')).toBe(true)
+  expect([...container.querySelectorAll('textarea')].some(i => i.value === 'Human About')).toBe(true)
   expect(state.save).not.toHaveBeenCalled()
   expect(container.textContent).not.toContain('INVENTED')
 })
