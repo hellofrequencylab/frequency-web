@@ -16,6 +16,6 @@
     "kind": "cmd",
     "cmd": "node scripts/probes/ai-coaching-consequences.mjs space",
     "checked": "2026-10-26",
-    "evidence": "Isolated preparation on main eecb4c51d:16focused suites133passed, one live-provider test skipped; provider/network/DB doubles only. Shared consequence probe is supplied by phase1 and remains a sequencing dependency. Full isolated typing/build, exact-head CI, authenticated production UI and provider acceptance are separate release gates. Storage receipt does not imply the UI is live."
+    "evidence": "Integrated on phase1/main8c31fff6b:16focused suites133passed, one live-provider test skipped; changed-file lint and bounded actual-source Space consequence probe pass with inert IO. Admin-client ratchet remains868; adoption gates unchanged. No duplicate SQL or base ledger edits. Full isolated typing/build, exact-head CI and authenticated production UI/provider acceptance remain separate release gates. Production storage readiness does not imply the UI is live."
   }
 }
