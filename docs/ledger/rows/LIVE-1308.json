@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1308",
+  "title": "Reject impossible event dates instead of silently moving them to another day",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/events/datetime.ts",
+    "ref": "Calendar and booking audit, 2026-10-23"
+  },
+  "detail": "The event input helpers accepted February 30, non-leap February 29, April 31 and 24:00 because Date normalized them into a different day. Validate wall-clock and date-only values by exact UTC round-trip before accepting them, and validate explicit-offset calendar parts before applying the offset. Preserve valid leap days, fractional seconds and colon/compact offsets. Five regression cases failed on the old source. Evidence is local helper behavior, not production event creation. No production data or schema changed. Final validation: 1,468 tests in 89 event/time/booking suites passed; the final focused helper and journey caller rerun passed 20 tests in two suites. Changed-file lint passed. Probe-cost correction on 2026-10-23: the prior ledger command reran the full test runner (node node_modules/vitest/vitest.mjs run --cache=false --fsModuleCachePath .next/cache/audit-vitest --maxWorkers=2 lib/events/datetime.test.ts). Keep those comprehensive behavior tests in normal CI; the ledger now executes the actual code/fixture consequence directly without a nested runner. No assertion or application gate is waived.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-repair-state.mjs dates",
+    "note": "Impossible dates and midnight rollover return null; valid leap dates and explicit-offset crossings retain their intended instant. Normal CI retains the fuller test suites; this direct probe keeps the per-row guard bounded."
+  },
+  "closed": "2026-10-23"
+}

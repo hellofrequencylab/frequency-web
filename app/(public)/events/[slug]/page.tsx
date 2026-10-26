@@ -50,8 +50,8 @@ export async function generateMetadata({
     .replace(/\s+/g, ' ')
     .trim()
   const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
-  const ended = hasEventEnded(event)
   const [seo, { indexedOccurrences }] = await Promise.all([shareEventSeo(event.slug), getSeriesDisplayConfig()])
+  const ended = hasEventEnded({ ...event, time_zone: seo.timeZone })
   // A recurring event's occurrences share one name, so each indexed date carries its day in the title
   // (24 pages read "Circle Night · Frequency" on the live sitemap). The series anchor keeps the bare
   // name: its stored start is the first meeting, not the next one.
@@ -100,7 +100,7 @@ export default async function PublicEventPage({
     getPublicEventVenue(slug),
     loadPublicJoinDoor(event.id),
   ])
-  const hasEnded = hasEventEnded(event)
+  const hasEnded = hasEventEnded({ ...event, time_zone: enrichment?.time_zone })
   // The where-line (ADR-1744, owner-ruled 2026-10-14): the venue and street plus the city when the
   // host left the address visible, the city alone otherwise. Same server-side read as the JSON-LD,
   // so the visible page and the structured data agree, and a hidden venue never reaches the HTML.

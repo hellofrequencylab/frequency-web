@@ -21,11 +21,25 @@ export const HOME_TZ = 'America/Los_Angeles'
 
 const IANA_TZ_RE = /^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+){0,2}$/
 
+// Cache only timezone formatters, never member data. Bound the shared vocabulary.
+const zoneFormatters = new Map<string, Intl.DateTimeFormat>()
+function wallFormatter(timezone: string): Intl.DateTimeFormat {
+  const cached = zoneFormatters.get(timezone)
+  if (cached) return cached
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  })
+  if (zoneFormatters.size >= 64) zoneFormatters.delete(zoneFormatters.keys().next().value!)
+  zoneFormatters.set(timezone, formatter)
+  return formatter
+}
+
 /** True when `tz` is a non-empty IANA zone the runtime tz database can resolve. */
 export function isValidTimeZone(tz: string | null | undefined): tz is string {
   if (!tz || tz.length > 64 || !IANA_TZ_RE.test(tz)) return false
   try {
-    new Intl.DateTimeFormat('en-CA', { timeZone: tz })
+    wallFormatter(tz)
     return true
   } catch {
     return false
@@ -40,16 +54,7 @@ export function resolveZone(tz: string | null | undefined): string {
 /** The wall-clock parts of a UTC instant AS SEEN in an IANA zone (Intl, no tz lib). */
 function wallPartsInZone(date: Date, timezone: string) {
   try {
-    const fmt = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    })
+    const fmt = wallFormatter(timezone)
     const parts = fmt.formatToParts(date)
     const get = (type: string) => Number(parts.find((p) => p.type === type)?.value)
     let hour = get('hour')
@@ -70,17 +75,27 @@ export function zoneOffsetMinutes(date: Date, timezone: string): number {
   return Math.round((asUtc - date.getTime()) / 60000)
 }
 
-/** A local wall-clock (calendar Y/M/D H:M:S) in `timezone` -> the absolute UTC instant.
- *  Two-pass offset solve so DST transitions resolve correctly. */
+/** Resolve wall-clock parts with PostgreSQL's gap/fold policy: a skipped hour
+ *  advances through the gap; a repeated hour uses the later occurrence. */
 export function zonedWallClockToInstant(
   year: number, month: number, day: number, hour: number, minute: number, second: number, timezone: string,
 ): Date {
   const guess = Date.UTC(year, month - 1, day, hour, minute, second)
-  const off1 = zoneOffsetMinutes(new Date(guess), timezone)
-  const corrected = guess - off1 * 60000
-  const off2 = zoneOffsetMinutes(new Date(corrected), timezone)
-  const finalMs = off2 === off1 ? corrected : guess - off2 * 60000
-  return new Date(finalMs)
+  const offset = zoneOffsetMinutes(new Date(guess), timezone)
+  const first = guess - offset * 60000
+  const firstOffset = zoneOffsetMinutes(new Date(first), timezone)
+  if (firstOffset !== offset) {
+    const second = guess - firstOffset * 60000
+    // If neither candidate maps to the requested wall time, this is the gap.
+    return new Date(zoneOffsetMinutes(new Date(second), timezone) === firstOffset ? second : Math.max(first, second))
+  }
+  // A valid first candidate can still be the early occurrence of a fold.
+  const laterOffset = zoneOffsetMinutes(new Date(first + 24 * 60 * 60_000), timezone)
+  if (laterOffset !== offset) {
+    const later = guess - laterOffset * 60000
+    if (later > first && zoneOffsetMinutes(new Date(later), timezone) === laterOffset) return new Date(later)
+  }
+  return new Date(first)
 }
 
 /** A stored event timestamp (wall-clock kept as UTC parts) + the event's zone -> the
