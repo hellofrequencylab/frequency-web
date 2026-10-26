@@ -25,7 +25,7 @@ describe('Notification switches (LIVE-1101)', () => {
   // wear the kit's `.sw` class instead of DAWN's `bg-primary` track.
   it('both notification switches draw the kit switch under Frequency', () => {
     const src = readFileSync('app/(main)/settings/notifications/form.tsx', 'utf8')
-    expect(src).toContain("const FQ = SITE_DESIGN === 'frequency'")
-    expect(src.match(/className=\{FQ \? \([^)]*'sw on' : 'sw'\)/g)?.length).toBe(2)
+    expect(src).not.toContain('SITE_DESIGN')
+    expect(src.match(/className=\{\([^)]*'sw on' : 'sw'\)\}/g)?.length).toBe(2)
   })
 })

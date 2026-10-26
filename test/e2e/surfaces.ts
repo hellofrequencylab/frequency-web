@@ -1243,36 +1243,6 @@ export const VISUAL_MASK_SITES: readonly {
     why: 'The Dispatch ticker scrolls the newest announcements with author and relative time, and it moves on its own, so no two captures show the same frame.',
   },
   {
-    value: 'nearby-stat-row',
-    file: 'app/(main)/nearby/page.tsx',
-    kind: 'live',
-    why: 'Four tiles of live tallies: upcoming events, circles, members and Dispatches this week.',
-  },
-  {
-    value: 'nearby-new-members',
-    file: 'app/(main)/nearby/page.tsx',
-    kind: 'live',
-    why: 'The newest members, with names, photos and how long ago each joined; the row changes with every sign-up.',
-  },
-  {
-    value: 'nearby-dispatch-list',
-    file: 'app/(main)/nearby/page.tsx',
-    kind: 'live',
-    why: 'The Dispatch stream itself, up to 8 cards with author and relative time.',
-  },
-  {
-    value: 'nearby-coming-up',
-    file: 'app/(main)/nearby/page.tsx',
-    kind: 'live',
-    why: 'The next four gatherings and their dates; masked with its header, whose count reads wider than the list.',
-  },
-  {
-    value: 'nearby-new-circles',
-    file: 'app/(main)/nearby/page.tsx',
-    kind: 'live',
-    why: 'The newest circles by created_at, with a live member count on each row.',
-  },
-  {
     value: 'nearby-board-stats',
     file: 'components/nearby/around-you-board.tsx',
     kind: 'live',

@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-899",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const pg=r('app/(main)/nearby/page.tsx');const c=r('components/nearby/nearby-map-header.tsx');const css=r('app/themes/frequency/members-community.css');const bad=[];const i=pg.indexOf('return (',pg.indexOf('const dispatchesAndRail'));const fq=i<0?'':pg.slice(i);if(!fq)bad.push('no Frequency branch on /nearby');if(fq.includes('hero='))bad.push('the Frequency page still opens on a header band');if(!fq.includes('title={title}'))bad.push('the Frequency page lost its plain heading');if(!fq.includes('<NearbyMapCard pins={null} />'))bad.push('the map card is not streamed behind a same-shape fallback');const m=fq.indexOf('<NearbyMapCardSection'),d=fq.indexOf('{dispatchesAndRail}');if(m<0||d<0||m>d)bad.push('the map is not above the Dispatches');if(!c.includes('export function NearbyMapCard')||!c.includes('setExpanded(true)'))bad.push('no map card with the View the map control');if(!/\\.fq-nearby-map-frame\\{[^}]*height:320px[^}]*var\\(--fq-radius-l\\)[^}]*--fq-glass-panel-shadow/.test(css)||!/fq-nearby-map-frame\\{height:240px\\}/.test(css))bad.push('the map card is not styled as a kit panel');if(bad.length){console.error('SCAN-899: '+bad.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1129): /nearby is Frequency-only; the probe reads the page body after the dispatches block."
+  }
+}

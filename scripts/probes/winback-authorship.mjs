@@ -39,7 +39,7 @@ const load=harness({
  '@/lib/unsubscribe-tokens':{buildUnsubscribeUrl:()=> 'https://example.com/unsubscribe'},
  '@/lib/site':{SITE_URL:'https://example.com'},
  '@/lib/email-studio/shell':{plainTextEmail:body=>({html:body,text:body})},
- '@/lib/ai/complete':{completeRaw:async call=>{state.modelCalls.push(call);return {text:JSON.stringify({questions:['How will you check current consent?']})}}},
+ '@/lib/ai/complete':{completeRaw:async call=>{state.modelCalls.push(call);return {text:JSON.stringify({questionIds:['consent']})}}},
  '@/lib/ai/usage':{aiAvailable:async()=>state.ai,featureOverBudget:async()=>false},
  '@/lib/ai/rate-limit':{aiRateLimited:async()=>false},
  '@/lib/ai/voice':{withVoice:value=>value},
