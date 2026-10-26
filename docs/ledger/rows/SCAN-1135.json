@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1135",
+  "title": "Dispute, fulfilment, deposit, trial-ending, beta-grant and donation code have tests",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "M",
+  "source": {
+    "file": "lib/commerce/disputes.ts",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "No tests for openDispute, setDisputeStatus, journey-fulfilment, notifyTrialEnding, lib/spaces/booking-actions.ts, space-beta-grant.ts or donation-actions.ts, while LIVE-234 money proof is still owner-timed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs money-tests",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}

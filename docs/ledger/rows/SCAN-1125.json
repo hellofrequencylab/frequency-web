@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1125",
+  "title": "Airtime today resets at the member local midnight",
+  "status": "open",
+  "priority": "P3",
+  "lane": "live",
+  "size": "XS",
+  "source": {
+    "file": "app/(main)/on-air/actions.ts",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "Line 352 uses the UTC day, so it resets near 5pm Pacific. Use lib/on-air/dispatch-day.ts the way Dispatches do.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs airtime-day",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}

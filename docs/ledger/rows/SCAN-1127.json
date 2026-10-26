@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1127",
+  "title": "Shared primitives and templates carry one design, not two",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "M",
+  "source": {
+    "file": "components/ui/button.tsx",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "About 15 files in components/ui and 9 in components/templates still branch on SITE_DESIGN. Remove the DAWN variants first so the route sweeps are mechanical.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs dawn-ui",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}

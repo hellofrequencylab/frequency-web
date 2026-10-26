@@ -1,0 +1,19 @@
+{
+  "id": "SEC-006",
+  "title": "Patch fast-uri in the actual schema-validation consumer without changing application dependencies",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "pnpm-lock.yaml",
+    "ref": "Current Dependabot alerts78-81 and upstream fast-uri advisories,2026-10-25"
+  },
+  "detail": "Root lock resolved fast-uri3.1.8 through schema-utils4.5.0/Ajv8.20.0. Add a narrow compatible3.x override to reviewed3.1.9 and regenerate with declaredpnpm10.33.0; only the parser resolution and override change. Frozen installation completed in a separate task-owned root, leaving original and concurrent dependency installations untouched. Six tests resolve the actual installed schema-utils->Ajv->fast-uri chain: encoded scheme rejection, malformed host errors, relative-reference resolution, safe relative suffix serialization, and valid/invalid relative schema reference compilation. Actual old3.1.8 fails three advisory controls. The safe suffix-object fixture also passes3.1.8, so it is compatibility coverage rather than differential proof of that advisory; no application exploitability is claimed. Cheap guard pins all locked instances and the actual Ajv binding. CI/release and production acceptance remain separately tracked. Mobile ExpoZod/forge findings remain SEC004.",
+  "closed": "2026-10-25",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/patched-fast-uri.mjs",
+    "note": "All locked fast-uri instances and Ajv binding use reviewed3.1.9. Actual consumer tests and three old-version differential controls passed separately; no production exploit or release claim."
+  }
+}

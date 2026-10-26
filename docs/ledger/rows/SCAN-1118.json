@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1118",
+  "title": "The On Air and Movement session engines load only when the overlay opens",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/on-air/mindless.tsx",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "OnAirSession (110 KB source) and MovementSession (76 KB) are static imports of the shell, parsed on every (main) route. Wrap in dynamic(). Estimated 30-40 KB gzip. Confirm with check:shell-weight on a build.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs onair-lazy",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}

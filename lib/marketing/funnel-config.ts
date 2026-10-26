@@ -231,7 +231,7 @@ const COACHES_FUNNEL: FunnelConfig = {
   hero: {
     eyebrow: 'For coaches and guides',
     h1: "You're good with people. Keep the paperwork out of the way.",
-    seoTitle: "Bookings and community gatherings for coaches and guides",
+    seoTitle: "Bookings and community for coaches and guides",
     subhead:
       "Share your sessions, take bookings and keep in touch with the people you meet. Give your community a place to find your next workshop.",
     microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
@@ -317,7 +317,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
   hero: {
     eyebrow: 'For studios and instructors',
     h1: "You teach the class. Keep the bookings close.",
-    seoTitle: "Classes and community for studios and instructors",
+    seoTitle: "Classes and community for studios",
     subhead:
       "Share your schedule, greet people at the door and invite them to the next class. Give your studio community a place to find the details.",
     microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
@@ -663,7 +663,7 @@ const NETWORKS_FUNNEL: FunnelConfig = {
   hero: {
     eyebrow: 'For groups with chapters',
     h1: "Every chapter is its own circle. Keep them connected.",
-    seoTitle: "Community chapters and shared calendars for networks",
+    seoTitle: "Chapters and shared calendars for networks",
     subhead:
       "Give each chapter a place to share its gatherings, with a Network calendar where people can find community events across locations.",
     microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
