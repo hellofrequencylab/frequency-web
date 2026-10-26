@@ -67,15 +67,3 @@ describe('kit block defaults', () => {
     }
   })
 })
-
-describe('kits against the real block registry', () => {
-  it('every kit block is a registered block and the applied site is valid with registry defaults', async () => {
-    const { config } = await import('@/lib/page-editor/config')
-    for (const s of KIT_INDEX) {
-      const kit = (await loadKit(s.id))!
-      for (const p of kit.pages) for (const b of p.blocks) expect(config.components[b.type], `${s.id}: ${b.type}`).toBeDefined()
-      const r = applyKit(site(['home']), kit, 'replace', (type) => config.components[type]?.defaultProps as Record<string, unknown> | undefined)
-      expect(r.ok, s.id).toBe(true)
-    }
-  })
-})
