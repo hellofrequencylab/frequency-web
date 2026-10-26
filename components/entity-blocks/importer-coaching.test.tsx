@@ -12,7 +12,7 @@ it('renders advice separately, never applying hostile content to human fields or
   const onContent = vi.fn()
   mocks.coach.mockResolvedValue({ questions: ['What would help someone decide?'], content: {body:'INVENTED'} })
   container = document.createElement('div'); document.body.append(container); root = createRoot(container)
-  await act(async () => root.render(<BlockEditPanel id="text" content={{text:'HUMAN WORDS'}} style={{}} hidden={false} reseedSlug="space-a" onContent={onContent} onStyle={vi.fn()} onToggleHide={vi.fn()} />))
+  await act(async () => root.render(<BlockEditPanel id="text" content={{text:'HUMAN WORDS'}} style={{}} hidden={false} editHref={null} reseedSlug="space-a" onContent={onContent} onStyle={vi.fn()} onToggleHide={vi.fn()} />))
   const button = [...container.querySelectorAll('button')].find(b => b.textContent === 'Get writing prompts')!
   expect(button).toBeDefined()
   await act(async () => button.click())

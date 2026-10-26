@@ -159,6 +159,23 @@ export function coerceExtraction(
     return value
   }
 
+  // About/Story are source quotations, never a generated summary. Bind the actual value and
+  // citation to the SAME supplied website page or owner paste; a real snippet about another
+  // sentence, a foreign URL or a search-result paraphrase cannot authorize replacement prose.
+  const putQuotedProse = (path: string, field: RawExtractedField | undefined): string | undefined => {
+    if (!field || field.kind !== 'fact') return undefined
+    const value = typeof field.value === 'string' ? field.value.trim() : ''
+    const snippet = typeof field.snippet === 'string' ? field.snippet.trim() : ''
+    const sourceUrl = typeof field.sourceUrl === 'string' ? field.sourceUrl.trim() : ''
+    if (!value || !snippet || !snippet.includes(value)) return undefined
+    const source = sources.find((s) =>
+      (s.kind === 'page' || s.kind === 'paste') &&
+      (s.url ? sourceUrl === s.url : s.kind === 'paste' && !sourceUrl) &&
+      typeof s.text === 'string' && s.text.includes(snippet),
+    )
+    return source ? put(path, { ...field, value, sourceUrl: source.url, kind: 'fact' }) : undefined
+  }
+
   // Identity
   const name = put('name', raw.name) ?? nameFallback.trim()
   draft.name = name
@@ -169,9 +186,9 @@ export function coerceExtraction(
   if (tagline) draft.tagline = tagline
   const category = put('category', raw.category)
   if (category) draft.category = category
-  const about = put('about', raw.about)
+  const about = putQuotedProse('about', raw.about)
   if (about) draft.about = about
-  const story = put('story', raw.story)
+  const story = putQuotedProse('story', raw.story)
   if (story) draft.story = story
 
   // Contact

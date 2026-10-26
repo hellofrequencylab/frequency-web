@@ -200,6 +200,7 @@ vi.mock('./harvest/staging-lifecycle', () => ({
 
 import { materializeBusiness, applyIntake } from './materialize'
 import { wellnessStudioFixture } from './fixtures/wellness-studio'
+import { coerceExtraction } from './extract/coerce'
 
 beforeEach(() => {
   H.reset()
@@ -539,4 +540,22 @@ describe('applyIntake — ledger-driven per-field gate end to end', () => {
     expect(res.ok).toBe(false)
     expect(res.error).toMatch(/not ready to apply/i)
   })
+})
+
+
+it('manual Apply writes source quotes or human edits, never rejected extraction prose', async () => {
+  const quote = 'We meet in our neighborhood studio.'
+  const result = coerceExtraction({
+    about: {value:'INVENTED ABOUT',kind:'generated'},
+    story: {value:quote,kind:'fact',snippet:quote,sourceUrl:'https://owner.test/about'},
+  },[{id:'source',kind:'page',url:'https://owner.test/about',fetchedAt:'now',text:quote}],'Owner Studio')
+  expect(H.tables.spaces.filter(row => row.id !== 'root-space')).toHaveLength(0)
+  const applied = await materializeBusiness(result.draft,{kind:'create',ownerProfileId:'owner-1'},{verificationPolicy:'allow'})
+  expect(applied.ok).toBe(true)
+  expect(JSON.stringify(H.tables.spaces)).toContain(quote)
+  expect(JSON.stringify(H.tables.spaces)).not.toContain('INVENTED ABOUT')
+  result.draft.about = 'I wrote this myself.'
+  const manual = await materializeBusiness(result.draft,{kind:'update',spaceId:applied.spaceId!},{verificationPolicy:'allow'})
+  expect(manual.ok).toBe(true)
+  expect(JSON.stringify(H.tables.spaces)).toContain('I wrote this myself.')
 })

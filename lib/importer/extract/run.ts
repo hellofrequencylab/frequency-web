@@ -132,7 +132,7 @@ Hard rules:
 - For every field, set kind honestly: "fact" ONLY when you copy a value from a source AND provide the exact snippet you copied it from plus that source's url; "inferred" when you deduce it from the sources; "generated" when you wrote it yourself with no source.
 - A "fact" MUST carry a snippet copied verbatim from a source and that source's url. If you cannot cite it, mark it "inferred" or leave it out. Do not claim a citation you do not have.
 - Commercial facts (address, phone, email, hours, every offering price, rating) are the ones that matter most: only mark them "fact" with a real snippet + url, otherwise omit them. A blank field is better than a wrong one.
-- about and story may be "generated" prose, but keep them grounded in what the sources say. Do not fabricate history, awards, or claims.
+- about and story MUST be exact, contiguous quotations from a supplied website page or owner paste, with kind "fact" and the exact containing snippet. For a website page, include that page sourceUrl; an owner paste has no URL. Preserve the original words, case and punctuation. Never summarize, rewrite, invent or use search snippets for these fields; omit them when no suitable quotation exists.
 - Prefer the operator paste and the business's own website over search snippets when they disagree.
 
 Call save_business_profile once with everything you can support.`

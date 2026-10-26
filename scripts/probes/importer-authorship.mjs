@@ -50,4 +50,23 @@ assert.equal(reads.length,1); assert.equal(calls.length,2)
 allowed=true; owned=false
 assert.equal((await exports.reseedBusinessImport('foreign','calm')).ok,false)
 assert.equal(calls.length,2); assert.equal(writes.length,0)
-console.log('LIVE-1346: actual importer actions strip generated prose, deny unauthorized/foreign intake before coaching, never save/apply advice; legacy composition/reframe never call providers')
+// Execute the actual pure extraction boundary, then prove the old permissive put path fails.
+const extractionSource=readFileSync('lib/importer/extract/coerce.ts','utf8')
+function loadExtraction(source) {
+ const sandbox={exports:{},URL}
+ vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,sandbox)
+ return sandbox.exports.coerceExtraction
+}
+const coerce=loadExtraction(extractionSource)
+const quote='Exact owner words. Keep punctuation!'
+const sources=[{id:'owner',kind:'page',url:'https://owner.example/about',fetchedAt:'now',text:quote}]
+const raw={about:{value:'INVENTED ABOUT',kind:'generated'},story:{value:quote,kind:'fact',snippet:quote,sourceUrl:sources[0].url}}
+const extracted=coerce(raw,sources,'Owner')
+assert.equal(extracted.draft.about,undefined);assert.equal(extracted.ledger.about,undefined)
+assert.equal(extracted.draft.story,quote);assert.equal(extracted.ledger.story[0].kind,'fact')
+for(const field of [ {...raw.story,value:'Paraphrase'}, {...raw.story,sourceUrl:'https://foreign.example'}, {...raw.story,snippet:undefined}, {...raw.story,kind:'generated'} ]) {
+ assert.equal(coerce({about:field},sources,'Owner').draft.about,undefined)
+}
+const permissive=loadExtraction(extractionSource.replace("putQuotedProse('about', raw.about)","put('about', raw.about)"))
+assert.notEqual(permissive(raw,sources,'Owner').draft.about,undefined,'negative control must expose the old generated-prose acceptance')
+console.log('LIVE-1346: actual importer actions deny unauthorized/foreign intake and never save/apply coaching; model composition/reframe disabled; extraction preserves source quotes and rejects invented/uncited About/Story with a permissive-source negative control')

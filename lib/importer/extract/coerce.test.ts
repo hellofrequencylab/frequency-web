@@ -112,9 +112,10 @@ describe('coerceExtraction — raw model shape to draft + ledger', () => {
     expect(ledger['offerings[0].price']).toBeDefined()
   })
 
-  it('records about as generated (no fabricated citation)', () => {
-    const { ledger } = coerceExtraction(raw, sources)
-    expect(ledger.about[0].kind).toBe('generated')
+  it('omits generated About rather than retaining a draft with invented wording', () => {
+    const { draft, ledger } = coerceExtraction(raw, sources)
+    expect(draft.about).toBeUndefined()
+    expect(ledger.about).toBeUndefined()
   })
 
   it('falls back to the name hint when the model returns no name', () => {
@@ -139,4 +140,31 @@ describe('parsePrice', () => {
   it('returns null for a price-less string', () => {
     expect(parsePrice('call us')).toBeNull()
   })
+})
+
+
+describe('About/Story source-verbatim gate', () => {
+ const quote = 'Our own words.\nWith our punctuation!'
+ const page: HarvestedSource = {id:'owner-page',kind:'page',url:'https://owner.test/about',fetchedAt:'now',text:`Intro. ${quote} End.`}
+ const field = {value:quote,snippet:quote,sourceUrl:page.url,kind:'fact',confidence:0.9}
+ it('keeps exact source words and matching provenance, including owner paste without a URL', () => {
+  const result=coerceExtraction({about:field,story:{...field,sourceUrl:undefined}},[page,{id:'paste',kind:'paste',fetchedAt:'now',text:quote}],'Owner')
+  expect(result.draft.about).toBe(quote);expect(result.draft.story).toBe(quote)
+  expect(result.ledger.about[0]).toMatchObject({kind:'fact',snippet:quote,sourceUrl:page.url})
+  expect(result.ledger.story[0].sourceUrl).toBeUndefined()
+ })
+ it.each([
+  {...field,value:'Invented rewriting'}, {...field,kind:'generated'}, {...field,kind:'inferred'}, {...field,kind:undefined},
+  {...field,snippet:undefined}, {...field,sourceUrl:'https://foreign.test/about'}, {...field,sourceUrl:undefined},
+  {...field,value:quote.toLowerCase()}, {...field,value:'Our own words. With our punctuation!'},
+ ])('rejects fabricated, uncited, relabeled or nonverbatim wording: %j', bad => {
+  const result=coerceExtraction({about:bad,story:bad},[page],'Owner')
+  expect(result.draft.about).toBeUndefined();expect(result.draft.story).toBeUndefined()
+  expect(result.ledger.about).toBeUndefined();expect(result.ledger.story).toBeUndefined()
+ })
+ it('cannot borrow a citation from another source, title alone or search result', () => {
+  for(const candidates of [[{...page,text:'Other words',title:quote}],[{...page,kind:'search_result' as const}],[{...page,url:'https://other.test'}]]) {
+   expect(coerceExtraction({about:field},candidates,'Owner').draft.about).toBeUndefined()
+  }
+ })
 })
