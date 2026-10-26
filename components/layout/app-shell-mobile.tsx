@@ -121,7 +121,7 @@ export function MobileTabBar({
           {/* The circle sits a touch lower than dead-center on the bar's top edge so
               it reads balanced against the flat tabs (its center is 6px below the
               line); the arch above drops to match, keeping the even 12px margin. */}
-          <span aria-hidden className="h-[26px] w-[22px]" />
+          <span aria-hidden className="h-6.5 w-5.5" />
           {/* The fully-rounded white catch the bolt sits in — a floating disc, not a bar bump.
               The lift is `--tab-bar-lift`, not a 22px literal: this disc is slot 0a of the
               mobile stacking contract (components/sidebar/game-stats-dock.tsx), and the same
@@ -129,18 +129,18 @@ export function MobileTabBar({
               (`--tab-bar-clearance`). Two literals that happened to agree is how the teaser
               pill and the RSVP bar each got painted over. */}
           <span aria-hidden className="absolute left-1/2 top-0 h-14 w-14 -translate-x-1/2 -translate-y-[var(--tab-bar-lift)] rounded-pill border border-border bg-surface" />
-          <span className="absolute left-1/2 top-0 flex h-12 w-12 -translate-x-1/2 -translate-y-[18px] items-center justify-center rounded-pill bg-primary shadow-pop">
+          <span className="absolute left-1/2 top-0 flex h-12 w-12 -translate-x-1/2 -translate-y-4.5 items-center justify-center rounded-pill bg-primary shadow-pop">
             {/* the catch behind the glyph — a soft shadow under the bolt (flips with
                 the glyph so the carve always reads) */}
             <Zap
               aria-hidden
-              className="absolute h-[24px] w-[24px] translate-y-[1.5px] text-primary-strong/40 fill-primary-strong/20 dark:text-on-primary/45 dark:fill-on-primary/25"
+              className="absolute h-6 w-6 translate-y-0.375 text-primary-strong/40 fill-primary-strong/20 dark:text-on-primary/45 dark:fill-on-primary/25"
               strokeWidth={2}
             />
             {/* the glyph: LIGHT on the orange button in light mode, DARK on the gold
                 button in night mode */}
             <Zap
-              className="relative h-[24px] w-[24px] text-on-primary fill-on-primary/35 dark:text-ink dark:fill-ink/35"
+              className="relative h-6 w-6 text-on-primary fill-on-primary/35 dark:text-ink dark:fill-ink/35"
               strokeWidth={2}
             />
           </span>
