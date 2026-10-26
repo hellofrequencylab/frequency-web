@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-957",
+  "wave": "W7",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26",
+    "notes": "Retired: dropped by owner 2026-10-26. Daniel dropped the rest of The Group's backlog work, nothing was built for this row.",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-10-26",
+      "evidence": "RETIRED, dropped by owner 2026-10-26. Not built and no longer waiting on June."
+    }
+  },
+  "append": {
+    "detail": "\n\nRETIRED 2026-10-26: dropped by owner 2026-10-26. The Group's remaining backlog work (sections B and D and the owner's Stripe Connect) was dropped, so this row closes without being built."
+  }
+}
