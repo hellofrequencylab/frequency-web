@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1306",
+  "title": "Keep failed Studio saves retryable and do not confirm rejected draft deletion",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/studio/draft-store.ts",
+    "ref": "Comprehensive create/edit workflow audit, 2026-10-23"
+  },
+  "detail": "saveStagedDraft ignored resolved Supabase errors, returned true and ran retention pruning after rejected upserts. The sync hook consumes true as confirmed and false as unsent/backoff, so a rejected cross-device save could stop retrying. Empty saves also reported success after failed deletion, and /drafts bin action confirmed failed removal. Inspect the upsert error before pruning; return a boolean from owner-scoped deletion for save/bin callers while cleanup actions still await it without blocking entity commits. The existing bin row now reaches its retry message on failure instead of refreshing as though the draft disappeared. Three new store regressions failed on the original code (returned upsert error; returned/thrown empty-save delete errors) and pass after the change. New server-action tests cover failed deletion, successful revalidation and missing-session refusal. Existing ownership filters and local-copy behavior are preserved. 102 tests passed across seven suites in the focused mocked validation; preceding create/edit and navigation batch passed 574 tests in twenty-nine suites. No production rows were changed; cross-device provider behavior is not live-proven. Probe-cost correction on 2026-10-23: the prior ledger command reran the full test runner (node node_modules/vitest/vitest.mjs run --cache=false --fsModuleCachePath .next/cache/audit-vitest --maxWorkers=2 lib/studio/draft-store.test.ts components/studio/spark/draft app/\\(main\\)/drafts/actions.test.ts). Keep those comprehensive behavior tests in normal CI; the ledger now executes the actual code/fixture consequence directly without a nested runner. No assertion or application gate is waived.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-repair-state.mjs drafts",
+    "note": "Resolved-error mock rejects writes; failed upsert must return false and never start pruning. Empty-save deletion failures must return false. The bin action must preserve failure for the UI and revalidate only success. Existing local storage, reconciliation/backoff and owner-scope tests run alongside. Normal CI retains the fuller test suites; this direct probe keeps the per-row guard bounded."
+  },
+  "closed": "2026-10-23"
+}
