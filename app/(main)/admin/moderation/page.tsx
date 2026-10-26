@@ -1,30 +1,9 @@
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate } from '@/components/templates'
-import { PageModules } from '@/components/widgets/page-modules'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqModerationBody } from '@/components/frequency/admin/pages/moderation/moderation-body'
 
-// MODERATION — the community report queue, module-driven (ADR-270/294): the page owns the
-// AdminTemplate header, then renders <PageModules>, which lays out the report queue as one
-// self-fetching, fail-safe RSC (components/widgets/admin/admin-moderation-queue.tsx). The interior
-// has no searchParams facet — it reads the pending reports and their target previews itself — so it
-// converts wholesale to one module. requireAdmin('host', { staff: 'community' }) gates the whole
-// route; the module renders only through it and never re-gates.
+// MODERATION — the Member Admin Moderation page over the community report queue. The host floor or a
+// community staff role gates the whole route; the body reads the pending reports and acts on them.
 export default async function ModerationPage() {
   await requireAdmin('host', { staff: 'community' })
-
-  // Under the Frequency design (SITE_DESIGN, build-time) this is the Member Admin Moderation page, over the
-  // same report read and the same actions; DAWN keeps the module-driven queue.
-  if (SITE_DESIGN === 'frequency') return <FqModerationBody />
-
-  return (
-    <AdminTemplate
-      title="Moderation"
-      eyebrow="Community"
-      description="Review reports submitted by community members, ranked newest first. Acting on a report resolves it; dismissed reports are hidden but not deleted."
-      width="wide"
-    >
-      <PageModules route="/admin/moderation" />
-    </AdminTemplate>
-  )
+  return <FqModerationBody />
 }
