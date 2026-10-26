@@ -7,7 +7,7 @@ import { loadSpaceDiscoveryConsent } from '@/lib/spaces/private-state'
 import { discoveryConsentActive } from '@/lib/spaces/discovery-consent'
 import { newSearchOAuthState, parseSearchOAuthState, sealSearchSecret, openSearchSecret, type SearchConnectionBinding } from './discovery-oauth-state'
 
-export interface SearchConnectionTokens { accessToken: string; refreshToken?: string; expiresAt: string; scopes: string[] }
+interface SearchConnectionTokens { accessToken: string; refreshToken?: string; expiresAt: string; scopes: string[] }
 type Provider = SearchConnectionBinding['provider']
 type Row = { space_id: string; provider: Provider; id: string; revision: number; actor_profile_id: string; consent_id: string; property_url: string; property_scope: SearchConnectionBinding['propertyScope']; state: string; nonce_hash: string | null; nonce_expires_at: string | null; pending_ciphertext: string | null; tokens_ciphertext: string | null; expires_at: string | null; scopes: string[]; updated_at: string }
 type Result = { data: Row | null; error: unknown }

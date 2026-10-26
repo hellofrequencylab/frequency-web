@@ -9,7 +9,7 @@ export const SEARCH_SCOPES = {
 export function searchProvider(value: unknown): DiscoverySearchProvider | null {
   return value === 'google' ? 'google_search_console' : value === 'bing' ? 'bing_webmaster' : null
 }
-export const providerSegment = (provider: DiscoverySearchProvider) => provider === 'google_search_console' ? 'google' : 'bing'
+const providerSegment = (provider: DiscoverySearchProvider) => provider === 'google_search_console' ? 'google' : 'bing'
 export function searchRedirectUri(provider: DiscoverySearchProvider) {
   return `${appOrigin()}/api/integrations/discovery/${providerSegment(provider)}/callback`
 }
