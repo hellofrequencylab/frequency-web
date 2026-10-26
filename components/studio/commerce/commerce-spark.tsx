@@ -32,6 +32,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useMemo, useState, useTransition, type ReactNode } from 'react'
+import { WritingQuestions } from '@/components/studio/writing-questions'
+import { safeWritingQuestions } from '@/lib/ai/writing-questions'
 import { useRouter } from 'next/navigation'
 import {
   FieldControl,
@@ -56,8 +58,9 @@ import type { EntityManifest, FieldDef, FieldKind } from '@/lib/studio/kernel/ma
 /** A draft in the entity's own shape. The manifest's paths address into it. */
 export type SparkDraft = Record<string, unknown>
 
-/** The two fields Vera is allowed to write on these manifests (`veraDrafts` is true only here). */
+/** Legacy content slots stay empty; coaching questions are displayed separately. */
 export interface SparkCopy {
+  questions?: string[]
   title: string
   description: string
 }
@@ -222,6 +225,7 @@ export function CommerceSpark({
   const [staged, setStaged] = useState<File[]>([])
   const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
   const [directions, setDirections] = useState('')
+  const [questions, setQuestions] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   // Whether the author has typed anything on the fields step. The "still needed" line waits for it,
   // so an untouched form is not scolded in warning colour the moment it opens.
@@ -289,27 +293,14 @@ export function CommerceSpark({
     return added.length ? writeAt(current, imagesField.path, [...existing, ...added]) : current
   }
 
-  /**
-   * Write Vera's copy onto the declared paths. Only the two fields these manifests mark
-   * `veraDrafts: true` are ever written, and only when the manifest actually declares them, so a
-   * photo, a price, or a status can never be replaced by a draft.
-   */
-  const applyCopy = (base: SparkDraft, copy: SparkCopy): SparkDraft => {
-    let next = base
-    for (const [path, value] of [['title', copy.title], ['description', copy.description]] as const) {
-      if (!value || !byPath.has(path)) continue
-      next = writeAt(next, path, value)
-    }
-    return next
-  }
-
+  // Advice never writes draft fields, even if an older server returns content slots.
   const enterDetails = (withVera: boolean) =>
     start(async () => {
       setError(null)
-      let next = await absorbStaged(draft)
+      const next = await absorbStaged(draft)
       if (withVera) {
         const copy = await onDraftCopy({ draft: next, sourceText, mood, directions })
-        next = applyCopy(next, copy)
+        setQuestions(safeWritingQuestions(copy))
       }
       setDraft(next)
       setStage('details')
@@ -319,7 +310,7 @@ export function CommerceSpark({
     start(async () => {
       setError(null)
       const copy = await onDraftCopy({ draft, sourceText, mood, directions })
-      setDraft((d) => applyCopy(d, copy))
+      setQuestions(safeWritingQuestions(copy))
     })
 
   const create = () =>
@@ -394,8 +385,8 @@ export function CommerceSpark({
           entityLabel={manifest.label}
           onVera={() => enterDetails(true)}
           onManual={() => enterDetails(false)}
-          veraLabel={doors.veraLabel}
-          veraHint={doors.veraHint}
+          veraLabel="Plan with Vera"
+          veraHint="Get questions to help you write your own listing."
           manualLabel={doors.manualLabel}
           manualHint={doors.manualHint}
           disabled={pending}
@@ -438,6 +429,7 @@ export function CommerceSpark({
         exits={exits}
       >
         <div className="space-y-5">
+          <WritingQuestions questions={questions} />
           {fields.map((def) => (
             <SparkFieldRow
               key={def.path}
@@ -471,6 +463,7 @@ export function CommerceSpark({
       error={error}
       exits={exits}
     >
+      <WritingQuestions questions={questions} />
       <SparkReview
         model={model}
         cover={coverState.offer}
@@ -496,7 +489,7 @@ export function CommerceSpark({
             // No lock pins on a CREATE flow: there is no saved draft to protect, and the redraw only
             // ever touches the two fields Vera drafts.
             onRedraw={redraw}
-            redrawLabel="Write it again with Vera"
+            redrawLabel="Get writing prompts"
             busy={pending}
           />
         </div>

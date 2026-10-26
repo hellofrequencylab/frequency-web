@@ -1,11 +1,9 @@
-// Winback drafting + consent — the testable core of the AI operator's
-// lapsed-member proposal (Phase 6.6 / ADR-028). Kept separate from agent.ts so
-// the consent gate and the deterministic fallback are unit-testable without a DB
-// or a live model. The agent stays COPILOT-GATED: these only produce a *proposed*
-// draft; a human approves before anything sends (see executeAction in agent.ts).
+// Human-written operational winback template, consent filtering and separate ephemeral coaching.
+// Model output has no proposal-write or send path. Human approval still precedes every send.
 
 import { completeRaw } from '@/lib/ai/complete'
-import { aiEnabled } from '@/lib/ai/client'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
+import { aiRateLimited } from '@/lib/ai/rate-limit'
 
 import { withVoice } from '@/lib/ai/voice'
 
@@ -24,8 +22,7 @@ interface WinbackDraft {
   body: string
 }
 
-// Deterministic fallback — used when there's no ANTHROPIC_API_KEY or the model
-// call fails/returns junk. Always available, so a winback can always be proposed.
+// Existing human-written operational template. The model never supplies these fields.
 export function deterministicWinback(name: string): WinbackDraft {
   const lead = name?.trim() || 'there'
   return {
@@ -48,87 +45,44 @@ export async function filterByConsent(
   return candidates.filter((_, i) => decisions[i])
 }
 
-// Task-specific contract only; the Frequency voice + no-em-dash rules come from withVoice (the
-// shared primer, lib/ai/voice.ts), so this prompt no longer hand-rolls them.
-const SYSTEM_PROMPT = `You write a short, warm win-back email for Frequency, a platform for real-world community built on in-person Practices (small recurring rituals members do together).
-
-Goal: gently invite a lapsed member back to log one Practice. Never invent a fact about the member. Keep it to 2 or 3 sentences.
-
-Respond with ONLY a JSON object, no other text, no markdown fences:
-{"subject": "<= 60 characters", "body": "2-3 sentence plain-text email body"}`
-
-// Extract the first balanced top-level JSON object from a model response.
-function extractJson(text: string): unknown | null {
-  const start = text.indexOf('{')
-  if (start === -1) return null
-  let depth = 0
-  for (let i = start; i < text.length; i++) {
-    if (text[i] === '{') depth++
-    else if (text[i] === '}') {
-      depth--
-      if (depth === 0) {
-        try {
-          return JSON.parse(text.slice(start, i + 1))
-        } catch {
-          return null
-        }
-      }
-    }
-  }
-  return null
-}
-
-function isValidDraft(v: unknown): v is WinbackDraft {
-  if (!v || typeof v !== 'object') return false
-  const d = v as Record<string, unknown>
-  return typeof d.subject === 'string' && d.subject.trim() !== '' &&
-    typeof d.body === 'string' && d.body.trim() !== ''
-}
-
-// Bounded Claude drafter. Returns null (→ caller uses the deterministic fallback)
-// when AI is off, the call errors, or the output doesn't parse to a valid
-// {subject, body}. The model only DRAFTS copy; it never sends (still COPILOT-gated:
-// a human approves before anything goes out, see executeAction in agent.ts). Routes
-// through the shared AI chokepoint (lib/ai/complete) so the provider/model tier is
-// governed in one place — no per-call SDK instance, no hardcoded model id. Runs on
-// Haiku: a 2 to 3 sentence email needs no Opus, and tiering is the biggest cost
-// lever (lib/ai/models.ts). Voice comes from the shared withVoice primer, and the
-// usage is attributed through the central completion wrapper.
-export async function draftWinbackWithClaude(
-  name: string,
-  opts: { lapseDays?: number } = {},
-): Promise<WinbackDraft | null> {
-  if (!aiEnabled()) return null
-
-  const lead = name?.trim() || 'there'
-  const lapseDays = opts.lapseDays ?? LAPSE_DAYS
-
+/** This guidance is transient operator review text. It is never a draft or a stored action payload. */
+export interface WinbackCoaching { questions: string[]; source: 'coach' | 'checklist' }
+const CHECKLIST = [
+  'What useful reason does someone have to return, without assuming why they paused?',
+  'Which consent and suppression checks must pass before this invitation is approved?',
+  'How will you learn whether the invitation helped without treating an open as a return?',
+]
+function coachingQuestions(text: string): string[] | null {
   try {
-    const res = await completeRaw({
-      accounting: { feature: FEATURE },
-      tier: 'haiku',
-      maxTokens: 400,
-      cacheSystem: true,
-      // Simple, single-shot generation — no thinking needed. Respond with the
-      // final JSON only (the prompt constrains the shape; we still parse defensively).
-      thinking: { type: 'disabled' },
-      system: withVoice(SYSTEM_PROMPT),
-      messages: [
-        {
-          role: 'user',
-          content: `Member's first name: ${lead}. They have no verified practice in the last ${lapseDays} days. Write their win-back email.`,
-        },
-      ],
-    })
+    const value: unknown = JSON.parse(text)
+    if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 1 || !('questions' in value) || !Array.isArray(value.questions) || value.questions.length < 1 || value.questions.length > 3) return null
+    if (!value.questions.every((question): question is string => typeof question === 'string' && question.length >= 12 && question.length <= 220 && /^(Who|What|Which|How|Why)\b[^?!.\n]*\?$/i.test(question) && !/[\d<>"“”]/.test(question))) return null
+    return value.questions
+  } catch { return null }
+}
 
-    const parsed = extractJson(res.text)
-    if (isValidDraft(parsed)) {
-      return { subject: parsed.subject.trim().slice(0, 120), body: parsed.body.trim() }
-    }
-    return null
-  } catch {
-    // AI off (AiUnavailableError) or a transient failure: caller uses the
-    // deterministic fallback. The model only ever drafts; it never sends.
-    return null
-  }
+/** No recipient identity, contact data or individual history crosses this boundary. Question-shape
+ * validation is not a semantic guarantee; the hard boundary is that this result has NO write/send path. */
+export async function coachWinbackReview(actorId: string): Promise<WinbackCoaching> {
+  const fallback: WinbackCoaching = { questions: [...CHECKLIST], source: 'checklist' }
+  if (!actorId || !(await aiAvailable()) || (await featureOverBudget(FEATURE)) || (await aiRateLimited(FEATURE, actorId))) return fallback
+  try {
+    const response = await completeRaw({
+      accounting: { feature: FEATURE, profileId: actorId }, tier: 'haiku', maxTokens: 350,
+      system: withVoice('Coach a human operator reviewing a lifecycle invitation. Ask questions about relevance, consent, friction and how a useful return would be measured. Do not write email subjects, bodies, offers or recipient-facing copy. Do not infer why anyone paused or invent statistics. Return only JSON with one questions array containing two or three short open questions, each beginning Who, What, Which, How or Why and ending with a question mark. No digits, quotes, markup or line breaks inside a question.'),
+      messages: [{ role: 'user', content: 'Help the operator review an existing human-written operational template. No individual recipient evidence is provided. Ask coaching questions only.' }],
+    })
+    const questions = coachingQuestions(response.text)
+    return questions ? { source: 'coach', questions } : fallback
+  } catch { return fallback }
+}
+
+/** Only this server-owned template version may flow through the winback proposal send door.
+ * Older unattributed/model drafts wait for a new human-reviewed proposal; no silent rewrite. */
+export function isOperationalWinbackPayload(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false
+  const payload = value as Record<string, unknown>
+  if (payload.copySource !== 'operational_winback_v1' || typeof payload.templateName !== 'string') return false
+  const expected = deterministicWinback(payload.templateName)
+  return payload.subject === expected.subject && payload.body === expected.body
 }

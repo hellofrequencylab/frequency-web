@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1147",
+  "title": "A Journey leader can email the people enrolled in it, through the Space email lane",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/(main)/journeys/[slug]/launch/page.tsx",
+    "ref": "Meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md), Phase 4 follow-up: Journeys email to a cohort was a disabled chip"
+  },
+  "detail": "The Email chip in Message enrollees on /journeys/[slug]/launch was disabled. It now sends through the Space's own campaign lane: a campaigns row under the marketing topic, then sendSpaceCampaign with a journey:<planId>[:in_progress|:finished] member segment, so the kill switch, daily cap, monthly meter, suppression and one-click unsubscribe all apply. The segment is re-resolved on the server and only when the plan belongs to that Space. It reaches enrolled people the Space already holds a subscribed contact for (ADR-863: an account email is never read for a Space send), so the result line can be smaller than the enrolled count. A Journey with no Space keeps a disabled chip that says so. Dispatch to a cohort stays a separate follow-up.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));const t=f.readFileSync(\"app/(main)/journeys/[slug]/launch/actions.ts\",\"utf8\");process.exit(/sendSpaceCampaign\\(/.test(t)&&/journey:/.test(t)?0:1)'",
+    "note": "Exits 0 once the launch action sends email through the Space campaign lane with a journey member segment."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}

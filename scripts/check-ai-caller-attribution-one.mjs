@@ -8,8 +8,6 @@ const paths = [
   "app/(main)/admin/library/vera-actions.ts",
   "app/(main)/admin/support/actions.ts",
   "lib/ai/campaign-coach.ts",
-  "lib/ai/circle-compose.ts",
-  "lib/ai/circle-edit.ts",
   "lib/ai/connections-ai.ts",
   "lib/ai/creator-tips.ts",
   "lib/ai/help-rag.ts",
@@ -17,7 +15,7 @@ const paths = [
   "lib/ai/journey-edit.ts",
   "lib/ai/journey-slot-coaching.ts",
   "lib/ai/library-tag.ts",
-  "lib/ai/listing-copy.ts",
+  "lib/ai/writing-coach.ts",
   "lib/ai/memory-summary.ts",
   "lib/ai/messaging-generator.ts",
   "lib/ai/poster-observer.ts",
@@ -64,6 +62,26 @@ function verifyPracticeDelegate(node) {
 }
 verifyPracticeDelegate(practiceEdit)
 assert.ok(sparkImport && boundedSpec && attributedRun, 'Practice edit lost its shared, attributed coaching dispatch')
+// These modules delegate their paid work to the inventoried writing-coach seam.
+// Keep the legacy feature attribution and prohibit a second direct completion.
+for (const [path, feature] of [['circle-compose', 'circle-compose'], ['circle-edit', 'circle-edit'], ['listing-copy', 'listing-copy'], ['circle-spark', 'circle-create']]) {
+ const source = ts.createSourceFile(path, readFileSync(`lib/ai/${path}.ts`, 'utf8'), ts.ScriptTarget.Latest, true)
+ let delegated = 0
+ function inspect(node) {
+  if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+   assert.ok(!['completeRaw','completeText','runToolLoop','recordAiUsage'].includes(node.expression.text), `${path} bypassed the shared accounting seam`)
+   if (node.expression.text === 'writingCoach') {
+    const args = node.arguments[0]
+    assert.ok(args && ts.isObjectLiteralExpression(args), `${path} lost explicit coaching options`)
+    const label = args.properties.find(p => ts.isPropertyAssignment(p) && p.name.getText(source) === 'feature')
+    assert.ok(label && ts.isStringLiteral(label.initializer) && label.initializer.text === feature, `${path} lost its accounting feature`)
+    delegated++
+   }
+  }
+  ts.forEachChild(node, inspect)
+ }
+ inspect(source); assert.equal(delegated, 1, `${path} lost its coaching delegation`)
+}
 // Event explanations now render current deterministic facts and must never reintroduce a paid caller.
 const factSource = ts.createSourceFile('lib/ai/event-blurb.ts', readFileSync('lib/ai/event-blurb.ts', 'utf8'), ts.ScriptTarget.Latest, true)
 function verifyFactOnly(node) {

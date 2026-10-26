@@ -177,8 +177,9 @@ export function normalizeChurnRisk(raw: unknown): ChurnRiskBand | null {
 
 /** The member-segment keys the audience grammar accepts (LIVE-293), matching the keys
  *  lib/spaces/broadcast-audience.ts emits: the whole membership, one paid tier, one of the Space's own
- *  circles, or one upcoming event's RSVPs. */
-const MEMBER_SEGMENT_RE = /^(?:members|(?:tier|circle|event):[A-Za-z0-9_-]{1,64})$/
+ *  circles, one upcoming event's RSVPs, or the people enrolled in one of its Journeys. */
+const MEMBER_SEGMENT_RE =
+  /^(?:members|(?:tier|circle|event):[A-Za-z0-9_-]{1,64}|journey:[A-Za-z0-9_-]{1,64}(?::(?:in_progress|finished))?)$/
 
 /** A valid member-segment key, or null. Pure. Fail-safe in the SAFE direction for a send surface: an
  *  unrecognized key reads as "no member narrowing" here, and `resolveAudience` refuses to resolve one

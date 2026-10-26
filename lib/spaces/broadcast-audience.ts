@@ -32,6 +32,11 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 //   event:<id>         — one UPCOMING space event's RSVPs (going or maybe — the Message
 //                        Attendees set), for events the space owns or hosts
 //                        (hostingSpaceId, the ADR-819 convention with root excluded).
+//   journey:<id>[:in_progress|:finished]
+//                      — the people enrolled in one of THIS Space's Journeys. Never listed in the
+//                        picker (the Journey launch page is its surface); resolved here only, and
+//                        only when the plan's space_id is this Space, so a key for another Space's
+//                        Journey resolves to nobody.
 //
 // Every read is service-role BEHIND the caller's space-manage gate, deduped by profile id,
 // and FAIL-SAFE: a broken read degrades to an empty segment, never a throw.
@@ -183,8 +188,46 @@ export async function resolveSpaceBroadcastAudience(
   selectedKeys: readonly string[],
 ): Promise<string[]> {
   const keys = selectedKeys.length > 0 ? selectedKeys : [MEMBERS_SEGMENT_KEY]
-  const segments = await loadSpaceBroadcastSegments(spaceId)
-  return unionSegmentIds(segments, keys)
+  const journeyKeys = keys.filter((k) => JOURNEY_KEY_RE.test(k))
+  const listedKeys = keys.filter((k) => !JOURNEY_KEY_RE.test(k))
+  const [listed, journeys] = await Promise.all([
+    listedKeys.length > 0 ? loadSpaceBroadcastSegments(spaceId).then((s) => unionSegmentIds(s, listedKeys)) : [],
+    Promise.all(journeyKeys.map((k) => readJourneyEnrolleeIds(spaceId, k))),
+  ])
+  return [...new Set([...listed, ...journeys.flat()])]
+}
+
+const JOURNEY_KEY_RE = /^journey:[A-Za-z0-9_-]{1,64}(?::(?:in_progress|finished))?$/
+
+/** The profile ids enrolled in one Journey of THIS Space, for a `journey:<id>[:state]` key. The plan is
+ *  re-read with `space_id = spaceId`, so a key naming another Space's Journey (or none) is nobody.
+ *  FAIL-SAFE to []: too few recipients is a missing email, too many cannot be recalled. */
+async function readJourneyEnrolleeIds(spaceId: string, key: string): Promise<string[]> {
+  const [, planId, state] = key.split(':') as [string, string, string | undefined]
+  try {
+    const { data: plan } = await db()
+      .from('journey_plans')
+      .select('id')
+      .eq('id', planId)
+      .eq('space_id', spaceId)
+      .maybeSingle()
+    if (!plan) return []
+    const { data } = await db()
+      .from('journey_enrollments')
+      .select('profile_id, completed_at')
+      .eq('plan_id', planId)
+      .limit(TIER_ROWS_CAP)
+    const rows = (data ?? []) as { profile_id: string; completed_at: string | null }[]
+    return [
+      ...new Set(
+        rows
+          .filter((r) => (state === 'finished' ? !!r.completed_at : state === 'in_progress' ? !r.completed_at : true))
+          .map((r) => r.profile_id),
+      ),
+    ]
+  } catch {
+    return []
+  }
 }
 
 /**
