@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1377",
+  "title": "Read verified dedicated Bing properties as permissioned discovery observations",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/ai/discovery-bing.ts",
+    "ref": "Owner-requested search integration; Microsoft official JSON/HTTP, OAuth and RankAndTrafficStats reference verified2026-10-26"
+  },
+  "detail": "Real fixed-host JSON/HTTP GET adapter uses only Webmaster.read Bearer credentials from the server broker. Fresh current Space editor access, discovery_coaching consent and exact connection binding gate every provider request and result. It permits only a server-owned dedicated canonical HTTPS root property, rejects shared app hosts and page-only scope, and checks GetUserSites exact Url plus IsVerified before GetRankAndTrafficStats. Two GETs maximum, no retry, 8s/1MiB per call, 5000-row cap and31day selection bound; HTTP429returns honest throttling. Only selected aggregate clicks/impressions are retained; credentials, verification codes and other sites are discarded. Bing totals span search verticals including Chat and are not AI citations, unique people or conversions. Provider timestamps bound freshness; reporting completeness and calendar bucket boundaries remain unknown. No new schema or provider mutation. Root-owned encrypted OAuth broker, ready custom-domain mapping, runtime cooldown and review UI consume this seam separately; live credential/provider acceptance is not established by mocked tests. LIVE-1335 broader scope remains open.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/discovery-bing.mjs",
+    "note": "Executes actual adapter/common permission gate/evidence validator with inert provider responses; proves verified scope, no preauthorization read, no statistics for unverified property and mid-flight revocation discard."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}
