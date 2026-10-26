@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1332",
+  "title": "Add protected Space coach context and evidence-backed next steps",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-26",
+  "wave": "W7",
+  "source": {
+    "file": "lib/spaces/private-state.ts",
+    "ref": "Owner-authorized AI coaching implementation 2026-10-25"
+  },
+  "detail": "Private Space coach settings, fresh canonical editor authorization, narrow service-only private-state upsert, explicit unavailable state, and one ranked dashboard task from confirmed identity gaps and bounded check-in/profile evidence. The form reads only coach_profile from private storage after the manage gate; save/clear write no public preferences and preserve website drafts/overview. Owner-declared audience and style are untrusted model context, never authorization. Actual setup, business-story and branding-tagline caller tests preserve authored text and expose separate coaching questions. Migration25000 is owned/applied through the separate reviewed3920 packet; this feature includes no SQL migration or duplicate pgTAP file. OWN-109 remains open for authenticated live UI/non-disclosure acceptance. No inferred sensitive targeting or campaign attribution claim.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/ai-coaching-consequences.mjs space",
+    "checked": "2026-10-26",
+    "evidence": "Isolated preparation on main eecb4c51d:16focused suites133passed, one live-provider test skipped; provider/network/DB doubles only. Shared consequence probe is supplied by phase1 and remains a sequencing dependency. Full isolated typing/build, exact-head CI, authenticated production UI and provider acceptance are separate release gates. Storage receipt does not imply the UI is live."
+  }
+}
