@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-133",
+  "patch": {
+    "verify": {
+      "kind": "grep-present",
+      "pattern": "cover",
+      "paths": [
+        "components/frequency/members/event/public-event-body.tsx"
+      ]
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1128): the public event page renders its cover in the Frequency event body."
+  }
+}
