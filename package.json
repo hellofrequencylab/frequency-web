@@ -120,7 +120,7 @@
     "check:node-document-safety": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-node-document-safety.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.135.0",
+    "@anthropic-ai/sdk": "^1.2.0",
     "@iconify/utils": "^3.1.7",
     "@react-email/render": "^2.1.1",
     "@resvg/resvg-wasm": "^2.6.2",
