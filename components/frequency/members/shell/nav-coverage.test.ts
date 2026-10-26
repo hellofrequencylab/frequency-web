@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as fqNav from './nav'
 import { ACCESS_LEVELS, NAV_AREAS, type NavAccess } from '@/lib/nav-areas'
 import { calmSpine, footerColumns, nodesForSurface, profileSections } from '@/lib/nav/registry'
@@ -352,3 +352,9 @@ describe('the site map lists the same set', () => {
     for (const h of ['/features', '/stories', '/vision']) expect(dawn).not.toContain(h)
   })
 })
+
+// Preserve this historical renderer fixture independently of the deployed default.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'dawn',
+}))

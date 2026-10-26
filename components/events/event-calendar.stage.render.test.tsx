@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { EventCalendar, type CalendarEvent } from './event-calendar'
@@ -227,3 +227,9 @@ describe('the popup says the same word in the same tone (LIVE-470)', () => {
     expect(document.body.textContent).toContain('New moon sit')
   })
 })
+
+// These assertions lock the historical DAWN renderer; platform selection is tested separately.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'dawn',
+}))

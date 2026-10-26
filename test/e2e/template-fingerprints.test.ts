@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -247,3 +247,9 @@ describe('the detector itself', () => {
     expect(() => publishedCountIn({ stores: [{ store: 'pages.published_data' }] } as Census)).toThrow(/documents/)
   })
 })
+
+// Preserve this historical renderer fixture independently of the deployed default.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'dawn',
+}))

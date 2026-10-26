@@ -410,6 +410,8 @@ describe('sendOrderReceipts — a split order', () => {
     })
 
     it('sends each seller it is given the exact notice the settle sends, and the buyer nothing', async () => {
+      // The email frame selects rotating artwork; compare delivery paths with the same artwork.
+      const artwork = vi.spyOn(Math, 'random').mockReturnValue(0.5)
       vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(new Date('2026-09-30T12:00:00Z'))
       let settle: Record<string, string>[]
@@ -420,6 +422,7 @@ describe('sendOrderReceipts — a split order', () => {
         await expect(sendRecoveredSplitSaleNotices('order-2', ['t1', 't2'])).resolves.toBe(2)
       } finally {
         vi.useRealTimers()
+        artwork.mockRestore()
       }
       expect(sent().some((p) => p.to === 'buyer@example.test')).toBe(false)
       expect(m.enqueueEmail).toHaveBeenCalledTimes(2)

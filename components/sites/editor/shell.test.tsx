@@ -59,3 +59,9 @@ it('lets page deletion publish even when no remaining page content changed', () 
  expect(Array.from(node.querySelectorAll('button')).find((button) => button.textContent?.startsWith('Publish now'))?.disabled).toBe(false)
  expect(node.querySelector('[role=dialog]')?.textContent).toContain('Removed')
 })
+
+// Preserve this historical renderer fixture independently of the deployed default.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'dawn',
+}))
