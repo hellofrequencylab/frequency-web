@@ -100,6 +100,15 @@ describe('Google Search Console bounded observation', () => {
     request.mockImplementation(async () => new Response('x'.repeat(262145), { headers: { 'content-type': 'application/json' } }))
     expect(await run()).toMatchObject({ reason: 'provider_error' })
   })
+  it('stops the read when its overall HTTP budget is exhausted', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(0)
+    try {
+      request.mockImplementation(async () => { clock.mockReturnValue(30_001); return response({ siteEntry: [{ siteUrl: connection.propertyUrl, permissionLevel: 'siteOwner' }] }) })
+      expect(await run()).toMatchObject({ reason: 'provider_error' })
+      expect(request).toHaveBeenCalledTimes(1)
+    } finally { clock.mockRestore() }
+  })
+
   it.each([401, 403, 429, 500])('fails unavailable on provider status%s without exposing body/token', async status => {
     request.mockImplementation(async () => response({ message: 'private-token' }, status))
     expect(await run()).toEqual({ status: 'unavailable', reason: 'provider_error' })
