@@ -1,0 +1,19 @@
+{
+  "id": "HYG-183",
+  "title": "Make performance baseline failures and unauthenticated scope explicit instead of recording fast false successes",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "scripts/perf-baseline.mjs",
+    "ref": "Meta audit2026-10-26; sampler ignored HTTP status, followed redirects and recorded rejected fetch duration as successful latency"
+  },
+  "detail": "The unauthenticated baseline sampler previously included HTTP failures, followed sign-in redirects and counted immediate network failures as successful fast samples. It also left response bodies unread and labelled the result without an explicit response-header boundary. Skip authenticated routes, request redirects manually, include only successful response-header durations in percentiles, report HTTP/network/timeout and warmup/cleanup failures separately, release every response body and return CLIexit1 when measured requests or cleanup fail. All-failed runs report null percentiles rather than a healthy score. Sample/warmup configuration is validated before requesting. No production requests are needed for verification.23tests across2files pass, including the actual CLI against a synthetic loopback503server; three actual old-body controls reproduce false-success outcomes. Initial sandbox listenEPERM is retained as an environment failure; rerun with loopback permission passes. This fixes measurement truthfulness, not actual application performance or authenticated/browser latency. Budgets and timeout ceilings remain unchanged.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/performance-sampling-outcomes.mjs",
+    "note": "Execute the actual sampler with synthetic transport boundaries: authroutes make no requests; HTTP/redirect/network/timeout failures produce no successful percentiles; successful header timing precedes body cleanup. Actual CLIexit/JSON behavior tested separately onloopback."
+  }
+}
