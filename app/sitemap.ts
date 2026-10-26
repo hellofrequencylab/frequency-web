@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { resolveProfileSiteCanonical } from '@/lib/sites/profile-canonical'
 import { SITE_URL } from "@/lib/site";
 import { SITE_DESIGN } from "@/lib/theme/design";
 import {
@@ -44,14 +45,14 @@ import { funnelSlugs } from "@/lib/marketing/funnel-config";
 // the admin client; only the handle crosses out (never meta/contact/geo).
 async function getSpotlightRoutes(): Promise<MetadataRoute.Sitemap> {
   try {
-    const handles = await listPublishedSpotlightHandles(1000);
+    const handles = await listPublishedSpotlightHandles(1000, { failClosed: true });
     return handles.map((handle) => ({
       url: `${SITE_URL}/spotlight/${handle}`,
       changeFrequency: "weekly" as const,
       priority: 0.5,
     }));
-  } catch {
-    return [];
+  } catch (err) {
+    return failSection("spotlights", err);
   }
 }
 
@@ -401,9 +402,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // request-cached settings row, and it never throws (a failed read returns the shipped defaults).
     const { indexedOccurrences } = await getSeriesDisplayConfig();
     const [channels, circles, events, journeys, organizers, spotlights, hubs, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
-      getTopicalChannels(),
+      sectionRead("channels", getTopicalChannels({ failClosed: true })),
       // Capped, not paged — see the cap note above this function. The RPC's own SQL ceiling.
-      getPublicCircles(CIRCLE_SITEMAP_CAP),
+      sectionRead("circles", getPublicCircles(CIRCLE_SITEMAP_CAP, { failClosed: true })),
       // Event URLs, FOLDED per series (ADR-897). Before this, one weekly cowork series advertised
       // ~9 URLs and ~9 image entries and a daily one ~61, all with the same title and description,
       // out of a GLOBAL 200-row cap — so a single daily series could crowd real one-offs out of the
@@ -413,17 +414,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // public_events RPC gated nothing but is_cancelled + starts_at, so unlisted, draft and
       // moderator-removed events were advertised here. ADR-903 closed that at the RPC, but this
       // reader stays a direct table read — it needs the recurrence columns the RPC never projected.
-      listSitemapEventEntries({ occurrences: indexedOccurrences }),
-      listPublicJourneys(),
+      sectionRead("events", listSitemapEventEntries({ occurrences: indexedOccurrences, failClosed: true })),
+      sectionRead("journeys", listPublicJourneys({ failClosed: true })),
       getOrganizerRoutes(),
       getSpotlightRoutes(),
-      // Five legacy readers above still swallow failures: channels, circles, events,
-      // journeys and spotlights. LIVE-331 explicitly left these outside its repair;
-      // adding sectionRead around a reader that returns [] on error would not help.
-      // SCAN-1051 now makes the organizer reader report failures through failSection
-      // inside its own catch, preserving status/code and abandoning regeneration on
-      // transport. This does not repair the other five. Any genuine throw reaches
-      // the dynamic block's transient-or-deterministic catch below.
+      // Each legacy reader opts into the shared fail-closed ladder for this sitemap.
+      // Other callers retain their existing empty-on-error behavior.
       //
       // Every read below goes through `sectionRead`, which logs a failure by section and lets a
       // transport failure abandon the regeneration (see the note above the helper). Since LIVE-331
@@ -485,7 +481,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // one that lies). ⚠️ `spaces` has no set_updated_at trigger and most write paths do not stamp the
     // column, so today this is a FLOOR on freshness (often the row's creation time), not a precise
     // edit time; making it precise is a write-side change, not a sitemap one.
-    const spaceRoutes: MetadataRoute.Sitemap = spaces.map((s) => ({
+    const canonicalSites = new Map(spaces.map((space) => [space.slug, space.canonicalSite]))
+    // Foreign-domain twins advertise themselves in their own sitemap. Do not submit their
+    // Frequency aliases as competing canonicals in this host's sitemap.
+    const spaceRoots = await Promise.all(spaces.map(async (s) => ({
+      space: s, twin: await resolveProfileSiteCanonical(s.canonicalSite),
+    })))
+    const spaceRoutes: MetadataRoute.Sitemap = spaceRoots.filter(({ twin }) => twin === null).map(({ space: s }) => ({
       url: `${SITE_URL}/spaces/${s.slug}`,
       ...((s.updatedAt) ? { lastModified: new Date(s.updatedAt) } : {}),
       changeFrequency: "weekly" as const,
@@ -721,8 +723,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // "emits no duplicate URLs" test in app/sitemap.test.ts holds this file to.
       const already = new Set([...spaceRoutes, ...podcastRoutes].map((e) => e.url));
       const tabs = await listNetworkedSpaceProfileTabs();
-      spaceTabRoutes = tabs
-        .map((t) => ({
+      const canonicalTabs = await Promise.all(tabs.map(async (tab) => ({ tab, twin: await resolveProfileSiteCanonical(canonicalSites.get(tab.slug), tab.segment) })))
+      spaceTabRoutes = canonicalTabs.filter(({ twin }) => twin === null)
+        .map(({ tab: t }) => ({
           url: `${SITE_URL}/spaces/${t.slug}/${t.segment}`,
           ...((t.updatedAt) ? { lastModified: new Date(t.updatedAt) } : {}),
           changeFrequency: "weekly" as const,

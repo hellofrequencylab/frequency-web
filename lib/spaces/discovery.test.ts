@@ -26,6 +26,9 @@ vi.mock('./follows', () => ({
 
 // ── A chainable admin-client mock backed by an in-memory set of spaces rows ─────────────────────────
 type SpaceRow = {
+  domain?: string | null
+  parent_id?: string | null
+  owner_profile_id?: string | null
   id: string
   slug: string
   name: string
@@ -916,4 +919,12 @@ describe('listNetworkedSpaceProfileTabs (the sitemap tab gates)', () => {
     expect(slugs.has('solo-standalone')).toBe(false)
     expect(slugs.has('frequency')).toBe(false) // root is never member-facing
   })
+})
+
+
+it('carries a published hosted canonical candidate on directory output rather than standing inputs', async () => {
+  store.spaces = store.spaces.map(row => row.id === 's2' ? { ...row, domain: 'sound.example', parent_id: 'network', owner_profile_id: 'owner', preferences: { websitePublished: true, pages: [{ slug: 'home', label: 'Home' }] } } : row)
+  const rows = await listNetworkedSpaces()
+  expect(rows.find(row => row.id === 's2')?.canonicalSite).toEqual({ id: 's2', slug: 'sound-co', domain: 'sound.example', parentId: 'network', ownerProfileId: 'owner', pages: ['home'] })
+  expect(rows.find(row => row.id === 's1')?.canonicalSite).toBeNull()
 })

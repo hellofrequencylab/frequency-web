@@ -709,14 +709,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 291,
+      "baseline": 290,
       "frozen": {
-        "at": "2026-10-24",
-        "value": 291,
+        "at": "2026-10-26",
+        "value": 290,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 8 raw button fills",
-        "from": 299
+        "reason": "Retired one raw button background in main before this PR; this PR changes none (SCAN-1142 sweep follow-up)",
+        "from": 291
       },
       "history": [
         {
@@ -921,6 +921,13 @@
           "to": 291,
           "direction": "lowered",
           "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 8 raw button fills"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 291,
+          "to": 290,
+          "direction": "lowered",
+          "reason": "Retired one raw button background in main before this PR; this PR changes none (SCAN-1142 sweep follow-up)"
         }
       ]
     },

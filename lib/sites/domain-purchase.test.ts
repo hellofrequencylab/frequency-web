@@ -65,6 +65,7 @@ const sessionsCreate = vi.fn()
 const getDomainAvailability = vi.fn()
 const getDomainPrice = vi.fn()
 
+vi.mock('@/lib/spaces/store', () => ({ stageSpaceDomain: async (id: string, domain: string) => { const space = tables.spaces.find((row) => row.id === id); if (space) space.preferences = { siteDomainSetup: { domain } }; return Boolean(space) } }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => fakeDb(tables) }))
 vi.mock('@/lib/billing/stripe', () => ({
   stripe: {
@@ -185,7 +186,8 @@ describe('recordDomainPurchaseFromSession', () => {
     expect(typeof row.renews_at).toBe('string')
     // The registry holds the registrant now; Frequency keeps no copy.
     expect(row.registrant).toBeNull()
-    expect(tables.spaces[0].domain).toBe('adalovelace.com')
+    expect(tables.spaces[0].domain).toBeNull()
+    expect(tables.spaces[0].preferences).toEqual({ siteDomainSetup: { domain: 'adalovelace.com' } })
     expect(tables.spaces[0].stripe_customer_id).toBe('cus_1')
     expect(addSiteDomain).toHaveBeenCalledWith('adalovelace.com')
   })

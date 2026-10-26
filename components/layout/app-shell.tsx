@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react'
 import {
@@ -62,7 +63,6 @@ import { RailFoldTick } from '@/components/layout/rail-fold-control'
 import type { AppOverrides } from '@/lib/apps/overrides'
 import { isJanitor, type WebRole } from '@/lib/core/roles'
 import type { Capability } from '@/lib/core/capabilities'
-import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
 import { AdminBar, type AdminBarState } from '@/components/layout/admin-bar/admin-bar'
 import { EntityLayoutMount } from '@/components/entity-blocks/profile-layout-context'
@@ -79,6 +79,9 @@ import {
   type NavSectionGroup,
   type Profile,
 } from './app-shell-nav'
+
+// SCAN-1119: mounted only while open, so its code loads on first press of search, not on every route.
+const SearchOverlay = dynamic(() => import('@/components/search/search-overlay').then((m) => m.SearchOverlay), { ssr: false })
 
 // LIVE-412: nav helpers, account dock, rail list, and mobile tab bar live in
 // sibling modules. This file keeps the layout chrome (header, rails, drawer).

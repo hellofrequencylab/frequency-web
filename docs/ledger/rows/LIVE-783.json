@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-783",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const proxy=r('proxy.ts');const host=r('lib/sites/host.ts');const page=r('components/sites/site-page.tsx');const prof=r('lib/spaces/profile-metadata.ts');const robots=r('app/hosted/[host]/robots.txt/route.ts');const sm=r('app/hosted/[host]/sitemap.xml/route.ts');const cfg=proxy.slice(proxy.indexOf('export const config'));const miss=[];if(!/missing:\\s*\\[\\{\\s*type:\\s*'host'/.test(cfg)||!/source:\\s*'\\/\\(robots[^']*sitemap/.test(cfg)||!/SITE_CRAWLER_FILES\\.has\\(pathname\\)\\)\\s*return\\s*\\{\\s*kind:\\s*'rewrite'/.test(host))miss.push('a custom domain still serves Frequency robots.txt and sitemap.xml');if(!/siteRobotsTxt\\(/.test(robots)||!/siteSitemapXml\\(/.test(sm))miss.push('there is no site robots.txt or sitemap.xml route');const a=page.indexOf('export async function siteMetadata');const meta=a<0?'':page.slice(a,page.indexOf('export async function SitePage'));if(!/alternates:\\s*\\{\\s*canonical/.test(meta)||!/index:\\s*true/.test(meta)||!/boundSiteDomain\\(/.test(meta))miss.push('a published site is still noindex or has no canonical on its domain');if(!/icons:/.test(meta)||!/images/.test(meta))miss.push('the site wears no brand favicon or share image');if(!/resolveProfileSiteCanonical\\(/.test(prof)||!/boundSiteDomain\\(/.test(r('lib/sites/profile-canonical.ts')))miss.push('the Space profile does not point its canonical at the site domain');if(miss.length){console.error('LIVE-783: '+miss.join('; '));process.exit(1)}\"",
+      "note": "Measures the consequence at each seam: a site host's crawler files reach the proxy and rewrite to the site's own robots and sitemap routes, those routes build the site's files, a published site page is indexable with a canonical computed from its bound domain plus a brand favicon and share image, and the profile canonical follows the domain. Failed on main before this change (the matcher had no host arm, siteMetadata was noindex with no canonical)."
+    }
+  },
+  "append": {
+    "detail": " Canonical extraction follow-up: retain every existing crawler and metadata assertion while following profile metadata through the shared profile-canonical bound-domain helper. LIVE-1337 adds actual-source readiness/activation consequences and focused profile/directory/sitemap regressions."
+  },
+  "wave": "W7"
+}
