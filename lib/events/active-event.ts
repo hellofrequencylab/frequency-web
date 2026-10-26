@@ -18,7 +18,7 @@ import type { RecapPhoto } from '@/components/events/recap-album'
 import type { CohostView } from '@/components/events/cohost-manager'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
-import type { FactGuest } from '@/components/events/event-fact-panel'
+import type { FactGuest } from '@/lib/events/fact-types'
 import type { WarmProofAttendee } from '@/components/events/warm-proof'
 
 /** The bits of the event a module needs (the page keeps the full row for its fixed header/Join). */
@@ -72,7 +72,7 @@ interface WarmProofData {
   spotsLeft: number | null
 }
 
-/** The critical-info card inputs the page already computed, for the `event-facts` module. */
+/** Event fact data retained in the request-local context. */
 interface EventFactsData {
   whenLine: string
   isOnline: boolean
@@ -169,7 +169,7 @@ export interface EventDetailContext {
   joinActions: ReactNode
   /** Inputs for the `event-warm-proof` module's <WarmProof> card. */
   warmProof: WarmProofData
-  /** Inputs for the `event-facts` module's <EventFactPanel> card (incl. the exact-venue map). */
+  /** Event facts and venue data computed by the page. */
   facts: EventFactsData
   /** Inputs for the `event-when-where` "Event Details" card (dates, times, calendar links). */
   schedule: EventScheduleData
