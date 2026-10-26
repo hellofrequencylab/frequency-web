@@ -59,6 +59,21 @@ export function missingAltText(doc: Data, config: Config): number {
   return walk(doc.content as unknown[], config, new Set())
 }
 
+/** Sections a starter kit placed that the owner has not touched yet (`sample: true`), nested blocks included. */
+export function sampleSections(doc: Data): number {
+  let count = 0
+  const visit = (blocks: unknown[], seen: Set<unknown>) => {
+    for (const block of blocks) {
+      if (!isBlock(block) || seen.has(block)) continue
+      seen.add(block)
+      if (block.props.sample === true) count += 1
+      for (const value of Object.values(block.props)) if (Array.isArray(value) && value.some(isBlock)) visit(value, seen)
+    }
+  }
+  visit(doc.content as unknown[], new Set())
+  return count
+}
+
 export interface PublishCheck {
   ok: boolean
   text: string
@@ -68,6 +83,7 @@ export interface PublishCheck {
 export function publishChecks(pages: { label: string; doc: Data; seo: { title: string; description: string } }[], config: Config, options: { otherChanged?: string[] } = {}): PublishCheck[] {
   const altMissing = pages.reduce((sum, p) => sum + missingAltText(p.doc, config), 0)
   // A blank title falls back to "Page | Site" on the live page, so only a missing description is a gap.
+  const sampleCount = pages.reduce((sum, p) => sum + sampleSections(p.doc), 0)
   const noSeo = pages.filter((p) => !p.seo.description.trim()).map((p) => p.label)
   return [
     altMissing === 0
@@ -76,6 +92,8 @@ export function publishChecks(pages: { label: string; doc: Data; seo: { title: s
     noSeo.length === 0
       ? { ok: true, text: 'Page title and description set' }
       : { ok: false, text: `Add a search description to ${noSeo.length <= 3 ? noSeo.join(', ') : `${noSeo.length} pages`}` },
+    // A kit's pages start as sample words. Said once, as a warning: the owner may keep them on purpose.
+    ...(sampleCount > 0 ? [{ ok: false, text: `${sampleCount} ${sampleCount === 1 ? 'section still has' : 'sections still have'} sample words from a starter kit` }] : []),
     // The design's third check: publishing sends the whole website, so OTHER pages' unpublished changes go live
     // too. Said as a warning, never a gate. Only when the caller names them (the Frequency modal).
     ...(options.otherChanged?.length ? [{ ok: false, text: `${options.otherChanged.length <= 3 ? options.otherChanged.join(', ') : `${options.otherChanged.length} other pages`} ${options.otherChanged.length === 1 ? 'page has' : 'have'} unpublished changes that go live too` }] : []),

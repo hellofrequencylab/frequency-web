@@ -338,7 +338,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     updateSection(id, (doc) => setSectionVisibility(doc, id, target, visible), 'Visibility')
     say(visible ? `Showing on ${target}` : `Hidden on ${target}`)
   }
-  function editProps(id: string, props: Record<string, unknown>, typing = false) { updateDoc(updateBlockPropsDeep(page.doc, config, id, props), { label: `Edited ${blockName(id)}`, burst: typing ? `props:${page.slug}:${id}` : undefined }) }
+  function editProps(id: string, props: Record<string, unknown>, typing = false) { updateDoc(updateBlockPropsDeep(page.doc, config, id, { ...props, sample: undefined }), { label: `Edited ${blockName(id)}`, burst: typing ? `props:${page.slug}:${id}` : undefined }) }
   function travel(redo: boolean) {
     const stack = redo ? future.current : history.current
     const next = stack.pop()

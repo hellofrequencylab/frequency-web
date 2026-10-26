@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1380",
+  "title": "Midnight theme feature page at /themes/midnight, built from the Frequency template kit",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/midnight-feature-page.mjs"
+  },
+  "detail": "Follow-up to LIVE-1365 (ADR-1885). The second Midnight design zip adds a feature page for the whole theme. components/frequency/site/pages/themes/frequency-midnight.tsx is that page on the template kit only (phero, sec, sh, tg-card, KeepGoing, no page CSS): the pains a guide names and what Midnight does about each, how Spotlight, Space and website travel, what one site record carries to each surface, four setup steps and the questions people ask. The route is app/(marketing)/themes/midnight/page.tsx with its FREQUENCY_PAGE_SEO entry and a sitemap line, Frequency-only like /networks. Left out on purpose: the design's third-party research figures (the voice guide allows no hard claims) and its live-preview modal, which needs a real Midnight site to point at. Still to build: the 'one site record, three surfaces' templates page with its kit picker and the single-surface framing page.",
+  "wave": "W7"
+}
