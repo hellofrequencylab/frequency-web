@@ -1,20 +1,13 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { CalendarDays, MapPin, Lock } from 'lucide-react'
 import { getPublicEventBySlug, getPublicEvents, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment, EVENT_CATEGORIES } from '@/app/discover/events/_data'
 import { getPublicEventVenue } from '@/lib/events/public-venue'
 import { publicPageWhere } from '@/lib/events/visible-location'
 import { SignInCta } from '@/components/discover/cards'
-import { Card } from '@/components/marketing/marketing-ui'
 import { loadPublicJoinDoor } from '@/lib/events/public-join-door'
 import { PublicJoinDoorBox, publicJoinHeading } from '@/components/events/public-join-door'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqPublicEventBody } from '@/components/frequency/members/event/public-event-body'
-import { EventDetailTemplate } from '@/components/templates'
-import { PosterBand } from '@/components/media/poster-band'
-import { eventPosterHeightClass, eventPosterMaxHeightClass } from '@/lib/events/hero-height'
 import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { formatEventDate, eventDateBadge } from '@/lib/utils'
 import { JsonLd } from '@/components/json-ld'
@@ -165,147 +158,40 @@ export default async function PublicEventPage({
     event.circle_name && event.circle_id
       ? { name: event.circle_name, href: `/discover/circles/${event.circle_id}` }
       : null
-
-  // THE FREQUENCY BODY (ADR-1737 switch, templates/members/Event.html). The owner's 2026-10-14 ask
-  // ("public event pages look like trash"): the share page wears the reference's event anatomy,
-  // which the member page keeps switched off by its own earlier ruling. Same reads, same privacy
-  // rules; only the placement changes. Build-time constant, so the DAWN return below is untouched.
-  if (SITE_DESIGN === 'frequency') {
-    const mode = enrichment?.attendance_mode ?? 'in_person'
-    const category = EVENT_CATEGORIES.find((c) => c.values.includes(enrichment?.category ?? 'gathering'))
-    const kind = category ? category.nounSingular.charAt(0).toUpperCase() + category.nounSingular.slice(1) : 'Gathering'
-    return (
-      <FqPublicEventBody
-        structuredData={structuredData}
-        heroUrl={enrichment?.cover_url ?? null}
-        heroFocus={enrichment?.cover_focus ?? null}
-        modeLabel={mode === 'online' ? 'Online' : mode === 'hybrid' ? 'Hybrid' : 'In person'}
-        kicker={[event.circle_name, kind].filter(Boolean).join(' · ')}
-        title={event.title}
-        status={
-          enrichment?.is_cancelled ? (
-            <span className="tag">This event was cancelled</span>
-          ) : hasEnded ? (
-            <span className="tag">This event has ended</span>
-          ) : null
-        }
-        dateChip={eventDateBadge(event.starts_at)}
-        whenLine={formatEventDateTime(event.starts_at)}
-        where={whereLine}
-        going={joined?.going ?? null}
-        joinHeading={joined ? publicJoinHeading(joined.door) : 'Join this event'}
-        joinBox={joinBox ?? signUpCard}
-        joinHref={BETA_CTA_HREF}
-        venuePoint={
-          venue.venue?.lat != null && venue.venue?.lng != null ? { lat: venue.venue.lat, lng: venue.venue.lng } : null
-        }
-        about={
-          event.description ??
-          "A real-world gathering near you: a standing time, a handful of regulars, and a seat that gets noticed when it's empty."
-        }
-        whereNote={where.exact ? null : 'The exact venue is shared with guests who RSVP.'}
-        host={host}
-      />
-    )
-  }
-
+  const mode = enrichment?.attendance_mode ?? 'in_person'
+  const category = EVENT_CATEGORIES.find((c) => c.values.includes(enrichment?.category ?? 'gathering'))
+  const kind = category ? category.nounSingular.charAt(0).toUpperCase() + category.nounSingular.slice(1) : 'Gathering'
   return (
-    <EventDetailTemplate
+    <FqPublicEventBody
       structuredData={structuredData}
-      cover={
-        enrichment?.cover_url ? (
-          <PosterBand
-            src={enrichment.cover_url}
-            heightClass={eventPosterHeightClass('standard')}
-            maxHeightClass={eventPosterMaxHeightClass('standard')}
-            aspect={enrichment.cover_aspect ?? null}
-            focus={enrichment.cover_focus ?? null}
-          />
-        ) : undefined
-      }
-      back={{ href: '/events', label: 'Events' }}
+      heroUrl={enrichment?.cover_url ?? null}
+      heroFocus={enrichment?.cover_focus ?? null}
+      modeLabel={mode === 'online' ? 'Online' : mode === 'hybrid' ? 'Hybrid' : 'In person'}
+      kicker={[event.circle_name, kind].filter(Boolean).join(' · ')}
       title={event.title}
-      badges={
-        hasEnded ? (
-          <span className="inline-block text-meta px-2 py-1 rounded-md font-medium bg-surface-elevated text-muted">
-            This event has ended
-          </span>
-        ) : undefined
+      status={
+        enrichment?.is_cancelled ? (
+          <span className="tag">This event was cancelled</span>
+        ) : hasEnded ? (
+          <span className="tag">This event has ended</span>
+        ) : null
       }
-      identity={{
-        when: (
-          <div className="flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-primary-strong shrink-0" />
-            <span className="text-body font-semibold text-text">{formatEventDateTime(event.starts_at)}</span>
-          </div>
-        ),
-        where: (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <MapPin className="w-4 h-4 text-subtle shrink-0" />
-            <span>{where.line ?? 'Location shared with members'}</span>
-            {where.mapsHref ? (
-              <a
-                href={where.mapsHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-strong hover:underline font-medium whitespace-nowrap"
-              >
-                Get directions
-              </a>
-            ) : null}
-          </div>
-        ),
-        hostedBy:
-          event.circle_name && event.circle_id ? (
-            <p>
-              <span className="text-subtle">Hosted by </span>
-              <Link
-                href={`/discover/circles/${event.circle_id}`}
-                className="text-primary-strong hover:underline font-medium"
-              >
-                {event.circle_name}
-              </Link>
-            </p>
-          ) : null,
-      }}
-      interiorMain={
-        <>
-          {event.description ? (
-            <section className="mb-8">
-              <p className="text-body-lg text-muted leading-relaxed whitespace-pre-line">
-                {event.description}
-              </p>
-            </section>
-          ) : (
-            <section className="mb-8">
-              <p className="text-body-lg text-muted leading-relaxed">
-                A real-world gathering near you: a standing time, a handful of regulars, and a seat
-                that gets noticed when it&apos;s empty. The kind of plan that pulls you off the couch
-                and into a room where people are glad you came.
-              </p>
-            </section>
-          )}
-          {where.exact ? null : (
-            <div className="flex items-start gap-3 rounded-card border border-border bg-marketing-canvas p-4">
-              <Lock className="w-4 h-4 text-muted shrink-0 mt-0.5" />
-              <p className="text-body-sm text-muted leading-relaxed">
-                The exact venue is shared with members who RSVP. Sign up free to see the full
-                details and let the host know you&apos;re coming.
-              </p>
-            </div>
-          )}
-        </>
+      dateChip={eventDateBadge(event.starts_at)}
+      whenLine={formatEventDateTime(event.starts_at)}
+      where={whereLine}
+      going={joined?.going ?? null}
+      joinHeading={joined ? publicJoinHeading(joined.door) : 'Join this event'}
+      joinBox={joinBox ?? signUpCard}
+      joinHref={BETA_CTA_HREF}
+      venuePoint={
+        venue.venue?.lat != null && venue.venue?.lng != null ? { lat: venue.venue.lat, lng: venue.venue.lng } : null
       }
-      interiorSide={
-        joinBox && joined ? (
-          <Card tone="feature" pad="p-6">
-            <p className="text-body-lg font-bold text-text mb-3">{publicJoinHeading(joined.door)}</p>
-            {joinBox}
-          </Card>
-        ) : (
-          signUpCard
-        )
+      about={
+        event.description ??
+        "A real-world gathering near you: a standing time, a handful of regulars, and a seat that gets noticed when it's empty."
       }
+      whereNote={where.exact ? null : 'The exact venue is shared with guests who RSVP.'}
+      host={host}
     />
   )
 }
