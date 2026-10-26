@@ -329,6 +329,19 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: ROUTES.networks, label: 'Networks' },
     ],
   },
+  // The six doors (SCAN-1140): each /for page was linked only from inside the funnel, so the footer gives
+  // them site-wide link weight. Plain role labels, the words a host searches with.
+  {
+    heading: 'Who it is for',
+    links: [
+      { href: '/for/coaches-and-healers', label: 'Coaches and healers' },
+      { href: '/for/studios', label: 'Studios' },
+      { href: '/for/event-hosts', label: 'Event hosts' },
+      { href: '/for/venues', label: 'Venues' },
+      { href: '/for/nonprofits', label: 'Non Profits' },
+      { href: '/for/networks', label: 'Networks' },
+    ],
+  },
   // THE FULL INDEX (LIVE-1030): the public directories and the marketplace, which the four columns above
   // never linked from the footer. Plain, descriptive link text so a crawler or an answer engine reads what
   // each page is, and every href is a route site-nav.test.ts finds in app/.

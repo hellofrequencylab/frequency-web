@@ -1,7 +1,7 @@
 {
   "name": "Frequency",
   "short_name": "Frequency",
-  "description": "Frequency connects neighborhoods into real-world community. Join local circles, show up for events near you, and build lasting friendships with people who live close by.",
+  "description": "Local groups and events near you. Find your Circle, show up in person, and open a Space to host.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F4F6F7",

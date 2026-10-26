@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { storeSpaceImage } from '@/lib/spaces/space-image-store'
 import { getCallerProfile } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, stageSpaceDomain, activateSpaceDomain } from '@/lib/spaces/store'
+import { readSiteDomainCandidate, siteDomainReady } from '@/lib/sites/domain-setup'
 import { getSpaceCapabilities, spaceCanUseFullWebsite, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { isValidAccent } from '@/lib/spaces/accent'
 import {
@@ -532,7 +533,7 @@ async function customDomainAllowed(spaceId: string, plan: string | null, entitle
   return spaceLimitsWaived(spaceId)
 }
 
-/** Connect `input` as the Space's website domain: store it, attach it to hosting, return its status. */
+/** Stage setup first. Only a fully verified, DNS-ready and secure candidate becomes active. */
 export async function connectSiteDomain(slug: string, input: string): Promise<ActionResult<DomainStatus & { domain: string }>> {
   const parsed = parseSiteDomain(input)
   if (!parsed.ok) return fail(parsed.error)
@@ -541,58 +542,64 @@ export async function connectSiteDomain(slug: string, input: string): Promise<Ac
   if (!(await customDomainAllowed(auth.spaceId, auth.plan, auth.entitlements))) {
     return fail('Your own domain is an add-on on Business, and it comes with Collective.')
   }
-
   const domain = parsed.domain
-  if (auth.domain && auth.domain !== domain) return fail('Remove your current domain first, then connect the new one.')
-
-  const saved = await writeSpaceDomain(auth.spaceId, domain)
-  if (saved === 'taken') return fail('That domain is already connected to another Space.')
-  if (saved === 'error') return fail('Could not save your domain. Try again.')
-
+  if (!(await stageSpaceDomain(auth.spaceId, domain))) return fail('Could not save your domain setup. Try again.')
   if (vercelDomainsConfigured()) {
     const added = await addSiteDomain(domain)
-    if (!added.ok) {
-      if (added.error === 'in-use') {
-        await writeSpaceDomain(auth.spaceId, null)
-        return fail('That domain is already in use on another Vercel account. Remove it there first, then connect it here.')
-      }
-      // The domain stays saved; Check again retries the attach.
-    } else {
-      await attachChapterHosts(auth.spaceId)
-    }
+    if (!added.ok && added.error === 'in-use') return fail('That domain is already in use on another Vercel account. Remove it there first, then connect it here.')
   }
-
-  // The site's canonical moves to the domain, and a 404 cached for the domain before it was bound must go.
-  refreshSite(slug)
-  revalidatePath(`/hosted/${domain}`, 'layout')
-  revalidatePath(`/spaces/${slug}/manage/layout`)
-  return ok({ domain, ...(await siteDomainStatus(domain)) })
+  // Re-authorize after provider IO; checkSiteDomain resolves the CURRENT staged candidate.
+  return checkSiteDomain(slug)
 }
 
-/** Re-check the Space's domain: re-attach if needed, then read verification and DNS. */
+/** Re-check the staged candidate. Existing active domains stay live until promotion succeeds. */
 export async function checkSiteDomain(slug: string): Promise<ActionResult<DomainStatus & { domain: string }>> {
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
-  if (!auth.domain) return fail('Connect a domain first.')
-  let status = await siteDomainStatus(auth.domain)
+  if (!(await customDomainAllowed(auth.spaceId, auth.plan, auth.entitlements))) return fail('Your plan does not include your own domain.')
+  const candidate = readSiteDomainCandidate(auth.preferences)
+  const domain = candidate ?? auth.domain
+  if (!domain) return fail('Connect a domain first.')
+  let status = await siteDomainStatus(domain)
   if (!status.attached && vercelDomainsConfigured()) {
-    await addSiteDomain(auth.domain)
-    status = await siteDomainStatus(auth.domain)
+    await addSiteDomain(domain)
+    status = await siteDomainStatus(domain)
   }
-  if (vercelDomainsConfigured()) await attachChapterHosts(auth.spaceId)
-  return ok({ domain: auth.domain, ...status })
+  if (candidate && candidate !== auth.domain && siteDomainReady(status)) {
+    // Permission and entitlement can change while DNS/hosting is checked.
+    const fresh = await authorizeEditor(slug)
+    if (!fresh || fresh.spaceId !== auth.spaceId || !(await customDomainAllowed(fresh.spaceId, fresh.plan, fresh.entitlements))) return fail('You do not have access to activate this domain.')
+    const activated = await activateSpaceDomain(fresh.spaceId, candidate, auth.domain)
+    if (activated === 'taken') return fail('That domain is already connected to another Space.')
+    if (activated !== 'ok') return fail('Your domain setup changed or could not be saved. Check again before activating it.')
+    refreshSite(slug)
+    revalidatePath(`/hosted/${candidate}`, 'layout')
+    revalidatePath(`/spaces/${slug}`, 'layout')
+    revalidatePath('/sitemap.xml')
+    if (vercelDomainsConfigured()) await attachChapterHosts(auth.spaceId)
+  }
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok({ domain, ...status })
 }
 
 /** Disconnect the Space's domain: detach it from hosting and clear spaces.domain. */
 export async function removeSiteDomain(slug: string): Promise<ActionResult> {
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
-  if (!auth.domain) return ok()
+  const candidate = readSiteDomainCandidate(auth.preferences)
+  const domain = candidate ?? auth.domain
+  if (!domain) return ok()
   if (vercelDomainsConfigured()) {
-    const removed = await detachSiteDomain(auth.domain)
+    const removed = await detachSiteDomain(domain)
     if (!removed.ok) return fail('Could not remove the domain from hosting. Try again.')
   }
+  if (candidate && candidate !== auth.domain) {
+    if (!(await stageSpaceDomain(auth.spaceId, null))) return fail('Could not clear your domain setup. Try again.')
+    revalidatePath(`/spaces/${slug}/manage/layout`)
+    return ok()
+  }
   if ((await writeSpaceDomain(auth.spaceId, null)) !== 'ok') return fail('Could not remove your domain. Try again.')
+  if (!(await stageSpaceDomain(auth.spaceId, null))) return fail('Your domain was removed, but its setup could not be cleared. Try again.')
   // The site's pages cached for the old domain stop serving, and its canonical returns to /sites.
   refreshSite(slug)
   revalidatePath(`/hosted/${auth.domain}`, 'layout')
@@ -610,11 +617,12 @@ export async function domainConnectLink(slug: string): Promise<ActionResult<OneC
   if (!(await customDomainAllowed(auth.spaceId, auth.plan, auth.entitlements))) {
     return fail('Your own domain is an add-on on Business, and it comes with Collective.')
   }
-  if (!auth.domain) return fail('Connect a domain first.')
+  const domain = readSiteDomainCandidate(auth.preferences) ?? auth.domain
+  if (!domain) return fail('Connect a domain first.')
 
   const state = signDomainConnectState(slug)
   if (!state) return ok({ supported: false })
-  const status = await siteDomainStatus(auth.domain)
+  const status = await siteDomainStatus(domain)
   if (status.providerIsVercel || (status.attached && status.verified && status.dnsReady)) return ok({ supported: false })
   const ip = status.records.find((r) => r.type === 'A' && r.name === '@')?.value
   const target = status.records.find((r) => r.type === 'CNAME' && r.name === 'www')?.value
@@ -622,7 +630,7 @@ export async function domainConnectLink(slug: string): Promise<ActionResult<OneC
 
   return ok(
     await findOneClickConnect({
-      domain: auth.domain,
+      domain,
       variables: { ip, target },
       redirectUri: `${appOrigin()}${DC_RETURN_PATH}`,
       state,

@@ -403,6 +403,13 @@ describe('organizationSchema', () => {
     expect(result.email).toMatch(/@/)
   })
 
+  it('carries the legal name, a support contact point and the domain as an alternate name', () => {
+    const result = organizationSchema()
+    expect(result.legalName).toBe('Frequency Labs Holdings')
+    expect(result.alternateName).toBe('frequencylocal.com')
+    expect(result.contactPoint).toMatchObject({ '@type': 'ContactPoint', email: 'hello@frequencylocal.com' })
+  })
+
   it('omits sameAs and foundingLocation when no options are passed (backward compatible)', () => {
     const result = organizationSchema()
     expect(result).not.toHaveProperty('sameAs')
