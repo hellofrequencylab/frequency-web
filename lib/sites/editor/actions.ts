@@ -2,11 +2,13 @@
 
 import { readSiteAdminAuthor } from '@/lib/sites/site-admin'
 import { authorizeWebsiteEditor } from './authorization'
+import { shareWebsiteAbout } from './share-about'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { readWebsiteEditor, nextWebsiteState, validWebsiteSnapshot, type WebsiteSnapshot, type WebsiteEditorState } from './state'
 
 
-export async function saveWebsiteDraft(host: string, expectedRevision: number, draft: WebsiteSnapshot, publish = false, scheduledAt?: string | null): Promise<{ ok: true; state: WebsiteEditorState } | { ok: false; error: string; conflict?: boolean }> {
+export async function saveWebsiteDraft(host: string, expectedRevision: number, draft0: WebsiteSnapshot, publish = false, scheduledAt?: string | null): Promise<{ ok: true; state: WebsiteEditorState } | { ok: false; error: string; conflict?: boolean }> {
+  let draft = draft0
   if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || !validWebsiteSnapshot(draft)) return { ok: false, error: 'This draft could not be saved. Check its pages and try again.' }
   const auth = await authorizeWebsiteEditor(host)
   if (!auth) return { ok: false, error: 'Your editing session ended. Reopen the builder to sign in.' }
@@ -14,6 +16,9 @@ export async function saveWebsiteDraft(host: string, expectedRevision: number, d
   const existing = readWebsiteEditor(auth.preferences)
   const current = existing ?? { v: 1 as const, revision: 0, draft, published: null, versions: [] }
   if (current.revision !== expectedRevision) return { ok: false, conflict: true, error: 'Someone saved a newer draft. Reload before continuing; your changes have not been overwritten.' }
+  // ONE ABOUT: publishing the website makes its typed home About the Space's own intro (share-about.ts).
+  const shared = publish ? shareWebsiteAbout(draft) : { body: null, snapshot: draft }
+  if (shared.body != null) draft = shared.snapshot
   const person = await readSiteAdminAuthor(auth.profileId)
   const authorName = person?.name.slice(0, 100) || 'You'
   const privateDraft = { ...draft, pages: draft.pages.map((page) => {
@@ -38,6 +43,13 @@ export async function saveWebsiteDraft(host: string, expectedRevision: number, d
   const result = await rpc.rpc('save_website_editor', { p_space_id: auth.space.id, p_expected_revision: expectedRevision, p_state: next, p_publish: publish })
   if (result.error) return { ok: false, error: 'Could not save your website. Try again.' }
   if (!result.data) return { ok: false, conflict: true, error: 'Someone saved a newer draft. Reload before continuing.' }
+  if (shared.body != null) {
+    // Untyped scoped write of the Space's own intro (the column is not in the generated types). The gate is
+    // authorizeWebsiteEditor above, the same one that just let this publish through.
+    const spaces = auth.db as unknown as { from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> } } }
+    const { error } = await spaces.from('spaces').update({ about: shared.body }).eq('id', auth.space.id)
+    if (error) return { ok: false, error: 'Your website published, but its About could not be saved to your Space. Publish again.' }
+  }
   if (publish) refreshSite(auth.space.slug)
   return { ok: true, state: next }
 }

@@ -28,7 +28,8 @@ import { hasNativeNodeStorage, legacySpaceLayoutWriteError } from '@/lib/entity-
 import { sanitizeNodeLayout } from '@/lib/entity-blocks/node-ops'
 import { renderPathEnabled } from '@/lib/platform-flags'
 import { layoutRendersSame } from '@/lib/entity-blocks/layout-equal'
-import { takeAboutBody } from '@/lib/spaces/promote-about'
+import { takeAboutBody, takeStoryBody } from '@/lib/spaces/promote-about'
+import { withProfileData } from '@/lib/spaces/profile-data'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { sanitizeBlockContent } from '@/lib/entity-blocks/block-content'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
@@ -228,8 +229,11 @@ export async function publishSpaceProfileLayout(slug: string): Promise<{ error?:
     // ONE ABOUT: publishing is when the page goes live, so an About body typed into the draft becomes the
     // Space's own intro here (the Spotlight and the website read it too) and leaves the page's copy.
     const about = draft == null ? null : takeAboutBody(draft)
+    // The Story block's body is the Space's longer story (profileData.about), shared the same way.
+    const story = about?.body != null || draft != null ? takeStoryBody(about?.body != null ? about.layout : draft) : null
     if (draft == null) delete current.profileLayout
-    else current.profileLayout = about?.body != null ? about.layout : draft
+    else current.profileLayout = story?.body != null ? story.layout : about?.body != null ? about.layout : draft
+    if (story?.body != null) Object.assign(current, withProfileData(current, { about: story.body }))
     if (about?.body != null && about.body !== (space.about ?? '').trim()) newAbout = about.body
     delete current.profileLayoutDraft
   }

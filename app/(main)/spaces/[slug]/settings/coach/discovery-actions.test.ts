@@ -55,11 +55,12 @@ describe('discovery action boundaries', () => {
   it('mints a fresh grant and saves revocation without touching writing preferences', async () => {
     const saved = await setSpaceDiscoveryConsent('space-a', true)
     expect(saved).toHaveProperty('data.purpose', 'discovery_coaching')
-    expect(m.write).toHaveBeenCalledWith('space-a', expect.objectContaining({ grantedBy: 'editor-a', purpose: 'discovery_coaching', revokedAt: null }))
+    expect(m.write).toHaveBeenCalledWith('space-a', expect.objectContaining({ grantedBy: 'editor-a', purpose: 'discovery_coaching', revokedAt: null }), grant.id)
     expect(m.write.mock.calls[0][1].id).not.toBe(grant.id)
     await setSpaceDiscoveryConsent('space-a', false)
     expect(m.write.mock.calls[1][1]).toMatchObject({ id: grant.id, revokedAt: expect.any(String) })
     expect(m.write.mock.calls[1][1]).not.toHaveProperty('coach_profile')
+    expect(m.write.mock.calls[1][2]).toBe(grant.id)
   })
   it('fails closed when storage is unavailable and does not fabricate zero data', async () => {
     m.load.mockResolvedValue({ available: false, consent: null })

@@ -18,7 +18,8 @@ function withoutBody(bag: Record<string, unknown>): Record<string, unknown> | un
   return Object.keys(rest).length ? rest : undefined
 }
 
-export function takeAboutBody(layout: unknown): { body: string | null; layout: unknown } {
+/** Lift the typed body of the blocks of one type (`about` or `story`). */
+export function takeBlockBody(layout: unknown, blockType: string): { body: string | null; layout: unknown } {
   let body: string | null = null
   const take = (bag: unknown): bag is Record<string, unknown> => {
     if (!isRecord(bag) || typeof bag.body !== 'string' || !bag.body.trim()) return false
@@ -28,8 +29,8 @@ export function takeAboutBody(layout: unknown): { body: string | null; layout: u
   const walk = (v: unknown, key?: string): unknown => {
     if (Array.isArray(v)) return v.map((x) => walk(x))
     if (!isRecord(v)) return v
-    // A node: { type: 'about', content: { body } }.
-    if (v.type === 'about' && take(v.content)) {
+    // A node: { type: <blockType>, content: { body } }.
+    if (v.type === blockType && take(v.content)) {
       const { content: _c, ...node } = v
       const left = withoutBody(v.content as Record<string, unknown>)
       return left ? { ...node, content: left } : node
@@ -38,7 +39,7 @@ export function takeAboutBody(layout: unknown): { body: string | null; layout: u
     const entries: [string, unknown][] = []
     for (const [k, child] of Object.entries(v)) {
       // A type-keyed document: content.about = { body }.
-      if (k === 'about' && key === 'content' && take(child)) {
+      if (k === blockType && key === 'content' && take(child)) {
         const left = withoutBody(child as Record<string, unknown>)
         if (left) entries.push([k, left])
         continue
@@ -49,4 +50,13 @@ export function takeAboutBody(layout: unknown): { body: string | null; layout: u
   }
   const next = walk(layout)
   return body === null ? { body: null, layout } : { body, layout: next }
+}
+
+export function takeAboutBody(layout: unknown): { body: string | null; layout: unknown } {
+  return takeBlockBody(layout, 'about')
+}
+
+/** The Story block's typed body: the Space's longer story (`preferences.profileData.about`). */
+export function takeStoryBody(layout: unknown): { body: string | null; layout: unknown } {
+  return takeBlockBody(layout, 'story')
 }

@@ -39,6 +39,7 @@
    carries follows while the sheet loads. */
 [data-design="frequency"] [data-space-fonts="network"] { --space-font-display: var(--font-nw-bricolage), var(--font-lexend); --space-font-body: var(--font-nw-outfit), var(--font-nunito); }
 [data-design="frequency"] [data-space-fonts="wildheart"] { --space-font-display: var(--font-wh-fell), var(--font-playfair); --space-font-body: var(--font-wh-garamond), var(--font-pt-serif); }
+[data-design="frequency"] [data-space-fonts="midnight"] { --space-font-display: var(--font-mn-bodoni), var(--font-playfair); --space-font-body: var(--font-mn-geist), var(--font-nunito); }
 
 /* ══ 0b. THE SPACE'S ACCENT (SCAN-979) ═══════════════════════════════════════════════════════════
    A Space that picked a brand color wears it where the design draws its iridescent fill: the buttons,
@@ -87,7 +88,7 @@
      Unbounded's -0.04em reads as one smudge);
    · --space-display-scale lifts a condensed face, whose narrow letters at Unbounded's sizes read a
      size smaller than the scale means. Every heading size below multiplies by it (default 1). */
-[data-design="frequency"] :is([data-space-fonts="editorial"], [data-space-fonts="classic"], [data-space-fonts="wildheart"]) { --space-display-track: -0.015em; }
+[data-design="frequency"] :is([data-space-fonts="editorial"], [data-space-fonts="classic"], [data-space-fonts="wildheart"], [data-space-fonts="midnight"]) { --space-display-track: -0.015em; }
 [data-design="frequency"] :is([data-space-fonts="playful"], [data-space-fonts="accessible"], [data-space-fonts="modern"], [data-space-fonts="network"]) { --space-display-track: -0.02em; }
 [data-design="frequency"] [data-space-fonts="menswork"] { --space-display-track: 0.005em; --space-display-scale: 1.18; }
 
