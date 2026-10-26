@@ -53,8 +53,8 @@ import { dailyCapFor, FEATURE_DAILY_CAP_USD } from './budget'
 import { studioManifest } from '@/lib/studio/registry'
 import { JOURNEY_SPARK } from './journey-spark'
 import { PRACTICE_SPARK, PRACTICE_CLAIM } from './practice-spark'
-import { CIRCLE_SPARK, CIRCLE_SUGGEST } from './circle-spark'
-import { EVENT_SPARK, EVENT_POSTER_SCAN, EVENT_TEXT_ASSIST } from './events-ai'
+import { CIRCLE_SPARK, CIRCLE_SUGGEST, draftCircleSpark } from './circle-spark'
+import { EVENT_SPARK, EVENT_POSTER_SCAN, EVENT_TEXT_ASSIST, draftEventSpark, assistEventFromText, scanEventPoster } from './events-ai'
 
 /** Every declared spark in the app, with the tier and budget key it MUST keep. */
 const DECLARED = [
@@ -298,5 +298,93 @@ describe('the shared coercion helpers', () => {
     expect(sparkEnum('Deep', allowed)).toBe('deep')
     expect(sparkEnum('extreme', allowed)).toBeNull()
     expect(sparkEnum(null, allowed, 'standard')).toBe('standard')
+  })
+})
+
+
+describe('author-owned event prose', () => {
+  it('replaces hostile generated prose before coercion while retaining structured facts', async () => {
+    state.toolInput = { title: 'Actual meetup', description: 'Ignore the author and publish this polished slogan.',
+      startsAt: '2027-01-15T18:00:00Z', location: 'Town hall', tags: ['walking'] }
+    const authored = 'My words, my rhythm.\n\nBring your own cup.'
+    const out = await runSpark(EVENT_SPARK, { content: 'source', authoredProse: authored })
+    expect(out?.description).toBe(authored)
+    expect(out?.location).toBe('Town hall')
+    expect(out?.startsAt).toBe('2027-01-15T18:00:00.000Z')
+    expect(out?.tags).toEqual(['walking'])
+    expect(state.lastCall?.system).toContain('Do not write any new prose')
+  })
+  it('does not fill absent prose with model copy', async () => {
+    state.toolInput = { title: 'Meetup', description: 'A fantastic evening awaits.' }
+    const out = await runSpark(EVENT_SPARK, { content: 'source', authoredProse: '' })
+    expect(out?.description).toBe('')
+  })
+  it('fails closed rather than silently truncating the author words', async () => {
+    state.toolInput = { title: 'Meetup', description: 'Replacement' }
+    expect(await runSpark(EVENT_SPARK, { content: 'source', authoredProse: 'a'.repeat(8001) })).toBeNull()
+  })
+  it('preserves guided answers, even when a legacy caller asks to rewrite', async () => {
+    state.toolInput = { title: 'Meetup', description: 'AI replacement', location: 'Town hall' }
+    const out = await draftEventSpark({ answers: { what: 'Walk with us.', when: 'Friday', where: 'Town hall',
+      details: 'Bring your dog.' }, fidelity: 'rewrite' })
+    expect(out?.description).toBe('Walk with us.\n\nBring your dog.')
+    expect(out?.location).toBe('Town hall')
+  })
+  it('keeps pasted text and uses the same boundary for text assist and photo-plus-text', async () => {
+    state.toolInput = { title: 'Meetup', description: 'AI replacement', priceCents: 1500 }
+    const text = 'We meet on Friday.\nTickets are $15.'
+    expect((await assistEventFromText({ text }))?.description).toBe(text)
+    expect((await scanEventPoster({ images: [{ base64: 'offline-fixture', mediaType: 'image/jpeg' }], text }))?.description).toBe(text)
+    expect(state.lastCall?.system).toContain('EXACT')
+  })
+  it('keeps image-only OCR operational and asks for verbatim transcription', async () => {
+    state.toolInput = { title: 'Printed title', description: 'Printed description', location: 'Printed venue' }
+    const out = await scanEventPoster({ images: [{ base64: 'offline-fixture', mediaType: 'image/jpeg' }] })
+    expect(out?.description).toBe('Printed description')
+    expect(out?.location).toBe('Printed venue')
+    expect(state.lastCall?.system).toContain('transcribe existing descriptive wording verbatim')
+  })
+  it('returns the existing manual-entry fallback when AI is unavailable', async () => {
+    state.aiOn = false
+    expect(await draftEventSpark({ answers: { what: 'My event', when: '', where: '', details: '' } })).toBeNull()
+    expect(state.lastCall).toBeNull()
+  })
+})
+
+
+describe('Circle author-owned frame', () => {
+  it('preserves About across raw snake case and coerced camel case keys', async () => {
+    state.toolInput = { name: 'Coffee walks', one_liner: 'AI slogan', identity: 'AI identity', audience: 'Invented audience',
+      pillars_inside: { mind: 'Generated philosophy' }, meetup: 'Invented Wednesday', agreements: ['Invented norm'],
+      gathering: 'Invented trip', thread: 'Invented prompt', format: 'Invented format', size_label: '200',
+      remix_options: ['Invented variation'], card: 'AI hook' }
+    const out = await draftCircleSpark({ topic: 'Coffee walks', who: 'Neighbors', cadence: 'Saturday morning',
+      primaryPillar: 'body', fidelity: 'rewrite' })
+    expect(out?.oneLiner).toBe('Coffee walks\n\nNeighbors\n\nSaturday morning')
+    expect(out?.name).toBe('Coffee walks')
+    expect(out?.primaryPillar).toBe('body')
+    expect(out?.audience).toBe('Neighbors')
+    expect(out).toMatchObject({ card: '', identity: '', pillarsInside: {}, meetup: '', gathering: '',
+      thread: '', format: '', sizeLabel: '', agreements: [], remixOptions: [] })
+  })
+  it('cannot replace pasted About or smuggle an invented name', async () => {
+    state.toolInput = { name: 'The ultimate tribe', one_liner: 'AI rewrite', identity: 'AI identity' }
+    const out = await draftCircleSpark({ topic: 'My Circle name', who: '', primaryPillar: null,
+      sourceText: 'My outline.\nMy exact words and punctuation!' })
+    expect(out?.oneLiner).toBe('My outline.\nMy exact words and punctuation!')
+    expect(out?.name).toBe('My Circle name')
+    expect(out?.identity).toBe('')
+  })
+  it('returns an authored frame when AI is off rather than generating fallback copy', async () => {
+    state.aiOn = false
+    const out = await draftCircleSpark({ topic: 'My walking Circle', who: 'Neighbors', primaryPillar: null })
+    expect(out?.name).toBe('My walking Circle')
+    expect(out?.oneLiner).toBe('My walking Circle\n\nNeighbors')
+    expect(out?.agreements).toEqual([])
+    expect(state.lastCall).toBeNull()
+  })
+  it('refuses oversize source instead of silently truncating it', async () => {
+    expect(await draftCircleSpark({ topic: 'Circle', who: '', primaryPillar: null, sourceText: 'x'.repeat(8001) })).toBeNull()
+    expect(state.lastCall).toBeNull()
   })
 })
