@@ -121,7 +121,7 @@ describe('now line', () => {
 })
 
 describe('timeline', () => {
-  const plans = [{ id: 'p1', title: 'Autumn retreat', stage: 'planning' as const }]
+  const plans = [{ id: 'p1', title: 'Autumn retreat', stage: 'plan' as const }]
   const today = '2026-10-27'
   it('spans nine weeks from last Monday', () => {
     const win = timelineWindow([], plans, today, today)
