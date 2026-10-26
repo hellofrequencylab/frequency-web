@@ -1319,14 +1319,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 65,
+      "baseline": 59,
       "frozen": {
         "at": "2026-10-26",
-        "value": 65,
+        "value": 59,
         "direction": "lowered",
         "basis": "8afdfcd88c01",
-        "reason": "SCAN-1132 moved 20 raw pixel sizes in the app shell nav list and mobile bar onto spacing tokens",
-        "from": 85
+        "reason": "SCAN-1132 moved the three tab-bar icon sizes onto spacing tokens",
+        "from": 65
       },
       "history": [
         {
@@ -1412,6 +1412,13 @@
           "to": 65,
           "direction": "lowered",
           "reason": "SCAN-1132 moved 20 raw pixel sizes in the app shell nav list and mobile bar onto spacing tokens"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 65,
+          "to": 59,
+          "direction": "lowered",
+          "reason": "SCAN-1132 moved the three tab-bar icon sizes onto spacing tokens"
         }
       ]
     },

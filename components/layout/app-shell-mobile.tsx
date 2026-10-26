@@ -64,7 +64,7 @@ export function MobileTabBar({
     const active = isActive(tab.node.href)
     return (
       <Link key={tab.node.id} href={tab.node.href} aria-label={tab.label} className={tabClass(active)}>
-        <Icon className="h-[22px] w-[22px] shrink-0" strokeWidth={2} />
+        <Icon className="h-5.5 w-5.5 shrink-0" strokeWidth={2} />
         {/* ONE line, clipped rather than wrapped or overflowing. The tab's accessible name is the
             full label (aria-label on the Link), so a truncated word never costs a screen-reader
             user the destination — and the icon, not the caption, is what a thumb aims at. */}
@@ -93,7 +93,7 @@ export function MobileTabBar({
         aria-expanded={menuOpen}
         className={`${handle} ${menuOpen ? 'text-primary-strong' : ''}`}
       >
-        {menuOpen ? <X className="h-[22px] w-[22px] shrink-0" strokeWidth={2} /> : <Menu className="h-[22px] w-[22px] shrink-0" strokeWidth={2} />}
+        {menuOpen ? <X className="h-5.5 w-5.5 shrink-0" strokeWidth={2} /> : <Menu className="h-5.5 w-5.5 shrink-0" strokeWidth={2} />}
         <span className="w-full truncate text-center leading-none">Menu</span>
       </button>
 

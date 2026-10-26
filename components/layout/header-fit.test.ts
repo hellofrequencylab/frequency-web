@@ -266,7 +266,7 @@ describe('MobileTabBar: five equal fifths, whatever the labels say', () => {
   })
 
   it('never lets an icon absorb the shrink — the glyph is what a thumb aims at', () => {
-    const icons = TAB_BAR.match(/h-\[22px\] w-\[22px\] shrink-0/g) ?? []
+    const icons = TAB_BAR.match(/h-5\.5 w-5\.5 shrink-0/g) ?? []
     expect(icons.length).toBeGreaterThanOrEqual(3)
   })
 
