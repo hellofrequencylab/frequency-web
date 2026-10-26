@@ -40,7 +40,7 @@ export function DiscoveryCoachingPanel({ spaceId, initial, available }: { spaceI
   return <RowCard title="Discovery coaching" meta={<div className="space-y-3">
     <p>Review this Space’s recorded profile-view buckets and primary-button events. These are aggregate signals, not unique visitors, search traffic or proof of conversions. You write the content.</p>
     <p>Allow a review only when you request it. Permission expires after ninety days and any Space editor can revoke it. No private messages, individual browsing histories, email sending or automatic publishing are included.</p>
-    <p>Google Search Console and Bing are not connected here. This review does not measure rankings or AI citations. Provider credentials and verified property access require separate setup.</p>
+    <p>This recorded-signal review does not include search-provider data or measure rankings or AI citations. Search connections below require separate provider authorization and verified property access.</p>
     <label className="block">Outcome for this review
       <Select value={goal} disabled={pending} onChange={event => { setGoal(event.target.value as DiscoveryGoal); setResult(null) }}>
         <option value="attendance">Attendance</option><option value="return_visits">Return visits</option><option value="bookings">Completed bookings</option><option value="enquiries">Useful enquiries</option>

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1471",
+  "title": "A Space that chose the Default theme shows its published kit pages",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/editor/state.ts",
+    "ref": "LIVE-1470 follow-up: Default kits are stored as the DAWN editor theme, which the public site never served."
+  },
+  "detail": "publishedWebsiteSnapshot now serves a published DAWN document when the Space's Mega Theme choice (preferences.megaTheme.theme) is 'frequency'. A Space with no stored choice, or only a niche, keeps the house Default look exactly as before, so no existing site changes. The document must still match the theme the site wears.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/sites/editor/state.ts','utf8');process.exit(s.includes('choseDefaultTheme')?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "state.test.ts covers no choice, niche only, chosen Default, and a mismatched theme."
+  },
+  "closed": "2026-10-26"
+}

@@ -11,7 +11,7 @@ const DISCOVERY_COLLECTION_METHODS = ['api_response', 'owner_mapped_snapshot', '
 type DiscoveryCollectionMethod = typeof DISCOVERY_COLLECTION_METHODS[number]
 const COLLECTION_METHODS: Record<DiscoveryProvider, readonly DiscoveryCollectionMethod[]> = {
   google_search_console: ['api_response'], google_analytics: ['api_response'],
-  bing_webmaster: ['owner_mapped_snapshot'], public_page: ['public_research'],
+  bing_webmaster: ['api_response', 'owner_mapped_snapshot'], public_page: ['public_research'],
   geo_probe: ['synthetic_probe'], first_party_aggregate: ['first_party_reader'],
   manual_import: ['owner_mapped_snapshot', 'public_research'],
 }

@@ -2,7 +2,7 @@
  * The server caller must derive access and the exact page allow-list from authenticated ownership.
  * Search rows are aggregate provider evidence, never a source of individual browsing histories.
  * Google shape: https://developers.google.com/webmaster-tools/v1/searchanalytics/query
- * Bing dashboard semantics: https://www.bing.com/webmasters/help/ai-performance-9f8e7d6c
+ * Bing citation input below is an owner-mapped snapshot, not a documented native API payload.
  */
 import { validateDiscoveryObservation } from './discovery-evidence'
 import type { ProfileCoachingEvidence } from './coaching-evidence'

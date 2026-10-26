@@ -761,6 +761,8 @@ lib/admin/practices-context.ts
 lib/ai/accounting.ts
 lib/ai/campaign-coach.ts
 lib/ai/creator-tips.ts
+lib/ai/discovery-connection-store.ts
+lib/ai/discovery-guidance-store.ts
 lib/ai/embed.ts
 lib/ai/event-blurb.ts
 lib/ai/help-index.ts
@@ -1293,5 +1295,3 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
-
-lib/ai/discovery-guidance-store.ts
