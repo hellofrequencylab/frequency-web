@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { SpaceProfileMenuView } from './space-profile-menu-view'
-import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
+import type { SpaceProfileTab } from '@/lib/spaces/profile-tab'
 
 // THE SPACE MENU RAIL, MEASURED IN A DOM (LIVE-744).
 //

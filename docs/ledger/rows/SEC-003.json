@@ -1,0 +1,19 @@
+{
+  "id": "SEC-003",
+  "title": "Pin patched Vite and block host-file access through analyzed project imports",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "pnpm-lock.yaml",
+    "ref": "GHSA-rq7h-c2jc-7f22 and dependency alerts72\u201376; actual synthetic canary reproduction2026-10-25"
+  },
+  "detail": "Root lock shippedVite8.0.16 through Vitest and optional Sentry peers. Pin reviewed8.1.6 with a bounded8.xoverride; regenerate root lock with declaredpnpm10.33.0 in a task-owned workspace with scripts disabled. Direct versions stay fixed; required Rolldown/bindings and peers update with Vite. An actual loopback old-version server returned a synthetic host file after analyzing an in-root decoy import(200);8.1.6refuses the same request(403). The regression uses only disposable canaries, canonical temporary paths for macOS aliases, disabled app config/discovery, project-only fsallow, finally cleanup and ephemeral loopback port. A setup diagnostic retains the legitimate source-map trailer in servedJS. The cheap release-pin/lock guard refuses absent/unparsed/downgraded entries; real HTTP behavior remains a normal test. This is dev/test-toolchain evidence, not production exploitability or whole-app safety. Mobile Zod/forge/uuid alerts remain open. No shared dependencies, providers, production data/schema or budgets changed. Whole-app new-toolchain build/integration evidence stays separate. Thirty focused cases across three test files pass on actualVite8.1.6/Vitest5.0.5, including the committed real HTTP regression. Three guard controls (downgraded lock, absent lock and removed override) fail at intended assertions. A module-hook control substitutes actualVite8.0.16 into the unchanged committed boundary probe and fails its403assertion with200. Focused test types and lint pass (isolated minimal tooling emits a React auto-detection warning only). Root pnpm10.33.0frozen lockfile-only verification passes. Main9b9c723e8was revalidated before applying; concurrent design PR3903 is preserved. Full application tests/typing/build on the new lock remain pending CI, not inferred from earlier audit results.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/patched-vite.mjs",
+    "note": "Assert intentional reviewed override and every locked Vite instance; normal runtime test separately verifies the synthetic real HTTP boundary."
+  },
+  "closed": "2026-10-25"
+}

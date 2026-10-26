@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SURFACE_PANELS, isPanelId } from '@/components/spaces/workspace/surface-panels'
-import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
+import type { SpaceProfileTab } from '@/lib/spaces/profile-tab'
 import { SpaceMenuDropdown } from '@/components/spaces/space-menu-dropdown'
 import { SITE_DESIGN } from '@/lib/theme/design'
 
