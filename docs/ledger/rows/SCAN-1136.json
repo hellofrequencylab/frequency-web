@@ -1,20 +1,10 @@
 {
   "id": "SCAN-1136",
-  "title": "The six /for doors, /spaces/new, /offer and /rewards are in the visual and accessibility surface list",
-  "status": "done",
-  "priority": "P2",
-  "lane": "hygiene",
-  "size": "S",
-  "source": {
-    "file": "test/e2e/surfaces.ts",
-    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26",
+    "detail": "None of these launch-path routes appear in the surface registry and there is no Playwright journey for the try-first funnel.\n\nThe six /for doors, /join, /accessibility and /help join the public surface list (LAUNCH_DOOR_PATHS in test/e2e/surfaces.ts), so the a11y ratchet holds them at zero by default; /spaces/new, /offer and /rewards need a session and are named in LAUNCH_SESSION_ROUTES. test/e2e/funnel.spec.ts walks each door and the signed-out hop through /sign-in for /spaces/new and /offer. Visual baselines for the new surfaces are captured by the next update_baselines dispatch.",
+    "title": "The six /for doors, /spaces/new, /offer and /rewards are in the visual and accessibility surface list"
   },
-  "detail": "None of these launch-path routes appear in the surface registry and there is no Playwright journey for the try-first funnel.\n\nThe six /for doors, /join, /accessibility and /help join the public surface list (LAUNCH_DOOR_PATHS in test/e2e/surfaces.ts), so the a11y ratchet holds them at zero by default; /spaces/new, /offer and /rewards need a session and are named in LAUNCH_SESSION_ROUTES. test/e2e/funnel.spec.ts walks each door and the signed-out hop through /sign-in for /spaces/new and /offer. Visual baselines for the new surfaces are captured by the next update_baselines dispatch.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs e2e-surfaces",
-    "note": "Exits 0 only when the repair has landed; fails on main today."
-  },
-  "wave": "W7",
-  "closed": "2026-10-26"
+  "wave": "W7"
 }
