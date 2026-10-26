@@ -1,0 +1,20 @@
+{
+  "id": "SEC-013",
+  "title": "Restrict private coach preference writes to fresh direct Space editors",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-26",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/coach/actions.ts",
+    "ref": "Private coaching security audit2026-10-26"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/private-coach-writes.mjs",
+    "note": "Actual save action and direct-editor resolver reject staff/network/foreign/revoked writes before private IO, allow direct owner/editor; authority-bypass source mutation fails. Real-capability tests additionally prove general staff/network editing would permit the old private save; actual narrow service-role upsert preserves both tenants' unrelated private state. Local offline proof, not production acceptance."
+  },
+  "detail": "Protected coach settings/page/prompt reads intentionally exclude platform staff and inherited network content-management reach. saveSpaceCoachProfile formerly used general getSpaceCapabilities(canEditProfile), which grants both, permitting callers blocked from private reads to overwrite or clear another Space's private steering through service_role. Save and clear now use the same uncached direct-owner/active-editor authority as private discovery and reads. Tests use actual capability resolver, actual direct membership resolver and actual private-state upsert behind inert tenant-aware storage; owner/editor succeed, staff/network/foreign/anonymous/revoked/error cases cannot write. Public content-management rights are unchanged. No schema, provider, customer data, migration, production or deployment changes.",
+  "wave": "W7"
+}
