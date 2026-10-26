@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1116",
+  "title": "The axe ratchet renders the Frequency Stage and Commons states",
+  "status": "open",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "M",
+  "source": {
+    "file": "test/e2e/a11y-baselines.json",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "Baselines are keyed dawn and midnight only. Add /, /discover, /pricing, /help, /join, /accessibility and the /for doors in Frequency states at zero.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs axe-frequency",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}
