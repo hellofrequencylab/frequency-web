@@ -21,7 +21,8 @@ export type BingDiscoveryResult =
   | { status: 'unavailable'; reason: Reason; retryAfterSeconds?: number }
   | { status: 'completed'; provider: 'bing_webmaster'; propertyUrl: string; observations: ReturnType<typeof validateDiscoveryObservation>[]; limitations: string[] }
 export interface BingDiscoveryDependencies extends DiscoveryProviderDependencies { request?: typeof pinnedFetch }
-const unavailable = (reason: Reason): BingDiscoveryResult => ({ status: 'unavailable', reason })
+type BingUnavailable = Extract<BingDiscoveryResult, { status: 'unavailable' }>
+const unavailable = (reason: Reason): BingUnavailable => ({ status: 'unavailable', reason })
 const record = (raw: unknown): Record<string, unknown> | null => raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : null
 const count = (raw: unknown): raw is number => typeof raw === 'number' && Number.isSafeInteger(raw) && raw >= 0
 function stamp(raw: unknown): number | null {
@@ -40,14 +41,7 @@ function dedicatedProperty(property: string, pages: readonly string[]): boolean 
     return url.protocol === 'https:' && url.href === property && url.pathname === '/' && !url.search && !url.hash && !url.username && !url.password && !url.port && url.hostname !== shared && !url.hostname.endsWith(`.${shared}`) && pages.includes(property)
   } catch { return false }
 }
-/** A real read-only connector, usable only through a server-owned credential/permission broker.
- * It deliberately refuses shared-host properties: Bing's documented site statistics cannot
- * restrict a request to one Space's pages. No connection/storage/OAuth provisioning is implied.
- */
-export async function observeBingDiscovery(spaceId: string, period: { from: string; to: string }, deps: BingDiscoveryDependencies): Promise<BingDiscoveryResult> {
-  const now = deps.now?.() ?? new Date()
-  const from = Date.parse(period?.from), to = Date.parse(period?.to)
-  if (typeof period?.from !== 'string' || typeof period?.to !== 'string' || !period.from.includes('T') || !period.to.includes('T') || !Number.isFinite(now.getTime()) || !Number.isFinite(from) || !Number.isFinite(to) || from >= to || to > now.getTime() || to - from > 31 * DAY || from < now.getTime() - 90 * DAY) return unavailable('invalid_context')
+async function openVerifiedBing(spaceId: string, deps: BingDiscoveryDependencies) {
   const opened = await openDiscoveryProvider(spaceId, 'bing_webmaster', 'Webmaster.read', deps)
   if (opened.status !== 'ready') return opened
   const session = opened.session
@@ -56,7 +50,7 @@ export async function observeBingDiscovery(spaceId: string, period: { from: stri
   // The broader write scope is not needed for any method this reader calls.
   if (session.connection.scopes.some(scope => scope.toLowerCase() === 'webmaster.manage')) return unavailable('not_connected')
   const request = deps.request ?? pinnedFetch
-  let requestFailure: BingDiscoveryResult | null = null
+  let requestFailure: BingUnavailable | null = null
   async function get(method: 'GetUserSites' | 'GetRankAndTrafficStats'): Promise<unknown[] | null> {
     if (!(await discoveryProviderSessionCurrent(session, deps))) { requestFailure = unavailable('permission_denied'); return null }
     const url = new URL(method, BASE)
@@ -87,8 +81,33 @@ export async function observeBingDiscovery(spaceId: string, period: { from: stri
       // identity permits that spelling, never a prefix, query or different protocol.
       try { return new URL(site.Url).href === property } catch { return false }
     })) return unavailable('property_unverified')
+    return { status: 'ready' as const, session, property, get, failure: () => requestFailure }
+  } catch { return unavailable('provider_error') }
+}
+
+/** Verify authorization independently of search activity. A new/quiet verified property
+ * can connect without any traffic rows; this operation never reads performance data. */
+export async function verifyBingSearchProperty(spaceId: string, deps: BingDiscoveryDependencies): Promise<BingUnavailable | { status: 'completed'; propertyUrl: string }> {
+  const reader = await openVerifiedBing(spaceId, deps)
+  if (reader.status !== 'ready') return reader
+  if (!(await discoveryProviderSessionCurrent(reader.session, deps))) return unavailable('permission_denied')
+  return { status: 'completed', propertyUrl: reader.property }
+}
+
+/** A real read-only connector, usable only through a server-owned credential/permission broker.
+ * It deliberately refuses shared-host properties: Bing's documented site statistics cannot
+ * restrict a request to one Space's pages. No connection/storage/OAuth provisioning is implied.
+ */
+export async function observeBingDiscovery(spaceId: string, period: { from: string; to: string }, deps: BingDiscoveryDependencies): Promise<BingDiscoveryResult> {
+  const now = deps.now?.() ?? new Date()
+  const from = Date.parse(period?.from), to = Date.parse(period?.to)
+  if (typeof period?.from !== 'string' || typeof period?.to !== 'string' || !period.from.includes('T') || !period.to.includes('T') || !Number.isFinite(now.getTime()) || !Number.isFinite(from) || !Number.isFinite(to) || from >= to || to > now.getTime() || to - from > 31 * DAY || from < now.getTime() - 90 * DAY) return unavailable('invalid_context')
+  const reader = await openVerifiedBing(spaceId, deps)
+  if (reader.status !== 'ready') return reader
+  const { session, property, get } = reader
+  try {
     const rows = await get('GetRankAndTrafficStats')
-    if (!rows) return requestFailure ?? unavailable('provider_error')
+    if (!rows) return reader.failure() ?? unavailable('provider_error')
     const seen = new Set<number>()
     let clicks = 0, impressions = 0, latest = -Infinity, selected = 0
     for (const raw of rows) {

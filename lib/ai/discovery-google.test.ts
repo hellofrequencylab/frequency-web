@@ -37,7 +37,7 @@ describe('Google Search Console bounded observation', () => {
     if (variant === 'actor') connection.actorProfileId = 'stranger'
     if (variant === 'consent') connection.consentId = 'old'
     if (variant === 'revoked') access.consent.revokedAt = time.toISOString()
-    if (variant === 'write_scope') connection.scopes.push('https://www.googleapis.com/auth/webmasters')
+    if (variant === 'write_scope') connection.scopes = [...connection.scopes, 'https://www.googleapis.com/auth/webmasters']
     if (variant === 'expired_scope') connection.scopes = []
     expect((await run()).status).toBe('unavailable')
     expect(request).not.toHaveBeenCalled()

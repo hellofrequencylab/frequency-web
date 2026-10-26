@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { observeBingDiscovery, type BingDiscoveryDependencies } from './discovery-bing'
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
+import { observeBingDiscovery, verifyBingSearchProperty, type BingDiscoveryDependencies } from './discovery-bing'
 import type { DiscoveryProviderAccess, DiscoveryProviderConnection } from './discovery-provider-access'
 
 const now = new Date('2026-10-26T12:00:00.000Z')
@@ -8,13 +8,13 @@ const period = { from: '2026-10-20T00:00:00.000Z', to: now.toISOString() }
 let access: DiscoveryProviderAccess
 let connection: DiscoveryProviderConnection
 let deps: BingDiscoveryDependencies
-let request: ReturnType<typeof vi.fn>
+let request: Mock<NonNullable<BingDiscoveryDependencies['request']>>
 const json = (body: unknown, status = 200, extra: Record<string, string> = {}) => ({ status, headers: { 'content-type': 'application/json', ...extra }, body: Buffer.from(JSON.stringify(body)), finalUrl: 'https://ssl.bing.com/webmaster/api.svc/json/GetUserSites' })
 const row = (time = '2026-10-25T07:00:00Z', clicks = 3, impressions = 30) => ({ Date: `/Date(${Date.parse(time)}-0700)/`, Clicks: clicks, Impressions: impressions })
 beforeEach(() => {
   access = { spaceId: 'A', actorProfileId: 'owner', canEditProfile: true, consent: { id: 'grant', purpose: 'discovery_coaching', grantedAt: '2026-10-01T00:00:00Z', expiresAt: '2026-12-01T00:00:00Z', revokedAt: null }, authorizedPageUrls: [property] }
   connection = { provider: 'bing_webmaster', connectionId: 'conn', spaceId: 'A', actorProfileId: 'owner', consentId: 'grant', propertyUrl: property, propertyScope: 'dedicated_property', accessToken: 'SECRET_TOKEN', expiresAt: '2026-10-27T00:00:00Z', revokedAt: null, scopes: ['Webmaster.read'] }
-  request = vi.fn().mockResolvedValueOnce(json({ d: [{ Url: property, IsVerified: true, AuthenticationCode: 'PRIVATE_CODE' }, { Url: 'https://other.example/', IsVerified: true }] })).mockResolvedValueOnce(json({ d: [row(), row('2026-10-10T07:00:00Z', 99, 100)] }))
+  request = vi.fn<NonNullable<BingDiscoveryDependencies['request']>>().mockResolvedValueOnce(json({ d: [{ Url: property, IsVerified: true, AuthenticationCode: 'PRIVATE_CODE' }, { Url: 'https://other.example/', IsVerified: true }] })).mockResolvedValueOnce(json({ d: [row(), row('2026-10-10T07:00:00Z', 99, 100)] }))
   deps = { resolveAccess: vi.fn(async () => structuredClone(access)), resolveConnection: vi.fn(async () => structuredClone(connection)), request, now: () => now }
 })
 describe('Bing dedicated-property read-only observations', () => {
@@ -39,7 +39,7 @@ describe('Bing dedicated-property read-only observations', () => {
     if (kind === 'wrong_purpose') Object.assign(access.consent, { purpose: 'analytics' })
     if (kind === 'other_actor') connection.actorProfileId = 'other'
     if (kind === 'other_grant') connection.consentId = 'other'
-    if (kind === 'manage_scope') connection.scopes.push('Webmaster.manage')
+    if (kind === 'manage_scope') connection.scopes = [...connection.scopes, 'Webmaster.manage']
     expect((await observeBingDiscovery('A', period, deps)).status).toBe('unavailable')
     expect(request).not.toHaveBeenCalled()
   })
@@ -116,5 +116,33 @@ describe('Bing dedicated-property read-only observations', () => {
   it('bounds time windows before any credential or provider access', async () => {
     expect(await observeBingDiscovery('A', { from: '2026-01-01', to: now.toISOString() }, deps)).toMatchObject({ reason: 'invalid_context' })
     expect(request).not.toHaveBeenCalled(); expect(deps.resolveAccess).not.toHaveBeenCalled()
+  })
+})
+
+
+describe('Bing OAuth property verification is independent of traffic', () => {
+  it('connects a verified property with no performance request or observations', async () => {
+    request.mockReset().mockResolvedValue(json({ d: [{ Url: property.slice(0, -1), IsVerified: true }] }))
+    expect(await verifyBingSearchProperty('A', deps)).toEqual({ status: 'completed', propertyUrl: property })
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(request.mock.calls[0][0]).toContain('/GetUserSites')
+    expect(request.mock.calls.some(call => call[0].includes('GetRankAndTrafficStats'))).toBe(false)
+  })
+  it.each(['unverified', 'other_property', 'permission', 'consent', 'replaced_connection'])('denies %s without statistics or credentials', async kind => {
+    request.mockReset().mockImplementation(async () => {
+      if (kind === 'permission') access.canEditProfile = false
+      if (kind === 'consent') access.consent.revokedAt = now.toISOString()
+      if (kind === 'replaced_connection') connection.connectionId = 'new-conn'
+      return json({ d: [{ Url: kind === 'other_property' ? 'https://other.example/' : property, IsVerified: kind !== 'unverified' }] })
+    })
+    const result = await verifyBingSearchProperty('A', deps)
+    expect(result.status).toBe('unavailable')
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(JSON.stringify(result)).not.toContain('SECRET_TOKEN')
+  })
+  it('refuses shared properties before even listing provider sites', async () => {
+    connection.propertyScope = 'page_urls'
+    expect(await verifyBingSearchProperty('A', deps)).toMatchObject({ status: 'unavailable', reason: 'property_scope_unavailable' })
+    expect(request).not.toHaveBeenCalled()
   })
 })
