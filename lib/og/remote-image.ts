@@ -19,6 +19,8 @@
 // Satori can size are emitted; everything else returns null and the caller's own fallback (the
 // placeholder cover, the initials chip) carries the card.
 
+import { fetchPinned } from '@/lib/net/pinned-fetch'
+
 const MAX_BYTES = 6 * 1024 * 1024
 const TIMEOUT_MS = 3500
 
@@ -96,18 +98,18 @@ export function sniffInlineImageType(buf: ArrayBuffer): InlineImageType | null {
 }
 
 export async function fetchRemoteImage(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) })
-    if (!res.ok) return null
-    const type = res.headers.get('content-type') ?? ''
-    if (!type.startsWith('image/')) return null
-    const buf = await res.arrayBuffer()
-    if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return null
-    // The declared type comes from the bytes, never from the header (see the header comment).
-    const sniffed = sniffInlineImageType(buf)
-    if (!sniffed) return null
-    return `data:${sniffed};base64,${Buffer.from(buf).toString('base64')}`
-  } catch {
-    return null
-  }
+  // SCAN-1123: resolved once, public addresses only, socket pinned, redirects re-checked.
+  const res = await fetchPinned(url, {
+    maxBytes: MAX_BYTES,
+    timeoutMs: TIMEOUT_MS,
+    accept: (_status, headers) => (headers['content-type'] ?? '').startsWith('image/'),
+  })
+  if (!res || res.status < 200 || res.status >= 300) return null
+  if (!(res.headers['content-type'] ?? '').startsWith('image/')) return null
+  const buf = res.body
+  if (buf.byteLength === 0) return null
+  // The declared type comes from the bytes, never from the header (see the header comment).
+  const sniffed = sniffInlineImageType(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer)
+  if (!sniffed) return null
+  return `data:${sniffed};base64,${buf.toString('base64')}`
 }
