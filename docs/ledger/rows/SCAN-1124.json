@@ -1,7 +1,7 @@
 {
   "id": "SCAN-1124",
   "title": "Cron auth fails closed off Vercel and the vitals endpoint is rate limited",
-  "status": "done",
+  "status": "open",
   "priority": "P3",
   "lane": "live",
   "size": "S",
@@ -9,11 +9,11 @@
     "file": "lib/cron-auth.ts",
     "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
   },
-  "detail": "An unset CRON_SECRET outside production lets 40+ cron routes through; /api/vitals is an unauthenticated service-role insert with no per-IP limit. Also add a header presence gate (see headers-gate).\n\nClosed by SEC-011 (#3932): cron auth allows an unset secret only in development and test, and /api/vitals has a shared rate ceiling. The original small-hardening probe looked for VERCEL_ENV or ALLOW_UNAUTHENTICATED_CRON in cron-auth.ts; the repair keys on NODE_ENV instead, so the probe is replaced with sec-cron-vitals.mjs, which asserts both halves.",
+  "detail": "An unset CRON_SECRET outside production lets 40+ cron routes through; /api/vitals is an unauthenticated service-role insert with no per-IP limit. Also add a header presence gate (see headers-gate).\n\n2026-10-26 REPAIR LANDED as SEC-011 (#3932): cron auth now allows an unset secret only in development and test, and /api/vitals has a shared rate ceiling, verified by scripts/probes/sec-cron-vitals.mjs. This row's probe looks for VERCEL_ENV or ALLOW_UNAUTHENTICATED_CRON in cron-auth.ts, which the repair does not use. The repair is done; the probe is unchanged and still fails, so this row stays open until Daniel rules on replacing it or the probe is re-pointed.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/sec-cron-vitals.mjs"
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs small-hardening",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
   },
-  "closed": "2026-10-26",
   "wave": "W7"
 }
