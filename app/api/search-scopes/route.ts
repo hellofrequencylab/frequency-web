@@ -15,10 +15,9 @@ import { normalizeSpaceType, isConsoleSpaceType } from '@/lib/spaces/types'
 //     `type_label` (collaboratorTypeLabel) so the picker badges it as a Space and it never reads as
 //     a person. requestEventShare enforces the same rule server-side; this filter just keeps
 //     invalid rows out of the picker.
-// Auth-gated + rate-limited (the guards are copied from app/api/search/route.ts). The admin client
-// bypasses RLS, so this scopes results itself: only listable Spaces (active, not private) and
-// non-archived Circles surface, and the picked target's steward still has to approve before
-// anything goes live — so this is a low-risk read.
+// Auth-gated + rate-limited. Space discovery scopes privileged rows to active, listable Spaces.
+// Circle discovery uses session RLS, retaining the owning Space visibility/module wall as well
+// as the Circle's independent discoverability rule.
 
 type ScopeHit = { id: string; name: string; slug: string; image_url: string | null; type_label?: string }
 
@@ -87,11 +86,11 @@ export async function GET(request: Request) {
       .neq('visibility', 'private')
       .order('name')
       .limit(6),
-    // 🔴 The admin client bypasses RLS, so `circles_access_restrictive` does not apply here and the
-    // filter has to be written by hand (ADR-1015). A picker is a DISCOVERY surface, so it keys on
+    // Use the authenticated session client so parent-Space visibility and disabled-module
+    // RESTRICTIVE policies filter BEFORE limit. ADR-1015: discovery still keys on
     // AXIS 1 (`unlisted`) and not on access: a LISTED closed Circle is meant to be findable by name
     // — that is the lead funnel. What must never appear is an unlisted one.
-    admin
+    supabase
       .from('circles')
       .select('id, name, slug, image_url, status')
       .or(`name.ilike.%${safeQ}%,slug.ilike.%${safeQ}%`)
