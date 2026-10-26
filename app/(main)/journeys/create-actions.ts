@@ -17,12 +17,11 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { getTemplate, templateToBlocks, MASTER_FRAMEWORK, masterFrameworkToBlocks } from '@/lib/journeys/templates'
 import { pillarIdsBySlug } from '@/lib/journeys/compose'
+import { WRITING_COACHING_FALLBACK } from '@/lib/ai/writing-coaching'
 import { normalizeSeedFidelity } from '@/lib/studio/kernel/fidelity'
 import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek, type SparkSettings, type SparkMeeting } from '@/lib/ai/journey-spark'
 import { normalizeJourneyMeeting } from '@/lib/journey-plans'
 import { isSeedMood, moodToAccent } from '@/lib/importer/moods'
-import { composeJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
-import { composeIntoPhase } from '@/lib/journeys/compose'
 import { extractOverviewText } from '@/lib/journeys/extract-text'
 import { getSpacePlan, transitionSpacePlanRows } from '@/lib/calendar/plans-store'
 import { briefError, log } from '@/lib/log'
@@ -214,8 +213,8 @@ export async function sparkJourneyAction(
     fidelity: normalizeSeedFidelity(fidelity),
     profileId: caller.id,
   })
-  if (!spark) return fail('Vera is offline right now. Name it yourself and keep going.')
-  return ok(spark)
+  if (!spark) return ok({ questions: [...WRITING_COACHING_FALLBACK], title: '', promise: '', overview: '', arc: [], settings: { difficulty: null, category: null, tags: [], dailyMinutes: null }, meeting: { format: null, schedule: null, timezone: null, location: null, link: null } })
+  return ok({ questions: spark.questions, title: '', promise: '', overview: '', arc: [], settings: spark.settings, meeting: spark.meeting })
 }
 
 /** Pull plain text out of an uploaded course write-up (PDF / Word / plain text) so the author can
@@ -407,47 +406,7 @@ export async function createJourneyFromSparkAction(input: {
     )
     .select('id, sort_order')
   if (weekPhaseError) seedFailed('spark.week_phases', plan.id, weekPhaseError)
-  const phases = ((phaseRows ?? []) as { id: string; sort_order: number }[]).sort((x, y) => x.sort_order - y.sort_order)
-
-  if (source) {
-    // Built from a document: populate EVERY week from the outline (not just the opening one), each
-    // grounded in that week's focus + the practices already used earlier so weeks don't repeat.
-    // Sequential + best-effort: each phase commits before the next, so a slow/offline run still
-    // leaves the completed weeks intact (the rest stay one outline-aware click away in the editor).
-    const usedTitles: string[] = []
-    for (let i = 0; i < phases.length; i++) {
-      const w = arc[i]
-      const focus = w?.title ? `Week ${i + 1}: ${w.title}${w.focus ? `. ${w.focus}` : ''}` : `Week ${i + 1}`
-      const description = [
-        `Compose this week's four Pillar practices so they fit this week's focus and follow the author's outline.`,
-        `This week's focus: ${focus}.`,
-        usedTitles.length ? `Practices already used in earlier weeks (do not repeat): ${usedTitles.join('; ')}.` : '',
-        `The author's own course outline follows. Follow it closely and use the practices it names for THIS week where it gives them:\n"""\n${source.slice(0, 4000)}\n"""`,
-      ]
-        .filter(Boolean)
-        .join(' ')
-      try {
-        await composeIntoPhase({ admin, planId: plan.id, phaseId: phases[i].id, description, profileId: authorId })
-        const { data: kids } = await admin
-          .from('journey_plan_items')
-          .select('title')
-          .eq('parent_id', phases[i].id)
-          .eq('block_type', 'practice')
-        for (const k of (kids ?? []) as { title: string | null }[]) if (k.title) usedTitles.push(k.title)
-      } catch {
-        /* best-effort: a failed week stays empty and fillable in the editor */
-      }
-    }
-  } else {
-    // Questions path: pre-seed only the opening week's four Pillar practices (the existing model);
-    // the later weeks carry their arc focus and fill on demand. Best-effort.
-    const description = `A ${weeks}-week Journey for ${a.who.trim() || 'anyone'}. About: ${a.topic.trim() || 'general wellbeing'}. People should walk away with: ${a.outcome.trim() || 'a steadier week'}. Daily time: ${a.pace}.`
-    try {
-      await composeJourneyAction(plan.slug, description)
-    } catch {
-      /* best-effort pre-seed */
-    }
-  }
+  void phaseRows // The explicit create operation seeds weeks only; the author fills their content.
 
   await closeJourneyProductionSeam(ctx.spaceId, plan.id, ctx.spacePlanId)
   redirect(`/journeys/${plan.slug}/edit`)

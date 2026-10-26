@@ -14,6 +14,7 @@ import type { Database } from '@/lib/database.types'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan } from '@/lib/journey-plans'
 import { createPractice } from '@/lib/practices'
+import { WRITING_COACHING_FALLBACK } from '@/lib/ai/writing-coaching'
 import { draftSlotCoaching } from '@/lib/ai/journey-slot-coaching'
 import { planJourneyEdits, type JourneyForEdit } from '@/lib/ai/journey-edit'
 import { getCurrentSeason } from '@/lib/seasons'
@@ -303,14 +304,11 @@ export async function mintPracticeForBlockAction(
   return ok({ practiceId: practice.id })
 }
 
-/** Vera drafts a per-slot coaching line for a practice block (JOURNEYS.md §6), grounded in the
- *  season, the Journey's name, the practice, and its Pillar — generated dynamically on demand.
- *  Stores it on `settings.coaching_prompt`; the author can edit it after. Degrades to a clear
- *  error when AI is off so the author can write the line by hand. */
+/** Questions for the author about a slot. Never saves participant-facing prose or settings. */
 export async function draftSlotCoachingAction(
   slug: string,
   itemId: string,
-): Promise<ActionResult<{ prompt: string }>> {
+): Promise<ActionResult<{ questions: string[] }>> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
   const admin = db()
@@ -340,16 +338,7 @@ export async function draftSlotCoachingAction(
     season: season ? { name: season.name, theme: season.theme } : null,
     profileId: a.profileId,
   })
-  if (!prompt) return fail('Vera could not draft a prompt right now. Try again, or write one yourself.')
-
-  const { error } = await admin
-    .from('journey_plan_items')
-    .update({ settings: { coaching_prompt: prompt } })
-    .eq('id', itemId)
-    .eq('plan_id', a.planId)
-  if (error) return fail('Could not save the prompt.')
-  done(slug)
-  return ok({ prompt })
+  return ok({ questions: prompt?.questions ?? [...WRITING_COACHING_FALLBACK] })
 }
 
 // ── Vera Journey composer (JOURNEYS.md §6) ──────────────────────────────────────────────
@@ -389,51 +378,22 @@ export async function scaffoldJourneyAction(slug: string): Promise<ActionResult<
   return ok({ phaseId })
 }
 
-/** Vera composes the opening week from a one-line description: one slot per Pillar (Mind/Body/Spirit
- *  practices reused from the library or freshly written, and an Expression challenge). Falls back to
- *  the empty scaffold when Vera is off, so the author always gets the balanced shape. */
+/** Read-only planning advice. Manual scaffold creation is a separate explicit action. */
 export async function composeJourneyAction(
   slug: string,
   description: string,
-): Promise<ActionResult<{ aiUsed: boolean }>> {
+): Promise<ActionResult<{ aiUsed: boolean; questions: string[] }>> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
   const desc = description.trim().slice(0, 2000)
   if (!desc) return fail('Tell Vera what you want to build first.')
 
-  const admin = db()
-  const phaseId = await reuseOrCreatePhase(admin, a.planId, SCAFFOLD_PHASE)
-  if (!phaseId) return fail('Could not build the journey.')
-
-  // One shared composer fills the phase (library-first, one per Pillar + an extra-credit slot).
-  // When Vera is off it still lays down the four placeholder slots, so aiUsed=false is the only signal.
-  const { aiUsed, title } = await composeIntoPhase({ admin, planId: a.planId, phaseId, description: desc, profileId: a.profileId })
-
-  // Name an untitled Journey from Vera's suggestion.
-  // 2026-09-05 (scan2 L5-13): the title write reads its { error }. The week is already composed
-  // by then, so the page is still revalidated and the author is told the one thing that did not
-  // land, instead of a silent "saved" over a still-untitled Journey.
-  if (title) {
-    const loaded = await getPlan(slug)
-    const current = (loaded?.plan.title ?? '').trim().toLowerCase()
-    if (!current || current === 'untitled journey' || current === 'untitled') {
-      const { error } = await admin.from('journey_plans').update({ title }).eq('id', a.planId)
-      if (error) {
-        log.error('journeys.vera_title_write_failed', { planId: a.planId, error: error.message })
-        done(slug)
-        return fail('Vera filled the week, but the title did not save. Name the journey by hand.')
-      }
-    }
-  }
-
-  done(slug)
-  return ok({ aiUsed })
+  const result = await composeIntoPhase({ admin: db(), planId: a.planId, phaseId: '', description: desc, profileId: a.profileId })
+  return ok({ aiUsed: result.aiUsed, questions: result.questions })
 }
 
-/** Fill ONE empty week (ADR-302): Vera reads the Journey + this week's focus + the practices already
- *  in earlier weeks, then composes this week's four Pillar practices to fit — building on what exists
- *  rather than repeating it. Degrades to the empty four-Pillar shape when Vera is offline. */
-export async function populateWeekAction(slug: string, phaseId: string): Promise<ActionResult<{ aiUsed: boolean }>> {
+/** Read-only questions about an empty week and the existing outline. */
+export async function populateWeekAction(slug: string, phaseId: string): Promise<ActionResult<{ aiUsed: boolean; questions: string[] }>> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
   const admin = db()
@@ -474,26 +434,19 @@ export async function populateWeekAction(slug: string, phaseId: string): Promise
     .filter(Boolean)
     .join(' ')
 
-  const { aiUsed } = await composeIntoPhase({ admin, planId: a.planId, phaseId, description, profileId: a.profileId })
-  done(slug)
-  return ok({ aiUsed })
+  const { aiUsed, questions } = await composeIntoPhase({ admin, planId: a.planId, phaseId, description, profileId: a.profileId })
+  return ok({ aiUsed, questions })
 }
 
-type PlanUpdate = Database['public']['Tables']['journey_plans']['Update']
-
-/** Vera "apply the change" (ADR-302): the author types a plain-language change; Vera reads the whole
- *  Journey and returns constrained edit ops, which we re-validate (every id must belong to this plan)
- *  and apply in place. Powers the editor's "tell Vera what to change" box on a populated Journey. */
+/** Compatibility action name: returns questions with zero edits and no content writes. */
 export async function applyVeraChangeAction(
   slug: string,
   request: string,
-): Promise<ActionResult<{ applied: number; failed: number[] }>> {
+): Promise<ActionResult<{ applied: number; failed: number[]; questions: string[] }>> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
   const req = request.trim().slice(0, 1000)
   if (!req) return fail('Tell Vera what to change first.')
-  const admin = db()
-
   const loaded = await getPlan(slug)
   if (!loaded) return fail('Journey not found.')
   const plan = loaded.plan
@@ -525,68 +478,7 @@ export async function applyVeraChangeAction(
   }
 
   const ops = await planJourneyEdits({ request: req, journey, profileId: a.profileId })
-  if (!ops) return fail('Vera is offline right now. Try again in a moment, or edit by hand.')
-  if (ops.length === 0) return fail('Vera could not make that change. Try rephrasing it.')
-
-  const validIds = new Set(items.map((b) => b.id))
-  const phaseIds = new Set(phases.map((p) => p.id))
-  const pillarIds = await pillarIdsBySlug()
-  // 2026-09-05 (scan2 L5-13): `applied` used to count an op BEFORE its write was known to have
-  // landed. Every op now reads its { error }; only landed ops count, and the ones that were refused
-  // come back by index in `failed` so the editor can say what Vera did not manage to change.
-  let applied = 0
-  const failed: number[] = []
-  const settle = (index: number, error: { message: string } | null) => {
-    if (!error) {
-      applied++
-      return
-    }
-    failed.push(index)
-    log.error('journeys.vera_op_write_failed', { planId: a.planId, index, error: error.message })
-  }
-
-  for (const [index, op] of ops.entries()) {
-    if (op.op === 'identity') {
-      const upd: PlanUpdate = {}
-      if (op.title) upd.title = op.title
-      if (op.subtitle !== undefined) upd.summary = op.subtitle || null
-      if (op.intro !== undefined) upd.intro = op.intro || null
-      if (Object.keys(upd).length) {
-        const { error } = await admin.from('journey_plans').update(upd).eq('id', a.planId)
-        settle(index, error)
-      }
-    } else if (op.op === 'phase') {
-      if (!phaseIds.has(op.id)) continue
-      const upd: BlockUpdate = {}
-      if (op.title) upd.title = op.title
-      if (op.focus !== undefined) upd.body = op.focus || null
-      if (Object.keys(upd).length) {
-        const { error } = await admin.from('journey_plan_items').update(upd).eq('id', op.id).eq('plan_id', a.planId)
-        settle(index, error)
-      }
-    } else if (op.op === 'practice') {
-      if (!validIds.has(op.id) || phaseIds.has(op.id)) continue
-      const upd: BlockUpdate = {}
-      if (op.title) upd.title = op.title
-      if (op.body !== undefined) upd.body = op.body || null
-      if (Object.keys(upd).length) {
-        const { error } = await admin.from('journey_plan_items').update(upd).eq('id', op.id).eq('plan_id', a.planId)
-        settle(index, error)
-      }
-    } else if (op.op === 'add_practice') {
-      if (!phaseIds.has(op.phaseId)) continue
-      const sort = await nextSortOrder(admin, a.planId, op.phaseId)
-      const { error } = await admin.from('journey_plan_items').insert({ plan_id: a.planId, parent_id: op.phaseId, block_type: 'practice', title: op.title, body: op.body, domain_id: pillarIds[op.pillar] ?? null, sort_order: sort, required: true })
-      settle(index, error)
-    } else if (op.op === 'remove') {
-      if (!validIds.has(op.id)) continue
-      const { error } = await admin.from('journey_plan_items').delete().eq('id', op.id).eq('plan_id', a.planId)
-      settle(index, error)
-    }
-  }
-
-  done(slug)
-  return ok({ applied, failed })
+  return ok({ applied: 0, failed: [], questions: ops?.questions ?? [...WRITING_COACHING_FALLBACK] })
 }
 
 export async function updateBlockAction(

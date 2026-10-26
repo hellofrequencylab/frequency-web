@@ -22,6 +22,9 @@ const mocks = vi.hoisted(() => ({
   getPillars: vi.fn(),
   pillarIdsBySlug: vi.fn(),
   revalidatePath: vi.fn(),
+  composeIntoPhase: vi.fn(),
+  draftSlotCoaching: vi.fn(),
+  getCurrentSeason: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({ getCallerProfile: mocks.getCallerProfile }))
@@ -36,15 +39,15 @@ vi.mock('@/lib/journeys/authoring', () => ({
 vi.mock('@/lib/pillars', () => ({ getPillars: mocks.getPillars }))
 vi.mock('@/lib/journeys/compose', () => ({
   pillarIdsBySlug: mocks.pillarIdsBySlug,
-  composeIntoPhase: vi.fn(),
+  composeIntoPhase: mocks.composeIntoPhase,
   insertChildren: vi.fn(),
   extraCreditRow: vi.fn(),
   PILLAR_SLOTS: [],
   EXTRA_CREDIT_PLACEHOLDER: { title: '', body: '' },
 }))
 vi.mock('@/lib/practices', () => ({ createPractice: vi.fn() }))
-vi.mock('@/lib/ai/journey-slot-coaching', () => ({ draftSlotCoaching: vi.fn() }))
-vi.mock('@/lib/seasons', () => ({ getCurrentSeason: vi.fn() }))
+vi.mock('@/lib/ai/journey-slot-coaching', () => ({ draftSlotCoaching: mocks.draftSlotCoaching }))
+vi.mock('@/lib/seasons', () => ({ getCurrentSeason: mocks.getCurrentSeason }))
 vi.mock('@/lib/journeys/portable', () => ({ toPortable: vi.fn() }))
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 
@@ -95,7 +98,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: (t: string) => builder(t) }),
 }))
 
-import { moveBlockAction, reorderBlocksAction, applyVeraChangeAction } from './actions'
+import { moveBlockAction, reorderBlocksAction, applyVeraChangeAction, composeJourneyAction, populateWeekAction, draftSlotCoachingAction } from './actions'
 
 const ME = 'profile-me'
 const PLAN = 'plan-1'
@@ -273,15 +276,48 @@ describe('applyVeraChangeAction (bulk ops)', () => {
     ])
   })
 
-  it('counts every landed op when nothing is refused', async () => {
-    expect(await applyVeraChangeAction(SLUG, 'rename the sit')).toEqual({ data: { applied: 3, failed: [] } })
+  it('ignores forged edit/remove/add operations without a write or refresh', async () => {
+    const result = await applyVeraChangeAction(SLUG, 'rename the sit')
+    expect(result).toMatchObject({ data: { applied: 0, failed: [], questions: expect.any(Array) } })
+    expect(writes).toEqual([])
+    expect(mocks.revalidatePath).not.toHaveBeenCalled()
   })
-
-  it('ONE OP REFUSED: applied excludes it and its index comes back in failed', async () => {
-    refuse = (w) => w.op === 'delete'
-
-    expect(await applyVeraChangeAction(SLUG, 'rename the sit')).toEqual({ data: { applied: 2, failed: [1] } })
-    // The refused delete was attempted (so the refusal is real) and the later insert still ran.
-    expect(writes.map((w) => w.op)).toEqual(['update', 'delete', 'insert'])
+  it('returns separate questions and leaves every existing field alone', async () => {
+    mocks.planJourneyEdits.mockResolvedValue({ questions: ['What do participants need first?'], edits: [{ op: 'identity', title: 'Attack' }] })
+    expect(await applyVeraChangeAction(SLUG, 'make it clearer')).toEqual({ data: { applied: 0, failed: [], questions: ['What do participants need first?'] } })
+    expect(writes).toEqual([])
   })
+  it('falls back without writes when unavailable and refuses unrelated callers', async () => {
+    mocks.planJourneyEdits.mockResolvedValue(null)
+    expect(await applyVeraChangeAction(SLUG, 'help')).toMatchObject({ data: { applied: 0, questions: expect.any(Array) } })
+    mocks.getCallerProfile.mockResolvedValue({ id: 'outsider' })
+    mocks.planJourneyEdits.mockClear()
+    expect(await applyVeraChangeAction(SLUG, 'help')).toHaveProperty('error')
+    expect(mocks.planJourneyEdits).not.toHaveBeenCalled()
+    expect(writes).toEqual([])
+  })
+})
+
+it('composer guidance returns questions without creating a phase or naming the plan', async () => {
+  mocks.composeIntoPhase.mockResolvedValue({ aiUsed: true, title: 'Attack', questions: ['What belongs in your first week?'] })
+  expect(await composeJourneyAction(SLUG, 'My plan')).toMatchObject({ data: { questions: ['What belongs in your first week?'] } })
+  expect(writes).toEqual([])
+  expect(mocks.revalidatePath).not.toHaveBeenCalled()
+})
+it('week guidance has no row writes even when the model includes a title', async () => {
+  reads.self = { id: 'week', title: 'My week', body: 'My focus', source_overview: 'My source' }
+  mocks.getPlan.mockResolvedValue({ plan: { title: 'Mine' }, items: [] })
+  mocks.composeIntoPhase.mockResolvedValue({ aiUsed: true, title: 'Attack', questions: ['How does this week build on the last?'] })
+  expect(await populateWeekAction(SLUG, 'week')).toMatchObject({ data: { questions: ['How does this week build on the last?'] } })
+  expect(writes).toEqual([])
+  expect(mocks.revalidatePath).not.toHaveBeenCalled()
+})
+it('slot questions do not save a participant prompt or clobber settings', async () => {
+  reads.self = { title: 'Mine', block_type: 'practice', domain_id: null }
+  mocks.getPlan.mockResolvedValue({ plan: { title: 'Mine' }, items: [] })
+  mocks.getCurrentSeason.mockResolvedValue(null)
+  mocks.draftSlotCoaching.mockResolvedValue({ questions: ['What should the participant notice?'], prompt: 'Attack', settings: { coaching_prompt: 'Attack' } })
+  expect(await draftSlotCoachingAction(SLUG, 'slot')).toEqual({ data: { questions: ['What should the participant notice?'] } })
+  expect(writes).toEqual([])
+  expect(mocks.revalidatePath).not.toHaveBeenCalled()
 })
