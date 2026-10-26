@@ -22,6 +22,12 @@ export function ownerNodeLayout(
       content: saved?.content ?? {},
       style: saved?.style ?? {},
     }) ?? { rows: [], bench: [] }
+  return fillDataNodes(base, effectiveContent)
+}
+
+/** Fill every DATA node that has no words of its own with the section's effective content. An authored value
+ *  on the node always wins. Pure, and the same reference semantics as a plain map. */
+export function fillDataNodes(layout: NodeLayout, effectiveContent: Record<string, Record<string, unknown>>): NodeLayout {
   const fill = (n: BlockNode): BlockNode => {
     if (entityBlockById(n.type)?.category !== 'data') return n
     const effective = effectiveContent[n.type]
@@ -29,8 +35,8 @@ export function ownerNodeLayout(
     return { ...n, content: { ...effective, ...(n.content ?? {}) } }
   }
   return {
-    ...base,
-    rows: base.rows.map((row) => ({ ...row, cells: row.cells.map((stack) => stack.map(fill)) })),
-    bench: base.bench.map(fill),
+    ...layout,
+    rows: layout.rows.map((row) => ({ ...row, cells: row.cells.map((stack) => stack.map(fill)) })),
+    bench: layout.bench.map(fill),
   }
 }

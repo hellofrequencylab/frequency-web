@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1379",
+  "title": "Midnight top bar and the design's textures: moon phase, next gathering, cloud mist, smoke, stardust",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/midnight-bar.mjs"
+  },
+  "detail": "Follow-up to LIVE-1365 (ADR-1885) and LIVE-1371. The Midnight design opens every page with a thin top bar: the moon's phase and the Space's next gathering on the left, small Gift cards, Letter, About and Contact links on the right. components/sites/midnight-bar.tsx draws it above the sticky header (so it scrolls away, which is how the design's bar collapses), lib/theme/midnight-moon.ts names the phase as a plain calendar fact, and site-page.tsx passes the Space's next event for a Midnight site. The design's procedural textures (cloud, smoke, roots, stardust) now live as --mn-tex-* tokens in lib/theme/midnight.ts, with the .mn-mist, .mn-smoke, .mn-roots, .mn-stardust, .mn-moonglow, .mn-candle and .mn-vignette layers in midnight-blocks-css.ts (tokens only, motion stops under reduced motion). The hero, photo hero and quote band use them as the design does. Still to build: the Space page in the Midnight look and the Midnight theme feature page.",
+  "wave": "W7"
+}
