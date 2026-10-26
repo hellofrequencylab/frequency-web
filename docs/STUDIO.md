@@ -53,6 +53,7 @@ way only, and `pnpm check:studio` fails the build if it ever reverses.
   the house-voice redraft. `runSpark` takes `fidelity` and a spec names its `proseField`,
   so a new Spark gets the choice by passing it through, not by writing its own prompt.
   Circle, Journey and Event ask it today.
+- **Practice coaching:** Spark, claim and editor assistance return separate questions. The author writes and manually saves names, hooks and steps; copying a template never invokes an AI rewrite. The explicit written-text door carries the author's source unchanged. Operational library curation/review and visual cover offers remain separate. Journey prose paths require their own conversion.
 - **The kernel stays pure and entity-blind.** No React, no Next, no Supabase, and never
   an import from `lib/studio/entities/`. `pnpm check:studio` enforces all three, plus
   the drift guards in `lib/studio/registry.test.ts`.
