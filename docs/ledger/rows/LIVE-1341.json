@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1341",
+  "title": "Site kit engine: niche starter kits a site can apply (first kit: Wildheart, coaches and healers)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/apply.ts",
+    "ref": "Owner ask 2026-10-26: a theme and kit library; each live site's design becomes a theme with generic kits. Plan: https://claude.ai/artifact/KnVnxpTGVzMJ2pUxTVevfi"
+  },
+  "detail": "Phase 1 of the theme and kit library. A kit is typed code under lib/sites/kits (pages, sample copy, SEO, chrome) with a light index and an on-demand loader that the public site never imports. applyKit is a pure function over a website draft with three modes (theme, add, replace), never leaves a half-applied site, refuses past 30 pages, flags every block as sample, and renames clashing slugs. Not wired to the editor yet (phase 2: library screen, preview, undo as one editor step). Kits only target themes in WEBSITE_THEMES_LIVE; Default kits wait for the owner's preview sign-off on the Default render (LIVE-892 gate).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/sites/kits/apply.ts','utf8');const r=fs.readFileSync('lib/sites/kits/registry.ts','utf8');process.exit(a.includes('export function applyKit')&&r.includes('wildheart-coaches')&&fs.existsSync('lib/sites/kits/kits.test.ts')?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "No lib/sites/kits tests exist on main; the suite is added by this row."
+  }
+}
