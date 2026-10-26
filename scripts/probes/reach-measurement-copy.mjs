@@ -10,22 +10,22 @@ const React = require('react')
 const { renderToStaticMarkup } = require('react-dom/server')
 const primitive = ({ children }) => React.createElement('div', null, children)
 const stubs = {
-  'next/link': { default: primitive },
+  'next/link': { __esModule: true, default: primitive },
   'lucide-react': new Proxy({}, { get: () => () => null }),
   '@/components/ui/stat-card': { StatCard: ({ label, value, detail }) => React.createElement('div', null, label, ': ', value, ' ', detail) },
   '@/components/ui/section-header': { SectionHeader: ({ title }) => React.createElement('h2', null, title) },
   '@/components/ui/empty-state': { EmptyState: ({ title }) => React.createElement('p', null, title) },
 }
 function load(file) {
-  const module = { exports: {} }
+  const mod = { exports: {} }
   const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText
   const dep = key => {
     if (Object.hasOwn(stubs, key)) return stubs[key]
     if (key === 'react/jsx-runtime') return require(key)
     throw new Error('Unexpected dependency ' + key)
   }
-  new vm.Script(`(function(require,module,exports){${code}\n})`, { filename: file }).runInNewContext({ Date })(dep, module, module.exports)
-  return module.exports
+  new vm.Script(`(function(require,module,exports){${code}\n})`, { filename: file }).runInNewContext({ Date })(dep, mod, mod.exports)
+  return mod.exports
 }
 const { ReachReceipt } = load('components/spaces/reach-receipt.tsx')
 const { standingLevers, standingScore } = load('lib/spaces/standing.ts')
