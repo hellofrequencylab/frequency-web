@@ -30,7 +30,7 @@ describe('rankSpaceCoachingTask', () => {
     expect(task.rationale).toContain('not a prediction')
   })
   it('uses views with no clicks only to suggest checking the button, not a failed conversion claim', () => {
-    expect(rankSpaceCoachingTask(identity, { ...observed, ctaClicks: 0 })).toMatchObject({ id: 'action', destination: 'mode', confidence: 'observed signal' })
+    expect(rankSpaceCoachingTask(identity, { ...observed, ctaClicks: 0 })).toMatchObject({ id: 'action', destination: 'header', confidence: 'observed signal' })
   })
   it('never equates repeat clicks or view buckets with real-world outcomes', () => {
     const task = rankSpaceCoachingTask(identity, { ...observed, profileViews: 1, ctaClicks: 50 })
