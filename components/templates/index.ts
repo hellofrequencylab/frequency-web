@@ -26,7 +26,7 @@ export {
   type JourneyIdentitySlots,
 } from './journey-detail-template'
 // The standard block layout for every marketplace LISTING detail surface (Classifieds, Housing,
-// Market) — an entity composition over the member kit listing page, not a ninth shell.
+// Market) — an entity composition over ListingHero + the main/side grid, not a ninth shell.
 // See components/templates/listing-detail-template.tsx.
 export { ListingDetailTemplate } from './listing-detail-template'
 export { FocusTemplate } from './focus-template'
