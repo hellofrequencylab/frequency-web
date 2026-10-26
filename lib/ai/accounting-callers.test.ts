@@ -54,13 +54,14 @@ test('typed coaching inventory resolves trusted aliases/constants and refuses op
   expect(() => coachingFactoryFeatures('fixture.ts', imported.replace('const FEATURE', 'let FEATURE') + "coach('practice', FEATURE, TIER)")).toThrow('opaque coaching accounting inputs')
   expect(() => coachingFactoryFeatures('fixture.ts', imported.replace('as const', 'as unknown') + "coach('practice', FEATURE, TIER)")).toThrow('opaque coaching accounting inputs')
   expect(() => coachingFactoryFeatures('fixture.ts', "writingCoachingSpec('practice', 'practice-edit', 'opus')")).toThrow('untrusted coaching factory')
+  expect(coachingFactoryFeatures('fixture.ts', imported.replace("./writing-coaching", "./untrusted-builder") + "coach('practice', FEATURE, TIER)")).toEqual([])
 })
 
 // Inventory the actual production syntax, including multiline and nested calls.
 // The wrapper behavior tests separately prove admission and durable settlement.
 test('every shipped paid completion caller supplies central attribution', () => {
   const failures: string[] = []
-  let calls = 0
+  let directCompletionCalls = 0
   let typedCoachingCallers = 0
   const labels = new Set<string>()
   function walk(dir: string) {
@@ -84,7 +85,7 @@ test('every shipped paid completion caller supplies central attribution', () => 
       collect(source)
       function visit(node: ts.Node) {
         if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && ['completeRaw', 'completeText', 'runToolLoop'].includes(node.expression.text)) {
-          calls++
+          directCompletionCalls++
           const params = node.arguments[0]
           const context = params && ts.isObjectLiteralExpression(params) && params.properties.find(p => ts.isPropertyAssignment(p) && p.name.getText(source) === 'accounting')
           if (context && ts.isPropertyAssignment(context) && ts.isObjectLiteralExpression(context.initializer)) {
@@ -150,9 +151,9 @@ test('every shipped paid completion caller supplies central attribution', () => 
   // A typed coaching caller is still an attributed paid path even when multiple paths share
   // one physical completion in Spark. Count only the trusted factory calls resolved above;
   // converting a generator into that seam must not make an accounted path disappear.
-  expect(calls).toBeGreaterThan(0)
+  expect(directCompletionCalls).toBeGreaterThan(0)
   expect(typedCoachingCallers).toBeGreaterThan(0)
-  expect(calls + typedCoachingCallers).toBeGreaterThanOrEqual(46)
+  expect(directCompletionCalls + typedCoachingCallers).toBeGreaterThanOrEqual(46)
   expect(failures).toEqual([])
   expect(labels.size).toBeGreaterThanOrEqual(40)
   expect([...labels].filter(label => !Object.hasOwn(FEATURE_DAILY_CAP_USD, label))).toEqual([])
