@@ -134,10 +134,24 @@ function color(value: unknown, fallback: string): string {
 
 /** True if an IP literal (v4 or v6) points at the server's own network — loopback,
  *  private, link-local, cloud metadata (169.254.169.254), or CGNAT. Shared by the hostname
- *  check below AND the fetch-time DNS-resolution check in lib/qr/raster.ts (ADR-274), so a
+ *  check below AND the fetch-time DNS-resolution check in lib/qr/remote-logo.ts (ADR-274), so a
  *  public hostname that *resolves* to an internal IP (DNS rebinding) is blocked too. */
 export function isPrivateIp(ip: string): boolean {
   const h = ip.toLowerCase().replace(/^\[|\]$/g, '')
+  // URL canonicalization normalizes IPv4-mapped IPv6, including dotted and expanded forms.
+  if (h.includes(':')) {
+    try {
+      const canonical = new URL(`http://[${h}]/`).hostname.slice(1, -1)
+      const mapped = canonical.match(/^::ffff:([0-9a-f]+):([0-9a-f]+)$/)
+      if (mapped) {
+        const upper = parseInt(mapped[1], 16)
+        const lower = parseInt(mapped[2], 16)
+        return isPrivateIp(`${upper >> 8}.${upper & 255}.${lower >> 8}.${lower & 255}`)
+      }
+      // Deprecated IPv4-compatible literals, unspecified and loopback are not global unicast.
+      if (canonical.startsWith('::')) return true
+    } catch { return true }
+  }
   // IPv6 loopback / unspecified / unique-local (fc00::/7) / link-local (fe80::/10)
   if (h === '::1' || h === '::' || h.startsWith('fc') || h.startsWith('fd') || h.startsWith('fe8') || h.startsWith('fe9') || h.startsWith('fea') || h.startsWith('feb')) return true
   const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
