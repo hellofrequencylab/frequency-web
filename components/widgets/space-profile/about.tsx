@@ -1,6 +1,7 @@
 import type { SpaceContentData } from '@/lib/spaces/content-data'
 import type { SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { SpaceAboutBlock } from '@/components/page-editor/blocks/profile'
+import { readSlots } from '@/lib/spaces/content-slots'
 import { ModuleSection } from './section'
 
 // ABOUT — the space's short intro card. The owner's inline-authored `body` (ADR-542, written in the page
@@ -19,7 +20,7 @@ export function AboutBlock({
   /** The owner's inline-authored About text (from the block's content bag); precedence over the data bag. */
   authoredBody?: string
 }) {
-  const body = authoredBody?.trim() || data.aboutShort
+  const body = authoredBody?.trim() || readSlots(data).intro
   if (!body) return null
   return (
     <ModuleSection anchor="about">

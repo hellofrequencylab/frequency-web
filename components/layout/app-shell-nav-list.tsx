@@ -208,7 +208,7 @@ export function NavLinkList({
                     ariaLabel={label}
                     className={`flex items-center gap-2.5 rounded-control px-3 py-2 text-body-sm font-medium text-subtle`}
                   >
-                    <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} aria-hidden />
+                    <Icon className="h-4.25 w-4.25 shrink-0" strokeWidth={2} aria-hidden />
                     {label}
                   </GhostLink>
                 )
@@ -231,7 +231,7 @@ export function NavLinkList({
               }
               return (
                 <Link key={item.key} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active)}>
-                  <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
+                  <Icon className="w-4.25 h-4.25 shrink-0" strokeWidth={2} />
                   {label}
                 </Link>
               )
@@ -299,7 +299,7 @@ export function NavLinkList({
                     active ? 'bg-chrome-hover text-muted' : 'text-subtle hover:bg-chrome-hover hover:text-muted'
                   }`}
                 >
-                  <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
+                  <Icon className="h-4.25 w-4.25 shrink-0" strokeWidth={2} />
                   {label}
                 </Link>
               )
@@ -313,7 +313,7 @@ export function NavLinkList({
                   title="You don't have access to this yet"
                   className={`flex items-center gap-2.5 px-3 py-2 rounded-control text-body-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none`}
                 >
-                  <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
+                  <Icon className="w-4.25 h-4.25 shrink-0" strokeWidth={2} />
                   {label}
                 </div>
               )
@@ -321,7 +321,7 @@ export function NavLinkList({
             const active = isActive(href)
             return (
               <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active)}>
-                <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
+                <Icon className="w-4.25 h-4.25 shrink-0" strokeWidth={2} />
                 {label}
               </Link>
             )
@@ -367,7 +367,7 @@ export function NavLinkList({
             }
             return (
               <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
-                <Icon className="w-[17px] h-[17px] shrink-0" strokeWidth={2} />
+                <Icon className="w-4.25 h-4.25 shrink-0" strokeWidth={2} />
                 {label}
               </Link>
             )

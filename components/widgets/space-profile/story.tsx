@@ -1,6 +1,7 @@
 import type { SpaceContentData } from '@/lib/spaces/content-data'
 import type { SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { SpaceAboutBlock } from '@/components/page-editor/blocks/profile'
+import { readSlots } from '@/lib/spaces/content-slots'
 import { ModuleSection } from './section'
 
 // STORY — the space's longer narrative card. The owner's inline-authored `body` (ADR-542, written in the
@@ -19,7 +20,7 @@ export function StoryBlock({
   /** The owner's inline-authored Story text (from the block's content bag); precedence over the data bag. */
   authoredBody?: string
 }) {
-  const body = authoredBody?.trim() || data.profile?.about
+  const body = authoredBody?.trim() || readSlots(data).story
   if (!body) return null
   return (
     <ModuleSection anchor="story">

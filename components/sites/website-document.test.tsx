@@ -149,3 +149,19 @@ describe('section tone, width and anchor (Frequency page editor, HANDOFF-PAGE-ED
   })
 })
 
+
+describe('shared Space content slots', () => {
+  const slotDoc = (lead: string): Data => ({ root: {}, content: [{ type: 'EditorialSection', props: { id: 'about', lead } }] })
+  it('draws the saved fact in public and editor, and the kit copy until one is saved, without touching the draft', () => {
+    const doc = slotDoc('{{story|Write a few honest lines.}}')
+    const original = structuredClone(doc)
+    for (const editing of [false, true]) {
+      expect(render(doc, editing, { space: { profile: { about: 'We started in a garage.' } } })).toContain('We started in a garage.')
+      expect(render(doc, editing, { space: {} })).toContain('Write a few honest lines.')
+    }
+    expect(doc).toEqual(original)
+  })
+  it('leaves words the owner typed over a token alone', () => {
+    expect(render(slotDoc('My own words.'), false, { space: { profile: { about: 'Saved story' } } })).toContain('My own words.')
+  })
+})
