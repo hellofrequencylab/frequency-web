@@ -34,6 +34,7 @@ import { meetsIndexFloor } from "@/lib/seo/index-floor";
 import { listDensityCities } from "@/app/discover/cities/_data";
 import { COMPARISONS, comparisonPath } from "@/lib/marketing/comparisons";
 import { funnelSlugs } from "@/lib/marketing/funnel-config";
+import { GUIDE_LAST_MODIFIED } from "@/lib/seo/guide-dates";
 
 // Organizer profiles (/discover/events/organizer/[handle]) — one URL per host with
 // at least one upcoming PUBLIC event. Reads the redaction-safe RPC, which carries the
@@ -244,9 +245,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/networks`, changeFrequency: "monthly", priority: 0.6 },
         ] satisfies MetadataRoute.Sitemap)
       : []),
-    { url: `${SITE_URL}/the-community`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE_URL}/the-community`, lastModified: GUIDE_LAST_MODIFIED["the-community"], changeFrequency: "monthly", priority: 0.8 },
     // /the-quest MERGED into /features#f-zaps (owner ruling 2026-10-14): it 301s, so it is not listed.
-    { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/about`, lastModified: GUIDE_LAST_MODIFIED["about"], changeFrequency: "monthly", priority: 0.7 },
     // /what-is-frequency MERGED into /about (SCAN-1017): it 308s, so it is not listed. About now carries
     // the explainer FAQ (FAQPage node) beside the founding narrative.
     // /beta is GONE (LIVE-251). It sold "Free during the beta" and a membership price
@@ -283,7 +284,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     })),
     // The entity Spaces directory (the networked profile network) + the indexable pricing page.
-    { url: `${SITE_URL}/spaces`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${SITE_URL}/spaces`, lastModified: GUIDE_LAST_MODIFIED["spaces"], changeFrequency: "daily", priority: 0.8 },
     // The llms.txt pair. Convention-probing agents find these by path, but anything that
     // discovers URLs from the sitemap did not — they were reachable only by guessing.
     // Deliberately NOT advertised via a robots.txt directive: `Llms:` is not part of the
@@ -314,19 +315,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // building community, life after the feed, always-wired stress, new-city
     // connection). Answer-first; Article + FAQ schema. These complete the five
     // Seeker pain clusters (CONTENT-VOICE §7a) with a pillar each.
-    { url: `${SITE_URL}/loneliness`, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/friendship-as-an-adult`, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/how-to-build-community`, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/calm-down-fast`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/loneliness`, lastModified: GUIDE_LAST_MODIFIED["loneliness"], changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/friendship-as-an-adult`, lastModified: GUIDE_LAST_MODIFIED["friendship-as-an-adult"], changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/how-to-build-community`, lastModified: GUIDE_LAST_MODIFIED["how-to-build-community"], changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/calm-down-fast`, lastModified: GUIDE_LAST_MODIFIED["calm-down-fast"], changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/mindless`, changeFrequency: "monthly", priority: 0.6 },
     // Leader-track pillar (CONTENT-VOICE §7b.2): the activation guide for the
     // natural connector — answer-first, HowTo + FAQ schema.
-    { url: `${SITE_URL}/how-to-start-a-circle`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/how-to-start-a-circle`, lastModified: GUIDE_LAST_MODIFIED["how-to-start-a-circle"], changeFrequency: "monthly", priority: 0.7 },
     // Seeker-track pillar (CONTENT-VOICE §7a): finding your people by shared
     // wavelength — answer-first, Article + FAQ schema.
     // Seeker-track pillar (CONTENT-VOICE §7a): closing the gap between wanting
     // connection and the daily default of staying in — answer-first, Article + FAQ schema.
-    { url: `${SITE_URL}/how-to-be-more-social`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/how-to-be-more-social`, lastModified: GUIDE_LAST_MODIFIED["how-to-be-more-social"], changeFrequency: "monthly", priority: 0.7 },
     // Seeker-track pillar (CONTENT-VOICE §7a): a social life without drinking —
     // gather around an activity, not a bar. Answer-first, Article + FAQ schema.
     // Seeker-track pillar (CONTENT-VOICE §7a): reaching back to a friend you
