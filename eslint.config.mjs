@@ -58,6 +58,27 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // SCAN-1143: a promise nobody awaits fails silently, and on a payment, webhook, cron or notification
+  // path that is a lost charge, a lost event or a message that never went out. Typed linting is slow, so
+  // the rule and the type information are scoped to those paths instead of the whole repo. A deliberate
+  // fire-and-forget takes `void` and a comment saying why it is safe to lose; never a bare call.
+  {
+    files: [
+      "lib/billing/**/*.{ts,tsx}",
+      "lib/notifications/**/*.{ts,tsx}",
+      "lib/spaces/**/*.{ts,tsx}",
+      "lib/crm/**/*.{ts,tsx}",
+      "app/api/**/*.ts",
+      "app/join/**/*.{ts,tsx}",
+    ],
+    ignores: ["**/*.test.{ts,tsx}"],
+    languageOptions: {
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+    },
+    rules: {
+      "@typescript-eslint/no-floating-promises": "error",
+    },
+  },
   // PROG-A1 (App Platform A1): a feature module is reached through its barrel only. The pages import
   // `@/modules/<app>` (server) or `@/modules/<app>/client` (a client component), never the module's
   // files or a file inside modules/. Modules so far: crm, booking, email-design, qr. The module's own

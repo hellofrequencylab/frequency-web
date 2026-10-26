@@ -157,7 +157,7 @@ type Query = {
   update: (patch: Row) => Query
   delete: () => Query
   maybeSingle: () => Promise<{ data: Row | null; error: unknown }>
-  then: (resolve: (r: { data: Row[] | null; error: unknown }) => unknown) => Promise<unknown>
+  then: (resolve: (r: { data: Row[] | null; error: unknown }) => unknown, reject?: (e: unknown) => unknown) => Promise<unknown>
 }
 
 function table(name: string): Query {
@@ -236,7 +236,7 @@ export async function listSpaceRules(spaceId: string): Promise<SpaceAutomationRu
         .then(({ data, error }) => {
           if (error || !data) return resolve([])
           resolve(data.map(mapRule))
-        })
+        }, () => resolve([]))
     })
   } catch {
     return []
@@ -327,7 +327,7 @@ export async function listSpaceSequences(spaceId: string): Promise<SpaceDripSequ
         .select(SEQ_COLS)
         .eq('space_id', spaceId)
         .order('created_at', { ascending: false })
-        .then(({ data, error }) => resolve(error || !data ? [] : data))
+        .then(({ data, error }) => resolve(error || !data ? [] : data), () => resolve([]))
     })
     if (seqRows.length === 0) return []
 
@@ -338,7 +338,7 @@ export async function listSpaceSequences(spaceId: string): Promise<SpaceDripSequ
         .select(STEP_COLS)
         .eq('space_id', spaceId)
         .order('step_order', { ascending: true })
-        .then(({ data, error }) => resolve(error || !data ? [] : data))
+        .then(({ data, error }) => resolve(error || !data ? [] : data), () => resolve([]))
     })
     const stepsBySeq = new Map<string, SpaceDripStep[]>()
     for (const s of stepRows) {
@@ -425,7 +425,7 @@ export async function addSequenceStep(
       .eq('space_id', spaceId)
       .eq('sequence_id', sequenceId)
       .order('step_order', { ascending: false })
-      .then(({ data, error }) => resolve(error || !data ? [] : data))
+      .then(({ data, error }) => resolve(error || !data ? [] : data), () => resolve([]))
   })
   const nextOrder =
     existing.length > 0 ? (Number(existing[0].step_order) || 0) + 1 : 1

@@ -1,3 +1,4 @@
+// LIVE1349 retires the social-fuel model call; the 18 remaining callers retain all attribution guards.
 // LIVE890: actual migrated feature dispatch plus an AST inventory of every migrated caller.
 import './check-ai-accounting-preparation.mjs'
 import assert from 'node:assert/strict'
@@ -8,7 +9,6 @@ const paths = [
   "lib/ai/vera/feature-posts.ts",
   "lib/ai/vera/owner-brief.ts",
   "lib/ai/vera/today.ts",
-  "lib/circles/social-fuel.ts",
   "lib/comms/vera-conversation.ts",
   "lib/crm/brief.ts",
   "lib/crm/import/ai.ts",
@@ -42,8 +42,8 @@ for (const path of paths) {
   }
   visit(source); assert.ok(localCalls > 0, `${path} has no inventoried completion`)
 }
-assert.equal(paths.length, 19)
-assert.equal(calls, 22)
+assert.equal(paths.length, 18)
+assert.equal(calls, 21)
 // Importer prose replacement was retired; both entrypoints delegate only writing questions.
 for (const path of ['lib/importer/compose.ts', 'lib/importer/reframe/run.ts']) {
  const source = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true)

@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1160",
+  "title": "Practice notices ride the notification router",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/practices/lifecycle.ts",
+    "ref": "Meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md), Phase 4 follow-up: remaining direct bell inserts"
+  },
+  "detail": "The practice-complete notice, the daily practice reminder and the once-ever staleness prompt read the member's practice switches by hand and inserted the bell row and sent the push themselves. They now route the registry rows practice.term_complete and practice.reminder (in-app and push) and practice.stale_check (in-app), so the member's own inapp_practice and push_practice switches, suppression and the outbox retry apply through the one seam. The bell rows are unchanged (same type, practice reference, body); push copy, url and tag are unchanged. The wired-switch detector's positive control in lib/notifications/wired.test.ts now expects the practice readers to be registry rows rather than lifecycle.ts, with the owner's go-ahead (Daniel, 'update the practice reader pin', 2026-10-26).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));const t=f.readFileSync(\"lib/practices/lifecycle.ts\",\"utf8\");process.exit(/routeNotification\\(\\s*.practice\\.reminder./.test(t)&&!/from\\(.notifications.\\)/.test(t)?0:1)'",
+    "note": "Exits 0 once lifecycle.ts routes its notices and no longer inserts bell rows itself."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}

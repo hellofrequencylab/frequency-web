@@ -23,6 +23,10 @@ export type MegaNicheId = (typeof MEGA_NICHES)[number]
 
 export type MegaThemeId = SiteThemeId | 'midnight'
 
+/** The one thing an owner wants people to do, from the picker's second question (ADR-1883). */
+export const MEGA_ACTIONS = ['book', 'try', 'tickets', 'tour', 'donate', 'chapter', 'join', 'list', 'ask'] as const
+export type MegaActionId = (typeof MEGA_ACTIONS)[number]
+
 interface MegaThemeDef {
   id: MegaThemeId
   /** The editor's document theme. */
@@ -44,6 +48,10 @@ export interface MegaThemeChoice {
   /** The theme the owner picked, or null when they never did. */
   theme: MegaThemeId | null
   niche: MegaNicheId | null
+  /** The one thing the owner wants people to do, or null. */
+  action: MegaActionId | null
+  /** An existing site the owner offered to borrow from (https only), kept for the importer. Null when none. */
+  sourceUrl: string | null
   /** The package version the Space started from, so an update can say what changed. */
   version: number | null
 }
@@ -52,6 +60,26 @@ const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v ===
 
 export function isMegaThemeId(v: unknown): v is MegaThemeId {
   return MEGA_THEMES.some((t) => t.id === v)
+}
+
+export function isMegaActionId(v: unknown): v is MegaActionId {
+  return (MEGA_ACTIONS as readonly unknown[]).includes(v)
+}
+
+const MAX_SOURCE_URL = 300
+
+/** An https URL with no credentials, trimmed, or null. The picker's optional "existing site" answer. */
+export function cleanSourceUrl(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const text = v.trim()
+  if (!text || text.length > MAX_SOURCE_URL) return null
+  try {
+    const url = new URL(/^https?:\/\//i.test(text) ? text : `https://${text}`)
+    if (url.protocol !== 'https:' || url.username || url.password || !url.hostname.includes('.')) return null
+    return url.toString()
+  } catch {
+    return null
+  }
 }
 
 export function isMegaNicheId(v: unknown): v is MegaNicheId {
@@ -65,33 +93,39 @@ export function readMegaTheme(preferences: unknown): MegaThemeChoice {
   return {
     theme: isMegaThemeId(node?.theme) ? node.theme : null,
     niche: isMegaNicheId(node?.niche) ? node.niche : null,
+    action: isMegaActionId(node?.action) ? node.action : null,
+    sourceUrl: cleanSourceUrl(node?.sourceUrl),
     version: typeof version === 'number' && Number.isInteger(version) && version > 0 ? version : null,
   }
+}
+
+/** A patch value: undefined keeps the stored one, null clears it, a valid value sets it, an invalid one is ignored. */
+function pick<T>(patch: unknown, current: T | null, valid: (v: unknown) => T | null): T | null {
+  if (patch === undefined) return current
+  if (patch === null) return null
+  return valid(patch) ?? current
 }
 
 /** Save part of the choice, keeping every other preferences key. A value sets it, null clears it, and an
  *  unknown value is ignored rather than stored. The node is dropped once it is empty. */
 export function withMegaTheme(
   preferences: unknown,
-  patch: { theme?: string | null; niche?: string | null; version?: number | null },
+  patch: { theme?: string | null; niche?: string | null; action?: string | null; sourceUrl?: string | null; version?: number | null },
 ): Record<string, unknown> {
   const next = { ...(record(preferences) ? preferences : {}) }
   const current = readMegaTheme(preferences)
   const merged: MegaThemeChoice = {
-    theme: patch.theme === undefined ? current.theme : patch.theme === null ? null : isMegaThemeId(patch.theme) ? patch.theme : current.theme,
-    niche: patch.niche === undefined ? current.niche : patch.niche === null ? null : isMegaNicheId(patch.niche) ? patch.niche : current.niche,
-    version:
-      patch.version === undefined
-        ? current.version
-        : patch.version === null
-          ? null
-          : Number.isInteger(patch.version) && patch.version > 0
-            ? patch.version
-            : current.version,
+    theme: pick(patch.theme, current.theme, (v) => (isMegaThemeId(v) ? v : null)),
+    niche: pick(patch.niche, current.niche, (v) => (isMegaNicheId(v) ? v : null)),
+    action: pick(patch.action, current.action, (v) => (isMegaActionId(v) ? v : null)),
+    sourceUrl: pick(patch.sourceUrl, current.sourceUrl, cleanSourceUrl),
+    version: pick(patch.version, current.version, (v) => (typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null)),
   }
   const node = {
     ...(merged.theme ? { theme: merged.theme } : {}),
     ...(merged.niche ? { niche: merged.niche } : {}),
+    ...(merged.action ? { action: merged.action } : {}),
+    ...(merged.sourceUrl ? { sourceUrl: merged.sourceUrl } : {}),
     ...(merged.version ? { version: merged.version } : {}),
   }
   if (Object.keys(node).length) next.megaTheme = node

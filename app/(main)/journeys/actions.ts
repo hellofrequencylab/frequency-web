@@ -40,15 +40,8 @@ import { writeJourneyGuarantee } from '@/lib/journeys/guarantee'
 import { writeJourneyFaq, type JourneyFaqItem } from '@/lib/journeys/faq'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
 import { planJourneyEdits, type JourneyForEdit } from '@/lib/ai/journey-edit'
-import { JOURNEY_MANIFEST } from '@/lib/studio/entities/journey'
-import {
-  applyLock,
-  declaredLockKeys,
-  redrawBrief,
-  settleRedraw,
-  type FieldChange,
-} from '@/lib/studio/kernel/redraw'
-import { saveSteer } from '@/lib/studio/steer-store'
+import type { FieldChange } from '@/lib/studio/kernel/redraw'
+import { WRITING_COACHING_FALLBACK } from '@/lib/ai/writing-coaching'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
@@ -733,19 +726,13 @@ interface JourneyWeek {
 }
 
 /** The manifest paths a Journey redraw may touch. */
-const JOURNEY_REDRAW_PATHS = ['title', 'summary', 'intro', 'arc'] as const
 
 /** The arc as one readable block, so a week that moved shows up in the diff beside the plain
  *  fields instead of being invisible. Plain text, no dashes (voice canon). */
-function arcDisplay(weeks: readonly JourneyWeek[]): string {
-  return weeks
-    .map((w, i) => `${i + 1}. ${w.title || 'Untitled week'}${w.focus ? ` (${w.focus})` : ''}`)
-    .join('\n')
-}
-
 /** What one Journey redraw did: what moved, what the pins held, and the previous values of
  *  exactly the changed paths (feed straight back to restoreJourneyAction to undo). */
 export interface JourneyRedrawResult {
+  questions?: string[]
   changes: FieldChange[]
   kept: string[]
   before: JourneyRedrawState
@@ -847,13 +834,6 @@ export async function redrawJourneyAction(
   const state = await journeyRedrawState(planId)
   if (!state) return fail('Journey not found.')
 
-  const pins = declaredLockKeys(JOURNEY_MANIFEST, input.locked ?? [])
-  await saveSteer('journey', planId, profileId, {
-    mood: input.mood,
-    directions: input.directions,
-    locked: pins,
-  })
-
   const journey: JourneyForEdit = {
     title: state.title,
     subtitle: state.summary,
@@ -868,93 +848,8 @@ export async function redrawJourneyAction(
     })),
   }
 
-  const ops = await planJourneyEdits({
-    request: redrawBrief({
-      manifest: JOURNEY_MANIFEST,
-      lead: 'Draft this Journey again, keeping every fact it already states true. Re-word the name, the promise, the overview, and each week focus. Do not add, remove, or re-word the practices inside the weeks.',
-      mood: input.mood,
-      directions: input.directions,
-      locked: pins,
-    }),
-    journey,
-    profileId,
-  })
-  if (!ops) return fail('Vera is offline right now. Try again in a moment, or edit by hand.')
-
-  // Fold the two ops a redraw consumes into a proposal in MANIFEST-PATH space. Every other op
-  // kind is dropped here (see the header note), never applied.
-  const proposal: JourneyRedrawState = {}
-  const nextWeeks = state.weeks.map((w) => ({ ...w }))
-  let arcMoved = false
-  const weekById = new Map(nextWeeks.map((w) => [w.id, w]))
-  for (const op of ops) {
-    if (op.op === 'identity') {
-      if (op.title !== undefined) proposal.title = op.title
-      if (op.subtitle !== undefined) proposal.summary = op.subtitle
-      if (op.intro !== undefined) proposal.intro = op.intro
-    } else if (op.op === 'phase') {
-      const week = weekById.get(op.id)
-      if (!week) continue
-      if (op.title !== undefined) week.title = op.title
-      if (op.focus !== undefined) week.focus = op.focus
-      arcMoved = true
-    }
-  }
-  if (arcMoved) proposal.arc = nextWeeks
-
-  // THE GUARANTEE: the pinned paths are deleted from the proposal here, before it is compared or
-  // written. `identity` covers the name; `arc` is a repeated collection and is deleted the same way.
-  const safe = applyLock(JOURNEY_MANIFEST, pins, proposal)
-
-  const settled = settleRedraw({
-    manifest: JOURNEY_MANIFEST,
-    locked: pins,
-    current: {
-      title: state.title,
-      summary: state.summary,
-      intro: state.intro,
-      arc: arcDisplay(state.weeks),
-    },
-    proposed: {
-      ...(safe.title !== undefined ? { title: safe.title } : {}),
-      ...(safe.summary !== undefined ? { summary: safe.summary } : {}),
-      ...(safe.intro !== undefined ? { intro: safe.intro } : {}),
-      ...(safe.arc ? { arc: arcDisplay(safe.arc) } : {}),
-    },
-  })
-  const paths = settled.changedPaths.filter((p) => (JOURNEY_REDRAW_PATHS as readonly string[]).includes(p))
-  if (paths.length === 0) {
-    return fail('Vera kept this one as it is. Give her a direction, or unpin something, and try again.')
-  }
-
-  const write: JourneyRedrawState = {}
-  const before: JourneyRedrawState = {}
-  for (const path of paths) {
-    if (path === 'title' && safe.title !== undefined) {
-      write.title = safe.title
-      before.title = state.title
-    } else if (path === 'summary' && safe.summary !== undefined) {
-      write.summary = safe.summary
-      before.summary = state.summary
-    } else if (path === 'intro' && safe.intro !== undefined) {
-      write.intro = safe.intro
-      before.intro = state.intro
-    } else if (path === 'arc' && safe.arc) {
-      write.arc = safe.arc
-      before.arc = state.weeks
-    }
-  }
-
-  const written = await writeJourneyRedraw(planId, write)
-  if (!written.ok) return fail(written.error)
-  revalidatePath('/journeys', 'layout')
-  revalidatePath(`/journeys/${state.slug}`)
-
-  return ok({
-    changes: settled.changes.filter((c) => paths.includes(c.path)),
-    kept: settled.kept,
-    before,
-  })
+  const result = await planJourneyEdits({ request: input.directions ?? 'Which details would make this Journey clearer?', journey, profileId })
+  return ok({ changes: [], kept: [], before: {}, questions: result?.questions ?? [...WRITING_COACHING_FALLBACK] })
 }
 
 /** Put it back: write the pre-redraw values the diff handed the rail, through the same writer. */

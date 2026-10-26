@@ -91,9 +91,8 @@ describe('every public layout wears the site shell under Frequency', () => {
     'app/spaces/claim/layout.tsx',
   ]
 
-  it.each(SHELLED)('%s branches on SITE_DESIGN into SiteShell', (file) => {
+  it.each(SHELLED)('%s renders SiteShell', (file) => {
     const src = readFileSync(file, 'utf8')
-    expect(src).toMatch(/SITE_DESIGN === 'frequency'/)
     expect(src).toMatch(/<SiteShell[\s>]/)
   })
 

@@ -144,10 +144,12 @@ describe('check:client-boundary — it cannot pass over nothing', () => {
     withFixture((fx) => {
       // Above MIN_MODULES, below MIN_CLIENT_ENTRYPOINTS: proves the two floors are independent,
       // and that "the walk read a lot of files" is not accepted as "the walk saw the client set".
-      for (let i = 0; i < 2600; i++) fx.add(`lib/ballast/m${i}.ts`, `export const m${i} = ${i}\n`)
+      for (let i = 0; i < 3500; i++) fx.add(`lib/ballast/m${i}.ts`, `export const m${i} = ${i}\n`)
       const { code, out } = run(fx.dir)
       expect(code).toBe(1)
       expect(out).toContain('found 0 client entry point(s)')
+      const minimumModules = Number(/MIN_MODULES = (\d+)/.exec(readFileSync(GUARD, 'utf8'))?.[1])
+      expect(Number(/walked only (\d+) module/.exec(out)?.[1])).toBeGreaterThan(minimumModules)
       expect(out).not.toContain('✓ client/server boundary')
     })
   })
@@ -178,7 +180,7 @@ describe('check:client-boundary — the tree as committed', () => {
     // Read the constants from the script source and the reading from its own ✓ line. A floor
     // that equals today's reading fails the next honest deletion; one above it fails now. The
     // reading is parsed rather than hard-coded so this test does not become a second number to
-    // keep in sync — only the script's own comment carries the 2026-09-04 figure.
+    // keep in sync — the script's own comment records the floor's measurement basis.
     const src = readFileSync(GUARD, 'utf8')
     const minClient = Number(/MIN_CLIENT_ENTRYPOINTS = (\d+)/.exec(src)?.[1])
     const minModules = Number(/MIN_MODULES = (\d+)/.exec(src)?.[1])

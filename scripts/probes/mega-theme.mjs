@@ -11,7 +11,7 @@ const mega = read('lib/theme/mega-theme.ts')
 for (const needle of ['export const MEGA_THEMES', 'export const MEGA_NICHES', 'export function readMegaTheme', 'export function withMegaTheme', 'next.megaTheme']) {
   if (!mega.includes(needle)) bad.push(`lib/theme/mega-theme.ts lost: ${needle}`)
 }
-if (!read('lib/spaces/provision.ts').includes('withMegaTheme({}, { niche: input.niche })')) bad.push('Space creation no longer seeds the niche')
+if (!read('lib/spaces/provision.ts').includes('withMegaTheme({}, picked)')) bad.push('Space creation no longer seeds the niche')
 if (!read('lib/spaces/profile-settings.ts').includes('withMegaTheme(prefs,')) bad.push('the owner profile save no longer writes the Mega Theme choice')
 
 if (bad.length) {

@@ -74,8 +74,10 @@ function mapMember(r: MemberRow): SpaceMembership | null {
  *  membership several times per request — resolveSpaceManageAccess calls getSpaceCapabilities, and the
  *  rail bundle / getters call getSpaceCapabilities AGAIN for the same viewer — so without the cache one
  *  rail open fired the same membership query 2x+. The cache collapses them to a single read (perf), and
- *  is safe because a viewer's membership does not change within a request. */
-export const getSpaceMembership = cache(async function getSpaceMembership(
+ *  is appropriate for rendering. Permission-sensitive observations use readSpaceMembershipFresh
+ *  before and after IO, because membership can be revoked during a long request. */
+/** Uncached canonical read for revocation-sensitive gates; never infer staff/network authority. */
+export async function readSpaceMembershipFresh(
   spaceId: string,
   profileId: string,
 ): Promise<SpaceMembership | null> {
@@ -90,7 +92,9 @@ export const getSpaceMembership = cache(async function getSpaceMembership(
   } catch {
     return null
   }
-})
+}
+
+export const getSpaceMembership = cache(readSpaceMembershipFresh)
 
 /** Every membership row of a Space (any status), newest first. Service-role read; FAIL-SAFE
  *  (empty array on any error). Unknown roles/statuses are dropped (fail-closed). */
