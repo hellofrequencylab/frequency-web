@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition, type DragEvent } from 'react'
 import Link from 'next/link'
-import { EyeOff, GripVertical, Plus, Inbox } from 'lucide-react'
+import { ChevronDown, ChevronUp, EyeOff, GripVertical, Plus, Inbox } from 'lucide-react'
+import { IconButton } from '@/components/ui/icon-button'
+import { Select } from '@/components/ui/select'
 import { syncMenuFromDefaults, reorderCategories, createItem } from '@/lib/menus/actions'
 import type { MenuSurfaceKey, ResolvedMenu } from '@/lib/menus/types'
 
@@ -11,7 +13,8 @@ import type { MenuSurfaceKey, ResolvedMenu } from '@/lib/menus/types'
 //   2. A side palette of UNLINKED pages — pages the surface knows about that aren't
 //      placed in this menu — that you drag onto a box to add (createItem).
 //   3. A badge on any box that contains a HIDDEN page (mode 'hidden').
-// Native HTML5 drag-and-drop (no new dep). Loads by materializing the surface on mount
+// Native HTML5 drag-and-drop (no new dep), with a button / select alternative for every drag
+// (WCAG 2.5.7): Move up / Move down on a box, and an "Add to group" select on an unlinked page. Loads by materializing the surface on mount
 // (syncMenuFromDefaults), exactly like the bulk editor, so the boxes carry real DB ids.
 
 type PalettePage = { label: string; href: string; icon?: string }
@@ -82,6 +85,41 @@ export function MenuArrangeBoard({
     })
   }
 
+  function moveBox(id: string, to: number) {
+    const from = boxes.findIndex((b) => b.id === id)
+    if (from < 0 || to < 0 || to >= boxes.length || from === to) return
+    const next = [...boxes]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    persistOrder(next)
+  }
+
+  function addPage(href: string, targetId: string) {
+    const page = allPages.find((p) => p.href === href)
+    if (!page || !menuId) return
+    startTransition(async () => {
+      const res = await createItem({
+        menuId,
+        categoryId: targetId,
+        label: page.label,
+        href: page.href,
+        icon: page.icon ?? null,
+        position: 999,
+      })
+      if (res.ok) {
+        setBoxes((bs) =>
+          bs.map((b) =>
+            b.id === targetId
+              ? { ...b, items: [...b.items, { id: res.id, label: page.label, href: page.href, mode: 'active' }] }
+              : b,
+          ),
+        )
+      } else {
+        setError(res.error)
+      }
+    })
+  }
+
   function handleDropOnBox(targetId: string, e: DragEvent) {
     e.preventDefault()
     setOverId(null)
@@ -89,40 +127,12 @@ export function MenuArrangeBoard({
     if (data.startsWith('cat:')) {
       const id = data.slice(4)
       if (id === targetId) return
-      const from = boxes.findIndex((b) => b.id === id)
-      const to = boxes.findIndex((b) => b.id === targetId)
-      if (from < 0 || to < 0) return
-      const next = [...boxes]
-      const [moved] = next.splice(from, 1)
-      next.splice(to, 0, moved)
-      persistOrder(next)
+      moveBox(id, boxes.findIndex((b) => b.id === targetId))
     } else if (data.startsWith('page:')) {
-      const href = data.slice(5)
-      const page = allPages.find((p) => p.href === href)
-      if (!page || !menuId) return
-      startTransition(async () => {
-        const res = await createItem({
-          menuId,
-          categoryId: targetId,
-          label: page.label,
-          href: page.href,
-          icon: page.icon ?? null,
-          position: 999,
-        })
-        if (res.ok) {
-          setBoxes((bs) =>
-            bs.map((b) =>
-              b.id === targetId
-                ? { ...b, items: [...b.items, { id: res.id, label: page.label, href: page.href, mode: 'active' }] }
-                : b,
-            ),
-          )
-        } else {
-          setError(res.error)
-        }
-      })
+      addPage(data.slice(5), targetId)
     }
   }
+
 
   return (
     <div>
@@ -157,10 +167,10 @@ export function MenuArrangeBoard({
           {/* The board — category boxes, drag to reorder */}
           <div className="flex-1">
             <p className="mb-3 text-body-sm text-muted">
-              Drag a box by its handle to reorder. Drag a page from the right onto a box to add it.
+              Drag a box by its handle, or use its up and down buttons, to reorder. Drag a page from the right onto a box, or pick a group for it, to add it.
             </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {boxes.map((box) => {
+              {boxes.map((box, boxIndex) => {
                 const hiddenCount = box.items.filter((i) => i.mode === 'hidden').length
                 const isOver = overId === box.id
                 return (
@@ -194,6 +204,22 @@ export function MenuArrangeBoard({
                       >
                         <GripVertical className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                         <span className="truncate text-body-sm font-semibold text-text">{box.label}</span>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        <IconButton
+                          label={`Move ${box.label} up`}
+                          disabled={boxIndex === 0}
+                          onClick={() => moveBox(box.id, boxIndex - 1)}
+                        >
+                          <ChevronUp className="h-4 w-4" aria-hidden />
+                        </IconButton>
+                        <IconButton
+                          label={`Move ${box.label} down`}
+                          disabled={boxIndex === boxes.length - 1}
+                          onClick={() => moveBox(box.id, boxIndex + 1)}
+                        >
+                          <ChevronDown className="h-4 w-4" aria-hidden />
+                        </IconButton>
                       </div>
                       {hiddenCount > 0 && (
                         <span
@@ -240,7 +266,7 @@ export function MenuArrangeBoard({
                 <Inbox className="h-4 w-4 text-muted" aria-hidden />
                 <h3 className="text-body-sm font-semibold text-text">Unlinked pages</h3>
               </div>
-              <p className="mb-3 text-meta text-subtle">Pages not in this menu. Drag one onto a box to add it.</p>
+              <p className="mb-3 text-meta text-subtle">Pages not in this menu. Drag one onto a box, or pick a group, to add it.</p>
               {palette.length === 0 ? (
                 <p className="rounded-control border border-dashed border-border px-2 py-3 text-center text-meta text-subtle">
                   Every page is placed. 🎉
@@ -260,11 +286,25 @@ export function MenuArrangeBoard({
                         dragKind.current = null
                         setOverId(null)
                       }}
-                      className="flex cursor-grab items-center gap-1.5 rounded-control border border-border bg-surface px-2 py-1.5 text-body-sm text-text active:cursor-grabbing hover:border-primary"
+                      className="cursor-grab space-y-1.5 rounded-control border border-border bg-surface px-2 py-1.5 text-body-sm text-text active:cursor-grabbing hover:border-primary"
                       title={p.href}
                     >
-                      <Plus className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-                      <span className="truncate">{p.label}</span>
+                      <div className="flex items-center gap-1.5">
+                        <Plus className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+                        <span className="truncate">{p.label}</span>
+                      </div>
+                      {boxes.length > 0 && (
+                        <Select
+                          aria-label={`Add ${p.label} to a group`}
+                          className="text-meta"
+                          value=""
+                          emptyLabel="Add to group…"
+                          options={boxes.map((b) => ({ value: b.id, label: b.label }))}
+                          onChange={(e) => {
+                            if (e.target.value) addPage(p.href, e.target.value)
+                          }}
+                        />
+                      )}
                     </li>
                   ))}
                 </ul>

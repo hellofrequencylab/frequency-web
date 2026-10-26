@@ -184,18 +184,22 @@ export const SYNCHRONOUS_ADMIN_IMPORTS = [
 // exactly why Arm B exists. The byte ceiling catches "the shell doubled"; only the fingerprints
 // catch "one module came back".
 //
-// Why 1,400 and not 1,100: this number must survive ordinary shell work — a new nav surface, an
-// icon set, a provider — without anyone reaching for the constant, because a budget that gets raised
-// routinely stops being a budget. ~375 KB of headroom is roughly a third again of the current shell.
+// 2026-10-26 (SCAN-1119, #3931 build logs): main drifted to 1,131 KB / 25 chunks, then the On Air
+// engines and the search overlay went behind dynamic() and the same shell measured 1,030 KB / 24
+// chunks. The ceiling moved from 1,400 to 1,100: ~70 KB (7%) of headroom over the measured shell, so
+// the next 100 KB of drift fails a build instead of arriving unseen.
 //
-// Why 1,400 and not 2,000: it still fires on the regression that actually happened. Re-inlining the
+// Why 1,100 and not lower: it must still survive ordinary shell work, because a budget that gets
+// raised routinely stops being a budget. If real work needs more, raise it with a measurement.
+//
+// Why 1,100 and not 2,000: it still fires on the regression that actually happened. Re-inlining the
 // admin console put the median app/(main) route at 2.78 MB (dc47b89's measurement); the shell entry
-// carried ~1.6 MB of that. Either half of the class overshoots 1,400 KB immediately, so this ceiling
+// carried ~1.6 MB of that. Either half of the class overshoots 1,100 KB immediately, so this ceiling
 // cannot launder it.
 //
 // It is a RATCHET in spirit: it may FALL, and raising it is a decision that needs a measurement and
 // a paragraph in the commit — the same standard check:build-budget and check:og-trace hold.
-export const BUDGET_KB = 1400
+export const BUDGET_KB = 1100
 
 // ── ARM B · THE FINGERPRINTS ────────────────────────────────────────────────────────────────
 // Each row is: a literal that survives minification, and the ONE source file it lives in. Every row

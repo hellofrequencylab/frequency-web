@@ -41,6 +41,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
+import { FREQUENCY_SHEETS, FREQUENCY_STATES, resolveFrequencyTokens, unsupportedSelectors } from './lib/contrast-frequency.mjs'
 
 const CSS = join('app', 'globals.css')
 
@@ -435,6 +436,7 @@ export const WAIVERS = [
     floors: {
       'DAWN light': 2.46, 'DAWN dark': 2.46, 'Midnight light': 2.46, 'Midnight dark': 2.46,
       'Light-lock on a dark device': 2.46,
+      'Commons day': 2.46, 'Commons night': 2.46, 'Stage on a light device': 2.46, 'Stage on a dark device': 2.46,
     },
     why:
       'White on the GOLD core is 2.46:1 — under even the 3:1 non-text bar, and the only rank of the ' +
@@ -447,20 +449,23 @@ export const WAIVERS = [
   {
     fg: '--color-border-strong',
     bg: '--color-canvas',
-    floors: { 'Light-lock on a dark device': 1.4, 'DAWN light': 1.4, 'DAWN dark': 1.93, 'Midnight light': 1.53, 'Midnight dark': 1.99 },
+    floors: { 'Light-lock on a dark device': 1.4, 'DAWN light': 1.4, 'DAWN dark': 1.93, 'Midnight light': 1.53, 'Midnight dark': 1.99,
+      'Commons day': 1.51, 'Commons night': 1.72, 'Stage on a light device': 1.85, 'Stage on a dark device': 1.85 },
     why: 'By design, not debt: the "strong" hairline is a tone step, not a control outline — controls are identified by fill + label + focus ring, which 1.4.11 accepts. Kept in the table with a frozen floor so a palette edit cannot flatten the tone step away.',
   },
   {
     fg: '--color-border-strong',
     bg: '--color-surface',
-    floors: { 'Light-lock on a dark device': 1.49, 'DAWN light': 1.49, 'DAWN dark': 1.79, 'Midnight light': 1.74, 'Midnight dark': 1.79 },
+    floors: { 'Light-lock on a dark device': 1.49, 'DAWN light': 1.49, 'DAWN dark': 1.79, 'Midnight light': 1.74, 'Midnight dark': 1.79,
+      'Commons day': 1.52, 'Commons night': 1.79, 'Stage on a light device': 1.92, 'Stage on a dark device': 1.92 },
     why: 'Same hairline, on a card. See above.',
   },
   // ── The marketing canvas (PROG-P9, measured 2026-08-25, ADR-1123) ────────────────────────
   {
     fg: '--color-border-strong',
     bg: '--color-marketing-canvas',
-    floors: { 'Light-lock on a dark device': 1.29, 'DAWN light': 1.29, 'DAWN dark': 2.0, 'Midnight light': 1.41, 'Midnight dark': 2.06 },
+    floors: { 'Light-lock on a dark device': 1.29, 'DAWN light': 1.29, 'DAWN dark': 2.0, 'Midnight light': 1.41, 'Midnight dark': 2.06,
+      'Commons day': 1.51, 'Commons night': 1.72, 'Stage on a light device': 1.85, 'Stage on a dark device': 1.85 },
     why: 'The same hairline as on the app canvas, one notch tighter because the cream ground is darker (1.29 vs 1.40 in DAWN light). Same call, for the same reason: a tone step is not a control outline, and 1.4.11 identifies a control by fill + label + focus ring. Frozen so the tone step cannot be flattened away.',
   },
   {
@@ -468,6 +473,37 @@ export const WAIVERS = [
     bg: '--color-marketing-canvas',
     floors: { 'Light-lock on a dark device': 2.19, 'DAWN light': 2.19, 'Midnight light': 2.33 },
     why: 'The amber brand fill on the cream ground is 2.19:1 — the marketing twin of the already-waived 2.52:1 on white, and darker ground means a WORSE number, not a better one. Decorative fill only: this is the vector art (fill-primary / stroke-primary), never an indicator that identifies a control. Anything on this ground that has to be READ takes --color-primary-strong (4.75:1, in the table above and passing). Frozen so the amber cannot drift lighter.',
+  },
+  // ── Frequency Commons day (SCAN-1115, measured 2026-10-26) ────────────────────────────────
+  // The gate used to read app/globals.css alone, so the Frequency palette that ships (Commons by
+  // day, Commons at night, Stage) was never measured. The first run found four TEXT pairs under
+  // 4.5:1, all on Commons day, all from the cooled aqua accent. These are real reading failures,
+  // not by-design hairlines: they wait on an owner palette decision (a deeper aqua for text, the
+  // way DAWN's primary-strong is darker than its fill). Frozen at today's ratio so they can only
+  // improve, and printed in every run.
+  {
+    fg: '--color-primary-strong',
+    bg: '--color-marketing-canvas',
+    floors: { 'Commons day': 3.59 },
+    why: 'Aqua accent text on the cooled marketing canvas: 3.59:1 against 4.5. Needs a deeper text step of the accent (owner palette decision).',
+  },
+  {
+    fg: '--color-primary-strong',
+    bg: '--color-surface',
+    floors: { 'Commons day': 3.86 },
+    why: 'The same aqua accent text on a card: 3.86:1 against 4.5. Same decision as above.',
+  },
+  {
+    fg: '--color-primary-strong',
+    bg: '--color-primary-bg',
+    floors: { 'Commons day': 3.42 },
+    why: 'Primary chip text on its own wash: 3.42:1 against 4.5. Same decision as above.',
+  },
+  {
+    fg: '--color-move-strong',
+    bg: '--color-move-bg',
+    floors: { 'Commons day': 4.45 },
+    why: 'Get Moving chip text: 4.45:1 against 4.5, a near miss of five hundredths. One step deeper on the teal clears it.',
   },
   // (`--color-success` on `--color-marketing-canvas` lived here until 2026-09-10 as "THE PAIRING TO
   // AVOID", frozen at 4.05 / 3.80. LIVE-300 darkened the token for the chip pairing and carried
@@ -738,11 +774,16 @@ function waiverFor(pair, stateKey) {
   return w ? { floor: w.floors[stateKey], why: w.why } : null
 }
 
-/** Evaluate the whole pair table against one CSS source. Returns one row per (state, pair). */
-export function evaluateContrast(src, { pairs = PAIRS, states = STATES } = {}) {
+/**
+ * Evaluate the whole pair table against one CSS source. Returns one row per (state, pair).
+ * `src` is whatever `resolve` reads: the CSS text, or the ordered sheets for Frequency.
+ * @param {any} src
+ * @param {{ pairs?: ContrastPair[], states?: any[], resolve?: (src: any, state: any) => Map<string, string> }} [opts]
+ */
+export function evaluateContrast(src, { pairs = PAIRS, states = STATES, resolve = resolveTokens } = {}) {
   const rows = []
   for (const state of states) {
-    const tokens = resolveTokens(src, state)
+    const tokens = resolve(src, state)
     for (const pair of pairs) {
       if (pair.only && !pair.only.includes(state.key)) continue
       const fgValue = resolveSide(tokens, pair.fg)
@@ -771,7 +812,13 @@ export function evaluateContrast(src, { pairs = PAIRS, states = STATES } = {}) {
               const underC = typeof under === 'string' ? parseColor(under) : under
               return underC ? composite(tint, underC) : null
             })()
-      const ratio = contrastRatio(fgPainted, bgPainted)
+      // A translucent ground declared as a token (Frequency's `rgba(…, .12)` status washes) is
+      // painted over the card it sits on, so it is measured over `--color-surface`. Without
+      // this a 12% wash reads as the colour itself and the ratio against its own ink is 1.00.
+      const bgParsed = typeof bgPainted === 'string' ? parseColor(bgPainted) : bgPainted
+      const underCard = bgParsed && bgParsed.a < 1 ? parseColor(resolveSide(tokens, '--color-surface')) : null
+      const bgSeen = underCard ? composite(bgParsed, underCard) : bgPainted
+      const ratio = contrastRatio(fgPainted, bgSeen)
       const waiver = waiverFor(pair, state.key)
       const min = waiver ? waiver.floor : ROLE_MINIMUM[pair.role]
       rows.push({
@@ -814,8 +861,21 @@ function table(rows) {
 function main() {
   const src = readFileSync(CSS, 'utf8')
   const aaaStates = aaaGenerationStates(aaaGenerationIds(readFileSync(join('lib', 'theme', 'generations.ts'), 'utf8')))
-  const rows = [...evaluateContrast(src), ...evaluateContrast(src, { pairs: AAA_GENERATION_PAIRS, states: aaaStates })]
-  const ALL_STATES = [...STATES, ...aaaStates]
+  // Frequency is the shipped design (SCAN-1115): its Commons and Stage rooms are measured from the
+  // same sheets the browser loads (app/themes/frequency/core.css, then app/themes/frequency.css),
+  // in the order app/layout.tsx imports them.
+  const sheets = FREQUENCY_SHEETS.map((f) => readFileSync(f, 'utf8'))
+  const unsupported = unsupportedSelectors(sheets.slice(1))
+  if (unsupported.length) {
+    console.error(`✗ Contrast gate cannot score these Frequency selectors, so it would skip their tokens:\n${unsupported.map((u) => `    ${u}`).join('\n')}`)
+    process.exit(1)
+  }
+  const rows = [
+    ...evaluateContrast(src),
+    ...evaluateContrast(src, { pairs: AAA_GENERATION_PAIRS, states: aaaStates }),
+    ...evaluateContrast(sheets, { states: FREQUENCY_STATES, resolve: resolveFrequencyTokens }),
+  ]
+  const ALL_STATES = [...STATES, ...aaaStates, ...FREQUENCY_STATES]
   const report = process.argv.includes('--report')
 
   if (report) {

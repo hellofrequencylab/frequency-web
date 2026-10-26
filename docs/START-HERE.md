@@ -60,11 +60,11 @@ disagree, the code wins; fix the doc in the same pass.
   operator overrides can beat it), [STUDIO.md](STUDIO.md) (declare a manifest, never build a wizard),
   [MENU-CONTRACT.md](MENU-CONTRACT.md) (add a catalog row, never rewrite the rail), and
   [DEPLOY-SAFETY.md](DEPLOY-SAFETY.md) (a merge is a deploy; the artifact gates run in `postbuild`).
-- **Two design systems, one per deploy.** `NEXT_PUBLIC_SITE_DESIGN` picks **DAWN** (the default)
-  or **Frequency** at build (`lib/theme/design.ts`, ADR-1737). `pnpm design:use frequency` wears
-  Frequency locally; run `pnpm design:use dawn` before you commit, because the generated stubs in
+- **One design system: Frequency.** `NEXT_PUBLIC_SITE_DESIGN=frequency` is the only deployable
+  selection, read at build (`lib/theme/design.ts`, ADR-1737). `pnpm design:use frequency` writes it
+  to `.env.local` locally; selecting DAWN is retired and exits 2. The generated stubs in
   `app/themes/active/`, `lib/theme/design-fonts/active.ts` and `public/manifest.json` are committed
-  as DAWN. Components read semantic tokens, never a design's own (`--fq-*`): [THEME.md](THEME.md).
+  as Frequency, so there is nothing to switch back before you commit. Components read semantic tokens, never a design's own (`--fq-*`): [THEME.md](THEME.md).
   The handoff lives in `design_handoff/frequency/`; going live and rolling back is
   [RUNBOOKS.md](RUNBOOKS.md) section 8.
 

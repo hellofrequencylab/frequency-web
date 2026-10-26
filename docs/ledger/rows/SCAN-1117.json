@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1117",
+  "title": "Operator drawers close on Escape, trap Tab and return focus",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/admin/library/apps-lane.tsx",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "role=dialog aria-modal drawers at apps-lane.tsx:144 and splash-lane.tsx:235,292 have no Escape, trap or focus restore. Also give calendar-chrome.tsx:254 an Escape and add Tab traps to marketing-mobile-menu, bottom-sheet, spotlight-tour and admin-bar.\n\nOperator drawers render through the kit Dialog (align=drawer): Escape, Tab trap, focus return; BottomSheet gets the same",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs dialogs-escape",
+    "note": "Exits 0 once the repair has landed."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}

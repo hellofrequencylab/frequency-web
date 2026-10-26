@@ -1,4 +1,5 @@
-// THE FREQUENCY PUBLIC FOOTER (`footer.ft2`, identical on every template page). Server component, no JS.
+// THE FREQUENCY PUBLIC FOOTER (`footer.ft2`, identical on every template page). Server component; the one
+// client island is the Pause motion button.
 // The logo sheen and the roundel beside "Your people stay yours." are what fx.js adds after load; here
 // they are in the markup from the start. Links: lib/frequency/site-nav.ts (a link with no route yet is
 // left out).
@@ -7,6 +8,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { FOOTER_COLUMNS, FOOTER_LEGAL, ROUTES, SIDE_CTA } from '@/lib/frequency/site-nav'
 import { JsonLd } from '@/components/json-ld'
+import { MotionPause } from '@/components/frequency/site/shell/motion-pause'
 import { siteNavigationSchema } from '@/lib/jsonld'
 import { CONTACT_EMAIL, SOCIAL_PROFILES, SITE_SIGNOFF, socialLabel } from '@/lib/site'
 
@@ -71,6 +73,7 @@ export function SiteFooter() {
                 {socialLabel(url)}
               </a>
             ))}
+            <MotionPause />
           </span>
           <span className="ft2-sign">
             <span className="fq-logo-icon fq-iridescent ft2-roundel" aria-hidden="true" />

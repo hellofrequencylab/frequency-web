@@ -37,7 +37,9 @@ type Kind = 'action' | 'prefetch' | 'navigation' | 'document'
 
 async function cookiesWritten(kind: Kind, opts: { cookie?: string; country?: string; path?: string } = {}) {
   const headers = new Headers()
-  if (opts.cookie) headers.set('cookie', opts.cookie)
+  // The mocked session read stands in for a signed-in member, so the request carries the Supabase
+  // session cookie a real one would (SCAN-1122: the proxy skips the session read without one).
+  headers.set('cookie', ['sb-test-auth-token=x', opts.cookie].filter(Boolean).join('; '))
   if (opts.country) headers.set('x-vercel-ip-country', opts.country)
   if (kind === 'action') headers.set('next-action', '7f3a')
   if (kind === 'prefetch') {
@@ -89,5 +91,15 @@ describe('the markers still do their job', () => {
     )
     const ask = response.cookies.get('fq_ask')
     expect(ask?.value ?? '').toBe('')
+  })
+})
+
+describe('SCAN-1122: an anonymous request skips the Supabase session read', () => {
+  it('makes no getUser call without a session cookie, and still makes one with it', async () => {
+    getUser.mockClear()
+    await proxy(new NextRequest('https://frequencylocal.com/', { headers: { cookie: 'fq_ask=1' } }))
+    expect(getUser).not.toHaveBeenCalled()
+    await proxy(new NextRequest('https://frequencylocal.com/', { headers: { cookie: 'sb-ref-auth-token.0=x' } }))
+    expect(getUser).toHaveBeenCalledTimes(1)
   })
 })

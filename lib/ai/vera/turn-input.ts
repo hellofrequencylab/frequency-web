@@ -14,4 +14,3 @@ export const VERA_TURN_BODY = z.object({
     .default([]),
 })
 
-export type VeraTurnBody = z.infer<typeof VERA_TURN_BODY>

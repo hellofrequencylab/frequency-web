@@ -9,7 +9,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
-import { spaceEarningsSummary } from '@/lib/commerce/orders'
+import { readCompleteSpaceEarnings } from '@/lib/commerce/orders'
 import { ShopTabs, toShopTab, type ShopTab } from '@/components/spaces/shop/shop-tabs'
 import { CatalogTab } from './catalog-tab'
 import { OrdersTab } from './orders-tab'
@@ -116,12 +116,12 @@ function usd(cents: number): string {
 
 // The live earnings band for THIS space's commerce (settled orders). Fail-safe to zeros.
 async function ShopStats({ spaceId }: { spaceId: string }) {
-  const e = await spaceEarningsSummary(spaceId)
+  const e = await readCompleteSpaceEarnings(spaceId)
   return (
     <>
-      <StatCard size="sm" label="Net earned" value={usd(e.netCents)} icon={Wallet} />
-      <StatCard size="sm" label="Gross sales" value={usd(e.grossCents)} icon={Coins} />
-      <StatCard size="sm" label="Orders" value={e.orderCount} icon={Receipt} />
+      <StatCard size="sm" label="Net earned" value={e ? usd(e.netCents) : 'Unavailable'} icon={Wallet} />
+      <StatCard size="sm" label="Gross sales" value={e ? usd(e.grossCents) : 'Unavailable'} icon={Coins} />
+      <StatCard size="sm" label="Orders" value={e ? e.orderCount : 'Unavailable'} icon={Receipt} />
     </>
   )
 }
