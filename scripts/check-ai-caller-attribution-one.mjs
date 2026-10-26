@@ -12,7 +12,6 @@ const paths = [
   "lib/ai/circle-edit.ts",
   "lib/ai/connections-ai.ts",
   "lib/ai/creator-tips.ts",
-  "lib/ai/event-blurb.ts",
   "lib/ai/help-rag.ts",
   "lib/ai/journey-composition.ts",
   "lib/ai/journey-edit.ts",
@@ -48,6 +47,15 @@ for (const path of paths) {
   }
   visit(source); assert.ok(localCalls > 0, `${path} has no inventoried completion`)
 }
+// Event explanations now render current deterministic facts and must never reintroduce a paid caller.
+const factSource = ts.createSourceFile('lib/ai/event-blurb.ts', readFileSync('lib/ai/event-blurb.ts', 'utf8'), ts.ScriptTarget.Latest, true)
+function verifyFactOnly(node) {
+  if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+    assert.ok(!['completeRaw', 'completeText', 'runToolLoop', 'getAnthropic', 'recordAiUsage'].includes(node.expression.text), 'event facts reintroduced a model call')
+  }
+  ts.forEachChild(node, verifyFactOnly)
+}
+verifyFactOnly(factSource)
 const state = globalThis.__legacyCompletionProbe
 state.enabled = true; state.overBudget = false; state.rateLimited = false
 const sources = new Map([

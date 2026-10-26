@@ -437,6 +437,42 @@ export interface SpaceEarnings {
   networkOrderCount: number
 }
 
+// One request-local, completeness-checked source read serves every report window.
+// No process-global cache: money can change between requests and tenants never share a snapshot.
+interface EarningsSnapshot {
+  sinceDays: number
+  now: number
+  reads: Map<string, Promise<unknown[]>>
+}
+type EarningsQuery = Parameters<typeof completeEarningsRead>[0]
+function earningsSince(days: number, snapshot?: EarningsSnapshot): string {
+  return new Date((snapshot?.now ?? Date.now()) - (snapshot?.sinceDays ?? days) * 86_400_000).toISOString()
+}
+async function snapshotRead(snapshot: EarningsSnapshot, key: string, read: () => Promise<unknown[]>): Promise<unknown[]> {
+  let pending = snapshot.reads.get(key)
+  if (!pending) { pending = read(); snapshot.reads.set(key, pending) }
+  return pending
+}
+async function earningsRead(query: EarningsQuery, strict: boolean, key: string, snapshot?: EarningsSnapshot, timeColumn?: string, days?: number) {
+  if (!snapshot) return strict ? completeEarningsRead(query) : await query
+  const source = await snapshotRead(snapshot, key, async () => (await completeEarningsRead(query)).data)
+  const since = snapshot.now - (days ?? snapshot.sinceDays) * 86_400_000
+  const data = timeColumn ? source.filter((row) => {
+    const at = Date.parse(String((row as Record<string, unknown>)[timeColumn] ?? ''))
+    if (!Number.isFinite(at)) throw new Error('earnings source timestamp is unavailable')
+    return at >= since && at < snapshot.now
+  }) : source
+  return { data, error: null }
+}
+
+/** Complete, consistently timed summaries with one shared read per source, not fourteen scans.
+ * Windows are observation periods, not a transaction-isolated database snapshot. */
+export async function spaceEarningsWindows(spaceId: string, windows: readonly number[], now = Date.now()): Promise<SpaceEarnings[]> {
+  if (!spaceId || !windows.length || windows.length > 20 || !Number.isFinite(now) || windows.some((days) => !Number.isInteger(days) || days <= 0 || days > 3650)) throw new Error('invalid earnings report window')
+  const snapshot: EarningsSnapshot = { sinceDays: Math.max(...windows), now, reads: new Map() }
+  return Promise.all(windows.map((days) => summarizeSpaceEarnings(spaceId, days, true, snapshot)))
+}
+
 /**
  * THE TICKET ARM (LIVE-375).
  *
@@ -462,7 +498,7 @@ export interface SpaceEarnings {
  * `created_at`: a ticket row is created when checkout opens, which can be days earlier on a delayed
  * settlement and is not when the Space earned anything.
  */
-async function ticketEarnings(spaceId: string, sinceDays?: number, strict = false): Promise<SpaceEarnings> {
+async function ticketEarnings(spaceId: string, sinceDays?: number, strict = false, snapshot?: EarningsSnapshot): Promise<SpaceEarnings> {
   const out: SpaceEarnings = {
     grossCents: 0,
     feeCents: 0,
@@ -481,19 +517,19 @@ async function ticketEarnings(spaceId: string, sinceDays?: number, strict = fals
     .from('events')
     .select('id')
     .or(`host_space_id.eq.${spaceId},and(space_id.eq.${spaceId},host_space_id.is.null)`)
-  const { data: evRows } = strict ? await completeEarningsRead(eventQuery) : await eventQuery
+  const { data: evRows } = await earningsRead(eventQuery, strict, 'events', snapshot)
   const eventIds = ((evRows ?? []) as { id: string }[]).map((e) => e.id).filter(Boolean)
   if (eventIds.length === 0) return out
 
   let q = db()
     .from('event_tickets')
-    .select('id, currency, amount_cents, platform_fee_cents, status, refunded_at')
+    .select('id, currency, amount_cents, platform_fee_cents, status, refunded_at, succeeded_at')
     .in('event_id', eventIds)
     .not('succeeded_at', 'is', null)
   if (sinceDays && sinceDays > 0) {
-    q = q.gte('succeeded_at', new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString())
+    q = q.gte('succeeded_at', earningsSince(sinceDays, snapshot))
   }
-  const { data } = strict ? await completeEarningsRead(q) : await q
+  const { data } = await earningsRead(q, strict, 'tickets', snapshot, 'succeeded_at', sinceDays)
   if (strict) assertUsdEarningsRows(data ?? [])
   const rows = (data ?? []) as {
     amount_cents?: number | null
@@ -541,7 +577,7 @@ async function ticketEarnings(spaceId: string, sinceDays?: number, strict = fals
  * Memberships stay out of this arm. `space_memberships` has no amount and no invoice ledger, so
  * summing a tier price on `started_at` would invent renewals that never happened.
  */
-async function donationEarnings(spaceId: string, sinceDays?: number, strict = false): Promise<SpaceEarnings> {
+async function donationEarnings(spaceId: string, sinceDays?: number, strict = false, snapshot?: EarningsSnapshot): Promise<SpaceEarnings> {
   const out: SpaceEarnings = {
     grossCents: 0,
     feeCents: 0,
@@ -556,13 +592,13 @@ async function donationEarnings(spaceId: string, sinceDays?: number, strict = fa
 
   let q = db()
     .from('space_donations')
-    .select('id, currency, amount_cents, platform_fee_cents, status, refunded_at, source')
+    .select('id, currency, amount_cents, platform_fee_cents, status, refunded_at, source, succeeded_at')
     .eq('space_id', spaceId)
     .not('succeeded_at', 'is', null)
   if (sinceDays && sinceDays > 0) {
-    q = q.gte('succeeded_at', new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString())
+    q = q.gte('succeeded_at', earningsSince(sinceDays, snapshot))
   }
-  const { data } = strict ? await completeEarningsRead(q) : await q
+  const { data } = await earningsRead(q, strict, 'donations', snapshot, 'succeeded_at', sinceDays)
   if (strict) assertUsdEarningsRows(data ?? [])
   const rows = (data ?? []) as {
     amount_cents?: number | null
@@ -605,7 +641,7 @@ async function donationEarnings(spaceId: string, sinceDays?: number, strict = fa
  * cart, not per share, so the rule beside networkGrossCents (never overstate it) keeps shares out.
  * The window is the order's created_at, matching the arm above.
  */
-async function splitShareEarnings(spaceId: string, sinceDays?: number, strict = false): Promise<SpaceEarnings> {
+async function splitShareEarnings(spaceId: string, sinceDays?: number, strict = false, snapshot?: EarningsSnapshot): Promise<SpaceEarnings> {
   const out: SpaceEarnings = {
     grossCents: 0,
     feeCents: 0,
@@ -616,18 +652,19 @@ async function splitShareEarnings(spaceId: string, sinceDays?: number, strict = 
     networkFeeCents: 0,
     networkOrderCount: 0,
   }
-  const rows = await sellerShareRows({ kind: 'space', id: spaceId }, undefined, strict)
+  const readShares = () => sellerShareRows({ kind: 'space', id: spaceId }, undefined, strict)
+  const rows = (snapshot ? await snapshotRead(snapshot, 'shares', readShares) : await readShares()) as ShareRow[]
   if (!rows.length) return out
   const byOrder = new Map(rows.map((r) => [r.order_id, r]))
   let q = db()
     .from('commerce_orders')
-    .select('id, currency, amount_cents, status, metadata')
+    .select('id, currency, amount_cents, status, metadata, created_at')
     .in('id', [...byOrder.keys()])
     .eq('funds_flow', 'separate')
   if (sinceDays && sinceDays > 0) {
-    q = q.gte('created_at', new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString())
+    q = q.gte('created_at', earningsSince(sinceDays, snapshot))
   }
-  const { data, error } = strict ? await completeEarningsRead(q) : await q
+  const { data, error } = await earningsRead(q, strict, 'split-orders', snapshot, 'created_at', sinceDays)
   if (error) throw new Error(`split orders unreadable: ${error.message}`)
   if (strict) assertUsdEarningsRows(data ?? [])
   for (const o of (data ?? []) as { id: string; amount_cents?: number | null; status?: string; metadata?: unknown }[]) {
@@ -655,6 +692,15 @@ async function splitShareEarnings(spaceId: string, sinceDays?: number, strict = 
 
 /** strict=true rejects any errored or truncated source; default retains the legacy dashboard fallback. */
 export async function spaceEarningsSummary(spaceId: string, sinceDays?: number, strict = false): Promise<SpaceEarnings> {
+  return summarizeSpaceEarnings(spaceId, sinceDays, strict)
+}
+/** Money surfaces render unknown when any source is unreadable, capped or not USD. */
+export async function readCompleteSpaceEarnings(spaceId: string, sinceDays?: number): Promise<SpaceEarnings | null> {
+  try { return await spaceEarningsSummary(spaceId, sinceDays, true) }
+  catch (error) { console.error('[commerce/earnings] complete reading unavailable:', error); return null }
+}
+
+async function summarizeSpaceEarnings(spaceId: string, sinceDays?: number, strict = false, snapshot?: EarningsSnapshot): Promise<SpaceEarnings> {
   const empty: SpaceEarnings = {
     grossCents: 0,
     feeCents: 0,
@@ -674,14 +720,14 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number, 
       .from('commerce_orders')
       // `metadata` carries the partial-refund record (LIVE-160); without it a half-refunded order that
       // keeps its 'paid' status is counted at full gross.
-      .select('id, currency, amount_cents, platform_fee_cents, status, source, metadata')
+      .select('id, currency, amount_cents, platform_fee_cents, status, source, metadata, created_at')
       .eq('owner_space_id', spaceId)
       .neq('status', 'pending')
     if (sinceDays && sinceDays > 0) {
-      const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString()
+      const since = earningsSince(sinceDays, snapshot)
       query = query.gte('created_at', since)
     }
-    const { data } = strict ? await completeEarningsRead(query) : await query
+    const { data } = await earningsRead(query, strict, 'orders', snapshot, 'created_at', sinceDays)
     if (strict) assertUsdEarningsRows(data ?? [])
     const rows = (data ?? []) as {
       amount_cents?: number | null
@@ -728,7 +774,7 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number, 
     // the outer catch takes, applied at the finer grain the second source makes possible.
     let tickets: SpaceEarnings | null = null
     try {
-      tickets = await ticketEarnings(spaceId, sinceDays, strict)
+      tickets = await ticketEarnings(spaceId, sinceDays, strict, snapshot)
     } catch (error) {
       if (strict) throw error
       tickets = null
@@ -746,7 +792,7 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number, 
     // gifts returns the commerce+ticket number instead of collapsing the header to zeros.
     let donations: SpaceEarnings | null = null
     try {
-      donations = await donationEarnings(spaceId, sinceDays, strict)
+      donations = await donationEarnings(spaceId, sinceDays, strict, snapshot)
     } catch (error) {
       if (strict) throw error
       donations = null
@@ -766,7 +812,7 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number, 
     // other arms' number rather than zeros. Network figures untouched; see splitShareEarnings.
     let shares: SpaceEarnings | null = null
     try {
-      shares = await splitShareEarnings(spaceId, sinceDays, strict)
+      shares = await splitShareEarnings(spaceId, sinceDays, strict, snapshot)
     } catch (error) {
       if (strict) throw error
       shares = null
