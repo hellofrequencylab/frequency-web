@@ -4,7 +4,6 @@ import { PersonCard } from '@/components/cards/person-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import {
   ORBIT_LABEL,
   resonanceContext,
@@ -13,26 +12,13 @@ import {
 } from '@/lib/connections/resonance'
 import { UnfriendButton, ReconnectButton } from './friend-row-actions'
 
-// FREQUENCY (LIVE-1086): the kit's `.tag` chip and `.btn` pill. Inlined at build; DAWN keeps its pills.
-const FREQUENCY = SITE_DESIGN === 'frequency'
 const GRID = 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'
 const ORBIT_ORDER: Orbit[] = ['inner', 'middle', 'outer']
 
 // A private, viewer-only chip — the orbit label is *your* read on the relationship,
 // never a public ranking (ADR-186). No number is ever shown.
 function OrbitChip({ orbit }: { orbit: Orbit }) {
-  const tone =
-    orbit === 'inner'
-      ? 'bg-primary-bg text-primary-strong'
-      : orbit === 'middle'
-        ? 'bg-surface-elevated text-muted'
-        : 'bg-surface-elevated text-subtle'
-  if (FREQUENCY) return <span className="tag">{ORBIT_LABEL[orbit]}</span>
-  return (
-    <span className={`rounded-pill px-2 py-0.5 text-2xs font-medium ${tone}`}>
-      {ORBIT_LABEL[orbit]}
-    </span>
-  )
+  return <span className="tag">{ORBIT_LABEL[orbit]}</span>
 }
 
 function OrbitCard({ member }: { member: OrbitMember }) {
@@ -74,9 +60,7 @@ function emptyFriends() {
         <Link
           href="/people"
           className={
-            FREQUENCY
-              ? buttonClasses('primary', 'md')
-              : 'inline-flex items-center gap-2 rounded-control bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover'
+            buttonClasses('primary', 'md')
           }
         >
           Find people

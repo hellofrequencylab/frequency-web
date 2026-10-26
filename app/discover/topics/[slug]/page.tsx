@@ -1,20 +1,14 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
 import {
   getTopicalChannels,
   getTopicalChannelBySlug,
   getPublicCirclesByChannel,
 } from '@/lib/discover'
-import { CircleCard, SignInCta } from '@/components/discover/cards'
-import { CircleConstellation } from '@/components/marketing/vector-art'
-import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { circleListSchema, breadcrumbSchema } from '@/lib/jsonld'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyTopic } from '@/components/frequency/site/pages/discover/topics'
 
 export const revalidate = 3600
@@ -84,80 +78,10 @@ export default async function TopicPage({
     ]),
     circleListSchema(circles, `${channel.name} circles`),
   ]
-
-  // THE DESIGN SWITCH (ADR-1737): the same Channel, Circles and JSON-LD, drawn in the site kit.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd data={schema} />
-        <FrequencyTopic channel={channel} circles={circles} image={hero.coverImage} />
-      </>
-    )
-  }
-
   return (
-    <div className="relative overflow-hidden max-w-4xl mx-auto px-6 py-20 sm:py-24">
-      {/* A constellation of people: the network this topic opens onto. */}
-      <CircleConstellation
-        aria-hidden
-        className="pointer-events-none absolute top-6 right-0 w-72 max-w-none text-primary opacity-[0.05]"
-      />
+    <>
       <JsonLd data={schema} />
-
-      <Link
-        href="/discover/topics"
-        className="mb-4 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Channels
-      </Link>
-
-      <DetailTemplate
-        {...hero}
-        title={channel.name}
-        subtitle={
-          channel.description ? (
-            channel.description
-          ) : (
-            <>
-              One doorway into a room of people. Name {channel.name.toLowerCase()} as the thing
-              you practice and you land among neighbors who lit up the same way you did, the first
-              conversation already halfway in.
-            </>
-          )
-        }
-      >
-        {/* Circles in this topic */}
-        {circles.length > 0 ? (
-          <>
-            <h2 className="text-body-lg font-semibold text-text mb-5">
-              {circles.length} {circles.length === 1 ? 'circle' : 'circles'} in {channel.name}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-16">
-              {circles.map((c) => (
-                <CircleCard key={c.id} circle={c} />
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="rounded-card border border-border bg-marketing-canvas p-10 text-center mb-16">
-            <p className="text-body-lg font-semibold text-text mb-1">
-              No circles in {channel.name} yet.
-            </p>
-            <p className="text-muted leading-relaxed max-w-md mx-auto">
-              Every circle begins with one person and a standing time. Be the first to gather your
-              neighbors around {channel.name.toLowerCase()}, and the next person who comes looking
-              will find your room already warm.
-            </p>
-          </div>
-        )}
-
-        <SignInCta
-          title={`Join the ${channel.name} community`}
-          body={`Sign up free to tune in to ${channel.name.toLowerCase()}, find a circle living it near you, and start showing up for the people who practice what you love.`}
-          action="Sign up free"
-        />
-      </DetailTemplate>
-    </div>
+      <FrequencyTopic channel={channel} circles={circles} image={hero.coverImage} />
+    </>
   )
 }

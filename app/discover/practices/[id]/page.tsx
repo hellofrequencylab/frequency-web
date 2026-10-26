@@ -1,16 +1,10 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
 import { getPublicPractice, listPublicPractices } from '@/lib/practices'
-import { SignInCta } from '@/components/discover/cards'
-import { ShareButton } from '@/components/discover/share-button'
-import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceSchema, breadcrumbSchema } from '@/lib/jsonld'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyPractice } from '@/components/frequency/site/pages/discover/practices'
 
 export const revalidate = 3600
@@ -71,76 +65,10 @@ export default async function PublicPracticePage({
       { name: practice.title, path: `/discover/practices/${practice.slug ?? practice.id}` },
     ]),
   ]
-
-  // THE DESIGN SWITCH (ADR-1737): the same practice and JSON-LD, drawn in the site kit.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd data={schema} />
-        <FrequencyPractice practice={practice} image={hero.coverImage} />
-      </>
-    )
-  }
-
   return (
-    <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
+    <>
       <JsonLd data={schema} />
-
-      <Link
-        href="/discover/practices"
-        className="mb-4 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Practices
-      </Link>
-
-      <DetailTemplate
-        {...hero}
-        title={practice.title}
-        actions={
-          <ShareButton
-            path={`/discover/practices/${practice.slug ?? practice.id}`}
-            title={`${practice.title} · ${SITE_NAME}`}
-            text={practice.summary ?? practice.description ?? `A practice on ${SITE_NAME}.`}
-            label="Share"
-          />
-        }
-        badges={
-          practice.subcategory ? (
-            <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-meta font-medium text-muted">
-              {practice.subcategory.name}
-            </span>
-          ) : undefined
-        }
-      >
-        {(practice.summary || practice.description) && (
-          <p className="mb-8 max-w-2xl text-body-lg leading-relaxed text-muted">
-            {practice.summary ?? practice.description}
-          </p>
-        )}
-
-        {practice.body && (
-          <div className="mb-8 max-w-2xl whitespace-pre-line text-body leading-relaxed text-text">
-            {practice.body}
-          </div>
-        )}
-
-        {practice.tags.length > 0 && (
-          <div className="mb-10 flex flex-wrap gap-2">
-            {practice.tags.map((t) => (
-              <span key={t.slug} className="rounded-pill bg-surface-elevated px-2.5 py-1 text-meta text-subtle">
-                {t.label}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <SignInCta
-          title="Start this practice"
-          body={`Join Frequency to adopt ${practice.title}, log it with people near you, and earn Zaps for showing up. Free to join.`}
-          action="Get started"
-        />
-      </DetailTemplate>
-    </div>
+      <FrequencyPractice practice={practice} image={hero.coverImage} />
+    </>
   )
 }
