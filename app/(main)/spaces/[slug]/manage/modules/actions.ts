@@ -26,6 +26,9 @@ import { sanitizeModuleOrder, sanitizeHiddenModules, sanitizeActivatedModules } 
 import { spaceFunctionDef, DEFAULT_FUNCTION_ROLE, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { isSpaceRole, type SpaceRole } from '@/lib/spaces/membership'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { isMegaNicheId, readMegaTheme, withMegaTheme } from '@/lib/theme/mega-theme'
+import { isUntouchedSetup, nicheBundle } from '@/lib/spaces/niche-defaults'
+import { startSpaceFromNiche } from '@/lib/spaces/niche-start'
 
 /** Untyped scoped update of the space's preferences jsonb (ADR-246), bound to the resolved id. */
 async function updateSpacePreferences(spaceId: string, preferences: Record<string, unknown>): Promise<boolean> {
@@ -191,4 +194,31 @@ export async function setSpaceFeatureMinRole(
   if (!(await updateSpaceBlob(auth.spaceId, { feature_roles: next }))) return fail('Could not save that change.')
   revalidateFeatureSurfaces(slug)
   return ok()
+}
+
+/** Say what this Space is building (ADR-1882). Saves the niche on `preferences.megaTheme`, and, only when
+ *  the Space has no saved niche and its tool switches were never touched, starts it from the niche's
+ *  preset. A tuned Space keeps every switch as it is. The preset only subtracts and never grants, so a plan
+ *  limit still holds. Owner/admin-gated. */
+export async function chooseSpaceNiche(slug: string, niche: string): Promise<ActionResult<{ applied: boolean }>> {
+  if (!isMegaNicheId(niche)) return fail('Pick one of the options.')
+
+  const caller = await getCallerProfile()
+  const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
+  if (!space) return fail('You do not have access to manage this space.')
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canManageMembers) return fail('You do not have access to manage this space.')
+
+  const prefs =
+    space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
+      ? (space.preferences as Record<string, unknown>)
+      : {}
+  if (readMegaTheme(prefs).niche) return fail('This space already has a starting setup.')
+
+  const fresh = isUntouchedSetup(space.entitlements, space.featureRoles)
+  const applied = fresh ? await startSpaceFromNiche(space.id, niche) : false
+  if (fresh && nicheBundle(niche) && !applied) return fail('Could not save that change.')
+  if (!(await updateSpacePreferences(space.id, withMegaTheme(prefs, { niche })))) return fail('Could not save that change.')
+  revalidateFeatureSurfaces(slug)
+  return ok({ applied })
 }

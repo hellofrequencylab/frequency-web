@@ -75,9 +75,11 @@ import { join, dirname, normalize } from 'node:path'
 const ADMIN = 'lib/supabase/admin.ts'
 const ROOTS = ['app', 'components', 'lib', 'hooks']
 /** Non-triviality floors (ADR-962). ~70% of the 2026-09-04 reading: 834 client entry points and
- *  3437 modules walked. Lower them only beside a real deletion, and name it — never to go green. */
+ *  3437 modules walked. Lower them only beside a real deletion, and name it — never to go green.
+ *  MIN_MODULES rose 2400 to 2700 on 2026-10-26: the tree passed 4800 modules walked, and the floor test
+ *  wants the floor above half the reading. */
 const MIN_CLIENT_ENTRYPOINTS = 580
-const MIN_MODULES = 2400
+const MIN_MODULES = 2700
 const QUIET = process.argv.includes('--probe')
 
 const say = (...a) => { if (!QUIET) console.log(...a) }
