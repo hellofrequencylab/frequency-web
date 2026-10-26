@@ -27,7 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Worklist } from '@/components/dashboard/worklist'
 import { SpaceDispatchBand } from './space-dispatch-band'
 import { relativeTime } from '@/lib/utils'
-import { spaceEarningsSummary } from '@/lib/commerce/orders'
+import { readCompleteSpaceEarnings } from '@/lib/commerce/orders'
 import { getSpaceHealth, getWorklist } from '@/lib/dashboard/scores'
 import { listActiveSpaceMemberIds } from '@/lib/spaces/resonance-roster'
 import { listWorkspaceConversations } from '@/lib/comms/workspace'
@@ -126,7 +126,7 @@ async function DashboardStats({ spaceId, slug }: { spaceId: string; slug: string
   // for a space full of members who joined but were never emailed-as-contacts or scored yet. Health,
   // At risk, and active-this-week stay on the scored subset (that IS what they measure).
   const [earnings, health, memberIds] = await Promise.all([
-    spaceEarningsSummary(spaceId, 30),
+    readCompleteSpaceEarnings(spaceId, 30),
     getSpaceHealth(spaceId),
     listActiveSpaceMemberIds(spaceId),
   ])
@@ -137,9 +137,9 @@ async function DashboardStats({ spaceId, slug }: { spaceId: string; slug: string
     <div data-visual-mask="space-console-stats" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatCard
         label="Revenue, last 30 days"
-        value={usd(earnings.netCents)}
+        value={earnings ? usd(earnings.netCents) : 'Unavailable'}
         icon={BadgeDollarSign}
-        detail={earnings.orderCount > 0 ? `${earnings.orderCount} paid ${earnings.orderCount === 1 ? 'order' : 'orders'}` : 'No sales yet'}
+        detail={!earnings ? 'Revenue is unavailable or incomplete' : earnings.orderCount > 0 ? `${earnings.orderCount} paid ${earnings.orderCount === 1 ? 'order' : 'orders'}` : 'No sales yet'}
         href={`/spaces/${slug}/settings/billing`}
         size="sm"
       />
@@ -200,7 +200,7 @@ async function DashboardProfileStats({ spaceId, slug }: { spaceId: string; slug:
 }
 
 // ── Journeys: who started and who finished (LIVE-422) ─────────────────────────────────────────────
-// Revenue already sits on the first row (spaceEarningsSummary). This band is completion:
+// Revenue already sits on the first row (readCompleteSpaceEarnings). This band is completion:
 // unique people on this Space's Journeys, all-time. A re-take is one person. Fail-safe zeros.
 async function DashboardJourneyStats({ spaceId, slug }: { spaceId: string; slug: string }) {
   const stats = await getSpaceCompletionAnalytics(spaceId)

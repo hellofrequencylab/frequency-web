@@ -1,3 +1,4 @@
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 // Spaces DIRECTORY discovery reads (ENTITY-SPACES-BUILD §A/§B, Phase 1 / Epic 1.8). The one
 // query the in-app directory at /spaces calls to list the NETWORKED entity Spaces a member can
 // browse: practitioners, businesses, organizations, coaching academies, event spaces.
@@ -15,6 +16,7 @@
 // filter args, so the page renders it at most once per request.
 
 import { cache } from 'react'
+import { profileCanonicalSite, type ProfileCanonicalSite } from '@/lib/sites/profile-canonical'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTransientReadFailure, listReadFailClosed } from '@/lib/discover'
 import { listFollowedSpaceIds } from './follows'
@@ -68,6 +70,8 @@ interface NetworkedSpaceAction {
 /** One networked Space as the directory consumes it — the brand anchor, the type + category, the
  *  resolved action, and a few cheap stats. Camel-cased; only the fields a directory card needs. */
 export interface NetworkedSpace {
+  /** Public website canonical candidate; resolved only by sitemap, never a grant. */
+  canonicalSite?: ProfileCanonicalSite | null
   id: string
   slug: string
   /** Display brand name when set, else the plain Space name (resolved here so cards stay dumb). */
@@ -215,7 +219,7 @@ export function normalizeSpaceSort(value: string | null | undefined): SpaceSort 
 // /discover/places/<slug> filter this list on citySlug(city) so a city page can show the local
 // Spaces located there, the same way it already shows that city's Circles and events.
 const COLS =
-  'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, city, created_at, updated_at, preferences'
+  'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, city, created_at, updated_at, preferences, domain, parent_id, owner_profile_id'
 
 /** The jsonb path to a Space's stored SUBJECT (preferences.profileData.subject), used to filter in the
  *  DB. A missing path reads as NULL, which matches no subject (there is no default subject). The KIND
@@ -241,6 +245,9 @@ type SpaceDiscoveryRow = {
   created_at: string | null
   updated_at: string | null
   preferences: unknown
+  domain?: string | null
+  parent_id?: string | null
+  owner_profile_id?: string | null
 }
 
 // A real PromiseLike (not a hand-typed `then`), so a thunk that builds one is what
@@ -626,6 +633,7 @@ export const listNetworkedSpaces = cache(
           type,
           kind: spaceKind({ preferences: r.preferences }),
           kindLabel: spaceKindPillLabel({ preferences: r.preferences }),
+          canonicalSite: profileCanonicalSite({ id: r.id, slug: r.slug, domain: r.domain ?? null, parentId: r.parent_id, ownerProfileId: r.owner_profile_id, preferences: r.preferences }),
           tagline: r.tagline?.trim() || null, // Populated from the row (Wave B); the card omits it when null.
           logoUrl: r.brand_logo_url,
           logoBackdrop: readLogoBackdrop(r.preferences),
@@ -774,9 +782,10 @@ interface SpaceProfileTabRoute {
 // widget the Book page leads with) and `updated_at`. It deliberately does NOT reuse COLS — the
 // directory pays for a card's worth of columns on every /spaces render, and this pays for a gate's
 // worth once an hour behind the sitemap's revalidate.
-const TAB_COLS = 'id, slug, type, mode_variant, updated_at, preferences, entitlements'
+const TAB_COLS = 'id, slug, type, mode_variant, updated_at, preferences, entitlements, time_zone'
 
 type SpaceTabRow = {
+  time_zone?: string | null
   id: string
   slug: string
   type: string
@@ -896,11 +905,18 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
     if (rows.length === 0) return []
     const ids = rows.map((r) => r.id)
 
-    // Floor the event window on today's start, the same way spaceHasPublicUpcomingEvents does, so
-    // an event happening later TODAY still counts (a `> now` floor would hide it).
-    const fromDayIso = `${new Date().toISOString().slice(0, 10)}T00:00:00Z`
-
-    const [withEvents, withCircles, withReviews, withTiers, withAsks, collabHost, collabPartner] = await Promise.all([
+    // Stored starts_at values are local wall-clock UTC parts. Group the existing scoped
+    // presence reads by each Space's local day (at most three worldwide), never by raw UTC
+    // date or a true-instant bound. A known Space zone wins; unknown/invalid falls back HOME.
+    const now = new Date()
+    const eventDayGroups = new Map<string, string[]>()
+    for (const row of rows) {
+      const floor = upcomingEventFloor(now, row.time_zone)
+      const group = eventDayGroups.get(floor) ?? []
+      group.push(row.id)
+      eventDayGroups.set(floor, group)
+    }
+    const eventPresence = Promise.all([...eventDayGroups].map(([fromDayIso, groupIds]) =>
       presenceIds(
         (q) =>
           q
@@ -910,11 +926,15 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
             .is('removed_at', null)
             .eq('is_demo', false)
             .gte('starts_at', fromDayIso)
-            .in('space_id', ids),
+            .in('space_id', groupIds),
         'events',
         'space_id',
         (r) => (typeof r.space_id === 'string' ? r.space_id : null),
-      ),
+      )
+    )).then(groups => new Set(groups.flatMap(group => [...group])))
+
+    const [withEvents, withCircles, withReviews, withTiers, withAsks, collabHost, collabPartner] = await Promise.all([
+      eventPresence,
       presenceIds(
         // AXIS 1 in SQL, exactly as listPublicSpaceCircles spells it: `unlisted` is nullable and a
         // NULL row is a LISTED row, so a bare `.eq('unlisted', false)` would be wrong.

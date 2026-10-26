@@ -132,8 +132,8 @@ describe('the trust line survives a listing with no contact module', () => {
   it('renders contactNote when the contact section is absent', () => {
     // A Space-owned listing has a null sellerProfileId, so showContact is false and the section
     // carrying "Checkout is secure on Stripe" plus the Report control never rendered at all.
-    const tpl = read('components', 'templates', 'listing-detail-template.tsx')
-    expect(tpl).toContain('{!showContact && !claimToken && contactNote && (')
+    const tpl = read('components', 'frequency', 'members', 'marketplace', 'listing-detail.tsx')
+    expect(tpl).toContain('{contactNote && <div className="t2">{contactNote}</div>}')
   })
 })
 
@@ -333,7 +333,7 @@ describe('proof sits between the guide and the objections', () => {
 })
 
 describe('the additive rail slot does not reach the other verticals', () => {
-  const tpl = code('components', 'templates', 'listing-detail-template.tsx')
+  const tpl = code('components', 'frequency', 'members', 'marketplace', 'listing-detail.tsx')
 
   it('is optional and defaults to rendering nothing', () => {
     expect(tpl).toContain('asideExtras?: React.ReactNode')

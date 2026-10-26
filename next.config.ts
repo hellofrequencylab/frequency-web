@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { resolveDesign } from "./lib/theme/design";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 // An ENFORCED Content-Security-Policy (P8 hardening, ADR-170). Graduated from
@@ -17,10 +18,9 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 // would break hydration site-wide. The full inline-script XSS mile is the tracked
 // follow-up; everything around it is enforced today.
 const isDev = process.env.NODE_ENV === 'development'
-// The deploy's design (ADR-1737), read the way lib/theme/design.ts reads it: only the exact id
-// 'frequency' is Frequency. Two merged pages land on Frequency-only routes (/features, /vision), so
+// The deploy's design follows the canonical resolver (ADR-1737). Two merged pages land on Frequency-only routes (/features, /vision), so
 // their redirects split on it (lib/marketing/merged-routes.ts keeps the in-app links on the same split).
-const FREQUENCY_DESIGN = process.env.NEXT_PUBLIC_SITE_DESIGN === 'frequency'
+const FREQUENCY_DESIGN = resolveDesign(process.env.NEXT_PUBLIC_SITE_DESIGN) === 'frequency'
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -52,7 +52,9 @@ const csp = [
   // was the stale allowlist ADR-922 said should go rather than grow a third collector.
   // Stripe: api.stripe.com is every XHR the on-page checkout makes from our origin;
   // merchant-ui-api.stripe.com is audited (with its caveat) in the Stripe block below.
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co https://api.stripe.com https://merchant-ui-api.stripe.com",
+  // Browser error envelopes use this exact configured organization ingest origin.
+  // No Sentry wildcard: keep unrelated organizations outside the connection policy.
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co https://api.stripe.com https://merchant-ui-api.stripe.com https://o4512171150934016.ingest.us.sentry.io",
   // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
   // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
   // Bandcamp, Apple Music and Twitch (two player hosts: clips have their own) joined on
@@ -194,27 +196,18 @@ const PERMISSIONS_POLICY_CAMERA = 'camera=(self), microphone=(), geolocation=(se
 // one may not start with `?`, which is path-to-regexp's rule, not ours.
 const notCameraRoute = `/:path((?!(?:${CAMERA_ROUTES.map((r) => r.slice(1)).join('|')})/?$).*)`
 
-// The faces lib/og/load-nunito.ts opens from disk at RUNTIME: the Nunito pair every share card draws
-// with, and LiberationSans-Bold, its same-directory fallback.
-//
-// ⚠️ NAMED, not `./public/fonts/*.ttf`. That glob also used to sweep LiberationSans-Regular
-// (410,820 bytes) into every lambda. LIVE-216 deleted that face with the flyer builder.
-//
-// Plus the four Stage faces lib/og/load-stage-fonts.ts opens (Unbounded, Hanken Grotesk, Instrument
-// Serif), which every card draws with since the Stage redesign. Named, never `./public/fonts/stage/*`.
+// Exactly the five faces the active Stage loader opens. Named paths avoid tracing unrelated fonts
+// into every share-card function; the retired Nunito loader's Black/Liberation faces are no longer used.
 const OG_CARD_FONTS = [
   './public/fonts/Nunito-Bold.ttf',
-  './public/fonts/Nunito-Black.ttf',
-  './public/fonts/LiberationSans-Bold.ttf',
   './public/fonts/stage/Unbounded-Bold.ttf',
   './public/fonts/stage/HankenGrotesk-Medium.ttf',
   './public/fonts/stage/HankenGrotesk-Bold.ttf',
   './public/fonts/stage/InstrumentSerif-Italic.ttf',
 ]
 
-// What the root-card generator actually draws with: the four Stage faces and the Nunito Bold glyph fallback
-// lib/og/load-stage-fonts.ts opens. It gets its own, shorter list because check:build-fanout caps the public/
-// files any one function carries at 14, and Nunito Black and Liberation (above) are not read on this route.
+// The root-card generator uses these same Stage faces and the Nunito Bold glyph fallback.
+// Keep its explicit list so the root route's trace can be audited independently.
 const ROOT_CARD_FONTS = [
   './public/fonts/Nunito-Bold.ttf',
   './public/fonts/stage/Unbounded-Bold.ttf',
@@ -359,6 +352,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },
+      // SCAN-1121: brand art, fonts, icons and static images are replaced by renaming, never in
+      // place, so repeat views can skip revalidation. A week plus stale-while-revalidate keeps a
+      // same-name swap from sticking for long.
+      ...['/brand/:path*', '/fonts/:path*', '/icons/:path*', '/images/:path*'].map((source) => ({
+        source,
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }],
+      })),
       { source: notCameraRoute, headers: [{ key: 'Permissions-Policy', value: PERMISSIONS_POLICY_DEFAULT }] },
       ...CAMERA_ROUTES.map((source) => ({
         source,

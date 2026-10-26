@@ -120,16 +120,16 @@ export function briefHtml(intro: string, cards: TodayCard[], laterCount: number)
     .map(
       (c) => `
     <div style="border-left:3px solid ${palette.emailBorderStrong};padding:2px 0 2px 14px;margin:0 0 16px;">
-      <p style="margin:0 0 2px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${palette.emailSubtle};">${escapeHtml(c.context)} · ${escapeHtml(c.playbookName)}</p>
-      <p style="margin:0 0 4px;font-size:16px;font-weight:700;color:${palette.text};">${escapeHtml(c.name)}</p>
-      <p style="margin:0 0 4px;font-size:14px;color:${palette.textMuted};line-height:1.55;">${escapeHtml(c.whyNow)}</p>
-      <p style="margin:0;font-size:14px;color:${palette.text};line-height:1.55;">${escapeHtml(c.actionDraft)}</p>
+      <p data-fq="fq-muted" style="margin:0 0 2px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${palette.textMuted};">${escapeHtml(c.context)} · ${escapeHtml(c.playbookName)}</p>
+      <p data-fq="fq-p" style="margin:0 0 4px;font-size:16px;font-weight:700;color:${palette.text};">${escapeHtml(c.name)}</p>
+      <p data-fq="fq-muted" style="margin:0 0 4px;font-size:14px;color:${palette.textMuted};line-height:1.55;">${escapeHtml(c.whyNow)}</p>
+      <p data-fq="fq-p" style="margin:0;font-size:14px;color:${palette.text};line-height:1.55;">${escapeHtml(c.actionDraft)}</p>
     </div>`,
     )
     .join('')
-  const later = laterCount > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:${palette.emailSubtle};">${laterCount} more are on the Later shelf.</p>` : ''
+  const later = laterCount > 0 ? `<p data-fq="fq-muted" style="margin:8px 0 0;font-size:13px;color:${palette.textMuted};">${laterCount} more are on the Later shelf.</p>` : ''
   return `${emailKicker(`Vera · Today`)}
-    <p style="font-size:16px;color:${palette.text};line-height:1.6;margin:0 0 20px;">${escapeHtml(intro)}</p>
+    <p data-fq="fq-p" style="font-size:16px;color:${palette.text};line-height:1.6;margin:0 0 20px;">${escapeHtml(intro)}</p>
     ${rows}
     ${later}
     ${emailButton('Open Today', `${BASE_URL}/admin/crm/intelligence`)}`
@@ -211,7 +211,7 @@ export async function sendOwnerBrief(
  *  address line. Exported for the stock catalog. */
 export function ownerBriefEmailHtml(bodyHtml: string, unsubscribeUrl: string): string {
   return emailShell(bodyHtml, {
-    text: `You're getting this because you run a community on Frequency. <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Unsubscribe from the daily brief</a> or manage emails any time.`,
+    text: `You're getting this because you run a community on Frequency. <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from the daily brief</a> or manage emails any time.`,
     unsubscribe: false,
   })
 }

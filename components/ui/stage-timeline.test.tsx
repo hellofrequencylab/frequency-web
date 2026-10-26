@@ -77,11 +77,8 @@ describe('StageTimeline hover', () => {
 })
 
 describe('StageTimeline pressed + focus-visible', () => {
-  it('composes the button geometry, so .press and the tap floor come along', () => {
-    for (const b of buttons(mount())) {
-      expect(b.className).toContain('press')
-      expect(b.className).toContain('tap-target')
-    }
+  it('composes the button geometry, so the kit .btn shape comes along', () => {
+    for (const b of buttons(mount())) expect(b.className).toContain('btn')
   })
 
   it('reports the step key when a live step is pressed', () => {

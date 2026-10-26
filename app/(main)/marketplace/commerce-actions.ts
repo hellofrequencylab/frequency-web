@@ -18,6 +18,7 @@ import { canListNew } from '@/lib/commerce/selling'
 import { setOrderFulfillment } from '@/lib/commerce/fulfilment'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
+import { safeWritingQuestions } from '@/lib/ai/writing-coach'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import type { ProductKind, ProductStatus, FulfillmentStatus } from '@/lib/commerce/types'
 import {
@@ -137,11 +138,12 @@ export async function draftMakerProductCopyAction(input: {
 }): Promise<ListingCopy> {
   const profile = await getCallerProfile()
   if (!profile) return { title: '', description: '' }
-  return draftListingCopy({
+  const advice = await draftListingCopy({
     kind: input.productKind === 'digital' ? 'digital' : 'physical',
     seed: input.seed ?? null,
     profileId: profile.id,
   })
+  return { title: '', description: '', questions: safeWritingQuestions(advice) }
 }
 
 /** Start a one-item checkout for a product (optionally a specific variant). Returns the Stripe Checkout

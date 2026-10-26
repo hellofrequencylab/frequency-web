@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 725,
+      "baseline": 713,
       "frozen": {
-        "at": "2026-10-20",
-        "value": 725,
+        "at": "2026-10-26",
+        "value": 713,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Nurture step editor (#3637) button moved from rounded-md to rounded-control, retiring one literal-radius site",
-        "from": 726
+        "reason": "SCAN-1131 removed the legal and capture DAWN class props, retiring 1 literal radius site",
+        "from": 714
       },
       "history": [
         {
@@ -357,6 +357,27 @@
           "to": 725,
           "direction": "lowered",
           "reason": "Nurture step editor (#3637) button moved from rounded-md to rounded-control, retiring one literal-radius site"
+        },
+        {
+          "at": "2026-10-24",
+          "from": 725,
+          "to": 717,
+          "direction": "lowered",
+          "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 8 literal radii"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 717,
+          "to": 714,
+          "direction": "lowered",
+          "reason": "SCAN-1127 removed DAWN branches in components/ui and templates, retiring 3 literal radius sites"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 714,
+          "to": 713,
+          "direction": "lowered",
+          "reason": "SCAN-1131 removed the legal and capture DAWN class props, retiring 1 literal radius site"
         }
       ]
     },
@@ -435,14 +456,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 42,
+      "baseline": 41,
       "frozen": {
-        "at": "2026-10-13",
-        "value": 42,
+        "at": "2026-10-26",
+        "value": 41,
         "direction": "lowered",
         "basis": "fa00e74e05ee",
-        "reason": "ADR-1737 design-switch fan-out (2026-10-13): shadow-literals sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
-        "from": 47
+        "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites",
+        "from": 42
       },
       "history": [
         {
@@ -521,6 +542,13 @@
           "to": 42,
           "direction": "lowered",
           "reason": "ADR-1737 design-switch fan-out (2026-10-13): shadow-literals sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 42,
+          "to": 41,
+          "direction": "lowered",
+          "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites"
         }
       ]
     },
@@ -702,14 +730,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 299,
+      "baseline": 289,
       "frozen": {
-        "at": "2026-10-20",
-        "value": 299,
+        "at": "2026-10-26",
+        "value": 289,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Re-freeze to the current lower count: a landed sweep retired sites without re-freezing (owner approved, found on #3747)",
-        "from": 308
+        "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites",
+        "from": 290
       },
       "history": [
         {
@@ -907,6 +935,27 @@
           "to": 299,
           "direction": "lowered",
           "reason": "Re-freeze to the current lower count: a landed sweep retired sites without re-freezing (owner approved, found on #3747)"
+        },
+        {
+          "at": "2026-10-24",
+          "from": 299,
+          "to": 291,
+          "direction": "lowered",
+          "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 8 raw button fills"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 291,
+          "to": 290,
+          "direction": "lowered",
+          "reason": "Retired one raw button background in main before this PR; this PR changes none (SCAN-1142 sweep follow-up)"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 290,
+          "to": 289,
+          "direction": "lowered",
+          "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites"
         }
       ]
     },
@@ -1270,14 +1319,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 86,
+      "baseline": 85,
       "frozen": {
-        "at": "2026-10-14",
-        "value": 86,
+        "at": "2026-10-24",
+        "value": 85,
         "direction": "lowered",
         "basis": "8afdfcd88c01",
-        "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN",
-        "from": 112
+        "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 1 arbitrary pixel size",
+        "from": 86
       },
       "history": [
         {
@@ -1349,6 +1398,13 @@
           "to": 86,
           "direction": "lowered",
           "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN"
+        },
+        {
+          "at": "2026-10-24",
+          "from": 86,
+          "to": 85,
+          "direction": "lowered",
+          "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 1 arbitrary pixel size"
         }
       ]
     },
@@ -1854,14 +1910,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 228,
+      "baseline": 221,
       "frozen": {
-        "at": "2026-10-20",
-        "value": 228,
+        "at": "2026-10-26",
+        "value": 221,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "Re-freeze 230 to 228: a landed sweep shrank it without re-freezing (owner approved, found on #3747)",
-        "from": 230
+        "reason": "SCAN-1127 removed DAWN branches in page-heading and templates, retiring 4 hand-rolled eyebrows",
+        "from": 225
       },
       "history": [
         {
@@ -1961,6 +2017,20 @@
           "to": 228,
           "direction": "lowered",
           "reason": "Re-freeze 230 to 228: a landed sweep shrank it without re-freezing (owner approved, found on #3747)"
+        },
+        {
+          "at": "2026-10-24",
+          "from": 228,
+          "to": 225,
+          "direction": "lowered",
+          "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 3 hand-rolled eyebrows"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 225,
+          "to": 221,
+          "direction": "lowered",
+          "reason": "SCAN-1127 removed DAWN branches in page-heading and templates, retiring 4 hand-rolled eyebrows"
         }
       ]
     }

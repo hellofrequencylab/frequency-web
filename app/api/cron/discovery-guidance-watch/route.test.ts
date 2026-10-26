@@ -1,0 +1,33 @@
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+const m=vi.hoisted(()=>({run:vi.fn(),deps:vi.fn(),deny:vi.fn(),warn:vi.fn()}))
+vi.mock('@/lib/ai/discovery-guidance-watch',()=>({runGuidanceWatch:m.run}))
+vi.mock('@/lib/ai/discovery-guidance-store',()=>({guidanceWatchDependencies:m.deps}))
+vi.mock('@/lib/cron-auth',()=>({rejectUnauthorizedCron:m.deny}))
+vi.mock('@/lib/observability/cron-heartbeat',()=>({withCronHeartbeat:(_job:string,handler:unknown)=>handler}))
+vi.mock('@/lib/log',()=>({log:{warn:m.warn}}))
+import { GET } from './route'
+beforeEach(()=>{vi.resetAllMocks();vi.stubEnv('CRON_SECRET','test-secret');m.deny.mockReturnValue(null);m.run.mockResolvedValue({report:[],processed:3,remaining:0,errors:0})})
+afterEach(()=>vi.unstubAllEnvs())
+it('rejects missing or wrong authorization before reading storage or network',async()=>{
+ vi.stubEnv('CRON_SECRET','')
+ expect((await GET(new Request('https://example.test'))).status).toBe(401)
+ expect(m.run).not.toHaveBeenCalled();expect(m.deps).not.toHaveBeenCalled()
+ vi.stubEnv('CRON_SECRET','test-secret');m.deny.mockReturnValue(new Response(null,{status:401}))
+ expect((await GET(new Request('https://example.test'))).status).toBe(401)
+ expect(m.run).not.toHaveBeenCalled()
+})
+it('flags human review without publishing and makes source failures visible',async()=>{
+ m.run.mockResolvedValue({report:[{id:'google_ai_features',status:'review_required'}],processed:3,remaining:0,errors:0})
+ const response=await GET(new Request('https://example.test'))
+ expect(response.status).toBe(200)
+ expect((await response.json()).effect).toContain('no content or policy changed')
+ expect(m.warn).toHaveBeenCalledWith('discovery.guidance.human_review_required',expect.any(Object))
+ m.run.mockResolvedValue({report:[],processed:3,remaining:0,errors:1})
+ expect((await GET(new Request('https://example.test'))).status).toBe(503)
+})
+it('reports state-store failure without claiming a successful baseline',async()=>{
+ m.run.mockRejectedValue(Error('unavailable'))
+ const response=await GET(new Request('https://example.test'))
+ expect(response.status).toBe(503)
+ expect((await response.json()).error).toContain('baseline was not reset')
+})

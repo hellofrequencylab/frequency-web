@@ -59,8 +59,8 @@ const PROMPTS: Prompt[][] = [
     {
       photo: 'gathering-06.jpg',
       kind: 'Space story',
-      title: 'The café that filled its slow night',
-      ask: 'Turned a quiet night into the one people plan around? Tell us what you tried.',
+      title: 'A gathering at your local café',
+      ask: 'Hosted a gathering at a café? Tell us what you tried and what you noticed.',
       hue: 'var(--fq-x-magenta-neon)',
     },
   ],
@@ -83,7 +83,7 @@ export function FrequencyStories() {
           <h1 className="h-xl">
             Hosts and Spaces, <em className="fq-iri-text">in their own words.</em>
           </h1>
-          <p>Every story ends in a community you can join.</p>
+          <p>Host a Circle or run a community Space? Tell us what happened. We have no published stories here yet.</p>
           <div className="ctas">
             <Link className="btn fq-iri-btn" href="/the-community">
               Find your Circle
@@ -102,7 +102,7 @@ export function FrequencyStories() {
             <div className="label">
               <b>Stories</b>Hosts and Spaces
             </div>
-            <h2 className="h-l">The first stories are being written now.</h2>
+            <h2 className="h-l">Help us tell the stories of community gatherings.</h2>
           </div>
           <div className="pb-empty">
             <h3>No stories here yet.</h3>
@@ -149,7 +149,7 @@ export function FrequencyStories() {
               <span className="k">Tell us your story</span>
               <h3>Host a Circle or run a Space?</h3>
               <p>
-                Tell us how it started, and where readers can find you. A real person reads every story.
+                Tell us how it started, where readers can find you, and how we can get in touch.
               </p>
             </div>
             <StoryForm email={CONTACT_EMAIL} />
@@ -158,8 +158,8 @@ export function FrequencyStories() {
       </section>
 
       <KeepGoing
-        title="Find your community."
-        body="Or open a Space for yours."
+        title="Find a community gathering."
+        body="Browse local Circles, or learn about opening a Space."
         primary={{ href: '/the-community', label: 'Find your Circle →' }}
         secondary={{ href: '/spaces', label: 'Open your Space' }}
       />

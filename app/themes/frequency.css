@@ -123,6 +123,7 @@
 
   /* ── The design layer: what rounded-*, shadow-*, font-* and the type steps mean ── */
   --design-font-body: var(--fq-font-sans);
+  --design-practice-orb: var(--fq-pa-orb);
   --design-font-display: var(--fq-font-display);
   --design-font-display-fallback: var(--fq-font-sans);
   --design-heading-weight: 600;
@@ -384,6 +385,9 @@
 :root[data-design="frequency"]:not(.dark) {
   --fq-accent: #3A8C99; /* export aqua deep, softened toward seaglass (owner: no harsh blue) */
   --fq-accent-soft: #E4F3F4; /* export accent-soft in sky */
+  /* Text step of the accent (SCAN-1115, owner 2026-10-26): the fill aqua reads 3.4 to 3.9:1 as words. Text only; fills keep --fq-accent. */
+  --color-primary-strong: #26636F; /* token-ok: palette literal, the text step of the accent */
+  --color-move-strong: #1F6F64; /* token-ok: palette literal, the text step of the second accent */
   --fq-bg-canvas: #F4F6F7; /* export canvas, cooled */
   --fq-bg-sunken: #E9EEF1; /* export sunken, cooled */
 }
@@ -398,6 +402,8 @@
   --fq-pa: linear-gradient(120deg, #A3D4FF 0%, #8FE9FF 60%, #A3E8D4 100%); /* export --fq-pa stops #A3D4FF, #8FE9FF */
   --fq-pa-orb: radial-gradient(circle at 35% 30%, #fff 0, #CFE6FF 30%, #A3D4FF 62%, #8FE9FF 100%); /* export --fq-pa-orb, periwinkle centre */
   --fq-accent: var(--fq-x-aqua-neon);
+  --color-primary-strong: var(--fq-accent); /* the Stage is dark on any device: the neon already reads */
+  --color-move-strong: var(--fq-accent-2);
   --fq-bg-canvas: #070B14; /* export canvas, cooled */
   --fq-surface-raised: #121C2E; /* export stage raised, blue-black */
   --fq-text-muted: #98A6BC; /* export stage muted, cooled */

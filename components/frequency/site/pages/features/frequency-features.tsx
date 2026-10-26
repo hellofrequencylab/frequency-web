@@ -19,7 +19,7 @@ import { FeaturesMotion } from './features-motion'
 
 /**
  * THE HYBRID: each feature's onward page beyond this one (its help article, the live calendar, the
- * Circle guide), from the nav's FEATURE_FALLBACK table. The design stops at "What changes"; the site
+ * Circle guide), from the nav's FEATURE_FALLBACK table. The design stops at "What you can do"; the site
  * already has a real page for most features, so the open card links on to it. Features whose only page
  * is the Spaces marketing page get no link (it would send an owner back where they came from).
  */
@@ -89,7 +89,7 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
                       ))}
                     </ol>
                     <p className="out">
-                      <b>What changes</b>
+                      <b>What you can do</b>
                       {f.changes}
                     </p>
                     <GuideLink id={f.id} />
@@ -121,9 +121,9 @@ export function FrequencyFeatures() {
             <span>Features</span>
           </nav>
           <h1 className="h-xl">
-            Everything it takes to <em className="fq-iri-text">gather.</em>
+            Want to gather? <em className="fq-iri-text">Start with the next date.</em>
           </h1>
-          <p>Every feature, for both sides of the door. Open one to see how it works.</p>
+          <p>Find a community gathering or host one yourself. Open a feature to see the steps, from choosing a Circle to welcoming guests.</p>
         </div>
       </section>
 

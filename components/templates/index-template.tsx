@@ -10,18 +10,13 @@
 //
 // Presentational + server-friendly (no hooks).
 
-import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
 import { PageHeading } from './page-heading'
-import { PageHero, type PageHeroSize, type PageHeroVariant } from './page-hero'
+import type { PageHeroSize, PageHeroVariant } from './page-hero'
 import { PageIntro } from './page-intro'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
-import { PageAdminBar } from '@/components/layout/page-admin-bar'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
-// FREQUENCY (ADR-1737): the header is PageHeading's kit `.head`; the banner is a borderless 24px photo
-// and the toolbar sits on the kit's 28px rhythm (`mu-toolbar`). Inlined at build; DAWN is unchanged.
-const FREQUENCY = SITE_DESIGN === 'frequency'
+// The header is PageHeading's kit `.head`; the banner is a borderless 24px photo and the toolbar sits on
+// the kit's 28px rhythm (`mu-toolbar`).
 
 /** One crumb in the standard index breadcrumb (`/network` -> this section). */
 export type Crumb = { href: string; label: string }
@@ -38,9 +33,6 @@ export function IndexTemplate({
   heroImage,
   heroFocus,
   heroOverlay = false,
-  heroLayout = 'overlay',
-  heroSize = 'large',
-  heroScrim = true,
   underHero,
   banner,
   adminBar = true,
@@ -66,25 +58,21 @@ export function IndexTemplate({
    *  breadcrumb (16:9-ish, object-cover) so every index reads the same. Renders only when set. */
   heroImage?: string | null
   /** Focal point for the hero image, a CSS object-position string ("x% y%") from the operator's
-   *  focal-point picker. Applied to the hero <img> in BOTH the banner and overlay branches so the
+   *  focal-point picker. Applied to the hero <img> so the
    *  important part of the photo survives the crop. Unset = centered (today's behavior). */
   heroFocus?: string | null
-  /** OVERLAY hero mode: the title / description / action render ON the hero image over an ink
-   *  legibility scrim (the Space-profile hero grammar), instead of the banner-above-heading
-   *  lockup. Only applies when `heroImage` is set; the admin-bar rule still draws below, so the
-   *  operator Settings affordance never disappears. */
+  /** A hub page carries no photo band (owner 2026-10-14 and 2026-10-19): an overlay hero draws no photo
+   *  and falls through to the standard kit `.head`. */
   heroOverlay?: boolean
-  /** Overlay hero LAYOUT variant, forwarded to PageHero (`overlay` | `identity` | `minimal`).
-   *  Defaults to the shipped centered `overlay`. Only applies in overlay mode. */
+  /** Accepted for existing callers and ignored (see `heroOverlay`). */
   heroLayout?: PageHeroVariant
-  /** Overlay hero band size, forwarded to PageHero. Defaults to the taller `large` directory
-   *  band (today's look). Only applies in overlay mode. */
+  /** Accepted for existing callers and ignored (see `heroOverlay`). */
   heroSize?: PageHeroSize
-  /** Draw the ink scrim over the overlay hero cover. Default on. Only applies in overlay mode. */
+  /** Accepted for existing callers and ignored (see `heroOverlay`). */
   heroScrim?: boolean
   /** Optional controls row rendered directly UNDER the hero banner — a wrapping pill row for
    *  secondary page controls (Manage / drafts / subscribe), keeping the header-right `action`
-   *  for the primary CTA only. Rendered in BOTH the standard-banner and overlay-hero branches. */
+   *  for the primary CTA only. */
   underHero?: React.ReactNode
   /** Escape hatch for a fully custom header media node (rendered after trail + heroImage).
    *  Prefer `trail` + `heroImage` — `banner` is for the rare bespoke header. */
@@ -94,60 +82,12 @@ export function IndexTemplate({
   adminBar?: boolean
   children: React.ReactNode
 }) {
-  // OVERLAY hero: one composed header band — image + bottom-heavy ink scrim + the page heading
-  // grammar (eyebrow / h1 / description on-ink, the action bottom-right) anchored over it. The
-  // standard PageHeading is suppressed (its h1 would double), but the admin-bar rule below stays.
-  // FREQUENCY (LIVE-1012): a hub page carries no photo band (owner 2026-10-14 and 2026-10-19), so the
-  // overlay hero falls through to the standard kit `.head` below, the header Around You and Events
-  // open on. The page's copy, actions and secondary controls are unchanged; only the photo is gone.
-  if (heroOverlay && !FREQUENCY) {
-    // The overlaid index hero now renders the ONE canonical PageHero (the single-source header band),
-    // so this branch and every entity/commerce hero share one component + one edit point. A page may
-    // pass `heroOverlay` with no `heroImage` (or an explicit null) to get the band with the neutral
-    // gradient placeholder — so a manager surface with no cover still reads as a unified hero.
-    return (
-      <div>
-        {trail && <Breadcrumbs trail={trail} />}
-        {back && (
-          <Link href={back.href} className="mb-2 mt-3 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text">
-            <ChevronLeft className="h-4 w-4" /> {back.label}
-          </Link>
-        )}
-        <div className={back ? '' : 'mt-3'}>
-          <PageHero
-            coverImage={heroImage ?? null}
-            coverFocus={heroFocus}
-            eyebrow={eyebrow}
-            title={title}
-            subtitle={description}
-            actions={action}
-            variant={heroLayout}
-            size={heroSize}
-            overlay={heroScrim}
-            rawImg={!!heroImage}
-          />
-        </div>
-        {/* Secondary page controls, directly under the overlaid hero band (same wrapping pill
-            row as the standard-banner branch) — keeps the header-right `action` for the CTA. */}
-        {underHero && <div className="mt-4 flex flex-wrap gap-2">{underHero}</div>}
-        {banner}
-        {/* The header rule + operator Settings, same contract as the standard heading. */}
-        <div className="mt-4">
-          {adminBar ? <PageAdminBar asDivider /> : <div className="mb-5 border-b border-border sm:mb-6" />}
-        </div>
-        <PageIntro text={intro} />
-        {toolbar && <div className="mb-4">{toolbar}</div>}
-        {children}
-      </div>
-    )
-  }
-
   return (
     <div>
-      {(trail || (heroImage && !(FREQUENCY && heroOverlay)) || banner || underHero) && (
+      {(trail || (heroImage && !heroOverlay) || banner || underHero) && (
         <div>
           {trail && <Breadcrumbs trail={trail} />}
-          {heroImage && !(FREQUENCY && heroOverlay) && (
+          {heroImage && !heroOverlay && (
             // The standardized header banner: cropped (object-cover) to a consistent height so
             // every index reads the same, regardless of the uploaded image's aspect ratio.
             // Raw <img> (not next/image) so an arbitrary operator URL on a non-whitelisted host
@@ -158,7 +98,7 @@ export function IndexTemplate({
               alt=""
               fetchPriority="high"
               style={heroFocus ? { objectPosition: heroFocus } : undefined}
-              className={FREQUENCY ? 'mb-7 mt-3 h-44 w-full rounded-card object-cover sm:h-56' : 'mb-6 mt-3 h-44 w-full rounded-card border border-border object-cover sm:h-56'}
+              className="mb-7 mt-3 h-44 w-full rounded-card object-cover sm:h-56"
             />
           )}
           {/* Secondary page controls, sitting directly under the banner (a wrapping pill row) —
@@ -169,7 +109,7 @@ export function IndexTemplate({
       )}
       <PageHeading eyebrow={eyebrow} title={title} description={description} actions={action} back={back} adminBar={adminBar} />
       <PageIntro text={intro} />
-      {toolbar && <div className={FREQUENCY ? 'mu-toolbar' : 'mb-4'}>{toolbar}</div>}
+      {toolbar && <div className="mu-toolbar">{toolbar}</div>}
       {children}
     </div>
   )

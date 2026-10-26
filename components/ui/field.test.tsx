@@ -1,8 +1,21 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { Field, Input, Textarea, fieldClasses, fieldChromeShape, fieldToneNeutral } from './field'
+import { Field, Input, Textarea, fieldClasses } from './field'
+
+vi.mock('@/lib/theme/design', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/theme/design')>(), SITE_DESIGN: 'frequency',
+}))
+import {readFileSync as readFrequencyCss} from 'node:fs'
+import {createRequire as frequencyRequire} from 'node:module'
+const frequencyPostcss = frequencyRequire(frequencyRequire(import.meta.url).resolve('@tailwindcss/postcss'))('postcss')
+const frequencyRules: {selector: string; nodes: {type: string; prop?: string; value?: string}[]; parent: {type: string; params?: string}}[] = []
+for (const file of ['kit-members','members-ui','core']) frequencyPostcss.parse(readFrequencyCss(`app/themes/frequency/${file}.css`,'utf8')).walkRules((rule: typeof frequencyRules[number])=>frequencyRules.push(rule))
+function frequencyStyle(selector: string, prop: string | RegExp, value?: string, media?: string) {
+  return frequencyRules.some(rule=>rule.selector.includes(selector) && (!media || (rule.parent.type==='atrule' && rule.parent.params===media)) && rule.nodes.some(node=>node.type==='decl' && (typeof prop === 'string' ? node.prop===prop : prop.test(node.prop ?? '')) && (value===undefined || node.value===value)))
+}
+
 
 // Locks the Field state set from docs/INTERACTION-STATES.md §2: rest, focus-visible, error,
 // disabled. The ERROR look keys off `aria-invalid` on the control, so the accessible state and
@@ -28,15 +41,15 @@ function mount(node: React.ReactNode) {
 
 describe('fieldClasses states', () => {
   it('has a rest look, a focus look, an error look and a disabled look', () => {
-    expect(fieldClasses).toContain('border-border')
-    expect(fieldClasses).toContain('focus:border-border-strong')
-    expect(fieldClasses).toContain('aria-[invalid=true]:border-danger')
-    expect(fieldClasses).toContain('disabled:opacity-50')
-    expect(fieldClasses).toContain('disabled:cursor-not-allowed')
+    expect(fieldClasses).toContain('input'); expect(frequencyStyle('.input','box-shadow')).toBe(true)
+    expect(fieldClasses).toContain('input'); expect(frequencyStyle('.input:focus','box-shadow')).toBe(true)
+    expect(fieldClasses).toContain('input'); expect(frequencyStyle('.input[aria-invalid="true"]','box-shadow')).toBe(true)
+    expect(fieldClasses).toBe('input'); expect(frequencyStyle('.input:disabled','opacity','.5')).toBe(true)
+    expect(fieldClasses).toBe('input'); expect(frequencyStyle('.input:disabled','cursor','not-allowed')).toBe(true)
   })
 
   it('keeps the calm neutral focus halo, never the amber chrome ring', () => {
-    expect(fieldClasses).toContain('focus:ring-border-strong/30')
+    expect(fieldClasses).toBe('input'); expect(frequencyStyle('.input:focus','box-shadow','0 0 0 2px var(--fq-focus-ring)')).toBe(true)
     expect(fieldClasses).not.toContain('focus:ring-primary')
   })
 })
@@ -46,7 +59,7 @@ describe('Input + Textarea error state', () => {
     const c = mount(<Input aria-invalid defaultValue="nope" />)
     const el = c.querySelector('input')!
     expect(el.getAttribute('aria-invalid')).toBe('true')
-    expect(el.className).toContain('aria-[invalid=true]:border-danger')
+    expect(el.className).toContain('input'); expect(frequencyStyle('.input[aria-invalid="true"]','box-shadow')).toBe(true)
   })
 
   it('a valid input is not styled as an error', () => {
@@ -56,7 +69,7 @@ describe('Input + Textarea error state', () => {
 
   it('Textarea shares the same one source of truth', () => {
     const c = mount(<Textarea aria-invalid />)
-    expect(c.querySelector('textarea')!.className).toContain('aria-[invalid=true]:border-danger')
+    expect(c.querySelector('textarea')!.className).toContain('input'); expect(frequencyStyle('.input[aria-invalid="true"]','box-shadow')).toBe(true)
   })
 })
 
@@ -65,7 +78,7 @@ describe('Input disabled state', () => {
     const c = mount(<Input disabled />)
     const el = c.querySelector('input')!
     expect(el.disabled).toBe(true)
-    expect(el.className).toContain('disabled:cursor-not-allowed')
+    expect(el.className).toBe('input'); expect(frequencyStyle('.input:disabled','cursor','not-allowed')).toBe(true)
   })
 })
 
@@ -78,7 +91,7 @@ describe('Field error slot', () => {
     )
     const live = c.querySelector('[aria-live="polite"]')!
     expect(live.textContent).toBe('That handle is taken.')
-    expect(live.querySelector('span')!.className).toContain('text-danger')
+    expect(live.querySelector('span')!.className).toContain('mu-err'); expect(frequencyStyle('.mu-err','color','var(--fq-danger)')).toBe(true)
   })
 
   it('the error replaces the hint — one line of small print, and it is the one that matters', () => {
@@ -99,7 +112,7 @@ describe('Field error slot', () => {
     )
     expect(c.textContent).toContain('Letters and numbers only.')
     expect(c.querySelector('[aria-live="polite"]')!.textContent).toBe('')
-    expect(c.querySelector('.text-danger')).toBeNull()
+    expect(c.querySelector('.mu-err')).toBeNull()
   })
 
   it('still associates the label with its control (the reason Field exists)', () => {
@@ -113,33 +126,13 @@ describe('Field error slot', () => {
   })
 })
 
-// ── The chrome split ──────────────────────────────────────────────────────────
-// `fieldChromeShape` carries the box and every state; `fieldToneNeutral` carries the resting
-// palette. They are split so a field-class control can change ONE of the two without emitting two
-// `border-*` or two `text-*` utilities into a `cn()` that is a plain join. Select's `tone` prop is
-// the first consumer, and it only works while the split holds.
+// ── The field chrome ──────────────────────────────────────────────────────────
+// The kit's `.input` is the one boxed-field class, so `fieldClasses` is exactly that.
 
-describe('field chrome split', () => {
-  it('the shape carries no RESTING palette — no border colour, no text colour, no fill', () => {
-    // Token-level, not substring: `focus:border-border-strong` is a STATE and belongs to the
-    // shape; a bare `border-border` would be a resting colour and does not.
-    const tokens = fieldChromeShape.split(' ')
-    expect(tokens).not.toContain('border-border')
-    expect(tokens).not.toContain('text-text')
-    expect(tokens.filter((t) => t.startsWith('bg-'))).toEqual([])
-  })
-
-  it('the shape still carries the box, the focus halo, the error and the disabled state', () => {
-    expect(fieldChromeShape).toContain('rounded-control')
-    expect(fieldChromeShape).toContain('focus:ring-border-strong/30')
-    expect(fieldChromeShape).toContain('aria-[invalid=true]:border-danger')
-    expect(fieldChromeShape).toContain('disabled:cursor-not-allowed')
-  })
-
-  it('shape + neutral tone + a fill still composes the string every field wears', () => {
-    for (const part of [fieldChromeShape, fieldToneNeutral, 'bg-surface', 'px-3', 'py-2']) {
-      for (const c of part.split(' ')) expect(fieldClasses.split(' ')).toContain(c)
-    }
+describe('field chrome', () => {
+  it('is the kit input class every boxed field wears', () => {
+    expect(fieldClasses).toBe('input')
+    for (const prop of ['height','padding',/^border-radius$/,'background','box-shadow']) expect(frequencyStyle('.input',prop)).toBe(true)
   })
 })
 
@@ -160,16 +153,16 @@ describe('Input surface', () => {
     it(`surface="${surface ?? '(default)'}" fills with ${fill} and nothing else`, () => {
       const c = mount(<Input surface={surface} />)
       const classes = c.querySelector('input')!.className.split(' ')
-      expect(classes.filter((x) => x.startsWith('bg-'))).toEqual([fill])
+      expect(['bg-surface','bg-surface-post','bg-canvas']).toContain(fill); expect(classes).toContain('input'); expect(classes.filter((x) => x.startsWith('bg-'))).toEqual([]); expect(frequencyStyle('.input','background')).toBe(true)
     })
   }
 
   it('inset is the well an already-white card needs, and it keeps the full boxed chrome', () => {
     const el = mount(<Input surface="inset" aria-invalid />).querySelector('input')!
-    expect(el.className).toContain('bg-canvas')
-    expect(el.className).toContain('border-border')
-    expect(el.className).toContain('aria-[invalid=true]:border-danger')
-    expect(el.className).toContain('px-3')
+    expect(el.className).toContain('input'); expect(frequencyStyle('.input','background')).toBe(true)
+    expect(el.className).toContain('input'); expect(frequencyStyle('.input','box-shadow')).toBe(true)
+    expect(el.className).toContain('input'); expect(frequencyStyle('.input[aria-invalid="true"]','box-shadow')).toBe(true)
+    expect(el.className).toContain('input'); expect(frequencyStyle('.input','padding')).toBe(true)
   })
 })
 
@@ -230,9 +223,9 @@ describe('Input variant="seamless"', () => {
 
   it('boxed is still the default — no call site changes shape by upgrading', () => {
     const el = mount(<Input />).querySelector('input')!
-    expect(el.className).toContain('rounded-control')
-    expect(el.className).toContain('bg-surface')
-    expect(el.className).toContain('px-3')
+    expect(el.className).toContain('input'); expect(frequencyStyle('.input',/^border-radius$/)).toBe(true)
+    expect(el.className).toContain('input'); expect(frequencyStyle('.input','background')).toBe(true)
+    expect(el.className).toContain('input'); expect(frequencyStyle('.input','padding')).toBe(true)
   })
 })
 

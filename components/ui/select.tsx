@@ -1,13 +1,10 @@
 import { forwardRef, type ReactNode, type SelectHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
-import { fieldChromeShape, fieldToneNeutral } from './field'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
-// FREQUENCY (ADR-1737): the kit's `.input` well with the chevron in a `mu-select` wrapper; `active` is
-// the soft iridescent fill (app/themes/frequency/members-ui.css). Inlined at build; DAWN unchanged.
-const FREQUENCY = SITE_DESIGN === 'frequency'
+// The kit's `.input` well with the chevron in a `mu-select` wrapper (ADR-1737); `active` is the soft
+// iridescent fill (app/themes/frequency/members-ui.css).
 
-// The Select primitive (DAWN dawn/components/forms/Select.jsx) — a styled NATIVE dropdown for
+// The Select primitive — a styled NATIVE dropdown for
 // toolbar filters, settings and forms. The audit counted ~267 raw `<select>` elements and no
 // primitive at all: the largest un-primitived control in the product. This is where that sweep
 // lands.
@@ -19,55 +16,33 @@ const FREQUENCY = SITE_DESIGN === 'frequency'
 // `name`, and keyboard behaviour are the browser's, not ours. `appearance-none` removes only the
 // UA's arrow so the warm chevron can take its place.
 //
-// CHROME. It wears the same look as `Input` (`fieldChromeClasses`), which means the same CALM,
+// CHROME. It wears the same look as `Input` (`.input`), which means the same CALM,
 // NEUTRAL focus halo — a select is a field, and the field ring is the treatment fields get so
 // that filling in a form never glows orange. The 3px amber `--color-focus-ring` in
 // app/globals.css stays for actionable chrome (buttons, links, checkboxes). One split, two
 // treatments, no third.
 //
-// TOUCH. `tap-target` clamps the control to the active `--tap-min` — 32px density floor on a
-// mouse, 44px on a coarse pointer (app/globals.css).
 // TONE — the resting palette, and the only axis on which a select departs from the field look.
 //
 // A census of the raw `<select>` elements left after the Phase 3 sweep found the SAME control
 // twice (the CRM contacts roster and the member viewer): a registry-driven facet filter rendered
 // as a row of chips, where "this facet is filtering" is said with a border + fill + text swap
-// (`border-primary bg-primary-bg text-primary-strong`) against a neutral rest. Both stayed
-// hand-rolled, and the ratchet entry says exactly why: "cn() is a plain join rather than
-// tailwind-merge, so a tint passed to Select would land beside the primitive's own border-border
-// and emit order would decide the winner. They need a tone prop on Select, not a call-site hack."
-// This is that prop.
+// (the `mu-active` fill) against a neutral rest. Both stayed hand-rolled because a call-site tint
+// cannot replace a class (cn() is a plain join, not tailwind-merge). This is that prop.
 //
 // 🔴 TONE IS THE RESTING PALETTE ONLY. It does NOT touch the focus treatment: an active chip
 // focuses with the same calm neutral halo as every other field, because the split this file
 // documents above (fields get the neutral ring, actionable chrome gets the amber one) is a
 // sitewide rule and a filter chip is still a field. One split, two treatments, no third.
 //
-//   default  the kit field palette. Byte-identical to what every existing Select renders.
+//   default  the kit field palette.
 //   active   this control is currently narrowing the set. Same shape, tinted.
 export type SelectTone = 'default' | 'active'
 
-const SELECT_TONE: Record<SelectTone, string> = {
-  default: `${fieldToneNeutral} bg-surface`,
-  active: 'border-primary bg-primary-bg text-primary-strong',
-}
-
-export const selectClasses = FREQUENCY ? 'input' : cn(
-  fieldChromeShape,
-  SELECT_TONE.default,
-  // `cursor-pointer` is unconditional: the `disabled:cursor-not-allowed` already in the chrome
-  // string is a `:disabled` variant, so it outranks it exactly when it should.
-  'tap-target appearance-none py-2 pl-3 pr-9 cursor-pointer',
-)
+export const selectClasses = 'input'
 
 function selectWithTone(tone: SelectTone): string {
-  if (FREQUENCY) return tone === 'active' ? 'input mu-active' : 'input'
-  if (tone === 'default') return selectClasses
-  return cn(
-    fieldChromeShape,
-    SELECT_TONE[tone],
-    'tap-target appearance-none py-2 pl-3 pr-9 cursor-pointer',
-  )
+  return tone === 'active' ? 'input mu-active' : 'input'
 }
 
 /** An option as a bare string (value === label) or as an explicit value/label pair. */
@@ -112,7 +87,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   ref,
 ) {
   return (
-    <span className={cn(FREQUENCY ? 'mu-select' : 'relative block w-full', wrapperClassName)}>
+    <span className={cn('mu-select', tone === 'active' && 'mu-active', wrapperClassName)}>
       <select ref={ref} className={cn(selectWithTone(tone), className)} {...props}>
         {emptyLabel !== undefined ? <option value="">{emptyLabel}</option> : null}
         {options?.map((option) => {
@@ -141,14 +116,6 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={
-          FREQUENCY
-            ? undefined
-            : cn(
-                'pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2',
-                tone === 'active' ? 'text-primary-strong' : 'text-subtle',
-              )
-        }
       >
         <polyline points="6 9 12 15 18 9" />
       </svg>

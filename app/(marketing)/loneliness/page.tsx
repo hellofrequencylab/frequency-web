@@ -18,9 +18,9 @@ export const revalidate = 3600
 
 const SLUG = 'loneliness'
 const PATH = '/loneliness'
-const TITLE = 'High-functioning loneliness: lonely but not alone'
+const TITLE = "Feeling lonely around other people"
 const DESCRIPTION =
-  'High-functioning loneliness is feeling alone while your life looks fine. What it is, why third places vanished, how to quit doomscrolling, and small ways back to real connection.'
+  "Feeling lonely even around other people? Read about everyday connection and ways to try a local walk, Circle or community gathering at your own pace."
 
 // Real-gathering photos double as the multimodal AIO signal (CONTENT-VOICE §8b)
 // and the E-E-A-T proof (§8e). All three are on the page (the hero photo plus two
@@ -40,7 +40,7 @@ const UPDATED = '2026-07-24'
 // Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
 const OG_TITLE = 'High-functioning loneliness, explained · Frequency'
 const OG_DESCRIPTION =
-  'A hundred contacts and no one to call on a Tuesday. What high-functioning loneliness is, why third places got rare, how to beat the feed, and small ways back to real connection.'
+  "Feeling lonely even around other people? Read about everyday connection and ways to try a local walk, Circle or community gathering at your own pace."
 
 export function generateMetadata(): Metadata {
   return {

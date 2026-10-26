@@ -135,8 +135,9 @@ export function passesCalendarGate(e: SpaceCalendarEventRow, fromDayIso: string)
   return !e.is_cancelled && passesCalendarPaintGate(e, fromDayIso)
 }
 
-/** Instant compare that survives ISO offset-format differences (`Z` vs `+00:00`): parse both. A
- *  missing/invalid start (NaN) fails closed. Pure. */
+/** Compare stored wall-clock UTC parts with a same-convention day bound. Parsing handles
+ * `Z` versus `+00:00`; neither operand is an eventInstant or a real "now" timestamp. A
+ * missing/invalid start (NaN) fails closed. Pure. */
 function startsOnOrAfter(startsAt: string | null | undefined, fromDayIso: string): boolean {
   if (!startsAt) return false
   const t = new Date(startsAt).getTime()
@@ -279,9 +280,26 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // space_id with a null host_space_id, so the mirror is not even applied consistently — a
 // consistency wart, not a bug, since both axes are read.
 
+/** Resolve the owning calendar's day, not UTC's date or an event's true instant. A known
+ * Space zone avoids a second metadata read; id-only callers read just that column. Null or
+ * invalid zones retain the canonical HOME fallback. Explicit calendar windows bypass this. */
+async function spaceCalendarDefaultFloor(
+  admin: ReturnType<typeof createAdminClient>,
+  spaceId: string,
+  timeZone: string | null | undefined,
+): Promise<string> {
+  if (timeZone !== undefined) return upcomingEventFloor(new Date(), timeZone)
+  // time_zone is part of the newer Space metadata tail (same boundary as spaces/store.ts).
+  const { data, error } = await admin.from('spaces').select('time_zone').eq('id', spaceId).maybeSingle()
+  if (error) throw error
+  const row = data as unknown as { time_zone?: string | null } | null
+  return upcomingEventFloor(new Date(), row?.time_zone)
+}
+
 /**
  * A space's events for its calendar tab (Events EC2), from `fromDay` (YYYY-MM-DD, inclusive) forward,
- * soonest first, deduped by id. MEMBERSHIP (ADR-905) is three DECLARATIONS, never an inference:
+ * soonest first, deduped by id. An omitted fromDay uses this Space's own current day; an explicit
+ * day/window stays exactly caller-selected. MEMBERSHIP (ADR-905) is three DECLARATIONS, never an inference:
  * tenancy (the event is homed here), the hosting axis (the event names this space via
  * host_space_id), and events accepted-SHARED to the space (EC3). Nothing keys on WHO OWNS the
  * space — see the block above. Same EVENT filters as the EC1 subscribe
@@ -294,19 +312,19 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  */
 export async function listSpaceCalendarEvents(
   spaceId: string | null | undefined,
-  opts: { fromDay?: string; toDay?: string; exhaustive?: boolean; limit?: number; paintCancelled?: boolean } = {},
+  opts: { fromDay?: string; toDay?: string; exhaustive?: boolean; limit?: number; paintCancelled?: boolean; timeZone?: string | null } = {},
 ): Promise<SpaceCalendarEvent[]> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
   const limit = opts.limit ?? 300
-  const fromDay = opts.fromDay ?? new Date().toISOString().slice(0, 10)
-  const fromDayIso = `${fromDay}T00:00:00Z`
-  // Exhaustive reads must name a finite, bounded month window; never sweep all future events.
-  const toDay = opts.toDay
-  const span = toDay ? (Date.parse(toDay) - Date.parse(fromDay)) / 86400000 : NaN
-  if (opts.exhaustive && (!/^\d{4}-\d{2}-\d{2}$/.test(fromDay) || !toDay || !/^\d{4}-\d{2}-\d{2}$/.test(toDay) || !Number.isFinite(span) || span <= 0 || span > 62)) throw new Error('Invalid calendar window')
   try {
     const admin = createAdminClient()
+    const fromDay = opts.fromDay ?? (await spaceCalendarDefaultFloor(admin, sid, opts.timeZone)).slice(0, 10)
+    const fromDayIso = `${fromDay}T00:00:00Z`
+    // Exhaustive reads must name a finite, bounded month window; never sweep all future events.
+    const toDay = opts.toDay
+    const span = toDay ? (Date.parse(toDay) - Date.parse(fromDay)) / 86400000 : NaN
+    if (opts.exhaustive && (!/^\d{4}-\d{2}-\d{2}$/.test(fromDay) || !toDay || !/^\d{4}-\d{2}-\d{2}$/.test(toDay) || !Number.isFinite(span) || span <= 0 || span > 62)) throw new Error('Invalid calendar window')
     // Membership (ADR-905): tenancy (space_id) + the hosting axis (host_space_id) + accepted
     // shares. Three DECLARATIONS that the event belongs to this Space. The owner-identity axes
     // ADR-898 added are gone; see the block above for why they can never come back.
@@ -373,13 +391,12 @@ export async function listSpaceCalendarEvents(
  * only upcoming events are drafts / private / circle_only, owned or shared, must NOT get the tab).
  * FAIL-SAFE: false on any error / missing tenant.
  */
-export async function spaceHasPublicUpcomingEvents(spaceId: string | null | undefined): Promise<boolean> {
+export async function spaceHasPublicUpcomingEvents(spaceId: string | null | undefined, timeZone?: string | null): Promise<boolean> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return false
-  const today = new Date().toISOString().slice(0, 10)
-  const fromDayIso = `${today}T00:00:00Z`
   try {
     const admin = createAdminClient()
+    const fromDayIso = await spaceCalendarDefaultFloor(admin, sid, timeZone)
     const { data: owned, error } = await admin
       .from('events')
       .select('id')

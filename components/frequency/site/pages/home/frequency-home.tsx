@@ -10,7 +10,7 @@
 //   06 Manifesto  "Sacred, not serious."
 //   Dock          the Browse / Host switch and Join the beta, pinned once the hero has gone
 //
-// THE BETA (owner, 2026-10-14): "We're in beta until January 1, let's announce that and do clear calls to
+// THE BETA (owner, 2026-10-14, since moved to December 1 by the 2026-10-19 ruling; OPENING_DATE_LABEL in lib/site.ts is the one date, year included): "We're in beta until January 1, let's announce that and do clear calls to
 // action into our beta sign up. Each feature CTA leads to the same beta intake flow." So the hero carries
 // the beta pill and ONE primary (Join the beta), a band after the story says it again, and every feature
 // CTA on this page (the chapter Acts, the path doors, the "Live this week" host button, the closer, the
@@ -32,7 +32,8 @@
 import '@/app/themes/active/site-pages-a'
 import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
-import { BETA_ENDS_LABEL } from '@/lib/core/beta-notices'
+import { OPENING_DATE_LABEL } from '@/lib/site'
+import { homeFaq } from '@/lib/marketing/quick-answers'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getActiveCircleCount, getRankedSpaces, getWhatsOn, type SiteEvent } from '../shared/data'
 import { SITE } from '../shared/links'
@@ -44,7 +45,7 @@ import { WEAVE } from './weave-data'
 const SIG = 'Gather like it matters.'
 
 /** The shared beta label keeps the pill, band and closer on the same date. */
-const BETA_UNTIL = BETA_ENDS_LABEL
+const BETA_UNTIL = OPENING_DATE_LABEL
 const BETA_CTA = 'Join the beta'
 
 /** The fold's floating photos: [file, data-d depth, position + size]. Verbatim from the design. */
@@ -58,12 +59,12 @@ const FOLD_PHOTOS: [string, number, CSSProperties][] = [
 ]
 
 const FEATS: { icon: FqIconName; name: string; vp: string; ve: string; pp: string; pe: string }[] = [
-  { icon: 'circle', name: 'Circle', vp: 'You join', ve: 'You run', pp: 'A small group around one thing, at the same time each week.', pe: 'Choose a time and invite people to meet regularly.' },
-  { icon: 'event', name: 'Event', vp: 'You go', ve: 'You throw', pp: 'Find a one-off gathering you’d like to try.', pe: 'Sell tickets, greet guests and handle refunds.' },
-  { icon: 'program', name: 'Program', vp: 'You move through', ve: 'You design', pp: 'A few weeks with the same group, start to finish.', pe: 'A path your Circle walks together, step by step.' },
+  { icon: 'circle', name: 'Circle', vp: 'You join', ve: 'You run', pp: 'A small group around one activity, with its own meeting times.', pe: 'Choose a time and invite people to meet regularly.' },
+  { icon: 'event', name: 'Event', vp: 'You go', ve: 'You throw', pp: 'Find a one-off gathering you’d like to try.', pe: 'Greet guests and manage tickets. Paid tickets start at Business.' },
+  { icon: 'program', name: 'Program', vp: 'You move through', ve: 'You design', pp: 'Follow the program’s sessions and meeting dates.', pe: 'A path your Circle walks together, step by step.' },
   { icon: 'host', name: 'Experience', vp: 'You host', ve: 'You hand off', pp: 'Open your living room, garden or local park.', pe: 'Regulars running gatherings under your Space.' },
-  { icon: 'checkin', name: 'Check-in', vp: 'You arrive', ve: 'You remember', pp: 'Scan at the door. Zaps for being there.', pe: 'See who checked in and welcome them by name.' },
-  { icon: 'membership', name: 'Membership', vp: 'You belong', ve: 'You sustain', pp: 'Join a group with a recurring membership.', pe: 'Recurring support that drops people into their Circle.' },
+  { icon: 'checkin', name: 'Check-in', vp: 'You arrive', ve: 'You remember', pp: 'Follow the check-in instructions at the door.', pe: 'See who checked in and welcome them by name.' },
+  { icon: 'membership', name: 'Membership', vp: 'You belong', ve: 'You sustain', pp: 'Join a Space with a recurring membership.', pe: 'Offer a recurring membership with clearly listed benefits.' },
 ]
 
 /** Both halves of a two-sided line. */
@@ -108,6 +109,10 @@ export async function FrequencyHome() {
   return (
     <div className="pa-page pa-home" data-motion-scope style={{ display: 'contents' }}>
       <HomeMotion />
+      {/* SCAN-1120: the hero photo is a CSS background, which the browser only discovers after the
+          stylesheet parses. React hoists this link into <head> so the LCP image starts fetching with
+          the document. Only the default side (experiences) is preloaded; the other is a stored choice. */}
+      <link rel="preload" as="image" href="/brand/frequency/broll/yoga-rave-uv-swirl-web.jpg" fetchPriority="high" />
 
       <section className="hero" data-time="night" data-night="uv" data-energy="charge" data-screen-label="01 Hero">
         <div className="bg p" />
@@ -290,7 +295,7 @@ export async function FrequencyHome() {
               items={[
                 { href: SITE.join, icon: 'pin', title: 'Join to set your town', sub: 'See what meets near you' },
                 { href: SITE.join, icon: 'event', title: 'Join to browse this week', sub: 'Circles, events, programs' },
-                { href: SITE.join, icon: 'circle', title: 'Join to pick a Circle', sub: 'Same people, same time' },
+                { href: SITE.join, icon: 'circle', title: 'Join to pick a Circle', sub: 'Check the group’s meeting times' },
               ]}
             />
             <Acts
@@ -334,7 +339,7 @@ export async function FrequencyHome() {
               <Sided p="Walk in. Check in." e="Know who came." />
             </h2>
             <p className="body-l p-only">
-              Scan the QR code when you arrive to check in. Earn Zaps for taking part.
+              Scan an eligible QR code when you arrive and follow the check-in confirmation.
             </p>
             <p className="body-l e-only">
               Invite people to scan your QR code when they arrive. See who checked in and who’s new, so you can
@@ -343,8 +348,8 @@ export async function FrequencyHome() {
             <Acts
               className="p-only"
               items={[
-                { href: SITE.join, icon: 'ticket', title: 'Join to RSVP to an event', sub: 'Or just turn up' },
-                { href: SITE.join, icon: 'checkin', title: 'Join to check in at the door', sub: '+25 Zaps for being there' },
+                { href: SITE.join, icon: 'ticket', title: 'Join to RSVP to an event', sub: 'Check the entry details' },
+                { href: SITE.join, icon: 'checkin', title: 'Join to check in at the door', sub: 'See your check-in record' },
                 { href: SITE.join, icon: 'contacts', title: 'Join to meet your Circle', sub: 'Find a time to meet again' },
               ]}
             />
@@ -352,8 +357,8 @@ export async function FrequencyHome() {
               className="e-only"
               items={[
                 { href: SITE.join, icon: 'qr', title: 'Join to print your door QR', sub: 'One code for every experience' },
-                { href: SITE.join, icon: 'ticket', title: 'Join to run your guest list', sub: 'Tickets, refunds, walk-ins' },
-                { href: SITE.join, icon: 'nudge', title: 'Join to greet first-timers', sub: 'Nudges while they’re still in the room' },
+                { href: SITE.join, icon: 'ticket', title: 'Join to run your guest list', sub: 'Paid tickets start at Business' },
+                { href: SITE.join, icon: 'nudge', title: 'Join to greet first-timers', sub: 'Read their check-in history' },
               ]}
             />
           </div>
@@ -378,7 +383,7 @@ export async function FrequencyHome() {
                   }
                   e={
                     <>
-                      What your town is <em className="fq-iri-text">looking for.</em>
+                      Gatherings on <em className="fq-iri-text">your local calendar.</em>
                     </>
                   }
                 />
@@ -431,7 +436,7 @@ export async function FrequencyHome() {
               03 · <Sided p="Come back" e="Bring them back" />
             </span>
             <h2 className="h-l">
-              <Sided p="Same people, same time." e="Give them a rhythm." />
+              <Sided p="A regular time to gather." e="Give them a rhythm." />
             </h2>
             <p className="body-l p-only">
               A regular Circle gives you a time and place to meet again. Try a Thursday walk or a weekly class,
@@ -445,8 +450,8 @@ export async function FrequencyHome() {
               className="p-only"
               items={[
                 { href: SITE.join, icon: 'circle', title: 'Join to find a Circle', sub: 'A place to keep coming back' },
-                { href: SITE.join, icon: 'program', title: 'Join to start a program', sub: 'Six weeks, same group' },
-                { href: SITE.join, icon: 'zap', title: 'Join to follow your Circle', sub: 'Zaps for showing up again' },
+                { href: SITE.join, icon: 'program', title: 'Join to start a program', sub: 'Check the sessions and dates' },
+                { href: SITE.join, icon: 'zap', title: 'Join to follow your Circle', sub: 'See activity through the season' },
               ]}
             />
             <Acts
@@ -454,7 +459,7 @@ export async function FrequencyHome() {
               items={[
                 { href: SITE.join, icon: 'circle', title: 'Join to run a Circle', sub: 'The heartbeat of a Space' },
                 { href: SITE.join, icon: 'program', title: 'Join to build a program', sub: 'A path your Circle walks together' },
-                { href: SITE.join, icon: 'membership', title: 'Join to sell memberships', sub: 'Members land in their Circle' },
+                { href: SITE.join, icon: 'membership', title: 'Join to sell memberships', sub: 'Set out the included benefits' },
               ]}
             />
           </div>
@@ -485,8 +490,8 @@ export async function FrequencyHome() {
               a walk, a shared meal or a Circle of your own.
             </p>
             <p className="body-l e-only">
-              Share the hosting with a regular, or invite another local group to gather with you. When someone we
-              bring you buys, we take a small share. Your own regulars, you keep all of it, after card processing.
+              Share the hosting with a regular, or invite another local group to gather with you. Paid Space plans
+              and introduction fees are separate. Your own bookings carry no network fee, plus card processing.
             </p>
             <Acts
               className="p-only"
@@ -522,8 +527,7 @@ export async function FrequencyHome() {
                 Frequency is in beta. <em className="fq-iri-text">Help us build it.</em>
               </h2>
               <p className="body-l">
-                Free until {BETA_UNTIL}. Founding members set the rhythm here, and what we build next comes from the people
-                who show up.
+                Free until {BETA_UNTIL}. Founding members set the rhythm here, and you can tell us what you notice as you try the Circles and tools.
               </p>
             </div>
             <div className="bb-side">
@@ -534,7 +538,7 @@ export async function FrequencyHome() {
                 </li>
                 <li>
                   <b>3</b>
-                  <span>steps to get in</span>
+                  <span>sign-up steps</span>
                 </li>
               </ul>
               <Link className="btn fq-iri-btn" href={SITE.join}>
@@ -583,6 +587,26 @@ export async function FrequencyHome() {
             Choose a step to follow the thread. Switch sides to see the host’s view.
           </p>
           <Weave stages={WEAVE} />
+        </div>
+      </section>
+
+      {/* 07 Questions: the same answers the page's FAQPage markup carries (SCAN-1112), in the kit's .qa rows. */}
+      <section className="sec" id="questions" data-screen-label="07 Questions">
+        <div className="wrap">
+          <div className="sh">
+            <div className="label">
+              <b>Questions</b>Asked and answered
+            </div>
+            <h2 className="h-l">Before you jump in.</h2>
+          </div>
+          <div className="qa">
+            {homeFaq().map((f) => (
+              <details key={f.q}>
+                <summary>{f.q}</summary>
+                <p>{f.a}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 

@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { SpaceProfileMenuView } from './space-profile-menu-view'
-import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
+import type { SpaceProfileTab } from '@/lib/spaces/profile-tab'
 
 // THE SPACE MENU RAIL, MEASURED IN A DOM (LIVE-744).
 //
@@ -133,3 +133,9 @@ describe('the saved menu in the rail', () => {
     expect(el.querySelector(`a[href="${base}?panel=manage"]`)).not.toBeNull()
   })
 })
+
+// This fixture locks the historical DAWN rail and its pinned owner action.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'dawn',
+}))

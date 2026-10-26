@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -668,34 +668,50 @@ function runResolver(routes: GhRoute[], job: 'pr-compare' | 'lighthouse' = 'pr-c
   writeFileSync(join(bin, 'gh'), FAKE_GH)
   // `sleep` records its argument instead of sleeping, so a 12-minute window runs in a second.
   writeFileSync(join(bin, 'sleep'), '#!/bin/sh\necho "$1" >> "$FAKE_GH.sleeps"\n')
+  // The workflow runs on Linux, but local audits also run on macOS (BSD date
+  // rejects GNU -d). Emulate only the two date operations this fixture needs.
+  writeFileSync(join(bin, 'date'), `#!/usr/bin/env node
+const args = process.argv.slice(2)
+if (args.length === 1 && args[0] === '+%s') console.log(Math.floor(Date.now() / 1000))
+else if (args[0] === '-u' && args[1] === '-d' && args[2]?.startsWith('@') && args[3] === '+%H:%M:%SZ') console.log(new Date(Number(args[2].slice(1)) * 1000).toISOString().slice(11, 19) + 'Z')
+else process.exit(1)
+`)
   chmodSync(join(bin, 'gh'), 0o755)
   chmodSync(join(bin, 'sleep'), 0o755)
+  chmodSync(join(bin, 'date'), 0o755)
   const fake = join(dir, 'routes.json')
   writeFileSync(fake, JSON.stringify(routes))
   const script = join(dir, 'resolve.sh')
   writeFileSync(script, resolverScript(job))
   for (const f of ['output', 'summary']) writeFileSync(join(dir, f), '')
   // The runner's own invocation for a `run:` step: bash --noprofile --norc -eo pipefail {0}.
-  const r = spawnSync('bash', ['--noprofile', '--norc', '-eo', 'pipefail', script], {
-    encoding: 'utf8',
-    env: {
-      ...process.env,
-      PATH: `${bin}:${process.env.PATH}`,
-      FAKE_GH: fake,
-      RUNNER_TEMP: dir,
-      GITHUB_OUTPUT: join(dir, 'output'),
-      GITHUB_STEP_SUMMARY: join(dir, 'summary'),
-      REPO: 'o/r',
-      SHA: 'abc123',
-    },
-  })
-  const read = (f: string) => (existsSync(join(dir, f)) ? readFileSync(join(dir, f), 'utf8') : '')
-  return {
-    status: r.status,
-    log: `${r.stdout}${r.stderr}`,
-    output: read('output'),
-    summary: read('summary'),
-    sleeps: read('routes.json.sleeps').split('\n').filter(Boolean).map(Number),
+  try {
+    const r = spawnSync('bash', ['--noprofile', '--norc', '-eo', 'pipefail', script], {
+      encoding: 'utf8',
+      timeout: 25_000,
+      killSignal: 'SIGKILL',
+      env: {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        FAKE_GH: fake,
+        RUNNER_TEMP: dir,
+        GITHUB_OUTPUT: join(dir, 'output'),
+        GITHUB_STEP_SUMMARY: join(dir, 'summary'),
+        REPO: 'o/r',
+        SHA: 'abc123',
+      },
+    })
+    if (r.error) throw r.error
+    const read = (f: string) => (existsSync(join(dir, f)) ? readFileSync(join(dir, f), 'utf8') : '')
+    return {
+      status: r.status,
+      log: `${r.stdout}${r.stderr}`,
+      output: read('output'),
+      summary: read('summary'),
+      sleeps: read('routes.json.sleeps').split('\n').filter(Boolean).map(Number),
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
   }
 }
 

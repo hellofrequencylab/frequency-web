@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { LEGAL, LegalPage } from '@/components/legal/legal-page'
+import { LegalPage } from '@/components/legal/legal-page'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 // SPACE EMAIL ACCEPTABLE-USE POLICY: LIVE (LIVE-729, ADR-1673). Drafted by LIVE-707 (ADR-1658) as a
@@ -16,7 +16,7 @@ import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 //   who receives    canEmailContact: a marketing send needs consent_state 'subscribed' in THIS
 //                   Space; an import lands 'unknown' (lib/crm/import/commit.ts); the one relaxed
 //                   lane is an event host mailing that event's guests (consentPurposeForLane);
-//   how it goes out the shared sender with the Space's name, no per-Space Reply-To, and the
+//   how it goes out the chosen verified identity or shared sender, verified Space Inbox Reply-To, and the
 //                   platform postal line in every footer (lib/email-studio/postal.ts, LIVE-728);
 //   limits          DAILY_SEND_CAP (500 a day, UTC; skipped recipients do not count) and the plan's
 //                   monthly `space_email` allowance;
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 function Section({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className={LEGAL.h2}>
+      <h2>
         {n}. {title}
       </h2>
       {children}
@@ -58,25 +58,21 @@ function Section({ n, title, children }: { n: number; title: string; children: R
   )
 }
 
-const P = LEGAL.p
-const UL = LEGAL.ul
-const B = LEGAL.b
-const A = LEGAL.a
 
 export default function SpaceEmailPolicyPage() {
   return (
     <LegalPage title="Space email acceptable use policy" updated="September 30, 2026">
         <Section n={1} title="What this covers">
-          <p className={P}>
+          <p>
             A Space on Frequency can email its own contacts: one-off campaigns, scheduled sends,
             automated sequences, and an event host&apos;s updates to that event&apos;s guests. This
             policy covers all of it. It sits on top of our{' '}
-            <Link href="/terms" className={A}>
+            <Link href="/terms">
               Terms of Service
             </Link>
             , which still apply.
           </p>
-          <p className={P}>
+          <p>
             Email is off for every Space until someone who runs the Space turns it on. By default
             that is the Space&apos;s owner or an admin; a Space can open it to its editors. Turning
             it on means confirming that you have permission to email these people and will follow
@@ -86,12 +82,14 @@ export default function SpaceEmailPolicyPage() {
         </Section>
 
         <Section n={2} title="How your email goes out">
-          <ul className={UL}>
+          <ul>
             <li>
-              We send it through our email provider from Frequency&apos;s shared sending address, with
-              your Space&apos;s name as the sender name.
+              We send it through our email provider. By default, the sender shows your Space&apos;s name
+              on Frequency&apos;s shared sending address. A Space can use its own verified sending
+              identity when its plan and settings allow it.
             </li>
-            <li>Replies go to that shared address, not to your Space.</li>
+            <li>When your Space has a verified inbox address, replies go to that inbox in Conversations.
+              Otherwise, replies use the sending address.</li>
             <li>Every email ends with Frequency Labs Holdings&apos; postal address.</li>
             <li>
               Every email carries a one-click unsubscribe link, both in the email itself and in the
@@ -105,26 +103,26 @@ export default function SpaceEmailPolicyPage() {
         </Section>
 
         <Section n={3} title="Who you may email">
-          <p className={P}>
+          <p>
             Only people who asked to hear from your Space. In Frequency, that means a contact your
-            Space holds as <strong className={B}>subscribed</strong>. A contact gets there by doing
+            Space holds as <strong>subscribed</strong>. A contact gets there by doing
             something themselves: joining your Space, ticking the opt-in box on your contact form,
             taking something you offered in exchange for their email, unlocking an offer from your QR
             code, or accepting a warm intro. Anyone else is skipped when you send, and the skip is
             logged.
           </p>
-          <p className={P}>
+          <p>
             Contacts you import start as not opted in, and a campaign skips them. Importing a list
             does not give you permission to email it.
           </p>
-          <p className={P}>
-            <strong className={B}>One exception.</strong> The host of an event may send updates
+          <p>
+            <strong>One exception.</strong> The host of an event may send updates
             about that event to the people who signed up for it, even if they never subscribed to
             the Space. Only event updates, only to that event&apos;s own guests, and everyone who
             unsubscribed or muted event updates is still skipped.
           </p>
-          <p className={P}>Do not:</p>
-          <ul className={UL}>
+          <p>Do not:</p>
+          <ul>
             <li>Buy, rent, borrow, trade, or scrape email lists</li>
             <li>Add people because they handed you a card, filled in a sign-up sheet for something else, or appear in a directory</li>
             <li>Email anyone who has unsubscribed from your Space, including through another tool</li>
@@ -133,7 +131,7 @@ export default function SpaceEmailPolicyPage() {
         </Section>
 
         <Section n={4} title="Unsubscribes">
-          <ul className={UL}>
+          <ul>
             <li>
               One click unsubscribes a person from your Space. The next send skips them. There is no
               login, no form, and no fee.
@@ -156,7 +154,7 @@ export default function SpaceEmailPolicyPage() {
         </Section>
 
         <Section n={5} title="What your email must be">
-          <ul className={UL}>
+          <ul>
             <li>From your Space, under its real name. Do not pose as another person, business, or Frequency.</li>
             <li>Honest in its subject line. The subject says what the email is about.</li>
             <li>Clear about who is writing and why the reader is getting it.</li>
@@ -165,7 +163,7 @@ export default function SpaceEmailPolicyPage() {
         </Section>
 
         <Section n={6} title="What you may not send">
-          <ul className={UL}>
+          <ul>
             <li>Anything our Terms of Service prohibit, including harassment, threats, hate, and illegal content</li>
             <li>Phishing, malware, or links that pretend to go somewhere they do not</li>
             <li>Requests for passwords, card numbers, or bank details by email</li>
@@ -177,29 +175,29 @@ export default function SpaceEmailPolicyPage() {
             <li>Get-rich-quick offers, multi-level marketing recruitment, crypto or investment pitches, and payday or debt offers</li>
             <li>Anything sold for someone else, or email sent on another business&apos;s behalf</li>
           </ul>
-          <p className={P}>
+          <p>
             We may add to this list. When something is unclear, ask us before you send.
           </p>
         </Section>
 
         <Section n={7} title="Sending limits">
-          <ul className={UL}>
+          <ul>
             <li>A Space can send up to 500 emails a day, counted from midnight UTC. This is the same on every plan.</li>
             <li>Your plan may also set a monthly allowance, which resets on the 1st.</li>
             <li>A person who is skipped (unsubscribed, never opted in, or bounced) does not count against any limit.</li>
           </ul>
-          <p className={P}>
+          <p>
             These limits protect the sending reputation every Space shares. Do not split one list
             across several Spaces or accounts to get around them.
           </p>
         </Section>
 
         <Section n={8} title="Bounces and spam complaints">
-          <p className={P}>
+          <p>
             If an address bounces for good, or a person marks your email as spam, nobody on Frequency
             can email that address again. That stop applies to your Space and to every other Space.
           </p>
-          <p className={P}>
+          <p>
             Your Space&apos;s email page shows what was sent, delivered, bounced, and marked as spam.
             It warns you when spam complaints go above 0.1% of what you sent, which is the line inbox
             providers watch. If you see that warning, stop, and send only to people who clearly asked.
@@ -207,17 +205,17 @@ export default function SpaceEmailPolicyPage() {
         </Section>
 
         <Section n={9} title="When we turn email off">
-          <p className={P}>
+          <p>
             We can turn off email for a Space at any time. Turning it off stops everything, including
             scheduled sends and sequences. We may do it when:
           </p>
-          <ul className={UL}>
+          <ul>
             <li>A Space breaks this policy or our Terms of Service</li>
             <li>Spam complaints stay above 0.1%, or bounces climb, and do not come down</li>
             <li>Recipients report the Space&apos;s email to us</li>
             <li>Our email provider asks us to stop a sender</li>
           </ul>
-          <p className={P}>
+          <p>
             We will tell the Space&apos;s owner why by email. For serious or repeated problems we may
             also suspend the Space or the accounts involved, as our Terms of Service allow. A
             suspended Space sends no email at all.
@@ -225,9 +223,9 @@ export default function SpaceEmailPolicyPage() {
         </Section>
 
         <Section n={10} title="Asking us to look again">
-          <p className={P}>
+          <p>
             If we turned off your Space&apos;s email and you think we got it wrong, email{' '}
-            <a href="mailto:hello@frequencylocal.com" className={A}>
+            <a href="mailto:hello@frequencylocal.com">
               hello@frequencylocal.com
             </a>{' '}
             with your Space&apos;s name and what happened. A person reads every appeal and writes back.
@@ -237,7 +235,7 @@ export default function SpaceEmailPolicyPage() {
         </Section>
 
         <Section n={11} title="Your part">
-          <p className={P}>
+          <p>
             Your Space is the sender. You are responsible for following the email laws that apply to
             you and to the people you write to, which can include the CAN-SPAM Act in the United
             States, Canada&apos;s anti-spam law, and data protection law in the UK and European Union.
@@ -246,7 +244,7 @@ export default function SpaceEmailPolicyPage() {
         </Section>
 
         <Section n={12} title="Changes to this policy">
-          <p className={P}>
+          <p>
             We may update this policy. When we make a real change, we will tell every Space that has
             email turned on before the change takes effect.
           </p>

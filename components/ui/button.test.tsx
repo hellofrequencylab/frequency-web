@@ -1,8 +1,21 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { Button, buttonClasses } from './button'
+
+vi.mock('@/lib/theme/design', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/theme/design')>(), SITE_DESIGN: 'frequency',
+}))
+import {readFileSync as readFrequencyCss} from 'node:fs'
+import {createRequire as frequencyRequire} from 'node:module'
+const frequencyPostcss = frequencyRequire(frequencyRequire(import.meta.url).resolve('@tailwindcss/postcss'))('postcss')
+const frequencyRules: {selector: string; nodes: {type: string; prop?: string; value?: string}[]; parent: {type: string; params?: string}}[] = []
+for (const file of ['kit-members','members-ui','core']) frequencyPostcss.parse(readFrequencyCss(`app/themes/frequency/${file}.css`,'utf8')).walkRules((rule: typeof frequencyRules[number])=>frequencyRules.push(rule))
+function frequencyStyle(selector: string, prop: string, value?: string, media?: string) {
+  return frequencyRules.some(rule=>rule.selector.includes(selector) && (!media || (rule.parent.type==='atrule' && rule.parent.params===media)) && rule.nodes.some(node=>node.type==='decl' && node.prop===prop && (value===undefined || node.value===value)))
+}
+
 
 // Locks the Action-control state set from docs/INTERACTION-STATES.md §2: rest, hover,
 // pressed, focus-visible, loading, disabled. Button is the highest-reach control in the
@@ -33,7 +46,7 @@ function btn(c: HTMLElement) {
 describe('Button rest + hover', () => {
   it('renders the variant tokens at rest and a hover step for each variant', () => {
     for (const variant of ['primary', 'secondary', 'ghost', 'danger'] as const) {
-      expect(buttonClasses(variant)).toContain('hover:')
+      expect(buttonClasses(variant)).toContain('btn'); expect(frequencyStyle('.btn:hover','transform','translateY(-1px)')).toBe(true)
     }
   })
 })
@@ -41,14 +54,14 @@ describe('Button rest + hover', () => {
 describe('Button pressed', () => {
   it('carries `.press` — the ONE sanctioned pressed state, not a bespoke scale', () => {
     const c = mount(<Button>Save</Button>)
-    expect(btn(c).className).toContain('press')
+    expect(btn(c).className).toContain('btn'); expect(frequencyStyle('.btn:active','transform','scale(.97)')).toBe(true)
     // The press must be able to ease, so `transform` is in the transition property list.
-    expect(btn(c).className).toContain('transform')
+    expect(btn(c).className).toContain('btn'); expect(frequencyStyle('.btn','transition')).toBe(true)
   })
 
   it('collapses its transition under prefers-reduced-motion', () => {
     const c = mount(<Button>Save</Button>)
-    expect(btn(c).className).toContain('motion-reduce:transition-none')
+    expect(btn(c).className).toContain('btn'); expect(frequencyStyle(':root[data-design="frequency"]','--fq-dur-base','0ms','(prefers-reduced-motion:reduce)')).toBe(true)
   })
 })
 
@@ -56,8 +69,8 @@ describe('Button disabled', () => {
   it('is a real `disabled` attribute, not a no-op handler, and reads as unavailable', () => {
     const c = mount(<Button disabled>Save</Button>)
     expect(btn(c).disabled).toBe(true)
-    expect(btn(c).className).toContain('disabled:opacity-50')
-    expect(btn(c).className).toContain('disabled:cursor-not-allowed')
+    expect(btn(c).className).toContain('btn'); expect(frequencyStyle('.btn:disabled','opacity','.4')).toBe(true)
+    expect(btn(c).className).toContain('btn'); expect(frequencyStyle('.btn:disabled','cursor','not-allowed')).toBe(true)
   })
 })
 

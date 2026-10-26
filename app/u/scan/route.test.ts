@@ -66,7 +66,7 @@ describe('GET /u/scan is inert', () => {
     const body = await res.text()
 
     expect(res.status).toBe(200)
-    expect(body).toContain('Unsubscribe from Frequency email?')
+    expect(body).toContain('Stop these follow-up emails?')
     expect(body).toMatch(/<form method="post"/)
     expect(body).toMatch(/<button type="submit"/)
     // The confirm form posts the SAME token back to this route.

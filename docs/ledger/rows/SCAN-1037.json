@@ -1,0 +1,6 @@
+{
+  "id": "SCAN-1037",
+  "append": {
+    "detail": "2026-10-26 production receipt: PR3920 merged7b1cc6991b20358b3a0a5029b571f4a58fa03abf. Applied exact reviewed migrations20270346024600_public_discovery_event_instants and20270346025000_space_coach_profile_private via execute_sql with exact version/name ledger inserts in their transactions. Set comparison857repo/857live, zero missing/extra pairs. Actual public_events(200) returned200rows with zero past actual instants and zero invalid zones; public calendar237rows, density16cities. coach_profile exists; anon/authenticated direct private-state SELECT denied. No new security advisor findings versus captured baseline. Full migrated-schema tests1310assertions/88files passed before application. Matching production deployment dpl_Bu1h5wS5SJSp54TjCBbv3NDKsqrL is READY. No event timestamp rows rewritten. Authenticated owner UI acceptance remains separate under OWN-109."
+  }
+}

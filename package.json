@@ -30,6 +30,7 @@
     "check:capture-followup": "node scripts/check-capture-followup.mjs",
     "check:dawn-bundle": "node scripts/check-dawn-bundle.mjs",
     "check:headers": "node scripts/check-headers.mjs",
+    "check:security-headers": "node scripts/check-security-headers.mjs",
     "check:menu": "node scripts/check-menu.mjs",
     "email:readiness": "node scripts/space-email-readiness.mjs",
     "email:samples": "node scripts/email-samples.mjs",
@@ -105,6 +106,7 @@
     "check:docs-links": "node scripts/check-docs-links.mjs",
     "check:arch-doc": "node scripts/check-arch-doc.mjs",
     "check:cron-freshness": "node scripts/cron-freshness.mjs",
+    "maintenance:live-catalog": "node scripts/maintenance/live-catalog.mjs",
     "maintenance:ledger-parity": "node scripts/maintenance/ledger-parity.mjs",
     "maintenance:menu-drift": "node scripts/maintenance/menu-drift.mjs",
     "eval:copilot": "COPILOT_EVAL_LIVE=1 vitest run lib/ai/space-copilot-eval.test.ts",
@@ -188,7 +190,9 @@
       "brace-expansion@>=5.0.0 <5.0.8": ">=5.0.8",
       "brace-expansion@1": ">=1.1.21 <2",
       "source-map-js@1": ">=1.2.2 <2",
-      "js-yaml@4": ">=4.3.2 <5"
+      "js-yaml@4": ">=4.3.2 <5",
+      "vite@>=8.0.0 <8.1.6": "8.1.6",
+      "fast-uri@>=3.0.0 <3.1.9": "3.1.9"
     }
   }
 }

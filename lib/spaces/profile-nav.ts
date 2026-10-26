@@ -19,7 +19,7 @@ import { canSeeSpaceContactTab, readContactFormContent } from '@/lib/spaces/cont
 import { canSeeSpaceMembershipsTab } from '@/lib/spaces/memberships-tab'
 import { spaceHasActiveMembershipTiers } from '@/lib/spaces/memberships'
 import { readProfileData } from '@/lib/spaces/profile-data'
-import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
+import type { SpaceProfileTab } from '@/lib/spaces/profile-tab'
 
 // THE ONE Space profile sub-nav model — the tab set + the operator's admin links — resolved from the
 // Space itself, so the SAME menu renders on the public profile chrome AND on the owner surfaces
@@ -27,7 +27,7 @@ import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 // be identical across those routes: the profile chrome layout and the owner shell layouts both call this
 // and hand the result to <SpaceStickyNav>, giving the member a persistent menu whose body swaps beneath
 // it without a full reload (the "persistent shell" model). Server-only; the active-tab state stays
-// client-side in SpaceProfileTabs (usePathname), so nothing here can go stale across soft navigation.
+// client-side in SpaceProfileMenu (usePathname), so nothing here can go stale across soft navigation.
 interface SpaceProfileNav {
   /** Home + one anchor per live Home section + the operator's custom sub-pages. */
   tabs: SpaceProfileTab[]
@@ -99,7 +99,7 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     // Gate the Calendar tab on the SAME public/unlisted published set the calendar renders, not on the
     // broader presence.events (which counts drafts/private/circle_only) — otherwise the tab would show
     // over an empty grid for a member-only-event space.
-    spaceHasPublicUpcomingEvents(space.id),
+    spaceHasPublicUpcomingEvents(space.id, space.timeZone),
     // The Collaborators tab shows only when there is at least one ACCEPTED collaboration (ADR-799 B1).
     spaceHasCollaborators(space.id),
     // People (LIVE-420): fellow members and managers only. Visitors never get a tab over a roster

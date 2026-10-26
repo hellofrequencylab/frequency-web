@@ -20,8 +20,9 @@ interface QuickAnswer {
 /** The member themes a picker offers on this deploy, e.g. ["Default", "Midnight"]. Passed in, so this
  *  module stays free of the theme registry and the caller decides what the build offers. */
 export function quickAnswers(opts: {
-  /** The whole priced ladder in one phrase, e.g. "Member free, Crew from $5, ...". */
-  ladder: string
+  /** The whole priced ladder in one phrase, e.g. "Member free, Crew from $5, ...". Left out, the cost
+   *  answer points at /pricing instead (the home FAQ, which reads no offerings). */
+  ladder?: string
   /** Absolute URL builder, so links resolve per environment. */
   abs: (path: string) => string
   /** Member theme labels (SELECTABLE_SKINS). */
@@ -42,7 +43,7 @@ export function quickAnswers(opts: {
     },
     {
       q: `How much does ${SITE_NAME} cost?`,
-      a: `${PLAN_STORY.lines} ${PLAN_STORY.selling} The ladder: ${ladder}. Full pricing: ${abs('/pricing')}.`,
+      a: `${PLAN_STORY.lines} ${PLAN_STORY.selling}${ladder ? ` The ladder: ${ladder}.` : ''} Full pricing: ${abs('/pricing')}.`,
     },
     {
       q: `Does ${SITE_NAME} take a cut of tips or my own bookings?`,
@@ -62,4 +63,12 @@ export function quickAnswers(opts: {
 /** The answers as llms.txt-style lines: a `###` question, then the answer. */
 export function quickAnswerLines(answers: readonly QuickAnswer[]): string[] {
   return answers.flatMap((x) => [`### ${x.q}`, x.a, ''])
+}
+
+/** The questions the home page shows and marks up (SCAN-1112). One list for the visible Questions section
+ *  and its FAQPage node, so the markup never asserts an answer a visitor cannot read. Carries no priced
+ *  ladder: the home page reads no offerings, and the cost answer points at /pricing. */
+export function homeFaq(): QuickAnswer[] {
+  // Site-relative links, so the visible text and the markup are the same string.
+  return quickAnswers({ abs: (path) => path })
 }

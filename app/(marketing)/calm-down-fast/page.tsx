@@ -16,9 +16,9 @@ export const revalidate = 3600
 
 const SLUG = 'calm-down-fast'
 const PATH = '/calm-down-fast'
-const TITLE = 'How to calm down fast when you cannot switch off'
+const TITLE = "How to pause when you find it hard to switch off"
 const DESCRIPTION =
-  'Wired and tired at the same time? Here is a 60-second way to calm down fast, why you cannot switch off even when you are exhausted, and how to make calm your baseline instead of your best moments.'
+  "Finding it hard to switch off? Try a short breathing or grounding Practice at your own pace. Read the steps and stop if it does not feel right."
 
 // Real-gathering photos double as the multimodal AIO signal (CONTENT-VOICE §8b)
 // and the E-E-A-T proof (§8e). Fed into the Article schema below so answer engines
@@ -38,7 +38,7 @@ const UPDATED = '2026-06-29'
 // Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
 const OG_TITLE = 'How to calm down fast when you cannot switch off · Frequency'
 const OG_DESCRIPTION =
-  'A 60-second way to calm down fast, why you stay wired even when you are exhausted, and how to make calm a habit instead of a rescue.'
+  "Finding it hard to switch off? Try a short breathing or grounding Practice at your own pace. Read the steps and stop if it does not feel right."
 
 export function generateMetadata(): Metadata {
   return {

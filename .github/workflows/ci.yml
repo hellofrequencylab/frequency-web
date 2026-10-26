@@ -244,7 +244,10 @@ jobs:
       # tip fetch above on purpose: the tip's tree is then already on disk for check:id-collisions,
       # so `git show origin/<base>:<file>` never has to lazy-fetch through the promisor remote.
       - name: Fetch base history for check:shipped-ids
-        run: git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "+refs/heads/${GITHUB_BASE_REF:-main}:refs/remotes/origin/${GITHUB_BASE_REF:-main}"
+        run: |
+          git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "+refs/heads/${GITHUB_BASE_REF:-main}:refs/remotes/origin/${GITHUB_BASE_REF:-main}"
+          # A manual run judges HEAD; fetching main alone leaves a branch checkout shallow.
+          git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "$GITHUB_SHA"
 
       - name: Contract guards (all run; every failure reported)
         if: ${{ !cancelled() }}
@@ -377,7 +380,7 @@ jobs:
           # its home, beside rls-recursion and rls-deny which replay the same files.
           guards=(
             authz canon menu gate-parity workflows labels a11y-names help tokens phantom bridge contrast
-            node-document-safety email-blocks headers seo rls grants admin-client client-boundary migrations adr docs-links templates marketing-kit
+            node-document-safety email-blocks headers security-headers seo rls grants admin-client client-boundary migrations adr docs-links templates marketing-kit
             backlog one-list schema-contract rls-recursion id-collisions rls-deny fk-indexes shipped-ids
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only

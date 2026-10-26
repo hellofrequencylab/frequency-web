@@ -162,9 +162,31 @@ const EDITABLE_PAGES_FALLBACK: readonly string[] = [
   '/circles',
 ]
 
+/**
+ * The launch path (SCAN-1136): the six operator doors every funnel link, ad and email lands on. They
+ * are anonymous, prerendered and the first screen an operator sees, and none was in the surface list,
+ * so a regression on them reached the a11y ratchet and the visual suite only by accident. Keep this
+ * in step with `DEFAULT_FUNNEL_CONFIGS` in lib/marketing/funnel-config.ts.
+ */
+export const LAUNCH_DOOR_PATHS: readonly string[] = [
+  '/for/coaches-and-healers',
+  '/for/studios',
+  '/for/event-hosts',
+  '/for/venues',
+  '/for/nonprofits',
+  '/for/networks',
+]
+
+/**
+ * The launch routes that need a session, so they are NOT public surfaces: a signed-out visitor is sent
+ * to /sign-in with `next` set, and the try-first journey (funnel.spec.ts) proves that hop for each.
+ * `/offer` is the full-screen 72-hour offer, `/spaces/new` is Create-a-Space, `/rewards` is Regulars.
+ */
+export const LAUNCH_SESSION_ROUTES: readonly string[] = ['/spaces/new', '/offer', '/rewards']
+
 /** Public routes worth capturing that are NOT editor-backed (so they never appear in
  *  EDITABLE_PAGES). Keep this short: it is the only hand-maintained part of the list. */
-const EXTRA_PUBLIC_PATHS: readonly string[] = ['/discover']
+const EXTRA_PUBLIC_PATHS: readonly string[] = ['/discover', ...LAUNCH_DOOR_PATHS, '/join', '/accessibility', '/help']
 
 /** Fallback for protectedPathPrefixes() when proxy.ts cannot be read, mirroring the
  *  EDITABLE_PAGES_FALLBACK pattern above. Kept deliberately SHORT: only the prefixes that
@@ -1101,12 +1123,6 @@ export const VISUAL_MASK_SITES: readonly {
     file: 'components/chat/support-chat-launcher.tsx',
     kind: 'env',
     why: 'Mounts only where SUPPORT_CHAT=1: Production, and Preview since 2026-09-29 (LIVE-213).',
-  },
-  {
-    value: 'edge-pill',
-    file: 'components/layout/edge-pill.tsx',
-    kind: 'route',
-    why: 'The fallback launcher where no dock slot exists; its label and badge are live.',
   },
   {
     value: 'dock-chat-tab',

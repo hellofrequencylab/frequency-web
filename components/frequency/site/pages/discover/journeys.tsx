@@ -45,7 +45,7 @@ export function FrequencyJourneys({ journeys }: { journeys: JourneyPlan[] }) {
             Pick a Journey. <em className="fq-iri-text">Keep it for a season.</em>
           </>
         }
-        lede="A Journey is part of The Quest: a short, ordered set of small daily Practices. The first one takes under five minutes. Do it solo, or run it with your Circle and finish together."
+        lede="Want a place to start your practice? A Journey is part of The Quest: an ordered set of Practices. Read the steps and time involved, then try it solo or with your Circle."
       >
         <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL}
@@ -59,12 +59,12 @@ export function FrequencyJourneys({ journeys }: { journeys: JourneyPlan[] }) {
         label="The library"
         meta={journeys.length > 0 ? count(journeys.length, 'Journey', 'Journeys') : null}
         title="What you can practice."
-        lede="Each Journey is a few Practices in order, with an honest time ask and a forgiving finish line."
+        lede="Each Journey puts Practices in order. Read the steps and time involved before you start."
       >
         {journeys.length === 0 ? (
           <DirEmpty
             title="The first Journeys are being mapped."
-            body="The library is quiet for now. Join free and you can build the first ones: a handful of small Practices, in order, with a five-minute way in."
+            body="The library is quiet for now. Join free and you can build the first ones: a handful of small Practices, in order, with steps people can read before they begin."
           >
             <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
               {BETA_CTA_LABEL}
@@ -92,15 +92,14 @@ export function FrequencyJourneys({ journeys }: { journeys: JourneyPlan[] }) {
         <DirSection label="Why a Journey" title="Small practices, kept up, with company.">
           <div className="blocks">
             <div className="block">
-              <h3>Built for the tenth day.</h3>
+              <h3>See the next step.</h3>
               <p>
-                The hard part is not day one. It’s the day nobody would notice if you skipped. Small enough to keep,
-                ordered so you always know the next step.
+                A Journey puts Practices in an order you can follow. Look at the next step and choose a time that fits your day.
               </p>
             </div>
             <div className="block">
-              <h3>Better with your Circle.</h3>
-              <p>Run the same Journey together and the tenth day has witnesses. You show up because they did.</p>
+              <h3>Try it with your Circle.</h3>
+              <p>Choose a Journey with your Circle and make time to talk about what you tried. You can each take part at your own pace.</p>
             </div>
           </div>
         </DirSection>
@@ -108,7 +107,7 @@ export function FrequencyJourneys({ journeys }: { journeys: JourneyPlan[] }) {
 
       <KeepGoing
         title="Start your first Journey."
-        body="Joining is free. Adopt a Journey, run it with your Circle, and finish the season together."
+        body="Joining is free. Read a Journey’s steps and choose whether to try it solo or with your Circle."
         primary={{ href: BETA_CTA_HREF, label: BETA_CTA_LABEL }}
         secondary={{ href: '/discover', label: 'Back to Discover' }}
       />
@@ -287,7 +286,7 @@ export function FrequencyJourney({
               </>
             ) : (
               <>
-                <p>Its phases drip one at a time, your Circle can run it with you, and finishing earns the completion Gems.</p>
+                <p>Read the phases and access details before you start. Try the steps solo, or choose the Journey with your Circle.</p>
                 <Link className="btn fq-iri-btn" href="/sign-in">
                   Create a free account
                 </Link>
@@ -308,13 +307,13 @@ export function FrequencyJourney({
         sale.soldOut ? (
           <KeepGoing
             title={`Join ${plan.title}`}
-            body="Every seat is taken for this run. Follow the guide to hear when the next one opens."
+            body="Every seat is taken for this run. Browse other Journeys or check this page later."
             primary={{ href: '/discover/journeys', label: 'More Journeys' }}
           />
         ) : (
           <KeepGoing
             title={`Join ${plan.title}`}
-            body="Enrolling opens every phase and keeps them open. Your Circle can run it with you, and finishing earns the completion Gems."
+            body="Read the access details and price before enrolling. You can try the steps solo or choose the Journey with your Circle."
             primary={{ href: buyHref, label: `Get access · ${sale.priceLabel}` }}
             secondary={{ href: '/discover/journeys', label: 'More Journeys' }}
           />
@@ -322,7 +321,7 @@ export function FrequencyJourney({
       ) : (
         <KeepGoing
           title="Start this Journey."
-          body="Sign up free to start it. Its phases drip one at a time, your Circle can run it with you, and finishing earns the completion Gems."
+          body="Sign up free to start it. Read the phases and access details before you start. Try the steps solo, or choose the Journey with your Circle."
           primary={{ href: '/sign-in', label: 'Create a free account' }}
           secondary={{ href: '/discover/journeys', label: 'More Journeys' }}
         />

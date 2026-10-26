@@ -15,7 +15,8 @@
 // which outranks the unscoped blocks without an !important anywhere.
 //
 // THE ONE BUTTON. `NEXT_PUBLIC_SITE_DESIGN` (Vercel env, or .env.local for a local build). Unset or
-// unknown reads as DAWN, so a missing variable can never ship a half-built system.
+// unknown or retired values read as Frequency. DAWN remains a historical registry entry,
+// never a deployable platform selection.
 //
 // NO URL PREVIEW (SCAN-850). A `?design=` switch used to store a preview in localStorage and stamp it
 // on <html>. A design's sheets load per design (app/themes/active/, written by
@@ -25,7 +26,7 @@
 
 /**
  * Every design system the platform can wear. Add one = a CSS file in app/themes/, an entry here and a
- * font module in lib/theme/design-fonts/<id>.ts (OG cards draw in Nunito for every design, lib/og/load-nunito.ts). The manifest
+ * font module in lib/theme/design-fonts/<id>.ts (OG cards use the Stage faces and Nunito glyph fallback, lib/og/load-stage-fonts.ts). The manifest
  * colours and the active font module are written from SITE_DESIGN by scripts/write-design-assets.mjs.
  */
 export type DesignId = 'dawn' | 'frequency'
@@ -60,7 +61,7 @@ export const DESIGNS: readonly DesignDef[] = [
   },
 ]
 
-export const DEFAULT_DESIGN: DesignId = 'dawn'
+export const DEFAULT_DESIGN: DesignId = 'frequency'
 
 /** The localStorage key the retired `?design=` preview wrote. The pre-paint script clears it (SCAN-850). */
 export const DESIGN_PREVIEW_KEY = 'freq-design'
@@ -70,11 +71,11 @@ export function isDesignId(id: unknown): id is DesignId {
 }
 
 export function resolveDesign(raw: string | null | undefined): DesignId {
-  return isDesignId(raw) ? raw : DEFAULT_DESIGN
+  return raw === 'frequency' ? raw : DEFAULT_DESIGN
 }
 
 export function designDef(id: DesignId): DesignDef {
-  return DESIGNS.find((d) => d.id === id) ?? DESIGNS[0]
+  return DESIGNS.find((d) => d.id === id) ?? DESIGNS.find((d) => d.id === DEFAULT_DESIGN)!
 }
 
 /** The design this deploy wears. Read once, at build (NEXT_PUBLIC_ is inlined), so it is static. */

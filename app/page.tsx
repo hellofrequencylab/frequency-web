@@ -14,6 +14,8 @@ import { resolvePageContent } from '@/lib/page-content'
 import { OG_SITE, SITE_DESCRIPTION } from '@/lib/site'
 import { FrequencyHome } from '@/components/frequency/site/pages/home/frequency-home'
 import { JsonLd } from '@/components/json-ld'
+import { faqSchema } from '@/lib/jsonld'
+import { homeFaq } from '@/lib/marketing/quick-answers'
 import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd } from '@/lib/seo/frequency-pages'
 
 // SEO title + description are operator-editable through the ADR-180 page-content
@@ -165,6 +167,8 @@ export default async function RootPage() {
             document this build does not render (lib/seo/frequency-pages.ts). No breadcrumb: this IS
             the root. Organization + WebSite come from the root layout. */}
         <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.home)} />
+        {/* FAQPage from the same list the Questions section shows (SCAN-1112). */}
+        <JsonLd data={faqSchema(homeFaq())} />
         <FrequencyHome />
       </SiteShell>
     )

@@ -53,6 +53,7 @@ beforeEach(() => {
   Object.values(mocks).forEach((m) => m.mockReset())
   window.matchMedia = (() => ({ matches: true, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia
   class IO {
+    constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {}
     observe() {}
     disconnect() {}
   }

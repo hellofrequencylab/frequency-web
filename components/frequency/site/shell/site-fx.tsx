@@ -68,7 +68,8 @@ function noiseTile(): string | null {
 
 function run(root: HTMLElement): () => void {
   const d = document
-  const RM = matchMedia('(prefers-reduced-motion:reduce)').matches
+  // A visitor's Pause motion choice (footer) counts exactly like the OS setting.
+  const RM = matchMedia('(prefers-reduced-motion:reduce)').matches || root.dataset.motion === 'paused'
   const E = (root.dataset.energyPage as Energy) || 'flow'
   const quiet = Number(root.dataset.fxQuiet || 0)
   const added: Element[] = []
@@ -257,7 +258,9 @@ function run(root: HTMLElement): () => void {
         if (!en.isIntersecting) return
         const el = en.target
         const now = performance.now()
-        const delay = Math.max(0, lastPop + 170 - now)
+        // Keep the ordinary cadence, but coalesce excess entries in a large burst.
+        // Copy must not wait behind an arbitrarily long global reveal queue.
+        const delay = Math.min(1020, Math.max(0, lastPop + 170 - now))
         lastPop = now + delay
         setTimeout(() => el.classList.add('in'), delay)
         pio.unobserve(el)
@@ -521,8 +524,10 @@ export function SiteFx() {
       stop = run(root)
     }
     mq.addEventListener('change', onChange)
+    window.addEventListener('fq-motion-change', onChange)
     return () => {
       mq.removeEventListener('change', onChange)
+      window.removeEventListener('fq-motion-change', onChange)
       stop()
     }
   }, [pathname])

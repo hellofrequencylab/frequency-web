@@ -27,8 +27,8 @@ import { runToolLoop, type CompleteMessage, type SystemPrompt } from '@/lib/ai/c
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { aiRateLimited } from '@/lib/ai/rate-limit'
 import type { MemberContext } from '@/lib/ai/memory'
-import { VERA_TOOLS, MEMBER_CHAT_TOOL_KEYS, requiresConfirmation, validateToolCall, type VeraToolDef } from './tools'
-import { executeReadTool } from './read-tools'
+import { VERA_TOOLS, MEMBER_CHAT_TOOL_KEYS, type VeraToolDef } from './tools'
+import { handleModelToolCalls } from './model-tools'
 import { getVeraConfig, type VeraConfig } from './config'
 import { withVoice } from '@/lib/ai/voice'
 import { veraDailyCapReached } from './usage-gate'
@@ -232,8 +232,9 @@ How you show up:
 Working with your tools:
 - Use suggest_circle / find_host to point at real options and real people, never a vague "look around." Name the circle, name the host.
 - When a circle clearly fits, propose join_circle with its exact slug (from suggest_circle); actually getting them in is a real win. It's a proposal; they confirm.
-- When they share something durable (an interest, a goal, where they live), call remember_fact so you carry it forward. Use set_profile_field only for their own profile, as a light offer (e.g. a one-line bio); for a photo, point them to /settings/profile. These are PROPOSALS that don't run until the member approves, so it's warm, never pushy, to offer.
-- When find_host names someone (or they want to say hi to a specific person), offer to break the ice: propose draft_intro with the COMPLETE hello already written in their voice (short, warm, true to what they've shared) in the "message" param. They read and approve it before it posts to the feed, so the scary first hello is done for them.
+- When they share something durable (an interest, a goal, where they live), call remember_fact so you carry it forward. Use set_profile_field only to save words they wrote or an explicit factual value they supplied for their own profile; never compose a bio for them; for a photo, point them to /settings/profile. These are PROPOSALS that don't run until the member approves, so it's warm, never pushy, to offer.
+- Coach, do not ghostwrite. Never provide publish-ready introductions, bios, posts, campaigns, or outreach in the member's voice. Ask one useful question at a time, offer structure, or review words they wrote without replacing them.
+- When find_host names someone (or they want to say hi to a specific person), use draft_intro with their handle for introduction questions and the feed route. The member writes and publishes their own hello. Never claim an introduction was posted or sent.
 - Always make what you mention reachable: name the circle, host, practice, or page and offer the tap. Never leave a feature as a bare mention they have to go hunt for.
 
 Quick replies: end EVERY reply with one final line in exactly this format, CHIPS: first option | second option, giving 1 to 3 short things the member might naturally say next, in THEIR voice (e.g. CHIPS: Find me a circle | Yes, introduce me | I'll explore first). Keep each under about six words. That line is stripped out and shown as tappable chips, so never refer to it in your prose, and never leave it off; a turn without chips dead-ends the conversation.
@@ -329,34 +330,7 @@ export async function runVeraClaudeTurn(input: {
       tools,
       messages,
       onText,
-      onToolCalls: async (toolCalls) => {
-        // Capture valid write proposals — never executed here.
-        for (const c of toolCalls) {
-          if (MEMBER_CHAT_TOOL_KEYS.has(c.name) && requiresConfirmation(c.name) && validateToolCall(c.name, c.input).ok) {
-            if (!proposals.some((p) => p.tool === c.name && JSON.stringify(p.args) === JSON.stringify(c.input))) {
-              proposals.push({ tool: c.name, args: c.input })
-            }
-          }
-        }
-
-        // Only continue the loop when there's a read to run; a turn of writes-only
-        // stops here (after capturing the proposals), as before.
-        const reads = toolCalls.filter(
-          (c) => MEMBER_CHAT_TOOL_KEYS.has(c.name) && !requiresConfirmation(c.name) && validateToolCall(c.name, c.input).ok,
-        )
-        if (reads.length === 0) return null
-
-        const results: Anthropic.ToolResultBlockParam[] = []
-        for (const c of toolCalls) {
-          const content = !MEMBER_CHAT_TOOL_KEYS.has(c.name)
-            ? 'That tool is not available in this chat.'
-            : requiresConfirmation(c.name)
-              ? 'Proposed to the member for confirmation.'
-              : await executeReadTool(c.name, c.input)
-          results.push({ type: 'tool_result', tool_use_id: c.id, content })
-        }
-        return results
-      },
+      onToolCalls: (toolCalls) => handleModelToolCalls(toolCalls, proposals),
     })
 
     // Release any prose the chips filter was still holding when the last round ended.

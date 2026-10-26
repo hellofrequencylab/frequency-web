@@ -58,7 +58,7 @@ import { HOME_TZ, resolveZone, isEventPast, zoneAbbrev, eventInstant } from '@/l
 import { formatSalesDate, ticketOnSale } from '@/lib/events/sales-window'
 import { type ActivityPost } from '@/components/events/event-activity'
 import { EventCheckInSurface } from '@/components/events/event-checkin-surface'
-import { type FactGuest } from '@/components/events/event-fact-panel'
+import { type FactGuest } from '@/lib/events/fact-types'
 import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
 import { EventBelonging, EventBelongingSkeleton } from '@/components/events/event-belonging'

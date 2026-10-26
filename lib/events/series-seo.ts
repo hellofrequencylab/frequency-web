@@ -1,4 +1,5 @@
 import 'server-only'
+import { listReadFailClosed } from '@/lib/discover'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EVENT_MEDIA_BUCKET } from './hero-url'
 import { eventHasEnded } from './end-time'
@@ -269,6 +270,7 @@ export async function seriesSeoFacts(row: SeriesSeoRow): Promise<SeriesSeoFacts>
 
 type ShareEventSeo = {
   facts: SeriesSeoFacts
+  timeZone: string | null
   /** `events.visibility`, or null when the row could not be read. */
   visibility: string | null
 }
@@ -285,14 +287,14 @@ export async function shareEventSeo(slug: string): Promise<ShareEventSeo> {
     const admin = createAdminClient()
     const { data } = await admin
       .from('events')
-      .select(`id, starts_at, visibility, ${SERIES_COLUMNS}`)
+      .select(`id, starts_at, visibility, time_zone, ${SERIES_COLUMNS}`)
       .eq('slug', slug)
       .maybeSingle()
-    if (!data) return { facts: ONE_OFF_FACTS, visibility: null }
-    const row = data as SeriesSeoRow & { visibility: string | null }
-    return { facts: await seriesSeoFacts(row), visibility: row.visibility }
+    if (!data) return { facts: ONE_OFF_FACTS, visibility: null, timeZone: null }
+    const row = data as SeriesSeoRow & { visibility: string | null; time_zone: string | null }
+    return { facts: await seriesSeoFacts(row), visibility: row.visibility, timeZone: row.time_zone }
   } catch {
-    return { facts: ONE_OFF_FACTS, visibility: null }
+    return { facts: ONE_OFF_FACTS, visibility: null, timeZone: null }
   }
 }
 
@@ -310,6 +312,7 @@ export async function seriesSeoFactsBySlug(slug: string): Promise<SeriesSeoFacts
  * drops from ~61 URLs and ~61 image entries to 3.
  */
 export async function listSitemapEventEntries(opts: {
+  failClosed?: boolean
   occurrences?: number
   limit?: number
 }): Promise<SitemapEventEntry[]> {
@@ -321,13 +324,13 @@ export async function listSitemapEventEntries(opts: {
   try {
     const admin = createAdminClient()
     const floor = upcomingFloor()
-    const { data, error } = await admin
+    const query = () => admin
       .from('events')
       // SERIES_COLUMNS verbatim: without them collapseSeries is a silent no-op and this ships
       // looking finished while the sitemap still carries every date.
       // `cover_image_path` rides along for the image-sitemap entry — the PUBLIC bucket only; see
       // the note on SitemapEventEntry.image for why the other two hero sources must never appear.
-      .select(`id, slug, starts_at, ends_at, is_cancelled, cover_image_path, ${SERIES_COLUMNS}`)
+      .select(`id, slug, starts_at, ends_at, time_zone, is_cancelled, cover_image_path, ${SERIES_COLUMNS}`)
       .eq('status', 'published')
       .eq('visibility', 'public')
       .eq('is_cancelled', false)
@@ -335,6 +338,9 @@ export async function listSitemapEventEntries(opts: {
       .gte('starts_at', floor)
       .order('starts_at', { ascending: true })
       .limit(limit)
+    const { data, error } = opts.failClosed
+      ? { data: await listReadFailClosed('sitemap.events', query), error: null }
+      : await query()
     if (error || !Array.isArray(data)) return []
 
     type Row = {
@@ -342,6 +348,7 @@ export async function listSitemapEventEntries(opts: {
       slug: string | null
       starts_at: string | null
       ends_at: string | null
+      time_zone: string | null
       is_cancelled: boolean | null
       cover_image_path: string | null
       recurrence_type: string | null
@@ -384,7 +391,8 @@ export async function listSitemapEventEntries(opts: {
       })
     }
     return out
-  } catch {
+  } catch (err) {
+    if (opts.failClosed) throw err
     return []
   }
 }

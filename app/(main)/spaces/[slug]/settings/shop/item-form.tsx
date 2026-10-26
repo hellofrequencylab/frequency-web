@@ -1,5 +1,8 @@
 'use client'
 
+import { WritingQuestions } from '@/components/studio/writing-questions'
+import { safeWritingQuestions } from '@/lib/ai/writing-questions'
+
 import { useRef, useState, useTransition, type FormEvent, type KeyboardEvent } from 'react'
 import { Sparkles, X } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
@@ -30,7 +33,7 @@ function urlToStoragePath(ref: string): string {
 
 // The Catalog item authoring form (ADR-596, findings #3/#5/F5). One client form serves both create and
 // edit: it carries the price-model + policy inputs, reveals the cancellation/no-show pair only when a
-// charge applies, and wires the "Draft with Vera" button that fills the title + description. Create
+// charge applies, and wires the writing prompts button that leaves the title and description to the author. Create
 // submits the raw FormData to createSpaceProductAction (server parses it); edit builds a typed patch and
 // calls updateProductAction. No em or en dashes.
 
@@ -139,6 +142,7 @@ export function ItemForm({
   const [tagDraft, setTagDraft] = useState('')
   const [marketPublished, setMarketPublished] = useState(product?.marketPublished ?? false)
   const [pending, startTransition] = useTransition()
+  const [questions, setQuestions] = useState<string[]>([])
   const [drafting, setDrafting] = useState(false)
 
   // Optional variants editor (Etsy-Grade Phase 2). Two option dimension names + a row per variant.
@@ -283,8 +287,7 @@ export function ItemForm({
         seed: title || null,
         priceModel: isService ? priceModel : null,
       })
-      if (copy.title) setTitle(copy.title)
-      if (copy.description) setDescription(copy.description)
+      setQuestions(safeWritingQuestions(copy))
     } finally {
       setDrafting(false)
     }
@@ -371,9 +374,10 @@ export function ItemForm({
             className={buttonClasses('ghost', 'sm')}
           >
             <Sparkles className="mr-1 h-3.5 w-3.5" aria-hidden />
-            {drafting ? 'Drafting...' : 'Draft with Vera'}
+            {drafting ? 'Thinking...' : 'Get writing prompts'}
           </button>
         </div>
+        <WritingQuestions questions={questions} />
         <Input
           id={`title-${mode}-${product?.id ?? 'new'}`}
           name="title"

@@ -22,19 +22,19 @@ import { FrequencyDiscoverEvents } from '@/components/frequency/site/pages/disco
 export const metadata: Metadata = {
   title: 'Upcoming events',
   description:
-    'Browse upcoming events across the Frequency community: a sunrise on the bluff, a cold plunge, a supper table. Real plans, on real days, with neighbors near you.',
+    'Browse community events and local gatherings on Frequency. Check the date, activity, availability and how to take part before you go.',
   alternates: { canonical: '/discover/events' },
   openGraph: {
     ...OG_SITE,
     images: ROOT_OG_IMAGES,
     title: `Upcoming events · ${SITE_NAME}`,
-    description: 'Browse upcoming real-world events across the Frequency community.',
+    description: 'Browse community events and local gatherings on Frequency. Check the date, activity, availability and how to take part before you go.',
     url: '/discover/events',
   },
   twitter: {
     card: 'summary_large_image',
     title: `Upcoming events · ${SITE_NAME}`,
-    description: 'Browse upcoming real-world events across the Frequency community.',
+    description: 'Browse community events and local gatherings on Frequency. Check the date, activity, availability and how to take part before you go.',
   },
 }
 
@@ -95,7 +95,7 @@ export default async function DiscoverEventsPage() {
         focal="object-center"
         eyebrow="Coming up"
         title={<>Show up <span className="text-primary">this week</span></>}
-        subtitle="A sunrise on the bluff. A thermal circuit. A supper table with a seat saved for you. These are real plans, on real days, with neighbors who will notice if you don't come. Public pages show the city only; the exact venue is shared with members who RSVP."
+        subtitle="Browse listed community events, read the activity and check the date. Public pages show the city only; the exact venue is shared with members who RSVP."
       >
         <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
       </PhotoHero>
@@ -115,11 +115,7 @@ export default async function DiscoverEventsPage() {
               kicker="Every Circle begins with a few neighbors deciding to show up."
             />
             <p className="mt-6 text-body-lg text-muted leading-relaxed">
-              We&rsquo;re just getting started in North County San Diego. The calendar is quiet
-              for now, but quiet is how every standing time starts: one sunrise, one cold plunge,
-              one supper that someone put on the calendar. Join free and you&rsquo;ll be among
-              the first to know when the first one lands, and one of the faces the next person walks
-              in and recognizes.
+              We’re just getting started in North County San Diego. Check back for new dates, or explore the Circles listed here and how to start a gathering of your own.
             </p>
             <div className="mt-9">
               <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
@@ -140,12 +136,10 @@ export default async function DiscoverEventsPage() {
                 <SectionHeading
                   eyebrow="On the calendar"
                   title={<>What&apos;s <span className="text-primary-strong">coming up</span></>}
-                  kicker="Pick one, RSVP, and you're expected."
+                  kicker="Choose a gathering and check the details."
                 />
                 <p className="mt-5 text-body-lg text-muted leading-relaxed">
-                  This is the kind of plan that pulls you off the couch and into a room. Look
-                  through what&apos;s next, find the one that sounds like your morning, and let
-                  a few neighbors start to know your face.
+                  Browse the upcoming dates and choose an activity you would like to try. Read the listing for availability and how to take part.
                 </p>
               </div>
               <div className="space-y-3">
@@ -166,7 +160,7 @@ export default async function DiscoverEventsPage() {
                 />
                 <SignInCta
                   title="Want to be at one of these?"
-                  body="RSVP, see the exact venue, and let a few neighbors start to know your face."
+                  body="Read the listing, RSVP and check the venue details before you go."
                   action={BETA_CTA_LABEL}
                   href={BETA_CTA_HREF}
                 />
@@ -182,17 +176,13 @@ export default async function DiscoverEventsPage() {
             imgAspect="natural"
             eyebrow="Why in person"
             title="The room does what the feed can't"
-            kicker="Cold, gold, quiet, and the same faces, week after week."
+            kicker="Choose an activity and a date that work for you."
           >
             <p>
-              A sunrise on the bluff. Mats laid out in rows on the grass. A circuit that runs you
-              from heat to cold and hands you back calmer than you arrived. None of it survives a
-              screen. You have to be in the room.
+              A walk, a class, a table where people gather. Choose an activity that interests you and read what taking part involves.
             </p>
             <p>
-              And the second time you come, you&apos;re not a stranger anymore. The faces you
-              half-recognize from the feed are already there, saving you the corner by the window.
-              Showing up stops feeling like a plan and starts feeling like home.
+              You can try one date before deciding whether to return. Ask the Host about future gatherings if you want a regular time to meet.
             </p>
           </ZigZag>
 

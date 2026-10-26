@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── The sitemap's emitted URL set is the contract ────────────────────────────────────────────────
@@ -18,6 +19,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // The route builds every URL from SITE_URL, which is resolved at module load — so the test reads the
 // same constant rather than stubbing the env after the import has already been hoisted.
 import { readFileSync } from 'node:fs'
+import { resolveSitemap } from 'next/dist/build/webpack/loaders/metadata/resolve-route-data'
+import { resolveProfileSiteCanonical } from '@/lib/sites/profile-canonical'
+vi.mock('@/lib/sites/profile-canonical', () => ({ resolveProfileSiteCanonical: vi.fn(async () => null) }))
 import { SITE_URL as SITE } from '@/lib/site'
 
 // ── Fixture ──────────────────────────────────────────────────────────────────────────────────────
@@ -50,7 +54,7 @@ function show(over: Partial<FixtureShow> & { id: string; spaceId: string; slug: 
 // `updatedAt` is the LIVE-197 field: the discovery reader projects `spaces.updated_at` so the Space
 // section can carry a `<lastmod>`. delta deliberately has NONE, because the rule is that a row with
 // no timestamp emits no lastmod rather than a synthesised one.
-const SPACES = [
+const SPACES: Array<{ id: string; slug: string; type: string; updatedAt: string | null; canonicalSite?: import('@/lib/sites/profile-canonical').ProfileCanonicalSite }> = [
   { id: 'sp-a', slug: 'alpha', type: 'business', updatedAt: '2026-07-04T10:00:00Z' },
   { id: 'sp-b', slug: 'bravo', type: 'business', updatedAt: '2026-08-09T11:30:00Z' },
   { id: 'sp-c', slug: 'charlie', type: 'business', updatedAt: '2026-05-01T00:00:00Z' },
@@ -176,7 +180,14 @@ vi.mock('@/app/discover/events/_data', () => ({ getCityCategoryHubs: async () =>
 const cityReads = vi.hoisted(() => ({ places: [] as { slug: string; eventCount?: number }[], density: [] as { slug: string }[] }))
 vi.mock('@/app/discover/cities/_towns', () => ({ listDiscoverCities: async () => cityReads.places }))
 vi.mock('@/app/discover/cities/_data', () => ({ listDensityCities: async () => cityReads.density }))
-vi.mock('@/lib/supabase/public', () => ({ createPublicClient: () => ({ rpc: async () => ({ data: [] }) }) }))
+const organizerRead = vi.hoisted(() => ({
+  rpc: vi.fn(async (_name: string, _args: unknown) => ({
+    data: [] as { handle: string; next_starts: string | null }[],
+    error: null as { message: string; code?: string } | null,
+    status: 200,
+  })),
+}))
+vi.mock('@/lib/supabase/public', () => ({ createPublicClient: () => ({ rpc: organizerRead.rpc }) }))
 // The admin client answers per TABLE, so a LIVE-331 test can hand the real practices reader the
 // exact resolved shape supabase-js produces under a database window, while every other read this
 // route makes through the admin client keeps resolving the healthy empty it always did.
@@ -211,6 +222,8 @@ vi.mock('@/lib/supabase/admin', () => ({
 import sitemap from './sitemap'
 
 beforeEach(() => {
+  organizerRead.rpc.mockReset()
+  organizerRead.rpc.mockResolvedValue({ data: [], error: null, status: 200 })
   showsBatch.mockClear()
   profileTabs.rows = []
   readers.journeys = async () => []
@@ -343,6 +356,22 @@ describe('app/sitemap emitted URL set', () => {
     const hit = (await sitemap()).find((e) => e.images?.[0]?.includes('a.jpg'))
     expect(hit, 'the product entry is advertised').toBeDefined()
     expect(hit!.images![0]).toBe('https://cdn.example/a.jpg?x=1&amp;y=2')
+  })
+
+  it('serializes only fully qualified public image locations and preserves external CDNs', async () => {
+    const inputs = ['/brand/photos/local.jpg', 'images/path.jpg', '//cdn.example/p.jpg', 'https://cdn.example/a.jpg?x=1&y=2', 'http://cdn.example/plain.jpg', 'data:image/png;base64,x', 'javascript:alert(1)', 'ftp://cdn.example/x', 'https://user:secret@cdn.example/x', 'https://[invalid', '', '#fragment']
+    // Each product contributes its first image, exercising the actual route's final projection.
+    commerce.shop = inputs.map((image, i) => ({ id: `image-${i}`, images: [image] }))
+    const entries = await sitemap()
+    const xml = resolveSitemap(entries)
+    const document = new DOMParser().parseFromString(xml, 'application/xml')
+    const locations = [...document.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-image/1.1', 'loc')].map(n => n.textContent!)
+    expect(locations).toEqual([`${SITE}/brand/photos/local.jpg`, `${SITE}/images/path.jpg`, 'https://cdn.example/p.jpg', 'https://cdn.example/a.jpg?x=1&y=2', 'http://cdn.example/plain.jpg'])
+    expect(locations.every(image => /^https?:\/\//.test(image) && !new URL(image).username)).toBe(true)
+    // The former verbatim image projection fails this same absolute-URL acceptance condition.
+    const oldXml = resolveSitemap([{ url: `${SITE}/spaces/example`, images: ['/brand/photos/local.jpg'] }])
+    const oldDoc = new DOMParser().parseFromString(oldXml, 'application/xml')
+    expect([...oldDoc.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-image/1.1', 'loc')].every(n => /^https?:\/\//.test(n.textContent!))).toBe(false)
   })
 
   it('emits no duplicate URLs', async () => {
@@ -632,25 +661,25 @@ describe('app/sitemap section read failures', () => {
     error.mockRestore()
   })
 
-  it('applies the same rule to a throw from one of the six reads OUTSIDE the chain', async () => {
+  it('reports journey throws by section and preserves the other sections', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    // Transient: the outer catch must NOT degrade this to static-only; it rethrows.
+    // Transient: the section wrapper must abandon regeneration.
     readers.journeys = async () => {
       throw FETCH_FAILED
     }
-    await expect(sitemap()).rejects.toMatchObject({ message: 'TypeError: fetch failed' })
-    expect(sitemapLines(error).some((l) => l.includes('dynamic block failed on TRANSPORT'))).toBe(true)
+    await expect(sitemap()).rejects.toMatchObject({ name: 'SitemapTransientReadError', cause: FETCH_FAILED })
+    expect(sitemapLines(error).some((l) => l.includes('journeys read failed on TRANSPORT'))).toBe(true)
 
-    // Deterministic: the static-only fallback this route always had, now with a line saying so.
+    // Deterministic: keep every other section, including the fixture Space.
     error.mockClear()
     readers.journeys = async () => {
       throw PERMISSION_DENIED
     }
     const urls = (await sitemap()).map((e) => e.url)
     expect(urls).toContain(`${SITE}/`)
-    expect(urls).not.toContain(`${SITE}/spaces/alpha`)
-    expect(sitemapLines(error).some((l) => l.includes('dynamic block failed') && l.includes('42501'))).toBe(true)
+    expect(urls).toContain(`${SITE}/spaces/alpha`)
+    expect(sitemapLines(error).some((l) => l.includes('journeys read failed') && l.includes('42501'))).toBe(true)
     error.mockRestore()
   })
 
@@ -717,4 +746,64 @@ describe('app/sitemap section read failures', () => {
     const src = readFileSync('app/sitemap.ts', 'utf8')
     expect(src.match(/\.catch\(\(\) => \[\]\)/g)).toBeNull()
   })
+})
+
+
+describe('organizer sitemap read failures', () => {
+  it('keeps the public organizer RPC and emits returned handles without invented lastmod', async () => {
+    organizerRead.rpc.mockResolvedValueOnce({ data: [{ handle: 'public-host', next_starts: '2026-12-01' }], error: null, status: 200 })
+    const entry = (await sitemap()).find(e => e.url.endsWith('/organizer/public-host'))
+    expect(entry).toMatchObject({ url: `${SITE}/discover/events/organizer/public-host` })
+    expect(entry?.lastModified).toBeUndefined()
+    expect(organizerRead.rpc).toHaveBeenCalledWith('public_organizer_handles', { _limit: 500 })
+  })
+
+  it('treats a healthy empty organizer read as empty without an error log', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      expect((await sitemap()).some(e => e.url.includes('/organizer/'))).toBe(false)
+      expect(log).not.toHaveBeenCalled()
+    } finally { log.mockRestore() }
+  })
+
+  it.each(['resolved HTTP 503', 'thrown fetch failure'])('abandons regeneration for organizer transport: %s', async kind => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      if (kind === 'resolved HTTP 503') organizerRead.rpc.mockResolvedValueOnce({ data: [], error: { message: 'edge unavailable', code: '' }, status: 503 })
+      else organizerRead.rpc.mockRejectedValueOnce(new TypeError('fetch failed'))
+      await expect(sitemap()).rejects.toMatchObject({ name: 'SitemapTransientReadError' })
+      expect(log).toHaveBeenCalledTimes(1)
+      expect(String(log.mock.calls[0][0])).toContain('organizers read failed on TRANSPORT')
+    } finally { log.mockRestore() }
+  })
+
+  it.each([403, 503])('keeps a real PostgREST error deterministic even at organizer HTTP %s', async status => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      organizerRead.rpc.mockResolvedValueOnce({ data: [], error: { message: 'permission denied', code: '42501' }, status })
+      const entries = await sitemap()
+      expect(entries.some(e => e.url.includes('/organizer/'))).toBe(false)
+      expect(entries.map(e => e.url)).toContain(`${SITE}/spaces/alpha`)
+      expect(log).toHaveBeenCalledTimes(1)
+      expect(String(log.mock.calls[0][0])).toContain('organizers read failed')
+      expect(String(log.mock.calls[0][0])).not.toContain('TRANSPORT')
+    } finally { log.mockRestore() }
+  })
+})
+
+
+it('does not advertise Frequency aliases whose public website twin is canonical on another host', async () => {
+  vi.mocked(resolveProfileSiteCanonical).mockImplementation(async (site, pageSlug) => site?.id === 'sp-a' && (!pageSlug || pageSlug === 'home') ? 'https://alpha.example/' : null)
+  // The real route passes the canonical candidate attached by the directory reader.
+  SPACES[0] = { ...SPACES[0], canonicalSite: { id: 'sp-a', slug: 'alpha', domain: 'alpha.example', pages: ['home'] } }
+  try {
+    const entries = await sitemap()
+    expect(entries.some((entry) => entry.url === `${SITE}/spaces/alpha`)).toBe(false)
+    expect(entries.some((entry) => entry.url === `${SITE}/spaces/bravo`)).toBe(true)
+    expect(entries.some((entry) => entry.url === `${SITE}/spaces/alpha/podcasts`)).toBe(true)
+    expect(entries.some((entry) => entry.url === 'https://alpha.example/')).toBe(false)
+  } finally {
+    delete SPACES[0].canonicalSite
+    vi.mocked(resolveProfileSiteCanonical).mockResolvedValue(null)
+  }
 })

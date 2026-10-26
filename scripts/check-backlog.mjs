@@ -70,7 +70,8 @@
 //   node scripts/check-backlog.mjs --lane owner   # filter the report to one lane
 
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs'
-import { spawn, spawnSync } from 'node:child_process'
+import { parseShellCommands } from './lib/shell-parse.mjs'
+import { spawn } from 'node:child_process'
 import { availableParallelism } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -188,6 +189,7 @@ let fragmentsRead = 0
 /** Structural validation. A malformed row is a failure, not a skip — a row the script cannot read
  *  is a row nothing is checking, which is indistinguishable from the drift this file prevents. */
 function validate(entries) {
+  const shellErrors = parseShellCommands(entries.filter(e => e.verify?.kind === 'cmd' && e.verify.cmd).map(e => e.verify.cmd))
   const problems = []
   const seen = new Set()
 
@@ -303,10 +305,10 @@ function validate(entries) {
         // nothing computed, which the row would have reported forever. `sh -n` parses without
         // executing, so it catches every syntax error the heuristic enumerates plus the ones
         // nobody thought of. A sweep the day this landed found exactly one offender.
-        const parse = spawnSync('sh', ['-n'], { input: p.cmd, encoding: 'utf8' })
-        if (parse.status !== 0) {
+        const parseError = shellErrors.get(p.cmd)
+        if (parseError) {
           problems.push(
-            `${at}: verify.cmd cannot be parsed by the shell (${(parse.stderr ?? '').trim().split('\n')[0]}). ` +
+            `${at}: verify.cmd cannot be parsed by the shell (${parseError}). ` +
               `A probe that cannot RUN does not answer "not done" — it answers nothing, and the guard ` +
               `would read its exit code as a verdict. Fix the syntax; quote the body with single quotes ` +
               `and use String.fromCharCode(39) or \\x60 where a literal quote or backtick is needed.`,
@@ -456,9 +458,12 @@ function spawnProbe(cmd) {
     const report = []
     child.stdio[3].on('data', (c) => report.push(c))
     child.stdout.resume()
-    child.stderr.resume()
+    let stderr = Buffer.alloc(0)
+    child.stderr.on('data', chunk => {
+      if (stderr.length < 8192) stderr = Buffer.concat([stderr, chunk.subarray(0, 8192 - stderr.length)])
+    })
     child.on('error', (error) => resolve({ error }))
-    child.on('close', (status, signal) => resolve({ status, signal, cpuMs: parseProbeReport(Buffer.concat(report)) }))
+    child.on('close', (status, signal) => resolve({ status, signal, cpuMs: parseProbeReport(Buffer.concat(report)), stderr: stderr.toString('utf8') }))
   })
 }
 
@@ -487,7 +492,7 @@ async function runProbe(p) {
     if (r.error || r.signal !== null || r.status === null) return { result: null, cpuMs } // killed, timed out, unspawnable
     if (r.status === 127) return { result: null, cpuMs } // the shell could not find the command — not an answer
     if (r.status === PROBE_INDETERMINATE) return { result: null, cpuMs } // the probe told us it could not look
-    return { result: r.status === 0, cpuMs }
+    return { result: r.status === 0, cpuMs, diagnostic: r.stderr }
   }
 
   // Paths that do not exist count as "no match" — a deleted file cannot contain the thing.
@@ -764,7 +769,7 @@ await runPool(
 
 for (const [i, e] of toProbe.entries()) {
   const p = e.verify
-  const { result, cpuMs } = outcomes[i]
+  const { result, cpuMs, diagnostic } = outcomes[i]
   if (p.kind === 'cmd') {
     if (cpuMs === null) unattributed++
     else probeCosts.push({ id: e.id, kind: p.kind, cpuMs })
@@ -791,6 +796,7 @@ for (const [i, e] of toProbe.entries()) {
         says: 'done',
         found: 'NOT DONE',
         why: 'Either this regressed, or the row was closed without the probe ever passing.',
+        diagnostic,
       })
     }
   }
@@ -880,6 +886,10 @@ if (contradictions.length) {
     console.error(`      ${dim(c.why)}`)
     if (c.e.verify.pattern) console.error(`      ${dim(`probe: ${c.e.verify.kind} /${c.e.verify.pattern}/ in ${c.e.verify.paths.join(', ')}`)}`)
     if (c.e.verify.cmd) console.error(`      ${dim(`probe: ${c.e.verify.cmd}`)}`)
+    if (c.diagnostic?.trim()) {
+      console.error('      stderr (first 8 KiB, at most 16 lines):')
+      for (const line of c.diagnostic.trim().split('\n').slice(0, 16)) console.error(`      ${line}`)
+    }
     console.error('')
   }
   console.error(dim(`   Fix the ROW (change its status) or the PROBE (if it measures the wrong thing).`))

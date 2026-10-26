@@ -1,4 +1,5 @@
-import type { Metadata } from 'next'
+import type { Metadata, ResolvingMetadata } from 'next'
+import { helpPageMetadata } from '@/lib/help/metadata'
 import { SITE_NAME } from '@/lib/site'
 import { promises as fs } from 'fs'
 import path from 'path'
@@ -13,7 +14,7 @@ import { FrequencyHelpChangelog } from '@/components/frequency/site/pages/help/f
 // so the public version history IS the changelog: one source, auto-updated on
 // every release. Keep CHANGELOG entries written for humans (Keep a Changelog);
 // technical detail belongs in git history, not here.
-export const metadata: Metadata = {
+const HELP_METADATA: Metadata = {
   title: "What's new · Help",
   description: 'Recent changes and improvements to Frequency.',
   alternates: { canonical: '/help/changelog' },
@@ -25,6 +26,13 @@ export const metadata: Metadata = {
     description: 'Recent changes and improvements to Frequency.',
     url: '/help/changelog',
   },
+}
+
+export async function generateMetadata(
+  _props: { params: Promise<Record<string, never>> },
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  return helpPageMetadata(HELP_METADATA, parent)
 }
 
 export default async function ChangelogPage() {

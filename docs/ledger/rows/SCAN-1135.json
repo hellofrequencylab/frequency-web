@@ -1,0 +1,6 @@
+{
+  "id": "SCAN-1135",
+  "patch": { "status": "done", "closed": "2026-10-26" },
+  "append": { "detail": "Closed by #3927: tests for disputes, the guest booking door, the trial-ending notice and the beta price grant. Journey fulfilment and donation settlement already had tests." },
+  "wave": "W7"
+}

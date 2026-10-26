@@ -1,7 +1,8 @@
 import 'server-only'
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { spaceEarningsSummary } from '@/lib/commerce/orders'
+import { spaceEarningsWindows, type SpaceEarnings } from '@/lib/commerce/orders'
+import { eventInstant } from '@/lib/time/zone'
 import { DAY_MS, type CheckinRow } from './checkin-stats'
 
 // THE SPACE READS THE FREQUENCY ADMIN BODIES ADD (Overview, Contacts, Economy). Read-only, fail-quiet, and
@@ -23,9 +24,13 @@ const PAGE = 1000
 const MAX_EVENTS = 5_000
 const MAX_ROWS = 50_000
 
-/** The Space's events whose start falls after `sinceIso` (all of them when omitted), newest first, capped. */
+/** Past Space events after the optional window margin. Throws if completeness cannot be established. */
 async function spaceEventIds(spaceId: string, sinceIso?: string): Promise<string[]> {
-  let q = createAdminClient().from('events').select('id').eq('space_id', spaceId)
+  const now = Date.now()
+  // Stored starts_at is a wall clock in UTC parts. Keep a UTC+14 margin in SQL,
+  // then resolve each actual event instant before counting it as past.
+  let q = createAdminClient().from('events').select('id, starts_at, time_zone').eq('space_id', spaceId)
+    .lte('starts_at', new Date(now + 14 * 3_600_000).toISOString())
   // Check-ins land on or after an event's day, so an event that started before the window holds none of
   // the window's rows (the margin covers a multi-day event).
   if (sinceIso) q = q.gte('starts_at', new Date(Date.parse(sinceIso) - 14 * DAY_MS).toISOString())
@@ -33,10 +38,18 @@ async function spaceEventIds(spaceId: string, sinceIso?: string): Promise<string
   for (let from = 0; from < MAX_EVENTS; from += PAGE) {
     const { data, error } = await q.order('starts_at', { ascending: false }).order('id').range(from, from + PAGE - 1)
     if (error) throw error
-    const rows = (data ?? []) as { id: string }[]
-    for (const r of rows) ids.push(r.id)
-    if (rows.length < PAGE) break
+    const rows = (data ?? []) as { id: string; starts_at: string; time_zone: string | null }[]
+    for (const r of rows) {
+      const start = eventInstant(r.starts_at, r.time_zone)?.getTime()
+      if (start === undefined || !Number.isFinite(start)) throw new Error('check-in event time is unavailable')
+      if (start <= now) ids.push(r.id)
+    }
+    if (rows.length < PAGE) return ids
   }
+  // A full final page cannot prove completeness. Probe one row, never raise the safety bound.
+  const { data: extra, error: extraError } = await q.order('starts_at', { ascending: false }).order('id').range(MAX_EVENTS, MAX_EVENTS)
+  if (extraError) throw extraError
+  if (extra?.length) throw new Error('check-in event history exceeds the complete-read bound')
   return ids
 }
 
@@ -49,8 +62,10 @@ export const loadSpaceCheckins = cache(async (spaceId: string, sinceDays?: numbe
     const ids = await spaceEventIds(spaceId, since)
     if (ids.length === 0) return []
     const out: CheckinRow[] = []
-    for (let i = 0; i < ids.length && out.length < MAX_ROWS; i += EVENT_BATCH) {
-      for (let from = 0; out.length < MAX_ROWS; from += PAGE) {
+    let scannedRows = 0
+    for (let i = 0; i < ids.length; i += EVENT_BATCH) {
+      for (let from = 0; ; from += PAGE) {
+        if (scannedRows >= MAX_ROWS) throw new Error('check-in history exceeds the complete-read bound')
         let q = createAdminClient()
           .from('engagement_events')
           .select('id, actor_profile_id, created_at, event_id:context->>eventId')
@@ -60,6 +75,7 @@ export const loadSpaceCheckins = cache(async (spaceId: string, sinceDays?: numbe
         if (since) q = q.gte('created_at', since)
         const { data, error } = await q.order('id').range(from, from + PAGE - 1)
         if (error) throw error
+        scannedRows += (data ?? []).length
         const rows = (data ?? []) as unknown as { actor_profile_id: string | null; created_at: string; event_id: string | null }[]
         for (const r of rows) {
           const at = Date.parse(r.created_at)
@@ -80,6 +96,7 @@ export interface RevenueSeries {
   weeks: number[]
   last30: number
   prior30: number
+  summary30: SpaceEarnings
 }
 
 /** Net revenue per week for the last `weeks` weeks, and the last two 30-day windows. Null on a failure. */
@@ -87,15 +104,13 @@ export const loadSpaceRevenueSeries = cache(async (spaceId: string, weeks = 12):
   if (!spaceId) return null
   try {
     const windows = Array.from({ length: weeks }, (_, i) => (i + 1) * 7)
-    const [cumulative, d30, d60] = await Promise.all([
-      Promise.all(windows.map((days) => spaceEarningsSummary(spaceId, days, true))),
-      spaceEarningsSummary(spaceId, 30, true),
-      spaceEarningsSummary(spaceId, 60, true),
-    ])
+    const summaries = await spaceEarningsWindows(spaceId, [...windows, 30, 60])
+    const cumulative = summaries.slice(0, windows.length)
+    const [d30, d60] = summaries.slice(windows.length)
     const nets = cumulative.map((s) => s.netCents)
     // nets[i] covers the last (i+1) weeks; week i (newest first) is its difference from the window before.
     const newestFirst = nets.map((v, i) => v - (i === 0 ? 0 : nets[i - 1]))
-    return { weeks: newestFirst.reverse(), last30: d30.netCents, prior30: d60.netCents - d30.netCents }
+    return { weeks: newestFirst.reverse(), last30: d30.netCents, prior30: d60.netCents - d30.netCents, summary30: d30 }
   } catch (error) {
     console.error('[frequency/admin] space revenue series read failed:', error)
     return null

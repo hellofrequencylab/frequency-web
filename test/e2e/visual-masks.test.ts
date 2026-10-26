@@ -128,16 +128,13 @@ describe('visual masks (LIVE-213)', () => {
   it('PageHeading stamps visualMask on the heading ROW, and StreamTemplate passes it through (LIVE-308)', () => {
     // The row, not the h1: the title block is a content-sized flex item, so an h1 mask would be
     // a box of a different width on two honest captures of the feed's greeting. The stamp must
-    // sit on the element that opens the `flex flex-row` / `flex flex-col` row.
+    // sit on the kit head row.
     const heading = readFileSync('components/templates/page-heading.tsx', 'utf8')
-    // One stamp per design branch (ADR-1737): the Frequency row is the kit's `.head`, the DAWN row
-    // opens with the inlineActions flex switch. Each sits on its row, never the h1.
+    // One stamp, on the kit's `.head` row, never the h1 (ADR-1880).
     const stamps = [...heading.matchAll(/data-visual-mask=\{visualMask\}/g)].map((m) => m.index!)
-    expect(stamps).toHaveLength(2)
-    const after = stamps.map((i) => heading.slice(i, i + 200))
-    const before = stamps.map((i) => heading.slice(Math.max(0, i - 80), i))
-    expect(after.some((t) => /inlineActions\s*\?\s*'flex flex-row/.test(t))).toBe(true)
-    expect(before.some((t) => /className="head"\s*$/.test(t))).toBe(true)
+    expect(stamps).toHaveLength(1)
+    const before = heading.slice(Math.max(0, stamps[0] - 80), stamps[0])
+    expect(before).toMatch(/className="head"\s*$/)
     const stream = readFileSync('components/templates/stream-template.tsx', 'utf8')
     expect(stream).toMatch(/visualMask=\{visualMask\}/)
     // And the feed is the page that sets it, on the one heading that is a clock.
@@ -151,13 +148,10 @@ describe('visual masks (LIVE-213)', () => {
     expect(source).not.toMatch(/<ModuleCard\b/)
   })
 
-  it('a mask paints a box and moves nothing: no site is a zero-size wrapper', () => {
-    // A `<span className="hidden md:block">` around a fixed child has a zero box, so masking
-    // it paints nothing. Every registered site must sit on an element that draws.
+  it('the floating edge chat tab is gone, so no mask sits on a zero-size wrapper', () => {
     const source = readFileSync('components/vera/vera-launcher.tsx', 'utf8')
-    const wrapper = source.indexOf('<span className="hidden md:block">')
-    expect(wrapper).toBeGreaterThan(-1)
-    expect(source.slice(wrapper, wrapper + 40)).not.toContain('data-visual-mask')
+    expect(source).not.toContain('<span className="hidden md:block">')
+    expect(source).not.toMatch(/<EdgePill\b/)
   })
 
   it('Playwright declines the Vercel preview toolbar on every run', () => {
