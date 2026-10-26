@@ -98,5 +98,6 @@ export function initialWebsiteTheme(preferences: unknown): WebsiteTheme {
   if (siteTheme(preferences) === 'wildheart') return 'Wildheart'
   if (siteTheme(preferences) === 'network') return 'Network'
   if (siteTheme(preferences) === 'temple') return 'Temple'
+  if (siteTheme(preferences) === 'midnight') return 'Midnight'
   return siteTheme(preferences) === 'bold' || theme.toLowerCase() === 'menswork' ? 'Menswork' : 'DAWN'
 }

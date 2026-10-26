@@ -2,6 +2,7 @@ import { MENSWORK_PALETTE } from '@/lib/theme/menswork'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { NETWORK_SCHEMES } from '@/lib/theme/network'
 import { TEMPLE_ACCENT } from '@/lib/theme/temple'
+import { MIDNIGHT_ACCENT } from '@/lib/theme/midnight'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteFacesId } from '@/lib/theme/site-faces'
 
@@ -39,7 +40,7 @@ import type { SiteFacesId } from '@/lib/theme/site-faces'
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
-export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'temple'
+export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'temple' | 'midnight'
 
 interface SiteThemeDef {
   id: SiteThemeId
@@ -88,6 +89,14 @@ export const SITE_THEMES: readonly SiteThemeDef[] = [
     description: 'A lime-washed house: plaster and umber, one clay color, arched photos and cards, warm and unhurried.',
     defaultFonts: 'classic',
   },
+  {
+    // Typography-only on the Space page too (ADR-578): Bodoni Moda, Marcellus and Geist load on the website
+    // alone, so a synced Space page wears Classic (a serif headline over a quiet body).
+    id: 'midnight',
+    label: 'Midnight',
+    description: 'After dark: deep night grounds, bone type, one violet accent, square frames and monochrome photos.',
+    defaultFonts: 'classic',
+  },
 ]
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
@@ -128,6 +137,7 @@ export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
   wildheart: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   network: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   temple: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  midnight: { corners: 'square', spacing: 'airy', header: 'bar', footer: 'full' },
 }
 
 export interface SiteLook {
@@ -158,7 +168,7 @@ const MAX_PAGE_THEMES = 30
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 export function isSiteThemeId(v: unknown): v is SiteThemeId {
-  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'temple'
+  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'temple' || v === 'midnight'
 }
 
 export function readSiteStyle(preferences: unknown): SiteStyle {
@@ -273,5 +283,6 @@ export function spacePageDefaultAccent(preferences: unknown, typeDefault: string
   if (!style.synced) return typeDefault
   if (style.theme === 'network') return NETWORK_SCHEMES.marigold.accent
   if (style.theme === 'temple') return TEMPLE_ACCENT.accent
+  if (style.theme === 'midnight') return MIDNIGHT_ACCENT.accent
   return style.theme === 'bold' ? MENSWORK_PALETTE.teal : style.theme === 'wildheart' ? WILDHEART_PALETTE.violet : typeDefault
 }

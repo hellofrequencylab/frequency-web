@@ -41,7 +41,7 @@ export const MEGA_THEMES: readonly MegaThemeDef[] = [
   { id: 'wildheart', editor: 'Wildheart', site: 'wildheart' },
   { id: 'network', editor: 'Network', site: 'network' },
   { id: 'temple', editor: 'Temple', site: 'temple' },
-  { id: 'midnight', editor: 'Midnight', site: null },
+  { id: 'midnight', editor: 'Midnight', site: 'midnight' },
 ]
 
 export interface MegaThemeChoice {
