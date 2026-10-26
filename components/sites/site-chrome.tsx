@@ -12,6 +12,7 @@ import { NETWORK_CSS } from './network-css'
 import { TEMPLE_CSS } from './temple-css'
 import { MIDNIGHT_CSS } from './midnight-css'
 import { MidnightLogo } from './midnight-logo'
+import { MidnightBar } from './midnight-bar'
 import type { NetworkSchemeId } from '@/lib/theme/network'
 import { WildheartSubBar } from './wildheart-now-line'
 import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
@@ -195,6 +196,7 @@ export function SiteChrome({
       className="hs-root"
     >
       <style>{skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
+      {midnight && <MidnightBar now={new Date()} next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} />}
       {wild && <WildheartInkDefs />}
       {wild ? (
         <>
