@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
+import { safeWritingQuestions } from '@/lib/ai/writing-coach'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import {
   createListing, updateListing, setListingStatus, deleteListing, listingAuthorId,
@@ -82,7 +83,7 @@ export async function draftBoardListingCopyAction(input: {
 }): Promise<ListingCopy> {
   const profileId = await getMyProfileId()
   if (!profileId) return { title: '', description: '' }
-  return draftListingCopy({
+  const advice = await draftListingCopy({
     // A Classifieds listing is not a commerce row at all. `kind` only picks the default framing, which
     // `framing` overrides with the truth for this board.
     kind: 'physical',
@@ -90,6 +91,7 @@ export async function draftBoardListingCopyAction(input: {
     seed: input.seed ?? null,
     profileId,
   })
+  return { title: '', description: '', questions: safeWritingQuestions(advice) }
 }
 
 export async function updateListingAction(id: string, patch: ListingPatch): Promise<ActionResult> {

@@ -1,40 +1,39 @@
 'use client'
 
-// The Circle's Guided section (ADR-450 §2 · ADR-996). The surface is the shared GuidedModule;
-// this file supplies only what is a Circle's own: its manifest, its read-gated getter, and its
-// two actions.
-//
-// The Circle is the entity that proved the LOCK had a hole in it: it pins `agreements`, which is
-// a REPEATED collection, and the kernel used to resolve a repeat's section to zero paths. The pin
-// rendered and protected nothing. Fixed in lib/studio/kernel/redraw.ts (ADR-996), so pinning the
-// group's own norms now holds through a redraw.
-
-import { useCallback } from 'react'
-import { CIRCLE_MANIFEST } from '@/lib/studio/entities/circle'
+import { useState, useTransition } from 'react'
+import { usePathname } from 'next/navigation'
 import { getCircleAdminData } from '@/app/(main)/circles/admin-actions'
-import { redrawCircleAction, restoreCircleAction, type CircleRedrawResult } from '@/app/(main)/circles/actions'
-import { GuidedModule } from './guided-module'
+import { redrawCircleAction } from '@/app/(main)/circles/actions'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/field'
+import { WritingQuestions } from '@/components/studio/writing-questions'
+import { safeWritingQuestions } from '@/lib/ai/writing-questions'
 import { useEntityRailRead } from './entity-rail-data'
 
-const routeKey = (pathname: string) => pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
-
-const restore = (id: string, before: CircleRedrawResult['before']) => restoreCircleAction(id, before)
-
 export function CircleGuidedModule() {
-  /** getCircleAdminData returns null unless the viewer holds circle.editSettings, so a non-host
-   *  resolves to no entity and the section renders nothing. Its first read comes from the rail's one
-   *  bundled request (ADR-1685), the same read Settings and the Circle Quest block make. */
+  const slug = usePathname().match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  return slug ? <CircleCoach key={slug} slug={slug} /> : null
+}
+function CircleCoach({ slug }: { slug: string }) {
   const readAdmin = useEntityRailRead('circle', 'admin', getCircleAdminData)
-  const resolve = useCallback(async (slug: string) => (await readAdmin(slug))?.id ?? null, [readAdmin])
-  return (
-    <GuidedModule
-      moduleId="circle.guided"
-      manifest={CIRCLE_MANIFEST}
-      blurb="Draft this Circle again with Vera. Pin the name or the agreements and they survive untouched."
-      routeKey={routeKey}
-      resolve={resolve}
-      redraw={redrawCircleAction}
-      restore={restore}
-    />
-  )
+  const [request, setRequest] = useState('')
+  const [questions, setQuestions] = useState<string[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+  return <section className="space-y-3">
+    <p className="text-body-sm text-muted">Think through your Circle with Vera, then make any changes in your own words.</p>
+    <Textarea aria-label="What would you like to improve?" value={request} onChange={event => setRequest(event.target.value)} disabled={pending} />
+    <Button type="button" disabled={pending} onClick={() => start(async () => {
+      setError(null)
+      try {
+        const circle = await readAdmin(slug)
+        if (!circle) { setError('You do not manage this Circle.'); return }
+        const result = await redrawCircleAction(circle.id, { directions: request })
+        if ('error' in result) { setError(result.error); return }
+        setQuestions(safeWritingQuestions(result.data))
+      } catch { setError('Could not load your writing prompts. Try again.') }
+    })}>{pending ? 'Thinking...' : 'Get writing prompts'}</Button>
+    <WritingQuestions questions={questions} />
+    {error && <p role="alert" className="text-body-sm text-danger">{error}</p>}
+  </section>
 }

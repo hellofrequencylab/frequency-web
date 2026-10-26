@@ -1,24 +1,12 @@
-// THE SPACE COPILOT EVAL HARNESS (LIVE-676). A fixed set of Spaces and a scored rubric for the
-// drafts lib/ai/space-copilot.ts writes, so a change to the prompt or the grounding is measured
-// rather than eyeballed. Grounding (the Space's live offerings in the prompt) shipped in the same
-// change and is the first thing this measures.
-//
-// PURE. The rubric reads a draft and the facts it was given; nothing here calls a model. The
-// runner takes the drafter as an argument, so the unit test runs it over the deterministic
-// fallbacks (which must always pass) and `pnpm eval:copilot` runs it over the live model.
-//
-// What the rubric checks is the copilot's own contract, each a named failure:
-//   · the voice canon: no em or en dash, no first person "I", no emoji, hashtags or quotes;
-//   · the shape: a bio is 8 to 70 words and names the Space; a tagline is one line of at most
-//     80 characters and 12 words;
-//   · grounding: no number the facts did not contain (a year, a price, a count is an invented
-//     claim), and no hype or health claim.
+// Offline rubric for Space writing coaching. Historical API names are retained for the
+// existing eval runner. Questions, bounded length, grounding and voice are scored;
+// publication prose fails even when it would have passed the former copy rubric.
 
 import type { SpaceContext } from './space-copilot'
 
-export type DraftKind = 'bio' | 'tagline'
+type DraftKind = 'bio' | 'tagline'
 
-export interface DraftScore {
+interface DraftScore {
   score: number
   failures: string[]
 }
@@ -35,11 +23,11 @@ function numbers(text: string): string[] {
 }
 
 /** The text of every fact a draft may draw on. */
-export function factText(ctx: SpaceContext): string {
+function factText(ctx: SpaceContext): string {
   return [ctx.name, ctx.brandName, ctx.about, ...(ctx.offerings ?? [])].filter(Boolean).join(' ')
 }
 
-export function scoreSpaceDraft(kind: DraftKind, draft: string, ctx: SpaceContext): DraftScore {
+export function scoreSpaceDraft(_kind: DraftKind, draft: string, ctx: SpaceContext): DraftScore {
   const failures: string[] = []
   const text = draft.trim()
   if (!text) return { score: 0, failures: ['empty'] }
@@ -57,18 +45,10 @@ export function scoreSpaceDraft(kind: DraftKind, draft: string, ctx: SpaceContex
   const invented = numbers(text).filter((n) => !known.has(n))
   if (invented.length) failures.push(`invented number: ${invented.join(', ')}`)
 
-  if (kind === 'bio') {
-    if (words < 8) failures.push('bio too short')
-    if (words > 70) failures.push('bio too long')
-    // Compared on letters and digits only: the drafters clean quotes and stray marks out of a name.
-    const squash = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
-    const brand = squash(ctx.brandName || ctx.name || '')
-    if (brand && !squash(text).includes(brand)) failures.push('does not name the Space')
-  } else {
-    if (/\n/.test(text)) failures.push('tagline is more than one line')
-    if (text.length > 80) failures.push('tagline too long')
-    if (words > 12) failures.push('tagline too wordy')
-  }
+  if (!/^(Who|What|Which|How|Why)\b/i.test(text) || !text.endsWith('?')) failures.push('not coaching questions')
+  if (/[.!]/.test(text)) failures.push('contains prose instead of questions')
+  if (words > 120) failures.push('coaching too long')
+  if ((text.match(/\?/g) ?? []).length > 3) failures.push('too many questions')
 
   return { score: Math.max(0, 100 - failures.length * 25), failures }
 }
@@ -110,7 +90,7 @@ export const SPACE_COPILOT_EVAL_SET: readonly { id: string; ctx: SpaceContext }[
   },
 ]
 
-export interface EvalReport {
+interface EvalReport {
   kind: DraftKind
   mean: number
   passed: number

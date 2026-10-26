@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-1345",
+  "title": "Coach messaging authors without creating or replacing their prose",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-26",
+  "wave": "W7",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/messaging-authorship.mjs", "note": "Actual server action and generator execute with inert permission, provider and storage dependencies; unauthorized calls deny, generated prose is rejected and no draft is created. Focused DOM tests separately verify typed replies and setup answers remain unchanged. Local proof; deployment and production acceptance are separate." },
+  "detail": "Guided campaign and sequence assistance returns questions, checks and a proposed outcome measurement. Only explicit manual continuation creates an author-controlled draft; model failure has no write fallback. Shared CRM reply assistance returns coaching in a separate region and never fills the reply composer. Manual sends, summaries and triage retain their existing gates. No schema or provider configuration changes."
+}

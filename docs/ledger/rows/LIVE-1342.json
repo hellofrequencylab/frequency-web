@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-1342",
+  "title": "Coach Circle and listing authors without filling or saving generated prose",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-26",
+  "wave": "W7",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/circle-listing-authorship.mjs",
+    "note": "Actual server-action functions execute with inert session/draft/provider dependencies. Hostile generator fields are stripped, human text is retained, signed-out calls deny, and no generated-field writes occur. Focused render tests separately prove coaching cannot merge/autosave or change the create payload. Local/mocked proof only; release CI, artifact and production acceptance remain separate."
+  },
+  "detail": "Circle section/edit/redraw and the small suggestion path return coaching questions, never writable model patches. Listing helpers return empty legacy title/description slots plus separate questions. Fresh existing author/tenant gates run before context reads; actions re-project outputs so a malformed future generator cannot return authored fields. Commerce Spark, shop item form, Circle builder and Circle rail render guidance without applying it to fields or autosaving. Existing human form saves, manual creation and old undo remain available. No migration, SDK change, provider/DB mutation or dependency update. Depends on LIVE-1331 for main Event/Circle builder preservation; Practice/Journey, importer and marketing generators remain separate packets."
+}

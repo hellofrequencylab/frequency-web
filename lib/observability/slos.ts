@@ -221,7 +221,7 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'weekly',
     freshByMinutes: 60 * 24 * 7 + 60 * 24, // one week + one day grace
-    jobs: ['weekly-digest', 'this-week'],
+    jobs: ['weekly-digest', 'this-week', 'discovery-guidance-watch'],
     why: 'digest delivery and the Thursday regional calendar; a miss is visible to every recipient',
   },
 ]
@@ -415,6 +415,7 @@ export const CRON_MONITORED: readonly string[] = [
 
 /** Jobs that deliberately have no monitor. Silence is chosen here, one line each. */
 export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
+  { job: 'discovery-guidance-watch', reason: 'weekly public guidance drift review (LIVE-1347); structured cron/source failures and durable last-success state are present, but no external monitor is provisioned by this packet' },
   { job: 'embed-events', reason: 'embedding derivation; a miss degrades event search gradually and a backfill repairs it' },
   { job: 'embed-posts', reason: 'embedding derivation (LIVE-677); a miss leaves new posts without the interest term, which the blend drops, and the next run embeds them' },
   { job: 'embed-room-messages', reason: 'embedding derivation; a miss degrades room search gradually and a backfill repairs it' },

@@ -177,7 +177,7 @@ type and helpers live in `lib/action-result.ts`.
 ## Cron
 
 **`vercel.json` is the schedule's source of truth**, and every entry maps 1:1 to a route handler
-under `app/api/cron`. **37 jobs as of 2026-10-22** (27 as of 2026-08-17; `signup-lead-recovery` joined on 2026-09-08, ADR-1274; `onboarding-throughput` joined on 2026-09-14, LIVE-311; `tag-library` joined on 2026-09-29, LIVE-587; `reconcile-transfers` joined on 2026-09-29, LIVE-622; `storage-backup` joined on 2026-09-30, HYG-144; `event-followups` joined on 2026-10-06, LIVE-802; `embed-posts` joined on 2026-10-06, LIVE-677; `this-week` joined on 2026-10-12, LIVE-806; `space-inbox-verify` joined on 2026-10-13, EMAIL-022; `indexnow` joined on 2026-10-22, LIVE-1137), in seven families:
+under `app/api/cron`. **38 jobs as of 2026-10-26** (27 as of 2026-08-17; `signup-lead-recovery` joined on 2026-09-08, ADR-1274; `onboarding-throughput` joined on 2026-09-14, LIVE-311; `tag-library` joined on 2026-09-29, LIVE-587; `reconcile-transfers` joined on 2026-09-29, LIVE-622; `storage-backup` joined on 2026-09-30, HYG-144; `event-followups` joined on 2026-10-06, LIVE-802; `embed-posts` joined on 2026-10-06, LIVE-677; `this-week` joined on 2026-10-12, LIVE-806; `space-inbox-verify` joined on 2026-10-13, EMAIL-022; `indexnow` joined on 2026-10-22, LIVE-1137; `discovery-guidance-watch` joined on 2026-10-26, LIVE-1347), in seven families:
 
 | Family | Example jobs | Cadence |
 |---|---|---|
@@ -187,7 +187,7 @@ under `app/api/cron`. **37 jobs as of 2026-10-22** (27 as of 2026-08-17; `signup
 | Embeddings | `embed-events`, `embed-posts` (the feed interest signal, LIVE-677), `embed-practices`, `embed-help`, `embed-library`, `embed-room-messages`, `tag-library` (Vera names Loom images nobody named, ahead of `embed-library`, LIVE-587) | nightly / 10–30 min |
 | Lifecycle + season | `publish-scheduled`, `season-go-live`, `practice-lifecycle`, `lifecycle-triggers` | 5 min → nightly |
 | Money + retention | `billing-renewals`, `enforce-retention`, `demo-decay`, `refresh-traits`, `reconcile-transfers` (retries the seller transfers of a split order, LIVE-622, and the pro rata reversals a split refund still owes, LIVE-623), `storage-backup` (copies new Storage files to Cloudflare R2, HYG-144) | nightly / 30 min |
-| AI (Vera) | `vera-owner-brief`, `journey-prompt`, `summarize-vera-memory` | daily (`journey-prompt` fires hourly and sends each member once, at their local morning) |
+| AI (Vera) | `vera-owner-brief`, `journey-prompt`, `summarize-vera-memory`, `discovery-guidance-watch` (fixed official public pages; hash changes require human review, no content or policy edits, LIVE-1347) | daily (`journey-prompt` fires hourly and sends each member once, at their local morning); guidance watch weekly |
 
 Every handler is wrapped twice, and both wrappers are contract-checked:
 

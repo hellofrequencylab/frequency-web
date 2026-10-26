@@ -11,10 +11,11 @@ import { cn } from '@/lib/utils'
 import { isError } from '@/lib/action-result'
 import { MESSAGING_GOALS, MESSAGING_TONES, getMessagingGoal } from '@/lib/messaging/goals'
 import { startBuild } from './actions'
+import type { MessagingCoaching } from '@/lib/ai/messaging-generator'
 import { Input, Textarea } from '@/components/ui/field'
 
 // The guided setup, three screens (EMAIL-CAMPAIGNS-FUNNELS-PLAN P3, ask #3/#6): pick a
-// GOAL, answer a few plain questions, then choose "Let Vera draft it" or "Build it
+// GOAL, answer a few plain questions, then choose "Coach my plan" or "Build it
 // manually", seeded from a best-practice template, never a blank page. Lives inside the
 // admin workspace, so it uses the kit's WizardProgress + Button rather than the
 // full-screen onboarding WizardShell. No em dashes (voice).
@@ -29,6 +30,7 @@ export function GuidedSetup({ segments }: { segments: SegmentOption[] }) {
   const [audience, setAudience] = useState(segments[0]?.key ?? '')
   const [tone, setTone] = useState(MESSAGING_TONES[0].key)
   const [details, setDetails] = useState('')
+  const [coaching, setCoaching] = useState<MessagingCoaching | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [buildMode, setBuildMode] = useState<'manual' | 'vera' | null>(null)
   const [pending, start] = useTransition()
@@ -48,12 +50,15 @@ export function GuidedSetup({ segments }: { segments: SegmentOption[] }) {
     setBuildMode(mode)
     const audienceLabel = segments.find((s) => s.key === audience)?.label
     start(async () => {
-      const res = await startBuild({ goalKey: goal.key, name, audience, audienceLabel, tone, details, mode })
+      let res: Awaited<ReturnType<typeof startBuild>>
+      try { res = await startBuild({ goalKey: goal.key, name, audience, audienceLabel, tone, details, mode }) }
+      catch { setError('The review could not load. Your answers are still here. Try again.'); setBuildMode(null); return }
       if (isError(res)) {
         setError(res.error)
         setBuildMode(null)
         return
       }
+      if (res.data.coaching) { setCoaching(res.data.coaching); setBuildMode(null); return }
       const suffix = res.data.veraPending ? `${res.data.href.includes('?') ? '&' : '?'}vera=pending` : ''
       router.push(`${res.data.href}${suffix}`)
     })
@@ -63,6 +68,13 @@ export function GuidedSetup({ segments }: { segments: SegmentOption[] }) {
     <div className="mx-auto max-w-2xl">
       <WizardProgress current={step} total={3} label={STEP_LABELS[step - 1]} />
 
+      {coaching && <section className="mt-6 rounded-card border border-border bg-surface p-4" aria-label="Writing coaching">
+        <h2 className="text-body-sm font-semibold">Questions for your own draft</h2>
+        <ul className="mt-2 list-disc pl-5">{coaching.questions.map((q, i) => <li key={i}>{q}</li>)}</ul>
+        <ul className="mt-2 list-disc pl-5">{coaching.checks.map((q, i) => <li key={i}>{q}</li>)}</ul>
+        <p className="mt-3 text-meta">Proposed measurement: {coaching.measurement}</p>
+        <p className="mt-2 text-meta text-muted">Your answers are unchanged. Continue with your own words when you are ready.</p>
+      </section>}
       <div className="mt-6">
         {step === 1 && <GoalStep onPick={pickGoal} selected={goalKey} />}
 
@@ -306,8 +318,8 @@ function BuildStep({
     <div>
       <h2 className="text-body-lg font-bold text-text">How do you want to build it?</h2>
       <p className="mt-0.5 text-body-sm text-muted">
-        Let Vera write the first draft, or start from the {isSequence ? 'best-practice series' : 'template'} for{' '}
-        {name || goal.suggestedName}. Either way you review and edit before anything sends.
+        Review your plan with Vera, or start from the {isSequence ? 'best-practice series' : 'template'} for{' '}
+        {name || goal.suggestedName}. You write the content before anything sends.
       </p>
 
       {error && (
@@ -319,7 +331,7 @@ function BuildStep({
       )}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {/* Let Vera draft it — the guided AI generator (CRM Phase 1). Lands a reviewable DRAFT in the composer;
+        {/* Coach my plan — the guided AI generator (CRM Phase 1). Lands a reviewable DRAFT in the composer;
             nothing sends until the operator sends it. */}
         <button
           type="button"
@@ -330,22 +342,22 @@ function BuildStep({
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary">
             {veraBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Sparkles className="h-5 w-5" aria-hidden />}
           </span>
-          <span className="text-body-sm font-semibold text-text">Let Vera draft it</span>
+          <span className="text-body-sm font-semibold text-text">Coach my plan</span>
           <span className="text-meta leading-snug text-muted">
             {veraBusy
               ? isSequence
-                ? 'Vera is writing your series. This takes a few seconds.'
-                : 'Vera is writing your email. This takes a few seconds.'
+                ? 'Vera is reviewing your series plan.'
+                : 'Vera is reviewing your email plan.'
               : isSequence
-                ? 'Vera writes every email in the series from your answers. Each lands as a draft to review and edit.'
-                : 'Vera writes the subject, preheader, and body from your answers, as a draft to review and edit.'}
+                ? 'Get questions about your audience, timing and the outcome you want.'
+                : 'Get questions and checks that help you write your own email.'}
           </span>
           <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 text-2xs font-medium text-success">
             <Check className="h-3 w-3" aria-hidden /> Ready
           </span>
         </button>
 
-        {/* Build it manually — the scaffold, unchanged. */}
+        {/* Continue with my words — the scaffold, unchanged. */}
         <button
           type="button"
           onClick={() => onBuild('manual')}
@@ -355,7 +367,7 @@ function BuildStep({
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
             {manualBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <PencilRuler className="h-5 w-5" aria-hidden />}
           </span>
-          <span className="text-body-sm font-semibold text-text">Build it manually</span>
+          <span className="text-body-sm font-semibold text-text">Continue with my words</span>
           <span className="text-meta leading-snug text-muted">
             {isSequence
               ? 'Open the flow view with the series set up, ready for you to write.'
