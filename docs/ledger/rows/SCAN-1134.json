@@ -1,7 +1,7 @@
 {
   "id": "SCAN-1134",
-  "title": "Day, Week and Timeline calendar views exist and two-way calendar sync has a connect button",
-  "status": "open",
+  "title": "Day, Week and Timeline calendar views exist",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "L",
@@ -9,11 +9,12 @@
     "file": "components/spaces/calendar-mode-toggle.tsx",
     "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
   },
-  "detail": "The three views are a label plus a Coming soon mark; Google, Apple, Outlook and Notion sync are four rows with no button. Calendar redesign plan lives in /mnt/project-files/calendar/.",
+  "detail": "The three views are a label plus a Coming soon mark; Google, Apple, Outlook and Notion sync are four rows with no button. Calendar redesign plan lives in /mnt/project-files/calendar/.\n\nCLOSED 2026-10-26 by LIVE-1178 (ADR-1876): the three views are built. The other half of the original title, a connect button for Google, Apple, Outlook and Notion two-way sync, is split into LIVE-1179: it needs provider credentials and the owner's go (calendar plan phase 12), so it is not hidden inside this closure.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs calendar-views",
     "note": "Exits 0 only when the repair has landed; fails on main today."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-26"
 }
