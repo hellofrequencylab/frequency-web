@@ -774,7 +774,12 @@ function waiverFor(pair, stateKey) {
   return w ? { floor: w.floors[stateKey], why: w.why } : null
 }
 
-/** Evaluate the whole pair table against one CSS source. Returns one row per (state, pair). */
+/**
+ * Evaluate the whole pair table against one CSS source. Returns one row per (state, pair).
+ * `src` is whatever `resolve` reads: the CSS text, or the ordered sheets for Frequency.
+ * @param {any} src
+ * @param {{ pairs?: ContrastPair[], states?: any[], resolve?: (src: any, state: any) => Map<string, string> }} [opts]
+ */
 export function evaluateContrast(src, { pairs = PAIRS, states = STATES, resolve = resolveTokens } = {}) {
   const rows = []
   for (const state of states) {

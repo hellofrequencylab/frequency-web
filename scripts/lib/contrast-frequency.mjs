@@ -234,6 +234,7 @@ function foldColorMix(value) {
 /**
  * Computed custom properties at the LAST element of `state.chain`: name → literal value.
  * @param {string[]} sheets CSS sources in cascade order
+ * @param {{ key?: string, chain: Node[] }} state
  */
 export function resolveFrequencyTokens(sheets, state) {
   const rules = sheets.flatMap((src, sheet) =>
