@@ -81,6 +81,26 @@ describe('Google Search Console bounded observation', () => {
     expect(result.status).toBe('completed')
     if (result.status === 'completed') { expect(result.imported.observations).toEqual([]); expect(result.imported.rejectedRows).toBe(1) }
   })
+  it('uses only matching owned pages when a Space also has a separate published custom domain', async () => {
+    access.authorizedPageUrls = [page, 'https://owner.example/']
+    connection.propertyUrl = 'https://owner.example/'
+    request.mockImplementation(async (url: string) => url.endsWith('/sites') ? response({ siteEntry: [{ siteUrl: connection.propertyUrl, permissionLevel: 'siteOwner' }] }) : response({ rows: [{ keys: ['https://owner.example/'], clicks: 8, impressions: 40 }] }))
+    expect((await run()).status).toBe('completed')
+    expect(request).toHaveBeenCalledTimes(2)
+    const [, init] = request.mock.calls[1] as unknown as [string, RequestInit]
+    expect(JSON.parse(String(init.body)).dimensionFilterGroups[0].filters[0].expression).toBe('https://owner.example/')
+  })
+
+  it('rejects a response page outside the selected property even if it is another owned door', async () => {
+    access.authorizedPageUrls = [page, 'https://owner.example/']
+    connection.propertyUrl = 'https://owner.example/'
+    request.mockImplementation(async (url: string) => url.endsWith('/sites') ? response({ siteEntry: [{ siteUrl: connection.propertyUrl, permissionLevel: 'siteOwner' }] }) : response({ rows: [{ keys: [page], clicks: 8, impressions: 40 }] }))
+    const result = await run()
+    if (result.status !== 'completed') throw new Error('Expected bounded import')
+    expect(result.imported.observations).toEqual([])
+    expect(result.imported.rejectedRows).toBe(1)
+  })
+
   it('missing rows do not invent a zero observation', async () => {
     request.mockImplementation(async (url: string) => url.endsWith('/sites') ? response({ siteEntry: [{ siteUrl: connection.propertyUrl, permissionLevel: 'siteOwner' }] }) : response({}))
     const result = await run()

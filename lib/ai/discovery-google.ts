@@ -64,7 +64,7 @@ async function properties(session: DiscoveryProviderSession, deps: GoogleDiscove
     const site = obj(entry)
     // Restricted/unverified properties cannot enable this integration. This proves provider
     // permission, not ownership of every tenant on a shared host.
-    if (site && typeof site.siteUrl === 'string' && ['siteOwner', 'siteFullUser'].includes(String(site.permissionLevel)) && session.access.authorizedPageUrls.every(page => propertyContains(site.siteUrl as string, page))) relevant.push(site.siteUrl)
+    if (site && typeof site.siteUrl === 'string' && ['siteOwner', 'siteFullUser'].includes(String(site.permissionLevel)) && session.access.authorizedPageUrls.some(page => propertyContains(site.siteUrl as string, page))) relevant.push(site.siteUrl)
   }
   return [...new Set(relevant)]
 }
@@ -95,12 +95,14 @@ export async function observeGoogleSearchConsole(spaceId: string, dates: { start
   const opened = await openDiscoveryProvider(spaceId, 'google_search_console', GOOGLE_SEARCH_READ_SCOPE, deps)
   if (opened.status !== 'ready') return opened
   const { session } = opened
-  if (session.access.authorizedPageUrls.length > MAX_PAGES) return { status: 'unavailable', reason: 'scope_limit' }
+  const matchingPages = session.access.authorizedPageUrls.filter(page => propertyContains(session.connection.propertyUrl, page))
+  if (!matchingPages.length) return { status: 'unavailable', reason: 'property_not_verified' }
+  if (matchingPages.length > MAX_PAGES) return { status: 'unavailable', reason: 'scope_limit' }
   const found = await properties(session, deps, deadline)
   if (!found) return { status: 'unavailable', reason: 'provider_error' }
   if (!found.includes(session.connection.propertyUrl)) return { status: 'unavailable', reason: 'property_not_verified' }
   const rows: unknown[] = []
-  for (const page of session.access.authorizedPageUrls) {
+  for (const page of matchingPages) {
     if (!(await discoveryProviderSessionCurrent(session, deps))) return { status: 'unavailable', reason: 'consent_required' }
     const raw = obj(await json(`${API}/${encodeURIComponent(session.connection.propertyUrl)}/searchAnalytics/query`, session, deps, deadline, { startDate: dates.startDate, endDate: dates.endDate, dimensions: ['page'], type: 'web', dataState: 'final', aggregationType: 'byPage', rowLimit: 100, startRow: 0, dimensionFilterGroups: [{ groupType: 'and', filters: [{ dimension: 'page', operator: 'equals', expression: page }] }] }))
     if (!raw || (raw.rows !== undefined && (!Array.isArray(raw.rows) || raw.rows.length > 100))) return { status: 'unavailable', reason: 'provider_error' }
@@ -108,7 +110,7 @@ export async function observeGoogleSearchConsole(spaceId: string, dates: { start
   }
   if (!(await discoveryProviderSessionCurrent(session, deps))) return { status: 'unavailable', reason: 'consent_required' }
   const retrieved = deps.now?.() ?? new Date()
-  const imported = normalizeGoogleSearchAnalytics({ spaceId, access: { spaceId, authorized: true, consent: session.access.consent }, importId: 'google_' + createHash('sha256').update(session.connection.connectionId).digest('hex').slice(0, 20), authorizedPageUrls: session.access.authorizedPageUrls, observedAt: range.to, retrievedAt: retrieved.toISOString(), period: range }, { dimensions: ['page'], response: { rows } }, retrieved)
+  const imported = normalizeGoogleSearchAnalytics({ spaceId, access: { spaceId, authorized: true, consent: session.access.consent }, importId: 'google_' + createHash('sha256').update(session.connection.connectionId).digest('hex').slice(0, 20), authorizedPageUrls: matchingPages, observedAt: range.to, retrievedAt: retrieved.toISOString(), period: range }, { dimensions: ['page'], response: { rows } }, retrieved)
   if (imported.error) return { status: 'unavailable', reason: 'invalid_context' }
   return { status: 'completed', imported, propertyUrl: session.connection.propertyUrl, limitations: [...imported.limitations, 'Google final-data request; Pacific calendar-day bounds. Only independently authorized exact pages were queried. Missing rows are unavailable, not zero or a ranking diagnosis.'] }
 }
