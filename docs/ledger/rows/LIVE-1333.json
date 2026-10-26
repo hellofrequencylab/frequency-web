@@ -14,8 +14,8 @@
   "detail": "Admin campaign review offers attendance, return visits, bookings and useful replies as goals. Validated coaching questions and deterministic checklist replace open-rate optimization. Raw email counts and attribution limits are visible; no generated publication copy is inserted. Goals are per-review selections, not stored program objectives. Real campaign outcome attribution and holdout learning are not implemented by this phase.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/ai-coaching-consequences.mjs campaign",
+    "cmd": "node scripts/probes/campaign-outcome-coaching.mjs",
     "checked": "2026-10-25",
-    "evidence": "Bounded actual-source probe passed with inert IO. Cumulative integration: 35 focused suites, 411 passed, one live-provider test skipped; changed-file ESLint and full TypeScript pass. Frequency compile-only build and all six local artifact gates pass. These are cumulative local checks, not independent phase artifacts, authenticated production, provider or DB acceptance. Migration remains prepared only (OWN-109)."
+    "evidence": "Independent phase release: bounded actual-source probe with inert database/provider IO and focused mocked tests. No phase2 profile, database migration, provider provisioning or attribution dependency. Full application types/build and authenticated preview/production acceptance remain coordinating release checks."
   }
 }
