@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1460",
+  "title": "Network niche starter kits: six variants as data on lib/sites/kits (coaches, studios, hosts, venues, nonprofits, networks)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/network-variants.ts",
+    "ref": "Mega theme rollout 2026-10-26: Network niche variants on the Network block family, the same model as the Midnight kits."
+  },
+  "detail": "Six kits for the Network mega theme, one per niche door, each 3 to 4 pages of Network blocks and shared Space blocks. Pure data on the SiteKit model, loaded lazily by the registry so the public site never imports them. Generic copy in the house voice (docs/marketing/voice-and-language-guide.md), slot tokens for facts a Space already stores, no prices, photos or real names. They appear in the editor's Starter kits panel beside the Midnight kits. Not built here: flipping the picker's feel to live (a test pin needs the owner's words), a Network feature page.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const v=fs.readFileSync('lib/sites/kits/network-variants.ts','utf8');const r=fs.readFileSync('lib/sites/kits/registry.ts','utf8');const n=['coaches','studios','hosts','venues','nonprofits','networks'];process.exit(n.every((x)=>v.includes(x+': {')&&r.includes('network-'+x))?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Six kits; four tests in lib/sites/kits/network-variants.test.ts and the shared kit tests pass locally."
+  },
+  "closed": "2026-10-26"
+}
