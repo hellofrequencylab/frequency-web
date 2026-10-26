@@ -51,6 +51,7 @@ on:
       - 'postcss.config.mjs'
       - 'pnpm-lock.yaml'
       - 'lighthouserc.json'
+      - 'lighthouserc.mobile.json'
       - 'playwright.config.ts'
       - '.github/workflows/e2e.yml'
 
@@ -1187,6 +1188,63 @@ jobs:
             --collect.settings.extraHeaders="{\"x-vercel-protection-bypass\":\"${BYPASS}\"}" \
           || { echo "::warning title=Lighthouse::assertions failed -- see the job log and the uploaded .lighthouseci report"; exit 1; }
 
+      # SCAN-1138: the same preview on the MOBILE preset, over the marketing home and the member shell
+      # (/feed signed out renders the real shell, SCAN-889). Config and the reasons for its warn-only
+      # start live in lighthouserc.mobile.json. Assertions here are warns, so this step reports and
+      # does not fail the job until the numbers have been read and tightened.
+      - name: Lighthouse (mobile, member shell)
+        if: ${{ always() && steps.preview.outputs.ready == 'true' }}
+        env:
+          PREVIEW_URL: ${{ steps.preview.outputs.url }}
+          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          set -euo pipefail
+          [[ "${PREVIEW_URL}" =~ ^https://[^[:space:]]+$ ]] || { echo "::error title=No preview URL::PREVIEW_URL is not an https URL ('${PREVIEW_URL}'), so Lighthouse would audit nothing (HYG-151)."; exit 1; }
+          urls=""
+          for path in "/" "/feed"; do
+            urls="${urls} --collect.url=${PREVIEW_URL}${path}"
+          done
+          npx --yes @lhci/cli@0.15.1 autorun \
+            --config=./lighthouserc.mobile.json \
+            ${urls} \
+            --collect.settings.extraHeaders="{\"x-vercel-protection-bypass\":\"${BYPASS}\"}" \
+          || { echo "::warning title=Lighthouse mobile::assertions failed -- see the job log and the uploaded .lighthouseci-mobile report"; exit 1; }
+
+      - name: Report the mobile numbers
+        if: ${{ always() && steps.preview.outputs.ready == 'true' }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dir = ".lighthouseci-mobile";
+            if (!fs.existsSync(dir)) { console.log("no .lighthouseci-mobile dir"); process.exit(0); }
+            const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
+            const byUrl = new Map();
+            for (const f of fs.readdirSync(dir).filter((f) => f.startsWith("lhr-") && f.endsWith(".json"))) {
+              let lhr; try { lhr = JSON.parse(fs.readFileSync(`${dir}/${f}`, "utf8")); } catch { continue; }
+              const url = lhr.finalDisplayedUrl || lhr.requestedUrl || "?";
+              if (!byUrl.has(url)) byUrl.set(url, []);
+              byUrl.get(url).push(lhr);
+            }
+            const script = (r) => r.audits?.["resource-summary"]?.details?.items?.find((i) => i.resourceType === "script")?.transferSize;
+            const METRICS = [
+              ["LCP", (r) => r.audits?.["largest-contentful-paint"]?.numericValue, (v) => `${Math.round(v)}ms`],
+              ["TBT", (r) => r.audits?.["total-blocking-time"]?.numericValue, (v) => `${Math.round(v)}ms`],
+              ["CLS", (r) => r.audits?.["cumulative-layout-shift"]?.numericValue, (v) => v.toFixed(3)],
+              ["Script", script, (v) => `${(v / 1000).toFixed(0)}KB`],
+            ];
+            const out = ["| URL | metric | median (mobile) |", "|---|---|---|"];
+            for (const [url, runs] of byUrl) {
+              const path = (() => { try { return new URL(url).pathname; } catch { return url; } })();
+              for (const [label, read, fmt] of METRICS) {
+                const vals = runs.map(read).filter((v) => typeof v === "number");
+                if (vals.length) out.push(`| ${path} | ${label} | ${fmt(median(vals))} |`);
+              }
+            }
+            const table = out.join("\n");
+            console.log(table);
+            if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Lighthouse mobile medians\n\n${table}\n`);
+          '
+
       # Print the medians into the job summary. WHY THIS EXISTS: lighthouse-ci only prints
       # assertions that FAIL, so a fully passing run says nothing about how close it came --
       # and ADR-930 says these thresholds are guesses to be re-set from real data. The first
@@ -1273,7 +1331,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: lighthouse-pr-compare
-          path: .lighthouseci/
+          path: |
+            .lighthouseci/
+            .lighthouseci-mobile/
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
