@@ -3,8 +3,6 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { SlidersHorizontal, ArrowUpRight } from 'lucide-react'
-import { DetailTemplate, PageHero } from '@/components/templates'
-import { buttonClasses, buttonGeometry } from '@/components/ui/button'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { getSpaceClaimToken } from '@/lib/spaces/claim'
@@ -15,12 +13,10 @@ import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { readHeaderLogo } from '@/lib/spaces/site-menu'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
-import { readHeroConfig, resolveHero, heroHeightClass } from '@/lib/spaces/hero-config'
+import { readHeroConfig, resolveHero } from '@/lib/spaces/hero-config'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
-import { cn } from '@/lib/utils'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
-import { readCoverSize, readCoverScrim, readCoverFocus, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
-import { heroOverlayForScrim } from '@/lib/layout/cover-scrim'
+import { readCoverSize, readCoverFocus, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readTagline } from '@/lib/spaces/tagline'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
@@ -43,8 +39,6 @@ import { spaceSchemaLocation } from '@/lib/spaces/schema-location'
 import { isServiceListed } from '@/lib/spaces/profile-data'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
 import { foundingBadgeForSpace } from '@/lib/founding/status'
-import { FoundingBusinessBadge } from '@/lib/community-roles'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
 import { FqSpaceFacts } from '@/components/frequency/members/space/space-facts'
 import { FounderMark } from '@/components/frequency/members/space/founder-mark'
@@ -78,70 +72,9 @@ import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 // lib/spaces/cover-placeholder — the OG share card (opengraph-image.tsx) draws from the same source,
 // so a shared link previews the SAME photo this hero shows.
 
-// The ON-COVER secondary chip: the SAME button primitive as every other control in this row, with
-// the COLOURS swapped for legibility over a photo (a bordered translucent-white chip on a backdrop
-// blur; the gradient scrim guarantees the ≥4.5:1 floor). Tokens only — the translucent whites are
-// legibility scrims, not hardcoded hex.
-//
-// 🔴 IT COMPOSES THE PRIMITIVE'S GEOMETRY, AND THAT IS THE WHOLE POINT — it used to be a HAND-ROLLED COPY of
-// the primitive's look (`inline-flex items-center justify-center gap-1.5 rounded-control px-3 py-1.5
-// text-body-sm font-semibold transition-colors`), and a copy of a primitive is a copy that stops
-// tracking it. `components/ui/button.tsx` BASE carries `tap-target`, i.e.
-// `min-block-size: var(--tap-min)`, and `--tap-min` is a VIEWER generation axis spanning 26px
-// (bold) · 32px (default) · 44px (classic) · 48px (spacious) · 46-56px (the kids bands).
-//
-// So the primary CTA — which does compose the primitive — ROSE with the viewer's generation while
-// this chip stayed pinned at its `h-9`, and Book / QR / Edit rendered as an UNEVEN ROW for every
-// viewer above 36px. That is over half the generation ladder, and it is the owner's report.
-// The comment on the action row below has claimed the three "line up as one even row" the whole
-// time: it was true when written and stopped being true the day `tap-target` joined BASE, because
-// nothing connected the hand-rolled string to the primitive it was imitating.
-//
-// Composing it means every control in the row now shares ONE geometry source: identical padding,
-// type scale, radius, press + focus states, and the same tap floor — so they rise together and
-// cannot drift apart again. The explicit `h-9` at each call site still sets the row's deliberate
-// resting height; `min-block-size` only ever RAISES, so all three resolve to max(36px, --tap-min)
-// in lockstep.
-//
-// `rounded-control` rides in from BASE: buttons are CONTROLS, so the Space's page theme shapes them.
-// 🔴 buttonGeometry, NOT buttonClasses('secondary'), and the distinction is load-bearing. `cn` in
-// this repo is a plain `.filter(Boolean).join(' ')` with NO tailwind-merge (lib/utils.ts:4), so
-// passing on-ink colours alongside the `secondary` variant would NOT replace its `bg-surface` /
-// `text-text` / `border-border` — both would survive into the class attribute and Tailwind's EMIT
-// order, not the call order, would decide which paints. A white chip winning on a photo is exactly
-// the illegible case the scrim exists to prevent. buttonGeometry carries no palette at all, so
-// there is nothing to fight: geometry from the primitive, colours from here.
-const onInkSecondaryClasses = buttonGeometry(
-  'sm',
-  'border border-on-ink/40 bg-on-ink/10 text-on-ink backdrop-blur-sm transition-colors hover:border-on-ink/60 hover:bg-on-ink/20',
-)
 
-// The ONE dominant primary action: a real filled primary BUTTON on the Space header (owner ask — the
-// header CTA is a BUTTON, while the Space INDEX card uses a text link). It keeps its accent fill in flow
-// and over a Hero photo alike; on a cover photo it gains a soft shadow so it lifts off the image. Tokens
-// only, no hex.
-function primaryCtaButton(onInk: boolean): string {
-  return buttonClasses('primary', 'sm', onInk ? 'lift-1' : undefined)
-}
 
-function ownerToolClasses(onInk: boolean): string {
-  return onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm')
-}
 
-// A borderless, background-free ICON button for the compact mobile action band: just the glyph, no chip
-// or white card behind it, so QR + Edit take minimal width and the primary CTA gets the room (owner
-// ask). Square 40px tap target, muted glyph that fills in on press. Tokens only.
-// `rounded-control`, not the `rounded-lg` literal that stood here: these are CONTROLS, so they take the
-// role token, which the [data-space-theme] pin resolves to 14px for every Space. (The sentence that
-// stood here described the glyphs sitting at 14px beside 2px chips on `editorial` and staying square
-// beside pills on `playful` — both of those are gone with the per-theme shape overrides.)
-// `tap-target` for the same reason the on-ink chip above now composes the primitive: this glyph sits
-// in the MOBILE band directly beside the primary CTA, and the CTA carries the floor while this did
-// not. At the default generation the CTA resolved to --tap-min (32px) against this button's fixed
-// 40px, so the phone toolbar was uneven too — the same defect as the desktop row, one breakpoint
-// down. With the floor on both and `h-10` on both, the pair renders max(40px, --tap-min) together.
-const ghostIconClasses =
-  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control tap-target text-muted transition-colors hover:bg-surface hover:text-text'
 
 export default async function SpaceProfileChromeLayout({
   children,
@@ -275,13 +208,6 @@ export default async function SpaceProfileChromeLayout({
     : {}
   // The operator's chosen cover size (Header vs Hero), read off preferences. Default-safe to Header.
   const coverSize = readCoverSize(space.preferences)
-  // The Hero scrim treatment (only relevant to the Hero size): 'shade' = a dark ink scrim under the
-  // overlaid identity (WCAG-safe on any photo, on-ink text); 'blend' = the photo fades to the page
-  // canvas and the identity uses the theme's own text tokens. Default-safe to 'shade'.
-  const coverScrim = readCoverScrim(space.preferences)
-  // 'shade' and 'none' overlay light on-ink text on the photo (shade backs it with a dark scrim; none relies
-  // on a token text-shadow); 'blend' fades to the page canvas and uses the theme's own text tokens.
-  const heroOnInk = coverScrim !== 'blend'
   // The operator's chosen cover FOCAL POINT (where the cropped cover sits in its window), set with the shared
   // ImageFocalPicker in the Branding rail. A CSS object-position applied to the cover <Image> below; unset
   // reads as centered ("50% 50%"), so a Space that never touched it crops exactly as before. Repositions
@@ -291,157 +217,10 @@ export default async function SpaceProfileChromeLayout({
   // for a mark drawn with a transparent background (Identity & Branding -> Logo backdrop).
   const logoBackdrop = readLogoBackdrop(space.preferences)
 
-  // The ONE owner affordance (Customize): opens the STANDARDIZED admin rail (openAdminBar) pointed at this
-  // Space's scope — the SAME rail chrome circles / events / hubs / nexuses use (ENTITY-MANAGEMENT / PR C),
-  // replacing the bespoke SpaceCustomizeDrawer. It resolves the Space's 9-spine surfaces as browse-first
-  // link-rows into the existing /settings/* sub-pages, gated on the viewer's per-Space functions (spaceFns)
-  // + the always-on floor. Owner-gated (canSeeAsOwner), so a visitor never sees it and never triggers it.
-  const ownerTools = (onInk = false, extra = '', iconOnly = false) =>
-    canSeeAsOwner ? (
-      <OpenAdminBarButton
-        scope={{ kind: 'space', id: space.id }}
-        spaceType={space.type}
-        spaceFns={spaceFns}
-        moduleMenu={{ order: moduleMenu.order, hidden: moduleMenu.hidden, activated: moduleMenu.activated }}
-        // Just "Edit" after the glyph (owner ask). The word "Space" was redundant beside the Space's
-        // own name and cover, and it was the longest label in the row — the one most likely to push
-        // the cluster into a wrap on a narrow desktop.
-        label={manage.staffViewing ? 'Edit (staff)' : 'Edit'}
-        icon={<SlidersHorizontal className={iconOnly ? 'h-5 w-5' : 'h-4 w-4'} aria-hidden />}
-        iconOnly={iconOnly}
-        // Desktop (non-icon) tool matches the primary CTA height (h-9) and never shrinks, so the three
-        // hero buttons read as one even row. The mobile icon-only variant keeps its own square target.
-        className={cn(iconOnly ? ghostIconClasses : cn(ownerToolClasses(onInk), 'h-9 shrink-0'), extra)}
-      />
-    ) : null
 
-  // The quiet social FOLLOW chip, sitting ABOVE the name in the lockup at every width. Null for a
-  // signed-out visitor. `onInk` paints it for legibility over a Hero cover photo.
-  // A COMPACT Follow chip (owner ask): smaller than a standard sm button so it reads as the quiet social
-  // action sitting above the name, not competing with the primary CTA. tailwind-merge lets the tighter
-  // padding/size win over the base secondary tokens.
-  // The Crew Boost (LIVE-756) rides beside Follow for a visitor who does not run this Space. The
-  // server checks Crew, the one-a-month rule and the not-your-own rule.
-  const followButton = (onInk = false) =>
-    viewerProfileId ? (
-      <span className="inline-flex flex-wrap items-start gap-2">
-        <FollowSpaceButton
-          spaceId={space.id}
-          spaceName={brandName}
-          initialFollowing={viewerFollows}
-          className={
-            onInk
-              ? cn(onInkSecondaryClasses, 'gap-1 px-2.5 py-1 text-2xs')
-              : buttonClasses('secondary', 'sm', 'gap-1 px-2.5 py-1 text-2xs')
-          }
-        />
-        {!canSeeAsOwner && (
-          <BoostButton
-            kind="space"
-            targetId={space.id}
-            className={
-              onInk
-                ? cn(onInkSecondaryClasses, 'gap-1 px-2.5 py-1 text-2xs')
-                : buttonClasses('secondary', 'sm', 'gap-1 px-2.5 py-1 text-2xs')
-            }
-          />
-        )}
-      </span>
-    ) : null
 
-  // The dominant primary CTA + the Connect (QR) affordance, factored out so both the desktop action row and
-  // the mobile action card render the identical buttons. `onInk` swaps Connect to on-cover styling; the
-  // primary CTA keeps its accent everywhere.
-  // Desktop hero buttons share a fixed h-9 and never shrink, so Book / QR / Edit line up as one even row.
-  //
-  // ⚠️ THE `h-9` IS ONLY HALF OF WHY THAT IS TRUE, and for a long stretch it was not true at all. Every
-  // control here must also carry the SAME tap floor: `min-block-size: var(--tap-min)` only ever raises,
-  // so a button with the floor grows past `h-9` on a generous generation while one without it does not.
-  // All three now compose buttonClasses (see onInkSecondaryClasses above), so they resolve to
-  // max(36px, --tap-min) together. Do not re-introduce a hand-rolled look-alike here.
-  const primaryCta = (onInk = false) => (
-    <Link href={ctaHref} className={cn(primaryCtaButton(onInk), 'h-9 shrink-0')} {...ctaLinkProps}>
-      {ctaLabel}
-      <ArrowUpRight className="h-4 w-4" aria-hidden />
-    </Link>
-  )
-  // The Connect affordance shows the "QR" label IN FRONT of the QR glyph (owner ask), so it reads as a
-  // labelled button, not a bare icon. ROOT-CAUSE FIX: this used to be a bare `<Link href="/codes">`,
-  // which opened the VIEWER's OWN personal code hub (their code + their avatar) — so a scan of a business
-  // Space showed the scanner's personal code, not the Space's. It now opens SpaceShareButton, which
-  // encodes THIS Space's public page + centers the Space's brand logo (and carries the sharer's ref for
-  // attribution + a "Save contact" vCard link).
-  const connectLink = (onInk = false) => (
-    <SpaceShareButton
-      slug={space.slug}
-      brandName={brandName}
-      brandLogoUrl={space.brandLogoUrl}
-      sharerProfileId={viewerProfileId}
-      hasContactCard
-      claimUrl={claimUrl}
-      className={cn(
-        onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm'),
-        'inline-flex items-center h-9 shrink-0 gap-1.5',
-      )}
-    />
-  )
 
-  // The identity ACTION ROW (desktop, ≥sm): the emphasized primary CTA, then Connect, then the single
-  // Customize tool. Follow is NOT here on desktop — it sits above the name in the lockup (nameLockup). This
-  // row sits RIGHT of the avatar + name lockup on the SAME line (wrapping below only when the row runs out
-  // of room). `onInk` swaps the secondary/owner affordances to on-cover styling for the Hero overlay while
-  // the primary CTA stays the same accent. Hidden on mobile — the buttons move to `mobileActionBand`.
-  // The action cluster is a bottom-anchored VERTICAL STACK by default (flex-col-reverse, so the primary
-  // CTA sits on the BOTTOM line, aligned with the identity's bottom row) that expands to one horizontal
-  // row once there is room (lg+). So a button row that would be too long stacks instead of crowding the
-  // name, and whichever button is at the bottom stays on the identity's bottom line. An operator who
-  // forces 'stacked' keeps the column at every width.
-  const identityActions = (onInk = false) => (
-    <div
-      className={cn(
-        'flex flex-col-reverse items-end gap-2',
-        hero.buttonOrientation !== 'stacked' && 'lg:flex-row lg:items-center',
-      )}
-    >
-      {primaryCta(onInk)}
-      {connectLink(onInk)}
-      {ownerTools(onInk)}
-    </div>
-  )
 
-  // MOBILE action band (<sm): the dominant primary CTA (Book / Join) fills the row, with QR (Connect) and
-  // Edit as compact ICON-ONLY buttons beside it — no white chip or card behind them, so the actions
-  // read as a clean toolbar and the primary CTA gets the width (owner ask). Follow is NOT here: it sits
-  // above the name in the lockup. `sm:hidden` — desktop keeps the overlaid row.
-  const mobileActionBand = (
-    <div className="mt-4 flex items-center gap-2 sm:hidden">
-      {/* `min-w-0` is the half that makes `flex-1` mean anything. A flex item's default
-          `min-width: auto` floors it at its own min-content — its longest WORD — and the CTA label is
-          operator-typed with no length cap anywhere in the write path (lib/spaces/header-cta.ts
-          neither slices nor validates length). Without this, one long word stops the CTA shrinking
-          and shoves the two glyph buttons past the right edge of the shell, which is
-          `overflow-x-clip`: they are not clipped-but-scrollable, they are GONE. Same defect, same
-          fix, as the tab bar in header-fit.test.ts. */}
-      {/* `h-10` matches the two glyph buttons beside it. Without it this CTA had no explicit height at
-          all, so it resolved to whatever `tap-target` floored it at (--tap-min, 32px by default)
-          against their fixed 40px — an uneven toolbar on every phone. */}
-      <Link href={ctaHref} className={cn(primaryCtaButton(false), 'h-10 min-w-0 flex-1')} {...ctaLinkProps}>
-        {ctaLabel}
-        <ArrowUpRight className="h-4 w-4" aria-hidden />
-      </Link>
-      <SpaceShareButton
-        slug={space.slug}
-        brandName={brandName}
-        brandLogoUrl={space.brandLogoUrl}
-        sharerProfileId={viewerProfileId}
-        hasContactCard
-        claimUrl={claimUrl}
-        iconOnly
-        className={ghostIconClasses}
-      />
-      {ownerTools(false, '', true)}
-    </div>
-  )
 
   // ── THE COVER + IDENTITY ─────────────────────────────────────────────────────────────────────────
   // A real uploaded cover always wins; a Space with NONE falls back to a calm SITE stock photo. The
@@ -449,10 +228,6 @@ export default async function SpaceProfileChromeLayout({
   // navigation instead of blank-until-refresh.
   const coverSrc = space.coverImageUrl || coverPlaceholderFor(space.id)
   const isHero = coverSize === 'hero'
-  // The Hero cover height is now operator-selectable (Short / Medium / Tall), off the hero config. The Header
-  // size keeps its compact band (the Header size is retired for Spaces — always Hero, ADR-526 — but the branch
-  // is kept intact + fail-safe).
-  const coverH = isHero ? heroHeightClass(hero.height) : 'h-40 sm:h-52'
   const coverImage = (
     <Image
       src={coverSrc}
@@ -465,201 +240,11 @@ export default async function SpaceProfileChromeLayout({
     />
   )
 
-  // The name + type badge + tagline lockup, with FOLLOW sitting ABOVE the name (a compact chip, the
-  // quiet social action that belongs with the identity rather than in the primary action row). `onInk`
-  // paints the whole lockup for legibility over a Hero cover photo.
-  // The tagline "say what you do" line (or, for an owner with none, a gentle prompt to add one).
-  // Extracted from the lockup so the Hero cover can relocate it to its own full-width row below the
-  // identity on mobile, while desktop keeps it inline under the name. Renders nothing for a visitor on
-  // a Space with no tagline, so wrappers can `empty:hidden` to collapse the reserved space.
-  const taglineNode = (onInk = false) =>
-    heroTagline ? (
-      <p className={cn('max-w-2xl text-body font-medium', onInk ? 'text-on-ink' : 'text-muted')}>
-        {heroTagline}
-      </p>
-    ) : (
-      canSeeAsOwner && (
-        <Link
-          href={`${base}/manage?section=settings`}
-          className={cn(
-            'inline-block max-w-2xl text-body-sm font-medium underline decoration-dashed underline-offset-4 transition-colors',
-            onInk ? 'text-on-ink-muted hover:text-on-ink' : 'text-muted hover:text-text',
-          )}
-        >
-          Add a tagline. Say what you do.
-        </Link>
-      )
-    )
 
-  const nameLockup = (onInk = false, taglineHiddenOnMobile = false) => (
-    <div className="min-w-0">
-      {viewerProfileId && (
-        // Follow sits above the name at EVERY width (owner ruling 2026-10-07: the header card reads
-        // "image, Follow, Title, tagline, action button, QR and edit"). It used to float in its own row
-        // above the avatar on a phone, which split it from the name it belongs to. Tight `mb-1` so the
-        // Follow -> name stack reads as one balanced block against the avatar.
-        <div className="mb-1">{followButton(onInk)}</div>
-      )}
-      {/* The operator's optional EYEBROW: a small pre-text kicker above the name (editable in the pinned hero
-          editor). Absent by default, so the lockup reads exactly as before for a Space with none. */}
-      {heroEyebrow && (
-        <p
-          className={cn(
-            // `font-eyebrow`: the page theme's per-role kicker treatment (ADR-578) — a bare marker with
-            // no bold-scoped rule, so a `bold` Space keeps this exact computed style.
-            'font-eyebrow mb-1 text-2xs font-semibold uppercase tracking-wide',
-            onInk ? 'text-on-ink-muted' : 'text-primary-strong',
-          )}
-        >
-          {heroEyebrow}
-        </p>
-      )}
-      {/* The name is the single <h1>. The Business / Non Profit type pill was removed from the header
-          content (D-refine #8): the designation is carried by the directory + naming context, so the
-          identity reads as name -> tagline without a redundant type chip.
-          header-ok: the Space profile hero IS this route group's header (the precedent DetailTemplate's
-          `band` slot follows), so the layout owns the single page h1 and no page beneath it declares one.
-          It carries the page theme's heading face and an on-ink variant PageHeading has no slot for. */}
-      <h1
-        className={cn(
-          // `font-section`: the cover title joins the page theme's heading face (ADR-578 — the owner's
-          // "from header to end"). With no theme (or `bold`) it resolves to the body stack this h1
-          // already inherits, so the default look is untouched.
-          'font-section min-w-0 break-words text-display-h3 font-bold leading-tight',
-          onInk ? 'text-on-ink text-shadow-on-photo' : 'text-text',
-        )}
-      >
-        {heroHeading}
-      </h1>
-      {/* The FOUNDING BUSINESS mark sits where the type pill used to (D-refine #8 retired that chip), so
-          the identity reads name -> founding mark -> tagline. It is the SAME gold chip a Founding Member
-          wears on their profile (lib/community-roles), so the two read as one system. It carries a status
-          only: the locked rate never reaches this component. Renders for every visitor; nothing here is
-          owner-gated. */}
-      {/* The BOOSTED mark (LIVE-756) sits in the same row: a Space wears it for the week a Crew member
-          backs it, and nothing about its directory order changes (owner ruling 2026-10-06). */}
-      {(isFoundingBusiness || isBoosted) && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          {isFoundingBusiness && <FoundingBusinessBadge founding className="text-3xs leading-tight" />}
-          <BoostedBadge boosted={isBoosted} className="text-3xs leading-tight" />
-        </div>
-      )}
-      {/* The tagline reads as part of the identity, not fine print. On the Hero cover it stays inline
-          under the name only at WIDE widths (lg+); below lg (narrow desktop + mobile) it is relocated to
-          its own full-width row below the buttons (taglineHiddenOnMobile), so the identity block stays a
-          clean Follow -> name that bottom-aligns with the avatar and never crowds the action row. At the
-          Header size (no taglineHiddenOnMobile) it always stays inline under the name. */}
-      <div className={cn('mt-1 empty:hidden', taglineHiddenOnMobile && 'hidden lg:block')}>
-        {taglineNode(onInk)}
-      </div>
-    </div>
-  )
 
-  // HERO cover node: the canonical PageHero (ADR-1579, owner ruling 2026-09-29: "both onto PageHero").
-  // This was the one cover composition the grammar had no slot for (ADR-1498): the name in the page theme
-  // heading face, the brand chip, a follow chip that moves between the cover and the mobile action card,
-  // a tagline that relocates below `lg`, on the FIXED cover-height ladder the operator picks from. Two
-  // PageHero slots carry it now: `frame` takes the tier height off lib/layout/cover-height.ts (never the
-  // header element, ADR-526), and `lockup` takes the identity row below as-is, so the <h1> keeps
-  // `font-section` (ADR-578) and the follow / tagline choreography is untouched. What PageHero owns from
-  // here: the cover <Image> at the operator's focal point, the None / Shade / Blend overlay through the ONE
-  // mapping (lib/layout/cover-scrim.ts, the same seam Circles use), the legibility class for the clean
-  // photo, and the band chrome every other entity cover carries. The hand-rolled bottom scrim is gone.
-  const heroCoverNode = (
-    <PageHero
-      title={heroHeading}
-      coverImage={coverSrc}
-      coverFocus={coverFocus}
-      overlayStyle={heroOverlayForScrim(coverScrim)}
-      // The cover's corner rounding stays themable (`--radius-cover`); the :root baseline is 24px — the same
-      // corner as --radius-card and PageHero's own — so a `bold` Space cover agrees with every card and
-      // cover around it. The frame carries the tier height so `size` (the min-height ladder) is not read.
-      frame={{ className: cn('rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated', coverH) }}
-      lockup={
-        <>
-          {/* ONE bottom row (owner ask): the identity (logo + Follow + title + tagline) anchors to the
-              bottom-LEFT and the action buttons to the bottom-RIGHT, both aligned to the SAME bottom line
-              (items-end). The name column (min-w-0) gives way and wraps for a long name; the action cluster
-              stacks vertically when the row would be too long, its bottom button staying on the bottom row.
-              On mobile the actions move to the card below the cover, so the phone hero holds only the identity. */}
-          <div className="flex items-end justify-between gap-4">
-            <div className="flex min-w-0 items-end gap-4">
-              {showLogoChip && (
-                <div className="shrink-0">
-                  <BrandAnchor name={brandName} logoUrl={logoChipUrl} backdrop={logoBackdrop} />
-                </div>
-              )}
-              {/* `taglineHiddenOnMobile` — the second argument, which BOTH call sites used to omit, so
-                  the parameter was dead and the behaviour the comment on it describes did not exist.
-                  It matters because the lockup is bottom-anchored inside a FIXED-HEIGHT
-                  `overflow-hidden` band: every extra line of copy grows the block UPWARD and out
-                  through the top of the cover, and the <h1> is the first thing to go. The tagline is
-                  the biggest and most variable term (400 chars allowed = ~19 lines on a phone), so
-                  below `lg` it moves out of the cover to its own row underneath. */}
-              <div className="min-w-0 pb-1">{nameLockup(heroOnInk, true)}</div>
-            </div>
-            <div className="hidden shrink-0 items-end sm:flex">{identityActions(heroOnInk)}</div>
-          </div>
-        </>
-      }
-    />
-  )
 
-  // HEADER cover node: the compact image band, with the logo chip hanging HALF-OFF the cover bottom-left
-  // (the LinkedIn / Facebook business-profile pattern). The chip is ABSOLUTELY positioned against the
-  // cover (not a fragile negative margin across the template's hero/band gap), so it deterministically
-  // sits half on the image, half below it. The name + actions live in the infoBand, cleared below it.
-  const headerCoverNode = (
-    <div className="relative w-full">
-      {/* Same themable cover rounding as the Hero size (baseline 24px = rounded-2xl). */}
-      <div
-        className={cn(
-          'relative w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated',
-          coverH,
-        )}
-      >
-        {coverImage}
-      </div>
-      {showLogoChip && (
-        <div className="absolute -bottom-10 left-5 sm:-bottom-12 sm:left-6">
-          <BrandAnchor name={brandName} logoUrl={logoChipUrl} backdrop={logoBackdrop} />
-        </div>
-      )}
-    </div>
-  )
 
-  const coverNode = isHero ? heroCoverNode : headerCoverNode
 
-  // ── THE PROFILE INFO AREA (band slot) ──────────────────────────────────────────────────────────
-  // HEADER size: ONE identity row — the logo chip overlapping the cover bottom + the name lockup on the
-  // left, the action buttons pushed RIGHT on the same line (wrapping below only when the row runs out
-  // of room). HERO size: the identity is already overlaid on the cover, so the info area is just the
-  // menu row. The client tab bar closes the band in both, above the divider.
-  const infoBand = (
-    <div>
-      {!isHero && (
-        // HEADER identity: the logo chip is owned by the cover (hanging half-off it), so this row is the
-        // name lockup + actions, cleared BELOW the hanging chip with top padding. Name on the left, actions
-        // pushed right on desktop; on mobile the name lockup stays and the actions drop to the white card
-        // below (mobileActionBand).
-        <div className={cn('flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-x-6', showLogoChip ? 'pt-14 sm:pt-16' : 'pt-4')}>
-          <div className="min-w-0">
-            {nameLockup(false)}
-          </div>
-          <div className="hidden shrink-0 sm:block">{identityActions(false)}</div>
-        </div>
-      )}
-      {/* The tagline's relocated home below `lg`, off the cover and on the page background (so
-          `onInk` is false here). `empty:hidden` collapses the row entirely for a Space with no
-          tagline and a visitor who gets no "add one" prompt, so nothing reserves space for it.
-          Hidden from `lg` up, where the lockup renders it inline under the name instead — the two
-          are exact complements, so the tagline is shown exactly once at every width. It comes BEFORE
-          the action buttons, in the owner's order (title, tagline, then the action button, QR and Edit). */}
-      {isHero && <div className="mt-3 empty:hidden lg:hidden">{taglineNode(false)}</div>}
-      {/* Mobile-only action row under the cover and the tagline (both Hero and Header sizes). */}
-      {mobileActionBand}
-    </div>
-  )
 
   // The menu row is handed to the template's STICKY slot (not the band), so it detaches on scroll and
   // pins directly under the global header, staying in view for the whole page (and for anchor jumps —
@@ -671,7 +256,6 @@ export default async function SpaceProfileChromeLayout({
   // reload. It is no longer a fold-out dropdown, and there is no separate CRM item (the CRM lives inside
   // the dashboard's Community area). A visitor never sees it (canManage false).
   const canManage = adminTabs.some((t) => t.label === 'Manage')
-  const stickyNav = <SpaceProfileMenu tabs={tabs} canManage={canManage} homeHref={base} />
 
   // Per-type structured data for the PUBLIC profile plus a Breadcrumb back to the directory. Network
   // spaces only, never on a private one. Both designs emit the same node.
@@ -712,158 +296,124 @@ export default async function SpaceProfileChromeLayout({
       ]}
     />
   ) : null
-
-  // THE FREQUENCY CHROME (ADR-1737, components/frequency/members/space). The same reads, gates, actions
-  // and owner tools as the DAWN header below, placed on the Circle page's grammar: a cover card holding
-  // the identity and the buttons, the kit's tab row (Follow and Boost at its right end, where the Circle
-  // keeps Boost), then the body. SITE_DESIGN is build-time, so a deploy ships one branch.
-  if (SITE_DESIGN === 'frequency') {
-    const frost = 'btn fqs-frost'
-    const checkinOn = spaceFunctionAccess(space, 'checkin', 'admin')
-    // SIGNED OUT (SCAN-883): a visitor on a Space tab reads this chrome under the public site shell
-    // (app/(main)/layout.tsx publicChrome), which has no centred column and no right rail. `public` opens
-    // the same frame the share root (app/(public)/spaces/[slug]/page.tsx) does, and the side column
-    // carries the same viewer-free key facts. A signed-in member keeps the shell's column and rail.
-    const signedOut = !viewerProfileId
-    const facts = signedOut && isNetwork ? await readPublicSpaceFacts(space, { tagline }) : null
-    return (
-      <>
-        {structuredData}
-        <FqSpaceChrome
-          public={signedOut}
-          aside={
-            facts ? (
-              <FqSpaceFacts
-                facts={facts}
-                brandName={brandName}
-                joinHref={BETA_CTA_HREF}
-                joinLabel={BETA_CTA_LABEL}
-                calendarHref={tabs.find((t) => t.href === `${base}/calendar`)?.href ?? null}
-              />
-            ) : undefined
-          }
-          coverImage={coverSrc}
-          coverFocus={coverFocus}
-          tall={isHero}
-          logo={showLogoChip ? <BrandAnchor name={brandName} logoUrl={logoChipUrl} backdrop={logoBackdrop} /> : null}
-          eyebrow={heroEyebrow}
-          name={heroHeading}
-          // The Founding mark rides INSIDE the cover photo (LIVE-1019); Boosted stays beside the name.
-          coverBadge={isFoundingBusiness ? <FounderMark /> : null}
-          // The Check In button (LIVE-1180): top right of the cover; greyed out until the Space turns badge check-in on.
-          coverAction={
-            <Suspense fallback={null}>
-              <BadgeNote spaceId={space.id} slug={space.slug} viewerProfileId={viewerProfileId} variant="cover" checkinOn={checkinOn} />
-            </Suspense>
-          }
-          badges={
-            isBoosted ? (
-              <div className="fqs-badges">
-                <BoostedBadge boosted={isBoosted} className="text-3xs leading-tight" />
-              </div>
-            ) : null
-          }
-          tagline={
-            heroTagline ? (
-              <p className="fqs-tagline">{heroTagline}</p>
-            ) : canSeeAsOwner ? (
-              <p className="fqs-tagline">
-                <Link href={`${base}/manage?section=settings`}>Add a tagline. Say what you do.</Link>
-              </p>
-            ) : null
-          }
-          actions={
-            <>
-              <SpaceShareButton
-                slug={space.slug}
-                brandName={brandName}
-                brandLogoUrl={space.brandLogoUrl}
-                sharerProfileId={viewerProfileId}
-                hasContactCard
-                claimUrl={claimUrl}
-                className={frost}
-              />
-              {canSeeAsOwner && (
-                <OpenAdminBarButton
-                  scope={{ kind: 'space', id: space.id }}
-                  spaceType={space.type}
-                  spaceFns={spaceFns}
-                  moduleMenu={{ order: moduleMenu.order, hidden: moduleMenu.hidden, activated: moduleMenu.activated }}
-                  label={manage.staffViewing ? 'Edit (staff)' : 'Edit'}
-                  icon={<SlidersHorizontal aria-hidden />}
-                  className={frost}
-                />
-              )}
-              <Link href={ctaHref} className="btn pa" {...ctaLinkProps}>
-                {ctaLabel}
-                <ArrowUpRight aria-hidden />
-              </Link>
-            </>
-          }
-          nav={
-            <SpaceProfileMenu
-              tabs={tabs}
-              canManage={canManage}
-              homeHref={base}
-              tools={
-                viewerProfileId ? (
-                  <>
-                    <FollowSpaceButton
-                      spaceId={space.id}
-                      spaceName={brandName}
-                      initialFollowing={viewerFollows}
-                      className="btn sm"
-                    />
-                    {!canSeeAsOwner && <BoostButton kind="space" targetId={space.id} className="btn sm" />}
-                  </>
-                ) : null
-              }
-            />
-          }
-          notices={manage.canManage && !isNetwork ? <SpacePrivateNotice spaceId={space.id} /> : null}
-        >
-          {/* A tapped placard lands here with ?checkin=: the check-in goes first. Empty otherwise. */}
-          <Suspense fallback={null}>
-            <FeaturedCheckin spaceName={brandName} />
-          </Suspense>
-          {/* The Regulars line (LIVE-944): what a full card here earns. Empty unless the program is on. */}
-          <Suspense fallback={null}>
-            <RegularsNote spaceId={space.id} />
-          </Suspense>
-          {/* The cardholder perk line (LIVE-1282): what this Space offers Frequency card holders. Empty unless set. */}
-          <Suspense fallback={null}>
-            <CardholderPerkNote spaceId={space.id} />
-          </Suspense>
-          {children}
-        </FqSpaceChrome>
-      </>
-    )
-  }
-
+  const frost = 'btn fqs-frost'
+  const checkinOn = spaceFunctionAccess(space, 'checkin', 'admin')
+  // SIGNED OUT (SCAN-883): a visitor on a Space tab reads this chrome under the public site shell
+  // (app/(main)/layout.tsx publicChrome), which has no centred column and no right rail. `public` opens
+  // the same frame the share root (app/(public)/spaces/[slug]/page.tsx) does, and the side column
+  // carries the same viewer-free key facts. A signed-in member keeps the shell's column and rail.
+  const signedOut = !viewerProfileId
+  const facts = signedOut && isNetwork ? await readPublicSpaceFacts(space, { tagline }) : null
   return (
     <>
       {structuredData}
-      <DetailTemplate title={brandName} hero={coverNode} band={infoBand} stickyNav={stickyNav}>
-        {/* Owner guardrail: a private Space is hidden from the directory, search, and shared links, so a
-            manager viewing their own private page gets a one-click Make public assist (server re-gates). */}
-        {manage.canManage && !isNetwork && <SpacePrivateNotice spaceId={space.id} />}
+      <FqSpaceChrome
+        public={signedOut}
+        aside={
+          facts ? (
+            <FqSpaceFacts
+              facts={facts}
+              brandName={brandName}
+              joinHref={BETA_CTA_HREF}
+              joinLabel={BETA_CTA_LABEL}
+              calendarHref={tabs.find((t) => t.href === `${base}/calendar`)?.href ?? null}
+            />
+          ) : undefined
+        }
+        coverImage={coverSrc}
+        coverFocus={coverFocus}
+        tall={isHero}
+        logo={showLogoChip ? <BrandAnchor name={brandName} logoUrl={logoChipUrl} backdrop={logoBackdrop} /> : null}
+        eyebrow={heroEyebrow}
+        name={heroHeading}
+        // The Founding mark rides INSIDE the cover photo (LIVE-1019); Boosted stays beside the name.
+        coverBadge={isFoundingBusiness ? <FounderMark /> : null}
+        // The Check In button (LIVE-1180): top right of the cover; greyed out until the Space turns badge check-in on.
+        coverAction={
+          <Suspense fallback={null}>
+            <BadgeNote spaceId={space.id} slug={space.slug} viewerProfileId={viewerProfileId} variant="cover" checkinOn={checkinOn} />
+          </Suspense>
+        }
+        badges={
+          isBoosted ? (
+            <div className="fqs-badges">
+              <BoostedBadge boosted={isBoosted} className="text-3xs leading-tight" />
+            </div>
+          ) : null
+        }
+        tagline={
+          heroTagline ? (
+            <p className="fqs-tagline">{heroTagline}</p>
+          ) : canSeeAsOwner ? (
+            <p className="fqs-tagline">
+              <Link href={`${base}/manage?section=settings`}>Add a tagline. Say what you do.</Link>
+            </p>
+          ) : null
+        }
+        actions={
+          <>
+            <SpaceShareButton
+              slug={space.slug}
+              brandName={brandName}
+              brandLogoUrl={space.brandLogoUrl}
+              sharerProfileId={viewerProfileId}
+              hasContactCard
+              claimUrl={claimUrl}
+              className={frost}
+            />
+            {canSeeAsOwner && (
+              <OpenAdminBarButton
+                scope={{ kind: 'space', id: space.id }}
+                spaceType={space.type}
+                spaceFns={spaceFns}
+                moduleMenu={{ order: moduleMenu.order, hidden: moduleMenu.hidden, activated: moduleMenu.activated }}
+                label={manage.staffViewing ? 'Edit (staff)' : 'Edit'}
+                icon={<SlidersHorizontal aria-hidden />}
+                className={frost}
+              />
+            )}
+            <Link href={ctaHref} className="btn pa" {...ctaLinkProps}>
+              {ctaLabel}
+              <ArrowUpRight aria-hidden />
+            </Link>
+          </>
+        }
+        nav={
+          <SpaceProfileMenu
+            tabs={tabs}
+            canManage={canManage}
+            homeHref={base}
+            tools={
+              viewerProfileId ? (
+                <>
+                  <FollowSpaceButton
+                    spaceId={space.id}
+                    spaceName={brandName}
+                    initialFollowing={viewerFollows}
+                    className="btn sm"
+                  />
+                  {!canSeeAsOwner && <BoostButton kind="space" targetId={space.id} className="btn sm" />}
+                </>
+              ) : null
+            }
+          />
+        }
+        notices={manage.canManage && !isNetwork ? <SpacePrivateNotice spaceId={space.id} /> : null}
+      >
+        {/* A tapped placard lands here with ?checkin=: the check-in goes first. Empty otherwise. */}
         <Suspense fallback={null}>
           <FeaturedCheckin spaceName={brandName} />
         </Suspense>
+        {/* The Regulars line (LIVE-944): what a full card here earns. Empty unless the program is on. */}
         <Suspense fallback={null}>
           <RegularsNote spaceId={space.id} />
         </Suspense>
+        {/* The cardholder perk line (LIVE-1282): what this Space offers Frequency card holders. Empty unless set. */}
         <Suspense fallback={null}>
           <CardholderPerkNote spaceId={space.id} />
         </Suspense>
-        <Suspense fallback={null}>
-          <BadgeNote spaceId={space.id} slug={space.slug} viewerProfileId={viewerProfileId} />
-        </Suspense>
         {children}
-      </DetailTemplate>
-      {/* The owner Customize rail is now the STANDARDIZED admin bar (mounted site-wide by the shell), opened
-          by the owner-gated Customize button in the identity row via openAdminBar — no per-profile drawer to
-          mount here anymore (ENTITY-MANAGEMENT / PR C). */}
+      </FqSpaceChrome>
     </>
   )
 }

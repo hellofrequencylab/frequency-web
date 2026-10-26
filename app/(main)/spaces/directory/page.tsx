@@ -1,25 +1,11 @@
-import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus, Settings2 } from 'lucide-react'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from '@/components/marketplace/hero-buttons'
-import {
-  MarketplaceColumnsProvider,
-  MarketplaceColumns,
-} from '@/components/marketplace/column-selector'
-import { PageAdminBar } from '@/components/layout/page-admin-bar'
-import { DirectorySearch } from '@/components/ui/directory-search'
 import { getMyProfileId } from '@/lib/auth'
 import { normalizeSpaceSort } from '@/lib/spaces/discovery'
-import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
-import {
-  SpacesGrid,
-  GridSkeleton,
-  normalizePerPage,
-  normalizePage,
-} from '@/components/spaces/directory-view'
+import { normalizePerPage, normalizePage } from '@/components/spaces/directory-view'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { listNetworkedSpaces } from '@/lib/spaces/discovery'
 import { buildDirectorySections } from '@/lib/spaces/directory-sections'
 import { FqSpacesBody } from '@/components/frequency/members/spaces/spaces-body'
@@ -45,7 +31,6 @@ export const metadata = {
   alternates: { canonical: '/discover/spaces' },
 }
 
-const DIRECTORY_BASE = '/spaces/directory'
 
 export default async function SpacesDirectoryPage({
   searchParams,
@@ -100,7 +85,7 @@ export default async function SpacesDirectoryPage({
       title="Business Spaces"
       subtitle="A Space is the home a studio, a shop or a nonprofit keeps here, and the Circles and Events they host hang off it. Find one near you, follow it, and turn up."
       // Under Frequency the one search box lives in the find row of the body (FqFindField), as on Circles.
-      search={SITE_DESIGN === 'frequency' ? undefined : <DirectorySearch placeholder="Search Spaces by name" />}
+      search={undefined}
       action={
         viewerProfileId ? (
           <>
@@ -117,71 +102,24 @@ export default async function SpacesDirectoryPage({
       }
     />
   )
-
-  // THE DESIGN SWITCH (ADR-1737): under Frequency the body is the kit's directory (the shared header, one find
-  // row, Featured and Founding rows, a results grid that grows with Show more), on the same discovery
-  // read. Build-time, so the DAWN hero below is untouched when it is off.
-  if (SITE_DESIGN === 'frequency') {
-    const [all, matched] = await Promise.all([
-      listNetworkedSpaces({}),
-      listNetworkedSpaces({
-        q,
-        subject,
-        kind: category,
-        followerProfileId: viewerProfileId,
-        onlyFollowed: following,
-        sort,
-      }),
-    ])
-    const params = { q, subject, category, following: followingParam, sort: sortParam, city, events, show }
-    return (
-      <FqSpacesBody
-        header={heroEl}
-        sections={buildDirectorySections(all, matched, params)}
-        params={params}
-        signedIn={!!viewerProfileId}
-      />
-    )
-  }
-
-  // The shared base for every pager/size link — the current filters, so paging preserves them.
-  const urlBase = { q, subject, category, following: followingParam, sort: sortParam, per, page }
-
+  const [all, matched] = await Promise.all([
+    listNetworkedSpaces({}),
+    listNetworkedSpaces({
+      q,
+      subject,
+      kind: category,
+      followerProfileId: viewerProfileId,
+      onlyFollowed: following,
+      sort,
+    }),
+  ])
+  const params = { q, subject, category, following: followingParam, sort: sortParam, city, events, show }
   return (
-    <div className="space-y-6">
-      {heroEl}
-
-      {/* The on-page operator Settings affordance IndexTemplate used to draw — re-added under the hero
-          as its divider rule so nothing an operator had was lost in the move to MarketHero. */}
-      <PageAdminBar asDivider />
-
-      {/* Search moved into the hero; the controls that stayed on the page live here, in the polished
-          Classifieds grammar: the toolbar (sort + Following + category, with the density chooser
-          trailing right) over the grid, both inside the column-density provider that drives `.mp-grid`. */}
-      <MarketplaceColumnsProvider className="space-y-5">
-        <SpacesToolbar showSearch={false} columns={<MarketplaceColumns />} />
-
-        {/* Keyed on the filters + sort + page window so a new query remounts the boundary and shows the
-            skeleton while the next result set streams in. */}
-        <Suspense
-          key={`${q ?? ''}:${subject ?? ''}:${category ?? ''}:${following ? '1' : ''}:${sort}:${per}:${page}`}
-          fallback={<GridSkeleton />}
-        >
-          <SpacesGrid
-            basePath={DIRECTORY_BASE}
-            q={q}
-            subject={subject}
-            kind={category}
-            following={following}
-            sort={sort}
-            page={page}
-            per={per}
-            viewerProfileId={viewerProfileId}
-            urlBase={urlBase}
-            gridClassName="mp-grid gap-6"
-          />
-        </Suspense>
-      </MarketplaceColumnsProvider>
-    </div>
+    <FqSpacesBody
+      header={heroEl}
+      sections={buildDirectorySections(all, matched, params)}
+      params={params}
+      signedIn={!!viewerProfileId}
+    />
   )
 }

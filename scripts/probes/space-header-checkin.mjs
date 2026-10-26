@@ -4,7 +4,8 @@ import { readFileSync, existsSync } from 'node:fs'
 const r = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')
 const bad = []
 const layout = r('app/(main)/spaces/[slug]/(profile)/layout.tsx')
-const fq = layout.slice(layout.indexOf("SITE_DESIGN === 'frequency'"), layout.indexOf('<DetailTemplate'))
+// Frequency is the only design (ADR-1880), so the whole layout is the Frequency header.
+const fq = layout
 if (!/coverAction=/.test(fq) || !/variant="cover"/.test(fq)) bad.push('the Frequency header has no Check In cover action')
 if (/<\/Suspense>\s*\{children\}/.test(fq) && /<BadgeNote[^>]*viewerProfileId=\{viewerProfileId\} \/>/.test(fq)) bad.push('the badge strip is still under the tabs')
 if (!/fqs-cover-action/.test(r('components/frequency/members/space/space-chrome.tsx'))) bad.push('the chrome has no cover action slot')

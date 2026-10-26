@@ -253,14 +253,14 @@ export function ancestorComposes(pagePath, read = (f) => readFileSync(f, 'utf8')
   }
 }
 
-/** The Frequency member kit is the page frame for the member app (ADR-1880). A member page, or the
+/** The Frequency member kit (and the Space console's admin page bodies) is the page frame (ADR-1880). A member page, or the
  *  layout above it, that renders a body from components/frequency/members/** composes that frame:
  *  those files ARE the design export's page anatomy (MembersBody, FqFocusPage, FqCircleShell and the
  *  per-page bodies). Verified against the import resolving to a real file in that tree, never assumed
  *  from a name. */
 export function composesMemberFrame(src, exists = existsSync) {
   const code = stripComments(src)
-  for (const m of code.matchAll(/from\s+'@\/(components\/frequency\/members\/[^']+)'/g)) {
+  for (const m of code.matchAll(/from\s+'@\/(components\/frequency\/(?:members|admin\/pages)\/[^']+)'/g)) {
     if (['.tsx', '/index.tsx'].some((x) => exists(m[1] + x))) return true
   }
   return false
