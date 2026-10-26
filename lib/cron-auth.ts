@@ -7,8 +7,9 @@
 // `if (CRON_SECRET && ...)`, which silently disabled auth whenever the env
 // var was unset — leaving the endpoints world-callable in that state.)
 //
-// In development we allow an unset secret so local cron runs work without
-// configuration; the moment a secret IS set, it is enforced everywhere.
+// Only a local `next dev` run (and the test runner) may leave the secret unset; the moment a secret
+// IS set, it is enforced everywhere. SCAN-1124: the allowance used to be "anything but production",
+// which waved through a staging or self-hosted deploy that runs with another NODE_ENV.
 
 import { timingSafeEqual } from 'crypto'
 import { NextResponse } from 'next/server'
@@ -34,11 +35,11 @@ function safeEqual(a: string, b: string): boolean {
  */
 export function rejectUnauthorizedCron(req: Request): NextResponse | null {
   if (!CRON_SECRET) {
-    if (process.env.NODE_ENV === 'production') {
-      console.error('[cron-auth] CRON_SECRET is not set in production — rejecting request.')
-      return NextResponse.json({ error: 'Server misconfigured' }, { status: 401 })
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+      return null // dev convenience: unauthenticated local runs allowed
     }
-    return null // dev convenience: unauthenticated local runs allowed
+    console.error('[cron-auth] CRON_SECRET is not set — rejecting request.')
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 401 })
   }
 
   const authHeader = req.headers.get('authorization')

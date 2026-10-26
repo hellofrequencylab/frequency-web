@@ -1,0 +1,20 @@
+{
+  "id": "SEC-011",
+  "title": "Cron auth fails closed outside development; throttle the vitals sink (SCAN-1124)",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/cron-auth.ts",
+    "ref": "Meta scan 2026-10-26, Stream E (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "rejectUnauthorizedCron allowed an unset CRON_SECRET anywhere NODE_ENV was not production, so a staging or self-hosted deploy ran open. It now allows only development and test. /api/vitals had no limiter; it now has one shared ceiling (never per caller, because its test pins that it never reads request headers) with whenUnconfigured allow so a missing KV cannot drop telemetry.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "evidence": "Probe passes on this branch; unit tests added alongside (lib/net/pinned-fetch.test.ts, scripts/maintenance/live-catalog.test.ts).",
+    "cmd": "node scripts/probes/sec-cron-vitals.mjs"
+  }
+}

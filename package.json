@@ -106,6 +106,7 @@
     "check:docs-links": "node scripts/check-docs-links.mjs",
     "check:arch-doc": "node scripts/check-arch-doc.mjs",
     "check:cron-freshness": "node scripts/cron-freshness.mjs",
+    "maintenance:live-catalog": "node scripts/maintenance/live-catalog.mjs",
     "maintenance:ledger-parity": "node scripts/maintenance/ledger-parity.mjs",
     "maintenance:menu-drift": "node scripts/maintenance/menu-drift.mjs",
     "eval:copilot": "COPILOT_EVAL_LIVE=1 vitest run lib/ai/space-copilot-eval.test.ts",
