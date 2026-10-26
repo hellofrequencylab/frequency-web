@@ -14,6 +14,7 @@ import { acceptedCrossListingSubjects } from '@/lib/collective/cross-listing-sto
 // so the ADR-246 untyped casts this module carried are retired.
 
 import { cache } from 'react'
+import { canReadCircleParentSpace } from './parent-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { holdsSharedMembership } from '@/lib/collective/shared-membership'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -348,7 +349,7 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       .maybeSingle()
     if (!rawCircle) return null
 
-    // THE TWO-AXIS GATE (see the header). Reached only for a CLOSED circle.
+    // Resolve the parent tenancy wall before the Circle-specific two-axis gate.
     const raw = rawCircle as unknown as {
       id: string
       access?: unknown
@@ -356,6 +357,9 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       space_id?: string | null
       host_id?: string | null
     }
+    // Service-role reads bypass both parent-Space RESTRICTIVE policies. Apply that wall
+    // even to an open Circle, before reading its roster or returning its identity.
+    if (!(await canReadCircleParentSpace(raw.space_id ?? null, await getMyProfileId()))) return null
     const access = asCircleAccess(raw.access)
     let canEnter = true
     let entryReason: CircleJoinReason | null = null
