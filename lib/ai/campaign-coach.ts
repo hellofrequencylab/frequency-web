@@ -10,7 +10,7 @@ import { withVoice } from './voice'
 
 const FEATURE = 'campaign-coach'
 
-export const CAMPAIGN_COACH_GOALS = ['attendance', 'return_visits', 'bookings', 'replies'] as const
+const CAMPAIGN_COACH_GOALS = ['attendance', 'return_visits', 'bookings', 'replies'] as const
 export type CampaignCoachGoal = (typeof CAMPAIGN_COACH_GOALS)[number]
 
 const GOAL_QUESTIONS: Record<CampaignCoachGoal, string[]> = {
@@ -20,7 +20,7 @@ const GOAL_QUESTIONS: Record<CampaignCoachGoal, string[]> = {
   replies: ['What is one question you would like a reader to answer in their own words?', 'How will you review useful replies separately from automated responses?'],
 }
 
-export const CAMPAIGN_COACH_LIMITATIONS = [
+const CAMPAIGN_COACH_LIMITATIONS = [
   'Attendance, return visits, bookings and replies are not attributed to this campaign here. They are unknown, not zero.',
   'Counts are recorded email events, not verified people or conversions. Repeat events and automated clicks can affect them. Opens can be triggered by mail privacy tools.',
   'A zero unsubscribe count does not prove nobody opted out. This event ledger does not capture every opt-out.',
