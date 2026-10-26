@@ -130,6 +130,15 @@ describe('normalizeMemberSegment (pure)', () => {
     expect(normalizeMemberSegment('event:e_1')).toBe('event:e_1')
   })
 
+  it('accepts a Journey key with an optional enrollment state, and nothing else after it', () => {
+    expect(normalizeMemberSegment('journey:p-1')).toBe('journey:p-1')
+    expect(normalizeMemberSegment('journey:p-1:in_progress')).toBe('journey:p-1:in_progress')
+    expect(normalizeMemberSegment('journey:p-1:finished')).toBe('journey:p-1:finished')
+    for (const bad of ['journey:', 'journey:p-1:done', 'journey:p-1:finished:x', 'journey:a b']) {
+      expect(normalizeMemberSegment(bad)).toBeNull()
+    }
+  })
+
   it('trims, so a stray space around a real key is not a refusal', () => {
     expect(normalizeMemberSegment(' members ')).toBe('members')
   })
