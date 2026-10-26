@@ -230,3 +230,5 @@ header/form/footer shell stays, because eight callers legitimately want that sha
 
 That's the whole plan: a new entity's "create/edit" becomes *compose the kit against an
 existing data layer*, not a new screen.
+
+- Journey coaching (LIVE-1344): Spark questions and optional factual settings/meeting extraction are reviewed separately from names, promises, overviews and weekly prose. Source documents remain available for manual use. Composition, week planning, edit, guided and slot questions do not write content or preferences. Creating a Journey seeds only explicit manual/framework structure; it never launches model population. Manual participant prompts, block editing, library selection and deterministic framework templates remain available.

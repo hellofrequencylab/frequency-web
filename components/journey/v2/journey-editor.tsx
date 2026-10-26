@@ -149,6 +149,7 @@ function SlotCoaching({
   pillarName: string | null
   disabled: boolean
 }) {
+  const [questions, setQuestions] = useState<string[]>([])
   const [value, setValue] = useState(initialPrompt ?? '')
   const [warmup, setWarmup] = useState(initialWarmup ?? '')
   const [busy, startBusy] = useTransition()
@@ -158,7 +159,7 @@ function SlotCoaching({
     startBusy(async () => {
       const res = await draftSlotCoachingAction(slug, itemId)
       if (isError(res)) setError(res.error ?? 'Vera could not draft a prompt.')
-      else setValue(res.data.prompt)
+      else setQuestions(res.data.questions)
     })
   }
   return (
@@ -177,9 +178,10 @@ function SlotCoaching({
           onClick={draft}
           className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-meta font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60"
         >
-          <Sparkles className="h-3.5 w-3.5" /> {busy ? 'Drafting…' : value ? 'Redraft' : 'Draft with Vera'}
+          <Sparkles className="h-3.5 w-3.5" /> {busy ? 'Thinking…' : 'Get writing questions'}
         </button>
       </div>
+      {questions.length > 0 && <ul role="status" className="mt-2 text-body-sm text-muted">{questions.map(q => <li key={q}>{q}</li>)}</ul>}
       <Textarea
         value={value}
         disabled={disabled || busy}
@@ -187,7 +189,7 @@ function SlotCoaching({
         onBlur={() => updateBlockAction(slug, itemId, { coachingPrompt: value })}
         rows={2}
         aria-label="Vera's coaching prompt for this step"
-        placeholder="What Vera nudges them with when they reach this practice. Draft it with Vera or write your own."
+        placeholder="Write what participants should consider when they reach this practice."
         className="mt-1.5 resize-y"
       />
       {/* Per-step warm-up override (ADR-592, P5): shown in the timer pre-roll for this step, over
@@ -243,6 +245,11 @@ export function JourneyEditor({
       else next.add(id)
       return next
     })
+  const [weekGuidance, setWeekGuidance] = useState<Record<string, string[]>>({})
+  const coachWeek = (id: string) => start(async () => {
+    const result = await populateWeekAction(slug, id)
+    setWeekGuidance(previous => ({ ...previous, [id]: isError(result) ? [result.error] : result.data.questions }))
+  })
   const run = (fn: () => Promise<unknown>) =>
     start(async () => {
       await fn()
@@ -835,14 +842,15 @@ export function JourneyEditor({
                   <button
                     type="button"
                     disabled={pending}
-                    onClick={() => run(() => populateWeekAction(slug, p.id))}
+                    onClick={() => coachWeek(p.id)}
                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary-bg/30 px-3 py-2.5 text-body-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg disabled:opacity-60"
                   >
-                    <Sparkles className="h-4 w-4" /> {pending ? 'Building…' : 'Populate this week with Vera'}
+                    <Sparkles className="h-4 w-4" /> {pending ? 'Thinking…' : 'Get questions for this week'}
                   </button>
-                  <p className="mt-1.5 text-center text-2xs text-muted">Vera follows your outline and pulls matching practices from the library. Or add your own below.</p>
+                  <p className="mt-1.5 text-center text-2xs text-muted">Use the questions to plan your week, then choose practices or write your own below.</p>
                 </div>
               )}
+              {weekGuidance[p.id] && <ul role="status" className="mt-2 text-body-sm text-muted">{weekGuidance[p.id].map(q => <li key={q}>{q}</li>)}</ul>}
               {renderPhaseChildren(p.id)}
               {stepTools(p.id, p.id)}
               <button

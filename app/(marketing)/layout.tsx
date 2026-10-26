@@ -1,9 +1,5 @@
-import { MarketingHeader } from '@/components/layout/marketing-header'
-import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { SupportChatLauncher } from '@/components/chat/support-chat-launcher'
 import { isSupportChatAvailable, supportChatFlagEnabled } from '@/lib/comms/chat-token'
-import { getMenu, getMenuSettings } from '@/lib/menus/read'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 // Shared chrome for the public marketing content pages (/the-lab, /how-it-works,
@@ -19,38 +15,7 @@ import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 // the page body + SEO are identical for signed-in and signed-out viewers.
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
   const chat = supportChatFlagEnabled() && isSupportChatAvailable() ? <SupportChatLauncher /> : null
-  // THE DESIGN SWITCH (ADR-1737, build-time). Frequency wears its own public chrome: the kit root, the
-  // header v4 mega menu, the ft2 footer and the FX island (components/frequency/site/shell). Its nav is
-  // typed data (lib/frequency/site-nav.ts), so the DB menu reads below are skipped. DAWN is unchanged.
-  if (SITE_DESIGN === 'frequency') return <SiteShell after={chat}>{children}</SiteShell>
-
-  // DB-backed nav megas (lib/menus); fall back to code defaults on any miss, so safe
-  // pre-migration. These are non-request reads (admin client, no cookies), so they prerender
-  // with the page. The public marketing surface is always a logged-out 'visitor'.
-  const [headerMenu, footerMenu, menuTimings] = await Promise.all([
-    getMenu('header'),
-    getMenu('footer'),
-    getMenuSettings(),
-  ])
-  return (
-    <div data-surface="stage" className="contents">
-      {/* Stage surface (ADR-1740): under the Frequency design the public site wears Stage, always dark;
-          under DAWN the attribute matches nothing. `contents` keeps the box out of layout. */}
-      <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} detectClientAuth />
-      {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
-          tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-      <main id="main" className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-        {children}
-      </main>
-      <MarketingFooter menu={footerMenu} />
-      {/* Anonymous live chat (ADR-816) — this PUBLIC surface owns the bottom-right corner
-          (docs/CHAT-SHELL-PLAN.md §2); the member shell owns its own via the dock. Off unless the
-          SUPPORT_CHAT switch is enabled (supportChatFlagEnabled in lib/comms/chat-token.ts; the
-          prefixed name it once carried is no longer read, LIVE-165, 2026-09-07). */}
-      {/* 2026-09-05 (scan2 L3-06): the build flag alone mounted the widget even when the server could
-          not mint its token (CONVERSATION_TOKEN_SECRET unset in production) or had no inbox owner, so
-          every chat attempt failed after writing rows. isSupportChatAvailable is the server-side gate. */}
-      {chat}
-    </div>
-  )
+  // Frequency wears its own public chrome: the kit root, the header v4 mega menu, the ft2 footer and the
+  // FX island (components/frequency/site/shell). Its nav is typed data (lib/frequency/site-nav.ts).
+  return <SiteShell after={chat}>{children}</SiteShell>
 }

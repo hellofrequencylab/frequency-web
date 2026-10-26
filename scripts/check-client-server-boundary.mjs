@@ -62,7 +62,8 @@
 // A wrong cwd, a renamed root, or a resolver that stopped matching `@/` would each have printed
 // `✓ 0 client entry points, none reach lib/supabase/admin.ts` and exited 0 — a ✓ over nothing,
 // which is the one thing a gate must never print (ADR-962). The floors are set at ~70% of the
-// reading taken that day (834 client entry points, 3437 modules walked), so a genuine shrink
+// reading taken that day (834 client entry points, 3437 modules walked). The module floor was
+// tightened on 2026-10-26 as the graph grew past twice that old floor, so a genuine shrink
 // has room and a blind walk does not. scripts/check-client-server-boundary.test.ts drives the
 // leak arm, the `server-only` arm and both floors against fixtures that must FAIL, and asserts
 // the floors still sit below the live reading.
@@ -74,12 +75,13 @@ import { join, dirname, normalize } from 'node:path'
 
 const ADMIN = 'lib/supabase/admin.ts'
 const ROOTS = ['app', 'components', 'lib', 'hooks']
-/** Non-triviality floors (ADR-962). ~70% of the 2026-09-04 reading: 834 client entry points and
- *  3437 modules walked. Lower them only beside a real deletion, and name it — never to go green.
- *  MIN_MODULES rose 2400 to 2700 on 2026-10-26: the tree passed 4800 modules walked, and the floor test
- *  wants the floor above half the reading. */
+/** Non-triviality floors (ADR-962). Client floor retains the initial 2026-09-04 basis.
+ * Module floor tightened 2026-10-26 to ~69% of the measured 4798-module graph (4802 on CI merge).
+ * This retains the stricter discovery-branch floor while incorporating main's independent
+ * correction that the old 2400 floor fell below half of the current graph.
+ * Lower them only beside a real deletion, and name it — never to go green. */
 const MIN_CLIENT_ENTRYPOINTS = 580
-const MIN_MODULES = 2700
+const MIN_MODULES = 3300
 const QUIET = process.argv.includes('--probe')
 
 const say = (...a) => { if (!QUIET) console.log(...a) }

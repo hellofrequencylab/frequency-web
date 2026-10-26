@@ -48,3 +48,27 @@ export async function writeSpaceCoachProfile(spaceId: string, profile: SpaceCoac
     return false
   }
 }
+
+// authz-delegated: fresh Space editor authorization is required before every call.
+export async function loadSpaceDiscoveryConsent(spaceId: string): Promise<{ available: boolean; consent: import('./discovery-consent').SpaceDiscoveryConsent | null }> {
+  try {
+    const { parseDiscoveryConsent } = await import('./discovery-consent')
+    const { data, error } = await createAdminClient().from('space_private_state').select('discovery_consent').eq('space_id', spaceId).maybeSingle()
+    if (error) throw error
+    return { available: true, consent: parseDiscoveryConsent((data as { discovery_consent?: unknown } | null)?.discovery_consent) }
+  } catch {
+    log.warn('space.discovery_consent.read_unavailable', { spaceId })
+    return { available: false, consent: null }
+  }
+}
+// Narrow upsert never reads/rewrites coach_profile, website_editor or program_overview.
+export async function writeSpaceDiscoveryConsent(spaceId: string, consent: import('./discovery-consent').SpaceDiscoveryConsent): Promise<boolean> {
+  try {
+    const { error } = await createAdminClient().from('space_private_state').upsert({ space_id: spaceId, discovery_consent: consent as unknown as Json, updated_at: new Date().toISOString() }, { onConflict: 'space_id' })
+    if (error) throw error
+    return true
+  } catch {
+    log.warn('space.discovery_consent.write_unavailable', { spaceId })
+    return false
+  }
+}
