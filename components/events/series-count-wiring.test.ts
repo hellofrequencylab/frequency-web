@@ -30,7 +30,6 @@ type Site = {
 const SITES: Site[] = [
   { path: 'lib/spaces/discovery.ts', stat: 'the /spaces directory card’s "N upcoming events"' },
   { path: 'app/(main)/admin/page.tsx', stat: 'the admin home KPI + Community tile "Events ahead"' },
-  { path: 'components/admin/admin-info-rail.tsx', stat: 'the admin rail’s "Upcoming events"' },
   { path: 'components/sidebar/rail-panels.tsx', stat: 'Community pulse "N this week"' },
   { path: 'components/widgets/community/manage.tsx', stat: 'the Community Manage card "upcoming events"' },
   { path: 'components/widgets/community/structure.tsx', stat: 'Structure & people "Upcoming events"' },

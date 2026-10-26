@@ -6,7 +6,6 @@ import { reDerivesHeaderHeight, APP_HEADER_H } from './header-offset'
 const CONSUMERS = [
   'components/layout/app-shell.tsx',
   'components/layout/admin-bar/admin-bar.tsx',
-  'app/(main)/admin/layout.tsx',
   'components/admin/admin-rail-drawer-column.tsx',
 ]
 

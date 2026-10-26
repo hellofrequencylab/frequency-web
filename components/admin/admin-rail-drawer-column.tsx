@@ -38,7 +38,7 @@ export function AdminRailDrawerColumn({ children }: { children: React.ReactNode 
       {/* 🔴 MASKED FOR THE VISUAL SUITE (`admin-rail`, ADR-1277 / VISUAL_MASK_SITES), and this is
           the ADR-1522 "rail as one box" treatment applied to the operator side. Every number in
           here is a live production reading taken on each render -- members, active this week,
-          upcoming events, and each attention queue's count (components/admin/admin-info-rail.tsx
+          upcoming events, and each attention queue's count (the retired admin info rail,
           railData). This aside is in the admin LAYOUT, so all four photographed operator surfaces
           carry it, which is why one member joining reds out eight blocking checks at once with
           three of them reporting byte-identical pixel counts.

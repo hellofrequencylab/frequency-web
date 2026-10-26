@@ -291,15 +291,6 @@ describe('the chat launcher reads the bar, and never the fold', () => {
   })
 })
 
-describe('the operator bar answers the same question', () => {
-  it('/admin passes the prop rather than inheriting a default', () => {
-    // A new call site has to state its fold. The operator info rail is not on the ladder — no
-    // RailFoldControl, so nothing can fold it — and `folded` is required so that is said out loud.
-    const adminLayout = readFileSync('app/(main)/admin/layout.tsx', 'utf8')
-    expect(adminLayout).toContain('<DockBar folded={false}')
-  })
-})
-
 describe('the sentinel-driven store still says "no bar" honestly', () => {
   it('the server snapshot anchors nothing', () => {
     const server = getServerDockGeometry()

@@ -214,22 +214,6 @@ describe('moduleIdsForScope', () => {
     expect(moduleIdsForScope('/admin/crm')).not.toContain('crm-members-roster')
   })
 
-  it('the Gamification page (/admin/gamification) resolves its seven blocks, in order, no leakage', () => {
-    const g = moduleIdsForScope('/admin/gamification')
-    expect(g).toBe(ROUTE_MODULE_IDS['/admin/gamification'])
-    // Default render order: season control, the janitor-only reward editor, the Rewards v2 metrics,
-    // the stat band, the top-achievers leaderboard, then the achievements + season-challenges tables.
-    expect(g).toEqual([
-      'gamification-season',
-      'gamification-rewards',
-      'gamification-metrics',
-      'gamification-stats',
-      'gamification-top-achievers',
-      'gamification-achievements',
-      'gamification-challenges',
-    ])
-  })
-
   it('an entity profile tab offers NO module set — the profile renders lib/entity-blocks', () => {
     // LIVE-067. '/spaces/*' declared an eight-block family palette for a surface that never mounted
     // <PageModules>: the tabs under app/(main)/spaces/[slug]/(profile)/ compose lib/entity-blocks

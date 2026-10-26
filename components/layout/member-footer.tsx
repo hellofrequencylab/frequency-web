@@ -12,7 +12,7 @@ import { SITE_TAGLINE, ORG_LEGAL_NAME } from '@/lib/site'
 // The MEMBER sitemap footer — a rich, multi-column lower footer (Strava/Discord/
 // LinkedIn register) that renders on the CANVAS at the END of the center content
 // column on member pages and scrolls up with the page (normal flow, never fixed).
-// It is a SEPARATE system from the admin footer (components/admin/admin-footer.tsx):
+// It is a SEPARATE system from the admin console footer:
 // the admin one navigates the operator workspace; this one is the member's map of
 // the community + the wider site.
 //
