@@ -7,7 +7,7 @@ import type { SiteLook } from '@/lib/theme/site-style'
 export type KitNiche = 'coaches' | 'studios' | 'hosts' | 'venues' | 'nonprofits' | 'networks'
 
 interface KitBlock { type: string; props?: Record<string, unknown> }
-interface KitPage {
+export interface KitPage {
   slug: string
   label: string
   seo: { title: string; description: string }
