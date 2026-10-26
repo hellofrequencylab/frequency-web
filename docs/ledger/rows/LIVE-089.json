@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-089",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/vera-accessibility.mjs overlays",
+      "note": "TeaserGate and chores overlay retired; the four surviving surfaces import and render the canonical named Dialog. Four per-surface hand-rolled regression controls fail; existing client tests verify portal escape, stacking and Vera accessibility. Retired surfaces are not recreated to satisfy obsolete path checks."
+    }
+  },
+  "append": {
+    "detail": "2026-10-23: TeaserGate and chores overlay retired; the four surviving surfaces import and render the canonical named Dialog. Four per-surface hand-rolled regression controls fail; existing client tests verify portal escape, stacking and Vera accessibility. Retired surfaces are not recreated to satisfy obsolete path checks."
+  }
+}

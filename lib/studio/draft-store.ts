@@ -26,6 +26,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { safeNextPath } from '@/lib/auth/safe-next'
 import {
   DRAFT_TTL_MS,
   DRAFT_VERSION,
@@ -67,9 +68,8 @@ const MAX_LABEL_CHARS = 80
 function safeRoute(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
   const route = raw.trim()
-  if (!route.startsWith('/') || route.startsWith('//')) return null
   if (route.length > MAX_ROUTE_CHARS) return null
-  return route
+  return safeNextPath(route) || null
 }
 
 function safeLabel(raw: unknown): string | null {
@@ -163,11 +163,10 @@ export async function saveStagedDraft(
   if (!profileId || !scope || scope.length > MAX_SCOPE_CHARS) return false
   const values = clean(input.values)
   if (Object.keys(values).length === 0) {
-    await discardStagedDraft(profileId, scope)
-    return true
+    return discardStagedDraft(profileId, scope)
   }
   try {
-    await db()
+    const { error } = await db()
       .from('studio_draft')
       .upsert(
         {
@@ -182,6 +181,7 @@ export async function saveStagedDraft(
         },
         { onConflict: 'profile_id,scope' },
       )
+    if (error) return false
     // Keep one author's staging area bounded. Only ever prunes their OWN oldest rows, and only
     // after a successful write, so a failure here cannot cost anyone a draft they still want.
     await trimToCap(profileId)
@@ -192,12 +192,14 @@ export async function saveStagedDraft(
 }
 
 /** Throw away one staged draft. Called on commit, on "start fresh", and on an empty payload. */
-export async function discardStagedDraft(profileId: string, scope: string): Promise<void> {
-  if (!profileId || !scope) return
+export async function discardStagedDraft(profileId: string, scope: string): Promise<boolean> {
+  if (!profileId || !scope) return false
   try {
-    await db().from('studio_draft').delete().eq('profile_id', profileId).eq('scope', scope)
+    const { error } = await db().from('studio_draft').delete().eq('profile_id', profileId).eq('scope', scope)
+    return !error
   } catch {
-    /* the local copy is already gone; nothing here is worth failing a commit over */
+    // Cleanup callers may ignore the result; save/bin callers must not confirm a failed deletion.
+    return false
   }
 }
 

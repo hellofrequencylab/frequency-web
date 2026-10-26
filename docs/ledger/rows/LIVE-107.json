@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-107",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/public-menu-consequences.mjs",
+      "note": "The registry now has four triggers; remove the obsolete minimum-five indeterminate exit while retaining every landing/directory consequence. Actual DAWN registry plus Frequency navigation preserve panel landing links, public Business Spaces directory and scheduled live data drift read/comparison. Five assertion controls and existing menu tests pass. No live menu rows changed."
+    }
+  },
+  "append": {
+    "detail": "2026-10-23: The registry now has four triggers; remove the obsolete minimum-five indeterminate exit while retaining every landing/directory consequence. Actual DAWN registry plus Frequency navigation preserve panel landing links, public Business Spaces directory and scheduled live data drift read/comparison. Five assertion controls and existing menu tests pass. No live menu rows changed."
+  }
+}

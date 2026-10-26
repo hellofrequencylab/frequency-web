@@ -1,0 +1,6 @@
+{
+  "id": "LIVE-920",
+  "append": {
+    "detail": "2026-10-23: HYG-178 removes the superseded, unreferenced lib/maps/css-color.ts utility. Active pin paint is lib/maps/pin-kinds.ts with token resolution in each canvas; the design-switch consequence still passes. Frequency/DAWN fonts are generated alternate entrypoints and retained."
+  }
+}
