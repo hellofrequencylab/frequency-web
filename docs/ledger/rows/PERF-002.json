@@ -1,0 +1,13 @@
+{
+  "id": "PERF-002",
+  "append": {
+    "detail": "2026-10-26 independent premise review (read-only production catalog and EXPLAIN; no live DDL): identities already have UNIQUE(domain_id, local_part) plus space_id_idx. A two-column domain/Space lookup uses BitmapAnd on these existing indexes. Since globally unique domain_id determines its parent Space under the existing composite FK, a second domain_id/space_id index is not justified merely to silence the advisor. Reply aliases already have UNIQUE(conversation_id), bounding the other lookup. Approximate live registry table counts are zero (aliases two); no production latency regression has been measured. The three direct-auth.uid owner policies still produce advisor notices. A disposable PostgreSQL run using the exact registry migrations and 2,000 synthetic rows per table proves scalar-only identity subqueries preserve two-owner isolation, missing-claim denial, anon denial and grants, and produce InitPlans. The original join already evaluates its profiles filter once in the tested plan; mixed execution timings (9.597 ms to 4.111 ms,6.359 to 3.675 ms,3.675 to 3.985 ms) are not production speedup proof. Runtime email readers use createAdminClient with separate owner gates, so these SELECT-policy changes would not accelerate those readers. No canonical migration is registered: keep OPEN with ownerAction ruling. Revisit a policy-only migration or an additional index when a real authenticated read workload, representative EXPLAIN ANALYZE or FK-maintenance measurement demonstrates a material benefit; preserve ownership joins and browser grants. Do not reapply the older unregistered index proposal as an acceptance checkbox."
+  },
+  "patch": {
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-10-26",
+      "evidence": "OPEN/ruling: existing domain-prefix and Space indexes are usable in the actual live EXPLAIN; reply alias unique bounds its FK lookup. Scalar-policy InitPlans and unchanged synthetic isolation/grants are proven locally, but no current application latency benefit is established. No production DDL or migration registration. Future trigger: representative authenticated workload or FK-maintenance plan showing material avoidable cost; then review the smallest policy-only/index change with behavior tests."
+    }
+  }
+}
