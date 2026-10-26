@@ -13,6 +13,8 @@ import { resetDocumentPlacements, sectionDeviceLayout } from '@/lib/sites/editor
 import { pendingChangeLabels, publishChecks } from '@/lib/sites/editor/publish-checks'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
+import { KitLibrary } from './kit-library'
+import type { KitApplyMode } from '@/lib/sites/kits/types'
 import { editorBlockMeta, editorPickerGroups, VERA_SUGGESTIONS } from '@/lib/sites/editor/block-meta'
 import { duplicateWebsiteSection } from '@/lib/sites/editor/duplicate'
 import { FqIcon, type FqEditorIconName, type FqIconName } from '@/components/frequency/icon'
@@ -433,6 +435,21 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [pickOpen])
+  /** Apply a starter kit to the draft as ONE undoable step. The kit loads on demand, so its pages never ride in the
+   *  editor's first load. A theme change saves the site style the way the Theme tab does. */
+  async function applyKitChoice(id: string, mode: KitApplyMode): Promise<string> {
+    const [{ loadKit }, { applyKit }] = await Promise.all([import('@/lib/sites/kits/registry'), import('@/lib/sites/kits/apply')])
+    const kit = await loadKit(id)
+    if (!kit) return 'That kit could not be loaded. Try again.'
+    const result = applyKit(latest.current, kit, mode, (type) => config.components[type]?.defaultProps as Record<string, unknown> | undefined)
+    if (!result.ok) return result.error
+    const site = SITE_THEMES.find((t) => EDITOR_THEME[t.id] === kit.theme)
+    const themeChanged = kit.theme !== latest.current.theme
+    commit(themeChanged ? { ...result.snapshot, pages: result.snapshot.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) } : result.snapshot, { label: `Applied the ${kit.label} kit` })
+    if (themeChanged && site) void saveStyle({ theme: site.id }, { ...style, theme: site.id, fonts: site.defaultFonts })
+    say(`${kit.label} kit applied`)
+    return mode === 'theme' ? 'Theme applied. Undo takes it back.' : `Kit applied. Rewrite the sample words, then publish. Undo takes it back.`
+  }
   function newPage(template: string) {
     const label = pageName.trim()
     if (!label) return
@@ -544,6 +561,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className={`theme${on(draft.theme === theme)}`} aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }, { label: 'Theme' }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }); say('Theme updated') }}>
       <span className="sw" style={websiteThemeVars(theme)} aria-hidden><i data-swatch="bg" /><i data-swatch="accent" /></span><span><b>{WEBSITE_THEME_LABEL[theme]}</b><small>{t.description}</small></span></button> })}
     {draft.theme === 'Midnight' && <p role="note" className="note">Midnight is retired. Pick Default or Bold to keep editing in a theme your live site can wear.</p>}
+    <KitLibrary onApply={applyKitChoice} />
     <div className="cap">Accent</div>
     <div className="swatches" role="group" aria-label="Accent">
       <button type="button" className={on(!draft.brand?.accent).trim() || undefined} aria-pressed={!draft.brand?.accent} aria-label="Theme accent" title="Theme accent" data-swatch="theme" onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } }, { label: 'Accent' })} />
@@ -575,6 +593,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const themeTab = FQ_EDITOR ? fqThemeTab : <><div className="we-caption">Theme</div>{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }) }}>
       <span className="we-theme-swatch" style={websiteThemeVars(theme)}><i style={{ background: 'var(--ed-chrome)' }} /><i style={{ background: 'var(--th-bg)' }}><b /></i></span><span><strong>{WEBSITE_THEME_LABEL[theme]}</strong><small>{t.description}</small></span>
       </button> })}{draft.theme === 'Midnight' && <p role="note" className="we-note">Midnight is retired. Pick Frequency or Bold to keep editing in a theme your live site can wear.</p>}
+      <KitLibrary onApply={applyKitChoice} />
       {/* GLOBAL STYLES (ADR-1728): the same setting Identity and branding edits, live at once. */}
       <div className="we-caption">Global styles</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="we-field">{LOOK_LABEL[key]}<div className="we-choice-row" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className="we-action secondary" aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; void saveStyle({ look: { [key]: stored } }, { ...style, look: { ...style.look, [key]: stored } }) }}>{o.label}</button>)}</div></div>)}
       {styleError && <p role="alert" className="we-note">{styleError}</p>}
