@@ -80,8 +80,6 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   if (!MEMBER_CONFIRMABLE_TOOLS.has(tool)) return { ok: false, error: 'That action is not available here.' }
 
   const result = await executeConfirmedTool(profileId, tool, args)
-  // A confirmed intro lands as a real feed post — show it on the next feed paint.
-  if (tool === 'draft_intro' && result.ok) revalidatePath('/feed')
   // A saved profile field shows on the profile and in settings on the next paint (SCAN-740).
   if (tool === 'set_profile_field' && result.ok) {
     revalidatePath('/settings/profile')

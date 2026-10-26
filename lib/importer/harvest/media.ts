@@ -15,6 +15,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isFetchableUrl } from '@/lib/ai/web'
+import { fetchPinned } from '@/lib/net/pinned-fetch'
 
 const BUCKET = 'site-media'
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024 // mirror the editor's 8MB cap
@@ -26,6 +27,10 @@ const FETCH_TIMEOUT_MS = 10_000
 const MIN_GALLERY_BYTES = 5 * 1024
 
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'])
+
+function typeOf(header: string | undefined): string {
+  return (header ?? '').split(';')[0].trim().toLowerCase()
+}
 
 function extFor(contentType: string): string {
   switch (contentType) {
@@ -67,20 +72,21 @@ export async function captureImage(
   role: 'logo' | 'hero' | 'gallery',
 ): Promise<CapturedImage | null> {
   if (!isFetchableUrl(imageUrl)) return null
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
   try {
-    const res = await fetch(imageUrl, {
-      signal: controller.signal,
+    // SCAN-1123: resolved once, public addresses only, socket pinned, redirects re-checked.
+    const res = await fetchPinned(imageUrl, {
+      maxBytes: MAX_IMAGE_BYTES,
+      timeoutMs: FETCH_TIMEOUT_MS,
       headers: { 'user-agent': 'FrequencyImporter/1.0 (+https://hellofrequency.com)' },
+      accept: (_status, headers) => ALLOWED_IMAGE_TYPES.has(typeOf(headers['content-type'])),
     })
-    if (!res.ok) return null
-    const contentType = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
+    if (!res || res.status < 200 || res.status >= 300) return null
+    const contentType = typeOf(res.headers['content-type'])
     if (!ALLOWED_IMAGE_TYPES.has(contentType)) return null
     // A gallery slot is a photograph; a vector mark is a logo by another name.
     if (role === 'gallery' && contentType === 'image/svg+xml') return null
-    const buf = new Uint8Array(await res.arrayBuffer())
-    if (buf.length === 0 || buf.length > MAX_IMAGE_BYTES) return null
+    const buf = new Uint8Array(res.body)
+    if (buf.length === 0) return null
     if (role === 'gallery' && buf.length < MIN_GALLERY_BYTES) return null
 
     const admin = createAdminClient()
@@ -91,7 +97,5 @@ export async function captureImage(
     return { publicUrl: data.publicUrl, path, sourceUrl: imageUrl }
   } catch {
     return null
-  } finally {
-    clearTimeout(timer)
   }
 }

@@ -15,7 +15,7 @@
 //     both; the photo is staged here and read by the EXISTING vision scan (app/(main)/events/scan),
 //     which is untouched. Vera reads the text and the photo together into one event.
 //
-// Either way Vera drafts the event for review, then creating it runs through the SHARED
+// Either way Vera extracts the event details for review, then creating it runs through the SHARED
 // saveDraft → draft editor → publish flow (the same one the poster scanner uses). Nothing persists
 // until that create. The manual door hands off to the full EventForm, which also carries the
 // Duplicate-event prefill (`initial` + `startInManual`). Degrades cleanly when Vera is off.
@@ -31,17 +31,13 @@ import {
   FieldControl,
   SparkDoors,
   SparkDropzone,
-  SparkFidelity,
   SparkOffers,
   SparkShell,
-  SparkSteer,
   draftText,
   useQualityCheck,
 } from '@/components/studio/spark'
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
-import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
-import { defaultSeedFidelity, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import { createClient } from '@/lib/supabase/client'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
@@ -75,7 +71,7 @@ const QUESTIONS = [
     key: 'what',
     label: 'What is the event',
     title: 'What is the event?',
-    description: 'A sentence is plenty. Tell Vera what it is and she drafts the rest.',
+    description: 'Use your own words. These become the start of your event description.',
     placeholder: 'e.g. A Sunday sound bath and tea circle for beginners.',
     long: true,
   },
@@ -111,8 +107,6 @@ const QUESTIONS_TOTAL = QUESTIONS.length + 2
 const IMPORT_TOTAL = 2
 
 /** The manifest's dials. The Event declares no locks, so nothing is narrowed here. */
-const EVENT_STEER = EVENT_MANIFEST.steer ?? {}
-const NO_LOCKS: readonly string[] = []
 
 /** Which of the four answers a step is on. */
 type AnswerKey = (typeof QUESTIONS)[number]['key']
@@ -258,14 +252,6 @@ export function EventSpark({
   // else (lineup, tickets, links, sponsors) carries through to the draft editor untouched.
   const [draft, setDraft] = useState<ExtractedEvent | null>(null)
 
-  // The steer dials. Captured on review so they never add a question to the flow.
-  const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
-  const [directions, setDirections] = useState('')
-
-  // Exact, Edit or Rewrite, asked right before Vera drafts. Null until the author picks, so the
-  // default can follow what they brought (their own write-up keeps its words; four short answers
-  // get a fresh draft).
-  const [fidelityPick, setFidelityPick] = useState<SeedFidelity | null>(null)
 
   // ── The pre-publish read (ADR-993 / ADR-995) ──
   //
@@ -306,8 +292,7 @@ export function EventSpark({
 
   /** Whether there is material to draft FROM, which is what picks the import path. */
   const hasSource = flyer.trim().length > 0 || staged !== null
-  const fidelity = fidelityPick ?? defaultSeedFidelity(hasSource)
-  const fidelityChoice = <SparkFidelity value={fidelity} onChange={setFidelityPick} />
+  const fidelity = 'exact' as const
 
   const applyDraft = (d: ExtractedEvent) => {
     setDraft(d)
@@ -355,7 +340,7 @@ export function EventSpark({
       // Text-only: the import path with just pasted text, or the questions path.
       const res = await sparkEventAction(answers, flyer.trim() || undefined, fidelity)
       if (!res.ok) {
-        setError(aiOffMessage(res.reason, 'Sign in to draft an event.'))
+        setError(aiOffMessage(res.reason, 'Could not organize those details. Try again, or use Fill it in myself.'))
         return
       }
       applyDraft(res.draft)
@@ -466,7 +451,7 @@ export function EventSpark({
         // The primary action only exists once there is something to draft FROM. Until then the
         // doors are the whole screen.
         {...(hasSource
-          ? { onNext: draftFromSource, nextLabel: 'Draft with Vera', busy: pending }
+          ? { onNext: draftFromSource, nextLabel: 'Organize event details', busy: pending }
           : {})}
       >
         <SparkDoors
@@ -480,11 +465,11 @@ export function EventSpark({
             setQ(0)
             setStage('questions')
           }}
-          veraLabel={hasSource ? 'Draft it from what you dropped in' : 'Answer a few questions'}
+          veraLabel={hasSource ? 'Organize my event details' : 'Answer a few questions'}
           veraHint={
             hasSource
-              ? 'Vera reads the write-up and the photo together and lays out the whole event.'
-              : 'Four short answers and Vera drafts the whole event for you to edit.'
+              ? 'Vera extracts the details from your write-up and photo, keeping your words.'
+              : 'Four short answers in your own words. Vera sorts dates, location and other details.'
           }
           onManual={() => setMode('manual')}
           manualLabel="Fill it in myself"
@@ -515,7 +500,7 @@ export function EventSpark({
               </span>
             </div>
           )}
-          {hasSource && <div className="mt-3">{fidelityChoice}</div>}
+          <p className="mt-3 text-meta text-subtle">Vera sorts the details and keeps your words. You write the description.</p>
         </SparkDoors>
       </SparkShell>
     )
@@ -538,8 +523,8 @@ export function EventSpark({
         stepLabel={question.label}
         onBack={() => (q === 0 ? setStage('doors') : setQ((s) => s - 1))}
         onNext={() => (last ? generate() : setQ((s) => s + 1))}
-        nextLabel={last ? 'Draft with Vera' : 'Continue'}
-        // Only the first answer is required; Vera fills the gaps.
+        nextLabel={last ? 'Organize event details' : 'Continue'}
+        // Only the first answer is required; unknown details remain editable on review.
         nextDisabled={q === 0 && !answers.what.trim()}
         busy={pending}
         error={error}
@@ -563,7 +548,7 @@ export function EventSpark({
             placeholder={question.placeholder}
           />
         )}
-        {last && <div className="mt-4">{fidelityChoice}</div>}
+        <p className="mt-4 text-meta text-subtle">Your answers stay in your own words. Vera helps sort the event details.</p>
       </SparkShell>
     )
   }
@@ -574,7 +559,7 @@ export function EventSpark({
     <SparkShell
       eyebrow="New event"
       title="Here is your event"
-      description="Vera's draft. Fix anything that looks off, then create it. The cover, lineup, tickets, and links carry into the editor next."
+      description="Your words, with the event details organized for review. Check the facts and finish your description before creating it."
       step={total}
       totalSteps={total}
       stepLabel="Review"
@@ -618,19 +603,14 @@ export function EventSpark({
             </p>
           )}
 
+          <aside className="rounded-card border border-border bg-surface p-3 text-body-sm text-text" aria-label="Writing coach">
+            <p className="font-semibold">Make it yours</p>
+            <p>Who should feel welcome? What will they do together? What should someone know before arriving?</p>
+          </aside>
           {/* Optional and skippable: a read before it goes out. */}
           <SparkOffers quality={qualityState.check} disabled={pending} />
 
-          <SparkSteer
-            steer={EVENT_STEER}
-            mood={mood}
-            onMood={setMood}
-            directions={directions}
-            onDirections={setDirections}
-            locked={NO_LOCKS}
-            onLocked={() => undefined}
-            disabled={pending}
-          />
+
         </div>
       )}
     </SparkShell>

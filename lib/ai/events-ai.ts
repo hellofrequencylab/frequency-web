@@ -38,7 +38,7 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
       description: {
         type: 'string',
         description:
-          'A clean 1 to 2 sentence description in plain voice. Say what it is and who it is for. No hype, no em dashes, no invented detail.',
+          'Transcribe the existing event description verbatim. Do not generate, improve, summarize or rewrite prose. Leave empty if none is printed.',
       },
       startsAt: {
         type: 'string',
@@ -212,7 +212,7 @@ const SCAN_SYSTEM = `You are Vera, Frequency's assistant. A community member pho
 Read every detail you can and call the save_event tool. Rules:
 - You may be given several images of the SAME poster, e.g. a wide shot plus a close-up. Treat them as one event and merge every detail you can read across all of them.
 - Only record what is actually present. Never invent a title, date, venue, organizer, or price.
-- description: a clean 1 to 2 sentences in plain voice. Say what the event is and who it is for. No hype, no fabricated backstory.
+- description: transcribe existing descriptive wording verbatim. Do not rewrite or add connective copy. If no descriptive wording is printed, leave empty.
 - starts_at and ends_at: ISO 8601. If the poster prints only a month and day with no year, use the NEXT future occurrence of that date.
 - price: if the poster says free, set isFree=true. If a paid price is printed, set priceCents in whole cents (e.g. 1500 for $15).
 - domain: classify into one of mind, body, spirit, expression.
@@ -226,7 +226,7 @@ const ASSIST_SYSTEM = `You are Vera, Frequency's assistant. A community member i
 
 Turn their free text into structured details and call the save_event tool. Rules:
 - Only fill fields the text actually supports. Do not invent a date, venue, organizer, or price.
-- description: a tidied 1 to 2 sentence version in plain voice. Do not add facts they did not mention.
+- description: copy the author text exactly. Do not tidy, shorten, improve or add words.
 - starts_at and ends_at: ISO 8601 when the text gives a date. If only a month and day are given, use the next future occurrence.
 - domain: classify into one of mind, body, spirit, expression.
 - tags: 3 to 6 short lowercase descriptors drawn from what they wrote.
@@ -236,7 +236,7 @@ Turn their free text into structured details and call the save_event tool. Rules
 const SPARK_SYSTEM = `You are Vera, Frequency's assistant. A community member answered a few quick questions about an event they want to post (what it is, when, where, and who it is for), and may have pasted a flyer or write-up. Turn that into an event draft and call the save_event tool. Rules:
 - Only record what the answers or pasted text actually say. Never invent a title, date, venue, organizer, or price.
 - If the member pasted a flyer or write-up, read it closely and let it lead; the short answers fill the gaps.
-- description: a clean 1 to 2 sentence version in plain voice. Say what the event is and who it is for. Do not add facts they did not give.
+- description: preserve the author words. Do not compose new sentences or fill missing prose.
 - starts_at and ends_at: ISO 8601 from the "when" answer. If only a month and day are given, use the next future occurrence. If the time is vague, leave it out rather than invent a precise time.
 - price: if they say free, set isFree=true. If a paid price is given, set priceCents in whole cents (e.g. 1500 for $15).
 - domain: classify into one of mind, body, spirit, expression.
@@ -290,11 +290,11 @@ export async function scanEventPoster(input: {
   /** Optional pasted write-up / listing text to read ALONGSIDE the image(s) — the
    *  smart-uploader case (a poster photo plus the text copied from its event page). */
   text?: string | null
-  /** Exact, Edit or Rewrite (lib/studio/kernel/fidelity.ts) for the pasted text and the poster's
-   *  own wording. Absent means Rewrite. */
+  /** Legacy parameter retained for callers. Pasted text and printed wording are preserved. */
   fidelity?: SeedFidelity | null
   profileId?: string | null
 }): Promise<ExtractedEvent | null> {
+  if ((input.text?.trim().length ?? 0) > 8000) return null
   const imgs = input.images.slice(0, 6)
   if (!imgs.length) return null
   const pasted = input.text?.trim().slice(0, fidelitySourceCap(input.fidelity, 8000)) || undefined
@@ -307,7 +307,8 @@ export async function scanEventPoster(input: {
   ]
   // No mood: reading a flyer is extraction, and a mood must never colour what a poster is
   // claimed to say.
-  return runSpark(EVENT_POSTER_SCAN, { content, fidelity: input.fidelity, profileId: input.profileId })
+  return runSpark(EVENT_POSTER_SCAN, { content, fidelity: 'exact',
+    ...(pasted ? { authoredProse: pasted } : {}), profileId: input.profileId })
 }
 
 /** The user instruction for a scan. Merges multiple shots, and when a pasted write-up
@@ -333,10 +334,12 @@ export async function assistEventFromText(input: {
   text: string
   profileId?: string | null
 }): Promise<ExtractedEvent | null> {
-  const text = input.text.trim().slice(0, 2000)
+  const text = input.text.trim()
+  if (text.length > 8000) return null
   if (!text) return null
   return runSpark(EVENT_TEXT_ASSIST, {
     content: [{ type: 'text', text }],
+    authoredProse: text,
     profileId: input.profileId,
   })
 }
@@ -371,14 +374,16 @@ function composeSparkText(a: EventSparkAnswers, sourceText?: string | null, fide
 export async function draftEventSpark(input: {
   answers: EventSparkAnswers
   sourceText?: string | null
-  /** Exact, Edit or Rewrite (lib/studio/kernel/fidelity.ts). Absent means Rewrite. */
+  /** Legacy parameter retained for callers. Event descriptions always keep author wording. */
   fidelity?: SeedFidelity | null
   profileId?: string | null
 }): Promise<ExtractedEvent | null> {
+  const authored = input.sourceText?.trim() || [input.answers.what.trim(), input.answers.details.trim()].filter(Boolean).join('\n\n')
+  if (authored.length > 8000) return null
   return runSpark(EVENT_SPARK, {
-    content: [{ type: 'text', text: composeSparkText(input.answers, input.sourceText, input.fidelity) }],
-    mood: input.answers.mood,
-    fidelity: input.fidelity,
+    content: [{ type: 'text', text: composeSparkText(input.answers, input.sourceText, 'exact') }],
+    authoredProse: authored,
+    fidelity: 'exact',
     profileId: input.profileId,
   })
 }
