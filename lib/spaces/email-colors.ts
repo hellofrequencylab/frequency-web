@@ -20,6 +20,8 @@
 
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
 import type { EmailBrand } from '@/lib/email-studio/shell'
+import { emailSurface } from '@/lib/theme/surface'
+import type { ThemeSurface } from '@/lib/theme/surface-vars'
 
 /** A 6-digit hex (`#rrggbb`). The only shape the brand color picker emits and the only shape this module
  *  derives from or stores, so the client, the server gate, and the renderer agree. */
@@ -101,14 +103,41 @@ function readableTextOn(hex: string): string {
  *                 mix — an email needs a real hex).
  * onPrimary     = the luminance-picked readable ink for a button filled with the accent.
  */
-export function brandEmailColors(brandAccent: string | null | undefined): SpaceEmailStyle {
+export function brandEmailColors(brandAccent: string | null | undefined, dark = false): SpaceEmailStyle {
   if (!brandAccent || !HEX.test(brandAccent)) return {}
+  // On a dark ground the accent text shade goes lighter (links on black) and the soft fill goes deeper.
   return {
     primary: brandAccent,
-    primaryStrong: mix(brandAccent, BLACK, 0.28),
-    primaryBg: mix(brandAccent, WHITE, 0.88),
+    primaryStrong: dark ? mix(brandAccent, WHITE, 0.3) : mix(brandAccent, BLACK, 0.28),
+    primaryBg: dark ? mix(brandAccent, BLACK, 0.84) : mix(brandAccent, WHITE, 0.88),
     onPrimary: readableTextOn(brandAccent),
   }
+}
+
+/** The email palette a themed ground gives: the surface's literals mapped onto every EmailColors slot. The
+ *  base a Space on that theme seeds from, in place of the warm DAWN default. Pure. */
+function surfaceEmailColors(s: ThemeSurface): EmailColors {
+  return {
+    canvas: s.canvas,
+    surface: s.raised,
+    surfaceElevated: s.elevated,
+    border: s.border,
+    text: s.text,
+    heading: s.text,
+    muted: s.muted,
+    subtle: s.subtle,
+    primary: s.accent.accent,
+    primaryStrong: s.accent.text,
+    primaryBg: s.accent.bg,
+    onPrimary: s.accent.on,
+    ...s.semantic,
+  }
+}
+
+/** The base palette for a Space: its Mega Theme's ground when it owns one, else the DAWN default. */
+function basePalette(preferences: unknown): { colors: EmailColors; dark: boolean } {
+  const surface = emailSurface(preferences)
+  return surface ? { colors: surfaceEmailColors(surface), dark: surface.dark } : { colors: DEFAULT_EMAIL_COLORS, dark: false }
 }
 
 /** Read + validate the operator's persisted email-style override from a raw `spaces.preferences` blob. Tolerant
@@ -161,16 +190,15 @@ interface SpaceEmailColorInput {
  * hex. PURE + total, so the editor, the live preview, and the send compile always paint the same palette.
  */
 export function spaceEmailColors(space: SpaceEmailColorInput | null | undefined): EmailColors {
-  const brand = brandEmailColors(space?.brandAccent)
-  const override = readSpaceEmailStyle(space?.preferences)
-  return { ...DEFAULT_EMAIL_COLORS, ...brand, ...override }
+  return { ...spaceEmailColorDefaults(space), ...readSpaceEmailStyle(space?.preferences) }
 }
 
 /** The brand-derived seed the Email-style surface resets a field back TO (default with the brand primary family
  *  folded in, but NO operator override). So "reset" returns a slot to its brand default, not the operator's
  *  last tuned value. PURE. */
 export function spaceEmailColorDefaults(space: SpaceEmailColorInput | null | undefined): EmailColors {
-  return { ...DEFAULT_EMAIL_COLORS, ...brandEmailColors(space?.brandAccent) }
+  const base = basePalette(space?.preferences)
+  return { ...base.colors, ...brandEmailColors(space?.brandAccent, base.dark) }
 }
 
 interface SpaceEmailBrandInput extends SpaceEmailColorInput {

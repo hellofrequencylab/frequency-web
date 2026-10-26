@@ -95,6 +95,9 @@ import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
 import { isAdmitted } from '@/lib/events/admission'
 import { SITE_DESIGN } from '@/lib/theme/design'
+import { pageSurface } from '@/lib/theme/surface'
+import type { ThemeSurface } from '@/lib/theme/surface-vars'
+import { AccentScope } from '@/components/spaces/accent-scope'
 import { FqEventBody } from '@/components/frequency/members/event/event-body'
 import {
   FQ_EVENT_JOIN_ID,
@@ -465,6 +468,8 @@ export default async function EventDetailPage({
   // the page can never name one Space twice (lib/events/belonging.ts).
   const eventVenueSpaceId = venueSpaceId(spaceAxes, rootSpaceId)
   let spaceHost: SpaceHostLite | null = null
+  // The hosting Space's Mega Theme ground (Midnight), so its event page reads in the same room.
+  let hostSurface: ThemeSurface | null = null
   // The HOSTING space's owner: for an explicitly space-hosted event (host_space_id set) this is
   // the payee whose Connect account tickets pay into (ADR-819) — the payout-readiness check below
   // must key on it, not on the personal organizer.
@@ -483,18 +488,19 @@ export default async function EventDetailPage({
   if (spaceIds.length > 0) {
     const { data: rawSpaces } = await admin
       .from('spaces')
-      .select('id, slug, name, brand_name, brand_logo_url, status, owner_profile_id')
+      .select('id, slug, name, brand_name, brand_logo_url, status, owner_profile_id, preferences')
       .in('id', spaceIds)
     type SpaceRow = {
       id: string; slug: string; name: string | null
       brand_name: string | null; brand_logo_url: string | null; status: string | null
-      owner_profile_id: string | null
+      owner_profile_id: string | null; preferences: unknown
     }
     const rows = (rawSpaces ?? []) as unknown as SpaceRow[]
     const activeSpace = (id: string | null) =>
       id ? rows.find((r) => r.id === id && r.status === 'active') ?? null : null
     const s = activeSpace(eventSpaceId)
     if (s) {
+      hostSurface = pageSurface(s.preferences)
       spaceHost = { id: s.id, slug: s.slug, name: s.brand_name ?? s.name ?? 'Space', logoUrl: s.brand_logo_url }
       if (extra?.host_space_id === s.id) hostSpaceOwnerId = s.owner_profile_id
     }
@@ -2097,6 +2103,8 @@ export default async function EventDetailPage({
   // event page keeps the original EventDetailTemplate layout below, styled by the Frequency primitives
   // and app/themes/frequency/event-detail.css, instead of the Event.html kit anatomy. The kit body is
   // kept, switched off, so the decision can be reversed in one line.
+  const themed = (page: ReactNode) => (hostSurface ? <AccentScope vars={null} surface={hostSurface}>{page}</AccentScope> : page)
+
   if (SITE_DESIGN === 'frequency' && FQ_EVENT_KIT_LAYOUT) {
     const cadenceLine =
       event.recurrence_type !== 'none' || event.parent_event_id
@@ -2109,7 +2117,7 @@ export default async function EventDetailPage({
             .filter(Boolean)
             .join(' · ')
         : null
-    return (
+    return themed(
       <FqEventBody
         structuredData={
           <JsonLd
@@ -2940,5 +2948,5 @@ export default async function EventDetailPage({
 
   // `fqm-evh` scopes the Frequency header rules (members-b.css): the title size, the facts lines, the
   // countdown. DAWN renders the template bare, exactly as before.
-  return FREQUENCY ? <div className="fqm-evh">{eventPage}</div> : eventPage
+  return themed(FREQUENCY ? <div className="fqm-evh">{eventPage}</div> : eventPage)
 }

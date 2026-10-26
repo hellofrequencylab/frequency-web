@@ -1,10 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { notFound } from 'next/navigation'
 import { CalendarDays, MapPin, Lock } from 'lucide-react'
 import { getPublicEventBySlug, getPublicEvents, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment, EVENT_CATEGORIES } from '@/app/discover/events/_data'
 import { getPublicEventVenue } from '@/lib/events/public-venue'
+import { getPublicEventSurface } from '@/lib/events/public-surface'
+import { AccentScope } from '@/components/spaces/accent-scope'
 import { publicPageWhere } from '@/lib/events/visible-location'
 import { SignInCta } from '@/components/discover/cards'
 import { Card } from '@/components/marketing/marketing-ui'
@@ -95,10 +98,11 @@ export default async function PublicEventPage({
   // The join door (lib/events/public-join-door.ts): guest RSVP or guest ticket, decided with the
   // member page's own signed-out rules from cookie-free reads. Null when it could not be read, which
   // keeps the plain sign-up card below.
-  const [enrichment, venue, joined] = await Promise.all([
+  const [enrichment, venue, joined, surface] = await Promise.all([
     getEventEnrichment(slug),
     getPublicEventVenue(slug),
     loadPublicJoinDoor(event.id),
+    getPublicEventSurface(slug),
   ])
   const hasEnded = hasEventEnded({ ...event, time_zone: enrichment?.time_zone })
   // The where-line (ADR-1744, owner-ruled 2026-10-14): the venue and street plus the city when the
@@ -170,11 +174,13 @@ export default async function PublicEventPage({
   // ("public event pages look like trash"): the share page wears the reference's event anatomy,
   // which the member page keeps switched off by its own earlier ruling. Same reads, same privacy
   // rules; only the placement changes. Build-time constant, so the DAWN return below is untouched.
+  const themed = (page: ReactNode) => (surface ? <AccentScope vars={null} surface={surface}>{page}</AccentScope> : page)
+
   if (SITE_DESIGN === 'frequency') {
     const mode = enrichment?.attendance_mode ?? 'in_person'
     const category = EVENT_CATEGORIES.find((c) => c.values.includes(enrichment?.category ?? 'gathering'))
     const kind = category ? category.nounSingular.charAt(0).toUpperCase() + category.nounSingular.slice(1) : 'Gathering'
-    return (
+    return themed(
       <FqPublicEventBody
         structuredData={structuredData}
         heroUrl={enrichment?.cover_url ?? null}
@@ -209,7 +215,7 @@ export default async function PublicEventPage({
     )
   }
 
-  return (
+  return themed(
     <EventDetailTemplate
       structuredData={structuredData}
       cover={
