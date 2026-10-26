@@ -11,9 +11,9 @@
   },
   "detail": "The coaches door at 320px exposed three example-screen captions at 4.48:1 contrast against their fixed white screen, below 4.5:1; the same shared style is used across the six niche doors. Replace the raw caption paint with a named screen-caption role derived from the existing stable day ink ramp, so fixed-white examples retain contrast in both surrounding themes. Use the existing 13px meta type role instead of the overridden 10px literal and duplicate 13px override. Do not hide text or change accessibility assertions. All six audience doors at 320/1280 in light/dark local actual-stylesheet preview pass axe A/AA with no document overflow (24 cases). This is stylesheet preview over anonymous production HTML, not deployed or built-route proof. Token and adoption guards pass; no paint allowance raised.",
   "verify": {
-    "kind": "manual",
-    "checked": "2026-10-23",
-    "evidence": "Retain pre-repair coaches mobile contrast failure and rerun all six /for doors at 320 and 1280 in both themes with the repaired site-niche.css plus existing local footer repairs. All 24 cases must have zero WCAG A/AA axe violations and no viewport overflow. Verified in local stylesheet preview only."
+    "kind": "cmd",
+    "cmd": "node scripts/probes/reprobe-manual-rows-2026-10-26.mjs niche-caption-token",
+    "note": "Re-probed 2026-10-26 (meta scan SCAN-1110 follow-up): a source consequence replaces the one-off manual browser check, so a regression fails here. Original browser evidence: Retain pre-repair coaches mobile contrast failure and rerun all six /for doors at 320 and 1280 in both themes with the repaired site-niche.css plus existing local footer repairs. All 24 cases must have zero WCAG A/AA axe violations and no viewport overflow. Verified in local stylesheet preview only."
   },
   "closed": "2026-10-23",
   "wave": "W0"

@@ -13,7 +13,7 @@ import { TierChip } from '@/components/pricing/tier-chip'
 import { activeAgreementForSpace, type AgreementMethod } from '@/lib/billing/manual-agreements'
 import { formatAgreementRate } from '@/lib/billing/manual-agreement-dates'
 import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
-import { spaceEarningsSummary } from '@/lib/commerce/orders'
+import { readCompleteSpaceEarnings } from '@/lib/commerce/orders'
 import { NetworkReceipt } from './network-receipt'
 import { ManageSubscriptionButton } from './manage-subscription'
 import { loadExtraSpaceQuote } from '@/lib/collective/extra-space-billing'
@@ -90,7 +90,7 @@ export async function BillingBody({ slug }: { slug: string }) {
     loadPersonalContext(caller?.realMembershipTier),
     getSpaceVerification(space.id),
     // The honest receipt (Phase 5): trailing 30-day earnings, split network-sourced vs self.
-    spaceEarningsSummary(space.id, 30),
+    readCompleteSpaceEarnings(space.id, 30),
     // A MANUAL billing agreement (ADR-872): an off-Stripe cash/check deal the crew recorded. When
     // one is active, the surface shows its receipt card and hides the Stripe portal button (there
     // is no Stripe subscription behind a cash deal). Fail-safe null: no agreement, nothing shown.
@@ -181,7 +181,7 @@ export async function BillingBody({ slug }: { slug: string }) {
 
         {/* The honest receipt (Phase 5, ADR-811 §A): the real dollars the network sourced, proving promise
             #4. Renders nothing until there is network-sourced business, so it never brags about zero. */}
-        <NetworkReceipt earnings={earnings} />
+        <>{earnings ? <NetworkReceipt earnings={earnings} /> : <p role="status" className="text-meta text-muted">Revenue is unavailable or incomplete. Try again before reviewing your receipt.</p>}</>
 
         {/* Already paying: the self-serve subscription control. Opens the Stripe billing portal (payment
             method, plan change/cancel). Owner action; hidden in staff

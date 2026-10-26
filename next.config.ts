@@ -352,6 +352,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },
+      // SCAN-1121: brand art, fonts, icons and static images are replaced by renaming, never in
+      // place, so repeat views can skip revalidation. A week plus stale-while-revalidate keeps a
+      // same-name swap from sticking for long.
+      ...['/brand/:path*', '/fonts/:path*', '/icons/:path*', '/images/:path*'].map((source) => ({
+        source,
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }],
+      })),
       { source: notCameraRoute, headers: [{ key: 'Permissions-Policy', value: PERMISSIONS_POLICY_DEFAULT }] },
       ...CAMERA_ROUTES.map((source) => ({
         source,

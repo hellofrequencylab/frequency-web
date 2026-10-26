@@ -109,6 +109,10 @@ export async function FrequencyHome() {
   return (
     <div className="pa-page pa-home" data-motion-scope style={{ display: 'contents' }}>
       <HomeMotion />
+      {/* SCAN-1120: the hero photo is a CSS background, which the browser only discovers after the
+          stylesheet parses. React hoists this link into <head> so the LCP image starts fetching with
+          the document. Only the default side (experiences) is preloaded; the other is a stored choice. */}
+      <link rel="preload" as="image" href="/brand/frequency/broll/yoga-rave-uv-swirl-web.jpg" fetchPriority="high" />
 
       <section className="hero" data-time="night" data-night="uv" data-energy="charge" data-screen-label="01 Hero">
         <div className="bg p" />

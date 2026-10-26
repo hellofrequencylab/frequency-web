@@ -8,7 +8,7 @@
 // key from there would have pulled the whole SDK into that route's function bundle — the fan-out
 // rule in AGENTS.md, and a direct contradiction of the route's own stated design.
 
-import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import { HOME_TZ, dayInZone, zonedWallClockToInstant } from '@/lib/time/zone'
 
 /**
  * The community's calendar day (YYYY-MM-DD), and the value `vera_dispatches` de-duplicates on
@@ -55,4 +55,13 @@ import { HOME_TZ, dayInZone } from '@/lib/time/zone'
  */
 export function dispatchDay(now: Date = new Date()): string {
   return dayInZone(now, HOME_TZ)
+}
+
+/**
+ * Midnight that opens the community's day, as an instant. "Airtime today" floored at
+ * `${utcDay}T00:00:00Z`, which is ~5pm Pacific, so the stat reset mid-afternoon (SCAN-1125).
+ */
+export function startOfDispatchDay(now: Date = new Date()): Date {
+  const [y, m, d] = dayInZone(now, HOME_TZ).split('-').map(Number)
+  return zonedWallClockToInstant(y, m, d, 0, 0, 0, HOME_TZ)
 }

@@ -140,7 +140,13 @@ export async function proxy(request: NextRequest) {
   // IMPORTANT: Do not add any logic between createServerClient and getUser().
   // A stray await or early return can silently break session refresh, causing
   // users to appear randomly logged out.
-  const { data: { user } } = await supabase.auth.getUser()
+  //
+  // SCAN-1122: a request with no Supabase auth cookie cannot hold a session, so the network round
+  // trip to Supabase is skipped for it and `user` is null (the same answer getUser() would give).
+  // Anonymous visitors and crawlers are most public-page traffic. Cookie names are the @supabase/ssr
+  // defaults: `sb-<project-ref>-auth-token`, split into `.0`, `.1` chunks when large.
+  const hasAuthCookie = request.cookies.getAll().some((c) => /^sb-.+-auth-token(\.\d+)?$/.test(c.name))
+  const user = hasAuthCookie ? (await supabase.auth.getUser()).data.user : null
 
   // The ACCOUNT MARKER (owner, 2026-09-11: "user cannot change to dark until they have an account").
   //

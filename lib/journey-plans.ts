@@ -21,6 +21,7 @@ import { acceptedCrossListingSubjects } from '@/lib/collective/cross-listing-sto
 // module that reaches this file now breaks the build instead of quietly shipping the database to a
 // phone. The pure `meeting` helpers live in lib/journeys/meeting.ts so a client CAN import them.
 import 'server-only'
+import { listReadFailClosed } from '@/lib/discover'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { adoptPracticesForJourney, retireJourneyPracticeRows } from '@/lib/practices'
@@ -291,14 +292,17 @@ export async function listPublicPlans(): Promise<JourneyPlan[]> {
 /** Indexable library Journeys for the anon discover index — published and not
  *  rejected, most-adopted first. (Mirrors listPublicPlans but excludes rejected
  *  plans, which shouldn't be promoted on a crawlable surface.) */
-export async function listPublicJourneys(): Promise<JourneyPlan[]> {
-  const { data } = await db()
+export async function listPublicJourneys(opts: { failClosed?: boolean } = {}): Promise<JourneyPlan[]> {
+  const query = () => db()
     .from('journey_plans')
     .select(PLAN_COLS)
     .eq('visibility', 'public')
     .neq('status', 'rejected')
     .order('adopt_count', { ascending: false })
     .order('published_at', { ascending: false })
+  const data = opts.failClosed
+    ? await listReadFailClosed<JourneyPlan>('sitemap.journey_plans', query)
+    : (await query()).data
   return (data as JourneyPlan[] | null) ?? []
 }
 

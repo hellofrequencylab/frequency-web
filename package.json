@@ -30,6 +30,7 @@
     "check:capture-followup": "node scripts/check-capture-followup.mjs",
     "check:dawn-bundle": "node scripts/check-dawn-bundle.mjs",
     "check:headers": "node scripts/check-headers.mjs",
+    "check:security-headers": "node scripts/check-security-headers.mjs",
     "check:menu": "node scripts/check-menu.mjs",
     "email:readiness": "node scripts/space-email-readiness.mjs",
     "email:samples": "node scripts/email-samples.mjs",

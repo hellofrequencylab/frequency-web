@@ -15,6 +15,7 @@ import {
   Link2,
   History,
 } from 'lucide-react'
+import { Dialog } from '@/components/ui/dialog'
 import type { AppLibraryItem } from '@/lib/apps/app-registry'
 import type { AppSurfaceKind } from '@/lib/apps/types'
 
@@ -139,131 +140,129 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
+// Escape, the Tab trap and focus return to the trigger come from the kit Dialog (SCAN-1117).
 function AppDrawer({ app, onClose }: { app: AppCard; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="App details">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-slat/40" />
-      <div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="font-display text-body-lg uppercase text-text">App</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-pill p-1 text-subtle hover:bg-surface-elevated"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="space-y-5 p-5">
-          {/* Preview + identity. */}
-          <div className="flex h-56 items-center justify-center overflow-hidden rounded-card border border-border bg-surface-elevated">
-            {app.preview}
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h3 className="min-w-0 flex-1 truncate text-body font-semibold text-text" title={app.title}>
-                {app.title}
-              </h3>
-              <span
-                className={`shrink-0 rounded-pill border px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${STATUS_TONE[app.status]}`}
-              >
-                {app.status.replace('_', ' ')}
-              </span>
-            </div>
-            <p className="text-meta text-subtle">
-              {app.categoryLabel} · v{app.version}
-            </p>
-            {app.description && <p className="pt-1 text-body-sm text-muted">{app.description}</p>}
-          </div>
-
-          {/* Surfaces. */}
-          <Field label="Surfaces">
-            <div className="flex flex-wrap gap-1.5">
-              {app.surfaces.map((s) => (
-                <SurfaceBadge key={s} surface={s} />
-              ))}
-            </div>
-          </Field>
-
-          {/* Gate. */}
-          <Field label="Gate">
-            <span className="inline-flex items-center gap-1.5 rounded-card border border-border bg-surface-elevated px-2.5 py-1 text-body-sm text-text">
-              {app.gate.system === 'none' ? (
-                <ShieldCheck className="h-4 w-4 text-signal-strong" aria-hidden />
-              ) : (
-                <Lock className="h-4 w-4 text-subtle" aria-hidden />
-              )}
-              {app.gateLabel}
-            </span>
-          </Field>
-
-          {/* Config schema (read-only). */}
-          <Field label="Config schema">
-            {app.config.length === 0 ? (
-              <p className="flex items-center gap-1.5 text-body-sm text-subtle">
-                <Sliders className="h-4 w-4" aria-hidden /> No configurable fields.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border overflow-hidden rounded-card border border-border">
-                {app.config.map((f) => (
-                  <li key={f.key} className="flex items-baseline justify-between gap-3 px-3 py-2">
-                    <span className="min-w-0">
-                      <span className="block truncate text-body-sm text-text">
-                        {f.label}
-                        {f.required && <span className="ml-1 text-danger">*</span>}
-                      </span>
-                      {f.description && <span className="block truncate text-meta text-subtle">{f.description}</span>}
-                    </span>
-                    <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
-                      {f.type}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Field>
-
-          {/* Connections (external wiring the App declares). */}
-          {app.connections.length > 0 && (
-            <Field label="Connections">
-              <ul className="space-y-1">
-                {app.connections.map((c) => (
-                  <li key={c.id} className="flex items-center gap-1.5 text-body-sm text-text">
-                    <Link2 className="h-4 w-4 text-subtle" aria-hidden />
-                    {c.label}
-                    {c.required && <span className="text-2xs text-muted">(required)</span>}
-                  </li>
-                ))}
-              </ul>
-            </Field>
-          )}
-
-          {/* Source — Layer 1 is read-only: git is the source of truth (docs/LOOM-PLATFORM.md §10). */}
-          <div className="rounded-card border border-border bg-surface-elevated/50 p-3">
-            <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
-              <GitBranch className="h-4 w-4 text-primary-strong" aria-hidden /> Source: code
-            </p>
-            <p className="mt-1 text-meta text-subtle">
-              This App is drawn from code, versioned in git. The Loom indexes it read-only; a version bump
-              is a commit. Config and placement are edited as data, never the source.
-            </p>
-          </div>
-
-          {/* Used in — the "help section for assets" index (docs/LOOM-PLATFORM.md §4). */}
-          <Field label="Used in">
-            <p className="flex items-center gap-1.5 text-body-sm text-subtle">
-              <History className="h-4 w-4" aria-hidden /> Usage tracking coming soon.
-            </p>
-            {/* TODO(E0): wire the where-referenced list when EDITOR E0 lands the instances layer.
-                The app_instances table that shipped ahead of its writers was dropped 2026-08-19
-                (OWN-031, migration 20270316000000); E0 re-creates it from ADR-499's spec WITH its
-                writers, and this lane gets its deep links then. */}
-          </Field>
-        </div>
+    <Dialog open onClose={onClose} align="drawer" ariaLabel="App details" className="flex max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <h2 className="font-display text-body-lg uppercase text-text">App</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-pill p-1 text-subtle hover:bg-surface-elevated"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
-    </div>
+
+      <div className="space-y-5 p-5">
+        {/* Preview + identity. */}
+        <div className="flex h-56 items-center justify-center overflow-hidden rounded-card border border-border bg-surface-elevated">
+          {app.preview}
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h3 className="min-w-0 flex-1 truncate text-body font-semibold text-text" title={app.title}>
+              {app.title}
+            </h3>
+            <span
+              className={`shrink-0 rounded-pill border px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide ${STATUS_TONE[app.status]}`}
+            >
+              {app.status.replace('_', ' ')}
+            </span>
+          </div>
+          <p className="text-meta text-subtle">
+            {app.categoryLabel} · v{app.version}
+          </p>
+          {app.description && <p className="pt-1 text-body-sm text-muted">{app.description}</p>}
+        </div>
+
+        {/* Surfaces. */}
+        <Field label="Surfaces">
+          <div className="flex flex-wrap gap-1.5">
+            {app.surfaces.map((s) => (
+              <SurfaceBadge key={s} surface={s} />
+            ))}
+          </div>
+        </Field>
+
+        {/* Gate. */}
+        <Field label="Gate">
+          <span className="inline-flex items-center gap-1.5 rounded-card border border-border bg-surface-elevated px-2.5 py-1 text-body-sm text-text">
+            {app.gate.system === 'none' ? (
+              <ShieldCheck className="h-4 w-4 text-signal-strong" aria-hidden />
+            ) : (
+              <Lock className="h-4 w-4 text-subtle" aria-hidden />
+            )}
+            {app.gateLabel}
+          </span>
+        </Field>
+
+        {/* Config schema (read-only). */}
+        <Field label="Config schema">
+          {app.config.length === 0 ? (
+            <p className="flex items-center gap-1.5 text-body-sm text-subtle">
+              <Sliders className="h-4 w-4" aria-hidden /> No configurable fields.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border overflow-hidden rounded-card border border-border">
+              {app.config.map((f) => (
+                <li key={f.key} className="flex items-baseline justify-between gap-3 px-3 py-2">
+                  <span className="min-w-0">
+                    <span className="block truncate text-body-sm text-text">
+                      {f.label}
+                      {f.required && <span className="ml-1 text-danger">*</span>}
+                    </span>
+                    {f.description && <span className="block truncate text-meta text-subtle">{f.description}</span>}
+                  </span>
+                  <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
+                    {f.type}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Field>
+
+        {/* Connections (external wiring the App declares). */}
+        {app.connections.length > 0 && (
+          <Field label="Connections">
+            <ul className="space-y-1">
+              {app.connections.map((c) => (
+                <li key={c.id} className="flex items-center gap-1.5 text-body-sm text-text">
+                  <Link2 className="h-4 w-4 text-subtle" aria-hidden />
+                  {c.label}
+                  {c.required && <span className="text-2xs text-muted">(required)</span>}
+                </li>
+              ))}
+            </ul>
+          </Field>
+        )}
+
+        {/* Source — Layer 1 is read-only: git is the source of truth (docs/LOOM-PLATFORM.md §10). */}
+        <div className="rounded-card border border-border bg-surface-elevated/50 p-3">
+          <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
+            <GitBranch className="h-4 w-4 text-primary-strong" aria-hidden /> Source: code
+          </p>
+          <p className="mt-1 text-meta text-subtle">
+            This App is drawn from code, versioned in git. The Loom indexes it read-only; a version bump
+            is a commit. Config and placement are edited as data, never the source.
+          </p>
+        </div>
+
+        {/* Used in — the "help section for assets" index (docs/LOOM-PLATFORM.md §4). */}
+        <Field label="Used in">
+          <p className="flex items-center gap-1.5 text-body-sm text-subtle">
+            <History className="h-4 w-4" aria-hidden /> Usage tracking coming soon.
+          </p>
+          {/* TODO(E0): wire the where-referenced list when EDITOR E0 lands the instances layer.
+              The app_instances table that shipped ahead of its writers was dropped 2026-08-19
+              (OWN-031, migration 20270316000000); E0 re-creates it from ADR-499's spec WITH its
+              writers, and this lane gets its deep links then. */}
+        </Field>
+      </div>
+    </Dialog>
   )
 }

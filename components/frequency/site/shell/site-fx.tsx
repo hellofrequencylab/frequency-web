@@ -68,7 +68,8 @@ function noiseTile(): string | null {
 
 function run(root: HTMLElement): () => void {
   const d = document
-  const RM = matchMedia('(prefers-reduced-motion:reduce)').matches
+  // A visitor's Pause motion choice (footer) counts exactly like the OS setting.
+  const RM = matchMedia('(prefers-reduced-motion:reduce)').matches || root.dataset.motion === 'paused'
   const E = (root.dataset.energyPage as Energy) || 'flow'
   const quiet = Number(root.dataset.fxQuiet || 0)
   const added: Element[] = []
@@ -523,8 +524,10 @@ export function SiteFx() {
       stop = run(root)
     }
     mq.addEventListener('change', onChange)
+    window.addEventListener('fq-motion-change', onChange)
     return () => {
       mq.removeEventListener('change', onChange)
+      window.removeEventListener('fq-motion-change', onChange)
       stop()
     }
   }, [pathname])

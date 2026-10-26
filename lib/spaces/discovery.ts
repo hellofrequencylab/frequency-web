@@ -15,6 +15,7 @@
 // filter args, so the page renders it at most once per request.
 
 import { cache } from 'react'
+import { profileCanonicalSite, type ProfileCanonicalSite } from '@/lib/sites/profile-canonical'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTransientReadFailure, listReadFailClosed } from '@/lib/discover'
 import { listFollowedSpaceIds } from './follows'
@@ -68,6 +69,8 @@ interface NetworkedSpaceAction {
 /** One networked Space as the directory consumes it — the brand anchor, the type + category, the
  *  resolved action, and a few cheap stats. Camel-cased; only the fields a directory card needs. */
 export interface NetworkedSpace {
+  /** Public website canonical candidate; resolved only by sitemap, never a grant. */
+  canonicalSite?: ProfileCanonicalSite | null
   id: string
   slug: string
   /** Display brand name when set, else the plain Space name (resolved here so cards stay dumb). */
@@ -215,7 +218,7 @@ export function normalizeSpaceSort(value: string | null | undefined): SpaceSort 
 // /discover/places/<slug> filter this list on citySlug(city) so a city page can show the local
 // Spaces located there, the same way it already shows that city's Circles and events.
 const COLS =
-  'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, city, created_at, updated_at, preferences'
+  'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, city, created_at, updated_at, preferences, domain, parent_id, owner_profile_id'
 
 /** The jsonb path to a Space's stored SUBJECT (preferences.profileData.subject), used to filter in the
  *  DB. A missing path reads as NULL, which matches no subject (there is no default subject). The KIND
@@ -241,6 +244,9 @@ type SpaceDiscoveryRow = {
   created_at: string | null
   updated_at: string | null
   preferences: unknown
+  domain?: string | null
+  parent_id?: string | null
+  owner_profile_id?: string | null
 }
 
 // A real PromiseLike (not a hand-typed `then`), so a thunk that builds one is what
@@ -626,6 +632,7 @@ export const listNetworkedSpaces = cache(
           type,
           kind: spaceKind({ preferences: r.preferences }),
           kindLabel: spaceKindPillLabel({ preferences: r.preferences }),
+          canonicalSite: profileCanonicalSite({ id: r.id, slug: r.slug, domain: r.domain ?? null, parentId: r.parent_id, ownerProfileId: r.owner_profile_id, preferences: r.preferences }),
           tagline: r.tagline?.trim() || null, // Populated from the row (Wave B); the card omits it when null.
           logoUrl: r.brand_logo_url,
           logoBackdrop: readLogoBackdrop(r.preferences),

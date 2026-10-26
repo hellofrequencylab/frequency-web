@@ -1,5 +1,11 @@
 # SYNC.md — "sync DAWN" routine for Claude Code
 
+> **Status (SCAN-1137):** DAWN is retired as a deployable design; Frequency is the only platform
+> design (ADR-1737, `docs/RUNBOOKS.md` section 8). `pnpm design:use dawn` exits 2. This routine still
+> applies to a DAWN handoff bundle as historical fixtures and regression evidence; it never selects
+> DAWN for a build and never restores DAWN stubs before committing. Work is tracked in
+> `docs/BUILD-BACKLOG.json`.
+>
 > **Trigger:** when the user says **"sync DAWN"** (or "apply the DAWN handoff"),
 > follow this routine exactly. This file is the standing instruction; it does not
 > change between rounds. The per-round changes live in `design_handoff/CHANGES.md`.

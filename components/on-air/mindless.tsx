@@ -25,6 +25,7 @@ import { CompactSetup, type SetupChoice } from './compact-setup'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
@@ -32,12 +33,16 @@ import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { loadOnAirSession } from '@/app/(main)/on-air/actions'
 import { getActiveTimerSession } from '@/app/(main)/on-air/timer-session-actions'
 import type { OnAirSessionData } from '@/lib/on-air/session-data'
-import { OnAirSession } from '@/components/on-air/session'
-import { MovementSession } from '@/components/on-air/movement-session'
 import { LotusIcon } from '@/components/on-air/icons'
 import { loadLiveSession, type LiveSessionRecord } from '@/lib/on-air/live-session'
 import type { MovementMode } from '@/lib/movement'
 import { Button } from '@/components/ui/button'
+
+// SCAN-1118: both engines are heavy and only one runs per open, so they load on demand. This file
+// is reachable from the app shell on every member route; static imports put ~30-40 KB gzip of
+// engine code on every page for a door most visits never open.
+const OnAirSession = dynamic(() => import('@/components/on-air/session').then((m) => m.OnAirSession), { ssr: false })
+const MovementSession = dynamic(() => import('@/components/on-air/movement-session').then((m) => m.MovementSession), { ssr: false })
 
 /** The two member-facing modes of the one timer: the sit ('still', "Be Still") and
  *  the movement timer ('move', "Get Moving"). */

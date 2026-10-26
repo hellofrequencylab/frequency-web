@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dispatchDay } from './dispatch-day'
+import { dispatchDay, startOfDispatchDay } from './dispatch-day'
 
 // SCAN-106. The Dispatch day key is the value `vera_dispatches` de-duplicates on
 // (`UNIQUE (profile_id, day)`), so getting it wrong does not shift a label — it mints the row
@@ -35,5 +35,16 @@ describe('dispatchDay — the community day key', () => {
 
   it('agrees with UTC during the hours the two zones share a date', () => {
     expect(dispatchDay(new Date('2026-08-25T18:00:00Z'))).toBe('2026-08-25') // 11am PDT
+  })
+})
+
+// SCAN-1125. "Airtime today" floors at the community day's midnight, not UTC midnight.
+describe('startOfDispatchDay — where Airtime today begins', () => {
+  it('is Pacific midnight (07:00Z in summer) at 6pm Pacific, when UTC is already tomorrow', () => {
+    expect(startOfDispatchDay(new Date('2026-08-26T01:00:00Z')).toISOString()).toBe('2026-08-25T07:00:00.000Z')
+  })
+
+  it('is 08:00Z in winter', () => {
+    expect(startOfDispatchDay(new Date('2026-12-02T03:00:00Z')).toISOString()).toBe('2026-12-01T08:00:00.000Z')
   })
 })
