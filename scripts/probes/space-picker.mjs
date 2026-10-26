@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1362 (ADR-1883): the Space picker is wired from config to storage.
+// LIVE-1367 (ADR-1883): the Space picker is wired from config to storage.
 //
 // Fails when createSpace stops resolving the picker answers, when the wizard stops passing them, when the
 // page stops reading a door's niche, or when the picker is no longer behind its switch.
