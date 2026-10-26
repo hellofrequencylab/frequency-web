@@ -8,7 +8,7 @@ export function parseWritingQuestions(raw: string): string[] | null {
     const value: unknown = JSON.parse(raw)
     if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => key !== 'questions')) return null
     const questions = (value as { questions?: unknown }).questions
-    if (!Array.isArray(questions) || questions.length < 1 || questions.length > 3 || questions.some(q => typeof q !== 'string' || !q.trim().endsWith('?') || q.length > 240 || /[\r\n]/.test(q))) return null
+    if (!Array.isArray(questions) || questions.length < 1 || questions.length > 3 || questions.some(q => typeof q !== 'string' || !q.trim().endsWith('?') || q.length > 240 || /[\r\n"\u201c\u201d]/.test(q))) return null
     return [...new Set(questions.map(q => (q as string).trim()))]
   } catch { return null }
 }
