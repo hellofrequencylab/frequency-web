@@ -1,17 +1,8 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { LifeBuoy, ChevronRight } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { listMyTickets } from '@/lib/support/store'
 import { relativeTime } from '@/lib/utils'
-import { ReportButton } from '@/components/support/report-button'
-import { IndexTemplate } from '@/components/templates'
-import { resolveIndexHero } from '@/lib/layout/index-hero'
-import { EmptyState } from '@/components/ui/empty-state'
-import {
-  TYPE_LABELS, STATUS_LABELS, statusChipClass, type SupportTicket,
-} from '@/lib/support/types'
-import { SITE_DESIGN } from '@/lib/theme/design'
+import { TYPE_LABELS, STATUS_LABELS } from '@/lib/support/types'
 import { getAllCategories, getSearchIndex } from '@/lib/help/content'
 import { HelpBody } from '@/components/frequency/members/help/help-body'
 
@@ -23,80 +14,21 @@ export default async function SupportPage() {
   const me = await getCallerProfile()
   if (!me) redirect('/sign-in?next=/support')
   const tickets = await listMyTickets(me.id)
-
-  // FREQUENCY (ADR-1737): the member Help panel (Help.html) inside the member shell, with this page's
-  // report history under it. /help stays the public help centre; this is the signed-in door to it.
-  if (SITE_DESIGN === 'frequency') {
-    const [categories, index] = await Promise.all([getAllCategories(), getSearchIndex()])
-    return (
-      <HelpBody
-        categories={categories}
-        index={index}
-        reports={tickets.map((t) => ({
-          id: t.id,
-          ref: t.ref,
-          subject: t.subject,
-          status: t.status,
-          statusLabel: STATUS_LABELS[t.status],
-          typeLabel: TYPE_LABELS[t.type],
-          updated: relativeTime(t.lastActivityAt),
-        }))}
-      />
-    )
-  }
-
-  const hero = await resolveIndexHero('/support')
-
+  const [categories, index] = await Promise.all([getAllCategories(), getSearchIndex()])
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <IndexTemplate
-        {...hero}
-        title={
-          <span className="inline-flex items-center gap-2">
-            <LifeBuoy className="h-5 w-5 shrink-0 text-primary-strong" /> Your reports
-          </span>
-        }
-        description="Bugs, questions and ideas you’ve sent, and where they stand."
-        action={<ReportButton label="New report" />}
-      >
-        {tickets.length === 0 ? (
-          <EmptyState
-            icon={LifeBuoy}
-            title="No reports yet"
-            description="Hit a bug or have a question? Send a report and we’ll pick it up. You can track it here."
-            action={<ReportButton label="Send your first report" />}
-          />
-        ) : (
-          <ul className="space-y-2">
-            {tickets.map((t) => (
-              <li key={t.id}>
-                <TicketRow ticket={t} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </IndexTemplate>
-    </div>
+    <HelpBody
+      categories={categories}
+      index={index}
+      reports={tickets.map((t) => ({
+        id: t.id,
+        ref: t.ref,
+        subject: t.subject,
+        status: t.status,
+        statusLabel: STATUS_LABELS[t.status],
+        typeLabel: TYPE_LABELS[t.type],
+        updated: relativeTime(t.lastActivityAt),
+      }))}
+    />
   )
 }
 
-function TicketRow({ ticket }: { ticket: SupportTicket }) {
-  return (
-    <Link
-      href={`/support/${ticket.id}`}
-      className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
-    >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className={`rounded-pill px-2 py-0.5 text-2xs font-semibold ${statusChipClass(ticket.status)}`}>
-            {STATUS_LABELS[ticket.status]}
-          </span>
-          <span className="text-2xs font-medium text-muted">{TYPE_LABELS[ticket.type]} · #{ticket.ref}</span>
-        </div>
-        <p className="mt-1 truncate text-body-sm font-semibold text-text">{ticket.subject}</p>
-        <p className="text-meta text-subtle">Updated {relativeTime(ticket.lastActivityAt)}</p>
-      </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-subtle" />
-    </Link>
-  )
-}

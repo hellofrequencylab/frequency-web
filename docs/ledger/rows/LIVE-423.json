@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-423",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"lib/spaces/my-memberships.ts\"))fail(\"my-memberships is gone\");const s=fs.readFileSync(\"lib/spaces/my-memberships.ts\",\"utf8\");if(!s.includes(\"export async function listMySpaceMemberships\"))fail(\"listMySpaceMemberships is gone\");if(!s.includes(\"export function isOpenSpaceMembership\"))fail(\"the open-status gate is gone\");if(!s.includes(\"waitlist\"))fail(\"the waitlist rule is gone\");const p=fs.readFileSync(\"app/(main)/settings/page.tsx\",\"utf8\");const d=fs.readFileSync(\"lib/search/destinations.ts\",\"utf8\");if(!d.includes(\"/settings#memberships\"))fail(\"search lost the memberships dest\");const u=fs.readFileSync(\"app/(main)/settings/memberships/section.tsx\",\"utf8\");if(!u.includes(\"MembershipCancelButton\"))fail(\"the list no longer reuses cancel\");if(!fs.existsSync(\"lib/spaces/my-memberships.test.ts\"))fail(\"no my-memberships test\");console.log(\"LIVE-423 ok\")'",
+      "note": "Passes when Settings mounts the viewer's own Space memberships, the reader keeps waitlist and refuses cancelled, and cancel reuses the existing action. Written 2026-09-20."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1129): Member app is Frequency-only (ADR-1880): the DAWN arm of this probe no longer applies"
+  }
+}

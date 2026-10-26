@@ -1,21 +1,21 @@
 {
   "id": "LIVE-1470",
-  "title": "Network niche starter kits: six variants as data on lib/sites/kits (coaches, studios, hosts, venues, nonprofits, networks)",
+  "title": "Six niche starter kits for the Default theme",
   "lane": "live",
   "priority": "P2",
   "size": "M",
   "status": "done",
   "wave": "W7",
   "source": {
-    "file": "lib/sites/kits/network-variants.ts",
-    "ref": "Mega theme rollout 2026-10-26: Network niche variants on the Network block family, the same model as the Midnight kits."
+    "file": "lib/sites/kits/default-variants.ts",
+    "ref": "Mega Theme plan 2026-10-26: each mega theme gets one starting kit per niche door, as Midnight did in LIVE-1355."
   },
-  "detail": "Six kits for the Network mega theme, one per niche door, each 3 to 4 pages of Network blocks and shared Space blocks. Pure data on the SiteKit model, loaded lazily by the registry so the public site never imports them. Generic copy in the house voice (docs/marketing/voice-and-language-guide.md), slot tokens for facts a Space already stores, no prices, photos or real names. They appear in the editor's Starter kits panel beside the Midnight kits. Not built here: flipping the picker's feel to live (a test pin needs the owner's words), a Network feature page.",
+  "detail": "Coaches, studios, event hosts, venues, nonprofits and networks, each as data in the Default theme's own blocks (Hero, FeatureGrid, EditorialSection, MediaText, CallToAction) plus the shared live Space blocks. The words live once in niche-spec.ts so the Bold kits reuse them. Generic sample copy in the house voice, no prices, photos or real names. The Starter kits panel lists them under their theme name and marks only the first kit of the Space's niche as suggested. Nothing is applied automatically and existing content is untouched. Default wears DAWN, which the public site does not serve a stored document for, so a published Default kit still shows the house Default look until DAWN is made live.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const v=fs.readFileSync('lib/sites/kits/network-variants.ts','utf8');const r=fs.readFileSync('lib/sites/kits/registry.ts','utf8');const n=['coaches','studios','hosts','venues','nonprofits','networks'];process.exit(n.every((x)=>v.includes(x+': {')&&r.includes('network-'+x))?0:1)\"",
+    "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('lib/sites/kits/registry.ts','utf8');process.exit(['coaches','studios','hosts','venues','nonprofits','networks'].every((n)=>r.includes(\\\"'default-\\\"+n+\\\"'\\\"))?0:1)\"",
     "checked": "2026-10-26",
-    "evidence": "Six kits; four tests in lib/sites/kits/network-variants.test.ts and the shared kit tests pass locally."
+    "evidence": "kits.test.ts and render-smoke.test.tsx pass: one Default kit per niche, every block registered, every link resolves, every page draws."
   },
   "closed": "2026-10-26"
 }

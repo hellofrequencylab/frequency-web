@@ -27,7 +27,6 @@ import { getMemberPillarBalance } from '@/lib/pillars'
 import { StageCelebration } from '@/components/progress/stage-celebration'
 import { AmplitudeCelebration } from '@/components/progress/amplitude-celebration'
 import { getAmplitudeCelebration } from '@/lib/amplitude-celebration'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyFeed } from '@/components/frequency/members/feed/feed-body'
 import { FrequencyAnonFeed } from '@/components/frequency/members/feed/anon-feed-body'
 
@@ -60,7 +59,7 @@ export default async function FeedPage({
   // member shell (app/(main)/layout.tsx, lib/nav/anon-feed.ts) and reads the same Feed body with public
   // data only: public posts and public events through lib/discover's cookieless RPCs. It returns before
   // the admin client below is even created, so no read here can see a member-only row.
-  if (SITE_DESIGN === 'frequency' && !profile) return <FrequencyAnonFeed sort={sort} />
+  if (!profile) return <FrequencyAnonFeed sort={sort} />
 
   const admin = createAdminClient()
   let myProfileId: string | null = null
@@ -173,7 +172,7 @@ export default async function FeedPage({
     myProfileId ? getCachedMemberProgress(myProfileId) : Promise.resolve(null),
     myProfileId ? getAmplitudeCelebration(myProfileId) : Promise.resolve(null),
     myProfileId ? getLocalActivity(myProfileId) : Promise.resolve(null),
-    myProfileId && SITE_DESIGN === 'frequency' ? getMemberPractices(myProfileId) : Promise.resolve([]),
+    myProfileId ? getMemberPractices(myProfileId) : Promise.resolve([]),
   ])
   const effectiveRadiusM = localActivity?.effectiveRadiusM ?? feedRadiusM
 
@@ -203,7 +202,7 @@ export default async function FeedPage({
   // reaches this branch and renders exactly what it always has below. Under Frequency the member's
   // home is the design handoff's Feed (components/frequency/members/feed); a signed-out visitor
   // still gets the public stream below.
-  if (SITE_DESIGN === 'frequency' && profile && myProfileId) {
+  if (profile && myProfileId) {
     const top = journeyProgress[0]
     const metaRec = (profile.meta as Record<string, unknown> | null) ?? {}
     const beta = (metaRec.beta ?? {}) as { location?: { label?: string | null } | null }

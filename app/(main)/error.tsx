@@ -1,44 +1,8 @@
 'use client'
 
-import * as Sentry from '@sentry/nextjs'
-import { useEffect } from 'react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { MemberError } from '@/components/frequency/members/member-status'
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  // FREQUENCY (ADR-1737, build-time): the members kit's status room. MemberError reports to Sentry itself.
-  if (SITE_DESIGN === 'frequency') return <MemberError error={error} reset={reset} />
-  return <DawnError error={error} reset={reset} />
+  return <MemberError error={error} reset={reset} />
 }
 
-function DawnError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => {
-    console.error(error)
-    // Report, don't just log: server renders are covered by instrumentation.ts
-    // onRequestError, but a client-side throw caught HERE never reaches the root
-    // reporting boundary (nearest-boundary-wins) - without this it was invisible.
-    Sentry.captureException(error)
-  }, [error])
-  return (
-    <div className="flex min-h-[40vh] flex-col items-center justify-center px-4">
-      <EmptyState
-        variant="error"
-        title="Something went wrong on our end"
-        description="This page hit a snag. Try again, or head back to your feed."
-        action={
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Button variant="secondary" onClick={reset}>
-              Try again
-            </Button>
-            <Button asChild>
-              <Link href="/feed">Back to feed</Link>
-            </Button>
-          </div>
-        }
-      />
-    </div>
-  )
-}

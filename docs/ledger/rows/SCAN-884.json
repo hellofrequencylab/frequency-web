@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-884",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const p='app/(main)/orders/page.tsx';const s=fs.readFileSync(p,'utf8');const bad=[];if(!fs.existsSync('lib/events/my-tickets.ts')||!s.includes('listMyEventTickets(profileId)'))bad.push('My orders still ignores event tickets');if(bad.length){console.error('SCAN-884: '+bad.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1129): Member app is Frequency-only (ADR-1880): the DAWN arm of this probe no longer applies"
+  }
+}
