@@ -53,6 +53,32 @@ test('every shipped paid completion caller supplies central attribution', () => 
                 expect(keys.length, `${file} lost its feature declarations`).toBeGreaterThan(0)
                 for (const key of keys) labels.add(key[1])
               }
+            } else if (value && ts.isPropertyAccessExpression(value) && path === 'lib/ai/writing-coach.ts' && value.getText(source) === 'input.feature') {
+              // Resolve every caller of this shared seam: no opaque or unknown feature is accepted.
+              let delegated = 0
+              function inventory(dir: string) {
+                for (const entry of readdirSync(dir, { withFileTypes: true })) {
+                  const callerPath = join(dir, entry.name)
+                  if (entry.isDirectory()) { inventory(callerPath); continue }
+                  if (!/\.tsx?$/.test(callerPath) || /\.(test|spec)\.tsx?$/.test(callerPath)) continue
+                  const callerText = readFileSync(callerPath, 'utf8')
+                  if (!callerText.includes('writingCoach')) continue
+                  const caller = ts.createSourceFile(callerPath, callerText, ts.ScriptTarget.Latest, true)
+                  function inspect(node: ts.Node) {
+                    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'writingCoach') {
+                      delegated++
+                      const options = node.arguments[0]
+                      const label = options && ts.isObjectLiteralExpression(options) && options.properties.find(p => ts.isPropertyAssignment(p) && p.name.getText(caller) === 'feature')
+                      if (label && ts.isPropertyAssignment(label) && ts.isStringLiteral(label.initializer)) labels.add(label.initializer.text)
+                      else failures.push(`${callerPath}: unreviewed coaching feature`)
+                    }
+                    ts.forEachChild(node, inspect)
+                  }
+                  inspect(caller)
+                }
+              }
+              inventory('app'); inventory('lib')
+              expect(delegated).toBeGreaterThanOrEqual(4)
             } else failures.push(`${path}: unreviewed dynamic feature ${value?.getText(source)}`)
           }
           if (!context || !ts.isPropertyAssignment(context) || !ts.isObjectLiteralExpression(context.initializer) || !context.initializer.properties.some(p => (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && p.name.getText(source) === 'feature')) failures.push(`${path}:${source.getLineAndCharacterOfPosition(node.pos).line + 1}`)

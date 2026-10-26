@@ -12,6 +12,7 @@ import { SITE_URL } from '@/lib/site'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { suggestCircleDraft, fallbackCircleSuggestion, type CircleSuggestion } from '@/lib/ai/circle-spark'
+import { safeWritingQuestions } from '@/lib/ai/writing-coach'
 import { planCircleEdit } from '@/lib/ai/circle-edit'
 import {
   getCircleDraft,
@@ -20,31 +21,21 @@ import {
   type CircleDraft,
   type CircleDraftPatch,
 } from '@/lib/circles/draft'
-import { CIRCLE_MANIFEST } from '@/lib/studio/entities/circle'
-import {
-  applyLock,
-  declaredLockKeys,
-  displayRecord,
-  redrawBrief,
-  settleRedraw,
-  type FieldChange,
-} from '@/lib/studio/kernel/redraw'
-import { saveSteer } from '@/lib/studio/steer-store'
+import type { FieldChange } from '@/lib/studio/kernel/redraw'
 
 // One address, nothing else: no spaces, exactly one at sign, a dotted domain.
 const SINGLE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// Vera's start-a-circle assist: suggest a name + about from the chosen Interest.
-// Live (Haiku) when AI is on; a deterministic draft otherwise — so the modal's
-// "Suggest" affordance always returns something the host can edit before creating.
+// Signed-in authors receive planning questions, with no generated name or About.
 export async function suggestCircle(
   interest: string,
   type: 'in-person' | 'online',
 ): Promise<CircleSuggestion> {
   const safeType: 'in-person' | 'online' = type === 'online' ? 'online' : 'in-person'
   const profileId = await getMyProfileId()
+  if (!profileId) return fallbackCircleSuggestion(interest, safeType)
   const ai = await suggestCircleDraft({ interest, type: safeType, profileId })
-  return ai ?? fallbackCircleSuggestion(interest, safeType)
+  return { name: '', about: '', questions: safeWritingQuestions(ai) }
 }
 
 /**
@@ -249,47 +240,12 @@ const CIRCLE_REDRAW_PATHS = [
 type CircleValues = Record<string, unknown>
 
 /** The live Circle, in manifest-path space. */
-function circleSnapshot(draft: CircleDraft): CircleValues {
-  const pi = draft.pillarsInside ?? {}
-  return {
-    name: draft.name ?? '',
-    about: draft.about ?? '',
-    'pillarsInside.mind': pi.mind ?? '',
-    'pillarsInside.body': pi.body ?? '',
-    'pillarsInside.spirit': pi.spirit ?? '',
-    'pillarsInside.expression': pi.expression ?? '',
-    'meetup.text': draft.meetup?.text ?? '',
-    'gathering.text': draft.gathering?.text ?? '',
-    thread: draft.thread ?? '',
-    format: draft.format ?? '',
-    sizeLabel: draft.sizeLabel ?? '',
-    agreements: draft.agreements ?? [],
-    remixOptions: draft.remixOptions ?? [],
-  }
-}
+
 
 /** Vera's spark-shaped patch, translated into manifest-path space. `card` / `oneLiner` /
  *  `identity` all describe the same thing on a live Circle (its About), so the first one she
  *  returns wins rather than three of them fighting over one column. */
-function circleProposal(patch: Awaited<ReturnType<typeof planCircleEdit>>): CircleValues {
-  const out: CircleValues = {}
-  if (!patch) return out
-  if (patch.name !== undefined) out.name = patch.name
-  const about = patch.card ?? patch.oneLiner ?? patch.identity
-  if (about !== undefined) out.about = about
-  for (const p of ['mind', 'body', 'spirit', 'expression'] as const) {
-    const line = patch.pillarsInside?.[p]
-    if (line !== undefined) out[`pillarsInside.${p}`] = line
-  }
-  if (patch.meetup !== undefined) out['meetup.text'] = patch.meetup
-  if (patch.gathering !== undefined) out['gathering.text'] = patch.gathering
-  if (patch.thread !== undefined) out.thread = patch.thread
-  if (patch.format !== undefined) out.format = patch.format
-  if (patch.sizeLabel !== undefined) out.sizeLabel = patch.sizeLabel
-  if (patch.agreements !== undefined) out.agreements = patch.agreements
-  if (patch.remixOptions !== undefined) out.remixOptions = patch.remixOptions
-  return out
-}
+
 
 /** Manifest-path space back to the draft's own storage shape. The two rhythm beats carry the
  *  length the draft already had, so re-drafting the wording never drops "90 minutes". */
@@ -342,6 +298,7 @@ function circleWritePatch(values: CircleValues, draft: CircleDraft, paths: reado
 /** What one Circle redraw did: what moved, what the pins held, and the previous values of
  *  exactly the changed paths (feed straight back to restoreCircleAction to undo). */
 export interface CircleRedrawResult {
+  questions?: string[]
   changes: FieldChange[]
   kept: string[]
   before: Record<string, unknown>
@@ -361,78 +318,12 @@ async function authorCircle(
   return { draft, profileId }
 }
 
-/** Re-steer a Circle that already exists: pick a mood, say how to approach it, pin what to keep,
- *  and draft it again. Every pinned path is deleted from the patch before anything is compared
- *  or written. */
-export async function redrawCircleAction(
-  circleId: string,
-  input: { mood?: string | null; directions?: string | null; locked?: readonly string[] },
-): Promise<ActionResult<CircleRedrawResult>> {
-  const gate = await authorCircle(circleId)
-  if ('error' in gate) return fail(gate.error)
-  const { draft, profileId } = gate
-
-  const pins = declaredLockKeys(CIRCLE_MANIFEST, input.locked ?? [])
-  await saveSteer('circle', circleId, profileId, {
-    mood: input.mood,
-    directions: input.directions,
-    locked: pins,
-  })
-
-  const patch = await planCircleEdit({
-    request: redrawBrief({
-      manifest: CIRCLE_MANIFEST,
-      lead: 'Draft this Circle again, keeping every fact it already states true.',
-      mood: input.mood,
-      directions: input.directions,
-      locked: pins,
-    }),
-    circle: {
-      name: draft.name,
-      card: draft.about ?? undefined,
-      identity: draft.about ?? undefined,
-      pillarsInside: draft.pillarsInside,
-      meetup: draft.meetup?.text || undefined,
-      gathering: draft.gathering?.text || undefined,
-      thread: draft.thread ?? undefined,
-      format: draft.format ?? undefined,
-      sizeLabel: draft.sizeLabel ?? undefined,
-      agreements: draft.agreements,
-      remixOptions: draft.remixOptions,
-    },
-    profileId,
-  })
-  if (!patch) return fail('Vera is offline right now. Try again in a moment, or edit by hand.')
-
-  // THE GUARANTEE: the pinned paths are deleted from the proposal here, before it is compared
-  // or written. `agreements` is a repeated collection and is deleted exactly like a plain field.
-  const current = circleSnapshot(draft)
-  const safe = applyLock(CIRCLE_MANIFEST, pins, circleProposal(patch)) as CircleValues
-
-  const settled = settleRedraw({
-    manifest: CIRCLE_MANIFEST,
-    locked: pins,
-    current: displayRecord(current),
-    proposed: displayRecord(safe),
-  })
-  const paths = settled.changedPaths.filter((p) => (CIRCLE_REDRAW_PATHS as readonly string[]).includes(p))
-  if (paths.length === 0) {
-    return fail('Vera kept this one as it is. Give her a direction, or unpin something, and try again.')
-  }
-
-  // A failed write is a refusal, not a diff: saveCircleDraft throws on it (SCAN-694).
-  try {
-    await saveCircleDraft(circleId, circleWritePatch(safe, draft, paths))
-  } catch (e) {
-    return fail(e instanceof Error ? e.message : CIRCLE_DRAFT_SAVE_ERROR)
-  }
-  revalidatePath('/circles')
-  revalidatePath(`/circles/${draft.slug}`)
-  revalidatePath(`/circles/${draft.slug}/edit`)
-
-  const before: Record<string, unknown> = {}
-  for (const path of paths) before[path] = current[path]
-  return ok({ changes: settled.changes.filter((c) => paths.includes(c.path)), kept: settled.kept, before })
+/** Re-check author access, then coach the requested change without persisting model fields. */
+export async function redrawCircleAction(circleId: string, input: { mood?: string | null; directions?: string | null; locked?: readonly string[] }): Promise<ActionResult<CircleRedrawResult>> {
+ const gate = await authorCircle(circleId)
+ if ('error' in gate) return fail(gate.error)
+ const advice = await planCircleEdit({ request: input.directions ?? '', circle: { name: gate.draft.name, identity: gate.draft.about ?? '' }, profileId: gate.profileId })
+ return ok({ questions: safeWritingQuestions(advice), changes: [], kept: [], before: {} })
 }
 
 /** Put it back: write the pre-redraw values the diff handed the rail. Same gate, same write

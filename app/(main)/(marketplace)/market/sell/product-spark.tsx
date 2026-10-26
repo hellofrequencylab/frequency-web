@@ -51,7 +51,7 @@ export function ProductSpark({
       doors={{
         title: 'What are you selling?',
         description: 'It shows up in the Market as soon as you list it.',
-        veraHint: 'Tell Vera roughly what it is and she writes the name and the details for you to edit.',
+        veraHint: 'Get questions to help you explain this in your own words.',
         manualHint: 'Go straight to the form: photos, price, and your own words.',
         aside: (
           <div className="space-y-4">
