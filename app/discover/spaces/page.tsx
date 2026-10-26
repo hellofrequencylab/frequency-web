@@ -1,23 +1,10 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { Plus, ArrowDown } from 'lucide-react'
-import { buttonClasses } from '@/components/ui/button'
 import { JsonLd } from '@/components/json-ld'
 import { spaceListSchema, breadcrumbSchema } from '@/lib/jsonld'
-import { BetaCTA } from '@/components/marketing/marketing-ui'
-import { MarketHero } from '@/components/marketplace/market-hero'
-import { DirectorySearch } from '@/components/ui/directory-search'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { listNetworkedSpacesPage, normalizeSpaceSort } from '@/lib/spaces/discovery'
-import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
-import {
-  SpacesResults,
-  normalizePerPage,
-  normalizePage,
-  DIRECTORY_GRID_WIDE,
-} from '@/components/spaces/directory-view'
+import { normalizePerPage, normalizePage } from '@/components/spaces/directory-view'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencySpacesDirectory } from '@/components/frequency/site/pages/discover/spaces'
 import { listActivePartners } from '@/lib/partners/read'
 import { emptyUnlessTransient } from '@/lib/discover'
@@ -35,11 +22,6 @@ import { emptyUnlessTransient } from '@/lib/discover'
 const TITLE = 'Businesses and nonprofits near you'
 const DESCRIPTION =
   'Browse businesses, Non Profits and community groups on Frequency. Read about their classes, services and events, then follow or reach out.'
-// The marketing header invitation: a plain, two-part welcome (browse what is here, or add your own), sized
-// for the on-photo hero. Voice canon: plain, no em dashes, never narrate the reader's feelings.
-const HERO_INVITE =
-  'Browse local businesses, Non Profits and community groups. Or learn about listing your own Space.'
-
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
@@ -51,8 +33,6 @@ export const metadata: Metadata = {
 // Revalidate hourly — the network of listed Spaces changes often enough to keep fresh, rarely enough that we
 // don't need per-request rendering for crawlers (matches the rest of /discover).
 export const revalidate = 3600
-
-const PUBLIC_BASE = '/discover/spaces'
 
 export default async function PublicSpacesDirectoryPage({
   searchParams,
@@ -80,8 +60,6 @@ export default async function PublicSpacesDirectoryPage({
     { limit: per, offset: (page - 1) * per },
   )
 
-  // The pager base — the current filters, so paging preserves them (no `following` on the public surface).
-  const urlBase = { q, subject, category, sort: sortParam, per, page }
 
   // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4):
   // the operator's Settings header image, then the page_content hero via the copy cascade, then
@@ -96,91 +74,20 @@ export default async function PublicSpacesDirectoryPage({
       { name: 'Business Spaces', path: '/discover/spaces' },
     ]),
   ]
-
-  // THE DESIGN SWITCH (ADR-1737): the same read, filters, sort, pager and JSON-LD, drawn in the site
-  // kit. Build-time constant; the DAWN branch below is untouched.
-  if (SITE_DESIGN === 'frequency') {
-    // The partners section (/discover/partners merged here, owner ruling 2026-10-14). The same
-    // fail-closed reader the old page used: a database answer renders no section, a transport failure
-    // rethrows so this ISR page keeps its last good copy.
-    const partners = await listActivePartners().catch(emptyUnlessTransient('spaces page partners'))
-    return (
-      <>
-        <JsonLd data={schema} />
-        <FrequencySpacesDirectory
-          spaces={spaces}
-          total={total}
-          query={{ q, subject, category, sort, per, page }}
-          image={hero.image}
-          partners={partners}
-        />
-      </>
-    )
-  }
-
+  // The partners section (/discover/partners merged here, owner ruling 2026-10-14). The same
+  // fail-closed reader the old page used: a database answer renders no section, a transport failure
+  // rethrows so this ISR page keeps its last good copy.
+  const partners = await listActivePartners().catch(emptyUnlessTransient('spaces page partners'))
   return (
-    // Ride in the SAME centered content column as the public Space profiles: the member three-column grid
-    // (empty rail gutters flanking a flex-1 center column inside max-w-[105rem]), so the directory and a
-    // Space profile are the exact same width. NOT full width. The /discover layout already clears the fixed
-    // header, so the center column's top padding stays small (no double gap above the hero).
-    <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:gap-10 lg:px-8">
-      <div className="hidden w-48 shrink-0 md:block" aria-hidden />
-      <div className="min-w-0 flex-1 pb-16 pt-4 sm:pb-20 sm:pt-6">
+    <>
       <JsonLd data={schema} />
-
-      {/* A Market-style marketing hero (components/marketplace/market-hero): full-bleed photo + scrim + amber
-          glow, a bold display headline, an in-hero SEARCH (writes ?q=, so the grid below filters live), and
-          two buttons: List your business (create) and Browse all (jump to the listings). */}
-      <MarketHero
-        {...hero}
-        eyebrow="Business Spaces"
-        title="Find a business or nonprofit near you"
-        subtitle={HERO_INVITE}
-        search={<DirectorySearch placeholder="Search businesses by name" />}
-        action={
-          <>
-            <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
-              <Plus className="h-4 w-4" aria-hidden />
-              List your business
-            </Link>
-            <Link href="#directory" className={buttonClasses('secondary', 'md')}>
-              <ArrowDown className="h-4 w-4" aria-hidden />
-              Browse all
-            </Link>
-          </>
-        }
+      <FrequencySpacesDirectory
+        spaces={spaces}
+        total={total}
+        query={{ q, subject, category, sort, per, page }}
+        image={hero.image}
+        partners={partners}
       />
-
-      {/* The subject filter + sort (search lives in the hero above). */}
-      <div className="mt-6">
-        <SpacesToolbar showFollowing={false} showSearch={false} />
-      </div>
-
-      {/* Anchor target for the hero's Browse CTA; scroll-mt clears the fixed site header. */}
-      <div id="directory" className="mt-6 scroll-mt-24">
-        <SpacesResults
-          basePath={PUBLIC_BASE}
-          spaces={spaces}
-          total={total}
-          q={q}
-          subject={subject}
-          kind={category}
-          following={false}
-          page={page}
-          per={per}
-          urlBase={urlBase}
-          gridClassName={DIRECTORY_GRID_WIDE}
-        />
-      </div>
-
-      <div className="mt-16">
-        <BetaCTA
-          heading="Run your whole business in the network people already browse."
-          body="Describe your work on your Space page, share dates and keep in touch with contacts. Check the plans for paid shop items, bookings and memberships."
-        />
-      </div>
-      </div>
-      <div className="hidden w-72 shrink-0 lg:block" aria-hidden />
-    </div>
+    </>
   )
 }

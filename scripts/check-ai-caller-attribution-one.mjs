@@ -43,9 +43,9 @@ for (const path of paths) {
 }
 // Explicit delegates retain the existing feature/tier and caller attribution through Spark.
 for (const [file, entity, feature, tier] of [
-  ['practice-edit', 'practice', 'practice-edit', 'opus'],
-  ['journey-edit', 'journey', 'journey-edit', 'opus'],
-  ['journey-composition', 'journey', 'journey-composition', 'opus'],
+  ['practice-edit', 'practice', 'practice-edit', 'sonnet'],
+  ['journey-edit', 'journey', 'journey-edit', 'sonnet'],
+  ['journey-composition', 'journey', 'journey-composition', 'sonnet'],
   ['journey-slot-coaching', 'journey', 'journey-slot-coaching', 'haiku'],
 ]) {
 const practiceEdit = ts.createSourceFile(file + '.ts', readFileSync('lib/ai/' + file + '.ts', 'utf8'), ts.ScriptTarget.Latest, true)

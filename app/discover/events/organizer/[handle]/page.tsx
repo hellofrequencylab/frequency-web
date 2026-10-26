@@ -1,21 +1,11 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { ChevronLeft, CalendarPlus } from 'lucide-react'
 import { createPublicClient } from '@/lib/supabase/public'
 import type { PublicEvent } from '@/lib/discover'
-import { EventRow, SignInCta } from '@/components/discover/cards'
-import { FrequencyArcs } from '@/components/marketing/vector-art'
-import { SectionHeading } from '@/components/marketing/marketing-ui'
-import { DetailTemplate } from '@/components/templates'
-import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventListSchema, personSchema } from '@/lib/jsonld'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
-import { getInitials } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { SITE_DESIGN } from '@/lib/theme/design'
+import { avatarSrc } from '@/lib/images/avatar-focus'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { FrequencyOrganizer } from '@/components/frequency/site/pages/discover/frequency-discover-events'
 
@@ -163,48 +153,8 @@ export default async function OrganizerPage({
   if (!organizer) notFound()
 
   const { displayName, handle: hostHandle, avatarUrl, upcoming, past } = organizer
-
-  // The Frequency design (ADR-1737): the same host read and JSON-LD, in the design's body.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd
-          data={[
-            personSchema({
-              name: displayName,
-              path: `/discover/events/organizer/${hostHandle}`,
-              image: avatarUrl ? avatarSrc(avatarUrl) : avatarUrl,
-            }),
-            breadcrumbSchema([
-              { name: 'Discover', path: '/discover' },
-              { name: 'Events', path: '/discover/events' },
-              { name: displayName, path: `/discover/events/organizer/${hostHandle}` },
-            ]),
-            eventListSchema(upcoming, `Upcoming events hosted by ${displayName}`),
-          ]}
-        />
-        <FrequencyOrganizer
-          displayName={displayName}
-          avatarUrl={avatarUrl}
-          upcoming={upcoming}
-          past={past}
-          today={dayInZone(new Date(), HOME_TZ)}
-        />
-      </>
-    )
-  }
-
-  // The standard entity cover (PROG-P5, ADR-1136): the operator's /discover/events Settings image,
-  // or nothing. An organizer's avatar is identity, not a cover — it stays in the title lockup.
-  const hero = await resolveDetailHero(`/discover/events/organizer/${hostHandle}`)
-
   return (
-    <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
-      <FrequencyArcs
-        aria-hidden
-        className="pointer-events-none absolute -top-10 right-0 w-[28rem] max-w-none text-primary opacity-[0.05]"
-      />
-
+    <>
       <JsonLd
         data={[
           personSchema({
@@ -220,105 +170,13 @@ export default async function OrganizerPage({
           eventListSchema(upcoming, `Upcoming events hosted by ${displayName}`),
         ]}
       />
-
-      <Link
-        href="/discover/events"
-        className="mb-4 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Events
-      </Link>
-
-      <DetailTemplate
-        {...hero}
-        title={
-          <span className="inline-flex items-center gap-3">
-            {avatarUrl ? (
-              <Image
-                src={avatarSrc(avatarUrl)}
-                alt={displayName}
-                width={48}
-                height={48}
-                className="h-12 w-12 rounded-pill object-cover"
-                style={avatarFocusStyle(avatarUrl)}
-              />
-            ) : (
-              <span className="flex h-12 w-12 items-center justify-center rounded-pill bg-primary-bg text-body font-semibold text-primary-strong select-none">
-                {getInitials(displayName)}
-              </span>
-            )}
-            {displayName}
-          </span>
-        }
-        subtitle={
-          <span>
-            Real-world gatherings, in one place. Public pages show the city only; the exact venue
-            is shared with members who RSVP.
-          </span>
-        }
-      >
-        {/* Subscribe affordance: follow this host's public calendar. The subscribe
-            URL is the public events feed for now; signed-in members get the live,
-            personal feed from the /events library. */}
-        <div className="mb-8 flex items-start gap-3 rounded-card border border-border bg-marketing-canvas p-4">
-          <CalendarPlus className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
-          <p className="text-body-sm leading-relaxed text-muted">
-            Want these on your calendar?{' '}
-            <Link href="/sign-in" className="font-medium text-primary-strong hover:underline">
-              Sign in
-            </Link>{' '}
-            and subscribe once. The events you RSVP to land in Google or Apple Calendar and stay
-            current on their own.
-          </p>
-        </div>
-
-        {/* Upcoming */}
-        <section className="mb-12">
-          <SectionHeading
-            eyebrow="On the calendar"
-            title={<>Coming <span className="text-primary-strong">up</span></>}
-            kicker={
-              upcoming.length > 0
-                ? 'Pick one, RSVP, and you are expected.'
-                : 'Nothing on the public calendar right now.'
-            }
-          />
-          {upcoming.length > 0 ? (
-            <div className="mt-6 space-y-3">
-              {upcoming.map((e) => (
-                <EventRow key={e.id} event={e} />
-              ))}
-            </div>
-          ) : (
-            <p className="mt-5 text-body leading-relaxed text-muted">
-              {displayName} doesn&rsquo;t have a public event up at the moment. The next one shows
-              up here as soon as it&rsquo;s posted.
-            </p>
-          )}
-        </section>
-
-        {/* Past */}
-        {past.length > 0 && (
-          <section className="mb-12">
-            <SectionHeading
-              eyebrow="Already happened"
-              title={<>Recently <span className="text-primary-strong">hosted</span></>}
-              kicker="A sense of the rooms this host puts together."
-            />
-            <div className="mt-6 space-y-3 opacity-80">
-              {past.map((e) => (
-                <EventRow key={e.id} event={e} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        <SignInCta
-          title="Show up to the next one"
-          body="Sign up free to RSVP, see who else is coming, and get the exact venue. Two words to belong."
-          action="Get started"
-        />
-      </DetailTemplate>
-    </div>
+      <FrequencyOrganizer
+        displayName={displayName}
+        avatarUrl={avatarUrl}
+        upcoming={upcoming}
+        past={past}
+        today={dayInZone(new Date(), HOME_TZ)}
+      />
+    </>
   )
 }

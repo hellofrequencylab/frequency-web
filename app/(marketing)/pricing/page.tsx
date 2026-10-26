@@ -1,9 +1,6 @@
 import type { Metadata } from 'next'
-import { ArrowRight } from 'lucide-react'
-import { PhotoHero, BetaCTA, Button } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
-import { PricingAudienceScope, PricingIntervalScope } from '@/components/marketing/pricing-billing-toggle'
 import { getPricingValues } from '@/lib/pricing/settings'
 import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { isBetaPricingActive } from '@/lib/pricing/beta'
@@ -11,13 +8,11 @@ import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
 import { annualDiscountNote } from '@/lib/pricing/display'
 import {
   memberOfferings,
-  planExtras,
   spaceFeatureGrid,
   spaceOfferings,
   type Offering,
   type PricingGridInput,
 } from '@/lib/pricing/pricing-grid'
-import { PLAN_STORY } from '@/lib/pricing/pricing-page'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
@@ -26,25 +21,10 @@ import { isWellFormed } from '@/lib/page-editor/templates'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { calculatorModel } from '@/components/frequency/site/pages/pricing/calculator-model'
 import { FrequencyPricing } from '@/components/frequency/site/pages/pricing/frequency-pricing'
 import { pricingAddOns } from '@/lib/pricing/pricing-addons'
 import { pricingFaq } from './pricing-faq'
-import {
-  PricingDoors,
-  PricingExtras,
-  PricingFaq,
-  PricingFeatureComparison,
-  PricingFeeLadder,
-  PricingMission,
-  PricingPlans,
-  PricingPromises,
-  PricingStatus,
-  PricingThesis,
-  PricingToggleCss,
-  PricingValue,
-} from './pricing-sections'
 
 // EVERY figure on this page is READ, never written. Prices, the yearly deal, the trial length, the
 // per-tier take-rate, the add-on and seat amounts, and every cell of the comparison grid come from
@@ -192,40 +172,10 @@ export default async function PricingPage() {
       }),
     )
 
-  // The Frequency design (ADR-1737): the same model, the same FAQ, the same schema and the same CTA
-  // hrefs, in the design's body. SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
-  // It sits ABOVE the published-document branch on purpose: a published /edit/pricing document is
-  // drawn in DAWN blocks, and under Frequency it rendered those blocks inside the Frequency shell, a
-  // DAWN page wearing the new header. The design's body reads the same live model, so nothing an
-  // operator sets in /admin/pricing is lost.
-  if (SITE_DESIGN === 'frequency') {
-    const faq = pricingFaq(input)
-    return (
-      <>
-        {/* The breadcrumb is the trail the design's hero shows: Home / For spaces / Pricing. */}
-        <JsonLd
-          data={[
-            breadcrumbSchema([
-              { name: 'For spaces', path: '/spaces' },
-              { name: 'Pricing', path: '/pricing' },
-            ]),
-            faqSchema(faq),
-            ...priceSchema,
-          ]}
-        />
-        <FrequencyPricing
-          members={members}
-          spaces={spaces}
-          grid={spaceFeatureGrid(input)}
-          faq={faq}
-          yearlyNote={annualDiscountNote(input.values)}
-          calculator={calculatorModel(members, spaces, input.catalog, annualDiscountNote(input.values))}
-          addOns={pricingAddOns(input)}
-        />
-      </>
-    )
-  }
-
+  // The page stays editable (ADR-916): a document an operator published wins. Until one exists the
+  // body is the Frequency pricing page, which reads the same live model, so nothing set in
+  // /admin/pricing is lost. The FAQPage schema is carried by the generated body only, never over a
+  // rewritten document.
   if (isWellFormed(published)) {
     return (
       <>
@@ -249,54 +199,27 @@ export default async function PricingPage() {
   }
 
   const faq = pricingFaq(input)
-  const pageSchema = [breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]), faqSchema(faq), ...priceSchema]
-
-  const extras = planExtras(input)
-
   return (
     <>
-      <JsonLd data={pageSchema} />
-
-      <PhotoHero
-        image="/images/site/lab-lounge.jpg"
-        alt="The connection bar inside The Lab, warm and low-lit"
-        focal="object-center"
-        eyebrow="Pricing"
-        title={
-          <>
-            Host free.
-            <br className="hidden sm:block" /> <span className="text-primary">Pay when you start charging.</span>
-          </>
-        }
-        subtitle={`${PLAN_STORY.ladder} Your own people are always free, and so are your tips.`}
-      >
-        <Button href="/spaces">
-          Start a free Space <ArrowRight className="h-5 w-5" />
-        </Button>
-      </PhotoHero>
-
-      <PricingMission />
-      <PricingToggleCss />
-
-      <PricingAudienceScope>
-        <PricingIntervalScope>
-          <PricingPlans input={input} members={members} spaces={spaces} />
-        </PricingIntervalScope>
-        <PricingFeeLadder members={members} spaces={spaces} />
-        <PricingFeatureComparison input={input} members={members} spaces={spaces} />
-      </PricingAudienceScope>
-
-      <PricingExtras extras={extras} />
-      <PricingDoors />
-      <PricingValue />
-      <PricingPromises />
-      <PricingThesis />
-      <PricingStatus />
-      <PricingFaq faq={faq} />
-
-      <BetaCTA
-        heading="Open your Space."
-        body="A Space comes with Crew, and hosting is free after that. When you are ready to charge, Business is one step away, and your own people stay yours."
+      {/* The breadcrumb is the trail the design's hero shows: Home / For spaces / Pricing. */}
+      <JsonLd
+        data={[
+          breadcrumbSchema([
+            { name: 'For spaces', path: '/spaces' },
+            { name: 'Pricing', path: '/pricing' },
+          ]),
+          faqSchema(faq),
+          ...priceSchema,
+        ]}
+      />
+      <FrequencyPricing
+        members={members}
+        spaces={spaces}
+        grid={spaceFeatureGrid(input)}
+        faq={faq}
+        yearlyNote={annualDiscountNote(input.values)}
+        calculator={calculatorModel(members, spaces, input.catalog, annualDiscountNote(input.values))}
+        addOns={pricingAddOns(input)}
       />
     </>
   )

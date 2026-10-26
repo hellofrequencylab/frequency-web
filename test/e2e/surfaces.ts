@@ -1291,25 +1291,25 @@ export const VISUAL_MASK_SITES: readonly {
   // for why this is masked rather than recaptured, and for the heights no mask can hold.
   {
     value: 'discover-hero-stats',
-    file: 'app/discover/page.tsx',
+    file: 'components/frequency/site/pages/discover/frequency-discover-hub.tsx',
     kind: 'live',
     why: 'The hero tally line: members, circles and upcoming events, three DB readings.',
   },
   {
     value: 'discover-upcoming-events',
-    file: 'app/discover/page.tsx',
+    file: 'components/frequency/site/pages/discover/frequency-discover-hub.tsx',
     kind: 'live',
     why: 'The four upcoming gatherings; the `starts_at >= now()` window slides continuously.',
   },
   {
     value: 'discover-featured-circles',
-    file: 'app/discover/page.tsx',
+    file: 'components/frequency/site/pages/discover/frequency-discover-hub.tsx',
     kind: 'live',
     why: 'The featured circles grid, ordered by member_count DESC: one join reorders the top six.',
   },
   {
     value: 'discover-community-posts',
-    file: 'app/discover/page.tsx',
+    file: 'components/frequency/site/pages/discover/frequency-discover-hub.tsx',
     kind: 'live',
     why: 'The newest three posts by created_at, each with an author and a relative timestamp.',
   },

@@ -19,6 +19,8 @@ const m = vi.hoisted(() => ({
   route: vi.fn(),
   rateOk: true,
   enrollments: [] as { profile_id: string; completed_at: string | null }[],
+  feedRows: [] as Record<string, unknown>[],
+  feedOk: true,
   revalidate: vi.fn(),
 }))
 
@@ -41,7 +43,18 @@ vi.mock('@/lib/notifications/router', () => ({ routeNotification: (...a: unknown
 vi.mock('@/lib/rate-limit', () => ({ rateLimitOk: async () => m.rateOk }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
-    from: () => ({ select: () => ({ eq: async () => ({ data: m.enrollments }) }) }),
+    from: () => ({
+      select: () => ({ eq: async () => ({ data: m.enrollments }) }),
+      insert: (row: Record<string, unknown>) => ({
+        select: () => ({
+          maybeSingle: async () => {
+            if (!m.feedOk) return { data: null }
+            m.feedRows.push(row)
+            return { data: { id: 'dispatch-1' } }
+          },
+        }),
+      }),
+    }),
   }),
 }))
 
@@ -65,6 +78,8 @@ beforeEach(() => {
   m.ctx = ctx()
   m.parseOk = true
   m.enrollments = []
+  m.feedRows = []
+  m.feedOk = true
   m.rateOk = true
   m.route.mockReset()
   m.createCampaign.mockImplementation(async () => ({ data: { id: `c-${m.createCampaign.mock.calls.length}` } }))
@@ -207,8 +222,9 @@ describe('sendJourneyBroadcastAction', () => {
       m.route.mockResolvedValueOnce({ enqueuedCount: 1 }).mockResolvedValueOnce({ enqueuedCount: 0 })
       const some = await sendJourneyBroadcastAction('plan-1', dispatch())
       expect(some).toMatchObject({ data: { results: [{ channel: 'dispatch', ok: true }] } })
+      // A half-cohort send posts no feed row, so no push means nothing went out at all.
       m.route.mockResolvedValue({ enqueuedCount: 0 })
-      const none = await sendJourneyBroadcastAction('plan-1', dispatch())
+      const none = await sendJourneyBroadcastAction('plan-1', dispatch({ segments: ['in_progress'] }))
       expect(none).toMatchObject({ data: { results: [{ channel: 'dispatch', ok: false, detail: 'No one has push on for this, so nothing went out.' }] } })
     })
 
@@ -217,6 +233,43 @@ describe('sendJourneyBroadcastAction', () => {
       m.route.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({ enqueuedCount: 1 })
       const res = await sendJourneyBroadcastAction('plan-1', dispatch())
       expect(res).toMatchObject({ data: { results: [{ channel: 'dispatch', ok: true }] } })
+    })
+
+    it('posts a Journey-scoped feed row for the whole cohort and says so', async () => {
+      m.enrollments = [{ profile_id: 'a', completed_at: null }]
+      m.route.mockResolvedValue({ enqueuedCount: 1 })
+      const res = await sendJourneyBroadcastAction('plan-1', dispatch({ segments: ['all'] }))
+      expect(m.feedRows).toEqual([
+        expect.objectContaining({
+          author_id: 'viewer-1',
+          title: 'Heads up',
+          body: 'Hello',
+          audience_scope: 'journey',
+          audience_id: 'plan-1',
+          status: 'published',
+        }),
+      ])
+      expect(res).toEqual({
+        data: { results: [{ channel: 'dispatch', ok: true, detail: 'Posted to their feed. Pushed to 1 person with push on.' }] },
+      })
+    })
+
+    it('posts to the feed for both halves, but not for just one half', async () => {
+      m.enrollments = [{ profile_id: 'a', completed_at: null }, { profile_id: 'b', completed_at: '2026-10-01T00:00:00Z' }]
+      m.route.mockResolvedValue({ enqueuedCount: 1 })
+      await sendJourneyBroadcastAction('plan-1', dispatch({ segments: ['in_progress', 'finished'] }))
+      expect(m.feedRows).toHaveLength(1)
+      await sendJourneyBroadcastAction('plan-1', dispatch({ segments: ['finished'] }))
+      expect(m.feedRows).toHaveLength(1)
+    })
+
+    it('still succeeds when push reaches no one but the feed row was posted', async () => {
+      m.enrollments = [{ profile_id: 'a', completed_at: null }]
+      m.route.mockResolvedValue({ enqueuedCount: 0 })
+      const res = await sendJourneyBroadcastAction('plan-1', dispatch({ segments: ['all'] }))
+      expect(res).toEqual({
+        data: { results: [{ channel: 'dispatch', ok: true, detail: 'Posted to their feed. No one has push on, so nothing was pushed.' }] },
+      })
     })
 
     it('refuses an empty audience and a rate-limited sender before routing anything', async () => {

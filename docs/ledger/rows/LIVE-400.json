@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-400",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(t)=>t.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/^\\s*\\/\\/.*$/gm,\"\");const mk=strip(fs.readFileSync(\"app/(public)/market/[id]/page.tsx\",\"utf8\"));if(!/redirect\\(journeyMemberPath\\(/.test(mk))fail(\"a Journey product still renders a second sales page on /market/<id>\");const shop=strip(fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/shop/page.tsx\",\"utf8\"));if(shop.includes(\"/market/${p.id}\"))fail(\"the Space Shop still sends every card to /market/<id>\");if(!shop.includes(\"withJourneySalesHref\"))fail(\"the Space Shop does not attach the Journey sales path\");const market=strip(fs.readFileSync(\"app/(main)/(marketplace)/market/page.tsx\",\"utf8\"));if(!market.includes(\"withJourneySalesHref\"))fail(\"the Market grid does not attach the Journey sales path\");const page=strip(fs.readFileSync(\"app/(main)/journeys/[slug]/page.tsx\",\"utf8\"));if(page.includes(\"plan.visibility === \\x27public\\x27 ? `/journeys/${plan.slug}/learn`\"))fail(\"a published author is still sent to /learn\");if(!page.includes(\"if (adopted && !preview && !isAuthor)\"))fail(\"an enrolled learner is no longer sent to /learn\");const widgets=strip(fs.readFileSync(\"components/journey/discovery-widgets.tsx\",\"utf8\"));if(widgets.includes(\"Free preview\"))fail(\"the path is still labelled a free preview of the course\");const pub=strip(fs.readFileSync(\"components/frequency/site/pages/discover/journeys.tsx\",\"utf8\"));if(!pub.includes(\"journeyBuySignInPath\"))fail(\"the public pitch still sends a paid visitor to /market/<id>\");'",
+      "note": "Measures the consequence: listing areas point at the Journey slug, leftover Market uuids redirect, authors stay on the sales page, learners still reach /learn, and the path is an outline. Written 2026-09-19."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1128): the public pitch lives in the Frequency journeys component."
+  }
+}

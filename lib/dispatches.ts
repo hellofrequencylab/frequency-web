@@ -58,6 +58,10 @@ export async function getRecentDispatchesForProfile(
   }
   const spaceIds = [...spaceIdSet]
 
+  // Journey Dispatches (SCAN-1165) reach the plan's enrollees.
+  const { data: enrolled } = await admin.from('journey_enrollments').select('plan_id').eq('profile_id', profileId)
+  const journeyPlanIds = [...new Set(((enrolled ?? []) as { plan_id: string | null }[]).map((r) => r.plan_id).filter((id): id is string => !!id))]
+
   const select = `id, title, audience_scope, published_at,
     author:profiles!author_id ( display_name ),
     linked_task:crew_tasks!linked_task_id ( id )`
@@ -88,6 +92,9 @@ export async function getRecentDispatchesForProfile(
       .order('published_at', { ascending: false }).limit(limit) as unknown as Promise<{ data: Row[] | null }>)
   if (spaceIds.length > 0)
     promises.push(base().eq('audience_scope', 'space').in('audience_id', spaceIds)
+      .order('published_at', { ascending: false }).limit(limit) as unknown as Promise<{ data: Row[] | null }>)
+  if (journeyPlanIds.length > 0)
+    promises.push(base().eq('audience_scope', 'journey').in('audience_id', journeyPlanIds)
       .order('published_at', { ascending: false }).limit(limit) as unknown as Promise<{ data: Row[] | null }>)
 
   const results = await Promise.all(promises)
