@@ -11,6 +11,12 @@ function coachingFactoryFeatures(path: string, text: string): string[] {
   const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true)
   const imports = new Set<string>()
   const constants = new Map<string, string>()
+  function stringValue(node: ts.Node | undefined): string | undefined {
+    if (!node) return undefined
+    if (ts.isStringLiteral(node)) return node.text
+    if (ts.isAsExpression(node) && node.type.getText(source) === 'const') return stringValue(node.expression)
+    return undefined
+  }
   function bindings(node: ts.Node) {
     if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text === './writing-coaching') {
       const named = node.importClause?.namedBindings
@@ -18,11 +24,14 @@ function coachingFactoryFeatures(path: string, text: string): string[] {
         if ((item.propertyName ?? item.name).text === 'writingCoachingSpec') imports.add(item.name.text)
       }
     }
-    if (ts.isVariableDeclaration(node) && ts.isVariableDeclarationList(node.parent) && (node.parent.flags & ts.NodeFlags.Const) && ts.isIdentifier(node.name) && node.initializer && ts.isStringLiteral(node.initializer)) constants.set(node.name.text, node.initializer.text)
+    if (ts.isVariableDeclaration(node) && ts.isVariableDeclarationList(node.parent) && (node.parent.flags & ts.NodeFlags.Const) && ts.isIdentifier(node.name)) {
+      const value = stringValue(node.initializer)
+      if (value !== undefined) constants.set(node.name.text, value)
+    }
     ts.forEachChild(node, bindings)
   }
   bindings(source)
-  const literal = (node: ts.Node | undefined) => node && ts.isStringLiteral(node) ? node.text : node && ts.isIdentifier(node) ? constants.get(node.text) : undefined
+  const literal = (node: ts.Node | undefined) => stringValue(node) ?? (node && ts.isIdentifier(node) ? constants.get(node.text) : undefined)
   const features: string[] = []
   function visit(node: ts.Node) {
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && (node.expression.text === 'writingCoachingSpec' || imports.has(node.expression.text))) {
@@ -38,11 +47,12 @@ function coachingFactoryFeatures(path: string, text: string): string[] {
 }
 
 test('typed coaching inventory resolves trusted aliases/constants and refuses opaque or spoofed factories', () => {
-  const imported = "import { writingCoachingSpec as coach } from './writing-coaching'; const FEATURE = 'practice-edit'; const TIER = 'opus';"
+  const imported = "import { writingCoachingSpec as coach } from './writing-coaching'; const FEATURE = 'practice-edit'; const TIER = 'opus' as const;"
   expect(coachingFactoryFeatures('fixture.ts', imported + "coach('practice', FEATURE, TIER)")).toEqual(['practice-edit'])
   expect(() => coachingFactoryFeatures('fixture.ts', imported + "coach('practice', input.feature, TIER)")).toThrow('opaque coaching accounting inputs')
   expect(() => coachingFactoryFeatures('fixture.ts', imported + "coach('practice', FEATURE, input.tier)")).toThrow('opaque coaching accounting inputs')
   expect(() => coachingFactoryFeatures('fixture.ts', imported.replace('const FEATURE', 'let FEATURE') + "coach('practice', FEATURE, TIER)")).toThrow('opaque coaching accounting inputs')
+  expect(() => coachingFactoryFeatures('fixture.ts', imported.replace('as const', 'as unknown') + "coach('practice', FEATURE, TIER)")).toThrow('opaque coaching accounting inputs')
   expect(() => coachingFactoryFeatures('fixture.ts', "writingCoachingSpec('practice', 'practice-edit', 'opus')")).toThrow('untrusted coaching factory')
 })
 
