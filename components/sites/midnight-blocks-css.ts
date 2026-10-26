@@ -90,6 +90,12 @@ ${N} .mn-card-title{display:block;font-family:var(--mn-display);font-weight:400;
 ${N} .mn-card-title--sm{font-size:24px;line-height:1.15}
 
 /* Seals: a sigil held in a hairline ring. */
+${N} .hs-brand{overflow:visible}
+${N} .mn-logo{display:inline-flex;align-items:center;gap:14px;text-align:left}
+${N} .mn-logo-ring{display:inline-flex;border-radius:50%;box-shadow:var(--mn-glow)}
+${N} .mn-logo-text{display:flex;flex-direction:column;gap:4px;min-width:0}
+${N} .mn-logo-name{font-family:var(--mn-display);font-size:28px;line-height:1;letter-spacing:var(--mn-tracking-display);color:var(--color-text)}
+${N} .mn-logo-tag{font-family:var(--mn-label);font-size:9px;line-height:1;text-transform:uppercase;letter-spacing:.28em;color:var(--color-text-subtle);max-width:22ch;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 ${N} .mn-seal{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;color:var(--color-text)}
 ${N} .mn-seal::before,${N} .mn-seal::after{content:"";position:absolute;border-radius:50%;border:1px solid var(--mn-night-500)}
 ${N} .mn-seal::before{inset:0;opacity:.35}

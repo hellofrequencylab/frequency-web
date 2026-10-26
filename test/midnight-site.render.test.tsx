@@ -60,6 +60,7 @@ describe('the Midnight site, rendered through the real chrome and sections', () 
       if (dir) writeFileSync(join(dir, `${p.slug}.html`), `${HEAD_(p.slug)}<div style="${FONT_VARS}">${html}</div></body></html>`)
       expect(html, p.slug).toContain('data-house-theme="midnight"')
       expect(html, p.slug).toContain(MIDNIGHT_CSS.slice(0, 60))
+      expect(html, p.slug).toContain('mn-logo-ring')
       expect(html, p.slug).not.toMatch(/—/)
     }
   })
