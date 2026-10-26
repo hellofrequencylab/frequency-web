@@ -26,10 +26,14 @@ test.describe('try-first funnel', { tag: '@smoke' }, () => {
 
   for (const route of ['/spaces/new', '/offer']) {
     test(`${route} sends a signed-out visitor to sign in and back`, async ({ page }) => {
+      const hops: string[] = []
+      page.on('response', (r) => {
+        if (r.status() >= 300 && r.status() < 400) hops.push(`${r.status()} ${new URL(r.url()).pathname} -> ${r.headers()['location'] ?? '?'}`)
+      })
       const response = await page.goto(route)
       expect(response!.ok(), `expected the ${route} redirect chain to end in a 2xx, got ${response!.status()} at ${page.url()}`).toBe(true)
       const url = new URL(page.url())
-      expect(url.pathname, `${route} landed on ${url.pathname}`).toBe('/sign-in')
+      expect(url.pathname, `${route} landed on ${url.pathname}${url.search}; redirects: ${hops.join(' | ') || 'none'}`).toBe('/sign-in')
       expect(url.searchParams.get('next') ?? '', `${route} dropped its next`).toContain(route)
     })
   }
