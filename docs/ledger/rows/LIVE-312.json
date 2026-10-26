@@ -1,0 +1,10 @@
+{
+  "id": "LIVE-312",
+  "patch": {
+    "status": "done"
+  },
+  "append": {
+    "detail": "Reopened by the full-app audit on 2026-10-23. The tracked fingerprint file on both current main 4410c0944 and the isolated repair branch contains fourteen surfaces whose capturedIn is local, not a commit. The existing unchanged provenance probe therefore exits 1 with template-fingerprints.json carries a non-commit capturedIn: local. Git history and objects are present; this is not a shallow-checkout failure. A local fingerprint regeneration is explicitly not capture proof according to the file contract. Preserve the real probe and baseline files; do not invent a SHA to green it. A fresh authorized operator capture with genuine provenance is required. Anonymous public browser checks and local CSS/DOM previews do not substitute for authenticated admin baselines. Publication/runner capture and any controlled operator account access remain outside this chat\u2019s current authorization.\n2026-10-25 release reconciliation: current main carries runner-shaped fingerprint provenance from d81c5a441; the unchanged full-history provenance probe now passes, including the admin baseline ancestry control. Preserve the original done state rather than reopening it from the older snapshot. This is source/history verification, not a new authenticated browser acceptance claim."
+  },
+  "wave": "W0"
+}

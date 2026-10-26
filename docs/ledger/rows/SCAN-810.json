@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-810",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/public-hub-consequences.mjs address",
+      "note": "Execute actual current route exports and the real pure index/region helpers against synthetic records; preserve the permanent places-to-cities alias and never contact the shared database."
+    }
+  },
+  "append": {
+    "detail": "2026-10-23 audit: /discover/places merged into the unified city template, so the historical probe could not read its retired file. Verify the active city/Space metadata branches and actual city JSON-LD constructor using synthetic data and the real pure index-floor/cityRegion helpers. Indexable metadata omits the robots key, thin hubs noindex; known regions/countries are emitted and unknown ones are not invented. Also assert the configured permanent old-places alias. Four reintroduced-bug controls (city/Space robots undefined, missing region, wrong alias) all fail without changing repository files. These are mocked route-export/source consequences, not deployed-route or live-data proof."
+  }
+}

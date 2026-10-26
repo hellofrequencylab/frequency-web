@@ -53,7 +53,8 @@ export async function dismissDraftAction(proposalId: string): Promise<ActionResu
 export async function binUnfinishedDraftAction(scope: string): Promise<boolean> {
   const profileId = await getMyProfileId()
   if (!profileId || !scope) return false
-  await discardStagedDraft(profileId, scope)
+  const discarded = await discardStagedDraft(profileId, scope)
+  if (!discarded) return false
   revalidatePath('/drafts')
   return true
 }
