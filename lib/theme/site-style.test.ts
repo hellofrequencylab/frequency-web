@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readSitePageStyle, readSiteStyle, siteLook, siteLookOverrides, siteTheme, spacePageDefaultAccent, spacePageFonts, withSitePageTheme, withSiteStyle, SITE_THEMES, THEME_LOOK } from './site-style'
+import { readSitePageStyle, readSiteStyle, siteLook, siteLookOverrides, siteTheme, spacePageDefaultAccent, spacePageFonts, spacePageSiteFaces, withSitePageTheme, withSiteStyle, SITE_THEMES, THEME_LOOK } from './site-style'
 import { MENSWORK_PALETTE } from './menswork'
 import { WILDHEART_PALETTE } from './wildheart'
 
@@ -117,5 +117,21 @@ describe('the site style', () => {
     expect(readSiteStyle({ siteStyle: { theme: 'frequency', pages: 'bold' } }).pages).toEqual({})
     // An invalid slug writes nothing.
     expect(readSiteStyle(withSitePageTheme({}, 'Not A Slug', 'bold')).pages).toEqual({})
+  })
+})
+
+describe('the website faces on the Space page', () => {
+  it('a Space on the Midnight Mega Theme wears the Midnight faces whatever the sync switch says', () => {
+    expect(spacePageSiteFaces({ megaTheme: { theme: 'midnight' } })).toBe('midnight')
+    expect(spacePageSiteFaces({ megaTheme: { theme: 'midnight' }, siteStyle: { theme: 'frequency', synced: false } })).toBe('midnight')
+  })
+
+  it('follows a synced Midnight website, and only while synced', () => {
+    expect(spacePageSiteFaces({ siteStyle: { theme: 'midnight', synced: true } })).toBe('midnight')
+    expect(spacePageSiteFaces({ siteStyle: { theme: 'midnight', synced: false } })).toBeNull()
+  })
+
+  it('leaves a Space with no theme of its own on the font set it picked', () => {
+    expect(spacePageSiteFaces({})).toBeNull()
   })
 })

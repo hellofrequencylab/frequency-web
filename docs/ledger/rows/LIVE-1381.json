@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1381",
+  "title": "Midnight faces on the Space page: Bodoni Moda display over Geist body",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/midnight-space-faces.mjs"
+  },
+  "detail": "Follow-up to LIVE-1365 and LIVE-1368. #4008 gave a Midnight Space page the dark ground; this gives it the design's faces. A Space on the Midnight Mega Theme (or synced to a Midnight website) now reads its Space page in Bodoni Moda over Geist, the way Network and Wildheart already do: SiteFacesId gains 'midnight' (lib/theme/site-faces.ts, sheet loaded only while the page renders so the faces never register on every Space route), spacePageSiteFaces answers it (the Mega Theme choice wins over the sync switch, as the ground does), and space-page.css maps it onto --space-font-display and --space-font-body. Frequency keeps its page frame, buttons and tabs; only the faces and the ground change, as the design's Space page shows."
+  ,"wave": "W7"
+}
