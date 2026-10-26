@@ -32,7 +32,7 @@ const metadata = { space: { identity: { name: 'Nocturne' }, slug: 'nocturne', ta
 function chrome(children: React.ReactNode) {
   return (
     <div style={midnightAccentVars(null) as React.CSSProperties}>
-    <SiteChrome brandName="Nocturne" homeHref="/" links={menu} cta={{ href: '/book', label: 'Book a session', external: false }} themeFonts skin={{ theme: 'midnight', season: 'fall' }} tagline="Counsel, gatherings and journeys." showBrandFooter>
+    <SiteChrome brandName="Nocturne" homeHref="/" links={menu} cta={{ href: '/book', label: 'Book a session', external: false }} themeFonts skin={{ theme: 'midnight', season: 'fall' }} tagline="Counsel, gatherings and journeys." showBrandFooter seasonNow={{ module: 'Waxing crescent circle', theme: null, next: '2026-11-18T19:00:00Z' }}>
       {children}
     </SiteChrome>
     </div>
@@ -61,6 +61,7 @@ describe('the Midnight site, rendered through the real chrome and sections', () 
       expect(html, p.slug).toContain('data-house-theme="midnight"')
       expect(html, p.slug).toContain(MIDNIGHT_CSS.slice(0, 60))
       expect(html, p.slug).toContain('mn-logo-ring')
+      expect(html, p.slug).toContain('mn-bar-moon')
       expect(html, p.slug).not.toMatch(/—/)
     }
   })
