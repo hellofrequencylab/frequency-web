@@ -51,6 +51,10 @@ describe('Bing dedicated-property read-only observations', () => {
     expect(await observeBingDiscovery('A', period, deps)).toMatchObject({ status: 'unavailable', reason: 'property_scope_unavailable' })
     expect(request).not.toHaveBeenCalled()
   })
+  it('accepts the provider root spelling without trailing slash through exact canonical identity', async () => {
+    request.mockReset().mockResolvedValueOnce(json({ d: [{ Url: property.slice(0, -1), IsVerified: true }] })).mockResolvedValueOnce(json({ d: [row()] }))
+    expect((await observeBingDiscovery('A', period, deps)).status).toBe('completed')
+  })
   it('requires exact provider-verified property before statistics, not prefix or accessible other site', async () => {
     request.mockReset().mockResolvedValue(json({ d: [{ Url: 'https://owner.example.evil/', IsVerified: true }, { Url: property, IsVerified: false }] }))
     expect(await observeBingDiscovery('A', period, deps)).toMatchObject({ reason: 'property_unverified' })

@@ -80,7 +80,13 @@ export async function observeBingDiscovery(spaceId: string, period: { from: stri
   try {
     const sites = await get('GetUserSites')
     if (!sites) return requestFailure ?? unavailable('provider_error')
-    if (!sites.some(raw => { const site = record(raw); return site?.IsVerified === true && site.Url === property })) return unavailable('property_unverified')
+    if (!sites.some(raw => {
+      const site = record(raw)
+      if (site?.IsVerified !== true || typeof site.Url !== 'string' || site.Url.length > 2048) return false
+      // The documented provider response may omit the root slash. Canonical URL
+      // identity permits that spelling, never a prefix, query or different protocol.
+      try { return new URL(site.Url).href === property } catch { return false }
+    })) return unavailable('property_unverified')
     const rows = await get('GetRankAndTrafficStats')
     if (!rows) return requestFailure ?? unavailable('provider_error')
     const seen = new Set<number>()
