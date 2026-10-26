@@ -1,0 +1,41 @@
+// @vitest-environment jsdom
+import { act } from 'react'
+import { createRoot } from 'react-dom/client'
+import { afterEach, beforeAll, expect, it, vi } from 'vitest'
+import { KIT_INDEX } from '@/lib/sites/kits/registry'
+import { KitLibrary } from './kit-library'
+
+beforeAll(() => { Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true }) })
+const cleanups: (() => void)[] = []
+afterEach(() => { cleanups.splice(0).forEach((c) => c()) })
+
+function mount(onApply: (id: string, mode: string) => Promise<string>) {
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  act(() => root.render(<KitLibrary onApply={onApply as never} />))
+  cleanups.push(() => { act(() => root.unmount()); host.remove() })
+  return host
+}
+const click = (el: Element | undefined) => act(async () => { el?.dispatchEvent(new MouseEvent('click', { bubbles: true })) })
+const byText = (host: HTMLElement, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(text))
+
+it('lists every kit, and replace needs a second click', async () => {
+  const onApply = vi.fn().mockResolvedValue('Kit applied.')
+  const host = mount(onApply)
+  for (const kit of KIT_INDEX) expect(host.textContent).toContain(kit.label)
+  await click(host.querySelector('button[aria-expanded]') ?? undefined)
+  await click(byText(host, 'Replace my pages'))
+  expect(onApply).not.toHaveBeenCalled()
+  await click(byText(host, 'Yes, replace my pages'))
+  expect(onApply).toHaveBeenCalledWith(KIT_INDEX[0].id, 'replace')
+  expect(host.querySelector('[role="status"]')?.textContent).toBe('Kit applied.')
+})
+
+it('add runs at once', async () => {
+  const onApply = vi.fn().mockResolvedValue('Done.')
+  const host = mount(onApply)
+  await click(host.querySelector('button[aria-expanded]') ?? undefined)
+  await click(byText(host, 'Add its pages'))
+  expect(onApply).toHaveBeenCalledWith(KIT_INDEX[0].id, 'add')
+})
