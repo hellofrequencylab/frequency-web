@@ -3,7 +3,7 @@ import { siteTheme, type SiteThemeId } from '@/lib/theme/site-style'
 
 // Website-only documents. Never written to pageDocs/profileLayout; public readers
 // consume only published. Bounded snapshots until E0's shared document store lands.
-export type WebsiteTheme = 'Menswork' | 'DAWN' | 'Midnight' | 'Wildheart' | 'Network' | 'Temple'
+export type WebsiteTheme = 'Menswork' | 'DAWN' | 'Midnight' | 'Wildheart' | 'Network' | 'Temple' | 'Designer'
 export type Device = 'desktop' | 'tablet' | 'phone'
 interface SiteCommentReply { id: string; body: string; author: string; createdAt: string }
 export interface SiteComment { id: string; blockId: string; text: string; author: string; createdAt: string; resolved: boolean; x?: number; y?: number; replies?: SiteCommentReply[] }
@@ -21,7 +21,7 @@ export interface WebsiteEditorState {
   published: WebsiteSnapshot | null; scheduled?: { at: string; author: string; snapshot: WebsiteSnapshot } | null; versions: WebsiteVersion[]
 }
 export const RESERVED_WEBSITE_SLUGS = new Set(['account', 'admin', 'book', 'contact', 'spotlight', 'api', 'opengraph-image', 'robots', 'sitemap'])
-export const WEBSITE_THEMES: WebsiteTheme[] = ['Menswork', 'DAWN', 'Midnight', 'Wildheart', 'Network', 'Temple']
+export const WEBSITE_THEMES: WebsiteTheme[] = ['Menswork', 'DAWN', 'Midnight', 'Wildheart', 'Network', 'Temple', 'Designer']
 const MAX_WEBSITE_BYTES = 700_000
 const MAX_VERSIONS = 8
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
@@ -143,7 +143,7 @@ export function readWebsiteEditor(preferences: unknown): WebsiteEditorState | nu
 
 /** The editor's stored theme id for each site theme (ADR-1726); the same table as EDITOR_THEME_OF in
  *  lib/sites/site-render-style.ts, restated here because that module pulls the render styles into every reader of this file. */
-const WORN_EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', temple: 'Temple', midnight: 'Midnight' }
+const WORN_EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', temple: 'Temple', midnight: 'Midnight', designer: 'Designer' }
 
 export function publishedWebsitePage(preferences: unknown, slug: string): WebsitePage | null {
   return publishedWebsiteSnapshot(preferences)?.pages.find((p) => p.slug === slug) ?? null
@@ -153,7 +153,7 @@ export function publishedWebsitePage(preferences: unknown, slug: string): Websit
  *  can be edited and published, but the public site keeps its house look (owner ask 2026-10-11, after a
  *  DAWN publish swapped danieltyack.com for an unfinished render: "can we not break the site when
  *  somebody edits?"). Add a theme only once its render matches the look it replaces. */
-export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteTheme>(['Menswork', 'Wildheart', 'Network', 'Temple', 'Midnight'])
+export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteTheme>(['Menswork', 'Wildheart', 'Network', 'Temple', 'Midnight', 'Designer'])
 
 /** The published website the PUBLIC site draws, or null to keep the house look: nothing published, a
  *  published theme not yet in WEBSITE_THEMES_LIVE, or a snapshot written in a theme other than the one the

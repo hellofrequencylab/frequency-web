@@ -21,7 +21,7 @@ import type { SiteThemeId } from '@/lib/theme/site-style'
 export const MEGA_NICHES = ['coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks'] as const
 export type MegaNicheId = (typeof MEGA_NICHES)[number]
 
-export type MegaThemeId = SiteThemeId | 'midnight'
+export type MegaThemeId = SiteThemeId | 'midnight' | 'designer'
 
 /** The one thing an owner wants people to do, from the picker's second question (ADR-1883). */
 export const MEGA_ACTIONS = ['book', 'try', 'tickets', 'tour', 'donate', 'chapter', 'join', 'list', 'ask'] as const
@@ -42,6 +42,7 @@ export const MEGA_THEMES: readonly MegaThemeDef[] = [
   { id: 'network', editor: 'Network', site: 'network' },
   { id: 'temple', editor: 'Temple', site: 'temple' },
   { id: 'midnight', editor: 'Midnight', site: 'midnight' },
+  { id: 'designer', editor: 'Designer', site: 'designer' },
 ]
 
 export interface MegaThemeChoice {
