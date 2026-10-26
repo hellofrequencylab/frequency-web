@@ -281,7 +281,7 @@ keyword apart in review and 1.6 MB apart in the artifact.
 > `scripts/check-cache-budget-warn-only.test.ts` + `check-shell-weight-warn-only.test.ts` fail a
 > re-added `--warn-only` as a silent demotion. It reads
 `entryJSFiles['[project]/app/(main)/layout']` from the client-reference manifests, which **is** the
-shell's eager first-load JS, and holds it to a budget (**957 KB measured 2026-08-17**, ceiling 1,400
+shell's eager first-load JS, and holds it to a budget (**1,030 KB measured 2026-10-26**, ceiling 1,100
 KB). It then does the thing a byte count cannot: it looks for **fingerprints** — literals that exist
 in exactly one lazily-mounted admin module — and names any module whose body reappears in those
 chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by finding

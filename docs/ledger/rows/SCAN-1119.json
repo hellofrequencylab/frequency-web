@@ -9,7 +9,7 @@
     "file": "components/layout/app-shell.tsx",
     "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
   },
-  "detail": "AdminBar (42 KB with body), SearchOverlay and DockBar are static shell imports. The shell budget is 1400 KB against 957 KB measured, so regressions of 45% pass. Lazy-load, then set the budget near the new reading.",
+  "detail": "AdminBar (42 KB with body), SearchOverlay and DockBar are static shell imports. The shell budget is 1400 KB against 957 KB measured, so regressions of 45% pass. Lazy-load, then set the budget near the new reading.\n\n2026-10-26: search overlay is lazy (#3931). Measured on Vercel builds: shell 1,131 KB / 25 chunks before, 1,030 KB / 24 after (front door 332 -> 329 KB). Budget lowered 1,400 -> 1,100 KB. Row stays open: its probe regex dynamic\\([^)]*(admin-bar|search-overlay) cannot match any dynamic(() => import(...)) call, because the arrow's own parentheses end the [^)]* run. The probe needs correcting before this row can close. The admin bar stays eager (it listens for open-admin-bar on mount).",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs shell-lazy",
