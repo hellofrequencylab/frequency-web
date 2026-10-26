@@ -51,6 +51,7 @@ import {
   type RegistrantContact,
 } from './registrar'
 import { addSiteDomain } from './vercel-domains'
+import { stageSpaceDomain } from '@/lib/spaces/store'
 
 const DOMAIN_PURCHASE_KIND = 'domain_purchase'
 const TABLE = 'space_domain_purchases'
@@ -344,9 +345,9 @@ export async function recordDomainPurchaseFromSession(session: Stripe.Checkout.S
   // The row stays `purchasing` if this write failed, and the sweep's attention notice needs the order id.
   if (recordError) console.error(`[domain-purchase] bought ${row.domain} as Vercel order ${bought.data.orderId} but could not record it (row=${row.id}): ${recordError.message}`)
 
-  // The existing connect path: bind the Space's domain (only when it has none) and attach it to the
-  // project. A failed attach is retried by the Domain section's Check again, which re-attaches.
-  await db().from('spaces').update({ domain: row.domain }).eq('id', row.space_id).is('domain', null)
+  // Stage the purchased domain without replacing an existing active binding. Check again verifies
+  // ownership, DNS and TLS before activation and retries a failed project attachment.
+  if (!(await stageSpaceDomain(row.space_id, row.domain))) console.error(`[domain-purchase] domain setup could not be staged for purchase ${row.id}`)
   await addSiteDomain(row.domain).catch(() => null)
   return status
 }

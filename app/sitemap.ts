@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { resolveProfileSiteCanonical } from '@/lib/sites/profile-canonical'
 import { SITE_URL } from "@/lib/site";
 import { SITE_DESIGN } from "@/lib/theme/design";
 import {
@@ -485,7 +486,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // one that lies). ⚠️ `spaces` has no set_updated_at trigger and most write paths do not stamp the
     // column, so today this is a FLOOR on freshness (often the row's creation time), not a precise
     // edit time; making it precise is a write-side change, not a sitemap one.
-    const spaceRoutes: MetadataRoute.Sitemap = spaces.map((s) => ({
+    const canonicalSites = new Map(spaces.map((space) => [space.slug, space.canonicalSite]))
+    // Foreign-domain twins advertise themselves in their own sitemap. Do not submit their
+    // Frequency aliases as competing canonicals in this host's sitemap.
+    const spaceRoots = await Promise.all(spaces.map(async (s) => ({
+      space: s, twin: await resolveProfileSiteCanonical(s.canonicalSite),
+    })))
+    const spaceRoutes: MetadataRoute.Sitemap = spaceRoots.filter(({ twin }) => twin === null).map(({ space: s }) => ({
       url: `${SITE_URL}/spaces/${s.slug}`,
       ...((s.updatedAt) ? { lastModified: new Date(s.updatedAt) } : {}),
       changeFrequency: "weekly" as const,
@@ -721,8 +728,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // "emits no duplicate URLs" test in app/sitemap.test.ts holds this file to.
       const already = new Set([...spaceRoutes, ...podcastRoutes].map((e) => e.url));
       const tabs = await listNetworkedSpaceProfileTabs();
-      spaceTabRoutes = tabs
-        .map((t) => ({
+      const canonicalTabs = await Promise.all(tabs.map(async (tab) => ({ tab, twin: await resolveProfileSiteCanonical(canonicalSites.get(tab.slug), tab.segment) })))
+      spaceTabRoutes = canonicalTabs.filter(({ twin }) => twin === null)
+        .map(({ tab: t }) => ({
           url: `${SITE_URL}/spaces/${t.slug}/${t.segment}`,
           ...((t.updatedAt) ? { lastModified: new Date(t.updatedAt) } : {}),
           changeFrequency: "weekly" as const,

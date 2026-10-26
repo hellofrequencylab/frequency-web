@@ -97,9 +97,11 @@ describe("the owner's writes expire the site", () => {
       const a = s.indexOf(`export async function ${name}(`)
       return s.slice(a, s.indexOf('\n}', a))
     }
-    for (const name of ['setWebsitePublished', 'connectSiteDomain', 'removeSiteDomain', 'setSpaceImages', 'setSpaceAccent']) {
+    for (const name of ['setWebsitePublished', 'checkSiteDomain', 'removeSiteDomain', 'setSpaceImages', 'setSpaceAccent']) {
       expect(body(name), name).toMatch(/refreshSite\(slug\)/)
     }
+    // Connect stages only; the authorized readiness check refreshes after actual activation.
+    expect(body('connectSiteDomain')).toMatch(/return checkSiteDomain\(slug\)/)
     // Every write that refreshes the whole profile refreshes the site with it.
     const profileWide = (s.match(/revalidatePath\(`\/spaces\/\$\{slug\}`(?:, 'layout')?\)/g) ?? []).length
     expect((s.match(/\brefreshSite\(slug\)/g) ?? []).length).toBeGreaterThanOrEqual(profileWide)
