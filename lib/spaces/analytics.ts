@@ -20,6 +20,7 @@
 // Server-only: routes through recordEngagementEvent, which uses the service-role admin client.
 
 import { cache } from 'react'
+import type { ProfileCoachingEvidence } from '@/lib/ai/coaching-evidence'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -42,20 +43,21 @@ interface SpaceProfileStats {
   ctaClicks: number
 }
 
-/** Count one event type for one space since `since`. Fail-safe: 0 on any error (and the error is
+/** Count one event type for one space since `since`. Unknown on a read error (and the error is
  *  logged, never thrown into the dashboard). */
-async function countSpaceEvents(eventType: string, spaceId: string, since: string): Promise<number> {
+async function countSpaceEvents(eventType: string, spaceId: string, since: string, through: string): Promise<number | null> {
   const { count, error } = await createAdminClient()
     .from('engagement_events')
     .select('id', { count: 'exact', head: true })
     .eq('event_type', eventType)
     .eq('context->>spaceId', spaceId)
     .gte('created_at', since)
+    .lt('created_at', through)
   if (error) {
     console.error(`[spaces/analytics] count ${eventType} failed:`, error.message)
-    return 0
+    return null
   }
-  return count ?? 0
+  return count
 }
 
 /**
@@ -64,21 +66,30 @@ async function countSpaceEvents(eventType: string, spaceId: string, since: strin
  * exactly as every other read on the Space Home dashboard does. Fail-safe: zeros, never a throw.
  */
 export async function getSpaceProfileStats(spaceId: string, windowDays = 30): Promise<SpaceProfileStats> {
-  const days = Number.isFinite(windowDays) && windowDays > 0 ? Math.floor(windowDays) : 30
-  const empty: SpaceProfileStats = { windowDays: days, profileViews: 0, ctaClicks: 0 }
+  const evidence = await getSpaceProfileEvidence(spaceId, windowDays)
+  return { windowDays: evidence.windowDays, profileViews: evidence.profileViews ?? 0, ctaClicks: evidence.ctaClicks ?? 0 }
+}
+
+/** Status-aware evidence for coaching. Query failure is unknown, never a zero-performance claim.
+ * Read through the existing Space manage gate. cache collapses the card + dashboard stats reads. */
+export const getSpaceProfileEvidence = cache(async (spaceId: string, windowDays = 30): Promise<ProfileCoachingEvidence> => {
+  const days = Number.isFinite(windowDays) && windowDays > 0 ? Math.max(1, Math.floor(windowDays)) : 30
+  const observedThrough = new Date().toISOString()
+  const observedFrom = new Date(Date.now() - days * 86_400_000).toISOString()
+  const empty = { windowDays: days, observedFrom, observedThrough, profileViews: null, ctaClicks: null }
   if (!spaceId) return empty
   try {
-    const since = new Date(Date.now() - days * 86_400_000).toISOString()
-    const [profileViews, ctaClicks] = await Promise.all([
-      countSpaceEvents(PROFILE_VIEW, spaceId, since),
-      countSpaceEvents(CTA_CLICK, spaceId, since),
-    ])
-    return { windowDays: days, profileViews, ctaClicks }
+    const safeCount = async (type: string) => {
+      try { return await countSpaceEvents(type, spaceId, observedFrom, observedThrough) }
+      catch (error) { console.error('[spaces/analytics] evidence unavailable:', error); return null }
+    }
+    const [profileViews, ctaClicks] = await Promise.all([safeCount(PROFILE_VIEW), safeCount(CTA_CLICK)])
+    return { ...empty, profileViews, ctaClicks }
   } catch (err) {
-    console.error('[spaces/analytics] getSpaceProfileStats failed:', err)
+    console.error('[spaces/analytics] getSpaceProfileEvidence failed:', err)
     return empty
   }
-}
+})
 
 /**
  * Record one profile-VIEW of a Space, deduped to once per (space, viewer, day).

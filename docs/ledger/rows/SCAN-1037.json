@@ -1,19 +1,6 @@
 {
   "id": "SCAN-1037",
-  "title": "Make public discovery listing time filters respect event wall-clock storage",
-  "status": "open",
-  "priority": "P1",
-  "lane": "live",
-  "size": "M",
-  "source": {
-    "file": "supabase/migrations/20270346008700_public_events_standalone_city.sql",
-    "ref": "Event timezone and crawl audit, 2026-10-23"
-  },
-  "detail": "Latest checked-in public_events(integer) function compares e.starts_at >= now() directly even though event starts_at stores host wall-clock parts as UTC. For Pacific 19:00 stored as 19:00Z, at 17:00 Pacific (00:00Z next day) the event is filtered from discovery before it begins. The RPC also omits time_zone, so downstream city filtering cannot resolve non-home event zones. SCAN-1036 repairs the independent public share page and sitemap end checks using existing zone reads, but cannot recover rows already discarded by this SQL listing filter. Trace matching calendar/listing RPCs and community-day floors, define intended in-progress policy, then prepare a migration with unchanged publication/visibility/Space-wall/demo/privacy gates and bounded ordering/limit behavior. No live event rows read or changed; source-confirmed consequence, not production impact proof. Applying shared schema changes requires explicit human authorization.\n\n2026-10-23: exact public-events SQL proposal prepared outside migrations and validated in disposable PostgreSQL with synthetic rows: reproduces baseline Pacific early expiry and London stale retention, corrects both, preserves nine exclusion/privacy gates, anonymous column redaction, explicit role grants and the 1..200 limit. Live catalog-only review found zero normal dependents of the function. JavaScript transition policy mismatch is repaired locally under SCAN-1043 (2,719 PostgreSQL comparisons, zero remaining disagreements). No shared schema or data changed; independent SQL review, canonical migration and approved production rollout are still open.",
-  "verify": {
-    "kind": "manual",
-    "checked": "2026-10-23",
-    "evidence": "Open: disposable SQL or authorized staging proof must retain Pacific events before their true start, exclude past events according to the chosen policy, cover London/Auckland and DST boundaries, preserve all visibility/privacy gates and demonstrate downstream timezone projection. No migration applied."
-  },
-  "wave": "W0"
+  "append": {
+    "detail": "2026-10-26 production receipt: PR3920 merged7b1cc6991b20358b3a0a5029b571f4a58fa03abf. Applied exact reviewed migrations20270346024600_public_discovery_event_instants and20270346025000_space_coach_profile_private via execute_sql with exact version/name ledger inserts in their transactions. Set comparison857repo/857live, zero missing/extra pairs. Actual public_events(200) returned200rows with zero past actual instants and zero invalid zones; public calendar237rows, density16cities. coach_profile exists; anon/authenticated direct private-state SELECT denied. No new security advisor findings versus captured baseline. Full migrated-schema tests1310assertions/88files passed before application. Matching production deployment dpl_Bu1h5wS5SJSp54TjCBbv3NDKsqrL is READY. No event timestamp rows rewritten. Authenticated owner UI acceptance remains separate under OWN-109."
+  }
 }

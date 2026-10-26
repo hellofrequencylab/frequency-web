@@ -65,6 +65,11 @@ export async function executeReadTool(tool: string, args: Record<string, unknown
       return suggestCircle(args.interest)
     case 'find_host':
       return findHost(args.topic)
+    case 'draft_intro': {
+      const handle = String(args.toHandle ?? '').trim().replace(/^@+/, '').toLowerCase()
+      if (!/^[a-z0-9_]{1,30}$/.test(handle)) return 'Ask which person they want to meet. No introduction was posted or sent.'
+      return `Help them write their own introduction to @${handle}. Ask what they have in common, what they would like to ask, and which personal detail they are comfortable sharing. Ask one question at a time. Do not supply a finished message. They can write their hello at /feed. Nothing has been posted or sent.`
+    }
     default:
       return 'No result.'
   }

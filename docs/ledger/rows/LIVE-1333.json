@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1333",
+  "title": "Coach campaign operators toward real-world outcomes",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-25",
+  "wave": "W7",
+  "source": {
+    "file": "lib/ai/campaign-coach.ts",
+    "ref": "Owner-authorized AI coaching implementation 2026-10-25"
+  },
+  "detail": "Admin campaign review offers attendance, return visits, bookings and useful replies as goals. Validated coaching questions and deterministic checklist replace open-rate optimization. Raw email counts and attribution limits are visible; no generated publication copy is inserted. Goals are per-review selections, not stored program objectives. Real campaign outcome attribution and holdout learning are not implemented by this phase.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/campaign-outcome-coaching.mjs",
+    "checked": "2026-10-25",
+    "evidence": "Independent phase release: bounded actual-source probe with inert database/provider IO and focused mocked tests. No phase2 profile, database migration, provider provisioning or attribution dependency. Full application types/build and authenticated preview/production acceptance remain coordinating release checks."
+  }
+}

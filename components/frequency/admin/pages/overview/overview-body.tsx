@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { SpaceDispatchBand } from '@/components/spaces/dashboard/space-dispatch-band'
-import { spaceEarningsSummary } from '@/lib/commerce/orders'
+import { spaceEarningsWindows } from '@/lib/commerce/orders'
 import { getSpaceHealth, getWorklist } from '@/lib/dashboard/scores'
 import { listActiveSpaceMemberIds } from '@/lib/spaces/resonance-roster'
 import { listWorkspaceConversations } from '@/lib/comms/workspace'
@@ -25,7 +25,7 @@ import { loadGoingRsvps, loadHostSpaces, loadSpaceCheckins, loadSpaceCircleTotal
 // CHECK-INS (space-reads.ts loadSpaceCheckins): the verified check-in ledger on this Space's events feeds
 // Check-ins, 30 days (with its change on the 30 days before), Came back within 2 weeks, the Check-ins by
 // week chart and the first-timers line in Needs you. Revenue's change compares the last 30 days with the 30
-// before, both from spaceEarningsSummary. Past-due memberships are listSpaceMemberships' payment status.
+// before, both from spaceEarningsWindows. Past-due memberships are listSpaceMemberships' payment status.
 //
 // NO READING, SO THE DESIGN'S EMPTY VALUE ("—"), never a sample number: a check-in read that failed, and
 // a return rate with nobody in its window. Active members has no prior-period reader, so it carries the
@@ -86,9 +86,8 @@ export async function FqOverviewBody({
 }) {
   const now = new Date()
   const today = dayInZone(now, HOME_TZ)
-  const [earnings, earnings60, health, memberIds, worklist, conversations, weekEvents, viewer, checkins, memberships, monthEvents, pastEvents, followers, billing, circles] = await Promise.all([
-    spaceEarningsSummary(spaceId, 30),
-    spaceEarningsSummary(spaceId, 60),
+  const [money, health, memberIds, worklist, conversations, weekEvents, viewer, checkins, memberships, monthEvents, pastEvents, followers, billing, circles] = await Promise.all([
+    spaceEarningsWindows(spaceId, [30, 60]).catch(() => null),
     getSpaceHealth(spaceId),
     listActiveSpaceMemberIds(spaceId),
     getWorklist({ spaceId }),
@@ -104,6 +103,7 @@ export async function FqOverviewBody({
     loadSpaceMembershipBilling(spaceId),
     loadSpaceCircleTotals(spaceId),
   ])
+  const [earnings, earnings60] = money ?? [null, null]
   const nowMs = now.getTime()
   const checkins30 = checkins ? countBetween(checkins, nowMs, 30) : null
   const checkinsTrend = checkins ? trendOf(percentChange(checkins30 ?? 0, countBetween(checkins, nowMs, 60, 30))) : undefined
@@ -111,7 +111,7 @@ export async function FqOverviewBody({
   const weekly = checkins ? weeklyCounts(checkins, nowMs, 12) : null
   const newFaces = checkins ? firstTimers(checkins, nowMs, 7) : 0
   const pastDue = memberships.filter((m) => isPastDueSpaceMembership(m.paymentStatus)).length
-  const revenueTrend = trendOf(percentChange(earnings.netCents, earnings60.netCents - earnings.netCents))
+  const revenueTrend = earnings && earnings60 ? trendOf(percentChange(earnings.netCents, earnings60.netCents - earnings.netCents)) : undefined
 
   const events = weekEvents.filter((e) => !e.is_cancelled)
   const past = pastEvents.filter((e) => !e.is_cancelled && Date.parse(e.starts_at) <= nowMs)
@@ -265,7 +265,7 @@ export async function FqOverviewBody({
       />
 
       <div className="g4">
-        <Kpi label="Check-ins, 30 days" value={checkins30 === null ? EMPTY : n(checkins30)} trend={checkinsTrend} />
+        <Kpi label="Check-ins, 30 days" value={checkins30 === null ? EMPTY : n(checkins30)} trend={checkinsTrend} note={checkins === null ? 'History unavailable or incomplete' : undefined} />
         <Kpi
           label="Came back within 2 weeks"
           value={returned ? `${returned.rate}%` : EMPTY}
@@ -274,9 +274,9 @@ export async function FqOverviewBody({
         <Kpi label="Active members" value={n(memberIds.length)} note={`${n(health.weeklyActive)} active this week`} />
         <Kpi
           label="Revenue, 30 days"
-          value={usd(earnings.netCents)}
+          value={earnings ? usd(earnings.netCents) : EMPTY}
           trend={revenueTrend}
-          note={earnings.orderCount > 0 ? `${earnings.orderCount} paid ${earnings.orderCount === 1 ? 'order' : 'orders'}` : 'No sales yet'}
+          note={!earnings ? 'Revenue is unavailable or incomplete' : earnings.orderCount > 0 ? `${earnings.orderCount} paid ${earnings.orderCount === 1 ? 'order' : 'orders'}` : 'No sales yet'}
         />
       </div>
 

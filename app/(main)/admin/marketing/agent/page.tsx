@@ -1,4 +1,6 @@
 import { Check, X, Sparkles, PenLine } from 'lucide-react'
+import { WinbackCoachingReview } from '@/components/studio/winback-coaching-review'
+import { isOperationalWinbackPayload } from '@/lib/studio/winback'
 import { listActions } from '@/lib/studio/agent'
 import { generateProposals, generateContentDrafts, approveAction, dismissAction } from './actions'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -14,7 +16,7 @@ export default async function AgentPage() {
     <AdminTemplate
       eyebrow="Marketing"
       title="Agent Console"
-      description="The operator proposes actions; you approve. Every approved action runs through the spine (consent + suppression + unsubscribe), so the agent can never bypass the guardrails. The proposer is deterministic for now; a live Claude operator slots in here later."
+      description="The operator proposes actions; you approve. Every approved action runs through the spine (consent + suppression + unsubscribe), so the agent can never bypass the guardrails. Winback invitations use an existing operational template. Coaching stays separate from messages."
     >
       <AdminSection title="Generate" description="Ask the operator to draft. Everything lands in the queue as a proposal.">
         <div className="flex flex-wrap gap-2">
@@ -33,6 +35,8 @@ export default async function AgentPage() {
         </div>
       </AdminSection>
 
+      <AdminSection title="Review your approach"><WinbackCoachingReview /></AdminSection>
+
       <AdminSection title="Action queue" description={`${proposed.length} awaiting your approval.`}>
         {proposed.length === 0 ? (
           <EmptyState
@@ -44,6 +48,7 @@ export default async function AgentPage() {
           <div className="space-y-2 max-w-2xl">
           {proposed.map((a) => {
             const isDraft = a.kind === 'content_draft'
+            const needsReplacement = a.kind === 'email_contact' && !isOperationalWinbackPayload(a.payload)
             return (
             <div key={a.id} className="rounded-card border border-border bg-surface lift-1 p-4">
               {isDraft ? (
@@ -60,15 +65,17 @@ export default async function AgentPage() {
                     {a.kind === 'email_contact' ? 'Email' : a.kind}: {String(a.payload.subject ?? '')}
                   </p>
                   <p className="text-meta text-subtle mt-0.5">to {String(a.payload.email ?? '')}</p>
+                  <p className="mt-2 whitespace-pre-wrap text-body-sm text-muted">{String(a.payload.body ?? '')}</p>
+                  {needsReplacement && <p role="status">This older or edited draft needs a new human-reviewed operational template proposal. Dismiss it before creating a replacement.</p>}
                 </>
               )}
               {a.rationale && <p className="text-meta text-muted mt-1.5">Why: {a.rationale}</p>}
               <div className="flex items-center gap-2 mt-3">
-                <form action={approveAction.bind(null, a.id)}>
+                {!needsReplacement && <form action={approveAction.bind(null, a.id)}>
                   <button type="submit" className="inline-flex items-center gap-1.5 rounded-control bg-success-bg text-success text-meta font-semibold px-3 py-1.5 hover:opacity-80 transition-opacity">
                     <Check className="w-3.5 h-3.5" /> {isDraft ? 'Approve (ready to post)' : 'Approve & send'}
                   </button>
-                </form>
+                </form>}
                 <form action={dismissAction.bind(null, a.id)}>
                   <button type="submit" className="inline-flex items-center gap-1.5 rounded-control bg-surface-elevated text-muted text-meta font-medium px-3 py-1.5 hover:text-danger transition-colors">
                     <X className="w-3.5 h-3.5" /> Dismiss

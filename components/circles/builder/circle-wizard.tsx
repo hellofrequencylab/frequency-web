@@ -31,17 +31,13 @@ import {
   FieldControl,
   SparkDoors,
   SparkDropzone,
-  SparkFidelity,
   SparkOffers,
   SparkShell,
-  SparkSteer,
   draftText,
   useQualityCheck,
 } from '@/components/studio/spark'
 import { CIRCLE_MANIFEST } from '@/lib/studio/entities/circle'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
-import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
-import { defaultSeedFidelity, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import type { PillarSlug } from '@/lib/pillars'
 import type { CircleSparkDraft } from '@/lib/ai/circle-spark'
@@ -67,14 +63,6 @@ function asPillar(value: string): PillarSlug | null {
   const known = PILLAR_FIELD?.options?.some((o) => o.value === value)
   return known ? (value as PillarSlug) : null
 }
-
-/**
- * The manifest's dials, minus `lock`. Lock pins only mean something next to a redraw ("anything
- * pinned here survives a redraw untouched"), and the create path has none: `SparkSteer` renders
- * them whenever they are declared, so the create path narrows the capability instead.
- */
-const CREATE_STEER = { mood: CIRCLE_MANIFEST.steer?.mood, directions: CIRCLE_MANIFEST.steer?.directions }
-const NO_LOCKS: readonly string[] = []
 
 /** The Vera path: the doors, the brief, the review. */
 type Mode = 'choose' | 'questions' | 'review'
@@ -140,18 +128,11 @@ export function CircleWizard() {
   // Source material from the shared drop zone (an uploaded outline, a paste, or both).
   const [sourceText, setSourceText] = useState('')
 
-  // Exact, Edit or Rewrite, asked on the brief right before Vera drafts. Null until the Host
-  // picks, so the default follows what they brought: an outline keeps its words, answers get a
-  // fresh draft.
-  const [fidelityPick, setFidelityPick] = useState<SeedFidelity | null>(null)
-  const fidelity = fidelityPick ?? defaultSeedFidelity(sourceText.trim().length > 0)
+  // Circle creation keeps human words; extraction does not offer a rewrite mode.
+  const fidelity = 'exact' as const
 
   // Vera's drafted frame (the review step, editable).
   const [spark, setSpark] = useState<CircleSparkDraft | null>(null)
-
-  // The steer dials. Captured on review so they never add a question to the flow.
-  const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
-  const [directions, setDirections] = useState('')
 
   // ── The pre-publish read (ADR-993 / ADR-995) ──
   //
@@ -240,7 +221,7 @@ export function CircleWizard() {
           entityLabel="Circle"
           onVera={() => setMode('questions')}
           veraLabel="Answer a few questions"
-          veraHint="Tell Vera the basics and she drafts the whole Circle for you to edit."
+          veraHint="Write the basics in your own words. Vera organizes your Circle for review."
           onManual={scratch}
           manualLabel="Start from scratch"
           manualHint="A blank Circle. Write every field yourself."
@@ -277,15 +258,15 @@ export function CircleWizard() {
         title="Tell Vera the basics"
         description={
           fromOutline
-            ? 'Vera has your outline. Add anything it does not say, then draft it.'
-            : 'A few answers and Vera drafts the whole frame for you to edit.'
+            ? 'Your outline becomes your About in your own words. Add any missing details.'
+            : 'Write what your Circle is about and who it is for. Your words become your About.'
         }
         step={2}
         totalSteps={TOTAL_STEPS}
         stepLabel="A few questions"
         onBack={() => setMode('choose')}
         onNext={generate}
-        nextLabel="Draft with Vera"
+        nextLabel="Organize my Circle"
         nextDisabled={!topic.trim() && !fromOutline}
         busy={pending}
         error={error}
@@ -321,7 +302,7 @@ export function CircleWizard() {
               placeholder="e.g. Wednesdays evening, Saturday mornings"
             />
           </StudioField>
-          <SparkFidelity value={fidelity} onChange={setFidelityPick} />
+          <p className="text-meta text-subtle">Vera keeps your words. You choose the name and write the details.</p>
         </div>
       </SparkShell>
     )
@@ -332,7 +313,7 @@ export function CircleWizard() {
     <SparkShell
       eyebrow="New Circle"
       title="Here is your Circle"
-      description="Vera's draft. Edit anything, then create it."
+      description="Your words, organized for review. Choose a name and finish your About before creating the draft."
       step={3}
       totalSteps={TOTAL_STEPS}
       stepLabel="Review"
@@ -355,24 +336,15 @@ export function CircleWizard() {
             />
           ))}
 
-          <p className="text-2xs leading-relaxed text-muted">
-            Vera also drafted the four Pillars inside, the rhythm, the agreements, and more. Create the draft to edit
-            all of it in the builder.
-          </p>
+          <aside className="rounded-card border border-border bg-surface p-3 text-body-sm text-text" aria-label="Writing coach">
+            <p className="font-semibold">Make it yours</p>
+            <p>Who should feel welcome? What will you do together? Which rhythm and agreements would you choose as a group?</p>
+          </aside>
 
           {/* Optional and skippable: a read before it goes out. */}
           <SparkOffers quality={qualityState.check} disabled={pending} />
 
-          <SparkSteer
-            steer={CREATE_STEER}
-            mood={mood}
-            onMood={setMood}
-            directions={directions}
-            onDirections={setDirections}
-            locked={NO_LOCKS}
-            onLocked={() => undefined}
-            disabled={pending}
-          />
+
         </div>
       )}
     </SparkShell>

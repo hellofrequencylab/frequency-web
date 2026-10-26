@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1331",
+  "title": "Keep Vera and gathering builders focused on human-authored work",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-25",
+  "wave": "W7",
+  "source": {
+    "file": "lib/ai/vera/model-tools.ts",
+    "ref": "Owner-authorized AI coaching implementation 2026-10-25"
+  },
+  "detail": "Model tool dispatch cannot propose authored entity fields, bios or outbound messages; introduction posting removed. Event and main Circle builder descriptions retain human source through coercion and manual fallback. Legacy Practice/Journey, small Circle suggestion and section editing remain separate. Focused source and inert/DOM consequences only; model conversational prose and image transcription still require review. No merge, deployment, provider or DB mutation.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/ai-coaching-consequences.mjs vera",
+    "checked": "2026-10-25",
+    "evidence": "Bounded actual-source probe passed with inert IO. Cumulative integration: 35 focused suites, 411 passed, one live-provider test skipped; changed-file ESLint and full TypeScript pass. Frequency compile-only build and all six local artifact gates pass. These are cumulative local checks, not independent phase artifacts, authenticated production, provider or DB acceptance. Migration remains prepared only (OWN-109)."
+  }
+}

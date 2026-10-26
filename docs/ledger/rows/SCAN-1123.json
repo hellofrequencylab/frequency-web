@@ -1,19 +1,14 @@
 {
   "id": "SCAN-1123",
-  "title": "Server fetches of user-provided image and crawl URLs resolve DNS and block private addresses",
-  "status": "open",
-  "priority": "P2",
-  "lane": "live",
-  "size": "S",
-  "source": {
-    "file": "lib/og/remote-image.ts",
-    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/sec-ssrf-pinned-fetch.mjs"
+    }
   },
-  "detail": "fetchRemoteImage has no guard on a public route; lib/ai/web/index.ts:118 and lib/importer/harvest/media.ts:67 check hostnames only and follow redirects. Reuse the pinned fetch from lib/qr/remote-logo.ts (#3919). Also extend the private range list (192.0.0.0/24, 198.18.0.0/15, NAT64, 6to4).",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs ssrf-og",
-    "note": "Exits 0 only when the repair has landed; fails on main today."
-  },
-  "wave": "W7"
+  "append": {
+    "detail": "\n\nClosed by SEC-010 (#3932). Daniel approved replacing this row's probe (2026-10-26, 'Two security rows whose checks look for old code: A'). The original ssrf-og probe matched one implementation (remote-logo, isPrivateIp or assertPublic in remote-image.ts); the repair is the shared lib/net/pinned-fetch.ts, so the probe is now scripts/probes/sec-ssrf-pinned-fetch.mjs, which asserts all three call sites."
+  }
 }

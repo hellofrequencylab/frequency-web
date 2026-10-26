@@ -1,9 +1,6 @@
-// The AI operator (Phase 6.6, ADR-028). The proposer surfaces lapsed members as
-// proposed winback emails into the Action Queue: a live Claude operator drafts the
-// copy when `ANTHROPIC_API_KEY` is set, falling back to a deterministic template
-// otherwise. A human approves; on approval the action runs THROUGH the spine
-// (consent + suppression + unsubscribe). The agent can only ever act via these
-// bounded, copilot-gated actions — the model drafts, it never sends. Server-only.
+// Human-reviewed operational proposals. Winback subject/body come only from the existing coded
+// template; AI coaching is transient and separate from this queue. Approval and current send consent
+// remain required. No model text is copied into a persisted action or a message.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -15,7 +12,7 @@ import { plainTextEmail } from '@/lib/email-studio/shell'
 import {
   LAPSE_DAYS,
   deterministicWinback,
-  draftWinbackWithClaude,
+  isOperationalWinbackPayload,
   filterByConsent,
   type WinbackCandidate,
 } from '@/lib/studio/winback'
@@ -54,8 +51,7 @@ export async function listActions(status = 'proposed'): Promise<AgentActionRow[]
 
 /**
  * Propose winback emails for members with no verified practice in the last
- * LAPSE_DAYS. The copy is drafted by the live Claude operator when an API key is
- * configured, else a deterministic template. Gated up front by lifecycle-email
+ * LAPSE_DAYS. Copy comes only from the existing human-written operational template. Gated up front by lifecycle-email
  * consent (`shouldSend`), so we never queue a proposal for someone who has opted
  * out — and skips members who already have a pending winback. Returns how many
  * proposals were created. (Copilot-gated: these are *proposed*, not sent.)
@@ -115,10 +111,10 @@ export async function proposeWinbacks(limit = 20): Promise<number> {
   for (const c of eligible) {
     if (created >= limit) break
     const name = c.displayName || 'there'
-    const draft = (await draftWinbackWithClaude(name)) ?? deterministicWinback(name)
+    const draft = deterministicWinback(name)
     await client.from('agent_actions').insert({
       kind: 'email_contact',
-      payload: { profileId: c.profileId, email: c.email, subject: draft.subject, body: draft.body },
+      payload: { profileId: c.profileId, email: c.email, subject: draft.subject, body: draft.body, copySource: 'operational_winback_v1', templateName: name },
       rationale: `No verified practice in the last ${LAPSE_DAYS} days (lapsed member).`,
       status: 'proposed',
     })
@@ -146,6 +142,7 @@ export async function executeAction(id: string): Promise<{ ok: boolean; error?: 
   }
 
   if (action.kind === 'email_contact') {
+    if (!isOperationalWinbackPayload(action.payload)) return { ok: false, error: 'This older or edited draft needs a new human-reviewed operational template proposal.' }
     const p = (action.payload ?? {}) as { profileId?: string; email?: string; subject?: string; body?: string }
     const gate = p.profileId ? await resolveSendGate(p.profileId, 'email', 'lifecycle') : null
     if (p.profileId && p.email && gate?.allowed) {

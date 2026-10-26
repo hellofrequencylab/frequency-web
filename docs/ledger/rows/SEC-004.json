@@ -1,19 +1,9 @@
 {
   "id": "SEC-004",
-  "title": "Resolve remaining Expo toolchain dependency advisories with consumer compatibility evidence",
-  "status": "open",
-  "priority": "P1",
-  "lane": "live",
-  "size": "M",
-  "source": {
-    "file": "mobile/pnpm-lock.yaml",
-    "ref": "Authoritative GHSA-mrhx-c7xc-m3w5/GHSA-86w9-cpqp-85rv/GHSA-w5hq-g745-h8pq metadata and checked-in lock instances2026-10-25"
+  "patch": {
+    "priority": "P3"
   },
-  "detail": "The separate SEC003Vite repair does not resolve mobile dependency alerts. Direct Zod4.6.7is outside the reported<4.6.6range, while Expo CLI also locks Zod3.25.76; assess affected collection-validation behavior and consumer support before forcing major3to4 or claiming a false positive. Expo CLI/code-signing dependencies lock node-forge1.4.0; current authoritative advisory reports<=1.4.0with no patched release. Map the actual signing/verification exposure and test an upstream-supported mitigation rather than dismissing toolchain findings. The xcode dependency locks uuid7.0.3; fixed11.1.1is a major update and requires consumer/API/round-trip project compatibility proof. These are package/version and source-path observations, not demonstrated production exploitability or native-device behavior. Do not blanket-dismiss alerts or override incompatible APIs to make scanners green. Resolve compatible updates in task-owned dependency environments, preserve pinned lockfiles, exercise actual consumers and native lint/typing/pure tests, and record any genuinely unpatchable upstream limitation separately from completed repairs. No provider/production mutation is authorized.",
-  "verify": {
-    "kind": "manual",
-    "checked": "2026-10-25",
-    "evidence": "OPEN: current mobile lock still contains Expo-transitiveZod3.25.76,node-forge1.4.0anduuid7.0.3matching the reported vulnerable ranges. DirectZod4.6.7is already outside its range. Close only with supported patched resolutions plus actual consumer compatibility evidence, or independently verified scoped mitigations/upstream applicability evidence for each affected instance. Raw alert counts alone are not closure."
-  },
-  "wave": "WM"
+  "append": {
+    "detail": "\n\n2026-10-26: Daniel ruled the mobile app security advisory is low priority while the app is parked (open-questions answer 4A). Priority P1 to P3."
+  }
 }

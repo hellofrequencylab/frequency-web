@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // in-memory row set.
 
 let failTable: string | null = null
+let readsByTable: Record<string, number> = {}
 let rows: Record<string, unknown>[] = []
 /** Ticket rows, and the events they hang off, for the LIVE-375 arm. Empty by default so every test
  *  written before tickets existed reads exactly as it did. */
@@ -45,6 +46,7 @@ vi.mock('@/lib/supabase/admin', () => ({
       then: (resolve: (v: { data: Record<string, unknown>[]; error: { message: string } | null }) => unknown) => {
         // The split-share arm (LIVE-624) reads the transfer ledger; none here, so every figure below
         // reads as it did. lib/commerce/orders-split.test.ts owns that arm.
+        readsByTable[table] = (readsByTable[table] ?? 0) + 1
         const byTable: Record<string, Record<string, unknown>[]> = {
           commerce_order_transfers: [],
           event_tickets: ticketRows,
@@ -60,10 +62,11 @@ vi.mock('@/lib/supabase/admin', () => ({
   },
 }))
 
-import { spaceEarningsSummary } from './orders'
+import { spaceEarningsSummary, spaceEarningsWindows, readCompleteSpaceEarnings } from './orders'
 
 beforeEach(() => {
   failTable = null
+  readsByTable = {}
   rows = []
   ticketRows = []
   donationRows = []
@@ -351,5 +354,40 @@ describe('spaceEarningsSummary strict complete report', () => {
   it('preserves partial refund and network attribution rules in strict mode', async () => {
     rows = [{ currency: 'usd', amount_cents: 1000, platform_fee_cents: 50, status: 'paid', source: 'network', metadata: { refund: { kind: 'partial', refunded_cents: 400 } } }]
     expect(await spaceEarningsSummary('space-1', undefined, true)).toMatchObject({ grossCents: 600, feeCents: 30, netCents: 570, refundedCents: 400, networkGrossCents: 600 })
+  })
+})
+
+
+describe('complete consistent earnings windows', () => {
+  it('shares one paged source read across fourteen windows and preserves the headline total', async () => {
+    const now = Date.parse('2026-10-25T12:00:00.000Z')
+    rows = Array.from({ length: 1101 }, () => ({ currency: 'usd', created_at: '2026-10-24T12:00:00.000Z', amount_cents: 100, platform_fee_cents: 5, status: 'paid' }))
+    rows.push({ currency: 'usd', created_at: '2026-09-10T12:00:00.000Z', amount_cents: 1000, platform_fee_cents: 50, status: 'paid' })
+    rows.push({ currency: 'usd', created_at: '2026-10-26T12:00:00.000Z', amount_cents: 9000, status: 'paid' })
+    const windows = [...Array.from({ length: 12 }, (_, i) => (i + 1) * 7), 30, 60]
+    const report = await spaceEarningsWindows('space-1', windows, now)
+    expect(report[12]).toMatchObject({ netCents: 1101 * 95, orderCount: 1101 })
+    expect(report[13].netCents - report[12].netCents).toBe(950)
+    expect(readsByTable.commerce_orders).toBe(3)
+    expect(readsByTable.events).toBe(1)
+    expect(readsByTable.event_tickets).toBe(1)
+    expect(readsByTable.space_donations).toBe(1)
+    expect(readsByTable.commerce_order_transfers).toBe(1)
+  })
+  it('preserves refunds and network attribution in the shared windows', async () => {
+    const now = Date.parse('2026-10-25T12:00:00.000Z')
+    rows = [{ currency: 'usd', created_at: '2026-10-24T12:00:00.000Z', amount_cents: 1000, platform_fee_cents: 50, status: 'paid', source: 'network', metadata: { refund: { kind: 'partial', refunded_cents: 400 } } }]
+    ticketRows = [{ currency: 'usd', succeeded_at: '2026-10-24T12:00:00.000Z', amount_cents: 200, platform_fee_cents: 10, status: 'succeeded' }]
+    donationRows = [{ currency: 'usd', succeeded_at: '2026-10-24T12:00:00.000Z', amount_cents: 300, platform_fee_cents: 15, status: 'succeeded', source: 'network' }]
+    expect((await spaceEarningsWindows('space-1', [7, 30], now))[0]).toMatchObject({ netCents: 1045, refundedCents: 400, networkGrossCents: 900, networkFeeCents: 45 })
+  })
+  it('returns unknown for an incomplete source and rejects undated window rows', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    failTable = 'commerce_orders'
+    expect(await readCompleteSpaceEarnings('space-1', 30)).toBeNull()
+    failTable = null
+    rows = [{ currency: 'usd', amount_cents: 100, status: 'paid' }]
+    await expect(spaceEarningsWindows('space-1', [30])).rejects.toThrow('timestamp')
+    errors.mockRestore()
   })
 })

@@ -47,12 +47,7 @@ way only, and `pnpm check:studio` fails the build if it ever reverses.
   mood): change the **kernel**, and add a `FIELD_KIND` if it is a new control.
 - **Never** hand-roll a per-entity wizard, review screen, or field style. If you think
   you need to, you need a field kind instead.
-- **Fidelity (LIVE-860).** Before a Spark drafts from the author's words it asks Exact,
-  Edit or Rewrite (`lib/studio/kernel/fidelity.ts`, rendered by `SparkFidelity`). Exact
-  keeps the text verbatim, Edit only fixes spelling, grammar and punctuation, Rewrite is
-  the house-voice redraft. `runSpark` takes `fidelity` and a spec names its `proseField`,
-  so a new Spark gets the choice by passing it through, not by writing its own prompt.
-  Circle, Journey and Event ask it today.
+- **Human authorship (owner direction 2026-10-25).** Event and Circle builder text inputs keep the author's description server-side and use Vera for organizing structured facts plus separate coaching questions. Their Rewrite/Edit controls are removed. The shared `runSpark` accepts protected `authoredProse` and optional raw/result field mapping; coercion that cannot retain the text fails to manual entry. Image-only extraction still requires human transcription review. Legacy Practice/Journey and small Circle suggestion/compose flows retain their previous fidelity behavior until separately converted; `lib/studio/kernel/fidelity.ts` remains for those callers.
 - **The kernel stays pure and entity-blind.** No React, no Next, no Supabase, and never
   an import from `lib/studio/entities/`. `pnpm check:studio` enforces all three, plus
   the drift guards in `lib/studio/registry.test.ts`.
