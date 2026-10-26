@@ -6,7 +6,7 @@ export const COACH_PROFILE_FIELDS = [
   { key: 'examples', label: 'Your own writing', hint: 'Add a few examples you wrote. Leave out private messages and personal information.', max: 2400 },
   { key: 'facts', label: 'What should Vera check?', hint: 'List facts, constraints or promises to check against your current Space information.', max: 1200 },
 ] as const
-export type CoachProfileField = typeof COACH_PROFILE_FIELDS[number]['key']
+type CoachProfileField = typeof COACH_PROFILE_FIELDS[number]['key']
 export type SpaceCoachProfile = Record<CoachProfileField, string> & { version: 1 }
 export function emptySpaceCoachProfile(): SpaceCoachProfile {
   return { version: 1, goals: '', audience: '', voice: '', examples: '', facts: '' }

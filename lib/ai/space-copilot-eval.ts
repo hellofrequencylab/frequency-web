@@ -4,9 +4,9 @@
 
 import type { SpaceContext } from './space-copilot'
 
-export type DraftKind = 'bio' | 'tagline'
+type DraftKind = 'bio' | 'tagline'
 
-export interface DraftScore {
+interface DraftScore {
   score: number
   failures: string[]
 }
@@ -23,7 +23,7 @@ function numbers(text: string): string[] {
 }
 
 /** The text of every fact a draft may draw on. */
-export function factText(ctx: SpaceContext): string {
+function factText(ctx: SpaceContext): string {
   return [ctx.name, ctx.brandName, ctx.about, ...(ctx.offerings ?? [])].filter(Boolean).join(' ')
 }
 
@@ -90,7 +90,7 @@ export const SPACE_COPILOT_EVAL_SET: readonly { id: string; ctx: SpaceContext }[
   },
 ]
 
-export interface EvalReport {
+interface EvalReport {
   kind: DraftKind
   mean: number
   passed: number
