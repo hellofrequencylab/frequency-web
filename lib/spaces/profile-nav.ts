@@ -99,7 +99,7 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     // Gate the Calendar tab on the SAME public/unlisted published set the calendar renders, not on the
     // broader presence.events (which counts drafts/private/circle_only) — otherwise the tab would show
     // over an empty grid for a member-only-event space.
-    spaceHasPublicUpcomingEvents(space.id),
+    spaceHasPublicUpcomingEvents(space.id, space.timeZone),
     // The Collaborators tab shows only when there is at least one ACCEPTED collaboration (ADR-799 B1).
     spaceHasCollaborators(space.id),
     // People (LIVE-420): fellow members and managers only. Visitors never get a tab over a roster

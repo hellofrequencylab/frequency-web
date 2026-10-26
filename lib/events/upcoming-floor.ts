@@ -22,9 +22,9 @@ import { seriesUpcomingFloor } from './series'
 // get one function instead of two lines they can get subtly out of step.
 
 /**
- * The start of today in the community's zone, as an `events.starts_at` bound.
+ * The start of today in the supplied Space/community zone, as an `events.starts_at` bound.
  * `now` is injectable so a test can pin the 5pm boundary instead of waiting for it.
  */
-export function upcomingEventFloor(now: Date = new Date()): string {
-  return seriesUpcomingFloor(dayInZone(now, HOME_TZ))
+export function upcomingEventFloor(now: Date = new Date(), timezone: string | null | undefined = HOME_TZ): string {
+  return seriesUpcomingFloor(dayInZone(now, timezone))
 }
