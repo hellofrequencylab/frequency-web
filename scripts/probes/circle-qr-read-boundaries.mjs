@@ -3,10 +3,14 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 const read = path => readFileSync(path, 'utf8')
 const shell = read('lib/circles/store.ts').split('export const loadCircleShell =')[1]
-assert.ok(shell.indexOf('await canReadCircleParentSpace(') > 0)
-assert.ok(shell.indexOf('await canReadCircleParentSpace(') < shell.indexOf(".from('memberships')"))
+assert.ok(shell.indexOf('canReadCircleParentSpace(') > 0)
+assert.ok(shell.indexOf('canReadCircleParentSpace(') < shell.indexOf(".from('memberships')"))
 const parent = read('lib/circles/parent-access.ts')
-for (const guard of ["data.status !== 'active'", "spaceFunctionAvailable(space, 'circles')", 'await getSpaceCapabilities(space, viewerProfileId)', "data.visibility === 'private' && !caps.role", 'enabled || caps.canEditProfile']) assert.ok(parent.includes(guard), guard)
+for (const guard of ["parent.status !== 'active'", "spaceFunctionAvailable(parent, 'circles')", "parent.visibility === 'private' && !caps?.role", 'enabled || caps?.canEditProfile === true']) assert.ok(parent.includes(guard), guard)
+assert.ok(!parent.includes('createAdminClient'))
+assert.ok(shell.includes("admin.from('spaces')"))
+assert.ok(shell.includes('if (error || !parent) return null'))
+assert.ok(shell.includes('await getSpaceCapabilities('))
 const search = read('app/api/search-scopes/route.ts')
 assert.match(search, /supabase\s*\.from\('circles'\)/)
 assert.doesNotMatch(search, /admin\s*\.from\('circles'\)/)

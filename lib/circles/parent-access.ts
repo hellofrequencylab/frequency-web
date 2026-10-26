@@ -1,26 +1,22 @@
-import { cache } from 'react'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAvailable } from '@/lib/spaces/functions'
 
-/** Parent tenancy wall for privileged Circle reads. Circle access is an additional gate,
- * never a substitute for the owning Space's visibility and module switch. */
-export const canReadCircleParentSpace = cache(async (spaceId: string | null, viewerProfileId: string | null): Promise<boolean> => {
-  // Legacy unpartitioned Circles have no owning Space, matching can_view_space_content.
-  if (!spaceId) return true
-  try {
-    const { data, error } = await createAdminClient().from('spaces')
-      .select('id, visibility, status, owner_profile_id, entitlements').eq('id', spaceId).maybeSingle()
-    if (error || !data || data.status !== 'active') return false
-    if (data.visibility !== null && data.visibility !== 'network' && data.visibility !== 'private') return false
-    const space = { id: data.id, ownerProfileId: data.owner_profile_id, entitlements: data.entitlements }
-    const enabled = spaceFunctionAvailable(space, 'circles')
-    if (data.visibility !== 'private' && enabled) return true
-    const caps = await getSpaceCapabilities(space, viewerProfileId)
-    // Active viewers can see a private Space; only writers/staff can read a disabled module.
-    if (data.visibility === 'private' && !caps.role) return false
-    return enabled || caps.canEditProfile
-  } catch {
-    return false
-  }
-})
+/** Metadata is loaded by the existing privileged Circle store, never by this pure gate. */
+export interface CircleParentSpace {
+  id: string
+  status: string | null
+  visibility: string | null
+  owner_profile_id: string | null
+  entitlements: unknown
+}
+
+type ParentCapabilities = { role: string | null; canEditProfile: boolean }
+
+/** Parent tenancy wall, additional to the Circle's own visibility/entry rules.
+ * Missing metadata is denial; only the store may recognize a genuinely unpartitioned Circle. */
+export function canReadCircleParentSpace(parent: CircleParentSpace | null, caps?: ParentCapabilities): boolean {
+  if (!parent || parent.status !== 'active') return false
+  if (parent.visibility !== null && parent.visibility !== 'network' && parent.visibility !== 'private') return false
+  const enabled = spaceFunctionAvailable(parent, 'circles')
+  if (parent.visibility === 'private' && !caps?.role) return false
+  return enabled || caps?.canEditProfile === true
+}
