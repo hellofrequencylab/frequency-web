@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isValidElement, type ReactNode } from 'react'
 import { CoachProfileForm } from '@/components/spaces/coach-profile-form'
 import { renderToStaticMarkup } from 'react-dom/server'
-const m = vi.hoisted(() => ({ caller: vi.fn(), space: vi.fn(), access: vi.fn(), form: vi.fn(), coach: vi.fn(), discovery: vi.fn() }))
+const m = vi.hoisted(() => ({ caller: vi.fn(), space: vi.fn(), access: vi.fn(), form: vi.fn(), coach: vi.fn(), discovery: vi.fn(), discoveryAccess: vi.fn() }))
+vi.mock('@/lib/spaces/discovery-access', () => ({ resolveDiscoveryEditor: m.discoveryAccess }))
 vi.mock('@/lib/auth', () => ({ getCallerProfile: m.caller }))
 vi.mock('@/lib/spaces/store', () => ({ getVisibleSpaceBySlug: m.space }))
 vi.mock('@/lib/spaces/private-state', () => ({ loadSpaceCoachProfile: m.coach, loadSpaceDiscoveryConsent: m.discovery }))
@@ -18,6 +19,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   m.caller.mockResolvedValue({ id: 'editor-A', webRole: 'member' })
   m.space.mockResolvedValue({ id: 'space-A', slug: 'makers', name: 'Makers', preferences: { coachProfile: { goals: 'Return visits' } } })
+  m.discoveryAccess.mockResolvedValue({ actor: 'editor-A' })
   m.discovery.mockResolvedValue({ available: true, consent: null })
   m.coach.mockResolvedValue({ available: true, profile: { goals: 'Private return visits' } })
   m.access.mockResolvedValue({ canManage: true, staffViewing: false })
@@ -66,4 +68,11 @@ it('keys the actual form by resolved tenant when navigating between Space settin
   const pageB = await Page({ params: Promise.resolve({ slug: 'gardeners' }) })
   expect(formKey(pageA)).toBe('space-A')
   expect(formKey(pageB)).toBe('space-B')
+})
+
+it('hides discovery permission from a staff-like capability without a direct Space editor grant', async () => {
+  m.access.mockResolvedValue({ canManage: true, staffViewing: false })
+  m.discoveryAccess.mockResolvedValue(null)
+  expect(await render()).not.toContain('Discovery permission controls')
+  expect(m.discovery).not.toHaveBeenCalled()
 })

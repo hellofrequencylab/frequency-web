@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const m = vi.hoisted(() => ({ actor: vi.fn(), space: vi.fn(), caps: vi.fn(), load: vi.fn(), write: vi.fn(), evidence: vi.fn(), context: vi.fn() }))
 vi.mock('@/lib/auth', () => ({ getMyProfileId: m.actor }))
 vi.mock('@/lib/spaces/store', () => ({ getSpaceById: m.space }))
-vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: m.caps }))
+vi.mock('@/lib/spaces/discovery-access', () => ({ resolveDiscoveryEditor: async (id: string) => { const actor = await m.actor(); const space = await m.space(id); return actor && space && (await m.caps(space)).canEditProfile ? { actor, space } : null } }))
 vi.mock('@/lib/spaces/private-state', () => ({ loadSpaceDiscoveryConsent: m.load, writeSpaceDiscoveryConsent: m.write, loadSpaceCoachProfile: m.context }))
 vi.mock('@/lib/spaces/analytics', () => ({ getSpaceProfileEvidence: m.evidence }))
 vi.mock('@/lib/sites/host', () => ({ appOrigin: () => 'https://frequencylocal.com' }))

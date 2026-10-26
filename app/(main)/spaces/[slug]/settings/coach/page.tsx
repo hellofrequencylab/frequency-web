@@ -6,6 +6,7 @@ import { loadSpaceDiscoveryConsent, loadSpaceCoachProfile } from '@/lib/spaces/p
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { CoachProfileForm } from '@/components/spaces/coach-profile-form'
+import { resolveDiscoveryEditor } from '@/lib/spaces/discovery-access'
 import { DiscoveryCoachingPanel } from '@/components/spaces/discovery-coaching-panel'
 import { consoleBack } from '@/lib/spaces/console-back'
 
@@ -18,7 +19,8 @@ export default async function SpaceCoachPage({ params }: { params: Promise<{ slu
   const { canManage, staffViewing } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage && !staffViewing) notFound()
   const coach = await loadSpaceCoachProfile(space.id)
-  const discovery = canManage && !staffViewing ? await loadSpaceDiscoveryConsent(space.id) : null
+  const discoveryEditor = canManage && !staffViewing ? await resolveDiscoveryEditor(space.id) : null
+  const discovery = discoveryEditor ? await loadSpaceDiscoveryConsent(space.id) : null
   return <ConsoleFocusTemplate back={consoleBack(slug, 'settings')} eyebrow={space.brandName ?? space.name} title="Coach preferences" description="Help Vera ask better questions about your Space." width="wide">
     {staffViewing && <StaffPreviewBanner spaceName={space.brandName ?? space.name} />}
     <>{coach.available ? <CoachProfileForm key={space.id} spaceId={space.id} initial={coach.profile} readOnly={!canManage || staffViewing} /> : <p role="status">Coach preferences are unavailable. Your existing Space profile is unchanged. Try again after setup is complete.</p>}

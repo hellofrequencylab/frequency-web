@@ -32,8 +32,13 @@ const load = harness({
   'node:crypto': { randomUUID: () => 'new-grant' },
   'next/cache': { revalidatePath() {} },
   '@/lib/auth': { getMyProfileId: async () => 'editor-A' },
+  './store': { getSpaceById: async id => ({ id, slug: 'makers' }) },
   '@/lib/spaces/store': { getSpaceById: async id => ({ id, slug: 'makers' }) },
-  '@/lib/spaces/entitlements': { getSpaceCapabilities: async space => ({ canEditProfile: state.allowed && space.id === 'space-A' }) },
+  react: { cache: fn => fn },
+  '@/lib/supabase/admin': { createAdminClient: () => ({ from: table => {
+    assert.equal(table, 'space_members'); const filters = {};
+    const query = { select: () => query, eq: (key, value) => { filters[key] = value; return query }, maybeSingle: async () => ({ data: state.allowed && filters.space_id === 'space-A' ? { id: 'member', space_id: filters.space_id, profile_id: filters.profile_id, role: 'editor', status: 'active', invited_by: null, created_at: '2026-10-01T00:00:00Z' } : null, error: null }) }; return query;
+  } }) },
   '@/lib/spaces/private-state': {
     loadSpaceDiscoveryConsent: async () => ({ available: true, consent: state.consent }),
     writeSpaceDiscoveryConsent: async (_id, consent) => { state.writes++; state.consent = consent; return true },
