@@ -241,6 +241,8 @@ export function ancestorComposes(pagePath, read = (f) => readFileSync(f, 'utf8')
   for (;;) {
     const layout = join(dir, 'layout.tsx')
     if (exists(layout) && composesShell(read(layout))) return true
+    // Not the (main) root layout: that one wraps every member page, so counting it would certify them all.
+    if (dir !== join(ROOT, '(main)') && exists(layout) && composesMemberFrame(read(layout), exists)) return true
     // The public site's own frame (ADR-1880): under these roots the layout's <SiteShell> is the page shell.
     // Scoped, not a SHELLS entry, because app/(main) renders a SiteShell too and that is not its page frame.
     if (PUBLIC_SITE_ROOTS.some((r) => dir === join(ROOT, r)) && exists(layout) && /<SiteShell\b/.test(stripComments(read(layout)))) return true
@@ -249,6 +251,19 @@ export function ancestorComposes(pagePath, read = (f) => readFileSync(f, 'utf8')
     if (up === dir) return false
     dir = up
   }
+}
+
+/** The Frequency member kit is the page frame for the member app (ADR-1880). A member page, or the
+ *  layout above it, that renders a body from components/frequency/members/** composes that frame:
+ *  those files ARE the design export's page anatomy (MembersBody, FqFocusPage, FqCircleShell and the
+ *  per-page bodies). Verified against the import resolving to a real file in that tree, never assumed
+ *  from a name. */
+export function composesMemberFrame(src, exists = existsSync) {
+  const code = stripComments(src)
+  for (const m of code.matchAll(/from\s+'@\/(components\/frequency\/members\/[^']+)'/g)) {
+    if (['.tsx', '/index.tsx'].some((x) => exists(m[1] + x))) return true
+  }
+  return false
 }
 
 /** Does this file contain anything that could be a JSX tag? A redirect/notFound stub does not, and
@@ -284,6 +299,7 @@ export function evaluate(io = {}) {
     if (!rendersJsx(src)) continue // redirect / notFound stub
     considered++
     if (composesPageShell(src)) continue
+    if (composesMemberFrame(src, exists)) continue
     if (ancestorComposes(p, read, exists)) continue
     bare.push(p.split('\\').join('/'))
   }
