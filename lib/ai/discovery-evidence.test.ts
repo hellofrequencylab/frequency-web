@@ -157,8 +157,15 @@ describe('permissioned discovery evidence', () => {
     expect(result.observation.limitations).toContain('owner_reported_source')
   })
 
+  it('preserves actual Bing API provenance separately from owner snapshots', () => {
+    const result = validate(fixture({ provider: 'bing_webmaster', collectionMethod: 'api_response', metric: 'bing_search_clicks' }))
+    expect(result.status).toBe('accepted')
+    if (result.status !== 'accepted') throw new Error('Expected provider observation')
+    expect(result.observation.collectionMethod).toBe('api_response')
+    expect(result.observation.limitations).not.toContain('owner_reported_source')
+  })
+
   it.each([
-    { provider: 'bing_webmaster', collectionMethod: 'api_response' },
     { provider: 'first_party_aggregate', collectionMethod: 'api_response' },
     { provider: 'google_search_console', collectionMethod: 'synthetic_probe' },
     { provider: 'geo_probe', collectionMethod: 'first_party_reader' },
