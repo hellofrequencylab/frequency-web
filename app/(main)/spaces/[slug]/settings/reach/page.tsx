@@ -5,7 +5,7 @@ import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
-import { getSpaceProfileStats } from '@/lib/spaces/analytics'
+import { getSpaceProfileEvidence } from '@/lib/spaces/analytics'
 import { listNetworkedSpaces } from '@/lib/spaces/discovery'
 import { readSpaceStanding } from '@/lib/spaces/standing-rollup'
 import { standingLevers, type StandingLever } from '@/lib/spaces/standing'
@@ -52,7 +52,7 @@ export default async function SpaceReachPage({ params }: { params: Promise<{ slu
   // directory itself runs, so the placement shown here is the placement a member sees, not a
   // second implementation of it.
   const [stats, stored, listing] = await Promise.all([
-    getSpaceProfileStats(space.id, 30),
+    getSpaceProfileEvidence(space.id, 30),
     readSpaceStanding(space.id),
     listNetworkedSpaces({}),
   ])
@@ -74,7 +74,7 @@ export default async function SpaceReachPage({ params }: { params: Promise<{ slu
       back={consoleBack(slug, 'marketing')}
       eyebrow={brandName}
       title="Your reach"
-      description="What the network sent you, and what would send more. Placement here is earned, never bought, so this page shows you the whole formula."
+      description="Your Space page activity and the signals behind your directory placement. Placement here is earned, never bought."
       width="wide"
     >
       <ReachReceipt
