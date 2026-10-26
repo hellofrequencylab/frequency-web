@@ -109,13 +109,13 @@ async function copilot() {
     './voice': { withVoice: s => s },
     './complete': { AiUnavailableError: class extends Error {}, completeText: async request => {
       calls.push(request)
-      return { text: '["What should a newcomer know about your offering?"]' }
+      return { text: '{"questionIds":["newcomer"]}' }
     } },
   })
   const coach = load('lib/ai/space-copilot.ts')
   const ctx = { name: 'Makers', spaceId: 'space-A', profileId: 'owner-A', offerings: ['Event: Sunday community sit', 'Product: Five class pass'] }
   for (const run of [coach.draftSpaceBio, coach.suggestTagline]) {
-    assert.equal(await run(ctx), 'What should a newcomer know about your offering?')
+    assert.equal(await run(ctx), 'What should a newcomer expect?')
     const request = calls.at(-1)
     for (const offering of ctx.offerings) assert.ok(request.messages[0].content.includes(offering), 'Both coaching paths receive actual offerings')
     assert.equal(request.accounting.spaceId, ctx.spaceId)
