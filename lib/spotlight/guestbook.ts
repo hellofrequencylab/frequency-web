@@ -1,6 +1,5 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { resolveSendGate as resolveSendGateSeam } from '@/lib/comms/send-gate'
 import { routeNotification } from '@/lib/notifications/router'
 import { GUESTBOOK_ENTRIES_SHOWN, type GuestbookEntry } from './guestbook.shared'
 
@@ -93,30 +92,22 @@ export async function resolveGuestbookOwner(handle: string): Promise<string | nu
 /** The injectable seams of the sign notice, so the decision is unit-testable without IO. */
 export interface GuestbookNotifyDeps {
   client?: Pick<ReturnType<typeof createAdminClient>, 'from'>
-  gate?: typeof resolveSendGateSeam
   route?: typeof routeNotification
   log?: (message: string, detail: Record<string, unknown>) => void
 }
 
 /**
  * Tell the owner someone signed their guestbook (ADR-1279). Two channels, both behind the
- * owner's `comments` preferences: the bell row is written only when `inapp_comments` is on
- * (a direct read, like the practice reminders), and the push rides the registry row
- * `guestbook.sign`, whose category is `comments`, so the router's send-gate reads
- * `push_comments` plus the hard suppression list. Best-effort end to end: a refused or failed
- * notice never undoes a note that already landed, and nothing here throws.
+ * owner's `comments` preferences and both riding the registry row `guestbook.sign`: the router's
+ * send-gate reads `inapp_comments` for the bell row and `push_comments` for the push, plus the
+ * hard suppression list, and enqueues each allowed channel on the outbox. Best-effort end to
+ * end: a refused or failed notice never undoes a note that already landed, and nothing here throws.
  */
 export async function notifyGuestbookSigned(
   input: { ownerProfileId: string; ownerHandle: string; signerProfileId: string },
   deps: GuestbookNotifyDeps = {},
 ): Promise<{ inapp: boolean; push: number }> {
   const client = deps.client ?? createAdminClient()
-  // THE SEAM, not the raw preference read (ADR-169): it applies suppression, consent and the
-  // per-subject mute on top of the switch, and lib/comms/send-gate-seam.test.ts refuses any send
-  // site that reaches past it. Bound to its own NAME on purpose, the way the preference read used
-  // to be: lib/notifications/wired.test.ts finds preference readers by the literal call
-  // `resolveSendGate(id, 'inapp', 'comments')`, so an alias here would make the switch read unwired.
-  const resolveSendGate = deps.gate ?? resolveSendGateSeam
   const route = deps.route ?? routeNotification
   const log = deps.log ?? ((m, d) => console.error(m, d))
   const out = { inapp: false, push: 0 }
@@ -135,31 +126,21 @@ export async function notifyGuestbookSigned(
   const url = `/people/${ownerHandle}#guestbook`
 
   try {
-    if ((await resolveSendGate(ownerProfileId, 'inapp', 'comments')).allowed) {
-      const { error } = await client.from('notifications').insert({
-        recipient_id: ownerProfileId,
-        actor_id: signerProfileId,
-        type: 'guestbook_signed',
-        reference_type: 'guestbook',
-        reference_id: ownerHandle,
-        body: 'signed your guestbook',
-      })
-      if (error) log('[guestbook] sign notice insert failed', { ownerProfileId, signerProfileId, error: error.message })
-      else out.inapp = true
-    }
-  } catch (err) {
-    log('[guestbook] sign notice (in-app) threw', { ownerProfileId, error: err instanceof Error ? err.message : String(err) })
-  }
-
-  try {
     const result = await route(
       'guestbook.sign',
       { profileId: ownerProfileId },
-      { title: 'New note in your guestbook', body: `${signerName} signed your guestbook.`, url },
+      {
+        title: 'New note in your guestbook',
+        body: `${signerName} signed your guestbook.`,
+        url,
+        ownerHandle,
+        signerProfileId,
+      },
     )
-    out.push = result.enqueuedCount
+    out.inapp = result.outcomes.some((o) => o.channel === 'inapp' && o.enqueued)
+    out.push = result.outcomes.some((o) => o.channel === 'push' && o.enqueued) ? 1 : 0
   } catch (err) {
-    log('[guestbook] sign notice (push) threw', { ownerProfileId, error: err instanceof Error ? err.message : String(err) })
+    log('[guestbook] sign notice threw', { ownerProfileId, error: err instanceof Error ? err.message : String(err) })
   }
   return out
 }
