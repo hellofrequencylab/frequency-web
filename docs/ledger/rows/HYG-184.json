@@ -1,0 +1,20 @@
+{
+  "id": "HYG-184",
+  "title": "Run the complete backlog contract separately from unrelated CI test workers",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "scripts/ci-test-suites.mjs",
+    "ref": "Current production d7 CI40378952787 backlog sweep90s timeout"
+  },
+  "detail": "CI still runs every test: the normal partition excludes only scripts/backlog-contract.test.ts, then the identical complete backlog suite runs separately with maxWorkers2. The runner runs both partitions after assertion failures, returns nonzero when either fails, and propagates cancellation without starting another partition. This removes unrelated Vitest worker contention from the full1766-probe sweep, which completed at87566ms on pinned42d versus90710ms on d7. No backlog90s timeout, probe scope, CPU budget, runner resources or coverage was relaxed. Focused fake-pnpm subprocess tests exercise both failure directions and SIGTERM. Fresh CI remains release evidence rather than inferred from source.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const r=fs.readFileSync(\"scripts/ci-test-suites.mjs\",\"utf8\"),c=fs.readFileSync(\".github/workflows/ci.yml\",\"utf8\"),t=fs.readFileSync(\"scripts/backlog-contract.test.ts\",\"utf8\");process.exit(c.includes(\"run: node scripts/ci-test-suites.mjs\")&&r.includes(\"--exclude\")&&r.includes(\"--maxWorkers=2\")&&r.split(\"scripts/backlog-contract.test.ts\").length===3&&r.includes(\"process.exitCode = failed ? 1 : 0\")&&r.includes(\"process.kill(process.pid, result.signal)\")&&t.includes(\"{ timeout: 90_000 }\")?0:1)'",
+    "note": "Pins complete complementary partitions, failure propagation, cancellation and unchanged backlog timeout without recursively invoking a test runner."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}

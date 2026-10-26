@@ -147,8 +147,10 @@ jobs:
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
+      # The complete backlog contract launches its own bounded probe pool. Keep it out of
+      # the unrelated test worker pool, then run it with the same coverage and budgets.
       - name: Test
-        run: pnpm test
+        run: node scripts/ci-test-suites.mjs
 
   # Typecheck plus every contract guard: about a minute of real work in total.
   checks:
