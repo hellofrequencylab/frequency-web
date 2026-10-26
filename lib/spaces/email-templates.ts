@@ -126,7 +126,7 @@ export async function listSpaceEmailTemplates(spaceId: string): Promise<SpaceEma
         .then(({ data, error }) => {
           if (error || !data) return resolve([])
           resolve(data.map(mapTemplate))
-        })
+        }, () => resolve([]))
     })
   } catch {
     return []

@@ -994,7 +994,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                           setEmail(e.target.value)
                           if (emailError) setEmailError('')
                         }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') advanceFromIntro() }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') void advanceFromIntro() }}
                         placeholder="you@example.com"
                         autoComplete="email"
                         aria-invalid={!!emailError}
@@ -1350,7 +1350,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') deferredMagicLink() }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') void deferredMagicLink() }}
                       placeholder="you@example.com"
                       autoComplete="email"
                       aria-label="Email address"

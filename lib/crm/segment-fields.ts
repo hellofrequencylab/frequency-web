@@ -161,7 +161,7 @@ export async function listSegmentFieldTemplates(spaceId: string): Promise<Segmen
         .select('id, name, field_keys')
         .eq('space_id', spaceId)
         .order('created_at', { ascending: true })
-        .then((r) => resolve(r))
+        .then((r) => resolve(r), () => resolve({ data: null }))
     })
     return (data ?? []).map((r) => ({
       id: String(r.id),

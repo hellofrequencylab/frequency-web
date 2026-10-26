@@ -132,7 +132,7 @@ export async function listSpaceSegments(spaceId: string): Promise<SpaceSegment[]
         .then(({ data, error }) => {
           if (error || !data) return resolve([])
           resolve(data.map(mapSegment))
-        })
+        }, () => resolve([]))
     })
   } catch {
     return []
