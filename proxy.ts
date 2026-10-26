@@ -72,6 +72,11 @@ const PROTECTED_PATHS = [
   '/settings',
 ]
 
+// The try-first funnel's two session pages (SCAN-1136). Exact match, not a prefix: `/spaces/new` as a
+// prefix would also catch a Space whose slug starts with "new". Left to the (main) layout, a signed-out
+// visitor was sent to the home page before the page's own redirect to /sign-in ever ran.
+const SESSION_ROUTES = new Set(['/spaces/new', '/offer'])
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -387,7 +392,7 @@ export async function proxy(request: NextRequest) {
     !isPublicEventView &&
     !isTwinRedirectable &&
     !anonFeedShell &&
-    PROTECTED_PATHS.some((p) => pathname.startsWith(p))
+    (PROTECTED_PATHS.some((p) => pathname.startsWith(p)) || SESSION_ROUTES.has(pathname.replace(/\/$/, '')))
 
   if (!anonFeedInShell(SITE_DESIGN) && !user && pathname === FEED_PATH) {
     const previewUrl = request.nextUrl.clone()
