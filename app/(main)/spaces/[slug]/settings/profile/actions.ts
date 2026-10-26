@@ -28,6 +28,7 @@ import { hasNativeNodeStorage, legacySpaceLayoutWriteError } from '@/lib/entity-
 import { sanitizeNodeLayout } from '@/lib/entity-blocks/node-ops'
 import { renderPathEnabled } from '@/lib/platform-flags'
 import { layoutRendersSame } from '@/lib/entity-blocks/layout-equal'
+import { takeAboutBody } from '@/lib/spaces/promote-about'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { sanitizeBlockContent } from '@/lib/entity-blocks/block-content'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
@@ -52,13 +53,17 @@ function sanitizeIds(value: unknown): ProfileBlockId[] {
 }
 
 /** Untyped scoped update of the space's preferences jsonb (ADR-246), bound to the resolved id. */
-async function updateSpacePreferences(spaceId: string, preferences: Record<string, unknown>): Promise<boolean> {
+async function updateSpacePreferences(
+  spaceId: string,
+  preferences: Record<string, unknown>,
+  about?: string,
+): Promise<boolean> {
   const db = createAdminClient() as unknown as {
     from: (t: string) => {
       update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
     }
   }
-  const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
+  const { error } = await db.from('spaces').update(about === undefined ? { preferences } : { preferences, about }).eq('id', spaceId)
   return !error
 }
 
@@ -215,17 +220,22 @@ export async function publishSpaceProfileLayout(slug: string): Promise<{ error?:
       ? { ...(space.preferences as Record<string, unknown>) }
       : {}
 
+  let newAbout: string | undefined
   // Promote the draft onto the published node, then drop the draft. When no draft exists, KEEP the current
   // published layout untouched (never lose it) and just mark the page live.
   if (Object.prototype.hasOwnProperty.call(current, 'profileLayoutDraft')) {
     const draft = current.profileLayoutDraft
+    // ONE ABOUT: publishing is when the page goes live, so an About body typed into the draft becomes the
+    // Space's own intro here (the Spotlight and the website read it too) and leaves the page's copy.
+    const about = draft == null ? null : takeAboutBody(draft)
     if (draft == null) delete current.profileLayout
-    else current.profileLayout = draft
+    else current.profileLayout = about?.body != null ? about.layout : draft
+    if (about?.body != null && about.body !== (space.about ?? '').trim()) newAbout = about.body
     delete current.profileLayoutDraft
   }
   current.profilePublished = true
 
-  if (!(await updateSpacePreferences(space.id, current))) {
+  if (!(await updateSpacePreferences(space.id, current, newAbout))) {
     return { error: 'Could not publish your page. Try again.' }
   }
 
