@@ -42,6 +42,15 @@ describe('domain setup never disables a working address before readiness', () =>
     await checkSiteDomain('makers')
     expect(active).toBeNull(); expect(m.activate).not.toHaveBeenCalled()
   })
+  it('a ready connect delegates activation and refreshes only after its active binding is saved', async () => {
+    active = 'working.example.com'
+    m.status.mockResolvedValue({ attached: true, verified: true, dnsReady: true, secure: true, records: [] })
+    expect(await connectSiteDomain('makers', 'ready.example.com')).not.toHaveProperty('error')
+    expect(active).toBe('ready.example.com')
+    expect(m.activate).toHaveBeenCalledExactlyOnceWith('space-A', 'ready.example.com', 'working.example.com')
+    expect(m.refresh).toHaveBeenCalledExactlyOnceWith('makers')
+    expect(m.activate.mock.invocationCallOrder[0]).toBeLessThan(m.refresh.mock.invocationCallOrder[0])
+  })
   it('promotes only a fully ready candidate and refreshes the canonical after promotion', async () => {
     active = 'working.example.com'; candidate = 'ready.example.com'
     m.status.mockResolvedValue({ attached: true, verified: true, dnsReady: true, secure: true, records: [] })
