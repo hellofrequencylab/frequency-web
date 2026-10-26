@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1338",
+  "title": "Complete Space earnings, bounded attendance history and current RSVP facts",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "wave": "W7",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/analytics-current-readings.mjs"
+  },
+  "detail": "Fixes deep audit BUG03, BUG04 and BUG05. Space money surfaces use complete paginated canonical earnings or explicitly unavailable values; Economy and Overview share one bounded source read across reporting windows. Attendance excludes actual future starts using the canonical event timezone, probes history bounds and reports incomplete history as unavailable. Event recommendation social facts read current confirmed RSVP and membership data per request; the daily model cache and paid generation are retired without deleting historical cache data. Focused mocked regressions: 81 tests, plus an actual-source bounded probe for 1100 orders across 14 windows, future-event displacement and canceled RSVP freshness. Scoped lint and paid-caller attribution guard pass. No live database/provider operations; source and mocked behavior verified, production deployment and authenticated acceptance belong to the parent release packet. Earnings share a fixed observation clock, not a transactional database snapshot."
+}

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { resolveProfileSiteCanonical } from '@/lib/sites/profile-canonical'
 import { SITE_URL } from "@/lib/site";
 import { SITE_DESIGN } from "@/lib/theme/design";
 import {
@@ -33,6 +34,7 @@ import { meetsIndexFloor } from "@/lib/seo/index-floor";
 import { listDensityCities } from "@/app/discover/cities/_data";
 import { COMPARISONS, comparisonPath } from "@/lib/marketing/comparisons";
 import { funnelSlugs } from "@/lib/marketing/funnel-config";
+import { GUIDE_LAST_MODIFIED } from "@/lib/seo/guide-dates";
 
 // Organizer profiles (/discover/events/organizer/[handle]) — one URL per host with
 // at least one upcoming PUBLIC event. Reads the redaction-safe RPC, which carries the
@@ -44,14 +46,14 @@ import { funnelSlugs } from "@/lib/marketing/funnel-config";
 // the admin client; only the handle crosses out (never meta/contact/geo).
 async function getSpotlightRoutes(): Promise<MetadataRoute.Sitemap> {
   try {
-    const handles = await listPublishedSpotlightHandles(1000);
+    const handles = await listPublishedSpotlightHandles(1000, { failClosed: true });
     return handles.map((handle) => ({
       url: `${SITE_URL}/spotlight/${handle}`,
       changeFrequency: "weekly" as const,
       priority: 0.5,
     }));
-  } catch {
-    return [];
+  } catch (err) {
+    return failSection("spotlights", err);
   }
 }
 
@@ -243,9 +245,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/networks`, changeFrequency: "monthly", priority: 0.6 },
         ] satisfies MetadataRoute.Sitemap)
       : []),
-    { url: `${SITE_URL}/the-community`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE_URL}/the-community`, lastModified: GUIDE_LAST_MODIFIED["the-community"], changeFrequency: "monthly", priority: 0.8 },
     // /the-quest MERGED into /features#f-zaps (owner ruling 2026-10-14): it 301s, so it is not listed.
-    { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/about`, lastModified: GUIDE_LAST_MODIFIED["about"], changeFrequency: "monthly", priority: 0.7 },
     // /what-is-frequency MERGED into /about (SCAN-1017): it 308s, so it is not listed. About now carries
     // the explainer FAQ (FAQPage node) beside the founding narrative.
     // /beta is GONE (LIVE-251). It sold "Free during the beta" and a membership price
@@ -282,7 +284,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     })),
     // The entity Spaces directory (the networked profile network) + the indexable pricing page.
-    { url: `${SITE_URL}/spaces`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${SITE_URL}/spaces`, lastModified: GUIDE_LAST_MODIFIED["spaces"], changeFrequency: "daily", priority: 0.8 },
     // The llms.txt pair. Convention-probing agents find these by path, but anything that
     // discovers URLs from the sitemap did not — they were reachable only by guessing.
     // Deliberately NOT advertised via a robots.txt directive: `Llms:` is not part of the
@@ -313,19 +315,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // building community, life after the feed, always-wired stress, new-city
     // connection). Answer-first; Article + FAQ schema. These complete the five
     // Seeker pain clusters (CONTENT-VOICE §7a) with a pillar each.
-    { url: `${SITE_URL}/loneliness`, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/friendship-as-an-adult`, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/how-to-build-community`, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/calm-down-fast`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/loneliness`, lastModified: GUIDE_LAST_MODIFIED["loneliness"], changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/friendship-as-an-adult`, lastModified: GUIDE_LAST_MODIFIED["friendship-as-an-adult"], changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/how-to-build-community`, lastModified: GUIDE_LAST_MODIFIED["how-to-build-community"], changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/calm-down-fast`, lastModified: GUIDE_LAST_MODIFIED["calm-down-fast"], changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/mindless`, changeFrequency: "monthly", priority: 0.6 },
     // Leader-track pillar (CONTENT-VOICE §7b.2): the activation guide for the
     // natural connector — answer-first, HowTo + FAQ schema.
-    { url: `${SITE_URL}/how-to-start-a-circle`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/how-to-start-a-circle`, lastModified: GUIDE_LAST_MODIFIED["how-to-start-a-circle"], changeFrequency: "monthly", priority: 0.7 },
     // Seeker-track pillar (CONTENT-VOICE §7a): finding your people by shared
     // wavelength — answer-first, Article + FAQ schema.
     // Seeker-track pillar (CONTENT-VOICE §7a): closing the gap between wanting
     // connection and the daily default of staying in — answer-first, Article + FAQ schema.
-    { url: `${SITE_URL}/how-to-be-more-social`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/how-to-be-more-social`, lastModified: GUIDE_LAST_MODIFIED["how-to-be-more-social"], changeFrequency: "monthly", priority: 0.7 },
     // Seeker-track pillar (CONTENT-VOICE §7a): a social life without drinking —
     // gather around an activity, not a bar. Answer-first, Article + FAQ schema.
     // Seeker-track pillar (CONTENT-VOICE §7a): reaching back to a friend you
@@ -401,9 +403,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // request-cached settings row, and it never throws (a failed read returns the shipped defaults).
     const { indexedOccurrences } = await getSeriesDisplayConfig();
     const [channels, circles, events, journeys, organizers, spotlights, hubs, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
-      getTopicalChannels(),
+      sectionRead("channels", getTopicalChannels({ failClosed: true })),
       // Capped, not paged — see the cap note above this function. The RPC's own SQL ceiling.
-      getPublicCircles(CIRCLE_SITEMAP_CAP),
+      sectionRead("circles", getPublicCircles(CIRCLE_SITEMAP_CAP, { failClosed: true })),
       // Event URLs, FOLDED per series (ADR-897). Before this, one weekly cowork series advertised
       // ~9 URLs and ~9 image entries and a daily one ~61, all with the same title and description,
       // out of a GLOBAL 200-row cap — so a single daily series could crowd real one-offs out of the
@@ -413,17 +415,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // public_events RPC gated nothing but is_cancelled + starts_at, so unlisted, draft and
       // moderator-removed events were advertised here. ADR-903 closed that at the RPC, but this
       // reader stays a direct table read — it needs the recurrence columns the RPC never projected.
-      listSitemapEventEntries({ occurrences: indexedOccurrences }),
-      listPublicJourneys(),
+      sectionRead("events", listSitemapEventEntries({ occurrences: indexedOccurrences, failClosed: true })),
+      sectionRead("journeys", listPublicJourneys({ failClosed: true })),
       getOrganizerRoutes(),
       getSpotlightRoutes(),
-      // Five legacy readers above still swallow failures: channels, circles, events,
-      // journeys and spotlights. LIVE-331 explicitly left these outside its repair;
-      // adding sectionRead around a reader that returns [] on error would not help.
-      // SCAN-1051 now makes the organizer reader report failures through failSection
-      // inside its own catch, preserving status/code and abandoning regeneration on
-      // transport. This does not repair the other five. Any genuine throw reaches
-      // the dynamic block's transient-or-deterministic catch below.
+      // Each legacy reader opts into the shared fail-closed ladder for this sitemap.
+      // Other callers retain their existing empty-on-error behavior.
       //
       // Every read below goes through `sectionRead`, which logs a failure by section and lets a
       // transport failure abandon the regeneration (see the note above the helper). Since LIVE-331
@@ -485,7 +482,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // one that lies). ⚠️ `spaces` has no set_updated_at trigger and most write paths do not stamp the
     // column, so today this is a FLOOR on freshness (often the row's creation time), not a precise
     // edit time; making it precise is a write-side change, not a sitemap one.
-    const spaceRoutes: MetadataRoute.Sitemap = spaces.map((s) => ({
+    const canonicalSites = new Map(spaces.map((space) => [space.slug, space.canonicalSite]))
+    // Foreign-domain twins advertise themselves in their own sitemap. Do not submit their
+    // Frequency aliases as competing canonicals in this host's sitemap.
+    const spaceRoots = await Promise.all(spaces.map(async (s) => ({
+      space: s, twin: await resolveProfileSiteCanonical(s.canonicalSite),
+    })))
+    const spaceRoutes: MetadataRoute.Sitemap = spaceRoots.filter(({ twin }) => twin === null).map(({ space: s }) => ({
       url: `${SITE_URL}/spaces/${s.slug}`,
       ...((s.updatedAt) ? { lastModified: new Date(s.updatedAt) } : {}),
       changeFrequency: "weekly" as const,
@@ -721,8 +724,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // "emits no duplicate URLs" test in app/sitemap.test.ts holds this file to.
       const already = new Set([...spaceRoutes, ...podcastRoutes].map((e) => e.url));
       const tabs = await listNetworkedSpaceProfileTabs();
-      spaceTabRoutes = tabs
-        .map((t) => ({
+      const canonicalTabs = await Promise.all(tabs.map(async (tab) => ({ tab, twin: await resolveProfileSiteCanonical(canonicalSites.get(tab.slug), tab.segment) })))
+      spaceTabRoutes = canonicalTabs.filter(({ twin }) => twin === null)
+        .map(({ tab: t }) => ({
           url: `${SITE_URL}/spaces/${t.slug}/${t.segment}`,
           ...((t.updatedAt) ? { lastModified: new Date(t.updatedAt) } : {}),
           changeFrequency: "weekly" as const,

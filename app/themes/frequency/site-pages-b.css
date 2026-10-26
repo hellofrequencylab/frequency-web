@@ -831,3 +831,10 @@ position:relative;background:var(--pc-void);color:var(--pc-body);font-family:var
 [data-design="frequency"] [data-kit="site"] .pc-form input{flex-basis:100%}
 [data-design="frequency"] [data-kit="site"] .pc-form .pc-cta{width:100%}
 }
+
+/* Windows High Contrast and forced colors drop box-shadow, which is the focus ring on these fields (they set
+   outline:0). Give them a real outline there (WCAG 2.4.7). */
+@media (forced-colors:active){
+  [data-design="frequency"] [data-kit="site"] :is(.hp-c, .jx-f, .pc-form) :is(input, select, textarea):focus-visible,
+  [data-design="frequency"] [data-kit="site"] .hp-s:focus-within{outline:2px solid Highlight;outline-offset:2px}
+}

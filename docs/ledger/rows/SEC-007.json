@@ -1,0 +1,19 @@
+{
+  "id": "SEC-007",
+  "title": "Remove browser write privileges from the PostGIS reference table while preserving reads and extension ownership",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W0",
+  "source": {
+    "file": "scripts/ops/secure-postgis-reference-table.sql",
+    "ref": "Production catalog read2026-10-25: spatial_ref_sys OID19953, owner supabase_admin, RLSfalse, both browser roles effectiveSELECT/INSERT/UPDATE/DELETE/TRUNCATE=true"
+  },
+  "detail": "Fresh Supabase security advisors still report public.spatial_ref_sys RLSdisabled. A targeted read-only catalog query confirms both anon and authenticated have effective INSERT,UPDATE,DELETE andTRUNCATE in addition toSELECT. No production write/exploit was attempted. OtherPostGIS/systemfunction warnings are separately catalogued;77anonymous/signed-in function observations match repository grant verdicts or extension ownership, not behavioral authorization proof. Prepared permission-only operator SQL revokes browser/PUBLIC table and column mutation grants, retains SELECT, checks expected table name/shape/owner, preserves every service-role table privilege and physical identity/RLS/owner, and rolls back on unexpected inherited privileges or ownership. Exact SQL passes disposable PostgreSQL tests with synthetic roles/rows, including actualSELECT success, DELETE/TRUNCATE denial, row preservation, idempotence and rollback. This is not a realPostGIS extension fixture or production application proof. The proposal remains unapplied and outside registered migrations. Existing human approval covered only two backup tables; this additional live permission change requires separate explicit authorization. Do not enable RLS on or relocate the extension as part of this scoped repair.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-25",
+    "evidence": "OPEN: production catalog proves effective browser mutation grants; exact permission-only proposal is reviewable and passes disposable SQL tests. Close only after separate explicit permission, approved execution, and post-commit catalog proof of no browser table/column mutation privileges with unchanged SELECT, service privilege matrix, owner/OID/relfilenode/RLS. No table rows need to be read or changed."
+  }
+}

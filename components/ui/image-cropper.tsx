@@ -154,6 +154,43 @@ export function ImageCropper({
     endListener.current = null
   }, [])
 
+  // Keyboard alternative to the drag (WCAG 2.5.7): arrows nudge the box (Shift = a bigger step), + and -
+  // grow and shrink it about its centre, keeping the locked ratio when there is one.
+  const onCropKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!display) return
+      const step = e.shiftKey ? 20 : 4
+      const { w: dw, h: dh } = display
+      if (e.key.startsWith('Arrow')) {
+        e.preventDefault()
+        const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0
+        const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0
+        setRect((r) => (r ? { ...r, x: clamp(r.x + dx, 0, dw - r.w), y: clamp(r.y + dy, 0, dh - r.h) } : r))
+      } else if (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '_') {
+        e.preventDefault()
+        const grow = e.key === '+' || e.key === '=' ? step : -step
+        setRect((r) => {
+          if (!r) return r
+          const ratio = aspect && aspect > 0 ? aspect : r.w / r.h
+          let w = clamp(r.w + grow, MIN_CROP_PX, dw)
+          let h = w / ratio
+          if (h > dh) {
+            h = dh
+            w = h * ratio
+          }
+          if (h < MIN_CROP_PX / ratio) {
+            h = MIN_CROP_PX / ratio
+            w = h * ratio
+          }
+          const cx = r.x + r.w / 2
+          const cy = r.y + r.h / 2
+          return { x: clamp(cx - w / 2, 0, dw - w), y: clamp(cy - h / 2, 0, dh - h), w, h }
+        })
+      }
+    },
+    [display, aspect],
+  )
+
   // Map a pointer position to the next crop rect for the active drag. Reads the (frozen) start state from the
   // drag ref plus the current display/aspect; never reads `rect`, so a burst of moves never captures a stale
   // rectangle. Called by the window pointermove listener.
@@ -356,9 +393,11 @@ export function ImageCropper({
               {/* Crop rectangle — draggable body (move) with corner handles (resize). */}
               <div
                 role="group"
-                aria-label="Crop selection. Drag to move, drag a corner to resize."
+                aria-label="Crop selection. Drag to move, drag a corner to resize. With the keyboard, arrow keys move it and plus and minus resize it."
+                tabIndex={0}
+                onKeyDown={onCropKeyDown}
                 onPointerDown={(e) => beginDrag(e, { kind: 'move' })}
-                className="absolute cursor-move border-2 border-on-ink ring-1 ring-ink/40"
+                className="absolute cursor-move border-2 border-on-ink ring-1 ring-ink/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
               >
                 {HANDLES.map((handle) => {
@@ -384,7 +423,7 @@ export function ImageCropper({
           </div>
 
           <p className="text-center text-meta text-muted">
-            Drag the box to move it, or drag a corner to resize.
+            Drag the box to move it, or drag a corner to resize. With the keyboard, focus the box, then use the arrow keys to move it and plus or minus to resize.
             {aspect ? ' The crop stays locked to a fixed shape.' : ''}
           </p>
 

@@ -4,7 +4,7 @@
 // location is CITY-LEVEL ONLY (addressLocality), never a precise venue. When a
 // city isn't known we describe the location generically rather than leak it.
 
-import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TAGLINE, SITE_OG_IMAGE, FOUNDING_CITIES } from '@/lib/site'
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TAGLINE, SITE_OG_IMAGE, FOUNDING_CITIES, ORG_LEGAL_NAME, CONTACT_EMAIL } from '@/lib/site'
 import { eventIsoWithOffset } from '@/lib/time/zone'
 import type { PublicCircle, PublicEvent, TopicalChannel } from '@/lib/discover'
 import type { JourneyPlan, JourneyPlanItem } from '@/lib/journey-plans'
@@ -38,13 +38,22 @@ export function organizationSchema(opts?: {
     '@type': 'Organization',
     '@id': ORG_ID,
     name: SITE_NAME,
+    legalName: ORG_LEGAL_NAME,
+    alternateName: 'frequencylocal.com',
     // "Community Collective" is the locked descriptor for the whole platform (NAMING.md, ADR-811); the
     // slogan carries it as an entity attribute so an answer engine resolves Frequency by its positioning.
     slogan: SITE_TAGLINE,
     url: SITE_URL,
     logo: abs('/icons/icon-192.png'),
     description: SITE_DESCRIPTION,
-    email: 'hello@frequencylocal.com',
+    email: CONTACT_EMAIL,
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: CONTACT_EMAIL,
+      areaServed: 'US',
+      availableLanguage: 'English',
+    },
     ...(sameAs.length ? { sameAs } : {}),
     ...(opts?.foundingLocation
       ? {

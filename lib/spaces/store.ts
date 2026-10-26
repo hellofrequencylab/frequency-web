@@ -486,3 +486,22 @@ export async function writeSpaceTimeZone(spaceId: string, zone: string | null): 
     return false
   }
 }
+
+/** authz-delegated: editor actions or the authenticated paid-domain settle stage public setup
+ * metadata. Never changes the active binding; no verification tokens or private data are stored. */
+export async function stageSpaceDomain(spaceId: string, domain: string | null): Promise<boolean> {
+  return patchSpacePreferences(spaceId, { siteDomainSetup: domain ? { domain } : null })
+}
+
+/** authz-delegated: domain actions call only after fresh editor/plan checks and complete provider
+ * readiness. Compare both the candidate and prior active binding so a stale provider response can
+ * never promote a different setup or overwrite a concurrently removed/replaced live domain. */
+export async function activateSpaceDomain(spaceId: string, domain: string, previousDomain: string | null): Promise<'ok' | 'taken' | 'stale' | 'error'> {
+  const db = createAdminClient()
+  let query = db.from('spaces').update({ domain }).eq('id', spaceId)
+    .eq('preferences->siteDomainSetup->>domain', domain)
+  query = previousDomain === null ? query.is('domain', null) : query.eq('domain', previousDomain)
+  const { data, error } = await query.select('id').maybeSingle()
+  if (error) return error.code === '23505' ? 'taken' : 'error'
+  return data ? 'ok' : 'stale'
+}

@@ -14,6 +14,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { logPractice, getPracticesToLogToday, getPracticeDepthContext, type LogPracticeResult } from '@/lib/practices'
 import { getPracticeStreak } from '@/lib/practice-streak'
 import { resolveMemberDay } from '@/lib/member-day'
+import { startOfDispatchDay } from '@/lib/on-air/dispatch-day'
 import { amplitudeLevel } from '@/lib/amplitude'
 import { getOrCreateDispatch } from '@/lib/vera-dispatch'
 import { getNextGathering } from '@/lib/quest/next-gathering'
@@ -349,7 +350,7 @@ export async function completeSession(
       .from('practice_sessions')
       .select('seconds')
       .eq('profile_id', profileId)
-      .gte('ended_at', `${new Date().toISOString().slice(0, 10)}T00:00:00Z`),
+      .gte('ended_at', startOfDispatchDay().toISOString()),
     // The per-practice depth streak AFTER this log (PD6-2) — flavor for the reveal. Derived from
     // practice_logs (economy-neutral); fail-safe to an empty context on any read error.
     getPracticeDepthContext(profileId, input.practiceId),

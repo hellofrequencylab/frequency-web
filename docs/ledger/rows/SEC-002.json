@@ -13,7 +13,7 @@
   "verify": {
     "kind": "manual",
     "checked": "2026-10-25",
-    "evidence": "PASS/production-catalog: both exact backups remain present with RLS enabled; anon/authenticated effective table and column privileges false; service_role SELECT true. OIDs, relfilenodes and owners unchanged. Security advisors rechecked after approved permission-only transaction. Operator creation rule and exact repeatable SQL retained; no backup row reads or writes. Reconfirmed metadata-only on 2026-10-25 during release reconciliation."
+    "evidence": "PASS/production-catalog: both exact backups remain present with RLS enabled; anon/authenticated effective table and column privileges false; service_role SELECT true. OIDs, relfilenodes and owners unchanged. Security advisors rechecked after approved permission-only transaction. Operator creation rule and exact repeatable SQL retained; no backup row reads or writes. Reconfirmed metadata-only on 2026-10-25 during release reconciliation. Re-checked read-only against production on 2026-10-26: zz_backup_group_event_owner_20261020 and zz_backup_temple_home_20261022 both RLS on, anon and authenticated have no table privileges, service_role SELECT true."
   },
   "wave": "W0"
 }

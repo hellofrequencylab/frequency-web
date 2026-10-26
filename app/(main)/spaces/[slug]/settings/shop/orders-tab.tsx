@@ -1,7 +1,7 @@
 import { Receipt, Wallet, Landmark, RotateCcw } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/ui/stat-card'
-import { listSpaceOrders, spaceEarningsSummary } from '@/lib/commerce/orders'
+import { listSpaceOrders, readCompleteSpaceEarnings } from '@/lib/commerce/orders'
 import { OrderFulfilmentControl } from '@/components/marketplace/order-fulfilment-control'
 import { OrderShareNote } from '@/components/marketplace/order-share-note'
 import { setOrderFulfillmentAction } from './shop-actions'
@@ -37,7 +37,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: string; slug: string; readOnly?: boolean }) {
-  const [orders, earnings] = await Promise.all([listSpaceOrders(spaceId, { limit: 50 }), spaceEarningsSummary(spaceId)])
+  const [orders, earnings] = await Promise.all([listSpaceOrders(spaceId, { limit: 50 }), readCompleteSpaceEarnings(spaceId)])
 
   if (orders.length === 0) {
     return (
@@ -55,9 +55,9 @@ export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: 
   return (
     <div className="mt-4 space-y-4">
       <div className="grid grid-cols-3 gap-3">
-        <StatCard bordered size="sm" label="Net earned" value={usd(earnings.netCents)} icon={Wallet} />
-        <StatCard bordered size="sm" label="Platform fee" value={usd(earnings.feeCents)} icon={Landmark} />
-        <StatCard bordered size="sm" label="Refunded" value={usd(earnings.refundedCents)} icon={RotateCcw} />
+        <StatCard bordered size="sm" label="Net earned" value={earnings ? usd(earnings.netCents) : 'Unavailable'} icon={Wallet} />
+        <StatCard bordered size="sm" label="Platform fee" value={earnings ? usd(earnings.feeCents) : 'Unavailable'} icon={Landmark} />
+        <StatCard bordered size="sm" label="Refunded" value={earnings ? usd(earnings.refundedCents) : 'Unavailable'} icon={RotateCcw} />
       </div>
 
       <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
