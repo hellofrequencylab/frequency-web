@@ -61,6 +61,9 @@ function builder(table: string) {
   }
 }
 
+const logPracticeMock = vi.fn(async (_input: Record<string, unknown>) => ({ logged: true, zapsAwarded: 1 }))
+vi.mock('@/lib/practices', () => ({ logPractice: (i: Record<string, unknown>) => logPracticeMock(i) }))
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: (t: string) => builder(t) }),
 }))
@@ -275,6 +278,46 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
     const result = await getActiveTimerSession()
     expect('error' in result).toBe(false)
     if (!('error' in result)) expect(result.data).toBeNull()
+  })
+
+  it('banks an unfinished sit that aged out as a partial log so the streak holds', async () => {
+    logPracticeMock.mockClear()
+    const started = Date.now() - 12 * 60 * 60_000
+    selectRow = {
+      profile_id: 'me-0000-4000-a000-00000000self',
+      practice_id: 'p4',
+      mode: 'mindless',
+      setup: { resumeFromSec: 0, payload: {} },
+      started_at: new Date(started).toISOString(),
+      paused_at: null,
+      seconds_target: null,
+      duration_min: 5,
+    }
+    const result = await getActiveTimerSession()
+    if ('error' in result) throw new Error('unexpected fail')
+    expect(result.data).toBeNull()
+    expect(logPracticeMock).toHaveBeenCalledTimes(1)
+    const arg = logPracticeMock.mock.calls[0][0]
+    expect(arg.profileId).toBe('me-0000-4000-a000-00000000self')
+    expect(arg.practiceId).toBe('p4')
+    expect(arg.secondsDone).toBe(0)
+    expect(arg.startedAt).toBe(new Date(started).toISOString())
+  })
+
+  it('banks nothing for an armed pre-roll that never began', async () => {
+    logPracticeMock.mockClear()
+    const t = Date.now() - 60 * 60_000
+    selectRow = {
+      profile_id: 'me-0000-4000-a000-00000000self',
+      practice_id: 'p5',
+      mode: 'mindless',
+      setup: { resumeFromSec: 0, payload: {} },
+      started_at: new Date(t).toISOString(),
+      paused_at: new Date(t).toISOString(),
+      seconds_target: null,
+    }
+    await getActiveTimerSession()
+    expect(logPracticeMock).not.toHaveBeenCalled()
   })
 
   it('fails when not signed in (never returns another member row)', async () => {
