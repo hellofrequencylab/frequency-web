@@ -547,15 +547,25 @@ it('manual Apply writes source quotes or human edits, never rejected extraction 
   const quote = 'We meet in our neighborhood studio.'
   const result = coerceExtraction({
     about: {value:'INVENTED ABOUT',kind:'generated'},
+    tagline: {value:'INVENTED TAGLINE',kind:'generated'},
+    offerings: [{title:{value:'Actual class'},blurb:{value:'INVENTED OFFERING',kind:'generated'}}],
+    faq: [{q:'INVENTED QUESTION',a:'INVENTED ANSWER'}],
+    events: [{title:'INVENTED EVENT',blurb:'INVENTED EVENT BLURB',startsAt:'2026-11-01T12:00:00Z'}],
     story: {value:quote,kind:'fact',snippet:quote,sourceUrl:'https://owner.test/about'},
   },[{id:'source',kind:'page',url:'https://owner.test/about',fetchedAt:'now',text:quote}],'Owner Studio')
   expect(H.tables.spaces.filter(row => row.id !== 'root-space')).toHaveLength(0)
   const applied = await materializeBusiness(result.draft,{kind:'create',ownerProfileId:'owner-1'},{verificationPolicy:'allow'})
   expect(applied.ok).toBe(true)
   expect(JSON.stringify(H.tables.spaces)).toContain(quote)
-  expect(JSON.stringify(H.tables.spaces)).not.toContain('INVENTED ABOUT')
+  expect(JSON.stringify(H.tables)).not.toContain('INVENTED')
   result.draft.about = 'I wrote this myself.'
+  result.draft.tagline = 'Human headline'
+  result.draft.offerings![0].blurb = 'Human offering description'
+  result.draft.faq = [{q:'Human question?',a:'Human answer'}]
+  result.draft.events = [{title:'Human event title',blurb:'Human event description',startsAt:'2026-11-01T12:00:00Z'}]
   const manual = await materializeBusiness(result.draft,{kind:'update',spaceId:applied.spaceId!},{verificationPolicy:'allow'})
   expect(manual.ok).toBe(true)
   expect(JSON.stringify(H.tables.spaces)).toContain('I wrote this myself.')
+  for (const words of ['Human headline','Human offering description','Human question?','Human answer','Human event title','Human event description']) expect(JSON.stringify(H.tables)).toContain(words)
+  expect(JSON.stringify(H.tables)).not.toContain('INVENTED')
 })

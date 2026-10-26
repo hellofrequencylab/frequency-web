@@ -69,4 +69,17 @@ for(const field of [ {...raw.story,value:'Paraphrase'}, {...raw.story,sourceUrl:
 }
 const permissive=loadExtraction(extractionSource.replace("putQuotedProse('about', raw.about)","put('about', raw.about)"))
 assert.notEqual(permissive(raw,sources,'Owner').draft.about,undefined,'negative control must expose the old generated-prose acceptance')
-console.log('LIVE-1346: actual importer actions deny unauthorized/foreign intake and never save/apply coaching; model composition/reframe disabled; extraction preserves source quotes and rejects invented/uncited About/Story with a permissive-source negative control')
+const publicProse={
+ tagline:{value:'INVENTED TAGLINE',kind:'generated'},
+ about:{value:'INVENTED ABOUT',kind:'generated'},story:{value:'INVENTED STORY',kind:'generated'},
+ offerings:[{title:{value:'Actual class'},blurb:{value:'INVENTED OFFERING',kind:'generated'}}],
+ faq:[{q:'INVENTED QUESTION',a:'INVENTED ANSWER'}],
+ events:[{title:'INVENTED EVENT',blurb:'INVENTED EVENT BLURB',startsAt:'2026-11-01T12:00:00Z'}],
+}
+assert.ok(!JSON.stringify(coerce(publicProse,sources,'Owner')).includes('INVENTED'),'every public prose surface must reject invented extraction')
+const extractionAst=ts.createSourceFile('coerce.ts',extractionSource,ts.ScriptTarget.Latest,true)
+const gate=extractionAst.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='sourceQuotation')
+assert.ok(gate,'shared quotation gate must exist')
+const bypass=extractionSource.slice(0,gate.getStart(extractionAst))+'function sourceQuotation(field) { return field?.value ? field : null }'+extractionSource.slice(gate.end)
+assert.ok(JSON.stringify(loadExtraction(bypass)(publicProse,sources,'Owner')).includes('INVENTED'),'shared-gate source negative control must expose generated copy')
+console.log('LIVE-1346: actual importer actions deny unauthorized/foreign intake and never save/apply coaching; composition/reframe disabled; all extracted public prose is source-quoted; permissive-source controls expose former generated-copy acceptance')

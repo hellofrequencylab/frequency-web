@@ -52,7 +52,7 @@ export const BUSINESS_MANIFEST: EntityManifest = {
 
   sections: [
     { key: 'identity', title: 'Identity', desc: 'Name, type, and brand. The Space this becomes.' },
-    { key: 'story', title: 'Story and about', desc: 'About and Story show exact supplied source words. Missing text stays Not set; write or paste your own wording to add it.' },
+    { key: 'story', title: 'Story and about', desc: 'Extracted prose shows exact supplied source words. Missing text stays Not set; write or paste your own wording to add it.' },
     { key: 'contact', title: 'Contact and hours', desc: 'Commercial facts. Each needs a source or your confirm before it goes live.' },
     { key: 'offerings', title: 'Offerings', desc: 'What the business offers. Prices are held until a source clears them.' },
     { key: 'reputation', title: 'Reputation', desc: 'Ratings and reviews. Held until a source clears them.' },
