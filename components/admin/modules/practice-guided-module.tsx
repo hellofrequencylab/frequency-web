@@ -37,7 +37,9 @@ export function PracticeGuidedModule() {
     <GuidedModule
       moduleId="practice.guided"
       manifest={PRACTICE_MANIFEST}
-      blurb="Draft this practice again with Vera. Pin anything you want kept and it survives untouched."
+      blurb="Ask Vera questions about this Practice. Your words stay unchanged."
+      coachingOnly
+      redrawLabel="Get coaching questions"
       routeKey={routeKey}
       resolve={resolve}
       redraw={redrawPracticeAction}

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1358",
+  "title": "More shared Space slots (photos, offers, people, schedule, call to action) and a Shared content panel in the website editor",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/spaces/content-slots.ts",
+    "ref": "Follow-up to LIVE-1356; Mega Theme plan piece 2"
+  },
+  "detail": "Adds slots for the logo and cover photo, the button label and link, the first three public offers (title, description, price), the first three people (name, role, photo) and the next three events (title, date and time, place), all read from the same Space record the website, Space page and Spotlight already share. The website editor gets a read-only Shared content panel (Page tab) listing each fact for the page, what is saved, how many sections use it, and a link to the form that already owns it, so each fact keeps one home. In-editor saving is deliberately not added: it would be a new write action on the authz ledger.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/sites/editor/shell.tsx','utf8');process.exit(s.includes('<SlotsPanel')&&fs.existsSync('lib/sites/editor/slot-panel.ts')?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Vitest: content-slots (offers, people, events, CTA), slot-panel model, SlotsPanel render; editor suite passes."
+  },
+  "closed": "2026-10-26"
+}

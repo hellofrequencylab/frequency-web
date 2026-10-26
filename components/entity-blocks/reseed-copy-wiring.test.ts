@@ -31,8 +31,9 @@ describe('the block edit panel carries the re-seed button', () => {
     expect(panel).toContain("reseedSlug && allFields.some((f) => f.type === 'text' || f.type === 'textarea')")
   })
 
-  it('merges the result through onContent — the ONE debounced save path, never a second write', () => {
-    expect(panel).toContain('onContent({ ...content, ...res.content })')
+  it('renders questions separately without applying advice to the draft', () => {
+    expect(panel).not.toContain('onContent({ ...content, ...res.content })')
+    expect(panel).toContain('setQuestions(safeWritingQuestions(res))')
     // The button must not grow its own persistence: the action writes nothing and neither does this.
     const buttonBody = panel.slice(panel.indexOf('function ReseedCopyButton'), panel.indexOf('/** One field editor'))
     expect(buttonBody).not.toContain('saveSpaceProfileLayout')
@@ -40,7 +41,7 @@ describe('the block edit panel carries the re-seed button', () => {
   })
 
   it('disables while pending and surfaces the refusal plainly', () => {
-    expect(panel).toContain("{pending ? 'Rewriting' : 'Re-seed copy'}")
+    expect(panel).toContain("{pending ? 'Thinking...' : 'Get writing prompts'}")
     const buttonBody = panel.slice(panel.indexOf('function ReseedCopyButton'), panel.indexOf('/** One field editor'))
     expect(buttonBody).toContain('disabled={pending}')
     expect(buttonBody).toContain('setError(res.error)')
@@ -54,10 +55,10 @@ describe('the builder hands the panel its Space slug', () => {
 })
 
 describe('the action contract the button relies on holds', () => {
-  it('reseedSpaceBlockCopy sanitizes the wire bag and RETURNS fields instead of writing', () => {
+  it('reseedSpaceBlockCopy sanitizes the wire bag and RETURNS questions instead of writing', () => {
     const body = actions.slice(actions.indexOf('export async function reseedSpaceBlockCopy'))
     expect(body).toContain('sanitizeBlockContent(blockId, current)')
-    expect(body).toContain('return { content: copy }')
+    expect(body).toContain('return { questions: safeWritingQuestions(copy) }')
     // No persistence in the action: one write path means the merge lands via the editor's save.
     expect(body).not.toContain('.update(')
   })

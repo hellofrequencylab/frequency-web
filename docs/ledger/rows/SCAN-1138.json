@@ -1,0 +1,9 @@
+{
+  "id": "SCAN-1138",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26",
+    "detail": "Only four anonymous marketing URLs on the desktop preset are measured; no JS-size assertion, so the member shell is unmeasured.\n\nlighthouserc.mobile.json runs the mobile preset over the home and the signed-out /feed (the real member shell) with LCP, CLS, TBT and a script-size assertion, as warns until a few runs set the numbers; the e2e.yml lighthouse job runs it and prints the medians and script KB into the job summary."
+  },
+  "wave": "W7"
+}

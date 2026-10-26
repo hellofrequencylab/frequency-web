@@ -31,11 +31,11 @@
 //
 // Rules the design system sets and this module keeps (the pass-1 contrast audit, measured by
 // lib/theme/wildheart.test.ts with lib/spaces/accent's contrastRatio): never pure black or white; text on a
-// violet or madder fill is vellum (vellum on violet 6.21:1, on its light stop 5.00:1, on pressed violet
-// 8.18:1, on madder 5.51:1, on its light stop 5.15:1, on nightshade 14.13:1); text on a season fill is ink
+// violet or madder fill is vellum (vellum on violet 6.94:1, on its light stop 5.39:1, on pressed violet
+// 9.03:1, on madder 5.51:1, on its light stop 5.15:1, on nightshade 14.13:1); text on a season fill is ink
 // (ink on winter 6.02:1, spring 6.12:1, summer 6.57:1, fall 4.69:1); season text on light grounds is the
 // season's ink (winter 6.49:1, spring 5.25:1, summer 5.52:1, fall 6.07:1 on parchment); link and symbol
-// text is the violet text shade (6.49:1 on parchment, 7.00:1 on vellum, 4.86:1 on lavender); body ink is
+// text is the violet text shade (7.46:1 on parchment, 8.05:1 on vellum, 5.58:1 on lavender); body ink is
 // 11.36:1 on parchment, the headline nightshade 13.09:1, secondary 6.70:1, muted 5.62:1; the violet focus
 // ring and the strong border clear 3:1 as graphics (5.75:1 and 6.06:1). In Nightshade: moon text on the
 // page 14.92:1, the card 13.56:1, secondary 9.96:1, muted 7.23:1 (5.72:1 on the raised ground), lilac links and
@@ -60,10 +60,10 @@ export const WILDHEART_PALETTE = {
   muted: '#6B5B51',
   secondary: '#5E5048',
   ink: '#3A2E29',
-  violet: '#6E4D96',
-  violetPressed: '#5A3D7E',
-  violetText: '#654590',
-  violetTop: '#7D5BA8',
+  violet: '#6A3FA0',
+  violetPressed: '#55308A',
+  violetText: '#5F3694',
+  violetTop: '#7A52AE',
   lavender: '#D9CBE6',
   mist: '#ECE4F1',
   nightshade: '#2E2138',
@@ -130,8 +130,8 @@ const ALPHA = {
   ink04: 'rgba(58,46,41,.04)',
   ink06: 'rgba(58,46,41,.06)',
   ink12: 'rgba(58,46,41,.12)',
-  violet12: 'rgba(110,77,150,.12)',
-  violet35: 'rgba(110,77,150,.35)',
+  violet12: 'rgba(106,63,160,.12)',
+  violet35: 'rgba(106,63,160,.35)',
   madder35: 'rgba(148,80,94,.35)',
   symbol70: 'rgba(101,69,144,.7)',
   symbol32: 'rgba(101,69,144,.32)',
@@ -146,7 +146,7 @@ const ALPHA = {
   vellum0: 'rgba(251,247,239,0)',
   vellum85: 'rgba(251,247,239,.85)',
   vellum12: 'rgba(251,247,239,.12)',
-  violet13: 'rgba(110,77,150,.13)',
+  violet13: 'rgba(106,63,160,.13)',
   madder05: 'rgba(148,80,94,.05)',
   madder16: 'rgba(148,80,94,.16)',
   nightshade28: 'rgba(46,33,56,.28)',
@@ -164,7 +164,7 @@ const NIGHT_ALPHA = {
   lilac32: 'rgba(199,173,232,.32)',
   lilac20: 'rgba(199,173,232,.2)',
   lilac25: 'rgba(199,173,232,.25)',
-  violet28: 'rgba(110,77,150,.28)',
+  violet28: 'rgba(106,63,160,.28)',
   madder22: 'rgba(148,80,94,.22)',
   rose35: 'rgba(222,154,168,.35)',
 } as const

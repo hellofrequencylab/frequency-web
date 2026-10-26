@@ -12,7 +12,7 @@ import { isReactionKey } from '@/lib/feed/reactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { canModeratePost } from '@/lib/moderation/scope'
 import { isBlockedBetween } from '@/lib/blocking'
-import { resolveSendGate } from '@/lib/comms/send-gate'
+import { routeNotification } from '@/lib/notifications/router'
 import { log } from '@/lib/log'
 import { listShareablesFor } from '@/lib/feed/shareables'
 import { asWebRole, isStaff, type CommunityRole } from '@/lib/core/roles'
@@ -139,19 +139,14 @@ async function fanOutMentions(
   } catch {
     /* non-critical */
   }
-  try {
-    await admin.from('notifications').insert(
-      targets.map((p) => ({
-        recipient_id: p.id,
-        actor_id: authorId,
-        type: 'mention',
-        reference_type: 'post',
-        reference_id: postId,
-        body: `mentioned you in ${context}`,
-      })),
-    )
-  } catch {
-    /* non-critical */
+  // The bell row rides the router, so each mentioned member's own inapp_mentions switch (and
+  // suppression) decides whether it is written. Best-effort per recipient.
+  for (const p of targets) {
+    try {
+      await routeNotification('post.mention', { profileId: p.id }, { authorId, postId, context })
+    } catch {
+      /* non-critical */
+    }
   }
 }
 
@@ -478,16 +473,7 @@ async function notifyParentAuthor(
     const { data: author } = await admin.from('profiles').select('handle').eq('id', authorId).maybeSingle()
     const handle = author?.handle?.toLowerCase()
     if (handle && new RegExp(`@${handle}(?![a-zA-Z0-9_])`, 'i').test(replyBody)) return
-    if (!(await resolveSendGate(authorId, 'inapp', 'comments')).allowed) return
-    const { error } = await admin.from('notifications').insert({
-      recipient_id: authorId,
-      actor_id: replierId,
-      type: 'reply',
-      reference_type: 'post',
-      reference_id: postId,
-      body: 'replied to your post',
-    })
-    if (error) log.warn('[feed] reply notice insert failed', { authorId, postId, error: error.message })
+    await routeNotification('post.reply', { profileId: authorId }, { replierId, postId })
   } catch (err) {
     log.warn('[feed] reply notice failed', { authorId, postId, error: err instanceof Error ? err.message : String(err) })
   }

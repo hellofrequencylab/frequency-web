@@ -1,5 +1,8 @@
 'use client'
 
+import { WritingQuestions } from '@/components/studio/writing-questions'
+import { safeWritingQuestions } from '@/lib/ai/writing-questions'
+
 import { useState, type DragEvent, type ReactNode } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -150,9 +153,7 @@ export function BlockEditPanel({
   /** The Loom library every image field on this surface opens into: a Space id or slug when a Space is
    *  being edited, 'mine' on a member page. Omit where there is no such context (the full picker). */
   loomScope?: string
-  /** The Space slug when this panel edits a SPACE page: enables the per-block "Re-seed copy" button
-   *  (task #17), which rewrites the block's text from the Space's master profile via
-   *  `reseedSpaceBlockCopy`. Omit on a member page or any surface with no seeded profile behind it. */
+  /** Space-scoped writing prompts, displayed separately from editable fields. */
   reseedSlug?: string
   onContent: (next: Record<string, unknown>) => void
   onStyle: (next: BlockStyle) => void
@@ -211,12 +212,9 @@ export function BlockEditPanel({
         />
       ))}
 
-      {/* Per-block copy re-seed (task #17): rewrite this block's text from the Space's master
-          profile, on demand. Only where a Space slug is in play and the block actually carries text
-          fields — the action has nothing to rewrite otherwise. The result merges through onContent,
-          the panel's ONE write path, so it repaints and debounce-saves like any typed edit. */}
+      {/* Guidance has no callback into editable content or autosave. */}
       {reseedSlug && allFields.some((f) => f.type === 'text' || f.type === 'textarea') && (
-        <ReseedCopyButton slug={reseedSlug} blockId={id} content={content} onContent={onContent} />
+        <ReseedCopyButton slug={reseedSlug} blockId={id} content={content} />
       )}
 
       {/* About + Story: the text above is the space's shared story. Editing it here updates it everywhere.
@@ -268,35 +266,30 @@ export function BlockEditPanel({
   )
 }
 
-/** The per-block "Re-seed copy" button (task #17): calls `reseedSpaceBlockCopy` for this block and
- *  merges the rewritten text fields over the current content THROUGH onContent — the same debounced
- *  save path a typed edit takes, never a second write path. Disabled while the rewrite runs; the
- *  action's refusal (no seeded profile, AI off, nothing to rewrite) is surfaced plainly in place. */
+/** Writing prompts never enter onContent or the debounced save path. */
 function ReseedCopyButton({
   slug,
   blockId,
   content,
-  onContent,
 }: {
   slug: string
   blockId: string
   content: Record<string, unknown>
-  onContent: (next: Record<string, unknown>) => void
 }) {
   const [pending, setPending] = useState(false)
+  const [questions, setQuestions] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
   async function onReseed() {
     if (pending) return
     setPending(true)
     setError(null)
-    const res = await reseedSpaceBlockCopy(slug, blockId, content)
-    setPending(false)
-    if (res.error) {
-      setError(res.error)
-      return
-    }
-    if (res.content) onContent({ ...content, ...res.content })
+    try {
+      const res = await reseedSpaceBlockCopy(slug, blockId, content)
+      if (res.error) { setError(res.error); return }
+      setQuestions(safeWritingQuestions(res))
+    } catch { setError('Could not load writing prompts. Try again.') }
+    finally { setPending(false) }
   }
 
   return (
@@ -312,9 +305,10 @@ function ReseedCopyButton({
         ) : (
           <Sparkles className="h-3.5 w-3.5" aria-hidden />
         )}
-        {pending ? 'Rewriting' : 'Re-seed copy'}
+        {pending ? 'Thinking...' : 'Get writing prompts'}
       </button>
-      <p className="mt-0.5 text-2xs text-muted">Rewrites this section&rsquo;s text from your business info.</p>
+      <p className="mt-0.5 text-2xs text-muted">Questions to help you write this section in your own words.</p>
+      <WritingQuestions questions={questions} />
       {error && <p className="mt-0.5 text-2xs text-danger">{error}</p>}
     </div>
   )

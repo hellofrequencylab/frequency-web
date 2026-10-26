@@ -6,6 +6,13 @@
    This sheet is also copied into the canvas frame, which is how the selection tag, toolbar and insert points
    inside the frame get their look (the .we-canvas-root rules at the end). */
 
+/* A Wildheart site: the selection ring, hover ring and soft washes wear the theme's witch purple (--ed-accent),
+   not the Frequency pastel. The pastel buttons keep their ink label. */
+[data-website-theme="Wildheart"] .we-shell{
+  --x-lilac:var(--ed-accent);
+  --pa-soft:color-mix(in srgb,var(--ed-accent) 12%,transparent);
+  --pa-glow:0 12px 28px -14px color-mix(in srgb,var(--ed-accent) 55%,transparent);
+}
 .we-shell,.we-canvas-root{
   --surface-card:#FFFEFC;--surface-raised:#FFFFFF;--bg-canvas:#FAF4EA;
   --text-strong:#34312E;--text-body:#4D4945;--text-muted:#7C766F;--text-faint:#A59F98;

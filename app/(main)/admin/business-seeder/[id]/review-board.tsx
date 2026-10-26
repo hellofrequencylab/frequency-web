@@ -1,5 +1,7 @@
 'use client'
 
+import { WritingQuestions } from '@/components/studio/writing-questions'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SMART BUSINESS IMPORTER — the REVIEW BOARD client (P3, docs/BUSINESS-IMPORTER.md §4).
 //
@@ -18,14 +20,14 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Check, X, Pencil, ExternalLink, Sparkles, ShieldQuestion, CheckCircle2, Palette, Plus, RefreshCw } from 'lucide-react'
+import { Loader2, Check, X, Pencil, ExternalLink, Sparkles, ShieldQuestion, CheckCircle2, Plus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/field'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { updateImportField, approveBusinessImport, reseedBusinessImport, reresearchWithInfo, setBusinessListed, type FieldAction } from '../actions'
-import { SEED_MOODS, type SeedMood } from '@/lib/importer/moods'
+import { type SeedMood } from '@/lib/importer/moods'
 import { SIGNAL_GLYPH, type ReviewField, type ReviewModel, type ReviewSignal } from '../review-model'
 import { SeederImages } from './seeder-images'
 
@@ -74,10 +76,11 @@ export function ReviewBoard({
   const router = useRouter()
   const [model, setModel] = useState<ReviewModel>(initialModel)
   const [mood, setMood] = useState<SeedMood>(initialMood)
-  const [lockHero, setLockHero] = useState(initialLockHero)
-  const [lockLayout, setLockLayout] = useState(initialLockLayout)
+  const [lockHero] = useState(initialLockHero)
+  const [lockLayout] = useState(initialLockLayout)
   const [listed, setListed] = useState(initialListed)
   const [listing, startListing] = useTransition()
+  const [writingQuestions, setWritingQuestions] = useState<string[]>([])
   const [reseedMsg, setReseedMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
   const [reseeding, startReseed] = useTransition()
   const [directions, setDirections] = useState(initialDirections)
@@ -134,9 +137,7 @@ export function ReviewBoard({
     })
   }
 
-  // Re-Seed (Importer v2): regenerate the whole page in the chosen mood — copy, layout, images — and
-  // re-apply it to the live Space, EXCEPT what is locked. `lockHero` freezes the hero headline + image;
-  // edit-wins protects any hand-edited prose. Verified facts are never touched.
+  // Writing advice never mutates the master draft or reapplies the live page.
   function reseed(next: SeedMood) {
     setMood(next)
     setReseedMsg(null)
@@ -147,26 +148,14 @@ export function ReviewBoard({
         setReseedMsg({ tone: 'err', text: res.error })
         return
       }
-      const label = SEED_MOODS.find((m) => m.key === next)?.label ?? next
-      const locks = [lockHero && 'hero', lockLayout && 'layout'].filter(Boolean) as string[]
-      const heroNote = locks.length ? ` The ${locks.join(' and ')} stayed locked.` : ''
-      setReseedMsg({
-        tone: 'ok',
-        text: res.revoiced
-          ? res.reapplied
-            ? `Re-seeded the page in the ${label} mood and pushed it live.${heroNote}`
-            : `Re-seeded the draft in the ${label} mood.${heroNote}`
-          : res.reapplied
-            ? `Re-applied the page in the ${label} mood.${heroNote} Turn AI on to also re-voice the copy.`
-            : 'Mood saved. Turn AI on to re-voice the copy.',
-      })
-      router.refresh()
+      setWritingQuestions(res.questions)
+      setReseedMsg({ tone: 'ok', text: 'Your draft and live page are unchanged. Edit any wording yourself when you are ready.' })
     })
   }
 
   // Add more info to the master profile + re-research (Importer v2.1). Folds the new boxes, appends them to
   // the source, and (when new source is added) re-runs research so new facts extract. Directions here also
-  // stick for the re-voice.
+  // remain available as guidance context.
   function addInfo() {
     setInfoMsg(null)
     startAddInfo(async () => {
@@ -211,89 +200,13 @@ export function ReviewBoard({
         </div>
       </div>
 
-      {/* Mood + Re-Seed (Importer v2): pick a mood to re-voice the copy. Facts stay put; only the tone
-          changes. Available on a reviewed or applied draft (there is verified copy to re-voice). */}
       <div className="rounded-card border border-border bg-surface p-4">
-        <div className="flex items-center gap-2 text-body-sm font-semibold text-text">
-          <Palette className="h-4 w-4 text-primary-strong" aria-hidden />
-          Mood and re-seed
-        </div>
-        <p className="mt-0.5 text-meta text-muted">
-          Pick a mood to re-seed the whole page: the copy, the layout, and the images regenerate and push
-          to the live Space. Verified facts stay put, and anything you edited by hand is kept. Lock the hero
-          below to freeze the headline and hero image while everything else refreshes.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {SEED_MOODS.map((m) => {
-            const active = m.key === mood
-            return (
-              <button
-                key={m.key}
-                type="button"
-                onClick={() => reseed(m.key)}
-                disabled={reseeding}
-                title={m.description}
-                aria-pressed={active}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-50',
-                  active
-                    ? 'border-primary bg-primary-bg text-primary-strong'
-                    : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text',
-                )}
-              >
-                {reseeding && active ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                ) : active ? (
-                  <Check className="h-3.5 w-3.5" aria-hidden />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" aria-hidden />
-                )}
-                {m.label}
-              </button>
-            )
-          })}
-        </div>
-        <Checkbox
-          wrapperClassName="mt-3"
-          label="Lock the hero (freeze the headline and hero image; re-seed everything else)"
-          checked={lockHero}
-          onChange={(e) => setLockHero(e.target.checked)}
-          disabled={reseeding}
-        />
-        <Checkbox
-          wrapperClassName="mt-2"
-          label="Lock the layout (keep this block arrangement; refresh the copy, photos and data inside it)"
-          checked={lockLayout}
-          onChange={(e) => setLockLayout(e.target.checked)}
-          disabled={reseeding}
-        />
-
-        {/* Directions (Importer v2.1): a freeform steer folded into the re-voice. Persists on re-seed, so it
-            keeps driving future runs. Blank leaves any stored directions untouched. */}
-        <div className="mt-3">
-          <label htmlFor="reseed-directions" className="block text-2xs font-semibold uppercase tracking-wide text-muted">
-            Directions for the re-seed
-          </label>
-          <Textarea
-            id="reseed-directions"
-            rows={2}
-            value={directions}
-            onChange={(e) => setDirections(e.target.value)}
-            disabled={reseeding}
-            placeholder="e.g. Lead with the retreat space, keep it calm and grounded, mention the sky deck."
-            className="mt-1 text-meta"
-          />
-          <p className="mt-1 text-2xs text-muted">Steers the wording and tone. Pick a mood above to re-seed with these directions.</p>
-        </div>
-
-        {reseedMsg && (
-          <p
-            className={cn('mt-2 text-meta', reseedMsg.tone === 'ok' ? 'text-success' : 'text-danger')}
-            role="status"
-          >
-            {reseedMsg.text}
-          </p>
-        )}
+        <h2 className="text-body-sm font-semibold text-text">Writing coach</h2>
+        <p className="mt-1 text-meta text-muted">Ask about clarity or missing details, then edit the draft in your own words.</p>
+        <Textarea aria-label="What would you like to improve?" value={directions} onChange={event => setDirections(event.target.value)} disabled={reseeding} />
+        <Button type="button" disabled={reseeding} onClick={() => reseed(mood)}>{reseeding ? 'Thinking...' : 'Get writing prompts'}</Button>
+        <WritingQuestions questions={writingQuestions} />
+        {reseedMsg && <p role="status" className="mt-2 text-meta text-muted">{reseedMsg.text}</p>}
 
         {/* Add more info (Importer v2.1): paste extra source content into the master profile, then re-read the
             sources so genuinely new facts (a new service, updated hours) get pulled in. Your hand edits are

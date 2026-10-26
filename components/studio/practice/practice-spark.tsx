@@ -14,7 +14,7 @@
 //   SparkSteer     the mood dial, on review, so it costs no extra step
 //
 // EVERY ENTRY PATH IS KEPT:
-//   • Vera drafts it, from four questions          (door 1)
+//   • Vera coaches it, from four questions          (door 1)
 //   • Build it yourself, in the full builder       (door 2, was a text link)
 //   • Bring the practice you already wrote         (the drop zone, on screen one)
 //
@@ -25,13 +25,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { capsLabel } from '@/components/ui/caps-label'
 import { Sparkles } from 'lucide-react'
 import {
   SparkDoors,
   SparkDropzone,
   SparkOffers,
   SparkShell,
-  SparkSteer,
   FieldControl,
   StudioField,
   draftText,
@@ -42,22 +42,12 @@ import { isError } from '@/lib/action-result'
 import type { GeneratedCover } from '@/lib/loom/cover-actions'
 import { PRACTICE_MANIFEST } from '@/lib/studio/entities/practice'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
-import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import { sparkPracticeAction, createPracticeFromSparkAction } from '@/app/(main)/practices/create-actions'
 import { createPracticeDraftAction } from '@/app/(main)/practices/actions'
 import type { PracticePace, PracticeCadenceHint, PracticeSparkTimer } from '@/lib/ai/practice-spark'
-import { timerPreview } from '@/lib/movement'
-import { capsLabel } from '@/components/ui/caps-label'
 
 // The Be Still sub-mode LABELS (naming canon: member copy never shows raw enum slugs).
-const MINDLESS_LABEL: Record<string, string> = {
-  meditate: 'Meditate',
-  breathe: 'Breathe',
-  journal: 'Journal',
-  stillness: 'Stillness',
-  ritual: 'Ritual',
-}
 
 /**
  * The three cadence hints the Spark offers. The manifest declares `answers.cadence` as the
@@ -88,7 +78,7 @@ const PILLARS: { key: 'mind' | 'body' | 'spirit' | 'expression'; label: string }
 const FIELD = new Map<string, FieldDef>(PRACTICE_MANIFEST.fields.map((f) => [f.path, f]))
 
 /** The fields a Spark asks for (`placement: 'spark'` plus anything required), by path. `title` is
- *  in here because it is required; it is asked on review, where the author names what Vera drafted. */
+ *  in here because it is required; it is asked on review, where the author names their Practice. */
 const ASKED = new Map<string, FieldDef>(sparkFields(PRACTICE_MANIFEST).map((f) => [f.path, f]))
 
 /**
@@ -100,7 +90,7 @@ const QUESTIONS: { label: string; title: string; description: string; paths: str
   {
     label: 'Who',
     title: 'Who is this Practice for?',
-    description: 'Tell Vera who it is for in a sentence and she drafts the whole Practice.',
+    description: 'Tell Vera who it is for, then write with coaching questions.',
     paths: ['answers.who'],
     requires: 'answers.who',
   },
@@ -161,13 +151,12 @@ export function PracticeSpark() {
   const [body, setBody] = useState('')
   const [pillars, setPillars] = useState<Array<'mind' | 'body' | 'spirit' | 'expression'>>([])
   const [draftCadence, setDraftCadence] = useState('')
-  const [durationMin, setDurationMin] = useState<number | null>(null)
+  const [durationMin] = useState<number | null>(null)
   // The timer half of Vera's draft (ADR-920 Phase 5): carried through to creation so the
   // practice ships with its timer preset instead of the silent default sit. Shown read-only
   // on the review step; the full tuning lives in the builder after create.
-  const [timer, setTimer] = useState<PracticeSparkTimer | null>(null)
+  const [timer] = useState<PracticeSparkTimer | null>(null)
   // The mood dial (kernel/moods.ts), shown on review so it costs no extra step.
-  const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
   // A header image Vera drew, once the author has kept it. Held here because this Spark has no
   // draft object: the review step IS the state, and creation is deferred until they commit.
   const [cover, setCover] = useState<GeneratedCover | null>(null)
@@ -183,7 +172,7 @@ export function PracticeSpark() {
     // Empty until a cover is kept, which is the truth: nothing here sets `header_image`. The path
     // comes back from the action, so it is never restated in this file.
     draft: cover ? { [cover.path]: cover.url } : {},
-    subject: { title, summary, mood, directions: null },
+    subject: { title, summary, mood: null, directions: null },
     onApply: setCover,
     onRemove: () => setCover(null),
   })
@@ -201,7 +190,7 @@ export function PracticeSpark() {
       ]),
   })
 
-  const source = sourceText.trim()
+  const source = sourceText
 
   // One binding per asked field. The control comes from the manifest; the value stays in the exact
   // shape sparkPracticeAction already takes.
@@ -261,6 +250,7 @@ export function PracticeSpark() {
 
   // ── The actions. Signatures and payloads are exactly as they were. ──
 
+  const [coaching, setCoaching] = useState<string[]>([])
   const generate = () => {
     setError(null)
     start(async () => {
@@ -268,14 +258,10 @@ export function PracticeSpark() {
       if (isError(res)) {
         setError(res.error)
       } else {
-        setTitle(res.data.title)
-        setSummary(res.data.summary)
-        setDescription(res.data.description)
-        setBody(res.data.body)
-        setPillars(res.data.pillar ? [res.data.pillar] : [])
-        setDraftCadence(res.data.cadence)
-        setDurationMin(res.data.durationMin)
-        setTimer(res.data.timer ?? null)
+        setCoaching(res.data.questions)
+        setDraftCadence(CADENCE_OPTIONS.find(option => option.value === cadence)?.label ?? 'Daily')
+        // The explicit written-text door carries the author's words, never model prose.
+        if (source && !body) setBody(source)
       }
       setStage('review')
     })
@@ -339,8 +325,8 @@ export function PracticeSpark() {
             }
           }}
           onManual={buildItMyself}
-          veraLabel="Have Vera draft it"
-          veraHint="Answer four short questions and Vera writes the whole Practice, guide and all, for you to review."
+          veraLabel="Plan with Vera"
+          veraHint="Answer four short questions, then write your Practice with separate coaching guidance."
           manualLabel="Build it yourself"
           manualHint="Go straight to the builder and write the guide, the Pillars, and the timer your own way."
           disabled={pending}
@@ -373,7 +359,7 @@ export function PracticeSpark() {
         stepLabel={q.label}
         onBack={() => (qIndex === 0 ? setStage('doors') : setQIndex((i) => i - 1))}
         onNext={() => (last ? generate() : setQIndex((i) => i + 1))}
-        nextLabel={last ? 'Draft with Vera' : 'Continue'}
+        nextLabel={last ? 'Get coaching questions' : 'Continue'}
         nextDisabled={!answered}
         busy={pending}
         error={error}
@@ -384,7 +370,7 @@ export function PracticeSpark() {
     )
   }
 
-  // ── Review. Vera's draft, editable, with the mood dial. Nothing has persisted yet. ──
+  // ── Review. The author's fields, with separate coaching. Nothing has persisted yet. ──
 
   const drafting = pending && !title
 
@@ -392,7 +378,7 @@ export function PracticeSpark() {
     <SparkShell
       eyebrow="New Practice"
       title="Here is your Practice"
-      description="Vera's draft. Edit anything, then create it."
+      description="Write your Practice in your own words. Vera offers questions, not copy."
       step={fromSource ? 2 : QUESTIONS.length + 2}
       totalSteps={fromSource ? 2 : QUESTIONS.length + 2}
       stepLabel="Review"
@@ -411,10 +397,11 @@ export function PracticeSpark() {
     >
       {drafting ? (
         <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-body-sm text-muted">
-          <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is shaping your Practice…
+          <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is preparing your coaching questions…
         </p>
       ) : (
         <div className="space-y-4">
+          {coaching.length > 0 && <section role="status" aria-label="Coaching questions" className="space-y-2 rounded-card border border-border p-4"><p className="text-body-sm text-muted">You write the content. These questions are not saved as your Practice.</p><ul className="list-disc pl-4">{coaching.map(q => <li key={q}>{q}</li>)}</ul></section>}
           {reviewField('title', title, setTitle, LIMIT.title, 'Name your Practice')}
           {reviewField('summary', summary, setSummary, LIMIT.summary, 'The problem it solves, in a line')}
           {reviewField('description', description, setDescription, LIMIT.description, "Who it's for and what they notice after a week")}
@@ -445,34 +432,11 @@ export function PracticeSpark() {
             </p>
           </div>
 
-          {timer && (
-            <div className="rounded-card border border-border bg-canvas px-3.5 py-2.5">
-              <span className={capsLabel('block text-2xs font-semibold text-muted')}>How it is done</span>
-              <p className="mt-0.5 text-body-sm font-medium text-text">
-                {timerPreview({
-                  timerKind: timer.timerKind,
-                  movementConfig: timer.movementMode ? { mode: timer.movementMode } : null,
-                  durationMin,
-                })}
-                {timer.mindlessMode && timer.timerKind === 'mindless' ? ` · ${MINDLESS_LABEL[timer.mindlessMode] ?? ''}` : ''}
-              </p>
-              <p className="mt-0.5 text-2xs text-muted">Vera set the timer to match the act. Tune every part of it in the next step.</p>
-            </div>
-          )}
-
           {/* Both optional, both skippable: a header image Vera can draw, and a read before it
               goes out. */}
           <SparkOffers cover={coverState.offer} quality={qualityState.check} disabled={pending} />
 
-          {/* The mood dial (kernel/moods.ts). On review, so it costs no extra step. */}
-          <SparkSteer
-            steer={{ mood: PRACTICE_MANIFEST.steer?.mood }}
-            mood={mood}
-            onMood={setMood}
-            directions=""
-            onDirections={() => {}}
-            disabled={pending}
-          />
+
         </div>
       )}
     </SparkShell>
