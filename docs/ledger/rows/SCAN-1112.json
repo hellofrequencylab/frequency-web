@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-1112",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs home-faq",
+      "note": "AST inspects the active Frequency home branch, its emitted FAQPage data and visible shared-corpus details/summary/answer mapping. Six source mutation controls plus rendered FrequencyHome/shared-schema parity test fail on missing wiring. Browser expansion and Return collapse separately verified by Frequency Control; not full-route acceptance."
+    }
+  },
+  "append": {
+    "detail": "2026-10-26: Replaced the stale DAWN-template premise with the active Frequency route contract under explicit owner authorization. No duplicate FAQ UI added. Read-only production HTTP captured six FAQPage questions and visible home details; Frequency Control browser verified first question expands and Return collapses with focus retained. Rendered unit test checks all six exact question/answer strings against FAQPage. Probe is lazy-loaded only for home-faq so unrelated scan processes do not import TypeScript. Exact-head CI/artifact identity remain release gates."
+  }
+}
