@@ -1,29 +1,5 @@
 import '@/app/themes/active/members-a'
-import { Skeleton } from '@/components/ui/skeleton'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
-function PostSkeleton() {
-  return (
-    <div className="rounded-card border border-border bg-surface p-4">
-      <div className="flex gap-3">
-        <Skeleton className="w-9 h-9 rounded-pill shrink-0" />
-        <div className="flex-1 space-y-2 min-w-0">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-3.5 w-28" />
-            <Skeleton className="h-3.5 w-12 rounded-pill" />
-          </div>
-          <Skeleton className="h-3 w-full" />
-          <Skeleton className="h-3 w-4/5" />
-          <Skeleton className="h-3 w-3/5" />
-          <div className="flex gap-3 pt-1">
-            <Skeleton className="h-3 w-10" />
-            <Skeleton className="h-3 w-10" />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 /** The Frequency Feed's loading face: the centre column's own shapes (greeting, the four standing
  *  numbers, the glass panel, the Up next card, three posts between hairlines), quiet and still, so the
@@ -53,15 +29,5 @@ function FrequencyFeedLoading() {
 }
 
 export default function FeedLoading() {
-  if (SITE_DESIGN === 'frequency') return <FrequencyFeedLoading />
-  return (
-    <div className="px-4 py-6 max-w-2xl mx-auto space-y-3">
-      {/* Composer placeholder */}
-      <Skeleton className="h-20 w-full rounded-xl" />
-      {/* Posts */}
-      {Array.from({ length: 5 }).map((_, i) => (
-        <PostSkeleton key={i} />
-      ))}
-    </div>
-  )
+  return <FrequencyFeedLoading />
 }

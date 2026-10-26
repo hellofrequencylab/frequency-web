@@ -1,12 +1,6 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Nfc } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { DashboardTemplate } from '@/components/templates'
-import { PageModules } from '@/components/widgets/page-modules'
 import { getCrewContext } from '@/lib/quest/crew-context'
 import { getPageHeaderImage } from '@/lib/page-settings/store'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { CrewBody } from '@/components/frequency/members/crew/crew-body'
 
 // My Quest (/crew) — the member's season home. Module-driven (ADR-270/294): the page composes the
@@ -24,65 +18,5 @@ export default async function CrewPage() {
 
   // Operator-set wide header image — set from Settings → SEO & meta → Header image.
   const headerImage = await getPageHeaderImage('/crew')
-
-  // FREQUENCY (ADR-1737): the same context and the same modules, in the members kit and in the
-  // operator's Layout order. DAWN keeps the Dashboard composition below.
-  if (SITE_DESIGN === 'frequency') return <CrewBody ctx={ctx} headerImage={headerImage} />
-
-  // 🔴 NO UPGRADE NUDGE ON THIS PAGE. A season-reset "convert before your standing resets" prompt
-  // and a Crew preview banner both stood here, and both are gone with the `gamification_full` gate
-  // (ADR-1295, owner ruling 2026-09-09, OWN-071). Every signed-in member plays the whole Quest, so
-  // an upsell that says otherwise is not a nudge, it is a false statement about what they may do.
-
-  return (
-    <DashboardTemplate
-      // The door to the member card editor (LIVE-1282): one quiet header action, not a module.
-      actions={
-        <Button asChild size="sm" variant="secondary">
-          <Link href="/crew/card">
-            <Nfc className="h-4 w-4" aria-hidden /> My card
-          </Link>
-        </Button>
-      }
-      banner={
-        headerImage && (
-          // Intrinsic sizing (w-full h-auto, no fixed height / object-cover): the WHOLE
-          // banner scales to the screen width and is never cropped, so a wide header reads
-          // fully on a phone as well as desktop. Recommended upload ~1600×500 (16:5).
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={headerImage}
-            alt=""
-            className="mb-6 h-auto w-full rounded-card border border-border"
-          />
-        )
-      }
-      title={
-        <span className="inline-flex flex-wrap items-center gap-2">
-          My Quest
-          {ctx.isCrewLead && (
-            <span className="rounded-md bg-warning-bg px-2 py-0.5 text-meta font-semibold text-warning">
-              Crew Lead
-            </span>
-          )}
-        </span>
-      }
-      description={
-        <>
-          Three Journeys this season, each touching all four Pillars: Mind, Body, Spirit, and
-          Expression. Finish each to climb from Ghost to Master.
-          {ctx.membership?.circleName && (
-            <>
-              {' '}
-              You&apos;re in <span className="font-medium text-text">{ctx.membership.circleName}</span>.
-            </>
-          )}
-        </>
-      }
-    >
-      {/* The season intention is now an arrangeable layout module ('quest-intention'),
-          composed by PageModules and editable from Settings → Layout like the other blocks. */}
-      <PageModules route="/crew" />
-    </DashboardTemplate>
-  )
+  return <CrewBody ctx={ctx} headerImage={headerImage} />
 }

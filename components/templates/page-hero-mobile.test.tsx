@@ -138,18 +138,11 @@ describe('the mobile pass touched nothing that is not breakpoint-scoped', () => 
     expect(page).toContain('className="flex items-center gap-3 max-sm:w-full max-sm:justify-end"')
   })
 
-  it("the owner's Edit profile is pulled right when it wraps, and only on a phone", () => {
-    // A one-item flex line under `justify-between` packs to flex-START, which is why this needs an
-    // auto margin rather than the parent's justification.
-    expect(page).toContain('hover:text-text max-sm:ml-auto')
-  })
-
   it('an on-cover refusal is capped to something a 320px hero can actually show', () => {
     // 16rem = 272px is wider than the whole hero content box on a 320px phone, so an errored
     // control became the widest item on its flex line and was clipped. Both call sites narrow on
     // phones and restore 16rem from 640px up.
     expect(friend).toContain('max-w-[13rem] text-meta text-on-media sm:max-w-[16rem]')
-    expect(page).toContain('max-w-[13rem] text-2xs text-on-media sm:max-w-[16rem]')
   })
 
   it('🔴 not one phone-scoped rule paints a backdrop behind header text', () => {

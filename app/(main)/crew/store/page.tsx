@@ -1,8 +1,5 @@
 import { notFound } from 'next/navigation'
-import { DashboardTemplate } from '@/components/templates'
-import { PageModules } from '@/components/widgets/page-modules'
 import { getVaultData } from '@/lib/vault/vault-data'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { VaultBody } from '@/components/frequency/members/vault/vault-body'
 
 // The Vault (ADR-270/294). Module-driven: the whole interior — standing hero, the leaderboard
@@ -20,19 +17,5 @@ export default async function StorePage() {
   // modules below self-fetch off the same cache.
   const data = await getVaultData()
   if (!data) notFound()
-
-  // FREQUENCY (ADR-1737): the reference's Vault (The Vault.html), off the same cached read and the
-  // same Store components. DAWN keeps the module-driven page below.
-  if (SITE_DESIGN === 'frequency') return <VaultBody />
-
-  return (
-    <DashboardTemplate
-      eyebrow="The Quest"
-      title="Vault Store"
-      description="Your Vault and the Vault Store in one place. Everything you earn by showing up, and what you can spend it on."
-      back={{ href: '/crew', label: 'Crew Dashboard' }}
-    >
-      <PageModules route="/crew/store" />
-    </DashboardTemplate>
-  )
+  return <VaultBody />
 }
