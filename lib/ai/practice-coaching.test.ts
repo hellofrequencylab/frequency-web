@@ -6,7 +6,7 @@ vi.mock('./rate-limit', () => ({ aiRateLimited: async () => false }))
 vi.mock('./complete', () => ({ completeRaw: m.complete }))
 import { draftPracticeSpark, personalizePractice, PRACTICE_SPARK } from './practice-spark'
 import { planPracticeEdits } from './practice-edit'
-beforeEach(() => { vi.clearAllMocks(); m.enabled = true; m.complete.mockResolvedValue({ content: [{ type: 'tool_use', name: 'coach_author', input: { questions: ['Who is this for?'], title: 'Generated title', body: 'Generated guide', steps: ['Generated step'] } }] }) })
+beforeEach(() => { vi.clearAllMocks(); m.enabled = true; m.complete.mockResolvedValue({ content: [{ type: 'tool_use', name: 'coach_author', input: { questionIds: ['audience'] } }] }) })
 describe('Practice model outputs cannot become authoring fields', () => {
   it('returns only separate questions across spark, claim and edit with central accounting', async () => {
     const original = '  First line.\n\nSecond line!  '
@@ -18,7 +18,8 @@ describe('Practice model outputs cannot become authoring fields', () => {
   })
   it('rejects plain copy, invalid questions and unbounded output', () => {
     expect(PRACTICE_SPARK.coerce({ title: 'Draft', body: 'Replace it' }, undefined)).toBeNull()
-    expect(PRACTICE_SPARK.coerce({ questions: ['Join our practice.', 'x'.repeat(281), 'What changed?\nPublish this.', 'Who is this for?', 'Who is this for?'] }, undefined)).toEqual({ questions: ['Who is this for?'] })
+    expect(PRACTICE_SPARK.coerce({ questions: ['Join our practice.', 'x'.repeat(281), 'What changed?\nPublish this.', 'Who is this for?', 'Who is this for?'] }, undefined)).toBeNull()
+    expect(PRACTICE_SPARK.coerce({ questionIds: ['audience'], title: 'Generated title' }, undefined)).toBeNull()
   })
   it('does not call the model when disabled', async () => {
     m.enabled = false

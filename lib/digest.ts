@@ -94,6 +94,10 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
   }
   const spaceIds = [...spaceIdSet]
 
+  // Journey Dispatches (SCAN-1165) reach the plan's enrollees.
+  const { data: enrolled } = await admin.from('journey_enrollments').select('plan_id').eq('profile_id', profileId)
+  const journeyPlanIds = [...new Set(((enrolled ?? []) as { plan_id: string | null }[]).map((r) => r.plan_id).filter((id): id is string => !!id))]
+
   // ── Recent dispatches reaching this user ───────────────────────────
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const filters: string[] = []
@@ -101,6 +105,7 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
   if (hubIds.length)     filters.push(`and(audience_scope.eq.hub,audience_id.in.(${hubIds.join(',')}))`)
   if (nexusIds.length)   filters.push(`and(audience_scope.eq.nexus,audience_id.in.(${nexusIds.join(',')}))`)
   if (spaceIds.length)   filters.push(`and(audience_scope.eq.space,audience_id.in.(${spaceIds.join(',')}))`)
+  if (journeyPlanIds.length) filters.push(`and(audience_scope.eq.journey,audience_id.in.(${journeyPlanIds.join(',')}))`)
 
   let dispatches: DigestDispatch[] = []
   if (filters.length) {

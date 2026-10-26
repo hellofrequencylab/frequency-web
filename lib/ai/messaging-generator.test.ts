@@ -11,9 +11,9 @@ function response(value: unknown) { return { content: [{ type: 'tool_use', name:
 beforeEach(() => vi.clearAllMocks())
 describe('messaging coaching boundary', () => {
   it('returns questions and measurement without subject/body/draft fields', async () => {
-    vi.mocked(completeRaw).mockResolvedValue(response({ questions: ['What next step matters?'], checks: ['Check the real date.'], measurement: 'Compare attended bookings after the campaign.' }))
+    vi.mocked(completeRaw).mockResolvedValue(response({ questionIds: ['next_step'], checkIds: ['facts'], measurementId: 'attendance' }))
     const result = await coachMessaging(input)
-    expect(result?.questions).toEqual(['What next step matters?'])
+    expect(result?.questions).toEqual(['What next step matters for this audience?'])
     expect(Object.keys(result!)).toEqual(['questions', 'checks', 'measurement'])
     expect(completeRaw).toHaveBeenCalledWith(expect.objectContaining({ accounting: { feature: 'messaging-generator', profileId: 'owner' } }))
     expect(input.details).toBe('My authored notes')

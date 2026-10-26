@@ -1,21 +1,17 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getMyProfileId } from '@/lib/auth'
-import { getSpaceById } from '@/lib/spaces/store'
+import { authorizeDiscoveryEditor } from '@/lib/spaces/discovery-access'
 import { writeSpaceCoachProfile } from '@/lib/spaces/private-state'
-import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { parseSpaceCoachProfile, validateSpaceCoachProfile, type SpaceCoachProfile } from '@/lib/spaces/coach-profile'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 
 // Authorization is resolved afresh for both save and clear. No preview or client role grants writes.
 export async function saveSpaceCoachProfile(spaceId: string, value: unknown): Promise<ActionResult<SpaceCoachProfile>> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return fail('Sign in to change your coach preferences.')
-  const space = await getSpaceById(spaceId)
-  if (!space) return fail('Space not found.')
-  const caps = await getSpaceCapabilities(space, profileId)
-  if (!caps.canEditProfile) return fail('You do not have permission to edit this Space.')
+  // Private coaching does not inherit platform staff or Network content-management authority.
+  const editor = await authorizeDiscoveryEditor(spaceId)
+  if (!editor) return fail('You do not have permission to edit coach preferences for this Space.')
+  const { space } = editor
   if (value !== null) {
     const error = validateSpaceCoachProfile(value)
     if (error) return fail(error)

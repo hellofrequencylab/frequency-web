@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { DetailTemplate } from '@/components/templates'
 import { SignInCta } from '@/components/discover/cards'
 import { JsonLd } from '@/components/json-ld'
 import { spaceSchema, breadcrumbSchema, parseOpeningHours } from '@/lib/jsonld'
@@ -15,7 +14,6 @@ import { listNetworkedSpaces } from '@/lib/spaces/discovery'
 import { readTagline } from '@/lib/spaces/tagline'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
-import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { markAnonymousRender } from '@/lib/core/anonymous-render'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout } from '@/lib/entity-blocks/layout'
@@ -27,7 +25,6 @@ import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
 import { FeaturedCheckin } from '@/components/spaces/featured-checkin'
 import { CardholderPerkNote } from '@/components/spaces/cardholder-perk-note'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqSpaceChrome } from '@/components/frequency/members/space/space-chrome'
 import { foundingBadgeForSpace } from '@/lib/founding/status'
 import { FounderMark } from '@/components/frequency/members/space/founder-mark'
@@ -112,18 +109,8 @@ export default async function PublicSpacePage({
   const brandName = space.brandName?.trim() || space.name
   const coverSrc = space.coverImageUrl || coverPlaceholderFor(space.id)
   const coverFocus = readCoverFocus(space.preferences)
-  // The cover resolves through the one detail-hero ladder (PROG-P5, ADR-1498), like the 20+
-  // entity pages before it: the Space's own cover (or its deterministic stock stand-in, the same
-  // photo the OG card draws) is rung 1, and the operator's FOCAL POINT travels with it, which the
-  // plain 16:6 crop this page shipped with ignored. The band then renders through the canonical
-  // PageHero at the header element's height and overlay, so /admin/elements retunes it with the
-  // rest. Service-role reads only, so ISR (`revalidate` above) is untouched.
-  const [tagline, hero, tiers, reviews] = await Promise.all([
+  const [tagline, tiers, reviews] = await Promise.all([
     readTagline(space.id),
-    resolveDetailHero(`/spaces/${space.slug}`, {
-      entityImage: coverSrc,
-      entityFocus: coverFocus,
-    }),
     // The Space's published tiers, for the front door at the foot of the page (LIVE-524). SPACE
     // data, not VIEWER data, so it costs this route nothing: `listMembershipTiers` takes a spaceId
     // and reads no caller, unlike `getMyMembership` which is why that one can never appear here.
@@ -195,13 +182,10 @@ export default async function PublicSpacePage({
           priceRange: spaceProfile.priceRange,
           openingHours: parseOpeningHours(spaceProfile.hours),
         }),
-        // Under Frequency the trail is the one the page shows: its back link reads "Spaces" and opens the
-        // directory (/discover/spaces), while /spaces is the "For spaces" page for owners, not this
-        // Space's parent. DAWN keeps its trail unchanged.
+        // The trail is the one the page shows: its back link reads "Spaces" and opens the directory
+        // (/discover/spaces), while /spaces is the "For spaces" page for owners, not this Space's parent.
         breadcrumbSchema([
-          SITE_DESIGN === 'frequency'
-            ? { name: 'Spaces', path: '/discover/spaces' }
-            : { name: 'Spaces', path: '/spaces' },
+          { name: 'Spaces', path: '/discover/spaces' },
           { name: brandName, path: `/spaces/${space.slug}` },
         ]),
       ]}
@@ -263,48 +247,23 @@ export default async function PublicSpacePage({
       )}
     </>
   )
-
-  // THE FREQUENCY CHROME (ADR-1737): the member profile's cover card and kit tab row, opened in its own
-  // kit scope because this page sits outside the member shell. Same reads, same menu, same body; the
-  // cover carries no viewer actions because this tree has no viewer (markAnonymousRender above).
-  //
-  // THE PUBLIC FRAME (SCAN-883): `public` opens the centred container the site shell does not give this
-  // page. The page is DAWN's: cover, name, tabs, the owner's blocks, the front door at the foot. No facts
-  // column; where, when and contact are the blocks' own cards.
-  if (SITE_DESIGN === 'frequency') {
-    // The Founding mark (LIVE-1019): a service-role read of SPACE data, no viewer, so ISR is untouched.
-    const founding = await foundingBadgeForSpace(space.id)
-    return (
-      <>
-        {structuredData}
-        <FqSpaceChrome
-          public
-          back={{ href: '/discover/spaces', label: 'Spaces' }}
-          coverImage={coverSrc}
-          coverFocus={coverFocus}
-          name={brandName}
-          coverBadge={founding?.isFounding ? <FounderMark /> : null}
-          tagline={tagline ? <p className="fqs-tagline">{tagline}</p> : null}
-          nav={menu}
-        >
-          {body}
-        </FqSpaceChrome>
-      </>
-    )
-  }
-
+  // The Founding mark (LIVE-1019): a service-role read of SPACE data, no viewer, so ISR is untouched.
+  const founding = await foundingBadgeForSpace(space.id)
   return (
     <>
       {structuredData}
-      <DetailTemplate
-        {...hero}
-        title={brandName}
-        subtitle={tagline ?? undefined}
+      <FqSpaceChrome
+        public
         back={{ href: '/discover/spaces', label: 'Spaces' }}
-        stickyNav={menu}
+        coverImage={coverSrc}
+        coverFocus={coverFocus}
+        name={brandName}
+        coverBadge={founding?.isFounding ? <FounderMark /> : null}
+        tagline={tagline ? <p className="fqs-tagline">{tagline}</p> : null}
+        nav={menu}
       >
         {body}
-      </DetailTemplate>
+      </FqSpaceChrome>
     </>
   )
 }

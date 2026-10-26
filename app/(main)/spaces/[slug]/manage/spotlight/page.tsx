@@ -13,6 +13,8 @@ import { renderPathEnabled } from '@/lib/platform-flags'
 import { LiveNodeGrid } from '@/components/entity-blocks/live-node-grid'
 import { resolveNodeRows } from '@/lib/entity-blocks/node-ops'
 import { resolveRows } from '@/lib/entity-blocks/layout'
+import { fillDataNodes } from '@/lib/entity-blocks/node-seed'
+import { withEffectiveDataContent } from '@/lib/spaces/effective-block-content'
 import type { BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
@@ -107,15 +109,21 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
         offer: await loadUpgradeOffer(),
       }
 
+  // The editor opens showing the Space's real words, the same ones the Spotlight and the Space page draw
+  // (effective-block-content.ts): About's eyebrow, title and text were empty placeholders before. Seed-only,
+  // nothing is saved until the owner edits, and an authored value always wins.
+  const seedContent = withEffectiveDataContent(grid.content, data)
+  const seedNodes = nodes ? fillDataNodes(nodes, seedContent) : null
+
   const seed: BuilderRailData | null = pageRail
     ? {
         matchId: space.slug,
         rows,
         hidden: [],
-        content: grid.content ?? {},
+        content: seedContent,
         style: grid.style ?? {},
         customized: spotlight.layout != null,
-        ...(nodes ? { nodeLayout: nodes } : {}),
+        ...(seedNodes ? { nodeLayout: seedNodes } : {}),
         lockedIds: pageRail.lockedIds,
         pickerData: pageRail.pickerData,
       }
@@ -127,12 +135,12 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
         <SpotlightHeader space={space} tagline={tagline} />
         <div className="@container/profile mt-8">
           {nodes ? (
-            <LiveNodeGrid nodes={renderSpaceBlockNodes(context, data, authored, grid)} initialLayout={nodes} />
+            <LiveNodeGrid nodes={renderSpaceBlockNodes(context, data, authored, grid)} initialLayout={seedNodes ?? nodes} />
           ) : (
             <LiveProfileGrid
               nodes={renderSpaceBlockNodes(context, data, authored, grid)}
               initialRows={rows}
-              initialContent={grid.content ?? {}}
+              initialContent={seedContent}
               initialStyle={grid.style ?? {}}
             />
           )}

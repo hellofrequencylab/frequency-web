@@ -6,16 +6,13 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import type {
   IntroductionMade,
   IntroductionForYou,
   IntroPerson,
 } from '@/lib/connections/introductions'
 
-// FREQUENCY (LIVE-1086): the kit's `.card` rows, `.tag` chips and `.btn` pill. Inlined at build; DAWN keeps its own.
-const FREQUENCY = SITE_DESIGN === 'frequency'
-const ROW = FREQUENCY ? 'card mu-ecard px-4 py-3' : 'rounded-card border border-border bg-surface px-4 py-3'
+const ROW = 'card mu-ecard px-4 py-3'
 
 function Avatar({ person, size = 36 }: { person: IntroPerson; size?: number }) {
   if (person.avatarUrl) {
@@ -56,30 +53,9 @@ function Pair({ a, b }: { a: IntroPerson; b: IntroPerson }) {
 }
 
 function StatusChip({ intro, rewardGems }: { intro: IntroductionMade; rewardGems: number }) {
-  if (FREQUENCY) {
-    if (intro.status === 'connected') return <span className="tag live">Connected ✓</span>
-    if (intro.status === 'declined') return <span className="tag">Didn’t take</span>
-    return <span className="tag">Waiting for them to connect · +{rewardGems} Gems when they do</span>
-  }
-  if (intro.status === 'connected') {
-    return (
-      <span className="shrink-0 rounded-pill bg-success-bg px-2.5 py-1 text-2xs font-semibold text-success">
-        Connected ✓
-      </span>
-    )
-  }
-  if (intro.status === 'declined') {
-    return (
-      <span className="shrink-0 rounded-pill bg-surface px-2.5 py-1 text-2xs font-medium text-muted">
-        Didn’t take
-      </span>
-    )
-  }
-  return (
-    <span className="shrink-0 rounded-pill bg-surface px-2.5 py-1 text-2xs font-medium text-muted">
-      Waiting for them to connect · +{rewardGems} Gems when they do
-    </span>
-  )
+  if (intro.status === 'connected') return <span className="tag live">Connected ✓</span>
+  if (intro.status === 'declined') return <span className="tag">Didn’t take</span>
+  return <span className="tag">Waiting for them to connect · +{rewardGems} Gems when they do</span>
 }
 
 function MadeRow({ intro, rewardGems }: { intro: IntroductionMade; rewardGems: number }) {
@@ -109,9 +85,7 @@ function ForYouRow({ intro }: { intro: IntroductionForYou }) {
           <Link
             href={`/people/${intro.other.handle}`}
             className={
-              FREQUENCY
-                ? buttonClasses('primary', 'sm', 'shrink-0')
-                : 'inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover'
+              buttonClasses('primary', 'sm', 'shrink-0')
             }
           >
             Meet {intro.other.displayName.split(/\s+/)[0]}

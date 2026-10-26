@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-397",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const s=p=>fs.readFileSync(p,\"utf8\");const fail=m=>{console.error(m);process.exit(1)};const meta=s(\"lib/journey-page-config.ts\");if(/social-proof|reward-preview/.test(meta))fail(\"retired discovery chip ids are still in the catalog\");const member=s(\"app/(main)/journeys/[slug]/page.tsx\");const body=s(\"components/marketplace/journey-sales-body.tsx\");if(!body.includes(\"enabledWidgets\"))fail(\"sales body does not read enabledWidgets\");if(!/case .path./.test(body))fail(\"sales body does not consult path\");const w=s(\"components/journey/discovery-widgets.tsx\");if(!w.includes(\"enabledWidgets\"))fail(\"DiscoveryBlocks lost enabledWidgets\");if(!/case .path./.test(w))fail(\"path is not consulted\")'",
+      "note": "Fails while a retired chip id is still offered, or while a visitor face ignores page_config order. Sales body keeps StoryBlock/PathBlock tags for LIVE-389. Written 2026-09-19."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1129): the member page is the Frequency journey body and no longer mounts DiscoveryBlocks; the sales body and widget arms stay."
+  }
+}

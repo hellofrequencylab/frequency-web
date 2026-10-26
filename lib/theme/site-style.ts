@@ -5,6 +5,7 @@ import { TEMPLE_ACCENT } from '@/lib/theme/temple'
 import { MIDNIGHT_ACCENT } from '@/lib/theme/midnight'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteFacesId } from '@/lib/theme/site-faces'
+import { readMegaTheme } from '@/lib/theme/mega-theme'
 
 // THE SITE STYLE (owner ask 2026-10-11, ADR-1726). A Space and its website wear one of four THEMES:
 //
@@ -248,9 +249,11 @@ export function siteTheme(preferences: unknown): SiteThemeId {
 
 /** The website faces a Space page wears: its website's, when the page is synced to a theme with its own. */
 export function spacePageSiteFaces(preferences: unknown): SiteFacesId | null {
+  // A Space that chose the Midnight Mega Theme wears its faces whatever the sync switch says, as its ground does.
+  if (readMegaTheme(preferences).theme === 'midnight') return 'midnight'
   const style = readSiteStyle(preferences)
   if (!style.synced) return null
-  return style.theme === 'network' || style.theme === 'wildheart' ? style.theme : null
+  return style.theme === 'network' || style.theme === 'wildheart' || style.theme === 'midnight' ? style.theme : null
 }
 
 /** The font set the SPACE PAGE renders in: the website's while synced, else the Space page's own. */

@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1032",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const bad=[];for(const p of ['app/(main)/(marketplace)/store/loading.tsx','app/(main)/(marketplace)/housing/loading.tsx','app/(main)/spaces/directory/loading.tsx','app/(main)/nearby/loading.tsx','app/(main)/network/loading.tsx']){if(!fs.existsSync(p)){bad.push(p+' is missing');continue}if(!/return <FqIndexLoading/.test(fs.readFileSync(p,'utf8')))bad.push(p+' has no kit skeleton')}if(bad.length){console.error('LIVE-1032: '+bad.join('; '));process.exit(1)}\"",
+      "note": "Fails when an index loading screen loses its Frequency kit skeleton. Behavior is index-loading.test.tsx.",
+      "checked": "2026-10-20"
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1129): the loading screens return the kit skeleton directly now that the DAWN branch is gone; the probe matches that."
+  }
+}

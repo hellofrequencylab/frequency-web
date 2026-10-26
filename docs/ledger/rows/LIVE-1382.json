@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1382",
+  "title": "Midnight feature page live preview: a sample Midnight site in a desktop and phone frame",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/midnight-demo.mjs"
+  },
+  "detail": "Follow-up to LIVE-1380. The Midnight design's feature page opens a live preview of the theme. components/sites/midnight-demo.tsx draws one generic Midnight website with sample content from the coaches niche kit (lib/sites/kits/midnight-variants.ts) through the real site chrome and sections, static and anonymous, every link pointing back at the demo. app/(demo)/themes/midnight/demo/page.tsx serves it at /themes/midnight/demo with no marketing chrome and noindex, and loads the Midnight faces on that one route only. components/frequency/site/pages/themes/midnight-preview.tsx is the button on the feature page: the kit Dialog around an iframe, a Desktop and Phone width toggle and an 'Open in a new tab' door."
+  ,"wave": "W7"
+}

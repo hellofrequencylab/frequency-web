@@ -20,7 +20,6 @@ import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { ViewerListingClaim } from '@/components/marketplace/listing-claim-box'
 import { ViewerHousingAddress } from '@/components/marketplace/housing-address'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
 // Public housing detail, advertised in app/sitemap.ts. Auth during render is a dynamic API
 // and would void ISR. Owners still edit at /housing/[id]/edit. The save heart and a ?claim=
@@ -36,13 +35,8 @@ export async function generateStaticParams(): Promise<{ id: string }[]> {
   return []
 }
 
-// The facts <dl> label, shared with the signed-in Address fact so the two read as one list.
-const FACT_LABEL = 'text-2xs font-semibold uppercase tracking-wide text-muted'
-
-// THE DESIGN SWITCH (ADR-1737, build-time). ListingDetailTemplate already draws the kit's listing page
-// under Frequency; the housing facts and tag rows it hands in follow it into the kit (`.list`, `.chips`,
-// `.tag`). Same facts, same address rule. DAWN's markup is unchanged.
-const FREQUENCY = SITE_DESIGN === 'frequency'
+// ListingDetailTemplate draws the kit's listing page; the housing facts and tag rows it hands in follow it
+// into the kit (`.list`, `.chips`, `.tag`). Same facts, same address rule.
 
 /** A labelled row of tags (amenities, accessibility, house rules) in the kit. */
 function FqTagRow({ label, items }: { label: string; items: string[] }) {
@@ -200,7 +194,6 @@ export default async function HousingDetailPage({
           </div>
       }
     >
-      {FREQUENCY ? (
         <>
           {(facts.length > 0 || showsAddressToMembers) && (
             <dl className="list">
@@ -223,60 +216,6 @@ export default async function HousingDetailPage({
           )}
           {rules.length > 0 && <FqTagRow label="Good to know" items={rules} />}
         </>
-      ) : (
-      <>
-      {(facts.length > 0 || showsAddressToMembers) && (
-        <dl className="mb-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
-          {facts.map((f) => (
-            <div key={f.label}>
-              <dt className={FACT_LABEL}>{f.label}</dt>
-              <dd className="mt-0.5 text-body-sm font-medium text-text">{f.value}</dd>
-            </div>
-          ))}
-          {showsAddressToMembers && <ViewerHousingAddress listingId={listing.id} labelClassName={FACT_LABEL} />}
-        </dl>
-      )}
-
-      {detail && detail.amenities.length > 0 && (
-        <div className="mb-5">
-          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Amenities</p>
-          <ul className="flex flex-wrap gap-2">
-            {detail.amenities.map((a) => (
-              <li key={a} className="rounded-pill bg-surface-elevated px-2.5 py-0.5 text-meta font-medium text-text">
-                {amenityLabel(a)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {detail && detail.accessibility.length > 0 && (
-        <div className="mb-5">
-          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Accessibility</p>
-          <ul className="flex flex-wrap gap-2">
-            {detail.accessibility.map((t) => (
-              <li key={t} className="rounded-pill bg-surface-elevated px-2.5 py-0.5 text-meta font-medium text-text">
-                {accessibilityLabel(t)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {rules.length > 0 && (
-        <div className="mb-5">
-          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Good to know</p>
-          <ul className="flex flex-wrap gap-2">
-            {rules.map((r) => (
-              <li key={r} className="rounded-pill bg-primary-bg px-2.5 py-0.5 text-meta font-medium text-primary-strong">
-                {r}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      </>
-      )}
     </ListingDetailTemplate>
     </ViewerProvider>
   )

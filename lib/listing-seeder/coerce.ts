@@ -43,8 +43,8 @@ export function coerceDetails(raw: RawListingDetail[] | undefined): ListingDetai
   if (!Array.isArray(raw)) return []
   const out: ListingDetail[] = []
   for (const item of raw) {
-    const label = (item?.label ?? '').trim().slice(0, DETAIL_LABEL_MAX)
-    const value = (item?.value ?? '').trim().slice(0, DETAIL_VALUE_MAX)
+    const label = typeof item?.label === 'string' ? item.label.trim().slice(0, DETAIL_LABEL_MAX) : ''
+    const value = typeof item?.value === 'string' ? item.value.trim().slice(0, DETAIL_VALUE_MAX) : ''
     if (!label || !value) continue
     out.push({ label, value })
     if (out.length >= MAX_DETAILS) break
@@ -58,6 +58,33 @@ const LISTING_KIND_SET = new Set<string>(LISTING_KINDS.map((k) => k.key))
  *  The seeder has no crawl; the paste IS the source of truth. PURE. */
 function pasteSource(pastedText: string): HarvestedSource[] {
   return [{ id: 'paste', kind: 'paste', fetchedAt: '', text: pastedText ?? '' }]
+}
+
+/** Copy prose only when the value and its entire citation occur verbatim in the source.
+ * A real but unrelated citation must never launder newly written prose. */
+function copiedValue(field: RawCitedField | undefined, pastedText: string): string | undefined {
+  if (field?.kind !== 'fact' || typeof field.value !== 'string' || typeof field.snippet !== 'string') return undefined
+  const value = field.value.trim()
+  const snippet = field.snippet.trim()
+  return value && snippet && snippet.includes(value) && pastedText.includes(snippet) ? value : undefined
+}
+
+/** Recheck stored prose too: older intakes may contain model-written copy. Human edits
+ * remain valid only when the recorded human confirmation matches the current value. */
+export function sourceOnlyListingCopy<T extends { title?: unknown; description?: unknown }>(
+  draft: T, ledger: ProvenanceLedger, pastedText: string,
+): T {
+  const result = { ...draft }
+  for (const path of ['title', 'description'] as const) {
+    const value = typeof draft[path] === 'string' ? draft[path].trim() : ''
+    const accepted = value && (ledger[path] ?? []).some((entry) =>
+      entry.verifiedBy === 'human'
+        ? entry.snippet?.trim() === value
+        : copiedValue({ value, kind: entry.kind, snippet: entry.snippet }, pastedText) === value,
+    )
+    Object.assign(result, { [path]: accepted ? value : path === 'title' ? '' : null })
+  }
+  return result
 }
 
 /**
@@ -77,15 +104,16 @@ export function coerceListingExtraction(
 
   /** Land a grounded ledger entry at `path` and return the trimmed value (or undefined when empty). */
   const put = (path: string, field: RawCitedField | undefined): string | undefined => {
-    const value = (field?.value ?? '').trim()
+    const value = typeof field?.value === 'string' ? field.value.trim() : ''
     if (!field || !value) return undefined
+    if ((path === 'title' || path === 'description') && !copiedValue(field, pastedText)) return undefined
     // `path` is a fixed literal below (never caller-derived), so there is no prototype-pollution risk.
     ledger[path] = [groundField(field as RawExtractedField, sources)]
     return value
   }
 
   if (kind === 'classifieds') {
-    return { draft: coerceClassifieds(raw as ClassifiedsExtraction, put), ledger }
+    return { draft: coerceClassifieds(raw as ClassifiedsExtraction, put, pastedText), ledger }
   }
   return { draft: coerceHousing(raw as HousingExtraction, put, sources, ledger), ledger }
 }
@@ -93,7 +121,7 @@ export function coerceListingExtraction(
 type Put = (path: string, field: RawCitedField | undefined) => string | undefined
 
 /** Classifieds -> market_listings draft. */
-function coerceClassifieds(raw: ClassifiedsExtraction, put: Put): ClassifiedsDraft {
+function coerceClassifieds(raw: ClassifiedsExtraction, put: Put, pastedText: string): ClassifiedsDraft {
   return {
     kind: 'classifieds',
     title: put('title', raw.title) ?? '',
@@ -101,7 +129,7 @@ function coerceClassifieds(raw: ClassifiedsExtraction, put: Put): ClassifiedsDra
     listingKind: clampListingKind(raw.listingKind?.value),
     category: put('category', raw.category) ?? null,
     priceNote: put('priceNote', raw.priceNote) ?? null,
-    details: coerceDetails(raw.details),
+    details: coerceDetails(raw.details).filter((detail) => pastedText.includes(detail.value)),
     // The seeder never publishes a scraped exact address: a seeded listing is always area-only.
     pickupPrecision: 'area',
     neighborhood: put('neighborhood', raw.neighborhood) ?? null,

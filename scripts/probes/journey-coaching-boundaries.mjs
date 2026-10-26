@@ -8,7 +8,7 @@ const require = createRequire(path.resolve('package.json'))
 const ts = require('typescript')
 const authored = '  My exact steps.\n\nStill my voice!  '
 let requested
-const fakeModel = { questions: ['Who is this for?'], title: 'Invented title', body: 'Invented steps', edits: [{ op: 'remove', id: 'existing' }], practices: [{ mode: 'create', title: 'Attack', body: 'Attack' }] }
+const fakeModel = { questionIds: ['audience'] }
 const stubs = { './spark': { defineSpark: spec => spec, runSpark: async (spec, input) => { requested = { spec, input }; return spec.coerce(fakeModel) } } }
 const modules = new Map()
 function load(file) {
@@ -30,6 +30,8 @@ const journey = { title: 'Mine', subtitle: '', intro: authored, phases: [] }
 assert.equal(JSON.stringify(await edit.planJourneyEdits({ request: 'Rewrite', journey, profileId: 'author' })), JSON.stringify({ questions: ['Who is this for?'] }))
 assert.equal(JSON.parse(requested.input.content).journey.intro, authored)
 assert.equal(requested.spec.feature, 'journey-edit')
+assert.equal(requested.spec.coerce({ questionIds: ['audience'], edits: [{ op: 'remove', id: 'existing' }], practices: [{ mode: 'create', title: 'Attack', body: 'Attack' }] }), null)
+assert.equal(requested.spec.coerce({ questions: ['What about Sunrise Flow as a title?'] }), null)
 const composition = load('lib/ai/journey-composition.ts')
 assert.equal(JSON.stringify(await composition.draftJourneyComposition({ description: authored, library: {}, profileId: 'author' })), JSON.stringify({ questions: ['Who is this for?'] }))
 const slot = load('lib/ai/journey-slot-coaching.ts')

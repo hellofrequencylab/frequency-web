@@ -194,9 +194,11 @@ describe('the public Journey page states the price', () => {
   it('does not tell a paying visitor the Journey is free', () => {
     // The free copy still exists for a free Journey; what must not exist is a path where an offer
     // is present and the free copy still renders.
-    const freeCopy = src.indexOf('Free to start')
-    expect(freeCopy).toBeGreaterThan(-1)
+    const fq = code('components', 'frequency', 'site', 'pages', 'discover', 'journeys.tsx')
+    expect(fq.indexOf('Free to start')).toBeGreaterThan(-1)
     expect(src).toMatch(/offer && priceLabel \?/)
+    // The free copy sits in the branch where there is no sale.
+    expect(fq).toMatch(/sale \? \(/)
   })
 
   it('emits the Offer in structured data', () => {
@@ -267,28 +269,16 @@ describe('there is exactly one enrol control per page', () => {
     // There were THREE — hero, rail and repeat card — each rendering an EnrollCta, which since
     // ADR-1400 means each mounting its own Stripe checkout island on a priced Journey.
     const src = code('app', '(main)', 'journeys', '[slug]', 'page.tsx')
-    // ADR-1740: the page has two design branches (Frequency returns early, DAWN below it). Each
-    // renders exactly one enrol control; a build carries only one branch, so a page never has two.
-    const at = src.indexOf("if (SITE_DESIGN === 'frequency')")
-    let branches = [src]
-    if (at > -1) {
-      const open = src.indexOf('{', at)
-      let depth = 0
-      let end = open
-      for (; end < src.length; end++) {
-        if (src[end] === '{') depth++
-        else if (src[end] === '}' && --depth === 0) break
-      }
-      branches = [src.slice(open, end + 1), src.slice(0, at) + src.slice(end + 1)]
-    }
-    for (const b of branches) expect(b.match(/buyControl=\{buyControl\}/g) ?? []).toHaveLength(1)
-    expect(src).toContain('interiorSide=')
+    // One design (ADR-1880): the page renders exactly one enrol control.
+    expect(src.match(/buyControl=\{buyControl\}/g) ?? []).toHaveLength(1)
+    expect(src).toContain('enrol={')
   })
 
   it('the closing CTA is an anchor to that one control, not a second copy', () => {
     const src = code('app', '(main)', 'journeys', '[slug]', 'page.tsx')
-    expect(src).toContain('id="enrol"')
-    expect(src).toContain('href="#enrol"')
+    // The Frequency body owns the enrol anchor; the page hands it the single control.
+    expect(src).toContain('enrol={')
+    expect(src).not.toContain('href="#enrol"')
   })
 
   it('the hero override that forced a button onto the cover is gone', () => {
@@ -368,8 +358,10 @@ describe('listing areas open the Journey sales page, not a product uuid', () => 
 
   it('the public pitch sends a paid visitor to sign-in, not a Market uuid', () => {
     const src = code('app', 'discover', 'journeys', '[slug]', 'page.tsx')
-    expect(src).toContain('journeyBuySignInPath')
+    const fq = code('components', 'frequency', 'site', 'pages', 'discover', 'journeys.tsx')
+    expect(fq).toContain('journeyBuySignInPath')
     expect(src).not.toContain('/market/${offer.productId}')
+    expect(fq).not.toContain('/market/${')
   })
 })
 

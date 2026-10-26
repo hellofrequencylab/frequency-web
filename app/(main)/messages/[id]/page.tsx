@@ -1,18 +1,12 @@
 import { notFound, redirect } from 'next/navigation'
 import { after } from 'next/server'
-import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronLeft, LogOut, UsersRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { MessageThread, type Message } from '@/components/messages/thread'
-import { getInitials } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { PageHeading } from '@/components/templates'
+import { type Message } from '@/components/messages/thread'
 import { leaveConversation } from '../actions'
 import { ConversationRenameButton } from '@/components/messages/conversation-rename-button'
 import { chatDmRoutesRetiredFlag } from '@/lib/platform-flags'
 import { DOCK_DEFAULT_PATH, dockThreadPath } from '@/lib/messages/dock-open'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqIcon } from '@/components/frequency/icon'
 import { FqAvatar } from '@/components/frequency/members/shared/avatar'
 import { FrequencyMessages } from '@/components/frequency/members/messages/messages-body'
@@ -152,179 +146,48 @@ export default async function ConversationPage({
       .eq('conversation_id', conversationId)
       .eq('profile_id', myProfileId)
   })
-
-  // Identity glyph for the compact takeover bar: the group icon, the peer's avatar,
-  // or initials. Kept as a leading element beside the shared PageHeading title.
-  // THE DESIGN SWITCH (ADR-1737): fixed at build time; a DAWN deploy renders the takeover below.
-  if (SITE_DESIGN === 'frequency') {
-    const peer = !isGroup ? others[0] ?? null : null
-    return (
-      <FrequencyMessages
-        supabase={supabase}
-        myProfileId={myProfileId}
-        activeKey={`dm:${conversationId}`}
-        pane={
-          <section className="panel fa-pane" aria-label={displayName}>
-            <div className="row fa-pane-h">
-              <Link href="/messages" className="btn txt sm fqm-msg-back" aria-label="All messages">←</Link>
-              {peer ? (
-                <FqAvatar url={peer.avatar_url} name={peer.display_name} size="m" />
-              ) : (
-                <span className="ic" aria-hidden><FqIcon name="contacts" /></span>
-              )}
-              <span className="grow">
-                <span className="t1" style={{ display: 'block' }}>{displayName}</span>
-                <span className="t2">{isGroup ? `${participants.length} people` : peer ? `@${peer.handle}` : ''}</span>
-              </span>
-              {peer ? (
-                <Link className="btn sm" href={`/people/${peer.handle}`}>
-                  <FqIcon name="user" />
-                  Profile
-                </Link>
-              ) : isGroup ? (
-                <>
-                  <ConversationRenameButton conversationId={conversationId} currentName={conv.name as string | null} />
-                  <form action={leaveConversation.bind(null, conversationId)}>
-                    <button type="submit" className="btn sm">Leave</button>
-                  </form>
-                </>
-              ) : null}
-            </div>
-            <FqDmThread
-              conversationId={conversationId}
-              initialMessages={messages}
-              myProfileId={myProfileId}
-              participants={participants.map((p) => ({ id: p.id, display_name: p.display_name }))}
-              peerFirstName={peer ? peer.display_name.split(' ')[0] ?? null : null}
-            />
-          </section>
-        }
-      />
-    )
-  }
-
-  const avatar = isGroup ? (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg">
-      <UsersRound className="h-4 w-4 text-primary-strong" />
-    </span>
-  ) : others[0] ? (
-    others[0].avatar_url ? (
-      <Image src={avatarSrc(others[0].avatar_url)} alt={others[0].display_name} width={36} height={36} className="h-9 w-9 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(others[0].avatar_url)} />
-    ) : (
-      <span className="flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg text-meta font-semibold text-primary-strong">
-        {getInitials(others[0].display_name)}
-      </span>
-    )
-  ) : null
-
-  // The title is the conversation identity; a 1:1 thread links to the peer's profile.
-  const titleNode = isGroup ? (
-    <span className="inline-flex items-center gap-2">
-      {displayName}
-      <ConversationRenameButton conversationId={conversationId} currentName={conv.name as string | null} />
-    </span>
-  ) : others[0] ? (
-    <Link href={`/people/${others[0].handle}`} className="transition-opacity hover:opacity-80">
-      {others[0].display_name}
-    </Link>
-  ) : (
-    'Conversation'
-  )
-
-  const subtitle = isGroup
-    ? `${participants.length} people`
-    : others[0]
-      ? `@${others[0].handle}`
-      : undefined
-
-  // Bleed the chat surface to the shell's edges. The negative margin must MIRROR the shell's
-  // responsive padding (px-4 sm:px-6 lg:px-8); a flat -mx-6 over-pulled on mobile (bleeding 8px
-  // past the viewport and causing a horizontal scroll) and under-pulled at lg. dvh, not vh, so
-  // the iOS dynamic toolbar does not push the composer off-screen.
+  const peer = !isGroup ? others[0] ?? null : null
   return (
-    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-var(--app-header-h)-var(--tab-bar-h))] md:h-[calc(100dvh-var(--app-header-h))]">
-      {/* Takeover chat bar — bespoke, full-bleed chrome (the documented exception,
-          MEMBER-DESIGN-SYSTEM §207), but the identity title now flows through the
-          shared PageHeading grammar instead of a hand-rolled <h1>. */}
-      {/* header-ok: conversation pane, not a page header — bespoke takeover chrome (§207); the title routes through PageHeading */}
-      <header className="shrink-0 flex items-center gap-3 border-b border-border bg-surface px-5 py-3">
-        <Link
-          href="/messages"
-          className="md:hidden -ml-1 rounded-control p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-muted"
-          aria-label="Back"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
-        {avatar}
-        {/* Compact takeover register: PageHeading carries the title/meta semantics, but
-            the bar tones its page-band scale down (no bottom margin, base title, xs meta). */}
-        <div className="min-w-0 flex-1 [&>div]:mb-0 [&_h1]:mb-0 [&_h1]:truncate [&_h1]:text-body [&_h1]:sm:text-body [&_p]:text-meta">
-          <PageHeading
-            title={titleNode}
-            description={subtitle}
-            divider={false}
-            adminBar={false}
-            actions={
-              isGroup ? (
+    <FrequencyMessages
+      supabase={supabase}
+      myProfileId={myProfileId}
+      activeKey={`dm:${conversationId}`}
+      pane={
+        <section className="panel fa-pane" aria-label={displayName}>
+          <div className="row fa-pane-h">
+            <Link href="/messages" className="btn txt sm fqm-msg-back" aria-label="All messages">←</Link>
+            {peer ? (
+              <FqAvatar url={peer.avatar_url} name={peer.display_name} size="m" />
+            ) : (
+              <span className="ic" aria-hidden><FqIcon name="contacts" /></span>
+            )}
+            <span className="grow">
+              <span className="t1" style={{ display: 'block' }}>{displayName}</span>
+              <span className="t2">{isGroup ? `${participants.length} people` : peer ? `@${peer.handle}` : ''}</span>
+            </span>
+            {peer ? (
+              <Link className="btn sm" href={`/people/${peer.handle}`}>
+                <FqIcon name="user" />
+                Profile
+              </Link>
+            ) : isGroup ? (
+              <>
+                <ConversationRenameButton conversationId={conversationId} currentName={conv.name as string | null} />
                 <form action={leaveConversation.bind(null, conversationId)}>
-                  <button
-                    type="submit"
-                    className="flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
-                  >
-                    <LogOut className="h-3 w-3" /> Leave
-                  </button>
+                  <button type="submit" className="btn sm">Leave</button>
                 </form>
-              ) : undefined
-            }
-            inlineActions
-          />
-        </div>
-      </header>
-
-      {/* Body */}
-      <div className="flex-1 min-h-0 flex">
-        <div className="flex-1 min-w-0 overflow-hidden">
-          <MessageThread
+              </>
+            ) : null}
+          </div>
+          <FqDmThread
             conversationId={conversationId}
             initialMessages={messages}
             myProfileId={myProfileId}
-            participants={participants}
+            participants={participants.map((p) => ({ id: p.id, display_name: p.display_name }))}
+            peerFirstName={peer ? peer.display_name.split(' ')[0] ?? null : null}
           />
-        </div>
-
-        {/* Members sidebar (group DMs only, desktop) */}
-        {isGroup && (
-          <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-border bg-surface/30 dark:bg-canvas/30">
-            <div className="px-4 py-3 border-b border-border">
-              <h3 className="text-2xs font-semibold uppercase tracking-wider text-muted">
-                People ({participants.length})
-              </h3>
-            </div>
-            <ul className="flex-1 overflow-y-auto divide-y divide-border/50">
-              {participants.map(p => (
-                <li key={p.id}>
-                  <Link
-                    href={`/people/${p.handle}`}
-                    className="flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated/50 transition-colors"
-                  >
-                    {p.avatar_url ? (
-                      <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-pill object-cover shrink-0" style={avatarFocusStyle(p.avatar_url)} />
-                    ) : (
-                      <div className="w-7 h-7 rounded-pill bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0 select-none">
-                        {getInitials(p.display_name)}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-meta font-medium text-text truncate">{p.display_name}</p>
-                      {p.id === myProfileId && <p className="text-3xs text-muted">You</p>}
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </aside>
-        )}
-      </div>
-    </div>
+        </section>
+      }
+    />
   )
 }

@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1396",
+  "title": "Listing extraction copies source prose and leaves missing words for the operator",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": { "file": "lib/listing-seeder/coerce.ts", "ref": "Daniel 2026-10-26: AI coaches and extracts facts without creating content for people" },
+  "detail": "Listing extraction no longer requests generated or inferred title/description copy or applies the writing voice primer. The pure coercer requires a fact with an exact source citation containing the exact prose value, so an unrelated real citation cannot launder new wording. Review/list reads suppress unsupported historical title/description and their badges without writing on read. Publish independently rechecks stored provenance, blocks a missing title before public writes and omits unsupported descriptions. Matching human-edited provenance remains valid. The review board offers fixed writing questions for missing fields; manual editing, staff gates, budgets/accounting, photos and claim flow remain. Extracted detail values must occur in the paste. This proves copy provenance, not the truth of pasted claims, semantic source safety or live provider acceptance; controlled factual normalization remains subject to operator review.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/listing-source-copy.mjs",
+    "checked": "2026-10-26",
+    "evidence": "Actual-source coercion/publish probe exercises adversarial unrelated citation, generated legacy title denial before writes, exact source excerpts and human-authored payload preservation with inert IO. Focused suites cover provider boundaries, actual intake/review persistence, rendered missing-field guidance, manual edits, public publish payload and existing seeder behavior. Full CI/preview and authenticated production acceptance remain separate."
+  },
+  "closed": "2026-10-26"
+}
