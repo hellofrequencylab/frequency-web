@@ -9,6 +9,7 @@
 // lib/theme/validate.ts (allowlist names + tight value checks).
 
 import type { CSSProperties } from 'react'
+import { MIDNIGHT_ACCENT, MIDNIGHT_SURFACE } from '@/lib/theme/midnight'
 
 // ── Curated fonts. Real web fonts are self-hosted via next/font in app/layout.tsx and
 // exposed as CSS variables on <html> (so they cascade to the public Spotlight route); each
@@ -108,6 +109,14 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
     id: 'forest', label: 'Forest',
     theme: { accent: '#3fa34d', surface: '#10231a', text: '#eefaf0', font: { heading: 'serif', body: 'serif' }, card: { radius: 'lg', shadow: 'soft', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },
       bg: { kind: 'gradient', gradient: { type: 'linear', angle: 180, animated: false, speed: 12, stops: [{ color: '#0b3d2e', pos: 0 }, { color: '#1b5e3f', pos: 100 }] } } },
+  },
+  // Midnight: the Midnight design system's Spotlight (one violet accent on true black, bone type, square cards, no
+  // shadow). Every value reads the one Midnight token set (lib/theme/midnight.ts); the faces are the nearest of the
+  // allowlist (Bodoni Moda and Marcellus load on websites only).
+  {
+    id: 'midnight', label: 'Midnight',
+    theme: { accent: MIDNIGHT_ACCENT.accent.toLowerCase(), surface: MIDNIGHT_SURFACE.raised, text: MIDNIGHT_SURFACE.text, font: { heading: 'serif', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 200, focusY: 50 },
+      bg: { kind: 'solid', color: MIDNIGHT_SURFACE.canvas } },
   },
   {
     id: 'mono', label: 'Mono',

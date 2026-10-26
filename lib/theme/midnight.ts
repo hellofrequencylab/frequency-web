@@ -39,6 +39,21 @@ const P = MIDNIGHT_PALETTE
 /** The violet, its text shade on black, and the label that reads on it. */
 export const MIDNIGHT_ACCENT = { accent: P.violet400, text: P.violet300, on: P.black50, bg: P.violet900 } as const
 
+/** THE ONE FLAT TOKEN SET every other Midnight surface reads (ADR pending): the Spotlight preset, the Space page,
+ *  email and event pages take their literal values from here and from MIDNIGHT_ACCENT, so a token round is one edit
+ *  and no surface keeps a copy. The website reads the same palette through MIDNIGHT_TOKENS_CSS. */
+export const MIDNIGHT_SURFACE = {
+  canvas: P.black50,
+  raised: P.black100,
+  elevated: P.black200,
+  border: P.black300,
+  text: P.bone50,
+  muted: P.ash200,
+  subtle: P.ash300,
+  solid: P.bone50,
+  onSolid: P.black50,
+} as const
+
 /** Frequency's season contract: winter frost, spring moss, summer ember, fall deep ember. */
 export const MIDNIGHT_SEASONS = { winter: P.frost400, spring: P.moss400, summer: P.ember400, fall: P.ember500 } as const
 
@@ -80,9 +95,11 @@ const MIDNIGHT_VARS = `
 --mn-shadow-menu:0 0 0 1px var(--mn-night-500),0 18px 40px -16px rgba(0,0,0,.95);
 --mn-glow:0 0 0 1px color-mix(in srgb,var(--mn-violet-400) 50%,transparent),0 0 24px -4px color-mix(in srgb,var(--mn-violet-400) 45%,transparent);
 --mn-blur:blur(14px) saturate(1.1);
+--mn-grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 --mn-size-eyebrow:.6875rem;--mn-size-meta:.75rem;--mn-size-body-sm:.875rem;--mn-size-body:1rem;--mn-size-lead:1.25rem;
 --mn-size-h3:clamp(1.75rem,3vw,2.5rem);--mn-size-h2:clamp(2.25rem,4.5vw,3.75rem);--mn-size-h1:clamp(3rem,6.5vw,5.75rem);--mn-size-hero:clamp(3.5rem,9vw,8.5rem);
 --mn-leading-display:1;--mn-leading-snug:1.2;--mn-leading-body:1.65;--mn-tracking-display:-.02em;--mn-tracking-label:.18em;--mn-tracking-eyebrow:.22em;
+--mn-max:96rem;--mn-wide:80rem;--mn-narrow:40rem;--mn-read:46rem;
 --mn-section-y:clamp(5rem,10vw,9rem);--mn-section-tight:clamp(3rem,6vw,5rem);--mn-gutter:clamp(1.25rem,4vw,3rem);--mn-measure:66ch;
 --mn-r-card:0px;--mn-r-control:2px;--mn-r-pill:9999px;--mn-r-arch:50% 50% 0 0 / 28% 28% 0 0;
 --mn-ease:cubic-bezier(.22,1,.36,1);--mn-ease-in-out:cubic-bezier(.65,0,.35,1);--mn-dur-fast:140ms;--mn-dur-base:320ms;--mn-dur-slow:900ms;
@@ -113,7 +130,7 @@ export const MIDNIGHT_TOKENS_CSS = `
 --space-section:var(--mn-section-y);--space-section-tight:var(--mn-section-tight);--space-gutter:var(--mn-gutter);
 --motion-fast:var(--mn-dur-fast);--motion-base:var(--mn-dur-base);--motion-slow:var(--mn-dur-slow);--ease-out:var(--mn-ease);--ease-in-out:var(--mn-ease-in-out);
 --shadow-float:var(--mn-shadow-float);--shadow-menu:var(--mn-shadow-menu);
-background:var(--color-canvas);color:var(--color-text);font-family:var(--mn-sans)}
+background:var(--color-canvas);color:var(--color-text);font-family:var(--mn-sans);counter-reset:mn-index}
 [data-house-theme="midnight"][data-site-corners="soft"]{--mn-r-card:14px;--mn-r-control:8px}
 [data-house-theme="midnight"][data-site-corners="subtle"]{--mn-r-card:6px;--mn-r-control:4px}
 [data-house-theme="midnight"][data-site-corners="square"]{--mn-r-card:0px;--mn-r-control:2px}

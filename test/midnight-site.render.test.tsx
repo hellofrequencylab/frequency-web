@@ -11,6 +11,7 @@ import { BlockRender } from '@/lib/page-editor/block-render'
 import { config } from '@/lib/page-editor/config'
 import { MIDNIGHT_CSS } from '@/components/sites/midnight-css'
 import { midnightSitePages } from '@/lib/sites/midnight-home'
+import { midnightAccentVars } from '@/lib/theme/midnight'
 
 vi.mock('@/components/sites/site-admin-gate', () => ({
   useSiteAdmin: () => true,
@@ -30,9 +31,11 @@ const metadata = { space: { identity: { name: 'Nocturne' }, slug: 'nocturne', ta
 
 function chrome(children: React.ReactNode) {
   return (
+    <div style={midnightAccentVars(null) as React.CSSProperties}>
     <SiteChrome brandName="Nocturne" homeHref="/" links={menu} cta={{ href: '/book', label: 'Book a session', external: false }} themeFonts skin={{ theme: 'midnight', season: 'fall' }} tagline="Counsel, gatherings and journeys." showBrandFooter>
       {children}
     </SiteChrome>
+    </div>
   )
 }
 

@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1306",
+  "title": "The Midnight mega theme: the design system as the stock Midnight site theme, with all 13 blocks in the editor",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/midnight-theme.mjs"
+  },
+  "detail": "Owner ask 2026-10-26: install the Midnight Design System in the slot of the old navy and amber Midnight, loaded in the theme editor with every design block an editor block, fully tokened for Website, Spotlight and Space. ADR-1876. lib/theme/midnight.ts holds the palette, accent, seasons and every --mn-* token, plus MIDNIGHT_SURFACE, the one flat token set that Spotlight and the Space accent read (email and events can adopt it). components/sites/midnight-css.ts is the skin, midnight-blocks-css.ts the block sheet, both tokens only and scoped under [data-house-theme=\"midnight\"]. Faces (Bodoni Moda, Marcellus, Geist) load only on the site page. components/page-editor/blocks/midnight.tsx registers the 13 design blocks (hero, live, doors, offerings, journeys, gatherings, membership, proof, shop, library, letter, faq, cta); journeys, gatherings, proof and faq read the live Space data bag, and every block reads saved content, then the theme sample copy, then the block default. lib/sites/midnight-home.ts seeds Home and nine inner pages with the Nocturne sample copy. Spotlight gets a midnight preset and Space pages get the Midnight default accent. The violet stays in theme-contract.json and is pending the owner's answer; a Space accent overrides it. Not built: the dark Space surface skin (the app skin data-skin=midnight shares the name), the design's logo ring and announcement bar, and the mist and smoke textures beyond CSS gradients.",
+  "wave": "W7"
+}

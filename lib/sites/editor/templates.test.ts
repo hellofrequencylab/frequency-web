@@ -13,7 +13,7 @@ describe('website page layouts', () => {
   it('uses each theme’s hero and story presets rather than a shared fixed layout', () => {
     expect(websiteTemplateSections('Menswork', 'Program')[0]).toEqual({ type: 'PhotoHero', props: { content: 'below' } })
     expect(websiteTemplateSections('DAWN', 'Program')[0]).toEqual({ type: 'Hero', props: { variant: 'split' } })
-    expect(websiteTemplateSections('Midnight', 'Program')[0]).toMatchObject({ type: 'PhotoHero', props: { content: 'below', variant: 'image' } })
+    expect(websiteTemplateSections('Midnight', 'Program')[0]).toMatchObject({ type: 'MidnightHero', props: { layout: 'split' } })
     expect(websiteTemplateSections('DAWN', 'About')[0].props).toEqual({ side: 'left' })
     expect(websiteTemplateSections('Midnight', 'About')[0].props).toEqual({ side: 'right' })
   })

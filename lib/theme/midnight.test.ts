@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { existsSync } from 'node:fs'
 import { contrastRatio } from '@/lib/spaces/accent'
 import contract from '@/lib/sites/editor/theme-contract.json'
-import { MIDNIGHT_ACCENT, MIDNIGHT_PALETTE as P, MIDNIGHT_SEASONS, MIDNIGHT_TOKENS_CSS, midnightAccentVars } from './midnight'
+import { MIDNIGHT_ACCENT, MIDNIGHT_PALETTE as P, MIDNIGHT_SEASONS, MIDNIGHT_SURFACE, MIDNIGHT_TOKENS_CSS, midnightAccentVars } from './midnight'
 import { websiteThemeVars, WEBSITE_THEME_FONT_VARS } from '@/lib/sites/editor/theme'
-import { midnightSitePages } from '@/lib/sites/midnight-home'
+import { midnightSitePages, midnightHomeBlocks } from '@/lib/sites/midnight-home'
+import { THEME_PRESETS, validateSpotlightTheme } from '@/lib/spotlight/theme'
+import { spacePageDefaultAccent, readSiteStyle, siteLook, THEME_LOOK } from '@/lib/theme/site-style'
+import { initialWebsiteTheme } from '@/lib/sites/editor/seed'
+import { websiteTemplateSections } from '@/lib/sites/editor/templates'
 
 describe('the Midnight theme tokens', () => {
   it('reads at AA wherever text meets a ground', () => {
@@ -44,5 +48,26 @@ describe('the Midnight theme tokens', () => {
     const urls = JSON.stringify(midnightSitePages()).match(/\/sites\/midnight\/photos\/[a-z-]+\.jpg/g) ?? []
     expect(urls.length).toBeGreaterThan(0)
     for (const u of new Set(urls)) expect(existsSync(`public${u}`), u).toBe(true)
+  })
+
+  it('reads the Spotlight preset and the Space page accent from the same token set', () => {
+    const preset = THEME_PRESETS.find((t) => t.id === 'midnight')
+    expect(preset).toBeTruthy()
+    const t = validateSpotlightTheme(preset!.theme)
+    expect(t.accent).toBe(MIDNIGHT_ACCENT.accent.toLowerCase())
+    expect(t.surface).toBe(MIDNIGHT_SURFACE.raised.toLowerCase())
+    expect(t.text).toBe(MIDNIGHT_SURFACE.text.toLowerCase())
+    expect(t.bg).toEqual({ kind: 'solid', color: MIDNIGHT_SURFACE.canvas.toLowerCase() })
+    expect(contrastRatio(MIDNIGHT_SURFACE.text, MIDNIGHT_SURFACE.canvas)).toBeGreaterThanOrEqual(4.5)
+    const synced = { siteStyle: { theme: 'midnight', synced: true } }
+    expect(spacePageDefaultAccent(synced, '#123456')).toBe(MIDNIGHT_ACCENT.accent)
+    expect(spacePageDefaultAccent({ siteStyle: { theme: 'midnight', synced: false } }, '#123456')).toBe('#123456')
+  })
+
+  it('is a registered site theme with its own look, and the editor opens on its Home', () => {
+    expect(THEME_LOOK.midnight).toEqual({ corners: 'square', spacing: 'airy', header: 'bar', footer: 'full' })
+    expect(siteLook(readSiteStyle({ siteStyle: { theme: 'midnight' } }))).toEqual(THEME_LOOK.midnight)
+    expect(initialWebsiteTheme({ siteStyle: { theme: 'midnight' } })).toBe('Midnight')
+    expect(websiteTemplateSections('Midnight', 'Program').map((b) => b.type)).toEqual(midnightHomeBlocks().map((b) => b.type))
   })
 })
