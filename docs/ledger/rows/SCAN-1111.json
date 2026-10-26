@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1111",
+  "title": "LIVE-1328 closes on a probe that measures design selection, not email rendering",
+  "status": "open",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "XS",
+  "source": {
+    "file": "docs/ledger/rows/LIVE-1328.json",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "LIVE-1328 is done but its probe is the email render check and its evidence says CI and production proof are pending. Point it at a probe that fails if resolveDesign can return anything but frequency, and trim the status log out of detail.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs row-1328-probe",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}
