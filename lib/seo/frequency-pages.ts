@@ -121,6 +121,19 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'Networks', path: '/networks' },
     ],
   },
+  midnight: {
+    path: '/themes/midnight',
+    title: 'Midnight: one site for your Spotlight, Space and website',
+    description:
+      'Midnight is a mega theme for guides, teachers and healers. Set up once, and your Spotlight, your Space on Frequency and your own website stay in step.',
+    shareTitle: 'Midnight: set it up once, run three surfaces',
+    headline: 'Midnight, a mega theme. Set it up once.',
+    lede: 'For guides, teachers and healers. Your Spotlight, your Space on Frequency and your own website, kept in step.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Midnight', path: '/themes/midnight' },
+    ],
+  },
 } as const satisfies Record<string, FrequencyPageSeo>
 
 /** The page's Metadata under Frequency: title, description, canonical, OpenGraph and X card, all from
