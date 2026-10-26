@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1348",
+  "title": "Separate winback coaching from recipient email copy",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/studio/winback.ts",
+    "ref": "Owner AI coaching direction and legacy winback audit, 2026-10-26"
+  },
+  "detail": "Winback proposal generation persists only the existing human-written operational template with server-owned provenance. AI is an explicit authenticated operator review returning ephemeral questions without recipient identity/history or proposal writes. Older unattributed/model or edited payloads are blocked before approval and again before execution; they remain available for dismissal rather than silently rewritten. Approval, suppression, unsubscribe and current send consent remain required. Question-shape validation is not a semantic guarantee; isolation from proposal/send paths is the structural boundary. Existing bounded candidate reads and targeting semantics are unchanged. Source and inert-IO verification only; no live email, database mutation or authenticated production review performed.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "evidence": "16 focused tests plus actual-source inert-IO probe verify no model copy persistence/send, privacy, usage guards and existing approval/send-consent gates.",
+    "cmd": "node scripts/probes/winback-authorship.mjs"
+  }
+}
