@@ -386,8 +386,8 @@
   --fq-accent: #3A8C99; /* export aqua deep, softened toward seaglass (owner: no harsh blue) */
   --fq-accent-soft: #E4F3F4; /* export accent-soft in sky */
   /* Text step of the accent (SCAN-1115, owner 2026-10-26): the fill aqua reads 3.4 to 3.9:1 as words. Text only; fills keep --fq-accent. */
-  --fq-accent-text: #26636F;
-  --fq-accent-2-text: #1F6F64;
+  --fq-accent-text: #26636F; /* token-ok: the palette literal, text step of the accent */
+  --fq-accent-2-text: #1F6F64; /* token-ok: the palette literal, text step of the second accent */
   --fq-bg-canvas: #F4F6F7; /* export canvas, cooled */
   --fq-bg-sunken: #E9EEF1; /* export sunken, cooled */
 }
