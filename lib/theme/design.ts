@@ -26,7 +26,7 @@
 
 /**
  * Every design system the platform can wear. Add one = a CSS file in app/themes/, an entry here and a
- * font module in lib/theme/design-fonts/<id>.ts (OG cards draw in Nunito for every design, lib/og/load-nunito.ts). The manifest
+ * font module in lib/theme/design-fonts/<id>.ts (OG cards use the Stage faces and Nunito glyph fallback, lib/og/load-stage-fonts.ts). The manifest
  * colours and the active font module are written from SITE_DESIGN by scripts/write-design-assets.mjs.
  */
 export type DesignId = 'dawn' | 'frequency'
