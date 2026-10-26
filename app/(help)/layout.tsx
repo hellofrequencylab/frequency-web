@@ -1,97 +1,10 @@
-import Link from 'next/link'
-import { MarketingHeader } from '@/components/layout/marketing-header'
-import { MarketingFooter } from '@/components/layout/marketing-footer'
-import { HelpNav } from '@/components/help/help-nav'
-import { HelpSearch } from '@/components/help/help-search'
 import { SupportChatLauncher } from '@/components/chat/support-chat-launcher'
 import { isSupportChatAvailable, supportChatFlagEnabled } from '@/lib/comms/chat-token'
-import { getAllCategories, getSearchIndex, helpHref } from '@/lib/help/content'
-import { getMenu, getMenuSettings } from '@/lib/menus/read'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 // Help-center chrome: shared marketing header/footer + a sticky sidebar (search +
 // topic nav). Public (not in proxy.ts PROTECTED_PATHS), statically generated.
 export default async function HelpLayout({ children }: { children: React.ReactNode }) {
-  // THE DESIGN SWITCH (ADR-1737, build-time), as app/(marketing)/layout.tsx makes it. Under Frequency
-  // the help center wears the public site's chrome (kit root, header v4, ft2 footer, FX) and no DAWN
-  // sidebar: Help.html's front page carries its own search and topic tabs, and every inner page
-  // (topic, article, What's new) renders its body in the kit (components/frequency/site/pages/help).
-  // The DB menu reads and the sidebar's index are skipped; DAWN is unchanged below.
-  if (SITE_DESIGN === 'frequency') {
-    const chat = supportChatFlagEnabled() && isSupportChatAvailable() ? <SupportChatLauncher /> : null
-    return <SiteShell after={chat}>{children}</SiteShell>
-  }
-
-  // DB-backed nav megas (lib/menus); fall back to code defaults on any miss.
-  const [categories, index, headerMenu, footerMenu, menuTimings] = await Promise.all([
-    getAllCategories(),
-    getSearchIndex(),
-    getMenu('header'),
-    getMenu('footer'),
-    getMenuSettings(),
-  ])
-  const nav = categories.map((c) => ({
-    slug: c.slug,
-    title: c.title,
-    articles: c.articles.map((a) => ({
-      slug: a.slug,
-      title: a.title,
-      href: helpHref(c.slug, a.slug),
-    })),
-  }))
-
-  return (
-    <>
-      {/* `detectClientAuth`, for the same reason the (marketing) layout sets it: these pages are
-          statically generated (see the note above), so the server cannot read auth here without
-          force-dynamicking the whole help centre. Without the flag the header rendered the
-          logged-out cluster on every help page forever — a member reading /help/the-quest was
-          offered "Sign in" and then invited to join the beta they are in. The flag upgrades the
-          chrome after hydration and leaves the prerendered body (and what a crawler indexes)
-          exactly as it was. */}
-      <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} detectClientAuth />
-      {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
-          tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-      {/* id="main" is the target of MarketingHeader's "Skip to content" link (WCAG 2.4.1);
-          without it the bypass-blocks link was broken on every help page. */}
-      <main id="main" tabIndex={-1} className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-        <div className="mx-auto flex max-w-6xl gap-10 px-4 py-10 lg:px-8">
-          <aside className="hidden w-64 shrink-0 lg:block">
-            <div className="sticky top-24 space-y-6">
-              <HelpSearch index={index} />
-              <Link
-                href="/help"
-                className="block text-body-sm font-medium text-muted hover:text-text"
-              >
-                Help home
-              </Link>
-              <HelpNav categories={nav} />
-              <Link
-                href="/help/changelog"
-                className="block text-meta text-subtle hover:text-text"
-              >
-                What&rsquo;s new
-              </Link>
-            </div>
-          </aside>
-          <div className="min-w-0 flex-1">
-            <div className="mb-6 lg:hidden">
-              <HelpSearch index={index} />
-            </div>
-            {children}
-          </div>
-        </div>
-      </main>
-      <MarketingFooter menu={footerMenu} />
-      {/* Anonymous live chat (ADR-816) — this PUBLIC surface owns the bottom-right corner
-          (docs/CHAT-SHELL-PLAN.md §2); the member shell owns its own via the dock. Off unless the
-          SUPPORT_CHAT switch is enabled (supportChatFlagEnabled in lib/comms/chat-token.ts; the
-          prefixed name it once carried is no longer read, LIVE-165, 2026-09-07). */}
-      {/* 2026-09-05 (scan2 L3-06): the build flag alone mounted the widget even when the server could
-          not mint its token (CONVERSATION_TOKEN_SECRET unset in production) or had no inbox owner, so
-          every chat attempt failed after writing rows. isSupportChatAvailable is the server-side gate. */}
-      {supportChatFlagEnabled() && isSupportChatAvailable() && <SupportChatLauncher />}
-    </>
-  )
+  const chat = supportChatFlagEnabled() && isSupportChatAvailable() ? <SupportChatLauncher /> : null
+  return <SiteShell after={chat}>{children}</SiteShell>
 }

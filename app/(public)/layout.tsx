@@ -1,7 +1,3 @@
-import { MarketingHeader } from '@/components/layout/marketing-header'
-import { MarketingFooter } from '@/components/layout/marketing-footer'
-import { getMenu, getMenuSettings } from '@/lib/menus/read'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 // Sitemap-advertised share URLs that used to live under (main) (SCAN-643 / ADR-1452).
@@ -13,30 +9,11 @@ import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 // Space share URLs (/spaces/<slug> and /spaces/<slug>/podcasts/<show>) live here
 // too (SCAN-644). Signed-in members rewrite to /full.
 
-export default async function PublicShareLayout({ children }: { children: React.ReactNode }) {
-  // THE DESIGN SWITCH (ADR-1737, build-time). Under Frequency these share pages wear the public
-  // Frequency chrome, exactly as app/(marketing)/layout.tsx does, so a listing or a product opened
-  // from the member Marketplace never lands in DAWN's header. SiteShell reads no request data, so
-  // the ISR pages under this group stay static. Public detail pages are COMMONS (a Space, a listing, an
-  // event: things to read and act on, guidelines/site-themes.md), so the members kit bodies here (the
-  // Space chrome) wear the light theme they were drawn for.
-  if (SITE_DESIGN === 'frequency') return <SiteShell surface="commons">{children}</SiteShell>
-  const [headerMenu, footerMenu, menuTimings] = await Promise.all([
-    getMenu('header'),
-    getMenu('footer'),
-    getMenuSettings(),
-  ])
-  return (
-    <>
-      <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} detectClientAuth />
-      <main id="main" className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-        <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:gap-10 lg:px-8">
-          <div className="hidden w-48 shrink-0 md:block" aria-hidden />
-          <div className="min-w-0 flex-1 py-6">{children}</div>
-          <div className="hidden w-72 shrink-0 lg:block" aria-hidden />
-        </div>
-      </main>
-      <MarketingFooter menu={footerMenu} />
-    </>
-  )
+export default function PublicShareLayout({ children }: { children: React.ReactNode }) {
+  // These share pages wear the public Frequency chrome, exactly as app/(marketing)/layout.tsx does, so a
+  // listing or a product opened from the member Marketplace never lands in a second header. SiteShell
+  // reads no request data, so the ISR pages under this group stay static. Public detail pages are COMMONS
+  // (a Space, a listing, an event: things to read and act on, guidelines/site-themes.md), so the members
+  // kit bodies here (the Space chrome) wear the light theme they were drawn for.
+  return <SiteShell surface="commons">{children}</SiteShell>
 }

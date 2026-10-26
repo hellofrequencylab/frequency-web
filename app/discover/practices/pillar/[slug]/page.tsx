@@ -1,16 +1,11 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getPillars, PILLAR_SLUGS } from '@/lib/pillars'
 import { searchLibraryPractices } from '@/lib/practices'
-import { PracticeCard, PillarChips } from '../../practice-card'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceListSchema, breadcrumbSchema } from '@/lib/jsonld'
-import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
-import { BetaCTA } from '@/components/marketing/marketing-ui'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyPillarPractices } from '@/components/frequency/site/pages/discover/practices'
 
 export const revalidate = 3600
@@ -83,60 +78,15 @@ export default async function PillarPracticesPage({
       { name: pillar.name, path: `/discover/practices/pillar/${slug}` },
     ]),
   ]
-
-  // THE DESIGN SWITCH (ADR-1737): the same Pillar read and JSON-LD, drawn in the site kit.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd data={schema} />
-        <FrequencyPillarPractices
-          pillar={pillar}
-          description={pillarDescription(pillar.name, pillar.description)}
-          pillars={pillars}
-          rows={rows}
-          image={hero.heroImage}
-        />
-      </>
-    )
-  }
-
   return (
     <>
-      <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
-        <JsonLd data={schema} />
-
-        {/* Public SEO surface: no operator admin bar (that's a member-app control). A
-            back-link returns to the full library, matching the breadcrumb trail. */}
-        <IndexTemplate
-          {...hero}
-          title={title}
-          description={pillarDescription(pillar.name, pillar.description)}
-          back={{ href: '/discover/practices', label: 'Practices' }}
-          adminBar={false}
-        >
-          <PillarChips pillars={pillars} active={slug} />
-
-          {rows.length === 0 ? (
-            <p className="text-muted">
-              No {pillar.name} practices yet.{' '}
-              <Link className="underline hover:text-text" href="/discover/practices">
-                Browse the full library
-              </Link>
-              .
-            </p>
-          ) : (
-            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {rows.map((p) => (
-                <PracticeCard key={p.id} p={p} />
-              ))}
-            </ul>
-          )}
-        </IndexTemplate>
-      </div>
-
-      <BetaCTA
-        heading="Practices stick when people are counting on you."
-        body={`Pick a ${pillar.name} practice, then find a Circle near you doing it on a standing rhythm. Join free and start showing up.`}
+      <JsonLd data={schema} />
+      <FrequencyPillarPractices
+        pillar={pillar}
+        description={pillarDescription(pillar.name, pillar.description)}
+        pillars={pillars}
+        rows={rows}
+        image={hero.heroImage}
       />
     </>
   )
