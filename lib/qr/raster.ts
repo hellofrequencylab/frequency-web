@@ -5,7 +5,8 @@
 
 import { Resvg, initWasm } from '@resvg/resvg-wasm'
 import { renderStyledQrSvg } from './render-styled'
-import { isSafeLogoSrc, isPrivateIp, type QrStyle } from './style'
+import { isSafeLogoSrc, type QrStyle } from './style'
+import { fetchPinnedLogo } from './remote-logo'
 import { SITE_URL } from '@/lib/site'
 
 // Init the wasm once per process. resvg's initWasm throws if called twice, so guard
@@ -38,22 +39,7 @@ async function inlineLogo(src: string): Promise<string | null> {
     // rasterizer can't load a bare path, so resolve it against our own origin (SITE_URL)
     // and fetch it like any other image. isSafeLogoSrc already guaranteed no '//' / '..'.
     const url = src.startsWith('/') ? new URL(src, SITE_URL).toString() : src
-    // Defense-in-depth vs DNS rebinding (ADR-274): the stored URL already passed the hostname
-    // allowlist (isSafeLogoSrc), but a public hostname can still RESOLVE to an internal IP. Look
-    // the host up and bail if any resolved address is private/loopback/metadata before fetching.
-    // (Residual TOCTOU: fetch re-resolves; acceptable for a blind, capped, image-only fetch.)
-    const { hostname } = new URL(url)
-    const { lookup } = await import('node:dns/promises')
-    const addrs = await lookup(hostname, { all: true })
-    if (addrs.length === 0 || addrs.some((a) => isPrivateIp(a.address))) return null
-
-    const res = await fetch(url, { signal: AbortSignal.timeout(4000) })
-    if (!res.ok) return null
-    const type = res.headers.get('content-type') ?? 'image/png'
-    if (!type.startsWith('image/')) return null
-    const buf = Buffer.from(await res.arrayBuffer())
-    if (buf.length > 512 * 1024) return null // cap at 512KB
-    return `data:${type};base64,${buf.toString('base64')}`
+    return await fetchPinnedLogo(new URL(url))
   } catch {
     return null
   }
