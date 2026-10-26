@@ -5,7 +5,8 @@
 
 import { Resvg, initWasm } from '@resvg/resvg-wasm'
 import { renderStyledQrSvg } from './render-styled'
-import { isSafeLogoSrc, isPrivateIp, type QrStyle } from './style'
+import { isSafeLogoSrc, type QrStyle } from './style'
+import { fetchPinnedLogo } from './remote-logo'
 import { SITE_URL } from '@/lib/site'
 
 // Init the wasm once per process. resvg's initWasm throws if called twice, so guard
@@ -38,50 +39,7 @@ async function inlineLogo(src: string): Promise<string | null> {
     // rasterizer can't load a bare path, so resolve it against our own origin (SITE_URL)
     // and fetch it like any other image. isSafeLogoSrc already guaranteed no '//' / '..'.
     const url = src.startsWith('/') ? new URL(src, SITE_URL).toString() : src
-    // Defense-in-depth vs DNS rebinding (ADR-274): the stored URL already passed URL syntax checks
-    // (isSafeLogoSrc), but a public hostname can still RESOLVE to an internal IP. Look
-    // the host up and bail if any resolved address is private/loopback/metadata before fetching.
-    // Residual TOCTOU: fetch re-resolves; this does not pin the connection to the checked address.
-    const { hostname } = new URL(url)
-    const { lookup } = await import('node:dns/promises')
-    const addrs = await lookup(hostname, { all: true })
-    if (addrs.length === 0 || addrs.some((a) => isPrivateIp(a.address))) return null
-
-    const res = await fetch(url, { signal: AbortSignal.timeout(4000), redirect: 'error' })
-    if (!res.ok) {
-      await res.body?.cancel()
-      return null
-    }
-    const type = res.headers.get('content-type') ?? 'image/png'
-    if (!type.startsWith('image/')) {
-      await res.body?.cancel()
-      return null
-    }
-    const maxBytes = 512 * 1024
-    const declaredLength = Number(res.headers.get('content-length'))
-    if (declaredLength > maxBytes || !res.body) {
-      await res.body?.cancel()
-      return null
-    }
-    const reader = res.body.getReader()
-    const chunks: Uint8Array[] = []
-    let length = 0
-    try {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        length += value.byteLength
-        if (length > maxBytes) {
-          await reader.cancel()
-          return null
-        }
-        chunks.push(value)
-      }
-    } finally {
-      reader.releaseLock()
-    }
-    const buf = Buffer.concat(chunks, length)
-    return `data:${type};base64,${buf.toString('base64')}`
+    return await fetchPinnedLogo(new URL(url))
   } catch {
     return null
   }
