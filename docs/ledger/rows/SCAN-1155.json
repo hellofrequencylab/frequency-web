@@ -1,0 +1,21 @@
+{
+  "id": "SCAN-1155",
+  "title": "Reach labels daily view buckets and host-marked attendance truthfully",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "components/spaces/reach-receipt.tsx",
+    "ref": "Authenticated Reach review identified stale visitor and attendance claims; source audit confirmed reader units"
+  },
+  "detail": "Reach now reads status-aware Space profile evidence, preserving null failures rather than displaying zero. Daily page views are signed-in account/UTC-day buckets plus one shared anonymous bucket; taps include repeats and neither metric proves network attribution. Current follower/member totals are distinguished from the trailing window. Canonical standing lever and rules describe roster attendance records, including repeat attendance and succeeded/unrefunded tickets, with unavailable signals excluded from scoring. No scoring, recording, access, DB or production change.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node node_modules/vitest/vitest.mjs run components/spaces/reach-receipt.test.tsx lib/spaces/analytics.test.ts lib/spaces/standing.test.ts lib/spaces/standing-rollup.test.ts --maxWorkers=2",
+    "checked": "2026-10-26",
+    "evidence": "Four focused suites/58 tests pass: rendered receipt truthful units and unknown states; actual recorders pin account/day/anonymous keys and repeat taps; actual rollup tests prove host marks, held-event window, succeeded/unrefunded tickets and unavailable-read exclusion. Source/mocked only, no browser/production verification."
+  },
+  "closed": "2026-10-26"
+}

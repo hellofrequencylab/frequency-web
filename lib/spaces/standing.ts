@@ -392,8 +392,8 @@ const LEVER_COPY: Record<StandingSignal, { label: string; measures: string; move
     move: 'Run one gathering and let it happen. Held counts more than planned.',
   },
   attendance: {
-    label: 'People in the room',
-    measures: 'People you marked present at your gatherings, from the roster.',
+    label: 'Attendance records',
+    measures: 'Roster marks of presence at held gatherings. Repeat attendance counts again; ticket records must be succeeded and unrefunded.',
     move: 'After each gathering, open the roster and mark who came.',
   },
   upcoming: {
