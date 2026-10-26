@@ -21,7 +21,7 @@ const PATTERN = BREATH_PATTERNS.find((p) => p.slug === 'cohere') ?? BREATH_PATTE
 /** Where "Same time tomorrow?" goes: a free account that lands on the member timer. */
 export const SAME_TIME_TOMORROW_HREF = '/join?next=/on-air'
 
-type Phase = { kind: 'ready' } | { kind: 'running'; startedAt: number } | { kind: 'done' }
+type Phase = { kind: 'ready' } | { kind: 'running'; startedAt: number } | { kind: 'done'; completed: boolean }
 
 function clock(seconds: number): string {
   const s = Math.max(0, Math.ceil(seconds))
@@ -38,7 +38,7 @@ export function PublicTimer() {
       const remaining = PUBLIC_SESSION_SECONDS - (Date.now() - phase.startedAt) / 1000
       if (remaining <= 0) {
         setLeft(0)
-        setPhase({ kind: 'done' })
+        setPhase({ kind: 'done', completed: true })
       } else {
         setLeft(remaining)
       }
@@ -49,7 +49,7 @@ export function PublicTimer() {
   if (phase.kind === 'done') {
     return (
       <div className="mx-auto max-w-md space-y-4 text-center" role="status">
-        <p className="eyebrow text-primary-strong">Five minutes, done</p>
+        <p className="eyebrow text-primary-strong">{phase.completed ? 'Five minutes, done' : 'Session ended'}</p>
         <h2 className="text-display-h3 font-semibold text-text">Same time tomorrow?</h2>
         <p className="text-body text-muted">
           Make a free account and tomorrow&apos;s session is one tap away, with every one after it counted toward your streak.
@@ -86,7 +86,7 @@ export function PublicTimer() {
       </p>
       <p className="text-body-sm text-muted">{PATTERN.blurb} A 5-minute practice. No account needed.</p>
       {phase.kind === 'running' ? (
-        <Button variant="secondary" onClick={() => setPhase({ kind: 'done' })}>
+        <Button variant="secondary" onClick={() => setPhase({ kind: 'done', completed: Date.now() - phase.startedAt >= PUBLIC_SESSION_SECONDS * 1000 })}>
           End early
         </Button>
       ) : (

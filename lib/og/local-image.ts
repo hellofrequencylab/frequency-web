@@ -26,7 +26,7 @@ import type { CoverPlaceholderPath } from '@/lib/spaces/cover-placeholder'
 // Every settings page under `/spaces/[slug]` was shipping the maplibre browser bundle, the PWA icon
 // set and 43 stock photographs, because the segment's share card sits above it and metadata is
 // inherited downward. Same failure as ADR-1006/1007 one layer down
-// (`lib/og/load-nunito.ts`, 333 MB of fonts) and ADR-1004 one layer up
+// (the retired Nunito loader, 333 MB of fonts) and ADR-1004 one layer up
 // (`join(process.cwd(), ...rubricPath)`, which swept the repo ROOT into ~300 functions).
 //
 // It is worth being precise about why the CALLERS could not fix this. Three of the four passed a
@@ -61,7 +61,7 @@ import type { CoverPlaceholderPath } from '@/lib/spaces/cover-placeholder'
 
 /** Base64 a JPEG for Satori.
  *
- *  Deliberately NOT memoised, unlike `loadNunito`. The helper this replaces was not either, so the
+ *  Deliberately NOT memoised, unlike `loadStageFonts`. The helper this replaces was not either, so the
  *  change moves the trace and nothing else — and a warm lambda would otherwise pin ~2.4 MB of
  *  base64 for photos a given card renders once. The fonts are cached because every card needs the
  *  same two faces; a cover is one entity's, drawn once. */

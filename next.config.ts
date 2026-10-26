@@ -196,27 +196,18 @@ const PERMISSIONS_POLICY_CAMERA = 'camera=(self), microphone=(), geolocation=(se
 // one may not start with `?`, which is path-to-regexp's rule, not ours.
 const notCameraRoute = `/:path((?!(?:${CAMERA_ROUTES.map((r) => r.slice(1)).join('|')})/?$).*)`
 
-// The faces lib/og/load-nunito.ts opens from disk at RUNTIME: the Nunito pair every share card draws
-// with, and LiberationSans-Bold, its same-directory fallback.
-//
-// ⚠️ NAMED, not `./public/fonts/*.ttf`. That glob also used to sweep LiberationSans-Regular
-// (410,820 bytes) into every lambda. LIVE-216 deleted that face with the flyer builder.
-//
-// Plus the four Stage faces lib/og/load-stage-fonts.ts opens (Unbounded, Hanken Grotesk, Instrument
-// Serif), which every card draws with since the Stage redesign. Named, never `./public/fonts/stage/*`.
+// Exactly the five faces the active Stage loader opens. Named paths avoid tracing unrelated fonts
+// into every share-card function; the retired Nunito loader's Black/Liberation faces are no longer used.
 const OG_CARD_FONTS = [
   './public/fonts/Nunito-Bold.ttf',
-  './public/fonts/Nunito-Black.ttf',
-  './public/fonts/LiberationSans-Bold.ttf',
   './public/fonts/stage/Unbounded-Bold.ttf',
   './public/fonts/stage/HankenGrotesk-Medium.ttf',
   './public/fonts/stage/HankenGrotesk-Bold.ttf',
   './public/fonts/stage/InstrumentSerif-Italic.ttf',
 ]
 
-// What the root-card generator actually draws with: the four Stage faces and the Nunito Bold glyph fallback
-// lib/og/load-stage-fonts.ts opens. It gets its own, shorter list because check:build-fanout caps the public/
-// files any one function carries at 14, and Nunito Black and Liberation (above) are not read on this route.
+// The root-card generator uses these same Stage faces and the Nunito Bold glyph fallback.
+// Keep its explicit list so the root route's trace can be audited independently.
 const ROOT_CARD_FONTS = [
   './public/fonts/Nunito-Bold.ttf',
   './public/fonts/stage/Unbounded-Bold.ttf',

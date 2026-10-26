@@ -125,38 +125,40 @@ export function AyTicker({ tabs, defaultTab }: { tabs: AyTab[]; defaultTab: AyTa
           </button>
         ))}
       </div>
-      <ol className="ay-list" id="ay-tab-panel" role="tabpanel" aria-labelledby={`ay-tab-${tab.key}`}>
-        {tab.items.map((i) => {
-          const s = signalFor(i, now)
-          return (
-            <li key={i.id}>
-              <Link href={`/events/${i.slug}`}>
-                <span className="ay-day">
-                  <b>{i.day}</b>
-                  <i>{i.time}</i>
-                </span>
-                <span className="ay-row-b">
-                  <span className="ay-row-t">{i.title}</span>
-                  <span className="t2">
-                    {[
-                      i.going ? 'Going' : null,
-                      tab.key === 'near' && i.miles != null ? `${i.miles} mi` : i.place,
-                      i.goingCount > 0 ? `${i.goingCount} going` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
+      <div id="ay-tab-panel" role="tabpanel" aria-labelledby={`ay-tab-${tab.key}`}>
+        <ol className="ay-list">
+          {tab.items.map((i) => {
+            const s = signalFor(i, now)
+            return (
+              <li key={i.id}>
+                <Link href={`/events/${i.slug}`}>
+                  <span className="ay-day">
+                    <b>{i.day}</b>
+                    <i>{i.time}</i>
                   </span>
-                </span>
-                {s ? (
-                  <span className={`ay-sig ${s.tone}`}>{s.text}</span>
-                ) : (
-                  <FqIcon name="chevron" className="ay-go" />
-                )}
-              </Link>
-            </li>
-          )
-        })}
-      </ol>
+                  <span className="ay-row-b">
+                    <span className="ay-row-t">{i.title}</span>
+                    <span className="t2">
+                      {[
+                        i.going ? 'Going' : null,
+                        tab.key === 'near' && i.miles != null ? `${i.miles} mi` : i.place,
+                        i.goingCount > 0 ? `${i.goingCount} going` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </span>
+                  {s ? (
+                    <span className={`ay-sig ${s.tone}`}>{s.text}</span>
+                  ) : (
+                    <FqIcon name="chevron" className="ay-go" />
+                  )}
+                </Link>
+              </li>
+            )
+          })}
+        </ol>
+      </div>
     </div>
   )
 }

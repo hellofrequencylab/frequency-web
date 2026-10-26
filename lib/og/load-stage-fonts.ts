@@ -10,7 +10,7 @@ import { join } from 'node:path'
 // here was cut from those files at one weight with fontTools' instancer (Unbounded 700, Hanken
 // Grotesk 500 and 700) and saved as plain TTF. Instrument Serif has no weight axis.
 //
-// ⚠️ ONE LITERAL PATH PER FACE, AND IT HAS TO STAY THAT WAY. Same rule as load-nunito.ts, for the same
+// ⚠️ ONE LITERAL PATH PER FACE, AND IT HAS TO STAY THAT WAY. A literal read is required for the same
 // reason: @vercel/nft cannot resolve a path built from a variable, so a shared `read(name)` helper
 // globs the whole directory into every function that reaches this module. The four reads below are
 // written out so the tracer resolves each exactly. `stage-fonts.test.ts` fails on a helper.
@@ -22,9 +22,7 @@ import { join } from 'node:path'
 const readUnboundedBold = () => readFile(join(process.cwd(), 'public/fonts/stage', 'Unbounded-Bold.ttf'))
 const readHankenMedium = () => readFile(join(process.cwd(), 'public/fonts/stage', 'HankenGrotesk-Medium.ttf'))
 const readHankenBold = () => readFile(join(process.cwd(), 'public/fonts/stage', 'HankenGrotesk-Bold.ttf'))
-// The glyph fallback is read here, by its own literal path, rather than through load-nunito.ts: that module
-// also names Nunito Black and LiberationSans, and importing it would carry both into every card function for
-// faces this layout never draws (check:build-fanout counts public/ files per function).
+// The glyph fallback has its own literal path, so the tracer carries only the face this layout draws.
 const readNunitoFallback = () => readFile(join(process.cwd(), 'public/fonts', 'Nunito-Bold.ttf'))
 const readInstrumentItalic = () => readFile(join(process.cwd(), 'public/fonts/stage', 'InstrumentSerif-Italic.ttf'))
 

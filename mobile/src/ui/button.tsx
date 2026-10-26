@@ -30,7 +30,7 @@ function recipe(v: ButtonVariant, c: Palette): { style: ViewStyle; fg: string; w
       return {
         style: {
           backgroundImage: `linear-gradient(120deg, ${c.pa[0]} 0%, ${c.pa[1]} 60%, ${c.pa[2]} 100%)`,
-          boxShadow: `0px 12px 28px -14px ${c.paGlow}, inset 0px 0px 0px 1px rgba(255,255,255,0.5)`,
+          boxShadow: `0px 12px 28px -14px ${c.paGlow}, inset 0px 0px 0px 1px ${c.paRim}`,
         },
         fg: c.onPa,
         weight: fonts.sansSemiBold,
