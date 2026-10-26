@@ -111,8 +111,8 @@ describe('--text-page-title-lg reproduces the ramp it retired', () => {
 })
 
 describe('the mirrored pair moved together', () => {
-  it('DetailTemplate’s display title is the single role, not the ramp', () => {
-    expect(DETAIL).toContain("titleScale === 'display' ? 'text-page-title-lg'")
+  it('DetailTemplate’s title is the kit h1, not the ramp', () => {
+    expect(DETAIL).toContain('<h1 className="h1">')
     expect(DETAIL).not.toContain('sm:text-3xl')
     expect(DETAIL).not.toContain('lg:text-4xl')
   })

@@ -51,21 +51,13 @@ describe('the button primitive exposes geometry without palette', () => {
     expect(BUTTON).toMatch(/export function buttonGeometry\(/)
   })
 
-  it('buttonGeometry carries the tap floor and no colour', () => {
+  it('buttonGeometry is the kit button geometry and no colour', () => {
     const body = BUTTON.slice(BUTTON.indexOf('export function buttonGeometry'))
     const fn = body.slice(0, body.indexOf('\n}') + 2)
-    // It composes BASE (which owns `tap-target`) and a SIZE, and nothing else.
-    expect(fn).toContain('BASE')
+    // It composes the kit's `btn` (which owns the tap floor) and a SIZE, and nothing else.
+    expect(fn).toContain("'btn'")
     expect(fn).toContain('SIZE[size]')
     expect(fn).not.toMatch(/VARIANT/)
-  })
-
-  it('BASE is what owns the tap floor, so every composer inherits it', () => {
-    const start = BUTTON.indexOf('const BASE =')
-    const end = BUTTON.indexOf('export function buttonGeometry')
-    expect(start, 'BASE declaration not found').toBeGreaterThan(-1)
-    expect(end, 'buttonGeometry not found after BASE').toBeGreaterThan(start)
-    expect(BUTTON.slice(start, end)).toContain('tap-target')
   })
 })
 
