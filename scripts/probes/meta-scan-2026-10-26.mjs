@@ -1,17 +1,18 @@
 // Probes for the SCAN-1110..1144 rows filed by the 2026-10-26 full repo meta scan.
 // Usage: node scripts/probes/meta-scan-2026-10-26.mjs <key>
 // Exit 0 only when the named repair has landed; each key fails on main today.
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')
 const has = (p, re) => re.test(read(p))
 const walk = (dir, out = []) => {
   if (!existsSync(dir)) return out
-  for (const n of readdirSync(dir)) {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const n = e.name
     const p = join(dir, n)
     if (n === 'node_modules' || n === '.next') continue
-    if (statSync(p).isDirectory()) walk(p, out)
+    if (e.isDirectory()) walk(p, out)
     else if (/\.(tsx?|css|mjs)$/.test(n) && !/\.test\./.test(n)) out.push(p)
   }
   return out
