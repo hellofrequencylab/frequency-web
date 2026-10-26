@@ -209,60 +209,14 @@ describe('the prose gate withholds a commercial claim hidden in generated copy',
   })
 })
 
-describe('reframe() — the LLM run (mocked model)', () => {
-  it('returns copy and the pipeline can fold it as generated', async () => {
-    completeRawMock.mockResolvedValueOnce(
-      toolResponse({ tagline: 'Come as you are.', about: 'A quiet studio.' }),
-    )
-    const res = await reframe({ verified: verifiedDraft(), profileId: 'op-1' })
-    expect(res).not.toBeNull()
-    expect(res!.copy.tagline).toBe('Come as you are.')
-    expect(res!.voice.ok).toBe(true)
-    expect(res!.costUsd).toBeCloseTo(0.01, 5)
-    // Folding it tags generated.
-    const { ledger } = applyReframe(verifiedDraft(), res!.copy, {})
-    expect(ledger.tagline[0].kind).toBe('generated')
+describe('reframe() — disabled prose replacement boundary', () => {
+  it('ignores even a successful invented draft without calling the model', async () => {
+    completeRawMock.mockResolvedValueOnce(toolResponse({ tagline: 'Invented words' }))
+    expect(await reframe({ verified: verifiedDraft(), profileId: 'op-1' })).toBeNull()
+    expect(completeRawMock).not.toHaveBeenCalled()
   })
-
-  it('regenerates once when the first draft fails the voice check, keeps the cleaner one', async () => {
-    completeRawMock
-      .mockResolvedValueOnce(toolResponse({ tagline: 'Unlock your best life!' })) // hype -> fails
-      .mockResolvedValueOnce(toolResponse({ tagline: 'A calm place to begin.' })) // clean
-    const res = await reframe({ verified: verifiedDraft(), profileId: 'op-1' })
-    expect(completeRawMock).toHaveBeenCalledTimes(2)
-    expect(res!.copy.tagline).toBe('A calm place to begin.')
-    expect(res!.voice.ok).toBe(true)
-    expect(res!.costUsd).toBeCloseTo(0.02, 5) // both calls billed
-  })
-
-  it('keeps the first (flagged) copy when the retry is no cleaner, and reports voice not ok', async () => {
-    completeRawMock
-      .mockResolvedValueOnce(toolResponse({ tagline: 'Elevate your journey!' }))
-      .mockResolvedValueOnce(toolResponse({ tagline: 'Supercharge your tribe!' }))
-    const res = await reframe({ verified: verifiedDraft(), profileId: 'op-1' })
-    expect(res!.voice.ok).toBe(false) // pipeline flags it amber
-  })
-
-  it('returns null (no fabricated prose) when the model returns no tool block', async () => {
-    completeRawMock.mockResolvedValueOnce({
-      tier: 'sonnet',
-      model: 'claude-sonnet-4-6',
-      content: [{ type: 'text', text: 'nope' }],
-      text: 'nope',
-      usage: { inputTokens: 1, outputTokens: 1 },
-      costUsd: 0.01,
-    })
-    expect(await reframe({ verified: verifiedDraft() })).toBeNull()
-  })
-
-  it('joinReframeCopy concatenates every generated string for the check', () => {
-    const joined = joinReframeCopy({
-      tagline: 'a',
-      about: 'b',
-      story: 'c',
-      offeringBlurbs: [{ index: 0, blurb: 'd' }],
-    })
-    expect(joined).toBe('a\nb\nc\nd')
+  it('retains the legacy pure copy inspector for existing stored records', () => {
+    expect(joinReframeCopy({ tagline: 'a', about: 'b', story: 'c', offeringBlurbs: [{index:0,blurb:'d'}] })).toBe('a\nb\nc\nd')
   })
 })
 

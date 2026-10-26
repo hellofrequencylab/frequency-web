@@ -1,12 +1,9 @@
 import { AlertTriangle, CheckCircle2, Inbox, Lock, SearchX } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
-// FREQUENCY (ADR-1737): the members kit's `.empty` state in a soft room of its own: the glyph in the
+// The members kit's `.empty` state in a soft room of its own (ADR-1737): the glyph in the
 // kit's `.ic` chip on the pastel wash, the title in `.h3`, the line in `.t2`
 // (app/themes/frequency/members-ui.css `mu-empty`; `data-tone` keys the error and cleared chips).
-// Inlined at build; DAWN's markup below is unchanged.
-const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // Shared empty state — one calm pattern for every "nothing here" moment, with a named
 // VARIANT taxonomy (ADR-233 §6, GitHub/Vercel): never a blank pane, always the reason +
@@ -20,15 +17,12 @@ const FREQUENCY = SITE_DESIGN === 'frequency'
 
 type Variant = 'first-use' | 'no-results' | 'cleared' | 'error' | 'permission'
 
-// `chip` — DAWN's icon-chip anatomy (dawn/components/feedback/EmptyState.jsx): the glyph
-// sits in a soft 56px tinted square, not bare. First-use keeps DAWN's warm amber chip;
-// the other variants keep this file's tone taxonomy, expressed as the chip's tint.
-const VARIANT: Record<Variant, { Icon: LucideIcon; chip: string; frame: string }> = {
-  'first-use': { Icon: Inbox, chip: 'bg-primary-bg text-primary-strong', frame: 'border-dashed border-border' },
-  'no-results': { Icon: SearchX, chip: 'bg-surface-elevated text-muted', frame: 'border-dashed border-border' },
-  cleared: { Icon: CheckCircle2, chip: 'bg-success-bg text-success', frame: 'border-dashed border-success/30' },
-  error: { Icon: AlertTriangle, chip: 'bg-danger-bg text-danger', frame: 'border-danger/30' },
-  permission: { Icon: Lock, chip: 'bg-surface-elevated text-muted', frame: 'border-border' },
+const VARIANT_ICON: Record<Variant, LucideIcon> = {
+  'first-use': Inbox,
+  'no-results': SearchX,
+  cleared: CheckCircle2,
+  error: AlertTriangle,
+  permission: Lock,
 }
 
 export function EmptyState({
@@ -44,31 +38,15 @@ export function EmptyState({
   action?: React.ReactNode
   variant?: Variant
 }) {
-  const v = VARIANT[variant]
-  const Glyph = Icon ?? v.Icon
-  if (FREQUENCY) {
-    return (
-      <div className="empty mu-empty" data-tone={variant}>
-        <span className="ic" aria-hidden>
-          <Glyph />
-        </span>
-        <p className="h3">{title}</p>
-        {description && <p className="t2">{description}</p>}
-        {action && <div className="mu-act">{action}</div>}
-      </div>
-    )
-  }
+  const Glyph = Icon ?? VARIANT_ICON[variant]
   return (
-    <div className={`rounded-card border bg-surface/50 px-6 py-12 text-center ${v.frame}`}>
-      <span
-        className={`mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-control ${v.chip}`}
-        aria-hidden
-      >
-        <Glyph className="h-6 w-6" />
+    <div className="empty mu-empty" data-tone={variant}>
+      <span className="ic" aria-hidden>
+        <Glyph />
       </span>
-      <p className="text-body-lg font-extrabold text-text">{title}</p>
-      {description && <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">{description}</p>}
-      {action && <div className="mt-4 flex justify-center">{action}</div>}
+      <p className="h3">{title}</p>
+      {description && <p className="t2">{description}</p>}
+      {action && <div className="mu-act">{action}</div>}
     </div>
   )
 }

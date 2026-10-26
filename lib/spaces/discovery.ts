@@ -1,3 +1,4 @@
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 // Spaces DIRECTORY discovery reads (ENTITY-SPACES-BUILD §A/§B, Phase 1 / Epic 1.8). The one
 // query the in-app directory at /spaces calls to list the NETWORKED entity Spaces a member can
 // browse: practitioners, businesses, organizations, coaching academies, event spaces.
@@ -781,9 +782,10 @@ interface SpaceProfileTabRoute {
 // widget the Book page leads with) and `updated_at`. It deliberately does NOT reuse COLS — the
 // directory pays for a card's worth of columns on every /spaces render, and this pays for a gate's
 // worth once an hour behind the sitemap's revalidate.
-const TAB_COLS = 'id, slug, type, mode_variant, updated_at, preferences, entitlements'
+const TAB_COLS = 'id, slug, type, mode_variant, updated_at, preferences, entitlements, time_zone'
 
 type SpaceTabRow = {
+  time_zone?: string | null
   id: string
   slug: string
   type: string
@@ -903,11 +905,18 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
     if (rows.length === 0) return []
     const ids = rows.map((r) => r.id)
 
-    // Floor the event window on today's start, the same way spaceHasPublicUpcomingEvents does, so
-    // an event happening later TODAY still counts (a `> now` floor would hide it).
-    const fromDayIso = `${new Date().toISOString().slice(0, 10)}T00:00:00Z`
-
-    const [withEvents, withCircles, withReviews, withTiers, withAsks, collabHost, collabPartner] = await Promise.all([
+    // Stored starts_at values are local wall-clock UTC parts. Group the existing scoped
+    // presence reads by each Space's local day (at most three worldwide), never by raw UTC
+    // date or a true-instant bound. A known Space zone wins; unknown/invalid falls back HOME.
+    const now = new Date()
+    const eventDayGroups = new Map<string, string[]>()
+    for (const row of rows) {
+      const floor = upcomingEventFloor(now, row.time_zone)
+      const group = eventDayGroups.get(floor) ?? []
+      group.push(row.id)
+      eventDayGroups.set(floor, group)
+    }
+    const eventPresence = Promise.all([...eventDayGroups].map(([fromDayIso, groupIds]) =>
       presenceIds(
         (q) =>
           q
@@ -917,11 +926,15 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
             .is('removed_at', null)
             .eq('is_demo', false)
             .gte('starts_at', fromDayIso)
-            .in('space_id', ids),
+            .in('space_id', groupIds),
         'events',
         'space_id',
         (r) => (typeof r.space_id === 'string' ? r.space_id : null),
-      ),
+      )
+    )).then(groups => new Set(groups.flatMap(group => [...group])))
+
+    const [withEvents, withCircles, withReviews, withTiers, withAsks, collabHost, collabPartner] = await Promise.all([
+      eventPresence,
       presenceIds(
         // AXIS 1 in SQL, exactly as listPublicSpaceCircles spells it: `unlisted` is nullable and a
         // NULL row is a LISTED row, so a bare `.eq('unlisted', false)` would be wrong.

@@ -4,19 +4,16 @@ import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { PageHeading } from './page-heading'
 import { WizardProgress } from './wizard-progress'
-import { SITE_DESIGN } from '@/lib/theme/design'
 // The kit the shell stamps (`data-kit="members"`) has to be LOADED for that stamp to mean anything. The
 // member layout loads it, but the wizard also renders outside it (/onboarding, its sequence preview),
 // where the kit's selectors had no sheet behind them and the outside-the-kit fallback in members-ui.css
 // is switched off by the stamp itself: the brand orb, the step buttons and the fields fell back to bare
-// browser chrome. Scoped to [data-design="frequency"] [data-kit="members"], so DAWN paints nothing new.
+// browser chrome. Scoped to [data-design="frequency"] [data-kit="members"].
 import '@/app/themes/active/kit-members'
 
-// FREQUENCY (ADR-1737): the wizard stamps the members kit on its own room (it renders outside the member
-// shell as often as inside it), wears the kit's buttons (`.btn.pa.lg` / `.btn.lg`) and its step bar, and
-// names the brand in the kit's display face rather than DAWN's amber tile and Anton caps. Inlined at
-// build; every DAWN string below is unchanged.
-const FREQUENCY = SITE_DESIGN === 'frequency'
+// The wizard stamps the members kit on its own room (it renders outside the member shell as often as
+// inside it), wears the kit's buttons (`.btn.pa.lg` / `.btn.lg`) and its step bar, and names the brand
+// in the kit's display face.
 
 // WizardShell — the staged Focus surface for onboarding (docs/MEMBER-DESIGN-SYSTEM.md
 // §4, the Wizard pattern). A centered, rail-less, single-column flow in the warm app
@@ -40,12 +37,8 @@ const WIDTHS = {
 
 // Shared footer button vocabulary — exported for the rare step that needs a fully
 // custom footer (a sign-in block, a multi-action row) but still wants the kit buttons.
-export const wizardPrimaryClass = FREQUENCY
-  ? 'btn pa lg'
-  : 'inline-flex items-center justify-center gap-1.5 rounded-control bg-primary px-5 py-3 text-body-sm font-semibold text-on-primary lift-1 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0'
-export const wizardSecondaryClass = FREQUENCY
-  ? 'btn lg'
-  : 'inline-flex items-center justify-center rounded-card border border-border-strong bg-surface px-5 py-3 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none'
+export const wizardPrimaryClass = 'btn pa lg'
+export const wizardSecondaryClass = 'btn lg'
 
 export function WizardShell({
   step,
@@ -126,22 +119,15 @@ export function WizardShell({
 
   return (
     <main
-      className={FREQUENCY ? 'flex min-h-screen flex-col px-5 py-10 sm:px-8' : 'flex min-h-screen flex-col bg-canvas px-5 py-10 sm:px-8'}
-      data-kit={FREQUENCY ? 'members' : undefined}
+      className="flex min-h-screen flex-col px-5 py-10 sm:px-8"
+      data-kit="members"
     >
       <div className={`mx-auto flex w-full flex-1 flex-col justify-center ${WIDTHS[width]}`}>
         {/* Brand mark — quiet, app register (not the marketing display lockup). */}
-        {FREQUENCY ? (
-          <div className="mb-8 flex items-center gap-2">
-            <span className="orb" aria-hidden />
-            <span className="h3">Frequency</span>
-          </div>
-        ) : (
-          <div className="mb-8 flex items-center gap-2">
-            <span className="h-7 w-7 rounded-control bg-primary" aria-hidden />
-            <span className="font-display text-body-lg uppercase tracking-tight text-text">Frequency</span>
-          </div>
-        )}
+        <div className="mb-8 flex items-center gap-2">
+          <span className="orb" aria-hidden />
+          <span className="h3">Frequency</span>
+        </div>
 
         <WizardProgress current={step} total={totalSteps} label={stepLabel} variant={progressVariant} />
 
@@ -156,7 +142,7 @@ export function WizardShell({
           <PageHeading eyebrow={eyebrow} title={title} description={description} divider={false} />
           {children}
 
-          {error && <p className={FREQUENCY ? 'mu-err mt-4' : 'mt-4 text-body-sm text-danger'}>{error}</p>}
+          {error && <p className="mu-err mt-4">{error}</p>}
 
           <div className="mt-7">{footer ?? standardFooter}</div>
         </div>

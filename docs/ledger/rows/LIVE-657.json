@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-657",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst re=/\\bfocus(?:-within)?:(?:border|ring)-primary\\b/\nconst norm=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\" \").replace(/^\\s*\\/\\/.*$/gm,\" \")\nconst hits=[];let n=0\nconst walk=(d)=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){if(e.name===\"node_modules\"||e.name.startsWith(\".\"))continue;const p=path.join(d,e.name);if(e.isDirectory())walk(p);else if(/\\.tsx?$/.test(e.name)&&!/\\.test\\.tsx?$/.test(e.name)){n++;if(re.test(norm(fs.readFileSync(p,\"utf8\"))))hits.push(p)}}}\nfor(const r of [\"app\",\"components\",\"lib\"]){if(!fs.existsSync(r))process.exit(79);walk(r)}\nif(n<500)process.exit(79)\nif(hits.length)fail(hits.length+\" files still focus a field with the brand orange (S8, LIVE-657): \"+hits.slice(0,6).join(\", \"))\nlet f;try{f=norm(fs.readFileSync(\"components/ui/field.tsx\",\"utf8\"))}catch(e){process.exit(79)}\nif(!/fieldClasses\\s*=\\s*.input./.test(f))fail(\"the field primitive no longer wears the kit input class, which carries the neutral focus the owner ruled in (S8)\")\nconsole.log(\"ok: \"+n+\" files, no orange field focus\")'",
+      "note": "Closed 2026-09-29 (ADR-1661). Walks app/, components/ and lib/ (tests excluded, comments blanked) and fails while any file focuses a control with focus:border-primary, focus:ring-primary or focus-within:border-primary; a second arm fails if components/ui/field.tsx loses the neutral halo (focus:border-border-strong, focus:ring-border-strong/30). Fails on main at 60567b67e with 16 files. Exits 79 only when a scanned root or the field primitive is gone."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1127): the probe now reads the Frequency field class, since the DAWN focus classes left the primitive with the DAWN variant. Daniel: rewrite the DAWN pins."
+  }
+}

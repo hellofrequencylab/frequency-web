@@ -18,12 +18,11 @@ describe('NOTIFICATION_REGISTRY invariants', () => {
     }
   })
 
-  it('declares at least one channel per row, none twice, and none on the in-app channel yet', () => {
+  it('declares at least one channel per row, and none twice', () => {
     for (const event of EVENTS) {
       const { channels } = NOTIFICATION_REGISTRY[event]
       expect(channels.length, event).toBeGreaterThan(0)
       expect(new Set(channels).size, event).toBe(channels.length)
-      expect(channels, event).not.toContain('inapp')
     }
   })
 

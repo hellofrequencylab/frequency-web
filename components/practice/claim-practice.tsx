@@ -11,8 +11,8 @@ import { Button } from '@/components/ui/button'
 
 // Claim a starter TEMPLATE → your own practice, via a short Vera-guided wizard
 // (ADR-116). Mirrors the demo-circle claim (components/circles/claim-circle.tsx):
-// a prominent button opens a modal — (1) your goal + schedule, (2) Vera tailors
-// the title / cadence / steps (editable; falls back to the template if AI is off),
+// a prominent button opens a modal: (1) your goal + schedule, (2) separate coaching
+// questions while the author edits the original template fields,
 // (3) Claim → creates your private, adopted copy and drops you on it.
 
 type Fallback = { title: string; cadence: string; why: string; steps: string[] }
@@ -26,6 +26,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
   const [pending, start] = useTransition()
   const [thinking, setThinking] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [coaching, setCoaching] = useState<string[]>([])
   const [veraUsed, setVeraUsed] = useState(false)
 
   // Step 1
@@ -42,6 +43,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
     setStep(1)
     setError(null)
     setVeraUsed(false)
+    setCoaching([])
     setGoal('')
     setSchedule('')
     setTitle(fallback.title)
@@ -75,17 +77,15 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
     try {
       const r = await suggestPracticeAction(templateId, goal, schedule)
       if (!isError(r) && r.data.suggestion) {
-        const s = r.data.suggestion
-        setTitle(s.title)
-        setCadence(s.cadence)
-        setWhy(s.why)
-        setSteps(s.steps.join('\n'))
+        setCoaching(r.data.suggestion.questions)
         setVeraUsed(true)
       } else {
-        prefillFromFallback()
+        setCoaching(['What would you change in your own words?'])
+        setVeraUsed(true)
       }
     } catch {
-      prefillFromFallback()
+      setCoaching(['What would you change in your own words?'])
+      setVeraUsed(true)
     } finally {
       setThinking(false)
       setStep(2)
@@ -142,7 +142,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
             {step === 1 ? (
               <div className="space-y-4">
                 <p className="text-body-sm text-muted">
-                  Tell Vera what you’re after and she’ll shape this practice around you, or skip and tweak it yourself.
+                  Tell Vera what you want to work on. She asks questions; you adapt the template yourself.
                 </p>
                 <div>
                   <label className={LABEL} htmlFor="goal">What do you want from this?</label>
@@ -183,17 +183,13 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                     disabled={thinking || !goal.trim()}
                   >
                     {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {thinking ? 'Vera is shaping it…' : 'Ask Vera'}
+                    {thinking ? 'Vera is thinking…' : 'Ask Vera'}
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                {veraUsed && (
-                  <p className="flex items-center gap-1.5 rounded-control bg-primary-bg px-3 py-2 text-meta font-medium text-primary-strong">
-                    <Sparkles className="h-3.5 w-3.5" /> Vera tailored this to you. Edit anything before you claim it.
-                  </p>
-                )}
+                {veraUsed && <section role="status" className="space-y-2"><p className="text-body-sm text-muted">Your template is unchanged. Use these questions to write your own version.</p><ul className="list-disc pl-4">{coaching.map(q => <li key={q}>{q}</li>)}</ul></section>}
                 <div>
                   <label className={LABEL} htmlFor="ctitle">Name</label>
                   <Input id="ctitle" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className="mt-1" />

@@ -1,4 +1,4 @@
-// LIVE1349 retires the social-fuel model call; the 20 remaining callers retain all attribution guards.
+// LIVE1349 retires the social-fuel model call; the 18 remaining callers retain all attribution guards.
 // LIVE890: actual migrated feature dispatch plus an AST inventory of every migrated caller.
 import './check-ai-accounting-preparation.mjs'
 import assert from 'node:assert/strict'
@@ -14,10 +14,8 @@ const paths = [
   "lib/crm/import/ai.ts",
   "lib/dashboard/person-band.ts",
   "lib/demo/ai-palette.ts",
-  "lib/importer/compose.ts",
   "lib/importer/extract/run.ts",
   "lib/importer/reframe/demographic.ts",
-  "lib/importer/reframe/run.ts",
   "lib/importer/verify/refute.ts",
   "lib/importer/vision.ts",
   "lib/listing-seeder/extract.ts",
@@ -44,8 +42,21 @@ for (const path of paths) {
   }
   visit(source); assert.ok(localCalls > 0, `${path} has no inventoried completion`)
 }
-assert.equal(paths.length, 20)
-assert.equal(calls, 24)
+assert.equal(paths.length, 18)
+assert.equal(calls, 21)
+// Importer prose replacement was retired; both entrypoints delegate only writing questions.
+for (const path of ['lib/importer/compose.ts', 'lib/importer/reframe/run.ts']) {
+ const source = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true)
+ let delegated = 0
+ function inspect(node) {
+  if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+   assert.ok(!['completeRaw','completeText','runToolLoop','recordAiUsage'].includes(node.expression.text), `${path} bypassed the coaching accounting seam`)
+   if(node.expression.text === 'writingCoach') delegated++
+  }
+  ts.forEachChild(node,inspect)
+ }
+ inspect(source); assert.equal(delegated,1)
+}
 const state = globalThis.__legacyCompletionProbe
 state.enabled = true; state.overBudget = false; state.rateLimited = false
 const sources = new Map([

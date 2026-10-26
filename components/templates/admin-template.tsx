@@ -1,7 +1,7 @@
 // Admin template — the operator shell for /admin/* (PAGE-FRAMEWORK §3 + §8.1). The
 // admin-nav sibling of Dashboard: it composes the SAME shared <PageHeading> grammar as
 // every other template (so admin pages read identically to the rest of the app), adds
-// an optional title icon + admin widths, and groups its body in <AdminSection> blocks.
+// the page's own content, and groups its body in <AdminSection> blocks.
 //
 // This promotes the old standalone `AdminPage` component into the first-class template
 // kit — admin pages now live inside the framework like everything else. `AdminPage` is
@@ -13,99 +13,54 @@
 //   </AdminTemplate>
 //
 // Presentational + server-friendly (no hooks). MUST stay client-importable — a few
-// client components render it — so the auto back-link is delegated to a client child
-// (AdminAutoBackLink), never read from next/headers here.
+// client components render it — so never read from next/headers here.
 
 import type { LucideIcon } from 'lucide-react'
-import { PageHeading } from './page-heading'
-import { AdminAutoBackLink } from '@/components/admin/admin-auto-back-link'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { AdminFrameSection, AdminPageFrame } from '@/components/frequency/admin/admin-page-frame'
-
-const WIDTHS = {
-  narrow: 'max-w-2xl',
-  default: 'max-w-5xl',
-  wide: 'max-w-7xl',
-} as const
 
 export function AdminTemplate({
   title,
-  icon: Icon,
   eyebrow,
   description,
   actions,
-  actionsAlign,
   back,
   hideBackLink = false,
-  adminBar = true,
-  width = 'default',
-  contentSpacing = 'default',
   headless = false,
   children,
 }: {
   title: string
-  /** Optional title icon (the admin section glyph). */
+  /** Accepted for existing callers; the admin shell's page head does not draw a title icon. */
   icon?: LucideIcon
   /** Small kicker above the title — usually the section group (e.g. "Insights"). */
   eyebrow?: React.ReactNode
   description?: React.ReactNode
   /** Right-aligned header controls (buttons, links). */
   actions?: React.ReactNode
-  /** Passed to PageHeading — 'end' bottom-aligns actions with the description. */
+  /** Accepted for existing callers; the admin shell's page head owns action alignment. */
   actionsAlign?: 'start' | 'end' | 'center'
-  /** Explicit back-link. When omitted, a sub-page auto-links back to its parent domain
-   *  dashboard (resolved client-side from the path); a domain root shows nothing. */
+  /** Explicit back-link. The shell's breadcrumb covers the parent trail; this adds a direct link. */
   back?: { href: string; label: string }
-  /** Suppress the auto (or explicit) back-link entirely — for a page that reads as a top-level
+  /** Suppress the explicit back-link entirely — for a page that reads as a top-level
    *  workspace rather than a nested sub-page. */
   hideBackLink?: boolean
-  /** Forwarded to PageHeading: render the operator on-page "Settings" bar on the header rule
-   *  (default on). Set false for a page that owns its header chrome and wants a plain divider. */
+  /** Accepted for existing callers; the admin shell owns the settings bar. */
   adminBar?: boolean
-  width?: keyof typeof WIDTHS
-  /** Vertical rhythm between body <AdminSection> blocks. 'default' is the roomy admin cadence;
-   *  'tight' pulls the sections closer for a denser workspace. */
+  /** Accepted for existing callers; the admin shell owns page width. */
+  width?: 'narrow' | 'default' | 'wide'
+  /** Accepted for existing callers; the admin shell owns the vertical rhythm. */
   contentSpacing?: 'default' | 'tight'
-  /** A full-bleed tool whose own frame carries its name (the CyberUnicorn portal): under the Frequency
-   *  design the page head is kept for screen readers but takes no room, so the tool starts at the top. */
+  /** A full-bleed tool whose own frame carries its name (the CyberUnicorn portal): the page head is kept
+   *  for screen readers but takes no room, so the tool starts at the top. */
   headless?: boolean
   children: React.ReactNode
 }) {
-  // Under the Frequency design (SITE_DESIGN, build-time) every admin page sits in the design's admin shell,
-  // so it wears the shell's page frame: the design's head and section heads around the page's own content.
-  // The title icon and the DAWN admin bar are DAWN chrome and stay out; an explicit back link is kept (the
-  // shell's breadcrumb replaces the automatic one). DAWN renders below exactly as before.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <AdminPageFrame kicker={eyebrow} title={title} meta={description} actions={actions} back={hideBackLink ? undefined : back} headless={headless}>
-        {children}
-      </AdminPageFrame>
-    )
-  }
+  // Every admin page sits in the design's admin shell, so it wears the shell's page frame: the design's
+  // head and section heads around the page's own content. An explicit back link is kept (the shell's
+  // breadcrumb replaces the automatic one).
   return (
-    <div className={`mx-auto w-full ${WIDTHS[width]}`}>
-      {!hideBackLink && <AdminAutoBackLink back={back} />}
-      <PageHeading
-        eyebrow={eyebrow}
-        title={
-          Icon ? (
-            <span className="inline-flex items-center gap-2">
-              <Icon className="h-5 w-5 shrink-0 text-primary-strong" />
-              {title}
-            </span>
-          ) : (
-            title
-          )
-        }
-        description={description}
-        actions={actions}
-        actionsAlign={actionsAlign}
-        adminBar={adminBar}
-      />
-      <div className={contentSpacing === 'tight' ? 'space-y-5 lg:space-y-6' : 'space-y-8 lg:space-y-10'}>
-        {children}
-      </div>
-    </div>
+    <AdminPageFrame kicker={eyebrow} title={title} meta={description} actions={actions} back={hideBackLink ? undefined : back} headless={headless}>
+      {children}
+    </AdminPageFrame>
   )
 }
 
@@ -122,25 +77,9 @@ export function AdminSection({
   actions?: React.ReactNode
   children: React.ReactNode
 }) {
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <AdminFrameSection title={title} description={description} actions={actions}>
-        {children}
-      </AdminFrameSection>
-    )
-  }
   return (
-    <section className="space-y-4">
-      {(title || actions) && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="min-w-0">
-            {title && <h2 className="text-body font-bold text-text">{title}</h2>}
-            {description && <p className="mt-0.5 text-body-sm text-muted">{description}</p>}
-          </div>
-          {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
-        </div>
-      )}
+    <AdminFrameSection title={title} description={description} actions={actions}>
       {children}
-    </section>
+    </AdminFrameSection>
   )
 }

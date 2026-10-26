@@ -27,6 +27,8 @@ export type NotificationEvent =
   | 'event.dispatch'
   | 'booking.reminder'
   | 'guestbook.sign'
+  | 'post.mention'
+  | 'post.reply'
   | 'housing.match'
   | 'plan.share'
   | 'plan.comment'
@@ -46,7 +48,14 @@ export interface NotificationContexts {
   /** Someone signed the recipient's Spotlight Guestbook (ADR-1279). The caller
    *  (lib/spotlight/guestbook.ts notifyGuestbookSigned) authors the copy in-voice and the URL of
    *  the owner's own guestbook. */
-  'guestbook.sign': { title: string; body: string; url: string }
+  'guestbook.sign': { title: string; body: string; url: string; ownerHandle: string; signerProfileId: string }
+  /** Someone @mentioned the recipient in a post or reply (`mentions`, in-app). The caller
+   *  (app/(main)/feed/actions.ts fanOutMentions) hands in the author, the post and where it was
+   *  said ('a post' / 'a reply'); the recipient's own inapp_mentions switch decides. */
+  'post.mention': { authorId: string; postId: string; context: string }
+  /** Someone replied to the recipient's post (`comments`, in-app). The caller
+   *  (app/(main)/feed/actions.ts notifyParentAuthor) hands in the replier and the post. */
+  'post.reply': { replierId: string; postId: string }
   /** A new housing match that lines up with the recipient (DEF-HOUS, ADR-1278). The caller
    *  (lib/listings/housing-match-alerts.ts) authors the push copy in-voice and renders the email
    *  from lib/email's builder; `tag` collapses a repeat push for the same counterpart on the
@@ -73,14 +82,28 @@ export interface NotificationContexts {
   'loyalty.nudge': { title: string; body: string; url: string; tag: string }
 }
 
+/** One bell row, in the shape of a `notifications` row (the table the bell and /notifications
+ *  read). The bell prints the actor's name before `body` and picks its destination from
+ *  `type` + `referenceType` + `referenceId` (lib/notifications/href.ts), so a type that rides
+ *  the in-app channel hands in exactly that tuple; there is no free-form URL on the row. */
+export interface InappPayload {
+  /** The row's `type`, e.g. 'guestbook_signed'. */
+  type: string
+  /** The sentence after the actor's name, e.g. 'signed your guestbook'. */
+  body: string
+  actorId?: string | null
+  referenceType?: string | null
+  referenceId?: string | null
+}
+
 /** Per-channel rendered payloads. A type renders only the channels it declares; a channel
- *  with no rendered payload is skipped (never enqueued half-formed). `inapp` is defined for
- *  when the in-app channel graduates onto the outbox (see the router's migration checklist);
- *  no migrated type declares it yet. */
+ *  with no rendered payload is skipped (never enqueued half-formed). `inapp` rides the
+ *  outbox as the 'inapp' job (lib/notifications/inapp.ts), gated by the member's own
+ *  `inapp_<category>` switch like email and push. */
 interface RenderedNotification {
   email?: EmailPayload
   push?: PushPayload
-  inapp?: { title: string; body: string; url?: string }
+  inapp?: InappPayload
 }
 
 /** One registry row: the declarative mapping event → notification type. */
@@ -136,14 +159,54 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
   },
   // A Guestbook note (ADR-1279). A note is the closest thing to a reply someone leaves on your
   // own page, so it rides the `comments` category: the owner's push_comments switch decides
-  // the push, and the caller checks inapp_comments for the bell row (the in-app channel is not
-  // on the outbox yet, see the router's checklist).
+  // the push, and the bell row rides the in-app channel behind inapp_comments. The bell prints
+  // the signer's name before the body and lands on the owner's guestbook.
   'guestbook.sign': {
     event: 'guestbook.sign',
     category: 'comments',
-    channels: ['push'],
+    channels: ['inapp', 'push'],
     render: (ctx) => ({
+      inapp: {
+        type: 'guestbook_signed',
+        body: 'signed your guestbook',
+        actorId: ctx.signerProfileId,
+        referenceType: 'guestbook',
+        referenceId: ctx.ownerHandle,
+      },
       push: { title: ctx.title, body: ctx.body, url: ctx.url },
+    }),
+  },
+
+  // An @mention in a post or reply. Its own `mentions` category, in-app only: the recipient's
+  // inapp_mentions switch (default on) decides, so the Mentions row in settings is a real switch.
+  'post.mention': {
+    event: 'post.mention',
+    category: 'mentions',
+    channels: ['inapp'],
+    render: (ctx) => ({
+      inapp: {
+        type: 'mention',
+        body: `mentioned you in ${ctx.context}`,
+        actorId: ctx.authorId,
+        referenceType: 'post',
+        referenceId: ctx.postId,
+      },
+    }),
+  },
+  // A reply to your post. `comments`, in-app: inapp_comments decides, as it did when the feed
+  // action read the gate by hand.
+  'post.reply': {
+    event: 'post.reply',
+    category: 'comments',
+    channels: ['inapp'],
+    render: (ctx) => ({
+      inapp: {
+        type: 'reply',
+        body: 'replied to your post',
+        actorId: ctx.replierId,
+        referenceType: 'post',
+        referenceId: ctx.postId,
+      },
     }),
   },
 

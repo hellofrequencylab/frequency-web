@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { LEGAL, LegalPage } from '@/components/legal/legal-page'
+import { LegalPage } from '@/components/legal/legal-page'
 import { CookieChoicesButton } from '@/components/consent/cookie-choices-button'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
@@ -30,8 +30,8 @@ export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy" updated="September 29, 2026">
       <section>
-        <h2 className={LEGAL.h2}>1. Who we are</h2>
-        <p className={LEGAL.p}>
+        <h2>1. Who we are</h2>
+        <p>
           Frequency is operated by Frequency Labs Holdings (&quot;Frequency,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).
           This policy describes how we collect, use, and protect your personal information when
           you use our platform at frequencylocal.com and related services.
@@ -39,65 +39,65 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className={LEGAL.h2}>2. Information we collect</h2>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Account information:</strong> When you sign up,
+        <h2>2. Information we collect</h2>
+        <p>
+          <strong>Account information:</strong> When you sign up,
           we collect your email address, display name, and optional profile details (bio, avatar,
           home area, website, and match preferences such as a birth date for astrology matching).
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Authentication data:</strong> If you sign in
+        <p>
+          <strong>Authentication data:</strong> If you sign in
           with Google, we receive your name, email, and profile photo from Google. We do not receive or store
           your Google password.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Google contacts (optional):</strong> If you choose to import
+        <p>
+          <strong>Google contacts (optional):</strong> If you choose to import
           contacts, we read your Google contacts in read-only mode to copy them into your private
           contact list on Frequency. We request one-time access and do not store your Google access or
           refresh tokens.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Content you create:</strong> Posts, comments,
+        <p>
+          <strong>Content you create:</strong> Posts, comments,
           reactions, event RSVPs, messages, and other content you contribute to the community.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Location:</strong> The home area you set is stored as a
+        <p>
+          <strong>Location:</strong> The home area you set is stored as a
           point on the map. If you turn on live location, we save your device&apos;s position once
           each time you turn it on. Other members only ever see an approximate area, never your exact
           point. When you claim a code that only works in one place, your device&apos;s position is
           checked against that place and is not saved. To center a map before you share anything, your
           browser may look up an approximate city from your IP address.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Camera and photos:</strong> The QR scanner uses your
+        <p>
+          <strong>Camera and photos:</strong> The QR scanner uses your
           camera only while it is open and reads codes on your device. The video is not uploaded. If
           you photograph a business card or an event poster, that photo is uploaded so Vera can read
           it, and the copies you keep are stored with the contact or event. Photos you add to your
           profile, posts, and events are stored so they can be shown.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Push notifications (optional):</strong> If you allow
+        <p>
+          <strong>Push notifications (optional):</strong> If you allow
           notifications, your browser gives us a push subscription: an address at your browser&apos;s
           push service, the keys that encrypt each notification, and your browser type. We store it
           to send you the notifications you choose, and we delete it when the push service tells us
           it has been turned off.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Phone number (optional):</strong> If you turn on text
+        <p>
+          <strong>Phone number (optional):</strong> If you turn on text
           messages, we store your phone number and a record of your consent, including the wording
           you agreed to, the time, and the IP address and browser you agreed from.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Payments:</strong> Card and bank details go straight to
+        <p>
+          <strong>Payments:</strong> Card and bank details go straight to
           Stripe. We keep your purchase history and a Stripe reference, never your full card number.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Vera&apos;s memory:</strong> If you use Vera, our AI
+        <p>
+          <strong>Vera&apos;s memory:</strong> If you use Vera, our AI
           guide, she keeps a short summary of what you have told her (such as interests, goals, and
           neighborhood) so she can help next time. It is not a transcript of your chats.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Usage data:</strong> We record which pages and features
+        <p>
+          <strong>Usage data:</strong> We record which pages and features
           you use, tied to your account, only while analytics is on for you, and we delete that raw
           record after 90 days. We also measure how fast pages load without tying it to you. We do
           not sell this data.
@@ -105,8 +105,8 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className={LEGAL.h2}>3. How we use your information</h2>
-        <ul className={LEGAL.ul}>
+        <h2>3. How we use your information</h2>
+        <ul>
           <li>To create and maintain your account</li>
           <li>To display your profile to other community members</li>
           <li>To deliver posts, messages, and notifications</li>
@@ -118,30 +118,30 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className={LEGAL.h2}>4. How we share your information</h2>
-        <p className={LEGAL.p}>
+        <h2>4. How we share your information</h2>
+        <p>
           We do not sell your personal information. We share data only with service providers
           that help us operate the platform:
         </p>
-        <ul className={LEGAL.ul}>
-          <li><strong className={LEGAL.b}>Supabase</strong>. Database, file storage, and sign-in. Everything in your account is stored here.</li>
-          <li><strong className={LEGAL.b}>Vercel</strong>. Hosting. Every page and request passes through Vercel, which sees your IP address and browser. Vercel Web Analytics counts page visits without cookies.</li>
-          <li><strong className={LEGAL.b}>Anthropic</strong>. The AI behind Vera and our drafting tools. When you use one, what you give it (your words, or a photo of a card or poster) and the context it needs, such as Vera&apos;s memory of you, is sent to Anthropic to produce the answer.</li>
-          <li><strong className={LEGAL.b}>Sentry</strong>. Error reports. When something breaks, the error, the page or request it happened on, and your browser and device type are sent to Sentry. We do not attach your name or email.</li>
-          <li><strong className={LEGAL.b}>Twilio</strong>. Text messages, only if you opt in. Twilio receives your phone number and the message.</li>
-          <li><strong className={LEGAL.b}>Resend</strong>. Email delivery. Resend receives your email address, name, and the message, and delivers replies to emails a Space sends.</li>
-          <li><strong className={LEGAL.b}>Stripe</strong>. Payments and payouts. Stripe collects your card or bank details and, for hosts who get paid, the identity details Stripe needs.</li>
-          <li><strong className={LEGAL.b}>Upstash</strong>. Rate limiting. Your IP address or account ID is kept as a short-lived counter so one person cannot flood the site.</li>
-          <li><strong className={LEGAL.b}>Google</strong>. Sign-in (if you choose Google login), contacts import (if you choose it), maps and address search, and Google Analytics. Analytics runs only while it is on for you, and some actions we record on our servers reach it with your account ID, never your name or email.</li>
-          <li><strong className={LEGAL.b}>Map and place search</strong>. OpenFreeMap draws maps, Photon (by Komoot) and OpenStreetMap Nominatim turn a place or address you type into a point on the map, and ipapi.co estimates an approximate city from your IP address. Your browser contacts OpenFreeMap, Photon, and ipapi.co directly, so they see your IP address.</li>
-          <li><strong className={LEGAL.b}>Recraft</strong>. Cover images, only if you ask for one. Recraft receives the title and short summary of what you are making.</li>
-          <li><strong className={LEGAL.b}>Your browser&apos;s push service</strong> (for example Apple, Google, or Mozilla). Delivers the notifications you allow. Each one is encrypted, so the push service cannot read it.</li>
+        <ul>
+          <li><strong>Supabase</strong>. Database, file storage, and sign-in. Everything in your account is stored here.</li>
+          <li><strong>Vercel</strong>. Hosting. Every page and request passes through Vercel, which sees your IP address and browser. Vercel Web Analytics counts page visits without cookies.</li>
+          <li><strong>Anthropic</strong>. The AI behind Vera and our drafting tools. When you use one, what you give it (your words, or a photo of a card or poster) and the context it needs, such as Vera&apos;s memory of you, is sent to Anthropic to produce the answer.</li>
+          <li><strong>Sentry</strong>. Error reports. When something breaks, the error, the page or request it happened on, and your browser and device type are sent to Sentry. We do not attach your name or email.</li>
+          <li><strong>Twilio</strong>. Text messages, only if you opt in. Twilio receives your phone number and the message.</li>
+          <li><strong>Resend</strong>. Email delivery. Resend receives your email address, name, and the message, and delivers replies to emails a Space sends.</li>
+          <li><strong>Stripe</strong>. Payments and payouts. Stripe collects your card or bank details and, for hosts who get paid, the identity details Stripe needs.</li>
+          <li><strong>Upstash</strong>. Rate limiting. Your IP address or account ID is kept as a short-lived counter so one person cannot flood the site.</li>
+          <li><strong>Google</strong>. Sign-in (if you choose Google login), contacts import (if you choose it), maps and address search, and Google Analytics. Analytics runs only while it is on for you, and some actions we record on our servers reach it with your account ID, never your name or email.</li>
+          <li><strong>Map and place search</strong>. OpenFreeMap draws maps, Photon (by Komoot) and OpenStreetMap Nominatim turn a place or address you type into a point on the map, and ipapi.co estimates an approximate city from your IP address. Your browser contacts OpenFreeMap, Photon, and ipapi.co directly, so they see your IP address.</li>
+          <li><strong>Recraft</strong>. Cover images, only if you ask for one. Recraft receives the title and short summary of what you are making.</li>
+          <li><strong>Your browser&apos;s push service</strong> (for example Apple, Google, or Mozilla). Delivers the notifications you allow. Each one is encrypted, so the push service cannot read it.</li>
         </ul>
       </section>
 
       <section>
-        <h2 className={LEGAL.h2}>5. Google user data</h2>
-        <p className={LEGAL.p}>
+        <h2>5. Google user data</h2>
+        <p>
           When you connect Google to import contacts, Frequency uses the read-only Google Contacts
           scope (contacts.readonly) for one purpose only: to copy the contacts you choose into your
           own private contact list on Frequency, which is visible only to you. We do not access your
@@ -149,11 +149,11 @@ export default function PrivacyPage() {
           or refresh tokens, and we never sell or share this data or use it for advertising. You can
           delete imported contacts at any time from your account.
         </p>
-        <p className={LEGAL.p}>
+        <p>
           Frequency&apos;s use and transfer of information received from Google APIs adheres to the{' '}
           <a
             href="https://developers.google.com/terms/api-services-user-data-policy"
-            className={LEGAL.a}
+           
           >
             Google API Services User Data Policy
           </a>
@@ -162,8 +162,8 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className={LEGAL.h2}>6. Data security</h2>
-        <p className={LEGAL.p}>
+        <h2>6. Data security</h2>
+        <p>
           We use industry-standard security measures including encrypted connections (HTTPS),
           secure authentication tokens, and row-level database security policies. Your data is
           stored in Supabase&apos;s infrastructure with encryption at rest.
@@ -171,22 +171,22 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className={LEGAL.h2}>7. Your rights</h2>
-        <p className={LEGAL.p}>
+        <h2>7. Your rights</h2>
+        <p>
           You can update or delete your profile information at any time from your account settings.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Download your data:</strong> Go to{' '}
-          <Link href="/settings#account" className={LEGAL.a}>
+        <p>
+          <strong>Download your data:</strong> Go to{' '}
+          <Link href="/settings#account">
             Settings, Account and privacy
           </Link>{' '}
           and choose Download my data. You get one file with what is keyed to you, including your
           profile, posts, the messages you sent, RSVPs, memberships, practice history, the contacts
           you saved, Vera&apos;s memory of you, and your consent history.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Delete your account:</strong> Go to{' '}
-          <Link href="/settings#account" className={LEGAL.a}>
+        <p>
+          <strong>Delete your account:</strong> Go to{' '}
+          <Link href="/settings#account">
             Settings, Account and privacy
           </Link>
           , type DELETE, and choose Delete account. It happens right away and cannot be undone. If
@@ -197,10 +197,10 @@ export default function PrivacyPage() {
           with that event or Space, and support conversations are kept. Deleted data can remain in our
           database backups until those backups expire.
         </p>
-        <p className={LEGAL.p}>
-          <strong className={LEGAL.b}>Turn things off:</strong> Change notifications and
+        <p>
+          <strong>Turn things off:</strong> Change notifications and
           texts in{' '}
-          <Link href="/settings#notifications" className={LEGAL.a}>
+          <Link href="/settings#notifications">
             Settings, Notifications
           </Link>
           , or reply STOP to any text. Turn analytics off with Change your cookie choice, under
@@ -209,8 +209,8 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className={LEGAL.h2}>8. Cookies</h2>
-        <p className={LEGAL.p}>
+        <h2>8. Cookies</h2>
+        <p>
           We use essential cookies to maintain your login session. We also use Google Analytics
           to understand how the site is used, and one attribution cookie that records which page
           or campaign first brought you here. Google Analytics runs only while it is on for you,
@@ -219,7 +219,7 @@ export default function PrivacyPage() {
           anonymization and with advertising and ad-personalization signals turned off. We do
           not use advertising cookies, and we never sell your data.
         </p>
-        <p className={LEGAL.p}>
+        <p>
           Google Analytics and the attribution cookie are optional. In the EU, the EEA and the
           UK we ask before either one is used, and nothing is stored until you answer. Anywhere
           else they are on by default and you can turn them off at any time.{' '}
@@ -228,18 +228,18 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className={LEGAL.h2}>9. Changes to this policy</h2>
-        <p className={LEGAL.p}>
+        <h2>9. Changes to this policy</h2>
+        <p>
           We may update this policy from time to time. We will notify members of material changes
           via email or an in-app announcement.
         </p>
       </section>
 
       <section>
-        <h2 className={LEGAL.h2}>10. Contact</h2>
-        <p className={LEGAL.p}>
+        <h2>10. Contact</h2>
+        <p>
           Questions about this policy? Email us at{' '}
-          <a href="mailto:hello@frequencylocal.com" className={LEGAL.a}>
+          <a href="mailto:hello@frequencylocal.com">
             hello@frequencylocal.com
           </a>.
         </p>

@@ -40,8 +40,6 @@ import {
   PRACTICE_REMIX,
   coerceRemixDirections,
   suggestRemixDirections,
-  normalizeRemixDirection,
-  remixRequest,
   REMIX_DIRECTION_MAX,
 } from './practice-remix'
 import { dailyCapFor, FEATURE_DAILY_CAP_USD } from './budget'
@@ -123,22 +121,5 @@ describe('suggestRemixDirections (the door)', () => {
   it('never asks about a practice with no name', async () => {
     expect(await suggestRemixDirections({ practice: { ...PRACTICE, title: '  ' } })).toBeNull()
     expect(state.lastCall).toBeNull()
-  })
-})
-
-describe('the fork half', () => {
-  it('bounds a picked direction to a chip and refuses anything else', () => {
-    expect(normalizeRemixDirection('  Gentler ')).toBe('Gentler')
-    expect(normalizeRemixDirection('x'.repeat(500))).toHaveLength(REMIX_DIRECTION_MAX)
-    expect(normalizeRemixDirection('')).toBeNull()
-    expect(normalizeRemixDirection(null)).toBeNull()
-    expect(normalizeRemixDirection(undefined)).toBeNull()
-    expect(normalizeRemixDirection(7)).toBeNull()
-  })
-
-  it('frames the direction as a change for the practice-edit path, with no em dash', () => {
-    const req = remixRequest('With a friend')
-    expect(req).toContain('With a friend')
-    expect(req).not.toMatch(/[–—]/)
   })
 })

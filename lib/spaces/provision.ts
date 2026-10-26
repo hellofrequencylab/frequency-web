@@ -38,6 +38,8 @@ import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-limits'
 import { postCreateLanding } from '@/lib/spaces/setup'
+import { startSpaceFromNiche } from '@/lib/spaces/niche-start'
+import { withMegaTheme } from '@/lib/theme/mega-theme'
 import { parseIntents, parsePlanHint, planWantsBilling } from '@/lib/spaces/create-wizard'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { sendOperatorEmailForSpace } from '@/lib/marketing/operator-lifecycle'
@@ -67,6 +69,9 @@ export interface CreateSpaceInput {
   /** What the owner said they want to do here (WIZARD_INTENTS ids, a multi-select, never a niche). Kept on
    *  the Space and in the audit draft, and recorded FIRST-PARTY ONLY: never sent to an ad pixel. */
   intents?: string[]
+  /** The niche door the owner came through (`coaches`, `studios`, ...). Kept on the Space as
+   *  `preferences.megaTheme.niche` (ADR-1881); an unknown value stores nothing. First-party only. */
+  niche?: string | null
 }
 
 // `spaces` isn't in the generated DB types yet (ADR-246) — reach it through an untyped `from`
@@ -194,6 +199,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   const planIntent = planWantsBilling(input.plan) ? parsePlanHint(input.plan) : null
   const intents = parseIntents(input.intents)
   const seedPreferences: Record<string, unknown> = {
+    ...withMegaTheme({}, { niche: input.niche }),
     ...(planIntent ? { planIntent } : {}),
     ...(intents.length ? { startingIntents: intents } : {}),
     ...birth.preferences,
@@ -307,6 +313,8 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   // Best-effort and NOT silent: both a refusal and a throw are logged (AGENTS "every fail-safe needs a
   // gate that notices it fired"), and a stage-seed failure never blocks provisioning.
   await finishSpaceBirth(spaceId, type, birth)
+  // The niche door starts the tools only when no explicit choice or Focus already picked a preset (ADR-1882).
+  if (!birth.presetId) await startSpaceFromNiche(spaceId, input.niche)
 
   // Success: hand the owner to SETUP, then to HOSTING (ADR-1733 amending LIVE-261). This landed
   // on `/manage` until 2026-09-09, the console's command center (revenue, pipeline, contacts), and
