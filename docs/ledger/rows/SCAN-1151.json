@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1151",
+  "title": "The in-app notification channel runs on the outbox, and the Guestbook notice is its first user",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/notifications/router.ts",
+    "ref": "Meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md), Phase 4 follow-up: the router recorded the in-app channel as skipped"
+  },
+  "detail": "routeNotification used to record the in-app channel as skipped, so every bell row was a direct notifications insert that read no preference (or a hand-rolled one). It now enqueues an 'inapp' outbox job after the same send-gate as email and push (the member's own inapp_<category> switch, suppression, per-subject mute), and lib/notifications/inapp.ts writes the notifications row and throws on a failed insert so the drain retries and dead-letters. guestbook.sign is the first type on it: notifyGuestbookSigned no longer reads the gate and inserts by hand, it routes once and reports the router's outcomes. The registry pin that said no row may declare inapp is replaced by the real behaviour (router.test.ts, inapp.test.ts). The remaining direct inserts migrate one registry row at a time; mentions still have no emitter, so that wired-map row stays hidden.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));const r=f.readFileSync(\"lib/notifications/router.ts\",\"utf8\");const h=f.readFileSync(\"lib/queue/handlers.ts\",\"utf8\");process.exit(/INAPP_JOB_KIND/.test(r)&&/runInappNotification/.test(h)&&f.existsSync(\"lib/notifications/inapp.ts\")?0:1)'",
+    "note": "Exits 0 once the router enqueues the inapp job and the outbox registers its handler."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}

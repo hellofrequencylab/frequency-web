@@ -27,12 +27,15 @@ describe('resolveNotificationType — pure registry lookup', () => {
     expect(t.transactional).toBe(true)
   })
 
-  it('maps guestbook.sign to the comments push type and renders the push from the context (ADR-1279)', () => {
+  it('maps guestbook.sign to the comments in-app + push type and renders both from the context (ADR-1279)', () => {
     const t = resolveNotificationType('guestbook.sign')
     expect(t.category).toBe('comments')
-    expect(t.channels).toEqual(['push'])
+    expect(t.channels).toEqual(['inapp', 'push'])
     expect(t.transactional ?? false).toBe(false)
-    expect(t.render({ title: 'T', body: 'B', url: '/people/ada#guestbook' })).toEqual({
+    expect(
+      t.render({ title: 'T', body: 'B', url: '/people/ada#guestbook', ownerHandle: 'ada', signerProfileId: 'signer-1' }),
+    ).toEqual({
+      inapp: { type: 'guestbook_signed', body: 'signed your guestbook', actorId: 'signer-1', referenceType: 'guestbook', referenceId: 'ada' },
       push: { title: 'T', body: 'B', url: '/people/ada#guestbook' },
     })
   })
@@ -90,6 +93,45 @@ function fakeDeps(decision: SendGateDecision): {
   }
   return { deps, enqueued, gate }
 }
+
+describe('routeNotification — the in-app channel (guestbook.sign)', () => {
+  const ctx = { title: 'T', body: 'B', url: '/people/ada#guestbook', ownerHandle: 'ada', signerProfileId: 'signer-1' }
+
+  it('enqueues an inapp job next to the push when the gate allows both', async () => {
+    const { deps, enqueued, gate } = fakeDeps(allow)
+    const result = await routeNotification('guestbook.sign', { profileId: 'owner-1' }, ctx, {}, deps)
+    expect(result.enqueuedCount).toBe(2)
+    expect(gate).toHaveBeenCalledWith('owner-1', 'inapp', 'comments', expect.anything())
+    expect(enqueued[0]).toEqual({
+      kind: 'inapp',
+      payload: {
+        profileId: 'owner-1',
+        type: 'guestbook_signed',
+        body: 'signed your guestbook',
+        actorId: 'signer-1',
+        referenceType: 'guestbook',
+        referenceId: 'ada',
+      },
+    })
+    expect(enqueued[1].kind).toBe('push')
+  })
+
+  it('writes no bell row when the member has the in-app switch off, and the push still goes to the gate', async () => {
+    const enqueued: string[] = []
+    const deps: RouterDeps = {
+      resolveGate: (async (_id: string, channel: string) => (channel === 'inapp' ? deny('pref_off') : allow)) as unknown as RouterDeps['resolveGate'],
+      enqueueJob: async (kind) => {
+        enqueued.push(kind)
+      },
+    }
+    const result = await routeNotification('guestbook.sign', { profileId: 'owner-1' }, ctx, {}, deps)
+    expect(result.outcomes).toEqual([
+      { channel: 'inapp', reason: 'pref_off', enqueued: false },
+      { channel: 'push', reason: 'ok', enqueued: true },
+    ])
+    expect(enqueued).toEqual(['push'])
+  })
+})
 
 describe('routeNotification — event.dispatch (push)', () => {
   it('enqueues a push job in the outbox shape when the gate allows', async () => {
