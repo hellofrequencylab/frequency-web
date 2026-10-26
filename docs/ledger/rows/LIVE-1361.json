@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1361",
+  "title": "Wildheart wears a witchy purple, and the Sites editor tints with it",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-26",
+  "wave": "W7",
+  "source": {
+    "file": "lib/theme/wildheart.ts",
+    "ref": "Daniel 2026-10-26: no old violet from the style system; Wildheart gets a witchy purple accent"
+  },
+  "detail": "Wildheart's own accent set moves to a richer purple (violet #6A3FA0, pressed #55308A, text #5F3694, top #7A52AE) in lib/theme/wildheart.ts and the editor theme contract; vellum on violet 6.94:1, link text 7.46:1 on parchment. The Sites editor's selection ring, hover ring and soft washes wear --ed-accent (the theme accent) while a Wildheart site is open; the pastel buttons keep their ink label. The old #5B3FD0 violet is not used. The editor theme test pin follows the palette value.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const w=fs.readFileSync('lib/theme/wildheart.ts','utf8');const c=fs.readFileSync('components/sites/editor/editor.css','utf8');const bad=[];if(!w.includes(\\\"violet: '#6A3FA0'\\\"))bad.push('Wildheart violet moved');if(/5B3FD0/i.test(w))bad.push('old violet is back');if(!/data-website-theme=\\\"Wildheart\\\"\\] \\.we-shell/.test(c))bad.push('editor lost the Wildheart tint');if(bad.length){console.error('LIVE-1361: '+bad.join('; '));process.exit(1)}\"",
+    "note": "Fails when Wildheart's purple reverts, the old violet returns, or the editor stops tinting with the theme accent.",
+    "checked": "2026-10-26"
+  }
+}
