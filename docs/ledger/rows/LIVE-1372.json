@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1372",
+  "title": "Spotlight editor opens showing the Space's real About words instead of empty fields",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/manage/spotlight/page.tsx",
+    "ref": "Daniel 2026-10-26: content blocks synced across Spotlight, Space page and website"
+  },
+  "detail": "The Spotlight manager seeded its About block from the raw saved bag, so Eyebrow, Title and About text showed placeholders while the preview showed the Space's real words. It now seeds from the same effective content the Space page editor uses (withEffectiveDataContent, and fillDataNodes on the node path). Seed-only: nothing is saved until the owner edits, and an authored value always wins. The website editor already reads the same Space record through the shared slots (LIVE-1356, LIVE-1358).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/spaces/[slug]/manage/spotlight/page.tsx','utf8');process.exit(s.includes('withEffectiveDataContent(grid.content')?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Vitest lib/entity-blocks and effective-block-content suites pass; eslint clean."
+  },
+  "closed": "2026-10-26"
+}
