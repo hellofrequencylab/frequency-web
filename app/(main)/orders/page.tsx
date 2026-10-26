@@ -3,8 +3,6 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import { Receipt, ShoppingBag, Truck } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
-import { resolveIndexHero } from '@/lib/layout/index-hero'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
@@ -177,7 +175,7 @@ export default async function OrdersPage({
   ])
 
   // Under Frequency a list of your orders needs no photo band (owner, 2026-10-14): the plain title and meta.
-  const hero = SITE_DESIGN === 'frequency' ? {} : await resolveIndexHero('/orders')
+  const hero = {}
 
   return (
     <IndexTemplate
