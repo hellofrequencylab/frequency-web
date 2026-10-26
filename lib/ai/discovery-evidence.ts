@@ -4,19 +4,18 @@ import { z } from 'zod'
  * Callers must resolve the actor's Space permissions and current consent on the server.
  * Collection method describes the supplied payload, not proof of live connection or authenticity.
  * URLs are citation locations, never a member's browsing history or an instruction to fetch. */
-export const DISCOVERY_PROVIDERS = ['google_search_console', 'google_analytics', 'bing_webmaster', 'public_page', 'geo_probe', 'first_party_aggregate', 'manual_import'] as const
-export const DISCOVERY_CATEGORIES = ['demand', 'technical_discovery', 'engagement', 'conversion', 'provider_citation'] as const
-export type DiscoveryProvider = typeof DISCOVERY_PROVIDERS[number]
-export type DiscoveryCategory = typeof DISCOVERY_CATEGORIES[number]
-export const DISCOVERY_COLLECTION_METHODS = ['api_response', 'owner_mapped_snapshot', 'first_party_reader', 'public_research', 'synthetic_probe'] as const
-export type DiscoveryCollectionMethod = typeof DISCOVERY_COLLECTION_METHODS[number]
+const DISCOVERY_PROVIDERS = ['google_search_console', 'google_analytics', 'bing_webmaster', 'public_page', 'geo_probe', 'first_party_aggregate', 'manual_import'] as const
+const DISCOVERY_CATEGORIES = ['demand', 'technical_discovery', 'engagement', 'conversion', 'provider_citation'] as const
+type DiscoveryProvider = typeof DISCOVERY_PROVIDERS[number]
+const DISCOVERY_COLLECTION_METHODS = ['api_response', 'owner_mapped_snapshot', 'first_party_reader', 'public_research', 'synthetic_probe'] as const
+type DiscoveryCollectionMethod = typeof DISCOVERY_COLLECTION_METHODS[number]
 const COLLECTION_METHODS: Record<DiscoveryProvider, readonly DiscoveryCollectionMethod[]> = {
   google_search_console: ['api_response'], google_analytics: ['api_response'],
   bing_webmaster: ['owner_mapped_snapshot'], public_page: ['public_research'],
   geo_probe: ['synthetic_probe'], first_party_aggregate: ['first_party_reader'],
   manual_import: ['owner_mapped_snapshot', 'public_research'],
 }
-export const DISCOVERY_PRIVACY_MIN_SAMPLE = 5
+const DISCOVERY_PRIVACY_MIN_SAMPLE = 5
 const DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000
 const token = z.string().min(1).max(120).regex(/^[A-Za-z0-9_-]+$/)
@@ -63,7 +62,7 @@ const observationSchema = z.object({
 }).strict()
 
 export type DiscoveryObservationInput = z.infer<typeof observationSchema>
-export type DiscoveryLimitation = 'small_sample' | 'sample_size_unknown' | 'partial_coverage' | 'coverage_unknown' | 'no_comparison' | 'comparison_not_comparable' | 'comparison_period_mismatch' | 'comparison_sample_unknown' | 'denominator_unknown' | 'inferred_not_measured' | 'experiment_not_proof' | 'causality_not_established' | 'stale_observation' | 'publication_time_unknown' | 'counts_not_distinct_people' | 'owner_reported_source' | 'synthetic_probe_only' | 'public_research_only'
+type DiscoveryLimitation = 'small_sample' | 'sample_size_unknown' | 'partial_coverage' | 'coverage_unknown' | 'no_comparison' | 'comparison_not_comparable' | 'comparison_period_mismatch' | 'comparison_sample_unknown' | 'denominator_unknown' | 'inferred_not_measured' | 'experiment_not_proof' | 'causality_not_established' | 'stale_observation' | 'publication_time_unknown' | 'counts_not_distinct_people' | 'owner_reported_source' | 'synthetic_probe_only' | 'public_research_only'
 export type DiscoveryObservation = DiscoveryObservationInput & {
   freshness: 'fresh' | 'stale'
   expiresAt: string
@@ -78,8 +77,8 @@ export interface DiscoveryAccessScope {
   /** Product freshness policy, not supplied by providers or model output. Bounded to ninety days. */
   maxAgeMs?: number
 }
-export type DiscoveryUnavailableReason = 'not_connected' | 'permission_denied' | 'consent_required' | 'provider_error' | 'no_data' | 'privacy_threshold' | 'unsupported' | 'invalid_evidence' | 'scope_mismatch'
-export type DiscoveryEvidenceResult =
+type DiscoveryUnavailableReason = 'not_connected' | 'permission_denied' | 'consent_required' | 'provider_error' | 'no_data' | 'privacy_threshold' | 'unsupported' | 'invalid_evidence' | 'scope_mismatch'
+type DiscoveryEvidenceResult =
   | { status: 'accepted'; observation: DiscoveryObservation }
   | { status: 'unavailable'; reason: DiscoveryUnavailableReason; provider?: DiscoveryProvider; metric?: string }
 

@@ -10,7 +10,7 @@ export interface DiscoveryOwnerContext {
 }
 
 type Category = DiscoveryObservation['category']
-export interface DiscoveryMeasurementPlan {
+interface DiscoveryMeasurementPlan {
   primaryOutcome: string
   leadingIndicator: string
   observationPeriod: DiscoveryObservation['period']
@@ -18,7 +18,7 @@ export interface DiscoveryMeasurementPlan {
   decisionRule: string
   caution: string
 }
-export interface DiscoveryRecommendation {
+interface DiscoveryRecommendation {
   id: string
   category: Category
   priority: number
