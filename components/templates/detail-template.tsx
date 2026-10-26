@@ -22,12 +22,9 @@ import { ChevronLeft, ImageIcon } from 'lucide-react'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageHero, type PageHeroSize, type HeroOverlayStyle } from './page-hero'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
-// FREQUENCY (ADR-1737): the identity lockup speaks the members kit (the Unbounded `.h1`, the `.meta`
-// line, the `mu-back` link) and the context tabs are the kit's `.tabs` strip. Inlined at build; every
-// DAWN string below is unchanged.
-const FREQUENCY = SITE_DESIGN === 'frequency'
+// The identity lockup speaks the members kit (the Unbounded `.h1`, the `.meta` line, the `mu-back` link)
+// and the context tabs are the kit's `.tabs` strip.
 
 export interface DetailTab {
   href: string
@@ -53,7 +50,6 @@ export function DetailTemplate({
   tabs,
   stickyNav,
   sidebar,
-  titleScale = 'default',
   children,
 }: {
   /** A fully custom hero node rendered ABOVE the context header band. The escape hatch for a
@@ -115,9 +111,7 @@ export function DetailTemplate({
    *  Every other Detail page omits it and is unchanged. The band must own the single
    *  page `<h1>` itself; `title` is then ignored for rendering. */
   band?: React.ReactNode
-  /** Heading scale. 'display' renders the h1 a deliberate step larger for marquee
-   *  destination pages (the public event page); the default keeps every existing
-   *  Detail page exactly as it was. */
+  /** Accepted for existing callers and ignored: the kit's `.h1` is the one title size. */
   titleScale?: 'default' | 'display'
   /** Context tabs. Two accepted shapes, and which one you want depends on WHERE the template is
    *  composed:
@@ -199,11 +193,7 @@ export function DetailTemplate({
         {back && (
           <Link
             href={back.href}
-            className={
-              FREQUENCY
-                ? 'mu-back mb-3'
-                : 'mb-2 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text'
-            }
+            className="mu-back mb-3"
           >
             <ChevronLeft className="h-4 w-4" />
             {back.label}
@@ -214,36 +204,13 @@ export function DetailTemplate({
         {band ?? (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="min-w-0">
-              {kicker && <p className={FREQUENCY ? 'k mb-2' : 'eyebrow mb-1 text-subtle'}>{kicker}</p>}
+              {kicker && <p className="k mb-2">{kicker}</p>}
               <div className="flex items-center gap-2 flex-wrap">
-                {/* The `display` scale is now ONE role (ADR-947's "fourth decision"). It used to be the three-step
-                    ramp `text-page-title sm:text-3xl lg:text-4xl` — 1.5 / 1.875 / 2.25rem in two
-                    jumps — kept on literals because nothing in the vocabulary could take it:
-                    every fixed role is a single size, and the nearest fluid one (`display-h3`)
-                    floors at 1.75rem and is an Anton display face against this bold sans.
-                    `text-page-title-lg` is that ramp's own floor and ceiling interpolated:
-                    clamp(1.5rem, 4vw, 2.25rem). Below `sm` it is pixel-identical to what the ramp
-                    painted; it reaches 2.25rem at ~956px instead of snapping there at `lg`.
-                    🔴 STILL MIRRORED at app/(main)/events/[slug]/page.tsx (the inline-edit input
-                    for the event title), and the marker stays: a browser gives form controls their
-                    own font, so the input cannot inherit this h1 and must NAME the same role. What
-                    the conversion removed is the ramp — one token to keep in step, not three
-                    classes across two breakpoints — not the requirement that both say it. */}
-                <h1
-                  className={
-                    FREQUENCY
-                      ? 'h1'
-                      : `${
-                          titleScale === 'display' ? 'text-page-title-lg' : 'text-lead sm:text-page-title'
-                        } font-bold text-text break-words`
-                  }
-                >
-                  {title}
-                </h1>
+                <h1 className="h1">{title}</h1>
                 {badges}
               </div>
               {subtitle && (
-                <div className={FREQUENCY ? 'meta mt-3' : 'mt-1 text-body-sm text-muted'}>{subtitle}</div>
+                <div className="meta mt-3">{subtitle}</div>
               )}
             </div>
             {actions && <div className="flex items-center gap-2 flex-wrap sm:shrink-0">{actions}</div>}
@@ -258,7 +225,7 @@ export function DetailTemplate({
             instead). A caller-supplied NODE renders in the same slot, untouched — that is the
             layout-composed form (see the prop's doc). */}
         {!stickyNav && tabs != null && !Array.isArray(tabs) && <div className="mt-4">{tabs}</div>}
-        {!stickyNav && Array.isArray(tabs) && tabs.length > 0 && FREQUENCY && (
+        {!stickyNav && Array.isArray(tabs) && tabs.length > 0 && (
           <nav className="tabs mt-6">
             {tabs.map((tab) => (
               <Link
@@ -266,23 +233,6 @@ export function DetailTemplate({
                 href={tab.href}
                 aria-current={tab.active ? 'page' : undefined}
                 className={tab.active ? 'on' : undefined}
-              >
-                {tab.label}
-              </Link>
-            ))}
-          </nav>
-        )}
-        {!stickyNav && Array.isArray(tabs) && tabs.length > 0 && !FREQUENCY && (
-          <nav className="flex items-center gap-1 mt-4 -mb-px overflow-x-auto">
-            {tabs.map((tab) => (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className={`px-3 py-1.5 rounded-control text-body-sm font-medium whitespace-nowrap transition-colors ${
-                  tab.active
-                    ? 'bg-primary-bg text-primary-strong'
-                    : 'text-muted hover:bg-surface-elevated hover:text-text'
-                }`}
               >
                 {tab.label}
               </Link>

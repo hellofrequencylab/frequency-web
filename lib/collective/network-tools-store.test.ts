@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const state = vi.hoisted(() => ({ tables: {} as Record<string, Record<string, unknown>[]>, membership: vi.fn() }))
+const state = vi.hoisted(() => ({ tables: {} as Record<string, Record<string, unknown>[]>, membership: vi.fn(), calendar: vi.fn(async () => []) }))
 vi.mock('server-only', () => ({}))
 vi.mock('react', async original => ({ ...await original<typeof import('react')>(), cache: (fn: unknown) => fn }))
-vi.mock('@/lib/events/store', () => ({ listSpaceCalendarEvents: vi.fn(async () => []) }))
+vi.mock('@/lib/events/store', () => ({ listSpaceCalendarEvents: state.calendar }))
 vi.mock('@/lib/spaces/membership', () => ({ getSpaceMembership: state.membership }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from(table: string) {
   let rows = [...(state.tables[table] ?? [])]
@@ -16,10 +16,11 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from(table:
   }
   return query
 } }) }))
-const { networkCentralAdminReach, networkToolsAccess } = await import('./network-tools-store')
+const { networkCentralAdminReach, networkToolsAccess, loadChaptersArea, readToolsSpace } = await import('./network-tools-store')
 
 const space = (id: string, extra: Record<string, unknown> = {}) => ({ id, slug: id, name: id, plan: 'free', status: 'active', type: 'business', parent_id: 'p', owner_profile_id: 'owner', ...extra })
 beforeEach(() => {
+  state.calendar.mockClear()
   state.tables = {
     spaces: [space('p', { plan: 'network', parent_id: null }), space('a'), space('b'), space('outside', { parent_id: null }),
       space('c', { plan: 'collective', parent_id: null }), space('cchild', { parent_id: 'c' })],
@@ -54,4 +55,17 @@ describe('Chapters area access', () => {
     expect(await networkToolsAccess('c', 'owner')).toBeNull()
     expect(await networkToolsAccess('p', null)).toBeNull()
   })
+})
+
+it('passes each owning Space zone to chapter/parent calendar reads while retaining limits', async () => {
+  const parent = state.tables.spaces.find(row => row.id === 'p')!
+  parent.time_zone = 'America/Los_Angeles'
+  state.tables.spaces.find(row => row.id === 'a')!.time_zone = 'Asia/Tokyo'
+  state.tables.spaces.find(row => row.id === 'b')!.time_zone = null
+  const resolved = await readToolsSpace('p')
+  expect(resolved).not.toBeNull()
+  await loadChaptersArea(resolved!)
+  expect(state.calendar).toHaveBeenCalledWith('p', { limit: 300, timeZone: 'America/Los_Angeles' })
+  expect(state.calendar).toHaveBeenCalledWith('a', { limit: 200, timeZone: 'Asia/Tokyo' })
+  expect(state.calendar).toHaveBeenCalledWith('b', { limit: 200, timeZone: null })
 })

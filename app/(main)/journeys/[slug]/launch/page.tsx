@@ -62,7 +62,7 @@ async function EnrolleeBroadcastSection({ planId, hasSpace }: { planId: string; 
           note: 'Goes through your Space’s email. Reaches enrolled people who are subscribed to it.',
         }
       : { key: 'email', enabled: false, note: 'Move this Journey to a Space to email from it' },
-    { key: 'dispatch', enabled: false, note: 'Not wired for Journeys yet' },
+    { key: 'dispatch', enabled: true, note: 'A push to enrolled people who have push on.' },
     SMS_CHANNEL,
   ]
 

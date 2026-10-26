@@ -112,9 +112,10 @@ describe('coerceExtraction — raw model shape to draft + ledger', () => {
     expect(ledger['offerings[0].price']).toBeDefined()
   })
 
-  it('records about as generated (no fabricated citation)', () => {
-    const { ledger } = coerceExtraction(raw, sources)
-    expect(ledger.about[0].kind).toBe('generated')
+  it('omits generated About rather than retaining a draft with invented wording', () => {
+    const { draft, ledger } = coerceExtraction(raw, sources)
+    expect(draft.about).toBeUndefined()
+    expect(ledger.about).toBeUndefined()
   })
 
   it('falls back to the name hint when the model returns no name', () => {
@@ -139,4 +140,85 @@ describe('parsePrice', () => {
   it('returns null for a price-less string', () => {
     expect(parsePrice('call us')).toBeNull()
   })
+})
+
+
+describe('About/Story source-verbatim gate', () => {
+ const quote = 'Our own words.\nWith our punctuation!'
+ const page: HarvestedSource = {id:'owner-page',kind:'page',url:'https://owner.test/about',fetchedAt:'now',text:`Intro. ${quote} End.`}
+ const field = {value:quote,snippet:quote,sourceUrl:page.url,kind:'fact',confidence:0.9}
+ it('keeps exact source words and matching provenance, including owner paste without a URL', () => {
+  const result=coerceExtraction({about:field,story:{...field,sourceUrl:undefined}},[page,{id:'paste',kind:'paste',fetchedAt:'now',text:quote}],'Owner')
+  expect(result.draft.about).toBe(quote);expect(result.draft.story).toBe(quote)
+  expect(result.ledger.about[0]).toMatchObject({kind:'fact',snippet:quote,sourceUrl:page.url})
+  expect(result.ledger.story[0].sourceUrl).toBeUndefined()
+ })
+ it.each([
+  {...field,value:'Invented rewriting'}, {...field,kind:'generated'}, {...field,kind:'inferred'}, {...field,kind:undefined},
+  {...field,snippet:undefined}, {...field,sourceUrl:'https://foreign.test/about'}, {...field,sourceUrl:undefined},
+  {...field,value:quote.toLowerCase()}, {...field,value:'Our own words. With our punctuation!'},
+ ])('rejects fabricated, uncited, relabeled or nonverbatim wording: %j', bad => {
+  const result=coerceExtraction({about:bad,story:bad},[page],'Owner')
+  expect(result.draft.about).toBeUndefined();expect(result.draft.story).toBeUndefined()
+  expect(result.ledger.about).toBeUndefined();expect(result.ledger.story).toBeUndefined()
+ })
+ it('cannot borrow a citation from another source, title alone or search result', () => {
+  for(const candidates of [[{...page,text:'Other words',title:quote}],[{...page,kind:'search_result' as const}],[{...page,url:'https://other.test'}]]) {
+   expect(coerceExtraction({about:field},candidates,'Owner').draft.about).toBeUndefined()
+  }
+ })
+})
+
+describe('every extracted public prose surface uses the same source quotation gate', () => {
+ const text='Our banner. Service detail. Can we meet? Yes, join us. Open studio. Doors open at noon.'
+ const source:HarvestedSource={id:'owner',kind:'page',url:'https://owner.test/page',fetchedAt:'now',text}
+ const citation={sourceUrl:source.url,snippet:text}
+ const field=(value:string)=>({...citation,value,kind:'fact',confidence:0.9})
+ const raw=():RawExtraction=>({
+  tagline:field('Our banner.'),
+  offerings:[{title:{value:'Class'},blurb:field('Service detail.'),price:{value:'25',kind:'inferred'}}],
+  faq:[{q:'Can we meet?',a:'Yes, join us.',...citation}],
+  events:[{title:'Open studio.',blurb:'Doors open at noon.',startsAt:'2026-11-01T12:00:00Z',...citation}],
+ })
+ it('keeps exact tagline, offering, FAQ and event words while retaining factual date/price extraction',()=>{
+  const {draft,ledger}=coerceExtraction(raw(),[source],'Owner')
+  expect(draft.tagline).toBe('Our banner.');expect(draft.offerings?.[0].blurb).toBe('Service detail.')
+  expect(draft.offerings?.[0].price).toBe(25)
+  expect(draft.faq).toEqual([{q:'Can we meet?',a:'Yes, join us.'}])
+  expect(draft.events?.[0]).toMatchObject({title:'Open studio.',blurb:'Doors open at noon.',startsAt:'2026-11-01T12:00:00Z'})
+  expect(ledger['faq[0].a'][0]).toMatchObject({kind:'fact',sourceUrl:source.url,snippet:text})
+  expect(ledger['events[0].title'][0].kind).toBe('fact')
+ })
+ it.each(['tagline','offering','faq-question','faq-answer','event-title','event-blurb'])('drops invented %s even with a real unrelated citation',surface=>{
+  const input=raw()
+  if(surface==='tagline')input.tagline!.value='INVENTED'
+  if(surface==='offering')input.offerings![0].blurb!.value='INVENTED'
+  if(surface==='faq-question')input.faq![0].q='INVENTED'
+  if(surface==='faq-answer')input.faq![0].a='INVENTED'
+  if(surface==='event-title')input.events![0].title='INVENTED'
+  if(surface==='event-blurb')input.events![0].blurb='INVENTED'
+  const result=coerceExtraction(input,[source],'Owner')
+  expect(JSON.stringify(result)).not.toContain('INVENTED')
+  if(surface.startsWith('faq'))expect(result.draft.faq).toBeUndefined()
+  if(surface==='event-title')expect(result.draft.events).toBeUndefined()
+  if(surface==='event-blurb')expect(result.draft.events?.[0].blurb).toBeUndefined()
+ })
+ it.each(['uncited','foreign','search','split-sources'])('rejects %s evidence across every public prose field',mode=>{
+  const input=raw();let sources=[source]
+  if(mode==='uncited'){
+   input.tagline!.snippet=undefined;input.offerings![0].blurb!.snippet=undefined
+   input.faq![0].snippet=undefined;input.events![0].snippet=undefined
+  }
+  if(mode==='foreign')sources=[{...source,url:'https://foreign.test/page'}]
+  if(mode==='search')sources=[{...source,kind:'search_result'}]
+  if(mode==='split-sources')sources=[{...source,text:'Our banner. Can we meet? Open studio.'},{...source,id:'other',url:'https://other.test',text:'Service detail. Yes, join us. Doors open at noon.'}]
+  const {draft}=coerceExtraction(input,sources,'Owner')
+  expect(draft.tagline).toBeUndefined();expect(draft.offerings?.[0].blurb).toBeUndefined()
+  expect(draft.faq).toBeUndefined();expect(draft.events).toBeUndefined()
+ })
+ it('accepts quoted FAQ/event words from a supplied owner paste with no fabricated URL',()=>{
+  const input=raw();input.faq![0].sourceUrl=undefined;input.events![0].sourceUrl=undefined
+  const {draft}=coerceExtraction(input,[{...source,kind:'paste',url:undefined}],'Owner')
+  expect(draft.faq?.[0].a).toBe('Yes, join us.');expect(draft.events?.[0].title).toBe('Open studio.')
+ })
 })

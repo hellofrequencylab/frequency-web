@@ -10,6 +10,9 @@ import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { moduleTierRead } from '@/lib/pricing/tier-marks'
+import { StartingSetup } from './starting-setup'
+import { NICHE_DEFAULTS, nicheStartTools } from '@/lib/spaces/niche-defaults'
+import { MEGA_NICHES, readMegaTheme } from '@/lib/theme/mega-theme'
 import { ModuleManager, type ModuleManagerRow } from './module-manager'
 import { consoleBack } from '@/lib/spaces/console-back'
 
@@ -54,6 +57,7 @@ export default async function SpaceModulesPage({
   const readOnly = staffViewing || !caps.canManageMembers
 
   const brandName = space.brandName ?? space.name
+  const savedNiche = readMegaTheme(space.preferences).niche
 
   // Build the rows: EVERY catalog module, in the owner's current menu order (spaceModuleManifest with the
   // saved order and no hidden filter returns the full catalog so hidden modules stay visible here to be
@@ -98,6 +102,13 @@ export default async function SpaceModulesPage({
       description="Turn the tools this space uses on or off, set who on your team can use each one, reorder your menu, and hide what you do not need."
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
+      <StartingSetup
+        slug={space.slug}
+        niche={savedNiche}
+        options={MEGA_NICHES.map((id) => ({ id, label: NICHE_DEFAULTS[id].label }))}
+        tools={nicheStartTools(savedNiche)}
+        readOnly={readOnly}
+      />
       <ModuleManager slug={space.slug} rows={rows} readOnly={readOnly} />
     </ConsoleFocusTemplate>
   )

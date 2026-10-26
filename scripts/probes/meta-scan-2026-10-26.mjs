@@ -27,7 +27,7 @@ const checks = {
       .concat(read('docs/DECISIONS.md'))
       .some((t) => /only platform design|Frequency is the only (platform )?design|DAWN (is )?(no longer|not) (selectable|deployable)/i.test(t)),
   'row-1328-probe': () => !/check-email-node-render/.test(read('docs/ledger/rows/LIVE-1328.json')),
-  'home-faq': () => has('lib/page-editor/templates/home.ts', /faq/i),
+  'home-faq': async () => (await import('./home-faq.mjs')).homeFaqContract(read('app/page.tsx'), read('components/frequency/site/pages/home/frequency-home.tsx')),
   'opening-date': () => has('components/frequency/site/pages/home/frequency-home.tsx', /OPENING_DATE_(ISO|LABEL)/),
   'commons-literal': () => !/#7C766F/i.test(read('app/themes/frequency/site-niche.css')),
   'contrast-gate': () => has('scripts/check-contrast.mjs', /themes\/frequency|frequency\.css/),
@@ -67,6 +67,6 @@ if (!checks[key]) {
   console.error(`unknown key ${key}; known: ${Object.keys(checks).join(', ')}`)
   process.exit(2)
 }
-const ok = Boolean(checks[key]())
+const ok = Boolean(await checks[key]())
 console.log(`${key}: ${ok ? 'repaired' : 'not yet repaired'}`)
 process.exit(ok ? 0 : 1)

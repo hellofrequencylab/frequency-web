@@ -19,6 +19,8 @@ import {
   type WizardPlan,
 } from '@/lib/spaces/create-wizard'
 import { Field, TextField } from '@/components/spaces/space-form'
+import type { MegaNicheId } from '@/lib/theme/mega-theme'
+import { SpacePicker, type PickerDone } from './space-picker'
 
 // The SPACE CREATION WIZARD (client). Step-by-step on the Spark kit, like every other seeder
 // (docs/STUDIO.md): What you want to do, Tool setup, Name it, Ready. The steps are read off the Space manifest by
@@ -80,7 +82,14 @@ export function CreateSpaceWizard({
   initialIntents = [],
   presetLabels = {},
   heardAboutOptions = [],
+  pickerEnabled = false,
+  arrivedNiche = null,
 }: {
+  /** Show the four-question picker before the wizard (ADR-1883, behind SPACE_PICKER_ENABLED). */
+  pickerEnabled?: boolean
+  /** The niche a /for door named (query or funnel cookie), already validated by the page. Saved on the
+   *  Space whether or not the picker is on. */
+  arrivedNiche?: MegaNicheId | null
   choices: SpaceModeChoice[]
   heardAboutOptions?: readonly string[]
   /** The Mode a niche funnel pre-selected (`${type}:${variant}`), already validated by the page. */
@@ -114,6 +123,9 @@ export function CreateSpaceWizard({
   // A plan hint that arrived already chosen starts past the plan step's question, not past the step.
   const [index, setIndex] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  // The picker runs first when it is on; its answers (or the door's niche) ride into createSpace.
+  const [picking, setPicking] = useState(pickerEnabled)
+  const [picked, setPicked] = useState<PickerDone>({ niche: arrivedNiche, action: null, feel: null, site: null })
   const [pending, start] = useTransition()
 
   const suggested = suggestModeForIntents(intents, choices.map((c) => c.id))
@@ -145,6 +157,10 @@ export function CreateSpaceWizard({
         heardAbout: heardAbout || null,
         plan,
         intents,
+        niche: picked.niche,
+        action: picked.action,
+        feel: picked.feel,
+        site: picked.site,
       })
       // createSpace redirects on success, so we only reach here on a returned error.
       if (result && isError(result)) setError(result.error)
@@ -153,6 +169,19 @@ export function CreateSpaceWizard({
 
   const last = index === STEPS.length - 1
   const nextDisabled = (step.key === 'model' && !choice) || (step.key === 'identity' && !identityOk)
+
+  if (picking) {
+    return (
+      <SpacePicker
+        arrivedNiche={arrivedNiche}
+        onDone={(answers) => {
+          setPicked(answers)
+          setPicking(false)
+        }}
+        onSkip={() => setPicking(false)}
+      />
+    )
+  }
 
   return (
     <div className="relative">

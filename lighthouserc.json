@@ -68,7 +68,13 @@
     "pr-compare), so cite the JOB id and the attempt, never the run. And re-run once before",
     "filing: the desktop preset applies no CPU throttle, so a busy shared runner inflates TBT",
     "directly, and numberOfRuns 3 medians one four-minute window on ONE runner, not three. This",
-    "job is not in the required set (WORKFLOW.md rule 4), so a one-attempt red blocks nothing."
+    "job is not in the required set (WORKFLOW.md rule 4), so a one-attempt red blocks nothing.",
+    "",
+    "\u2500\u2500 THE MOBILE PRESET AND THE MEMBER SHELL LIVE IN lighthouserc.mobile.json (SCAN-1138) \u2500\u2500",
+    "",
+    "This file stays the desktop gate over four anonymous marketing pages. The member shell on a phone",
+    "(the home and the signed-out /feed) is measured by the sibling file on the mobile preset, with a",
+    "script-size assertion. Its assertions start as warns until a few runs have set real numbers."
   ],
   "ci": {
     "collect": {

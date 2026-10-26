@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1360",
+  "title": "A Space stores its Mega Theme and niche, on one theme id model",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/theme/mega-theme.ts",
+    "ref": "Mega Theme plan, piece 1 (ADR-1881)"
+  },
+  "detail": "Adds lib/theme/mega-theme.ts: MEGA_THEMES maps one theme id to the editor theme and site theme, MEGA_NICHES names the six niches, and readMegaTheme/withMegaTheme store the choice at spaces.preferences.megaTheme. Space creation seeds the niche, and the owner profile save sets or clears either part. No table, no content rewrite.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "evidence": "Probe passes; vitest lib/theme/mega-theme.test.ts pins the map to the older tables and round-trips the stored choice.",
+    "cmd": "node scripts/probes/mega-theme.mjs"
+  }
+}

@@ -23,6 +23,7 @@ import { FREQUENCY_PAGE_CSS } from '../frequency-page-css'
 import { FQ_EDITOR, k } from './skin'
 import { FqIcon } from '@/components/frequency/icon'
 import { editorBlockMeta } from '@/lib/sites/editor/block-meta'
+import { bindSlots, readSlots } from '@/lib/spaces/content-slots'
 import { NETWORK_BLOCK_CSS, docHasNetworkBlocks } from '../network-css'
 import { SectionIcon } from './section-icon'
 
@@ -356,7 +357,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     const block = doc.content.find((b) => b.props.id === focusField.blockId)
     const section = mount.querySelector<HTMLElement>(`.we-section[data-block-id="${CSS.escape(focusField.blockId)}"]`)
     if (!block || !section) return
-    const targets = new Set(fieldTextTargets(block.props, focusField.field, focusField.path))
+    const targets = new Set(fieldTextTargets(bindSlots(block.props, readSlots(metadata?.space)), focusField.field, focusField.path))
     if (!targets.size) return
     const lit: HTMLElement[] = []
     for (const node of section.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6,p,blockquote,figcaption,li,dt,dd,a,button,label,summary,span,small,strong,em,b')) {
@@ -372,7 +373,10 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     const text = copy.textContent ?? ''
     return node.matches('.mw-strip-end') && text.trimEnd().endsWith('→') ? text.trimEnd().slice(0, -1).trimEnd() : text
   }
-  function editText(event: MouseEvent<HTMLElement>, block: ContentItem): boolean {
+  function editText(event: MouseEvent<HTMLElement>, stored: ContentItem): boolean {
+    // Match and edit the words the owner SEES: a kit's `{{story|...}}` token is resolved first (lib/spaces/content-slots.ts),
+    // so a click finds its field, and typing over the line saves the typed words in place of the token.
+    const block: ContentItem = { ...stored, props: bindSlots(stored.props, readSlots(metadata?.space)) }
     if (preview || editing.current || (event.target as HTMLElement).closest('.we-micro,.we-section-label,.we-pin,.we-layout-handles,.we-spacing-handle')) return false
     const schema = config.components[block.type]?.fields ?? {}
     const fields = { ...schema }

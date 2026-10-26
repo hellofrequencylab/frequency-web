@@ -1,0 +1,7 @@
+{
+  "id": "SCAN-1116",
+  "append": {
+    "detail": "Premise re-tested 2026-10-26: every deploy renders Frequency (an unset NEXT_PUBLIC_SITE_DESIGN reads as Frequency), so the dawn and midnight state ids in a11y-baselines.json already measure Commons and Stage; the ids are legacy names, and renaming them would rename every screenshot file. The real gap was route coverage, closed by SCAN-1136 (the six /for doors, /join, /accessibility, /help). Left open because only the iOS build may be parked (HYG-161) and the probe asks for renamed state keys. Needs an owner call: accept the rename, or retire this row with a probe that measures coverage."
+  },
+  "wave": "W7"
+}

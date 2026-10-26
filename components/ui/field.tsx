@@ -1,13 +1,10 @@
 import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes, type LabelHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
-// FREQUENCY (ADR-1737): under SITE_DESIGN === 'frequency' a boxed field is the members kit's `.input`
-// (48px, a 4% ink well, 16px radius, the focus ring), Field is the kit's `.field` column, and the label,
-// hint and error are `mu-label` / `mu-hint` / `mu-err` (app/themes/frequency/members-ui.css). The kit's
-// well reads on every surface, so the `surface` fills collapse to one. Seamless stays seamless. Inlined
-// at build, so every DAWN string below is unchanged.
-const FREQUENCY = SITE_DESIGN === 'frequency'
+// A boxed field is the members kit's `.input` (ADR-1737; 48px, a 4% ink well, 16px radius, the focus
+// ring), Field is the kit's `.field` column, and the label, hint and error are `mu-label` / `mu-hint` /
+// `mu-err` (app/themes/frequency/members-ui.css). The kit's well reads on every surface, so the
+// `surface` prop is accepted and ignored. Seamless stays seamless.
 
 // Shared form-field styling + primitives — one source of truth for inputs,
 // textareas, selects, and labels (the audit found this class string copy-pasted
@@ -16,68 +13,19 @@ const FREQUENCY = SITE_DESIGN === 'frequency'
 // is the calm, neutral halo standardized in the sitewide focus sweep — never the
 // amber :focus-visible ring (this wins by specificity).
 
-// State set per docs/INTERACTION-STATES.md §2 (Field): rest · focus-visible · error · disabled.
-// ERROR is driven by `aria-invalid` on the control itself, so the a11y attribute and the look can
-// never drift apart: set `aria-invalid` when the value is bad and the danger border follows. ~9
-// call sites already set it and got nothing back visually; they light up from this one string.
-// DISABLED also takes `cursor-not-allowed`, so the state reads before a click, not after.
-// `fieldChromeClasses` is the field LOOK with no padding of its own — border, surface, type,
-// the calm focus halo, the aria-invalid error and the disabled fade. It exists so a control that
-// must own its own padding can wear the same chrome WITHOUT fighting `px-3`: `Select` reserves a
-// right-hand gutter for its chevron, and `pr-9` layered over `px-3` is a logical-vs-physical
-// padding collision whose winner depends on Tailwind's emit order, not on the class list. Split
-// once here, and the two strings can never drift.
-// The chrome with NO fill of its own. Split out so a field can wear a different surface without
-// two `bg-*` utilities landing in one class string — see `FieldSurface` below for why that split
-// has to exist rather than being solved at the call site.
-// SHAPE AND STATE, WITH NO PALETTE. Split out on 2026-08-11 so a field-class control can wear a
-// different RESTING COLOUR without two `border-*` or two `text-*` utilities landing in one string —
-// the same reason `fieldChromeNoFill` exists for the fill. It carries the box, the type role, the
-// calm focus halo, the `aria-invalid` error and the disabled fade; it carries no border colour, no
-// text colour and no fill. `Select`'s `tone` prop is the first consumer (a chip filter whose active
-// state is a border + fill + text swap), and it is why the split had to happen in this file rather
-// than being re-derived next door: one shape, one focus treatment, no drift.
-export const fieldChromeShape =
-  'w-full rounded-control border text-body-sm outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/30 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-subtle'
+// State set per docs/INTERACTION-STATES.md §2 (Field): rest · focus-visible · error · disabled. The
+// kit's `.input` carries all four, keyed off the control's own `aria-invalid` / `:disabled`.
+// `fieldChromeClasses` is the field LOOK with no padding of its own; `fieldClasses` is the same look
+// for an element a component cannot wrap directly (e.g. a native <select>).
+export const fieldChromeClasses = 'input'
 
-/** The neutral resting palette every field wears unless it says otherwise. No fill. */
-export const fieldToneNeutral = 'border-border text-text'
-
-const fieldChromeNoFill = `${fieldChromeShape} ${fieldToneNeutral}`
-
-export const fieldChromeClasses = FREQUENCY ? 'input' : `${fieldChromeNoFill} bg-surface`
-
-export const fieldClasses = FREQUENCY ? 'input' : `${fieldChromeClasses} px-3 py-2`
+export const fieldClasses = 'input'
 
 /**
- * Which surface a field's fill sits on.
- *
- *   default  `bg-surface` — pure white. A field on the canvas or on a white card.
- *   post     `bg-surface-post` — the feed post-card surface. A field INSIDE a post.
- *   inset    `bg-canvas` — the field reads as a WELL cut into a lighter card. The beta
- *            induction, the member-link search and the QR title all sit inside a
- *            `bg-surface` card, where a `bg-surface` field is invisible: same fill, and the
- *            hairline border is the only thing separating control from container. Those
- *            surfaces each hand-rolled the inset field rather than adopt the primitive,
- *            and the raw-input ratchet was RAISED on 2026-08-07 to book three more of them
- *            (ADR-959) with "Input is bg-surface … the primitive would render them
- *            invisible" as the stated reason. This is that reason answered.
- *
- * 🔴 WHY THIS IS A PROP AND NOT A CLASSNAME (owner, 2026-08-06: "make all comment and dispatch box
- * backgrounds the same as the post box in every feed"). `cn` is a plain join, so passing
- * `className="bg-surface-post"` to a control whose base string already says `bg-surface` emits BOTH
- * utilities and lets Tailwind's stylesheet order decide the winner — not the call site. That is the
- * same trap `IconButton` documents for its `h-8 w-8`, and it is worse here because the two classes
- * differ by eight units of grey: the bug would be invisible in review and visible on screen.
- * Choosing the fill INSIDE the component keeps exactly one `bg-*` in the string.
+ * Which surface a field's fill sits on. Callers still pass it (`inset` for a field inside a
+ * `bg-surface` card), but the kit's `.input` well reads on every surface, so it changes nothing.
  */
 export type FieldSurface = 'default' | 'post' | 'inset'
-
-const FIELD_FILL: Record<FieldSurface, string> = {
-  default: 'bg-surface',
-  post: 'bg-surface-post',
-  inset: 'bg-canvas',
-}
 
 /**
  * How much chrome the field draws around itself.
@@ -124,32 +72,30 @@ export type FieldVariant = 'boxed' | 'seamless'
 const fieldSeamless =
   'bg-transparent outline-none placeholder:text-subtle aria-[invalid=true]:text-danger disabled:opacity-50 disabled:cursor-not-allowed'
 
-function fieldWithSurface(surface: FieldSurface, variant: FieldVariant = 'boxed'): string {
-  if (variant === 'seamless') return fieldSeamless
-  if (FREQUENCY) return 'input'
-  return `${fieldChromeNoFill} ${FIELD_FILL[surface]} px-3 py-2`
+function fieldWithVariant(variant: FieldVariant = 'boxed'): string {
+  return variant === 'seamless' ? fieldSeamless : 'input'
 }
 
-export const labelClasses = FREQUENCY ? 'mu-label' : 'text-meta font-medium text-muted'
+export const labelClasses = 'mu-label'
 
 export const Input = forwardRef<
   HTMLInputElement,
   InputHTMLAttributes<HTMLInputElement> & { surface?: FieldSurface; variant?: FieldVariant }
->(function Input({ className, surface = 'default', variant = 'boxed', ...props }, ref) {
-  return <input ref={ref} className={cn(fieldWithSurface(surface, variant), className)} {...props} />
+>(function Input({ className, surface: _surface, variant = 'boxed', ...props }, ref) {
+  return <input ref={ref} className={cn(fieldWithVariant(variant), className)} {...props} />
 })
 
 export const Textarea = forwardRef<
   HTMLTextAreaElement,
   TextareaHTMLAttributes<HTMLTextAreaElement> & { surface?: FieldSurface; variant?: FieldVariant }
->(function Textarea({ className, surface = 'default', variant = 'boxed', ...props }, ref) {
+>(function Textarea({ className, surface: _surface, variant = 'boxed', ...props }, ref) {
   return (
     <textarea
       ref={ref}
       // A seamless textarea is a composer inside a box that is already a card: the card owns the
       // frame, so the drag grip in its bottom-right corner would be a second, competing edge. All
       // six borderless composers in the product suppressed it by hand; the variant does it once.
-      className={cn(fieldWithSurface(surface, variant), variant === 'seamless' && 'resize-none', className)}
+      className={cn(fieldWithVariant(variant), variant === 'seamless' && 'resize-none', className)}
       {...props}
     />
   )
@@ -197,26 +143,14 @@ export function Field({
   labelClassName?: string
   children: ReactNode
 }) {
-  if (FREQUENCY) {
-    return (
-      <label className={cn('field', className)}>
-        <span className={cn('mu-label', labelClassName)}>{label}</span>
-        {children}
-        {hint && !error ? <span className="mu-hint">{hint}</span> : null}
-        {/* `contents`, so the live region adds no empty row (and no gap) to the field's column. */}
-        <span aria-live="polite" className="contents">
-          {error ? <span className="mu-err">{error}</span> : null}
-        </span>
-      </label>
-    )
-  }
   return (
-    <label className={cn('block', className)}>
-      <span className={cn(labelClasses, 'mb-1 block', labelClassName)}>{label}</span>
+    <label className={cn('field', className)}>
+      <span className={cn('mu-label', labelClassName)}>{label}</span>
       {children}
-      {hint && !error ? <span className="mt-1 block text-meta text-subtle">{hint}</span> : null}
-      <span aria-live="polite">
-        {error ? <span className="mt-1 block text-meta font-medium text-danger">{error}</span> : null}
+      {hint && !error ? <span className="mu-hint">{hint}</span> : null}
+      {/* `contents`, so the live region adds no empty row (and no gap) to the field's column. */}
+      <span aria-live="polite" className="contents">
+        {error ? <span className="mu-err">{error}</span> : null}
       </span>
     </label>
   )

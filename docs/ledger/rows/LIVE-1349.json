@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1349",
+  "title": "Keep automatic Circle milestone recognition on the human-written system template",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/circles/social-fuel.ts",
+    "ref": "Owner coaching direction and remaining AI authorship inventory2026-10-26"
+  },
+  "detail": "Removes the model call from automatic Journey/Master Circle feed recognition and uses the existing unchanged human-written operational template. Recognition still posts as the active SYSTEM account only to deduplicated active member Circles; no system account or no Circle produces no post. Preserves completion hook, membership scoping, group visibility and best-effort completion behavior. No handle/title or recipient data is sent to an AI provider. Actual persisted-payload tests and source VM probe verify fixed copy, system identity and audience boundaries. Negative controls inject different copy and member authorship and must fail. The Today actionDraft/owner brief are readonly operator analysis/summaries; creatorTips/poster observer are reviewed coaching notifications/internal flags, not creator publication fields. Those were inventoried, not classified as defects or disabled. This bounded change does not claim the entire legacy AI platform is audited. No live posts, notifications, provider calls or schema mutations performed.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "cmd": "node scripts/probes/circle-recognition-authorship.mjs",
+    "evidence": "Actual-source inert-IO assertions for exact human-written persisted body, SYSTEM author, active/deduplicated Circle audience and no-provider dependency; focused regressions plus adverse-copy/member-author controls."
+  }
+}

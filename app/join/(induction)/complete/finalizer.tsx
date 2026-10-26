@@ -55,7 +55,11 @@ export function CompleteFinalizer() {
         setError(res.error ?? 'Something went wrong.')
         setTimeout(() => router.replace('/join'), 1600)
       }
-    })()
+    })().catch(() => {
+      // The server action threw (network, deploy skew): show the same message instead of a silent spinner.
+      setMode('error')
+      setError('Something went wrong.')
+    })
   }, [router])
 
   return (

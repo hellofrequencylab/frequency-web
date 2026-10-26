@@ -474,37 +474,6 @@ export const WAIVERS = [
     floors: { 'Light-lock on a dark device': 2.19, 'DAWN light': 2.19, 'Midnight light': 2.33 },
     why: 'The amber brand fill on the cream ground is 2.19:1 — the marketing twin of the already-waived 2.52:1 on white, and darker ground means a WORSE number, not a better one. Decorative fill only: this is the vector art (fill-primary / stroke-primary), never an indicator that identifies a control. Anything on this ground that has to be READ takes --color-primary-strong (4.75:1, in the table above and passing). Frozen so the amber cannot drift lighter.',
   },
-  // ── Frequency Commons day (SCAN-1115, measured 2026-10-26) ────────────────────────────────
-  // The gate used to read app/globals.css alone, so the Frequency palette that ships (Commons by
-  // day, Commons at night, Stage) was never measured. The first run found four TEXT pairs under
-  // 4.5:1, all on Commons day, all from the cooled aqua accent. These are real reading failures,
-  // not by-design hairlines: they wait on an owner palette decision (a deeper aqua for text, the
-  // way DAWN's primary-strong is darker than its fill). Frozen at today's ratio so they can only
-  // improve, and printed in every run.
-  {
-    fg: '--color-primary-strong',
-    bg: '--color-marketing-canvas',
-    floors: { 'Commons day': 3.59 },
-    why: 'Aqua accent text on the cooled marketing canvas: 3.59:1 against 4.5. Needs a deeper text step of the accent (owner palette decision).',
-  },
-  {
-    fg: '--color-primary-strong',
-    bg: '--color-surface',
-    floors: { 'Commons day': 3.86 },
-    why: 'The same aqua accent text on a card: 3.86:1 against 4.5. Same decision as above.',
-  },
-  {
-    fg: '--color-primary-strong',
-    bg: '--color-primary-bg',
-    floors: { 'Commons day': 3.42 },
-    why: 'Primary chip text on its own wash: 3.42:1 against 4.5. Same decision as above.',
-  },
-  {
-    fg: '--color-move-strong',
-    bg: '--color-move-bg',
-    floors: { 'Commons day': 4.45 },
-    why: 'Get Moving chip text: 4.45:1 against 4.5, a near miss of five hundredths. One step deeper on the teal clears it.',
-  },
   // (`--color-success` on `--color-marketing-canvas` lived here until 2026-09-10 as "THE PAIRING TO
   // AVOID", frozen at 4.05 / 3.80. LIVE-300 darkened the token for the chip pairing and carried
   // this one to 4.936 / 4.630, so it is a plain PAIR above now. The marketing-canvas family it

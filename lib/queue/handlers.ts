@@ -12,6 +12,7 @@ import { RESEARCH_JOB_KIND, researchHandler } from '@/lib/importer/queue'
 import { BOOKING_REMINDER_KIND, runBookingReminder } from '@/lib/spaces/booking-notify'
 import { SPACE_CAMPAIGN_EMAIL_KIND, runSpaceCampaignEmail } from '@/lib/spaces/email'
 import { TICKET_REFUND_KIND, runTicketRefund } from '@/lib/events/cancellation'
+import { INAPP_JOB_KIND, runInappNotification } from '@/lib/notifications/inapp'
 
 export const queueHandlers: Record<string, JobHandler> = {
   // Space campaign send (the drain half of deliverSpaceCampaign). NOT the generic 'email' kind:
@@ -29,6 +30,8 @@ export const queueHandlers: Record<string, JobHandler> = {
   // Idempotent on an already-refunded ticket; throws on a processor refusal so the drain retries
   // and, past the cap, dead-letters instead of leaving a buyer charged in silence.
   [TICKET_REFUND_KIND]: runTicketRefund,
+  // Bell row (the router's in-app channel). payload: { profileId, type, body, actorId?, referenceType?, referenceId? }.
+  [INAPP_JOB_KIND]: runInappNotification,
   // Durable web push. payload: { profileId, payload: PushPayload, category: SendCategory }.
   push: async (p) => {
     const profileId = p.profileId as string

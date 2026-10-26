@@ -10,8 +10,8 @@ import {
   type NetworkEventDecision, type NetworkToolsSpace, type QueueCandidate,
 } from './network-tools'
 
-const SPACE_COLS = 'id, slug, name, plan, status, type, parent_id, owner_profile_id'
-type ToolsSpace = NetworkToolsSpace & { slug: string; name: string }
+const SPACE_COLS = 'id, slug, name, plan, status, type, parent_id, owner_profile_id, time_zone'
+type ToolsSpace = NetworkToolsSpace & { slug: string; name: string; time_zone?: string | null }
 // The two tables are newer than the generated types (ADR-246): reached untyped, like space_members was.
 type Untyped = { from: (table: string) => any; rpc: (fn: string, args: Record<string, unknown>) => any } // eslint-disable-line @typescript-eslint/no-explicit-any
 const db = () => createAdminClient() as unknown as Untyped
@@ -78,7 +78,7 @@ async function listNetworkChapters(parent: ToolsSpace): Promise<ToolsSpace[]> {
 
 /** Upcoming events a chapter's calendar shows, as queue candidates. */
 async function chapterCandidates(chapter: ToolsSpace): Promise<QueueCandidate[]> {
-  const rows = await listSpaceCalendarEvents(chapter.id, { limit: 200 })
+  const rows = await listSpaceCalendarEvents(chapter.id, { limit: 200, timeZone: chapter.time_zone })
   return rows.map(row => ({ id: row.id, slug: row.slug, title: row.title, starts_at: row.starts_at, time_zone: row.time_zone, is_cancelled: row.is_cancelled, chapterId: chapter.id, chapterName: chapter.name }))
 }
 
@@ -91,7 +91,7 @@ export async function loadChaptersArea(parent: ToolsSpace): Promise<ChaptersArea
     db().from('network_central_admins').select('profile_id').eq('parent_space_id', parent.id),
     db().from('space_members').select('profile_id').eq('space_id', parent.id).eq('status', 'active').limit(1000),
     db().from('network_event_approvals').select('event_id').eq('parent_space_id', parent.id).limit(5000),
-    listSpaceCalendarEvents(parent.id, { limit: 300 }),
+    listSpaceCalendarEvents(parent.id, { limit: 300, timeZone: parent.time_zone }),
   ])
   const owner = parent.owner_profile_id
   const leaders = ((leaderRows.data ?? []) as { space_id: string; profile_id: string }[]).filter(row => row.profile_id !== owner)

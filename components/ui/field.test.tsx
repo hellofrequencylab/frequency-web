@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { Field, Input, Textarea, fieldClasses, fieldChromeShape } from './field'
+import { Field, Input, Textarea, fieldClasses } from './field'
 
 vi.mock('@/lib/theme/design', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/lib/theme/design')>(), SITE_DESIGN: 'frequency',
@@ -126,30 +126,11 @@ describe('Field error slot', () => {
   })
 })
 
-// ── The chrome split ──────────────────────────────────────────────────────────
-// `fieldChromeShape` carries the box and every state; `fieldToneNeutral` carries the resting
-// palette. They are split so a field-class control can change ONE of the two without emitting two
-// `border-*` or two `text-*` utilities into a `cn()` that is a plain join. Select's `tone` prop is
-// the first consumer, and it only works while the split holds.
+// ── The field chrome ──────────────────────────────────────────────────────────
+// The kit's `.input` is the one boxed-field class, so `fieldClasses` is exactly that.
 
-describe('field chrome split', () => {
-  it('the shape carries no RESTING palette — no border colour, no text colour, no fill', () => {
-    // Token-level, not substring: `focus:border-border-strong` is a STATE and belongs to the
-    // shape; a bare `border-border` would be a resting colour and does not.
-    const tokens = fieldChromeShape.split(' ')
-    expect(tokens).not.toContain('input'); expect(frequencyStyle('.input','box-shadow')).toBe(true)
-    expect(tokens).not.toContain('text-text')
-    expect(tokens.filter((t) => t.startsWith('bg-'))).toEqual([])
-  })
-
-  it('the shape still carries the box, the focus halo, the error and the disabled state', () => {
-    expect(fieldChromeShape).toContain('rounded-control')
-    expect(fieldChromeShape).toContain('focus:ring-border-strong/30')
-    expect(fieldChromeShape).toContain('aria-[invalid=true]:border-danger')
-    expect(fieldChromeShape).toContain('disabled:cursor-not-allowed')
-  })
-
-  it('shape + neutral tone + a fill still composes the string every field wears', () => {
+describe('field chrome', () => {
+  it('is the kit input class every boxed field wears', () => {
     expect(fieldClasses).toBe('input')
     for (const prop of ['height','padding',/^border-radius$/,'background','box-shadow']) expect(frequencyStyle('.input',prop)).toBe(true)
   })

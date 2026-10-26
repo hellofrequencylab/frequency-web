@@ -1,0 +1,16 @@
+{
+  "id": "SCAN-1148",
+  "title": "Emit fully qualified image locations in the public sitemap",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-26",
+  "wave": "W7",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/sitemap-image-urls.mjs",
+    "note": "Executes actual sitemap URL projection with installed Next XML serializer and parses the emitted XML. Root/path/protocol-relative images resolve to configured public origin or external CDN, HTTP(S) CDNs survive, invalid schemes/credentials are omitted. Same acceptance rejects former relative projection. Offline/local proof; not deployed."
+  },
+  "detail": "Read-only production sitemap observation found six relative image:loc values under The Group Space profiles. Google sitemap guidance requires complete absolute URLs; image extensions inherit generic sitemap rules. The final shared sitemap projection now resolves image paths against configured SITE_URL, never request Host, preserves legitimate external HTTP(S) CDNs, removes fragments and omits malformed/unsupported/credential-bearing image URLs. Existing XML escaping and page/entity URL/canonical/visibility gates remain. Actual route tests parse Next output and reject the former behavior. No provider/DB/content mutations; no migration; full audit remains open. Reference: https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap and https://developers.google.com/search/docs/crawling-indexing/sitemaps/image-sitemaps."
+}

@@ -786,10 +786,25 @@ const XML_ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&
 export function escapeXml(value: string): string {
   return value.replace(/[&<>"']/g, (c) => XML_ESCAPES[c]);
 }
+// Resolve source image paths against the configured public origin, never a request Host header.
+// Preserve legitimate external CDNs; unsupported schemes and credential-bearing URLs are omitted.
+function sitemapImageUrl(value: string): string | null {
+  const input = value.trim()
+  if (!input || /^[?#]/.test(input) || /[\u0000-\u001f\u007f]/.test(input)) return null
+  try {
+    const image = new URL(input, `${SITE_URL}/`)
+    if (!['https:', 'http:'].includes(image.protocol) || image.username || image.password) return null
+    image.hash = ''
+    return image.href
+  } catch { return null }
+}
 function xmlSafe(entries: MetadataRoute.Sitemap): MetadataRoute.Sitemap {
-  return entries.map((e) => ({
-    ...e,
-    url: escapeXml(e.url),
-    ...(e.images ? { images: e.images.map(escapeXml) } : {}),
-  }));
+  return entries.map((e) => {
+    const images = e.images?.map(sitemapImageUrl).filter((image): image is string => image !== null)
+    return {
+      ...e,
+      url: escapeXml(e.url),
+      ...(images ? { images: images.map(escapeXml) } : {}),
+    }
+  });
 }

@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1012",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('components/marketplace/market-hero.tsx','utf8');const t=fs.readFileSync('components/templates/index-template.tsx','utf8');const bad=[];if(!/if \\(FREQUENCY\\)[\\s\\S]*<PageHeading/.test(m))bad.push('MarketHero lost the plain head');if(!t.includes('heroImage && !heroOverlay'))bad.push('IndexTemplate draws the overlay band under Frequency');if(bad.length){console.error('LIVE-1012: '+bad.join('; '));process.exit(1)}\"",
+      "note": "Fails when a hub page brings the photo band back under Frequency. Behavior is frequency-templates.test.tsx.",
+      "checked": "2026-10-19"
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1127): the probe reads the single-design index template, where the photo is skipped when heroOverlay is set."
+  }
+}

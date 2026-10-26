@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1357",
+  "title": "Site editor shows the resolved slot words and lets owners edit a bound line inline",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "components/sites/editor/inspector.tsx",
+    "ref": "Follow-up to LIVE-1356 (shared Space content slots)"
+  },
+  "detail": "A kit's {{slot|sample}} token no longer shows as raw text in the editor. The inspector fields show the resolved words; the canvas matches, highlights and inline-edits the resolved line. Saving keeps the token on every field the owner did not change (keepSlotTokens), and a field the owner changed takes their words in place of the token.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const i=fs.readFileSync('components/sites/editor/inspector.tsx','utf8');const c=fs.readFileSync('components/sites/editor/canvas.tsx','utf8');process.exit(i.includes('keepSlotTokens(')&&c.includes('bindSlots(stored.props')?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Vitest: inspector shows resolved words and keeps the other token on edit; canvas inline-edits a bound line and saves the typed words; keepSlotTokens unit tests."
+  },
+  "closed": "2026-10-26"
+}

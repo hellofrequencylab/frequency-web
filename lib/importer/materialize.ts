@@ -37,7 +37,6 @@ import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { insertSpaceLibraryImage, fileAssetsIntoSpacesCollection } from '@/lib/library/store'
 import { sweepIntakeStaging } from './harvest/staging-lifecycle'
 import { withImageOrder } from './media-order'
-import { composeMarketingLayout } from './compose'
 import { buildSourceExcerpt } from './excerpt'
 import { addSpaceMember } from '@/lib/spaces/membership'
 import { isSpaceClaimed } from '@/lib/spaces/claim'
@@ -182,22 +181,7 @@ export async function materializeBusiness(
   const plan = buildPlan(profile, policy)
   if (!plan) return { ok: false, error: 'Draft is missing a usable name or slug.' }
 
-  // AI PAGE COMPOSER (Importer v2): design a best-practice marketing layout that fits THIS business and
-  // REPLACE the deterministic one. Fail-safe: a null result (AI off / thin / error) keeps plan.layout.
-  if (options.aiCompose) {
-    // The call to action's DESTINATION is derived here, never chosen by the model (a model-picked url is
-    // a dead link). A bookable business is sent to its booking page; everyone else to their profile.
-    const bookable = (profile.availability ?? []).length > 0
-    const composed = await composeMarketingLayout(profile, profile.media?.gallery ?? [], {
-      profileId: options.aiCompose.profileId,
-      directions: options.aiCompose.directions,
-      sourceExcerpt: options.aiCompose.sourceExcerpt,
-      ctaUrl: bookable ? `/spaces/${plan.identity.slug}/book` : `/spaces/${plan.identity.slug}`,
-      bookable,
-      policy,
-    })
-    if (composed) plan.layout = composed
-  }
+  // Keep deterministic verified-source layout; AI advice cannot replace its prose.
 
   // The plan's identity values for the gated fields (edit-wins on re-apply).
   const planIdentity: IdentityValues = {

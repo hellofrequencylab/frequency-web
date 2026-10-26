@@ -36,7 +36,7 @@ interface CoachingTask {
   priority: number
   title: string
   question: string
-  destination: 'identity' | 'profile' | 'mode' | 'coach'
+  destination: 'identity' | 'profile' | 'header' | 'coach'
   action: string
   confidence: 'confirmed gap' | 'observed signal' | 'unavailable'
   evidence: string[]
@@ -83,7 +83,7 @@ export function rankSpaceCoachingTask(identity: SpaceCoachingIdentity | null, ob
     ...base, id: 'preview', priority: 60, title: 'Walk through your profile as a first-time visitor', question: 'Can someone find what you offer and understand the next step?', destination: 'profile', action: 'Preview your profile', confidence: 'observed signal',
   }
   if (observed.ctaClicks === 0) return {
-    ...base, id: 'action', priority: 50, title: 'Check the next step on your profile', question: 'Does your main button lead to the action you want someone to take?', destination: 'mode', action: 'Review your main button', confidence: 'observed signal',
+    ...base, id: 'action', priority: 50, title: 'Check the next step on your profile', question: 'Does your main button lead to the action you want someone to take?', destination: 'header', action: 'Review your main button', confidence: 'observed signal',
   }
   return {
     ...base, id: 'outcome', priority: 40, title: 'Look beyond the click', question: 'How will you check whether a profile visit led to attendance, a completed booking or a return visit?', destination: 'coach', action: 'Set your coaching goal', confidence: 'observed signal',

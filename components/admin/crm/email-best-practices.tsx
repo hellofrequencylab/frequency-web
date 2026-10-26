@@ -32,8 +32,10 @@ function buildChecks(o: MarketingEmailOverview): HealthCheck[] {
       target: 'Under 2%',
       grade: !hasSent ? 'na' : o.bounceRate < 0.02 ? 'good' : 'watch',
       note:
-        o.bounceRate < 0.02
-          ? 'Your list is clean. Hard bounces are auto-suppressed so they never resend.'
+        !hasSent
+          ? 'Bounce rate needs recorded sends. Review address quality and only email people who asked to hear from you.'
+          : o.bounceRate < 0.02
+          ? 'Recorded bounces are below target. Hard bounces are auto-suppressed so they never resend.'
           : 'High bounces hurt your sender reputation. Remove dead addresses and avoid old lists.',
     },
     {
@@ -42,8 +44,10 @@ function buildChecks(o: MarketingEmailOverview): HealthCheck[] {
       target: 'Under 0.1%',
       grade: !hasDelivery ? 'na' : o.complaintRate < 0.001 ? 'good' : 'watch',
       note:
-        o.complaintRate < 0.001
-          ? 'People are not marking you as spam. Keep sending to folks who asked to hear from you.'
+        !hasDelivery
+          ? 'Complaint rate needs recorded deliveries. Only email people who asked to hear from you.'
+          : o.complaintRate < 0.001
+          ? 'Recorded complaints are below target. Keep sending to folks who asked to hear from you.'
           : 'Complaints above 0.1% risk your inbox placement. Only email engaged, opted-in people.',
     },
     {
@@ -52,7 +56,9 @@ function buildChecks(o: MarketingEmailOverview): HealthCheck[] {
       target: 'Aim above 2%',
       grade: !hasDelivery ? 'na' : o.clickRate >= 0.02 ? 'good' : 'watch',
       note:
-        o.clickRate >= 0.02
+        !hasDelivery
+          ? 'Click rate needs recorded deliveries. Give your first email one clear call to action.'
+          : o.clickRate >= 0.02
           ? 'Clicks are the real engagement signal (opens are inflated by Apple Mail privacy).'
           : 'Lift clicks with one clear call to action and a subject the body actually delivers on.',
     },
@@ -62,7 +68,9 @@ function buildChecks(o: MarketingEmailOverview): HealthCheck[] {
       target: 'Under 0.5%',
       grade: !hasDelivery ? 'na' : o.unsubscribeRate < 0.005 ? 'good' : 'watch',
       note:
-        o.unsubscribeRate < 0.005
+        !hasDelivery
+          ? 'Unsubscribe rate needs recorded deliveries. Make opting out easy and respect people’s preferences.'
+          : o.unsubscribeRate < 0.005
           ? 'Opt-outs are healthy. A few every send is normal list hygiene.'
           : 'A spike in opt-outs means the content or cadence missed. Send less, or more relevant.',
     },
