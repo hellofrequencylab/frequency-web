@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1171",
+  "title": "Stop a stale discovery grant from overwriting a revocation",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/coach/discovery-actions.ts",
+    "ref": "Review of the Codex AI coaching overhaul, 2026-10-26"
+  },
+  "detail": "setSpaceDiscoveryConsent read the stored consent, built a new one and upserted it, so two quick toggles could interleave and a grant computed before a revoke could land after it. The write now carries the consent id the action read and lands only if the stored consent is still that one (or still none, for a first grant); a lost race returns the 'changed while you were saving' error. No migration: the guard is a conditional update on the existing jsonb column. Owner go-ahead: Daniel, 'update the discovery consent pins', 2026-10-26 (action test updated for the extra argument).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));const r=p=>f.readFileSync(p,\"utf8\");process.exit(/discovery_consent->>id/.test(r(\"lib/spaces/private-state.ts\"))&&/stored\\.consent\\?\\.id/.test(r(\"app/(main)/spaces/[slug]/settings/coach/discovery-actions.ts\"))?0:1)'",
+    "note": "Exits 0 once the consent write is guarded by the id the action read."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}
