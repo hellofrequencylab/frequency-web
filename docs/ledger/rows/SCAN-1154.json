@@ -1,0 +1,16 @@
+{
+  "id": "SCAN-1154",
+  "title": "Keep email health advice unknown until recorded samples exist",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-health-sample.mjs",
+    "note": "Executes actual health-card builder with zero samples, sent-without-delivery and measured samples; restores former ungated note selection as a negative control. Five rendered component tests also preserve threshold boundaries and truthful low nonzero complaint wording. Offline source/render proof, not production acceptance."
+  },
+  "detail": "Production authenticated Space marketing observation showed no sends/deliveries alongside unsupported positive claims about list quality and spam complaints. The canonical shared EmailBestPractices component already guarded metric values and grades but selected notes from zero-safe rates without checking denominators. Every note now uses the same recorded-send or recorded-delivery prerequisite as its metric; absent samples receive unknown guidance and practical preparation advice. Measured bounce/complaint wording describes recorded rates below target rather than asserting perfect list quality or zero complaints. Existing numeric thresholds and static playbook remain. No analytics queries, provider calls, content, database or deployment changes.",
+  "wave": "W7"
+}
