@@ -9,11 +9,11 @@ beforeAll(() => { Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true }) 
 const cleanups: (() => void)[] = []
 afterEach(() => { cleanups.splice(0).forEach((c) => c()) })
 
-function mount(onApply: (id: string, mode: string) => Promise<string>, suggestedNiche?: 'venues') {
+function mount(onApply: (id: string, mode: string) => Promise<string>, suggestedNiche?: 'venues', onPreview?: (id: string) => Promise<unknown>) {
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
-  act(() => root.render(<KitLibrary onApply={onApply as never} suggestedNiche={suggestedNiche} />))
+  act(() => root.render(<KitLibrary onApply={onApply as never} suggestedNiche={suggestedNiche} onPreview={onPreview as never} />))
   cleanups.push(() => { act(() => root.unmount()); host.remove() })
   return host
 }
@@ -46,4 +46,15 @@ it('puts the kit for the Space\'s niche first and says why', () => {
   expect(first?.textContent).toContain('Venues')
   expect(first?.textContent).toContain('Suggested for your Space')
   expect(host.textContent?.match(/Suggested for your Space/g)).toHaveLength(1)
+})
+
+it('shows the pages each mode would leave before anything is applied', async () => {
+  const onApply = vi.fn()
+  const host = mount(onApply, undefined, vi.fn().mockResolvedValue({ now: ['Home'], add: ['Home', 'Classes'], replace: ['Classes'], theme: 'Midnight' }))
+  await click(host.querySelector('button[aria-expanded]') ?? undefined)
+  await click(byText(host, 'See what changes'))
+  expect(host.textContent).toContain('Now: Home')
+  expect(host.textContent).toContain('Add its pages: Home, Classes')
+  expect(host.textContent).toContain('Replace my pages: Classes')
+  expect(onApply).not.toHaveBeenCalled()
 })

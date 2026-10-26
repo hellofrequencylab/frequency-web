@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1376",
+  "title": "A starter kit shows the pages each option would leave before it is applied",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/apply.ts",
+    "ref": "Mega Theme lead 2026-10-26: side-by-side preview, the last follow-up after the Starter kits panel (LIVE-1373)."
+  },
+  "detail": "Open a kit in the Theme tab and choose See what changes: it lists the site's pages now beside the pages Add its pages and Replace my pages would leave, and the theme the kit takes, with the reason when Add cannot run (past 30 pages). Computed by the same pure applyKit the real apply uses, so the preview cannot drift from the result; nothing is written. Not built: a rendered picture of the kit's pages. That needs the page renderer inside the panel and belongs with the Midnight design thread's shared renderer.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/sites/kits/apply.ts','utf8');const k=fs.readFileSync('components/sites/editor/kit-library.tsx','utf8');process.exit(a.includes('export function kitChanges')&&k.includes('See what changes')?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Kit and panel tests pass with the preview cases."
+  },
+  "closed": "2026-10-26"
+}
