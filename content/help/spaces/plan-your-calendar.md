@@ -1,0 +1,44 @@
+---
+title: Plan your calendar
+description: Hold a date in pencil, plan it with your team, and turn it into a real event when it's ready.
+category: spaces
+order: 6
+published: 2026-10-26
+updated: 2026-10-26
+audience: host
+featureKeys: [events]
+status: published
+---
+
+Most gatherings start as a maybe. Plans give your team a place to hold the date, keep notes and to-dos, and decide together before anything shows up for the public.
+
+## The three stages
+
+Every gathering on its way moves through the same stages, and each looks different on the calendar so you can read it at a glance.
+
+- **Pencil.** A date you're holding. Nothing is decided. It shows with a dashed border.
+- **Planning.** Decided, and being put together. It shows with a soft tint.
+- **Production.** Ready to run. It shows solid.
+
+A gathering that falls through can be marked **Cancelled** and stays in your history.
+
+Pencil and Planning dates stay on your team's view only. They never show on the public calendar. A visitor sees an event once you publish it.
+
+## Start a Plan
+
+1. Open your Space, then **Manage**, then **Calendar**.
+2. Start a **Plan** behind one date or several.
+3. Add notes, links, images and to-dos. Share it with other people on your team.
+4. When you're ready, choose **Make it a Production**. That opens the new event form with everything already filled in.
+
+## Repeating dates
+
+A pencil can repeat, for example every other Wednesday. If you skip one date, the skip is remembered. It doesn't come back when the series is rebuilt.
+
+## The calendar views
+
+On the Space Calendar tab you can switch between **Guest** (what visitors see), **Admin** (every draft and team-only date), **List**, **Timeline** and **Projects** (move a gathering through its stages). The tab remembers the last view you used.
+
+## Your private team link
+
+Calendar settings has a private calendar link for your team. It carries everything your team can see, and it's never shown on the public Space page. Keep it to your team. For the public link, see [Subscribe to a Space calendar](/help/spaces/calendar-feed).

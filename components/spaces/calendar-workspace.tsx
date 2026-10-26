@@ -29,6 +29,7 @@ import { StaffCalendar, STAFF_CALENDAR_LAYERS } from '@/app/(main)/spaces/[slug]
 import { CalendarModeToggle } from '@/components/spaces/calendar-mode-toggle'
 import { CalendarListView } from '@/components/spaces/calendar-list-view'
 import { CalendarWorkflowView } from '@/components/spaces/calendar-workflow-view'
+import { CalendarTimeViews } from '@/components/spaces/calendar-time-views'
 import { CalendarConsole, keyTargetIsTyping } from '@/components/spaces/calendar-console'
 import {
   adminViewHref,
@@ -43,6 +44,11 @@ import {
   type CalendarSurface,
   type CalendarListScope,
 } from '@/lib/calendar/admin-views'
+import {
+  CALENDAR_TIME_VIEW_DEFS,
+  rememberTimeView,
+  type CalendarTimeView,
+} from '@/lib/calendar/time-views'
 import { MEMBER_SURFACES } from '@/lib/calendar/member-calendar'
 import { listIndexItems, selectListItem } from '@/lib/calendar/list-index'
 import { workflowBoard } from '@/lib/calendar/workflow-board'
@@ -151,6 +157,8 @@ export function CalendarWorkspace({
   initialListItem,
   initialPlanId,
   initialConsole = false,
+  initialTimeView = null,
+  initialDay,
   initialYear,
   initialMonth1,
   guestEvents,
@@ -177,6 +185,10 @@ export function CalendarWorkspace({
   initialPlanId: string | null
   /** `?console=1`: open the console on load, on the same view and drawer the link names. */
   initialConsole?: boolean
+  /** `?look=day|week|timeline` or the remembered one: the operator's Day, Week or Timeline (LIVE-1178). */
+  initialTimeView?: CalendarTimeView | null
+  /** The Space's own day when the page loaded (YYYY-MM-DD). Today's mark and the time views' first day. */
+  initialDay?: string
   initialYear: number
   initialMonth1: number
   guestEvents: CalendarEvent[]
@@ -215,6 +227,11 @@ export function CalendarWorkspace({
   // and reports through the same two setters, so a switch made on the page is still the one the
   // console opens on.
   const [gridView, setGridView] = useState<'grid' | 'list'>('grid')
+  // DAY, WEEK OR TIMELINE (LIVE-1178): a way of looking that rides on the Calendar panel. Null is
+  // the month grid or the agenda, whichever `gridView` says. The anchor is the day the view is on.
+  const todayDay = initialDay ?? `${initialYear}-${String(initialMonth1).padStart(2, '0')}-01`
+  const [timeView, setTimeView] = useState<CalendarTimeView | null>(adminAllowed && initialView === 'admin' ? initialTimeView : null)
+  const [timeAnchor, setTimeAnchor] = useState(todayDay)
   const [hiddenLayers, setHiddenLayers] = useState<ReadonlySet<CalendarLayerKey>>(() => new Set())
   const toggleLayer = useCallback((key: CalendarLayerKey) => {
     setHiddenLayers((cur) => {
@@ -318,15 +335,20 @@ export function CalendarWorkspace({
   }, [])
 
   const syncUrl = useCallback(
-    (next: CalendarAdminView, extras?: { item?: string | null; plan?: string | null; year?: number; month1?: number }) => {
+    (next: CalendarAdminView, extras?: { item?: string | null; plan?: string | null; look?: string | null; year?: number; month1?: number }) => {
       if (typeof window === 'undefined') return
       window.history.replaceState(
         consoleStateOnly(),
         '',
-        adminViewHref(slug, next, { ...extras, plan: extras?.plan === undefined ? planId : extras.plan, console: consoleOpen }),
+        adminViewHref(slug, next, {
+          ...extras,
+          plan: extras?.plan === undefined ? planId : extras.plan,
+          look: extras?.look === undefined ? timeView : extras.look,
+          console: consoleOpen,
+        }),
       )
     },
-    [slug, planId, consoleOpen, consoleStateOnly],
+    [slug, planId, timeView, consoleOpen, consoleStateOnly],
   )
 
   const selectPlan = useCallback((nextPlanId: string, entryId?: string | null) => {
@@ -345,11 +367,44 @@ export function CalendarWorkspace({
     (next: CalendarAdminView) => {
       if (!adminAllowed) return
       setView(next)
+      setTimeView(null)
       rememberCalendarView(slug, next)
-      if (next === 'list') syncUrl(next, { item: listKey ?? selected?.key })
-      else syncUrl(next)
+      rememberTimeView(slug, null)
+      if (next === 'list') syncUrl(next, { item: listKey ?? selected?.key, look: null })
+      else syncUrl(next, { look: null })
     },
      [adminAllowed, slug, listKey, selected?.key, syncUrl],
+  )
+
+  // DAY, WEEK, TIMELINE (LIVE-1178). They sit on the Calendar panel, so picking one brings the team
+  // panel up if Guest, List or Workflow was showing. The anchor starts on today when the month on
+  // screen is this one, and on the first of the month otherwise, so the view opens where the reader was.
+  const selectTimeView = useCallback(
+    (next: CalendarTimeView) => {
+      if (!adminAllowed) return
+      const shownMonth = `${month.year}-${String(month.month1).padStart(2, '0')}`
+      if (!timeView && !timeAnchor.startsWith(shownMonth)) {
+        setTimeAnchor(todayDay.startsWith(shownMonth) ? todayDay : `${shownMonth}-01`)
+      }
+      setTimeView(next)
+      setView('admin')
+      setGridView('grid')
+      rememberCalendarView(slug, 'admin')
+      rememberTimeView(slug, next)
+      syncUrl('admin', { look: next })
+    },
+    [adminAllowed, month.year, month.month1, timeView, timeAnchor, todayDay, slug, syncUrl],
+  )
+
+  // A column header in the Week view opens that day.
+  const openTimeDay = useCallback(
+    (dayKey: string) => {
+      setTimeAnchor(dayKey)
+      setTimeView('day')
+      rememberTimeView(slug, 'day')
+      syncUrl('admin', { look: 'day' })
+    },
+    [slug, syncUrl],
   )
 
   // ONE CONTROL OVER TWO PIECES OF STATE (LIVE-490). The panel (`view`) and the grid's own
@@ -382,11 +437,13 @@ export function CalendarWorkspace({
       const { view: nextView, gridView: nextGrid } = viewForSurface(nextSurface, nextScope, audience)
       setGridView(nextGrid)
       setView(nextView)
+      setTimeView(null)
       rememberCalendarView(slug, nextView)
+      rememberTimeView(slug, null)
       // The all-time index is the one surface that carries a selected item in the URL, the way the
       // List panel always did; every other surface drops it.
-      if (nextView === 'list') syncUrl(nextView, { item: listKey ?? selected?.key })
-      else syncUrl(nextView)
+      if (nextView === 'list') syncUrl(nextView, { item: listKey ?? selected?.key, look: null })
+      else syncUrl(nextView, { look: null })
     },
     [adminAllowed, audience, slug, listKey, selected?.key, syncUrl],
   )
@@ -407,6 +464,31 @@ export function CalendarWorkspace({
       syncUrl('list', { item: key })
     },
     [syncUrl],
+  )
+
+  // A block in Day, Week or Timeline goes where the month chip's edit goes: its Plan when it has
+  // one, otherwise its row in the List, where the gathering's console lives. An item with neither
+  // (an Unavailable block, a to-do with no Plan) is drawn as text, not a button.
+  const listKeys = useMemo(() => new Set(items.map((item) => item.key)), [items])
+  const canOpenTimeItem = useCallback(
+    (item: CalendarEvent) => !!item.planId || listKeys.has(`${item.slug}|${item.dayKey}`),
+    [listKeys],
+  )
+  const openTimeItem = useCallback(
+    (item: CalendarEvent) => {
+      if (item.planId) {
+        selectPlan(item.planId, item.entryId)
+        return
+      }
+      const key = `${item.slug}|${item.dayKey}`
+      setListKey(key)
+      setView('list')
+      setTimeView(null)
+      rememberCalendarView(slug, 'list')
+      rememberTimeView(slug, null)
+      syncUrl('list', { item: key, look: null })
+    },
+    [selectPlan, slug, syncUrl],
   )
 
   // An agenda row selects the same item the List view selects, on whichever view is showing.
@@ -606,6 +688,8 @@ export function CalendarWorkspace({
         onSelect={selectSurface}
         scope={listScope}
         onScope={selectListScope}
+        timeView={timeView}
+        onTimeView={selectTimeView}
       />
     </>
   ) : (
@@ -687,7 +771,8 @@ export function CalendarWorkspace({
   // not set a zone says nothing here rather than saying two different things in two renders.
   // The same two derivations the console call makes, named once so the page bar and the console
   // cannot disagree about whether the surface showing has a month.
-  const pageSurfaceTitle = surface === 'workflow' ? 'Workflow' : 'Gatherings'
+  const timeViewLabel = timeView ? CALENDAR_TIME_VIEW_DEFS.find((d) => d.view === timeView)?.label ?? null : null
+  const pageSurfaceTitle = timeViewLabel ?? (surface === 'workflow' ? 'Workflow' : 'Gatherings')
 
   const pageZone = spaceTimeZone ? headerZone(spaceTimeZone, null) : null
 
@@ -705,7 +790,8 @@ export function CalendarWorkspace({
   // month's agenda, so `surfaceHasMonth` answers true for both of their surfaces anyway, and a
   // hardcoded `true` would silently become a lie the day a member is offered a surface with no
   // month (the all-time index, if it is ever opened up).
-  const pageHasMonth = surfaceHasMonth(surface, listScope)
+  // The time views page by their own Prev / Today / Next, so the month's controls would steer nothing.
+  const pageHasMonth = surfaceHasMonth(surface, listScope) && !timeView
 
   const pageBar = (
     <div data-calendar-page-header className="flex flex-col gap-2.5 rounded-card border border-border bg-surface px-4 py-3 sm:px-5">
@@ -886,7 +972,7 @@ export function CalendarWorkspace({
             >
               {panel === 'guest' ? guestBody : null}
               {panel === 'admin' ? (
-                <div data-calendar-admin-grid className={consoleOpen ? 'h-full' : undefined}>
+                <div data-calendar-admin-grid className={cn(consoleOpen && 'h-full', timeView && 'hidden')}>
                   <StaffCalendar
                     slug={slug}
                     spaceId={spaceId}
@@ -925,6 +1011,23 @@ export function CalendarWorkspace({
                     onMoveResult={setMoveLine}
                   />
                 </div>
+              ) : null}
+              {panel === 'admin' && timeView ? (
+                <CalendarTimeViews
+                  view={timeView}
+                  items={currentAdminEvents}
+                  plans={currentPlans}
+                  hiddenLayers={hiddenLayers}
+                  anchorDay={timeAnchor}
+                  onAnchor={setTimeAnchor}
+                  todayDay={todayDay}
+                  spaceTimeZone={spaceTimeZone}
+                  skyMarkers={skyMarkers}
+                  canOpen={canOpenTimeItem}
+                  onOpen={openTimeItem}
+                  onOpenPlan={selectPlan}
+                  onOpenDay={openTimeDay}
+                />
               ) : null}
               {panel === 'list' ? (
                 <CalendarListView items={items} selected={selected} onSelect={selectList} onOpenPlan={selectPlan} />
@@ -974,8 +1077,8 @@ export function CalendarWorkspace({
           month={month}
           onMonthChange={setMonth}
           viewControls={viewControls}
-          hasMonth={surfaceHasMonth(surface, listScope)}
-          surfaceTitle={surface === 'workflow' ? 'Workflow' : 'Gatherings'}
+          hasMonth={pageHasMonth}
+          surfaceTitle={pageSurfaceTitle}
           layers={view === 'admin' ? STAFF_CALENDAR_LAYERS : undefined}
           hiddenLayers={hiddenLayers}
           onToggleLayer={view === 'admin' ? toggleLayer : undefined}

@@ -59,6 +59,9 @@ type AdminViewExtras = {
   item?: string | null
   plan?: string | null
   console?: boolean
+  /** The Day, Week or Timeline view showing on the Calendar panel (LIVE-1178). Not a panel, so it is
+   *  its own parameter: `?view=` stays one of the four pinned panels. */
+  look?: string | null
 }
 
 export function adminViewHref(slug: string, view: CalendarAdminView, extras: AdminViewExtras = {}): string {
@@ -68,6 +71,7 @@ export function adminViewHref(slug: string, view: CalendarAdminView, extras: Adm
   if (view === 'list' && extras.item) params.set('item', extras.item)
   if (extras.plan) params.set('plan', extras.plan)
   if (extras.console) params.set('console', '1')
+  if (extras.look && view === 'admin') params.set('look', extras.look)
   const query = params.toString()
   return query ? `${base}?${query}` : base
 }
