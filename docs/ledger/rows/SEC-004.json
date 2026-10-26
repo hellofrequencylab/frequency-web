@@ -1,0 +1,9 @@
+{
+  "id": "SEC-004",
+  "patch": {
+    "priority": "P3"
+  },
+  "append": {
+    "detail": "\n\n2026-10-26: Daniel ruled the mobile app security advisory is low priority while the app is parked (open-questions answer 4A). Priority P1 to P3."
+  }
+}
