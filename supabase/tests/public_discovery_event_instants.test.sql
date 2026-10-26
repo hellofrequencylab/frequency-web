@@ -1,7 +1,7 @@
 -- Actual-schema pgTAP regression. Disposable migrated database only; all fixtures roll back.
 -- Timestamps are stored host wall-clock UTC parts, not true instants.
 begin;
-select plan(37);
+select plan(38);
 insert into public.entities(id,key,name,kind) select gen_random_uuid(),'labs','Labs','for_profit'
  where not exists(select 1 from public.entities where key='labs');
 insert into public.spaces(id,slug,name,type,entity_id,status,visibility,preferences) values
@@ -36,6 +36,8 @@ select is((select count(*)::int from public.public_events(200) where slug='insta
 select is((select time_zone from public.public_events(200) where slug='instant-104'),'America/Los_Angeles','invalid zone falls back HOME');
 update public.events set time_zone='' where slug='instant-104';
 select is((select time_zone from public.public_events(200) where slug='instant-104'),'America/Los_Angeles','blank zone falls back HOME');
+update public.events set time_zone='Factory' where slug='instant-104';
+select is((select time_zone from public.public_events(200) where slug='instant-104'),'America/Los_Angeles','Factory placeholder falls back HOME like Intl');
 select is(coalesce((select name from pg_catalog.pg_timezone_names where lower(name)=lower(null::text) limit 1),'America/Los_Angeles'),'America/Los_Angeles','null zone resolver falls back HOME (event column is NOT NULL)');
 select is((select time_zone from public.public_events(200) where slug='instant-106'),'America/Los_Angeles','zone case normalizes');
 select is((select count(*)::int from public.public_events(200) where slug in ('instant-109','instant-110','instant-111','instant-112','instant-113','instant-114','instant-115')),0,'publication privacy removal cancellation demo and Space walls remain');

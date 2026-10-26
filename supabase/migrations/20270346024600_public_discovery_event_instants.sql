@@ -32,7 +32,9 @@ set search_path = public
 as $$
   with zones as materialized (
     select distinct on (lower(name)) lower(name) as key, name
-    from pg_catalog.pg_timezone_names order by lower(name), name
+    from pg_catalog.pg_timezone_names
+    -- Factory is tzdata's unknown-local-zone placeholder; Intl rejects it, so use HOME.
+    where name <> 'Factory' order by lower(name), name
   )
 
   select e.id, e.slug, e.title, e.description, e.starts_at, e.ends_at,
@@ -84,7 +86,9 @@ returns table (
 language sql stable security definer set search_path to 'public' as $$
   with zones as materialized (
     select distinct on (lower(name)) lower(name) as key, name
-    from pg_catalog.pg_timezone_names order by lower(name), name
+    from pg_catalog.pg_timezone_names
+    -- Factory is tzdata's unknown-local-zone placeholder; Intl rejects it, so use HOME.
+    where name <> 'Factory' order by lower(name), name
   ),
   ev as (
     -- The public_events city and gates (20270346008700), counted rather than listed.
@@ -173,7 +177,9 @@ set search_path to 'public'
 as $function$
   with zones as materialized (
     select distinct on (lower(name)) lower(name) as key, name
-    from pg_catalog.pg_timezone_names order by lower(name), name
+    from pg_catalog.pg_timezone_names
+    -- Factory is tzdata's unknown-local-zone placeholder; Intl rejects it, so use HOME.
+    where name <> 'Factory' order by lower(name), name
   )
 
   select e.id, e.title, e.description,
@@ -216,7 +222,9 @@ set search_path to 'public'
 as $function$
   with zones as materialized (
     select distinct on (lower(name)) lower(name) as key, name
-    from pg_catalog.pg_timezone_names order by lower(name), name
+    from pg_catalog.pg_timezone_names
+    -- Factory is tzdata's unknown-local-zone placeholder; Intl rejects it, so use HOME.
+    where name <> 'Factory' order by lower(name), name
   ),
   target as (
     select s.id
@@ -300,7 +308,9 @@ set search_path = public
 as $$
   with zones as materialized (
     select distinct on (lower(name)) lower(name) as key, name
-    from pg_catalog.pg_timezone_names order by lower(name), name
+    from pg_catalog.pg_timezone_names
+    -- Factory is tzdata's unknown-local-zone placeholder; Intl rejects it, so use HOME.
+    where name <> 'Factory' order by lower(name), name
   )
 
   select e.id, e.title, e.description, e.location, e.starts_at, e.ends_at,
@@ -349,7 +359,9 @@ set search_path = public
 as $$
   with zones as materialized (
     select distinct on (lower(name)) lower(name) as key, name
-    from pg_catalog.pg_timezone_names order by lower(name), name
+    from pg_catalog.pg_timezone_names
+    -- Factory is tzdata's unknown-local-zone placeholder; Intl rejects it, so use HOME.
+    where name <> 'Factory' order by lower(name), name
   ), event_rows as (
     select e.*, coalesce(tz.name, 'America/Los_Angeles') as resolved_zone
     from public.events e left join zones tz on tz.key = lower(e.time_zone)
