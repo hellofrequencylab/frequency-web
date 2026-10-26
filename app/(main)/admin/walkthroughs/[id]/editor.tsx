@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Check, Eye, GripVertical, Plus, Copy, Trash2, Loader2,
+  Check, ChevronDown, ChevronUp, Eye, GripVertical, Plus, Copy, Trash2, Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 import { AdminTemplate } from '@/components/templates'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -104,6 +105,18 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
   function removeStep(i: number) {
     setWt((s) => ({ ...s, steps: s.steps.filter((_, idx) => idx !== i) }))
     setSelected((sel) => Math.max(0, sel > i ? sel - 1 : sel === i ? Math.min(sel, wt.steps.length - 2) : sel))
+    setSaved(false)
+  }
+  // Button alternative to dragging a slide (WCAG 2.5.7). The selection follows the moved slide.
+  function moveStep(i: number, to: number) {
+    if (to < 0 || to >= wt.steps.length) return
+    setWt((s) => {
+      const next = [...s.steps]
+      const [moved] = next.splice(i, 1)
+      next.splice(to, 0, moved)
+      return { ...s, steps: next }
+    })
+    setSelected((sel) => (sel === i ? to : sel))
     setSaved(false)
   }
   function reorder(overId: string) {
@@ -308,6 +321,26 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                     <span className="min-w-0 flex-1 truncate font-medium text-text">
                       {i + 1}. {st.title || 'Untitled slide'}
                     </span>
+                    <IconButton
+                      label="Move slide up"
+                      disabled={i === 0}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        moveStep(i, i - 1)
+                      }}
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+                    </IconButton>
+                    <IconButton
+                      label="Move slide down"
+                      disabled={i === wt.steps.length - 1}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        moveStep(i, i + 1)
+                      }}
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                    </IconButton>
                     <button
                       type="button"
                       aria-label="Duplicate slide"

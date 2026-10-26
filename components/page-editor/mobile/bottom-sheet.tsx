@@ -13,7 +13,7 @@
 // nest a sheet inside a sheet.
 //
 // Chrome only: backdrop click + ESC to close, body scroll-lock, focus moved into the
-// panel on open (a11y), slides up from the bottom (motion-safe). Caller supplies content.
+// panel on open, Tab trapped inside it, focus returned to the trigger on close (a11y), slides up from the bottom (motion-safe). Caller supplies content.
 
 import { useEffect, useRef, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
@@ -43,22 +43,60 @@ export function BottomSheet({
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
 
+  // The latest close handler, so the effect below does not rebind (and re-steal focus) on every render.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
   useEffect(() => {
     if (!open) return
+    const panel = panelRef.current
+    // Where focus was before the sheet opened, so closing hands it back (WCAG 2.4.3).
+    const previouslyFocused = document.activeElement as HTMLElement | null
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onCloseRef.current()
+        return
+      }
+      if (e.key !== 'Tab' || !panel) return
+      // Trap Tab inside the sheet: wrap at the ends, and pull focus back in if it escaped.
+      const els = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => el.getClientRects().length > 0)
+      if (els.length === 0) {
+        e.preventDefault()
+        panel.focus()
+        return
+      }
+      const first = els[0]!
+      const last = els[els.length - 1]!
+      const active = document.activeElement
+      const inside = panel.contains(active)
+      if (e.shiftKey) {
+        if (!inside || active === first || active === panel) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else if (!inside || active === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', onKey)
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     // Move focus into the sheet so keyboard + screen-reader users land inside it.
-    const t = window.setTimeout(() => panelRef.current?.focus(), 0)
+    const t = window.setTimeout(() => panel?.focus(), 0)
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = prevOverflow
       window.clearTimeout(t)
+      if (previouslyFocused && document.contains(previouslyFocused)) previouslyFocused.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

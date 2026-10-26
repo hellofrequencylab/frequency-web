@@ -14,6 +14,7 @@ import {
   QrCode,
   Target,
 } from 'lucide-react'
+import { Dialog } from '@/components/ui/dialog'
 import { type SplashTemplate } from '@/lib/library/splash-templates'
 import type { LiveSplash } from '@/lib/library/splash-registry'
 
@@ -230,126 +231,122 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
+// Escape, the Tab trap and focus return to the trigger come from the kit Dialog (SCAN-1117).
 function TemplateDrawer({ template, onClose }: { template: SplashTemplateCard; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Splash template">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-slat/40" />
-      <div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="font-display text-body-lg uppercase text-text">Splash template</h2>
-          <button type="button" onClick={onClose} className="rounded-pill p-1 text-subtle hover:bg-surface-elevated" aria-label="Close">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="space-y-5 p-5">
-          <div className="flex h-56 items-center justify-center overflow-hidden rounded-card border border-border bg-surface-elevated">
-            {template.preview}
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h3 className="min-w-0 flex-1 truncate text-body font-semibold text-text" title={template.title}>
-                {template.title}
-              </h3>
-              <KindBadge kind={template.kind} />
-            </div>
-            <p className="text-meta text-subtle">Splash{template.sourceSlug ? ` · from ${template.sourceSlug}` : ''}</p>
-            <p className="pt-1 text-body-sm text-muted">{template.description}</p>
-          </div>
-
-          {/* Source — code is the source of truth; the Loom indexes it read-only (§10). */}
-          <div className="rounded-card border border-border bg-surface-elevated/50 p-3">
-            <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
-              <GitBranch className="h-4 w-4 text-primary-strong" aria-hidden /> Source: code
-            </p>
-            <p className="mt-1 text-meta text-subtle">
-              This template is drawn from code. The Loom catalogs it; the splash itself is composed in the
-              real editor, never as blocks here.
-            </p>
-          </div>
-
-          <Field label="Compose">
-            <Link
-              href={template.composeHref}
-              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-body-sm font-semibold text-text hover:bg-surface-elevated"
-            >
-              {template.composeLabel}
-              <ExternalLink className="h-3.5 w-3.5 text-subtle" aria-hidden />
-            </Link>
-          </Field>
-
-        </div>
+    <Dialog open onClose={onClose} align="drawer" ariaLabel="Splash template" className="flex max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <h2 className="font-display text-body-lg uppercase text-text">Splash template</h2>
+        <button type="button" onClick={onClose} className="rounded-pill p-1 text-subtle hover:bg-surface-elevated" aria-label="Close">
+          <X className="h-5 w-5" />
+        </button>
       </div>
-    </div>
+
+      <div className="space-y-5 p-5">
+        <div className="flex h-56 items-center justify-center overflow-hidden rounded-card border border-border bg-surface-elevated">
+          {template.preview}
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h3 className="min-w-0 flex-1 truncate text-body font-semibold text-text" title={template.title}>
+              {template.title}
+            </h3>
+            <KindBadge kind={template.kind} />
+          </div>
+          <p className="text-meta text-subtle">Splash{template.sourceSlug ? ` · from ${template.sourceSlug}` : ''}</p>
+          <p className="pt-1 text-body-sm text-muted">{template.description}</p>
+        </div>
+
+        {/* Source — code is the source of truth; the Loom indexes it read-only (§10). */}
+        <div className="rounded-card border border-border bg-surface-elevated/50 p-3">
+          <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
+            <GitBranch className="h-4 w-4 text-primary-strong" aria-hidden /> Source: code
+          </p>
+          <p className="mt-1 text-meta text-subtle">
+            This template is drawn from code. The Loom catalogs it; the splash itself is composed in the
+            real editor, never as blocks here.
+          </p>
+        </div>
+
+        <Field label="Compose">
+          <Link
+            href={template.composeHref}
+            className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-body-sm font-semibold text-text hover:bg-surface-elevated"
+          >
+            {template.composeLabel}
+            <ExternalLink className="h-3.5 w-3.5 text-subtle" aria-hidden />
+          </Link>
+        </Field>
+
+      </div>
+    </Dialog>
   )
 }
 
+// Escape, the Tab trap and focus return to the trigger come from the kit Dialog (SCAN-1117).
 function LiveSplashDrawer({ splash, onClose }: { splash: LiveSplashCard; onClose: () => void }) {
   const { label: sourceLabel, Icon: SourceIcon } = SOURCE_META[splash.source]
   const when = fmtDate(splash.schedule)
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Live splash">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-slat/40" />
-      <div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="font-display text-body-lg uppercase text-text">Live splash</h2>
-          <button type="button" onClick={onClose} className="rounded-pill p-1 text-subtle hover:bg-surface-elevated" aria-label="Close">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <Dialog open onClose={onClose} align="drawer" ariaLabel="Live splash" className="flex max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <h2 className="font-display text-body-lg uppercase text-text">Live splash</h2>
+        <button type="button" onClick={onClose} className="rounded-pill p-1 text-subtle hover:bg-surface-elevated" aria-label="Close">
+          <X className="h-5 w-5" />
+        </button>
+      </div>
 
-        <div className="space-y-5 p-5">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <h3 className="min-w-0 flex-1 truncate text-body font-semibold text-text" title={splash.title}>
-                {splash.title}
-              </h3>
-              <StatusChip status={splash.status} />
-            </div>
-            <p className="inline-flex items-center gap-1.5 text-meta text-subtle">
-              <SourceIcon className="h-3.5 w-3.5" aria-hidden /> {sourceLabel}
-            </p>
+      <div className="space-y-5 p-5">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <h3 className="min-w-0 flex-1 truncate text-body font-semibold text-text" title={splash.title}>
+              {splash.title}
+            </h3>
+            <StatusChip status={splash.status} />
           </div>
-
-          <div className="grid grid-cols-1 gap-4">
-            <Field label="Source">{sourceLabel}</Field>
-            <Field label="Status">{splash.status}</Field>
-            {splash.target && (
-              <Field label="Target">
-                <span className="inline-flex items-center gap-1.5 break-words">
-                  <Target className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden /> {splash.target}
-                </span>
-              </Field>
-            )}
-            {when && (
-              <Field label="Schedule">
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarClock className="h-3.5 w-3.5 text-subtle" aria-hidden /> {when}
-                </span>
-              </Field>
-            )}
-          </div>
-
-          {/* The only action DEEP-LINKS OUT to the real editor; the Loom never edits the splash here (§10). */}
-          <Field label="Edit">
-            <Link
-              href={splash.editHref}
-              className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-body-sm font-semibold text-text hover:bg-surface-elevated"
-              title={splash.editLabel}
-            >
-              <PencilLine className="h-3.5 w-3.5" aria-hidden /> {splash.editLabel}
-              <ExternalLink className="h-3.5 w-3.5 text-subtle" aria-hidden />
-            </Link>
-          </Field>
-
-
-          <p className="text-meta text-subtle">
-            Editing opens the real editor: the Puck page editor for a micro-site, the QR studio for a QR
-            splash. The Loom catalogs and governs; it does not edit the splash here.
+          <p className="inline-flex items-center gap-1.5 text-meta text-subtle">
+            <SourceIcon className="h-3.5 w-3.5" aria-hidden /> {sourceLabel}
           </p>
         </div>
+
+        <div className="grid grid-cols-1 gap-4">
+          <Field label="Source">{sourceLabel}</Field>
+          <Field label="Status">{splash.status}</Field>
+          {splash.target && (
+            <Field label="Target">
+              <span className="inline-flex items-center gap-1.5 break-words">
+                <Target className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden /> {splash.target}
+              </span>
+            </Field>
+          )}
+          {when && (
+            <Field label="Schedule">
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarClock className="h-3.5 w-3.5 text-subtle" aria-hidden /> {when}
+              </span>
+            </Field>
+          )}
+        </div>
+
+        {/* The only action DEEP-LINKS OUT to the real editor; the Loom never edits the splash here (§10). */}
+        <Field label="Edit">
+          <Link
+            href={splash.editHref}
+            className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-body-sm font-semibold text-text hover:bg-surface-elevated"
+            title={splash.editLabel}
+          >
+            <PencilLine className="h-3.5 w-3.5" aria-hidden /> {splash.editLabel}
+            <ExternalLink className="h-3.5 w-3.5 text-subtle" aria-hidden />
+          </Link>
+        </Field>
+
+
+        <p className="text-meta text-subtle">
+          Editing opens the real editor: the Puck page editor for a micro-site, the QR studio for a QR
+          splash. The Loom catalogs and governs; it does not edit the splash here.
+        </p>
       </div>
-    </div>
+    </Dialog>
   )
 }
