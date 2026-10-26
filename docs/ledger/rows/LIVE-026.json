@@ -1,0 +1,9 @@
+{
+  "id": "LIVE-026",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node --experimental-strip-types --no-warnings -e \"const fs=require('fs');const M='lib/layout/rail-fold.ts';if(!fs.existsSync(M))process.exit(79);const store=new Map();globalThis.window={localStorage:{getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>store.set(k,String(v))}};let jar='';globalThis.document={get cookie(){return jar},set cookie(v){jar=String(v).split(';')[0]}};import('./lib/layout/rail-fold.ts').then(m=>{const want={left:'strip',right:'open'};m.setRailFolds(want);m.resetRailFoldsCache();const after=m.railFoldsSnapshot();if(after.left!==want.left||after.right!==want.right){console.error('a reload lost the fold: '+JSON.stringify(after));process.exit(1)}const p=m.RAIL_FOLD_COOKIE+'=';const server=m.readRailFoldCookie(jar.startsWith(p)?jar.slice(p.length):'');if(server.left!==want.left||server.right!==want.right){console.error('the first frame would not be folded: '+JSON.stringify(server));process.exit(1)}if(m.resolveRailFold('open',true)!=='open'||m.resolveRailFold('strip',false)!=='strip'||m.resolveRailFold('auto',true)!=='strip'||m.resolveRailFold('auto',false)!=='open'){console.error('the ladder is not three-position');process.exit(1)}process.exit(0)},e=>{console.error(e.message);process.exit(79)})\""
+    }
+  }
+}
