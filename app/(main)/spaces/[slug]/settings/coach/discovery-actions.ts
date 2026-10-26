@@ -2,7 +2,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
-import { resolveDiscoveryEditor as editor } from '@/lib/spaces/discovery-access'
+import { authorizeDiscoveryEditor } from '@/lib/spaces/discovery-access'
 import { loadSpaceDiscoveryConsent, writeSpaceDiscoveryConsent, loadSpaceCoachProfile } from '@/lib/spaces/private-state'
 import { discoveryConsentActive, grantDiscoveryConsent, type SpaceDiscoveryConsent } from '@/lib/spaces/discovery-consent'
 import { getSpaceProfileEvidence } from '@/lib/spaces/analytics'
@@ -12,14 +12,14 @@ import { appOrigin } from '@/lib/sites/host'
 
 /** This explicit choice never changes saved writing preferences or publishes anything. */
 export async function setSpaceDiscoveryConsent(spaceId: string, enabled: boolean): Promise<ActionResult<SpaceDiscoveryConsent | null>> {
-  const owner = await editor(spaceId)
+  const owner = await authorizeDiscoveryEditor(spaceId)
   if (!owner) return fail('You do not have permission to change discovery coaching for this Space.')
   if (typeof enabled !== 'boolean') return fail('Choose whether to allow aggregate discovery coaching.')
   const stored = await loadSpaceDiscoveryConsent(spaceId)
   if (!stored.available) return fail('Discovery coaching setup is unavailable. Permission was not changed.')
   if (!enabled && !stored.consent) return ok(null)
   const consent = enabled ? grantDiscoveryConsent(owner.actor, randomUUID()) : { ...stored.consent!, revokedAt: new Date().toISOString() }
-  if (!(await editor(spaceId))) return fail('You no longer have permission to change discovery coaching for this Space.')
+  if (!(await authorizeDiscoveryEditor(spaceId))) return fail('You no longer have permission to change discovery coaching for this Space.')
   if (!(await writeSpaceDiscoveryConsent(spaceId, consent))) return fail('Your permission could not be saved. Try again.')
   revalidatePath(`/spaces/${encodeURIComponent(owner.space.slug)}/settings/coach`)
   return ok(consent)
@@ -28,13 +28,13 @@ export async function setSpaceDiscoveryConsent(spaceId: string, enabled: boolean
 /** On-demand first-party aggregates only; no provider/API connection or retained observation store. */
 export async function reviewSpaceDiscovery(spaceId: string, requestedGoal: unknown = 'attendance') {
   const goal = requestedGoal === 'bookings' || requestedGoal === 'return_visits' || requestedGoal === 'enquiries' ? requestedGoal : 'attendance'
-  const owner = await editor(spaceId)
+  const owner = await authorizeDiscoveryEditor(spaceId)
   if (!owner) return { status: 'unavailable' as const, reason: 'permission_denied' as const }
   let grantedId: string | null = null
   let observedSlug = owner.space.slug
   const outcome = await observeSpaceDiscovery(spaceId, {
     authorize: async (id) => {
-      const fresh = await editor(id)
+      const fresh = await authorizeDiscoveryEditor(id)
       if (fresh) observedSlug = fresh.space.slug
       return fresh ? { spaceId: id, actorProfileId: fresh.actor, canEditProfile: true } : null
     },
@@ -55,7 +55,7 @@ export async function reviewSpaceDiscovery(spaceId: string, requestedGoal: unkno
     },
   })
   // Permission or consent can change during IO. Never return observations from a revoked/replaced grant.
-  const currentEditor = await editor(spaceId)
+  const currentEditor = await authorizeDiscoveryEditor(spaceId)
   if (!currentEditor) return { status: 'unavailable' as const, reason: 'permission_denied' as const }
   if (currentEditor.space.slug !== observedSlug) return { status: 'unavailable' as const, reason: 'invalid_context' as const }
   const current = await loadSpaceDiscoveryConsent(spaceId)

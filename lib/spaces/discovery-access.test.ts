@@ -16,7 +16,7 @@ vi.mock('@/lib/spaces/private-state',()=>({loadSpaceDiscoveryConsent:m.consent,w
 vi.mock('@/lib/spaces/analytics',()=>({getSpaceProfileEvidence:m.evidence}))
 vi.mock('@/lib/sites/host',()=>({appOrigin:()=> 'https://frequencylocal.com'}))
 vi.mock('next/cache',()=>({revalidatePath:vi.fn()}))
-import { resolveDiscoveryEditor } from './discovery-access'
+import { authorizeDiscoveryEditor } from './discovery-access'
 import { getSpaceMembership } from './membership'
 import { grantDiscoveryConsent } from './discovery-consent'
 import { reviewSpaceDiscovery, setSpaceDiscoveryConsent } from '@/app/(main)/spaces/[slug]/settings/coach/discovery-actions'
@@ -29,20 +29,20 @@ beforeEach(()=>{
 })
 describe('uncached direct Space discovery access',()=>{
  it('reads only the actor/Space pair and rejects another Space',async()=>{
-  expect(await resolveDiscoveryEditor('space-A')).not.toBeNull()
+  expect(await authorizeDiscoveryEditor('space-A')).not.toBeNull()
   expect(m.reads[0]).toEqual({space_id:'space-A',profile_id:'editor-A'})
-  expect(await resolveDiscoveryEditor('space-B')).toBeNull()
+  expect(await authorizeDiscoveryEditor('space-B')).toBeNull()
  })
  it('does not borrow staff/network authority or accept a noneditor/suspended role',async()=>{
-  m.role='member';expect(await resolveDiscoveryEditor('space-A')).toBeNull()
-  m.role='admin';m.status='suspended';expect(await resolveDiscoveryEditor('space-A')).toBeNull()
-  m.status='active';m.fail=true;expect(await resolveDiscoveryEditor('space-A')).toBeNull()
+  m.role='member';expect(await authorizeDiscoveryEditor('space-A')).toBeNull()
+  m.role='admin';m.status='suspended';expect(await authorizeDiscoveryEditor('space-A')).toBeNull()
+  m.status='active';m.fail=true;expect(await authorizeDiscoveryEditor('space-A')).toBeNull()
  })
  it('bypasses a primed sticky cached membership when access is revoked',async()=>{
   expect((await getSpaceMembership('space-A','editor-A'))?.status).toBe('active')
   m.status='suspended'
   expect((await getSpaceMembership('space-A','editor-A'))?.status).toBe('active')
-  expect(await resolveDiscoveryEditor('space-A')).toBeNull()
+  expect(await authorizeDiscoveryEditor('space-A')).toBeNull()
  })
  it('uses the actual uncached reader after observation IO and discards a revoked editor result',async()=>{
   m.evidence.mockImplementationOnce(async()=>{m.status='suspended';const now=new Date();return {windowDays:30,observedFrom:new Date(now.getTime()-30*86400000).toISOString(),observedThrough:now.toISOString(),profileViews:8,ctaClicks:1}})
@@ -56,7 +56,7 @@ describe('uncached direct Space discovery access',()=>{
  })
  it('accepts the current owner without inventing a membership',async()=>{
   m.actor='owner-A'
-  expect(await resolveDiscoveryEditor('space-A')).not.toBeNull()
+  expect(await authorizeDiscoveryEditor('space-A')).not.toBeNull()
   expect(m.reads).toHaveLength(0)
  })
 })

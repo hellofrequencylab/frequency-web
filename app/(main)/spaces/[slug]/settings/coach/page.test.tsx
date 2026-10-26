@@ -3,7 +3,7 @@ import { isValidElement, type ReactNode } from 'react'
 import { CoachProfileForm } from '@/components/spaces/coach-profile-form'
 import { renderToStaticMarkup } from 'react-dom/server'
 const m = vi.hoisted(() => ({ caller: vi.fn(), space: vi.fn(), access: vi.fn(), form: vi.fn(), coach: vi.fn(), discovery: vi.fn(), discoveryAccess: vi.fn() }))
-vi.mock('@/lib/spaces/discovery-access', () => ({ resolveDiscoveryEditor: m.discoveryAccess }))
+vi.mock('@/lib/spaces/discovery-access', () => ({ authorizeDiscoveryEditor: m.discoveryAccess }))
 vi.mock('@/lib/auth', () => ({ getCallerProfile: m.caller }))
 vi.mock('@/lib/spaces/store', () => ({ getVisibleSpaceBySlug: m.space }))
 vi.mock('@/lib/spaces/private-state', () => ({ loadSpaceCoachProfile: m.coach, loadSpaceDiscoveryConsent: m.discovery }))

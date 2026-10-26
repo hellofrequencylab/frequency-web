@@ -7,7 +7,7 @@ import { atLeastSpaceRole } from './membership-core'
 /** Explicit discovery permission belongs to this Space's owner or active direct editor/admin.
  * Uncached owner/member reads intentionally exclude staff preview and inferred network reach.
  * Re-run after observation IO before returning private aggregates. */
-export async function resolveDiscoveryEditor(spaceId: string) {
+export async function authorizeDiscoveryEditor(spaceId: string) {
   const actor = await getMyProfileId()
   if (!actor) return null
   const space = await getSpaceById(spaceId)
