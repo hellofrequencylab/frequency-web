@@ -25,7 +25,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendBulkDm } from '@/lib/comms/bulk-dm'
-import { createSpaceCampaign, scheduleSpaceCampaign, parseScheduleTime } from '@/lib/spaces/campaigns'
+import { createSpaceCampaign, scheduleSpaceCampaign, sendSpaceCampaign, parseScheduleTime } from '@/lib/spaces/campaigns'
 import { createFunnel, addStageLink } from '@/app/(main)/admin/growth/funnels/actions'
 import { getFunnel } from '@/lib/funnels/store'
 import { resolveJourneyLaunchContext, type JourneyLaunchContext } from '@/lib/journeys/launch-access'
@@ -244,14 +244,56 @@ async function resolveEnrolleeAudience(planId: string, segments: string[]): Prom
   return [...out]
 }
 
+/** The one `journey:<id>[:state]` member-segment key for the picked enrollee segments. Both halves, or
+ *  everyone, is the whole list; one half narrows to it. Null when nothing valid was picked. */
+function enrolleeSegmentKey(planId: string, segments: string[]): string | null {
+  const keys = new Set(segments.filter(isSegmentKey))
+  if (keys.size === 0) return null
+  if (keys.has('all') || (keys.has('in_progress') && keys.has('finished'))) return `journey:${planId}`
+  return `journey:${planId}:${keys.has('finished') ? 'finished' : 'in_progress'}`
+}
+
+/**
+ * Email the Journey's enrollees through the Space's own campaign lane: a `campaigns` row, then the
+ * interactive send (sendSpaceCampaign), so the kill switch, daily cap, monthly meter, suppression and
+ * the per-recipient unsubscribe all apply. The audience is a member segment (`journey:<id>`), which
+ * always rides the marketing consent bar and reaches only enrollees the Space already holds a
+ * subscribed contact for (ADR-863: an account email is never read for a Space send). So the honest
+ * result line is often "sent to fewer people than are enrolled".
+ */
+async function sendEnrolleeEmail(
+  ctx: JourneyLaunchContext,
+  planId: string,
+  subject: string,
+  body: string,
+  segments: string[],
+): Promise<BroadcastChannelResult> {
+  if (!ctx.spaceId) return { channel: 'email', ok: false, detail: LAUNCH_NEEDS_SPACE_MESSAGE }
+  const memberSegment = enrolleeSegmentKey(planId, segments)
+  if (!memberSegment) return { channel: 'email', ok: false, detail: 'Pick who should get it.' }
+
+  const created = await createSpaceCampaign(ctx.spaceId, { subject, body, topic: 'marketing' })
+  if (isError(created)) return { channel: 'email', ok: false, detail: created.error }
+
+  const sent = await sendSpaceCampaign(ctx.spaceId, created.data.id, { memberSegment })
+  if (isError(sent)) return { channel: 'email', ok: false, detail: sent.error }
+  const n = sent.data.recipientCount
+  return {
+    channel: 'email',
+    ok: true,
+    detail: `Sent to ${n} ${n === 1 ? 'person' : 'people'} who are subscribed to email from this Space.`,
+  }
+}
+
 /**
  * Message the Journey's enrollees from the launch surface, through the shared BroadcastComposer.
  *
- * Only the Direct Message lane is live here: it rides the comms spine (one conversation per
- * recipient, kind 'crm', channel 'in_app'), the same operator-DM path the event broadcast uses,
- * so every message is logged and lands in the member's own Frequency inbox. Email, Dispatch, and
- * Text are offered as disabled chips by the surface with honest reasons (refuse-first, ADR-256) —
- * a smuggled key is refused here too rather than silently ignored.
+ * Two lanes are live here. Direct Message rides the comms spine (one conversation per recipient,
+ * kind 'crm', channel 'in_app'), the same operator-DM path the event broadcast uses, so every message
+ * is logged and lands in the member's own Frequency inbox. Email rides the Space's own campaign lane
+ * (sendEnrolleeEmail below), so it clears the same marketing consent bar as any Space campaign.
+ * Dispatch and Text are offered as disabled chips by the surface with honest reasons (refuse-first,
+ * ADR-256) — a smuggled key is refused here too rather than silently ignored.
  *
  * SCOPE: these conversations carry the journey lane (scope_kind='journey', scope_id=plan id) so
  * the send threads in The Path beside the other lanes. See JOURNEY_COMMS_SCOPE_LIVE above.
@@ -269,15 +311,15 @@ export async function sendJourneyBroadcastAction(
 
   const picked = (input.channels ?? []) as BroadcastChannelKey[]
   if (picked.length === 0) return fail('Pick at least one channel.')
-  const unsupported = picked.filter((c) => c !== 'dm')
+  const unsupported = picked.filter((c) => c !== 'dm' && c !== 'email')
   const results: BroadcastChannelResult[] = unsupported.map((channel) => ({
     channel,
     ok: false,
-    detail:
-      channel === 'sms'
-        ? 'Text is not available yet.'
-        : 'That channel is not wired for Journeys yet. Use the launch series above to email your list.',
+    detail: channel === 'sms' ? 'Text is not available yet.' : 'That channel is not wired for Journeys yet.',
   }))
+  if (picked.includes('email')) {
+    results.push(await sendEnrolleeEmail(ctx, planId, subject, body, input.segments ?? []))
+  }
   if (!picked.includes('dm')) return ok({ results })
 
   const audience = await resolveEnrolleeAudience(planId, input.segments ?? [])

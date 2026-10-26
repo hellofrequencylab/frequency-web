@@ -33,7 +33,7 @@ export const dynamic = 'force-dynamic'
 /** Message enrollees — a self-fetching RSC that mounts the shared, scope-agnostic BroadcastComposer
  *  with the plan-bound send action. It supplies the segments; the action owns authorization,
  *  re-resolves the audience from the segment keys, and reports per-channel outcomes. */
-async function EnrolleeBroadcastSection({ planId }: { planId: string }) {
+async function EnrolleeBroadcastSection({ planId, hasSpace }: { planId: string; hasSpace: boolean }) {
   const { data } = await createAdminClient()
     .from('journey_enrollments')
     .select('profile_id, completed_at')
@@ -55,7 +55,13 @@ async function EnrolleeBroadcastSection({ planId }: { planId: string }) {
   // every other chip says plainly why it is not.
   const channels: BroadcastChannelOption[] = [
     { key: 'dm', enabled: true, note: 'Lands in each person’s Frequency inbox as a message from you.' },
-    { key: 'email', enabled: false, note: 'Use the launch series above to email your list' },
+    hasSpace
+      ? {
+          key: 'email',
+          enabled: true,
+          note: 'Goes through your Space’s email. Reaches enrolled people who are subscribed to it.',
+        }
+      : { key: 'email', enabled: false, note: 'Move this Journey to a Space to email from it' },
     { key: 'dispatch', enabled: false, note: 'Not wired for Journeys yet' },
     SMS_CHANNEL,
   ]
@@ -149,7 +155,7 @@ export default async function JourneyLaunchPage({ params }: { params: Promise<{ 
         }}
       >
         <Suspense fallback={null}>
-          <EnrolleeBroadcastSection planId={ctx.planId} />
+          <EnrolleeBroadcastSection planId={ctx.planId} hasSpace={!!ctx.spaceId} />
         </Suspense>
       </JourneyLaunch>
     </FocusTemplate>

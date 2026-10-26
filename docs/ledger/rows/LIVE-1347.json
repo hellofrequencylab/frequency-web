@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1347",
+  "title": "Watch official discovery guidance for human review",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "wave": "W7",
+  "status": "done",
+  "closed": "2026-10-26",
+  "source": {
+    "file": "lib/ai/discovery-guidance-watch.ts",
+    "ref": "Owner-authorized public guidance change watch"
+  },
+  "detail": "Weekly Monday07UTC watch reads a fixed allow-list of two verified Google developer guidance pages and one verified official Bing article through shared DNS-pinned fetch. HTTPS URLs fixed in source; redirects disabled, each response capped at512KiB and eight seconds, three sources per run. Article/main extraction validates the expected heading and stores only hashes and operational timestamps/status in existing private platform_settings, not document bodies or user analytics. First baseline, unchanged, review-required and unavailable outcomes stay distinct. Failed attempts preserve prior successful hashes/timestamp and pending review flags. Changes log human-review-required; no AI generation, campaign sends, content/policy edits, provider connections or automatic approval. Existing cron secret, budget, heartbeat and cadence contracts are wired. No external monitor is provisioned and no review-acknowledgment UI is included. Source URLs and successful article extraction verified with actual public HTML2026-10-26; mocked behavior, not deployed schedule or database acceptance, verified locally.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/discovery-guidance-watch.mjs",
+    "checked": "2026-10-26",
+    "evidence": "Bounded actual-source probe with inert IO;128focusedtests including cron authorization/budget/freshness and source/store behavior; scoped lint. No private database or provider writes, fullbuild/typecheck or production scheduling acceptance performed by this packet."
+  }
+}
