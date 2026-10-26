@@ -20,7 +20,7 @@ export async function setSpaceDiscoveryConsent(spaceId: string, enabled: boolean
   if (!enabled && !stored.consent) return ok(null)
   const consent = enabled ? grantDiscoveryConsent(owner.actor, randomUUID()) : { ...stored.consent!, revokedAt: new Date().toISOString() }
   if (!(await authorizeDiscoveryEditor(spaceId))) return fail('You no longer have permission to change discovery coaching for this Space.')
-  if (!(await writeSpaceDiscoveryConsent(spaceId, consent))) return fail('Your permission could not be saved. Try again.')
+  if (!(await writeSpaceDiscoveryConsent(spaceId, consent, stored.consent?.id ?? null))) return fail('Your permission could not be saved, or it changed while you were saving. Reload and try again.')
   revalidatePath(`/spaces/${encodeURIComponent(owner.space.slug)}/settings/coach`)
   return ok(consent)
 }
