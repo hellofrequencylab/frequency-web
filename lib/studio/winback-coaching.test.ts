@@ -5,7 +5,7 @@ vi.mock('@/lib/ai/rate-limit',()=>({aiRateLimited:m.limited}))
 vi.mock('@/lib/ai/complete',()=>({completeRaw:m.complete}))
 vi.mock('@/lib/ai/voice',()=>({withVoice:(s:string)=>s}))
 import { coachWinbackReview, deterministicWinback, isOperationalWinbackPayload } from './winback'
-beforeEach(()=>{vi.resetAllMocks();m.available.mockResolvedValue(true);m.budget.mockResolvedValue(false);m.limited.mockResolvedValue(false);m.complete.mockResolvedValue({text:JSON.stringify({questions:['What useful reason does someone have to return?','How will you check current consent?']})})})
+beforeEach(()=>{vi.resetAllMocks();m.available.mockResolvedValue(true);m.budget.mockResolvedValue(false);m.limited.mockResolvedValue(false);m.complete.mockResolvedValue({text:JSON.stringify({questionIds:['reason','consent']})})})
 describe('ephemeral operator winback coaching',()=>{
  it('returns questions with attributed accounting and no recipient evidence',async()=>{
   const result=await coachWinbackReview('operator-A')
@@ -39,4 +39,9 @@ describe('ephemeral operator winback coaching',()=>{
   expect(isOperationalWinbackPayload({...draft,templateName:'Ada'})).toBe(false)
   expect(isOperationalWinbackPayload({...draft,templateName:'Ada',copySource:'operational_winback_v1',body:'MODEL BODY'})).toBe(false)
  })
+})
+
+it.each([{questions:['What about the subject Come back today?']},{questionIds:['reason'],subject:'Invented'},{questionIds:['constructor']},{questionIds:[]}])('rejects free wording, unknown IDs and mixed fields: %j',async raw=>{
+ m.complete.mockResolvedValue({text:JSON.stringify(raw)})
+ expect((await coachWinbackReview('operator-A')).source).toBe('checklist')
 })

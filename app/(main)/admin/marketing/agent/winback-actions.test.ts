@@ -10,7 +10,7 @@ vi.mock('@/lib/ai/rate-limit',()=>({aiRateLimited:async()=>false}))
 vi.mock('@/lib/ai/complete',()=>({completeRaw:m.complete}))
 vi.mock('@/lib/ai/voice',()=>({withVoice:(s:string)=>s}))
 import { reviewWinbackCoaching, approveAction } from './actions'
-beforeEach(()=>{vi.resetAllMocks();m.staff.mockResolvedValue({profileId:'operator-A'});m.allowed.mockResolvedValue(true);m.complete.mockResolvedValue({text:'{"questions":["How will you check consent before approving?"]}'})})
+beforeEach(()=>{vi.resetAllMocks();m.staff.mockResolvedValue({profileId:'operator-A'});m.allowed.mockResolvedValue(true);m.complete.mockResolvedValue({text:'{"questionIds":["consent"]}'})})
 it('requires current marketing permission and never persists coaching',async()=>{
  m.allowed.mockResolvedValue(false);expect(await reviewWinbackCoaching()).toBeNull();expect(m.complete).not.toHaveBeenCalled()
  m.allowed.mockResolvedValue(true);expect((await reviewWinbackCoaching())?.source).toBe('coach')
