@@ -101,12 +101,11 @@ function subscribeViewport(callback: () => void) {
   return () => query.removeEventListener('change', callback)
 }
 
-/** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. Midnight
- *  is retired (ADR-1728): a draft that still carries it is offered the two themes. */
+/** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. */
 const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', Temple: 'Temple' }
 const EDITOR_THEME = EDITOR_THEME_OF
 /** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
-const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'Temple' ? 'temple' : 'frequency')
+const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'Temple' ? 'temple' : theme === 'Midnight' ? 'midnight' : 'frequency')
 /** A page's publish state in the design's words (Pages tab and page menu dots). */
 type PageState = 'live' | 'changed' | 'draft'
 const PAGE_STATE_LABEL: Record<PageState, string> = { live: 'Published', changed: 'Draft changes', draft: 'Not published yet' }
@@ -543,7 +542,6 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <div className="cap">Theme</div>
     {SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className={`theme${on(draft.theme === theme)}`} aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }, { label: 'Theme' }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }); say('Theme updated') }}>
       <span className="sw" style={websiteThemeVars(theme)} aria-hidden><i data-swatch="bg" /><i data-swatch="accent" /></span><span><b>{WEBSITE_THEME_LABEL[theme]}</b><small>{t.description}</small></span></button> })}
-    {draft.theme === 'Midnight' && <p role="note" className="note">Midnight is retired. Pick Default or Bold to keep editing in a theme your live site can wear.</p>}
     <div className="cap">Accent</div>
     <div className="swatches" role="group" aria-label="Accent">
       <button type="button" className={on(!draft.brand?.accent).trim() || undefined} aria-pressed={!draft.brand?.accent} aria-label="Theme accent" title="Theme accent" data-swatch="theme" onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } }, { label: 'Accent' })} />
@@ -574,7 +572,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const siteTab = FQ_EDITOR ? fqSiteTab : <><div className="we-caption">Website settings</div><button type="button" className="we-row" onClick={() => openChrome('header')}>Header and navigation</button><button type="button" className="we-row" onClick={() => openChrome('footer')}>Footer</button><button type="button" className="we-row" onClick={() => { setTab('Theme'); setLeft(true) }}>Theme and logo</button><button type="button" className="we-row" onClick={() => { setPanel('page'); setRight(true) }}>Page settings</button><button type="button" className="we-row" onClick={() => { setPanel('seo'); setRight(true) }}>SEO and sharing</button><a className="we-row" href={`https://${host}/`} target="_blank" rel="noreferrer">Open live website</a><a className="we-row" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer">Space home</a></>
   const themeTab = FQ_EDITOR ? fqThemeTab : <><div className="we-caption">Theme</div>{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }) }}>
       <span className="we-theme-swatch" style={websiteThemeVars(theme)}><i style={{ background: 'var(--ed-chrome)' }} /><i style={{ background: 'var(--th-bg)' }}><b /></i></span><span><strong>{WEBSITE_THEME_LABEL[theme]}</strong><small>{t.description}</small></span>
-      </button> })}{draft.theme === 'Midnight' && <p role="note" className="we-note">Midnight is retired. Pick Frequency or Bold to keep editing in a theme your live site can wear.</p>}
+      </button> })}
       {/* GLOBAL STYLES (ADR-1728): the same setting Identity and branding edits, live at once. */}
       <div className="we-caption">Global styles</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="we-field">{LOOK_LABEL[key]}<div className="we-choice-row" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className="we-action secondary" aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; void saveStyle({ look: { [key]: stored } }, { ...style, look: { ...style.look, [key]: stored } }) }}>{o.label}</button>)}</div></div>)}
       {styleError && <p role="alert" className="we-note">{styleError}</p>}
