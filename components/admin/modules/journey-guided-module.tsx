@@ -3,10 +3,7 @@
 // The Journey's Guided section (ADR-450 §2 · ADR-996). The surface is the shared GuidedModule;
 // this file supplies only what is a Journey's own.
 //
-// The Journey's redraw re-words the name, the promise, the overview, and each week's focus. It
-// deliberately does NOT touch the practices inside the weeks: "draft it again" is a rewrite, not
-// a restructure, and the editor's own Vera box is where an author asks for that. Pinning
-// `Identity` or `The weekly arc` holds either half through a redraw.
+// Guided questions remain separate from manually authored Journey fields.
 
 import { JOURNEY_MANIFEST } from '@/lib/studio/entities/journey'
 import { getJourneyRailData } from '@/app/(main)/journeys/admin-actions'
@@ -24,9 +21,10 @@ const restore = (id: string, before: JourneyRedrawState) => restoreJourneyAction
 export function JourneyGuidedModule() {
   return (
     <GuidedModule
+      coachingOnly
       moduleId="journey.guided"
       manifest={JOURNEY_MANIFEST}
-      blurb="Draft this Journey again with Vera: the name, the promise, the overview, and each week's focus. Pin what you want kept."
+      blurb="Get questions about your Journey while keeping every field in your own words."
       routeKey={routeKey}
       resolve={resolve}
       redraw={redrawJourneyAction}

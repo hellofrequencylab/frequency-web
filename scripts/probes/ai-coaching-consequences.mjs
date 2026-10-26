@@ -69,9 +69,9 @@ async function spark() {
   assert.equal(await runSpark({ ...spec, proseResultField: 'about', coerce: r => ({ about: r.description.trim() }) }, { content: authored, authoredProse: authored }).then(r => r.about), authored)
   const read = p => fs.readFileSync(path.join(root, p), 'utf8')
   for (const file of ['app/(main)/events/event-spark.tsx', 'components/circles/builder/circle-wizard.tsx']) assert.ok(!/<SparkFidelity /.test(read(file)), `${file}: no rewrite choice for authored text`)
-  assert.ok(/<SparkFidelity /.test(read('components/journey/v2/journey-spark.tsx')), 'unconverted Journey fidelity remains explicit')
+  assert.ok(!/<SparkFidelity /.test(read('components/journey/v2/journey-spark.tsx')), 'Journey coaching offers no prose rewrite control')
   assert.ok(/description: str\(r\.description, 8000\)/.test(read('lib/events/normalize.ts')), 'existing Event description capacity retained')
-  console.log('Actual Spark retains human words, rejects coercion loss and supports mapped fields; remaining Journey fidelity and Event capacity retained.')
+  console.log('Actual Spark retains human words, rejects coercion loss and supports mapped fields; Journey coaching and Event capacity retained.')
 }
 async function space() {
   const state = { allowed: false, writes: [], missing: false }
