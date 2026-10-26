@@ -383,7 +383,9 @@ export function parseVeraTranscript(raw: unknown): { transcript: VeraTranscript 
 
 function toolUsesOf(content: CompleteMessage['content']): Anthropic.ToolUseBlockParam[] {
   if (typeof content === 'string') return []
-  return content.filter((b): b is Anthropic.ToolUseBlockParam => (b as { type?: string }).type === 'tool_use')
+  const uses: Anthropic.ToolUseBlockParam[] = []
+  for (const b of content) if (b.type === 'tool_use') uses.push(b)
+  return uses
 }
 
 /** How many questions the transcript already holds. */

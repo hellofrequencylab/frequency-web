@@ -165,7 +165,16 @@ export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteThe
 export function publishedWebsiteSnapshot(preferences: unknown): WebsiteSnapshot | null {
   const editor = record(preferences) ? preferences.websiteEditor : null
   const published = record(editor) ? editor.published : null
+  if (validWebsiteSnapshot(published) && published.theme === 'DAWN' && WORN_EDITOR_THEME[siteTheme(preferences)] === 'DAWN' && choseDefaultTheme(preferences)) return published
   return validWebsiteSnapshot(published) && WEBSITE_THEMES_LIVE.has(published.theme) && published.theme === WORN_EDITOR_THEME[siteTheme(preferences)] ? published : null
+}
+
+/** A Space that chose the Default (Frequency) theme in its Mega Theme choice (ADR-1881) has published pages on
+ *  purpose, from a Default starter kit, so its DAWN document is served. A Space that never chose keeps the house
+ *  look exactly as before. Inline so this module takes no import for it. */
+function choseDefaultTheme(preferences: unknown): boolean {
+  const mega = record(preferences) ? preferences.megaTheme : null
+  return record(mega) && mega.theme === 'frequency'
 }
 
 export function withoutWebsiteDrafts<T>(preferences: T): T {

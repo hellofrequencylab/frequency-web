@@ -364,3 +364,6 @@ space_tags                           internal
 device_relay_settings                internal
 meet_codes                           internal
 meet_taps                            internal
+
+# LIVE-1378: sealed OAuth credentials, explicitly revoked from public/anon/authenticated in migration25300.
+space_discovery_connections           internal
