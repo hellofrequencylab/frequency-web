@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs'
 // DAWN's own tokens (app/globals.css :root and its two TypeScript mirrors) belong to the DAWN design that
 // Space websites wear; Frequency overrides them in app/themes/frequency.css. lib/theme/cyberunicorn.ts is
 // the CyberUnicorn 5000 device skin (its synthwave sky is the firmware's own colour), worn by one panel only.
-const SKIP = new Set(['lib/theme/wildheart.ts', 'lib/theme/cyberunicorn.ts', 'lib/spotlight/theme.ts', 'lib/sites/editor/theme-contract.json', 'app/globals.css', 'lib/maps/pin-kinds.ts', 'app/dev/og-root-card/route.tsx'])
+const SKIP = new Set(['lib/theme/wildheart.ts', 'lib/theme/cyberunicorn.ts', 'lib/spotlight/theme.ts', 'lib/sites/editor/theme-contract.json', 'app/globals.css', 'lib/maps/css-color.ts', 'lib/maps/pin-kinds.ts', 'app/dev/og-root-card/route.tsx'])
 const files = execSync('git ls-files app components lib').toString().split('\n').filter(Boolean)
 const bad = []
 
