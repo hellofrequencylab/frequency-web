@@ -73,7 +73,7 @@ type TemplateQuery = {
   update: (patch: Record<string, unknown>) => TemplateQuery
   delete: () => TemplateQuery
   maybeSingle: () => Promise<{ data: TemplateRow | null; error: unknown }>
-  then: (resolve: (r: { data: TemplateRow[] | null; error: unknown }) => unknown) => Promise<unknown>
+  then: (resolve: (r: { data: TemplateRow[] | null; error: unknown }) => unknown, reject?: (e: unknown) => unknown) => Promise<unknown>
 }
 
 const TEMPLATE_COLS = 'id, name, subject, body, created_at, space_id'

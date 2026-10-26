@@ -157,7 +157,7 @@ type Query = {
   update: (patch: Row) => Query
   delete: () => Query
   maybeSingle: () => Promise<{ data: Row | null; error: unknown }>
-  then: (resolve: (r: { data: Row[] | null; error: unknown }) => unknown) => Promise<unknown>
+  then: (resolve: (r: { data: Row[] | null; error: unknown }) => unknown, reject?: (e: unknown) => unknown) => Promise<unknown>
 }
 
 function table(name: string): Query {

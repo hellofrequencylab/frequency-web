@@ -80,7 +80,7 @@ type SegmentQuery = {
   update: (patch: Record<string, unknown>) => SegmentQuery
   delete: () => SegmentQuery
   maybeSingle: () => Promise<{ data: SegmentRow | null; error: unknown }>
-  then: (resolve: (r: { data: SegmentRow[] | null; error: unknown }) => unknown) => Promise<unknown>
+  then: (resolve: (r: { data: SegmentRow[] | null; error: unknown }) => unknown, reject?: (e: unknown) => unknown) => Promise<unknown>
 }
 
 const SEGMENT_COLS = 'id, name, definition, created_at, space_id'
