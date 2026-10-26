@@ -616,8 +616,7 @@ export const listNetworkedSpaces = cache(
           commons: memberCounts ? memberCounts.get(r.id) ?? 0 : null,
           care: careScore({
             tagline: r.tagline,
-            canonicalSite: profileCanonicalSite({ id: r.id, slug: r.slug, domain: r.domain ?? null, parentId: r.parent_id, ownerProfileId: r.owner_profile_id, preferences: r.preferences }),
-          logoUrl: r.brand_logo_url,
+            logoUrl: r.brand_logo_url,
             coverUrl: r.cover_image_url,
             subject: profile.subject ?? null,
             about: profile.about ?? null,
@@ -633,6 +632,7 @@ export const listNetworkedSpaces = cache(
           type,
           kind: spaceKind({ preferences: r.preferences }),
           kindLabel: spaceKindPillLabel({ preferences: r.preferences }),
+          canonicalSite: profileCanonicalSite({ id: r.id, slug: r.slug, domain: r.domain ?? null, parentId: r.parent_id, ownerProfileId: r.owner_profile_id, preferences: r.preferences }),
           tagline: r.tagline?.trim() || null, // Populated from the row (Wave B); the card omits it when null.
           logoUrl: r.brand_logo_url,
           logoBackdrop: readLogoBackdrop(r.preferences),

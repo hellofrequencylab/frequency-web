@@ -52,7 +52,7 @@ function show(over: Partial<FixtureShow> & { id: string; spaceId: string; slug: 
 // `updatedAt` is the LIVE-197 field: the discovery reader projects `spaces.updated_at` so the Space
 // section can carry a `<lastmod>`. delta deliberately has NONE, because the rule is that a row with
 // no timestamp emits no lastmod rather than a synthesised one.
-const SPACES = [
+const SPACES: Array<{ id: string; slug: string; type: string; updatedAt: string | null; canonicalSite?: import('@/lib/sites/profile-canonical').ProfileCanonicalSite }> = [
   { id: 'sp-a', slug: 'alpha', type: 'business', updatedAt: '2026-07-04T10:00:00Z' },
   { id: 'sp-b', slug: 'bravo', type: 'business', updatedAt: '2026-08-09T11:30:00Z' },
   { id: 'sp-c', slug: 'charlie', type: 'business', updatedAt: '2026-05-01T00:00:00Z' },
@@ -777,7 +777,7 @@ describe('organizer sitemap read failures', () => {
 it('does not advertise Frequency aliases whose public website twin is canonical on another host', async () => {
   vi.mocked(resolveProfileSiteCanonical).mockImplementation(async (site, pageSlug) => site?.id === 'sp-a' && (!pageSlug || pageSlug === 'home') ? 'https://alpha.example/' : null)
   // The real route passes the canonical candidate attached by the directory reader.
-  SPACES[0] = { ...SPACES[0], canonicalSite: { id: 'sp-a', slug: 'alpha', domain: 'alpha.example', pages: ['home'] } } as typeof SPACES[0]
+  SPACES[0] = { ...SPACES[0], canonicalSite: { id: 'sp-a', slug: 'alpha', domain: 'alpha.example', pages: ['home'] } }
   try {
     const entries = await sitemap()
     expect(entries.some((entry) => entry.url === `${SITE}/spaces/alpha`)).toBe(false)
@@ -785,7 +785,7 @@ it('does not advertise Frequency aliases whose public website twin is canonical 
     expect(entries.some((entry) => entry.url === `${SITE}/spaces/alpha/podcasts`)).toBe(true)
     expect(entries.some((entry) => entry.url === 'https://alpha.example/')).toBe(false)
   } finally {
-    delete (SPACES[0] as unknown as Record<string, unknown>).canonicalSite
+    delete SPACES[0].canonicalSite
     vi.mocked(resolveProfileSiteCanonical).mockResolvedValue(null)
   }
 })
