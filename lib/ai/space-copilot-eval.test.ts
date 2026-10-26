@@ -16,7 +16,7 @@ const STUDIO = SPACE_COPILOT_EVAL_SET.find((s) => s.id === 'rich-studio')!.ctx
 
 describe('the rubric', () => {
   it('passes a plain, grounded bio', () => {
-    const s = scoreSpaceDraft('bio', 'North Light Yoga is a small studio in Leucadia with slow morning classes and a Sunday sit.', STUDIO)
+    const s = scoreSpaceDraft('bio', 'Who is your Space for? What can a newcomer expect?', STUDIO)
     expect(s).toEqual({ score: 100, failures: [] })
   })
 
@@ -27,14 +27,14 @@ describe('the rubric', () => {
   })
 
   it('allows a number the facts carry', () => {
-    expect(scoreSpaceDraft('tagline', 'Slow mornings and a 5 class pass', STUDIO).failures).toEqual([])
+    expect(scoreSpaceDraft('tagline', 'What does your 5 class pass include?', STUDIO).failures).toEqual([])
   })
 
-  it('flags a tagline that runs long or a bio that skips the name', () => {
-    expect(scoreSpaceDraft('tagline', 'A '.repeat(20) + 'studio', STUDIO).failures).toContain('tagline too wordy')
-    expect(scoreSpaceDraft('bio', 'A small studio with slow morning classes for everyone nearby.', STUDIO).failures).toContain(
-      'does not name the Space',
-    )
+  it('rejects publication copy even when it names the Space', () => {
+    expect(scoreSpaceDraft('bio', 'North Light Yoga welcomes everyone nearby.', STUDIO).failures)
+      .toContain('not coaching questions')
+    expect(scoreSpaceDraft('tagline', 'Who joins? What happens? How often? Why now?', STUDIO).failures)
+      .toContain('too many questions')
   })
 })
 

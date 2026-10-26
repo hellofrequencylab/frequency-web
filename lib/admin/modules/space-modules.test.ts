@@ -361,6 +361,7 @@ describe('the five boxes (ADR-1432)', () => {
     ])
     expect(spaceModuleChildren('space.basics').map((m) => m.id)).toEqual([
       'space.layout',
+      'space.coach',
       'space.reviews',
       'space.billing',
       'space.chapters',

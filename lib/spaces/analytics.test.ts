@@ -33,12 +33,12 @@ vi.mock('@/lib/engagement/events', () => ({
 type LedgerRow = { event_type: string; context: Record<string, unknown>; created_at: string }
 const ledger: LedgerRow[] = []
 let countError: { message: string } | null = null
-const countQueries: Array<{ eventType?: string; spaceId?: string; since?: string }> = []
+const countQueries: Array<{ eventType?: string; spaceId?: string; since?: string; through?: string }> = []
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => {
       if (table !== 'engagement_events') throw new Error(`unexpected table ${table}`)
-      const q: { eventType?: string; spaceId?: string; since?: string } = {}
+      const q: { eventType?: string; spaceId?: string; since?: string; through?: string } = {}
       countQueries.push(q)
       const api = {
         select: () => api,
@@ -51,10 +51,11 @@ vi.mock('@/lib/supabase/admin', () => ({
           if (col === 'created_at') q.since = val
           return api
         },
+        lt: (col: string, val: string) => { if (col === 'created_at') q.through = val; return api },
         then: (resolve: (v: { count: number | null; error: { message: string } | null }) => void) => {
           if (countError) return resolve({ count: null, error: countError })
           const n = ledger.filter(
-            (r) => r.event_type === q.eventType && r.context.spaceId === q.spaceId && r.created_at >= (q.since ?? ''),
+            (r) => r.event_type === q.eventType && r.context.spaceId === q.spaceId && r.created_at >= (q.since ?? '') && r.created_at < (q.through ?? '9999'),
           ).length
           return resolve({ count: n, error: null })
         },
@@ -64,7 +65,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { recordSpaceProfileView, recordSpaceCtaClick, getSpaceProfileStats } from './analytics'
+import { recordSpaceProfileView, recordSpaceCtaClick, getSpaceProfileStats, getSpaceProfileEvidence } from './analytics'
 
 const lastCall = (): LedgerInput => {
   const calls = recordEngagementEvent.mock.calls
@@ -177,6 +178,7 @@ describe('getSpaceProfileStats', () => {
     for (const q of countQueries) {
       expect(q.spaceId).toBe('space-1')
       expect(q.since).toBeTruthy()
+      expect(q.through).toBeTruthy()
     }
   })
 
@@ -192,5 +194,32 @@ describe('getSpaceProfileStats', () => {
     await expect(getSpaceProfileStats('space-1')).resolves.toEqual({ windowDays: 30, profileViews: 0, ctaClicks: 0 })
     expect(errSpy).toHaveBeenCalled()
     errSpy.mockRestore()
+  })
+})
+
+
+describe('getSpaceProfileEvidence', () => {
+  beforeEach(() => { ledger.length = 0; countQueries.length = 0; countError = null })
+
+  it('keeps a successful zero distinct from unavailable evidence', async () => {
+    const zero = await getSpaceProfileEvidence('space-1', 30)
+    expect(zero).toMatchObject({ profileViews: 0, ctaClicks: 0, windowDays: 30 })
+    expect(Date.parse(zero.observedThrough)).toBeGreaterThan(Date.parse(zero.observedFrom))
+    countError = { message: 'read failed' }
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const unavailable = await getSpaceProfileEvidence('space-1', 30)
+    expect(unavailable).toMatchObject({ profileViews: null, ctaClicks: null })
+    errors.mockRestore()
+  })
+
+  it('excludes future-dated events from the stated observation window', async () => {
+    ledger.push({ event_type: 'space.profile_view', context: { spaceId: 'space-1' }, created_at: new Date(Date.now() + 86400000).toISOString() })
+    expect((await getSpaceProfileEvidence('space-1')).profileViews).toBe(0)
+  })
+
+  it('does not perform an unscoped read when the Space id is empty', async () => {
+    const result = await getSpaceProfileEvidence('')
+    expect(result.profileViews).toBeNull()
+    expect(countQueries).toHaveLength(0)
   })
 })
