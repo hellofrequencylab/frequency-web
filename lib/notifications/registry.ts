@@ -29,6 +29,7 @@ export type NotificationEvent =
   | 'guestbook.sign'
   | 'post.mention'
   | 'post.reply'
+  | 'event.notice'
   | 'practice.term_complete'
   | 'practice.reminder'
   | 'practice.stale_check'
@@ -59,6 +60,11 @@ export interface NotificationContexts {
   /** Someone replied to the recipient's post (`comments`, in-app). The caller
    *  (app/(main)/feed/actions.ts notifyParentAuthor) hands in the replier and the post. */
   'post.reply': { replierId: string; postId: string }
+  /** A person-to-person event notice: a share asked or answered, a placement asked or decided,
+   *  a host transfer, a co-host invite (`events`, in-app). The caller
+   *  (lib/notifications/event-notice.ts) hands in the bell row's type and predicate; the
+   *  recipient's own inapp_events switch decides. */
+  'event.notice': { type: string; actorId: string | null; eventId: string; body: string }
   /** A practice term finished, a daily "still waiting" nudge, and the once-ever "still keeping
    *  this?" prompt (`practice`; lib/practices/lifecycle.ts). The caller authors the sentence
    *  in-voice and hands the practice; the recipient's own inapp_practice / push_practice
@@ -201,6 +207,16 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
         referenceType: 'post',
         referenceId: ctx.postId,
       },
+    }),
+  },
+  // A person-to-person event notice. `events`, in-app: the recipient's inapp_events switch
+  // decides, so the Events row in settings is a real switch for these.
+  'event.notice': {
+    event: 'event.notice',
+    category: 'events',
+    channels: ['inapp'],
+    render: (ctx) => ({
+      inapp: { type: ctx.type, body: ctx.body, actorId: ctx.actorId, referenceType: 'event', referenceId: ctx.eventId },
     }),
   },
   // A reply to your post. `comments`, in-app: inapp_comments decides, as it did when the feed
