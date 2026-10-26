@@ -38,7 +38,8 @@ export async function approveAction(id: string): Promise<void> {
     .eq('id', id)
   // Bail before executing — never run the action if its approval never persisted.
   if (error) throw new Error(error.message)
-  await executeAction(id) // runs through the spine
+  const res = await executeAction(id) // runs through the spine
+  if (!res.ok) throw new Error(res.error ?? 'The approved action could not run.')
   revalidatePath('/admin/marketing/agent')
 }
 
