@@ -14,6 +14,7 @@ import { pendingChangeLabels, publishChecks } from '@/lib/sites/editor/publish-c
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
 import { KitLibrary } from './kit-library'
+import { ThemeChanger } from './theme-changer'
 import type { KitChanges } from '@/lib/sites/kits/apply'
 import type { KitApplyMode, KitNiche } from '@/lib/sites/kits/types'
 import { editorBlockMeta, editorPickerGroups, VERA_SUGGESTIONS } from '@/lib/sites/editor/block-meta'
@@ -207,7 +208,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // The DAWN Site Editor (LIVE-907): the inspector's sub-tabs and the page menu in the top bar.
   const [inspTab, setInspTab] = useState<'content' | 'design' | 'advanced'>('content')
   const [pageMenu, setPageMenu] = useState(false)
-  const [modal, setModal] = useState<'publish' | 'templates' | 'insert' | 'delete-page' | 'menu' | null>(null)
+  const [modal, setModal] = useState<'publish' | 'templates' | 'insert' | 'delete-page' | 'menu' | 'theme' | null>(null)
   const [filter, setFilter] = useState('')
   const [insertAt, setInsertAt] = useState<number | null>(null)
   const [pageName, setPageName] = useState('')
@@ -440,6 +441,14 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   }, [pickOpen])
   /** Apply a starter kit to the draft as ONE undoable step. The kit loads on demand, so its pages never ride in the
    *  editor's first load. A theme change saves the site style the way the Theme tab does. */
+  /** Switch the website theme: one undo step, positions reset to the new layout, style saved at once. */
+  function pickTheme(t: (typeof SITE_THEMES)[number]) {
+    const theme = EDITOR_THEME[t.id]
+    if (theme === draft.theme) return
+    commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }, { label: 'Theme' })
+    void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts })
+    say('Theme updated')
+  }
   async function previewKitChoice(id: string): Promise<KitChanges | string> {
     const [{ loadKit }, { kitChanges }] = await Promise.all([import('@/lib/sites/kits/registry'), import('@/lib/sites/kits/apply')])
     const kit = await loadKit(id)
@@ -564,9 +573,11 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const themeFonts = String(canvasVars['--th-display' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const bodyFont = String(canvasVars['--th-body' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const spaceAccent = brandAccent && /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(brandAccent) ? brandAccent : null
+  const changeThemeButton = <button type="button" className={k('we-row')} onClick={() => setModal('theme')}><span>Change theme<small>Now wearing {WEBSITE_THEME_LABEL[draft.theme]}. See every theme and its starter kits.</small></span></button>
   const fqThemeTab = <>
     <div className="cap">Theme</div>
-    {SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className={`theme${on(draft.theme === theme)}`} aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }, { label: 'Theme' }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }); say('Theme updated') }}>
+    {changeThemeButton}
+    {SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className={`theme${on(draft.theme === theme)}`} aria-pressed={draft.theme === theme} onClick={() => pickTheme(t)}>
       <span className="sw" style={websiteThemeVars(theme)} aria-hidden><i data-swatch="bg" /><i data-swatch="accent" /></span><span><b>{WEBSITE_THEME_LABEL[theme]}</b><small>{t.description}</small></span></button> })}
     <KitLibrary onApply={applyKitChoice} onPreview={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />
     <div className="cap">Accent</div>
@@ -598,7 +609,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <button type="button" className="we-row" disabled={draft.pages.length >= 30} onClick={() => setModal('templates')}><Plus size={15} />New page</button><button type="button" className="we-row" onClick={() => { setPanel('page'); setRight(true) }}><Settings2 size={15} />Page settings</button>
       <div className="we-caption">Site</div><a className="we-row" href={`https://${host}/`} target="_blank" rel="noreferrer"><Globe size={15} />{host}</a><button type="button" className="we-row" onClick={() => { setPanel('seo'); setRight(true) }}><Search size={15} />SEO and sharing</button><button type="button" className="we-row" onClick={() => { setPanel('content'); setRight(true) }}><Settings2 size={15} />Shared content</button></>
   const siteTab = FQ_EDITOR ? fqSiteTab : <><div className="we-caption">Website settings</div><button type="button" className="we-row" onClick={() => openChrome('header')}>Header and navigation</button><button type="button" className="we-row" onClick={() => openChrome('footer')}>Footer</button><button type="button" className="we-row" onClick={() => { setTab('Theme'); setLeft(true) }}>Theme and logo</button><button type="button" className="we-row" onClick={() => { setPanel('page'); setRight(true) }}>Page settings</button><button type="button" className="we-row" onClick={() => { setPanel('seo'); setRight(true) }}>SEO and sharing</button><a className="we-row" href={`https://${host}/`} target="_blank" rel="noreferrer">Open live website</a><a className="we-row" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer">Space home</a></>
-  const themeTab = FQ_EDITOR ? fqThemeTab : <><div className="we-caption">Theme</div>{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }) }}>
+  const themeTab = FQ_EDITOR ? fqThemeTab : <><div className="we-caption">Theme</div>{changeThemeButton}{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => pickTheme(t)}>
       <span className="we-theme-swatch" style={websiteThemeVars(theme)}><i style={{ background: 'var(--ed-chrome)' }} /><i style={{ background: 'var(--th-bg)' }}><b /></i></span><span><strong>{WEBSITE_THEME_LABEL[theme]}</strong><small>{t.description}</small></span>
       </button> })}
       <KitLibrary onApply={applyKitChoice} onPreview={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />
@@ -634,8 +645,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {panel === 'comments' && <><div className={k('we-note')}>{selectedId ? pinPosition?.blockId === selectedId ? 'Comment pinned at the selected position.' : 'Shift-click the page to choose a precise pin position.' : 'Select a section to pin a comment.'}</div>{page.comments.filter((c) => !c.resolved).map((c) => <article className={k('we-comment')} key={c.id}><button type="button" className={k('we-row')} onClick={() => setSelectedId(c.blockId)}><strong>{c.author}</strong></button><small>{new Date(c.createdAt).toLocaleString()}</small><p>{c.text}</p>{c.replies?.map((reply) => <div className={k('we-comment-reply')} key={reply.id}><strong>{reply.author}</strong><small>{new Date(reply.createdAt).toLocaleString()}</small><p>{reply.body}</p></div>)}{(c.replies?.length ?? 0) < 100 && <><label className={k('we-field')}>Reply to {c.author}<Textarea variant="seamless" aria-label={`Reply to comment by ${c.author}`} value={replies[c.id] ?? ''} maxLength={2000} onChange={(event) => setReplies((previous) => ({ ...previous, [c.id]: event.target.value }))} /></label><button type="button" className={k('we-action secondary')} disabled={!replies[c.id]?.trim()} onClick={() => replyToComment(c.id)}>Post reply</button></>}<button type="button" className={k('we-row')} onClick={() => commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, comments: p.comments.map((x) => x.id === c.id ? { ...x, resolved: true } : x) } : p) })}>Resolve</button></article>)}
       <label className={k('we-field')}>Comment<Textarea variant="seamless" value={comment} maxLength={2000} onChange={(e) => setComment(e.target.value)} /></label><button type="button" className={k('we-action')} disabled={!comment.trim() || !selectedId} onClick={addComment}>Post comment</button></>}
   </>
-  const modalLabel = modal === 'publish' ? 'Publish website' : modal === 'templates' ? 'New page' : modal === 'delete-page' ? 'Remove page' : modal === 'menu' ? 'Menu and logo' : 'Add section'
-  const modalTitle = modal === 'publish' ? 'Publish your changes' : modal === 'templates' ? 'Start a new page' : modal === 'delete-page' ? 'Remove this page?' : modal === 'menu' ? 'Menu and logo' : 'Add a section'
+  const modalLabel = modal === 'publish' ? 'Publish website' : modal === 'templates' ? 'New page' : modal === 'delete-page' ? 'Remove page' : modal === 'menu' ? 'Menu and logo' : modal === 'theme' ? 'Change theme' : 'Add section'
+  const modalTitle = modal === 'publish' ? 'Publish your changes' : modal === 'templates' ? 'Start a new page' : modal === 'delete-page' ? 'Remove this page?' : modal === 'menu' ? 'Menu and logo' : modal === 'theme' ? 'Change theme' : 'Add a section'
   const publishAction = () => { if (publishWhen === 'now') void save(true); else if (!scheduledAt || !Number.isFinite(new Date(scheduledAt).getTime()) || new Date(scheduledAt).getTime() <= Date.now()) setError('Choose a future date and time.'); else void save(false, new Date(scheduledAt).toISOString()) }
   const publishDisabled = !dirty || status === 'saving' || status === 'conflict'
   const publishLabel = status === 'saving' ? 'Saving…' : publishWhen === 'schedule' ? 'Schedule publish' : 'Publish now'
@@ -733,6 +744,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         {modal === 'publish' && <span className="eyebrow">{draft.chrome?.name || brandName} · {page.label}</span>}
         <h2>{modal === 'publish' ? 'Ready to publish?' : modalTitle}</h2>
         {modal === 'menu' && <SiteMenuEditor slug={links.slug} />}
+        {modal === 'theme' && <ThemeChanger current={draft.theme} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
         {modal === 'insert' && <div className="modal-body">{palette}</div>}
         {modal === 'delete-page' && deletePageBody}
         {modal === 'templates' && <><label className="fld"><span className="l">Page name</span><Input className="in" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="note err">{error}</p>}<div className="blocks">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="blk" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="th" aria-hidden><i className="a s" /><i className="w" /><i /></span>{name}<small>{description}</small></button>)}</div></>}
@@ -810,6 +822,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {modal && <div className="we-overlay" onClick={() => setModal(null)}><Dialog label={modalLabel}>
       <div className="we-modal-head"><h2>{modalTitle}</h2><Icon label="Close dialog" onClick={() => setModal(null)}><X size={18} /></Icon></div>
       {modal === 'menu' && <SiteMenuEditor slug={links.slug} />}
+      {modal === 'theme' && <ThemeChanger current={draft.theme} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
       {modal === 'insert' && palette}
       {modal === 'delete-page' && deletePageBody}
       {modal === 'templates' && <><label className="we-field">Page name<Input variant="seamless" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="we-error">{error}</p>}<div className="we-template-grid">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="we-template" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="we-template-mark"><span /><span /><span /></span><strong>{name}</strong><small>{description}</small><small>{draft.theme} layout</small></button>)}</div></>}
