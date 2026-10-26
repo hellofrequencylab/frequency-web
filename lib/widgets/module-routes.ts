@@ -42,7 +42,6 @@ export const MODULE_ROUTES: readonly string[] = [
   '/journal',
   '/library/review',
   '/practices',
-  '/channels',
   '/pages',
 ]
 

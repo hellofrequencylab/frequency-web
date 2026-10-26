@@ -62,6 +62,11 @@ export const PARKED = new Map([
   // but a feature that MOVED to a surface where it can be seen. This block drew only inside the
   // check-in window, so an operator placed it and then saw nothing for almost the whole life of an
   // event. It now renders in the event header as the countdown that becomes the door.
+  ['circle-members', 'the DAWN Circle member roster block; the Frequency Members tab (FqMembersPane) is its own route'],
+  ['circle-momentum', 'a DAWN-only Circle block; the Frequency Circle shell draws its own stats on the Stats tab'],
+  ['circle-events', 'a DAWN-only Circle block; the Frequency What\'s Happening tab draws the Circle events'],
+  ['circle-map', 'a DAWN-only Circle block; the Frequency Circle shell has no map pane'],
+  ['channels-list', 'the DAWN Channels browse; the Frequency forum board (FqChannelsBody) draws its own pillars, so /channels has no Layout panel (SCAN-1129)'],
   ['event-checkin', 'the check-in notice + door note; moved into the event header surface (ADR-1315)'],
 ])
 
@@ -188,6 +193,8 @@ export function parseMountedKeys(sources) {
       const tpl = attrs.match(/route\s*=\s*\{\s*`([^`]+)`\s*\}/)
       if (tpl) keys.add(tpl[1].replace(/\$\{[^}]*\}/g, '*'))
     }
+    // A Frequency body that reads the operator's block order for its route honors the same layout.
+    for (const m of code.matchAll(/visibleModuleOrder\(\s*['"]([^'"]+)['"]/g)) keys.add(m[1])
   }
   return keys
 }
@@ -208,8 +215,15 @@ function walk(dir, exts, out = []) {
  *  `input`: { routeSets: Map<key, ids[]>, bindings: Map<id, importPath|null>, mounted: Set<key>,
  *             appSources: string[] } */
 export function findViolations(input) {
-  const { routeSets, bindings, mounted, appSources } = input
+  const { routeSets, bindings, mounted, appSources, fqSources = [] } = input
   const appText = appSources.join('\n')
+  // Ids a Frequency body places by name (<FqModules ids={[...]} />): the kit draws those blocks in
+  // place of the operator grid, so they are rendered even though no <PageModules> mounts their key.
+  const fqIds = new Set()
+  for (const src of [...appSources, ...fqSources]) {
+    if (!src.includes('<FqModules')) continue
+    for (const m of stripComments(src).matchAll(/['"]([a-z][a-z0-9-]+)['"]/g)) fqIds.add(m[1])
+  }
   const importedInApp = (id) => {
     const path = bindings.get(id)
     return path != null && (appText.includes(`'${path}'`) || appText.includes(`"${path}"`))
@@ -221,7 +235,7 @@ export function findViolations(input) {
   //    component directly (the /admin/crm/intelligence shape).
   for (const [key, ids] of routeSets) {
     if (mounted.has(key)) continue
-    const dead = ids.filter((id) => !importedInApp(id))
+    const dead = ids.filter((id) => !importedInApp(id) && !fqIds.has(id) && !PARKED.has(id))
     if (dead.length) violations.push({ kind: 'unmounted-key', key, ids: dead })
   }
 
@@ -229,7 +243,7 @@ export function findViolations(input) {
   const liveIds = new Set()
   for (const [key, ids] of routeSets) if (mounted.has(key)) for (const id of ids) liveIds.add(id)
   const stranded = [...bindings.keys()].filter(
-    (id) => !liveIds.has(id) && !importedInApp(id) && !PARKED.has(id),
+    (id) => !liveIds.has(id) && !importedInApp(id) && !fqIds.has(id) && !PARKED.has(id),
   )
   if (stranded.length) violations.push({ kind: 'stranded-binding', ids: stranded })
 
@@ -249,6 +263,9 @@ export function readTree(root = ROOT) {
     bindings: parseComponentBindings(registry),
     mounted: parseMountedKeys(appSources),
     appSources,
+    fqSources: existsSync(join(root, 'components/frequency/members'))
+      ? walk(join(root, 'components/frequency/members'), ['.tsx']).map((f) => readFileSync(f, 'utf8'))
+      : [],
     appFileCount: appFiles.length,
   }
 }

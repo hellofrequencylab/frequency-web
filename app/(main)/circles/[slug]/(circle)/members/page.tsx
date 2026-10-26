@@ -1,17 +1,11 @@
 import { notFound } from 'next/navigation'
-import { Users } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleCapabilities } from '@/lib/circles/detail-access'
-import { PersonCard } from '@/components/cards/person-card'
-import { SectionHeader } from '@/components/ui/section-header'
-import { EmptyState } from '@/components/ui/empty-state'
 import { HostInviteButton } from '@/components/circles/host-invite-button'
-import { CircleRoleChip } from '@/components/circles/circle-role-chip'
 import { CircleRoleLegend } from '@/components/circles/circle-role-legend'
 import { CircleRolePicker } from '@/components/circles/circle-role-picker'
 import { circleRoleFromStoredValue, CIRCLE_ROLE_LABEL } from '@/lib/core/circle-roles'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqMembersPane } from '@/components/frequency/members/circle/members-pane'
 import { ARRIVAL_WINDOW_DAYS } from '@/lib/circles/arrivals'
 import { isoDaysAgo } from '@/lib/utils'
@@ -52,142 +46,52 @@ export default async function CircleMembersPage({
   // "Just the host, so far" is the common case, not an error. Say so plainly and give the one
   // person who can change it the thing that changes it.
   const aloneHere = members.length <= 1
-
-  // THE FREQUENCY ROSTER (templates/members/Circle.html, Members tab). Same roster, same gates, same
-  // role picker and invite door; only the grid changes.
-  if (SITE_DESIGN === 'frequency') {
-    // The reference labels a newcomer "New" (Sunny, Jonah). Only a plain Member who joined inside the
-    // greeting strip's own window (lib/circles/arrivals.ts) reads that way; a Host or a Crew rung keeps
-    // its name, and an unreadable join date is never called new.
-    const since = Date.parse(isoDaysAgo(ARRIVAL_WINDOW_DAYS))
-    const isNew = (joinedAt: string | null | undefined) => {
-      const t = joinedAt ? Date.parse(joinedAt) : NaN
-      return Number.isFinite(t) && t >= since
-    }
-    return (
-      <FqMembersPane
-        people={members.map((m) => {
-          const isOwner = circle.host?.id === m.profile.id
-          const rung = circleRoleFromStoredValue(m.volunteer_role)
-          return {
-            id: m.id,
-            handle: m.profile.handle,
-            name: m.profile.display_name,
-            avatarUrl: m.profile.avatar_url,
-            role: !isOwner && rung === 'member' && isNew(m.joined_at) ? 'New' : CIRCLE_ROLE_LABEL[isOwner ? 'host' : rung],
-            control:
-              canSetRoles && !isOwner ? (
-                <CircleRolePicker
-                  circleId={circle.id}
-                  profileId={m.profile.id}
-                  personName={m.profile.display_name}
-                  role={rung}
-                />
-              ) : undefined,
-          }
-        })}
-        seatsLine={circle.member_cap - members.length > 0 ? `${circle.member_cap - members.length} seats open` : 'Full'}
-        empty={
-          aloneHere ? (
-            <div className="empty stack">
-              <span className="h3">{canManage ? 'Just you here so far' : 'This circle is still forming'}</span>
-              <span className="t2">
-                {canManage
-                  ? 'Share the link with the people you want here. Names land on this list as they join.'
-                  : 'The host is the only one so far. Join and you will be one of the first.'}
-              </span>
-              {canManage && <HostInviteButton circleId={circle.id} />}
-            </div>
-          ) : null
-        }
-        legend={!aloneHere && canSetRoles ? <CircleRoleLegend /> : null}
-        youAreHere={!aloneHere && !!myProfileId && members.some((m) => m.profile.id === myProfileId)}
-      />
-    )
+  // The reference labels a newcomer "New" (Sunny, Jonah). Only a plain Member who joined inside the
+  // greeting strip's own window (lib/circles/arrivals.ts) reads that way; a Host or a Crew rung keeps
+  // its name, and an unreadable join date is never called new.
+  const since = Date.parse(isoDaysAgo(ARRIVAL_WINDOW_DAYS))
+  const isNew = (joinedAt: string | null | undefined) => {
+    const t = joinedAt ? Date.parse(joinedAt) : NaN
+    return Number.isFinite(t) && t >= since
   }
-
   return (
-    <section aria-labelledby="circle-members-heading">
-      <SectionHeader
-        id="circle-members-heading"
-        title="Members"
-        count={members.length}
-        action={
-          <span className="text-meta text-subtle">
-            {circle.member_cap - members.length > 0
-              ? `${circle.member_cap - members.length} seats open`
-              : 'Full'}
-          </span>
-        }
-      />
-
-      {aloneHere ? (
-        <EmptyState
-          icon={Users}
-          title={canManage ? 'Just you here so far' : 'This circle is still forming'}
-          description={
-            canManage
-              ? 'Share the link with the people you want here. Names land on this list as they join.'
-              : 'The host is the only one so far. Join and you will be one of the first.'
-          }
-          action={canManage ? <HostInviteButton circleId={circle.id} /> : undefined}
-        />
-      ) : (
-        // A plain viewport grid, not `@`-variants: container queries are for blocks that land in a
-        // PageModules SLOT (ADR-295), and this body is the tab itself, not a module.
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {members.map((m) => {
-            // The circle's OWN ladder, not the global one (lib/core/circle-roles): the Host is
-            // circles.host_id, and everyone else's rung is read off volunteer_role, fail-closed.
-            // Rendering the stored value through the global RoleBadge would print "Guide" for a
-            // circle Admin, which is a different job in a different scope.
-            const isOwner = circle.host?.id === m.profile.id
-            const rung = circleRoleFromStoredValue(m.volunteer_role)
-            return (
-              <PersonCard
-                key={m.id}
-                handle={m.profile.handle}
-                displayName={m.profile.display_name}
-                avatarUrl={m.profile.avatar_url}
-                context={isOwner ? 'Holds this circle' : `@${m.profile.handle}`}
-                meta={
-                  <span className="flex flex-wrap items-center gap-2">
-                    <CircleRoleChip role={isOwner ? 'host' : rung} />
-                    {m.profile.current_streak > 0 && (
-                      <span className="text-meta text-subtle">
-                        {m.profile.current_streak} day streak
-                      </span>
-                    )}
-                  </span>
-                }
-                // The Host's own row carries no picker: ownership is circles.host_id, and the
-                // action refuses that row outright, so offering the control would be an
-                // affordance for something the server will always decline.
-                footer={
-                  canSetRoles && !isOwner ? (
-                    <CircleRolePicker
-                      circleId={circle.id}
-                      profileId={m.profile.id}
-                      personName={m.profile.display_name}
-                      role={rung}
-                    />
-                  ) : undefined
-                }
+    <FqMembersPane
+      people={members.map((m) => {
+        const isOwner = circle.host?.id === m.profile.id
+        const rung = circleRoleFromStoredValue(m.volunteer_role)
+        return {
+          id: m.id,
+          handle: m.profile.handle,
+          name: m.profile.display_name,
+          avatarUrl: m.profile.avatar_url,
+          role: !isOwner && rung === 'member' && isNew(m.joined_at) ? 'New' : CIRCLE_ROLE_LABEL[isOwner ? 'host' : rung],
+          control:
+            canSetRoles && !isOwner ? (
+              <CircleRolePicker
+                circleId={circle.id}
+                profileId={m.profile.id}
+                personName={m.profile.display_name}
+                role={rung}
               />
-            )
-          })}
-        </div>
-      )}
-
-      {/* The read-only matrix, once, under the roster. Shown to whoever can actually set a
-          role: for everyone else it answers a question they were not asked. */}
-      {!aloneHere && canSetRoles && <CircleRoleLegend />}
-
-      {/* A member reading their own row is the one case worth naming: it makes the list feel like a
-          room they are in rather than a directory they are browsing. */}
-      {!aloneHere && myProfileId && members.some((m) => m.profile.id === myProfileId) && (
-        <p className="mt-4 text-body-sm text-subtle">You are in this circle.</p>
-      )}
-    </section>
+            ) : undefined,
+        }
+      })}
+      seatsLine={circle.member_cap - members.length > 0 ? `${circle.member_cap - members.length} seats open` : 'Full'}
+      empty={
+        aloneHere ? (
+          <div className="empty stack">
+            <span className="h3">{canManage ? 'Just you here so far' : 'This circle is still forming'}</span>
+            <span className="t2">
+              {canManage
+                ? 'Share the link with the people you want here. Names land on this list as they join.'
+                : 'The host is the only one so far. Join and you will be one of the first.'}
+            </span>
+            {canManage && <HostInviteButton circleId={circle.id} />}
+          </div>
+        ) : null
+      }
+      legend={!aloneHere && canSetRoles ? <CircleRoleLegend /> : null}
+      youAreHere={!aloneHere && !!myProfileId && members.some((m) => m.profile.id === myProfileId)}
+    />
   )
 }
