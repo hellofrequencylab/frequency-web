@@ -22,6 +22,7 @@ import { setOrderFulfillment } from '@/lib/commerce/fulfilment'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
+import { safeWritingQuestions } from '@/lib/ai/writing-coach'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { checkSpaceShopMeter } from '@/lib/spaces/counted-meters'
 import type {
@@ -319,10 +320,7 @@ export async function duplicateSpaceProductAction(slug: string, id: string): Pro
   revalidatePath(`/spaces/${slug}/settings/shop`)
 }
 
-/** Draft the title + description for a listing with Vera (#5). Gated to a manager of this Space (same
- *  gate the write actions use). Grounds Vera in the Space brand + the fields the author has typed so
- *  far. Never throws: draftListingCopy falls back to a deterministic draft when AI is off/over budget,
- *  and an unauthorized caller gets empty copy (the form leaves its fields untouched). */
+/** Fresh Space manager gate precedes context reads. Only questions cross back to the form. */
 export async function draftListingCopyAction(
   slug: string,
   input: { kind: ProductKind; seed?: string | null; priceModel?: ServicePriceModel | null },
@@ -331,7 +329,7 @@ export async function draftListingCopyAction(
   if (!gate) return { title: '', description: '' }
   const caller = await getCallerProfile()
   const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
-  return draftListingCopy({
+  const advice = await draftListingCopy({
     kind: input.kind,
     seed: input.seed ?? null,
     priceModel: input.priceModel ?? null,
@@ -339,6 +337,7 @@ export async function draftListingCopyAction(
     profileId: caller?.id ?? null,
     spaceId: gate.spaceId,
   })
+  return { title: '', description: '', questions: safeWritingQuestions(advice) }
 }
 
 /** Toggle whether a Space listing appears in the global Market (Phase 5, ADR-596). Separate from

@@ -7,12 +7,7 @@ import type { CircleComposeSection } from '@/lib/ai/circle-compose'
 import { Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 
-// The Vera panel in the Circle builder, mirroring the Journey composer (ADR-302):
-// a collapsible section with two moves. "Fill this section" buttons ask Vera to
-// compose ONE section grounded in the draft so far; the parent merges the partial
-// into the form and autosaves. The "tell Vera what to change" box applies a
-// plain-language edit across the whole draft. The parent owns the form + the saves;
-// this panel just collects intent and reports the outcome.
+// Section and change requests return coaching notes only. The parent owns human edits.
 
 const SECTIONS: { key: CircleComposeSection; label: string }[] = [
   { key: 'card', label: 'About' },
@@ -27,9 +22,9 @@ export function CircleVeraPanel({
   onCompose,
   onEdit,
 }: {
-  /** Ask Vera to fill one section. Resolves to a short note (or null if nothing came back). */
+  /** Ask Vera questions about one section. Resolves to a short note (or null if nothing came back). */
   onCompose: (section: CircleComposeSection) => Promise<string | null>
-  /** Apply a plain-language change. Resolves to a short note (or null if nothing changed). */
+  /** Coach a requested change. Resolves to a short note (or null if nothing changed). */
   onEdit: (request: string) => Promise<string | null>
 }) {
   const [open, setOpen] = useState(false)
@@ -71,7 +66,7 @@ export function CircleVeraPanel({
         className="flex w-full items-center gap-2 text-left"
       >
         <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
-        <h2 className="flex-1 text-body font-bold text-text">Build with Vera</h2>
+        <h2 className="flex-1 text-body font-bold text-text">Writing coach</h2>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? 'rotate-180' : ''}`}
           aria-hidden
@@ -79,13 +74,13 @@ export function CircleVeraPanel({
       </button>
       {!open && (
         <p className="mt-1 text-body-sm text-muted">
-          Have Vera fill a section, or tell her what to change in plain words.
+          Get questions to help you write a section or think through a change.
         </p>
       )}
 
       {open && (
         <>
-          <p className={capsLabel('mt-2 text-2xs font-semibold text-muted')}>Fill a section</p>
+          <p className={capsLabel('mt-2 text-2xs font-semibold text-muted')}>Think through a section</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {SECTIONS.map((s) => (
               <button
@@ -96,12 +91,12 @@ export function CircleVeraPanel({
                 className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
               >
                 <Wand2 className="h-3.5 w-3.5 text-primary-strong" aria-hidden />
-                {busySection === s.key ? 'Filling…' : s.label}
+                {busySection === s.key ? 'Thinking…' : s.label}
               </button>
             ))}
           </div>
 
-          <p className={capsLabel('mt-4 text-2xs font-semibold text-muted')}>Tell Vera what to change</p>
+          <p className={capsLabel('mt-4 text-2xs font-semibold text-muted')}>What would you like to improve?</p>
           <Textarea
             value={change}
             disabled={pending}
@@ -117,7 +112,7 @@ export function CircleVeraPanel({
               disabled={pending || !change.trim()}
               onClick={apply}
             >
-              <Wand2 className="h-4 w-4" aria-hidden /> {pending && !busySection ? 'Applying…' : 'Apply with Vera'}
+              <Wand2 className="h-4 w-4" aria-hidden /> {pending && !busySection ? 'Thinking…' : 'Get writing prompts'}
             </Button>
           </div>
 

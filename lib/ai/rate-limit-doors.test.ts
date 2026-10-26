@@ -143,7 +143,7 @@ describe('the pre-publish quality read (lib/ai/quality-gate.ts)', () => {
 describe('the Space copilot (lib/ai/space-copilot.ts)', () => {
   it('drafts while the owner is inside the window', async () => {
     const bio = await draftSpaceBio(SPACE)
-    expect(bio).toBe('model said something')
+    expect(bio).toBe(fallbackBio(SPACE)) // Non-question model output is rejected even inside the window.
     expect(state.modelCalls).toBe(1)
   })
 

@@ -49,11 +49,12 @@ const DISALLOW = [
   "/admin",
   "/onboarding",
   "/settings",
-  // The whole /join segment (ADR-1090): the Funnels induction at /join, the Funnel
-  // splashes and Circle invite tokens at /join/<slug>, and /join/complete|preview.
-  // Same intent the pieces carried before the move — the induction was under the
-  // "/onboarding" rule and each splash sets per-page noindex (formerly /beta/<slug>).
-  "/join",
+  // The /join SUBTREE (ADR-1090): the Funnel splashes and Circle invite tokens at /join/<slug>, and
+  // /join/complete|preview. Same intent the pieces carried before the move — each splash sets per-page
+  // noindex (formerly /beta/<slug>). The trailing slash walls the subtree only: /join itself is
+  // crawlable on purpose (owner 2026-10-26) so Google can read its noindex and follow its links, which
+  // a Disallow hides (a blocked page's noindex is never seen).
+  "/join/",
   "/unsubscribe",
   "/manage-emails",
   // Capture funnel landing paths (warm-intro accept, check-in, unlock, exchange, event RSVP). Each page

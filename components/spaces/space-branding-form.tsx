@@ -143,22 +143,18 @@ export function SpaceBrandingForm({
   const saveField = (patch: { brandName?: string | null; tagline?: string | null }) =>
     run(() => updateSpaceProfile(spaceId, patch))
 
-  // SUGGEST WITH VERA for the tagline (the manifest marks it `veraDrafts`; this control used to live only
-  // on the retired /settings/basics form, ADR-1336). The draft fills the field and FOCUSES it, so it is
-  // saved like any typed tagline: the blur handler writes it when the operator clicks away, and nothing
-  // is published until then. A failed draft reports through the form's one error line.
-  const taglineRef = useRef<HTMLTextAreaElement>(null)
+  // Coaching stays separate from the authored tagline and never triggers its blur-save path.
+  const [taglineCoaching, setTaglineCoaching] = useState<string | null>(null)
   const [taglineBusy, startTagline] = useTransition()
   function suggestTagline() {
     setError(null)
     startTagline(async () => {
-      const result = await suggestTaglineAction(spaceId)
+      const result = await suggestTaglineAction(spaceId, tagline)
       if (isError(result)) {
         setError(result.error)
         return
       }
-      setTagline(result.data)
-      taglineRef.current?.focus()
+      setTaglineCoaching(result.data)
     })
   }
 
@@ -290,7 +286,6 @@ export function SpaceBrandingForm({
         <div>
           <Label htmlFor="tagline" className="mb-1 block font-semibold">Tagline</Label>
           <Textarea
-            ref={taglineRef}
             id="tagline"
             rows={2}
             value={tagline}
@@ -311,11 +306,12 @@ export function SpaceBrandingForm({
               className="inline-flex items-center gap-1 text-meta font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
             >
               {taglineBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
-              Suggest with Vera
+              Coach me with Vera
             </button>
           </div>
+          {taglineCoaching && <p role="status" className="mt-2 whitespace-pre-wrap text-body-sm text-muted">{taglineCoaching}</p>}
           <p className="mt-1 text-meta text-subtle">
-            Vera is AI. Suggest writes a starting point into the field; edit it, then click away to save.
+            Vera asks questions to help you write your own line. Your tagline stays as you wrote it.
           </p>
         </div>
       </section>

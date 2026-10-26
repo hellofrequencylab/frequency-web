@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-676",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/ai-coaching-consequences.mjs copilot",
+      "checked": "2026-10-26",
+      "evidence": "Executes both actual Space coaching paths with inert model IO and asserts each receives live offerings and Space attribution. Retains fixed-set eval test wiring and rejection of publication prose. No provider or production verification."
+    }
+  },
+  "append": {
+    "detail": "2026-10-26: shared questions-only coaching consolidates prompt construction; replaced the obsolete duplicate offeringFacts call-count probe with executable grounding assertions for both bio/story and tagline coaching. Existing eval remains active."
+  },
+  "wave": "W7"
+}
