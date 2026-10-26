@@ -14,7 +14,7 @@ Frequency is in open beta, and a Collective that starts now gets a lower price t
 
 ## Beta pricing
 
-A Collective is $149 a month at list. During the beta it's **$99 a month**. The offer ends **January 1**. A Collective that starts on it keeps that price, grandfathered, for as long as it keeps the plan.
+A Collective that starts during the beta pays Beta pricing, which sits under the list price. The current figures are on the [pricing page](/pricing). The offer ends **January 1**. A Collective that starts on it keeps that price, grandfathered, for as long as it keeps the plan.
 
 A Collective that starts before **December 1** also gets the founder badge.
 
