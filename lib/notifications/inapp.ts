@@ -6,6 +6,10 @@ import type { JobHandler } from '@/lib/queue/outbox'
 // `inapp_<category>` switch, suppression and per-subject mute have passed the send-gate, so this
 // stays a plain write. It throws on a failed insert so the drain retries and, past the cap,
 // dead-letters, instead of marking a missing bell row as sent.
+//
+// authz-delegated: this handler is caller-trusted (ADR-274). It is reachable only from the outbox
+// drain, never from a request, and a job exists only because routeNotification enqueued it after the
+// recipient's own send-gate passed. The gate lives at the enqueue site, not here.
 
 export const INAPP_JOB_KIND = 'inapp'
 
