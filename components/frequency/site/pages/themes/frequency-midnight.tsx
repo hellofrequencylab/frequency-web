@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { OPERATOR_START_HREF } from '@/lib/site'
+import { MidnightPreview } from './midnight-preview'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
@@ -117,6 +118,7 @@ export function FrequencyMidnight() {
             <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
               Use Midnight
             </a>
+            <MidnightPreview />
             <Link className="btn btn-ghost fq-iri-rim" href="/pricing">
               See pricing
             </Link>
