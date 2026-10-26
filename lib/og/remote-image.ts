@@ -106,10 +106,10 @@ export async function fetchRemoteImage(url: string): Promise<string | null> {
   })
   if (!res || res.status < 200 || res.status >= 300) return null
   if (!(res.headers['content-type'] ?? '').startsWith('image/')) return null
-  const buf = res.body
+  const buf = res.body.buffer.slice(res.body.byteOffset, res.body.byteOffset + res.body.byteLength) as ArrayBuffer
   if (buf.byteLength === 0) return null
   // The declared type comes from the bytes, never from the header (see the header comment).
-  const sniffed = sniffInlineImageType(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer)
+  const sniffed = sniffInlineImageType(buf)
   if (!sniffed) return null
-  return `data:${sniffed};base64,${buf.toString('base64')}`
+  return `data:${sniffed};base64,${Buffer.from(buf).toString('base64')}`
 }
