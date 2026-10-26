@@ -22,7 +22,6 @@ const paths = [
   "lib/ai/messaging-generator.ts",
   "lib/ai/poster-observer.ts",
   "lib/ai/practice-curate.ts",
-  "lib/ai/practice-edit.ts",
   "lib/ai/practice-publish-screen.ts",
   "lib/ai/quality-gate.ts",
   "lib/ai/space-copilot.ts",
@@ -47,6 +46,24 @@ for (const path of paths) {
   }
   visit(source); assert.ok(localCalls > 0, `${path} has no inventoried completion`)
 }
+// Practice editing delegates to the accounted Spark runner without duplicate paid usage.
+const practiceEdit = ts.createSourceFile('practice-edit.ts', readFileSync('lib/ai/practice-edit.ts', 'utf8'), ts.ScriptTarget.Latest, true)
+let sparkImport = false, boundedSpec = false, attributedRun = false
+function verifyPracticeDelegate(node) {
+  if (ts.isImportDeclaration(node) && node.moduleSpecifier.text === './spark') sparkImport = !!node.importClause?.namedBindings?.elements?.some(e => e.name.text === 'runSpark')
+  if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+    const name = node.expression.text
+    assert.ok(!['completeRaw', 'completeText', 'runToolLoop', 'recordAiUsage', 'getAnthropic'].includes(name), 'Practice edit must not bypass shared accounting')
+    if (name === 'writingCoachingSpec') boundedSpec = node.arguments.map(a => a.getText(practiceEdit)).join(',') === "'practice','practice-edit','opus'"
+    if (name === 'runSpark') {
+      const params = node.arguments[1]
+      attributedRun = ts.isObjectLiteralExpression(params) && params.properties.some(p => ts.isPropertyAssignment(p) && p.name.getText(practiceEdit) === 'profileId' && p.initializer.getText(practiceEdit) === 'input.profileId')
+    }
+  }
+  ts.forEachChild(node, verifyPracticeDelegate)
+}
+verifyPracticeDelegate(practiceEdit)
+assert.ok(sparkImport && boundedSpec && attributedRun, 'Practice edit lost its shared, attributed coaching dispatch')
 // Event explanations now render current deterministic facts and must never reintroduce a paid caller.
 const factSource = ts.createSourceFile('lib/ai/event-blurb.ts', readFileSync('lib/ai/event-blurb.ts', 'utf8'), ts.ScriptTarget.Latest, true)
 function verifyFactOnly(node) {
