@@ -105,6 +105,25 @@ describe('website canvas iframe hydration', () => {
    container.remove()
  })
 
+ it('edits a line that is still bound to a Space content slot, and the typed words replace the token', () => {
+   const container = document.createElement('div')
+   document.body.appendChild(container)
+   const root = createRoot(container)
+   const onEdit = vi.fn()
+   const doc: Data = { root: {}, content: [{ type: 'Text', props: { id: 'copy', body: '{{story|Sample story}}' } }] }
+   const props = { ...defaults, doc, metadata: { space: { profile: { about: 'Loaded website content' } } }, config: { components: { Text: { render: () => null, fields: { body: { type: 'textarea' as const } } } } }, selectedId: 'copy', onEdit }
+   act(() => root.render(<WebsiteCanvas {...props} />))
+   const heading = container.querySelector('iframe')!.contentDocument!.querySelector('h1')!
+   act(() => heading.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })))
+   expect(heading.getAttribute('data-site-text-selected')).toBe('true')
+   act(() => heading.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 })))
+   heading.innerHTML = '<strong>Changed copy</strong>'
+   act(() => heading.dispatchEvent(new Event('blur')))
+   expect(onEdit).toHaveBeenCalledWith('copy', 'body', '**Changed copy**')
+   act(() => root.unmount())
+   container.remove()
+ })
+
  it('keeps live cards read-only even when their title equals the authored section heading', () => {
    const container = document.createElement('div')
    document.body.appendChild(container)

@@ -95,3 +95,22 @@ export function bindSlots<T>(value: T, slots: SlotValues): T {
   }
   return value
 }
+
+function sameJson(a: unknown, b: unknown): boolean {
+  return a === b || JSON.stringify(a) === JSON.stringify(b)
+}
+
+/** The props to save after an edit made on the RESOLVED words (what the inspector shows). Anything the owner left
+ *  alone keeps its stored value, token included, so editing one field never turns a neighbour's `{{slot|...}}`
+ *  into frozen text. A field the owner changed takes their words, which is what ends a token's job. Never mutates. */
+export function keepSlotTokens<T>(stored: T, bound: T, next: T): T {
+  if (sameJson(bound, next)) return stored
+  if (Array.isArray(next) && Array.isArray(stored) && Array.isArray(bound) && next.length === bound.length && stored.length === bound.length) {
+    return next.map((item, i) => keepSlotTokens(stored[i], bound[i], item)) as T
+  }
+  if (next && typeof next === 'object' && !Array.isArray(next) && stored && typeof stored === 'object' && bound && typeof bound === 'object') {
+    const s = stored as Record<string, unknown>, b = bound as Record<string, unknown>
+    return Object.fromEntries(Object.entries(next as Record<string, unknown>).map(([key, item]) => [key, key in b ? keepSlotTokens(s[key], b[key], item) : item])) as T
+  }
+  return next
+}
