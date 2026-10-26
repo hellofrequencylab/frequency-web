@@ -60,12 +60,21 @@ export async function verifySitemapEligibility() {
     }
     return query
   } }
-  const deps = { 'server-only': {}, '@/lib/supabase/admin': { createAdminClient: () => db },
+  // Load the actual shared read ladder; the strict healthy read must emit the same fold.
+  const discoverDeps = {
+    '@/lib/supabase/public': { createPublicClient: () => db },
+    '@/lib/events/end-time': end, '@/lib/events/series': fold, '@/lib/time/zone': zone,
+    '@/lib/maps/city-centroids': { cityCentroid: () => null },
+    '@/lib/utils': {}, // Unused discover re-exports; this probe calls only the real read ladder.
+  }
+  const discover = load('lib/discover.ts', name => { assert.ok(discoverDeps[name], name); return discoverDeps[name] })
+  const deps = { 'server-only': {}, '@/lib/discover': discover, '@/lib/supabase/admin': { createAdminClient: () => db },
     './hero-url': { EVENT_MEDIA_BUCKET: 'public' }, './series': fold, './end-time': end,
     '@/lib/time/zone': zone }
   const crawl = load('lib/events/series-seo.ts', name => { assert.ok(deps[name], name); return deps[name] })
   assert.equal((await crawl.shareEventSeo('event-50')).timeZone, 'America/Los_Angeles', 'Metadata read carries the selected host timezone')
   const entries = await crawl.listSitemapEventEntries({ occurrences: 2 })
+  assert.deepEqual(await crawl.listSitemapEventEntries({ occurrences: 2, failClosed: true }), entries, 'Strict healthy reads preserve every fold and eligibility consequence')
   const slugs = entries.map(r => r.slug)
   assert.deepEqual(slugs, ['event-2', 'event-4', 'event-10', 'event-11', 'event-12', 'event-21', 'event-22', 'event-40', 'event-50'])
   assert.ok(selections.some(s => s.includes('ends_at')), 'Reader projects the actual event end')

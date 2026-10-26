@@ -45,14 +45,14 @@ import { funnelSlugs } from "@/lib/marketing/funnel-config";
 // the admin client; only the handle crosses out (never meta/contact/geo).
 async function getSpotlightRoutes(): Promise<MetadataRoute.Sitemap> {
   try {
-    const handles = await listPublishedSpotlightHandles(1000);
+    const handles = await listPublishedSpotlightHandles(1000, { failClosed: true });
     return handles.map((handle) => ({
       url: `${SITE_URL}/spotlight/${handle}`,
       changeFrequency: "weekly" as const,
       priority: 0.5,
     }));
-  } catch {
-    return [];
+  } catch (err) {
+    return failSection("spotlights", err);
   }
 }
 
@@ -402,9 +402,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // request-cached settings row, and it never throws (a failed read returns the shipped defaults).
     const { indexedOccurrences } = await getSeriesDisplayConfig();
     const [channels, circles, events, journeys, organizers, spotlights, hubs, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
-      getTopicalChannels(),
+      sectionRead("channels", getTopicalChannels({ failClosed: true })),
       // Capped, not paged — see the cap note above this function. The RPC's own SQL ceiling.
-      getPublicCircles(CIRCLE_SITEMAP_CAP),
+      sectionRead("circles", getPublicCircles(CIRCLE_SITEMAP_CAP, { failClosed: true })),
       // Event URLs, FOLDED per series (ADR-897). Before this, one weekly cowork series advertised
       // ~9 URLs and ~9 image entries and a daily one ~61, all with the same title and description,
       // out of a GLOBAL 200-row cap — so a single daily series could crowd real one-offs out of the
@@ -414,17 +414,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // public_events RPC gated nothing but is_cancelled + starts_at, so unlisted, draft and
       // moderator-removed events were advertised here. ADR-903 closed that at the RPC, but this
       // reader stays a direct table read — it needs the recurrence columns the RPC never projected.
-      listSitemapEventEntries({ occurrences: indexedOccurrences }),
-      listPublicJourneys(),
+      sectionRead("events", listSitemapEventEntries({ occurrences: indexedOccurrences, failClosed: true })),
+      sectionRead("journeys", listPublicJourneys({ failClosed: true })),
       getOrganizerRoutes(),
       getSpotlightRoutes(),
-      // Five legacy readers above still swallow failures: channels, circles, events,
-      // journeys and spotlights. LIVE-331 explicitly left these outside its repair;
-      // adding sectionRead around a reader that returns [] on error would not help.
-      // SCAN-1051 now makes the organizer reader report failures through failSection
-      // inside its own catch, preserving status/code and abandoning regeneration on
-      // transport. This does not repair the other five. Any genuine throw reaches
-      // the dynamic block's transient-or-deterministic catch below.
+      // Each legacy reader opts into the shared fail-closed ladder for this sitemap.
+      // Other callers retain their existing empty-on-error behavior.
       //
       // Every read below goes through `sectionRead`, which logs a failure by section and lets a
       // transport failure abandon the regeneration (see the note above the helper). Since LIVE-331

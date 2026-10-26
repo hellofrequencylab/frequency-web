@@ -643,25 +643,25 @@ describe('app/sitemap section read failures', () => {
     error.mockRestore()
   })
 
-  it('applies the same rule to a throw from one of the six reads OUTSIDE the chain', async () => {
+  it('reports journey throws by section and preserves the other sections', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    // Transient: the outer catch must NOT degrade this to static-only; it rethrows.
+    // Transient: the section wrapper must abandon regeneration.
     readers.journeys = async () => {
       throw FETCH_FAILED
     }
-    await expect(sitemap()).rejects.toMatchObject({ message: 'TypeError: fetch failed' })
-    expect(sitemapLines(error).some((l) => l.includes('dynamic block failed on TRANSPORT'))).toBe(true)
+    await expect(sitemap()).rejects.toMatchObject({ name: 'SitemapTransientReadError', cause: FETCH_FAILED })
+    expect(sitemapLines(error).some((l) => l.includes('journeys read failed on TRANSPORT'))).toBe(true)
 
-    // Deterministic: the static-only fallback this route always had, now with a line saying so.
+    // Deterministic: keep every other section, including the fixture Space.
     error.mockClear()
     readers.journeys = async () => {
       throw PERMISSION_DENIED
     }
     const urls = (await sitemap()).map((e) => e.url)
     expect(urls).toContain(`${SITE}/`)
-    expect(urls).not.toContain(`${SITE}/spaces/alpha`)
-    expect(sitemapLines(error).some((l) => l.includes('dynamic block failed') && l.includes('42501'))).toBe(true)
+    expect(urls).toContain(`${SITE}/spaces/alpha`)
+    expect(sitemapLines(error).some((l) => l.includes('journeys read failed') && l.includes('42501'))).toBe(true)
     error.mockRestore()
   })
 

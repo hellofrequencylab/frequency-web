@@ -1,4 +1,5 @@
 import 'server-only'
+import { listReadFailClosed } from '@/lib/discover'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EVENT_MEDIA_BUCKET } from './hero-url'
 import { eventHasEnded } from './end-time'
@@ -311,6 +312,7 @@ export async function seriesSeoFactsBySlug(slug: string): Promise<SeriesSeoFacts
  * drops from ~61 URLs and ~61 image entries to 3.
  */
 export async function listSitemapEventEntries(opts: {
+  failClosed?: boolean
   occurrences?: number
   limit?: number
 }): Promise<SitemapEventEntry[]> {
@@ -322,7 +324,7 @@ export async function listSitemapEventEntries(opts: {
   try {
     const admin = createAdminClient()
     const floor = upcomingFloor()
-    const { data, error } = await admin
+    const query = () => admin
       .from('events')
       // SERIES_COLUMNS verbatim: without them collapseSeries is a silent no-op and this ships
       // looking finished while the sitemap still carries every date.
@@ -336,6 +338,9 @@ export async function listSitemapEventEntries(opts: {
       .gte('starts_at', floor)
       .order('starts_at', { ascending: true })
       .limit(limit)
+    const { data, error } = opts.failClosed
+      ? { data: await listReadFailClosed('sitemap.events', query), error: null }
+      : await query()
     if (error || !Array.isArray(data)) return []
 
     type Row = {
@@ -386,7 +391,8 @@ export async function listSitemapEventEntries(opts: {
       })
     }
     return out
-  } catch {
+  } catch (err) {
+    if (opts.failClosed) throw err
     return []
   }
 }

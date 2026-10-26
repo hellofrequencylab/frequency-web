@@ -382,9 +382,11 @@ export async function getPublicEventBySlug(slug: string): Promise<PublicEvent | 
 
 // ── Circles ─────────────────────────────────────────────────────────────────
 
-export async function getPublicCircles(limit = 50): Promise<PublicCircle[]> {
+export async function getPublicCircles(limit = 50, opts: { failClosed?: boolean } = {}): Promise<PublicCircle[]> {
   const supabase = createPublicClient()
-  const { rows } = await listRead<PublicCircle>('public_circles', () => supabase.rpc('public_circles', { _limit: limit }))
+  const query = () => supabase.rpc('public_circles', { _limit: limit })
+  if (opts.failClosed) return listReadFailClosed<PublicCircle>('public_circles', query)
+  const { rows } = await listRead<PublicCircle>('public_circles', query)
   return rows
 }
 
@@ -444,13 +446,15 @@ export async function getPublicPosts(limit = 20): Promise<PublicPost[]> {
 
 // ── Topical channels (public-read table) ──────────────────────────────────────
 
-export async function getTopicalChannels(): Promise<TopicalChannel[]> {
+export async function getTopicalChannels(opts: { failClosed?: boolean } = {}): Promise<TopicalChannel[]> {
   const supabase = createPublicClient()
-  const { data } = await supabase
+  const query = () => supabase
     .from('topical_channels')
     .select('id, name, slug, category, description, cover_image, display_order')
     .eq('is_active', true)
     .order('display_order', { ascending: true })
+  if (opts.failClosed) return listReadFailClosed<TopicalChannel>('sitemap.topical_channels', query)
+  const { data } = await query()
   return (data ?? []) as TopicalChannel[]
 }
 
