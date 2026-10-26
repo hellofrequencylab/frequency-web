@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { spacePageDefaultAccent, spacePageFonts } from '@/lib/theme/site-style'
+import { pageSurface } from '@/lib/theme/surface'
 import { getVisibleSpaceForRequest } from '@/lib/spaces/visible-space-for-request'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
@@ -88,7 +89,7 @@ export default async function SpaceRootLayout({
   return (
     <>
       <SpaceBreadcrumbs slug={slug} brandName={brandName} manageHref={spaceManageHref(space.type, slug)} />
-      <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)} siteFaces={spacePageSiteFaces(space.preferences)}>
+      <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)} siteFaces={spacePageSiteFaces(space.preferences)} surface={pageSurface(space.preferences)}>
         {children}
       </AccentScope>
     </>

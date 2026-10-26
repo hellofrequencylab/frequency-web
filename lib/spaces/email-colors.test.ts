@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { DEFAULT_EMAIL_COLORS } from '@/lib/email-studio/render'
+import { MIDNIGHT_ACCENT, MIDNIGHT_SURFACE } from '@/lib/theme/midnight'
 import {
   spaceEmailColors,
   spaceEmailColorDefaults,
@@ -136,5 +137,28 @@ describe('nextEmailStylePreferences', () => {
     const next = nextEmailStylePreferences({ hero: { height: 'tall' }, emailStyle: { primary: '#123456' } }, {})
     expect(next).toEqual({ hero: { height: 'tall' } })
     expect(next.emailStyle).toBeUndefined()
+  })
+})
+
+describe('a Space on the Midnight theme', () => {
+  const midnight = { preferences: { megaTheme: { theme: 'midnight' } } }
+
+  it('seeds its emails from the dark ground, not the DAWN default', () => {
+    const colors = spaceEmailColors(midnight)
+    expect(colors.canvas).toBe(MIDNIGHT_SURFACE.canvas)
+    expect(colors.text).toBe(MIDNIGHT_SURFACE.text)
+    expect(colors.primary).toBe(MIDNIGHT_ACCENT.accent)
+    for (const key of EMAIL_COLOR_KEYS) expect(colors[key]).toMatch(HEX)
+  })
+
+  it('shades a brand accent for a dark ground: lighter link text, deeper soft fill', () => {
+    const colors = spaceEmailColors({ ...midnight, brandAccent: '#3366cc' })
+    expect(colors.primary).toBe('#3366cc')
+    expect(colors.primaryStrong).not.toBe(brandEmailColors('#3366cc').primaryStrong)
+    expect(colors.canvas).toBe(MIDNIGHT_SURFACE.canvas)
+  })
+
+  it('leaves every other theme on the DAWN default', () => {
+    expect(spaceEmailColors({ preferences: { megaTheme: { theme: 'temple' } } }).canvas).toBe(DEFAULT_EMAIL_COLORS.canvas)
   })
 })

@@ -18,6 +18,7 @@
 
 import { HEX_ACCENT, contrastRatio, type AccentVars } from '@/lib/spaces/accent'
 import contract from '../sites/editor/theme-contract.json' with { type: 'json' }
+import type { ThemeSurface } from '@/lib/theme/surface-vars'
 
 /** The violet family lives in the editor contract (lib/sites/editor/theme-contract.json), the one file the
  *  violet-family probe lets carry a brand palette. The accent is a single swap there: it waits on the owner's
@@ -52,7 +53,10 @@ export const MIDNIGHT_SURFACE = {
   subtle: P.ash300,
   solid: P.bone50,
   onSolid: P.black50,
-} as const
+  dark: true,
+  accent: MIDNIGHT_ACCENT,
+  semantic: { success: P.moss400, info: P.frost400, danger: P.blood400 },
+} as const satisfies ThemeSurface
 
 /** Frequency's season contract: winter frost, spring moss, summer ember, fall deep ember. */
 export const MIDNIGHT_SEASONS = { winter: P.frost400, spring: P.moss400, summer: P.ember400, fall: P.ember500 } as const
