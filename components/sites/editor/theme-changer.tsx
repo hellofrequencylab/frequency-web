@@ -2,11 +2,13 @@
 
 import { KitLibrary } from './kit-library'
 import { k } from './skin'
-import { SITE_THEMES, type SiteThemeDef, type SiteThemeId } from '@/lib/theme/site-style'
+import { SITE_THEMES, type SiteThemeId } from '@/lib/theme/site-style'
 import { websiteThemeVars } from '@/lib/sites/editor/theme'
 import { WEBSITE_THEMES_LIVE, type WebsiteTheme } from '@/lib/sites/editor/state'
 import type { KitChanges } from '@/lib/sites/kits/apply'
 import type { KitApplyMode, KitNiche } from '@/lib/sites/kits/types'
+
+type SiteThemeDef = (typeof SITE_THEMES)[number]
 
 /** The Change theme dialog (ADR-1881 piece: the editor's switcher). Every theme as a card, then the starter
  *  kits for the theme the draft now wears. It calls the same handlers as the Theme tab, so a pick is one undo
