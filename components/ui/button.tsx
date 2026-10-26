@@ -1,6 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactElement, cloneElement, isValidElement } from 'react'
 import { cn } from '@/lib/utils'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
 // Shared button primitive — the audit found ~40 files hand-rolling button class
 // strings with drifting padding / size / feedback. One scale here (variant ×
@@ -18,101 +17,11 @@ type ButtonVariant =
   | 'successOutline'
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 
+// The button is the members kit's own `.btn` (ADR-1737; design_handoff/frequency/templates/members/app/app.css):
+// a 44px pill, `.pa` the iridescent primary, `.txt` the quiet text action, `.sm` / `.lg` the kit's
+// sizes. The kit has no class for the danger, warning and outline tones or for `xs`;
+// app/themes/frequency/members-ui.css adds them (`mu-*`).
 const VARIANT: Record<ButtonVariant, string> = {
-  // FLAT FILL, NO FINISH (ADR-1096). The label carried an eight-shadow text-emboss ring and a
-  // chisel inset bevel; both are gone. Neither was ever required: ADR-1031 decided this pair
-  // ships white-on-amber as a KNOWN exception that we DISCLOSE, and explicitly rejected the two
-  // moves that would raise the ratio. The emboss arrived six days later as a styling ask, and
-  // its own CSS comment shows it was reasoned about as a way to move the axe number, which is
-  // gaming the instrument rather than fixing the pair. `lift-1` gives the button its edge
-  // instead — an outer elevation, which is what the hand-rolled primaries beside it were already
-  // using, and which is why they looked cleaner than this one.
-  //
-  // 🔴 THE TWO DELETED NAMES ABOVE ARE BARE ON PURPOSE. `check:phantom` reads every
-  // backtick-delimited run in these files as a class string — it does not strip comments — so
-  // writing a class that no longer emits CSS inside backticks re-creates the exact phantom the
-  // deletion removed, and fails the build. Name a deleted class in prose, never in backticks.
-  primary: 'bg-primary text-on-primary lift-1 hover:bg-primary-hover',
-  // The MUTED amber: present, but not shouting until it matters. The token pair the system
-  // already carries for exactly this (`bg-primary-bg` + `text-primary-strong`, ~250 sites), on
-  // the primitive so a control can go quiet at rest without hand-rolling a fill string. Hover
-  // steps up to the full amber, which is the "this is the same button, louder" cue. First
-  // consumer: the dock's chat tab, muted until there is an unread.
-  primarySoft: 'bg-primary-bg text-primary-strong hover:bg-primary-hover hover:text-on-primary',
-  secondary: 'border border-border bg-surface text-text hover:border-border-strong hover:bg-surface-elevated',
-  ghost: 'text-muted hover:bg-surface-elevated hover:text-text',
-  danger: 'bg-danger text-on-danger lift-1 hover:opacity-90',
-  // Solid caution action (moderation Hide/Warn) — the danger shape in the warning tone.
-  warning: 'bg-warning text-on-warning lift-1 hover:opacity-90',
-  // Outlined state-change actions (Delete account / Deactivate / Reactivate):
-  // quieter than the solid fills, tinting on hover. One scale, three tones.
-  dangerOutline: 'border border-danger text-danger hover:bg-danger-bg',
-  warningOutline: 'border border-warning/60 text-warning hover:bg-warning-bg',
-  successOutline: 'border border-success text-success hover:bg-success-bg',
-}
-
-// `xs` and `lg` were added in the design-switch sweep (ADR-1737), each because 3+ hand-rolled
-// primaries already drew exactly that box and could not adopt the primitive without changing size:
-//   xs  the inline row action (Approve, Add, Nudge, Copy link) — `text-2xs`, a step under `sm`.
-//   lg  the roomy full-width commit (Pay, Claim, Continue) that sits at the foot of a card.
-// `sm` and `md` are unchanged, so every existing call site renders byte-identically.
-const SIZE: Record<ButtonSize, string> = {
-  xs: 'px-2.5 py-1 text-2xs',
-  sm: 'px-3 py-1.5 text-meta',
-  md: 'px-4 py-2 text-body-sm',
-  lg: 'px-5 py-2.5 text-body-sm',
-}
-
-// State set per docs/INTERACTION-STATES.md §2 (Action control): rest · hover (VARIANT) ·
-// pressed (`.press`, the ONE sanctioned pressed look) · focus-visible (the global amber ring
-// in app/globals.css) · loading (the `loading` prop) · disabled.
-// The transition names the properties the state changes actually touch — `transform` has to be
-// in the list or `.press` snaps instead of easing. `motion-reduce:transition-none` is the guard
-// (`.press` itself is already collapsed under prefers-reduced-motion in globals.css).
-// 🔴 `tap-target` is on the BASE, not on a size, and it is the fix for the most widespread touch
-// defect in the product. The SIZE strings above set padding and type and nothing else, so a
-// button's height was whatever its line-box happened to add up to:
-//
-//   sm  →  py-1.5 (12.75px) + text-meta's 17px box     = 29.75px
-//   md  →  py-2   (17px)    + text-body-sm's 21.25px   = 38.25px
-//
-// The repo already had the tool: `--tap-min` (globals.css) is the per-generation minimum target
-// size, and `@utility tap-target` consumes it as a min-block-size / min-inline-size pair. It
-// simply was never composed here.
-//
-// ⚠️ THIS PARAGRAPH ONCE CLAIMED A MEDIA QUERY THAT DID NOT EXIST, and the claim decided whether
-// a sweep moves layout. It said `--tap-min` "is 32px and rises to 44px under
-// `@media (pointer: coarse)`", so both sizes were "under the 44px touch floor" and converting a
-// site grew it on a phone. Until LIVE-469 there was no pointer-coarse rule anywhere in the CSS,
-// and `--tap-min` moved on the `data-generation` axis alone (26px at the dense end, 56px at the
-// spacious end, 32px at the default). The rule exists now (app/globals.css, "The touch floor"):
-// on a coarse pointer the DEFAULT generation's floor is 44px, so `sm` and `md` both grow on a
-// phone. With a mouse nothing changed: the floor is 32px on every viewport, which raises `sm`
-// (29.75 → 32px) and leaves `md` (38.25px) untouched.
-//
-// The consequence, and why it is written here rather than in a commit body: a `primary × md`
-// conversion is DIMENSION-INVARIANT. It gains `lift-1`'s two box-shadows and `press`, both of
-// which repaint without reflowing, so a full-page screenshot of a converted surface changes
-// pixels at a byte-identical height. That is the one signature `LIVE-212`'s cross-runner
-// divergence also has, which is what made this comment worth correcting (ADR-1271). The tap
-// floor still bites on the OTHER sizes and on the generations that raise `--tap-min`; it does
-// not bite on this pair.
-//
-// `min-block-size` does not fight an explicit `h-*` from a caller — a minimum only ever raises,
-// so shape overrides like the dock trigger's `h-full w-11` keep their geometry. On a mouse the
-// change is 29.75 → 32px for `sm` and nothing for `md`.
-const BASE =
-  // DAWN: controls take the ROLE radius (skinnable), not a literal step (dawn/tokens/spacing.css).
-  'inline-flex items-center justify-center gap-1.5 rounded-control font-semibold tap-target press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed'
-
-// FREQUENCY (ADR-1737). Under SITE_DESIGN === 'frequency' the button is the members kit's own `.btn`
-// (design_handoff/frequency/templates/members/app/app.css): a 44px pill, `.pa` the iridescent primary,
-// `.txt` the quiet text action, `.sm` / `.lg` the kit's sizes. The kit has no class for the danger,
-// warning and outline tones or for `xs`; app/themes/frequency/members-ui.css adds them (`mu-*`).
-// SITE_DESIGN is inlined at build, so a DAWN build never reaches these strings and its markup is
-// byte-identical to before.
-const FREQUENCY = SITE_DESIGN === 'frequency'
-const FQ_VARIANT: Record<ButtonVariant, string> = {
   primary: 'pa',
   primarySoft: 'mu-soft',
   secondary: '',
@@ -123,10 +32,9 @@ const FQ_VARIANT: Record<ButtonVariant, string> = {
   warningOutline: 'mu-warning-o',
   successOutline: 'mu-success-o',
 }
-const FQ_SIZE: Record<ButtonSize, string> = { xs: 'xs', sm: 'sm', md: '', lg: 'lg' }
+const SIZE: Record<ButtonSize, string> = { xs: 'xs', sm: 'sm', md: '', lg: 'lg' }
 
-/** The button's GEOMETRY ALONE — shape, padding, type scale, press/focus states and the
- *  `tap-target` floor — carrying NO palette whatsoever.
+/** The button's GEOMETRY ALONE — the kit's `.btn` shape and size, carrying NO palette whatsoever.
  *
  *  This exists because `cn` in this repo is a plain `.filter(Boolean).join(' ')` with NO
  *  tailwind-merge semantics (lib/utils.ts:4; the same trap is documented in skeleton.tsx,
@@ -144,8 +52,7 @@ const FQ_SIZE: Record<ButtonSize, string> = { xs: 'xs', sm: 'sm', md: '', lg: 'l
  *  Use `buttonClasses` whenever a standard variant's colours are wanted; reach for this only
  *  when the surface supplies its own (an on-photo scrim chip, a brand-accent fill). */
 export function buttonGeometry(size: ButtonSize = 'md', className?: string): string {
-  if (FREQUENCY) return cn('btn', FQ_SIZE[size], className)
-  return cn(BASE, SIZE[size], className)
+  return cn('btn', SIZE[size], className)
 }
 
 /** The exact button token string for a variant × size — so a styled `<Link>` (or
@@ -156,8 +63,7 @@ export function buttonClasses(
   size: ButtonSize = 'md',
   className?: string,
 ): string {
-  if (FREQUENCY) return cn('btn', FQ_VARIANT[variant], FQ_SIZE[size], className)
-  return cn(BASE, VARIANT[variant], SIZE[size], className)
+  return cn('btn', VARIANT[variant], SIZE[size], className)
 }
 
 export const Button = forwardRef<

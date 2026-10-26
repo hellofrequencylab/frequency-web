@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 717,
+      "baseline": 714,
       "frozen": {
-        "at": "2026-10-24",
-        "value": 717,
+        "at": "2026-10-26",
+        "value": 714,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 8 literal radii",
-        "from": 725
+        "reason": "SCAN-1127 removed DAWN branches in components/ui and templates, retiring 3 literal radius sites",
+        "from": 717
       },
       "history": [
         {
@@ -364,6 +364,13 @@
           "to": 717,
           "direction": "lowered",
           "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 8 literal radii"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 717,
+          "to": 714,
+          "direction": "lowered",
+          "reason": "SCAN-1127 removed DAWN branches in components/ui and templates, retiring 3 literal radius sites"
         }
       ]
     },
@@ -442,14 +449,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 42,
+      "baseline": 41,
       "frozen": {
-        "at": "2026-10-13",
-        "value": 42,
+        "at": "2026-10-26",
+        "value": 41,
         "direction": "lowered",
         "basis": "fa00e74e05ee",
-        "reason": "ADR-1737 design-switch fan-out (2026-10-13): shadow-literals sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
-        "from": 47
+        "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites",
+        "from": 42
       },
       "history": [
         {
@@ -528,6 +535,13 @@
           "to": 42,
           "direction": "lowered",
           "reason": "ADR-1737 design-switch fan-out (2026-10-13): shadow-literals sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 42,
+          "to": 41,
+          "direction": "lowered",
+          "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites"
         }
       ]
     },
@@ -709,14 +723,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 290,
+      "baseline": 289,
       "frozen": {
         "at": "2026-10-26",
-        "value": 290,
+        "value": 289,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Retired one raw button background in main before this PR; this PR changes none (SCAN-1142 sweep follow-up)",
-        "from": 291
+        "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites",
+        "from": 290
       },
       "history": [
         {
@@ -928,6 +942,13 @@
           "to": 290,
           "direction": "lowered",
           "reason": "Retired one raw button background in main before this PR; this PR changes none (SCAN-1142 sweep follow-up)"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 290,
+          "to": 289,
+          "direction": "lowered",
+          "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites"
         }
       ]
     },
@@ -1882,14 +1903,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 225,
+      "baseline": 221,
       "frozen": {
-        "at": "2026-10-24",
-        "value": 225,
+        "at": "2026-10-26",
+        "value": 221,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 3 hand-rolled eyebrows",
-        "from": 228
+        "reason": "SCAN-1127 removed DAWN branches in page-heading and templates, retiring 4 hand-rolled eyebrows",
+        "from": 225
       },
       "history": [
         {
@@ -1996,6 +2017,13 @@
           "to": 225,
           "direction": "lowered",
           "reason": "Deleting the floating chat edge tab (edge-pill.tsx and its vera-launcher fallback) removed 3 hand-rolled eyebrows"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 225,
+          "to": 221,
+          "direction": "lowered",
+          "reason": "SCAN-1127 removed DAWN branches in page-heading and templates, retiring 4 hand-rolled eyebrows"
         }
       ]
     }
