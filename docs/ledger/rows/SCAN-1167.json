@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1167",
+  "title": "Project reviewed choices in reply, Remix and winback author coaching",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-26",
+  "source": {
+    "file": "lib/comms/vera-conversation.ts",
+    "ref": "Remaining author-coaching callback inventory2026-10-26"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/conversation-coaching-selection.mjs",
+    "note": "Executes actual reply, Remix and winback callbacks with inert IO. Approved IDs map to reviewed words; arbitrary/unknown/mixed payloads reject. Three source mutations restoring raw output each fail the same acceptance. Reply transcript redaction, accounting, budget/no-write and manual composer send behavior retain separate tests; operational winback provenance/approval/send-consent probe remains. Local proof, not live provider/production acceptance."
+  },
+  "detail": "One-pass callback inventory found three remaining declared author-coaching seams accepting arbitrary model wording as questions/checks or short direction labels: veraDraftReply, suggestRemixDirections and coachWinbackReview. All now accept bounded reviewed IDs and project displayed text locally. Existing result shapes and human composers, Practice copy lineage/manual editing, operational winback template/provenance/approval/consent, budgets, tiers and usage attribution stay. Conversation transcript still omits internal notes and author names. Rendered actual provider-seam output leaves the human reply untouched and sends only after the human chooses Send. Source controls reject reintroduced free model text. Separate Sites rewrite and listing-seeder owner-source fixes remain outside this packet; operational staff support assistance, creator tips/platform posts, help/calendar/summary/classification/review feedback are explicit exclusions. This does not assert all site model text is zero or close the full audit. No customer, provider, email, schema or production mutations.",
+  "wave": "W7"
+}
