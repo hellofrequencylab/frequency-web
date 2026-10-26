@@ -19,6 +19,7 @@ import {
   type SpaceContext,
 } from '@/lib/ai/space-copilot'
 import { loadSpaceGrounding } from '@/lib/ai/space-grounding'
+import { authorizeDiscoveryEditor } from '@/lib/spaces/discovery-access'
 import { loadSpaceCoachProfile } from '@/lib/spaces/private-state'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -37,6 +38,8 @@ async function authorizeEdit(
 
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile) return { error: 'You do not have permission to edit this Space' }
+  // The private coach profile is owner/editor only; staff and network reach must not load it into a prompt.
+  if (!(await authorizeDiscoveryEditor(spaceId))) return { error: 'You do not have permission to edit this Space' }
 
   // The Space's own About and live offerings ground the draft (LIVE-676).
   const grounding = await loadSpaceGrounding(spaceId)
