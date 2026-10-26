@@ -1,9 +1,14 @@
 {
   "id": "SEC-004",
   "patch": {
-    "priority": "P3"
+    "priority": "P3",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-10-26",
+      "evidence": "OPEN: Expo CLI still resolves Zod3.25.76 and node-forge1.4.0 inside reviewed advisory ranges. Direct app Zod4.6.7 and separately repaired xcode UUID11.1.1 do not close these toolchain findings. Mobile typecheck/lint and 15 tests (9 pure,6 actual-consumer) pass on isolated current main; bounded schema/signature/CSR checks are compatibility evidence, not advisory remediation. No supported patched Forge release or compatible patched Zod3 verified. Preserve open status until supported fixes or independently verified mitigations and required native/provider acceptance."
+    }
   },
   "append": {
-    "detail": "\n\n2026-10-26: Daniel ruled the mobile app security advisory is low priority while the app is parked (open-questions answer 4A). Priority P1 to P3."
+    "detail": "\n\n2026-10-26: Daniel ruled the mobile app security advisory is low priority while the app is parked (open-questions answer 4A). Priority P1 to P3.\n\n2026-10-26 fresh-main cfe4d52e6: remains OPEN/P3; no unsupported major overrides or audit exceptions. Official https://github.com/advisories/GHSA-mrhx-c7xc-m3w5 lists Zod <4.6.6, patched4.6.6; Expo CLI58.1.13 declares ^3.25.76. Its two direct Zod consumers are DevToolsPlugin.schema.js and createMCPDevToolsExtensionSchema.js: plugin metadata/output and generated MCP command schemas. Output append caps at V8 MAX_STRING_LENGTH, not an independently established safe validation budget. MCP tunnel requires EXPO_UNSTABLE_MCP_SERVER and optional expo-mcp (absent from lock), but CLI/plugin parsing remains. App contract resolution already uses direct Zod4.6.7 through mobile/metro.config.js. Official https://github.com/advisories/GHSA-86w9-cpqp-85rv lists node-forge<=1.4.0 with no patched version; https://github.com/digitalbazaar/forge/issues/1149 unresolved. Actual Expo CLI->code-signing-certificates0.0.7 verifies self-signed certificates, generated manifest signatures and CSRs: generation-only non-reachability would be false. Current config has no updates.codeSigningCertificate; optional CLI/dev-signing paths remain. New mobile/scripts/expo-dependency-consumers.test.cjs exercises actual installed schema, PEM/certificate, signature and CSR consumers using synthetic local inputs plus Node crypto signature controls; wired into existing mobile test/CI command. Four compatibility cases pass, not advisory exploit regression or remediation. No real credentials/providers/native prebuild/APK/device operations. UUID11.1.1 remains separately repaired by SEC005. Supported upstream resolutions or independently reviewed backports with full consumer evidence, plus native/device and controlled provider acceptance, remain required for closure."
   }
 }
