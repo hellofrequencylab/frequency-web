@@ -111,11 +111,18 @@ const MIDNIGHT_VARS = `
 --mn-label:var(--font-mn-marcellus),Marcellus,'Trajan Pro',Georgia,serif;
 --mn-sans:var(--font-mn-geist),Geist,ui-sans-serif,system-ui,sans-serif;`
 
+const MIDNIGHT_TEXTURES = `--mn-tex-cloud:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='700'><filter id='f' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='0.0055' numOctaves='5' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.93  0 0 0 0 0.91  0 0 0 0 0.87  0 0 0 1.9 -0.82'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>");
+--mn-tex-smoke:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='600'><filter id='f' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='0.0018 0.011' numOctaves='4' seed='11' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.93  0 0 0 0 0.91  0 0 0 0 0.87  0 0 0 2.4 -1.05'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>");
+--mn-tex-roots:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='700' height='700'><filter id='f' x='0' y='0'><feTurbulence type='turbulence' baseFrequency='0.008' numOctaves='3' seed='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.93  0 0 0 0 0.91  0 0 0 0 0.87  -9 0 0 0 1.05'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>");
+--mn-tex-stardust:radial-gradient(1px 1px at 12% 18%,color-mix(in srgb,var(--mn-bone-50) 70%,transparent) 50%,transparent 51%),radial-gradient(1px 1px at 37% 72%,color-mix(in srgb,var(--mn-bone-50) 50%,transparent) 50%,transparent 51%),radial-gradient(1.5px 1.5px at 64% 34%,color-mix(in srgb,var(--mn-bone-50) 80%,transparent) 50%,transparent 51%),radial-gradient(1px 1px at 82% 81%,color-mix(in srgb,var(--mn-bone-50) 45%,transparent) 50%,transparent 51%),radial-gradient(1px 1px at 91% 12%,color-mix(in srgb,var(--mn-bone-50) 60%,transparent) 50%,transparent 51%),radial-gradient(1px 1px at 23% 91%,color-mix(in srgb,var(--mn-bone-50) 40%,transparent) 50%,transparent 51%),radial-gradient(1.5px 1.5px at 51% 54%,color-mix(in srgb,var(--mn-violet-400) 55%,transparent) 50%,transparent 51%);
+--mn-mist-opacity:.32;`
+
 /** The theme's tokens, scoped to a website root carrying data-house-theme="midnight". The --color-primary*
  *  family is NOT set here: it is the Space's (AccentScope, midnightAccentVars). The design system's own
  *  --color-accent* follows it, so the DS components and the house blocks share one accent. */
 export const MIDNIGHT_TOKENS_CSS = `
 [data-house-theme="midnight"]{color-scheme:dark;${MIDNIGHT_VARS}
+${MIDNIGHT_TEXTURES}
 --color-canvas:var(--mn-night-50);--color-marketing-canvas:var(--mn-night-0);--color-surface:var(--mn-night-100);--color-surface-elevated:var(--mn-night-200);--color-surface-post:var(--mn-night-100);--color-surface-hover:var(--mn-night-150);
 --color-chrome:var(--mn-glass);--color-chrome-border:var(--mn-night-300);--color-chrome-hover:var(--mn-night-200);--color-scrim:var(--mn-scrim);
 --color-border:var(--mn-night-300);--color-border-strong:var(--mn-night-500);--color-rule:var(--mn-rule);

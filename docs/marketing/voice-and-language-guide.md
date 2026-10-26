@@ -37,8 +37,8 @@ Lead every page with the reader's pain point, in their words. Then show the way 
 
 - **Pain first.** Name the real difficulty before offering anything. Never shame the reader for it; most people feel it (41% of US adults report loneliness, per Stanford's 2025 survey).
 - **Bold means a stance, not hype.** "Build circles, not walls." Not urgency, not superlatives.
-- **Inviting means permission.** "Come as you are." "Start with one Thursday."
-- **Specific over inspirational.** One real detail per block: a chair, a walk, a Thursday.
+- **Inviting means permission.** "Come as you are." "Try one gathering."
+- **Specific over inspirational.** One real detail per block: a chair, a walk, a scheduled gathering. Do not invent a weekday to make a headline feel specific.
 - **Love, plainly.** The word is welcome ("a space of love"). Never decorated.
 - **Casual mechanics.** Contractions, short sentences, sentence case, no em dashes, almost no exclamation points.
 
@@ -82,8 +82,8 @@ Formula: **name the difficulty or the person, then the way through, in one line.
 
 | Door | Today | Draft |
 |---|---|---|
-| Home, finding | Find local groups and events near you. | Making friends as an adult is hard. Start with one Thursday. |
-| Home, hosting | Host local events and groups people come back to. | Bringing people together shouldn't take six apps. |
+| Home, finding | Build circles, not walls. | Owner ruling 2026-10-26: retain this brand headline; explain finding local groups and events in the supporting paragraph. |
+| Home, hosting | Build circles, not walls. | Owner ruling 2026-10-26: retain the same headline; explain opening a Space and hosting gatherings in the supporting paragraph. |
 | Coaches and healers | Your practice without six logins | You're good with people. Keep the paperwork out of the way. |
 | Studios | Every class, every member, one place. | Class is where people meet. Give them a reason to know each other. |
 | Event hosts | Sell the tickets. Keep the room. | A great gathering deserves a way to remember the people in it. |

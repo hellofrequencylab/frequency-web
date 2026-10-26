@@ -1,0 +1,6 @@
+{
+  "id": "HYG-144",
+  "append": {
+    "detail": "2026-10-26 read-only acceptance recheck: Vercel project environment metadata lists 77 keys with hiddenProductionEnvCount0; none of R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY,R2_BACKUP_BUCKET is present. No values or credentials were read. The live platform_settings storage_backup_cursor row is absent. This confirms the current feature is not configured and provides no successful R2 copy/restore evidence; no cron was invoked and no R2/storage object was read or written. Preserve the explicit 2026-10-20 owner ruling to set up the second provider AFTER 1 December launch. The historical OWN-082 database restore rehearsal and SEC-002 operational backup-table permission repair do not back up Storage file bytes or close this row. After the deferred setup is authorized, verify a completed bounded copy and restore an approved non-sensitive object to a disposable destination with byte/hash and access-metadata comparison, recording cleanup. No activation, configuration or restore was performed by this audit."
+  }
+}

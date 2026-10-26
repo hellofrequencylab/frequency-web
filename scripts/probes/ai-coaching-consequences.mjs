@@ -77,8 +77,8 @@ async function space() {
   const state = { allowed: false, writes: [], missing: false }
   const load = harness({
     '@/lib/auth': { getMyProfileId: async () => 'operator-A' },
-    '@/lib/spaces/store': { getSpaceById: async () => ({ id: 'space-A', slug: 'makers' }) },
-    '@/lib/spaces/entitlements': { getSpaceCapabilities: async () => ({ canEditProfile: state.allowed }) },
+    './store': { getSpaceById: async (id) => ({ id, slug: 'makers', ownerProfileId: 'another-owner' }) },
+    './membership': { readSpaceMembershipFresh: async (id, actor) => state.allowed && id === 'space-A' && actor === 'operator-A' ? { status: 'active', role: 'editor' } : null },
     'next/cache': { revalidatePath() {} },
     '@/lib/log': { log: { warn() {} } },
     '@/lib/supabase/admin': { createAdminClient: () => ({ from: (table) => {

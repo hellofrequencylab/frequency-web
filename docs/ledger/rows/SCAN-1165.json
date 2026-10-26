@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1165",
+  "title": "A Journey Dispatch to the whole cohort is posted to enrollees' feeds",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/(main)/journeys/[slug]/launch/actions.ts",
+    "ref": "Meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md), Phase 4 follow-up: Dispatch to a cohort"
+  },
+  "detail": "Journey Dispatch (SCAN-1150) pushed to the cohort but posted nothing to the Dispatch feed, because dispatches rows could only be scoped to a Circle, Hub, Nexus, Space or everyone. Migration 20270346025200_dispatch_journey_scope.sql adds a journey tier (audience_id is the journey plan id; additive, idempotent, the same shape as the Space tier in 20270106000000). A send to the whole cohort (everyone, or both halves) now also publishes one journey-scoped dispatches row; a half-cohort send is pushed but not posted, because a feed row reaches every enrollee. Reach: viewerInDispatchAudience gains a journey case over journeyPlanIds (required on DispatchViewerContext, fail-closed), read from journey_enrollments in the feed viewer context, the right-rail reader and the digest. The migration must be applied before the post works; until then the insert is rejected by the check, the push still goes, and the result reports the push only.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));const a=f.readFileSync(\"app/(main)/journeys/[slug]/launch/actions.ts\",\"utf8\");const m=f.readFileSync(\"supabase/migrations/20270346025200_dispatch_journey_scope.sql\",\"utf8\");const v=f.readFileSync(\"lib/events/dispatch-audience.ts\",\"utf8\");process.exit(/audience_scope: .journey./.test(a)&&/journey/.test(m)&&/case .journey./.test(v)?0:1)'",
+    "note": "Exits 0 once the cohort Dispatch posts a journey-scoped row, the migration widens the scope, and the audience gate has a journey case."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}
