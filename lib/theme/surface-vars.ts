@@ -37,5 +37,18 @@ export function surfaceCssVars(s: ThemeSurface): Record<string, string> {
     '--color-text-subtle': s.subtle,
     '--color-ink': s.solid,
     '--color-on-ink': s.onSolid,
+    // The Frequency design owns its own ground and text names; the same surface, on its tokens.
+    '--fq-bg-canvas': s.canvas,
+    '--fq-bg-sunken': s.canvas,
+    '--fq-surface-card': s.raised,
+    '--fq-surface-raised': s.elevated,
+    '--fq-surface-glass': `color-mix(in oklab, ${s.raised} 74%, transparent)`,
+    '--fq-text-strong': s.text,
+    '--fq-text-body': s.text,
+    '--fq-text-muted': s.muted,
+    '--fq-text-faint': s.subtle,
+    '--fq-text-on-accent': s.accent.on,
+    '--fq-border-hair': `color-mix(in oklab, ${s.text} 10%, transparent)`,
+    '--fq-border-strong': `color-mix(in oklab, ${s.text} 22%, transparent)`,
   }
 }
