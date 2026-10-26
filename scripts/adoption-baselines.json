@@ -730,14 +730,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 289,
+      "baseline": 287,
       "frozen": {
         "at": "2026-10-26",
-        "value": 289,
+        "value": 287,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites",
-        "from": 290
+        "reason": "DAWN branches removed from the marketing and door pages retired two raw button backgrounds (SCAN-1128 part 1)",
+        "from": 289
       },
       "history": [
         {
@@ -956,6 +956,13 @@
           "to": 289,
           "direction": "lowered",
           "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 289,
+          "to": 287,
+          "direction": "lowered",
+          "reason": "DAWN branches removed from the marketing and door pages retired two raw button backgrounds (SCAN-1128 part 1)"
         }
       ]
     },
@@ -1924,14 +1931,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 221,
+      "baseline": 220,
       "frozen": {
         "at": "2026-10-26",
-        "value": 221,
+        "value": 220,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "SCAN-1127 removed DAWN branches in page-heading and templates, retiring 4 hand-rolled eyebrows",
-        "from": 225
+        "reason": "DAWN branch removed from the marketing and door pages retired one hand-rolled eyebrow (SCAN-1128 part 1)",
+        "from": 221
       },
       "history": [
         {
@@ -2045,6 +2052,13 @@
           "to": 221,
           "direction": "lowered",
           "reason": "SCAN-1127 removed DAWN branches in page-heading and templates, retiring 4 hand-rolled eyebrows"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 221,
+          "to": 220,
+          "direction": "lowered",
+          "reason": "DAWN branch removed from the marketing and door pages retired one hand-rolled eyebrow (SCAN-1128 part 1)"
         }
       ]
     }
