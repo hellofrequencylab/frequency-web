@@ -30,10 +30,8 @@ describe('/people/<handle> route skeleton', () => {
 
   it('paints the Detail shape (hero + band + 2/3 content beside a 1/3 aside)', () => {
     const src = read('app/(main)/people/[handle]/loading.tsx')
-    expect(src).toContain('xl:grid-cols-3')
-    expect(src).toContain('xl:col-span-2')
-    expect(src).toContain('<aside')
-    // NOT the directory grid it used to inherit.
+    // The Frequency profile skeleton (hero, tabs, rail), not the directory grid it used to inherit.
+    expect(src).toContain('<FqSpaceLoading')
     expect(src).not.toContain('sm:grid-cols-2 lg:grid-cols-3')
   })
 })

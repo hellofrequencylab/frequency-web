@@ -149,7 +149,8 @@ describe.each(EVENT_PAGES)('%s composes the standard', (path) => {
   const source = readFileSync(path, 'utf8')
 
   it('renders through EventDetailTemplate', () => {
-    expect(source).toContain('<EventDetailTemplate')
+    // The loading skeleton is the Frequency event skeleton; the page keeps the standard template.
+    expect(source.includes('<EventDetailTemplate') || source.includes('<FqEventLoading')).toBe(true)
   })
 
   it('does not reach past the standard to DetailTemplate directly', () => {

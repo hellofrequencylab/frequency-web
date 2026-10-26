@@ -10,7 +10,7 @@ import { ClaimRequestCta } from './claim-request-cta'
 import { doorNoteFor } from './door-note'
 import { HostRequestCta } from './host-request-cta'
 import { listSpacesThatCanAskToHost, type HostAskSpace } from '../host-transfer-actions'
-import { CalendarDays, MapPin, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
+import { MapPin, Check, Ticket, Clock, Zap, Video, Globe, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadSeriesDates } from '@/lib/events/series-dates'
 import { isPlatformAccount, showsOrganizerCredit } from '@/lib/events/platform-credit'
@@ -27,7 +27,6 @@ import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-proj
 import { TICKETS_NOT_READY } from '@/lib/events/ticket-eligibility'
 import { toggleRSVP } from '../actions'
 import { TicketButton, type TicketTierView } from './ticket-button'
-import { PosterBand } from '@/components/media/poster-band'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { deriveTicketOwnership } from '@/lib/events/ticket-ownership'
@@ -73,7 +72,6 @@ import { listCohosts, listCohostInvites, getMyCohostInvite } from '@/lib/events/
 import { listCollaboratorSpacesForEvent } from '@/lib/events/event-share'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { pointFromGeog } from '@/lib/events/geo'
-import { readEventHeroHeight, eventPosterHeightClass, eventPosterMaxHeightClass } from '@/lib/events/hero-height'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { readEventCoverAspect } from '@/lib/events/cover-aspect'
 import { EVENT_MEDIA_BUCKET, eventHeroCandidates } from '@/lib/events/hero-url'
@@ -94,7 +92,6 @@ import { nextOccurrence, recurrenceLineFor } from '@/lib/events/recurrence'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
 import { isAdmitted } from '@/lib/events/admission'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { pageSurface } from '@/lib/theme/surface'
 import type { ThemeSurface } from '@/lib/theme/surface-vars'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -113,10 +110,6 @@ import { CATEGORY_OPTIONS } from '@/lib/events/options'
 
 /** The Event.html kit anatomy for the event page under Frequency. Off by owner ruling (2026-10-14). */
 const FQ_EVENT_KIT_LAYOUT = false
-
-/** The design this build wears. Under Frequency the original layout above keeps its slots and fills
- *  them with the kit's header pieces (SCAN-903); under DAWN every slot is exactly as it was. */
-const FREQUENCY = SITE_DESIGN === 'frequency'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -624,14 +617,6 @@ export default async function EventDetailPage({
       break
     }
   }
-  // Host-picked hero height (Short / Standard / Tall), stored on events.theme; mirrors the
-  // Business Space cover hero. Applied to both the cover and the no-cover placeholder.
-  // The poster band's own ladder: same tiers, same desktop heights, one rung shorter on a phone
-  // because a contain-fitted poster does not use the whole box (lib/layout/cover-height.ts).
-  const heroHeight = readEventHeroHeight(extra?.theme)
-  const posterHeightCls = eventPosterHeightClass(heroHeight)
-  // The same tier as a CEILING, for the band that knows its cover's own shape (below).
-  const posterMaxHeightCls = eventPosterMaxHeightClass(heroHeight)
   // Host-picked cover FOCAL POINT (object-position), stored on events.theme.coverFocus. Applied to
   // the cover <img> so the important part of the photo survives the crop; defaults centered.
   const coverFocus = readEventCoverFocus(extra?.theme)
@@ -1495,7 +1480,7 @@ export default async function EventDetailPage({
        registers, which is exactly the null case the context is built to survive. */
     <JoinIntentProvider>
     {/* Under Frequency the header's primary action jumps here (SCAN-903). DAWN keeps no id. */}
-    <div className="space-y-4" id={FREQUENCY ? FQ_EVENT_JOIN_ID : undefined}>
+    <div className="space-y-4" id={FQ_EVENT_JOIN_ID}>
       <div className="space-y-4 rounded-card border border-border bg-surface p-4">
         <div className="flex items-center gap-2">
           <Ticket className="h-4 w-4 text-primary" aria-hidden />
@@ -2105,7 +2090,7 @@ export default async function EventDetailPage({
   // kept, switched off, so the decision can be reversed in one line.
   const themed = (page: ReactNode) => (hostSurface ? <AccentScope vars={null} surface={hostSurface}>{page}</AccentScope> : page)
 
-  if (SITE_DESIGN === 'frequency' && FQ_EVENT_KIT_LAYOUT) {
+  if (FQ_EVENT_KIT_LAYOUT) {
     const cadenceLine =
       event.recurrence_type !== 'none' || event.parent_event_id
         ? [
@@ -2316,7 +2301,7 @@ export default async function EventDetailPage({
   }
 
   // The host line under Frequency is a small byline (SCAN-955); DAWN keeps the bare line.
-  const fqHostFact = (line: ReactNode) => (FREQUENCY && line ? <div className="fqm-evh-by">{line}</div> : line)
+  const fqHostFact = (line: ReactNode) => (line ? <div className="fqm-evh-by">{line}</div> : line)
 
   // ── THE FREQUENCY HEADER (SCAN-903) ────────────────────────────────────────────────────────────
   // Owner, 2026-10-14: "I feel like we can do better on the event listing header and title area.
@@ -2396,7 +2381,7 @@ export default async function EventDetailPage({
           ? `${SITE_URL}/events/claim/${extra.claim_token}`
           : null
       }
-      className={FREQUENCY ? 'btn' : undefined}
+      className={'btn'}
     />
   )
 
@@ -2453,7 +2438,7 @@ export default async function EventDetailPage({
       // [A1] header image — the one big visual win. Uploaded cover, else the scanned
       // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
       cover={
-        FREQUENCY ? (
+        (
           <FqEventCover
             src={heroUrl}
             alt={event.title}
@@ -2463,73 +2448,6 @@ export default async function EventDetailPage({
             dateDay={new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
             dateMonth={new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}
           />
-        ) : heroUrl ? (
-          /* A full-bleed crop at the host's focal point, at EVERY width (owner, 2026-09-10:
-             "It should be full bleed and cropped to the selected area"). The band takes the
-             poster's own shape when it knows it and the height tier is the ceiling, so a cover
-             that fits is shown whole and one that does not is cropped on the HEIGHT, which is the
-             axis the focus picker aims. components/media/poster-band.tsx carries the measurement
-             across all 24 production covers, the tier-by-tier aspect table, and the full arc of
-             the three owner reports that settled the fit.
-             The uploaded cover is a PUBLIC URL the optimizer is configured for; a scanned
-             poster's hero is a SIGNED URL from the private bucket (path `/object/sign/...`,
-             outside next.config remotePatterns), so it must bypass the optimizer — matching
-             PosterDetails' plain <img> crops. */
-          <PosterBand
-            src={heroUrl}
-            heightClass={posterHeightCls}
-            // With the cover's own aspect known, the band is the poster's shape and the tier is
-            // its ceiling; without it, the tier height above applies unchanged (ADR-1248). This is
-            // also what keeps the crop honest: a clamped band is only ever SHORTER than the
-            // artwork, never narrower, so `object-cover` can cut nothing but the aimed axis.
-            maxHeightClass={posterMaxHeightCls}
-            aspect={coverAspect}
-            focus={coverFocus}
-            unoptimized={!heroIsPublic}
-            // FULL BLEED on a phone (owner, 2026-08-31): edge to edge, no gutter, no corners.
-            // `-mx-4` is the exact inverse of the shell's ONE horizontal gutter — `px-4` on the
-            // page row in app-shell.tsx — and `sm:mx-0` hands it back from 640px up. Both are
-            // rem-based so they cancel exactly at this app's 17px root, where a mismatched
-            // `-mx-6` over-pulls by 8.5px and bleeds into a horizontal scroll
-            // (lib/meta-scan-highs.test.ts records that exact mistake on the chat surfaces).
-            //
-            // 🔴 THE BLEED LIVES HERE AND NOT IN PosterBand, WHICH IS SHARED. The public twin at
-            // app/discover/events/[slug] renders the same component inside a `px-6 overflow-hidden`
-            // frame: a `-mx-4` baked into the band would under-pull by 8.5px there AND be clipped
-            // rather than bleed. Same reason it is not in DetailTemplate, whose hero slot has ten
-            // other callers.
-            // ⚠️ The WIDTH goes through `widthClass`, never appended here: PosterBand bakes a width
-            // into its base string, and a second `w-*` in `className` loses to it on Tailwind's
-            // emission order (this exact collision shipped — see that prop's comment).
-            className="-mx-4 sm:mx-0"
-            // 🔴 DEFINITE, not `w-auto`, and the shaped path is why (LIVE-507). `w-auto` bleeds
-            // correctly on its own -- a block box with auto width fills the container, and the
-            // -mx-4 EXPANDS that used width by both gutters, which is what fixed the 2026-09-01
-            // stripe. But when the band is SHAPED it also has no height: `sizeClass` becomes
-            // `max-h-*` and an inline `aspect-ratio` is the only other block-axis input. CSS then
-            // has an indefinite size on BOTH axes, so clamping the height at `max-h` transfers
-            // back through the ratio and shrinks the WIDTH to `max-height x aspect` -- 221x221 for
-            // a square poster on a phone. `calc(100% + 2rem)` is the same geometry `w-auto` gave
-            // (content + both gutters) but DEFINITE, so the clamp stays in its own axis and the
-            // poster crops to the band instead of the band shrinking to the poster.
-            widthClass="w-[calc(100%+2rem)] sm:w-full"
-            radiusClass="rounded-none sm:rounded-2xl"
-          />
-        ) : (
-          // No cover: a designed placeholder, not a blank box. Mirrors the
-          // circle-card no-cover fill (soft DAWN gradient + centered icon) and
-          // leads with the event's date so the slot still says something.
-          <div className={`-mx-4 sm:mx-0 relative flex ${posterHeightCls} w-auto sm:w-full items-center justify-center overflow-hidden rounded-none sm:rounded-card bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
-            <div className="flex flex-col items-center gap-1 text-center">
-              <CalendarDays className="h-7 w-7 opacity-80" />
-              <span className="text-display-h3 font-bold leading-none">
-                {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
-              </span>
-              <span className="eyebrow text-muted">
-                {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}
-              </span>
-            </div>
-          </div>
         )
       }
       // The page's OWN breadcrumb, carrying the event's real TITLE. The shell's generic trail
@@ -2543,7 +2461,7 @@ export default async function EventDetailPage({
       // The event title renders at the DISPLAY scale (a step up from the default Detail h1) —
       // this is the page's marquee fact, so it leads at destination-page stature.
       titleScale="display"
-      kicker={FREQUENCY ? fqKicker : undefined}
+      kicker={fqKicker}
       title={
         canManage ? (
           /* 🔴 The size here MIRRORS DetailTemplate's `titleScale="display"` h1, so the input
@@ -2584,39 +2502,12 @@ export default async function EventDetailPage({
       // this lockup, beside the info lines. There it sits at its natural width and costs the title
       // nothing. Do not move it back into this slot to "keep it near the buttons".
       actions={
-        FREQUENCY ? undefined : (
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          {shareButton}
-          {canManage && (
-            <>
-              <Link
-                href={`/events/${event.slug}/manage`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
-              >
-                <LayoutDashboard className="h-4 w-4 text-subtle" />
-                Manage
-              </Link>
-              {/* `label` is the VISIBLE text when `iconOnly` is off (it becomes the accessible name
-                  only in the icon-only render), so this one word is both, which is exactly what the
-                  three buttons are now: icon plus word, named by what you read. */}
-              <OpenAdminBarButton
-                scope={{ kind: 'event', id: event.id }}
-                caps={Array.from(eventCaps)}
-                label="Edit"
-                icon={<Settings className="h-4 w-4" />}
-              />
-            </>
-          )}
-        </div>
-
-        </div>
-        )
+        undefined
       }
       // THE ONE ACTION ROW (SCAN-903), under the facts rather than beside the title: the RSVP or
       // ticket action first, then Share, then a manager's Manage and Edit as quiet kit buttons.
       actionRow={
-        FREQUENCY ? (
+        (
           <FqEventActionRow
             primary={fqPrimary}
             share={shareButton}
@@ -2638,17 +2529,13 @@ export default async function EventDetailPage({
               ) : null
             }
           />
-        ) : undefined
+        )
       }
       // [A2] attendance-mode pill.
       badges={
-        FREQUENCY ? (
+        (
           <span className="tag glass">
             <FqIcon name={isOnline ? 'globe' : 'pin'} /> {mode.label}
-          </span>
-        ) : (
-          <span className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-meta font-semibold ${mode.cls}`}>
-            <mode.Icon className="h-3.5 w-3.5" /> {mode.label}
           </span>
         )
       }
@@ -2667,26 +2554,19 @@ export default async function EventDetailPage({
         // 🔴 `startsAtMs` GOES THROUGH `eventInstant`. `starts_at` carries the host's wall clock in
         // UTC parts, so `new Date(starts_at)` counts down to the wrong moment by the zone's whole
         // offset (ADR-1150).
-        aside: FREQUENCY ? (
+        aside: (
           <FqEventCountdown {...checkInGates} />
-        ) : (
-          <EventCheckInSurface {...checkInGates} />
         ),
         // The when-line is the key fact under the title — it renders a step stronger
         // (size, weight, and full text color) than the rest of the subtitle stack.
-        when: FREQUENCY ? (
+        when: (
           <FqEventFact icon="event" className="is-when">
             <span>{formatFull(event.starts_at)}</span>
             <span className="fqm-evh-q">{fqTimeLine}</span>
           </FqEventFact>
-        ) : (
-          <div className="flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-primary-strong shrink-0" />
-            <span className="text-body font-semibold text-text">{whenLine}</span>
-          </div>
         ),
 
-        where: FREQUENCY ? (
+        where: (
           isOnline ? (
             <FqEventFact icon="globe">Online</FqEventFact>
           ) : (
@@ -2710,66 +2590,23 @@ export default async function EventDetailPage({
               </FqEventFact>
             )
           )
-        ) : headerLocation && !isOnline && (
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-subtle shrink-0" />
-            {/* Venue name leads, then the address (item 4). The line deep-links into Maps
-                (native app on a phone, the map site on desktop) so guests navigate in one tap. */}
-            {mapsHref ? (
-              <a
-                href={mapsHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-primary-strong hover:underline"
-              >
-                {headerLocation}
-              </a>
-            ) : (
-              <span>{headerLocation}</span>
-            )}
-            {addressHidden && (
-              <span className="text-subtle">· Exact address shared after you RSVP</span>
-            )}
-          </div>
         ),
 
         // The cadence line reads the RULE, not the coarse column (ADR-1299), so a series that lands
         // every other Wednesday says so instead of "Repeats weekly". A row with no rule falls back
         // to what its legacy cadence means, resolved against its own start.
-        cadence: (event.recurrence_type !== 'none' || event.parent_event_id) && (FREQUENCY ? (
+        cadence: (event.recurrence_type !== 'none' || event.parent_event_id) && ((
           // With other dates to offer, the line rides the rail's "More dates" disclosure (seriesRail
           // below) instead of standing here as well.
           seriesRailDates.length >= 2 ? null : <FqEventFact className="is-series">{fqSeriesLine}</FqEventFact>
-        ) : (
-          <div className="flex items-center gap-2">
-            <span aria-hidden className="text-body leading-none">🔁</span>
-            <span>
-              {recurrenceLineFor(event) ?? 'Part of a recurring series'}
-              {event.recurrence_until && (
-                <span className="text-subtle ml-1">
-                  · until {new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-              )}
-            </span>
-          </div>
         )),
 
         // Recurring anchor whose date has passed: surface the next upcoming date so the
         // series never reads as a one-off that already happened.
         // Under Frequency the next date rides the series line above; it only stands alone on the rare
         // row that has a next date but no series facts.
-        nextDate: nextRecurrence && (FREQUENCY ? (
+        nextDate: nextRecurrence && ((
           fqSeries ? null : <FqEventFact className="is-series">Next: {fqNext}</FqEventFact>
-        ) : (
-          <div className="flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
-            <span>
-              Next:{' '}
-              {nextRecurrence.toLocaleDateString('en-US', {
-                weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
-              })}
-            </span>
-          </div>
         )),
 
         // WHERE THIS EVENT BELONGS: its Circle, its Space, and its Journey, each a link.
@@ -2790,7 +2627,7 @@ export default async function EventDetailPage({
             </Suspense>
           )
           // Under Frequency the chips read as small text links (SCAN-955, members-b.css).
-          return FREQUENCY ? <div className="fqm-evh-belong">{strip}</div> : strip
+          return <div className="fqm-evh-belong">{strip}</div>
         })(),
 
         hostedBy: fqHostFact(
@@ -2864,7 +2701,7 @@ export default async function EventDetailPage({
         seriesRail: <SeriesDatesRail
           dates={seriesRailDates}
           timeZone={eventTz}
-          wrap={FREQUENCY && fqSeries ? (rail) => <FqEventSeries line={fqSeriesLine} dates={rail} /> : undefined}
+          wrap={fqSeries ? (rail) => <FqEventSeries line={fqSeriesLine} dates={rail} /> : undefined}
         />,
 
         // [A3] THE REWARD LINE MOVED, AND THE SLOT IS DELIBERATELY LEFT EMPTY (ADR-1315).
@@ -2948,5 +2785,5 @@ export default async function EventDetailPage({
 
   // `fqm-evh` scopes the Frequency header rules (members-b.css): the title size, the facts lines, the
   // countdown. DAWN renders the template bare, exactly as before.
-  return themed(FREQUENCY ? <div className="fqm-evh">{eventPage}</div> : eventPage)
+  return themed(<div className="fqm-evh">{eventPage}</div>)
 }

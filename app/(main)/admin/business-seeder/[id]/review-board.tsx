@@ -53,8 +53,6 @@ export function ReviewBoard({
   initialMood,
   initialImages,
   initialImagePlan,
-  initialLockHero,
-  initialLockLayout,
   initialListed,
   initialDirections,
 }: {
@@ -66,9 +64,6 @@ export function ReviewBoard({
   initialMood: SeedMood
   initialImages: string[]
   initialImagePlan: { url: string; category: string; alt: string }[]
-  initialLockHero: boolean
-  /** Whether the BLOCK ARRANGEMENT is locked (ADR-1038) — seeds the layout lock toggle. */
-  initialLockLayout: boolean
   initialListed: boolean
   /** The operator DIRECTIONS currently stored on the intake (Importer v2.1) — prefills the re-seed box. */
   initialDirections: string
@@ -76,8 +71,6 @@ export function ReviewBoard({
   const router = useRouter()
   const [model, setModel] = useState<ReviewModel>(initialModel)
   const [mood, setMood] = useState<SeedMood>(initialMood)
-  const [lockHero] = useState(initialLockHero)
-  const [lockLayout] = useState(initialLockLayout)
   const [listed, setListed] = useState(initialListed)
   const [listing, startListing] = useTransition()
   const [writingQuestions, setWritingQuestions] = useState<string[]>([])
@@ -143,7 +136,7 @@ export function ReviewBoard({
     setReseedMsg(null)
     startReseed(async () => {
       // Pass the operator's directions only when non-blank, so an empty box never CLEARS stored directions.
-      const res = await reseedBusinessImport(intakeId, next, lockHero, directions.trim() || undefined, lockLayout)
+      const res = await reseedBusinessImport(intakeId, next, undefined, directions.trim() || undefined)
       if (!res.ok) {
         setReseedMsg({ tone: 'err', text: res.error })
         return

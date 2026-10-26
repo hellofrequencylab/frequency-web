@@ -1,18 +1,11 @@
 import Link from 'next/link'
-import { Search, EyeOff } from 'lucide-react'
-import { getMyProfileId, getCallerProfile } from '@/lib/auth'
+import { getCallerProfile } from '@/lib/auth'
 import { type PracticeSort } from '@/lib/practices'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { canReviewLibrarySubmission } from '@/lib/moderation/scope'
-import { buttonClasses } from '@/components/ui/button'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
-import { IndexTemplate } from '@/components/templates/index-template'
-import { PageContents } from '@/components/templates/page-contents'
-import { Input } from '@/components/ui/field'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { resolveIndexHero } from '@/lib/layout/index-hero'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
 import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { FqFindField } from '@/components/frequency/members/shared/kit-tools'
@@ -47,19 +40,6 @@ const SORTS: { key: PracticeSort; label: string }[] = [
   { key: 'az', label: 'A-Z' },
 ]
 
-function Chip({ label, href, active }: { label: string; href: string; active: boolean }) {
-  return (
-    <Link
-      href={href}
-      scroll={false}
-      className={`rounded-pill px-3 py-1 text-meta font-medium transition-colors ${
-        active ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted hover:text-text'
-      }`}
-    >
-      {label}
-    </Link>
-  )
-}
 
 export default async function PracticesPage({
   searchParams,
@@ -73,7 +53,6 @@ export default async function PracticesPage({
     sp.sort === 'top' || sp.sort === 'new' || sp.sort === 'az' ? sp.sort : 'trending'
   const qParam = sp.q?.trim() || ''
 
-  const profileId = await getMyProfileId()
   const caller = await getCallerProfile()
   const caps = await getGlobalCapabilities()
   const isAdmin = caps.has('admin.access')
@@ -110,7 +89,7 @@ export default async function PracticesPage({
   }
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, body, heroImage: contentHero, ctaLabel, ctaHref } =
+  const { title, description, body, ctaLabel, ctaHref } =
     await resolvePageContent('/practices', CONTENT_FALLBACK)
   // The uniform overlay Hero Header, resolved by the ONE browse-hero ladder (lib/layout/index-hero,
   // PROG-P4). This page used to re-type the whole stanza — operator image, then page-content hero,
@@ -118,160 +97,60 @@ export default async function PracticesPage({
   // operator-tunable header element. All of it now lives in the resolver, and the section cover
   // ('/images/site/meditation-circle.jpg') is the '/practices' row of INDEX_HERO_DEFAULTS. The
   // page-content hero is passed explicitly because this page has already resolved it for its copy.
-  const hero = await resolveIndexHero('/practices', { contentImage: contentHero })
-
-  // FREQUENCY (LIVE-935): the shared member header, the kit's search pill and Sort chips, then the
-  // same module-driven page. Every control the DAWN toolbar has stays: search, the four sorts, the
-  // admin hidden toggle, New practice, Review queue and the operator CTA.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <MembersBody>
-        <MemberHead
-          kicker="The Quest · Practices"
-          title={<SerifTail text={title} />}
-          meta={description}
-          actions={
-            signedIn || (ctaLabel && ctaHref) ? (
-              <div className="row wrap">
-                {signedIn && <NewPracticeButton canCreate={canCreatePractice} className="btn pa" />}
-                {canReview && (
-                  <Link href="/library/review" className="btn">
-                    Review queue
-                  </Link>
-                )}
-                {ctaLabel && ctaHref && (
-                  <a href={ctaHref} className="btn">
-                    {ctaLabel}
-                  </a>
-                )}
-              </div>
-            ) : undefined
-          }
-        />
-        {body && <div className="body mc-bottom-24">{body}</div>}
-        <div className="fqm-tools">
-          <FqFindField
-            action="/practices"
-            value={qParam}
-            placeholder="Search practices"
-            keep={{ pillar: sp.pillar, sub: sp.sub, tag: sp.tag, sort: sort !== 'trending' ? sort : undefined, hidden: showHidden ? '1' : undefined }}
-          />
-          <nav className="chips" aria-label="Sort practices">
-            {SORTS.map((x) => (
-              <Link
-                key={x.key}
-                href={href({ sort: x.key === 'trending' ? undefined : x.key })}
-                scroll={false}
-                className={sort === x.key ? 'chip on' : 'chip'}
-                aria-current={sort === x.key ? 'true' : undefined}
-              >
-                {x.label}
-              </Link>
-            ))}
-            {isAdmin && (
-              <Link href={href({ hidden: showHidden ? undefined : '1' })} className={showHidden ? 'chip on' : 'chip'} title="Admin: include hidden practices">
-                {showHidden ? 'Hidden shown' : 'Show hidden'}
-              </Link>
-            )}
-          </nav>
-        </div>
-        <div className="space-y-8">
-          <PageModules route="/practices" />
-        </div>
-      </MembersBody>
-    )
-  }
-
   return (
-    <IndexTemplate
-      title={title}
-      description={description}
-      intro={body}
-      action={
-        (signedIn || (ctaLabel && ctaHref)) ? (
-          <div className="flex items-center gap-2">
-            {signedIn && <NewPracticeButton canCreate={canCreatePractice} />}
-            {canReview && (
-              <Link href="/library/review" className={buttonClasses('secondary', 'sm')}>
-                Review queue
-              </Link>
-            )}
-            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
-            {ctaLabel && ctaHref && (
-              <a
-                href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
-              >
-                {ctaLabel}
-              </a>
-            )}
-          </div>
-        ) : undefined
-      }
-      toolbar={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Search (GET form — shareable, no client JS) */}
-          <form action="/practices" method="get" className="relative w-full sm:max-w-xs">
-            {sp.pillar && <input type="hidden" name="pillar" value={sp.pillar} />}
-            {sp.sub && <input type="hidden" name="sub" value={sp.sub} />}
-            {sp.tag && <input type="hidden" name="tag" value={sp.tag} />}
-            {sort !== 'trending' && <input type="hidden" name="sort" value={sort} />}
-            {showHidden && <input type="hidden" name="hidden" value="1" />}
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
-            <Input
-              name="q"
-              defaultValue={qParam}
-              placeholder="Search practices…"
-              aria-label="Search practices"
-              className="pl-9 pr-3"
-            />
-          </form>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-meta font-medium uppercase tracking-wide text-subtle">Sort</span>
-            {SORTS.map((s) => (
-              <Chip key={s.key} label={s.label} href={href({ sort: s.key === 'trending' ? undefined : s.key })} active={sort === s.key} />
-            ))}
-            {isAdmin && (
-              <Link
-                href={href({ hidden: showHidden ? undefined : '1' })}
-                className={`ml-1 inline-flex items-center gap-1 rounded-pill px-3 py-1 text-meta font-semibold transition-colors ${
-                  showHidden ? 'bg-danger/10 text-danger' : 'bg-surface-elevated text-muted hover:text-text'
-                }`}
-                title="Admin: include hidden practices"
-              >
-                <EyeOff className="h-3.5 w-3.5" /> {showHidden ? 'Hidden shown' : 'Show hidden'}
-              </Link>
-            )}
-          </div>
-        </div>
-      }
-      trail={[
-        { href: '/network', label: 'Community' },
-        { href: '/practices', label: 'Practices' },
-      ]}
-      {...hero}
-    >
-      {/* Jump between your stuff and the library. The personal entries point at module-driven
-          blocks that render only for a signed-in member with data; a dangling anchor is harmless
-          when a block returns null. */}
-      <PageContents
-        sections={[
-          ...(profileId
-            ? [
-                { id: 'practices-activity', label: 'Your activity' },
-                { id: 'practices-mine', label: 'Your practices' },
-              ]
-            : []),
-          { id: 'practices-best-of', label: 'Best of' },
-          { id: 'practices-library', label: 'Library' },
-        ]}
+    <MembersBody>
+      <MemberHead
+        kicker="The Quest · Practices"
+        title={<SerifTail text={title} />}
+        meta={description}
+        actions={
+          signedIn || (ctaLabel && ctaHref) ? (
+            <div className="row wrap">
+              {signedIn && <NewPracticeButton canCreate={canCreatePractice} className="btn pa" />}
+              {canReview && (
+                <Link href="/library/review" className="btn">
+                  Review queue
+                </Link>
+              )}
+              {ctaLabel && ctaHref && (
+                <a href={ctaHref} className="btn">
+                  {ctaLabel}
+                </a>
+              )}
+            </div>
+          ) : undefined
+        }
       />
-
-      {/* The whole interior — personal blocks AND the faceted library — is module-driven and
-          arranged by the operator. Each block self-fetches and sizes to the slot it lands in. */}
+      {body && <div className="body mc-bottom-24">{body}</div>}
+      <div className="fqm-tools">
+        <FqFindField
+          action="/practices"
+          value={qParam}
+          placeholder="Search practices"
+          keep={{ pillar: sp.pillar, sub: sp.sub, tag: sp.tag, sort: sort !== 'trending' ? sort : undefined, hidden: showHidden ? '1' : undefined }}
+        />
+        <nav className="chips" aria-label="Sort practices">
+          {SORTS.map((x) => (
+            <Link
+              key={x.key}
+              href={href({ sort: x.key === 'trending' ? undefined : x.key })}
+              scroll={false}
+              className={sort === x.key ? 'chip on' : 'chip'}
+              aria-current={sort === x.key ? 'true' : undefined}
+            >
+              {x.label}
+            </Link>
+          ))}
+          {isAdmin && (
+            <Link href={href({ hidden: showHidden ? undefined : '1' })} className={showHidden ? 'chip on' : 'chip'} title="Admin: include hidden practices">
+              {showHidden ? 'Hidden shown' : 'Show hidden'}
+            </Link>
+          )}
+        </nav>
+      </div>
       <div className="space-y-8">
         <PageModules route="/practices" />
       </div>
-    </IndexTemplate>
+    </MembersBody>
   )
 }

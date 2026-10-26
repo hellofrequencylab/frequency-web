@@ -52,24 +52,25 @@ const CHECKLIST = [
   'Which consent and suppression checks must pass before this invitation is approved?',
   'How will you learn whether the invitation helped without treating an open as a return?',
 ]
+const REVIEW_QUESTIONS = Object.freeze({ reason: CHECKLIST[0], consent: CHECKLIST[1], measurement: CHECKLIST[2] })
 function coachingQuestions(text: string): string[] | null {
   try {
     const value: unknown = JSON.parse(text)
-    if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 1 || !('questions' in value) || !Array.isArray(value.questions) || value.questions.length < 1 || value.questions.length > 3) return null
-    if (!value.questions.every((question): question is string => typeof question === 'string' && question.length >= 12 && question.length <= 220 && /^(Who|What|Which|How|Why)\b[^?!.\n]*\?$/i.test(question) && !/[\d<>"“”]/.test(question))) return null
-    return value.questions
+    if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 1 || !Object.hasOwn(value, 'questionIds')) return null
+    const ids = (value as { questionIds?: unknown }).questionIds
+    if (!Array.isArray(ids) || ids.length < 1 || ids.length > 3 || ids.some(id => typeof id !== 'string' || !Object.hasOwn(REVIEW_QUESTIONS, id))) return null
+    return [...new Set(ids as (keyof typeof REVIEW_QUESTIONS)[])].map(id => REVIEW_QUESTIONS[id])
   } catch { return null }
 }
 
-/** No recipient identity, contact data or individual history crosses this boundary. Question-shape
- * validation is not a semantic guarantee; the hard boundary is that this result has NO write/send path. */
+/** No recipient data crosses this boundary. The model selects reviewed IDs only; no write/send path. */
 export async function coachWinbackReview(actorId: string): Promise<WinbackCoaching> {
   const fallback: WinbackCoaching = { questions: [...CHECKLIST], source: 'checklist' }
   if (!actorId || !(await aiAvailable()) || (await featureOverBudget(FEATURE)) || (await aiRateLimited(FEATURE, actorId))) return fallback
   try {
     const response = await completeRaw({
       accounting: { feature: FEATURE, profileId: actorId }, tier: 'haiku', maxTokens: 350,
-      system: withVoice('Coach a human operator reviewing a lifecycle invitation. Ask questions about relevance, consent, friction and how a useful return would be measured. Do not write email subjects, bodies, offers or recipient-facing copy. Do not infer why anyone paused or invent statistics. Return only JSON with one questions array containing two or three short open questions, each beginning Who, What, Which, How or Why and ending with a question mark. No digits, quotes, markup or line breaks inside a question.'),
+      system: withVoice('Coach a human operator reviewing a lifecycle invitation. Ask questions about relevance, consent, friction and how a useful return would be measured. Do not write email subjects, bodies, offers or recipient-facing copy. Do not infer why anyone paused or invent statistics. Return only JSON with one questionIds array containing one to three distinct reviewed IDs. Choose relevant considerations from ' + JSON.stringify(REVIEW_QUESTIONS) + '. Return IDs only; the server supplies the reviewed words. No question wording, checks or other fields.'),
       messages: [{ role: 'user', content: 'Help the operator review an existing human-written operational template. No individual recipient evidence is provided. Ask coaching questions only.' }],
     })
     const questions = coachingQuestions(response.text)

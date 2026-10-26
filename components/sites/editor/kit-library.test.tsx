@@ -9,11 +9,11 @@ beforeAll(() => { Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true }) 
 const cleanups: (() => void)[] = []
 afterEach(() => { cleanups.splice(0).forEach((c) => c()) })
 
-function mount(onApply: (id: string, mode: string) => Promise<string>, suggestedNiche?: 'venues', onPreview?: (id: string) => Promise<unknown>) {
+function mount(onApply: (id: string, mode: string) => Promise<string>, suggestedNiche?: 'venues', onPreview?: (id: string) => Promise<unknown>, theme?: 'Midnight') {
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
-  act(() => root.render(<KitLibrary onApply={onApply as never} suggestedNiche={suggestedNiche} onPreview={onPreview as never} />))
+  act(() => root.render(<KitLibrary onApply={onApply as never} suggestedNiche={suggestedNiche} onPreview={onPreview as never} theme={theme} />))
   cleanups.push(() => { act(() => root.unmount()); host.remove() })
   return host
 }
@@ -41,7 +41,7 @@ it('add runs at once', async () => {
 })
 
 it('puts the kit for the Space\'s niche first and says why', () => {
-  const host = mount(vi.fn(), 'venues')
+  const host = mount(vi.fn(), 'venues', undefined, 'Midnight')
   const first = host.querySelector('button[aria-expanded]')
   expect(first?.textContent).toContain('Venues')
   expect(first?.textContent).toContain('Suggested for your Space')
