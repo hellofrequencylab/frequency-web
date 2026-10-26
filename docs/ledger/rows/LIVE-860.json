@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-860",
+  "patch": {
+    "title": "Event and Circle Sparks preserve human words; unconverted Journey fidelity remains explicit",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/ai-coaching-consequences.mjs spark",
+      "note": "Owner-directed authorship replaces Event/Circle rewrite choices with server-preserved prose. Actual Spark executes against invented model output, asserts exact source retention, mapped result fields and manual fallback on coercion loss. Retains the prior Journey fidelity and Event description-capacity assertions. No provider or DB calls."
+    }
+  },
+  "append": {
+    "detail": " Human-authorship direction supersedes the Event/Circle Exact/Edit/Rewrite controls. They retain author prose structurally, with separate coaching. The legacy Journey control and Event 8000-character capacity remain guarded; no claim is made that Journey or other legacy generators are converted."
+  },
+  "wave": "W7"
+}

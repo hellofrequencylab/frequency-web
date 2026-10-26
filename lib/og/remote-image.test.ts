@@ -35,15 +35,20 @@ beforeAll(async () => {
   bytes.svgUnsized = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>')
 })
 
+const pinned = vi.hoisted(() => ({ fetchPinned: vi.fn() }))
+vi.mock('@/lib/net/pinned-fetch', () => pinned)
+
 function stubFetch(body: Buffer | null, contentType: string, status = 200) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(body ? new Uint8Array(body) : null, { status, headers: { 'content-type': contentType } })),
-  )
+  pinned.fetchPinned.mockResolvedValue({
+    status,
+    headers: { 'content-type': contentType },
+    body: body ?? Buffer.alloc(0),
+    finalUrl: 'https://cdn.example/x',
+  })
 }
 
 afterEach(() => {
-  vi.unstubAllGlobals()
+  pinned.fetchPinned.mockReset()
 })
 
 describe('sniffInlineImageType decides from bytes, never from a label', () => {
@@ -121,7 +126,7 @@ describe('fetchRemoteImage never emits a data URL Satori cannot size', () => {
     expect(await fetchRemoteImage('https://cdn.example/page')).toBeNull()
     stubFetch(Buffer.alloc(0), 'image/png')
     expect(await fetchRemoteImage('https://cdn.example/empty.png')).toBeNull()
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('ECONNRESET') }))
+    pinned.fetchPinned.mockResolvedValue(null)
     expect(await fetchRemoteImage('https://cdn.example/reset.png')).toBeNull()
   })
 

@@ -1,0 +1,20 @@
+{
+  "id": "SEC-010",
+  "title": "Pin remote image, crawler and importer fetches to a public DNS answer (SCAN-1123)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/net/pinned-fetch.ts",
+    "ref": "Meta scan 2026-10-26, Stream E (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "The OG remote image fetch, the importer crawler (lib/ai/web) and importer media capture used global fetch behind a hostname check only, so a public name resolving to a private address, or a redirect to one, reached the server network. All three now go through lib/net/pinned-fetch.ts: resolve once, refuse any non-global address (private, loopback, link-local, CGNAT, benchmarking, multicast, documentation, NAT64, 6to4, Teredo, IPv4-mapped), pin the socket, follow redirects by hand and re-check each hop, cap bytes and time. Same technique as the QR logo fetch (#3919).",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "evidence": "Probe passes on this branch; unit tests added alongside (lib/net/pinned-fetch.test.ts, scripts/maintenance/live-catalog.test.ts).",
+    "cmd": "node scripts/probes/sec-ssrf-pinned-fetch.mjs"
+  }
+}

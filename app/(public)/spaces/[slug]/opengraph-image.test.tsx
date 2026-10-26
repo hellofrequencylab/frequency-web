@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import type { ReactElement, ReactNode } from 'react'
 import sharp from 'sharp'
 
@@ -21,6 +21,9 @@ const { getSpaceBySlug, getSpaceVisibility } = vi.hoisted(() => ({
 
 vi.mock('@/lib/spaces/store', () => ({ getSpaceBySlug, getSpaceVisibility }))
 
+const pinned = vi.hoisted(() => ({ fetchPinned: vi.fn() }))
+vi.mock('@/lib/net/pinned-fetch', () => pinned)
+
 // Spy on the real deliverer: the card still rasterises through next/og and sharp, and the element
 // plus the Satori options are captured for inspection.
 vi.mock('@/lib/og/deliver', async (importOriginal) => {
@@ -39,23 +42,12 @@ beforeAll(async () => {
   bytes.png = await base.clone().png().toBuffer()
   bytes.jpeg = await base.clone().jpeg().toBuffer()
   // The origin's content-type is whatever the upload declared; the route by extension mirrors the
-  // live storage bucket, where the crashing logo is stored as image/webp. Only the fake storage host
-  // is answered here: next/og fetches its own yoga and resvg wasm through the same global, and those
-  // requests must reach the real fetch.
-  const realFetch = globalThis.fetch
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-      const url = String(input instanceof Request ? input.url : input)
-      if (!url.startsWith('https://storage.example/')) return realFetch(input, init)
-      const kind = url.endsWith('.webp') ? 'webp' : url.endsWith('.png') ? 'png' : 'jpeg'
-      return new Response(new Uint8Array(bytes[kind]), { status: 200, headers: { 'content-type': `image/${kind}` } })
-    }),
-  )
-})
-
-afterAll(() => {
-  vi.unstubAllGlobals()
+  // live storage bucket, where the crashing logo is stored as image/webp. Remote images go through
+  // the pinned fetch (SCAN-1123), so that module answers for the fake storage host.
+  pinned.fetchPinned.mockImplementation(async (input: string) => {
+    const kind = input.endsWith('.webp') ? 'webp' : input.endsWith('.png') ? 'png' : 'jpeg'
+    return { status: 200, headers: { 'content-type': `image/${kind}` }, body: bytes[kind], finalUrl: input }
+  })
 })
 
 beforeEach(() => {
