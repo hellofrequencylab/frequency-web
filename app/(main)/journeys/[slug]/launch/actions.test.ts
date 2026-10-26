@@ -11,6 +11,7 @@ const m = vi.hoisted(() => ({
   parseOk: true,
   createCampaign: vi.fn(),
   scheduleCampaign: vi.fn(),
+  sendCampaign: vi.fn(),
   createFunnel: vi.fn(),
   addStageLink: vi.fn(),
   getFunnel: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('@/lib/journeys/launch-access', () => ({ resolveJourneyLaunchContext: as
 vi.mock('@/lib/spaces/campaigns', () => ({
   createSpaceCampaign: (...a: unknown[]) => m.createCampaign(...a),
   scheduleSpaceCampaign: (...a: unknown[]) => m.scheduleCampaign(...a),
+  sendSpaceCampaign: (...a: unknown[]) => m.sendCampaign(...a),
   parseScheduleTime: () => (m.parseOk ? new Date('2026-11-10T18:00:00Z') : null),
 }))
 vi.mock('@/app/(main)/admin/growth/funnels/actions', () => ({
@@ -61,6 +63,7 @@ beforeEach(() => {
   m.enrollments = []
   m.createCampaign.mockImplementation(async () => ({ data: { id: `c-${m.createCampaign.mock.calls.length}` } }))
   m.scheduleCampaign.mockResolvedValue({ data: undefined })
+  m.sendCampaign.mockResolvedValue({ data: { recipientCount: 3 } })
   m.createFunnel.mockResolvedValue({ data: { id: 'f-1' } })
   m.getFunnel.mockResolvedValue({ stages: [{ id: 's1' }, { id: 's2' }] })
   m.addStageLink.mockResolvedValue({ data: undefined })
@@ -164,10 +167,11 @@ describe('sendJourneyBroadcastAction', () => {
     expect(await sendJourneyBroadcastAction('plan-1', input({ channels: [] }))).toEqual({ error: 'Pick at least one channel.' })
   })
 
-  it('refuses email and text with honest reasons, and sends nothing when DM was not picked', async () => {
-    const res = await sendJourneyBroadcastAction('plan-1', input({ channels: ['email', 'sms'] }))
-    expect(res).toMatchObject({ data: { results: [{ channel: 'email', ok: false }, { channel: 'sms', ok: false, detail: 'Text is not available yet.' }] } })
+  it('refuses dispatch and text with honest reasons, and sends nothing when DM was not picked', async () => {
+    const res = await sendJourneyBroadcastAction('plan-1', input({ channels: ['dispatch', 'sms'] }))
+    expect(res).toMatchObject({ data: { results: [{ channel: 'dispatch', ok: false }, { channel: 'sms', ok: false, detail: 'Text is not available yet.' }] } })
     expect(m.sendBulkDm).not.toHaveBeenCalled()
+    expect(m.createCampaign).not.toHaveBeenCalled()
   })
 
   it('messages only the picked segments, never the sender, each person once', async () => {
@@ -199,5 +203,61 @@ describe('sendJourneyBroadcastAction', () => {
     const res = await sendJourneyBroadcastAction('plan-1', input())
     expect(res).toEqual({ data: { results: [{ channel: 'dm', ok: false, detail: 'No one in that audience yet.' }] } })
     expect(m.sendBulkDm).not.toHaveBeenCalled()
+  })
+
+  describe('the email lane', () => {
+    const email = (over: Record<string, unknown> = {}) => input({ channels: ['email'], subject: 'Week one', ...over })
+
+    it('goes through the Space campaign lane as a journey member segment, under the marketing topic', async () => {
+      const res = await sendJourneyBroadcastAction('plan-1', email())
+      expect(m.createCampaign).toHaveBeenCalledWith('space-1', { subject: 'Week one', body: 'Hello', topic: 'marketing' })
+      expect(m.sendCampaign).toHaveBeenCalledWith('space-1', 'c-1', { memberSegment: 'journey:plan-1' })
+      expect(res).toMatchObject({ data: { results: [{ channel: 'email', ok: true, detail: 'Sent to 3 people who are subscribed to email from this Space.' }] } })
+      expect(m.sendBulkDm).not.toHaveBeenCalled()
+    })
+
+    it('narrows the segment key to one half, and widens it back when both halves or everyone are picked', async () => {
+      await sendJourneyBroadcastAction('plan-1', email({ segments: ['finished'] }))
+      await sendJourneyBroadcastAction('plan-1', email({ segments: ['in_progress'] }))
+      await sendJourneyBroadcastAction('plan-1', email({ segments: ['in_progress', 'finished'] }))
+      await sendJourneyBroadcastAction('plan-1', email({ segments: ['all', 'bogus'] }))
+      expect(m.sendCampaign.mock.calls.map((c) => c[2].memberSegment)).toEqual([
+        'journey:plan-1:finished',
+        'journey:plan-1:in_progress',
+        'journey:plan-1',
+        'journey:plan-1',
+      ])
+    })
+
+    it('says so when the Journey has no Space, and writes no campaign', async () => {
+      m.ctx = ctx({ spaceId: null })
+      const res = await sendJourneyBroadcastAction('plan-1', email())
+      expect(res).toMatchObject({ data: { results: [{ channel: 'email', ok: false, detail: LAUNCH_NEEDS_SPACE_MESSAGE }] } })
+      expect(m.createCampaign).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the Journey title as the subject, like the DM lane', async () => {
+      await sendJourneyBroadcastAction('plan-1', email({ subject: '' }))
+      expect(m.createCampaign.mock.calls[0][1].subject).toBe('Sunrise')
+    })
+
+    it('reports the send seam refusal (no opt-ins, email off, cap) as the result, never as a success', async () => {
+      m.sendCampaign.mockResolvedValue({ error: 'Nobody on this list has opted in to email yet, so nothing was sent.' })
+      const res = await sendJourneyBroadcastAction('plan-1', email())
+      expect(res).toMatchObject({ data: { results: [{ channel: 'email', ok: false, detail: 'Nobody on this list has opted in to email yet, so nothing was sent.' }] } })
+    })
+
+    it('stops at a campaign that could not be written', async () => {
+      m.createCampaign.mockResolvedValue({ error: 'Give your campaign a subject before sending.' })
+      const res = await sendJourneyBroadcastAction('plan-1', email())
+      expect(res).toMatchObject({ data: { results: [{ channel: 'email', ok: false }] } })
+      expect(m.sendCampaign).not.toHaveBeenCalled()
+    })
+
+    it('lets email and DM go out together, each reporting on its own', async () => {
+      m.enrollments = [{ profile_id: 'a', completed_at: null }]
+      const res = await sendJourneyBroadcastAction('plan-1', email({ channels: ['email', 'dm'] }))
+      expect(res).toMatchObject({ data: { results: [{ channel: 'email', ok: true }, { channel: 'dm', ok: true }] } })
+    })
   })
 })

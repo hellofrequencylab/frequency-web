@@ -17,13 +17,17 @@ const state: {
   tierMemberships: Array<Record<string, unknown>>
   circles: Array<Record<string, unknown>>
   events: Array<Record<string, unknown>>
-} = { tiers: [], tierMemberships: [], circles: [], events: [] }
+  plans: Array<Record<string, unknown>>
+  enrollments: Array<Record<string, unknown>>
+} = { tiers: [], tierMemberships: [], circles: [], events: [], plans: [], enrollments: [] }
 
 function rowsFor(table: string): Array<Record<string, unknown>> {
   if (table === 'space_membership_tiers') return state.tiers
   if (table === 'space_memberships') return state.tierMemberships
   if (table === 'circles') return state.circles
   if (table === 'events') return state.events
+  if (table === 'journey_plans') return state.plans
+  if (table === 'journey_enrollments') return state.enrollments
   return []
 }
 
@@ -31,6 +35,7 @@ function builder(table: string) {
   const api: Record<string, unknown> = {}
   const chain = () => api
   for (const m of ['select', 'eq', 'neq', 'gte', 'or', 'is', 'order']) api[m] = chain
+  api.maybeSingle = async () => ({ data: rowsFor(table)[0] ?? null, error: null })
   api.limit = async () => ({ data: rowsFor(table), error: null })
   // tiers read has no .limit — resolve on order for that path via thenable
   api.then = (resolve: (v: { data: unknown; error: null }) => void) =>
@@ -61,6 +66,8 @@ beforeEach(() => {
   state.tierMemberships = [{ tier_id: TIER, member_profile_id: 'm1' }]
   state.circles = [{ id: CIRCLE, name: 'Morning crew' }]
   state.events = [{ id: EVENT, title: 'Launch night', space_id: SPACE, host_space_id: null }]
+  state.plans = []
+  state.enrollments = []
 })
 
 describe('loadSpaceBroadcastSegments', () => {
@@ -123,5 +130,46 @@ describe('scopeForSelection (the spine coordinates)', () => {
     expect(scopeForSelection([MEMBERS_SEGMENT_KEY])).toBeNull()
     expect(scopeForSelection([`tier:${TIER}`])).toBeNull()
     expect(scopeForSelection([`circle:${CIRCLE}`, `event:${EVENT}`])).toBeNull()
+  })
+})
+
+describe('journey:<id> keys (the Journey launch page email lane)', () => {
+  const PLAN = 'pppppppp-0000-4000-a000-00000000000p'
+  beforeEach(() => {
+    state.plans = [{ id: PLAN }]
+    state.enrollments = [
+      { profile_id: 'a', completed_at: null },
+      { profile_id: 'b', completed_at: '2026-10-01T00:00:00Z' },
+      { profile_id: 'a', completed_at: null },
+    ]
+  })
+
+  it('resolves everyone enrolled, each person once', async () => {
+    expect((await resolveSpaceBroadcastAudience(SPACE, [`journey:${PLAN}`])).sort()).toEqual(['a', 'b'])
+  })
+
+  it('narrows to the people still going, or to the finished', async () => {
+    expect(await resolveSpaceBroadcastAudience(SPACE, [`journey:${PLAN}:in_progress`])).toEqual(['a'])
+    expect(await resolveSpaceBroadcastAudience(SPACE, [`journey:${PLAN}:finished`])).toEqual(['b'])
+  })
+
+  it('resolves to nobody when the plan is not this Space\'s', async () => {
+    state.plans = []
+    expect(await resolveSpaceBroadcastAudience(SPACE, [`journey:${PLAN}`])).toEqual([])
+  })
+
+  it('never lists a journey in the picker', async () => {
+    const keys = (await loadSpaceBroadcastSegments(SPACE)).map((s) => s.key)
+    expect(keys.some((k) => k.startsWith('journey:'))).toBe(false)
+  })
+
+  it('unions with a listed segment without duplicates', async () => {
+    const ids = await resolveSpaceBroadcastAudience(SPACE, [`journey:${PLAN}:in_progress`, MEMBERS_SEGMENT_KEY])
+    expect(new Set(ids)).toEqual(new Set(['a', 'owner', 'm1', 'm2']))
+    expect(ids.length).toBe(4)
+  })
+
+  it('treats a malformed journey key as a listed key that matches nothing', async () => {
+    expect(await resolveSpaceBroadcastAudience(SPACE, ['journey:bad key'])).toEqual([])
   })
 })
