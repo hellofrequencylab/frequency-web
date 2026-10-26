@@ -8,7 +8,7 @@ const require = createRequire(path.resolve('package.json'))
 const ts = require('typescript')
 const authored = '  My exact steps.\n\nStill my voice!  '
 let requested
-const fakeModel = { questions: ['Who is this for?'], title: 'Invented title', body: 'Invented steps', steps: ['Invented step'] }
+const fakeModel = { questionIds: ['audience'] }
 const stubs = { './spark': { defineSpark: spec => spec, runSpark: async (spec, input) => { requested = { spec, input }; return spec.coerce(fakeModel) } } }
 const modules = new Map()
 function load(file) {
@@ -31,6 +31,8 @@ assert.equal(JSON.stringify(result), JSON.stringify({ questions: ['Who is this f
 assert.equal(JSON.parse(requested.input.content).authoredDraft, authored)
 assert.equal(requested.spec.feature, 'practice-spark')
 assert.equal(spark.PRACTICE_SPARK.coerce({ title: 'Generated title', body: 'Generated steps' }), null)
+assert.equal(spark.PRACTICE_SPARK.coerce({ questionIds: ['audience'], title: 'Invented title', body: 'Invented steps' }), null)
+assert.equal(spark.PRACTICE_SPARK.coerce({ questions: ['Would Sunrise Flow work as your title?'] }), null)
 const actions = readFileSync('app/(main)/practices/actions.ts', 'utf8')
 const coachBlock = actions.slice(actions.indexOf('export async function buildPracticeWithVeraAction'), actions.indexOf('// Set the author tags'))
 assert.ok(coachBlock.includes('await authorPractice(id)'))

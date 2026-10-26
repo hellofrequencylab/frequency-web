@@ -50,3 +50,17 @@ async function acceptance(instance) {
 await acceptance(boundary())
 await assert.rejects(acceptance(boundary(true)), 'restoring free-text model output must violate the same contract')
 console.log('SCAN-1164: actual Space/shared/Practice-Journey provider boundaries render reviewed IDs only; unquoted copy, unknown IDs and extra fields rejected; legacy-text bypass fails')
+
+// Retain the older SCAN-1163 conversation privacy/quoted-guidance contract as consequences.
+const conversation = readFileSync('lib/comms/vera-conversation.ts', 'utf8')
+const ast = ts.createSourceFile('conversation.ts', conversation, ts.ScriptTarget.Latest, true)
+const transcript = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === 'transcript')
+const quote = ast.statements.find(n => ts.isVariableStatement(n) && n.declarationList.declarations.some(d => d.name.getText(ast) === 'QUOTE'))
+assert.ok(transcript && quote)
+const privacy = {}
+vm.runInNewContext(ts.transpileModule(`${transcript.getText(ast)}\n${quote.getText(ast)}\nthis.quote = QUOTE`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, privacy)
+const messages = [{direction:'inbound', authorName:'PRIVATE AUTHOR', body:'Owner supplied body', isInternal:false},{direction:'outbound',authorName:'PRIVATE STAFF',body:'PRIVATE INTERNAL NOTE',isInternal:true}]
+assert.equal(privacy.transcript(messages), 'Them: Owner supplied body')
+assert.ok(privacy.transcript([{...messages[0],body:'x'.repeat(9000)}]).length <= 8000)
+for (const quoted of ['What about "Invented"?', 'What about “Invented”?']) assert.ok(privacy.quote.test(quoted))
+assert.ok(conversation.includes('!QUOTE.test(q)'), 'conversation quoted-guidance rejection remains wired')
