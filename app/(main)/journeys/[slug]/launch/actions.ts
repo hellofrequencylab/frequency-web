@@ -25,6 +25,9 @@ import { getCallerProfile } from '@/lib/auth'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendBulkDm } from '@/lib/comms/bulk-dm'
+import { rateLimitOk } from '@/lib/rate-limit'
+import { routeNotification } from '@/lib/notifications/router'
+import type { PreferenceSubject } from '@/lib/notification-preferences'
 import { createSpaceCampaign, scheduleSpaceCampaign, sendSpaceCampaign, parseScheduleTime } from '@/lib/spaces/campaigns'
 import { createFunnel, addStageLink } from '@/app/(main)/admin/growth/funnels/actions'
 import { getFunnel } from '@/lib/funnels/store'
@@ -285,6 +288,57 @@ async function sendEnrolleeEmail(
   }
 }
 
+/** Push cap for one Dispatch to a cohort: each recipient costs a router call (preferences + job). */
+const COHORT_DISPATCH_CAP = 500
+
+/**
+ * Dispatch to the cohort: a push to each picked enrollee, through the notification router
+ * ('event.dispatch', the same Dispatch category the Space and Event fan-outs use), so a member's
+ * own push preference and per-Space mute decide whether they hear it. Nothing is published to the
+ * Dispatch feed: a feed row is scoped to a Space or an Event, and a Journey cohort is neither.
+ */
+async function sendCohortDispatch(
+  ctx: JourneyLaunchContext,
+  planId: string,
+  subject: string,
+  body: string,
+  segments: string[],
+): Promise<BroadcastChannelResult> {
+  const audience = (await resolveEnrolleeAudience(planId, segments)).filter((id) => id !== ctx.viewerId)
+  if (audience.length === 0) return { channel: 'dispatch', ok: false, detail: 'No one in that audience yet.' }
+  if (audience.length > COHORT_DISPATCH_CAP) {
+    return { channel: 'dispatch', ok: false, detail: `That is too many people for one Dispatch (limit ${COHORT_DISPATCH_CAP}).` }
+  }
+  if (!(await rateLimitOk('journey-broadcast:dispatch', ctx.viewerId, 10, '1 h'))) {
+    return { channel: 'dispatch', ok: false, detail: 'You have sent a lot of messages recently. Try again in a bit.' }
+  }
+
+  const prefSubject: PreferenceSubject | undefined = ctx.spaceId
+    ? { subjectType: 'space', subjectId: ctx.spaceId }
+    : undefined
+  let reached = 0
+  for (const profileId of audience) {
+    try {
+      const res = await routeNotification(
+        'event.dispatch',
+        { profileId, ...(prefSubject ? { subject: prefSubject } : {}) },
+        { title: subject, body, url: `/journeys/${ctx.slug}` },
+      )
+      if (res.enqueuedCount > 0) reached++
+    } catch {
+      // a bad recipient never aborts the rest
+    }
+  }
+  if (reached === 0) {
+    return { channel: 'dispatch', ok: false, detail: 'No one has push on for this, so nothing went out.' }
+  }
+  return {
+    channel: 'dispatch',
+    ok: true,
+    detail: `Pushed to ${reached} ${reached === 1 ? 'person' : 'people'} with push on.`,
+  }
+}
+
 /**
  * Message the Journey's enrollees from the launch surface, through the shared BroadcastComposer.
  *
@@ -292,8 +346,9 @@ async function sendEnrolleeEmail(
  * kind 'crm', channel 'in_app'), the same operator-DM path the event broadcast uses, so every message
  * is logged and lands in the member's own Frequency inbox. Email rides the Space's own campaign lane
  * (sendEnrolleeEmail below), so it clears the same marketing consent bar as any Space campaign.
- * Dispatch and Text are offered as disabled chips by the surface with honest reasons (refuse-first,
- * ADR-256) — a smuggled key is refused here too rather than silently ignored.
+ * Dispatch is a push to the cohort through the notification router (sendCohortDispatch). Text is
+ * offered as a disabled chip with an honest reason (refuse-first, ADR-256); a smuggled key is
+ * refused here too rather than silently ignored.
  *
  * SCOPE: these conversations carry the journey lane (scope_kind='journey', scope_id=plan id) so
  * the send threads in The Path beside the other lanes. See JOURNEY_COMMS_SCOPE_LIVE above.
@@ -311,14 +366,17 @@ export async function sendJourneyBroadcastAction(
 
   const picked = (input.channels ?? []) as BroadcastChannelKey[]
   if (picked.length === 0) return fail('Pick at least one channel.')
-  const unsupported = picked.filter((c) => c !== 'dm' && c !== 'email')
+  const unsupported = picked.filter((c) => c !== 'dm' && c !== 'email' && c !== 'dispatch')
   const results: BroadcastChannelResult[] = unsupported.map((channel) => ({
     channel,
     ok: false,
-    detail: channel === 'sms' ? 'Text is not available yet.' : 'That channel is not wired for Journeys yet.',
+    detail: channel === 'sms' ? 'Text is not available yet.' : 'That channel is not available for Journeys.',
   }))
   if (picked.includes('email')) {
     results.push(await sendEnrolleeEmail(ctx, planId, subject, body, input.segments ?? []))
+  }
+  if (picked.includes('dispatch')) {
+    results.push(await sendCohortDispatch(ctx, planId, subject, body, input.segments ?? []))
   }
   if (!picked.includes('dm')) return ok({ results })
 
