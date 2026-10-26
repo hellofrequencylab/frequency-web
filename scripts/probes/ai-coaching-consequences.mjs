@@ -50,6 +50,29 @@ async function vera() {
   assert.equal(reads, 2); assert.equal(proposals.length, 0)
   console.log('Vera authoring dispatch refused; valid reads preserved; malformed mixed read refused.')
 }
+async function spark() {
+  const load = harness({
+    './client': { aiEnabled: () => true },
+    './usage': { featureOverBudget: async () => false },
+    './rate-limit': { aiRateLimited: async () => false },
+    './voice': { withVoice: (s) => s },
+    '@/lib/studio/registry': { studioManifest: () => ({ steer: {} }) },
+    './complete': { completeRaw: async () => ({ content: [{ type: 'tool_use', name: 'extract', input: { description: 'Invented marketing copy' } }] }) },
+  })
+  const { runSpark } = load('lib/ai/spark.ts')
+  const spec = { entity: 'event', feature: 'event-spark', tier: 'sonnet', maxTokens: 500,
+    system: 'Extract facts', tool: { name: 'extract' }, proseField: 'description', coerce: (r) => ({ description: r.description.trim() }) }
+  const authored = 'Human words remain mine.'
+  const result = await runSpark(spec, { content: authored, authoredProse: authored })
+  assert.equal(result.description, authored)
+  assert.equal(await runSpark({ ...spec, coerce: () => ({ description: 'Truncated' }) }, { content: authored, authoredProse: authored }), null)
+  assert.equal(await runSpark({ ...spec, proseResultField: 'about', coerce: r => ({ about: r.description.trim() }) }, { content: authored, authoredProse: authored }).then(r => r.about), authored)
+  const read = p => fs.readFileSync(path.join(root, p), 'utf8')
+  for (const file of ['app/(main)/events/event-spark.tsx', 'components/circles/builder/circle-wizard.tsx']) assert.ok(!/<SparkFidelity /.test(read(file)), `${file}: no rewrite choice for authored text`)
+  assert.ok(/<SparkFidelity /.test(read('components/journey/v2/journey-spark.tsx')), 'unconverted Journey fidelity remains explicit')
+  assert.ok(/description: str\(r\.description, 8000\)/.test(read('lib/events/normalize.ts')), 'existing Event description capacity retained')
+  console.log('Actual Spark retains human words, rejects coercion loss and supports mapped fields; remaining Journey fidelity and Event capacity retained.')
+}
 async function space() {
   const state = { allowed: false, writes: [], missing: false }
   const load = harness({
@@ -94,7 +117,7 @@ async function campaign() {
   assert.ok(result.limitations.some((v) => v.includes('unknown, not zero')))
   console.log('Outcome goal checklist stays useful with AI off; fabricated metric/prose output refused.')
 }
-const modes = { vera, space, campaign }
+const modes = { vera, spark, space, campaign }
 const mode = process.argv[2]
-assert.ok(Object.hasOwn(modes, mode), 'Choose vera, space or campaign')
+assert.ok(Object.hasOwn(modes, mode), 'Choose vera, spark, space or campaign')
 await modes[mode]()
