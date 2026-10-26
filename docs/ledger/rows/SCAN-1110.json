@@ -1,7 +1,7 @@
 {
   "id": "SCAN-1110",
   "title": "Record the decision that Frequency is the only platform design",
-  "status": "open",
+  "status": "done",
   "priority": "P1",
   "lane": "hygiene",
   "size": "S",
@@ -9,11 +9,12 @@
     "file": "lib/theme/design.ts",
     "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
   },
-  "detail": "#3903 reversed ADR-1737 (committed tree stays DAWN, rollback is unsetting the variable) with no ADR. Write the ADR fragment (supersede ADR-1737, link it in the Status line), including the new rollback path.",
+  "detail": "#3903 reversed ADR-1737 (committed tree stays DAWN, rollback is unsetting the variable) with no ADR. Write the ADR fragment (supersede ADR-1737, link it in the Status line), including the new rollback path. Closed 2026-10-26: ADR-1877 records that Frequency is the only platform design, supersedes ADR-1737 in part and documents the rollback path.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs adr-frequency-only",
     "note": "Exits 0 only when the repair has landed; fails on main today."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-26"
 }
