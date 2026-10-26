@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-1337",
+  "title": "Activate ready domains and align hosted website canonicals",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "pnpm exec vitest run lib/sites/domain-setup-actions.test.ts lib/spaces/domain-activation.test.ts lib/sites/profile-canonical.test.ts lib/spaces/profile-metadata-canonical.test.ts lib/sites/domain-purchase.test.ts app/sitemap.test.ts --maxWorkers=2",
+    "note": "Nine focused suites / 138 tests passed with inert provider/storage mocks, including readiness flags, stale candidate CAS, revoked authorization, existing-domain preservation, purchase staging, inherited chapter metadata and sitemap exclusion. Local source verification only; root owns full release checks and production verification."
+  },
+  "detail": "Manual and purchased domains stage in a public-safe preferences node while spaces.domain remains the active binding. Check again requires complete hosting/ownership/DNS/TLS readiness and fresh authorization, then compare-and-set matches both candidate and prior active binding. Pending cancellation preserves a working active domain. Metadata and sitemap share website canonical resolution, including published Network chapters with no direct domain. The Frequency sitemap omits aliases whose canonical belongs to a hosted website and retains app-only tabs. Existing active domains retain backward-compatible behavior; historical domain readiness needs separate release verification. No migration, provider mutation, purchase, DNS change or production data write performed. Existing preferences RPC is required; staging fails visibly when unavailable.",
+  "wave": "W7",
+  "closed": "2026-10-25"
+}

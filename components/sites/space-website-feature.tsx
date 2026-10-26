@@ -7,6 +7,7 @@ import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { appOrigin, siteSubdomainHost } from '@/lib/sites/host'
 import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
+import { readSiteDomainCandidate } from '@/lib/sites/domain-setup'
 import { siteDomainStatus } from '@/lib/sites/vercel-domains'
 import { domainPurchaseOpen } from '@/lib/sites/domain-purchase'
 import { SiteDomainPanel } from './site-domain-panel'
@@ -38,7 +39,8 @@ export async function SpaceWebsiteFeature({
     featureGatesLive().then((gatesLive) => featureAllowed('custom_domain', { plan }, { gatesLive })),
     domainPurchaseOpen(),
   ])
-  const domainStatus = space.domain ? { domain: space.domain, ...(await siteDomainStatus(space.domain)) } : null
+  const setupDomain = readSiteDomainCandidate(space.preferences) ?? space.domain
+  const domainStatus = setupDomain ? { domain: setupDomain, ...(await siteDomainStatus(setupDomain)) } : null
   const siteUrl = websiteUrl(space.slug, domainStatus)
   const address = siteUrl.replace(/^https?:\/\//, '')
 
@@ -82,7 +84,7 @@ export async function SpaceWebsiteFeature({
 
       <div className="mt-6 border-t border-border pt-5">
         {canConnect || domainStatus ? (
-          <SiteDomainPanel slug={space.slug} initial={domainStatus} websitePublished={published} buyOpen={buyOpen} />
+          <SiteDomainPanel key={`${space.id}:${JSON.stringify(domainStatus)}`} slug={space.slug} initial={domainStatus} websitePublished={published} buyOpen={buyOpen} />
         ) : null}
         {!entitled && <DomainUpgradeNudge slug={space.slug} openNow={canConnect} />}
       </div>

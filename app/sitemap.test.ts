@@ -18,6 +18,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // The route builds every URL from SITE_URL, which is resolved at module load — so the test reads the
 // same constant rather than stubbing the env after the import has already been hoisted.
 import { readFileSync } from 'node:fs'
+import { resolveProfileSiteCanonical } from '@/lib/sites/profile-canonical'
+vi.mock('@/lib/sites/profile-canonical', () => ({ resolveProfileSiteCanonical: vi.fn(async () => null) }))
 import { SITE_URL as SITE } from '@/lib/site'
 
 // ── Fixture ──────────────────────────────────────────────────────────────────────────────────────
@@ -769,4 +771,21 @@ describe('organizer sitemap read failures', () => {
       expect(String(log.mock.calls[0][0])).not.toContain('TRANSPORT')
     } finally { log.mockRestore() }
   })
+})
+
+
+it('does not advertise Frequency aliases whose public website twin is canonical on another host', async () => {
+  vi.mocked(resolveProfileSiteCanonical).mockImplementation(async (site, pageSlug) => site?.id === 'sp-a' && (!pageSlug || pageSlug === 'home') ? 'https://alpha.example/' : null)
+  // The real route passes the canonical candidate attached by the directory reader.
+  SPACES[0] = { ...SPACES[0], canonicalSite: { id: 'sp-a', slug: 'alpha', domain: 'alpha.example', pages: ['home'] } } as typeof SPACES[0]
+  try {
+    const entries = await sitemap()
+    expect(entries.some((entry) => entry.url === `${SITE}/spaces/alpha`)).toBe(false)
+    expect(entries.some((entry) => entry.url === `${SITE}/spaces/bravo`)).toBe(true)
+    expect(entries.some((entry) => entry.url === `${SITE}/spaces/alpha/podcasts`)).toBe(true)
+    expect(entries.some((entry) => entry.url === 'https://alpha.example/')).toBe(false)
+  } finally {
+    delete (SPACES[0] as unknown as Record<string, unknown>).canonicalSite
+    vi.mocked(resolveProfileSiteCanonical).mockResolvedValue(null)
+  }
 })
