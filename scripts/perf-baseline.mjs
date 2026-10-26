@@ -38,7 +38,7 @@ const WARMUP = Number(process.env.PERF_BASELINE_WARMUP || 5)
 // The five hot paths (OBSERVABILITY-BASELINES.md §2). `route` is a documentation-only
 // hint for where to sample; `sql` is the EXPLAIN target for the query plan. Routes that
 // require an authenticated session are flagged so the operator knows the floor sample
-// undercounts and the real number comes from RUM.
+// is skipped and the real number comes from authenticated RUM.
 export const HOT_PATHS = [
   {
     id: 'feed',
@@ -104,27 +104,57 @@ function percentile(sortedMs, p) {
   return Math.round(sortedMs[idx])
 }
 
-async function sampleRoute(path) {
-  if (!BASE_URL) return null
-  const url = `${BASE_URL.replace(/\/+$/, '')}${path.route.startsWith('/') ? path.route : '/'}`
-  // Only sample concrete GET-able routes (skip placeholder/action descriptions).
+/**
+ * @param {{ route: string, authed?: boolean }} path
+ * @param {{ baseUrl?: string | null, samples?: number, warmup?: number,
+ * fetcher?: (url: string, init?: RequestInit) => Promise<{ ok: boolean, status: number, body?: { cancel: () => Promise<unknown> } | null }>,
+ * now?: () => number }} options
+ */
+export async function sampleRoute(path, {
+  baseUrl = BASE_URL, samples = SAMPLES, warmup = WARMUP,
+  fetcher = fetch, now = () => performance.now(),
+} = {}) {
+  if (!baseUrl) return null
   if (!path.route.startsWith('/') || path.route.includes('<')) return { skipped: 'no concrete GET route' }
-
+  if (path.authed) return { skipped: 'authenticated route requires an authenticated measurement; no anonymous request made' }
+  if (!Number.isSafeInteger(samples) || samples < 1 || !Number.isSafeInteger(warmup) || warmup < 0) {
+    throw new Error('Performance samples must be a positive integer and warmup a nonnegative integer')
+  }
+  const url = `${baseUrl.replace(/\/+$/, '')}${path.route}`
   const durations = []
-  const total = WARMUP + SAMPLES
-  for (let i = 0; i < total; i++) {
-    const t0 = performance.now()
+  const failures = { http: {}, network: 0, timeout: 0 }
+  let warmupFailures = 0
+  let cleanupFailures = 0
+  for (let i = 0; i < warmup + samples; i++) {
+    const t0 = now()
+    let response
     try {
-      await fetch(url, { method: 'GET', cache: 'no-store', signal: AbortSignal.timeout(15000) })
-    } catch {
-      // A failed sample is recorded as the timeout ceiling so it shows up, not hidden.
+      // Redirects (including a sign-in redirect) are outcomes, never a fast successful page.
+      response = await fetcher(url, { method: 'GET', redirect: 'manual', cache: 'no-store', signal: AbortSignal.timeout(15000) })
+      const duration = now() - t0
+      if (response.ok) {
+        if (i >= warmup) durations.push(duration)
+      } else if (i < warmup) {
+        warmupFailures++
+      } else {
+        failures.http[response.status] = (failures.http[response.status] ?? 0) + 1
+      }
+    } catch (err) {
+      if (i < warmup) warmupFailures++
+      else if (err?.name === 'TimeoutError' || err?.name === 'AbortError') failures.timeout++
+      else failures.network++
+    } finally {
+      // This is a response-header latency floor, not a full-body/browser timing.
+      // Release every response body so sequential samples do not retain unread streams.
+      try { await response?.body?.cancel() } catch { cleanupFailures++ }
     }
-    const dt = performance.now() - t0
-    if (i >= WARMUP) durations.push(dt)
   }
   durations.sort((a, b) => a - b)
   return {
-    samples: durations.length,
+    measurement: 'successful response headers only; not browser or authenticated latency',
+    attempted: samples, samples: durations.length,
+    failed: samples - durations.length, failures,
+    warmupFailures, cleanupFailures,
     p50: percentile(durations, 50),
     p95: percentile(durations, 95),
     p99: percentile(durations, 99),
@@ -134,9 +164,11 @@ async function sampleRoute(path) {
 async function main() {
   const results = []
   for (const path of HOT_PATHS) {
-    const latency = plansOnly ? null : await sampleRoute(path.route ? path : path)
+    const latency = plansOnly ? null : await sampleRoute(path)
     results.push({ ...path, latency })
   }
+
+  if (results.some(({ latency }) => latency && (latency.failed > 0 || latency.cleanupFailures > 0))) process.exitCode = 1
 
   if (asJson) {
     console.log(JSON.stringify({ baseUrl: BASE_URL, samples: SAMPLES, paths: results }, null, 2))
@@ -145,6 +177,7 @@ async function main() {
 
   console.log('Performance baseline (H0-6) · docs/OBSERVABILITY-BASELINES.md')
   console.log('='.repeat(64))
+  console.log('Timing: successful response headers only; full-page, browser and authenticated latency are not measured.')
   if (!BASE_URL && !plansOnly) {
     console.log('PERF_BASELINE_BASE_URL not set: documentation mode (no samples taken).')
     console.log('Set it to a deployed base URL to collect a latency floor.\n')
@@ -164,14 +197,17 @@ async function main() {
   for (const r of results) {
     console.log(`\n${r.label}  [${r.id}]`)
     console.log(`  entry: ${r.entry}`)
-    console.log(`  route: ${r.route}${r.authed ? '  (authed: floor sample undercounts; read RUM for true p95)' : ''}`)
+    console.log(`  route: ${r.route}${r.authed ? '  (authed: anonymous sampling skipped; use authenticated RUM)' : ''}`)
     if (r.latency && r.latency.p50 != null) {
-      console.log(`  p50=${r.latency.p50}ms  p95=${r.latency.p95}ms  p99=${r.latency.p99}ms  (n=${r.latency.samples})`)
+      console.log(`  p50=${r.latency.p50}ms  p95=${r.latency.p95}ms  p99=${r.latency.p99}ms  (successful=${r.latency.samples}/${r.latency.attempted})`)
     } else if (r.latency && r.latency.skipped) {
       console.log(`  (skipped: ${r.latency.skipped})`)
+    } else if (r.latency && r.latency.attempted) {
+      console.log('  No successful response-header samples; latency is unavailable.')
     } else {
       console.log('  (no sample: set PERF_BASELINE_BASE_URL)')
     }
+    if (r.latency?.failed || r.latency?.cleanupFailures || r.latency?.warmupFailures) console.log(`  outcomes: ${JSON.stringify(r.latency.failures)}; warmupFailures=${r.latency.warmupFailures}; cleanupFailures=${r.latency.cleanupFailures}`)
   }
   console.log('\nNext: run with --plans to capture query plans; fill OBSERVABILITY-BASELINES §2b/§2c.')
 }

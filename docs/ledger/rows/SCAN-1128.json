@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1128",
+  "title": "Marketing, public, help, discover and door pages render one design",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "L",
+  "source": {
+    "file": "app/(marketing)/pricing/page.tsx",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "Dead DAWN branches in about 38 public pages (including the seven marketing-kit baseline pages: subscribe, go/[door], rsvp/[token], mindless, pricing, vs, vs/[slug]). Land as three PRs under the 40-file gate and shrink the marketing-kit baseline each time.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs dawn-public",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}

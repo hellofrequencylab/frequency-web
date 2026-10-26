@@ -69,6 +69,7 @@ export function SiteDomainPanel({
       const result = await checkSiteDomain(slug)
       if (isError(result)) return setError(result.error)
       setStatus(result.data)
+      router.refresh()
     })
   }
 
@@ -96,10 +97,10 @@ export function SiteDomainPanel({
       if (document.visibilityState !== 'visible' || polls.current >= AUTO_CHECK_MAX) return
       polls.current += 1
       const result = await checkSiteDomain(slug)
-      if (!isError(result)) setStatus(result.data)
+      if (!isError(result)) { setStatus(result.data); if (result.data.attached && result.data.verified && result.data.dnsReady && result.data.secure) router.refresh() }
     }, AUTO_CHECK_MS)
     return () => window.clearInterval(id)
-  }, [waiting, slug])
+  }, [waiting, slug, router])
 
   // Connect automatically: ask once per pending domain whether its DNS provider can apply Frequency's
   // template. Any failure just leaves the copy steps, which are always shown.
