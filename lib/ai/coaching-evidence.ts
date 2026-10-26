@@ -31,7 +31,7 @@ export interface SpaceCoachingIdentity {
   about: string | null
 }
 
-export interface CoachingTask {
+interface CoachingTask {
   id: 'name' | 'tagline' | 'about' | 'attendance' | 'measurement' | 'preview' | 'action' | 'outcome'
   priority: number
   title: string
