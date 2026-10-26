@@ -63,6 +63,8 @@ const HEAD_HTML_CHARS = 20_000 // <head> slice kept for og/logo parse
 const MAX_LINKS = 60 // same-origin hrefs handed to the crawl planner (it ranks + caps again)
 const MAX_IMAGES = 20 // image urls handed to the media capture (it filters chrome + caps again)
 
+import { fetchPinned } from '@/lib/net/pinned-fetch'
+
 // ── SSRF / scheme guard ────────────────────────────────────────────────────────────
 
 /** Whether an IPv4-literal host is in a private / loopback / link-local / CGNAT / metadata range.
@@ -317,36 +319,9 @@ function decodeAttr(value: string): string {
 
 // ── The default provider ────────────────────────────────────────────────────────────
 
-/** Read the response body up to a byte cap (bounds memory on a hostile / huge page). */
-async function readBounded(res: Response, maxBytes: number): Promise<string> {
-  const reader = res.body?.getReader()
-  if (!reader) return await res.text()
-  const chunks: Uint8Array[] = []
-  let total = 0
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) break
-    if (value) {
-      chunks.push(value)
-      total += value.length
-      if (total >= maxBytes) {
-        await reader.cancel()
-        break
-      }
-    }
-  }
-  return new TextDecoder('utf-8', { fatal: false }).decode(concat(chunks))
-}
-
-function concat(chunks: Uint8Array[]): Uint8Array {
-  const total = chunks.reduce((n, c) => n + c.length, 0)
-  const out = new Uint8Array(total)
-  let off = 0
-  for (const c of chunks) {
-    out.set(c, off)
-    off += c.length
-  }
-  return out
+/** Whether a content-type is something we parse for text (absent counts: be lenient). */
+function isHtmlish(contentType: string | undefined): boolean {
+  return !contentType || /html|xml|text\//i.test(contentType)
 }
 
 /**
@@ -361,49 +336,48 @@ export const defaultWebProvider: WebProvider = {
     if (!isFetchableUrl(url)) {
       return { ok: false, url, status: 0, error: 'url is not a fetchable public http(s) target' }
     }
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
     try {
-      const res = await fetch(url, {
-        method: 'GET',
-        redirect: 'follow',
-        signal: controller.signal,
+      // SCAN-1123: the host is resolved once, every address must be public, and the socket is pinned
+      // to it; each redirect hop is re-checked (lib/net/pinned-fetch.ts). The lexical guard above
+      // stays as the cheap first gate.
+      const res = await fetchPinned(url, {
+        maxBytes,
+        truncate: true,
+        timeoutMs,
         headers: {
           'user-agent': 'FrequencyImporter/1.0 (+https://hellofrequency.com)',
           accept: 'text/html,application/xhtml+xml',
         },
+        accept: (_status, headers) => isHtmlish(headers['content-type']),
       })
-      const contentType = res.headers.get('content-type') ?? undefined
+      if (!res) return { ok: false, url, status: 0, error: 'fetch failed or target is not a public host' }
+      const contentType = res.headers['content-type']
+      const finalUrl = res.finalUrl
+      if (res.status < 200 || res.status >= 300) {
+        return { ok: false, url, finalUrl, status: res.status, contentType, error: `http ${res.status}` }
+      }
       // Only parse html-ish bodies; a pdf / image / json page yields no readable text here.
-      const isHtml = !contentType || /html|xml|text\//i.test(contentType)
-      if (!res.ok) {
-        return { ok: false, url, finalUrl: res.url, status: res.status, contentType, error: `http ${res.status}` }
+      if (!isHtmlish(contentType)) {
+        return { ok: true, url, finalUrl, status: res.status, contentType, text: '', headHtml: '' }
       }
-      if (!isHtml) {
-        return { ok: true, url, finalUrl: res.url, status: res.status, contentType, text: '', headHtml: '' }
-      }
-      const body = await readBounded(res, maxBytes)
+      const body = new TextDecoder('utf-8', { fatal: false }).decode(res.body)
       // ONE parse of the body feeds everything downstream: readable text, the head slice for
       // og/logo, and the link + image lists. Callers never see raw body html.
-      const base = res.url || url
       return {
         ok: true,
         url,
-        finalUrl: res.url,
+        finalUrl,
         status: res.status,
         contentType,
         title: extractTitle(body),
         text: htmlToText(body),
         headHtml: extractHeadHtml(body),
-        links: extractLinks(body, base),
-        images: extractImages(body, base),
+        links: extractLinks(body, finalUrl),
+        images: extractImages(body, finalUrl),
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      const status = /abort/i.test(msg) ? 408 : 0
-      return { ok: false, url, status, error: msg }
-    } finally {
-      clearTimeout(timer)
+      return { ok: false, url, status: 0, error: msg }
     }
   },
 

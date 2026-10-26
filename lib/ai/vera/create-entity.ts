@@ -610,31 +610,13 @@ export async function confirmProposalWithRegisteredCommit(
 
 // ── The Vera tool entry point ────────────────────────────────────────────────────────────
 
-/**
- * What `create_entity` does when Vera calls it: it PROPOSES, and that is the whole of it.
- *
- * There is no confirm tool and no `approvedSend`-style graduation flag for creation, so no
- * sequence of model output reaches `confirmCreate`. The member has to open the draft and tap
- * Create in their own session. This function is the structural statement of that.
- */
+/** Legacy model tool entry point. Refuses content persistence; human Studio flows use
+ * proposeCreate / proposeAndConfirmCreate directly and retain their existing governance. */
 export async function proposeCreateFromTool(
-  actorProfileId: string,
-  args: Record<string, unknown>,
+  _actorProfileId: string,
+  _args: Record<string, unknown>,
 ): Promise<{ ok: boolean; error?: string }> {
-  // The caller is re-derived inside proposeCreate; `actorProfileId` is the confirming session's
-  // id as the tool loop knows it, and a mismatch means the loop is running for someone else.
-  const caller = await getCallerProfile()
-  if (!caller || caller.id !== actorProfileId) return { ok: false, error: 'Sign in first.' }
-
-  const draft = parseDraftArg(args.draft)
-  if (!draft) return { ok: false, error: 'That draft did not come through in one piece.' }
-
-  const res = await proposeCreate({
-    entity: String(args.entity ?? ''),
-    draft,
-    spaceId: typeof args.spaceId === 'string' ? args.spaceId : null,
-    aiDrafted: true,
-    rationale: typeof args.rationale === 'string' ? args.rationale : undefined,
-  })
-  return 'error' in res ? { ok: false, error: res.error } : { ok: true }
+  // This is specifically the MODEL entry point. Studio's human-authored proposeCreate and
+  // confirmCreate remain available, but a tool call cannot persist model-authored fields.
+  return { ok: false, error: 'Vera can help you plan what to make. Write your own content in the create flow.' }
 }

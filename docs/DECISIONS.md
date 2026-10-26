@@ -52128,7 +52128,7 @@ Wellness signals are sensitive data. A persona, archetype, arrival answer, age b
 
 ## ADR-1737: One setting picks the platform's design system, DAWN or Frequency, and Frequency overrides every older theme layer
 
-**Status:** Accepted · 2026-10-13 · backlog `LIVE-920` · owner-ruled · sits above [ADR-249](DECISIONS.md) (skins) and the four-axis model in docs/THEME.md · beside [ADR-1748](DECISIONS.md) (the name Frequency)
+**Status:** Accepted · 2026-10-13 · backlog `LIVE-920` · owner-ruled · sits above [ADR-249](DECISIONS.md) (skins) and the four-axis model in docs/THEME.md · beside [ADR-1748](DECISIONS.md) (the name Frequency) · **Superseded in part or whole by [ADR-1877](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** The owner is replacing DAWN with a new design system, Frequency, and asked for a one-button change-over: "The only two themes for the main site should be DAWN and Frequency", "The new Frequency theme will override everything. Midnight will become a theme for users." The survey of 2026-10-13 found colour about 99% on tokens but four things a token swap could not reach: `@theme inline` held the shadows, the radius steps (`rounded-sm` to `rounded-2xl`, about 2,200 call sites) and the body font as literals, which Tailwind compiles into each utility; the browser chrome colour and the MapLibre maps carried their own DAWN hex; five older theme layers (skins, generations, occasions, Space font sets and accents, Theme Studio `<style>`) re-point tokens below the shell root, where a site-level value cannot win; and the root layout must stay static, so a per-request switch was ruled out.
 
@@ -53287,3 +53287,195 @@ The shelf is derived, never stored (`lib/circles/kind.ts`): a circle owned by a 
 **Rejected.** A device token with role `authenticated` and `sub: "device:<id>"` as the protocol drafted: `authenticated` opens every signed-in read in PostgREST to a device, and a non-uuid `sub` makes `auth.uid()` raise in any other policy evaluated for the join. A custom Postgres role: cleaner in principle, but Realtime's handling of a role outside anon and authenticated is not something this repo can verify before a preview, so it waits for a measured need. Enforcing the command allow-list in the insert policy: Realtime authorizes at join, not per message, so a payload check would either deny the join or check nothing; the device enforces the list it receives in the token reply. A new JWT library: Node's crypto signs HS256 in a few lines.
 
 **Consequences.** Off by default, and the migration is unapplied: nothing changes until the RUNBOOKS gate is met. The device relies on a shared-secret signing key; if the project moves wholly to asymmetric signing keys, minting needs the new key and this ADR is revisited. Turning the switch off stops new tokens; live joins end within 15 minutes. Not built: the optional audit table, and a web panel for the switch.
+
+## ADR-1815: A Network is priced as $149 plus $59 a chapter, in two worlds, with a Founding year and a yearly package
+
+**Status:** Accepted 2026-10-20. The Network base and the Collective included-Space count were amended by [ADR-1817](DECISIONS.md) on 2026-10-21 ($299 base, $476 at three chapters). Replaces the Network figures in [ADR-1709](DECISIONS.md) item 2 (SCAN-980, LIVE-1183).
+
+**Context.** The old Network was a $599 quote with ten chapters included and a sales call. It was too high to try and too flat to grow with. The owner asked for a Founding rate, a yearly package, and two tiers: a Network that stays in the Frequency ecosystem pays less; one that cuts the cord pays SaaS prices.
+
+**Decision.**
+- **Partner Network** (self-serve, keeps the Frequency Partner badge, stays on discovery and the network fee): $149 a month plus $59 per chapter, three chapters to start, up to 25 (three chapters is $326 a month, ten is $739, 25 is $1,624). Verified nonprofit: $119 plus $47 per chapter ($260 at three). 14-day trial. Network fee on sales we send stays 2%.
+- **Founding.** A year costs nine months, first year only, taken as a Stripe coupon (`network-founding-year`, 10% off the first yearly invoice, base product only) that ends January 1 with the Collective Founding intro. Renews at list. No second price is minted.
+- **Yearly package.** Ten chapters, pay for eight: $6,210 a year (nonprofit $4,950), with onboarding session, priority support and a yearly network health review. It does not stack with Founding. Built as the base plus seven chapter units and a forever amount-off coupon; the chapter quantity cannot drop below seven while the coupon is on.
+- **Independent Network** (sales-led, cuts the cord: own audience, no badge, no discovery, 0% network fee): a yearly agreement from $30,000 plus a $5,000 one-time setup and onboarding fee, by a sales call (owner took the recommended figure, 2026-10-20). A Partner that removes the badge or disconnects moves to Independent pricing at renewal. 
+- Chapters included in a Collective are not touched by this: that count stays with the Collective rules.
+
+**Consequences.** The catalog gains `nonprofit_network_chapter`. The three included chapters replace ten in `set_collective_member_space` and `begin_collective_space_change`. Old Network prices stay resolvable for any existing subscriber. The pricing page, the Networks page and help read the numbers from `NETWORK_PLAN`.
+
+## ADR-1816: A Network resells websites; a client site is a Business Space billed through the Network
+
+**Status:** Accepted 2026-10-21. Builds on [ADR-1815](DECISIONS.md).
+
+**Context.** Website publishing and the custom domain already ship with Business. A Network owner wants to build sites for its own people and bill them outside Frequency. Hosting stays one multi-tenant deployment with custom domains, so there is nothing separate to host.
+
+**Decision.** Any Business account can launch a website. A Network buys only the right to resell: a wholesale price per live client site, $39 for sites 1 to 10, $29 for 11 to 25, $19 from 26, custom domain included. A client site is a Business-level Space, not a chapter (no shared membership), billed to the Network per site on the same item machinery as extra chapters. A member who buys direct stays at Business plus the domain add-on. The Partner badge stays on a Network's client sites; removing it is a $15 a site add-on (the `badge_removal` entitlement), and without it the footer keeps the badge or a text line. The footer credit is a per-Space setting (`preferences.siteBadge`: badge, line, none), and `none` is gated on the entitlement or Independent.
+
+**Consequences.** Four PRs: the footer setting (LIVE-1117), catalog items and per-site billing, the client sites list and creation in the Network admin, then hand-off to the member as owner with domain status and a billing summary. No new Stripe products are created without the owner's explicit yes.
+
+## ADR-1817: Network is $299 plus $59 a chapter with three chapters at the least, and a Collective includes three member Spaces
+
+**Status:** Accepted 2026-10-21. Amends the Network base in [ADR-1815](DECISIONS.md) and the Collective included count in [ADR-1709](DECISIONS.md) item 2 (LIVE-1266).
+
+**Context.** ADR-1815 priced Network at $149 plus $59 a chapter with three chapters included, so the real minimum was $326 and the pricing page said "$149" in one place and "$326" in another. The $149 base also equalled Collective's list price, so Network did not read as the bigger plan. The owner asked for Network to cost more a month than Collective, at about $299 with chapters as add-ons, three chapters at the least, and for each Collective owner to get three member Spaces. The owner chose "$299 plus chapters on top" over "$299 with three chapters included" (2026-10-21).
+
+**Decision.**
+- **Partner Network:** $299 a month plus $59 per chapter, three chapters at the least, up to 25. A Network therefore starts at **$476** a month (three chapters), ten chapters is $889, 25 is $1,774. Verified nonprofit: $239 plus $47 per chapter ($380 at three). Pages quote the real minimum ("from $476"), never the bare base.
+- The Stripe base price bundles the first three chapters ($476 a month, $4,760 a year; nonprofit $380 and $3,800); chapters past three ride the unchanged chapter price. The old $326 and $260 prices stay active so a current subscriber keeps billing and are archived after merge.
+- **Founding** (a year for nine months, first year only, the 10% coupon on the first yearly invoice) and the **yearly package** (ten chapters, pay for eight: $7,710 a year, nonprofit $6,150) keep their rules and now read the new base. Independent Network is unchanged.
+- **Collective** includes **three** member Spaces (it was five); extras stay $29 each. No production Collective holds a member Space, so nobody loses one. A Collective that holds more than three keeps them and cannot attach another until it buys the difference.
+
+**Consequences.** `NETWORK_PLAN` carries 29_900 and 23_900. Migration 20270346022500 repoints the four base price keys and counts three included Spaces for a Collective in `set_collective_member_space` and `begin_collective_space_change`. Network's own contact and email allowances and the plain-word feature rows remain later passes.
+
+## ADR-1818: A new Space comes with Crew, and every pricing surface says so
+
+**Status:** Accepted 2026-10-22. Builds on ADR-810 (the Space creation gate) and ADR-1709 (the ladder).
+
+### Context
+
+The pricing page, grid, FAQ and help said a free Space needs no Crew. The product intent in ADR-810 is the opposite: Crew unlocks your first Space, and owning a paid Business or Non Profit Space unlocks more. That gate is behind featureGatesLive() and bites when the beta ends (December 1). The owner ruled on 2026-10-22 that opening a new Space requires Crew, existing Spaces keep working, and the upsell must be clear everywhere.
+
+### Decision
+
+- One line carries it, `PLAN_STORY.crewSpace`: a Space comes with Crew, funded at whatever amount you choose; until the beta ends anyone can open one free. Hosting stays free after that, and a plan is only for when you charge.
+- The pricing page, grid, calculator, FAQ ("Do I need Crew to open a Space?"), help article and Crew story read that line. No surface says "no card, no clock" about a Space.
+- No new gate is built: ADR-810 already enforces it from the end of the beta. Cards avoid the word beta (the closed-window test), the story, FAQ and help carry it.
+
+### Consequences
+
+The home hero ("Businesses host free", pinned by migrations and the home copy canon) and the /for niche doors are owned elsewhere and follow this line in their own PRs.
+
+## ADR-1863: Six launch doors, and "Decide later" in onboarding (LIVE-1130)
+
+**Status:** Accepted · 2026-10-22 · backlog `LIVE-1130`
+
+**Context.** Daniel set the 1 December North County launch to six niche doors: coaches and healers, studios, event hosts, venues, nonprofits, and The Network (groups with chapters). He first chose four on a card, then on 2026-10-22 chose "Six: add Network and Venues". The code served six different `/for` doors (it had community builders and teachers where venues and networks belong). Sign-up and Create a Space also had no visible way to pass on a choice.
+
+**Decision.** Add `/for/venues` and `/for/networks` (data in `funnel-config.ts`, destinations in `NICHE_FUNNEL_DESTINATIONS`). Retire community builders and teachers: `/for/community-builders` redirects to `/for/venues`, `/for/teachers` to `/for/coaches-and-healers` (permanent). A stale `?seq=communities` or `teachers` falls back to the general landing. The Network door quotes no price; the Network plan's number stays on `/pricing`. The sign-up fork and the Create-a-Space goals step each get a "Decide later" choice that clears the picks and keeps the default persona and general setup. No new admin screens: funnels stay under Growth and Campaigns, onboarding under Onboarding controls.
+
+**Rejected.** A new niche or funnel admin (Funnels, Campaigns, Persona nurture and Onboarding controls already cover it). Deleting the Space Modes behind the retired doors (other Spaces still use them). Editing the probes behind LIVE-797 and LIVE-911: they are parked with a pointer here instead.
+
+**Consequences.** No migration. Old inbound links keep working through the redirects. Claude Design's page work should target these six slugs. A Network door's Start free creates a membership Space, and the Network plan is chosen in its billing.
+
+## ADR-1864: Door names: "Coaches and guides" and "Studios and instructors" (LIVE-1131)
+
+**Status:** Accepted · 2026-10-22 · backlog `LIVE-1131` · amends ADR-1863
+
+**Context.** After the six launch doors landed, Daniel asked for the first two to be named "Coaches and Guides" and "Studios and instructors". Teachers who work across studios are instructors, so the Teachers door belongs with Studios rather than Coaches.
+
+**Decision.** The visible names, hero eyebrows and meta copy change; the addresses stay `/for/coaches-and-healers` and `/for/studios` so no link breaks. `/for/teachers` now redirects to `/for/studios`, not to coaches.
+
+**Rejected.** Renaming the coaches address (a new redirect and sitemap churn for no visitor benefit).
+
+**Consequences.** No migration. The launch handoff for Claude Design names the doors the same way.
+
+## ADR-1868: Funnel plumbing on the existing systems, and a trial-ending notice (LIVE-1132)
+
+**Status:** Accepted · 2026-10-22 · backlog `LIVE-1132`
+
+**Context.** Daniel asked that the funnel add no new admin surfaces or funnel tools and tie into the email and messaging system. The funnel had no event for a Space being created, no notice when a Space trial turns into a charge, and the new Network door would have carried a Business price in its structured data.
+
+**Decision.** Record one first-party `space_created` engagement row per Space (setup, plan hint, Decide later flag), never mirrored to GA4. Handle Stripe's `customer.subscription.trial_will_end` by emailing the Space owner through the existing outbox and email shell, deduped per subscription. The Network door emits no product Offer. Nothing new is added to admin: the existing Funnels and Campaigns screens and the engagement ledger carry the data.
+
+**Rejected.** A new funnel admin or dashboard. A day 1, 3 and 7 operator email sequence in this change: the existing persona nurture runs on database rows and a migration, so it ships separately.
+
+**Consequences.** No migration. The live Stripe webhook endpoint must have `customer.subscription.trial_will_end` enabled or the notice never fires; as of 2026-10-22 it was not in the endpoint's list.
+
+## ADR-1869: Public marketing pages compose the kit, enforced by check:marketing-kit (LIVE-1133)
+
+**Status:** Accepted · 2026-10-22 · backlog `LIVE-1133`
+
+**Context.** A new /for index shipped as hand-built Tailwind markup in a page file, with no site header or footer. The owner asked for the standard header, footer and rail, the design system, fully tokened, and a rule so it does not happen again.
+
+**Decision.** A public marketing page (`app/(marketing)`, `app/for`, `app/privacy`, `app/terms`) loads data, sets metadata and renders a kit component from `components/frequency/site/pages`, built from kit sections and tokens. `pnpm check:marketing-kit` fails a `page.tsx` there that carries its own Tailwind layout classes. Seven pages whose Tailwind is the DAWN fallback beside a Frequency component sit on `scripts/marketing-kit-baseline.txt`, which may only shrink. The six operator doors wear the same header and footer under Frequency, as the Claude Design handoff asks; ADR-591's chrome-free door now applies to a DAWN build only.
+
+**Rejected.** A rule in prose only. Scanning component files: the design-system gates already measure those.
+
+**Consequences.** The gate is source-text only and runs in the CI guard list. It cannot judge whether a kit component is the right one, only that a page file does not own a layout.
+
+## ADR-1871: Offerings and Money is tabs, and Check in lives there
+
+**Status:** Accepted 2026-10-20. Partly reverses the Check in half of [ADR-1294](DECISIONS.md) (LIVE-226).
+
+**Context.** LIVE-226 took Check in off the Offerings page because it was an event mechanic, not an offering. The `?panel=checkin` workspace kept working but lost its menu door, and the page it left behind stacked three sections of forms into one very long scroll. The owner could not find Check in and called the page a joke.
+
+**Decision.** `/spaces/<slug>/settings/offerings` is five tabs in one bar (Get paid, Bookings, Memberships, Donations, Check in), selected by `?tab=`. Only the open tab renders. An old `#availability`, `#memberships`, `#donations` or `#checkin` link forwards to its tab on arrival. Check in returns as a tab because the people who run the door and the people who set prices are the same people, and a tab costs nothing when it is closed. Every control in every section is kept; this changes where they sit, not what they do.
+
+**Consequences.** The page loads one section's data instead of all of them. The Check in console row is named Check in and opens the tab. The Memberships tab is compacted in a follow-up (LIVE-1175 PR 2).
+
+## ADR-1872: One Stage share card for every public page type
+
+**Status:** Accepted 2026-10-21 (LIVE-1269).
+
+**Context.** A link preview is the first thing a stranger sees of Frequency. Fifteen routes each carried a hand-copied layout in Nunito on a near-black gradient, five of them text-only, in a theme that predated the design system's Stage theme. The owner asked for all of them to be redesigned in the dark Frequency theme with images, following the design system and best practice.
+
+**Decision.**
+- One layout, `lib/og/stage-card.tsx`, draws every card. Routes pass strings and an image and keep their own data reads, visibility gates and hero resolution. `eventCardResponse` and `claimCardResponse` stay as thin mappers so their callers do not change.
+- The look is the Stage theme as the app wears it (`app/themes/frequency.css`: the cool blue-black ladder and cool greys, violet retired by [ADR-1792](DECISIONS.md)) as literals (`lib/og/stage-tokens.ts`; Satori has no stylesheet): pastel action gradient and iridescent sweep as accents with the sky stop in place of lilac, the sky, magenta and aqua aura as the fallback ground. Type is Unbounded 700 for the title, Instrument Serif italic for one line, Hanken Grotesk for the facts, committed as static TrueType under `public/fonts/stage/` (Satori cannot parse WOFF2 and draws a variable font at its default instance) with Nunito Bold as the per-glyph fallback.
+- 1200x630, 64px safe margins, title clamped at 72 characters and stepped down by length, one image full-bleed under a Stage scrim with the entity's own picture first and the branded aura card when there is none. A member avatar rides the logo chip, never the full-bleed slot.
+- Every font read is a literal path and every face is named in `OG_CARD_FONTS`, the same rules as the Nunito pair (ADR-1006, ADR-1007). Delivery stays `cardResponse` (JPEG, CDN headers).
+- Hosted-site cards keep each site's own brand. The static root card file was regenerated from the same layout.
+
+**Consequences.** A new public page type gets a card by calling `stageCardResponse`. The Space card test now expects five fonts and the neutral card to carry only the local mark. The build fan-out source test names `lib/og/stage-card.tsx` where it named the event card and event claim route, because the mark read moved there.
+
+## ADR-1873: A Space check-in is presence, not a practice (LIVE-1271)
+
+**Status:** Accepted · 2026-10-22 · backlog `LIVE-1271`
+
+**Context.** `captureNode` emitted `practice.verified` for every non-partner node. The `Congrats on Practice` automation rule emails the actor "Nice work! You just logged a practice" on that event, so a member tapping a venue's check-in tag received a practice email. Production showed it for the first House of Fates tap: a `node_capture` row and a `practice.verified` row 700 ms apart, then the email.
+
+**Decision.** A node with `kind = 'checkin'` skips the `practice.verified` event. Its `node_capture` ledger row, the Regulars stamp, the Space Resonance entry and the community trust signal are unchanged. The automation rule is left alone so real practices still get it.
+
+**Rejected.** Disabling or rewording the rule (it is correct for practices). Filtering inside the automation (the event is the wrong signal for a venue visit).
+
+**Consequences.** No migration. Check-ins stop counting toward the practice North Star event; they still count as `node_capture`.
+
+## ADR-1874: A member card holds one link; its face lives on the website (LIVE-1282)
+
+**Status:** Accepted · 2026-10-22 · backlog `LIVE-1282`
+
+**Context.** A member card (an NTAG215 the CyberUnicorn console writes) held `/c/<token>`, and a phone tap only showed the tapper their own Regulars cards. Cards worked at one Space. The owner asked (2026-10-22) for a two-way system where members set what their card does (a link and/or a virtual card) from their own console, with perks that make the card feel exclusive, tied into the game. iPhones cannot write tags from a web page, so a member can never rewrite their own card.
+
+**Decision.** The chip never changes. `card_faces` holds what a tap opens, set by the owner: `page` (the owner's own page, and the default with no row), `card` (a virtual contact card with Save contact and Swap contacts) or `link` (one https link), plus a pause switch. A card registered to a Space (`member_cards.face_space_id`) reads the Space's face, set in the Space's Check-in workspace. New member cards are Frequency-wide (`space_id` null) and numbered from one sequence; 1 to 100 is the Founders edition. Owner rulings 2026-10-22: getting a card is a Crew perk; the My card screen lives in the Crew hub and is open to every cardholder; any Space on any plan may set a one-line cardholder perk. Card taps pay Zaps (a member-to-member connect, a contact swap), never Gems, and count toward card achievements. The CyberUnicorn stays a staff tool and is never named on member or owner surfaces.
+
+**Rejected.** Writing the member's choice onto the chip (needs a writer the member does not have, and a lost card would leak the old link). A private-by-default face (the owner chose the member's own page as the default). A per-Space card as the member card (one card should open every door). A new status ladder for card editions (the member stages already exist).
+
+**Consequences.** Migration `20270346024000_member_card_faces.sql` (`card_faces`, `card_taps`, the card number sequence and RPC, `network_contacts.source` gains `nfc_card`). Rides the counter scanners' switch (`SCANNER_DEVICES_ENABLED`). Cards already written keep their link and start reading their holder's face.
+
+## ADR-1875: The Temple is a stock site theme, tokens first (LIVE-1285)
+
+**Status:** Accepted · 2026-10-22 · backlog `LIVE-1285`
+
+**Context.** Royal Temple, a community house in Vista, brought its own design system (plaster, umber, clay and saffron, arch and keyhole shapes, warm shadows, Branch and Marcellus type) and asked for a website theme that reflects it exactly and works with every block and feature a Space site has.
+
+**Decision.** A new `SiteThemeId` `temple`, with the editor theme `Temple`. Every design value is a `--tp-*` token in `lib/theme/temple.ts`, scoped to `[data-house-theme="temple"]`, that re-points the DAWN `--color-*` set, so blocks that already read those tokens follow without change. The skin sheet (`components/sites/temple-css.ts`) holds no hex or rgba and layers after the house and page sheets. The faces load only on the Temple site page, never the root layout. Island and bespoke sections from the design (night-band tiers, hero fact row, Your house page, RSVP) stay out until a block needs them, so the theme never grows a parallel section system.
+
+**Rejected.** A Royal Temple only skin (the theme is stock and reusable). Raw colors in the sheet. Loading the faces globally.
+
+**Consequences.** Two contrast deviations from the design are recorded in the theme contract (muted text and on-accent), both to meet text contrast. Applying the theme to Royal Temple is one guarded update of the Space's `siteStyle`. Remaining textures, icons and utilities ship in a follow-up PR.
+
+## ADR-1876: Day, Week and Timeline ride beside the three surfaces, not inside them (LIVE-1178)
+
+**Status:** Accepted · 2026-10-26 · backlog `LIVE-1178`
+
+**Context.** The Space calendar redesign (phases 7 and 8) draws six views: Day, Week, Month, Agenda, Board, Timeline. Three exist. The view bar said Day, Week and Timeline were Coming soon (LIVE-1159). `CALENDAR_SURFACES`, `CALENDAR_ADMIN_VIEWS` and the `?view=` and `freq-cal-view-*` values are pinned by tests that a change needs the owner's words to move.
+
+**Decision.** Day, Week and Timeline are a second state, `timeView`, on the operator Calendar panel, in their own segmented box beside Month, Agenda, Board. Choosing one clears the surface highlight and the other way round. They have their own `?look=` parameter and `freq-cal-look-<slug>` cookie. They read the items the Calendar panel already holds (`CalendarEvent`), so no read, no table and no migration is added; `CalendarEvent` gains an optional `endTimeLabel`, filled by the entry and admin-event adapters, so a block has a length and an item with none holds an hour. Chips come from `calendarPresentation`. The page month controls hide while one is showing, because each view pages itself. Members are never handed these views: they read the guest feed, and a time grid of the team's private entries is not theirs.
+
+**Rejected.** Adding three values to `CALENDAR_SURFACES` and one six-segment box (right to the design, but it edits pinned tests and the surface cookie). Drag to move on the time grid in this change (a move needs the series choice and Undo the month grid already carries, and a weaker second way to change dates is worse than none). Building Google, Apple, Outlook and Notion two-way sync here (plan phase 12, parked until the owner says).
+
+**Consequences.** Two boxes sit side by side in the view bar until the owner rules the six-segment form; folding them is a pin edit and one prop. A time view shows only what the operator horizon already loads (three months back, fifteen forward). LIVE-1159's probe measured the Coming soon mark on these three views and is superseded by LIVE-1178's.
+
+## ADR-1877: Frequency is the only platform design; DAWN stays in the registry but is never selectable (SCAN-1110)
+
+**Status:** Accepted · 2026-10-26 · backlog `SCAN-1110`, `LIVE-1328` · owner-directed (2026-10-25) · **Supersedes** [ADR-1737](DECISIONS.md) in part: its "unset or unknown reads as DAWN" default and its DAWN-or-Frequency switch · keeps ADR-1737's static root layout, one sheet per design and design layer
+
+**Context.** ADR-1737 built a one-variable switch between DAWN and Frequency, with DAWN as the unset default and the committed tree. PR #3903 reversed that on the owner's word: DAWN is no longer a deployable platform design and Frequency must be fully implemented. It merged with no ADR, so the decision record still said the opposite and the rollback path was undocumented.
+
+**Decision.** (1) `resolveDesign` returns `frequency` for every input, including `dawn`, unset and unknown values; `DEFAULT_DESIGN` is `frequency`. (2) DAWN remains in `DESIGNS` as a historical registry entry, so stored data, fonts, customer colours, serialized block identifiers and native email fixtures that name it still resolve. It is never a platform selection. (3) The local `design:use` command rejects a retired selection before any environment write, and the generated active sheets, fonts and manifest colours follow Frequency. (4) The legacy theme axes (skins, generations, occasions, Space font sets, Theme Studio) stay off, as ADR-1737 already ruled for Frequency.
+
+**Rollback.** Unsetting `NEXT_PUBLIC_SITE_DESIGN` no longer returns the platform to DAWN, because an unset value reads as Frequency. Putting DAWN back means reverting #3903, which restores the DAWN default and the `dawn` branch of `resolveDesign`, and rerunning `scripts/write-design-assets.mjs`. A rollback is a deliberate code change that needs the owner's words, not a variable.
+
+**Rejected.** Deleting the DAWN registry entry (it would break stored values and email fixtures that still name it). Keeping DAWN selectable behind a flag (the owner retired it).
+
+**Consequences.** `scripts/probes/platform-design-selection.mjs` is the standing proof: it runs the real resolver and the real redirect body across five selections. LIVE-1328's ledger probe now points at it.

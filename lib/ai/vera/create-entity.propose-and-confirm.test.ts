@@ -81,7 +81,7 @@ function table() {
 }
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: () => table() }) }))
 
-const { proposeAndConfirmCreate, CREATE_AUDIT_KIND } = await import('./create-entity')
+const { proposeAndConfirmCreate, proposeCreateFromTool, CREATE_AUDIT_KIND } = await import('./create-entity')
 
 const only = () => {
   expect(rows.size).toBe(1)
@@ -260,5 +260,16 @@ describe('proposeAndConfirmCreate: the wizard road (ADR-1249)', () => {
     })
     expect(res).toEqual({ data: { spaceId: 's9' } })
     expect((only().payload as Record<string, unknown>).space_id).toBe('s9')
+  })
+})
+
+
+describe('model create entry point', () => {
+  it('does not persist model-authored fields even for an authorized caller', async () => {
+    const sizeBefore = rows.size
+    const result = await proposeCreateFromTool('p1', { entity: 'circle', draft: '{"name":"AI circle","about":"AI prose"}' })
+    expect(result.ok).toBe(false)
+    expect(result.error).toContain('Write your own content')
+    expect(rows.size).toBe(sizeBefore)
   })
 })
