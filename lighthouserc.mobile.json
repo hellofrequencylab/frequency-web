@@ -1,0 +1,49 @@
+{
+  "$comment": [
+    "Lighthouse CI, MOBILE preset, member shell (SCAN-1138). The sibling of lighthouserc.json, which keeps",
+    "gating the four anonymous marketing pages on the desktop preset.",
+    "",
+    "WHY A SECOND FILE. Only four anonymous marketing URLs on the desktop preset were measured, and nothing",
+    "asserted JavaScript size, so the member shell (components/layout/app-shell.tsx and everything",
+    "statically reachable from it, parsed on every phone on every app/(main) route) was unmeasured. One",
+    "lighthouse-ci config carries one preset, so mobile needs its own file.",
+    "",
+    "WHAT IS MEASURED. `/` is the marketing home on a phone. `/feed` signed out renders the REAL member",
+    "shell with the viewer drawn as Anonymous (lib/nav/anon-feed.ts, SCAN-889), so it needs no session and",
+    "is the cheapest honest reading of the shell's script weight.",
+    "",
+    "EVERY ASSERTION IS A WARN, ON PURPOSE, FOR NOW. Nobody has a mobile lab reading for this site, and the",
+    "first thresholds on a new instrument are guesses (ADR-930 said so about the desktop ones and was",
+    "right). The `Report the numbers` step in .github/workflows/e2e.yml prints the medians and the script",
+    "weight into the job summary on every run. After a few runs, set each number from that data and move",
+    "LCP, TBT and the script size to `error`, the way lighthouserc.json did in ADR-936.",
+    "",
+    "SCRIPT SIZE. `resource-summary:script:size` is the bytes of JavaScript the page loads. 600000 is a",
+    "provisional line (about 600 KB over the wire is where a mid-range phone starts to feel parse time),",
+    "chosen to warn loudly rather than to be right.",
+    "",
+    "Same caveats as lighthouserc.json: a LAB run on a shared runner against a cold preview, three runs",
+    "and the median, INP absent because it needs a real interaction."
+  ],
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "mobile",
+        "chromeFlags": "--no-sandbox --headless=new"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "largest-contentful-paint": ["warn", { "maxNumericValue": 4000, "aggregationMethod": "median" }],
+        "cumulative-layout-shift": ["warn", { "maxNumericValue": 0.1, "aggregationMethod": "median" }],
+        "total-blocking-time": ["warn", { "maxNumericValue": 600, "aggregationMethod": "median" }],
+        "resource-summary:script:size": ["warn", { "maxNumericValue": 600000, "aggregationMethod": "median" }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouseci-mobile"
+    }
+  }
+}
