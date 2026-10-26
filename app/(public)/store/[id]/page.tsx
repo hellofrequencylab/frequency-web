@@ -2,13 +2,11 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getProduct } from '@/lib/commerce/products'
 import { getProductReviews } from '@/lib/commerce/reviews'
-import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { productSchema } from '@/lib/jsonld'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { BuyButton } from '@/app/(main)/marketplace/buy-button'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqStoreProduct } from '@/components/frequency/members/marketplace/store-product'
 
 // Public Product JSON-LD page, advertised in app/sitemap.ts. force-dynamic here would keep the
@@ -105,69 +103,18 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
       })}
     />
   )
-
-  // THE DESIGN SWITCH (ADR-1737, build-time). Under Frequency the product is the kit's page, fed the
-  // same reads and the same JSON-LD; the Buy button is the very same island (never stamped, below).
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <FqStoreProduct
-        structuredData={structuredData}
-        title={product.title}
-        priceLabel={usd(product.priceCents, product.currency)}
-        category={product.category ?? null}
-        description={product.description ?? null}
-        images={product.images}
-        coverUrl={product.images[0] ?? (typeof hero.coverImage === 'string' ? hero.coverImage : null)}
-        soldOut={soldOut}
-        // 🔴 NEVER STAMPED, exactly as the DAWN panel below: /store/<id> is the seller's own storefront.
-        buy={soldOut ? null : <BuyButton productId={product.id} />}
-      />
-    )
-  }
-
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      {structuredData}
-      {/* The /store index is members-only (lib/nav/public-detail-routes.ts) and 307s a signed-out
-          visitor to /, and this ISR page has no viewer to gate on, so the back link goes to the
-          public /discover hub instead of the index (SCAN-786). */}
-      <DetailTemplate
-        {...hero}
-        back={{ href: '/discover', label: 'Discover' }}
-        title={product.title}
-        subtitle={<span className="font-semibold text-text">{usd(product.priceCents, product.currency)}</span>}
-        badges={product.category ? <span className="text-meta text-subtle">{product.category}</span> : undefined}
-      >
-        <div className="rounded-3xl border border-border bg-surface p-5 lift-1">
-          {product.images.length > 0 && (
-            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {product.images.map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={i}
-                  src={src}
-                  alt={`${product.title}, photo ${i + 1}`}
-                  loading={i === 0 ? 'eager' : 'lazy'}
-                  decoding="async"
-                  className="aspect-square w-full rounded-card border border-border object-cover"
-                />
-              ))}
-            </div>
-          )}
-
-          {product.description && (
-            <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-text">{product.description}</p>
-          )}
-
-          <div className="mt-5 border-t border-border pt-4">
-            {/* 🔴 THIS PATH IS NEVER STAMPED (LIVE-219 / LIVE-220). This is the seller's OWN
-                storefront — a buyer arrives by a link the seller shared, so Frequency made no
-                introduction and ADR-811 promises 0%. proxy.ts stamps `/market/<id>` only.
-                Do not add a marketplace stamp here. */}
-            {soldOut ? <p className="text-body-sm font-medium text-subtle">Sold out.</p> : <BuyButton productId={product.id} />}
-          </div>
-        </div>
-      </DetailTemplate>
-    </div>
+    <FqStoreProduct
+      structuredData={structuredData}
+      title={product.title}
+      priceLabel={usd(product.priceCents, product.currency)}
+      category={product.category ?? null}
+      description={product.description ?? null}
+      images={product.images}
+      coverUrl={product.images[0] ?? (typeof hero.coverImage === 'string' ? hero.coverImage : null)}
+      soldOut={soldOut}
+      // 🔴 NEVER STAMPED, exactly as the DAWN panel below: /store/<id> is the seller's own storefront.
+      buy={soldOut ? null : <BuyButton productId={product.id} />}
+    />
   )
 }

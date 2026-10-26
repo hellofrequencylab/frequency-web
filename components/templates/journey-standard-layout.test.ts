@@ -19,8 +19,8 @@ const templateCode = template.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/
  *  loading skeletons today, so unlike the event set this list has no `loading.tsx` entries. Add one
  *  here the day a skeleton appears — a skeleton IS a claim about the destination's shape. */
 const JOURNEY_PAGES = [
+  // The public page draws the Frequency journey body now that Frequency is the only design (ADR-1880).
   'app/(main)/journeys/[slug]/page.tsx',
-  'app/discover/journeys/[slug]/page.tsx',
 ] as const
 
 describe('the standard exists and is a composition, not a fork', () => {

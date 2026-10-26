@@ -1,15 +1,10 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowRight, Building2, Compass } from 'lucide-react'
 import { listNetworkedSpaces } from '@/lib/spaces/discovery'
 import { DIRECTORY_TYPES, spaceTypeLabel } from '@/components/spaces/space-type'
-import { SpaceCard } from '@/components/spaces/space-card'
-import { PageHero, Section, SectionHeading, BetaCTA, Button } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, spaceListSchema } from '@/lib/jsonld'
-import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
-import { SITE_DESIGN } from '@/lib/theme/design'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL } from '@/lib/site'
 import { FrequencySpaceTypeHub } from '@/components/frequency/site/pages/discover/spaces'
 
 export const revalidate = 3600
@@ -78,88 +73,10 @@ export default async function DiscoverSpacesByTypePage({
     },
     spaces.length > 0 && spaceListSchema(spaces, `${hub.plural} on ${SITE_NAME}`),
   ].filter(Boolean)
-
-  // THE DESIGN SWITCH (ADR-1737): the same hub, Spaces and JSON-LD, drawn in the site kit.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd data={schema} />
-        <FrequencySpaceTypeHub type={type} hub={hub} hubs={TYPE_HUBS} label={label} spaces={spaces} />
-      </>
-    )
-  }
-
   return (
     <>
       <JsonLd data={schema} />
-
-      <PageHero
-        eyebrow="Discover by type"
-        title={
-          <>
-            {hub.plural} on <span className="text-primary-strong">{SITE_NAME}</span>
-          </>
-        }
-        subtitle={`The ${hub.plural.toLowerCase()} building on ${SITE_NAME}: ${hub.blurb}. Browse them free, follow the ones you like, then reach out.`}
-      />
-
-      {spaces.length > 0 ? (
-        <Section tone="surface" className="!max-w-none">
-          <div className="mx-auto max-w-5xl">
-            <SectionHeading
-              eyebrow="Browse"
-              title={<>Every {label} in the network</>}
-              kicker={`${spaces.length} ${spaces.length === 1 ? 'profile' : 'profiles'}, and counting.`}
-            />
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {spaces.map((s) => (
-                <SpaceCard key={s.id} space={s} />
-              ))}
-            </div>
-          </div>
-        </Section>
-      ) : (
-        <Section tone="surface">
-          <div className="mx-auto max-w-md text-center">
-            <Building2 className="mx-auto h-8 w-8 text-subtle" aria-hidden />
-            <p className="mt-3 text-body-sm text-muted">
-              No {hub.plural.toLowerCase()} here yet. Be the first to claim one.
-            </p>
-          </div>
-        </Section>
-      )}
-
-      {/* Cross-links to the other type hubs, so each page feeds the others (hub-and-spoke). */}
-      <Section tone="canvas">
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-body-sm">
-          <Link
-            href="/spaces"
-            className="inline-flex items-center gap-1.5 font-semibold text-primary-strong hover:underline"
-          >
-            <Compass className="h-4 w-4" /> All Spaces
-          </Link>
-          {DIRECTORY_TYPES.filter((t) => t.value !== type).map((t) => (
-            <Link
-              key={t.value}
-              href={`/discover/spaces/${t.value}`}
-              className="inline-flex items-center gap-1.5 font-semibold text-primary-strong hover:underline"
-            >
-              {TYPE_HUBS[t.value]?.plural ?? t.label}
-            </Link>
-          ))}
-        </div>
-      </Section>
-
-      <BetaCTA
-        heading={`Run your ${label.toLowerCase()} on ${SITE_NAME}`}
-        body="Start with a free profile that gets found on search and AI, then grow into the full toolkit when you are ready."
-      />
-
-      <div className="px-6 pb-16 text-center">
-        <Button href={BETA_CTA_HREF} variant="ghost">
-          {BETA_CTA_LABEL} <ArrowRight className="h-4 w-4" />
-        </Button>
-      </div>
+      <FrequencySpaceTypeHub type={type} hub={hub} hubs={TYPE_HUBS} label={label} spaces={spaces} />
     </>
   )
 }

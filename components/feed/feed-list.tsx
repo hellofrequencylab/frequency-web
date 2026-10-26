@@ -100,7 +100,7 @@ async function resolveDispatchViewer(
   // getMyOrbit runs on the authed client (auth.uid() = this viewer), so it returns
   // the VIEWER's resonance set. Empty when resonance is off or there are no
   // connections, which simply means no surrounding-area bleed surfaces for them.
-  const [membershipsR, profileR, orbit, spaceMemberR, ownedSpaceR] = await Promise.all([
+  const [membershipsR, profileR, orbit, spaceMemberR, ownedSpaceR, journeyR] = await Promise.all([
     admin.from('memberships').select('circle_id').eq('profile_id', profileId).eq('status', 'active'),
     admin.from('profiles').select('nexus_region_id').eq('id', profileId).maybeSingle(),
     getMyOrbit(200),
@@ -109,6 +109,8 @@ async function resolveDispatchViewer(
     // (ADR-858 — lib/dispatches.ts:48 unions exactly these two for the same reason).
     admin.from('space_members').select('space_id').eq('profile_id', profileId).eq('status', 'active'),
     admin.from('spaces').select('id').eq('owner_profile_id', profileId),
+    // Journey reach: a Journey Dispatch (audience_scope 'journey', SCAN-1165) reaches the plan's enrollees.
+    admin.from('journey_enrollments').select('plan_id').eq('profile_id', profileId),
   ])
   const circleIds = ((membershipsR.data ?? []) as { circle_id: string | null }[])
     .map((m) => m.circle_id)
@@ -136,10 +138,14 @@ async function resolveDispatchViewer(
     ].filter((id): id is string => !!id)),
   ]
 
+  const journeyPlanIds = [
+    ...new Set(((journeyR.data ?? []) as { plan_id: string | null }[]).map((r) => r.plan_id).filter((id): id is string => !!id)),
+  ]
+
   // Resonance set: hosts the viewer has real co-presence with. The surrounding-area
   // bleed only surfaces an event whose host is in here ("close by who have resonance").
   const resonantHostIds = new Set(orbit.filter((m) => m.resonance > 0).map((m) => m.profileId))
-  return { profileId, circleIds, hubIds, nexusIds, spaceIds, regionId, home: nearby, resonantHostIds }
+  return { profileId, circleIds, hubIds, nexusIds, spaceIds, journeyPlanIds, regionId, home: nearby, resonantHostIds }
 }
 
 /**

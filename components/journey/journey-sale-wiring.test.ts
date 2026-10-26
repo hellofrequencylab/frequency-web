@@ -194,9 +194,11 @@ describe('the public Journey page states the price', () => {
   it('does not tell a paying visitor the Journey is free', () => {
     // The free copy still exists for a free Journey; what must not exist is a path where an offer
     // is present and the free copy still renders.
-    const freeCopy = src.indexOf('Free to start')
-    expect(freeCopy).toBeGreaterThan(-1)
+    const fq = code('components', 'frequency', 'site', 'pages', 'discover', 'journeys.tsx')
+    expect(fq.indexOf('Free to start')).toBeGreaterThan(-1)
     expect(src).toMatch(/offer && priceLabel \?/)
+    // The free copy sits in the branch where there is no sale.
+    expect(fq).toMatch(/sale \? \(/)
   })
 
   it('emits the Offer in structured data', () => {
@@ -368,8 +370,10 @@ describe('listing areas open the Journey sales page, not a product uuid', () => 
 
   it('the public pitch sends a paid visitor to sign-in, not a Market uuid', () => {
     const src = code('app', 'discover', 'journeys', '[slug]', 'page.tsx')
-    expect(src).toContain('journeyBuySignInPath')
+    const fq = code('components', 'frequency', 'site', 'pages', 'discover', 'journeys.tsx')
+    expect(fq).toContain('journeyBuySignInPath')
     expect(src).not.toContain('/market/${offer.productId}')
+    expect(fq).not.toContain('/market/${')
   })
 })
 

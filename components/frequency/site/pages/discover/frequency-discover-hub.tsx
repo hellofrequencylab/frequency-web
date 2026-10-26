@@ -60,7 +60,7 @@ export function FrequencyDiscoverHub({
         {proven ? (
           // Members and Circles only: the hub reads just the next four events, so `events.length` is a page
           // size, not a count, and printing it as "4 upcoming events" would undercount the calendar.
-          <p className="dx-hp">
+          <p className="dx-hp" data-visual-mask="discover-hero-stats">
             <b>{counts.members}</b> members · <b>{counts.circles}</b> Circles
           </p>
         ) : (
@@ -84,21 +84,23 @@ export function FrequencyDiscoverHub({
             title="Show up this week."
             lede="Browse the dates and activities listed here. Open a gathering to check availability and RSVP."
           />
-          <DxCalendar
-            events={events}
-            today={today}
-            empty={
-              <>
-                <b>The calendar is quiet for now.</b>
-                <p>
-                  Check back for new dates, or explore the Circle listings and how to start a gathering of your own.
-                </p>
-                <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
-                  {BETA_CTA_LABEL}
-                </Link>
-              </>
-            }
-          />
+          <div data-visual-mask="discover-upcoming-events">
+            <DxCalendar
+              events={events}
+              today={today}
+              empty={
+                <>
+                  <b>The calendar is quiet for now.</b>
+                  <p>
+                    Check back for new dates, or explore the Circle listings and how to start a gathering of your own.
+                  </p>
+                  <Link className="btn fq-iri-btn" href={BETA_CTA_HREF}>
+                    {BETA_CTA_LABEL}
+                  </Link>
+                </>
+              }
+            />
+          </div>
           {events.length > 0 && (
             <div className="dx-foot">
               <Link className="btn btn-ghost fq-iri-rim" href="/discover/events">
@@ -198,7 +200,9 @@ export function FrequencyDiscoverHub({
               sub="Circles forming now"
               title="Small groups with a regular time to meet."
             />
-            <DxCircleCards circles={circles} />
+            <div data-visual-mask="discover-featured-circles">
+              <DxCircleCards circles={circles} />
+            </div>
             <div className="dx-foot">
               <Link className="dx-link" href="/discover/circles">
                 Browse all Circles →
@@ -212,7 +216,7 @@ export function FrequencyDiscoverHub({
         <section className="dx-sec" data-screen-label="07 From the community">
           <div className="wrap">
             <DxHead label="From the community" sub="What people are saying" title="Overheard this week." />
-            <div className="dx-posts">
+            <div className="dx-posts" data-visual-mask="discover-community-posts">
               {posts.map((p) => (
                 <article key={p.id} className="dx-post">
                   <p>{p.body}</p>
