@@ -15,6 +15,7 @@ const h = vi.hoisted(() => ({
     intake: null as Record<string, unknown> | null,
     seedOwner: null as string | null,
     updates: [] as Record<string, unknown>[],
+    published: [] as Record<string, unknown>[],
   },
 }))
 
@@ -61,6 +62,12 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
+vi.mock('@/lib/marketplace', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/marketplace')>(),
+  createListing: async (_owner: string, payload: Record<string, unknown>) => { h.state.published.push(payload); return { id: 'published' } },
+}))
+vi.mock('./claim', () => ({ mintListingClaimToken: async () => 'claim-token' }))
+
 import { housingDollarsToCents, publishListingIntake } from './publish'
 import { __resetSeedOwnerCache } from './seed-owner'
 
@@ -68,6 +75,7 @@ beforeEach(() => {
   h.state.intake = null
   h.state.seedOwner = null
   h.state.updates = []
+  h.state.published = []
   __resetSeedOwnerCache()
 })
 
@@ -106,6 +114,7 @@ const REVIEW_CLASSIFIEDS = {
     images: [],
   },
   status: 'review',
+  ledger: { title: [{ kind: 'fact', confidence: 1, verifiedBy: 'human', snippet: 'Free sofa' }] },
 }
 
 describe('publishListingIntake — guards + fail-safe', () => {
@@ -133,5 +142,43 @@ describe('publishListingIntake — guards + fail-safe', () => {
     const res = await publishListingIntake('nope')
     expect(res.ok).toBe(false)
     expect(h.state.updates).toHaveLength(0)
+  })
+})
+
+
+describe('actual publish payload authorship', () => {
+  it('blocks legacy generated titles before public writes and leaves review editable', async () => {
+    h.state.intake = { ...REVIEW_CLASSIFIEDS, ledger: { title: [{ kind: 'generated', confidence: 1 }] } }
+    h.state.seedOwner = 'seed-owner'
+    const result = await publishListingIntake('intake-1')
+    expect(result).toMatchObject({ ok: false })
+    expect(h.state.published).toEqual([])
+    expect(h.state.updates).toEqual([])
+  })
+  it('does not reuse an old human confirmation for a changed title', async () => {
+    h.state.intake = { ...REVIEW_CLASSIFIEDS, draft: { ...REVIEW_CLASSIFIEDS.draft, title: 'Unconfirmed replacement' } }
+    h.state.seedOwner = 'seed-owner'
+    expect(await publishListingIntake('intake-1')).toMatchObject({ ok: false })
+    expect(h.state.published).toEqual([])
+  })
+  it('publishes a human title with exact source description and unchanged operational controls', async () => {
+    h.state.intake = { ...REVIEW_CLASSIFIEDS,
+      inputs: { pastedText: 'sofa for sale. Good condition.', images: [] },
+      draft: { ...REVIEW_CLASSIFIEDS.draft, description: 'Good condition.' },
+      ledger: { ...REVIEW_CLASSIFIEDS.ledger, description: [{ kind: 'fact', snippet: 'Good condition.', confidence: 1 }] },
+    }
+    h.state.seedOwner = 'seed-owner'
+    expect(await publishListingIntake('intake-1')).toMatchObject({ ok: true, listingId: 'published', claimToken: 'claim-token' })
+    expect(h.state.published).toHaveLength(1)
+    expect(h.state.published[0]).toMatchObject({ title: 'Free sofa', description: 'Good condition.', kind: 'free', pickupPrecision: 'area' })
+  })
+  it('never forwards an invented description with an unrelated real citation', async () => {
+    h.state.intake = { ...REVIEW_CLASSIFIEDS,
+      draft: { ...REVIEW_CLASSIFIEDS.draft, description: 'The perfect sofa for your dream home' },
+      ledger: { ...REVIEW_CLASSIFIEDS.ledger, description: [{ kind: 'fact', snippet: 'sofa', confidence: 1 }] },
+    }
+    h.state.seedOwner = 'seed-owner'
+    expect(await publishListingIntake('intake-1')).toMatchObject({ ok: true })
+    expect(h.state.published[0].description).toBeNull()
   })
 })

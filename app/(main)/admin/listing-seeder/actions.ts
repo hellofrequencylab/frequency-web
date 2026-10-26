@@ -28,7 +28,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ingestImageBytes } from '@/lib/library/ingest'
 import type { LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
 import { extractListing } from '@/lib/listing-seeder/extract'
-import { coerceListingExtraction, coerceDetails } from '@/lib/listing-seeder/coerce'
+import { coerceListingExtraction, coerceDetails, sourceOnlyListingCopy } from '@/lib/listing-seeder/coerce'
 import { publishListingIntake } from '@/lib/listing-seeder/publish'
 import { findSimilarSeededListings, type SimilarSeededListing } from '@/lib/listing-seeder/dedupe'
 import type {
@@ -76,12 +76,16 @@ function intakeTable() {
 /** Map a raw DB row to the typed ListingIntake. Defensive: jsonb columns default to their
  *  empty shape so a partial row never crashes a consumer. */
 function mapRow(raw: Record<string, unknown>): ListingIntake {
+  const ledger = { ...((raw.ledger as ProvenanceLedger) ?? {}) }
+  const draft = sourceOnlyListingCopy((raw.draft as ListingDraft | Record<string, unknown>) ?? {}, ledger, (raw.inputs as ListingIntakeInputs)?.pastedText ?? '')
+  // Do not return rejected legacy copy through a citation badge either.
+  for (const path of ['title', 'description']) if (!(draft as Record<string, unknown>)[path]) delete ledger[path]
   return {
     id: raw.id as string,
     kind: (raw.kind as ListingSeedKind) ?? 'classifieds',
     inputs: (raw.inputs as ListingIntakeInputs) ?? { pastedText: '' },
-    draft: (raw.draft as ListingDraft | Record<string, unknown>) ?? {},
-    ledger: (raw.ledger as ProvenanceLedger) ?? {},
+    draft,
+    ledger,
     status: (raw.status as ListingIntakeStatus) ?? 'intake',
     appliedListingId: (raw.applied_listing_id as string | null) ?? null,
     createdBy: (raw.created_by as string) ?? '',
@@ -205,7 +209,7 @@ export async function listListingIntakes(): Promise<ListingIntakeListItem[]> {
   if (!operatorId) return []
   try {
     const { data, error } = await intakeTable()
-      .select('id, kind, status, draft, created_at, updated_at, error')
+      .select('id, kind, status, draft, ledger, inputs, created_at, updated_at, error')
       .eq('created_by', operatorId)
       .order('updated_at', { ascending: false })
       .limit(100)
@@ -214,7 +218,7 @@ export async function listListingIntakes(): Promise<ListingIntakeListItem[]> {
       id: raw.id as string,
       kind: (raw.kind as ListingSeedKind) ?? 'classifieds',
       status: (raw.status as ListingIntakeStatus) ?? 'intake',
-      title: listingDraftTitle(raw.draft as Parameters<typeof listingDraftTitle>[0]),
+      title: listingDraftTitle(mapRow(raw).draft as Parameters<typeof listingDraftTitle>[0]),
       createdAt: raw.created_at as string,
       updatedAt: raw.updated_at as string,
       error: (raw.error as string | null) ?? null,

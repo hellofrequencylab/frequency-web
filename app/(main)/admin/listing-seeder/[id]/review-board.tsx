@@ -147,6 +147,15 @@ export function ReviewBoard({
         )}
       </div>
 
+      {!published && model.sections.some((section) => section.fields.some((field) =>
+        (field.path === 'title' || field.path === 'description') && !field.display.trim(),
+      )) && (
+        <Banner tone="info" title="Keep the poster's words, or write your own">
+          What title would help someone recognize this listing? What details should they know?
+          Missing title and description fields stay blank for you to fill in. Extraction copies source wording without writing new copy.
+        </Banner>
+      )}
+
       {!published && duplicates.length > 0 && (
         <Banner tone="warning" title="A similar seeded listing may already exist">
           <span>
