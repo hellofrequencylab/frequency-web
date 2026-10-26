@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1385",
+  "title": "Website About and Story edits save to the Space too",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/editor/share-about.ts",
+    "ref": "Daniel 2026-10-26: content blocks synced across Spotlight, Space page and website; follow-up to LIVE-1384"
+  },
+  "detail": "Publishing the website now saves the About typed into its home page About section to the Space's intro (spaces.about) and leaves the section on the shared {{intro}} token. Publishing the Space page also saves a typed Story body to the Space's longer story (profileData.about). Sections that already carry a slot token, or sit on other pages, are never touched.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/sites/editor/actions.ts','utf8');process.exit(s.includes('shareWebsiteAbout')&&fs.existsSync('lib/sites/editor/share-about.ts')?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Vitest share-about, promote-about, site editor and Space profile action suites pass; check:authz and the Space write-safety probe pass."
+  },
+  "closed": "2026-10-26"
+}
