@@ -4,7 +4,7 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "wave": "W7",
   "source": {
     "file": "lib/sites/kits/apply.ts",
@@ -15,6 +15,7 @@
     "kind": "cmd",
     "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/sites/kits/apply.ts','utf8');const r=fs.readFileSync('lib/sites/kits/registry.ts','utf8');process.exit(a.includes('export function applyKit')&&r.includes('wildheart-coaches')&&fs.existsSync('lib/sites/kits/kits.test.ts')?0:1)\"",
     "checked": "2026-10-26",
-    "evidence": "No lib/sites/kits tests exist on main; the suite is added by this row."
-  }
+    "evidence": "Engine, loader, one kit and 7 tests (lib/sites/kits/kits.test.ts) pass locally. The engine is not yet wired to the editor; the library screen is the next row."
+  },
+  "closed": "2026-10-26"
 }
