@@ -177,7 +177,7 @@ export function ReachReceipt({
           </li>
           <li>
             <strong className="font-semibold text-text">Host-marked attendance counts when measured.</strong> The roster
-            records seats you marked present at held gatherings. Paid tickets count while succeeded and unrefunded.
+            records seats you marked present at held gatherings. Marked ticket seats also require a succeeded, unrefunded payment.
             These are attendance records, not unique people across gatherings. Without a complete attendance read,
             this signal is left out of standing. Gatherings held is a separate count of published gatherings that started.
           </li>

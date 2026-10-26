@@ -393,7 +393,7 @@ const LEVER_COPY: Record<StandingSignal, { label: string; measures: string; move
   },
   attendance: {
     label: 'Attendance records',
-    measures: 'Roster marks of presence at held gatherings. Repeat attendance counts again; ticket records must be succeeded and unrefunded.',
+    measures: 'Roster marks of presence at held gatherings. Repeat attendance counts again; marked ticket records also require succeeded, unrefunded payment.',
     move: 'After each gathering, open the roster and mark who came.',
   },
   upcoming: {
