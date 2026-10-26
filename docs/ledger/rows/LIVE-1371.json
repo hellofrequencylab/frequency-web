@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1371",
+  "title": "Midnight logo lockup: the ringed moon seal, the name and the tagline in the header and footer",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/midnight-logo.mjs"
+  },
+  "detail": "Follow-up to LIVE-1365 (ADR-1885). The Midnight design's header and footer lead with the logo lockup: a 44px ring with a waxing-moon sigil and violet glow, the name in Bodoni, and the Space's tagline under it in Marcellus. components/sites/midnight-logo.tsx draws it from the existing MidnightSeal; site-chrome.tsx passes it as the header brand mark and in the footer for a Midnight site. The .mn-logo rules sit in midnight-blocks-css.ts, tokens only. Still to build from the design: the announcement bar and the richer mist and smoke textures.",
+  "wave": "W7"
+}

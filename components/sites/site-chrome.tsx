@@ -11,6 +11,7 @@ import { WILDHEART_CSS } from './wildheart-css'
 import { NETWORK_CSS } from './network-css'
 import { TEMPLE_CSS } from './temple-css'
 import { MIDNIGHT_CSS } from './midnight-css'
+import { MidnightLogo } from './midnight-logo'
 import type { NetworkSchemeId } from '@/lib/theme/network'
 import { WildheartSubBar } from './wildheart-now-line'
 import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
@@ -157,6 +158,8 @@ export function SiteChrome({
   const net = skin?.theme === 'network'
   // Temple draws the Space's logo alone as a one-colour seal (the design's arch lockup), in the header and the footer.
   const temple = skin?.theme === 'temple'
+  // Midnight draws the ringed moon seal, the name and the Space's tagline as one lockup, in the header and the footer.
+  const midnight = skin?.theme === 'midnight'
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
   // that reserves its height, so nothing shifts when the date line folds away on scroll.
   const header = (
@@ -173,7 +176,7 @@ export function SiteChrome({
       fadeOnPause={fadeOnPause}
       member={member}
       tools={tools}
-      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : null}
+      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : null}
     />
   )
   const year = new Date().getFullYear()
@@ -219,6 +222,8 @@ export function SiteChrome({
               ) : temple && logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- operator logo on an arbitrary host
                 <img src={logoUrl} alt={brandName} className="tp-footer-seal" />
+              ) : midnight ? (
+                <MidnightLogo name={brandName} tagline={tagline} />
               ) : (
                 brandName
               )}
