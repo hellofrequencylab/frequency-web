@@ -1,4 +1,5 @@
 import type { Data } from '@/lib/page-editor/types'
+import { memberJoinedYear } from '@/lib/spotlight/member-year'
 import type { SpotlightData } from '@/lib/spotlight/data'
 import type { SpotlightRenderMeta } from '@/lib/spotlight/puck/metadata'
 import { spotlightLayoutToPuck } from '@/lib/spotlight/puck/convert'
@@ -39,7 +40,7 @@ export function spotlightRenderMeta(data: SpotlightData): SpotlightRenderMeta {
       zaps: totalZaps,
       streak: profile.current_streak,
       gems: profile.lifetime_gems,
-      joinedYear: profile.created_at ? new Date(profile.created_at).getFullYear() : null,
+      joinedYear: memberJoinedYear(profile.created_at),
       region: profile.nexus_regions?.name ?? null,
     },
     topFriends,

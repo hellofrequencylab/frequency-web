@@ -119,6 +119,7 @@ type Rpc = { data: unknown; error: { message: string } | null }
 let rpcResult: Rpc = { data: [], error: null }
 const rpcCalls: Array<{ fn: string; args: Record<string, unknown> }> = []
 const updates: Array<Record<string, unknown>> = []
+const updateResults: Array<{ message: string } | Error | null> = []
 const inserts: Array<Record<string, unknown>> = []
 let insertResult: { error: { code?: string; message: string } | null } = { error: null }
 
@@ -132,7 +133,9 @@ vi.mock('@/lib/supabase/admin', () => ({
       update: (patch: Record<string, unknown>) => ({
         eq: async () => {
           updates.push(patch)
-          return { error: null }
+          const error = updateResults.shift() ?? null
+          if (error instanceof Error) throw error
+          return { error }
         },
       }),
       insert: async (row: Record<string, unknown>) => {
@@ -153,6 +156,7 @@ beforeEach(() => {
   rpcResult = { data: [], error: null }
   rpcCalls.length = 0
   updates.length = 0
+  updateResults.length = 0
   inserts.length = 0
   insertResult = { error: null }
 })
@@ -192,6 +196,33 @@ describe('enqueue (dedupeKey)', () => {
 })
 
 describe('processQueue (wiring)', () => {
+  it.each(['returned', 'thrown'])('surfaces a %s completion-write error without scheduling the successful handler again', async (failure) => {
+    rpcResult = { data: [job()], error: null }
+    updateResults.push(failure === 'thrown' ? new Error('ack unavailable') : { message: 'ack unavailable' })
+    const handler = vi.fn(async () => {})
+    await expect(processQueue({ push: handler })).rejects.toThrow(/ack unavailable/)
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(updates.map((u) => u.status)).toEqual(['done'])
+  })
+
+  it.each([
+    ['retry', 0, new Error('provider unavailable')],
+    ['dead-letter', 4, new Error('provider unavailable')],
+    ['deferral', 0, { statusCode: 429, message: 'rate limit exceeded' }],
+  ])('cannot report a successful %s when its state write is rejected', async (_name, attempts, handlerError) => {
+    rpcResult = { data: [job({ attempts })], error: null }
+    updateResults.push({ message: 'status write rejected' })
+    await expect(processQueue({ push: async () => { throw handlerError } })).rejects.toThrow(/status write rejected/)
+  })
+
+  it('surfaces a rejected bulk-lane parking write without invoking that recipient handler', async () => {
+    rpcResult = { data: [job({ id: 'bulk-1', payload: { [LANE_KEY]: 'bulk' } }), job({ id: 'bulk-2', payload: { [LANE_KEY]: 'bulk' } })], error: null }
+    updateResults.push(null, { message: 'parking write rejected' })
+    const handler = vi.fn(async () => { throw quotaError() })
+    await expect(processQueue({ push: handler })).rejects.toThrow(/parking write rejected/)
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
   it('claims via claim_outbox_jobs with the limit, propagating a custom limit', async () => {
     await processQueue({}, 25)
     expect(rpcCalls).toEqual([{ fn: 'claim_outbox_jobs', args: { _limit: 25 } }])

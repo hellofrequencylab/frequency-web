@@ -1,0 +1,12 @@
+{
+  "id": "OWN-032",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const P='app/(main)/(marketplace)/market/sell/page.tsx',A='app/(main)/marketplace/commerce-actions.ts',K='lib/billing/pricing-keys.ts',G='lib/pricing/gates.ts';for(const f of [P,A,K,G])if(!fs.existsSync(f))process.exit(1);const strip=(t)=>t.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const bad=[];for(const f of [P,A]){const t=strip(fs.readFileSync(f,'utf8'));if(t.indexOf('realMembershipTier')>=0)bad.push(f+' still gates on realMembershipTier');if(t.indexOf('/upgrade')>=0)bad.push(f+' still redirects to /upgrade')}const k=fs.readFileSync(K,'utf8');if(k.indexOf('memberFree: 1000')<0)bad.push('the free-seller rung is no longer 1000bps, so opening the Market gave the sale away');const g=fs.readFileSync(G,'utf8');for(const gate of ['journey_library_list','entry_points','gamification_full','vault_cash_in','vera_unlimited'])if(g.indexOf(gate)<0)bad.push('a Crew gate the owner ruled STAYS has gone: '+gate);if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+    }
+  },
+  "append": {
+    "detail": "2026-10-23 audit: the historical probe returned 79 because its source path predates the (marketplace) route group. Reanchor it to the active route; missing mandatory sources now fail instead of silently becoming unavailable. The unchanged application consequence passes on current code; this is probe maintenance, not a newly discovered application defect."
+  }
+}

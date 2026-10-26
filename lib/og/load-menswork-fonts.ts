@@ -3,9 +3,8 @@ import { join } from 'node:path'
 
 // THE MENSWORK SHARE CARD'S FACES (LIVE-870). The theme's display face (Sofia Sans Extra Condensed 800)
 // and body face (Barlow 500), committed under public/fonts and read from disk, never fetched, for the
-// same reasons as load-nunito.ts. Each read is a LITERAL path so @vercel/nft ships exactly these two files
-// to the one route that opens them (app/hosted/[host]/opengraph-image) and globs nothing; see the long
-// note in load-nunito.ts before turning these into a helper. Memoised once a read succeeds.
+// same reasons as load-stage-fonts.ts. Each read is a LITERAL path so @vercel/nft ships exactly these two
+// files to the route that opens them and globs nothing. Memoised once a read succeeds.
 
 const detach = (buf: Buffer): ArrayBuffer => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
 

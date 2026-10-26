@@ -598,69 +598,46 @@ Write on that bucket only; set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_A
 `R2_BACKUP_BUCKET` in Vercel Production and redeploy. The first nights copy everything that exists
 (1.5 GiB and 500 files a night at most), then only what changed.
 
-## 8. Design switch (DAWN and Frequency)
+## 8. Design switch and Frequency deployment
 
-**Serves** `availability.uptime` through the one change-over, and makes the way back as short as the
-way in. Not a failure mode: a planned switch with a gate, a go-live and a roll back. Decisions:
-[ADR-1737](DECISIONS.md) (one setting, one design per deploy), ADR-1740 (the installed Frequency
-export), ADR-1747 (the merged pages). Code: `lib/theme/design.ts`; the build half is
-`scripts/write-design-assets.mjs` in `prebuild`. Row: LIVE-922, probe
-`node scripts/probes/frequency-go-live.mjs`.
+Use `NEXT_PUBLIC_SITE_DESIGN=frequency` explicitly for every site build, including local,
+Preview and Production builds. This build-time value selects the platform design; changing
+configuration requires a rebuild. Do not depend on missing-value behavior. Code:
+`lib/theme/design.ts`; asset generation: `scripts/write-design-assets.mjs` in `prebuild`.
+Background: [ADR-1737](DECISIONS.md), ADR-1740 and ADR-1747.
 
-**The switch.** `NEXT_PUBLIC_SITE_DESIGN`, `dawn` or `frequency`. Unset or any other value reads as
-DAWN, so a missing variable can never ship half a system. It is a choice of two, not an on/off, so it
-is not read through `envFlag`; otherwise it follows the rollout-switch contract (listed blank in
-`.env.example`, gated here). It is a `NEXT_PUBLIC_` value, inlined at build: **changing it needs a
-rebuild**. Promoting or rolling back to an existing deployment serves whatever design that deployment
-was built with.
+**Build and verify.**
 
-**What flips with it.** `<html data-design>`; the per-design stylesheet stubs in `app/themes/active/`
-and the font module `lib/theme/design-fonts/active.ts` (both rewritten at build; the committed copies
-are DAWN's, `lib/theme/design.test.ts`); the `public/manifest.json` colours; the DAWN-era theme axes
-switch off (skins except Midnight, generations, occasions, Space font sets, Theme Studio CSS); the
-Frequency-only routes `/features` and `/vision` answer (they 404 under DAWN); `/the-quest` and
-`/the-lab` redirect **permanently** to `/features#f-zaps` and `/vision` (under DAWN they are temporary
-redirects to `/help/the-quest` and `/about`, `lib/marketing/merged-routes.ts`); the sitemap and
-`llms.txt` list the two Frequency routes. No data changes: a member's stored skin is ignored under
-Frequency and read again under DAWN.
+1. Confirm the build scope has `NEXT_PUBLIC_SITE_DESIGN=frequency`. Keep that value set during
+   fixes, promotions and rollbacks. Do not select DAWN or unset the variable as a recovery step.
+2. Build the intended commit. Verify the generated `app/themes/active/` imports point to
+   Frequency stylesheets, `lib/theme/design-fonts/active.ts` exports Frequency fonts, and
+   `public/manifest.json` matches `designDef('frequency').chrome.light` in `lib/theme/design.ts`.
+   These generated assets must agree with the runtime design; do not restore DAWN stubs before
+   committing a Frequency build.
+3. Require the normal build and deployment gates. Review `check:shell-weight` and
+   `check:build-budget` without raising budgets to accommodate a failure
+   ([`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md), rule 2). Use the configured Enhanced build machine.
+4. Review the Preview in light and dark on `/`, `/features`, `/vision`, `/pricing`, `/join`,
+   and the authorized member and operator routes relevant to the change. Confirm
+   `<html data-design="frequency">`, the manifest colors, fonts and stylesheet loading.
+   Check `/the-quest` redirects to `/features#f-zaps` and `/the-lab` to `/vision`.
+5. Deploy the reviewed commit through the normal release process. Confirm `/api/status`
+   `build.commit` identifies that commit and the production home page carries
+   `data-design="frequency"`. Run `node scripts/probes/frequency-go-live.mjs` with the
+   matching source checkout. Exit 79 means public evidence was unavailable; it is not a pass.
 
-**Gate before turning it on**, in order. All **owner** unless tagged.
+**Roll back.** Use the normal deployment rollback procedure in section 6, selecting a previously
+verified Frequency deployment. A promotion or rollback serves the assets built into that deployment;
+changing an environment variable does not rebuild it. Confirm its commit, `data-design`, manifest,
+fonts and stylesheet assets after rollback. If no suitable Frequency deployment is available,
+revert the faulty change in source and rebuild with `NEXT_PUBLIC_SITE_DESIGN=frequency`.
+Never recover by promoting a DAWN deployment, unsetting the design variable, or setting it to `dawn`.
+Keep the existing Frequency destinations for cached `/the-quest` and `/the-lab` redirects.
 
-1. The design work is merged and production is green on DAWN: `/api/status` `build.commit` is the
-   merge SHA and `data-design="dawn"` is on the home page's `<html>`.
-2. A Preview build wears Frequency: set `NEXT_PUBLIC_SITE_DESIGN=frequency` for the **Preview** scope
-   only, on a branch, and let the build finish. All six `postbuild` gates print green. The Frequency
-   sheets change what the root layout and the shells carry, so read `check:shell-weight` and
-   `check:build-budget` first ([`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) rule 2: a gate that fires is a
-   fan-out to fix, never a budget to raise). Keep the Enhanced build machine.
-3. Walk that preview, light and dark: `/`, `/features`, `/vision`, `/pricing`, `/join`, a member home,
-   a Circle, a Space page, an event, `/admin`. `/manifest.json` has `"theme_color": "#FAF4EA"`;
-   `curl -sI <preview>/the-quest` answers 308 to `/features#f-zaps`.
-4. **agent** The tree is DAWN: the probe's tree half passes (it exits 1 on a stub, font module or
-   manifest committed in a Frequency state; `pnpm design:use dawn` fixes a local tree before a commit).
-
-**Go live.** **owner** Set `NEXT_PUBLIC_SITE_DESIGN=frequency` in Vercel **Production**, then
-**Redeploy** the current production commit (a rebuild; a promote serves the old DAWN build). Confirm:
-`curl -s https://frequencylocal.com/ | grep -o 'data-design="[a-z]*"'` prints `frequency`,
-`/api/status` `build.commit` is the SHA you redeployed, and `node scripts/probes/frequency-go-live.mjs`
-exits 0. **agent** Close LIVE-922 with `pnpm ledger:close LIVE-922 --verify-file
-scripts/probes/frequency-go-live.mjs --note <the reading>`.
-
-**Roll back.**
-
-1. **Fastest, seconds:** Instant Rollback to the last DAWN-built production deployment (section 6,
-   step 3). No build. **owner**, or **agent** with `request_rollback`.
-2. **Then make it stick:** unset `NEXT_PUBLIC_SITE_DESIGN` (or set `dawn`) in Production, or the next
-   merge rebuilds Frequency. **owner**
-3. **The cached redirects.** While Frequency was live, `/the-quest` and `/the-lab` answered permanent
-   308s. Browsers and crawlers that cached them keep going to `/features` and `/vision`, which 404
-   under DAWN. If the roll back will last longer than a day, add temporary redirects from `/features`
-   and `/vision` to the DAWN fallbacks in `next.config.ts`, in a PR. **agent**
-
-**How you know it is over.** `data-design` on the home page is the design you meant, `/manifest.json`
-carries that design's colours (`designDef(...).chrome.light` in `lib/theme/design.ts`), the Sentry
-release for the redeploy is quiet, and the probe agrees (exit 0 after a go-live; exit 1 naming DAWN
-after a roll back, with the row reopened if it had closed).
+**Completion evidence.** Record the deployed commit, reviewed Frequency surfaces, asset checks,
+probe result and normal deployment health observations. Historical DAWN fixtures may remain as
+regression evidence; they are not a supported site deployment or rollback target.
 
 ---
 

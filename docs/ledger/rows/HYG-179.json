@@ -1,0 +1,19 @@
+{
+  "id": "HYG-179",
+  "title": "Retire unused Nunito loader and two forced share-card fonts",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "lib/og/load-stage-fonts.ts",
+    "ref": "Two-design module graph and runtime font tracing audit, 2026-10-23"
+  },
+  "detail": "The Stage loader directly owns all five active share-card faces, including full Nunito Bold for missing glyphs. The old Nunito loader has no runtime importers; only its tests and forced trace config keep Black and Liberation Bold alive (539,944 source bytes total). Remove that obsolete loader and those two unused faces, migrate byte-detachment/cache/retry and trace-scope tests to the active loader, retain Nunito Bold and license, and correct historical LIVE-216 preservation premise. Twenty-two focused tests pass, including real 1200x630 JPEG rendering and non-Latin fallback. Whole-tree typecheck, merged-Home focused verification and a new Frequency artifact build must pass before closure; no production performance claim or deployment.\n\nVerified on build snapshot 58ab49fe9: whole-tree TypeScript passes with the documented 6144MB heap; Frequency compile succeeds in 2.8min; all six enforcing artifact gates pass (7.48GB traces/8GB, member shell 1125KB/1400KB, front door 329KB/450KB, cache packed estimate 0.55GB/1.5GB). All five active font faces appear in 53 function traces each; both retired faces appear in zero. Prior trace sum was 7.49GB, but the new snapshot also integrates Home changes, so the entire delta is not attributed solely to font cleanup. These are macOS compile-only artifacts, not deployment/prerender/production-latency proof.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/retired-flyer-fonts.mjs",
+    "note": "Basic retirement/preservation contract; completed whole-tree typing, Frequency compile and all six local artifact gates are recorded separately, not rerun per row."
+  },
+  "wave": "W0"
+}
