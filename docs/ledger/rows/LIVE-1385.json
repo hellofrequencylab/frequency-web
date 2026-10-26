@@ -1,21 +1,21 @@
 {
   "id": "LIVE-1385",
-  "title": "Website About and Story edits save to the Space too",
+  "title": "The starter kit for a Space's niche leads the kit list in the site editor",
   "lane": "live",
   "priority": "P2",
   "size": "S",
   "status": "done",
   "wave": "W7",
   "source": {
-    "file": "lib/sites/editor/share-about.ts",
-    "ref": "Daniel 2026-10-26: content blocks synced across Spotlight, Space page and website; follow-up to LIVE-1384"
+    "file": "components/sites/editor/kit-library.tsx",
+    "ref": "Mega Theme lead 2026-10-26: /for doors pre-select their kit, the third follow-up after the Starter kits panel (LIVE-1373)."
   },
-  "detail": "Publishing the website now saves the About typed into its home page About section to the Space's intro (spaces.about) and leaves the section on the shared {{intro}} token. Publishing the Space page also saves a typed Story body to the Space's longer story (profileData.about). Sections that already carry a slot token, or sit on other pages, are never touched.",
+  "detail": "A visitor who came in through a /for door already has a niche saved on the Space (preferences.megaTheme.niche, written when the Space is created). The editor now passes that niche to the Theme tab, and the kit for it moves to the top of the list marked 'Suggested for your Space'. Nothing is applied for the owner: the kit still needs a click and still adds or replaces nothing until chosen. No new storage and no change to the doors. A Space with no saved niche sees the list as before.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/sites/editor/actions.ts','utf8');process.exit(s.includes('shareWebsiteAbout')&&fs.existsSync('lib/sites/editor/share-about.ts')?0:1)\"",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/sites/editor/kit-library.tsx','utf8');const e=fs.readFileSync('components/sites/editor/editor-page.tsx','utf8');process.exit(s.includes('suggestedNiche')&&e.includes('readMegaTheme')?0:1)\"",
     "checked": "2026-10-26",
-    "evidence": "Vitest share-about, promote-about, site editor and Space profile action suites pass; check:authz and the Space write-safety probe pass."
+    "evidence": "Panel tests pass with the new ordering case."
   },
   "closed": "2026-10-26"
 }

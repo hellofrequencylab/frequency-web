@@ -1,2 +1,1 @@
 # Pages that predate check:marketing-kit (DAWN fallback markup beside a Frequency kit component). Shrink only.
-app/(marketing)/pricing/page.tsx
