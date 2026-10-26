@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1162",
+  "title": "Keep the Space coach profile away from staff preview and coaching prompts",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/coach/actions.ts",
+    "ref": "Review of the Codex AI coaching overhaul, 2026-10-26"
+  },
+  "detail": "The private Space coach profile could be written, and sent to the model vendor through the bio and tagline coaching actions, by platform staff and network admins, because those actions gated on canEditProfile (which staff preview and network reach satisfy). The settings page also loaded it for staff preview. The bio and tagline actions now also require authorizeDiscoveryEditor (the owner or an active direct editor, fresh read, no staff or network reach), and the page does not load the profile for anyone else. approveAction in the marketing agent also ignored the result of executeAction, so a refused send showed as approved; it now throws. Left for follow-up: saveSpaceCoachProfile still gates on canEditProfile, so staff can overwrite the profile; the fix is one line but breaks the LIVE-1332 probe harness, which needs the owner's go-ahead to update; journey-edit, journey-composition and practice-edit still ask Opus for at most four short questions (the caller check pins the tier; needs the owner to lift it); question validators do not reject quoted draft text (writing-questions, writing-coaching, space-copilot, vera-conversation checks), the conversation coach sends the member transcript with author names, the importer review board still carries dead mood and lock controls, and legacy winback proposals block re-proposal.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));const r=p=>f.readFileSync(p,\"utf8\");const a=r(\"app/(main)/spaces/[slug]/settings/coach/actions.ts\"),c=r(\"app/(main)/spaces/copilot-actions.ts\"),j=r(\"lib/ai/journey-edit.ts\")+r(\"lib/ai/journey-composition.ts\")+r(\"lib/ai/practice-edit.ts\");process.exit(/authorizeDiscoveryEditor/.test(c)?0:1)'",
+    "note": "Exits 0 once the bio and tagline actions use the owner-or-editor check."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}
