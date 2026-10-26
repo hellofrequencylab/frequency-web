@@ -86,15 +86,16 @@ export function parseSelector(part) {
   let depth = 0
   let start = 0
   const pieces = []
-  for (let i = 0; i <= s.length; i++) {
+  for (let i = 0; i < s.length; i++) {
     const c = s[i]
     if (c === '[' || c === '(') depth++
     else if (c === ']' || c === ')') depth--
-    else if ((c === ' ' || i === s.length) && depth === 0) {
+    else if (c === ' ' && depth === 0) {
       pieces.push(s.slice(start, i))
       start = i + 1
     }
   }
+  pieces.push(s.slice(start))
   for (const p of pieces) {
     const c = parseCompound(p)
     if (!c) return null
