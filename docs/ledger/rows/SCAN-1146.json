@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1146",
+  "title": "Journey launch actions and the notification registry have tests",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/journeys/[slug]/launch/actions.ts",
+    "ref": "Meta scan 2026-10-26 stream G (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "The launch surface (schedule a send, schedule the series, build the funnel, message enrollees) re-checks authorization and tier on every call, and nothing pinned that. The notification registry had its first rows pinned by name and no whole-catalog invariants. Tests added for both. The product gaps found beside them stay open as follow-ups: Journeys email and Dispatch to a cohort are offered as disabled chips, and the in-app channel is not on the outbox yet.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "test -f 'app/(main)/journeys/[slug]/launch/actions.test.ts' && test -f lib/notifications/registry.test.ts",
+    "note": "Exits 0 once both test files exist."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}
