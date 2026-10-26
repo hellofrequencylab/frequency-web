@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1307",
+  "title": "Surface rejected outbox status writes instead of reporting a successful drain",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/queue/outbox.ts",
+    "ref": "Comprehensive notification/delivery audit, 2026-10-23"
+  },
+  "detail": "processQueue ignored resolved database errors on done/retry/dead-letter/deferral writes and incremented success counters even if a claimed job stayed processing. A thrown completion acknowledgement was also caught as a handler failure, scheduling a successful handler for retry. Check every state-write response through one typed seam and increment counters only after persistence succeeds. Keep successful-handler acknowledgement outside the handler-error catch; persistence faults now reject the drain, reaching its existing HTTP 500 and failure heartbeat path instead of a successful summary. Six regression cases failed on the old source: returned/thrown completion errors, rejected retry/dead-letter/rate-limit deferral, and rejected parking of a bulk job behind closed quota. A route integration test proves a persistence rejection reaches HTTP 500 and the mocked /fail heartbeat. Final batch: 493 tests pass in forty-four suites across queue, cron wrapper, notifications, recipient/consent gates, messaging and email lifecycle; lint passes. No messages were sent and no production queue rows were read or changed. Metadata-only catalog read confirmed the expected queue columns. Existing stale-claim recovery and at-least-once semantics remain; this does not claim exactly-once delivery or live provider acceptance. Probe-cost correction on 2026-10-23: the prior ledger command reran the full test runner (node node_modules/vitest/vitest.mjs run --cache=false --fsModuleCachePath .next/cache/audit-vitest --maxWorkers=2 lib/queue/outbox.test.ts lib/queue/outbox-health.test.ts app/api/cron/process-queue/route.test.ts). Keep those comprehensive behavior tests in normal CI; the ledger now executes the actual code/fixture consequence directly without a nested runner. No assertion or application gate is waived.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-repair-state.mjs outbox",
+    "note": "Reject each persistence failure, never schedule a successful handler as a retry for its failed acknowledgement, preserve quota-lane short circuit and existing retry counts, and prove the route exposes the failure through HTTP 500 and a mocked failure heartbeat. Normal CI retains the fuller test suites; this direct probe keeps the per-row guard bounded."
+  },
+  "closed": "2026-10-23"
+}

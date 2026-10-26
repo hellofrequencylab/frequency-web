@@ -130,53 +130,32 @@ function memberTraitsBuilder() {
   return api
 }
 
-// memberships builder (place-tree circle: selector): .select('profile_id').in('circle_id', ids).eq('status', v)
-function membershipsBuilder() {
-  const f: { circleIds: string[] } = { circleIds: [] }
+function placeBuilder(table: string) {
+  const rows: Record<string, unknown>[] = table === 'memberships'
+    ? db.memberships.map((row, i) => ({ ...row, id: String(i).padStart(8, '0') }))
+    : table === 'circles' ? db.circles : db.hubs
+  const filters: ((row: Record<string, unknown>) => boolean)[] = []
+  let after: string | null = null
+  let limit = 1000
   const api = {
-    select() {
-      return api
-    },
-    in(col: string, vals: string[]) {
-      if (col === 'circle_id') f.circleIds = vals
-      return api
-    },
-    eq(col: string, val: string) {
-      const data = db.memberships
-        .filter((m) => f.circleIds.includes(m.circle_id) && m.status === val)
-        .map((m) => ({ profile_id: m.profile_id }))
-      return Promise.resolve({ data, error: null })
+    select() { return api },
+    eq(key: string, value: string) { filters.push(row => row[key] === value); return api },
+    in(key: string, values: string[]) { filters.push(row => values.includes(String(row[key]))); return api },
+    order() { return api },
+    limit(value: number) { limit = value; return api },
+    gt(_key: string, value: string) { after = value; return api },
+    then(resolve: (value: unknown) => unknown) {
+      const result = rows.filter(row => filters.every(filter => filter(row)) && (after === null || String(row.id) > after))
+        .sort((a, b) => String(a.id) < String(b.id) ? -1 : 1).slice(0, Math.min(limit, 1000))
+      return Promise.resolve({ data: result, error: null }).then(resolve)
     },
   }
   return api
 }
 
-// circles / hubs builders (place-tree hub:/nexus: walk) — return the tree rows for the given parent.
-function circlesBuilder() {
-  const api = {
-    select() {
-      return api
-    },
-    eq(_col: string, val: string) {
-      return Promise.resolve({ data: db.circles.filter((c) => c.hub_id === val).map((c) => ({ id: c.id })), error: null })
-    },
-    in(_col: string, vals: string[]) {
-      return Promise.resolve({ data: db.circles.filter((c) => c.hub_id && vals.includes(c.hub_id)).map((c) => ({ id: c.id })), error: null })
-    },
-  }
-  return api
-}
-function hubsBuilder() {
-  const api = {
-    select() {
-      return api
-    },
-    eq(_col: string, val: string) {
-      return Promise.resolve({ data: db.hubs.filter((h) => h.nexus_id === val).map((h) => ({ id: h.id })), error: null })
-    },
-  }
-  return api
-}
+function membershipsBuilder() { return placeBuilder('memberships') }
+function circlesBuilder() { return placeBuilder('circles') }
+function hubsBuilder() { return placeBuilder('hubs') }
 
 // network_contact_tags builder. Two shapes are used:
 //   resolveAudience tag path: .select(embed).eq('network_contacts.shared_space_id', v).ilike('tag', t)
