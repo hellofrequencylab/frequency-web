@@ -95,3 +95,9 @@ describe('the public event page where-line', () => {
 })
 
 vi.mock('@/lib/events/public-join-door', () => ({ loadPublicJoinDoor: async () => null }))
+
+// Exercise Frequency's public privacy boundary regardless of the build's default design.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'frequency',
+}))
