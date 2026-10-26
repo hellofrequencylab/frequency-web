@@ -5,6 +5,7 @@ vi.mock('@/lib/auth', () => ({ getMyProfileId: m.actor }))
 vi.mock('@/lib/spaces/store', () => ({ getSpaceById: m.get }))
 vi.mock('@/lib/spaces/private-state', () => ({ loadSpaceCoachProfile: m.coach }))
 vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: m.caps }))
+vi.mock('@/lib/spaces/discovery-access', () => ({ authorizeDiscoveryEditor: async (id: string) => (id === 'space-A' ? { actor: 'editor-A', space: { id } } : null) }))
 vi.mock('@/lib/ai/space-grounding', () => ({ loadSpaceGrounding: m.grounding }))
 vi.mock('@/lib/ai/space-copilot', () => ({ draftSpaceBio: m.bio, suggestTagline: m.tagline }))
 import { draftSpaceBioAction, suggestTaglineAction } from './copilot-actions'
