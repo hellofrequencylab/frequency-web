@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { Data, Metadata } from '@/lib/page-editor/types'
 import { config } from '@/lib/page-editor/config'
@@ -529,3 +529,9 @@ describe('AssetRef unwrapping (divergence #2, ADR-1130): renderers only ever see
     expect(html).toContain('data-src="https://legacy/b.jpg"')
   })
 })
+
+// These assertions lock the historical DAWN renderer; platform selection is tested separately.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'dawn',
+}))
