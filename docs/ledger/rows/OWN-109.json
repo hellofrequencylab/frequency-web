@@ -1,0 +1,20 @@
+{
+  "id": "OWN-109",
+  "title": "Apply and verify private Space coach storage before rollout",
+  "lane": "owner",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "ownerAction": "account",
+  "source": {
+    "file": "supabase/migrations/20270346025000_space_coach_profile_private.sql",
+    "ref": "Private context release dependency for LIVE-1332"
+  },
+  "detail": "Owner applies the additive coach_profile column to existing service-role-only space_private_state through the normal migration process after isolated DB proof. Run supabase/tests/space_coach_profile_private.test.sql in a disposable migrated database first, then verify schema/grants and authenticated two-Space save/clear/read isolation in the rollout environment. No live SQL was applied by this implementation. Missing schema currently shows unavailable and logs a bounded failure; never substitute public preferences.\n\n2026-10-25 migration gap repair includes reviewed additive storage migration25000 and its eight-assertion pgTAP probe. Offline PostgreSQL assertions pass; required full-schema CI and live schema/grants verification remain part of rollout. Coach settings/authenticated two-Space UI remain unpublished in the separate AI phases; storage readiness must not imply those features are live.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-25",
+    "evidence": "Migration and eight-assertion disposable-DB probe prepared, not applied/executed. Production schema and authenticated browser acceptance remain unverified."
+  },
+  "wave": "W7"
+}
