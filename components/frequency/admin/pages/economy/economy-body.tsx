@@ -3,7 +3,6 @@ import { FqIcon } from '@/components/frequency/icon'
 import { SpacePayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { PATHS, RateBand, loadMoneyPaths, type MoneyPathState } from '@/app/(main)/spaces/[slug]/settings/payments/payments-body'
-import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import type { Space } from '@/lib/spaces/types'
 import { AdminHead, AdminPageBody, EMPTY, Kpi, WeekBars, n, trendOf, usd } from '../shared'
 import { loadEarnRates } from '../earn-rates'
@@ -43,12 +42,12 @@ export async function FqEconomyBody({
   viewerProfileId: string | null
   staffViewing: boolean
 }) {
-  const [earnings, paths, rates, series] = await Promise.all([
-    spaceEarningsSummary(space.id, 30),
+  const [paths, rates, series] = await Promise.all([
     loadMoneyPaths(space, viewerProfileId, staffViewing),
     loadEarnRates(),
     loadSpaceRevenueSeries(space.id),
   ])
+  const earnings = series?.summary30 ?? null
   const now = new Date().getTime()
   const month = new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: HOME_TZ }).format(now)
   const weekEnd = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: HOME_TZ })
@@ -72,9 +71,9 @@ export async function FqEconomyBody({
       <div className="g4">
         <Kpi
           label="Revenue, 30 days"
-          value={usd(earnings.netCents)}
+          value={earnings ? usd(earnings.netCents) : EMPTY}
           trend={series ? trendOf(percentChange(series.last30, series.prior30)) : undefined}
-          note={earnings.orderCount > 0 ? `${earnings.orderCount} paid ${earnings.orderCount === 1 ? 'order' : 'orders'}` : 'No sales yet'}
+          note={!earnings ? 'Revenue is unavailable or incomplete' : earnings.orderCount > 0 ? `${earnings.orderCount} paid ${earnings.orderCount === 1 ? 'order' : 'orders'}` : 'No sales yet'}
         />
         <Kpi label="Next payout" value={EMPTY} />
         <Kpi
