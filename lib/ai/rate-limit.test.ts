@@ -121,7 +121,6 @@ const UNLIMITED_DOORS: Record<string, string> = {
   'lib/ai/vera/owner-brief.ts': 'cron owner brief, no per-request actor',
   'lib/ai/vera/today.ts': 'server-rendered dashboard band, no per-request actor threaded',
   'lib/dashboard/person-band.ts': 'server-rendered dashboard band, no per-request actor threaded',
-  'lib/circles/social-fuel.ts': 'fired by a milestone hook, not by a member request',
   'lib/vera-dispatch.ts': 'cron dispatch, no per-request actor',
 
   // Operator-only surfaces reached from /admin or an importer run. They loop by design (an import
