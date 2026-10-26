@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── The sitemap's emitted URL set is the contract ────────────────────────────────────────────────
@@ -18,7 +19,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // The route builds every URL from SITE_URL, which is resolved at module load — so the test reads the
 // same constant rather than stubbing the env after the import has already been hoisted.
 import { readFileSync } from 'node:fs'
-import { JSDOM } from 'jsdom'
 import { resolveSitemap } from 'next/dist/build/webpack/loaders/metadata/resolve-route-data'
 import { resolveProfileSiteCanonical } from '@/lib/sites/profile-canonical'
 vi.mock('@/lib/sites/profile-canonical', () => ({ resolveProfileSiteCanonical: vi.fn(async () => null) }))
@@ -359,19 +359,18 @@ describe('app/sitemap emitted URL set', () => {
   })
 
   it('serializes only fully qualified public image locations and preserves external CDNs', async () => {
-    commerce.shop = [{ id: 'image-paths', images: ['/brand/photos/local.jpg'] }]
     const inputs = ['/brand/photos/local.jpg', 'images/path.jpg', '//cdn.example/p.jpg', 'https://cdn.example/a.jpg?x=1&y=2', 'http://cdn.example/plain.jpg', 'data:image/png;base64,x', 'javascript:alert(1)', 'ftp://cdn.example/x', 'https://user:secret@cdn.example/x', 'https://[invalid', '', '#fragment']
     // Each product contributes its first image, exercising the actual route's final projection.
     commerce.shop = inputs.map((image, i) => ({ id: `image-${i}`, images: [image] }))
     const entries = await sitemap()
     const xml = resolveSitemap(entries)
-    const document = new JSDOM(xml, { contentType: 'application/xml' }).window.document
+    const document = new DOMParser().parseFromString(xml, 'application/xml')
     const locations = [...document.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-image/1.1', 'loc')].map(n => n.textContent!)
     expect(locations).toEqual([`${SITE}/brand/photos/local.jpg`, `${SITE}/images/path.jpg`, 'https://cdn.example/p.jpg', 'https://cdn.example/a.jpg?x=1&y=2', 'http://cdn.example/plain.jpg'])
     expect(locations.every(image => /^https?:\/\//.test(image) && !new URL(image).username)).toBe(true)
     // The former verbatim image projection fails this same absolute-URL acceptance condition.
     const oldXml = resolveSitemap([{ url: `${SITE}/spaces/example`, images: ['/brand/photos/local.jpg'] }])
-    const oldDoc = new JSDOM(oldXml, { contentType: 'application/xml' }).window.document
+    const oldDoc = new DOMParser().parseFromString(oldXml, 'application/xml')
     expect([...oldDoc.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-image/1.1', 'loc')].every(n => /^https?:\/\//.test(n.textContent!))).toBe(false)
   })
 

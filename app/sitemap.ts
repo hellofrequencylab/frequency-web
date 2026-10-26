@@ -799,9 +799,12 @@ function sitemapImageUrl(value: string): string | null {
   } catch { return null }
 }
 function xmlSafe(entries: MetadataRoute.Sitemap): MetadataRoute.Sitemap {
-  return entries.map((e) => ({
-    ...e,
-    url: escapeXml(e.url),
-    ...(e.images ? { images: e.images.map(sitemapImageUrl).filter((image): image is string => image !== null).map(escapeXml) } : {}),
-  }));
+  return entries.map((e) => {
+    const images = e.images?.map(sitemapImageUrl).filter((image): image is string => image !== null)
+    return {
+      ...e,
+      url: escapeXml(e.url),
+      ...(images ? { images: images.map(escapeXml) } : {}),
+    }
+  });
 }
