@@ -9,6 +9,7 @@ import { THEME_PRESETS, validateSpotlightTheme } from '@/lib/spotlight/theme'
 import { spacePageDefaultAccent, readSiteStyle, siteLook, THEME_LOOK } from '@/lib/theme/site-style'
 import { initialWebsiteTheme } from '@/lib/sites/editor/seed'
 import { websiteTemplateSections } from '@/lib/sites/editor/templates'
+import { MIDNIGHT_CSS } from '@/components/sites/midnight-css'
 
 describe('the Midnight theme tokens', () => {
   it('reads at AA wherever text meets a ground', () => {
@@ -69,5 +70,41 @@ describe('the Midnight theme tokens', () => {
     expect(siteLook(readSiteStyle({ siteStyle: { theme: 'midnight' } }))).toEqual(THEME_LOOK.midnight)
     expect(initialWebsiteTheme({ siteStyle: { theme: 'midnight' } })).toBe('Midnight')
     expect(websiteTemplateSections('Midnight', 'Program').map((b) => b.type)).toEqual(midnightHomeBlocks().map((b) => b.type))
+  })
+})
+
+// The Midnight skin dresses the house sections for a website wearing the theme and nothing else.
+const skin = MIDNIGHT_CSS.slice(MIDNIGHT_TOKENS_CSS.length)
+
+describe('the Midnight website skin', () => {
+  it('scopes every rule under the Midnight root, so no other website changes', () => {
+    const selectors = skin
+      .replace(/\{[^}]*\}/g, '\n')
+      .split('\n')
+      .map((s) => s.trim())
+      .filter((s) => s && !s.startsWith('@') && !s.startsWith('/*') && s !== '}' && !/^\d+%|^from$|^to$/.test(s))
+    const unscoped = selectors.flatMap((line) => line.split(/,(?![^(]*\))/).map((s) => s.trim())).filter((s) => s && !s.includes('[data-house-theme="midnight"]') && !/^\d/.test(s))
+    expect(unscoped).toEqual([])
+  })
+
+  it('hardcodes no colour: every value is a token', () => {
+    expect(skin).not.toMatch(/#[0-9a-f]{3,8}\b/i)
+    expect(skin).not.toMatch(/rgba?\(/)
+  })
+
+  it('hardcodes no motion the design system names', () => {
+    expect(skin).not.toMatch(/cubic-bezier/)
+    expect(skin).not.toMatch(/\d+ms\b/)
+  })
+
+  it('wears the bone button, the faces and the square frame through tokens', () => {
+    expect(skin).toContain('background:var(--mn-solid)')
+    expect(skin).toContain('font-family:var(--mn-display)')
+    expect(skin).toContain('font-family:var(--mn-label)')
+    expect(skin).toContain('border-radius:var(--mn-r-card)')
+  })
+
+  it('stops its motion under reduced motion', () => {
+    expect(skin).toContain('@media (prefers-reduced-motion:reduce)')
   })
 })

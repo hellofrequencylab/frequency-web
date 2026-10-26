@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-892",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/sites/editor/state.ts','utf8');const miss=[];const m=/WEBSITE_THEMES_LIVE[^=]*=\\s*new Set<WebsiteTheme>\\(\\[([^\\]]*)\\]\\)/.exec(s);if(!m)miss.push('no live-theme list');else if(/DAWN/.test(m[1]))miss.push('an unfinished theme is marked live');if(!/validWebsiteSnapshot\\(published\\) && WEBSITE_THEMES_LIVE\\.has\\(published\\.theme\\)/.test(s))miss.push('the public published read is not gated on the live-theme list');if(!/still in preview/.test(fs.readFileSync('components/sites/editor/shell.tsx','utf8')))miss.push('the Publish dialog does not warn');if(miss.length){console.error('LIVE-892: '+miss.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "2026-10-26 (LIVE-1365): Midnight is now a finished theme (the design system, 13 blocks), so the unfinished-theme guard names DAWN only. Owner approved the pin update (update the Midnight test pins)."
+  }
+}

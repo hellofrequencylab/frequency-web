@@ -17,7 +17,7 @@
 // readable text) · violet-400 7.9:1 · black-50 on violet-400 7.9:1.
 
 import { HEX_ACCENT, contrastRatio, type AccentVars } from '@/lib/spaces/accent'
-import contract from '@/lib/sites/editor/theme-contract.json'
+import contract from '../sites/editor/theme-contract.json' with { type: 'json' }
 
 /** The violet family lives in the editor contract (lib/sites/editor/theme-contract.json), the one file the
  *  violet-family probe lets carry a brand palette. The accent is a single swap there: it waits on the owner's

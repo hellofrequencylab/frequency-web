@@ -10,8 +10,8 @@
 //
 // Links start with `~/` for a page of this site. Wrap words in *stars* to set them in the italic.
 
-export interface MidnightBlockSeed { type: string; props: Record<string, unknown> }
-export interface MidnightPageSeed { slug: string; title: string; nav: boolean; blocks: MidnightBlockSeed[] }
+interface MidnightBlockSeed { type: string; props: Record<string, unknown> }
+interface MidnightPageSeed { slug: string; title: string; nav: boolean; blocks: MidnightBlockSeed[] }
 
 const P = '/sites/midnight/photos'
 

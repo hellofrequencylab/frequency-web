@@ -12,7 +12,13 @@ import { readFileSync } from 'node:fs'
 // DAWN's own tokens (app/globals.css :root and its two TypeScript mirrors) belong to the DAWN design that
 // Space websites wear; Frequency overrides them in app/themes/frequency.css. lib/theme/cyberunicorn.ts is
 // the CyberUnicorn 5000 device skin (its synthwave sky is the firmware's own colour), worn by one panel only.
-const SKIP = new Set(['lib/theme/wildheart.ts', 'lib/theme/cyberunicorn.ts', 'lib/spotlight/theme.ts', 'lib/sites/editor/theme-contract.json', 'app/globals.css', 'lib/maps/pin-kinds.ts', 'app/dev/og-root-card/route.tsx'])
+const SKIP = new Set(['lib/theme/wildheart.ts', 'lib/theme/cyberunicorn.ts', 'lib/spotlight/theme.ts', 'app/globals.css', 'lib/maps/pin-kinds.ts', 'app/dev/og-root-card/route.tsx'])
+// A stock website theme's own palette may carry violet (ADR-1885: Midnight keeps its violet #A68BF2 as the
+// theme's accent, and a Space accent overrides it). The exception is explicit and per hex, in the one file
+// that holds theme palettes: any other violet in theme-contract.json fails like it does anywhere else.
+const THEME_PALETTE_VIOLET = {
+  'lib/sites/editor/theme-contract.json': new Set(['1C1424', '261C31', '654590', '6E4D96', 'C7ADE8', '1C1430', '7D5FD3', 'A68BF2', 'CDBDFB']),
+}
 const files = execSync('git ls-files app components lib').toString().split('\n').filter(Boolean)
 const bad = []
 
@@ -32,7 +38,7 @@ for (const f of files) {
     if (/--fq-pa:|--fq-pa-soft:|--pa:|--fq-pa-orb:|--pa-orb:/.test(line)) return
     for (const m of line.matchAll(/#([0-9a-fA-F]{6})\b|#([0-9a-fA-F]{3})\b(?![0-9a-fA-F])/g)) {
       const hex = (m[1] || m[2]).toUpperCase()
-      if (hex === 'E6CDF4') continue
+      if (hex === 'E6CDF4' || THEME_PALETTE_VIOLET[f]?.has(hex)) continue
       const { h, s, l } = hsl(hex)
       if (h >= 235 && h <= 295 && s > 0.25 && l > 0.06 && l < 0.92) bad.push(`${f}:${i + 1} #${hex}`)
     }

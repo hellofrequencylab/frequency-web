@@ -31,7 +31,7 @@ assert.deepEqual(style.readSiteStyle(style.withSiteStyle(prefs, { theme: 'bold',
 const cleared = style.withSitePageTheme(prefs, 'events', null)
 assert.equal(style.readSitePageStyle(cleared, 'events').theme, 'frequency', 'clearing puts the page back on the site theme')
 assert.equal(cleared.siteStyle.pages, undefined, 'a cleared override is not stored')
-assert.deepEqual(style.readSiteStyle({ siteStyle: { theme: 'frequency', pages: { 'Bad Slug': 'bold', about: 'midnight', ok: 'bold' } } }).pages, { ok: 'bold' }, 'malformed entries are dropped')
+assert.deepEqual(style.readSiteStyle({ siteStyle: { theme: 'frequency', pages: { 'Bad Slug': 'bold', about: 'sunrise', ok: 'bold' } } }).pages, { ok: 'bold' }, 'malformed entries are dropped')
 assert.deepEqual(style.readSiteStyle(style.withSitePageTheme({}, 'Not A Slug', 'bold')).pages, {}, 'an invalid slug writes nothing')
 
 // 2. The Space's visual brand in the website header, with its fallbacks.
