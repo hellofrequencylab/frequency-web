@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-878",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('components/frequency/members/events/events-body.tsx','utf8'),c=fs.readFileSync('components/frequency/members/crew/crew-body.tsx','utf8');const bad=[];if(e.includes('ev-hero-ph')||!e.includes('ev-hero is-plain'))bad.push('Events still draws its photo band');if(c.includes('mc-banner'))bad.push('the Quest still draws its banner image');const o=fs.readFileSync('app/(main)/spaces/operating/page.tsx','utf8');if(/resolveIndexHero/.test(o))bad.push('Spaces you run still draws a photo header');if(bad.length){console.error('SCAN-878: '+bad.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1129): Spaces you run is Frequency-only; the probe asks that it draws no hero resolver."
+  }
+}

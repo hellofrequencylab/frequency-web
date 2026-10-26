@@ -4,7 +4,6 @@ import { MarketHero } from '@/components/marketplace/market-hero'
 import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from '@/components/marketplace/hero-buttons'
 import { getMyProfileId } from '@/lib/auth'
 import { normalizeSpaceSort } from '@/lib/spaces/discovery'
-import { normalizePerPage, normalizePage } from '@/components/spaces/directory-view'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
 import { listNetworkedSpaces } from '@/lib/spaces/discovery'
 import { buildDirectorySections } from '@/lib/spaces/directory-sections'
@@ -56,16 +55,12 @@ export default async function SpacesDirectoryPage({
     category,
     following: followingParam,
     sort: sortParam,
-    per: perParam,
-    page: pageParam,
     city,
     events,
     show,
   } = await searchParams
   const following = followingParam === '1'
   const sort = normalizeSpaceSort(sortParam)
-  const per = normalizePerPage(perParam)
-  const page = normalizePage(pageParam)
 
   // The Create + Manage affordances are for signed-in members (each destination re-checks auth). The
   // viewer id also feeds the "Following" filter (a signed-out viewer follows nothing).

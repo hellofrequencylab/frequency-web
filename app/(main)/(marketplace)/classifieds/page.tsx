@@ -32,7 +32,7 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
   const { kind } = await searchParams
   const activeKind = LISTING_KINDS.some((k) => k.key === kind) ? (kind as ListingKind) : null
 
-  const { description, body, ctaLabel, ctaHref } = await resolvePageContent('/classifieds', CONTENT_FALLBACK)
+  const { body, ctaLabel, ctaHref } = await resolvePageContent('/classifieds', CONTENT_FALLBACK)
   // One unfiltered read powers the stats; the grid filters to the active kind in-process. The hero
   // search bar filters the grid instantly on the client (MarketGrid reads the shared query).
   const [profileId, allListings] = await Promise.all([getMyProfileId(), listListings({})])

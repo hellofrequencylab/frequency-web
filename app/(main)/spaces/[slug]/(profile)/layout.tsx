@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { SlidersHorizontal, ArrowUpRight } from 'lucide-react'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
@@ -71,10 +70,6 @@ import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 // The cover PLACEHOLDER (a Space with no uploaded cover) is the SHARED deterministic pick from
 // lib/spaces/cover-placeholder — the OG share card (opengraph-image.tsx) draws from the same source,
 // so a shared link previews the SAME photo this hero shows.
-
-
-
-
 
 export default async function SpaceProfileChromeLayout({
   children,
@@ -217,34 +212,12 @@ export default async function SpaceProfileChromeLayout({
   // for a mark drawn with a transparent background (Identity & Branding -> Logo backdrop).
   const logoBackdrop = readLogoBackdrop(space.preferences)
 
-
-
-
-
-
   // ── THE COVER + IDENTITY ─────────────────────────────────────────────────────────────────────────
   // A real uploaded cover always wins; a Space with NONE falls back to a calm SITE stock photo. The
   // image is a next/image with `fill` + `preload` (not a plain <img>) so it paints on the FIRST
   // navigation instead of blank-until-refresh.
   const coverSrc = space.coverImageUrl || coverPlaceholderFor(space.id)
   const isHero = coverSize === 'hero'
-  const coverImage = (
-    <Image
-      src={coverSrc}
-      alt=""
-      fill
-      sizes="(max-width: 1024px) 100vw, 1344px"
-      preload
-      className="object-cover"
-      style={{ objectPosition: coverFocus }}
-    />
-  )
-
-
-
-
-
-
 
   // The menu row is handed to the template's STICKY slot (not the band), so it detaches on scroll and
   // pins directly under the global header, staying in view for the whole page (and for anchor jumps —
