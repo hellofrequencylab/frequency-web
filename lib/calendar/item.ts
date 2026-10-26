@@ -16,6 +16,9 @@ export interface CalendarEvent {
   endDayKey?: string | null
   /** Short time for the day-cell chip, e.g. "7:00 PM" ("All day" for an all-day entry). */
   timeLabel: string
+  /** When the item ends that same day, in the same short form ("8:30 PM"). Absent for an all-day item,
+   *  a to-do or an item with no end; the Day and Week grids then give it an hour (LIVE-1178). */
+  endTimeLabel?: string | null
   /** Full when-line, e.g. "Mon, Jul 20, 7:00 PM PDT", in the item's own zone. */
   whenLabel: string
   /** The true instant as an absolute ISO, for the viewer-timezone toggle. Null when unresolved or
