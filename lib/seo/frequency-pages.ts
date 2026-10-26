@@ -46,7 +46,7 @@ export const FREQUENCY_PAGE_SEO = {
     title: 'Frequency · Local groups and events near you',
     description: SITE_DESCRIPTION,
     shareTitle: 'Frequency · Local groups and events near you',
-    headline: 'Making friends as an adult is hard. Start with one Thursday.',
+    headline: 'Build circles, not walls.',
     lede: 'Find local groups and community events near you. Try a walk, a class or a regular Circle. Pick something you like doing and a time you’re free. Free to join.',
     crumbs: [],
   },
