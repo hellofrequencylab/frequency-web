@@ -144,6 +144,6 @@ describe('confirmGuestBookingFormAction', () => {
     m.confirmGuest.mockResolvedValue({ ok: true, spaceId: 'space-1', startsAt: '2026-11-02T18:00:00.000Z' })
     const res = await confirmGuestBookingFormAction({ outcome: null, when: null } as never, form('tok', 'space-1'))
     expect(m.confirmGuest).toHaveBeenCalledWith('tok', 'space-1')
-    expect(res.when).toBe('Monday, November 2 at 10:00 AM PST')
+    expect(res?.when).toBe('Monday, November 2 at 10:00 AM PST')
   })
 })
