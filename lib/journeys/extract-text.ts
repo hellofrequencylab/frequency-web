@@ -10,8 +10,12 @@ export async function extractOverviewText(buf: Buffer, mime: string, filename: s
   if (mime.includes('pdf') || name.endsWith('.pdf')) {
     const { PDFParse } = await import('pdf-parse')
     const parser = new PDFParse({ data: new Uint8Array(buf) })
-    const res = await parser.getText()
-    return (res?.text ?? '').trim()
+    try {
+      const res = await parser.getText()
+      return (res?.text ?? '').trim()
+    } finally {
+      await parser.destroy()
+    }
   }
 
   if (

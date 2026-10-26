@@ -14,46 +14,24 @@ const tree = {
   memberships: [] as Membership[],
 }
 
-function circlesBuilder() {
+function builder(table: string) {
+  const rows: Record<string, unknown>[] = table === 'memberships'
+    ? tree.memberships.map((row, i) => ({ ...row, id: String(i).padStart(8, '0') }))
+    : table === 'circles' ? tree.circles : tree.hubs
+  const filters: ((row: Record<string, unknown>) => boolean)[] = []
+  let after: string | null = null
+  let limit = 1000
   const api = {
-    select() {
-      return api
-    },
-    eq(_c: string, val: string) {
-      return Promise.resolve({ data: tree.circles.filter((c) => c.hub_id === val).map((c) => ({ id: c.id })), error: null })
-    },
-    in(_c: string, vals: string[]) {
-      return Promise.resolve({ data: tree.circles.filter((c) => c.hub_id && vals.includes(c.hub_id)).map((c) => ({ id: c.id })), error: null })
-    },
-  }
-  return api
-}
-function hubsBuilder() {
-  const api = {
-    select() {
-      return api
-    },
-    eq(_c: string, val: string) {
-      return Promise.resolve({ data: tree.hubs.filter((h) => h.nexus_id === val).map((h) => ({ id: h.id })), error: null })
-    },
-  }
-  return api
-}
-function membershipsBuilder() {
-  const f: { circleIds: string[] } = { circleIds: [] }
-  const api = {
-    select() {
-      return api
-    },
-    in(_c: string, vals: string[]) {
-      f.circleIds = vals
-      return api
-    },
-    eq(_c: string, val: string) {
-      const data = tree.memberships
-        .filter((m) => f.circleIds.includes(m.circle_id) && m.status === val)
-        .map((m) => ({ profile_id: m.profile_id }))
-      return Promise.resolve({ data, error: null })
+    select() { return api },
+    eq(key: string, value: string) { filters.push(row => row[key] === value); return api },
+    in(key: string, values: string[]) { filters.push(row => values.includes(String(row[key]))); return api },
+    order() { return api },
+    limit(value: number) { limit = value; return api },
+    gt(_key: string, value: string) { after = value; return api },
+    then(resolve: (value: unknown) => unknown) {
+      const result = rows.filter(row => filters.every(filter => filter(row)) && (after === null || String(row.id) > after))
+        .sort((a, b) => String(a.id) < String(b.id) ? -1 : 1).slice(0, Math.min(limit, 1000))
+      return Promise.resolve({ data: result, error: null }).then(resolve)
     },
   }
   return api
@@ -62,9 +40,7 @@ function membershipsBuilder() {
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from(table: string) {
-      if (table === 'circles') return circlesBuilder()
-      if (table === 'hubs') return hubsBuilder()
-      if (table === 'memberships') return membershipsBuilder()
+      if (['circles', 'hubs', 'memberships'].includes(table)) return builder(table)
       throw new Error(`unexpected table ${table}`)
     },
   }),
@@ -150,4 +126,24 @@ describe('resolvePlaceTreeProfileIds (walks the tree to active members)', () => 
     expect(await resolvePlaceTreeProfileIds({ type: 'nexus', id: 'nope' })).toEqual([])
     expect(await resolvePlaceTreeProfileIds({ type: 'circle', id: '' })).toEqual([])
   })
+})
+
+// The service deliberately caps unpaged reads at 1,000, like supabase/config.toml.
+it('resolves more than 1,000 Circle members without truncating the audience', async () => {
+  tree.memberships = Array.from({ length: 1205 }, (_, i) => ({ circle_id: 'circle-a', profile_id: `p${i}`, status: 'active' }))
+  expect(await resolvePlaceTreeProfileIds({ type: 'circle', id: 'circle-a' })).toHaveLength(1205)
+})
+it('pages every hub/circle layer while preserving the selected Nexus boundary', async () => {
+  tree.hubs = Array.from({ length: 1205 }, (_, i) => ({ id: `h${String(i).padStart(5, '0')}`, nexus_id: 'n-a' }))
+  tree.hubs.push({ id: 'other-hub', nexus_id: 'n-b' })
+  tree.circles = tree.hubs.map(hub => ({ id: `c-${hub.id}`, hub_id: hub.id }))
+  tree.memberships = tree.circles.map(circle => ({ circle_id: circle.id, profile_id: `p-${circle.id}`, status: 'active' }))
+  const ids = await resolvePlaceTreeProfileIds({ type: 'nexus', id: 'n-a' })
+  expect(ids).toHaveLength(1205)
+  expect(ids).not.toContain('p-c-other-hub')
+})
+it('pages a Hub with more than 1,000 circles', async () => {
+  tree.circles = Array.from({ length: 1205 }, (_, i) => ({ id: `c${String(i).padStart(5, '0')}`, hub_id: 'h-a' }))
+  tree.memberships = tree.circles.map(circle => ({ circle_id: circle.id, profile_id: `p-${circle.id}`, status: 'active' }))
+  expect(await resolvePlaceTreeProfileIds({ type: 'hub', id: 'h-a' })).toHaveLength(1205)
 })
