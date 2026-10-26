@@ -27,6 +27,14 @@ const state = vi.hoisted(() => ({
 }))
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+// The decision notice rides the notification router (event.notice, SCAN-1161): record what it is
+// asked to send, in the same bell-row shape the old direct insert used.
+vi.mock('@/lib/notifications/router', () => ({
+  routeNotification: async (_event: string, _to: unknown, ctx: { type: string }) => {
+    state.notifications.push({ type: ctx.type })
+    return { outcomes: [], enqueuedCount: 1 }
+  },
+}))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => {

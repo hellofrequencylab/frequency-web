@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { notifyEventPeople } from '@/lib/notifications/event-notice'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -373,14 +374,7 @@ export async function inviteCohost(
   try {
     const { data: ev } = await admin.from('events').select('title').eq('id', eventId).maybeSingle()
     const title = ev?.title ?? 'an event'
-    await admin.from('notifications').insert({
-      recipient_id: target.id,
-      actor_id: profileId,
-      type: 'cohost_invite',
-      reference_type: 'event',
-      reference_id: eventId,
-      body: `invited you to cohost "${title}"`,
-    })
+    await notifyEventPeople([target.id], profileId, 'cohost_invite', eventId, `invited you to cohost "${title}"`)
   } catch {
     /* best-effort */
   }
@@ -429,14 +423,7 @@ export async function acceptCohostInvite(
       .eq('id', eventId)
       .maybeSingle()
     if (ev?.host_id) {
-      await admin.from('notifications').insert({
-        recipient_id: ev.host_id,
-        actor_id: profileId,
-        type: 'cohost_accepted',
-        reference_type: 'event',
-        reference_id: eventId,
-        body: `accepted your invite to cohost "${ev.title}"`,
-      })
+      await notifyEventPeople([ev.host_id], profileId, 'cohost_accepted', eventId, `accepted your invite to cohost "${ev.title}"`)
     }
   } catch {
     /* best-effort */

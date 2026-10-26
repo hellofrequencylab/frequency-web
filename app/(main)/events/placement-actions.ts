@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { notifyEventPeople } from '@/lib/notifications/event-notice'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-capabilities'
@@ -71,15 +72,12 @@ async function notifyStewardsOfRequest(
         : await listCircleStewardIds(target.id)
     const recipients = stewardIds.filter((id) => id && id !== actorId)
     if (recipients.length === 0) return
-    await admin.from('notifications').insert(
-      recipients.map((recipient_id) => ({
-        recipient_id,
-        actor_id: actorId,
-        type: 'event_placement_request',
-        reference_type: 'event',
-        reference_id: eventId,
-        body: `asked to bring “${eventTitle}” to your ${target.type === 'space' ? 'Space' : 'Circle'}`,
-      })),
+    await notifyEventPeople(
+      recipients,
+      actorId,
+      'event_placement_request',
+      eventId,
+      `asked to bring “${eventTitle}” to your ${target.type === 'space' ? 'Space' : 'Circle'}`,
     )
   } catch {
     /* best-effort */
@@ -98,16 +96,13 @@ async function notifyRequesterOfDecision(
 ): Promise<void> {
   try {
     if (!requesterId || requesterId === actorId) return
-    await admin.from('notifications').insert({
-      recipient_id: requesterId,
-      actor_id: actorId,
-      type: approved ? 'event_placement_approved' : 'event_placement_declined',
-      reference_type: 'event',
-      reference_id: eventId,
-      body: approved
-        ? `placed “${eventTitle}” in ${targetName}`
-        : `passed on placing “${eventTitle}” in ${targetName}`,
-    })
+    await notifyEventPeople(
+      [requesterId],
+      actorId,
+      approved ? 'event_placement_approved' : 'event_placement_declined',
+      eventId,
+      approved ? `placed “${eventTitle}” in ${targetName}` : `passed on placing “${eventTitle}” in ${targetName}`,
+    )
   } catch {
     /* best-effort */
   }
