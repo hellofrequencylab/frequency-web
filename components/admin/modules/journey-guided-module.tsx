@@ -22,6 +22,7 @@ export function JourneyGuidedModule() {
   return (
     <GuidedModule
       coachingOnly
+      redrawLabel="Get coaching questions"
       moduleId="journey.guided"
       manifest={JOURNEY_MANIFEST}
       blurb="Get questions about your Journey while keeping every field in your own words."
