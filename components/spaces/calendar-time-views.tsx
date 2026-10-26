@@ -93,16 +93,18 @@ function ItemButton({
   onOpen,
   className,
   style,
+  label: labelOverride,
   children,
 }: OpenProps & {
   item: CalendarEvent
+  label?: string
   className?: string
   style?: React.CSSProperties
   children: React.ReactNode
 }) {
   const look = calendarPresentation(item, 'team')
   const base = cn('block w-full min-w-0 overflow-hidden rounded-control px-2 py-1 text-left text-meta', look.chipClass, className)
-  const label = `${look.word}: ${item.title}, ${item.timeLabel}`
+  const label = labelOverride ?? `${look.word}: ${item.title}, ${item.timeLabel}`
   if (!canOpen(item)) {
     return (
       <div className={base} style={style} data-calendar-time-item={look.key} aria-label={label}>
@@ -127,7 +129,7 @@ function TimedCard({ block, canOpen, onOpen }: OpenProps & { block: TimedBlock }
       item={item}
       canOpen={canOpen}
       onOpen={onOpen}
-      className="absolute"
+      className="absolute py-0.5"
       style={{
         top,
         height: Math.max(height - 2, 18),
@@ -135,9 +137,19 @@ function TimedCard({ block, canOpen, onOpen }: OpenProps & { block: TimedBlock }
         width: `calc(${100 / lanes}% - 2px)`,
       }}
     >
-      <ItemWord item={item} />
-      <span className={cn('block truncate font-medium', look.titleClass)}>{item.title}</span>
-      <span className="block truncate text-2xs text-muted">{timeRangeLabel(item)}</span>
+      {height < 40 ? (
+        // A half hour has one line of room: the word and the title share it.
+        <span className="flex min-w-0 items-baseline gap-1.5">
+          <ItemWord item={item} />
+          <span className={cn('truncate font-medium', look.titleClass)}>{item.title}</span>
+        </span>
+      ) : (
+        <>
+          <ItemWord item={item} />
+          <span className={cn('block truncate font-medium', look.titleClass)}>{item.title}</span>
+          <span className="block truncate text-2xs text-muted">{timeRangeLabel(item)}</span>
+        </>
+      )}
     </ItemButton>
   )
 }
@@ -332,17 +344,23 @@ function Timeline({
                   {win.todayPct !== null ? (
                     <span className="absolute inset-y-0 w-0.5 bg-primary" style={{ left: `${win.todayPct}%` }} aria-hidden data-calendar-today-line />
                   ) : null}
-                  {row.dates.length > 1 ? (
-                    <span
-                      className={cn('absolute top-1/2 h-2 -translate-y-1/2 rounded-pill', look?.chipClass ?? 'bg-cal-works-bg')}
-                      style={{ left: `${row.spanLeftPct}%`, width: `${row.spanWidthPct}%` }}
-                      aria-hidden
-                    />
-                  ) : null}
+                  {/* The Plan's span as one bar in its stage's form and colour, its dates as dots on it
+                      (the design's Timeline). A single date still gets a short bar so the row reads. */}
+                  <span
+                    className={cn('absolute top-1/2 h-6 -translate-y-1/2 rounded-pill', look?.chipClass ?? 'bg-cal-works-bg')}
+                    style={{ left: `calc(${row.spanLeftPct}% - 0.75rem)`, width: `calc(${row.spanWidthPct}% + 1.5rem)` }}
+                    aria-hidden
+                  />
                   {row.dates.map(({ item, leftPct }) => (
-                    <span key={`${item.slug}|${item.dayKey}`} className="absolute top-2 -translate-x-1/2" style={{ left: `${leftPct}%` }}>
-                      <ItemButton item={item} canOpen={canOpen} onOpen={onOpen} className="w-auto truncate rounded-pill px-2 py-0.5 text-2xs">
-                        {shortDateLabel(item.dayKey)}
+                    <span key={`${item.slug}|${item.dayKey}`} className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left: `${leftPct}%` }}>
+                      <ItemButton
+                        item={item}
+                        canOpen={canOpen}
+                        onOpen={onOpen}
+                        className="h-3.5 w-3.5 rounded-pill border border-border-strong bg-surface p-0"
+                        label={`${item.title}, ${shortDateLabel(item.dayKey)}`}
+                      >
+                        <span className="sr-only">{`${item.title}, ${shortDateLabel(item.dayKey)}`}</span>
                       </ItemButton>
                     </span>
                   ))}
@@ -350,7 +368,7 @@ function Timeline({
                     <span
                       key={`${item.slug}|${item.dayKey}`}
                       className={cn(
-                        'absolute bottom-2 h-2.5 w-2.5 -translate-x-1/2 rounded-pill',
+                        'absolute top-2 h-2.5 w-2.5 -translate-x-1/2 rounded-pill',
                         overdue ? 'bg-cal-event' : 'bg-cal-todo',
                       )}
                       style={{ left: `${leftPct}%` }}
@@ -364,6 +382,11 @@ function Timeline({
             )
           })}
         </ul>
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-3 py-2 text-2xs text-muted">
+          <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-pill border border-border-strong bg-surface" aria-hidden />Dates on the Plan</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-pill bg-cal-todo" aria-hidden />To-do due</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-pill bg-cal-event" aria-hidden />Overdue</span>
+        </p>
       </div>
     </div>
   )

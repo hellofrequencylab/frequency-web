@@ -101,7 +101,7 @@ describe('CalendarTimeViews (LIVE-1178)', () => {
     mount('timeline', { items: [yoga, { ...todo, planId: 'p1', dayKey: '2026-10-20' }] })
     const row = container!.querySelector('[data-calendar-timeline-row="plan-p1"]')!
     expect(row.textContent).toContain('Autumn retreat')
-    expect(row.textContent).toContain('Oct 27')
+    expect(row.querySelector('[aria-label="Sunset yoga, Oct 27"]')).not.toBeNull()
     expect(row.querySelector('[aria-label^="Overdue to-do"]')).not.toBeNull()
   })
 
