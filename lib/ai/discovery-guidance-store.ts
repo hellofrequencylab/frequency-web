@@ -4,7 +4,8 @@ import { fetchPinned } from '@/lib/net/pinned-fetch'
 import { parseGuidanceWatchState, type GuidanceWatchState } from './discovery-guidance-watch'
 
 const KEY = 'official_discovery_guidance_watch_v1'
-/** Existing private platform text store; no schema or raw document content is stored. */
+/** authz-delegated: only the strict-secret cron calls this global operational store.
+ * Existing service-role-only platform text setting; no tenant/user rows or document bodies. */
 export function guidanceWatchDependencies(exhausted: () => boolean) {
   return {
     exhausted,

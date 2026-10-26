@@ -1293,3 +1293,6 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
+
+# LIVE-1347: strict-secret cron stores only public guidance digests/status in the service-role-only platform_settings key. It has no user/tenant query or session-authorized surface.
+lib/ai/discovery-guidance-store.ts
