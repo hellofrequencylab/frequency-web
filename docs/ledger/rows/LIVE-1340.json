@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1340",
+  "title": "Help articles for bookings, calendar plans, calendar feed, Regulars and hunts, and the Beta offer",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "/mnt/project-files/audits/meta-scan-2026-10-26.md",
+    "ref": "Stream L, follow-up: help articles"
+  },
+  "detail": "Five host-facing help articles in content/help/spaces/ close the help gaps the 2026-10-26 meta scan listed. North County seed content waits on real Circles and events from Daniel (city pages are built from live rows).",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "evidence": "All five article files exist and pnpm check:help passes.",
+    "cmd": "node -e \"for (const f of ['take-bookings','plan-your-calendar','calendar-feed','regulars-and-hunts','beta-pricing']) require('fs').accessSync('content/help/spaces/'+f+'.md')\""
+  }
+}
