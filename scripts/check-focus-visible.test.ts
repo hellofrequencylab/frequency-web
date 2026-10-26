@@ -630,8 +630,8 @@ describe('the detector fires', () => {
     const blind = readSheet(mutated)
     expect(blind.restoring).toEqual([{ classes: ['ring-focus'], reach: null }, { classes: ['ring-focus'], reach: null }])
     const { failures, lifted } = auditTree(ROOT, blind)
-    // Floor lowered 100 -> 90 as DAWN-only lifted controls leave the tree (ADR-1880); it still has to be well above zero.
-    expect(failures.length).toBeGreaterThanOrEqual(90)
+    // Floor lowered 100 -> 90 -> 80 as DAWN-only lifted controls leave the tree (ADR-1880); it still has to be well above zero.
+    expect(failures.length).toBeGreaterThanOrEqual(80)
     // Every lifted element that is green with the rule is red without it (detached control
     // strings are judged only when red, so they are counted apart).
     const elementFailures = failures.filter((f) => !f.includes('<(string)>'))

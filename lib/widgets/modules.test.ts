@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS } from './modules'
 import { COMPONENT_IDS } from './registry'
@@ -275,14 +275,26 @@ describe('module route registration (LP7 admin dashboards)', () => {
   it('every MODULE_ROUTES entry resolves to a page that actually renders <PageModules>', () => {
     const root = join(__dirname, '..', '..')
     const GROUPS = ['(main)', '(marketing)', '(help)', '']
+    const fqRoot = join(root, 'components', 'frequency', 'members')
+    const fqBodies: string[] = []
+    const collect = (d: string) => {
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        const q = join(d, e.name)
+        if (e.isDirectory()) collect(q)
+        else if (e.name.endsWith('.tsx')) fqBodies.push(readFileSync(q, 'utf8'))
+      }
+    }
+    collect(fqRoot)
     for (const route of MODULE_ROUTES) {
       const file = GROUPS.map((g) => join(root, 'app', g, route.replace(/^\//, ''), 'page.tsx')).find((p) =>
         existsSync(p),
       )
       expect(file, `${route} is in MODULE_ROUTES but has no page.tsx`).toBeDefined()
       const src = readFileSync(file!, 'utf8')
+      // A Frequency body mounts the route's blocks itself, in the operator's order.
+      const mountsInBody = fqBodies.some((b) => b.includes(`visibleModuleOrder('${route}')`))
       expect(
-        src.includes('<PageModules'),
+        src.includes('<PageModules') || src.includes(`visibleModuleOrder('${route}')`) || mountsInBody,
         `${route} is in MODULE_ROUTES but its page never renders <PageModules>` +
           (/redirect\(/.test(src) ? ' — it is a redirect stub, so the Layout editor draws on a page that navigates away' : ''),
       ).toBe(true)

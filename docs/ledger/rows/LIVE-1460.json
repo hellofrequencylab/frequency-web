@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1460",
+  "title": "A theme gallery at /themes shows every theme with its starter kits and a door to start",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-themes.tsx",
+    "ref": "Mega Theme plan, the theme gallery (ADR-1895)"
+  },
+  "detail": "One card per theme read from SITE_THEMES and the kit index, each kit linking to Space creation with its niche, Midnight with its live preview and feature page. A theme with no kit yet says so and opens the setup door.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "evidence": "Probe passes; the page renders in vitest.",
+    "cmd": "node scripts/probes/theme-gallery.mjs"
+  }
+}

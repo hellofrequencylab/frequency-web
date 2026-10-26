@@ -19,7 +19,7 @@ it('shows missing rejected prose honestly and requires explicit manual Apply',as
  expect(fields.find(field=>field.path==='story')?.value).toBe('')
  mocks.approve.mockResolvedValue({ok:true,profileHref:'/spaces/owner',siteHref:'/sites/owner'})
  container=document.createElement('div');document.body.append(container);root=createRoot(container)
- await act(async()=>root.render(<ReviewBoard intakeId="intake-owner" initialModel={model} status="review" isDemo initialMood="warm" appliedSpaceId={null} initialImages={[]} initialImagePlan={[]} initialLockHero initialLockLayout={false} initialListed={false} initialDirections="" />))
+ await act(async()=>root.render(<ReviewBoard intakeId="intake-owner" initialModel={model} status="review" isDemo initialMood="warm" appliedSpaceId={null} initialImages={[]} initialImagePlan={[]} initialListed={false} initialDirections="" />))
  expect(container.textContent).not.toContain('INVENTED')
  expect(container.textContent).toContain('Missing text stays Not set')
  expect(container.textContent).toContain('Not set')

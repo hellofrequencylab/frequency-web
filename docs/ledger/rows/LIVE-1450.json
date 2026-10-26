@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1450",
+  "title": "A Change theme button in the website editor opens every theme and its starter kits",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/sites/editor/theme-changer.tsx",
+    "ref": "Mega Theme plan, the editor's Change theme button (ADR-1890)"
+  },
+  "detail": "The Theme tab opens with a Change theme row that names the current theme and opens a dialog of every theme plus the kits of the theme now worn. The tab and the dialog share one pick handler, so a switch is one undo step and saves the site style.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "evidence": "Probe passes; vitest on the editor shell passes.",
+    "cmd": "node scripts/probes/theme-changer.mjs"
+  }
+}
