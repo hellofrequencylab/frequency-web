@@ -4,6 +4,58 @@ import ts from 'typescript'
 import { expect, test } from 'vitest'
 import { FEATURE_DAILY_CAP_USD } from './budget'
 
+/** Resolve only the real typed coaching builder, with statically known accounting inputs.
+ * A similarly named local function or an opaque feature/tier cannot satisfy this inventory. */
+function coachingFactoryFeatures(path: string, text: string): string[] {
+  if (!text.includes('writingCoachingSpec') && !text.includes('\\u')) return []
+  const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true)
+  const imports = new Set<string>()
+  const constants = new Map<string, string>()
+  function stringValue(node: ts.Node | undefined): string | undefined {
+    if (!node) return undefined
+    if (ts.isStringLiteral(node)) return node.text
+    if (ts.isAsExpression(node) && node.type.getText(source) === 'const') return stringValue(node.expression)
+    return undefined
+  }
+  function bindings(node: ts.Node) {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text === './writing-coaching') {
+      const named = node.importClause?.namedBindings
+      if (named && ts.isNamedImports(named)) for (const item of named.elements) {
+        if ((item.propertyName ?? item.name).text === 'writingCoachingSpec') imports.add(item.name.text)
+      }
+    }
+    if (ts.isVariableDeclaration(node) && ts.isVariableDeclarationList(node.parent) && (node.parent.flags & ts.NodeFlags.Const) && ts.isIdentifier(node.name)) {
+      const value = stringValue(node.initializer)
+      if (value !== undefined) constants.set(node.name.text, value)
+    }
+    ts.forEachChild(node, bindings)
+  }
+  bindings(source)
+  const literal = (node: ts.Node | undefined) => stringValue(node) ?? (node && ts.isIdentifier(node) ? constants.get(node.text) : undefined)
+  const features: string[] = []
+  function visit(node: ts.Node) {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && (node.expression.text === 'writingCoachingSpec' || imports.has(node.expression.text))) {
+      if (!imports.has(node.expression.text)) throw new Error(`${path}: untrusted coaching factory`)
+      const entity = literal(node.arguments[0]), feature = literal(node.arguments[1]), tier = literal(node.arguments[2])
+      if (!entity || !['practice', 'journey'].includes(entity) || !feature || !tier || !['haiku', 'sonnet', 'opus'].includes(tier)) throw new Error(`${path}: opaque coaching accounting inputs`)
+      features.push(feature)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return features
+}
+
+test('typed coaching inventory resolves trusted aliases/constants and refuses opaque or spoofed factories', () => {
+  const imported = "import { writingCoachingSpec as coach } from './writing-coaching'; const FEATURE = 'practice-edit'; const TIER = 'opus' as const;"
+  expect(coachingFactoryFeatures('fixture.ts', imported + "coach('practice', FEATURE, TIER)")).toEqual(['practice-edit'])
+  expect(() => coachingFactoryFeatures('fixture.ts', imported + "coach('practice', input.feature, TIER)")).toThrow('opaque coaching accounting inputs')
+  expect(() => coachingFactoryFeatures('fixture.ts', imported + "coach('practice', FEATURE, input.tier)")).toThrow('opaque coaching accounting inputs')
+  expect(() => coachingFactoryFeatures('fixture.ts', imported.replace('const FEATURE', 'let FEATURE') + "coach('practice', FEATURE, TIER)")).toThrow('opaque coaching accounting inputs')
+  expect(() => coachingFactoryFeatures('fixture.ts', imported.replace('as const', 'as unknown') + "coach('practice', FEATURE, TIER)")).toThrow('opaque coaching accounting inputs')
+  expect(() => coachingFactoryFeatures('fixture.ts', "writingCoachingSpec('practice', 'practice-edit', 'opus')")).toThrow('untrusted coaching factory')
+})
+
 // Inventory the actual production syntax, including multiline and nested calls.
 // The wrapper behavior tests separately prove admission and durable settlement.
 test('every shipped paid completion caller supplies central attribution', () => {
@@ -16,6 +68,7 @@ test('every shipped paid completion caller supplies central attribution', () => 
       if (entry.isDirectory()) { walk(path); continue }
       if (!/\.tsx?$/.test(path) || /\.(test|spec)\.tsx?$/.test(path) || path === 'lib/ai/complete.ts') continue
       const text = readFileSync(path, 'utf8')
+      for (const feature of coachingFactoryFeatures(path, text)) labels.add(feature)
       // Parsing thousands of unrelated modules can exceed the suite's timeout. This prefilter
       // cannot skip a matching identifier: escaped Unicode names still receive full AST parsing.
       if (!['completeRaw', 'completeText', 'runToolLoop', '\\u'].some(token => text.includes(token))) continue
@@ -45,13 +98,15 @@ test('every shipped paid completion caller supplies central attribution', () => 
               }
               options(source)
             } else if (value && ts.isPropertyAccessExpression(value) && path === 'lib/ai/spark.ts' && value.getText(source) === 'spec.feature') {
-              // All shipped Spark specs are declared by these four modules; their executable tests
-              // additionally verify each exported spec's accounting metadata reaches the wrapper.
+              // Core wizard specs may use a literal declaration or the trusted typed builder.
+              // Executable specs separately prove their metadata reaches central accounting.
               for (const file of ['practice-spark', 'circle-spark', 'journey-spark', 'events-ai']) {
                 const declaration = readFileSync(`lib/ai/${file}.ts`, 'utf8')
                 const keys = [...declaration.matchAll(/(?:const FEATURE = |feature: |eventSpark\()'([^']+)'/g)]
-                expect(keys.length, `${file} lost its feature declarations`).toBeGreaterThan(0)
+                const typed = coachingFactoryFeatures(`lib/ai/${file}.ts`, declaration)
+                expect(keys.length + typed.length, `${file} lost its feature declarations`).toBeGreaterThan(0)
                 for (const key of keys) labels.add(key[1])
+                for (const feature of typed) labels.add(feature)
               }
             } else if (value && ts.isPropertyAccessExpression(value) && path === 'lib/ai/writing-coach.ts' && value.getText(source) === 'input.feature') {
               // Resolve every caller of this shared seam: no opaque or unknown feature is accepted.

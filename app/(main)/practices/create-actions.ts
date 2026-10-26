@@ -1,8 +1,8 @@
 'use server'
 
 // Practice builder — create from the guided Spark (ADR-358). Mirrors the Journey builder's
-// create-actions.ts: Vera interviews the author (who · the act · outcome · cadence · time), drafts
-// the WHOLE Practice's identity, and the author reviews it before anything persists. DEFERRED
+// create-actions.ts: Vera coaches the author on who, the act, outcome, cadence and time.
+// The author writes every identity and guide field before anything persists. DEFERRED
 // CREATION holds, exactly like Journeys: a practices row is created ONLY once the author commits a
 // (reviewed) title. Then the author lands in the full editor to refine, add a guide, set the Pillar,
 // and publish. Authoring a library Practice is a Crew+ act (ADR-109), gated the same way as the
@@ -14,6 +14,7 @@ import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { canCreate } from '@/lib/core/load-capabilities'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
+import { WRITING_COACHING_FALLBACK } from '@/lib/ai/writing-coaching'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { checkPersonalPracticeMeter } from '@/lib/spaces/counted-meters'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -60,9 +61,7 @@ async function authorizeCreatePractice(): Promise<
   return { profileId: caller.id, autoApprove, tier: caller.realMembershipTier }
 }
 
-/** Vera drafts the whole Practice from the spark answers. Returns the draft for the author to
- *  review/edit; creates nothing (deferred creation). Null-safe: when Vera is offline the wizard
- *  lets them type the identity by hand. */
+/** Owner-gated coaching only. The author writes and reviews all fields before manual creation. */
 export async function sparkPracticeAction(
   answers: PracticeSparkAnswers,
   sourceText?: string,
@@ -70,8 +69,8 @@ export async function sparkPracticeAction(
   const gate = await authorizeCreatePractice()
   if ('error' in gate) return fail(gate.error)
   const spark = await draftPracticeSpark({ ...answers, sourceText, profileId: gate.profileId })
-  if (!spark) return fail('Vera is offline right now. Name it yourself and keep going.')
-  return ok(spark)
+  if (!spark) return ok({ questions: [...WRITING_COACHING_FALLBACK] })
+  return ok({ questions: spark.questions })
 }
 
 /** Create the Practice from the reviewed identity, then drop the author into the editor to refine
