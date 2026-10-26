@@ -425,6 +425,7 @@
 # member_cards are service-role only. store.ts scopes every read and write to the signed-in member's own profile id
 # or runs behind the Space owner gate (loyaltyOwnerGate); the tap lookup reads one card by its token hash.
 # rewards.ts calls card_meet() and the capped award_zaps_atomic for the two members of one verified tap.
+# LIVE-1347: lib/ai/discovery-guidance-store.ts serves a strict-secret cron and stores only public guidance digests/status in the service-role-only platform_settings key. It has no user/tenant query or session-authorized surface.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -1293,3 +1294,5 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
+
+lib/ai/discovery-guidance-store.ts

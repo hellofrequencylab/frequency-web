@@ -19,9 +19,9 @@
 //   • offerings → setSpaceBusinessInfo (offerings)
 // Each action re-gates on the server (canEditProfile); this surface is convenience over that gate.
 //
-// VERA drafts the prose the manifest marks `veraDrafts` (tagline, story) through the Space's own
-// draft seam (app/(main)/spaces/copilot-actions.ts → lib/ai/space-copilot.ts). A draft fills the
-// field for the member to edit; it is never saved until they continue, and the step never waits on
+// VERA coaches the owner on the prose the manifest marks `veraDrafts` (tagline, story) through the Space's own
+// coaching seam (app/(main)/spaces/copilot-actions.ts → lib/ai/space-copilot.ts). Questions fill a
+// separate guidance panel without changing a field; the step never waits on
 // it. No website research here: the URL door is the staff Business Seeder's and stays there.
 //
 // Autosave is OFF (`draftScopeKey={null}`): every step already saves to the Space, so a resumed
@@ -135,8 +135,8 @@ export function SpaceSetupSpark({
     })
   }
 
-  /** Vera drafts one field. Never blocks: a refusal shows as a quiet note, the field stays editable. */
-  const draft = (action: () => Promise<ActionResult<string>>, apply: (text: string) => void) => {
+  /** Coaching is separate from authored content; requesting it never changes a field. */
+  const draft = (action: () => Promise<ActionResult<string>>) => {
     setVeraNote(null)
     startVera(async () => {
       const result = await action()
@@ -144,7 +144,7 @@ export function SpaceSetupSpark({
         setVeraNote(result.error)
         return
       }
-      apply(result.data)
+      setVeraNote(result.data)
     })
   }
 
@@ -222,7 +222,7 @@ export function SpaceSetupSpark({
           onChange={setTagline}
           placeholder="Slow, breath-led yoga by the river."
           maxLength={200}
-          action={<VeraButton busy={veraBusy} onClick={() => draft(() => suggestTaglineAction(spaceId), setTagline)} />}
+          action={<VeraButton busy={veraBusy} onClick={() => draft(() => suggestTaglineAction(spaceId, tagline))} />}
         />
         <TextareaField
           id="setup-about"
@@ -243,13 +243,13 @@ export function SpaceSetupSpark({
           placeholder="Tell people who you are and what they can expect."
           rows={6}
           maxLength={4000}
-          action={<VeraButton busy={veraBusy} onClick={() => draft(() => draftSpaceBioAction(spaceId), setStory)} />}
+          action={<VeraButton busy={veraBusy} onClick={() => draft(() => draftSpaceBioAction(spaceId, [about, story].filter(Boolean).join("\n\n")))} />}
         />
         <p className="text-meta text-subtle">
-          Vera is AI. A draft writes a starting point into the field; edit it, then continue to save.
+          Vera is AI. Get questions to help you write in your own voice. Coaching never changes your fields.
         </p>
         {veraNote && (
-          <p className="rounded-card bg-warning-bg px-3 py-2 text-body-sm font-medium text-warning" role="status">
+          <p className="rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text" role="status">
             {veraNote}
           </p>
         )}
@@ -318,7 +318,7 @@ export function SpaceSetupSpark({
           <p className="text-meta text-subtle">Paints your buttons, the active tab, and highlights. Saves when picked.</p>
         </div>
         {identityNote && (
-          <p className="rounded-card bg-warning-bg px-3 py-2 text-body-sm font-medium text-warning" role="status">
+          <p className="rounded-card border border-border bg-surface px-3 py-2 text-body-sm text-text" role="status">
             {identityNote}
           </p>
         )}
@@ -460,7 +460,7 @@ function VeraButton({ busy, onClick }: { busy: boolean; onClick: () => void }) {
       className="inline-flex items-center gap-1 text-meta font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
-      Draft with Vera
+      Coach me with Vera
     </button>
   )
 }

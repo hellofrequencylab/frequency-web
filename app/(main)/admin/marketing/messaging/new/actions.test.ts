@@ -29,14 +29,14 @@ vi.mock('@/app/(main)/admin/growth/funnels/actions', () => ({ createFunnel: vi.f
 vi.mock('@/lib/outbound/guard', () => ({ writerGate: vi.fn() }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => h.admin }))
 vi.mock('@/lib/ai/messaging-generator', () => ({
-  generateCampaignDraft: vi.fn(),
-  generateSequenceDraft: vi.fn(),
+  coachMessaging: vi.fn(),
 }))
 vi.mock('@/lib/email-studio/shell', () => ({ compileEmailDoc: vi.fn(() => ({ html: '' })) }))
 
 import { getMessagingGoal } from '@/lib/messaging/goals'
 import { writerGate } from '@/lib/outbound/guard'
 import { startBuild } from './actions'
+import { coachMessaging } from '@/lib/ai/messaging-generator'
 
 const campaignGoal = { key: 'welcome', label: 'Welcome', object: 'campaign', blurb: 'Say hi', outline: undefined }
 
@@ -77,5 +77,28 @@ describe('startBuild — manual campaign mints a draft and opens it (no dead end
     h.state.insertError = { message: 'boom' }
     const res = await startBuild({ goalKey: 'welcome', name: 'Oops', mode: 'manual' })
     expect('error' in res).toBe(true)
+  })
+})
+
+
+describe('Vera coaching never persists generated content', () => {
+  it('returns guidance without creating a campaign or losing the author notes', async () => {
+    const coaching = { questions: ['Who should take the next step?'], checks: ['Check the real date.'], measurement: 'Count attended bookings, not just opens.' }
+    vi.mocked(coachMessaging).mockResolvedValue(coaching)
+    const res = await startBuild({ goalKey: 'welcome', name: 'My title', details: 'My own message', mode: 'vera' })
+    expect(res).toEqual({ data: { href: '', veraPending: false, coaching } })
+    expect(h.state.insertRow).toBeNull()
+    expect(coachMessaging).toHaveBeenCalledWith(expect.objectContaining({ name: 'My title', details: 'My own message', profileId: 'me' }))
+  })
+  it('does not create a fallback draft when coaching is unavailable', async () => {
+    vi.mocked(coachMessaging).mockResolvedValue(null)
+    expect(await startBuild({ goalKey: 'welcome', name: 'My title', mode: 'vera' })).toHaveProperty('error')
+    expect(h.state.insertRow).toBeNull()
+  })
+  it('denies an unauthorized caller before coaching or writes', async () => {
+    vi.mocked(writerGate).mockResolvedValue({ ok: false, error: 'Denied' } as never)
+    expect(await startBuild({ goalKey: 'welcome', name: 'My title', mode: 'vera' })).toHaveProperty('error')
+    expect(coachMessaging).not.toHaveBeenCalled()
+    expect(h.state.insertRow).toBeNull()
   })
 })
