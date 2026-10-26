@@ -48,10 +48,8 @@ import { wizardSecondaryClass } from '@/components/templates'
 import {
   SparkDoors,
   SparkDropzone,
-  SparkFidelity,
   SparkOffers,
   SparkShell,
-  SparkSteer,
   FieldControl,
   StudioField,
   draftText,
@@ -63,8 +61,6 @@ import { InfoTip } from '@/components/ui/info-tip'
 import { isError } from '@/lib/action-result'
 import { JOURNEY_MANIFEST } from '@/lib/studio/entities/journey'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
-import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
-import { defaultSeedFidelity, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import {
   sparkJourneyAction,
@@ -200,17 +196,16 @@ export function JourneySpark({
   const [title, setTitle] = useState('')
   const [promise, setPromise] = useState('')
   const [overview, setOverview] = useState('')
-  const [arc, setArc] = useState<ArcWeek[]>([])
+  const [arc] = useState<ArcWeek[]>([])
   const [settings, setSettings] = useState<SparkSettings | null>(null)
   // How the group meets (ADR-302). Pre-filled from Vera's extraction on review; the author can
   // confirm or edit. Stays all-null when nothing is set, so the Journey persists no meeting.
   const [meeting, setMeeting] = useState<SparkMeeting>(EMPTY_MEETING)
   const patchMeeting = (patch: Partial<SparkMeeting>) => setMeeting((m) => ({ ...m, ...patch }))
   // The mood dial (kernel/moods.ts), shown on review so it costs no extra step.
-  const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
+  const [coaching, setCoaching] = useState<string[]>([])
   // Exact, Edit or Rewrite, asked right before Vera drafts. Null until the author picks, so the
   // default follows what they brought: a write-up keeps its words, answers get a fresh draft.
-  const [fidelityPick, setFidelityPick] = useState<SeedFidelity | null>(null)
   // A cover Vera drew, once the author has kept it. Held here rather than on a draft object because
   // this Spark has no draft object: the review step IS the state, and creation is deferred.
   const [cover, setCover] = useState<GeneratedCover | null>(null)
@@ -228,7 +223,7 @@ export function JourneySpark({
     entity: JOURNEY_MANIFEST.entity,
     manifest: JOURNEY_MANIFEST,
     draft: cover ? { [cover.path]: cover.url } : {},
-    subject: { title, summary: promise, mood, directions: null },
+    subject: { title, summary: promise, mood: null, directions: null },
     // Inside a Space's Journeys manager the asset belongs to that Space's Loom, so the next author
     // there can reuse it. Otherwise it lands in the member's own.
     scopeKey: spaceSlug,
@@ -259,8 +254,6 @@ export function JourneySpark({
 
   const weeks = clampWeeks(weeksText)
   const source = sourceText.trim()
-  const fidelity = fidelityPick ?? defaultSeedFidelity(source.length > 0)
-  const fidelityChoice = <SparkFidelity value={fidelity} onChange={setFidelityPick} />
 
   // One binding per asked field. The control comes from the manifest; the value stays in the
   // exact shape createJourneyFromSparkAction already takes.
@@ -310,17 +303,15 @@ export function JourneySpark({
 
   const generate = () => {
     setError(null)
+    if (sourceText && !overview) setOverview(sourceText)
     start(async () => {
-      const res = await sparkJourneyAction({ who, topic, outcome, weeks, pace }, source || undefined, fidelity)
+      const res = await sparkJourneyAction({ who, topic, outcome, weeks, pace }, sourceText || undefined)
       if (isError(res)) {
         setError(res.error)
       } else {
-        setTitle(res.data.title)
-        setPromise(res.data.promise)
-        setOverview(res.data.overview)
-        setArc(res.data.arc ?? [])
-        setSettings(res.data.settings ?? null)
-        setMeeting(res.data.meeting ?? EMPTY_MEETING)
+        setCoaching(res.data.questions)
+        if (!settings) setSettings(res.data.settings ?? null)
+        if (Object.values(meeting).every(value => value === null)) setMeeting(res.data.meeting ?? EMPTY_MEETING)
       }
       setStage('review')
     })
@@ -419,7 +410,7 @@ export function JourneySpark({
           Your outline and every handout
           <InfoTip
             side="top"
-            label="Select your outline and every supporting document together. Vera reads PDF, Word, and plain text and weaves them into one Journey."
+            label="Select your outline and every supporting document together. PDF, Word and plain text are extracted for your review. You decide the Journey wording."
           />
         </span>
       }
@@ -476,7 +467,7 @@ export function JourneySpark({
               'A six-week reset for people who sit at a desk all day. Short morning movement, one idea to chew on, and something to make by Friday.',
             value: sourceText,
             onChange: setSourceText,
-            submitLabel: 'Draft it with Vera',
+            submitLabel: 'Get writing questions',
           }}
           manualLabel="Build it yourself"
           manualHint="Go straight to the builder and shape the Phases, modules, and lessons your own way."
@@ -591,13 +582,13 @@ export function JourneySpark({
       <SparkShell
         eyebrow="New Journey"
         title="Your course, and how long it runs"
-        description="Vera builds the whole Journey from what you brought. Tell her how many weeks to lay it out over."
+        description="Keep your own outline and get questions about gaps. Choose the number of weeks you want."
         step={2}
         totalSteps={3}
         stepLabel="Your course"
         onBack={() => setStage('doors')}
         onNext={generate}
-        nextLabel="Draft with Vera"
+        nextLabel="Get writing questions"
         nextDisabled={!source}
         busy={pending}
         error={error}
@@ -618,7 +609,6 @@ export function JourneySpark({
           {/* Weeks, and only weeks: the same one question this path has always asked. The daily
               ask comes from what Vera reads in the write-up. */}
           {askField('answers.weeks')}
-          {fidelityChoice}
         </div>
       </SparkShell>
     )
@@ -641,7 +631,7 @@ export function JourneySpark({
               {q.description}{' '}
               <InfoTip
                 side="bottom"
-                label="Describe the person and the change. For example: busy parents who want calmer mornings, and by the end they keep a ten minute routine that sticks. The more specific you are, the sharper Vera's draft."
+                label="Describe the person and the change. For example: busy parents who want calmer mornings, and by the end they keep a ten minute routine that sticks. The more specific you are, the sharper Your writing."
               />
             </>
           ) : (
@@ -653,7 +643,7 @@ export function JourneySpark({
         stepLabel={q.label}
         onBack={() => (qIndex === 0 ? setStage('doors') : setQIndex((i) => i - 1))}
         onNext={() => (last ? generate() : setQIndex((i) => i + 1))}
-        nextLabel={last ? 'Draft with Vera' : 'Continue'}
+        nextLabel={last ? 'Get writing questions' : 'Continue'}
         nextDisabled={!answered}
         busy={pending}
         error={error}
@@ -661,7 +651,6 @@ export function JourneySpark({
       >
         <div className="space-y-5">
           {q.paths.map((path) => askField(path))}
-          {last && fidelityChoice}
         </div>
       </SparkShell>
     )
@@ -675,7 +664,7 @@ export function JourneySpark({
     <SparkShell
       eyebrow="New Journey"
       title="Here is your Journey"
-      description="Vera's draft. Edit anything, then create it."
+      description="Write your Journey in your own words. Use the questions to decide what to include."
       step={fromSource ? 3 : QUESTIONS.length + 2}
       totalSteps={fromSource ? 3 : QUESTIONS.length + 2}
       stepLabel="Review"
@@ -694,7 +683,7 @@ export function JourneySpark({
     >
       {drafting ? (
         <p className="flex items-center gap-2 rounded-card border border-border bg-canvas px-4 py-3 text-body-sm text-muted">
-          <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is drafting your Journey…
+          <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary-strong" aria-hidden /> Vera is preparing questions…
         </p>
       ) : (
         <div className="space-y-4">
@@ -737,18 +726,12 @@ export function JourneySpark({
             <p className="text-2xs text-muted">Optional. You can fine-tune this in Settings later.</p>
           </div>
 
+          {coaching.length > 0 && <div role="status" className="text-body-sm text-muted"><ul>{coaching.map(q => <li key={q}>{q}</li>)}</ul></div>}
+
           {/* Both optional, both skippable: a cover Vera can draw, and a read before it goes out. */}
           <SparkOffers cover={coverState.offer} quality={qualityState.check} disabled={pending} />
 
-          {/* The mood dial (kernel/moods.ts). On review, so it costs no extra step. */}
-          <SparkSteer
-            steer={{ mood: JOURNEY_MANIFEST.steer?.mood }}
-            mood={mood}
-            onMood={setMood}
-            directions=""
-            onDirections={() => {}}
-            disabled={pending}
-          />
+
         </div>
       )}
     </SparkShell>

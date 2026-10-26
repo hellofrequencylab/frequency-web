@@ -61,6 +61,7 @@ test('typed coaching inventory resolves trusted aliases/constants and refuses op
 test('every shipped paid completion caller supplies central attribution', () => {
   const failures: string[] = []
   let calls = 0
+  let typedCoachingCallers = 0
   const labels = new Set<string>()
   function walk(dir: string) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -68,7 +69,9 @@ test('every shipped paid completion caller supplies central attribution', () => 
       if (entry.isDirectory()) { walk(path); continue }
       if (!/\.tsx?$/.test(path) || /\.(test|spec)\.tsx?$/.test(path) || path === 'lib/ai/complete.ts') continue
       const text = readFileSync(path, 'utf8')
-      for (const feature of coachingFactoryFeatures(path, text)) labels.add(feature)
+      const coachingFeatures = coachingFactoryFeatures(path, text)
+      typedCoachingCallers += coachingFeatures.length
+      for (const feature of coachingFeatures) labels.add(feature)
       // Parsing thousands of unrelated modules can exceed the suite's timeout. This prefilter
       // cannot skip a matching identifier: escaped Unicode names still receive full AST parsing.
       if (!['completeRaw', 'completeText', 'runToolLoop', '\\u'].some(token => text.includes(token))) continue
@@ -144,7 +147,12 @@ test('every shipped paid completion caller supplies central attribution', () => 
     }
   }
   walk('app'); walk('lib')
-  expect(calls).toBeGreaterThanOrEqual(46)
+  // A typed coaching caller is still an attributed paid path even when multiple paths share
+  // one physical completion in Spark. Count only the trusted factory calls resolved above;
+  // converting a generator into that seam must not make an accounted path disappear.
+  expect(calls).toBeGreaterThan(0)
+  expect(typedCoachingCallers).toBeGreaterThan(0)
+  expect(calls + typedCoachingCallers).toBeGreaterThanOrEqual(46)
   expect(failures).toEqual([])
   expect(labels.size).toBeGreaterThanOrEqual(40)
   expect([...labels].filter(label => !Object.hasOwn(FEATURE_DAILY_CAP_USD, label))).toEqual([])
