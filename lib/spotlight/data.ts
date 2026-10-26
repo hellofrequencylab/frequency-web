@@ -1,4 +1,5 @@
 import 'server-only'
+import { listReadFailClosed } from '@/lib/discover'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   readSpotlightPublished,
@@ -74,15 +75,18 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
 
 /** Published Spotlight handles for sitemap + generateStaticParams (SCAN-642).
  *  Same publish gate as getPublishedSpotlight: is_active, not system, meta.spotlight.published. */
-export async function listPublishedSpotlightHandles(limit = 1000): Promise<string[]> {
+export async function listPublishedSpotlightHandles(limit = 1000, opts: { failClosed?: boolean } = {}): Promise<string[]> {
   const admin = createAdminClient()
-  const { data } = await admin
+  const query = () => admin
     .from('profiles')
     .select('handle')
     .eq('is_active', true)
     .eq('is_system', false)
     .filter('meta->spotlight->>published', 'eq', 'true')
     .limit(limit)
+  const data = opts.failClosed
+    ? await listReadFailClosed<{ handle: string | null }>('sitemap.profiles', query)
+    : (await query()).data
   if (!Array.isArray(data)) return []
   return (data as { handle: string | null }[])
     .map((p) => p.handle)
