@@ -10,9 +10,9 @@ import { grantDiscoveryConsent } from '@/lib/spaces/discovery-consent'
 let container: HTMLDivElement, root: Root
 beforeEach(() => { vi.resetAllMocks(); container=document.createElement('div'); document.body.appendChild(container); root=createRoot(container) })
 afterEach(async () => { await act(async () => root.unmount()); container.remove() })
-it('requires explicit permission and honestly labels unconnected providers', async () => {
+it('requires explicit permission and separates provider review from first-party signals', async () => {
   await act(async () => root.render(<DiscoveryCoachingPanel spaceId="a" initial={null} available />))
-  expect(container.textContent).toContain('Google Search Console and Bing are not connected')
+  expect(container.textContent).toContain('This recorded-signal review does not include search-provider data')
   expect(container.textContent).toContain('not unique visitors')
   expect(container.querySelectorAll('button')[1].disabled).toBe(true)
   expect(m.review).not.toHaveBeenCalled()

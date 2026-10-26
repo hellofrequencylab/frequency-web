@@ -1,25 +1,15 @@
 import Link from 'next/link'
-import { Heart, Home, Plus, Users, DoorOpen, SlidersHorizontal } from 'lucide-react'
+import { Home, Plus, Users } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Input } from '@/components/ui/field'
-import { Select } from '@/components/ui/select'
 import { getMyProfileId } from '@/lib/auth'
 import { listSavedListingIds, listSavedListings } from '@/lib/listings'
 import { listHousingListings } from '@/lib/listings/housing'
-import { AMENITIES, PROPERTY_TYPES } from '@/lib/listings/types'
+import { PROPERTY_TYPES } from '@/lib/listings/types'
 import type { AmenitySlug, PropertyType } from '@/lib/listings/types'
-import { ListingCard } from '@/components/marketplace/listing-card'
-import { SaveListingButton } from '@/components/marketplace/save-listing-button'
 import { MarketHero } from '@/components/marketplace/market-hero'
-import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
-import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
-import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
-import { HousingCategoryNav } from '@/components/marketplace/housing-category-nav'
-import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
-import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
+import { MarketSearchProvider, MarketSearchBar } from '@/components/marketplace/market-search'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqHousingBody } from '@/components/frequency/members/marketplace/marketplace-body'
 
 // Housing — rentals + roommates (connect-only, member-only). Hero-led (the site PhotoHero grammar) to
@@ -53,7 +43,6 @@ type HousingSearchParams = {
   saved?: string
 }
 
-const FILTER_LABEL = 'mb-1 block text-meta font-medium text-muted'
 
 // Canonical quick-browse sub-menu: All + one tab per property type, then Roommates (its own route).
 // Both these tabs and the advanced filter form drive `?type=`, so the two stay in sync via the URL.
@@ -100,7 +89,7 @@ export default async function HousingPage({
     />
   )
 
-  if (!viewerProfileId && SITE_DESIGN === 'frequency') {
+  if (!viewerProfileId) {
     return (
       <div className="empty stack">
         <span className="h3">Sign in to browse housing</span>
@@ -158,204 +147,28 @@ export default async function HousingPage({
   const activeFacetCount =
     (selectedType ? 1 : 0) + (minCents != null || maxCents != null ? 1 : 0) + selectedAmenities.size
   const hasFacets = activeFacetCount > 0
-
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <FqHousingBody
-        homes={listings.map((l) => ({
-          id: l.id,
-          title: l.title,
-          description: l.description,
-          image: l.images[0] ?? null,
-          priceNote: l.priceNote,
-          category: l.category,
-          city: l.city,
-          lat: l.latitude,
-          lng: l.longitude,
-          createdAt: l.createdAt,
-          unclaimed: l.seededUnclaimed,
-        }))}
-        savedIds={[...savedIds]}
-        selectedType={selectedType}
-        savedOnly={savedOnly}
-        min={sp.min ?? ''}
-        max={sp.max ?? ''}
-        amenities={rawAmenities}
-        hasFacets={hasFacets}
-      />
-    )
-  }
-
   return (
-    <MarketSearchProvider>
-      <div className="space-y-6">
-        {hero}
-
-        <MarketplaceHiddenBanner area="housing" />
-
-        <div className="space-y-5">
-          <MarketplaceBar
-            active="housing"
-            stats={[
-              { label: 'Listings', value: listings.length, icon: Home },
-              { label: 'Roommates', value: 'Matched', icon: DoorOpen },
-            ]}
-          />
-
-          {/* One column-density context spans the sub-menu density control and the grid it drives. */}
-          <MarketplaceColumnsProvider className="space-y-6">
-            {/* Canonical sub-menu: quick category browse (All | House | Room | Apartment | Studio | Other
-                dropdown | Roommates), with the density control folded to the right of the menu. */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <HousingCategoryNav selectedType={selectedType} />
-              <div className="flex items-center gap-2">
-                {/* The saved filter: `?saved=1` narrows the grid to hearted homes. */}
-                <Link
-                  href={savedOnly ? '/housing' : '/housing?saved=1'}
-                  aria-current={savedOnly ? 'true' : undefined}
-                  className={buttonClasses(savedOnly ? 'secondary' : 'ghost', 'sm')}
-                >
-                  <Heart className={savedOnly ? 'h-4 w-4 fill-primary text-primary' : 'h-4 w-4'} aria-hidden />{' '}
-                  Saved
-                </Link>
-                <MarketplaceColumns />
-              </div>
-            </div>
-
-            {/* Advanced filters — a URL-driven GET form (no client JS). Submitting rebuilds the query.
-                Hidden in the saved view: the facets do not apply to the hearted list, and showing a
-                form that silently does nothing would be dishonest. */}
-            {!savedOnly && (
-            <form
-              method="get"
-              className="space-y-4 rounded-card border border-border bg-surface p-4 lift-1"
-              aria-label="Filter housing"
-            >
-              <div className="flex items-center gap-2 text-body-sm font-medium text-text">
-                <SlidersHorizontal className="h-4 w-4 text-muted" aria-hidden /> Filters
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div>
-                  <label htmlFor="type" className={FILTER_LABEL}>
-                    Property type
-                  </label>
-                  <Select id="type" name="type" defaultValue={selectedType} emptyLabel="Any type">
-                    {PROPERTY_TYPES.map((p) => (
-                      <option key={p.slug} value={p.slug}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-                <div>
-                  <label htmlFor="min" className={FILTER_LABEL}>
-                    Min rent (per month)
-                  </label>
-                  <Input
-                    id="min"
-                    name="min"
-                    type="number"
-                    min="0"
-                    inputMode="numeric"
-                    defaultValue={sp.min ?? ''}
-                    placeholder="Any"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="max" className={FILTER_LABEL}>
-                    Max rent (per month)
-                  </label>
-                  <Input
-                    id="max"
-                    name="max"
-                    type="number"
-                    min="0"
-                    inputMode="numeric"
-                    defaultValue={sp.max ?? ''}
-                    placeholder="Any"
-                  />
-                </div>
-              </div>
-
-              <fieldset>
-                <legend className={FILTER_LABEL}>Amenities</legend>
-                <div className="flex flex-wrap gap-2">
-                  {AMENITIES.map((a) => (
-                    <label
-                      key={a.slug}
-                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary-bg has-[:checked]:text-primary-strong"
-                    >
-                      <input
-                        type="checkbox"
-                        name="amenity"
-                        value={a.slug}
-                        defaultChecked={selectedAmenities.has(a.slug)}
-                        className="sr-only"
-                      />
-                      {a.label}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-
-              <div className="flex items-center justify-end gap-2">
-                {hasFacets && (
-                  <Link href="/housing" className={buttonClasses('ghost', 'sm')}>
-                    Clear
-                  </Link>
-                )}
-                <button type="submit" className={buttonClasses('primary', 'sm')}>
-                  Apply filters
-                </button>
-              </div>
-            </form>
-            )}
-
-            {listings.length === 0 ? (
-              savedOnly ? (
-                <EmptyState
-                  icon={Heart}
-                  variant="first-use"
-                  title="Nothing saved yet."
-                  description="Tap the heart on a home to keep it here."
-                />
-              ) : (
-                <EmptyState
-                  icon={Home}
-                  variant={hasFacets ? 'no-results' : 'first-use'}
-                  title={hasFacets ? 'Nothing matches those filters.' : 'No housing listed near you yet.'}
-                  description={
-                    hasFacets
-                      ? 'Try widening the price range or clearing an amenity.'
-                      : 'List a room, a rental, or a sublet. Roommate listings will match to members you\'d actually get along with.'
-                  }
-                />
-              )
-            ) : (
-              <div className="@container">
-                <InstantGrid
-                  items={listings.map((l) => ({ text: `${l.title} ${l.description ?? ''}` }))}
-                  className="mp-grid gap-6"
-                >
-                  {listings.map((l) => (
-                    // Wrapper-level heart: the save toggle floats over the shared card, so the
-                    // EntityCard contract stays untouched for the other verticals.
-                    <div key={l.id} className="relative">
-                      <ListingCard listing={l} />
-                      <div className="absolute right-3 top-3 z-10">
-                        <SaveListingButton listingId={l.id} initialSaved={savedIds.has(l.id)} signedIn />
-                      </div>
-                    </div>
-                  ))}
-                </InstantGrid>
-              </div>
-            )}
-          </MarketplaceColumnsProvider>
-        </div>
-
-        <MarketplaceGuide />
-      </div>
-    </MarketSearchProvider>
+    <FqHousingBody
+      homes={listings.map((l) => ({
+        id: l.id,
+        title: l.title,
+        description: l.description,
+        image: l.images[0] ?? null,
+        priceNote: l.priceNote,
+        category: l.category,
+        city: l.city,
+        lat: l.latitude,
+        lng: l.longitude,
+        createdAt: l.createdAt,
+        unclaimed: l.seededUnclaimed,
+      }))}
+      savedIds={[...savedIds]}
+      selectedType={selectedType}
+      savedOnly={savedOnly}
+      min={sp.min ?? ''}
+      max={sp.max ?? ''}
+      amenities={rawAmenities}
+      hasFacets={hasFacets}
+    />
   )
 }

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1376",
+  "title": "Bounded read-only Google Search Console property and Space-page observation reader",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-26",
+  "wave": "W7",
+  "source": {
+    "file": "lib/ai/discovery-google.ts",
+    "ref": "Owner-authorized Search Console integration; official sites.list and searchanalytics.query API contracts"
+  },
+  "detail": "Server provider reader requires fresh Space edit authority, purpose-specific consent and actor/Space/consent-bound private credential broker output. Rechecks binding/scopes/revocation/expiry around IO; refresh delegates once to the private broker without exposing refresh tokens. Verifies selected property against live siteOwner/siteFullUser permissions, limits page scope to independently approved exact URLs even on shared Domain properties, and issues only readonly Sites.list and exact-page SearchAnalytics requests. Pacific inclusive date bounds, final web data, at most31days/20pages,8second request deadlines,256KiB streamed caps, no redirects/query demographics/content writes/raw responses retained. Missing rows stay unavailable. Runtime OAuth credential storage and owner connection UI belong to separate coordinated integration; mocked/source verification is not a connected account or production claim. Also permits truthfully labeled Bing API provenance separately from owner snapshots for the parallel reader.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/google-discovery-boundaries.mjs",
+    "checked": "2026-10-26",
+    "evidence": "Actual provider/gate/normalizer offline execution with inert transport proves precise page filters on a shared domain property, current consent/outsider denial, foreign-row rejection and no credential returned. Four focused discovery suites101tests pass including refresh/revoke, mismatchedactor/Space/consent, propertypermissions, stream/status/page/date limits and PacificDST. No live provider/SQL/config mutation."
+  }
+}

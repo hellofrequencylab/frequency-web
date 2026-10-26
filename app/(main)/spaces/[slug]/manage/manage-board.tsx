@@ -9,10 +9,8 @@ import { isStaff } from '@/lib/core/roles'
 import { resolveSpaceMenu } from '@/lib/admin/modules/space-menu'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { asHubSection, sectionForModule, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
-import { SpaceResonanceCrm } from '@/modules/crm'
 import { SpaceCoachingCard } from '@/components/spaces/dashboard/space-coaching-card'
 import { readProfileData } from '@/lib/spaces/profile-data'
-import { SpaceDashboard } from '@/components/spaces/dashboard/space-dashboard'
 import { SpaceMarketing } from '@/components/spaces/marketing/space-marketing'
 import { betaWindow } from '@/lib/pricing/beta-state'
 import { betaStartLabel } from '@/lib/pricing/beta-notice'
@@ -21,7 +19,6 @@ import { thumbActionsFor } from '@/lib/spaces/console-thumb'
 import { SpaceManageConsole } from './console'
 import { SpaceIdentityEditor } from './identity-editor'
 import { SpaceWebsiteFeature } from '@/components/sites/space-website-feature'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqOverviewBody } from '@/components/frequency/admin/pages/overview/overview-body'
 import { FqContactsBody } from '@/components/frequency/admin/pages/contacts/contacts-body'
 import { ManageQuickLinks } from '@/components/spaces/manage-quick-links'
@@ -117,20 +114,16 @@ export async function SpaceManageBoard({
         <Suspense fallback={null}>
           <SpaceCoachingCard spaceId={space.id} slug={space.slug} identity={{ name: brandName, tagline: space.tagline ?? null, about: space.about || readProfileData(space.preferences).about || null }} />
         </Suspense>
-        {SITE_DESIGN === 'frequency' ? (
+        {(
           <FqOverviewBody spaceId={space.id} slug={space.slug} spaceName={brandName} viewerProfileId={viewerProfileId} />
-        ) : (
-          <SpaceDashboard spaceId={space.id} slug={space.slug} spaceName={brandName} />
         )}
       </div>
     ) : undefined
 
   const crmEmbed =
     section === 'resonance' ? (
-      SITE_DESIGN === 'frequency' ? (
+      (
         <FqContactsBody spaceId={space.id} slug={space.slug} spaceName={brandName} />
-      ) : (
-        <SpaceResonanceCrm spaceId={space.id} slug={space.slug} spaceName={brandName} />
       )
     ) : undefined
 

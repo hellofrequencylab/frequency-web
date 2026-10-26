@@ -197,10 +197,11 @@ describe('source shape: the public Founding Business badge never renders the loc
   it('the public mount sites hand it a boolean, never the founding record', () => {
     for (const path of [
       'components/spaces/space-card.tsx',
-      'app/(main)/spaces/[slug]/(profile)/layout.tsx',
+      'components/frequency/members/space/founder-mark.tsx',
     ]) {
       const file = src(path)
-      expect(file).toContain('FoundingBusinessBadge')
+      // The cover-photo mark draws the same registry entry (TIER_MARKS.founding_business) directly.
+      expect(file).toMatch(/FoundingBusinessBadge|TIER_MARKS\.founding_business/)
       expect(file).not.toMatch(/lockedRateCents|locked_rate_cents/)
     }
   })
