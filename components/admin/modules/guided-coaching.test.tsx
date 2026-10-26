@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import type { EntityManifest } from '@/lib/studio/kernel/manifest'
+import { PRACTICE_MANIFEST } from '@/lib/studio/entities/practice'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 const m = vi.hoisted(() => ({ refresh: vi.fn(), load: vi.fn() }))
 vi.mock('next/navigation', () => ({ usePathname: () => '/practices/p/edit', useRouter: () => ({ refresh: m.refresh }) }))
@@ -16,7 +16,7 @@ afterEach(() => { if (root) act(() => root!.unmount()); element?.remove(); vi.cl
 it('coaching rail shows questions without rewrite controls, diff, undo or refresh', async () => {
   const redraw = vi.fn().mockResolvedValue({ data: { changes: [], before: {}, kept: [], questions: ['What would make the steps clearer?'] } })
   const restore = vi.fn()
-  const manifest = { entity: 'practice', steer: { mood: true, lock: ['title'], directions: true } } as EntityManifest
+  const manifest = PRACTICE_MANIFEST
   element = document.createElement('div'); document.body.appendChild(element); root = createRoot(element)
   await act(async () => root!.render(<GuidedModule moduleId="practice.guided" manifest={manifest} blurb="Coach" routeKey={() => 'p'} resolve={async () => 'p'} redraw={redraw} restore={restore} coachingOnly />))
   const button = Array.from(element.querySelectorAll('button')).find(b => b.textContent === 'Coach')!
