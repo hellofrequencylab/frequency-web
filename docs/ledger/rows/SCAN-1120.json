@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1120",
+  "title": "The home hero images preload and use responsive formats",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/site/pages/home/frequency-home.tsx",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "Hero LCP images are CSS background-image (kit-site.css:34, site-pages-a.css:15-16), undiscovered until CSS parses, no AVIF or srcset. Expected 150-400 ms LCP on mobile. Also move the 20 raw img tags in components/frequency/site to sized next/image.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs hero-preload",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}
