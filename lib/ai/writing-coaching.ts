@@ -13,7 +13,7 @@ function coerceWritingCoaching(raw: unknown): WritingCoaching | null {
   for (const value of (raw as { questions: unknown[] }).questions.slice(0, 12)) {
     if (typeof value !== 'string') continue
     const question = value.trim()
-    if (question.length > 280 || /[\r\n]/.test(question) || !/^(what|who|which|how|when|where|why|could|would|can|does|do|is|are)\b.+\?$/i.test(question)) continue
+    if (question.length > 280 || /[\r\n"\u201c\u201d]/.test(question) || !/^(what|who|which|how|when|where|why|could|would|can|does|do|is|are)\b.+\?$/i.test(question)) continue
     if (seen.has(question.toLowerCase())) continue
     seen.add(question.toLowerCase()); questions.push(question)
     if (questions.length === 4) break

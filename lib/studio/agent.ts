@@ -84,6 +84,8 @@ export async function proposeWinbacks(limit = 20): Promise<number> {
     .eq('status', 'proposed')
   const alreadyProposed = new Set(
     ((pending ?? [])
+      // Pre-overhaul model-drafted rows can no longer be approved; they must not hide the member from a fresh proposal.
+      .filter((r) => isOperationalWinbackPayload(r.payload))
       .map((r) => (r.payload as { profileId?: string } | null)?.profileId)
       .filter(Boolean)) as string[],
   )
