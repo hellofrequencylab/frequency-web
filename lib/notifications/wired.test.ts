@@ -173,8 +173,8 @@ describe('the detector (positive controls — each must fire, or the walk below 
     const { found, files } = readersInTree()
     // Corpus floor: an empty walk would pass every "no reader" assertion below by looking at nothing.
     expect(files).toBeGreaterThanOrEqual(1500)
-    expect(found.get('inapp_practice')?.some((w) => w.startsWith('lib/practices/lifecycle.ts'))).toBe(true)
-    expect(found.get('push_practice')?.some((w) => w.startsWith('lib/practices/lifecycle.ts'))).toBe(true)
+    expect(found.get('inapp_practice')?.some((w) => w.includes('registry row'))).toBe(true)
+    expect(found.get('push_practice')?.some((w) => w.includes('registry row'))).toBe(true)
     expect(found.get('email_dispatches')?.some((w) => w.startsWith('lib/events/dispatch.ts'))).toBe(true)
     expect(found.get('push_dispatches')?.some((w) => w.includes('registry row'))).toBe(true)
   })

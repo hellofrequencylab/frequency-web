@@ -573,7 +573,7 @@ export function SpaceSettingsSurface({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-body-sm font-semibold text-text">Mode and focus</span>
-          <span className="mt-0.5 block text-meta text-muted">Choose what your space leads with, and what its main button opens.</span>
+          <span className="mt-0.5 block text-meta text-muted">Choose your Space’s mode, focus, and which tools it highlights.</span>
         </span>
         <ArrowRight
           className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"

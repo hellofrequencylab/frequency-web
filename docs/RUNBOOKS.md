@@ -741,6 +741,20 @@ Then set `SMS_PROVISIONING_ENABLED` to `1`, `true` or `on` and redeploy. The fir
 
 **Turn it off.** Unset. Every `sendSms()` returns `not_provisioned`. In-flight Twilio posts that already left are not recalled.
 
+### Space picker (ADR-1883)
+
+`SPACE_PICKER_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`). Off, `/spaces/new` opens on the setup wizard exactly as before; a niche named by a `/for` door (`?niche=` or the funnel cookie) is still saved on the new Space either way.
+
+**Gate before turning it on.** All **owner** unless tagged.
+
+1. At least one feel besides Midnight is live in `PICKER_FEELS` (`lib/spaces/space-picker.ts`), or the owner accepts a one-feel screen with the rest shown as coming soon.
+2. A side-by-side render of the picker beside the Midnight design, at 1280 and 390 wide. **agent**
+3. The live preview reads the theme package (it is a text stub today).
+
+Then set `SPACE_PICKER_ENABLED` to `1`, `true` or `on` and redeploy.
+
+**Turn it off.** Unset. The wizard opens first again; Spaces already created keep what the picker saved.
+
 ## IndexNow ping
 
 `INDEXNOW_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`). The `indexnow` cron (`/api/cron/indexnow`, daily 14:00 UTC) reads `app/sitemap.ts`, keeps the URLs whose `lastModified` is inside the last 26 hours and posts them once to `api.indexnow.org` with the key in `lib/seo/indexnow.ts`. It can only name URLs the sitemap already advertises. The key is public by protocol; the proof is `public/<key>.txt` at the site root.
