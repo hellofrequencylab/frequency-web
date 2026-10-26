@@ -569,7 +569,6 @@ const CRM_MEMBERS_MODULE_IDS = ['crm-members-roster'] as const
 // The Channels page (/channels). The whole pillar-grouped browse (the toc, the four Pillars with
 // their Channels split tuned-in vs explore, and the Pillars jump-nav) derives from one viewer-scoped
 // fetch with no searchParams facet, so the whole interior converts wholesale to one module.
-const CHANNELS_MODULE_IDS = ['channels-list'] as const
 
 // Season Challenges (/crew/challenges). The KPI band and the challenges-by-difficulty grid derive
 // from one viewer-scoped fetch, so the whole interior is one module rather than a double-fetch.
@@ -739,7 +738,6 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/practices/*': PRACTICE_DETAIL_MODULE_IDS,
   '/crew/store': VAULT_MODULE_IDS,
   '/crew/challenges': CHALLENGES_MODULE_IDS,
-  '/channels': CHANNELS_MODULE_IDS,
   // NOTE: there is no '/spaces/*' entry either — the profile tabs render lib/entity-blocks, not
   // <PageModules>. See the SPACE_MODULE_IDS retirement note above (LIVE-067).
   '/pages': PAGES_MODULE_IDS,
