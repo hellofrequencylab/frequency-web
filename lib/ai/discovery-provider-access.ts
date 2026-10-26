@@ -33,7 +33,7 @@ export interface DiscoveryProviderDependencies {
   now?: () => Date
 }
 export type DiscoveryProviderSession = { access: DiscoveryProviderAccess; connection: DiscoveryProviderConnection; requiredScope: string }
-export type DiscoveryProviderOpen = { status: 'ready'; session: DiscoveryProviderSession } | { status: 'unavailable'; reason: 'permission_denied' | 'consent_required' | 'invalid_context' | 'not_connected' | 'connection_expired' }
+type DiscoveryProviderOpen = { status: 'ready'; session: DiscoveryProviderSession } | { status: 'unavailable'; reason: 'permission_denied' | 'consent_required' | 'invalid_context' | 'not_connected' | 'connection_expired' }
 const token = (value: string) => typeof value === 'string' && /^[A-Za-z0-9_-]{1,120}$/.test(value)
 function pagesValid(pages: readonly string[]) {
   return Array.isArray(pages) && pages.length > 0 && pages.length <= 200 && new Set(pages).size === pages.length && pages.every(raw => {

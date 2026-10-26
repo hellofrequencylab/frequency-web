@@ -17,7 +17,7 @@ const LIMITS = [
   'Provider record timestamps determine freshness. A new retrieval does not make old data fresh. No comparison or causal effect is established.',
 ]
 type Reason = 'permission_denied' | 'consent_required' | 'invalid_context' | 'not_connected' | 'connection_expired' | 'property_scope_unavailable' | 'property_unverified' | 'provider_error' | 'rate_limited' | 'invalid_response' | 'no_data'
-export type BingDiscoveryResult =
+type BingDiscoveryResult =
   | { status: 'unavailable'; reason: Reason; retryAfterSeconds?: number }
   | { status: 'completed'; provider: 'bing_webmaster'; propertyUrl: string; observations: ReturnType<typeof validateDiscoveryObservation>[]; limitations: string[] }
 export interface BingDiscoveryDependencies extends DiscoveryProviderDependencies { request?: typeof pinnedFetch }

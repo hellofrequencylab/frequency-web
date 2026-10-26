@@ -16,7 +16,7 @@ export interface GoogleDiscoveryDependencies extends DiscoveryProviderDependenci
   request?: typeof fetch
 }
 type Failure = { status: 'unavailable'; reason: 'permission_denied' | 'consent_required' | 'invalid_context' | 'not_connected' | 'connection_expired' | 'property_not_verified' | 'provider_error' | 'scope_limit' }
-export type GoogleDiscoveryResult = Failure | { status: 'completed'; imported: DiscoveryImportResult; propertyUrl: string; limitations: string[] }
+type GoogleDiscoveryResult = Failure | { status: 'completed'; imported: DiscoveryImportResult; propertyUrl: string; limitations: string[] }
 const obj = (v: unknown): Record<string, unknown> | null => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : null
 /** Scope matching never grants page ownership. Every queried page still comes from the independent
  * server allow-list, including when a platform-wide or Domain property is available to Google. */
