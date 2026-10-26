@@ -1,4 +1,5 @@
 import type { EntityIdentity } from './context'
+import { memberJoinedYear } from '@/lib/spotlight/member-year'
 import type { SpotlightData } from '@/lib/spotlight/data'
 import type { SpotlightStatsContext } from '@/components/spotlight/blocks/render'
 import type { TopFriend } from '@/lib/spotlight/top-friends.types'
@@ -121,7 +122,7 @@ export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
       zaps: totalZaps,
       streak: profile.current_streak,
       gems: profile.lifetime_gems,
-      joinedYear: profile.created_at ? new Date(profile.created_at).getFullYear() : null,
+      joinedYear: memberJoinedYear(profile.created_at),
       region: profile.nexus_regions?.name ?? null,
     },
     statKeys,

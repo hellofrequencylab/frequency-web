@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1033",
+  "title": "Keep timer artwork on a semantic token so both designs paint the orb",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "XS",
+  "source": {
+    "file": "components/on-air/compact-setup.tsx",
+    "ref": "Comprehensive audit, 2026-10-23: headless browser measurements of actual SSR timer setup under both design branches"
+  },
+  "detail": "The shared timer setup directly read --fq-pa-orb, a Frequency-only paint. DAWN resolved that inline background as transparent, overriding its semantic background utility. Introduce --design-practice-orb in the semantic design layer: DAWN fills it from --color-primary-bg and Frequency aliases its existing --fq-pa-orb. The component reads only the semantic role. Local browser fixtures at 320/390 by 844, still/move and light/dark: before DAWN was transparent in all eight cases, after all sixteen have visible artwork. Frequency retains the identical radial gradient. Neither document nor dialog overflow was observed. Fixture CSS includes all installed Frequency sheets, so this does not prove cold route stylesheet loading or production behavior. Existing design, token, setup and focus checks passed (82 tests in seven suites) after the fix; 719 tests in sixty suites passed in the preceding theme/accessibility batch. No production change or publication.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-23",
+    "evidence": "Local browser verified: render CompactSetup with the real design-specific primitive branch and compiled CSS, under DAWN/Frequency in both modes and light/dark at 320/390x844. Computed orb background must be nontransparent in both designs; Frequency gradient must match its pre-fix value. Confirm no viewport overflow. All sixteen cases passed. Token/adoption gates and seven focused suites also passed. The separate contrast finding in the timer masthead is not closed by this paint fix."
+  },
+  "closed": "2026-10-23"
+}
