@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // The Spaces DIRECTORY discovery read (ENTITY-SPACES-BUILD §A/§B). What is locked here, network-free
 // (the admin client + the follows read are mocked):
@@ -26,6 +26,7 @@ vi.mock('./follows', () => ({
 
 // ── A chainable admin-client mock backed by an in-memory set of spaces rows ─────────────────────────
 type SpaceRow = {
+  time_zone?: string | null
   domain?: string | null
   parent_id?: string | null
   owner_profile_id?: string | null
@@ -236,7 +237,7 @@ function presenceBuilder(rows: PresenceRow[]) {
       return api
     },
     gte(col: string, val: string) {
-      out = out.filter((r) => String(r[col] ?? '') >= val)
+      out = out.filter((r) => col === 'starts_at' ? Date.parse(String(r[col] ?? '')) >= Date.parse(val) : String(r[col] ?? '') >= val)
       return api
     },
     or(filter: string) {
@@ -927,4 +928,34 @@ it('carries a published hosted canonical candidate on directory output rather th
   const rows = await listNetworkedSpaces()
   expect(rows.find(row => row.id === 's2')?.canonicalSite).toEqual({ id: 's2', slug: 'sound-co', domain: 'sound.example', parentId: 'network', ownerProfileId: 'owner', pages: ['home'] })
   expect(rows.find(row => row.id === 's1')?.canonicalSite).toBeNull()
+})
+
+// The discovery sitemap must use each Space's calendar day, just like its visible tab.
+afterEach(() => vi.useRealTimers())
+it('keeps Pacific tonight discoverable after UTC midnight while Tokyo has advanced', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date('2026-08-21T02:00:00Z'))
+  tabRead = true
+  for (const row of store.spaces) row.time_zone = row.id === 's1' ? 'Asia/Tokyo' : 'America/Los_Angeles'
+  store.events = ['s1', 's2'].map(space_id => ({ space_id, status: 'published', is_cancelled: false, visibility: 'public', removed_at: null, is_demo: false, starts_at: '2026-08-20T19:00:00Z' }))
+  const tabs = await listNetworkedSpaceProfileTabs()
+  expect(tabs.filter(row => row.segment === 'calendar').map(row => row.slug)).toContain('sound-co')
+  expect(tabs.filter(row => row.segment === 'calendar').map(row => row.slug)).not.toContain('river-yoga')
+})
+it('rolls discovery forward at Space midnight and uses HOME for invalid zones', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date('2026-08-21T06:59:59Z'))
+  tabRead = true
+  for (const row of store.spaces) row.time_zone = 'Not/AZone'
+  store.events = [{ space_id: 's2', status: 'published', is_cancelled: false, visibility: 'public', removed_at: null, is_demo: false, starts_at: '2026-08-20T19:00:00Z' }]
+  expect((await listNetworkedSpaceProfileTabs()).some(row => row.slug === 'sound-co' && row.segment === 'calendar')).toBe(true)
+  vi.setSystemTime(new Date('2026-08-21T07:00:00Z'))
+  expect((await listNetworkedSpaceProfileTabs()).some(row => row.slug === 'sound-co' && row.segment === 'calendar')).toBe(false)
+})
+it('discovery honors Tokyo local midnight while UTC and HOME are still yesterday', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date('2026-08-20T15:30:00Z'))
+  tabRead = true
+  for (const row of store.spaces) row.time_zone = 'Asia/Tokyo'
+  store.events = [{ space_id: 's2', status: 'published', is_cancelled: false, visibility: 'public', removed_at: null, is_demo: false, starts_at: '2026-08-21T00:15:00Z' }, { space_id: 's1', status: 'published', is_cancelled: false, visibility: 'public', removed_at: null, is_demo: false, starts_at: '2026-08-20T23:59:00Z' }]
+  const tabs = await listNetworkedSpaceProfileTabs()
+  expect(tabs.some(row => row.slug === 'sound-co' && row.segment === 'calendar')).toBe(true)
+  expect(tabs.some(row => row.slug === 'river-yoga' && row.segment === 'calendar')).toBe(false)
 })

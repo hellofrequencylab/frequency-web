@@ -45,7 +45,8 @@ vi.mock('@/lib/spaces/entitlements', async (importOriginal) => ({
   resolveSpaceManageAccess: async () => ({ canManage: false, staffViewing: false }),
 }))
 vi.mock('@/lib/spaces/content-data', () => ({ getSpaceSectionPresence: async () => presence }))
-vi.mock('@/lib/events/store', () => ({ spaceHasPublicUpcomingEvents: async () => true }))
+const upcoming = vi.hoisted(() => vi.fn(async () => true))
+vi.mock('@/lib/events/store', () => ({ spaceHasPublicUpcomingEvents: upcoming }))
 vi.mock('@/lib/spaces/collaborations', () => ({ spaceHasCollaborators: async () => false }))
 // 🔴 DELIBERATELY TRUE. This reader calls getCallerProfile INTERNALLY, so the anonymous path must
 // never reach it. Returning true here means: if the public build ever calls it, a People tab
@@ -161,4 +162,11 @@ describe('Collective network navigation', () => {
       expect((await buildPublicSpaceProfileNav(space({ plan: 'collective', status: 'active', ownerProfileId: 'owner', ...change } as Partial<Space>))).tabs.some(tab => tab.label === 'Partners')).toBe(false)
     }
   })
+})
+
+it('passes the known Space zone to the calendar-tab reader without reading the viewer', async () => {
+  upcoming.mockClear()
+  const ownerSpace = space({ timeZone: 'Asia/Tokyo' })
+  await buildPublicSpaceProfileNav(ownerSpace)
+  expect(upcoming).toHaveBeenCalledWith(ownerSpace.id, 'Asia/Tokyo')
 })
