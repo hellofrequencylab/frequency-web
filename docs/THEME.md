@@ -22,8 +22,9 @@ the code wins.
 
 ## 0. The design axis, above the four (ADR-1737)
 
-The platform wears ONE design system per deploy: **DAWN** or **Frequency**. It is chosen by
-`NEXT_PUBLIC_SITE_DESIGN` (unset reads as DAWN), stamped as `data-design` on `<html>` by the root
+The platform wears ONE design system per deploy: **Frequency** (DAWN is retired as a deploy target
+and survives only as a historical registry entry and test fixture). It is chosen by
+`NEXT_PUBLIC_SITE_DESIGN` (unset or unknown reads as Frequency), stamped as `data-design` on `<html>` by the root
 layout, and defined in `lib/theme/design.ts`. It is the one-button change-over: set the variable,
 redeploy (a rebuild: the value is inlined). The gate, go-live and roll back: [RUNBOOKS.md](RUNBOOKS.md) section 8.
 
@@ -48,17 +49,16 @@ so nothing imports `app/themes/<id>.css` or `app/themes/<id>/*.css` directly: ea
 (`import '@/app/themes/active/kit-site'`). `scripts/write-design-assets.mjs` (prebuild, predev, and
 `pnpm design:use <id>`) rewrites every stub from `NEXT_PUBLIC_SITE_DESIGN` (`scripts/lib/design-styles.mjs`):
 under Frequency a stub is one `import '../frequency/<sheet>.css'`, so each sheet still loads only where
-its importer renders and in the same order; under DAWN every stub is empty, so a DAWN deploy carries no
-Frequency CSS. The committed stubs are DAWN's, and `lib/theme/design.test.ts` fails on a committed
+its importer renders and in the same order; a DAWN fixture's stubs are empty. The committed stubs are Frequency's, and `lib/theme/design.test.ts` fails on a committed
 Frequency stub, a missing or stray stub, or any direct import of a design sheet.
 
-**Preview locally.** `pnpm design:use frequency` and restart `pnpm dev`; `pnpm design:use dawn` before committing.
+**Preview locally.** `pnpm design:use frequency` and restart `pnpm dev`. Nothing to switch back before committing.
 There is no `?design=` URL switch: it stamped an attribute whose sheets the build did not carry and
 unstyled production for anyone who opened such a link (SCAN-850). The pre-paint script clears its old
 `localStorage['freq-design']` key.
 
 **Adding a design** = an id in `DesignId` and `DESIGNS`, its sheets in `app/themes/<id>.css` and
-`app/themes/<id>/`, and `pnpm design:use dawn` once to write their (empty) stubs. The test fails until
+`app/themes/<id>/`, and `node --experimental-strip-types scripts/write-design-assets.mjs` once to write their stubs. The test fails until
 they agree.
 
 ### The rules every component follows, under either design
@@ -110,7 +110,7 @@ generated `app/themes/frequency/core.css`; DAWN's semantic names (`--color-*`, `
 while Frequency keeps its own words.
 
 **Install and switch locally:** `pnpm design:install "<export>.zip"`, then `pnpm design:use frequency`
-and restart `pnpm dev`. `pnpm design:use dawn` switches back. The locked core is "edit only in the
+and restart `pnpm dev`. The locked core is "edit only in the
 Frequency design system; products import, never override".
 
 Two surfaces, one family:

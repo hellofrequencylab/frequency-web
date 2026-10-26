@@ -32,7 +32,7 @@ loop below. A request too large for one PR is split into phases before any code 
    `localhost:3000`. Fix the cause, not the symptom.
 4. **Record it.** One ledger row per PR in `docs/ledger/rows/<ID>.json` with a `verify` probe that fails on
    main and passes on the branch. Run the probe both ways before committing.
-5. **Switch back and check.** `pnpm design:use dawn` (the committed theme stubs are DAWN's), then:
+5. **Check.** The committed theme stubs are Frequency's, so there is nothing to switch back. Run:
    - `pnpm exec tsc --noEmit`
    - `pnpm exec eslint <changed files>`
    - `pnpm check:tokens`, `check:phantom`, `check:a11y-names`, `check:backlog`, `check:adoption`,
