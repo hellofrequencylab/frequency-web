@@ -1,12 +1,11 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
-// The Checkbox primitive (DAWN dawn/components/forms/Checkbox.jsx) — a warm box that fills amber
+// The Checkbox primitive — a warm box that fills amber
 // with a check when on. Used for consent gates, settings and filter lists, all of which were
 // hand-rolling a raw `<input type="checkbox">` with drifting size, colour and label wiring.
 //
-// NATIVE, NOT A FAKE. DAWN's reference draws a `<button role="checkbox">`; this does not. A real
+// NATIVE, NOT A FAKE. The reference kit draws a `<button role="checkbox">`; this does not. A real
 // `<input type="checkbox">` is what gives us Space to toggle, `disabled`, `required`, form
 // submission with `name`/`value`, label click-through, and the browser's own announcement — all
 // of which a role-annotated button has to re-implement, and usually only half does. So the input
@@ -15,7 +14,7 @@ import { SITE_DESIGN } from '@/lib/theme/design'
 // `aria-invalid`) styles itself with no JS mirror to fall out of sync. The check mark is a
 // `pointer-events-none` sibling revealed by `peer-checked`.
 //
-// CONTROLLED THE NATIVE WAY. `checked` + `onChange(event)`, not DAWN's `onChange(nextBoolean)`.
+// CONTROLLED THE NATIVE WAY. `checked` + `onChange(event)`, not the kit's `onChange(nextBoolean)`.
 // That keeps it a drop-in for the raw inputs it replaces (no call site has to rewrite its
 // handler), keeps `defaultChecked` working uncontrolled, and keeps it usable inside a plain
 // `<form>` with a server action.
@@ -25,13 +24,11 @@ import { SITE_DESIGN } from '@/lib/theme/design'
 // is a control you act on, not a field you type in, so it keeps that ring — the calm neutral
 // halo in `fieldClasses` is for text fields, and inventing a third treatment here would break
 // the split.
-const dawnCheckbox =
-  'peer size-5 shrink-0 appearance-none rounded-control border border-border-strong bg-surface transition-[background-color,border-color] motion-reduce:transition-none checked:border-primary checked:bg-primary aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-50'
-// FREQUENCY (ADR-1737): the control radius is 16px there, which would round a 20px box into a circle;
-// the box keeps a 6px corner. Inlined at build; DAWN's string is unchanged.
+// The control radius is 16px under Frequency (ADR-1737), which would round a 20px box into a circle;
+// the box keeps a 6px corner.
 // token-ok: Frequency's export has no radius step under 10px (--fq-radius-s), so the 6px box corner stays literal.
 export const checkboxClasses =
-  SITE_DESIGN === 'frequency' ? dawnCheckbox.replace(' rounded-control ', ' rounded-[6px] ') : dawnCheckbox
+  'peer size-5 shrink-0 appearance-none rounded-[6px] border border-border-strong bg-surface transition-[background-color,border-color] motion-reduce:transition-none checked:border-primary checked:bg-primary aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-50'
 
 export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   /** The visible label, rendered beside the box and wired by implicit `<label>` association —

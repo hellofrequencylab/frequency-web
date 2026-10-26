@@ -2,13 +2,11 @@ import Link from 'next/link'
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { TrendArea } from '@/components/admin/spark-charts'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
-// FREQUENCY (ADR-1737): the members kit's stat panel (templates/members/The Vault.html): a `.panel`
+// The members kit's stat panel (templates/members/The Vault.html, ADR-1737): a `.panel`
 // with the `.k` label over the `.num` reading and a `.t2` qualifier; `sm` / `xs` are the denser tiles
 // (`mu-stat`, app/themes/frequency/members-ui.css). A linked stat is an `a.panel`, which the kit lifts
-// on hover. Inlined at build; DAWN's markup below is unchanged.
-const FREQUENCY = SITE_DESIGN === 'frequency'
+// on hover.
 
 // One stat tile for KPI rows and dashboards (crew home, Studio, admin). The
 // audits found stat strips static (no time-axis) and over-boxed; this tile is a
@@ -17,8 +15,8 @@ const FREQUENCY = SITE_DESIGN === 'frequency'
 // STUDIO-REVIEW #7). Pass `href` to make it a drill-down.
 //
 // Variants (PB.2a — the former bespoke stats fold in here, no new one-offs):
-//   `bordered` — hard-bordered card on bg-surface (QR stats/analytics, practice
-//   detail) for pages whose stat rows sit on the canvas, not inside a panel.
+//   `bordered` — kept for callers (QR stats/analytics, practice detail); the `.panel` surface is
+//   the same either way.
 //   `detail`   — a small subtle line under the value (a qualifier, not a trend).
 //   `size="sm"`— compact tile with a text-body-sm value, for phrase-valued stats
 //   (e.g. a practice's "+20 zaps · streak +1" reward) where 2xl would wrap.
@@ -38,9 +36,9 @@ export type StatDelta = {
 }
 
 const TREND = {
-  up: { Icon: ArrowUpRight, cls: 'text-success' },
-  down: { Icon: ArrowDownRight, cls: 'text-danger' },
-  flat: { Icon: Minus, cls: 'text-subtle' },
+  up: { Icon: ArrowUpRight },
+  down: { Icon: ArrowDownRight },
+  flat: { Icon: Minus },
 } as const
 
 export function StatCard({
@@ -50,7 +48,7 @@ export function StatCard({
   delta,
   detail,
   href,
-  bordered = false,
+  bordered: _bordered = false,
   size = 'md',
   sparkline,
   title,
@@ -62,7 +60,7 @@ export function StatCard({
   /** Small subtle qualifier under the value (e.g. "across 12 codes"). */
   detail?: React.ReactNode
   href?: string
-  /** Hard-bordered card on bg-surface (for stat rows sitting on the canvas). */
+  /** Accepted for existing callers; the kit's `.panel` is the one tile surface, so it changes nothing. */
   bordered?: boolean
   /** 'sm' = compact tile (text-body-sm value) for phrase values that would wrap at 2xl.
    *  'xs' = HALF-height dense tile (text-body value, tight padding) for metric-dense dashboards
@@ -82,94 +80,35 @@ export function StatCard({
   const sm = size === 'sm'
   const xs = size === 'xs'
 
-  if (FREQUENCY) {
-    const fq = (
-      <>
-        <span className="row">
-          <span className="k grow">{label}</span>
-          {Icon && <Icon aria-hidden />}
-        </span>
-        <span className="num">{value}</span>
-        {detail && <span className="t2">{detail}</span>}
-        {delta && t && (
-          <span className={`t2 row ${delta.trend === 'up' ? 'mu-up' : delta.trend === 'down' ? 'mu-down' : ''}`}>
-            <t.Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {delta.label}
-          </span>
-        )}
-        {sparkline && sparkline.length > 1 && (
-          <span className="block h-8">
-            <TrendArea points={sparkline} height={32} />
-          </span>
-        )}
-      </>
-    )
-    const fqCls = `panel mu-stat${sm ? ' mu-sm' : xs ? ' mu-xs' : ''}`
-    return href ? (
-      <Link href={href} title={title} className={fqCls}>
-        {fq}
-      </Link>
-    ) : (
-      <div className={fqCls} title={title}>
-        {fq}
-      </div>
-    )
-  }
-
-  // VALUE-FIRST anatomy (dashboard redesign): the number is the loudest thing in
-  // the tile; the label sits quiet beneath in sentence case (uppercase + tracking
-  // made labels dominate and wrap — the opposite of a stat tile's job).
-  const inner = (
+  const fq = (
     <>
-      <div className="flex items-start justify-between gap-2">
-        <p
-          className={`tabular-nums text-text ${
-            sm
-              ? 'text-body-sm font-bold'
-              : xs
-                ? 'text-body font-extrabold leading-none'
-                : 'text-lead font-extrabold leading-none'
-          }`}
-        >
-          {value}
-        </p>
-        {Icon && <Icon className={`mt-0.5 shrink-0 text-subtle ${xs ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} />}
-      </div>
-      <p className={`font-medium text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-1 text-meta'}`}>{label}</p>
-      {detail && <p className={`text-muted ${xs ? 'mt-0.5 text-2xs' : 'mt-0.5 text-meta'}`}>{detail}</p>}
+      <span className="row">
+        <span className="k grow">{label}</span>
+        {Icon && <Icon aria-hidden />}
+      </span>
+      <span className="num">{value}</span>
+      {detail && <span className="t2">{detail}</span>}
       {delta && t && (
-        <p className={`mt-1 inline-flex items-center gap-1 text-meta font-medium ${t.cls}`}>
-          <t.Icon className="h-3.5 w-3.5 shrink-0" />
+        <span className={`t2 row ${delta.trend === 'up' ? 'mu-up' : delta.trend === 'down' ? 'mu-down' : ''}`}>
+          <t.Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
           {delta.label}
-        </p>
+        </span>
       )}
       {sparkline && sparkline.length > 1 && (
-        <div className="mt-2 h-8">
+        <span className="block h-8">
           <TrendArea points={sparkline} height={32} />
-        </div>
+        </span>
       )}
     </>
   )
-
-  // Both variants take the CARD role. They disagreed before -- the compact one was
-  // rounded-card and the default a literal rounded-2xl (24px) -- so one StatCard's
-  // corners moved with the Feel axis and its neighbour's did not. DAWN reserves 2xl for
-  // marketing feature cards; a StatCard is an in-app tile.
-  const cls = `block ${xs ? 'rounded-card px-3 py-2' : 'rounded-card'} ${
-    sm ? 'px-4 py-3' : xs ? '' : 'px-3.5 py-2.5'
-  } ${bordered ? 'border border-border bg-surface lift-1' : 'bg-surface-elevated/60'}`
+  const fqCls = `panel mu-stat${sm ? ' mu-sm' : xs ? ' mu-xs' : ''}`
   return href ? (
-    <Link
-      href={href}
-      title={title}
-      // A linked tile is a Card that navigates, so it owes hover + pressed + focus
-      // (docs/INTERACTION-STATES.md §2). `.press` is the pressed look; the focus ring is the
-      // global one every <a> gets. The unlinked tile below stays inert on purpose.
-      className={`${cls} press transition-[background-color,box-shadow,transform] hover:bg-surface-elevated motion-reduce:transition-none`}
-    >
-      {inner}
+    <Link href={href} title={title} className={fqCls}>
+      {fq}
     </Link>
   ) : (
-    <div className={cls} title={title}>{inner}</div>
+    <div className={fqCls} title={title}>
+      {fq}
+    </div>
   )
 }
