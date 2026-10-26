@@ -1,4 +1,7 @@
-import { readFileSync, existsSync, readdirSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { readFileSync, existsSync, readdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_DESIGN, DESIGNS, isDesignId, resolveDesign } from './design'
 import { ALIAS_STUB, STUB_DIR, designSheets, renderStubs } from '../../scripts/lib/design-styles.mjs'
@@ -15,11 +18,12 @@ const layout = readFileSync('app/layout.tsx', 'utf8')
 const dawnNames = new Set([...globals.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((m) => m[1]))
 
 describe('the design registry', () => {
-  it('reads an unset or unknown switch as DAWN, so a missing variable never ships a half-built system', () => {
-    expect(DEFAULT_DESIGN).toBe('dawn')
-    expect(resolveDesign(undefined)).toBe('dawn')
-    expect(resolveDesign('')).toBe('dawn')
-    expect(resolveDesign('midnight')).toBe('dawn')
+  it('uses Frequency for missing, unknown and retired platform selections', () => {
+    expect(DEFAULT_DESIGN).toBe('frequency')
+    expect(resolveDesign(undefined)).toBe('frequency')
+    expect(resolveDesign('')).toBe('frequency')
+    expect(resolveDesign('midnight')).toBe('frequency')
+    expect(resolveDesign('dawn')).toBe('frequency')
     expect(resolveDesign('frequency')).toBe('frequency')
     expect(isDesignId('dawn')).toBe(true)
   })
@@ -112,15 +116,15 @@ describe('a deploy built with NEXT_PUBLIC_SITE_DESIGN=frequency', () => {
     }
   })
 
-  it('wears DAWN with every layer on when the variable is unset', async () => {
+  it('wears Frequency with legacy layers off when the variable is unset', async () => {
     const { vi } = await import('vitest')
     vi.resetModules()
     vi.stubEnv('NEXT_PUBLIC_SITE_DESIGN', '')
     try {
       const design = await import('./design')
       const skins = await import('./skins')
-      expect(design.SITE_DESIGN).toBe('dawn')
-      expect(design.LEGACY_THEME_AXES).toBe(true)
+      expect(design.SITE_DESIGN).toBe('frequency')
+      expect(design.LEGACY_THEME_AXES).toBe(false)
       expect(skins.SELECTABLE_SKINS.map((s) => s.id)).toEqual(['default', 'midnight'])
     } finally {
       vi.unstubAllEnvs()
@@ -132,7 +136,7 @@ describe('a deploy built with NEXT_PUBLIC_SITE_DESIGN=frequency', () => {
 // STYLES PER DESIGN (scripts/lib/design-styles.mjs). A CSS import is not tree-shaken by a runtime
 // `SITE_DESIGN` branch, so a sheet imported directly ships in every deploy, DAWN's included. Code reaches a
 // design's sheets only through the app/themes/active/ stubs, which write-design-assets.mjs points at the
-// build's design; the committed stubs are DAWN's (empty), like lib/theme/design-fonts/active.ts.
+// build's design; the committed stubs load Frequency, like lib/theme/design-fonts/active.ts.
 describe('styles per design', () => {
   const ids = DESIGNS.map((d) => d.id)
   const onDisk = readdirSync(STUB_DIR)
@@ -140,13 +144,13 @@ describe('styles per design', () => {
     .map((f) => f.slice(0, -3))
     .sort()
 
-  it("commits every stub as DAWN's (empty), one per design sheet and no others", () => {
-    const dawn = renderStubs('dawn', ids)
-    expect(onDisk).toEqual(Object.keys(dawn).sort())
+  it("commits every Frequency stylesheet import, one per design sheet and no others", () => {
+    const frequency = renderStubs('frequency', ids)
+    expect(onDisk).toEqual(Object.keys(frequency).sort())
     for (const name of onDisk) {
       const src = readFileSync(`${STUB_DIR}/${name}.ts`, 'utf8')
-      expect(src, `${STUB_DIR}/${name}.ts: run \`pnpm design:use dawn\` before committing`).toBe(dawn[name])
-      expect(src).not.toMatch(/^import /m)
+      expect(src, `${STUB_DIR}/${name}.ts: run \`pnpm design:use frequency\` before committing`).toBe(frequency[name])
+      expect(src).toMatch(/^import /m)
     }
   })
 
@@ -174,5 +178,34 @@ describe('styles per design', () => {
       }
     }
     expect(offenders, 'import the app/themes/active/<sheet> stub instead').toEqual([])
+  })
+})
+
+
+describe('retired platform selection', () => {
+  it('normalizes an explicit DAWN environment to Frequency with legacy axes disabled', async () => {
+    const { vi } = await import('vitest')
+    vi.resetModules()
+    vi.stubEnv('NEXT_PUBLIC_SITE_DESIGN', 'dawn')
+    try {
+      const design = await import('./design')
+      expect(design.SITE_DESIGN).toBe('frequency')
+      expect(design.LEGACY_THEME_AXES).toBe(false)
+    } finally { vi.unstubAllEnvs(); vi.resetModules() }
+  })
+  it('rejects the retired CLI selection before writing an environment file', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'frequency-design-'))
+    try {
+      const result = spawnSync(process.execPath, [resolve('scripts/use-design.mjs'), 'dawn'], { cwd: dir, encoding: 'utf8' })
+      expect(result.status).toBe(2)
+      expect(existsSync(join(dir, '.env.local'))).toBe(false)
+      expect(readdirSync(dir)).toEqual([])
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+  it('commits manifest colors from the active Frequency design', async () => {
+    const { designDef } = await import('./design')
+    const manifest = JSON.parse(readFileSync('public/manifest.json', 'utf8'))
+    expect(manifest.theme_color).toBe(designDef('frequency').chrome.light)
+    expect(manifest.background_color).toBe(designDef('frequency').chrome.light)
   })
 })
