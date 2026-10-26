@@ -1,8 +1,7 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { EyeOff, LayoutDashboard, MapPin, Settings, Users } from 'lucide-react'
-import { ProgressTrack } from '@/components/ui/progress-track'
+import { Settings } from 'lucide-react'
 import { getCachedUser, getMyProfileId } from '@/lib/auth'
 import { leaveCircle } from '../../actions'
 import { JoinCircleButton } from '@/components/circles/join-circle-button'
@@ -13,16 +12,12 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { CircleLocked } from '@/components/circles/circle-locked'
 import { DeviceNudge } from '@/components/push/device-nudge'
-import { DetailTemplate, PageHero } from '@/components/templates'
-import { buttonClasses } from '@/components/ui/button'
-import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { QrShareDropdown } from '@/modules/qr'
 import { BoostButton } from '@/components/crew/boost-button'
 import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { loadCircleShell } from '@/lib/circles/store'
 import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 import { circleTabs } from '@/lib/circles/tabs'
-import { circleSubheading } from '@/lib/circles/subheading'
 import {
   circleHeroOverlayStyle,
   hasCircleHeroHeight,
@@ -35,7 +30,6 @@ import { circleEventInsider, loadCircleContentFacts, loadCircleUpcomingEvents } 
 import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 import { sisterCircleOffer } from '@/lib/circles/sister'
 import { SisterCirclePrompt } from '@/components/circles/sister-circle-prompt'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqCircleShell } from '@/components/frequency/members/circle/circle-shell'
 import { FqCircleSpaceHeader } from '@/components/frequency/members/space/circle-space-header'
 import { owningSpaceSlug } from '@/lib/circles/owning-space'
@@ -259,7 +253,6 @@ export default async function CircleDetailLayout({
 
   const full = circle.member_count >= circle.member_cap
   const nearCap = circle.member_count >= circle.member_cap * 0.9
-  const pct = Math.min(100, Math.round((circle.member_count / circle.member_cap) * 100))
 
   // Header status pill: draft → muted, forming → green, active → blue, full/closed → red.
   const statusPill = isDraft
@@ -304,402 +297,126 @@ export default async function CircleDetailLayout({
     isHost,
     isMember,
   })
-
-  // THE FREQUENCY SHELL (ADR-1737 switch, templates/members/Circle.html). Every gate above stands;
-  // only the placement changes. Build-time constant, so the DAWN tree below is untouched.
-  if (SITE_DESIGN === 'frequency') {
-    // Memo hit: loadCircleContentFacts asked the same question with the same key above.
-    const [upcoming, rootSpaceId] = await Promise.all([
-      loadCircleUpcomingEvents(circle.id, circleEventInsider({ isMember, isHost }), spaceCircleEventScope(circle)),
-      loadRootSpaceId(),
-    ])
-    // SCAN-881: a Circle that belongs to a Space (its space_id, the root excluded) opens under that
-    // Space's own header, the one its Space pages wear; the Circle's cover, title, tabs and actions
-    // follow below it. A personal Circle renders exactly as before.
-    const owner = owningSpaceSlug(circle, rootSpaceId)
-    const spaceName =
-      circle.is_space_primary && circle.space && circle.space.type !== 'root'
-        ? circle.space.brand_name || circle.space.name
-        : null
-    const place = circle.neighborhood ?? circle.city ?? null
-    const shell = (
-      <FqCircleShell
-        inSpace={!!owner}
-        notices={
-          <>
-            {isDraft && (
-              <div className="panel stack" role="status">
-                <span className="t1">This circle is in draft</span>
-                <span className="t2">
-                  Only you can see it. It stays off the Circles directory, map, and search until you publish
-                  it from the builder.
-                </span>
-              </div>
-            )}
-            {user && <CircleHandoffBanner circleId={circle.id} />}
-            {circle.is_demo && user && (
-              <Suspense fallback={null}>
-                <DemoClaimCard circleId={circle.id} name={circle.name} about={circle.about} />
-              </Suspense>
-            )}
-          </>
-        }
-        coverImage={hero.coverImage}
-        statusLabel={nearCap && !full ? `${statusPill.label} · Almost full` : statusPill.label}
-        live={!isDraft && !full && circle.status === 'active'}
-        name={circle.name}
-        subline={[
-          `${circle.member_count} ${circle.member_count === 1 ? 'member' : 'members'}`,
-          typeLabel,
-          place,
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-        invite={<QrShareDropdown manager={canManage} className="btn" />}
-        primary={
-          <>
-            {primary === 'create' && (
-              <CircleCreateMenu circleId={circle.id} circleSlug={circle.slug} canPost={isMember || isHost} canManage={canManage} />
-            )}
-            {primary === 'join' && (
-              <JoinCircleButton circleId={circle.id} circleSlug={circle.slug} label="Join" className="btn pa" />
-            )}
-            {!isMember && myProfileId && full && (
-              <button type="button" className="btn" disabled>
-                Full
-              </button>
-            )}
-          </>
-        }
-        admin={
-          canManage ? (
-            <>
-              <OpenAdminBarButton
-                scope={{ kind: 'circle', id: circle.id }}
-                caps={Array.from(caps)}
-                label="Edit"
-                icon={<Settings className="h-4 w-4" />}
-                className="btn"
-              />
-              <Link href={`/circles/${circle.slug}/manage`} className="btn">
-                Manage
-              </Link>
-            </>
-          ) : null
-        }
-        sister={sisterOffer ? <SisterCirclePrompt circleId={circle.id} reason={sisterOffer} /> : null}
-        nextEvent={canEnter ? (upcoming.events[0] ?? null) : null}
-        myProfileId={myProfileId}
-        tabs={canEnter ? tabs : []}
-        tabTools={
-          <>
-            {myProfileId && !isHost && <BoostButton kind="circle" targetId={circle.id} />}
-            {isMember && !isHost && <CircleMemberMenu leaveAction={leaveCircle.bind(null, circle.id)} />}
-          </>
-        }
-        about={circle.about}
-        hostLine={
-          spaceName && circle.space ? (
-            <>
-              Hosted by <Link href={`/spaces/${circle.space.slug}`}>{spaceName}</Link>
-            </>
-          ) : circle.host ? (
-            <>
-              Host <Link href={`/people/${circle.host.handle}`}>{circle.host.display_name}</Link>
-            </>
-          ) : null
-        }
-        memberCount={circle.member_count}
-        memberCap={circle.member_cap}
-      >
-        {canEnter ? (
-          <>
-            {isMember && <DeviceNudge context="circle" className="mb-4" />}
-            {children}
-          </>
-        ) : (
-          <CircleLocked
-            reason={entryReason ?? 'closed'}
-            circleSlug={circle.slug}
-            spaceSlug={circle.space && circle.space.type !== 'root' ? circle.space.slug : null}
-            spaceName={circle.space?.brand_name || circle.space?.name || null}
-          />
-        )}
-      </FqCircleShell>
-    )
-    return owner ? <FqCircleSpaceHeader spaceSlug={owner}>{shell}</FqCircleSpaceHeader> : shell
-  }
-
-  return (
-    <div>
-      {/* Draft notice: only a manager ever reaches this page while the circle is a draft (everyone
-          else 404s above), so this line reassures the owner it is private until they publish. */}
-      {isDraft && (
-        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-warning/40 bg-warning-bg/50 px-4 py-3">
-          <EyeOff className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
-          <div className="text-body-sm">
-            <p className="font-semibold text-text">This circle is in draft</p>
-            <p className="mt-0.5 text-muted">
-              Only you can see it. It stays off the Circles directory, map, and search until you publish
-              it from the builder.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* A pending handoff, shown ONLY to the person it was offered to (ADR-845). Self-fetching,
-          so it costs this page no read and renders nothing for everyone else. */}
-      {user && <div className="mb-4"><CircleHandoffBanner circleId={circle.id} /></div>}
-
-      {/* Demo circles invite a real member to claim + host them in place. The card needs the whole
-          practice library for its picker, so it streams: the header never waits on it. */}
-      {circle.is_demo && user && (
-        <Suspense fallback={null}>
-          <DemoClaimCard circleId={circle.id} name={circle.name} about={circle.about} />
-        </Suspense>
-      )}
-
-      <DetailTemplate
-        back={{ href: '/circles', label: 'Circles' }}
-        title={circle.name}
-        hero={
-          <PageHero
-            {...hero}
-            /* ── THE EYEBROW BECAME A CORNER PILL (owner ruling, 2026-09-17) ──────────────────
-               *"Change the 'CIRCLE' eyebrow to a pill button in the corner. Create a subheading
-               line under the circle name."*
-
-               It was an uppercase accent line stacked directly above the title, which spent a
-               whole line of the lockup on one word and pushed the name down. As a pill in the
-               top-left corner it labels the cover from the opposite end of the band and leaves
-               the lockup to the name and the line under it.
-
-               ON A SPACE CIRCLE THE PILL IS A LINK to the Space that owns it, which is the one
-               piece of navigation a Space's hub always owes its visitor and the reason `corner`
-               is a slot rather than a string. Its label still reads "Circle": NAMING.md is
-               explicit that "Space Circle" is STAFF copy and that a member-facing page just
-               shows the Circle, named for the Space. The pill says what the page is; the Space's
-               name rides beside it. */
-            corner={
-              circle.is_space_primary && circle.space && circle.space.type !== 'root' ? (
-                <Link
-                  href={`/spaces/${circle.space.slug}`}
-                  className="inline-flex items-center gap-1.5 rounded-pill border border-on-ink/25 bg-on-ink/15 px-3 py-1 text-meta font-bold uppercase tracking-eyebrow text-on-ink backdrop-blur-sm transition-colors hover:bg-on-ink/25"
-                >
-                  Circle
-                  <span className="font-semibold normal-case tracking-normal opacity-90">
-                    {circle.space.brand_name || circle.space.name}
-                  </span>
-                </Link>
-              ) : (
-                <span className="inline-flex items-center rounded-pill border border-on-ink/25 bg-on-ink/15 px-3 py-1 text-meta font-bold uppercase tracking-eyebrow text-on-ink backdrop-blur-sm">
-                  Circle
-                </span>
-              )
-            }
-            title={circle.name}
-            /* The line the pill freed up. What this Circle IS, resolved by one pure rule
-               (lib/circles/subheading.ts); `''` means render no subtitle at all. */
-            subtitle={
-              circleSubheading({
-                about: circle.about,
-                type: circle.type,
-                neighborhood: circle.neighborhood,
-                city: circle.city,
-                isSpaceCircle: circle.is_space_primary === true,
-                spaceName: circle.space?.brand_name || circle.space?.name || null,
-              }) || undefined
-            }
-          />
-        }
-        band={
-          <div className="min-w-0 space-y-2">
-            {/* ── THE FACT ROW AND THE ACTIONS, ON ONE LINE (owner ruling, 2026-08-13) ──────────
-                Facts left, buttons right, one baseline. The buttons were on the COVER until this
-                change and the owner moved them down here: *"Move buttons under header on the same
-                line with forming / in person pills & member count."*
-
-                🔴 THEY ARE NO LONGER ON A PHOTO, SO THEY MUST NOT WEAR `HERO_ACTION_CLASS`. That
-                class is the kit's glassy on-ink treatment — translucent white on a backdrop blur —
-                which is legible over an arbitrary image and invisible on the page background. Every
-                button here takes `buttonClasses()` instead, the ordinary surface treatment.
-
-                It stacks on mobile (`flex-col` until `sm`) so a long circle name and four buttons
-                never fight for one narrow line. */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
-                {/* Status / mode chips — the rounded-pill chip grammar the event + Journey bands use. */}
-                <span className="inline-flex flex-wrap items-center gap-1.5">
-                  <span className={`inline-flex items-center rounded-pill px-2 py-0.5 text-meta font-semibold ${statusPill.cls}`}>
-                    {statusPill.label}
-                  </span>
-                  <span className="inline-flex items-center rounded-pill bg-signal-bg px-2 py-0.5 text-meta font-medium text-signal-strong">
-                    {typeLabel}
-                  </span>
-                  {nearCap && !full && (
-                    <span className="inline-flex items-center rounded-pill bg-warning-bg px-2 py-0.5 text-meta font-medium text-warning">
-                      Almost full
-                    </span>
-                  )}
-                </span>
-
-                {/* The fact row, folded onto the same line as the chips: the key fact a step
-                    stronger, the events-header idiom. */}
-                <span className="flex items-center gap-1.5 text-body-sm text-muted">
-                  <Users className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-                  <span className="font-semibold text-text">
-                    {circle.member_count} of {circle.member_cap} members
-                  </span>
-                </span>
-                {/* THE SPACE CIRCLE (ADR-1391) is hosted by its Space, not by the person who owns the Space. */}
-                {circle.is_space_primary && circle.space && circle.space.type !== 'root' ? (
-                  <span className="text-body-sm text-muted">
-                    Hosted by{' '}
-                    <Link
-                      href={`/spaces/${circle.space.slug}`}
-                      className="font-medium text-primary-strong hover:underline"
-                    >
-                      {circle.space.brand_name || circle.space.name}
-                    </Link>
-                  </span>
-                ) : circle.host && (
-                  <span className="text-body-sm text-muted">
-                    Host{' '}
-                    <Link
-                      href={`/people/${circle.host.handle}`}
-                      className="font-medium text-primary-strong hover:underline"
-                    >
-                      {circle.host.display_name}
-                    </Link>
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                {/* The ONE primary: Create for someone already inside, Join for someone who is not.
-                    It renders FIRST, so the header's strongest control is the one that makes
-                    something rather than the one that leaves. */}
-                {primary === 'create' && (
-                  <CircleCreateMenu
-                    circleId={circle.id}
-                    circleSlug={circle.slug}
-                    canPost={isMember || isHost}
-                    canManage={canManage}
-                  />
-                )}
-
-                {primary === 'join' && (
-                  <JoinCircleButton
-                    circleId={circle.id}
-                    circleSlug={circle.slug}
-                    label="Join"
-                    className={buttonClasses('primary')}
-                  />
-                )}
-
-                {!isMember && myProfileId && full && (
-                  <span className="inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-control border border-border bg-surface-elevated px-3 py-1.5 text-body-sm font-semibold text-subtle">
-                    Full
-                  </span>
-                )}
-
-                {/* ADMIN ONLY, beside the primary. Gated on the same `circle.editSettings` the admin
-                    rail's circle modules use, so a member never sees them. The host menu rides
-                    along: it is the third host affordance and belongs with the other two. */}
-                {canManage && (
-                  <>
-                    <OpenAdminBarButton
-                      scope={{ kind: 'circle', id: circle.id }}
-                      caps={Array.from(caps)}
-                      label="Edit"
-                      icon={<Settings className="h-4 w-4" />}
-                      className={buttonClasses('secondary')}
-                    />
-                    <Link href={`/circles/${circle.slug}/manage`} className={buttonClasses('secondary')}>
-                      <LayoutDashboard className="h-4 w-4" aria-hidden />
-                      Manage
-                    </Link>
-                  </>
-                )}
-
-                {/* Leave is NOT here any more. It moved to the overflow control on the tab row
-                    below (CircleMemberMenu), on the owner's ruling that leaving is a setting rather
-                    than one of the header's primary actions. */}
-              </div>
+  // Memo hit: loadCircleContentFacts asked the same question with the same key above.
+  const [upcoming, rootSpaceId] = await Promise.all([
+    loadCircleUpcomingEvents(circle.id, circleEventInsider({ isMember, isHost }), spaceCircleEventScope(circle)),
+    loadRootSpaceId(),
+  ])
+  // SCAN-881: a Circle that belongs to a Space (its space_id, the root excluded) opens under that
+  // Space's own header, the one its Space pages wear; the Circle's cover, title, tabs and actions
+  // follow below it. A personal Circle renders exactly as before.
+  const owner = owningSpaceSlug(circle, rootSpaceId)
+  const spaceName =
+    circle.is_space_primary && circle.space && circle.space.type !== 'root'
+      ? circle.space.brand_name || circle.space.name
+      : null
+  const place = circle.neighborhood ?? circle.city ?? null
+  const circleShell = (
+    <FqCircleShell
+      inSpace={!!owner}
+      notices={
+        <>
+          {isDraft && (
+            <div className="panel stack" role="status">
+              <span className="t1">This circle is in draft</span>
+              <span className="t2">
+                Only you can see it. It stays off the Circles directory, map, and search until you publish
+                it from the builder.
+              </span>
             </div>
-
-            {/* Place-first context: the Hub this circle belongs to. Hubs/Nexuses surface here as the
-                emergent "where this sits", never as primary nav (IA §3a/§4). */}
-            {circle.hub && (
-              <div className="flex items-center gap-1.5 text-body-sm text-subtle">
-                <MapPin className="h-4 w-4 shrink-0" aria-hidden />
-                <span className="truncate">
-                  {circle.hub.nexus?.outpost?.name && <>{circle.hub.nexus.outpost.name} · </>}
-                  <Link href={`/spaces/${circle.hub.slug}`} className="hover:text-primary-strong hover:underline">
-                    {circle.hub.name}
-                  </Link>
-                </span>
-              </div>
-            )}
-
-            {/* The fact row used to live HERE, on its own line under the Hub. It folded up into the
-                chip row above on 2026-08-13, because that is the line the owner named for the
-                actions and a member count is what the buttons act on. */}
-            <ProgressTrack
-              value={pct}
-              tone={full ? 'danger' : 'primary'}
-              track="border"
-              animate
-              className="mt-2 max-w-xs"
-              label={`${circle.member_count} of ${circle.member_cap} seats taken`}
+          )}
+          {user && <CircleHandoffBanner circleId={circle.id} />}
+          {circle.is_demo && user && (
+            <Suspense fallback={null}>
+              <DemoClaimCard circleId={circle.id} name={circle.name} about={circle.about} />
+            </Suspense>
+          )}
+        </>
+      }
+      coverImage={hero.coverImage}
+      statusLabel={nearCap && !full ? `${statusPill.label} · Almost full` : statusPill.label}
+      live={!isDraft && !full && circle.status === 'active'}
+      name={circle.name}
+      subline={[
+        `${circle.member_count} ${circle.member_count === 1 ? 'member' : 'members'}`,
+        typeLabel,
+        place,
+      ]
+        .filter(Boolean)
+        .join(' · ')}
+      invite={<QrShareDropdown manager={canManage} className="btn" />}
+      primary={
+        <>
+          {primary === 'create' && (
+            <CircleCreateMenu circleId={circle.id} circleSlug={circle.slug} canPost={isMember || isHost} canManage={canManage} />
+          )}
+          {primary === 'join' && (
+            <JoinCircleButton circleId={circle.id} circleSlug={circle.slug} label="Join" className="btn pa" />
+          )}
+          {!isMember && myProfileId && full && (
+            <button type="button" className="btn" disabled>
+              Full
+            </button>
+          )}
+        </>
+      }
+      admin={
+        canManage ? (
+          <>
+            <OpenAdminBarButton
+              scope={{ kind: 'circle', id: circle.id }}
+              caps={Array.from(caps)}
+              label="Edit"
+              icon={<Settings className="h-4 w-4" />}
+              className="btn"
             />
-            {sisterOffer && <SisterCirclePrompt circleId={circle.id} reason={sisterOffer} />}
-          </div>
-        }
-        tabs={
-          <div className="flex items-center justify-between gap-4">
-            {canEnter && tabs.length > 0 ? (
-              <UnderlineTabs tabs={tabs} label="Circle sections" />
-            ) : (
-              // Holds the left edge so the share control stays right-aligned on a strip-less Circle.
-              <span />
-            )}
-            <div className="flex shrink-0 items-center gap-1 pb-2">
-              <QrShareDropdown manager={canManage} />
-              {/* The Crew Boost (LIVE-756): a member vouches for a Circle they do not host. The
-                  server checks Crew and the one-a-month rule; a Host never sees it. */}
-              {myProfileId && !isHost && <BoostButton kind="circle" targetId={circle.id} />}
-              {/* The quiet home Leave moved to (owner ruling, 2026-09-17). A Host never gets it:
-                  they hand the Circle over (ADR-845) rather than walking out of it. */}
-              {isMember && !isHost && (
-                <CircleMemberMenu leaveAction={leaveCircle.bind(null, circle.id)} />
-              )}
-            </div>
-          </div>
-        }
-      >
-        {canEnter ? (
-          <>
-            {/* Belonging to a Circle earns one ask for its check-ins, by a tap only (LIVE-701). The
-                card shows once per device and never on a load it cannot help. Installing is not
-                offered here: the owner ruled it for an RSVP or a post (LIVE-703). */}
-            {isMember && <DeviceNudge context="circle" className="mb-4" />}
-            {children}
+            <Link href={`/circles/${circle.slug}/manage`} className="btn">
+              Manage
+            </Link>
           </>
-        ) : (
-          // In place of `children`, and therefore covering EVERY tab beneath this shell, the same
-          // way the draft gate above does. A tab strip over bodies that all render nothing is
-          // just more places to find out you are outside.
-          <CircleLocked
-            reason={entryReason ?? 'closed'}
-            circleSlug={circle.slug}
-            spaceSlug={circle.space && circle.space.type !== 'root' ? circle.space.slug : null}
-            spaceName={circle.space?.brand_name || circle.space?.name || null}
-          />
-        )}
-      </DetailTemplate>
-    </div>
+        ) : null
+      }
+      sister={sisterOffer ? <SisterCirclePrompt circleId={circle.id} reason={sisterOffer} /> : null}
+      nextEvent={canEnter ? (upcoming.events[0] ?? null) : null}
+      myProfileId={myProfileId}
+      tabs={canEnter ? tabs : []}
+      tabTools={
+        <>
+          {myProfileId && !isHost && <BoostButton kind="circle" targetId={circle.id} />}
+          {isMember && !isHost && <CircleMemberMenu leaveAction={leaveCircle.bind(null, circle.id)} />}
+        </>
+      }
+      about={circle.about}
+      hostLine={
+        spaceName && circle.space ? (
+          <>
+            Hosted by <Link href={`/spaces/${circle.space.slug}`}>{spaceName}</Link>
+          </>
+        ) : circle.host ? (
+          <>
+            Host <Link href={`/people/${circle.host.handle}`}>{circle.host.display_name}</Link>
+          </>
+        ) : null
+      }
+      memberCount={circle.member_count}
+      memberCap={circle.member_cap}
+    >
+      {canEnter ? (
+        <>
+          {isMember && <DeviceNudge context="circle" className="mb-4" />}
+          {children}
+        </>
+      ) : (
+        <CircleLocked
+          reason={entryReason ?? 'closed'}
+          circleSlug={circle.slug}
+          spaceSlug={circle.space && circle.space.type !== 'root' ? circle.space.slug : null}
+          spaceName={circle.space?.brand_name || circle.space?.name || null}
+        />
+      )}
+    </FqCircleShell>
   )
+  return owner ? <FqCircleSpaceHeader spaceSlug={owner}>{circleShell}</FqCircleSpaceHeader> : circleShell
 }
 
 // The demo-claim card's practice picker needs the whole public practice library. Only a claimable

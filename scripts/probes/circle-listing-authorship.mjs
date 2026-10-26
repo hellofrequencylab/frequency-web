@@ -9,7 +9,9 @@ function selected(file, name) {
   assert.ok(node, name)
   return ts.transpileModule(node.getText(ast), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
 }
-const pure = { exports: {} }
+const catalog = { exports: {} }
+vm.runInNewContext(ts.transpileModule(readFileSync('lib/ai/coaching-question-catalog.ts','utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, catalog)
+const pure = { exports: {}, require: key => { assert.equal(key, './coaching-question-catalog'); return catalog.exports } }
 vm.runInNewContext(ts.transpileModule(readFileSync('lib/ai/writing-questions.ts','utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, pure)
 const { safeWritingQuestions, parseWritingQuestions } = pure.exports
 assert.equal(parseWritingQuestions('{"title":"Invented","description":"New copy"}'), null)

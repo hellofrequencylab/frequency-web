@@ -77,8 +77,8 @@ async function space() {
   const state = { allowed: false, writes: [], missing: false }
   const load = harness({
     '@/lib/auth': { getMyProfileId: async () => 'operator-A' },
-    '@/lib/spaces/store': { getSpaceById: async () => ({ id: 'space-A', slug: 'makers' }) },
-    '@/lib/spaces/entitlements': { getSpaceCapabilities: async () => ({ canEditProfile: state.allowed }) },
+    './store': { getSpaceById: async (id) => ({ id, slug: 'makers', ownerProfileId: 'another-owner' }) },
+    './membership': { readSpaceMembershipFresh: async (id, actor) => state.allowed && id === 'space-A' && actor === 'operator-A' ? { status: 'active', role: 'editor' } : null },
     'next/cache': { revalidatePath() {} },
     '@/lib/log': { log: { warn() {} } },
     '@/lib/supabase/admin': { createAdminClient: () => ({ from: (table) => {
@@ -109,13 +109,13 @@ async function copilot() {
     './voice': { withVoice: s => s },
     './complete': { AiUnavailableError: class extends Error {}, completeText: async request => {
       calls.push(request)
-      return { text: '["What should a newcomer know about your offering?"]' }
+      return { text: '{"questionIds":["newcomer"]}' }
     } },
   })
   const coach = load('lib/ai/space-copilot.ts')
   const ctx = { name: 'Makers', spaceId: 'space-A', profileId: 'owner-A', offerings: ['Event: Sunday community sit', 'Product: Five class pass'] }
   for (const run of [coach.draftSpaceBio, coach.suggestTagline]) {
-    assert.equal(await run(ctx), 'What should a newcomer know about your offering?')
+    assert.equal(await run(ctx), 'What should a newcomer expect?')
     const request = calls.at(-1)
     for (const offering of ctx.offerings) assert.ok(request.messages[0].content.includes(offering), 'Both coaching paths receive actual offerings')
     assert.equal(request.accounting.spaceId, ctx.spaceId)

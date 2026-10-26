@@ -288,14 +288,21 @@ async function sendEnrolleeEmail(
   }
 }
 
+/** True when the picked segments cover every enrollee: everyone, or both halves. */
+function isWholeCohort(segments: string[]): boolean {
+  const keys = new Set(segments.filter(isSegmentKey))
+  return keys.has('all') || (keys.has('in_progress') && keys.has('finished'))
+}
+
 /** Push cap for one Dispatch to a cohort: each recipient costs a router call (preferences + job). */
 const COHORT_DISPATCH_CAP = 500
 
 /**
  * Dispatch to the cohort: a push to each picked enrollee, through the notification router
  * ('event.dispatch', the same Dispatch category the Space and Event fan-outs use), so a member's
- * own push preference and per-Space mute decide whether they hear it. Nothing is published to the
- * Dispatch feed: a feed row is scoped to a Space or an Event, and a Journey cohort is neither.
+ * own push preference and per-Space mute decide whether they hear it. A send to the whole cohort is
+ * also posted to the Dispatch feed as a Journey-scoped row (migration 20270346025200), so enrollees
+ * see it there even with push off.
  */
 async function sendCohortDispatch(
   ctx: JourneyLaunchContext,
@@ -311,6 +318,29 @@ async function sendCohortDispatch(
   }
   if (!(await rateLimitOk('journey-broadcast:dispatch', ctx.viewerId, 10, '1 h'))) {
     return { channel: 'dispatch', ok: false, detail: 'You have sent a lot of messages recently. Try again in a bit.' }
+  }
+
+  // The feed row: one `dispatches` row scoped to the Journey (audience_scope 'journey', SCAN-1165),
+  // read in each enrollee's feed. Only a send to the WHOLE cohort is posted there: a half-cohort send
+  // (just the in-progress or just the finished) is pushed but not posted, since a feed row reaches
+  // every enrollee and would show a message meant for half of them to all.
+  let posted = false
+  if (isWholeCohort(segments)) {
+    const { data: row } = await createAdminClient()
+      .from('dispatches')
+      .insert({
+        author_id: ctx.viewerId,
+        title: subject,
+        body,
+        audience_scope: 'journey',
+        audience_id: planId,
+        dispatch_type: 'post',
+        status: 'published',
+        published_at: new Date().toISOString(),
+      })
+      .select('id')
+      .maybeSingle()
+    posted = !!row?.id
   }
 
   const prefSubject: PreferenceSubject | undefined = ctx.spaceId
@@ -330,13 +360,12 @@ async function sendCohortDispatch(
     }
   }
   if (reached === 0) {
-    return { channel: 'dispatch', ok: false, detail: 'No one has push on for this, so nothing went out.' }
+    return posted
+      ? { channel: 'dispatch', ok: true, detail: 'Posted to their feed. No one has push on, so nothing was pushed.' }
+      : { channel: 'dispatch', ok: false, detail: 'No one has push on for this, so nothing went out.' }
   }
-  return {
-    channel: 'dispatch',
-    ok: true,
-    detail: `Pushed to ${reached} ${reached === 1 ? 'person' : 'people'} with push on.`,
-  }
+  const pushed = `Pushed to ${reached} ${reached === 1 ? 'person' : 'people'} with push on.`
+  return { channel: 'dispatch', ok: true, detail: posted ? `Posted to their feed. ${pushed}` : pushed }
 }
 
 /**

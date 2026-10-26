@@ -48,7 +48,6 @@ import {
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
 import { NetworkHubBar } from '@/components/people/network-hub-bar'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
 import { hubLinks } from '@/components/frequency/members/shell/nav'
 
@@ -425,13 +424,7 @@ export default async function CommunityPage({
               href={filterHref({ ...base, online: onlineFilter ? undefined : '1' })}
               aria-pressed={!!onlineFilter}
               className={
-                SITE_DESIGN === 'frequency'
-                  ? onlineFilter ? 'chip on' : 'chip'
-                  : `inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 py-2.5 text-body-sm font-medium transition-colors ${
-                      onlineFilter
-                        ? 'border-primary bg-primary text-on-primary'
-                        : 'border-border bg-surface text-text hover:border-primary hover:text-primary-strong'
-                    }`
+                onlineFilter ? 'chip on' : 'chip'
               }
             >
               <span className={`h-1.5 w-1.5 rounded-pill ${onlineFilter ? 'bg-on-primary' : 'bg-success'}`} />
@@ -557,7 +550,7 @@ export default async function CommunityPage({
       </div>
       </IndexTemplate>
       {/* Frequency: the Members hub's "More in" row. DAWN keeps its tab strip and Invite as they were. */}
-      {SITE_DESIGN === 'frequency' && (
+      {(
         <Suspense fallback={null}>
           <HubLinks title="Members" links={(v) => hubLinks('/network', v)} />
         </Suspense>

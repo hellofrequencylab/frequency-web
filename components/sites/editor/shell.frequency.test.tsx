@@ -22,7 +22,7 @@ const initial: WebsiteEditorState = { v: 1, revision: 0, published: null, versio
 ] } }
 const mounted: (() => void)[] = []
 afterEach(() => { mounted.splice(0).forEach((cleanup) => cleanup()) })
-function mount(options: { start?: WebsiteEditorState; onPropose?: (request: string, value: string) => Promise<{ ok: true; text: string } | { ok: false; error: string }> } = {}) {
+function mount(options: { start?: WebsiteEditorState; onPropose?: (request: string, value: string) => ReturnType<NonNullable<import('./shell').WebsiteEditorShellProps['onPropose']>> } = {}) {
   const node = document.createElement('div'); document.body.append(node); const root = createRoot(node)
   const start = options.start ?? initial
   const onSave = vi.fn(async (_revision: number, draft: typeof initial.draft, publish: boolean) => ({ ok: true as const, state: { ...start, revision: 1, draft, published: publish ? { ...draft, pages: draft.pages.map((p) => ({ ...p, comments: [] })) } : start.published } }))
@@ -226,18 +226,32 @@ it('removes a section with a toast and no confirm, and ⌘Z brings it back unles
   expect(rows()).toBe(1)
 })
 
-it('focuses Vera with ⌘K and applies a proposal as one undo step', async () => {
-  const onPropose = vi.fn(async () => ({ ok: true as const, text: 'Welcome in' }))
-  const { node, click } = mount({ start: clean, onPropose })
+it('focuses Vera with ⌘K and shows coaching without a draft edit or undo entry', async () => {
+  const onPropose = vi.fn(async () => ({ ok: true as const, promptIds: ['reader' as const], text: 'Forged replacement headline' }))
+  const { node, click, onSave } = mount({ start: clean, onPropose })
   key(document, { key: 'k', metaKey: true })
   expect(document.activeElement?.getAttribute('aria-label')).toBe('Ask Vera')
   expect(node.querySelector('.vera .ctx')?.textContent).toBe('Cards')
-  await act(async () => { click('Suggest a better heading'); await Promise.resolve() })
+  await act(async () => { click('Review the heading'); await Promise.resolve() })
   expect(onPropose).toHaveBeenCalledWith(expect.stringContaining('heading'), 'Hello')
-  expect(node.querySelector('.vera .reply')?.textContent).toContain('Welcome in')
-  click('Apply')
-  expect(titleInput(node).value).toBe('Welcome in')
-  expect(badge(node)).toBe('1')
+  expect(node.querySelector('.vera .reply')?.textContent).toContain('Who is this passage for')
+  expect(node.textContent).not.toContain('Forged replacement headline')
+  expect(Array.from(node.querySelectorAll('button')).some(button => button.textContent === 'Apply')).toBe(false)
+  expect(titleInput(node).value).toBe('Hello')
+  expect(badge(node)).toBeNull()
+  expect(onSave).not.toHaveBeenCalled()
+})
+
+it('keeps manual edits made while coaching is in flight and adds no second undo step', async () => {
+  let reply!: (value: { ok: true; promptIds: ['clarity'] }) => void
+  const onPropose = vi.fn(() => new Promise<{ ok: true; promptIds: ['clarity'] }>(resolve => { reply = resolve }))
+  const { node, click } = mount({ start: clean, onPropose })
+  await act(async () => { click('Review the heading'); await Promise.resolve() })
+  typeInto(titleInput(node), 'My own revised headline')
+  const beforeReply = badge(node)
+  await act(async () => { reply({ ok: true, promptIds: ['clarity'] }); await Promise.resolve() })
+  expect(titleInput(node).value).toBe('My own revised headline')
+  expect(badge(node)).toBe(beforeReply)
   click('Undo')
   expect(titleInput(node).value).toBe('Hello')
 })

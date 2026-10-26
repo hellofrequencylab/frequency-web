@@ -11,9 +11,12 @@ function selected(file, name) {
   return ts.transpileModule(node.getText(ast), { compilerOptions: options }).outputText
 }
 let allowed = true, writes = 0, modelCalls = 0
-const guidance = { questions: ['Who needs this invitation?'], checks: ['Verify the event time.'], measurement: 'Compare confirmed RSVPs.' }
+const guidance = { questionIds: ['next_step'], checkIds: ['facts'], measurementId: 'attendance' }
+const catalog = { exports: {} }
+vm.runInNewContext(ts.transpileModule(readFileSync('lib/ai/marketing-advice-catalog.ts', 'utf8'), { compilerOptions: options }).outputText, catalog)
 let response = guidance
 const modules = {
+  './marketing-advice-catalog': catalog.exports,
   './complete': { completeRaw: async () => { modelCalls++; return { content: [{ type: 'tool_use', name: 'coach_messaging', input: response }] } } },
   './client': { aiEnabled: () => true }, './usage': { featureOverBudget: async () => false }, './voice': { withVoice: x => x },
 }
@@ -25,7 +28,7 @@ const actions = { exports: {}, getMessagingGoal: () => ({ key: 'event', label: '
   coachMessaging: generator.exports.coachMessaging, ok: data => ({ data }), fail: error => ({ error }),
   createAdminClient: () => { writes++; throw Error('Unexpected storage access') }, startManual: () => { writes++; throw Error('Unexpected fallback') } }
 vm.runInNewContext(selected('app/(main)/admin/marketing/messaging/new/actions.ts', 'startBuild'), actions)
-assert.equal((await actions.exports.startBuild(input)).data.coaching.questions[0], guidance.questions[0])
+assert.equal((await actions.exports.startBuild(input)).data.coaching.questions[0], 'What next step matters for this audience?')
 assert.equal(input.details, 'Human notes'); assert.equal(writes, 0)
 response = { ...guidance, body: 'Invented email' }
 assert.ok((await actions.exports.startBuild(input)).error); assert.equal(writes, 0)

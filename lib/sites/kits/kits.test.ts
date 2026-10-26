@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { validWebsiteSnapshot, WEBSITE_THEMES_LIVE, type WebsiteSnapshot } from '@/lib/sites/editor/state'
-import { applyKit } from './apply'
+import { applyKit, kitChanges } from './apply'
 import { KIT_INDEX, loadKit } from './registry'
 
 const page = (slug: string) => ({ slug, label: slug, doc: { root: {}, content: [{ type: 'Text', props: { id: 'a', text: 'Mine' } }] }, seo: { title: '', description: '' }, comments: [] })
@@ -38,6 +38,16 @@ describe('site kits', () => {
       expect(r.renamed).toEqual({ home: 'home-kit', about: 'about-kit' })
       expect(r.snapshot.pages.map((p) => p.slug)).toEqual(['home', 'about', 'home-kit', 'about-kit', 'sessions'])
     }
+  })
+  it('names the pages each mode would leave, and why a mode cannot run', async () => {
+    const kit = (await loadKit('wildheart-coaches'))!
+    const changes = kitChanges(site(['home', 'old']), kit)
+    expect(changes.now).toEqual(['home', 'old'])
+    expect(changes.add).toHaveLength(5)
+    expect(changes.replace).toHaveLength(3)
+    expect(changes.theme).toBe('Wildheart')
+    const full = kitChanges(site(Array.from({ length: 29 }, (_, i) => `p${i}`)), kit)
+    expect(typeof full.add).toBe('string')
   })
   it('add refuses past 30 pages and changes nothing', async () => {
     const kit = (await loadKit('wildheart-coaches'))!

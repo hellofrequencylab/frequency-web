@@ -1,7 +1,7 @@
 // THE HOME PAGE BODY under the Frequency design: templates/website/Home.html, section by section, in the
 // "site" kit's markup plus Home's own styles (.pa-home in app/themes/frequency/site-pages-a.css).
 //
-//   01 Hero       the Browse / Host switch, the location pill, the two-sided headline, the signature ticker
+//   01 Hero       the Browse / Host switch, the location pill, the shared brand headline, the signature ticker
 //   02 Fold       the vision told over a pinned stage of photos, ending in the two path doors
 //   03 Story      four chapters per side (Find, Show up, Come back, Pass it on), with "Live this week"
 //   04 Features   six ways to be in the room / six things you can make
@@ -143,18 +143,7 @@ export async function FrequencyHome() {
               </span>
             </Link>
             <h1 className="h-xl">
-              <Sided
-                p={
-                  <>
-                    Making friends as an adult is hard. <em className="fq-iri-text">Start with one Thursday.</em>
-                  </>
-                }
-                e={
-                  <>
-                    Bringing people together <em className="fq-iri-text">shouldn’t take six apps.</em>
-                  </>
-                }
-              />
+              Build circles, <em className="fq-iri-text">not walls.</em>
             </h1>
             <div className="h-foot">
               <div className="lede">

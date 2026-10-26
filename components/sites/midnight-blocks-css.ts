@@ -10,12 +10,25 @@ const LABEL = 'font-family:var(--mn-label);text-transform:uppercase;letter-spaci
 const HAIR = '1px solid var(--mn-night-300)'
 
 export const MIDNIGHT_BLOCKS_CSS = `
-${N} .mn-section{position:relative;isolation:isolate;padding:var(--mn-section-y) max(var(--mn-gutter),calc((100% - var(--mn-max)) / 2))}
+${N} .mn-section{position:relative;isolation:isolate;overflow:clip;padding:var(--mn-section-y) max(var(--mn-gutter),calc((100% - var(--mn-max)) / 2))}
 ${N} .mn-grain::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.09;mix-blend-mode:screen;background-image:var(--mn-grain)}
-${N} .mn-mist{position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(60% 55% at var(--mist-x,20%) var(--mist-y,40%),color-mix(in srgb,var(--mn-bone-50) 7%,transparent),transparent 70%),radial-gradient(40% 40% at 78% 70%,color-mix(in srgb,var(--mn-bone-50) 4%,transparent),transparent 70%)}
-${N} .mn-mist--low{background:linear-gradient(0deg,color-mix(in srgb,var(--mn-bone-50) 8%,transparent),transparent 45%)}
+${N} .mn-mist,${N} .mn-smoke,${N} .mn-roots,${N} .mn-stardust,${N} .mn-vignette,${N} .mn-moonglow,${N} .mn-candle{position:absolute;inset:0;z-index:0;pointer-events:none}
+${N} .mn-mist{inset:-8%;background-image:var(--mn-tex-cloud);background-size:cover;background-repeat:no-repeat;background-position:center;opacity:var(--mn-mist-opacity);mix-blend-mode:screen;-webkit-mask-image:radial-gradient(ellipse 55% 48% at var(--mist-x,72%) var(--mist-y,38%),var(--mn-night-0) 0%,color-mix(in srgb,var(--mn-night-0) 55%,transparent) 45%,transparent 72%);mask-image:radial-gradient(ellipse 55% 48% at var(--mist-x,72%) var(--mist-y,38%),var(--mn-night-0) 0%,color-mix(in srgb,var(--mn-night-0) 55%,transparent) 45%,transparent 72%);animation:mn-drift 48s var(--mn-ease-in-out) infinite alternate}
+${N} .mn-mist--low{-webkit-mask-image:radial-gradient(ellipse 90% 45% at 50% 105%,var(--mn-night-0),transparent 75%);mask-image:radial-gradient(ellipse 90% 45% at 50% 105%,var(--mn-night-0),transparent 75%)}
+${N} .mn-hero>.mn-mist,${N} .mn-hero .mn-mist:not(.mn-mist--low){--mist-x:20%;--mist-y:40%}
 ${N} .mn-mist--right{--mist-x:75%;--mist-y:45%}
-${N} .mn-mist--veil{background:radial-gradient(70% 80% at 50% 0%,color-mix(in srgb,var(--mn-bone-50) 8%,transparent),transparent 70%)}
+${N} .mn-mist--left{--mist-x:8%;--mist-y:60%}
+${N} .mn-mist--corner{--mist-x:92%;--mist-y:6%}
+${N} .mn-mist--veil{-webkit-mask-image:none;mask-image:none;opacity:.14}
+${N} .mn-mist--dense{opacity:.5}
+${N} .mn-smoke{inset:-6%;background-image:var(--mn-tex-smoke);background-size:cover;background-repeat:no-repeat;opacity:.22;mix-blend-mode:screen;-webkit-mask-image:linear-gradient(180deg,transparent,var(--mn-night-0) 25%,var(--mn-night-0) 75%,transparent);mask-image:linear-gradient(180deg,transparent,var(--mn-night-0) 25%,var(--mn-night-0) 75%,transparent);animation:mn-drift 64s var(--mn-ease-in-out) infinite alternate-reverse}
+${N} .mn-roots{background-image:var(--mn-tex-roots);background-size:700px 700px;opacity:.12;mix-blend-mode:screen}
+${N} .mn-stardust{background-image:var(--mn-tex-stardust);background-size:420px 420px;opacity:.9}
+${N} .mn-moonglow{background:radial-gradient(ellipse 45% 55% at var(--glow-x,78%) var(--glow-y,0%),color-mix(in srgb,var(--mn-bone-50) 16%,transparent),transparent 70%)}
+${N} .mn-candle{background:radial-gradient(ellipse 40% 35% at var(--glow-x,20%) var(--glow-y,100%),color-mix(in srgb,var(--mn-violet-400) 16%,transparent),transparent 70%)}
+${N} .mn-vignette{background:radial-gradient(ellipse 75% 70% at 50% 45%,transparent 40%,color-mix(in srgb,var(--mn-night-0) 85%,transparent) 100%)}
+@keyframes mn-drift{from{transform:translate3d(-2.5%,0,0)}to{transform:translate3d(2.5%,-1%,0)}}
+@media (prefers-reduced-motion:reduce){${N} .mn-mist,${N} .mn-smoke{animation:none}}
 ${N} .mn-eyebrow{display:flex;align-items:center;gap:14px;${LABEL};font-size:var(--mn-size-eyebrow);color:var(--mn-ash-200)}
 ${N} .mn-eyebrow--block{display:block;color:var(--mn-ash-300)}
 ${N} .mn-eyebrow--icon{gap:8px;font-size:var(--mn-size-eyebrow)}
@@ -90,6 +103,22 @@ ${N} .mn-card-title{display:block;font-family:var(--mn-display);font-weight:400;
 ${N} .mn-card-title--sm{font-size:24px;line-height:1.15}
 
 /* Seals: a sigil held in a hairline ring. */
+${N} .mn-bar{display:flex;align-items:center;justify-content:space-between;gap:var(--mn-gutter);min-height:36px;padding:0 var(--mn-gutter);background:var(--color-canvas);border-bottom:1px solid var(--mn-night-300);font-family:var(--mn-label);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--color-text-subtle)}
+${N} .mn-bar-now{display:flex;align-items:center;gap:10px;margin:0;min-width:0}
+${N} .mn-bar-now .mn-sigil{color:var(--color-accent)}
+${N} .mn-bar-moon{color:var(--color-text)}
+${N} .mn-bar-next{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+${N} .mn-bar-next::before{content:"\\00B7";margin-right:10px}
+${N} .mn-bar-links{display:flex;gap:24px}
+${N} .mn-bar-links a{color:var(--color-text-subtle)}
+${N} .mn-bar-links a:hover{color:var(--color-text)}
+@media (max-width:760px){${N} .mn-bar-links{display:none}${N} .mn-bar-next{display:none}}
+${N} .hs-brand{overflow:visible}
+${N} .mn-logo{display:inline-flex;align-items:center;gap:14px;text-align:left}
+${N} .mn-logo-ring{display:inline-flex;border-radius:50%;box-shadow:var(--mn-glow)}
+${N} .mn-logo-text{display:flex;flex-direction:column;gap:4px;min-width:0}
+${N} .mn-logo-name{font-family:var(--mn-display);font-size:28px;line-height:1;letter-spacing:var(--mn-tracking-display);color:var(--color-text)}
+${N} .mn-logo-tag{font-family:var(--mn-label);font-size:9px;line-height:1;text-transform:uppercase;letter-spacing:.28em;color:var(--color-text-subtle);max-width:22ch;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 ${N} .mn-seal{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;color:var(--color-text)}
 ${N} .mn-seal::before,${N} .mn-seal::after{content:"";position:absolute;border-radius:50%;border:1px solid var(--mn-night-500)}
 ${N} .mn-seal::before{inset:0;opacity:.35}

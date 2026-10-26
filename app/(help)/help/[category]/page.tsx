@@ -1,14 +1,10 @@
 import type { Metadata, ResolvingMetadata } from 'next'
 import { helpPageMetadata } from '@/lib/help/metadata'
 import { SITE_NAME } from '@/lib/site'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAllCategories, helpHref } from '@/lib/help/content'
-import { IndexTemplate } from '@/components/templates'
-import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyHelpCategory } from '@/components/frequency/site/pages/help/frequency-help-pages'
 
 type Params = { params: Promise<{ category: string }> }
@@ -50,48 +46,15 @@ export default async function HelpCategoryPage({ params }: Params) {
       ])}
     />
   )
-
-  // The Frequency design (ADR-1737, build-time): the same topic, articles and routes in the kit's help
-  // idiom. DAWN never reaches this branch.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        {crumbsLd}
-        <FrequencyHelpCategory
-          slug={cat.slug}
-          title={cat.title}
-          description={cat.description}
-          articles={cat.articles.map((a) => ({ title: a.title, description: a.description, href: helpHref(cat.slug, a.slug) }))}
-        />
-      </>
-    )
-  }
-
-  // The shared hero band (LIVE-117, ADR-1261). A category page is a DYNAMIC route, so rung 1 reads
-  // `page_settings` on '/help' — the section key the map hands it — and the Help image an operator
-  // set on the section root stands behind every category.
-  const hero = await resolveIndexHero(`/help/${cat.slug}`)
-
   return (
-    <IndexTemplate
-      {...hero}
-      title={cat.title}
-      description={cat.description}
-      back={{ href: '/help', label: 'Help center' }}
-    >
+    <>
       {crumbsLd}
-      <ul className="divide-y divide-border rounded-card border border-border bg-surface-elevated">
-        {cat.articles.map((a) => (
-          <li key={a.slug}>
-            <Link href={helpHref(cat.slug, a.slug)} className="block px-5 py-4 hover:bg-surface">
-              <span className="block font-medium text-text">{a.title}</span>
-              {a.description && (
-                <span className="mt-0.5 block text-body-sm text-muted">{a.description}</span>
-              )}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </IndexTemplate>
+      <FrequencyHelpCategory
+        slug={cat.slug}
+        title={cat.title}
+        description={cat.description}
+        articles={cat.articles.map((a) => ({ title: a.title, description: a.description, href: helpHref(cat.slug, a.slug) }))}
+      />
+    </>
   )
 }

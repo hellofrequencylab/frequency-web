@@ -1,40 +1,20 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Sparkles } from 'lucide-react'
 import { getPublicJourney, listPublicJourneys } from '@/lib/journey-plans'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { readJourneyGuarantee } from '@/lib/journeys/guarantee'
-import { JourneyGuaranteeBlock } from '@/components/journey/guarantee-block'
-import { JourneyGuestBuy } from '@/components/journey/journey-guest-buy'
 import { getPillars, pillarsById } from '@/lib/pillars'
-import {
-  DiscoveryBlocks,
-  OutcomesBlock,
-  InstructorBlock,
-  JourneyFaq,
-  JourneyStatChips,
-  AtAGlanceCard,
-  journeyFacts,
-  primaryPillar,
-} from '@/components/journey/discovery-widgets'
+import { journeyFacts, primaryPillar } from '@/components/journey/discovery-widgets'
 import { getPlanAuthor } from '@/lib/journey-plans'
-import { JourneyDetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
-import { ShareButton } from '@/components/discover/share-button'
-import { buttonClasses } from '@/components/ui/button'
-import { accentColor, accentTint } from '@/lib/studio/accents'
-import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { journeySchema, breadcrumbSchema, journeyOfferSchema } from '@/lib/jsonld'
 import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
-import { journeyBuySignInPath } from '@/lib/journeys/sales-path'
 import { getProductReviews } from '@/lib/commerce/reviews'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
 import { readJourneyFaq } from '@/lib/journeys/faq'
 import { genericJourneyFaq } from '@/components/journey/discovery-widgets'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyJourney } from '@/components/frequency/site/pages/discover/journeys'
 
 // Public, indexable detail page for one library Journey. Mirrors the in-app Journey
@@ -111,8 +91,6 @@ export default async function DiscoverJourneyPage({
     }),
   ])
   const byId = pillarsById(pillars)
-  const accent = plan.accent
-  const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
 
   const facts = journeyFacts(items)
   const topPillar = primaryPillar(items, byId)
@@ -155,210 +133,34 @@ export default async function DiscoverJourneyPage({
       { name: plan.title, path: `/discover/journeys/${plan.slug}` },
     ]),
   ]
-
-  // THE DESIGN SWITCH (ADR-1737): the same reads, the same price rule and the same buy door
-  // (JourneyGuestBuy, hosted checkout), drawn in the site kit. Build-time constant, so ISR holds.
-  if (SITE_DESIGN === 'frequency') {
-    const authoredFaq = readJourneyFaq(plan.page_config)
-    return (
-      <>
-        <JsonLd data={schema} />
-        <FrequencyJourney
-          plan={plan}
-          facts={facts}
-          pillarName={topPillar?.name ?? null}
-          author={author}
-          sale={offer && priceLabel ? { productId: offer.productId, priceLabel, soldOut } : null}
-          image={hero.coverImage}
-          outcomes={readJourneyOutcomes(plan.page_config)}
-          guarantee={readJourneyGuarantee(plan.page_config)}
-          faqs={authoredFaq.length > 0 ? authoredFaq : genericJourneyFaq(plan)}
-          reviews={
-            reviews && offer ? (
-              <ProductReviews
-                productId={offer.productId}
-                productTitle={plan.title}
-                reviews={reviews}
-                myReview={null}
-                signedIn={false}
-                canReview={false}
-                canModerate={false}
-              />
-            ) : null
-          }
-        />
-      </>
-    )
-  }
-
-  // The marketing-register CTA. A FREE Journey reads exactly as it always did; a paid one names its
-  // price and sends the buyer to the storefront that can take it, which is public, crawlable and
-  // (since ADR-1399) opens the card fields in place.
-  const signUpCta =
-    offer && priceLabel ? (
-      <div className="space-y-2">
-        {soldOut ? (
-          <span
-            className={buttonClasses('secondary', 'md', 'w-full pointer-events-none opacity-70')}
-          >
-            Full
-          </span>
-        ) : (
-          // LIVE-396: buy without an account. The sign-in door is kept beside it for anyone who
-          // already has one, so their purchase lands on their profile instead of waiting on a claim.
-          <JourneyGuestBuy
-            productId={offer.productId}
-            priceLabel={priceLabel}
-            signInHref={journeyBuySignInPath(plan.slug)}
-          />
-        )}
-        {soldOut ? (
-          <p className="text-2xs leading-relaxed text-muted">
-            Every seat is taken for this run.
-          </p>
-        ) : null}
-      </div>
-    ) : (
-      <div className="space-y-2">
-        <Link href="/sign-in" className={buttonClasses('primary', 'md', 'w-full')}>
-          Create a free account
-        </Link>
-        <p className="text-2xs leading-relaxed text-muted">
-          Free to start. Run it with your Circle or solo.
-        </p>
-      </div>
-    )
-
+  const authoredFaq = readJourneyFaq(plan.page_config)
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12 sm:py-16">
+    <>
       <JsonLd data={schema} />
-
-      <JourneyDetailTemplate
-        {...hero}
-        back={{ href: '/discover/journeys', label: 'Journeys' }}
-        title={
-          <span className="inline-flex items-center gap-3 align-middle">
-            <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-card"
-              style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
-            >
-              <PlanIcon className="h-6 w-6" />
-            </span>
-            <span className="min-w-0 break-words">{plan.title}</span>
-          </span>
-        }
-        badges={
-          <span className="inline-flex flex-wrap items-center gap-1.5">
-            {plan.official && (
-              <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">
-                {/* Sparkles, matching the member page. The two surfaces used different icons for
-                    the same badge (Flame here, Sparkles there) until this template unified them. */}
-                <Sparkles className="h-3 w-3" /> Official
-              </span>
-            )}
-            {topPillar && (
-              <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
-                {topPillar.name}
-              </span>
-            )}
-          </span>
-        }
-        identity={{
-          promise: plan.summary ? (
-            <p className="leading-relaxed text-text">{plan.summary}</p>
-          ) : undefined,
-          shape: <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />,
-          guide: author ? (
-            <Link
-              href={`/people/${author.handle}`}
-              className="inline-flex items-center gap-1 text-meta text-muted hover:text-text"
-            >
-              By <span className="font-semibold text-text">{author.displayName}</span>
-            </Link>
-          ) : undefined,
-        }}
-        actions={
-          /* 🔴 SHARE ONLY. This row used to carry an unconditional "Create a free account" link,
-             which on a PRICED Journey sat directly above a rail reading "Get access · $444" and a
-             closing card saying the same: the header argued with the rest of the page about
-             whether the thing was free. The enrol control belongs in the side column, where it can
-             be the full-width box a buy control needs to be, and where exactly one of them lives. */
-          <ShareButton
-            path={`/discover/journeys/${plan.slug}`}
-            title={`${plan.title} · ${SITE_NAME}`}
-            text={plan.summary ?? `A guided Journey on ${SITE_NAME}.`}
-            label="Share"
-          />
-        }
-        interiorSide={
-          <AtAGlanceCard
-            plan={plan}
-            slug={plan.slug}
-            facts={facts}
-            enrolled={false}
-            canStart={facts.lessonCount > 0}
-            isAuthor={false}
-            progress={null}
-            cta={signUpCta}
-          />
-        }
-        interiorMain={
-          <div className="max-w-2xl space-y-8">
-            <DiscoveryBlocks
-              plan={plan}
-              items={items}
-              pillars={pillars}
-              facts={facts}
-              accent={accent}
-              afterStory={<OutcomesBlock outcomes={readJourneyOutcomes(plan.page_config)} />}
+      <FrequencyJourney
+        plan={plan}
+        facts={facts}
+        pillarName={topPillar?.name ?? null}
+        author={author}
+        sale={offer && priceLabel ? { productId: offer.productId, priceLabel, soldOut } : null}
+        image={hero.coverImage}
+        outcomes={readJourneyOutcomes(plan.page_config)}
+        guarantee={readJourneyGuarantee(plan.page_config)}
+        faqs={authoredFaq.length > 0 ? authoredFaq : genericJourneyFaq(plan)}
+        reviews={
+          reviews && offer ? (
+            <ProductReviews
+              productId={offer.productId}
+              productTitle={plan.title}
+              reviews={reviews}
+              myReview={null}
+              signedIn={false}
+              canReview={false}
+              canModerate={false}
             />
-            <InstructorBlock author={author} />
-            {reviews && offer && (
-              <ProductReviews
-                productId={offer.productId}
-                productTitle={plan.title}
-                reviews={reviews}
-                myReview={null}
-                signedIn={false}
-                canReview={false}
-                canModerate={false}
-              />
-            )}
-            <JourneyFaq plan={plan} />
-
-            {/* The refund promise (LIVE-441), last before the CTA: the same block the product
-                sales body renders, reaching the buyer who lands on the Journey itself. Empty
-                unless the host wrote one. */}
-            <JourneyGuaranteeBlock guarantee={readJourneyGuarantee(plan.page_config)} />
-
-            {/* The closing CTA, in the same two registers. The free copy is untouched; the paid copy
-                says what it costs and what enrolling buys, and never the word free. */}
-            <div className="rounded-card border border-border bg-surface p-5 text-center lift-1">
-              <p className="mb-1 text-body-lg font-bold text-text">
-                {offer ? `Join ${plan.title}` : 'Start this Journey'}
-              </p>
-              <p className="mx-auto mb-4 max-w-sm text-body-sm leading-relaxed text-muted">
-                {offer && priceLabel
-                  ? soldOut
-                    ? 'Every seat is taken for this run. Follow the guide to hear when the next one opens.'
-                    : `Enrolling opens every phase and keeps them open. Your Circle can run it with you, and finishing earns the completion Gems.`
-                  : 'Sign up free to start it. Its phases drip one per week, your Circle can run it with you, and finishing earns the completion Gems.'}
-              </p>
-              {offer && priceLabel ? (
-                soldOut ? null : (
-                  <Link href={journeyBuySignInPath(plan.slug)} className={buttonClasses('primary', 'md')}>
-                    Get access · {priceLabel}
-                  </Link>
-                )
-              ) : (
-                <Link href="/sign-in" className={buttonClasses('primary', 'md')}>
-                  Create a free account
-                </Link>
-              )}
-            </div>
-          </div>
+          ) : null
         }
       />
-    </div>
+    </>
   )
 }

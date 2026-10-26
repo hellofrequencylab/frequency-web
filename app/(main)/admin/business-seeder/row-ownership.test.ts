@@ -76,7 +76,7 @@ vi.mock('@/lib/importer/pipeline', () => ({
   editedProsePaths: () => [],
 }))
 vi.mock('@/lib/importer/reframe', () => ({
-  coachBusinessWriting: async () => ({questions:['Who are your visitors?'],about:'INVENTED'}), reframe: async () => null, applyReframe: () => ({ draft: row.draft, ledger: {} }) }))
+  coachBusinessWriting: async () => ({questions:['Who is this for?'],about:'INVENTED'}), reframe: async () => null, applyReframe: () => ({ draft: row.draft, ledger: {} }) }))
 vi.mock('@/lib/importer/vision', () => ({
   planSeedImages: async () => ({ order: [IMAGE], items: [{ url: IMAGE, category: 'space', alt: 'a', heroScore: 1 }], heroUrl: IMAGE }),
 }))
@@ -203,7 +203,7 @@ describe("business seeder — a platform admin may act on another operator's row
     expect(applyIntake).not.toHaveBeenCalled()
     expect(saveDraft).not.toHaveBeenCalled()
     expect(setInputs).not.toHaveBeenCalled()
-    expect(res).toMatchObject({questions:['Who are your visitors?'],revoiced:false,reapplied:false})
+    expect(res).toMatchObject({questions:['Who is this for?'],revoiced:false,reapplied:false})
   })
 })
 

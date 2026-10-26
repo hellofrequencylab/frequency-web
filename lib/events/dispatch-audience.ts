@@ -167,6 +167,8 @@ export interface DispatchViewerContext {
   hubIds: string[]
   nexusIds: string[]
   spaceIds: string[]
+  /** Journey plans the viewer is enrolled in: a Journey Dispatch reaches its enrollees (SCAN-1165). */
+  journeyPlanIds: string[]
   /** Member home + "how local" radius, when set (the geo-bleed reach). */
   home: { lat: number; lng: number; radiusM: number } | null
   /**
@@ -288,7 +290,8 @@ export interface DispatchAudienceTarget {
  *   • `circle`  reaches members of that circle;
  *   • `hub`     reaches members of a circle in that hub;
  *   • `nexus`   reaches members of a hub in that nexus;
- *   • `space`   reaches a Space's active members and its owner.
+ *   • `space`   reaches a Space's active members and its owner;
+ *   • `journey` reaches a Journey's enrollees.
  *
  * This is the AUDIENCE question only. An Event Dispatch has a second, narrower gate on top of it
  * (`viewerInEventDispatchArea` — readability plus guest / hosting-Circle / resonant-area reach), and
@@ -312,6 +315,7 @@ export function viewerInDispatchAudience(
     case 'hub': return viewer.hubIds.includes(id)
     case 'nexus': return viewer.nexusIds.includes(id)
     case 'space': return viewer.spaceIds.includes(id)
+    case 'journey': return viewer.journeyPlanIds.includes(id)
     default: return false
   }
 }

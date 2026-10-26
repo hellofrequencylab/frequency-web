@@ -80,7 +80,8 @@ describe('every public surface threads the viewer through', () => {
     const main = read('../../app/(main)/layout.tsx')
     const disc = read('../../app/discover/layout.tsx')
     expect(main).toMatch(/<SiteHeader[\s\S]*authMode="client"/)
-    expect(disc).toMatch(/<SiteHeader[\s\S]*authMode="client"/)
+    // /discover wears the public site shell, whose header resolves the viewer after paint.
+    expect(disc).toMatch(/<SiteShell\b/)
     expect(main).not.toMatch(/<MarketingHeader/)
   })
 

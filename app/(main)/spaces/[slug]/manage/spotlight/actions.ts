@@ -23,6 +23,7 @@ import { legacySpotlightWriteError, nextSpotlightPreferences } from '@/lib/space
 import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
 import { renderPathEnabled } from '@/lib/platform-flags'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
+import { takeAboutBody } from '@/lib/spaces/promote-about'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { siteSubdomainHost } from '@/lib/sites/host'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
@@ -55,7 +56,8 @@ async function attachHost(host: string, slug: string): Promise<boolean> {
   }
 }
 
-async function writeSpotlight(slug: string, requested: SpotlightChange): Promise<{ error?: string }> {
+async function writeSpotlight(slug: string, change0: SpotlightChange): Promise<{ error?: string }> {
+  let requested = change0
   const managed = await managedSpace(slug)
   if ('error' in managed) return managed
   const { space } = managed
@@ -67,6 +69,10 @@ async function writeSpotlight(slug: string, requested: SpotlightChange): Promise
   // THE SPOTLIGHT'S BRANCH POINT OF render_path_spotlight (ADR-1853). Switched on, a NATIVE node document is
   // stored as nodes; everything else keeps the legacy-write refusal, so a stale type-keyed save can never
   // overwrite stored nodes. Switched off, or on any read error, nothing changes.
+  // ONE ABOUT: an About body typed here is the Space's own intro, so it is saved to the Space (below) and
+  // lifted out of this page's copy, which would otherwise beat the shared intro everywhere else.
+  const about = requested.layout !== undefined ? takeAboutBody(requested.layout) : null
+  if (about?.body != null) requested = { ...requested, layout: about.layout }
   const native = requested.layout !== undefined && hasNativeNodeStorage(requested.layout) && (await renderPathEnabled('spotlight'))
   if (requested.layout !== undefined && !native) {
     const refused = legacySpotlightWriteError(requested.layout, space.preferences)
@@ -81,11 +87,15 @@ async function writeSpotlight(slug: string, requested: SpotlightChange): Promise
       update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
     }
   }
-  const { error } = await db.from('spaces').update({ preferences }).eq('id', space.id)
+  const { error } = await db
+    .from('spaces')
+    .update(about?.body != null && about.body !== (space.about ?? '').trim() ? { preferences, about: about.body } : { preferences })
+    .eq('id', space.id)
   if (error) return { error: 'Could not save your Spotlight. Try again.' }
 
   revalidatePath(`/spaces/${space.slug}/spotlight`)
   revalidatePath(`/spaces/${space.slug}/manage/spotlight`)
+  if (about?.body != null) revalidatePath(`/spaces/${space.slug}`)
   refreshSite(space.slug)
 
   // The paid link: `<slug>.frequencylocal.com/spotlight` needs the subdomain on hosting.

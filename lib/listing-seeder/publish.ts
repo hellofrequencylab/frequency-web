@@ -23,6 +23,8 @@
 // seeder console), not here.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { sourceOnlyListingCopy } from './coerce'
+import type { ProvenanceLedger } from '@/lib/importer/schema'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createListing as createMarketListing } from '@/lib/marketplace'
 import { createListing as createBaseListing } from '@/lib/listings'
@@ -139,7 +141,7 @@ export async function publishListingIntake(intakeId: string): Promise<PublishLis
 
   const { data: row, error: loadErr } = await admin
     .from('listing_intake')
-    .select('id, kind, inputs, draft, status')
+    .select('id, kind, inputs, draft, ledger, status')
     .eq('id', intakeId)
     .maybeSingle()
 
@@ -151,13 +153,14 @@ export async function publishListingIntake(intakeId: string): Promise<PublishLis
     inputs: ListingIntakeInputs | null
     draft: ListingDraft | Record<string, unknown> | null
     status: string
+    ledger?: ProvenanceLedger
   }
 
   if (intake.status !== 'review') {
     return { ok: false, error: `This intake is ${intake.status}, not ready to publish.` }
   }
 
-  const draft = intake.draft as ListingDraft | null
+  const draft = intake.draft ? sourceOnlyListingCopy(intake.draft, intake.ledger ?? {}, intake.inputs?.pastedText ?? '') as ListingDraft : null
   if (
     !draft ||
     (draft.kind !== 'classifieds' && draft.kind !== 'housing') ||
@@ -165,6 +168,8 @@ export async function publishListingIntake(intakeId: string): Promise<PublishLis
   ) {
     return { ok: false, error: 'This intake has no valid draft to publish.' }
   }
+
+  if (!draft.title?.trim()) return { ok: false, error: 'What title would you give this listing? Write one or copy the original title before publishing.' }
 
   try {
     const seedOwnerId = await resolveSeedOwnerProfileId()

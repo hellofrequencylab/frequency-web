@@ -71,7 +71,7 @@ const websiteSources=new Map([
 ])
 registerHooks({resolve(spec,context,next){if(context.parentURL?.endsWith('/lib/sites/editor/actions.ts')&&websiteSources.has(spec))return {url:`data:text/javascript,${encodeURIComponent(websiteSources.get(spec))}`,shortCircuit:true};return next(spec,context)}})
 const {proposeWebsiteText}=await import('../lib/sites/editor/actions.ts')
-reset();check((await proposeWebsiteText('synthetic.example','Shorten','Synthetic passage')).ok)
+reset();const websiteCoaching=await proposeWebsiteText('synthetic.example','Review clarity','Synthetic passage');check(websiteCoaching.ok&&Array.isArray(websiteCoaching.promptIds)&&!('text' in websiteCoaching))
 check(state.dispatches===1);check(state.usage.size===1)
 check([...state.usage.values()][0].p_feature==='website-editor');check([...state.usage.values()][0].p_profile==='synthetic-owner');check([...state.usage.values()][0].p_space==='synthetic-space')
 reset();state.dbDown=true;check(!(await proposeWebsiteText('synthetic.example','Shorten','Synthetic passage')).ok);check(state.dispatches===0);check(state.usage.size===0)

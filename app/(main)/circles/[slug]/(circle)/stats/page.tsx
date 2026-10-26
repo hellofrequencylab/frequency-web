@@ -1,26 +1,10 @@
-import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { Users, Lock } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { getCurrentSeason } from '@/lib/seasons'
-import {
-  loadCircleBoard,
-  loadOptOutPreference,
-  getCircleZapContributions,
-  summariseContributions,
-  type CircleBoardMember,
-} from '@/lib/circles/effort-board'
-import { MIN_BOARD_CONTRIBUTORS } from '@/lib/quest/effort'
-import { CircleMomentum } from '@/components/connections/circle-momentum'
-import { CollectiveGoal } from '@/components/quest/collective-goal'
-import { BoardControls } from '@/components/quest/board-controls'
-import { LeaderboardList, type LeaderboardListEntry, type LeaderboardTrack } from '@/components/quest/leaderboard-list'
-import { SectionHeader } from '@/components/ui/section-header'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Skeleton } from '@/components/ui/skeleton'
-import { SITE_DESIGN } from '@/lib/theme/design'
+import { loadOptOutPreference, getCircleZapContributions, summariseContributions } from '@/lib/circles/effort-board'
+import { type LeaderboardTrack } from '@/components/quest/leaderboard-list'
 import { FqCircleStatsPane } from '@/components/frequency/members/circle/stats-pane'
 
 // ── THE CIRCLE STATS TAB ────────────────────────────────────────────────────────────────────────
@@ -67,7 +51,6 @@ import { FqCircleStatsPane } from '@/components/frequency/members/circle/stats-p
 
 type Track = Extract<LeaderboardTrack, 'effort' | 'consistency'>
 
-const TRACKS: Track[] = ['effort', 'consistency']
 
 export const metadata = { title: 'Circle Stats' }
 
@@ -75,18 +58,6 @@ function parseTrack(v: string | undefined): Track {
   return v === 'consistency' ? 'consistency' : 'effort'
 }
 
-function toEntry(m: CircleBoardMember): LeaderboardListEntry {
-  return {
-    id: m.id,
-    displayName: m.displayName,
-    handle: m.handle,
-    avatarUrl: m.avatarUrl,
-    seasonRank: m.seasonRank,
-    seasonZaps: m.seasonZaps,
-    streak: m.streak,
-    effort: { band: m.effort.band, index: m.effort.index, daysThisWeek: m.effort.daysThisWeek },
-  }
-}
 
 export default async function CircleStatsPage({
   params,
@@ -123,188 +94,20 @@ export default async function CircleStatsPage({
     canSeeRows ? loadOptOutPreference(myProfileId) : Promise.resolve(false),
   ])
   const { total, contributors } = summariseContributions(contributions)
-
-  // THE DESIGN SWITCH (ADR-1737): under Frequency the same reads and gates, drawn in the member kit.
-  // Build-time constant, so the DAWN body below is untouched when it is off.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <FqCircleStatsPane
-        circleId={circle.id}
-        slug={circle.slug}
-        total={total}
-        contributors={contributors}
-        seasonName={season?.name ?? null}
-        canSeeRows={canSeeRows}
-        optedOut={optedOut}
-        track={track}
-        memberIds={memberIds}
-        viewerId={myProfileId}
-      />
-    )
-  }
-
   return (
-    <div className="space-y-8">
-      {/* 1. THE VITAL SIGNS. Aggregate only, never member names: this is the circle warming or
-             quieting. It self-fetches and renders nothing when there is no signal at all, so a
-             brand-new circle gets the board below without an empty grid of zeroes above it. */}
-      <Suspense fallback={null}>
-        <CircleMomentum circleId={circle.id} />
-      </Suspense>
-
-      {/* 2. HOW IT IS GOING FOR THE CIRCLE. This one belongs to the group, and it leads the board. */}
-      <section aria-labelledby="circle-effort-heading" className="space-y-4">
-        <SectionHeader id="circle-effort-heading" title="How the circle is doing" />
-        <CollectiveGoal
-          scopeLabel="this Circle"
-          total={total}
-          contributors={contributors}
-          seasonName={season?.name}
-        />
-
-        {!canSeeRows ? (
-          <EmptyState
-            variant="permission"
-            icon={Lock}
-            title="The board is for people in this Circle"
-            description="The total above is the whole Circle's. Join, log a practice, and your own week shows up here."
-          />
-        ) : (
-          <div className="space-y-4">
-            <BoardControls
-              track={track}
-              hidden={optedOut}
-              basePath={`/circles/${circle.slug}/stats`}
-              tracks={TRACKS}
-              showScope={false}
-            />
-            <Suspense key={track} fallback={<BoardSkeleton />}>
-              <BoardSection
-                circleId={circle.id}
-                memberIds={memberIds}
-                viewerId={myProfileId}
-                track={track}
-              />
-            </Suspense>
-          </div>
-        )}
-      </section>
-    </div>
+    <FqCircleStatsPane
+      circleId={circle.id}
+      slug={circle.slug}
+      total={total}
+      contributors={contributors}
+      seasonName={season?.name ?? null}
+      canSeeRows={canSeeRows}
+      optedOut={optedOut}
+      track={track}
+      memberIds={memberIds}
+      viewerId={myProfileId}
+    />
   )
 }
 
-// The board is awaited behind <Suspense> so the momentum tiles + the shared bar above paint
-// immediately and the list streams in (PAGE-FRAMEWORK §5).
-async function BoardSection({
-  circleId,
-  memberIds,
-  viewerId,
-  track,
-}: {
-  circleId: string
-  memberIds: string[]
-  viewerId: string | null
-  track: Track
-}) {
-  const board = await loadCircleBoard(circleId, memberIds, viewerId)
-  const me = board.me
-  // "Your week" is the reading that works at every Circle size and needs nobody else to exist, so
-  // it fills in exactly when the list does not already carry the viewer's row: below the gate, when
-  // they are hidden, and on the week they have not logged anything.
-  const showMyWeek = !!me && !board.rows.some((r) => r.id === me.id)
 
-  return (
-    <div className="space-y-6">
-      <section aria-labelledby="circle-board-heading">
-        <SectionHeader
-          id="circle-board-heading"
-          title="This week"
-          count={board.showsBoard ? board.rows.length : undefined}
-        />
-        {board.showsBoard ? (
-          <>
-            <p className="-mt-2 mb-3 text-body-sm text-muted">
-              {track === 'effort'
-                ? "Everyone here is measured against their own last few weeks, not against each other. The list is alphabetical, so there's no first place."
-                : "Everyone's current daily practice streak. Same alphabetical list: this is what each person has going, not a race."}
-            </p>
-            <LeaderboardList entries={board.rows.map(toEntry)} track={track} selfId={viewerId ?? ''} showPosition={false} />
-          </>
-        ) : (
-          <EmptyState
-            variant="first-use"
-            icon={Users}
-            title="No board yet"
-            description={
-              board.showing === 0
-                ? `Nobody has logged anything in the last 7 days. A board needs about ${MIN_BOARD_CONTRIBUTORS} people showing up in the same week before it says anything worth reading. The total above counts everyone either way.`
-                : `${board.showing === 1 ? 'One person has' : `${board.showing} people have`} shown up this week. A board needs about ${MIN_BOARD_CONTRIBUTORS} in the same week before it says anything worth reading, so there's no list yet. The total above counts everyone either way.`
-            }
-          />
-        )}
-      </section>
-
-      {/* The whole answer for a circle of two, and what a member in their first week gets while
-          their usual week is still being built. */}
-      {me && showMyWeek && (
-        <section aria-labelledby="my-week-heading">
-          <SectionHeader id="my-week-heading" title="Your week" />
-          {me.effort.recent === 0 ? (
-            <p className="text-body-sm text-muted">
-              You haven&apos;t logged anything in the last 7 days. Nothing is lost. Log one practice and your
-              week starts counting again.
-            </p>
-          ) : (
-            <LeaderboardList entries={[toEntry(me)]} track={track} selfId={me.id} showPosition={false} />
-          )}
-          {me.optedOut && (
-            <p className="mt-3 text-meta text-muted">
-              You&apos;re hidden from this Circle&apos;s list right now. You still count toward the shared total.
-            </p>
-          )}
-        </section>
-      )}
-
-      {/* The formula, in plain words. A score nobody can explain is a score nobody trusts, and this
-          one is explainable in three sentences, so it gets three sentences. */}
-      {track === 'effort' && (
-        <section aria-labelledby="how-it-works-heading" className="rounded-card border border-border bg-surface/50 px-5 py-4">
-          <h2 id="how-it-works-heading" className="text-body-sm font-bold text-text">
-            How the number works
-          </h2>
-          <ul className="mt-2 space-y-1.5 text-body-sm text-muted">
-            <li>
-              It&apos;s the Zaps you earned in the last 7 days, as a percent of your own usual week. Your usual
-              week is the middle of your last four weeks that had any activity.
-            </li>
-            <li>
-              You need two of those four weeks before there&apos;s a usual week to compare with. Until then your
-              row shows the days you showed up, and the chip on it says so.
-            </li>
-            <li>
-              A gap never costs you anything. Come back after a quiet month and your row reads &ldquo;Back this
-              week&rdquo; instead of a number. Take a week off and you&apos;re simply not on the list.
-            </li>
-          </ul>
-        </section>
-      )}
-    </div>
-  )
-}
-
-function BoardSkeleton() {
-  return (
-    <div className="space-y-1.5">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex min-h-[3.25rem] items-center gap-3 rounded-card bg-surface-elevated/40 px-3 py-2">
-          <Skeleton className="h-9 w-9 shrink-0 rounded-pill" />
-          <div className="flex-1 space-y-1.5">
-            <Skeleton className="h-3.5 w-32" />
-            <Skeleton className="h-3 w-24" />
-          </div>
-          <Skeleton className="h-4 w-16 shrink-0" />
-        </div>
-      ))}
-    </div>
-  )
-}

@@ -8,7 +8,7 @@ import { draftListingCopy, parseCopy } from './listing-copy'
 import { composeCircleSection } from './circle-compose'
 import { planCircleEdit } from './circle-edit'
 import { parseWritingQuestions, WRITING_QUESTIONS } from './writing-questions'
-beforeEach(() => { state.on = true; state.over = false; state.calls.mockClear(); state.response = '{"questions":["What will someone receive?"]}' })
+beforeEach(() => { state.on = true; state.over = false; state.calls.mockClear(); state.response = '{"questionIds":["offering"]}' })
 describe('human-authored listing and Circle coaching', () => {
   it('refuses invented title/description and extra model fields', () => {
     expect(parseCopy('{"title":"Invented","description":"A promise"}')).toBeNull()

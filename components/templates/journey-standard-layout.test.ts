@@ -18,10 +18,10 @@ const templateCode = template.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/
 /** Every surface that must compose the standard. Both are real pages; there are no Journey detail
  *  loading skeletons today, so unlike the event set this list has no `loading.tsx` entries. Add one
  *  here the day a skeleton appears — a skeleton IS a claim about the destination's shape. */
-const JOURNEY_PAGES = [
-  'app/(main)/journeys/[slug]/page.tsx',
-  'app/discover/journeys/[slug]/page.tsx',
-] as const
+const JOURNEY_PAGES: readonly string[] = [
+  // Empty on purpose (ADR-1880): both Journey pages draw the Frequency journey body now, and the
+  // template survives only for the surfaces that still wrap it. Add a page here the day one wraps it.
+]
 
 describe('the standard exists and is a composition, not a fork', () => {
   it('is a real file with a real export (non-vacuity control)', () => {
