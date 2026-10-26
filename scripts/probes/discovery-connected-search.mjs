@@ -5,10 +5,10 @@ import vm from 'node:vm'
 import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url), ts = require('typescript')
 const load = (file, dependencies, globals = {}) => {
-  const module = { exports: {} }
+  const loaded = { exports: {} }
   const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
-  new vm.Script(`(function(require,module,exports){${code}\n})`, { filename: file }).runInNewContext({ Buffer, URL, Date, process: { env: { DISCOVERY_OAUTH_ENCRYPTION_KEY: Buffer.alloc(32, 13).toString('base64') } }, ...globals })(key => key === 'server-only' ? {} : dependencies(key), module, module.exports)
-  return module.exports
+  new vm.Script(`(function(require,module,exports){${code}\n})`, { filename: file }).runInNewContext({ Buffer, URL, Date, process: { env: { DISCOVERY_OAUTH_ENCRYPTION_KEY: Buffer.alloc(32, 13).toString('base64') } }, ...globals })(key => key === 'server-only' ? {} : dependencies(key), loaded, loaded.exports)
+  return loaded.exports
 }
 const crypto = load('lib/ai/discovery-oauth-state.ts', key => require(key))
 const binding = { spaceId: 'space', provider: 'google_search_console', connectionId: '00000000-0000-4000-8000-000000000001', revision: 1, actorProfileId: 'owner', consentId: 'grant', propertyUrl: 'sc-domain:example.com', propertyScope: 'page_urls' }
