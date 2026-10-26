@@ -143,7 +143,7 @@ export function readWebsiteEditor(preferences: unknown): WebsiteEditorState | nu
 
 /** The editor's stored theme id for each site theme (ADR-1726); the same table as EDITOR_THEME_OF in
  *  lib/sites/site-render-style.ts, restated here because that module pulls the render styles into every reader of this file. */
-const WORN_EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', temple: 'Temple' }
+const WORN_EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', temple: 'Temple', midnight: 'Midnight' }
 
 export function publishedWebsitePage(preferences: unknown, slug: string): WebsitePage | null {
   return publishedWebsiteSnapshot(preferences)?.pages.find((p) => p.slug === slug) ?? null
@@ -153,7 +153,7 @@ export function publishedWebsitePage(preferences: unknown, slug: string): Websit
  *  can be edited and published, but the public site keeps its house look (owner ask 2026-10-11, after a
  *  DAWN publish swapped danieltyack.com for an unfinished render: "can we not break the site when
  *  somebody edits?"). Add a theme only once its render matches the look it replaces. */
-export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteTheme>(['Menswork', 'Wildheart', 'Network', 'Temple'])
+export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteTheme>(['Menswork', 'Wildheart', 'Network', 'Temple', 'Midnight'])
 
 /** The published website the PUBLIC site draws, or null to keep the house look: nothing published, a
  *  published theme not yet in WEBSITE_THEMES_LIVE, or a snapshot written in a theme other than the one the

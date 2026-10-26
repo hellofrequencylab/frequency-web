@@ -38,13 +38,14 @@ describe('the site style', () => {
     expect(prefs.siteStyle).toEqual({ theme: 'frequency', synced: true, spaceFonts: 'classic' })
   })
 
-  it('names the five themes Default, Bold, Wildheart, Network and Temple, each with its own default fonts', () => {
+  it('names the six themes Default, Bold, Wildheart, Network, Temple and Midnight, each with its own default fonts', () => {
     expect(SITE_THEMES.map((t) => [t.id, t.label, t.defaultFonts])).toEqual([
       ['frequency', 'Default', 'frequency'],
       ['bold', 'Bold', 'menswork'],
       ['wildheart', 'Wildheart', 'classic'],
       ['network', 'Network', 'modern'],
       ['temple', 'Temple', 'classic'],
+      ['midnight', 'Midnight', 'classic'],
     ])
     // A stock theme: no stored value from before it existed reads as Wildheart.
     expect(readSiteStyle({ theme: 'classic' }).theme).toBe('frequency')
@@ -112,7 +113,7 @@ describe('the site style', () => {
     expect(readSiteStyle(withSiteStyle(prefs, { theme: 'bold', fonts: 'menswork' })).pages).toEqual({ about: 'bold' })
     // A page whose theme equals the site's reads as the site style, unchanged.
     expect(readSitePageStyle(withSiteStyle(prefs, { theme: 'bold' }), 'about').fonts).toBe(readSiteStyle(withSiteStyle(prefs, { theme: 'bold' })).fonts)
-    expect(readSiteStyle({ siteStyle: { theme: 'frequency', pages: { 'Bad Slug': 'bold', about: 'midnight', ok: 'bold' } } }).pages).toEqual({ ok: 'bold' })
+    expect(readSiteStyle({ siteStyle: { theme: 'frequency', pages: { 'Bad Slug': 'bold', about: 'sunrise', ok: 'bold' } } }).pages).toEqual({ ok: 'bold' })
     expect(readSiteStyle({ siteStyle: { theme: 'frequency', pages: 'bold' } }).pages).toEqual({})
     // An invalid slug writes nothing.
     expect(readSiteStyle(withSitePageTheme({}, 'Not A Slug', 'bold')).pages).toEqual({})

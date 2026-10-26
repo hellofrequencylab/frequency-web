@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1161",
+  "title": "Event share, placement, host transfer and co-host notices ride the notification router",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/events/share-actions.ts",
+    "ref": "Meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md), Phase 4 follow-up: remaining direct bell inserts"
+  },
+  "detail": "Six direct bell inserts across the event share, placement, host-transfer and co-host actions ignored the member's notification settings. They now route one registry row, event.notice (events, in-app), through lib/notifications/event-notice.ts, so each recipient's own inapp_events switch, suppression and the outbox retry apply. Bell rows are unchanged (same type, event reference, body). The Events in-app switch in settings is now real: WIRED_PREFERENCE_CHANNELS lists events as email, push and in-app, and the pinned hidden-set test in lib/notifications/wired.test.ts moves from eight hidden to seven with the owner's go-ahead. Friend requests, billing receipts and similar always-on notices are left as direct inserts on purpose: they have no category.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));const t=f.readFileSync(\"app/(main)/events/share-actions.ts\",\"utf8\");const p=f.readFileSync(\"app/(main)/events/placement-actions.ts\",\"utf8\");process.exit(/notifyEventPeople/.test(t)&&/notifyEventPeople/.test(p)&&!/from\\(.notifications.\\)/.test(t+p)?0:1)'",
+    "note": "Exits 0 once the share and placement notices go through the router and no longer insert bell rows themselves."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}

@@ -10,6 +10,8 @@ import { FREQUENCY_PAGE_CSS } from './frequency-page-css'
 import { WILDHEART_CSS } from './wildheart-css'
 import { NETWORK_CSS } from './network-css'
 import { TEMPLE_CSS } from './temple-css'
+import { MIDNIGHT_CSS } from './midnight-css'
+import { MidnightLogo } from './midnight-logo'
 import type { NetworkSchemeId } from '@/lib/theme/network'
 import { WildheartSubBar } from './wildheart-now-line'
 import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
@@ -67,7 +69,7 @@ export type SiteLink = HouseHeaderLink
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart' | 'network' | 'temple'
+  theme: 'menswork' | 'wildheart' | 'network' | 'temple' | 'midnight'
   season: MensworkSeason
   /** Network only: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
@@ -78,6 +80,7 @@ function skinCss(skin: SiteSkin | null): string {
   if (skin.theme === 'wildheart') return HOUSE_CSS + FREQUENCY_PAGE_CSS + WILDHEART_CSS
   if (skin.theme === 'network') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NETWORK_CSS
   if (skin.theme === 'temple') return HOUSE_CSS + FREQUENCY_PAGE_CSS + TEMPLE_CSS
+  if (skin.theme === 'midnight') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MIDNIGHT_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
 
@@ -155,6 +158,8 @@ export function SiteChrome({
   const net = skin?.theme === 'network'
   // Temple draws the Space's logo alone as a one-colour seal (the design's arch lockup), in the header and the footer.
   const temple = skin?.theme === 'temple'
+  // Midnight draws the ringed moon seal, the name and the Space's tagline as one lockup, in the header and the footer.
+  const midnight = skin?.theme === 'midnight'
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
   // that reserves its height, so nothing shifts when the date line folds away on scroll.
   const header = (
@@ -171,7 +176,7 @@ export function SiteChrome({
       fadeOnPause={fadeOnPause}
       member={member}
       tools={tools}
-      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : null}
+      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : null}
     />
   )
   const year = new Date().getFullYear()
@@ -217,6 +222,8 @@ export function SiteChrome({
               ) : temple && logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- operator logo on an arbitrary host
                 <img src={logoUrl} alt={brandName} className="tp-footer-seal" />
+              ) : midnight ? (
+                <MidnightLogo name={brandName} tagline={tagline} />
               ) : (
                 brandName
               )}

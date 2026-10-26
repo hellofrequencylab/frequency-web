@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { getPublicEventBySlug, getPublicEvents, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment, EVENT_CATEGORIES } from '@/app/discover/events/_data'
 import { getPublicEventVenue } from '@/lib/events/public-venue'
+import { getPublicEventSurface } from '@/lib/events/public-surface'
+import { AccentScope } from '@/components/spaces/accent-scope'
 import { publicPageWhere } from '@/lib/events/visible-location'
 import { SignInCta } from '@/components/discover/cards'
 import { loadPublicJoinDoor } from '@/lib/events/public-join-door'
@@ -88,10 +90,11 @@ export default async function PublicEventPage({
   // The join door (lib/events/public-join-door.ts): guest RSVP or guest ticket, decided with the
   // member page's own signed-out rules from cookie-free reads. Null when it could not be read, which
   // keeps the plain sign-up card below.
-  const [enrichment, venue, joined] = await Promise.all([
+  const [enrichment, venue, joined, surface] = await Promise.all([
     getEventEnrichment(slug),
     getPublicEventVenue(slug),
     loadPublicJoinDoor(event.id),
+    getPublicEventSurface(slug),
   ])
   const hasEnded = hasEventEnded({ ...event, time_zone: enrichment?.time_zone })
   // The where-line (ADR-1744, owner-ruled 2026-10-14): the venue and street plus the city when the
@@ -161,7 +164,7 @@ export default async function PublicEventPage({
   const mode = enrichment?.attendance_mode ?? 'in_person'
   const category = EVENT_CATEGORIES.find((c) => c.values.includes(enrichment?.category ?? 'gathering'))
   const kind = category ? category.nounSingular.charAt(0).toUpperCase() + category.nounSingular.slice(1) : 'Gathering'
-  return (
+  const page = (
     <FqPublicEventBody
       structuredData={structuredData}
       heroUrl={enrichment?.cover_url ?? null}
@@ -194,4 +197,5 @@ export default async function PublicEventPage({
       host={host}
     />
   )
+  return surface ? <AccentScope vars={null} surface={surface}>{page}</AccentScope> : page
 }

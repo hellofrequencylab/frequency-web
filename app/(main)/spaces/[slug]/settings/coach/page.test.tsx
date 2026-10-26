@@ -31,10 +31,11 @@ describe('coach settings access', () => {
     expect(m.space).toHaveBeenCalledExactlyOnceWith('makers', 'editor-A')
     expect(m.form).toHaveBeenCalledWith(expect.objectContaining({ spaceId: 'space-A', readOnly: false, initial: expect.objectContaining({ goals: 'Private return visits' }) }))
   })
-  it('renders staff preview with a read-only form', async () => {
+  it('keeps the private coach profile away from staff preview', async () => {
     m.access.mockResolvedValue({ canManage: false, staffViewing: true })
     expect(await render()).toContain('Read-only staff preview')
-    expect(m.form.mock.calls[0][0].readOnly).toBe(true)
+    expect(m.coach).not.toHaveBeenCalled()
+    expect(m.form).not.toHaveBeenCalled()
     expect(m.discovery).not.toHaveBeenCalled()
   })
   it('does not render preferences to an unrelated visitor', async () => {
