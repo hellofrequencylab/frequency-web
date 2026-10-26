@@ -46,7 +46,7 @@
     "prebuild": "expo prebuild --platform android --clean",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --max-warnings=0 .",
-    "test": "node --experimental-strip-types --no-warnings --test src/**/*.test.ts && node --test scripts/*.test.cjs",
+    "test": "node --experimental-strip-types --no-warnings --test src/**/*.test.ts && node --test scripts/xcode-uuid.test.cjs && node --test scripts/expo-dependency-consumers.test.cjs",
     "gen:icons": "node scripts/gen-icons.mjs",
     "doctor": "expo-doctor",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
