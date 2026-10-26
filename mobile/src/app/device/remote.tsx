@@ -26,7 +26,7 @@ function Pad({ k, icon, label, rotate, run, primary }: { k: Key; icon: IconName;
         style={[
           styles.pad,
           primary
-            ? { backgroundImage: `linear-gradient(120deg, ${c.pa[0]} 0%, ${c.pa[1]} 60%, ${c.pa[2]} 100%)`, boxShadow: `0px 12px 28px -14px ${c.paGlow}, inset 0px 0px 0px 1px rgba(255,255,255,0.5)` }
+            ? { backgroundImage: `linear-gradient(120deg, ${c.pa[0]} 0%, ${c.pa[1]} 60%, ${c.pa[2]} 100%)`, boxShadow: `0px 12px 28px -14px ${c.paGlow}, inset 0px 0px 0px 1px ${c.paRim}` }
             : { backgroundColor: c.raised, boxShadow: `${shadow.card}, inset 0px 0px 0px 1px ${c.border}` },
         ]}
       >

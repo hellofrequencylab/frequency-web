@@ -63,8 +63,8 @@ export default function Led() {
           <Svg width={SIZE} height={SIZE}>
             <Defs>
               <RadialGradient id="white" cx="50%" cy="50%" r="50%">
-                <Stop offset="0" stopColor="#FFFFFF" stopOpacity={1} />
-                <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+                <Stop offset="0" stopColor={c.colorWheelNeutral} stopOpacity={1} />
+                <Stop offset="1" stopColor={c.colorWheelNeutral} stopOpacity={0} />
               </RadialGradient>
             </Defs>
             <G>
