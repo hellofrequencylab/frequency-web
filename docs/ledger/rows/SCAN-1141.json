@@ -1,7 +1,7 @@
 {
   "id": "SCAN-1141",
   "title": "Organization structured data carries contact, legal name and alternate names",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "S",
@@ -9,11 +9,11 @@
     "file": "lib/jsonld.ts",
     "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
   },
-  "detail": "Missing contactPoint, legalName (ORG_LEGAL_NAME exists), foundingDate, knowsAbout; WebSite lacks alternateName. Also title lengths over 60 for coaches, networks and /vision, and the DAWN-era manifest.json.",
+  "detail": "Missing contactPoint, legalName (ORG_LEGAL_NAME exists), foundingDate, knowsAbout; WebSite lacks alternateName. Also title lengths over 60 for coaches, networks and /vision, and the DAWN-era manifest.json.\n\nClosed by #3926 on 2026-10-26.\n\nScope landed in #3926: contactPoint, legalName, alternateName on the Organization node; coaches, studios and networks door titles shortened; manifest description updated. Not done: foundingDate (the opening day is in the future), knowsAbout, the /vision title.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs org-jsonld",
-    "note": "Exits 0 only when the repair has landed; fails on main today."
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs org-jsonld"
   },
+  "closed": "2026-10-26",
   "wave": "W7"
 }
