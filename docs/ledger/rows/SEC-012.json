@@ -1,0 +1,20 @@
+{
+  "id": "SEC-012",
+  "title": "Scheduled live-catalog check and IDOR sample of unguarded admin-client actions",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "scripts/maintenance/live-catalog.mjs",
+    "ref": "Meta scan 2026-10-26, Stream E (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "Adds scripts/maintenance/live-catalog.mjs and a token-gated step in the weekly maintenance sweep that reads production pg_catalog: RLS off on a public table (PostGIS spatial_ref_sys accepted) and backup-shaped tables that still grant to anon or authenticated. This is the shape SEC-002 slipped past every migration-text gate. IDOR sample, 2026-10-26: of 345 use-server files, 12 import the admin client without an obvious authz helper by name; all 12 read by hand, plus 6 that only authenticate by name. Each is gated by a staff gate, a capability check, an ownership check or a self-scoped query. No unguarded action found. The 68 actions without parseInput were not part of this sample.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "evidence": "Probe passes on this branch; unit tests added alongside (lib/net/pinned-fetch.test.ts, scripts/maintenance/live-catalog.test.ts).",
+    "cmd": "node scripts/probes/sec-live-catalog.mjs"
+  }
+}
