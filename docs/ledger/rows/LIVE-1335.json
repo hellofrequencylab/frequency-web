@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1335",
+  "title": "Connect permissioned discovery evidence to human-authored Space coaching",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "lib/ai/discovery-observation-service.ts",
+    "ref": "Owner deep SEO/GEO analytics coaching request, 2026-10-25"
+  },
+  "detail": "Local foundation validates purpose-specific current consent, exact Space scope, owned canonical pages, provenance, periods, freshness and sample/counting-unit limits. Bounded Search Analytics rows, explicitly owner-mapped Bing citation snapshots and existing Space aggregate adapters feed deterministic coaching questions and measurement tasks; no content generation or publication. Server-only dependency-injected orchestration gates authorization and consent before reading. No default live reader, real provider connection, saved discovery consent resolver, owner UI or scheduled refresh is wired. Existing legacy analytics cannot be relabeled consented personal browsing. Foundation source/mocked tests pass; rollout remains open until real authorization/consent/property ownership and provider/authenticated acceptance are proven.\n\n2026-10-26 bounded owner first-party integration is tracked by LIVE-1350: explicit durable purpose consent and on-demand profile bucket/CTA review with fresh pre/post authorization and revocation gates. Google/Bing connections, actual property authorization, manual import owner controls and scheduled refresh remain unwired. Keep this row OPEN; first-party UI and pure adapters do not establish a live SEO connector.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-25",
+    "evidence": "91 focused tests across four suites passed; whole-tree TypeScript passed. No live provider/database calls or production deployment. Close only after current purpose-specific consent and fresh owner authorization guard actual scoped connectors, freshness/refusal UI and authenticated cross-Space acceptance; do not count imports as live feeds or citations as conversions."
+  },
+  "wave": "W7"
+}
