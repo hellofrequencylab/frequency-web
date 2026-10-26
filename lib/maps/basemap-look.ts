@@ -1,6 +1,6 @@
 // THE BASEMAP'S LOOK UNDER A DESIGN SYSTEM (ADR-901, ADR-1737).
 //
-// Pins already wear the design (`--design-map-*`, lib/maps/css-color.ts). This is the ground under
+// Pins already wear the design (`--design-map-*`, lib/maps/pin-kinds.ts). This is the ground under
 // them: land, water, roads and labels. Under Frequency the map reads the kit's own `--fq-*` tokens AT
 // ITS CONTAINER, not on <html>, because the palette changes below the root: the website kit is Stage
 // (always dark), a `[data-time="night"]` section flips to UV, and the members kit dims to Thermal at
