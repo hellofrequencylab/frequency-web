@@ -82,8 +82,11 @@ export function Dialog({
    *    never moves. It sits one tier LOWER (`z-[70]`) than the other aligns, so a Dialog opened from
    *    inside it (the Plan drawer, the entry form, a shortcuts sheet) always paints on top whatever
    *    order the two portals reached <body> in. This is the dvh takeover of lib/fullscreen.ts, not the
-   *    Fullscreen API: the owner ruled (2026-06-22) that Element.requestFullscreen is never called. */
-  align?: 'top' | 'center' | 'sheet' | 'bottom' | 'overlay'
+   *    Fullscreen API: the owner ruled (2026-06-22) that Element.requestFullscreen is never called.
+   *  - `drawer`: a full-height side drawer pinned to the right edge (the operator detail drawers). The
+   *    panel supplies its own width (`max-w-md`); the primitive makes it `h-full`. Same ESC, Tab trap,
+   *    focus return and backdrop close as every other Dialog. */
+  align?: 'top' | 'center' | 'sheet' | 'bottom' | 'overlay' | 'drawer'
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   // A stable identity for this instance, used to find it in the dialog stack (topmost check).
@@ -230,14 +233,16 @@ export function Dialog({
         //
         // The smaller aligns keep it: a centred card covers little, so the filter is cheap there
         // and the separation is worth more.
-        align === 'overlay' ? 'z-[70] overflow-hidden' : 'z-[80] overflow-y-auto backdrop-blur-sm',
+        align === 'overlay' ? 'z-[70] overflow-hidden' : align === 'drawer' ? 'z-[80] justify-end overflow-hidden' : 'z-[80] overflow-y-auto backdrop-blur-sm',
         // `sheet` goes edge-to-edge on mobile (panel fills the viewport), then a centered card at sm+.
         //
         // SAFE AREAS BELONG HERE, not in each caller. This primitive padded by a flat 16px (and
         // `sheet` by nothing at all), so on a notched phone a sheet's controls sat on the home
         // indicator and a centred dialog's did too -- which is why report-dialog, invite-launcher
         // and capture-launcher each re-solved it by hand and each landed somewhere different.
-        align === 'overlay'
+        align === 'drawer'
+          ? 'items-stretch p-0'
+          : align === 'overlay'
           ? // The margin IS the design: a phone gets a hairline 8px so the panel keeps its screen, a
             // desk gets 2.5vmin (~2.7% of a 1080p height, ~2.5% of its width) so the dimmed page reads
             // as a frame. Every side is a max() against its own safe-area inset, so a notch or a home
@@ -273,7 +278,9 @@ export function Dialog({
         tabIndex={-1}
         className={cn(
           'w-full outline-none motion-safe:animate-[slideUp_0.3s_ease-out]',
-          align === 'overlay'
+          align === 'drawer'
+            ? 'h-full min-h-0'
+            : align === 'overlay'
             ? 'min-h-0'
             : align === 'sheet' || align === 'bottom'
             ? 'sm:my-auto'
