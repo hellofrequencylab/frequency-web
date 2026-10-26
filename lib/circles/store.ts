@@ -14,6 +14,8 @@ import { acceptedCrossListingSubjects } from '@/lib/collective/cross-listing-sto
 // so the ADR-246 untyped casts this module carried are retired.
 
 import { cache } from 'react'
+import { canReadCircleParentSpace } from './parent-access'
+import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { holdsSharedMembership } from '@/lib/collective/shared-membership'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -348,13 +350,30 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       .maybeSingle()
     if (!rawCircle) return null
 
-    // THE TWO-AXIS GATE (see the header). Reached only for a CLOSED circle.
+    // Resolve the parent tenancy wall before the Circle-specific two-axis gate.
     const raw = rawCircle as unknown as {
       id: string
       access?: unknown
       unlisted?: unknown
       space_id?: string | null
       host_id?: string | null
+    }
+    // Service-role reads bypass both parent-Space RESTRICTIVE policies. Apply that wall
+    // even to an open Circle, before reading its roster or returning its identity.
+    // Only a genuinely unpartitioned legacy Circle skips the parent lookup. Missing or
+    // failed metadata for a partitioned Circle must never masquerade as legacy access.
+    if (raw.space_id) {
+      const { data: parent, error } = await admin.from('spaces')
+        .select('id, visibility, status, owner_profile_id, entitlements')
+        .eq('id', raw.space_id).maybeSingle()
+      if (error || !parent) return null
+      if (!canReadCircleParentSpace(parent)) {
+        const caps = await getSpaceCapabilities(
+          { id: parent.id, ownerProfileId: parent.owner_profile_id, entitlements: parent.entitlements },
+          await getMyProfileId(),
+        )
+        if (!canReadCircleParentSpace(parent, caps)) return null
+      }
     }
     const access = asCircleAccess(raw.access)
     let canEnter = true
