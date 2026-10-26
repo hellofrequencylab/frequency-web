@@ -12,7 +12,8 @@ describe('site kits', () => {
       const kit = await loadKit(s.id)
       expect(kit, s.id).not.toBeNull()
       expect([kit!.niche, kit!.theme, kit!.label]).toEqual([s.niche, s.theme, s.label])
-      expect(WEBSITE_THEMES_LIVE.has(kit!.theme), `${s.id} must wear a theme the public site serves`).toBe(true)
+      // Default wears DAWN, which the public site does not serve a stored document for (its house look is the Default look).
+      if (kit!.theme !== 'DAWN') expect(WEBSITE_THEMES_LIVE.has(kit!.theme), `${s.id} must wear a theme the public site serves`).toBe(true)
     }
   })
   it('rejects an unknown or inherited kit id', async () => {
@@ -78,10 +79,10 @@ describe('kit block defaults', () => {
   })
 })
 
-describe('Midnight niche variants', () => {
-  it('there is one for each niche door, all wearing Midnight', async () => {
-    const mid = KIT_INDEX.filter((k) => k.theme === 'Midnight')
-    expect(mid.map((k) => k.niche).sort()).toEqual(['coaches', 'hosts', 'networks', 'nonprofits', 'studios', 'venues'])
+describe('niche variants', () => {
+  it.each(['Midnight', 'DAWN'] as const)('there is one %s kit for each niche door', async (theme) => {
+    const kits = KIT_INDEX.filter((k) => k.theme === theme)
+    expect(kits.map((k) => k.niche).sort()).toEqual(['coaches', 'hosts', 'networks', 'nonprofits', 'studios', 'venues'])
   })
   it('every kit block is a registered block, and the applied site is valid with registry defaults', async () => {
     const { config } = await import('@/lib/page-editor/config')
@@ -93,13 +94,13 @@ describe('Midnight niche variants', () => {
     }
   })
   it('kit copy holds no prices, photos or real names', async () => {
-    for (const s of KIT_INDEX.filter((k) => k.theme === 'Midnight')) {
+    for (const s of KIT_INDEX.filter((k) => k.theme === 'Midnight' || k.theme === 'DAWN')) {
       const json = JSON.stringify(await loadKit(s.id))
       expect(json, s.id).not.toMatch(/\$\d|\.jpg|\.png|Nocturne|—/)
     }
   })
   it('every link points at a page of the same kit or a platform page', async () => {
-    for (const s of KIT_INDEX.filter((k) => k.theme === 'Midnight')) {
+    for (const s of KIT_INDEX.filter((k) => k.theme === 'Midnight' || k.theme === 'DAWN')) {
       const kit = (await loadKit(s.id))!
       const own = new Set([...kit.pages.map((p) => p.slug), 'book', 'contact'])
       const links = [...JSON.stringify(kit).matchAll(/~\/([a-z-]+)/g)].map((m) => m[1])

@@ -9,6 +9,12 @@ const LOADERS: Record<string, () => Promise<SiteKit>> = {
   'midnight-venues': () => import('./midnight-variants').then((m) => m.midnightKit('venues')),
   'midnight-nonprofits': () => import('./midnight-variants').then((m) => m.midnightKit('nonprofits')),
   'midnight-networks': () => import('./midnight-variants').then((m) => m.midnightKit('networks')),
+  'default-coaches': () => import('./default-variants').then((m) => m.defaultKit('coaches')),
+  'default-studios': () => import('./default-variants').then((m) => m.defaultKit('studios')),
+  'default-hosts': () => import('./default-variants').then((m) => m.defaultKit('hosts')),
+  'default-venues': () => import('./default-variants').then((m) => m.defaultKit('venues')),
+  'default-nonprofits': () => import('./default-variants').then((m) => m.defaultKit('nonprofits')),
+  'default-networks': () => import('./default-variants').then((m) => m.defaultKit('networks')),
   'wildheart-coaches': () => import('./wildheart-coaches').then((m) => m.default),
 }
 
@@ -22,6 +28,12 @@ export const KIT_INDEX: readonly KitSummary[] = [
   { id: 'midnight-venues', niche: 'venues', theme: 'Midnight', label: 'Venues', description: 'Show the room, what is on and how to book it.' },
   { id: 'midnight-nonprofits', niche: 'nonprofits', theme: 'Midnight', label: 'Nonprofits', description: 'Explain the work plainly and make it easy to say yes: come along, volunteer or give.' },
   { id: 'midnight-networks', niche: 'networks', theme: 'Midnight', label: 'Networks', description: 'One home for many chapters: find a chapter, start one, and see what is on everywhere.' },
+  { id: 'default-coaches', niche: 'coaches', theme: 'DAWN', label: 'Coaches and healers', description: 'A calm first page, your ways to work together, and an easy way to book.' },
+  { id: 'default-studios', niche: 'studios', theme: 'DAWN', label: 'Studios', description: 'Classes, a simple schedule and memberships people can join in a minute.' },
+  { id: 'default-hosts', niche: 'hosts', theme: 'DAWN', label: 'Event hosts', description: 'A home for your gatherings: what is coming up, how to join and a list to stay in touch.' },
+  { id: 'default-venues', niche: 'venues', theme: 'DAWN', label: 'Venues', description: 'Show the room, what is on and how to book it.' },
+  { id: 'default-nonprofits', niche: 'nonprofits', theme: 'DAWN', label: 'Nonprofits', description: 'Explain the work plainly and make it easy to say yes: come along, volunteer or give.' },
+  { id: 'default-networks', niche: 'networks', theme: 'DAWN', label: 'Networks', description: 'One home for many chapters: find a chapter, start one, and see what is on everywhere.' },
   { id: 'wildheart-coaches', niche: 'coaches', theme: 'Wildheart', label: 'Coaches and healers', description: 'Your story, how you work, what you offer and a way to book.' },
 ]
 

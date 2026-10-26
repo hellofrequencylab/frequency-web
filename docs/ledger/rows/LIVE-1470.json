@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1470",
+  "title": "Six niche starter kits for the Default theme",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/default-variants.ts",
+    "ref": "Mega Theme plan 2026-10-26: each mega theme gets one starting kit per niche door, as Midnight did in LIVE-1355."
+  },
+  "detail": "Coaches, studios, event hosts, venues, nonprofits and networks, each as data in the Default theme's own blocks (Hero, FeatureGrid, EditorialSection, MediaText, CallToAction) plus the shared live Space blocks. The words live once in niche-spec.ts so the Bold kits reuse them. Generic sample copy in the house voice, no prices, photos or real names. The Starter kits panel lists them under their theme name and marks only the first kit of the Space's niche as suggested. Nothing is applied automatically and existing content is untouched. Default wears DAWN, which the public site does not serve a stored document for, so a published Default kit still shows the house Default look until DAWN is made live.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('lib/sites/kits/registry.ts','utf8');process.exit(['coaches','studios','hosts','venues','nonprofits','networks'].every((n)=>r.includes(\\\"'default-\\\"+n+\\\"'\\\"))?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "kits.test.ts and render-smoke.test.tsx pass: one Default kit per niche, every block registered, every link resolves, every page draws."
+  },
+  "closed": "2026-10-26"
+}
