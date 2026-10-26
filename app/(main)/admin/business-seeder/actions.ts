@@ -1,5 +1,7 @@
 'use server'
 
+import { safeWritingQuestions } from '@/lib/ai/writing-questions'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SMART BUSINESS IMPORTER — the OPERATOR SEEDER CONSOLE actions (P3,
 // docs/BUSINESS-IMPORTER.md §4/§8). Extends the P1 START action with the console's
@@ -44,8 +46,8 @@ import {
   intakeIdsBySpaceIds,
 } from '@/lib/importer/store'
 import { enqueueResearch } from '@/lib/importer/queue'
-import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse, editedProsePaths } from '@/lib/importer/pipeline'
-import { reframe, applyReframe } from '@/lib/importer/reframe'
+import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse } from '@/lib/importer/pipeline'
+import { coachBusinessWriting } from '@/lib/importer/reframe'
 import { normalizeSeedMood, type SeedMood } from '@/lib/importer/moods'
 import { applyIntake, fileSeedImagesIntoLoom } from '@/lib/importer/materialize'
 import { mintSpaceClaimToken } from '@/lib/spaces/claim'
@@ -335,7 +337,7 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
   await requireStaffCap('structure', 'write')
   const row = await readOwnedIntake(intakeId)
   if (!row) return null
-  const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
+  const draft: BusinessProfile = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
   const ledger = (row.ledger as ProvenanceLedger) ?? {}
   const listed = row.targetSpaceId ? await spaceIsListed(row.targetSpaceId) : false
   return {
@@ -581,7 +583,7 @@ export async function autoArrangeSeederImages(intakeId: string): Promise<Arrange
     : []
   if (images.length === 0) return { ok: false, error: 'Add some images first, then arrange them.' }
 
-  const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
+  const draft: BusinessProfile = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
   const name = (draft.name && String(draft.name).trim()) || row.inputs.hints?.name || ''
   const plan = await planSeedImages(images, name, operatorId)
   if (!plan) return { ok: false, error: 'The image designer is off or over budget right now. Try again shortly.' }
@@ -603,81 +605,19 @@ export async function autoArrangeSeederImages(intakeId: string): Promise<Arrange
 // ── Re-Seed with a mood (Importer v2) ────────────────────────────────────────────────────
 
 export type ReseedResult =
-  | { ok: true; revoiced: boolean; reapplied: boolean; mood: SeedMood }
+  | { ok: true; revoiced: boolean; reapplied: boolean; mood: SeedMood; questions: string[] }
   | { ok: false; error: string }
 
-/**
- * RE-SEED the whole page in a mood. This regenerates EVERYTHING the master profile drives — the copy, the
- * block layout, and the images — and re-applies it to the live Space, EXCEPT what is locked:
- *   • `lockHero` freezes the hero HEADLINE (tagline) and the hero IMAGE (draft.media.heroPath is left as
- *     it is, so the cover and photoHero image do not move). Everything else (about, story, offering
- *     blurbs, layout) is re-voiced + recomposed.
- *   • `lockLayout` (ADR-1038) freezes the BLOCK ARRANGEMENT, so a page an operator hand-tuned survives.
- *     The copy inside the blocks, the images and the live data all still refresh.
- *   • Edit-wins (P5): any prose field the operator hand-edited is preserved too (editedProsePaths).
- * Steps: persist mood + lockHero → re-voice the verified draft (best-effort; AI off just skips the
- * re-voice) → on an APPLIED intake, re-apply via applyIntake so the live page regenerates from the fresh
- * draft. The commercial-fact gate is untouched (re-voice only rewrites prose). Only from 'review' /
- * 'applied'; fail-safe with a plain reason.
- */
-export async function reseedBusinessImport(
-  intakeId: string,
-  mood: SeedMood,
-  lockHero = true,
-  directions?: string,
-  lockLayout = false,
-): Promise<ReseedResult> {
-  await requireStaffCap('structure', 'write')
-  const operatorId = await getMyProfileId()
-  const nextMood = normalizeSeedMood(mood)
-
-  const row = await readOwnedIntake(intakeId)
-  if (!row) return { ok: false, error: 'Import not found.' }
-  if (row.status !== 'review' && row.status !== 'applied') {
-    return { ok: false, error: `This import is '${row.status}', not ready to re-seed (finish research first).` }
-  }
-
-  // Fresh operator DIRECTIONS steer this re-voice (Importer v2.1). When provided they replace the stored
-  // directions (so they stick for every future run); absent, the existing directions carry.
-  const nextDirections = directions !== undefined ? directions.trim() : (row.inputs.directions ?? '')
-
-  // Persist the chosen mood + the hero lock + directions so they stick and drive this + every future run.
-  await setInputs(intakeId, {
-    ...row.inputs,
-    mood: nextMood,
-    lockHero,
-    lockLayout,
-    ...(nextDirections ? { directions: nextDirections } : {}),
-  })
-
-  // Re-voice the verified draft in the new mood + directions. If AI is off / over budget, reframe returns
-  // null and the copy is left as-is (the layout/images still regenerate on re-apply below).
-  const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
-  const ledger = (row.ledger as ProvenanceLedger) ?? {}
-  const result = await reframe({ verified: draft, profileId: operatorId, mood: nextMood, directions: nextDirections || undefined })
-
-  let revoiced = false
-  if (result) {
-    // Preserve set: hand-edited prose always, plus the hero HEADLINE (tagline) when the hero is locked.
-    // about / story / offering blurbs are re-voiced. The hero IMAGE is protected separately (media is
-    // not touched by the re-voice).
-    const preserve = new Set(editedProsePaths(row.draft))
-    if (lockHero) preserve.add('tagline')
-    const folded = applyReframe(draft, result.copy, ledger, preserve)
-    const saved = await saveDraft(intakeId, { draft: folded.draft, ledger: folded.ledger })
-    if (!saved) return { ok: false, error: 'Re-voiced, but the save failed. Try again.' }
-    revoiced = true
-  }
-
-  // Re-apply to the live Space so the WHOLE page regenerates from the fresh draft (copy + layout + hero +
-  // gallery), honouring the locks the draft already encodes. Only when the Space exists (applied).
-  let reapplied = false
-  if (row.status === 'applied' && row.targetSpaceId) {
-    const res = await applyIntake(intakeId, { ownerProfileId: operatorId ?? row.createdBy })
-    reapplied = res.ok
-  }
-
-  return { ok: true, revoiced, reapplied, mood: nextMood }
+/** Owner-scoped writing questions only. Manual edits and Apply remain separate actions. */
+export async function reseedBusinessImport(intakeId: string, mood: SeedMood, _lockHero = true, directions?: string, _lockLayout = false): Promise<ReseedResult> {
+ await requireStaffCap('structure', 'write')
+ const operatorId = await getMyProfileId()
+ const row = await readOwnedIntake(intakeId)
+ if (!row) return { ok: false, error: 'Import not found.' }
+ if (row.status !== 'review' && row.status !== 'applied') return { ok: false, error: 'Finish research before requesting writing guidance.' }
+ const draft: BusinessProfile = (row.draft as unknown as BusinessProfile) ?? { name: '', type: 'business' }
+ const advice = await coachBusinessWriting({ verified: draft, profileId: operatorId, directions: directions ?? row.inputs.directions })
+ return { ok: true, revoiced: false, reapplied: false, mood: normalizeSeedMood(mood), questions: safeWritingQuestions(advice) }
 }
 
 // ── Add more info to the master profile + re-research (Importer v2.1) ──────────────────────
@@ -967,7 +907,7 @@ export async function approveBusinessImport(intakeId: string): Promise<ApproveRe
 
   // Surface red (contradicted) commercial fields before we hand off to Apply, so the operator
   // resolves them first. Apply itself would withhold them, but a clear message beats a silent drop.
-  const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
+  const draft: BusinessProfile = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
   const model = buildReviewModel(draft, (row.ledger as ProvenanceLedger) ?? {})
   const blocked = model.sections
     .flatMap((s) => s.fields)

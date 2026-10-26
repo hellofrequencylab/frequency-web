@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-1346",
+  "title": "Keep importer prose human authored and provide separate writing prompts",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-26",
+  "wave": "W7",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/importer-authorship.mjs",
+    "note": "Actual source action bodies run over inert author/tenant/provider dependencies. Malicious content is stripped; unauthorized and foreign intake calls deny before coaching; no save/apply dispatch occurs. Legacy model layout and reframe paths return null. Focused UI tests prove no content callback/autosave and recovery after failure. Local/mocked proof; exact-head CI and production acceptance separate."
+  },
+  "detail": "Research retains source extraction, verification, commercial-fact gates, deterministic layout and explicit manual Apply. It no longer runs model reframe or model layout composition. Operator-edited prose survives renewed research independently of AI availability. Block and master-profile guidance returns questions only; the editor and review board show advice separately and never merge it into fields, save a model draft, refresh/reapply a page or persist mood as a consequence of coaching. Shared writing-coach preserves existing kill/budget/rate/accounting gates. Legacy pure layout/provenance helpers remain for compatibility with stored data; no migration, SDK change, provider mutation or connector claim. Depends on LIVE-1342 shared writing-coach helper."
+}
