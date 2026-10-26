@@ -41,6 +41,27 @@ describe('campaign outcome coaching panel', () => {
     expect(container.querySelector('button')!.textContent).toContain('Review my next step')
   })
 
+  it('renders coaching as review text without changing authored message fields or emitting edits', async () => {
+    const authored = document.createElement('textarea')
+    authored.value = 'The human message stays here.'
+    const edited = vi.fn()
+    authored.addEventListener('input', edited)
+    authored.addEventListener('change', edited)
+    container.appendChild(authored)
+    const panel = document.createElement('div')
+    container.appendChild(panel)
+    const panelRoot = createRoot(panel)
+    try {
+      await act(async () => panelRoot.render(<CampaignAnalyticsExpansion campaignId="campaign" />))
+      await act(async () => panel.querySelector('button')!.click())
+      expect(panel.textContent).toContain('How will you record attendance?')
+      expect(panel.querySelector('textarea, [contenteditable="true"]')).toBeNull()
+      expect(authored.value).toBe('The human message stays here.')
+      expect(edited).not.toHaveBeenCalled()
+      expect([...panel.querySelectorAll('button')].some(button => /insert|apply|save|send/i.test(button.textContent ?? ''))).toBe(false)
+    } finally { await act(async () => panelRoot.unmount()) }
+  })
+
   it('keeps the checklist reachable for a send without tagged engagement', async () => {
     mocks.metrics.mockResolvedValue({ hasSent: true, attributionMode: 'legacy', attributedRecipients: 4 })
     await act(async () => root.render(<CampaignAnalyticsExpansion campaignId="legacy" />))
