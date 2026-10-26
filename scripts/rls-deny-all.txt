@@ -154,3 +154,6 @@ device_relay_settings
 # LIVE-946 Tap to meet: codes and taps are written by lib/meet/store.ts for the signed-in member and by the meet_tap RPC; service-only, no browser role.
 meet_codes
 meet_taps
+
+# LIVE-1378: encrypted OAuth credentials; only fresh-authorized service broker, never browser roles.
+space_discovery_connections

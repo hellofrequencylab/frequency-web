@@ -75,17 +75,16 @@ describe('PRACTICE_REMIX (the declaration)', () => {
 })
 
 describe('coerceRemixDirections (never trust the model)', () => {
-  it('keeps three short, clean, distinct directions', () => {
-    expect(
-      coerceRemixDirections({
-        directions: ['two minutes, for mornings.', 'Gentler', 'gentler', 'With a friend — or two!', 'On a walk'],
-      }),
-    ).toEqual(['Two minutes, for mornings', 'Gentler', 'With a friend, or two'])
+  it('projects three reviewed directions without accepting the model wording', () => {
+    expect(coerceRemixDirections({ directionIds: ['duration', 'effort', 'companion'] })).toEqual(['Review session length', 'Review the effort level', 'Invite a friend'])
+    expect(coerceRemixDirections({ directionIds: ['duration', 'duration'] })).toBeNull()
   })
-
-  it('drops a line too long to be a chip', () => {
-    const long = 'x'.repeat(REMIX_DIRECTION_MAX + 1)
-    expect(coerceRemixDirections({ directions: [long, 'Gentler', 'Before bed'] })).toEqual(['Gentler', 'Before bed'])
+  it('rejects unknown IDs, arbitrary labels and extra text rather than trimming generated copy', () => {
+    expect(coerceRemixDirections({ directions: ['Invented public title', 'Gentler'] })).toBeNull()
+    expect(coerceRemixDirections({ directionIds: ['duration', 'constructor'] })).toBeNull()
+    expect(coerceRemixDirections({ directionIds: ['duration', 'effort'], title: 'Invented' })).toBeNull()
+    const result = coerceRemixDirections({ directionIds: ['duration', 'effort'] })!
+    expect(result.every(direction => direction.length <= REMIX_DIRECTION_MAX)).toBe(true)
   })
 
   it('answers null when there is nothing to choose between', () => {
@@ -98,9 +97,9 @@ describe('coerceRemixDirections (never trust the model)', () => {
 
 describe('suggestRemixDirections (the door)', () => {
   it('returns the directions and threads the voice and practice-shape primers', async () => {
-    state.toolInput = { directions: ['Two minutes, for mornings', 'Gentler', 'With a friend'] }
+    state.toolInput = { directionIds: ['duration', 'effort', 'companion'] }
     const out = await suggestRemixDirections({ practice: PRACTICE, profileId: 'p1' })
-    expect(out).toEqual(['Two minutes, for mornings', 'Gentler', 'With a friend'])
+    expect(out).toEqual(['Review session length', 'Review the effort level', 'Invite a friend'])
     const system = String(state.lastCall?.system)
     expect(system).toContain(VOICE_PRIMER)
     expect(system).toContain(PRACTICE_SHAPE_PRIMER)

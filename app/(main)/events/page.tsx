@@ -1,11 +1,8 @@
-import { EventsSurface } from '@/components/marketplace/events-surface'
-import { EventsHeaderActions } from '@/components/marketplace/events-header-actions'
 import { CommerceLastVisited } from '@/components/marketplace/commerce-last-visited'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventsListingSchema } from '@/lib/jsonld'
 import { pageContentMetadata } from '@/lib/page-content'
 import { getEventsIndexData, CONTENT_FALLBACK } from './index-data'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqEventsBody } from '@/components/frequency/members/events/events-body'
 
 // EVENTS — the one events home, for members and for the commerce hub alike. The hub's Events tab
@@ -46,13 +43,7 @@ export default async function EventsPage({
 }) {
   const sp = await searchParams
   const data = await getEventsIndexData(sp)
-  const { myProfileId, userHasEvents } = data
 
-  // The member action cluster (New Event always; Manage + My drafts once they have added one), from
-  // the shared header-actions component.
-  const actions = (
-    <EventsHeaderActions myProfileId={myProfileId} userHasEvents={userHasEvents} />
-  )
 
   // JSON-LD for the self-canonical /events home (the one events URL; the structured data lives on
   // the canonical). A BreadcrumbList (Home ->
@@ -82,15 +73,8 @@ export default async function EventsPage({
       <JsonLd data={jsonLd} />
       {onCommerceFace && <CommerceLastVisited surface="events" />}
       {/* THE DESIGN SWITCH (ADR-1737): build-time, so DAWN's tree is untouched when it is off. */}
-      {SITE_DESIGN === 'frequency' ? (
+      {(
         <FqEventsBody data={data} params={sp} />
-      ) : (
-      <EventsSurface
-        data={data}
-        basePath="/events"
-        activeCategory={sp.category}
-        actions={actions}
-      />
       )}
     </>
   )

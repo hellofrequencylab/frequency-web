@@ -91,22 +91,22 @@ const BODY = ['body', 'lead', 'text', 'description', 'subtitle', 'sub']
 const BUTTON = ['ctaLabel', 'cta', 'buttonLabel', 'label']
 export const VERA_SUGGESTIONS: Record<EditorBlockKind, VeraSuggestion[]> = {
   Hero: [
-    { label: 'Tighten the headline', prompt: 'Tighten this headline. Keep it short, warm and true to the original.', fields: HEADING },
-    { label: 'Make the button clearer', prompt: 'Make this button label clearer about what happens next. Two to four words.', fields: BUTTON },
+    { label: 'Review the headline', prompt: 'Which questions would help me review this headline in my own words?', fields: HEADING },
+    { label: 'Review the button', prompt: 'What should I consider before writing my own button label?', fields: BUTTON },
   ],
   About: [
-    { label: 'Shorten to two lines', prompt: 'Shorten this to about two lines while keeping every fact.', fields: BODY },
-    { label: 'Warmer tone', prompt: 'Make this warmer and more welcoming. Keep every fact.', fields: BODY },
+    { label: 'Review length', prompt: 'Help me decide which details to keep in this passage.', fields: BODY },
+    { label: 'Review tone', prompt: 'What should I consider about welcoming tone while writing in my own words?', fields: BODY },
   ],
   FAQ: [
-    { label: 'Suggest a better heading', prompt: 'Suggest a clearer, friendlier heading for this section.', fields: HEADING },
+    { label: 'Review the heading', prompt: 'Which questions should I consider while writing my own heading for this section?', fields: HEADING },
   ],
   CTA: [
-    { label: 'Make it a question', prompt: 'Rewrite this heading as a short, inviting question.', fields: HEADING },
-    { label: 'Make the button clearer', prompt: 'Make this button label clearer about what happens next. Two to four words.', fields: BUTTON },
+    { label: 'Review the invitation', prompt: 'What would make this invitation clear to its intended reader?', fields: HEADING },
+    { label: 'Review the button', prompt: 'What should I consider before writing my own button label?', fields: BUTTON },
   ],
   _: [
-    { label: 'Suggest a better heading', prompt: 'Suggest a clearer, friendlier heading for this section.', fields: HEADING },
-    { label: 'Write this in our voice', prompt: 'Rewrite this in a warm, plain, welcoming voice. Keep every fact.', fields: [...BODY, ...HEADING] },
+    { label: 'Review the heading', prompt: 'Which questions should I consider while writing my own heading for this section?', fields: HEADING },
+    { label: 'Review our voice', prompt: 'Which questions would help me check that this sounds like our own voice?', fields: [...BODY, ...HEADING] },
   ],
 }

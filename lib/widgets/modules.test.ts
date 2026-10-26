@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS } from './modules'
 import { COMPONENT_IDS } from './registry'
@@ -214,22 +214,6 @@ describe('moduleIdsForScope', () => {
     expect(moduleIdsForScope('/admin/crm')).not.toContain('crm-members-roster')
   })
 
-  it('the Gamification page (/admin/gamification) resolves its seven blocks, in order, no leakage', () => {
-    const g = moduleIdsForScope('/admin/gamification')
-    expect(g).toBe(ROUTE_MODULE_IDS['/admin/gamification'])
-    // Default render order: season control, the janitor-only reward editor, the Rewards v2 metrics,
-    // the stat band, the top-achievers leaderboard, then the achievements + season-challenges tables.
-    expect(g).toEqual([
-      'gamification-season',
-      'gamification-rewards',
-      'gamification-metrics',
-      'gamification-stats',
-      'gamification-top-achievers',
-      'gamification-achievements',
-      'gamification-challenges',
-    ])
-  })
-
   it('an entity profile tab offers NO module set — the profile renders lib/entity-blocks', () => {
     // LIVE-067. '/spaces/*' declared an eight-block family palette for a surface that never mounted
     // <PageModules>: the tabs under app/(main)/spaces/[slug]/(profile)/ compose lib/entity-blocks
@@ -291,14 +275,26 @@ describe('module route registration (LP7 admin dashboards)', () => {
   it('every MODULE_ROUTES entry resolves to a page that actually renders <PageModules>', () => {
     const root = join(__dirname, '..', '..')
     const GROUPS = ['(main)', '(marketing)', '(help)', '']
+    const fqRoot = join(root, 'components', 'frequency', 'members')
+    const fqBodies: string[] = []
+    const collect = (d: string) => {
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        const q = join(d, e.name)
+        if (e.isDirectory()) collect(q)
+        else if (e.name.endsWith('.tsx')) fqBodies.push(readFileSync(q, 'utf8'))
+      }
+    }
+    collect(fqRoot)
     for (const route of MODULE_ROUTES) {
       const file = GROUPS.map((g) => join(root, 'app', g, route.replace(/^\//, ''), 'page.tsx')).find((p) =>
         existsSync(p),
       )
       expect(file, `${route} is in MODULE_ROUTES but has no page.tsx`).toBeDefined()
       const src = readFileSync(file!, 'utf8')
+      // A Frequency body mounts the route's blocks itself, in the operator's order.
+      const mountsInBody = fqBodies.some((b) => b.includes(`visibleModuleOrder('${route}')`))
       expect(
-        src.includes('<PageModules'),
+        src.includes('<PageModules') || src.includes(`visibleModuleOrder('${route}')`) || mountsInBody,
         `${route} is in MODULE_ROUTES but its page never renders <PageModules>` +
           (/redirect\(/.test(src) ? ' — it is a redirect stub, so the Layout editor draws on a page that navigates away' : ''),
       ).toBe(true)

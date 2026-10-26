@@ -76,7 +76,6 @@ import { CommunityRelated } from '@/components/widgets/community/related'
 import { AuditRecentActions } from '@/components/widgets/audit/recent-actions'
 import { AdminHubsRoster } from '@/components/widgets/admin/admin-hubs-roster'
 import { AdminNexusesRoster } from '@/components/widgets/admin/admin-nexuses-roster'
-import { AdminModerationQueue } from '@/components/widgets/admin/admin-moderation-queue'
 import { OperationsAi } from '@/components/widgets/operations/ai-area'
 import { OperationsPlatform } from '@/components/widgets/operations/platform-area'
 import { OperationsManage } from '@/components/widgets/operations/manage'
@@ -138,13 +137,6 @@ import { EventVenueMapBlock } from '@/components/widgets/events/event-venue-map-
 import { EventWhenWhere } from '@/components/widgets/events/event-when-where'
 import { EventAttendees } from '@/components/widgets/events/event-attendees'
 import { EventCheckin } from '@/components/widgets/events/event-checkin'
-import { GamificationSeason } from '@/components/widgets/gamification/gamification-season'
-import { GamificationRewards } from '@/components/widgets/gamification/gamification-rewards'
-import { GamificationMetrics } from '@/components/widgets/gamification/gamification-metrics'
-import { GamificationStats } from '@/components/widgets/gamification/gamification-stats'
-import { GamificationTopAchievers } from '@/components/widgets/gamification/gamification-top-achievers'
-import { GamificationAchievements } from '@/components/widgets/gamification/gamification-achievements'
-import { GamificationChallenges } from '@/components/widgets/gamification/gamification-challenges'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -259,7 +251,6 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'admin-hubs-roster': AdminHubsRoster,
   'admin-nexuses-roster': AdminNexusesRoster,
   // Moderation queue (/admin/moderation) — the community report queue.
-  'admin-moderation-queue': AdminModerationQueue,
   // Operations dashboard (/admin/operations) — the platform machine as one operator home.
   'operations-ai': OperationsAi,
   'operations-platform': OperationsPlatform,
@@ -327,15 +318,6 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'event-activity': EventActivityBlock,
   'event-recap': EventRecap,
   'event-gallery': EventGalleryBlock,
-  // Gamification (/admin/gamification) — achievements, challenges, and engagement, plus the
-  // janitor-only reward-economy editor (self-gating, renders null for a non-janitor).
-  'gamification-season': GamificationSeason,
-  'gamification-rewards': GamificationRewards,
-  'gamification-metrics': GamificationMetrics,
-  'gamification-stats': GamificationStats,
-  'gamification-top-achievers': GamificationTopAchievers,
-  'gamification-achievements': GamificationAchievements,
-  'gamification-challenges': GamificationChallenges,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {

@@ -82,6 +82,14 @@ describe('website draft boundary', () => {
     expect(WEBSITE_THEMES_LIVE.has('Menswork')).toBe(true)
     expect(WEBSITE_THEMES_LIVE.has('DAWN')).toBe(false)
   })
+  it('serves a published Default (DAWN) document only for a Space that chose the Default Mega Theme', () => {
+    const live = nextWebsiteState(state(), { ...snapshot(), theme: 'DAWN' }, true, 'owner')
+    expect(publishedWebsiteSnapshot({ websiteEditor: live, ...wears('DAWN') })).toBeNull()
+    expect(publishedWebsiteSnapshot({ websiteEditor: live, ...wears('DAWN'), megaTheme: { niche: 'coaches' } })).toBeNull()
+    expect(publishedWebsiteSnapshot({ websiteEditor: live, ...wears('DAWN'), megaTheme: { theme: 'frequency' } })?.theme).toBe('DAWN')
+    // The choice never makes a document written in another theme appear.
+    expect(publishedWebsiteSnapshot({ websiteEditor: live, ...wears('Menswork'), megaTheme: { theme: 'frequency' } })).toBeNull()
+  })
   it('serves a published document only while the site wears the theme it was written in (SCAN-831)', () => {
     const live = nextWebsiteState(state(), snapshot(), true, 'owner')
     expect(publishedWebsiteSnapshot({ websiteEditor: live, ...wears('Menswork') })).not.toBeNull()

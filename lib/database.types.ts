@@ -14,6 +14,67 @@ export type Database = {
   }
   public: {
     Tables: {
+      // Migration 20270346025300 schema; refresh from the catalog after canonical apply.
+      space_discovery_connections: {
+        Row: {
+          space_id: string
+          provider: string
+          id: string
+          revision: number
+          actor_profile_id: string
+          consent_id: string
+          property_url: string
+          property_scope: string
+          state: string
+          nonce_hash: string | null
+          nonce_expires_at: string | null
+          pending_ciphertext: string | null
+          tokens_ciphertext: string | null
+          expires_at: string | null
+          scopes: string[]
+          updated_at: string
+        }
+        Insert: {
+          space_id: string
+          provider: string
+          id: string
+          revision?: number
+          actor_profile_id: string
+          consent_id: string
+          property_url: string
+          property_scope: string
+          state: string
+          nonce_hash?: string | null
+          nonce_expires_at?: string | null
+          pending_ciphertext?: string | null
+          tokens_ciphertext?: string | null
+          expires_at?: string | null
+          scopes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          space_id?: string
+          provider?: string
+          id?: string
+          revision?: number
+          actor_profile_id?: string
+          consent_id?: string
+          property_url?: string
+          property_scope?: string
+          state?: string
+          nonce_hash?: string | null
+          nonce_expires_at?: string | null
+          pending_ciphertext?: string | null
+          tokens_ciphertext?: string | null
+          expires_at?: string | null
+          scopes?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "space_discovery_connections_space_id_fkey"; columns: ["space_id"]; isOneToOne: false; referencedRelation: "spaces"; referencedColumns: ["id"] },
+          { foreignKeyName: "space_discovery_connections_actor_profile_id_fkey"; columns: ["actor_profile_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       card_faces: {
         Row: {
           cardholder_perk: string | null

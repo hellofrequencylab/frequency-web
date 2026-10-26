@@ -1,7 +1,6 @@
 # OVERHAUL (Frequency design, PR #3434): each Frequency body below re-reads what its DAWN counterpart already reads under service role; none returns a row the DAWN page would not.
 #   app/(main)/messages/inbox-data.ts: peer presence (profiles.last_seen_at), moved verbatim out of DAWN app/(main)/messages/page.tsx, which no longer imports the client.
 #   app/(main)/search/search-data.ts: people/posts/events search moved out of DAWN app/(main)/search/page.tsx (directory-visibility, public-only filters kept); Circles now read under the session.
-#   components/frequency/admin/admin-console.tsx: the pending-reports head-count DAWN components/admin/admin-info-rail.tsx reads, now only for platform moderators/community-write staff.
 #   components/frequency/admin/pages/moderation/moderation-reads.ts: resolved reports narrowed by scopeReportsToViewer, the DAWN components/widgets/admin/admin-moderation-queue.tsx scoping; Blocked is platform-moderator only.
 #   components/frequency/admin/pages/space-reads.ts: manage-gated Space aggregates (check-ins, follows, paid memberships), as DAWN lib/events/event-stats.ts, lib/spaces/follows.ts, lib/commerce/seller-audience.ts; other members' rows RLS cannot serve.
 #   components/frequency/admin/pages/standing/standing-reads.ts: requireAdmin platform standing over profiles, the DAWN app/(main)/crew/leaderboard/page.tsx read; opt-outs never named.
@@ -683,7 +682,6 @@ app/spaces/[slug]/calendar.ics/route.ts
 app/u/scan/route.ts
 app/unsubscribe/actions.ts
 app/unsubscribe/page.tsx
-components/admin/admin-info-rail.tsx
 components/admin/crm/member-composer-actions.ts
 components/admin/email-studio/data-picker-actions.ts
 components/admin/email-studio/product-picker-actions.ts
@@ -732,7 +730,6 @@ components/widgets/gamification/gamification-challenges.tsx
 components/widgets/gamification/gamification-metrics.tsx
 components/widgets/gamification/gamification-rewards.tsx
 components/widgets/gamification/gamification-stats.tsx
-components/widgets/gamification/gamification-top-achievers.tsx
 components/widgets/growth/funnel-area.tsx
 components/widgets/growth/manage.tsx
 components/widgets/journal/journal-entries.tsx
@@ -764,6 +761,8 @@ lib/admin/practices-context.ts
 lib/ai/accounting.ts
 lib/ai/campaign-coach.ts
 lib/ai/creator-tips.ts
+lib/ai/discovery-connection-store.ts
+lib/ai/discovery-guidance-store.ts
 lib/ai/embed.ts
 lib/ai/event-blurb.ts
 lib/ai/help-index.ts
@@ -1296,5 +1295,3 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
-
-lib/ai/discovery-guidance-store.ts

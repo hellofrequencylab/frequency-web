@@ -1,5 +1,4 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqIndexLoading } from '@/components/frequency/members/community-states'
 import { NearbyMapCard } from '@/components/nearby/nearby-map-header'
 
@@ -49,20 +48,5 @@ function NearbyBodySkeleton() {
 }
 
 export default function NearbyLoading() {
-  // Under Frequency the wait keeps the page's own order: the kit head, the map card's pending frame
-  // (the exact Suspense fallback the page streams behind), the ticker strip, then the tiles and the
-  // events and Circles split, so nothing jumps when the page lands (LIVE-1042).
-  if (SITE_DESIGN === 'frequency') return <FqIndexLoading label="Loading Around You" shape="items" lead={<NearbyMapCard pins={null} />}><NearbyBodySkeleton /></FqIndexLoading>
-  return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <Skeleton className="h-7 w-40" />
-        <Skeleton className="h-4 w-full max-w-2xl" />
-      </div>
-
-      <Skeleton className="h-12 w-full rounded-card" />
-
-      <NearbyBodySkeleton />
-    </div>
-  )
+  return <FqIndexLoading label="Loading Around You" shape="items" lead={<NearbyMapCard pins={null} />}><NearbyBodySkeleton /></FqIndexLoading>
 }

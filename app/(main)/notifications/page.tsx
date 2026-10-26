@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
 import { RowCard } from '@/components/cards/row-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Badge } from '@/components/ui/badge'
@@ -9,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
 import { relativeTime } from '@/lib/utils'
 import { notificationHref } from '@/lib/notifications/href'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqFocusPage } from '@/components/frequency/members/shared/focus-page'
 import { getMyNotifications, markAllRead } from './actions'
 
@@ -93,18 +91,9 @@ export default async function NotificationsPage() {
       )}
     </>
   )
-
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <FqFocusPage kicker="You" title="Notifications" meta={description} actions={<div className="row wrap">{actions}</div>}>
-        {content}
-      </FqFocusPage>
-    )
-  }
-
   return (
-    <FocusTemplate eyebrow="You" title="Notifications" description={description} actions={actions}>
+    <FqFocusPage kicker="You" title="Notifications" meta={description} actions={<div className="row wrap">{actions}</div>}>
       {content}
-    </FocusTemplate>
+    </FqFocusPage>
   )
 }

@@ -214,11 +214,11 @@ describe('the panel is composed from the kit, and a null count never renders as 
     // Owner ruling, 2026-07-28: this moved out of the 2/3 content column into the 1/3 rail, so
     // the guard moved with it. Pinning placement matters because the panel fans out six reads;
     // dropping its Suspense or burying it below the tiled panels are both silent regressions.
-    const aside = page.indexOf('<aside className="order-1 min-w-0')
+    const aside = page.indexOf('side={\n          <>')
     // Match the Suspense that wraps THIS panel, not the first one on the page: the profile has
     // several null-fallback boundaries and indexOf on the bare tag found an earlier one.
-    const suspense = page.indexOf('<Suspense fallback={null}>\n            <ProfileAssociations')
-    const asideClose = page.indexOf('</aside>')
+    const suspense = page.indexOf('<Suspense fallback={null}>\n              <ProfileAssociations')
+    const asideClose = page.indexOf('<ProfileStanding')
     expect(aside).toBeGreaterThan(-1)
     expect(asideClose).toBeGreaterThan(-1)
     // Structural, not word-matching: the panel opens INSIDE the aside and closes before it does.

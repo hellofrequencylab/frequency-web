@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { KIT_INDEX } from '@/lib/sites/kits/registry'
 import type { KitChanges } from '@/lib/sites/kits/apply'
-import type { KitApplyMode, KitNiche } from '@/lib/sites/kits/types'
+import type { KitApplyMode, KitNiche, SiteKit } from '@/lib/sites/kits/types'
 import { k } from './skin'
 
 const MODES: { mode: KitApplyMode; label: string; help: string }[] = [
@@ -14,7 +14,7 @@ const MODES: { mode: KitApplyMode; label: string; help: string }[] = [
 
 /** The Theme tab's starter kits. A kit is a starting point written into the draft once: it is one undo step,
  *  its words are placeholders, and nothing reaches the live site until the owner publishes. */
-export function KitLibrary({ onApply, onPreview, suggestedNiche }: { onApply: (id: string, mode: KitApplyMode) => Promise<string>; onPreview?: (id: string) => Promise<KitChanges | string>; suggestedNiche?: KitNiche | null }) {
+export function KitLibrary({ onApply, onPreview, suggestedNiche, theme }: { theme?: SiteKit['theme']; onApply: (id: string, mode: KitApplyMode) => Promise<string>; onPreview?: (id: string) => Promise<KitChanges | string>; suggestedNiche?: KitNiche | null }) {
   const [open, setOpen] = useState<string | null>(null)
   const [confirm, setConfirm] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -32,8 +32,9 @@ export function KitLibrary({ onApply, onPreview, suggestedNiche }: { onApply: (i
   }
 
   // The kit for the door this Space came in through (its saved niche) leads the list; the rest keep their order.
-  const kits = [...KIT_INDEX].sort((a, b) => Number(b.niche === suggestedNiche) - Number(a.niche === suggestedNiche))
+  const kits = KIT_INDEX.filter((kit) => !theme || kit.theme === theme).sort((a, b) => Number(b.niche === suggestedNiche) - Number(a.niche === suggestedNiche))
 
+  if (!kits.length) return null
   return <>
     <div className={k('we-caption')}>Starter kits</div>
     <p className={k('we-note')}>A kit gives you pages with sample words to rewrite. Nothing goes live until you publish, and undo takes it back.</p>

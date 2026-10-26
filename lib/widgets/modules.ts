@@ -168,14 +168,6 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'community-manage', label: 'Manage', description: 'One card per working surface in Community, each with a live stat and a link straight to the surface that edits it.' },
   { id: 'community-related', label: 'Related areas', description: 'A cross-link strip to the neighboring workspaces the viewer can enter from here.' },
 
-  // ── Gamification blocks (/admin/gamification) — achievements, challenges, and engagement ──
-  { id: 'gamification-season', label: 'Season control', description: 'The current season, with the janitor-only control to end it and open the next.' },
-  { id: 'gamification-rewards', label: 'Reward economy', description: 'The live Zap and Gem economy editor: tune what each action earns, add actions, or remove them (janitor only).' },
-  { id: 'gamification-metrics', label: 'Economy metrics', description: 'The Rewards v2 health metrics, each against its target band: the North Star, streaks, completion, distribution, and sink rate.' },
-  { id: 'gamification-stats', label: 'Engagement stats', description: 'The headline counts: achievements, times unlocked, season challenges, and challenges completed.' },
-  { id: 'gamification-top-achievers', label: 'Top achievers', description: 'The five members with the most achievements, each with their Zaps and streak.' },
-  { id: 'gamification-achievements', label: 'All achievements', description: 'The full achievements table by sort order, with tier, category, and Zap reward.' },
-  { id: 'gamification-challenges', label: 'Season challenges', description: 'The active season challenges, with difficulty, target, and Zap reward.' },
 
   // ── Audit log blocks (/admin/audit) — the append-only security trail ──
   { id: 'audit-recent-actions', label: 'Recent actions', description: 'The 100 most recent sensitive platform actions, newest first: who did what, to whom.' },
@@ -184,8 +176,6 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'admin-hubs-roster', label: 'Hub roster', description: 'The editable table of every hub with its nexus, guide, circle count, and status. Edit a row inline; the "no hubs yet" first-use empty leads when the table is empty.' },
   { id: 'admin-nexuses-roster', label: 'Nexus roster', description: 'The editable table of every nexus with its hub count, member cap, mentor, and status. Edit a row inline; the "no nexuses yet" first-use empty leads when the table is empty.' },
 
-  // ── Moderation queue block (/admin/moderation) — the community report queue ──
-  { id: 'admin-moderation-queue', label: 'Report queue', description: 'The pending community reports, newest first, each with its target preview and (for member reports) the prior-report count. The "queue is clear" empty leads when nothing is waiting.' },
 
   // ── Operations dashboard blocks (/admin/operations) — the platform machine as one operator home ──
   { id: 'operations-ai', label: 'AI & assistant', description: 'The AI master switch, the agent actions awaiting review, and the help gaps Vera could not answer. Assistant figures cover the last 7 days.' },
@@ -495,22 +485,6 @@ const COMMUNITY_ADMIN_MODULE_IDS = [
   'community-related',
 ] as const
 
-// The Gamification page (/admin/gamification), in default render order — the season control, the
-// janitor-only reward-economy editor, the Rewards v2 metrics, the stat band, the top-achievers
-// leaderboard, then the achievements + season-challenges tables. Each block self-fetches (fail-safe);
-// the page keeps its host + community-staff gate, and the reward editor self-gates further to the
-// web_role janitor axis (the same axis its server actions enforce), so it renders null for a non-
-// janitor. The modules render only through the gated route and never re-gate.
-const GAMIFICATION_MODULE_IDS = [
-  'gamification-season',
-  'gamification-rewards',
-  'gamification-metrics',
-  'gamification-stats',
-  'gamification-top-achievers',
-  'gamification-achievements',
-  'gamification-challenges',
-] as const
-
 // The Audit log (/admin/audit). The whole interior is one self-fetching security trail, keyed only on
 // recency with no searchParams facet, so it converts wholesale to one module. The page keeps its
 // admin gate; the module renders only through that gated route.
@@ -526,12 +500,6 @@ const ADMIN_HUBS_MODULE_IDS = ['admin-hubs-roster'] as const
 // nexus table + its first-use empty), keyed only on the ?edit=<id> deep-link read from the x-search
 // header, so it converts wholesale to one module. The page keeps its mentor + structure-staff gate.
 const ADMIN_NEXUSES_MODULE_IDS = ['admin-nexuses-roster'] as const
-
-// The Moderation admin page (/admin/moderation). The whole interior is one self-fetching report queue
-// (the pending reports with their target previews + the "queue is clear" empty), keyed only on the
-// pending status with no searchParams facet, so it converts wholesale to one module. The page keeps its
-// host + community-staff gate; the module renders only through that gated route, so it never re-gates.
-const ADMIN_MODERATION_MODULE_IDS = ['admin-moderation-queue'] as const
 
 // The Operations dashboard (/admin/operations), in default render order — the AI & assistant KPIs, the
 // platform/system-health stats, the Manage grid (one card per working sub-page), then the Related areas
@@ -723,11 +691,9 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   // Registering it would make the on-page Layout editor offer blocks the page does not render.
   '/admin/crm/intelligence': CRM_INTELLIGENCE_MODULE_IDS,
   '/admin/crm/members': CRM_MEMBERS_MODULE_IDS,
-  '/admin/gamification': GAMIFICATION_MODULE_IDS,
   '/admin/audit': AUDIT_MODULE_IDS,
   '/admin/hubs': ADMIN_HUBS_MODULE_IDS,
   '/admin/nexuses': ADMIN_NEXUSES_MODULE_IDS,
-  '/admin/moderation': ADMIN_MODERATION_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
   '/network/friends': FRIENDS_MODULE_IDS,
   '/crew/leaderboard': LEADERBOARD_MODULE_IDS,

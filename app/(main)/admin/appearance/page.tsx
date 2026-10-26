@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { GateNotice } from '@/components/ui/gate-notice'
-import { LEGACY_THEME_AXES, SITE_DESIGN, designDef } from '@/lib/theme/design'
+import { SITE_DESIGN, designDef } from '@/lib/theme/design'
 import { buttonClasses } from '@/components/ui/button'
 import { listThemes } from '@/lib/theme/server/admin-themes'
 import type { ThemeRow, ThemeStatus } from '@/lib/theme/admin-types'
@@ -15,19 +15,16 @@ import { DefaultGenerationPicker } from './default-generation'
 export const dynamic = 'force-dynamic'
 
 // Theme Studio — the janitor-only home for data-driven themes (skins + seasonal occasions).
-// Each row is a named set of DAWN token overrides an operator edits as data (no code deploy).
+// Each row is a named set of token overrides an operator edits as data (no code deploy).
 // A theme takes effect once its status is Active (and, for the default skin, set as Default).
 // Reads are best-effort: if the `themes` table isn't migrated yet, listThemes() returns [] and
 // the teaching empty state shows. The actual styling is applied by the root layout once a
 // theme is active; the editor + preview let an operator design before any of that is live.
 //
-// WHAT THE ROWS DRIVE (SCAN-915). Every row here is a DAWN-era axis: app/(main)/layout.tsx injects the
-// active skin/occasion <style> and lib/theme/server/resolve.ts reads the community feel only when
-// LEGACY_THEME_AXES is true (SITE_DESIGN 'dawn'). Space websites never read this table (they wear their own
-// website theme, components/sites/site-design-reset.tsx). So under Frequency the page leads with the design
-// the platform actually wears (a build-time constant, not a row) and labels the rows as the DAWN design's:
-// a row's Active and Default say what DAWN would wear, never what the site wears now. Under DAWN the page
-// renders exactly as before.
+// WHAT THE ROWS DRIVE (SCAN-915). The rows are the retired skin and occasion axes, kept as data. The platform
+// wears the Frequency design (a build-time constant, not a row), so the page leads with it and labels the rows
+// as saved only: an Active or Default row never reaches the site. Space websites never read this table
+// (they wear their own website theme, components/sites/site-design-reset.tsx).
 
 const STATUS_BADGE: Record<ThemeStatus, string> = {
   draft: 'bg-surface-elevated text-subtle',
@@ -44,14 +41,13 @@ const STATUS_LABEL: Record<ThemeStatus, string> = {
   archived: 'Archived',
 }
 
-// Under a design that overrides everything an Active row is on only for DAWN, so it is not shown in the
-// live green and says so; Default is DAWN's default skin, not the site's.
+// The design overrides everything, so an Active row is on only for DAWN, is not shown in the live green and says so.
 const ACTIVE_UNDER_DAWN_BADGE = 'bg-surface-elevated text-muted'
 const ACTIVE_UNDER_DAWN_LABEL = 'Active under DAWN'
 const DEFAULT_UNDER_DAWN_LABEL = 'DAWN default'
 
 function statusBadge(status: ThemeStatus): { cls: string; label: string } {
-  if (!LEGACY_THEME_AXES && status === 'active') return { cls: ACTIVE_UNDER_DAWN_BADGE, label: ACTIVE_UNDER_DAWN_LABEL }
+  if (status === 'active') return { cls: ACTIVE_UNDER_DAWN_BADGE, label: ACTIVE_UNDER_DAWN_LABEL }
   return { cls: STATUS_BADGE[status], label: STATUS_LABEL[status] }
 }
 
@@ -75,8 +71,8 @@ function ActiveDesignCard() {
         page. {label} sets every colour, corner, font, size and motion itself.
       </p>
       <p className="text-body-sm text-muted">
-        The skins, occasions and community feel below belong to the DAWN design. They stay saved and come back
-        only if the site is built on DAWN again. Space websites wear their own website theme either way.
+        The skins, occasions and community feel below are from the retired DAWN design. They stay saved as data
+        and do not apply. Space websites wear their own website theme either way.
       </p>
     </div>
   )
@@ -114,7 +110,7 @@ function ThemeRowCard({ t }: { t: ThemeRow }) {
           {/* Default badge */}
           {t.isDefault && (
             <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">
-              <Star className="h-3 w-3" aria-hidden /> {LEGACY_THEME_AXES ? 'Default' : DEFAULT_UNDER_DAWN_LABEL}
+              <Star className="h-3 w-3" aria-hidden /> {DEFAULT_UNDER_DAWN_LABEL}
             </span>
           )}
         </div>
@@ -146,48 +142,28 @@ export default async function ThemeStudioPage() {
       title="Theme Studio"
       icon={Palette}
       eyebrow="Operations · Appearance"
-      description={
-        LEGACY_THEME_AXES
-          ? 'Named sets of token overrides you edit as data, no code deploy. A skin retunes the whole palette and feel; an occasion overlays a seasonal look within a calendar window.'
-          : `The design the platform wears, and the DAWN design's skins and occasions saved as data. Under ${DESIGN_LABEL} those rows are kept but do not apply.`
-      }
+      description={`The design the platform wears, and the skins and occasions saved as data. Under ${DESIGN_LABEL} those rows are kept but do not apply.`}
       width="wide"
       actions={<NewThemeLink />}
     >
       {/* Under a design that overrides everything (Frequency, ADR-1737) nothing here reaches the site, so
           the page leads with the design the site does wear (SCAN-915), before any row that will not show. */}
-      {!LEGACY_THEME_AXES ? (
-        <AdminSection title="Active design" description="What the whole platform wears right now.">
-          <ActiveDesignCard />
-        </AdminSection>
-      ) : null}
+      <AdminSection title="Active design" description="What the whole platform wears right now.">
+        <ActiveDesignCard />
+      </AdminSection>
 
       {/* How a theme goes live — the operator's first question. */}
       <AdminSection>
-        {LEGACY_THEME_AXES ? (
-          <div className="rounded-card border border-border bg-surface-elevated/50 px-4 py-3 text-body-sm text-muted">
-            A theme takes effect once its status is <strong className="text-text">Active</strong>, and
-            for the base skin once you also <strong className="text-text">Set default</strong>. One
-            one-time step: the database migration must be applied for the theme system to be live.
-            Until then you can still design and preview themes here.
-          </div>
-        ) : (
-          <GateNotice kind="dormant" title={`Paused while the ${DESIGN_LABEL} design is on`}>
-            Everything below is used by the DAWN design only. Under DAWN a theme takes effect once its status is
-            Active, and the base skin once you also Set default. You can still design and preview here.
-          </GateNotice>
-        )}
+        <GateNotice kind="dormant" title={`Paused while the ${DESIGN_LABEL} design is on`}>
+          Everything below is saved data from the retired DAWN design. You can still design and preview here.
+        </GateNotice>
       </AdminSection>
 
-      {/* The community default generation (LIVE-658): the feel axis as editable data. resolveTheme() reads
-          it only under DAWN; Frequency's feel is its own. */}
+      {/* The community default generation (LIVE-658): the feel axis as editable data. Frequency's feel
+          is its own, so this saved value does not apply. */}
       <AdminSection
         title="Community feel"
-        description={
-          LEGACY_THEME_AXES
-            ? 'Type size, spacing and motion for everyone whose Space and own settings have not picked one.'
-            : 'Used by the DAWN design: type size, spacing and motion for everyone whose Space and own settings have not picked one.'
-        }
+        description="Saved from the retired DAWN design: type size, spacing and motion. Not applied."
       >
         <DefaultGenerationPicker current={defaultGeneration} />
       </AdminSection>
@@ -203,12 +179,8 @@ export default async function ThemeStudioPage() {
         <>
           {skins.length > 0 && (
             <AdminSection
-              title={LEGACY_THEME_AXES ? 'Skins' : 'DAWN skins'}
-              description={
-                LEGACY_THEME_AXES
-                  ? 'Base palettes and feel for a Space.'
-                  : 'Used by the DAWN design: base palettes for the member app and a Space. Not Space websites, and none applies under ' + DESIGN_LABEL + '.'
-              }
+              title="DAWN skins"
+              description="Used by the DAWN design: base palettes for the member app and a Space. None applies under Frequency."
             >
               <div className="space-y-3">
                 {skins.map((t) => (
@@ -219,12 +191,8 @@ export default async function ThemeStudioPage() {
           )}
           {occasions.length > 0 && (
             <AdminSection
-              title={LEGACY_THEME_AXES ? 'Occasions' : 'DAWN occasions'}
-              description={
-                LEGACY_THEME_AXES
-                  ? 'Seasonal overlays that apply within a calendar window.'
-                  : 'Used by the DAWN design: seasonal overlays within a calendar window. None applies under ' + DESIGN_LABEL + '.'
-              }
+              title="DAWN occasions"
+              description="Used by the DAWN design: seasonal overlays within a calendar window. None applies under Frequency."
             >
               <div className="space-y-3">
                 {occasions.map((t) => (

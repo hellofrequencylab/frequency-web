@@ -8,12 +8,14 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExtern
 import { ArrowRight, ChevronDown, ChevronLeft, Copy, Eye, FileText, Globe, Layers, Lock, MessageSquare, Minus, Monitor, PanelLeft, PanelRight, Palette, Plus, Radio, Redo2, Search, Settings2, Trash2, Smartphone, Tablet, Undo2, X } from 'lucide-react'
 import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 import { addBlock, buildOutline, derivePickerGroups, findBlockDeep, moveBlockTo, nudgeBlock, removeBlockDeep, updateBlockPropsDeep, type OutlineNode } from '@/components/page-editor/mobile/data-ops'
-import { inlineFieldValue, replaceInlineField } from '@/lib/sites/editor/inline-edit'
+import { websiteCoachingQuestions, type WebsiteCoachingPromptId } from '@/lib/sites/editor/coaching'
+import { inlineFieldValue } from '@/lib/sites/editor/inline-edit'
 import { resetDocumentPlacements, sectionDeviceLayout } from '@/lib/sites/editor/layout'
 import { pendingChangeLabels, publishChecks } from '@/lib/sites/editor/publish-checks'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
 import { KitLibrary } from './kit-library'
+import { ThemeChanger } from './theme-changer'
 import type { KitChanges } from '@/lib/sites/kits/apply'
 import type { KitApplyMode, KitNiche } from '@/lib/sites/kits/types'
 import { editorBlockMeta, editorPickerGroups, VERA_SUGGESTIONS } from '@/lib/sites/editor/block-meta'
@@ -63,14 +65,13 @@ type Panel = 'inspect' | 'comments' | 'seo' | 'header' | 'footer' | 'page' | 'co
 type InspectorTab = 'content' | 'design' | 'advanced' | 'notes'
 const INSPECTOR_TABS: { id: InspectorTab; label: string }[] = [{ id: 'content', label: 'Content' }, { id: 'design', label: 'Design' }, { id: 'advanced', label: 'Advanced' }, { id: 'notes', label: 'Notes' }]
 type Tab = 'Pages' | 'Layers' | 'Add' | 'Theme' | 'Site'
-type Proposal = { pageSlug: string; blockId: string; field: string; path: (string | number)[]; before: string; after: string }
 type SaveResult = { ok: true; state: WebsiteEditorState } | { ok: false; error: string; conflict?: boolean }
 export interface WebsiteEditorShellProps {
   host: string; brandName: string; logo?: string | null; brandAccent?: string | null; author: string
   initial: WebsiteEditorState; config: Config; metadata?: Metadata; live: MwLive; links: SiteLinkMap; origin: string
   onSave: (revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string | null) => Promise<SaveResult>
   onPresence?: (cursor: WebsitePresence['cursor']) => Promise<{ ok: true; people: WebsitePresence[] } | { ok: false; error: string }>
-  onPropose?: (request: string, value: string) => Promise<{ ok: true; text: string } | { ok: false; error: string }>
+  onPropose?: (request: string, value: string) => Promise<{ ok: true; promptIds: WebsiteCoachingPromptId[] } | { ok: false; error: string }>
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
   onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>>; pages?: Record<string, SiteThemeId | null> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
@@ -207,7 +208,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // The DAWN Site Editor (LIVE-907): the inspector's sub-tabs and the page menu in the top bar.
   const [inspTab, setInspTab] = useState<'content' | 'design' | 'advanced'>('content')
   const [pageMenu, setPageMenu] = useState(false)
-  const [modal, setModal] = useState<'publish' | 'templates' | 'insert' | 'delete-page' | 'menu' | null>(null)
+  const [modal, setModal] = useState<'publish' | 'templates' | 'insert' | 'delete-page' | 'menu' | 'theme' | null>(null)
   const [filter, setFilter] = useState('')
   const [insertAt, setInsertAt] = useState<number | null>(null)
   const [pageName, setPageName] = useState('')
@@ -220,7 +221,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [textSelection, setTextSelection] = useState<{ blockId: string; field: string; path: (string | number)[]; value: string } | null>(null)
   // The field the owner is typing in on the inspector, lit on the canvas (lib/sites/editor/field-sync.ts).
   const [fieldFocus, setFieldFocus] = useState<FieldFocus | null>(null)
-  const [proposal, setProposal] = useState<Proposal | null>(null)
+  const [coachingQuestions, setCoachingQuestions] = useState<string[]>([])
   const [veraStatus, setVeraStatus] = useState('')
   const [asking, setAsking] = useState(false)
   // Frequency-only view state (no effect on the draft): the top bar's page menu and the inspector tab.
@@ -440,6 +441,14 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   }, [pickOpen])
   /** Apply a starter kit to the draft as ONE undoable step. The kit loads on demand, so its pages never ride in the
    *  editor's first load. A theme change saves the site style the way the Theme tab does. */
+  /** Switch the website theme: one undo step, positions reset to the new layout, style saved at once. */
+  function pickTheme(t: (typeof SITE_THEMES)[number]) {
+    const theme = EDITOR_THEME[t.id]
+    if (theme === draft.theme) return
+    commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }, { label: 'Theme' })
+    void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts })
+    say('Theme updated')
+  }
   async function previewKitChoice(id: string): Promise<KitChanges | string> {
     const [{ loadKit }, { kitChanges }] = await Promise.all([import('@/lib/sites/kits/registry'), import('@/lib/sites/kits/apply')])
     const kit = await loadKit(id)
@@ -490,30 +499,23 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   async function askVera(text = request, prefer?: string[]) {
     if (text.trim().startsWith('/')) { setRequest(''); insert(page.doc.content.length); return }
     if (!text.trim() || asking) return
-    setVeraStatus(''); setRequest('')
+    setVeraStatus(''); setCoachingQuestions([]); setRequest('')
     const selection = textSelection?.blockId === selectedId ? textSelection : null
     const preferred = prefer && selected ? prefer.find((key) => typeof selected.props[key] === 'string' && (selected.props[key] as string).trim() && ['text', 'textarea'].includes(String(config.components[selected.type]?.fields?.[key]?.type))) : undefined
     const field = selection?.field ?? preferred ?? (selected && Object.entries(config.components[selected.type]?.fields ?? {}).find(([k, f]) => (f.type === 'textarea' || f.type === 'text') && typeof selected.props[k] === 'string' && selected.props[k].length > 30)?.[0])
-    if (!selected || !selectedId || !field) { setVeraStatus('Select a section with text first. I can propose a rewrite for you to review.'); return }
+    if (!selected || !selectedId || !field) { setVeraStatus('Select a section with text first. I can help you review it in your own words.'); return }
     if (!onPropose) { setVeraStatus('Vera is not connected for this website yet.'); return }
     setAsking(true)
     try {
       const path = selection?.path ?? []
       const before = inlineFieldValue(selected.props, { field, path, start: 0, end: 0 })
       const result = await onPropose(text, before)
-      if (result.ok) { setProposal({ pageSlug: page.slug, blockId: selectedId, field, path, before, after: result.text }); setVeraStatus('Here is a proposed change. It stays in your draft until you publish.') }
+      if (result.ok) { setCoachingQuestions(websiteCoachingQuestions(result.promptIds)); setVeraStatus('Consider these questions as you write in your own words.') }
       else setVeraStatus(result.error)
     } catch { setVeraStatus('Vera could not reply. Try again in a moment.') }
     finally { setAsking(false) }
   }
-  function applyProposal() {
-    if (!proposal) return
-    const target = draft.pages.find((p) => p.slug === proposal.pageSlug)
-    const block = target && findBlockDeep(target.doc, config, proposal.blockId)
-    if (!target || !block || inlineFieldValue(block.props, { field: proposal.field, path: proposal.path, start: 0, end: 0 }) !== proposal.before) { setVeraStatus('That text has changed. Ask for a new proposal before applying.'); return }
-    commit({ ...draft, pages: draft.pages.map((p) => p.slug === target.slug ? { ...p, doc: updateBlockPropsDeep(p.doc, config, proposal.blockId, { [proposal.field]: replaceInlineField(block.props, { field: proposal.field, path: proposal.path, start: 0, end: proposal.before.length }, proposal.after) }) } : p) }, { label: `Edited ${config.components[block.type]?.label ?? block.type}` })
-    setProposal(null); setVeraStatus('Applied to your draft. Undo is available above.')
-  }
+
   function openChrome(area: 'header' | 'footer') { setTextSelection(null); setSelectedId(null); setPanel(area); openRight() }
   function movePage(direction: -1 | 1) {
     const index = draft.pages.indexOf(page), target = index + direction
@@ -564,9 +566,11 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const themeFonts = String(canvasVars['--th-display' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const bodyFont = String(canvasVars['--th-body' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const spaceAccent = brandAccent && /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(brandAccent) ? brandAccent : null
+  const changeThemeButton = <button type="button" className={k('we-row')} onClick={() => setModal('theme')}><span>Change theme<small>Now wearing {WEBSITE_THEME_LABEL[draft.theme]}. See every theme and its starter kits.</small></span></button>
   const fqThemeTab = <>
     <div className="cap">Theme</div>
-    {SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className={`theme${on(draft.theme === theme)}`} aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }, { label: 'Theme' }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }); say('Theme updated') }}>
+    {changeThemeButton}
+    {SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className={`theme${on(draft.theme === theme)}`} aria-pressed={draft.theme === theme} onClick={() => pickTheme(t)}>
       <span className="sw" style={websiteThemeVars(theme)} aria-hidden><i data-swatch="bg" /><i data-swatch="accent" /></span><span><b>{WEBSITE_THEME_LABEL[theme]}</b><small>{t.description}</small></span></button> })}
     <KitLibrary onApply={applyKitChoice} onPreview={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />
     <div className="cap">Accent</div>
@@ -598,7 +602,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <button type="button" className="we-row" disabled={draft.pages.length >= 30} onClick={() => setModal('templates')}><Plus size={15} />New page</button><button type="button" className="we-row" onClick={() => { setPanel('page'); setRight(true) }}><Settings2 size={15} />Page settings</button>
       <div className="we-caption">Site</div><a className="we-row" href={`https://${host}/`} target="_blank" rel="noreferrer"><Globe size={15} />{host}</a><button type="button" className="we-row" onClick={() => { setPanel('seo'); setRight(true) }}><Search size={15} />SEO and sharing</button><button type="button" className="we-row" onClick={() => { setPanel('content'); setRight(true) }}><Settings2 size={15} />Shared content</button></>
   const siteTab = FQ_EDITOR ? fqSiteTab : <><div className="we-caption">Website settings</div><button type="button" className="we-row" onClick={() => openChrome('header')}>Header and navigation</button><button type="button" className="we-row" onClick={() => openChrome('footer')}>Footer</button><button type="button" className="we-row" onClick={() => { setTab('Theme'); setLeft(true) }}>Theme and logo</button><button type="button" className="we-row" onClick={() => { setPanel('page'); setRight(true) }}>Page settings</button><button type="button" className="we-row" onClick={() => { setPanel('seo'); setRight(true) }}>SEO and sharing</button><a className="we-row" href={`https://${host}/`} target="_blank" rel="noreferrer">Open live website</a><a className="we-row" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer">Space home</a></>
-  const themeTab = FQ_EDITOR ? fqThemeTab : <><div className="we-caption">Theme</div>{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }) }}>
+  const themeTab = FQ_EDITOR ? fqThemeTab : <><div className="we-caption">Theme</div>{changeThemeButton}{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => pickTheme(t)}>
       <span className="we-theme-swatch" style={websiteThemeVars(theme)}><i style={{ background: 'var(--ed-chrome)' }} /><i style={{ background: 'var(--th-bg)' }}><b /></i></span><span><strong>{WEBSITE_THEME_LABEL[theme]}</strong><small>{t.description}</small></span>
       </button> })}
       <KitLibrary onApply={applyKitChoice} onPreview={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />
@@ -634,8 +638,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {panel === 'comments' && <><div className={k('we-note')}>{selectedId ? pinPosition?.blockId === selectedId ? 'Comment pinned at the selected position.' : 'Shift-click the page to choose a precise pin position.' : 'Select a section to pin a comment.'}</div>{page.comments.filter((c) => !c.resolved).map((c) => <article className={k('we-comment')} key={c.id}><button type="button" className={k('we-row')} onClick={() => setSelectedId(c.blockId)}><strong>{c.author}</strong></button><small>{new Date(c.createdAt).toLocaleString()}</small><p>{c.text}</p>{c.replies?.map((reply) => <div className={k('we-comment-reply')} key={reply.id}><strong>{reply.author}</strong><small>{new Date(reply.createdAt).toLocaleString()}</small><p>{reply.body}</p></div>)}{(c.replies?.length ?? 0) < 100 && <><label className={k('we-field')}>Reply to {c.author}<Textarea variant="seamless" aria-label={`Reply to comment by ${c.author}`} value={replies[c.id] ?? ''} maxLength={2000} onChange={(event) => setReplies((previous) => ({ ...previous, [c.id]: event.target.value }))} /></label><button type="button" className={k('we-action secondary')} disabled={!replies[c.id]?.trim()} onClick={() => replyToComment(c.id)}>Post reply</button></>}<button type="button" className={k('we-row')} onClick={() => commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, comments: p.comments.map((x) => x.id === c.id ? { ...x, resolved: true } : x) } : p) })}>Resolve</button></article>)}
       <label className={k('we-field')}>Comment<Textarea variant="seamless" value={comment} maxLength={2000} onChange={(e) => setComment(e.target.value)} /></label><button type="button" className={k('we-action')} disabled={!comment.trim() || !selectedId} onClick={addComment}>Post comment</button></>}
   </>
-  const modalLabel = modal === 'publish' ? 'Publish website' : modal === 'templates' ? 'New page' : modal === 'delete-page' ? 'Remove page' : modal === 'menu' ? 'Menu and logo' : 'Add section'
-  const modalTitle = modal === 'publish' ? 'Publish your changes' : modal === 'templates' ? 'Start a new page' : modal === 'delete-page' ? 'Remove this page?' : modal === 'menu' ? 'Menu and logo' : 'Add a section'
+  const modalLabel = modal === 'publish' ? 'Publish website' : modal === 'templates' ? 'New page' : modal === 'delete-page' ? 'Remove page' : modal === 'menu' ? 'Menu and logo' : modal === 'theme' ? 'Change theme' : 'Add section'
+  const modalTitle = modal === 'publish' ? 'Publish your changes' : modal === 'templates' ? 'Start a new page' : modal === 'delete-page' ? 'Remove this page?' : modal === 'menu' ? 'Menu and logo' : modal === 'theme' ? 'Change theme' : 'Add a section'
   const publishAction = () => { if (publishWhen === 'now') void save(true); else if (!scheduledAt || !Number.isFinite(new Date(scheduledAt).getTime()) || new Date(scheduledAt).getTime() <= Date.now()) setError('Choose a future date and time.'); else void save(false, new Date(scheduledAt).toISOString()) }
   const publishDisabled = !dirty || status === 'saving' || status === 'conflict'
   const publishLabel = status === 'saving' ? 'Saving…' : publishWhen === 'schedule' ? 'Schedule publish' : 'Publish now'
@@ -651,7 +655,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // layout. Top bar, left rail (Pages, Layers, Add, Theme, Site), the stage with the Vera bar, the inspector
   // (Content, Design, Advanced, Notes) and the publish modal. Folding is the kit's data-lf / data-rf.
   if (FQ_EDITOR) {
-    const veraVisible = asking || !!veraStatus || !!proposal
+    const veraVisible = asking || !!veraStatus || coachingQuestions.length > 0
     // The design's save line: "Saving…", then "Draft saved · 2 min ago". A failed save says so and the line retries.
     const fqSaveLabel = status === 'saving' ? 'Saving…' : status === 'saved' ? (savedAt ? `Draft saved · ${savedAgo(savedAt, now)}` : 'Draft saved') : status === 'unsaved' ? 'Unsaved changes' : status === 'conflict' ? 'A newer draft exists' : 'Not saved · Retry'
     // "Section 2 of 8 · Live data" (the design's inspector header) for a top-level section; nested blocks keep the scope line.
@@ -704,10 +708,10 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><FqIcon name="minus" /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><FqIcon name="plus" /></Icon></div>}
           {!preview && veraHidden && <button type="button" className="vera-orb" aria-label="Show Vera" aria-keyshortcuts="Meta+K Control+K Meta+Backslash Control+Backslash" title="Show Vera (⌘K)" onClick={() => putVeraAway(false, true)}><span className="orb" aria-hidden /></button>}
           {!preview && !veraHidden && <div className="vera">
-            <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is preparing a proposal…' : <><b>Vera</b>{proposal ? <> · {blockName(proposal.blockId, draft.pages.find((p) => p.slug === proposal.pageSlug)?.doc)}</> : null}{veraStatus && !proposal && <p>{veraStatus}</p>}</>}{proposal && <><p>{proposal.after}</p><div className="acts"><button type="button" className="btn sm pa" onClick={applyProposal}>Apply</button><button type="button" className="btn sm txt" onClick={() => { setProposal(null); setVeraStatus('') }}>Not now</button></div></>}</div>
+            <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is choosing coaching questions…' : <><b>Vera</b>{veraStatus && <p>{veraStatus}</p>}{coachingQuestions.map(question => <p key={question}>{question}</p>)}{coachingQuestions.length > 0 && <button type="button" className="btn sm txt" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button>}</>}</div>
             <form className="bar" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
               <span className="orb" aria-hidden />
-              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder="Ask Vera to change this page…" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder="Ask Vera to help review your writing…" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
               <span className="ctx">{veraContext}</span>
               <button type="submit" className="btn sm ink" disabled={asking}>Ask</button>
               <button type="button" className="ib vera-hide" aria-label="Hide Vera" aria-keyshortcuts="Meta+Backslash Control+Backslash" title="Hide Vera (⌘\\)" onClick={() => putVeraAway(true)}><FqIcon name="close" /></button>
@@ -733,6 +737,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         {modal === 'publish' && <span className="eyebrow">{draft.chrome?.name || brandName} · {page.label}</span>}
         <h2>{modal === 'publish' ? 'Ready to publish?' : modalTitle}</h2>
         {modal === 'menu' && <SiteMenuEditor slug={links.slug} />}
+        {modal === 'theme' && <ThemeChanger current={draft.theme} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
         {modal === 'insert' && <div className="modal-body">{palette}</div>}
         {modal === 'delete-page' && deletePageBody}
         {modal === 'templates' && <><label className="fld"><span className="l">Page name</span><Input className="in" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="note err">{error}</p>}<div className="blocks">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="blk" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="th" aria-hidden><i className="a s" /><i className="w" /><i /></span>{name}<small>{description}</small></button>)}</div></>}
@@ -787,12 +792,12 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
       {!preview && <div className="we-zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><Minus size={15} aria-hidden /></Icon><span>{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><Plus size={15} aria-hidden /></Icon></div>}
       {!preview && <VeraDock>
-        {(asking || veraStatus || proposal) && <div className="we-thread">
-          <p role="status"><b>Vera</b>{selected ? ` · ${config.components[selected.type]?.label ?? selected.type}` : ''}<br />{asking ? 'Vera is preparing a proposal…' : veraStatus}</p>{proposal && <div className="we-proposal"><div className="we-caption">Proposed text</div><p>{proposal.after}</p><div className="we-actions"><button type="button" className="we-action pa sm" onClick={applyProposal}>Apply</button><button type="button" className="we-action txt sm" onClick={() => { setProposal(null); setVeraStatus('Proposal discarded.') }}>Not now</button></div></div>}</div>}
-        <div className="we-suggestions"><button type="button" onClick={() => void askVera('Make this shorter while keeping every fact.')}>Make it shorter</button><button type="button" onClick={() => void askVera('Make this warmer and more welcoming. Keep every fact.')}>Make it warmer</button><button type="button" onClick={() => void askVera('Suggest a better heading for this section. Keep every fact.')}>Suggest a better heading</button><button type="button" onClick={() => insert(page.doc.content.length)}>Add a section</button></div>
+        {(asking || veraStatus || coachingQuestions.length > 0) && <div className="we-thread">
+          <p role="status"><b>Vera</b>{selected ? ` · ${config.components[selected.type]?.label ?? selected.type}` : ''}<br />{asking ? 'Vera is choosing coaching questions…' : veraStatus}</p>{coachingQuestions.length > 0 && <div className="we-proposal"><div className="we-caption">Questions for your writing</div>{coachingQuestions.map(question => <p key={question}>{question}</p>)}<button type="button" className="we-action txt sm" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button></div>}</div>}
+        <div className="we-suggestions"><button type="button" onClick={() => void askVera('Help me decide which details to keep in this passage.')}>Review length</button><button type="button" onClick={() => void askVera('What should I consider about welcoming tone while writing in my own words?')}>Review tone</button><button type="button" onClick={() => void askVera('Which questions should I consider while writing my own heading for this section?')}>Review the heading</button><button type="button" onClick={() => insert(page.doc.content.length)}>Add a section</button></div>
         <form className="we-vera-bar" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
           <span className="we-orb" aria-hidden />
-          <Input variant="seamless" aria-label="Ask Vera" placeholder="Ask Vera to change this page…" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+          <Input variant="seamless" aria-label="Ask Vera" placeholder="Ask Vera to help review your writing…" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
           <span className="we-context" title={textSelection ? `Selected text · ${textSelection.field}` : undefined}>{textSelection ? 'Selected text' : selected ? config.components[selected.type]?.label ?? selected.type : page.label}</span>
           <button type="submit" className="we-action ink sm" disabled={asking}>Ask</button>
         </form>
@@ -810,6 +815,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {modal && <div className="we-overlay" onClick={() => setModal(null)}><Dialog label={modalLabel}>
       <div className="we-modal-head"><h2>{modalTitle}</h2><Icon label="Close dialog" onClick={() => setModal(null)}><X size={18} /></Icon></div>
       {modal === 'menu' && <SiteMenuEditor slug={links.slug} />}
+      {modal === 'theme' && <ThemeChanger current={draft.theme} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
       {modal === 'insert' && palette}
       {modal === 'delete-page' && deletePageBody}
       {modal === 'templates' && <><label className="we-field">Page name<Input variant="seamless" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="we-error">{error}</p>}<div className="we-template-grid">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="we-template" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="we-template-mark"><span /><span /><span /></span><strong>{name}</strong><small>{description}</small><small>{draft.theme} layout</small></button>)}</div></>}
