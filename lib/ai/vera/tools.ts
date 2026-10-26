@@ -68,12 +68,10 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
   {
     key: 'draft_intro',
     description:
-      'Introduce the member to a host or member: write a short, warm introduction post in the member\'s own voice (use what they\'ve told you) and put the COMPLETE text in `message`. Once the member approves, it posts to the community feed mentioning @toHandle — the scary first hello, done.',
-    mode: 'write',
-    confirmLabel: 'Post this introduction',
+      'Coach the member through introducing themselves to a host or member. Returns questions and a route to write their own introduction. Never drafts, publishes, or sends words on their behalf.',
+    mode: 'read',
     params: [
-      { name: 'toHandle', type: 'string', required: true, description: 'Handle of the person to introduce them to.' },
-      { name: 'message', type: 'string', required: true, description: 'The full drafted introduction, ready to post — the member reads and approves exactly this text.' },
+      { name: 'toHandle', type: 'string', required: true, description: 'Handle of the person they want to meet.' },
     ],
   },
   {
@@ -188,9 +186,8 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
   // the drift ADR-986 exists to kill, so the entity list is derived and the tool widens when a
   // manifest lands. See lib/ai/vera/create-tools.ts for the autonomy law behind it.
   //
-  // It is a PROPOSE, and only a propose. Vera drafts a thing; the member opens it, changes what
-  // they like, and taps Create in their own session. There is no confirm tool and no graduation
-  // flag, so no sequence of model output creates anything (lib/ai/vera/create-entity.ts).
+  // Retained for authenticated human application callers. The model-facing dispatcher refuses
+  // create_entity and routes to coaching; human Studio creation remains governed separately.
   createEntityToolDef(),
 ] as const
 

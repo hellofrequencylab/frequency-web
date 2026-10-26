@@ -215,11 +215,18 @@ Vera acts **only** through a small, typed tool registry, so consent, safety, and
 | `set_profile_field` | Set handle / display name / region / avatar | **confirm** (shown, one-tap accept) |
 | `suggest_circle` / `suggest_practice` | Surface 1 to 2 best-fit options (semantic match, §9) | read-only |
 | `join_circle` / `adopt_practice` | Take the action | **confirm** |
-| `draft_intro_post` | Draft a first hello / intro post for the member to send | propose-only (human sends) |
+| `draft_intro` | Ask introduction questions and point the member to the feed to write their own hello | read-only; no model-authored message or publish action |
 | `surface_help` | Pull the relevant help article(s) (RAG) | read-only |
 | `introduce_to_human` | Offer/route a warm intro to a host/guide | **confirm** |
 | `flag_for_human` | Route cruelty/crisis to moderation / a person | act (audited) |
 | `create_entity` | Draft any entity in the Studio catalog (ADR-986) for the member to review | propose-only (human creates) |
+
+**Authorship boundary.** The live conversational tool loop never executes writes. Its allowed
+member actions remain proposals for confirmation. `create_entity`, `send_playbook_email`, and
+`send_intro_email` are rejected at the model dispatch boundary with coaching instructions, even
+if a model invents those calls. The legacy model create entry point cannot save fields. Human
+Studio creation and authenticated operator programs keep their separate application paths. This
+is not a claim that every legacy Studio generator has been converted to coaching.
 
 **Creation (ADR-988).** `create_entity` is one tool for every creatable entity, and its entity list is
 **derived** from `lib/studio/registry.ts` rather than restated, so it can never name something the catalog
@@ -250,8 +257,8 @@ is her fallback.
   conversation via `set_profile_field` + `remember_fact` (lazy capture, ADR-047). The form still
   exists as the fallback.
 - **Cold-start solved:** the scariest step ("which circle?") becomes `suggest_circle` →
-  `join_circle` → `draft_intro_post`. She narrows the choice to one good option and writes your
-  first hello, then hands you to the humans.
+  `join_circle` → `draft_intro`. She narrows the choice to one good option, asks what you would
+  like to share, and points you to the feed to write your own hello.
 - **The welcome moment:** once your name is set, she triggers the community welcome post (ADR-047
   beat #6) so you arrive *greeted*, not alone.
 - **Then she fades.** Per §3, once you've joined a circle and adopted a practice, her footprint
@@ -284,15 +291,16 @@ member toward people/practices (doctrine-aligned), and each rides infrastructure
 1. **"Find your people" semantic matching.** Embed a member's stated interests/goals (reuse
    pgvector) and match to the 1 to 2 circles/practices/people most likely to land. Kills the
    cold-start "which circle?" friction (the #1 onboarding drop-off).
-2. **Warm intros, not just suggestions.** `draft_intro_post` writes the first hello so the scary
-   part is done. Suggestions convert when the awkwardness is removed.
+2. **Introduction coaching.** `draft_intro` asks what the member has in common with someone,
+   what they would like to ask, and what they are comfortable sharing. The member writes and
+   publishes their own hello. The tool cannot accept a finished message or create a post.
 3. **Goal-anchored accountability.** Tie every nudge to the member's *own* stated goal (from
    memory, §5) + a *real* upcoming event, not a generic "we miss you." Specific + real = it works.
 4. **Rationed proactive encouragement.** Streak-risk / first-practice / milestone nudges via the
    existing queue + Batch, frequency-capped through `shouldSend`: one channel, never spammy.
 5. **The welcome moment** (§7): turn passive signups into *greeted* members on day one.
 6. **Host/Guide copilot as the human-amplifier.** The biggest anti-lean-in lever: make the humans
-   better at holding the room (summaries, at-risk flags, draft announcements) so the *human*
+   better at holding the room (summaries, evidence-backed signals, announcement prompts) so the *human*
    relationship carries the engagement, not Vera.
 7. **Plain-language / accessibility on request.** One-shot translate/clarify lowers the barrier for
    newcomers and non-native speakers: a small surface, big inclusion win.
