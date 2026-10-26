@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1375",
+  "title": "Keep the home hero on Build circles, not walls",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/site/pages/home/frequency-home.tsx",
+    "ref": "Owner explicit hero ruling2026-10-26"
+  },
+  "detail": "The same brand headline now leads Browse and Host. Supporting paragraphs still explain local gatherings and opening a Space. Search WebPage headline agrees; voice guide records the owner ruling and removes the ungrounded Thursday draft direction. No pricing, beta entry, layout or audience-switch behavior changed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/home-brand-promise.mjs",
+    "note": "Actual H1 must equal the shared brand promise without audience switching; coded search metadata must agree and arbitrary weekday must be absent."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}

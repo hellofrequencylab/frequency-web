@@ -1,21 +1,21 @@
 {
   "id": "LIVE-1373",
-  "title": "One About for every surface: typing About in the Spotlight or publishing the Space page saves it to the Space",
+  "title": "Starter kits panel in the site editor's Theme tab: add its pages, replace my pages, or look only",
   "lane": "live",
   "priority": "P2",
   "size": "S",
   "status": "done",
   "wave": "W7",
   "source": {
-    "file": "lib/spaces/promote-about.ts",
-    "ref": "Daniel 2026-10-26: content blocks synced across Spotlight, Space page and website; follow-up to LIVE-1372"
+    "file": "components/sites/editor/kit-library.tsx",
+    "ref": "Mega Theme lead 2026-10-26: rebuild the kit panel small on a clean branch, reading the Midnight niche variants (LIVE-1355). No picker or switcher."
   },
-  "detail": "An About body typed into one page was saved as that page's own copy, which beats the Space's intro, so the other pages never saw it. The Spotlight save, and the Space page when it is published, now lift the typed body out of the layout, write it to the Space (spaces.about) and leave the page on the shared intro. Both actions already gate on canManage. Story and the website editor are not changed here.",
+  "detail": "The Theme tab lists the registered kits (the six Midnight niche variants and the Wildheart coaches kit). Open one and choose Add its pages, Replace my pages (needs a second click) or Look only. Applying loads the kit on demand and commits one labelled editor step, so undo takes it back; block defaults come from the registry; a kit on another theme saves the site theme the way the theme list does. Kit words are sample copy: nothing reaches the live site until the owner publishes. Not built: the full-website entitlement check on add and replace, a side-by-side preview, the sample-copy highlight and publish warning, a picker or switcher.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/spaces/[slug]/manage/spotlight/actions.ts','utf8');process.exit(s.includes('takeAboutBody')&&fs.existsSync('lib/spaces/promote-about.ts')?0:1)\"",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/sites/editor/shell.tsx','utf8');process.exit(fs.existsSync('components/sites/editor/kit-library.tsx')&&s.includes('applyKitChoice')&&s.includes('<KitLibrary')?0:1)\"",
     "checked": "2026-10-26",
-    "evidence": "Vitest promote-about and the Space profile action suites pass; check:authz passes."
+    "evidence": "Panel, shell wiring and 2 panel tests pass locally with the editor suites (61 tests)."
   },
   "closed": "2026-10-26"
 }

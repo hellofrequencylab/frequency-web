@@ -27,7 +27,6 @@ const event: PublicEvent = {
 
 let zone: string | null = 'America/Los_Angeles'
 let cancelled = false
-vi.mock('@/lib/theme/design', () => ({ SITE_DESIGN: 'frequency' }))
 
 vi.mock('@/lib/discover', () => ({
   getPublicEventBySlug: async () => event,

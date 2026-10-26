@@ -7,27 +7,14 @@
 // answer-first copy, breadcrumb + CollectionPage + ItemList JSON-LD. Voice locked:
 // plain, concrete, no narrated feelings, no health claims, no em dashes.
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowRight, Users, CalendarDays, Building2 } from 'lucide-react'
 import { getDensityCity, listDensityCities, cityFromSlug } from '../_data'
 import { getCityHub } from '../_towns'
 import { meetsIndexFloor } from '@/lib/seo/index-floor'
 import { getCityCategoryHubs, cityRegion } from '@/app/discover/events/_data'
-import { CircleCard, EventRow } from '@/components/discover/cards'
-import { SpaceCard } from '@/components/spaces/space-card'
-import {
-  PageHero,
-  Section,
-  SectionHeading,
-  BetaCTA,
-  Button,
-} from '@/components/marketing/marketing-ui'
-import { Stat } from '@/components/ui/stat'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema, cityEventListSchema, spaceListSchema } from '@/lib/jsonld'
-import { OG_SITE, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
-import { SITE_DESIGN } from '@/lib/theme/design'
+import { OG_SITE, SITE_NAME, SITE_URL } from '@/lib/site'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { FrequencyTown } from '@/components/frequency/site/pages/discover/frequency-discover-places'
 
@@ -155,212 +142,23 @@ export default async function DiscoverCityPage({
         ].filter(Boolean)}
       />
   )
-
-  // The Frequency design (ADR-1737): the same reads, lists and schema, in the design's town body.
-  // SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        {schema}
-        <FrequencyTown
-          city={city}
-          base={{ href: '/discover/cities', label: 'Cities' }}
-          circles={circles}
-          events={events}
-          spaces={spaces}
-          types={hubs.map((h) => ({
-            href: `/discover/events/in/${h.citySlug}/${h.category.slug}`,
-            label: h.category.label,
-            count: h.events.length,
-          }))}
-          startOne
-          today={dayInZone(new Date(), HOME_TZ)}
-        />
-      </>
-    )
-  }
-
   return (
     <>
       {schema}
-
-      <PageHero
-        eyebrow="A community taking root"
-        title={
-          <>
-            Find your people in <span className="text-primary-strong">{city}</span>
-          </>
-        }
-        subtitle={`Circles are meeting and events are happening in ${city} right now. Browse them free, then sign up to join one, RSVP, or start your own. Keep coming back and the faces get familiar.`}
+      <FrequencyTown
+        city={city}
+        base={{ href: '/discover/cities', label: 'Cities' }}
+        circles={circles}
+        events={events}
+        spaces={spaces}
+        types={hubs.map((h) => ({
+          href: `/discover/events/in/${h.citySlug}/${h.category.slug}`,
+          label: h.category.label,
+          count: h.events.length,
+        }))}
+        startOne
+        today={dayInZone(new Date(), HOME_TZ)}
       />
-
-      {/* ── At a glance ─────────────────────────────────────────── */}
-      <Section tone="canvas" role="cont">
-        <div className="grid grid-cols-2 gap-8 text-center sm:gap-12">
-          <Stat value={circles.length} label={circles.length === 1 ? 'Circle' : 'Circles'} />
-          <Stat
-            value={events.length}
-            label={events.length === 1 ? 'Upcoming event' : 'Upcoming events'}
-          />
-        </div>
-      </Section>
-
-      {/* ── Circles ─────────────────────────────────────────────── */}
-      {circles.length > 0 && (
-        <Section tone="surface" className="!max-w-none">
-          <div className="mx-auto max-w-4xl">
-            <SectionHeading
-              eyebrow="Find your people"
-              title={
-                <>
-                  Circles in <span className="text-primary-strong">{city}</span>
-                </>
-              }
-              kicker="Up to fifty neighbors, small enough to know everyone."
-            />
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {circles.map((c) => (
-                <CircleCard key={c.id} circle={c} />
-              ))}
-            </div>
-          </div>
-        </Section>
-      )}
-
-      {/* ── Events ──────────────────────────────────────────────── */}
-      {events.length > 0 && (
-        <Section tone="canvas" className="!max-w-none">
-          <div className="mx-auto max-w-3xl">
-            <SectionHeading
-              eyebrow="Coming up"
-              title={
-                <>
-                  Happening in <span className="text-primary-strong">{city}</span>
-                </>
-              }
-              kicker="Real plans, on real days, with room for you."
-            />
-            <div className="space-y-3">
-              {events.map((e) => (
-                <EventRow key={e.id} event={e} />
-              ))}
-            </div>
-            {hubs.length > 0 && (
-              // The city × category hubs (/discover/events/in/<city>/<category>) answer the most
-              // local query shape there is, and until SCAN-670 nothing but the sitemap linked them.
-              // Same pill row the hub page draws for its siblings, under the page's own heading kit.
-              <section className="mt-10">
-                <SectionHeading
-                  eyebrow="By type"
-                  title={
-                    <>
-                      Events by type in <span className="text-primary-strong">{city}</span>
-                    </>
-                  }
-                />
-                <div className="flex flex-wrap gap-2">
-                  {hubs.map((h) => (
-                    <Link
-                      key={h.category.slug}
-                      href={`/discover/events/in/${h.citySlug}/${h.category.slug}`}
-                      className="rounded-pill border border-border bg-surface px-4 py-2 text-body-sm font-medium text-text transition-colors hover:border-border-strong"
-                    >
-                      {h.category.label} ({h.events.length})
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
-            <div className="mt-8">
-              <Link
-                href="/discover/events"
-                className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline"
-              >
-                Browse all events <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </Section>
-      )}
-
-      {/* ── Local Spaces ────────────────────────────────────────── */}
-      {spaces.length > 0 && (
-        // The businesses, studios and organizations that say they are in this city (spaces.city,
-        // SCAN-675): the strongest local-intent entities the site has, each linking to its own
-        // self-canonical profile. Same directory card /discover/spaces draws, so nothing is authored
-        // twice; the ItemList above mirrors this grid for answer engines.
-        <Section tone="surface" className="!max-w-none">
-          <div className="mx-auto max-w-4xl">
-            <SectionHeading
-              eyebrow="Local Spaces"
-              title={
-                <>
-                  Local Spaces in <span className="text-primary-strong">{city}</span>
-                </>
-              }
-              kicker="Studios, shops and organizations with a home here."
-            />
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {spaces.map((s) => (
-                <SpaceCard key={s.id} space={s} />
-              ))}
-            </div>
-            <div className="mt-8">
-              <Link
-                href="/discover/spaces"
-                className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline"
-              >
-                <Building2 className="h-4 w-4" /> Browse all Spaces
-              </Link>
-            </div>
-          </div>
-        </Section>
-      )}
-
-      {/* ── If you would rather start one ───────────────────────── */}
-      <Section tone="surface">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="mb-4 font-display text-display-h3 uppercase text-text">
-            Want to start one in {city}?
-          </h2>
-          <p className="text-body-lg leading-relaxed text-muted">
-            You do not have to build a community. Host one Circle. Pick one thing, set a
-            standing time, and invite a few people. We hand you the format and the
-            first-night script.
-          </p>
-          <div className="mt-8">
-            <Button href="/how-to-start-a-circle" variant="secondary">
-              See how to start a Circle
-            </Button>
-          </div>
-        </div>
-      </Section>
-
-      {/* ── Cross-links: the other ways to browse ───────────────── */}
-      <Section tone="canvas">
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-body-sm">
-          <Link href="/discover/cities" className="inline-flex items-center gap-1.5 font-semibold text-primary-strong hover:underline">
-            <Users className="h-4 w-4" /> All cities
-          </Link>
-          <Link href="/discover/circles" className="inline-flex items-center gap-1.5 font-semibold text-primary-strong hover:underline">
-            <Users className="h-4 w-4" /> All Circles
-          </Link>
-          <Link href="/discover/events" className="inline-flex items-center gap-1.5 font-semibold text-primary-strong hover:underline">
-            <CalendarDays className="h-4 w-4" /> All events
-          </Link>
-        </div>
-      </Section>
-
-      <BetaCTA
-        heading={`Your people are already gathering in ${city}`}
-        body="Frequency is free to join, and it stays free. Sign up, find a Circle near you, and start showing up this week."
-      />
-
-      <div className="px-6 pb-16 text-center">
-        <Button href={BETA_CTA_HREF} variant="ghost">
-          {BETA_CTA_LABEL} <ArrowRight className="h-4 w-4" />
-        </Button>
-      </div>
     </>
   )
 }

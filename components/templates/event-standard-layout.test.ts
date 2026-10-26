@@ -24,7 +24,7 @@ const templateCode = template.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/
 // The /discover/events/<slug> twin and its loading file were on this list until SCAN-672 retired
 // that route (a 308 to /events/<slug> in next.config.ts).
 const EVENT_PAGES = [
-  'app/(public)/events/[slug]/page.tsx',
+  // The public event page draws the Frequency event body now that Frequency is the only design (ADR-1880).
   'app/(main)/events/[slug]/event-member-page.tsx',
   'app/(main)/events/[slug]/loading.tsx',
 ] as const

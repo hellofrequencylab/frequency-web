@@ -1,37 +1,6 @@
-import { Skeleton } from '@/components/ui/skeleton'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyHelpLoading } from '@/components/frequency/site/pages/help/frequency-help-pages'
 
-// Loading skeleton for the Help Center home. Mirrors the header + the
-// two-column grid of category cards.
-function CategoryCardSkeleton() {
-  return (
-    <div className="rounded-card border border-border bg-surface-elevated p-5">
-      <Skeleton className="h-6 w-40" />
-      <Skeleton className="mt-2 h-4 w-56 max-w-full" />
-      <div className="mt-4 space-y-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-4 w-44 max-w-full" />
-        ))}
-      </div>
-    </div>
-  )
-}
-
+// Loading skeleton for the Help Center home: the help hero's frame, so nothing jumps when it lands.
 export default function HelpLoading() {
-  // Under Frequency (build-time) the wait is the help hero's frame, so nothing jumps when it lands.
-  if (SITE_DESIGN === 'frequency') return <FrequencyHelpLoading />
-  return (
-    <div>
-      <div className="mb-10 space-y-3">
-        <Skeleton className="h-10 w-72 max-w-full" />
-        <Skeleton className="h-6 w-full max-w-xl" />
-      </div>
-      <div className="grid gap-5 sm:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <CategoryCardSkeleton key={i} />
-        ))}
-      </div>
-    </div>
-  )
+  return <FrequencyHelpLoading />
 }

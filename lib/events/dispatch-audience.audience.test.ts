@@ -23,6 +23,7 @@ const STRANGER: DispatchViewerContext = {
   hubIds: [],
   nexusIds: [],
   spaceIds: [],
+  journeyPlanIds: [],
   regionId: null,
   home: null,
   resonantHostIds: new Set(),
@@ -82,12 +83,13 @@ describe('viewerInDispatchAudience — the gate the feed card shipped without', 
     ['hub', 'hubIds'],
     ['nexus', 'nexusIds'],
     ['space', 'spaceIds'],
+    ['journey', 'journeyPlanIds'],
   ] as const)('gates %s on the viewer’s %s', (scope, key) => {
     const target = row({ audience_scope: scope, audience_id: 'x-1' })
     expect(viewerInDispatchAudience(target, STRANGER)).toBe(false)
     expect(viewerInDispatchAudience(target, withReach({ [key]: ['x-1'] }))).toBe(true)
     // The tiers are not interchangeable: reach on the wrong axis must not open the row.
-    const otherKeys = (['circleIds', 'hubIds', 'nexusIds', 'spaceIds'] as const).filter((k) => k !== key)
+    const otherKeys = (['circleIds', 'hubIds', 'nexusIds', 'spaceIds', 'journeyPlanIds'] as const).filter((k) => k !== key)
     for (const other of otherKeys) {
       expect(viewerInDispatchAudience(target, withReach({ [other]: ['x-1'] }))).toBe(false)
     }
@@ -95,10 +97,10 @@ describe('viewerInDispatchAudience — the gate the feed card shipped without', 
 
   describe('fails closed', () => {
     it('refuses a scoped row with no audience_id', () => {
-      for (const scope of ['circle', 'hub', 'nexus', 'space']) {
+      for (const scope of ['circle', 'hub', 'nexus', 'space', 'journey']) {
         expect(
           viewerInDispatchAudience(row({ audience_scope: scope, audience_id: null }), withReach({
-            circleIds: ['x'], hubIds: ['x'], nexusIds: ['x'], spaceIds: ['x'],
+            circleIds: ['x'], hubIds: ['x'], nexusIds: ['x'], spaceIds: ['x'], journeyPlanIds: ['x'],
           })),
         ).toBe(false)
       }

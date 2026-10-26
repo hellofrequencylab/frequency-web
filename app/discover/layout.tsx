@@ -1,10 +1,5 @@
-import Link from 'next/link'
-import { SiteHeader } from '@/components/layout/site-header'
-import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { SupportChatLauncher } from '@/components/chat/support-chat-launcher'
 import { isSupportChatAvailable, supportChatFlagEnabled } from '@/lib/comms/chat-token'
-import { Wordmark } from '@/components/layout/wordmark'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 // Shared chrome for every public /discover page: the SiteHeader (light variant,
@@ -22,60 +17,10 @@ import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 // round trips plus the page's own full query set, on every hit. Now the anonymous shell (which IS
 // the indexable view) renders statically and a member's chrome swaps in after hydration.
 export default function DiscoverLayout({ children }: { children: React.ReactNode }) {
-  // THE DESIGN SWITCH (ADR-1737, build-time), as app/(marketing)/layout.tsx makes it. Under Frequency the
-  // town calendar and the directories wear the public Frequency chrome (header v4, whose signed-in state
-  // and Feed link resolve after paint, so these pages stay static), on COMMONS: they are listings, where
-  // people find and RSVP, not a pitch (guidelines/site-themes.md). A page can choose Stage with a row in
-  // lib/frequency/site-pages.ts. DAWN is unchanged below.
-  if (SITE_DESIGN === 'frequency') {
-    const chat = supportChatFlagEnabled() && isSupportChatAvailable() ? <SupportChatLauncher /> : null
-    return (
-      <SiteShell surface="commons" after={chat}>
-        {children}
-      </SiteShell>
-    )
-  }
-
+  const chat = supportChatFlagEnabled() && isSupportChatAvailable() ? <SupportChatLauncher /> : null
   return (
-    <ViewerProvider>
-      <SiteHeader variant="light" authMode="client" />
-      {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
-          tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-      {/* id="main" is the target of SiteHeader's "Skip to content" link (WCAG 2.4.1 Bypass
-          Blocks) on the only indexable community surface. */}
-      <main id="main" tabIndex={-1} className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-        {children}
-      </main>
-
-      {/* pt base + the home-indicator inset on the bottom so the legal/contact links clear it
-          in a standalone PWA (env() = 0 off-device, so unchanged in a normal browser). */}
-      <footer
-        className="bg-marketing-canvas border-t border-border/60 pt-10 px-safe [--px-safe-gutter:1.5rem]"
-        style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}
-      >
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <Wordmark className="h-5 w-auto opacity-40" />
-            <span className="text-meta text-muted">
-              &copy; {new Date().getFullYear()} Frequency Labs Holdings
-            </span>
-          </div>
-          <div className="flex items-center gap-8 text-meta text-muted">
-            <Link href="/discover" className="hover:text-text transition-colors">Discover</Link>
-            <Link href="/privacy" className="hover:text-text transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-text transition-colors">Terms</Link>
-            <a href="mailto:hello@frequencylocal.com" className="hover:text-text transition-colors">Contact</a>
-          </div>
-        </div>
-      </footer>
-      {/* Anonymous live chat (ADR-816) — this PUBLIC surface owns the bottom-right corner
-          (docs/CHAT-SHELL-PLAN.md §2); the member shell owns its own via the dock. Off unless the
-          SUPPORT_CHAT switch is enabled (supportChatFlagEnabled in lib/comms/chat-token.ts; the
-          prefixed name it once carried is no longer read, LIVE-165, 2026-09-07). */}
-      {/* 2026-09-05 (scan2 L3-06): the build flag alone mounted the widget even when the server could
-          not mint its token (CONVERSATION_TOKEN_SECRET unset in production) or had no inbox owner, so
-          every chat attempt failed after writing rows. isSupportChatAvailable is the server-side gate. */}
-      {supportChatFlagEnabled() && isSupportChatAvailable() && <SupportChatLauncher />}
-    </ViewerProvider>
+    <SiteShell surface="commons" after={chat}>
+      {children}
+    </SiteShell>
   )
 }

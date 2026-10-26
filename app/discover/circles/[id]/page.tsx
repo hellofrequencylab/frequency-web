@@ -1,16 +1,10 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
-import { Users, MapPin, ChevronLeft } from 'lucide-react'
 import { getPublicCircle, getPublicCircles } from '@/lib/discover'
-import { SignInCta } from '@/components/discover/cards'
-import { RippleRings } from '@/components/marketing/vector-art'
-import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
-import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleSchema } from '@/lib/jsonld'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyCircle } from '@/components/frequency/site/pages/discover/circles'
 
 export const revalidate = 3600
@@ -94,91 +88,10 @@ export default async function CirclePage({
     // helper so it stays consistent with every other /discover entity schema.
     circleSchema(circle),
   ]
-
-  // THE DESIGN SWITCH (ADR-1737): the same Circle, drawn in the site kit. Build-time constant.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd data={schema} />
-        <FrequencyCircle circle={circle} image={hero.coverImage} />
-      </>
-    )
-  }
-
   return (
-    <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
-      {/* Ripple rings: a circle widening out, the motif for this surface. */}
-      <RippleRings
-        aria-hidden
-        className="pointer-events-none absolute -top-24 -right-24 w-[30rem] max-w-none text-primary opacity-[0.05]"
-      />
+    <>
       <JsonLd data={schema} />
-
-      <Link
-        href="/discover/circles"
-        className="mb-4 inline-flex items-center gap-1 text-body-sm font-medium text-muted transition-colors hover:text-text"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Circles
-      </Link>
-
-      <DetailTemplate
-        {...hero}
-        title={circle.name}
-        subtitle={
-          <div className="flex flex-wrap items-center gap-4 text-body-sm text-muted">
-            <span className="inline-flex items-center gap-1.5">
-              <Users className="w-4 h-4" />
-              {circle.member_count} {circle.member_count === 1 ? 'member' : 'members'}
-            </span>
-            {circle.city && (
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin className="w-4 h-4" />
-                {circle.city}
-              </span>
-            )}
-            {circle.channel_name && circle.channel_slug && (
-              <Link
-                href={`/discover/topics/${circle.channel_slug}`}
-                className="inline-flex items-center gap-1 text-primary-strong hover:underline"
-              >
-                {circle.channel_name}
-              </Link>
-            )}
-          </div>
-        }
-        badges={
-          circle.status === 'forming' ? (
-            <span className="text-meta px-2 py-1 rounded-md font-medium bg-warning-bg text-warning capitalize">
-              forming
-            </span>
-          ) : undefined
-        }
-      >
-        {/* About */}
-        {circle.about ? (
-          <section className="mb-10">
-            <p className="text-body-lg text-muted leading-relaxed whitespace-pre-line">{circle.about}</p>
-          </section>
-        ) : (
-          <section className="mb-10">
-            <p className="text-body-lg text-muted leading-relaxed">
-              A small standing group of neighbors gathering in person around what they share.
-              Up to fifty people, close enough to walk to, small enough that the regulars learn
-              your name and notice the week you go missing.
-            </p>
-          </section>
-        )}
-
-        {/* Someone reading a single Circle is the warmest lead on the site, so the
-            ask lands here where intent peaks rather than bouncing them to /sign-in. */}
-        <SignInCta
-          title={`Want in on ${circle.name}?`}
-          body="Circles are small on purpose: up to 50 neighbors, no audition, two words to belong. Request a spot, see the standing times, and start showing up for people who'll keep a seat warm for you."
-          action={BETA_CTA_LABEL}
-          href={BETA_CTA_HREF}
-        />
-      </DetailTemplate>
-    </div>
+      <FrequencyCircle circle={circle} image={hero.coverImage} />
+    </>
   )
 }

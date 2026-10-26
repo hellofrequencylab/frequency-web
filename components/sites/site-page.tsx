@@ -332,6 +332,12 @@ export async function SitePage({
         ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()),
         next: mwLive?.events.find((e) => /circle night/i.test(e.title)) ?? null,
       }
+    : midnightSite
+      ? (() => {
+          // Midnight's top bar names the moon and the Space's next gathering, whatever it is called.
+          const next = mwLive?.events[0] ?? null
+          return { module: next?.title ?? '', theme: null, next }
+        })()
     : wildSite
       ? (() => {
           // The next Circle Night when the Space has one coming (the handoff's "Next Circle Night" line), else
