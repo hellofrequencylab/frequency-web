@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1172",
+  "title": "Remove the unused lock controls from the importer review board",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/admin/business-seeder/[id]/review-board.tsx",
+    "ref": "Review of the Codex AI coaching overhaul, 2026-10-26"
+  },
+  "detail": "Writing guidance no longer changes the draft or the live page, so the hero and layout lock state the board carried and forwarded to the reseed action did nothing (the action ignores both). The board and its page no longer take or forward them. The reseed action signature is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));process.exit(/initialLockHero|initialLockLayout/.test(f.readFileSync(\"app/(main)/admin/business-seeder/[id]/review-board.tsx\",\"utf8\"))?1:0)'",
+    "note": "Exits 0 once the review board no longer carries the dead lock props."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}
