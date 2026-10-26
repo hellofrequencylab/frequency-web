@@ -448,6 +448,14 @@ not.
 
 ## 7. Restore from backup
 
+### Operational table copies
+
+Create operational backup tables in a private, non-exposed schema where possible. If a copy must live in `public`, enable RLS and revoke **all table and column privileges** from `PUBLIC`, `anon` and `authenticated` in the same transaction as its creation, before commit. Preserve the required operator/service-role access. Do not add browser policies to an operator-only backup. Default grants can expose a newly copied table even when its name looks temporary; RLS alone does not block `TRUNCATE`.
+
+For the two exact backup names covered by SEC-002, the repeatable operator repair is [`scripts/ops/secure-frequency-backups.sql`](../scripts/ops/secure-frequency-backups.sql). Review the target and obtain database-change authorization before running it. It changes permissions only, retains the tables and rolls back if effective browser table or column privileges remain. Never widen its name filter without separately reviewing the newly targeted tables.
+
+After any backup creation or permission repair, inspect `pg_class.relrowsecurity`, `has_table_privilege` and `has_any_column_privilege` for both browser roles; check retained operator/service access and run security advisors. Check live catalogs as well as migration parity: operational copies can exist outside the migration ledger. No private-row reads are needed for these permission checks.
+
 **Serves** no SLO row. This is the section for a bad write, a dropped table, a migration that
 destroyed data, or a project that is gone. Section 4 is for a database that is slow or refusing;
 come here only when the data itself is wrong or missing. Owner only, and announced first: the
