@@ -1,5 +1,6 @@
 begin;
-select plan(26);
+select plan(27);
+select ok(exists(select 1 from pg_indexes where schemaname='public' and tablename='space_discovery_connections' and indexname='space_discovery_connections_actor_profile_id_idx' and indexdef like '%(actor_profile_id)%'),'actor foreign key has a leading index');
 select is((select relrowsecurity from pg_class where oid='public.space_discovery_connections'::regclass),true,'RLS enabled');
 select is((select bool_or(has_column_privilege('anon','public.space_discovery_connections',attname,'select')) from pg_attribute where attrelid='public.space_discovery_connections'::regclass and attnum>0 and not attisdropped),false,'anon has no column-level select grant');
 select is((select bool_or(has_column_privilege('authenticated','public.space_discovery_connections',attname,'select')) from pg_attribute where attrelid='public.space_discovery_connections'::regclass and attnum>0 and not attisdropped),false,'authenticated has no column-level select grant');

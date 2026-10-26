@@ -29,6 +29,7 @@ create table if not exists public.space_discovery_connections (
   ),
   constraint discovery_connection_nonce_lifetime check (nonce_expires_at is null or nonce_expires_at <= updated_at + interval '10 minutes')
 );
+create index if not exists space_discovery_connections_actor_profile_id_idx on public.space_discovery_connections (actor_profile_id);
 alter table public.space_discovery_connections enable row level security;
 revoke all on table public.space_discovery_connections from public, anon, authenticated;
 grant select, insert, update, delete on table public.space_discovery_connections to service_role;

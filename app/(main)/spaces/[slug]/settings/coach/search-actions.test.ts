@@ -48,6 +48,11 @@ describe('owner search connection actions', () => {
     expect(await disconnectSearchProvider('space', 'google')).toEqual({ success: true })
     expect(disconnectSearchConnection).toHaveBeenCalledWith('space', 'google_search_console')
   })
+  it('denies review at the action boundary before any runtime/private read', async () => {
+    m.allowed = false
+    expect(await reviewConnectedSearch('space', 'google')).toEqual({ status: 'unavailable', reason: 'permission_denied' })
+    expect(reviewSearchSignals).not.toHaveBeenCalled()
+  })
   it('never bypasses runtime gates or coerces an unknown provider into Google', async () => {
     expect(await reviewConnectedSearch('space', 'unknown')).toMatchObject({ status: 'unavailable', reason: 'invalid_provider' })
     expect(reviewSearchSignals).not.toHaveBeenCalled()

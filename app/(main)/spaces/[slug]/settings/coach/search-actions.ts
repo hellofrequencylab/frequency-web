@@ -29,5 +29,7 @@ export async function disconnectSearchProvider(spaceId: string, selected: string
 }
 export async function reviewConnectedSearch(spaceId: string, selected: string) {
   const provider = searchProvider(selected)
-  return provider ? reviewSearchSignals(spaceId, provider) : { status: 'unavailable' as const, reason: 'invalid_provider' }
+  if (!provider) return { status: 'unavailable' as const, reason: 'invalid_provider' }
+  if (!(await authorizeDiscoveryEditor(spaceId))) return { status: 'unavailable' as const, reason: 'permission_denied' }
+  return reviewSearchSignals(spaceId, provider)
 }
