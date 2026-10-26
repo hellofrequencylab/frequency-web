@@ -16,6 +16,8 @@ const m = vi.hoisted(() => ({
   addStageLink: vi.fn(),
   getFunnel: vi.fn(),
   sendBulkDm: vi.fn(),
+  route: vi.fn(),
+  rateOk: true,
   enrollments: [] as { profile_id: string; completed_at: string | null }[],
   revalidate: vi.fn(),
 }))
@@ -35,6 +37,8 @@ vi.mock('@/app/(main)/admin/growth/funnels/actions', () => ({
 }))
 vi.mock('@/lib/funnels/store', () => ({ getFunnel: (...a: unknown[]) => m.getFunnel(...a) }))
 vi.mock('@/lib/comms/bulk-dm', () => ({ sendBulkDm: (...a: unknown[]) => m.sendBulkDm(...a) }))
+vi.mock('@/lib/notifications/router', () => ({ routeNotification: (...a: unknown[]) => m.route(...a) }))
+vi.mock('@/lib/rate-limit', () => ({ rateLimitOk: async () => m.rateOk }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: () => ({ select: () => ({ eq: async () => ({ data: m.enrollments }) }) }),
@@ -61,6 +65,8 @@ beforeEach(() => {
   m.ctx = ctx()
   m.parseOk = true
   m.enrollments = []
+  m.rateOk = true
+  m.route.mockReset()
   m.createCampaign.mockImplementation(async () => ({ data: { id: `c-${m.createCampaign.mock.calls.length}` } }))
   m.scheduleCampaign.mockResolvedValue({ data: undefined })
   m.sendCampaign.mockResolvedValue({ data: { recipientCount: 3 } })
@@ -167,11 +173,72 @@ describe('sendJourneyBroadcastAction', () => {
     expect(await sendJourneyBroadcastAction('plan-1', input({ channels: [] }))).toEqual({ error: 'Pick at least one channel.' })
   })
 
-  it('refuses dispatch and text with honest reasons, and sends nothing when DM was not picked', async () => {
-    const res = await sendJourneyBroadcastAction('plan-1', input({ channels: ['dispatch', 'sms'] }))
-    expect(res).toMatchObject({ data: { results: [{ channel: 'dispatch', ok: false }, { channel: 'sms', ok: false, detail: 'Text is not available yet.' }] } })
+  it('refuses text with an honest reason, and sends nothing when DM was not picked', async () => {
+    const res = await sendJourneyBroadcastAction('plan-1', input({ channels: ['sms'] }))
+    expect(res).toMatchObject({ data: { results: [{ channel: 'sms', ok: false, detail: 'Text is not available yet.' }] } })
     expect(m.sendBulkDm).not.toHaveBeenCalled()
     expect(m.createCampaign).not.toHaveBeenCalled()
+    expect(m.route).not.toHaveBeenCalled()
+  })
+
+  describe('dispatch (push to the cohort)', () => {
+    const dispatch = (over: Record<string, unknown> = {}) => input({ channels: ['dispatch'], subject: 'Heads up', ...over })
+
+    it('routes one push per picked enrollee, never the sender, under the Space mute subject', async () => {
+      m.enrollments = [
+        { profile_id: 'a', completed_at: null },
+        { profile_id: 'b', completed_at: '2026-10-01T00:00:00Z' },
+        { profile_id: 'viewer-1', completed_at: null },
+      ]
+      m.route.mockResolvedValue({ enqueuedCount: 1 })
+      const res = await sendJourneyBroadcastAction('plan-1', dispatch({ segments: ['in_progress'] }))
+      expect(m.route).toHaveBeenCalledTimes(1)
+      expect(m.route).toHaveBeenCalledWith(
+        'event.dispatch',
+        { profileId: 'a', subject: { subjectType: 'space', subjectId: 'space-1' } },
+        { title: 'Heads up', body: 'Hello', url: '/journeys/sunrise' },
+      )
+      expect(res).toEqual({ data: { results: [{ channel: 'dispatch', ok: true, detail: 'Pushed to 1 person with push on.' }] } })
+      expect(m.sendBulkDm).not.toHaveBeenCalled()
+    })
+
+    it('counts only people the router actually enqueued, and says so when it is no one', async () => {
+      m.enrollments = [{ profile_id: 'a', completed_at: null }, { profile_id: 'b', completed_at: null }]
+      m.route.mockResolvedValueOnce({ enqueuedCount: 1 }).mockResolvedValueOnce({ enqueuedCount: 0 })
+      const some = await sendJourneyBroadcastAction('plan-1', dispatch())
+      expect(some).toMatchObject({ data: { results: [{ channel: 'dispatch', ok: true }] } })
+      m.route.mockResolvedValue({ enqueuedCount: 0 })
+      const none = await sendJourneyBroadcastAction('plan-1', dispatch())
+      expect(none).toMatchObject({ data: { results: [{ channel: 'dispatch', ok: false, detail: 'No one has push on for this, so nothing went out.' }] } })
+    })
+
+    it('skips a recipient the router throws on and still reaches the rest', async () => {
+      m.enrollments = [{ profile_id: 'a', completed_at: null }, { profile_id: 'b', completed_at: null }]
+      m.route.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({ enqueuedCount: 1 })
+      const res = await sendJourneyBroadcastAction('plan-1', dispatch())
+      expect(res).toMatchObject({ data: { results: [{ channel: 'dispatch', ok: true }] } })
+    })
+
+    it('refuses an empty audience and a rate-limited sender before routing anything', async () => {
+      m.enrollments = []
+      expect(await sendJourneyBroadcastAction('plan-1', dispatch())).toMatchObject({
+        data: { results: [{ channel: 'dispatch', ok: false, detail: 'No one in that audience yet.' }] },
+      })
+      m.enrollments = [{ profile_id: 'a', completed_at: null }]
+      m.rateOk = false
+      expect(await sendJourneyBroadcastAction('plan-1', dispatch())).toMatchObject({
+        data: { results: [{ channel: 'dispatch', ok: false }] },
+      })
+      expect(m.route).not.toHaveBeenCalled()
+    })
+
+    it('omits the mute subject when the Journey has no Space', async () => {
+      m.ctx = ctx({ spaceId: null })
+      m.enrollments = [{ profile_id: 'a', completed_at: null }]
+      m.route.mockResolvedValue({ enqueuedCount: 1 })
+      await sendJourneyBroadcastAction('plan-1', dispatch())
+      expect(m.route.mock.calls[0][1]).toEqual({ profileId: 'a' })
+    })
   })
 
   it('messages only the picked segments, never the sender, each person once', async () => {
