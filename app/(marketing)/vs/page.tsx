@@ -2,14 +2,10 @@
 // (GE11-1). Public marketing chrome, real canonical, breadcrumb + ItemList
 // JSON-LD. Voice locked: plain, honest, no em dashes.
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
-import { PageHero, Section, BetaCTA, Button, cardClasses } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL } from '@/lib/site'
 import { COMPARISONS, comparisonPath } from '@/lib/marketing/comparisons'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyCompareIndex } from '@/components/frequency/site/pages/funnel/frequency-compare'
 
 export const revalidate = 3600
@@ -41,8 +37,6 @@ export function generateMetadata(): Metadata {
 }
 
 export default function ComparisonsIndexPage() {
-  // The Frequency design (ADR-1737): the same registry, links and schema, in the design's body.
-  const frequency = SITE_DESIGN === 'frequency'
   return (
     <>
       <JsonLd
@@ -63,56 +57,7 @@ export default function ComparisonsIndexPage() {
         ]}
       />
 
-      {frequency ? <FrequencyCompareIndex /> : <ComparisonsIndexDawn />}
-    </>
-  )
-}
-
-function ComparisonsIndexDawn() {
-  return (
-    <>
-      <PageHero
-        eyebrow="Compare"
-        title={
-          <>
-            How Frequency <span className="text-primary-strong">compares</span>
-          </>
-        }
-        subtitle="Most tools help you throw one event, share one link, or sell one ticket. Frequency is the standing room underneath: a small Circle that keeps meeting in person. Hosting is free, selling starts at Business, and your own people are always free. Here is how it stacks up against the tools you already know."
-      />
-
-      <Section tone="canvas" role="cont">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {COMPARISONS.map((c) => (
-            <Link
-              key={c.slug}
-              href={comparisonPath(c.slug)}
-              className={cardClasses({ tone: 'feature', pad: 'px-6 py-5', className: 'group flex items-center justify-between gap-4 transition-colors hover:border-primary' })}
-            >
-              <span>
-                <span className="block text-body-lg font-semibold text-text">
-                  Frequency vs {c.name}
-                </span>
-                <span className="mt-0.5 block text-body-sm text-muted">{c.category}</span>
-              </span>
-              <ArrowRight className="h-5 w-5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong" aria-hidden />
-            </Link>
-          ))}
-        </div>
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          <Button href="/discover">
-            Find a Circle near you <ArrowRight className="h-5 w-5" />
-          </Button>
-          <Button href="/pricing" variant="secondary">
-            See the honest pricing
-          </Button>
-        </div>
-      </Section>
-
-      <BetaCTA
-        heading="The tool is not the point. The people you keep seeing are."
-        body="Frequency is free to join, and it stays free. Find a Circle near you and start showing up."
-      />
+      <FrequencyCompareIndex />
     </>
   )
 }
