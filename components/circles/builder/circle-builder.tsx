@@ -11,7 +11,7 @@ import { ArrowLeft, Check, Eye, Send, Loader2, Plus, X, CalendarPlus } from 'luc
 import type { PillarSlug } from '@/lib/pillars/slugs'
 import { PILLAR_SLUGS } from '@/lib/pillars/slugs'
 import type { CircleDraft, CircleDraftPatch } from '@/lib/circles/draft'
-import type { CircleComposeSection, CircleComposeResult } from '@/lib/ai/circle-compose'
+import type { CircleComposeSection } from '@/lib/ai/circle-compose'
 import {
   saveCircleDraftAction,
   composeSectionAction,
@@ -30,8 +30,7 @@ import { FunnelNextStep } from '@/components/funnels/next-step-link'
 // FORM, not a curriculum tree. Every field autosaves on blur via
 // saveCircleDraftAction then router.refresh(). Edit-mode callouts (standard
 // best-practice + the template's editorNotes) sit beside each section and never
-// reach the published Circle. A Vera panel fills sections + applies plain-language
-// edits. The header + foot action sets hold the save indicator, Preview, and
+// reach the published Circle. A Vera panel offers questions without applying or saving model prose. The header + foot action sets hold the save indicator, Preview, and
 // Publish; after publish the Host can generate the two standing events.
 
 const PILLAR_LABELS: Record<PillarSlug, string> = {
@@ -97,78 +96,23 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
   }
 
   // ── Vera wiring ──────────────────────────────────────────────────────────
-  // Merge a compose-section partial into the form + persist it. Returns a note.
-  const applyCompose = (result: CircleComposeResult): string | null => {
-    const patch: CircleDraftPatch = {}
-    if (result.pillarsInside) {
-      const merged = { ...pillarsInside, ...result.pillarsInside }
-      setPillarsInside(merged)
-      patch.pillarsInside = merged
-    }
-    if (result.meetup !== undefined) {
-      setMeetup(result.meetup)
-      patch.meetup = { text: result.meetup, length: meetupLength || undefined }
-    }
-    if (result.gathering !== undefined) {
-      setGathering(result.gathering)
-      patch.gathering = { text: result.gathering, length: draft.gathering.length }
-    }
-    if (result.thread !== undefined) {
-      setThread(result.thread)
-      patch.thread = result.thread
-    }
-    if (result.agreements) {
-      setAgreements(result.agreements)
-      patch.agreements = result.agreements
-    }
-    if (result.remixOptions) {
-      setRemixOptions(result.remixOptions)
-      patch.remixOptions = result.remixOptions
-    }
-    // The Card / one-liner land in the Circle's About.
-    if (result.oneLiner) {
-      setAbout(result.oneLiner)
-      patch.about = result.oneLiner
-    } else if (result.card) {
-      setAbout(result.card)
-      patch.about = result.card
-    }
-    if (Object.keys(patch).length === 0) return null
-    save(patch)
-    return 'Vera filled that section. Edit anything you like.'
-  }
-
   const onCompose = async (section: CircleComposeSection): Promise<string | null> => {
     const result = await composeSectionAction({ circleId, section })
     if (!result) return null
-    return applyCompose(result)
+    return result.questions?.join(' ') ?? null
   }
 
-  // Apply a plain-language edit, then sync the whole form from the fresh draft.
+  // Ask for guidance while retaining the form, including unsaved human text.
   const onEdit = async (request: string): Promise<string | null> => {
     let res: Awaited<ReturnType<typeof editDraftAction>>
     try {
       res = await editDraftAction({ circleId, request })
     } catch {
       // The write failed (SCAN-694): the panel shows this note instead of "Vera updated the Circle."
-      return "Couldn't save Vera's change. Try again."
+      return "Could not load your writing prompts. Try again."
     }
     if (!res) return null
-    const d = res.draft
-    setName(d.name)
-    setAbout(d.about ?? '')
-    setPrimaryPillar(d.primaryPillar)
-    setPillarsInside(d.pillarsInside)
-    setMeetup(d.meetup.text)
-    setMeetupLength(d.meetup.length ?? '')
-    setGathering(d.gathering.text)
-    setThread(d.thread ?? '')
-    setFormat(d.format ?? '')
-    setSizeLabel(d.sizeLabel ?? '')
-    setAgreements(d.agreements)
-    setRemixOptions(d.remixOptions)
-    startRefresh(() => router.refresh())
-    return 'Vera updated the Circle.'
+    return res.questions.join(' ')
   }
 
   const actions = (
