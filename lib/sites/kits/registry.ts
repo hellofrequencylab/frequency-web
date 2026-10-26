@@ -21,6 +21,12 @@ const LOADERS: Record<string, () => Promise<SiteKit>> = {
   'default-venues': () => import('./default-variants').then((m) => m.defaultKit('venues')),
   'default-nonprofits': () => import('./default-variants').then((m) => m.defaultKit('nonprofits')),
   'default-networks': () => import('./default-variants').then((m) => m.defaultKit('networks')),
+  'temple-coaches': () => import('./temple-variants').then((m) => m.templeKit('coaches')),
+  'temple-studios': () => import('./temple-variants').then((m) => m.templeKit('studios')),
+  'temple-hosts': () => import('./temple-variants').then((m) => m.templeKit('hosts')),
+  'temple-venues': () => import('./temple-variants').then((m) => m.templeKit('venues')),
+  'temple-nonprofits': () => import('./temple-variants').then((m) => m.templeKit('nonprofits')),
+  'temple-networks': () => import('./temple-variants').then((m) => m.templeKit('networks')),
   'wildheart-coaches': () => import('./wildheart-coaches').then((m) => m.default),
 }
 
@@ -46,6 +52,12 @@ export const KIT_INDEX: readonly KitSummary[] = [
   { id: 'default-venues', niche: 'venues', theme: 'DAWN', label: 'Venues', description: 'Show the room, what is on and how to book it.' },
   { id: 'default-nonprofits', niche: 'nonprofits', theme: 'DAWN', label: 'Nonprofits', description: 'Explain the work plainly and make it easy to say yes: come along, volunteer or give.' },
   { id: 'default-networks', niche: 'networks', theme: 'DAWN', label: 'Networks', description: 'One home for many chapters: find a chapter, start one, and see what is on everywhere.' },
+  { id: 'temple-coaches', niche: 'coaches', theme: 'Temple', label: 'Coaches and healers', description: 'A warm first page, your ways to work together, and an easy way to book.' },
+  { id: 'temple-studios', niche: 'studios', theme: 'Temple', label: 'Studios', description: 'Classes, a simple schedule and memberships people can join in a minute.' },
+  { id: 'temple-hosts', niche: 'hosts', theme: 'Temple', label: 'Event hosts', description: 'A home for your gatherings: what is coming up, how to join and a list to stay in touch.' },
+  { id: 'temple-venues', niche: 'venues', theme: 'Temple', label: 'Venues', description: 'Show the room, what is on and how to book it.' },
+  { id: 'temple-nonprofits', niche: 'nonprofits', theme: 'Temple', label: 'Nonprofits', description: 'Explain the work plainly and make it easy to say yes: come along, volunteer or give.' },
+  { id: 'temple-networks', niche: 'networks', theme: 'Temple', label: 'Networks', description: 'One home for many chapters: find a chapter, start one, and see what is on everywhere.' },
   { id: 'wildheart-coaches', niche: 'coaches', theme: 'Wildheart', label: 'Coaches and healers', description: 'Your story, how you work, what you offer and a way to book.' },
 ]
 

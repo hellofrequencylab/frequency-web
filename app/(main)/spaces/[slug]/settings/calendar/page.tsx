@@ -32,7 +32,6 @@ import { SharedPlansPanel } from './shared-plans-panel'
 import { CalendarPlansPanel } from './calendar-plans-panel'
 import { SpaceTodosPanel } from './space-todos-panel'
 import { listTasksWithShared } from '@/lib/calendar/shared-tasks'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { dayKeyIn } from '@/lib/calendar/day-grid-nav'
 import { CalendarPlanner, type PlannerUpNext } from '@/components/frequency/admin/calendar-planner'
 import { consoleBack } from '@/lib/spaces/console-back'
@@ -146,7 +145,7 @@ export default async function SpaceCalendarConsolePage({
   // calendar is a full-width planning surface with its own toolbar and side bar; everything below it (the
   // to-dos, Plans, settings and the manage table) is the same set DAWN shows. Its today is the Space's own
   // day (America/Los_Angeles when the Space has none), so the server and the browser shade the same days.
-  const planner = SITE_DESIGN === 'frequency' && !featureLocked
+  const planner = !featureLocked
   const todayKey = dayKeyIn(space.timeZone, now)
   const upNext: PlannerUpNext[] = planner
     ? ownedRows
