@@ -10,7 +10,6 @@ import { PlacementApprovals } from '@/components/events/placement-approvals'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { FeatureEventField } from '@/components/events/feature-event-field'
 import { SPACE_HUB_SECTIONS, asHubSection, hubSearchItems } from '@/lib/admin/modules/space-hub'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { AdminPageFrame } from '@/components/frequency/admin/admin-page-frame'
 import { HubSearch } from './hub-search'
 import { SpaceManageBoard } from './manage-board'
@@ -68,80 +67,35 @@ export default async function SpaceManagePage({
   if (!isConsoleSpaceType(space.type)) notFound()
 
   const brandName = space.brandName ?? space.name
-
-  // THE FREQUENCY CONSOLE (SITE_DESIGN, build-time). The page sits in the design's admin shell, whose sidebar
-  // is the hub's tabs. Home and Resonance are the Member Admin Overview and Contacts bodies, and Marketing
-  // frames itself (space-marketing.tsx), so each carries its own head. Every other tab wears the shell's page
-  // frame (the tab's name and blurb as the head) with the tools finder under it. The approvals and the
-  // feature field follow unchanged.
-  if (SITE_DESIGN === 'frequency') {
-    const hub = asHubSection(section)
-    const tab = SPACE_HUB_SECTIONS.find((s) => s.key === hub)
-    const board = <SpaceManageBoard slug={slug} section={section} thumbBar />
-    const tail = canManage && (
-      <>
-        <Suspense fallback={null}>
-          <PlacementApprovals target={{ type: 'space', id: space.id }} />
-        </Suspense>
-        <Suspense fallback={null}>
-          <EventShareApprovals spaceId={space.id} />
-        </Suspense>
-        <FeatureEventField spaceId={space.id} />
-      </>
-    )
-    return (
-      <div className="max-md:pb-18">
-        {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
-        {hub === 'dashboard' || hub === 'resonance' || hub === 'marketing' ? (
-          <>
-            {board}
-            {tail}
-          </>
-        ) : (
-          <AdminPageFrame kicker={brandName} title={tab?.label ?? 'Manage'} meta={tab?.blurb}>
-            <HubSearch items={hubSearchItems(space.slug)} />
-            {board}
-            {tail}
-          </AdminPageFrame>
-        )}
-      </div>
-    )
-  }
-
-  // Owner directive: the Manage hub reads like the admin CRM workspace (/admin/crm) — it leads with the
-  // SEARCH BAR, then the category MENU, then the section content, with NO big identity hero above them
-  // (the space name lives in the breadcrumb + left rail; the active section renders its own header, e.g.
-  // the Resonance CRM / Marketing PageHeading). The old DashboardTemplate hero (eyebrow + brand title +
-  // description + the members/plan/mode strip) pushed the search + menu far down the page; dropping it puts
-  // the menu right under the search, matching the admin workspace exactly. Wide, no on-page Settings bar.
+  const hub = asHubSection(section)
+  const tab = SPACE_HUB_SECTIONS.find((s) => s.key === hub)
+  const board = <SpaceManageBoard slug={slug} section={section} thumbBar />
+  const tail = canManage && (
+    <>
+      <Suspense fallback={null}>
+        <PlacementApprovals target={{ type: 'space', id: space.id }} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <EventShareApprovals spaceId={space.id} />
+      </Suspense>
+      <FeatureEventField spaceId={space.id} />
+    </>
+  )
   return (
-    <div className="mx-auto w-full max-w-7xl max-md:pb-18">
+    <div className="max-md:pb-18">
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
-      {/* Search first (a fast finder over every tool + setting), then the category menu + section content
-          (SpaceManageBoard renders the HubNav tabs + the active section), exactly like the admin workspace. */}
-      <div className="mb-5">
-        <HubSearch items={hubSearchItems(space.slug)} />
-      </div>
-      {/* thumbBar: the daily doors at the bottom edge of a phone (LIVE-704), only on this standalone page.
-          The wrapper's max-md:pb-18 is the room that bar takes above the lane (console-thumb-bar.tsx). */}
-      <SpaceManageBoard slug={slug} section={section} thumbBar />
-      {/* Pending "where does this event live" requests a Space steward can approve. Only a manager
-          (not a staff previewer) acts on them; the actions re-check steward caps server-side. */}
-      {canManage && (
-        <Suspense fallback={null}>
-          <PlacementApprovals target={{ type: 'space', id: space.id }} />
-        </Suspense>
+      {hub === 'dashboard' || hub === 'resonance' || hub === 'marketing' ? (
+        <>
+          {board}
+          {tail}
+        </>
+      ) : (
+        <AdminPageFrame kicker={brandName} title={tab?.label ?? 'Manage'} meta={tab?.blurb}>
+          <HubSearch items={hubSearchItems(space.slug)} />
+          {board}
+          {tail}
+        </AdminPageFrame>
       )}
-      {/* Pending co-hosted-event share requests (Events EC3) a Space steward can accept onto their
-          calendar. Same manager gate; the actions re-check steward caps server-side. */}
-      {canManage && (
-        <Suspense fallback={null}>
-          <EventShareApprovals spaceId={space.id} />
-        </Suspense>
-      )}
-      {/* The space-side entry into the co-host handshake: ask a public event's host to feature it here.
-          Manager-only; the action re-checks steward caps and routes to the event host for approval. */}
-      {canManage && <FeatureEventField spaceId={space.id} />}
     </div>
   )
 }

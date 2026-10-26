@@ -1,25 +1,11 @@
-import Link from 'next/link'
-import { Plus, ShoppingBag, Package, CalendarClock, Ticket } from 'lucide-react'
-import { buttonClasses } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { getMyProfileId } from '@/lib/auth'
 import { listMarketListings } from '@/lib/commerce/products'
 import { withJourneySalesHref } from '@/lib/journeys/listing-href'
 import { productRatingsFor } from '@/lib/commerce/reviews'
 import { sellerVerifiedFor } from '@/lib/commerce/seller-verification'
 import { foundingSellersFor } from '@/lib/founding/status'
-import { MARKET_GROUPS, asMarketGroup, marketGroupForKind, type MarketGroup, type MarketItem } from '@/lib/commerce/types'
+import { asMarketGroup, marketGroupForKind, type MarketGroup, type MarketItem } from '@/lib/commerce/types'
 import { listTicketedEventProjections } from '@/lib/commerce/ticket-projection'
-import { ProductCard } from '@/components/marketplace/product-card'
-import { MarketHero } from '@/components/marketplace/market-hero'
-import { MarketSearchProvider, MarketSearchBar, InstantGrid, InstantSection } from '@/components/marketplace/market-search'
-import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
-import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
-import { UnderlineTabs } from '@/components/ui/underline-tabs'
-import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
-import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
-import { resolveMarketHero } from '@/lib/layout/index-hero'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqMarketBody } from '@/components/frequency/members/marketplace/marketplace-body'
 
 // Market — the community commerce umbrella (ADR-596). Hero-led (the site PhotoHero grammar), a stats
@@ -38,15 +24,7 @@ export const metadata = {
   robots: { index: false, follow: true },
 }
 
-// A real community photo, not a random stock placeholder. This is the hero and the LCP element, and
-// it is what any social or AI preview of the page surfaces, so it has to be ours. Shares the asset
-// the Spaces/business directory heroes use: the Market aggregates listings from those same makers
-// and Business Spaces.
-const HERO_IMAGE = '/images/site/business-directory-hero.jpg'
-const GROUP_LABEL: Record<MarketGroup, string> = { products: 'Products', services: 'Services', tickets: 'Tickets' }
 
-const GRID_CLASS = 'mp-grid gap-6'
-const searchText = (p: MarketItem) => `${p.title} ${p.description ?? ''}`
 
 export default async function MarketPage({
   searchParams,
@@ -80,138 +58,15 @@ export default async function MarketPage({
     tickets: byGroup('tickets').length,
   }
 
-  const shown = group ? byGroup(group) : null
-  const sections = MARKET_GROUPS.map((g) => ({ group: g, items: byGroup(g) })).filter((s) => s.items.length > 0)
-
-  // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4):
-  // the operator's Settings header image, then the page_content hero via the copy cascade, then
-  // this page's coded cover, plus the operator-tunable header element (ADR-793) for
-  // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
-  // header image for this route got nothing.
-  // THE DESIGN SWITCH (ADR-1737, templates/members/Marketplace.html): the same catalog and group
-  // filter in the member kit; every card opens the product page, where the buy flow lives.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <FqMarketBody
-        items={items}
-        group={group ?? null}
-        counts={counts}
-        signedIn={!!viewerProfileId}
-        ratings={ratings}
-        verified={verified}
-        founding={founding}
-      />
-    )
-  }
-
-  const hero = await resolveMarketHero('/market', { cover: HERO_IMAGE })
-
   return (
-    <MarketSearchProvider>
-    <div className="space-y-6">
-      <MarketHero
-        {...hero}
-        eyebrow="The Market"
-        title="Buy from your community"
-        subtitle="Products, services, and tickets from the people and businesses around you. Buy direct, the seller gets paid, the fee stays low."
-        search={<MarketSearchBar placeholder="Search the Market" />}
-        action={
-          viewerProfileId ? (
-            <>
-              <Link href="/market/sell" className={buttonClasses('primary', 'md')}>
-                <Plus className="h-4 w-4" aria-hidden /> List a product
-              </Link>
-              <Link href="/market/manage" className={buttonClasses('secondary', 'md')}>
-                My storefront
-              </Link>
-            </>
-          ) : undefined
-        }
-      />
-
-      <MarketplaceHiddenBanner area="makers" />
-
-      <div className="space-y-5">
-        <MarketplaceBar
-          active="makers"
-          stats={[
-            { label: 'Listings', value: counts.total, icon: ShoppingBag },
-            { label: 'Products', value: counts.products, icon: Package },
-            { label: 'Services', value: counts.services, icon: CalendarClock },
-            { label: 'Tickets', value: counts.tickets, icon: Ticket },
-          ]}
-        />
-
-        <MarketplaceColumnsProvider className="space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <UnderlineTabs
-              tabs={[
-                { href: '/market', label: 'All', count: counts.total },
-                ...MARKET_GROUPS.map((g) => ({ href: `/market?group=${g}`, label: GROUP_LABEL[g], count: counts[g] })),
-              ]}
-              activeHref={group ? `/market?group=${group}` : '/market'}
-            />
-            <MarketplaceColumns />
-          </div>
-
-          <div className="@container">
-          {shown ? (
-            shown.length > 0 ? (
-              <InstantGrid items={shown.map((p) => ({ text: searchText(p) }))} className={GRID_CLASS}>
-                {shown.map((p) => (
-                  <ProductCard
-                    key={p.id}
-                    product={p}
-                    rating={ratings.get(p.id) ?? null}
-                    verified={verified.get(p.id) ?? false}
-                    founding={founding.get(p.id) ?? false}
-                  />
-                ))}
-              </InstantGrid>
-            ) : (
-              <EmptyState
-                icon={ShoppingBag}
-                variant="first-use"
-                title={`No ${GROUP_LABEL[group!].toLowerCase()} yet.`}
-                description="When people and businesses publish to the Market, they show up here."
-              />
-            )
-          ) : sections.length > 0 ? (
-            <div className="space-y-10">
-              {sections.map((s) => (
-                <InstantSection
-                  key={s.group}
-                  title={GROUP_LABEL[s.group]}
-                  seeAllHref={`/market?group=${s.group}`}
-                  items={s.items.map((p) => ({ text: searchText(p) }))}
-                  className={GRID_CLASS}
-                >
-                  {s.items.map((p) => (
-                    <ProductCard
-                      key={p.id}
-                      product={p}
-                      rating={ratings.get(p.id) ?? null}
-                      verified={verified.get(p.id) ?? false}
-                      founding={founding.get(p.id) ?? false}
-                    />
-                  ))}
-                </InstantSection>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={ShoppingBag}
-              variant="first-use"
-              title="Nothing in the Market yet."
-              description="This is where the community sells. Publish a product, service, or ticket and it shows up here."
-            />
-          )}
-          </div>
-        </MarketplaceColumnsProvider>
-      </div>
-
-      <MarketplaceGuide />
-    </div>
-    </MarketSearchProvider>
+    <FqMarketBody
+      items={items}
+      group={group ?? null}
+      counts={counts}
+      signedIn={!!viewerProfileId}
+      ratings={ratings}
+      verified={verified}
+      founding={founding}
+    />
   )
 }
