@@ -2,21 +2,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isValidElement, type ReactNode } from 'react'
 import { CoachProfileForm } from '@/components/spaces/coach-profile-form'
 import { renderToStaticMarkup } from 'react-dom/server'
-const m = vi.hoisted(() => ({ caller: vi.fn(), space: vi.fn(), access: vi.fn(), form: vi.fn(), coach: vi.fn() }))
+const m = vi.hoisted(() => ({ caller: vi.fn(), space: vi.fn(), access: vi.fn(), form: vi.fn(), coach: vi.fn(), discovery: vi.fn() }))
 vi.mock('@/lib/auth', () => ({ getCallerProfile: m.caller }))
 vi.mock('@/lib/spaces/store', () => ({ getVisibleSpaceBySlug: m.space }))
-vi.mock('@/lib/spaces/private-state', () => ({ loadSpaceCoachProfile: m.coach }))
+vi.mock('@/lib/spaces/private-state', () => ({ loadSpaceCoachProfile: m.coach, loadSpaceDiscoveryConsent: m.discovery }))
 vi.mock('@/lib/spaces/entitlements', () => ({ resolveSpaceManageAccess: m.access }))
 vi.mock('next/navigation', () => ({ notFound: () => { throw new Error('not-found') } }))
 vi.mock('@/components/templates/console-templates', () => ({ ConsoleFocusTemplate: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }))
 vi.mock('@/components/spaces/staff-preview-banner', () => ({ StaffPreviewBanner: () => <aside>Read-only staff preview</aside> }))
 vi.mock('@/components/spaces/coach-profile-form', () => ({ CoachProfileForm: (props: unknown) => { m.form(props); return <form /> } }))
+vi.mock('@/components/spaces/discovery-coaching-panel', () => ({ DiscoveryCoachingPanel: () => <section>Discovery permission controls</section> }))
 vi.mock('@/lib/spaces/console-back', () => ({ consoleBack: () => ({ href: '/spaces' }) }))
 import Page from './page'
 beforeEach(() => {
   vi.clearAllMocks()
   m.caller.mockResolvedValue({ id: 'editor-A', webRole: 'member' })
   m.space.mockResolvedValue({ id: 'space-A', slug: 'makers', name: 'Makers', preferences: { coachProfile: { goals: 'Return visits' } } })
+  m.discovery.mockResolvedValue({ available: true, consent: null })
   m.coach.mockResolvedValue({ available: true, profile: { goals: 'Private return visits' } })
   m.access.mockResolvedValue({ canManage: true, staffViewing: false })
 })
@@ -31,6 +33,7 @@ describe('coach settings access', () => {
     m.access.mockResolvedValue({ canManage: false, staffViewing: true })
     expect(await render()).toContain('Read-only staff preview')
     expect(m.form.mock.calls[0][0].readOnly).toBe(true)
+    expect(m.discovery).not.toHaveBeenCalled()
   })
   it('does not render preferences to an unrelated visitor', async () => {
     m.access.mockResolvedValue({ canManage: false, staffViewing: false })

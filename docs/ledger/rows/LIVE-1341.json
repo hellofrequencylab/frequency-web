@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1341",
+  "title": "Review Space discovery signals with explicit private permission",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "wave": "W7",
+  "status": "done",
+  "closed": "2026-10-26",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/coach/discovery-actions.ts",
+    "ref": "Owner-authorized bounded discovery review, 2026-10-26"
+  },
+  "detail": "Space editors explicitly enable ninety-day discovery_coaching permission stored in separate service-role-only discovery_consent, never public preferences or coach_profile. On-demand review resolves current tenant access and consent before aggregate reads and rechecks both after IO, discarding revoked or changed grants. Existing profile-view buckets and CTA events remain coarse limited observations, not unique visitors or attributed conversions. Owner UI shows source, counting unit, period, freshness, coverage, questions and measurement limits, plus expiry/revoke and unavailable states. Google Search Console and Bing are explicitly not connected. No scheduled refresh, provider writes, content generation or publication. Migration25100 and fourteen-assertion disposable pgTAP source are prepared only; release owner must verify full DB CI and apply/accept production storage before UI rollout. LIVE-1335 remains open for provider connectors and full discovery scope.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/discovery-owner-boundaries.mjs",
+    "checked": "2026-10-26",
+    "evidence": "Bounded actual-source probe with inert IO, focused mocked consent/action/store/page/UI tests and scoped lint. No live database/provider or authenticated production acceptance is claimed."
+  }
+}
