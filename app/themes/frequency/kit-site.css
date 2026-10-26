@@ -703,3 +703,13 @@
 /* SCAN-1019, phones: the grain film keeps its texture but stops stepping; a fixed full-screen layer repainting five
    times a second under a 320vh pinned scroll is what a phone feels as a stutter. */
 @media (max-width:760px){[data-design="frequency"] [data-kit="site"] .tx-film{animation:none}}
+
+/* Pause motion (footer button, WCAG 2.2.2): every keyframe in the site stops where it is, and reveals show at once,
+   the same as prefers-reduced-motion. SiteFx reads data-motion too, so its loops stand down. */
+[data-design="frequency"] [data-kit="site"][data-motion="paused"] *,[data-design="frequency"] [data-kit="site"][data-motion="paused"] *::before,[data-design="frequency"] [data-kit="site"][data-motion="paused"] *::after{animation-play-state:paused!important}
+[data-design="frequency"] [data-kit="site"][data-motion="paused"] .pop{opacity:1!important;transform:none!important}
+[data-design="frequency"] [data-kit="site"][data-motion="paused"] .pop>.pglow{animation:none!important;opacity:.2!important}
+/* The pause control reads as one of the legal links beside it. */
+[data-design="frequency"] [data-kit="site"] .ft2-pause{font:inherit;color:#8E82A8;background:none;border:0;padding:0;cursor:pointer}
+[data-design="frequency"] [data-kit="site"] .ft2-pause:hover{color:#F2F5FA}
+[data-design="frequency"] [data-kit="site"] .ft2-pause:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:3px;border-radius:var(--fq-radius-s,4px)}
