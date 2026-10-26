@@ -1,7 +1,7 @@
 {
   "id": "SCAN-1140",
   "title": "The footer links the six /for doors",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "XS",
@@ -9,11 +9,11 @@
     "file": "lib/frequency/site-nav.ts",
     "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
   },
-  "detail": "Doors are reachable only from nav and /for. Add a footer column. Door names per docs/NAMING.md.",
+  "detail": "Doors are reachable only from nav and /for. Add a footer column. Door names per docs/NAMING.md.\n\nClosed by #3926 on 2026-10-26.\n\nLanded in #3926: a Who it is for footer column links the six /for doors.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs footer-doors",
-    "note": "Exits 0 only when the repair has landed; fails on main today."
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs footer-doors"
   },
+  "closed": "2026-10-26",
   "wave": "W7"
 }

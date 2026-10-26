@@ -1,7 +1,7 @@
 {
   "id": "SCAN-1121",
   "title": "Static brand, image, font and icon files carry long-lived cache headers",
-  "status": "done",
+  "status": "open",
   "priority": "P2",
   "lane": "live",
   "size": "XS",
@@ -9,12 +9,11 @@
     "file": "next.config.ts",
     "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
   },
-  "detail": "public/ assets get max-age=0 must-revalidate; next.config headers set only security headers. Add Cache-Control for /brand, /images, /fonts, /icons.\n\nWeek-long cache headers on brand, fonts, icons, images (#3931).",
+  "detail": "public/ assets get max-age=0 must-revalidate; next.config headers set only security headers. Add Cache-Control for /brand, /images, /fonts, /icons.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs asset-cache",
     "note": "Exits 0 only when the repair has landed; fails on main today."
   },
-  "wave": "W7",
-  "closed": "2026-10-26"
+  "wave": "W7"
 }
