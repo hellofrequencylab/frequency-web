@@ -4,7 +4,7 @@ import { writingCoach } from './writing-coach'
 export type CircleComposeSection = 'pillars' | 'agreements' | 'remix' | 'rhythm' | 'card' | 'thread'
 
 /** What Vera knows about the Circle so far, to ground the section it drafts. */
-export interface CircleComposeContext {
+interface CircleComposeContext {
   name: string
   primaryPillar: PillarSlug | null
   topic?: string

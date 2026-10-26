@@ -1,6 +1,6 @@
 import type { CircleSparkDraft } from './circle-spark'
 import { writingCoach } from './writing-coach'
-export type CircleForEdit = Partial<
+type CircleForEdit = Partial<
   Pick<
     CircleSparkDraft,
     | 'name'
@@ -20,7 +20,7 @@ export type CircleForEdit = Partial<
 > & { name: string }
 
 /** The minimal change to apply: only the fields Vera touched. */
-export type CircleEditPatch = Partial<
+type CircleEditPatch = Partial<
   Pick<
     CircleSparkDraft,
     | 'name'
