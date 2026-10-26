@@ -1,6 +1,6 @@
 // SCAN-1112: inspect the active Frequency route, never the retired document template.
 import { readFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
 import ts from 'typescript'
 export function homeFaqContract(routeText, bodyText) {
  const parse = (name,text) => ts.createSourceFile(name,text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
@@ -21,7 +21,7 @@ export function homeFaqContract(routeText, bodyText) {
  const field=(tag,key)=>descendants.some(n=>ts.isJsxElement(n)&&n.openingElement.tagName.getText(body)===tag&&n.children.some(c=>ts.isJsxExpression(c)&&c.expression?.getText(body)===key))
  return rendered&&schema&&details&&map&&field('summary','f.q')&&field('p','f.a')
 }
-if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
+if(invokedDirectly(import.meta.url)){
  const ok=homeFaqContract(readFileSync('app/page.tsx','utf8'),readFileSync('components/frequency/site/pages/home/frequency-home.tsx','utf8'))
  console.log(`Frequency home FAQ visible/schema wiring: ${ok?'pass':'fail'}`);process.exit(ok?0:1)
 }
