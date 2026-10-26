@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1356",
+  "title": "Shared Space content slots: the website, Space page and Spotlight draw the same facts",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/spaces/content-slots.ts",
+    "ref": "Mega Theme plan, piece 2 (https://claude.ai/artifact/C2Vm4aje8F1AwhoNisBqEU)"
+  },
+  "detail": "One slot vocabulary (name, tagline, intro, story, email, phone, address, hours) read from the Space's existing content record, so no new table and no stored content is touched. Resolution order is saved content, then kit copy, then the block default. A kit writes its sample words as {{slot|sample words}}; WebsiteDocument resolves the token at render time for both the public site and the editor canvas, so the site follows the same facts as the Space page and Spotlight and an owner who types over a token keeps their words. The About and Story blocks (shared by the Space page and Spotlight) read the same slots. The Wildheart coaches kit is the first user (tagline, story), kit version 2. Not in this row: a dedicated slot editor, slots for offers, photos and people, and tokens in the other kits.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const d=fs.readFileSync('components/sites/website-document.tsx','utf8');const a=fs.readFileSync('components/widgets/space-profile/about.tsx','utf8');process.exit(fs.existsSync('lib/spaces/content-slots.ts')&&d.includes('bindSlots(')&&a.includes('readSlots(')?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Vitest: lib/spaces/content-slots.test.ts (resolution order, nesting, no mutation, identity on untouched props) and components/sites/website-document.test.tsx (public and editor draw the saved story, kit copy until then, owner words kept)."
+  },
+  "closed": "2026-10-26"
+}
