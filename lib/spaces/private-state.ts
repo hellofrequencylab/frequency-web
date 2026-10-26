@@ -61,11 +61,27 @@ export async function loadSpaceDiscoveryConsent(spaceId: string): Promise<{ avai
     return { available: false, consent: null }
   }
 }
-// Narrow upsert never reads/rewrites coach_profile, website_editor or program_overview.
-export async function writeSpaceDiscoveryConsent(spaceId: string, consent: import('./discovery-consent').SpaceDiscoveryConsent): Promise<boolean> {
+// Narrow write never reads/rewrites coach_profile, website_editor or program_overview. With `expectedId`
+// (the consent id the caller read, or null for none) the write only lands if the stored consent is still
+// that one, so a stale grant cannot overwrite a revocation that raced it. Without it, a plain upsert.
+export async function writeSpaceDiscoveryConsent(spaceId: string, consent: import('./discovery-consent').SpaceDiscoveryConsent, expectedId?: string | null): Promise<boolean> {
   try {
-    const { error } = await createAdminClient().from('space_private_state').upsert({ space_id: spaceId, discovery_consent: consent as unknown as Json, updated_at: new Date().toISOString() }, { onConflict: 'space_id' })
+    const db = createAdminClient()
+    const value = consent as unknown as Json
+    const updated_at = new Date().toISOString()
+    if (expectedId === undefined) {
+      const { error } = await db.from('space_private_state').upsert({ space_id: spaceId, discovery_consent: value, updated_at }, { onConflict: 'space_id' })
+      if (error) throw error
+      return true
+    }
+    const guard = db.from('space_private_state').update({ discovery_consent: value, updated_at }).eq('space_id', spaceId)
+    const { data, error } = await (expectedId === null ? guard.is('discovery_consent', null) : guard.eq('discovery_consent->>id', expectedId)).select('space_id')
     if (error) throw error
+    if (data && data.length > 0) return true
+    if (expectedId !== null) return false
+    // No row yet: a concurrent first write loses on the unique key instead of overwriting.
+    const { error: insertError } = await db.from('space_private_state').insert({ space_id: spaceId, discovery_consent: value, updated_at })
+    if (insertError) throw insertError
     return true
   } catch {
     log.warn('space.discovery_consent.write_unavailable', { spaceId })

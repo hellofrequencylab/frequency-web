@@ -1,13 +1,7 @@
 import type { Metadata, ResolvingMetadata } from 'next'
 import { helpPageMetadata } from '@/lib/help/metadata'
 import { SITE_NAME } from '@/lib/site'
-import Link from 'next/link'
-import { LifeBuoy } from 'lucide-react'
 import { getAllCategories, helpHref } from '@/lib/help/content'
-import { SITE_DESIGN } from '@/lib/theme/design'
-import { EmptyState } from '@/components/ui/empty-state'
-import { IndexTemplate } from '@/components/templates'
-import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { FrequencyHelp } from '@/components/frequency/site/pages/help/frequency-help'
@@ -39,75 +33,21 @@ export async function generateMetadata(
 
 export default async function HelpHomePage() {
   const categories = await getAllCategories()
-
-  // The Frequency design (ADR-1737): the same categories and article routes, in the design's front
-  // page. SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd data={breadcrumbSchema([{ name: 'Help', path: '/help' }])} />
-        <FrequencyHelp
-          topics={categories.map((c) => ({
-            slug: c.slug,
-            title: c.title,
-            description: c.description,
-            articles: c.articles.map((a) => ({
-              title: a.title,
-              description: a.description,
-              href: helpHref(c.slug, a.slug),
-            })),
-          }))}
-        />
-      </>
-    )
-  }
-
-  const hero = await resolveIndexHero('/help')
-
   return (
-    <IndexTemplate
-      {...hero}
-      title="How can we help?"
-      description="Everything you need to find your people, show up, and make the most of Frequency."
-    >
-      <JsonLd
-        data={breadcrumbSchema([{ name: 'Help', path: '/help' }])}
+    <>
+      <JsonLd data={breadcrumbSchema([{ name: 'Help', path: '/help' }])} />
+      <FrequencyHelp
+        topics={categories.map((c) => ({
+          slug: c.slug,
+          title: c.title,
+          description: c.description,
+          articles: c.articles.map((a) => ({
+            title: a.title,
+            description: a.description,
+            href: helpHref(c.slug, a.slug),
+          })),
+        }))}
       />
-      <div className="grid gap-5 sm:grid-cols-2">
-        {categories.map((cat) => (
-          <section
-            key={cat.slug}
-            className="rounded-card border border-border bg-surface-elevated p-5"
-          >
-            <Link href={`/help/${cat.slug}`} className="block">
-              <h2 className="font-display text-lead text-text">{cat.title}</h2>
-              {cat.description && (
-                <p className="mt-1 text-body-sm text-muted">{cat.description}</p>
-              )}
-            </Link>
-            <ul className="mt-4 space-y-1.5">
-              {cat.articles.slice(0, 5).map((a) => (
-                <li key={a.slug}>
-                  <Link
-                    href={helpHref(cat.slug, a.slug)}
-                    className="text-body-sm text-primary-strong hover:underline"
-                  >
-                    {a.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-      </div>
-
-      {categories.length === 0 && (
-        <EmptyState
-          icon={LifeBuoy}
-          title="Help articles are coming soon"
-          description="We're writing up guides for finding Circles, showing up, and how the Quest works. Check back soon."
-        />
-      )}
-    </IndexTemplate>
+    </>
   )
 }

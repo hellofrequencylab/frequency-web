@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-401",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const p=fs.readFileSync(\"app/discover/page.tsx\",\"utf8\");if(!p.includes(\"liveChannels\"))fail(\"Discover does not filter live Channels\");if(!/DxHero|DirHero/.test(fs.readFileSync(\"components/frequency/site/pages/discover/frequency-discover-hub.tsx\",\"utf8\")))fail(\"Discover has no photo hero\");const t=fs.readFileSync(\"components/frequency/site/pages/discover/topics.tsx\",\"utf8\");if(!t.includes(\"No Channels yet\"))fail(\"topics empty copy is gone\");console.log(\"LIVE-401 ok\")'",
+      "note": "Passes when Discover only maps Channels that have Circles, the hero is PhotoHero, and topics says No Channels yet."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1128): the Discover hub leads with the Frequency hero."
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1166",
+  "title": "Render reviewed marketing advice choices without accepting model-authored wording",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-26",
+  "source": {
+    "file": "lib/ai/marketing-advice-catalog.ts",
+    "ref": "Continuation of human-authorship output-boundary audit2026-10-26"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/marketing-advice-selection.mjs",
+    "note": "Actual messaging/campaign provider boundaries run over inert IO; accepted IDs project reviewed questions/checks/proposed measurements, arbitrary words and extra fields reject, source mutation restoring raw text fails. Actual startBuild probe proves no storage/manual fallback on advice; rendered GuidedSetup retains human notes without navigation; actual Journey caller explicitly names coaching. Local proof, not production/provider acceptance."
+  },
+  "detail": "Marketing assistance remained a semantic gap after writing-coach hardening: messaging accepted any strings in questions/checks/measurement, and campaign-coach accepted unquoted suggested copy matching an interrogative regex. Both provider doors now accept only bounded caller-specific reviewed IDs, mapping all rendered advice locally. Existing result/UI shapes, campaign observation/attribution limitations, AI-off checklist/manual fallback, budget/accounting gates and author inputs remain. Measurements are explicitly plans and retain unknown attribution; no measured result is invented. Journey's already coaching-only caller explicitly labels its button Get coaching questions; shared default for genuinely drafting modules remains unchanged. Thirty-six focused tests across eight suites cover accepted-model rendering, rejection, fallback, actions, and caller label; source probes retain malicious-output/unauthorized/no-draft controls. No schema, provider, email, customer data or production mutations. Other AI features and full authenticated/runtime audit remain separately scoped.",
+  "wave": "W7"
+}

@@ -18,5 +18,5 @@ export interface ComposeCandidate {
 
 
 export async function draftJourneyComposition(input: { description: string; library: Record<ComposePillar, ComposeCandidate[]>; profileId?: string | null; priorWeekSummary?: string; anchorTitle?: string }): Promise<WritingCoaching | null> {
-  return runSpark(writingCoachingSpec('journey', 'journey-composition', 'opus'), { content: JSON.stringify(input).slice(0, 16000), profileId: input.profileId })
+  return runSpark(writingCoachingSpec('journey', 'journey-composition', 'sonnet'), { content: JSON.stringify(input).slice(0, 16000), profileId: input.profileId })
 }

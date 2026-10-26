@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-738",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(\"LIVE-738: \"+m);process.exit(1)};const read=(f)=>{if(!fs.existsSync(f))fail(f+\" is gone\");return fs.readFileSync(f,\"utf8\")};const B=read(\"components/journey/v2/journey-builder.tsx\");const band=B.match(/<HeaderImageField\\b[\\s\\S]*?\\/>/);if(!band)fail(\"the Journey editor cover band does not mount HeaderImageField, the Space header control\");if(!/label=\"Cover\"/.test(band[0])||!/focus=\\{focus\\}/.test(band[0])||!/onFocusChange=\\{onFocusChange\\}/.test(band[0]))fail(\"the editor cover band mounts HeaderImageField without its saved focus and focus setter\");if(/<ImageUpload\\s+label=\"Cover\"/.test(B))fail(\"the bare cover upload box is still in the editor\");if(!/setJourneyHeaderFocus\\(planId,/.test(B))fail(\"a focus drag in the editor never writes journey_plans.cover_focus\");if(!/readJourneyCoverFocus\\(initialCoverFocus\\)/.test(B))fail(\"the editor does not seed the marker from the saved focus\");const E=read(\"app/(main)/journeys/[slug]/edit/page.tsx\");if(!/initialCoverFocus=\\{plan\\.cover_focus\\}/.test(E))fail(\"the edit page does not hand the editor the stored cover_focus\");const P=read(\"app/(main)/journeys/[slug]/page.tsx\");const H=read(\"components/ui/header-image-field.tsx\");if(!/<ImageFocalPicker[\\s\\S]*?value=\\{focus\\}[\\s\\S]*?onChange=\\{onFocusChange\\}/.test(H))fail(\"HeaderImageField no longer carries the drag-to-focus picker\");if(!/objectPosition:\\s*coverFocus/.test(read(\"components/templates/page-hero.tsx\")))fail(\"PageHero no longer applies coverFocus as the cover object-position\");console.log(\"ok: the Journey editor cover band is HeaderImageField seeded from and writing journey_plans.cover_focus, and the Journey page crops its PageHero cover by that column\")'",
+      "note": "Closed 2026-09-30 (ADR-1699). Reads the wiring from both ends: the editor's cover band is HeaderImageField with the saved focus and its setter, the bare Cover upload is gone, a drag writes through setJourneyHeaderFocus, the marker seeds from initialCoverFocus, the edit page passes plan.cover_focus, the Journey page crops by entityFocus: plan.cover_focus, HeaderImageField still carries ImageFocalPicker, and PageHero still applies coverFocus as object-position. Fails on main (38a5b1a15) at the first arm. Exits 1 naming the file when a wired file is gone."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-26 (SCAN-1129): the member Journey page draws no cover band under Frequency, so the page-crop arm is retired; the editor-side wiring arms stay."
+  }
+}

@@ -99,7 +99,9 @@ describe('the design switch set mirrors the route files (ADR-1737)', () => {
   it('each CODED_UNDER_FREQUENCY slug branches on SITE_DESIGN in its route file, and no other block slug does', () => {
     for (const p of EDITABLE_PAGES) {
       const src = routeFileFor(p.path)
-      const branches = /SITE_DESIGN === 'frequency'/.test(src)
+      // Frequency is the only design (ADR-1880): a coded slug either still branches on the switch or
+      // renders its Frequency body from the published-document fallback.
+      const branches = /SITE_DESIGN === 'frequency'|components\/frequency\/(site\/pages|members)\//.test(src)
       expect(branches, `${p.slug}: route file ${branches ? 'branches' : 'does not branch'} on the design`).toBe(
         CODED_UNDER_FREQUENCY.has(p.slug),
       )

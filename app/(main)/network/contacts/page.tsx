@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Plus, ScanText, Lock, Globe, MapPin, Search, UserRoundCheck, ShieldCheck, Download } from 'lucide-react'
+import { Plus, ScanText, Lock, Globe, MapPin, UserRoundCheck, ShieldCheck, Download } from 'lucide-react'
 import { contactsOwnerId } from '@/lib/connections/access'
 import { googleImportConfigured } from '@/lib/integrations/google/config'
 import { listContacts, listDueReminders, type ContactSort as ContactSortKey } from '@/lib/connections/store'
@@ -15,18 +15,14 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { ContactMatches } from '@/components/connections/contact-matches'
 import { ReachOutList } from '@/components/connections/reach-out-list'
 import { SpaceCrmPrompt } from '@/components/connections/space-crm-prompt'
-import { ContactSort, type ContactSortValue } from '@/components/connections/contact-sort'
+import { type ContactSortValue } from '@/components/connections/contact-sort'
 import { GoogleImportBanner, type GoogleImportOutcome } from '@/components/connections/google-import-banner'
 import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
 import { NetworkHubBar } from '@/components/people/network-hub-bar'
 import { buttonClasses } from '@/components/ui/button'
 import { FqFacetMenu, FqFindField } from '@/components/frequency/members/shared/kit-tools'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import type { NetworkContactListItem } from '@/lib/connections/types'
 
-// FREQUENCY (LIVE-1086): the kit's `.btn` pills, `.tag` chips, find field and sort chip, so the page wears
-// the same controls Members and Friends do. Inlined at build; DAWN keeps its own.
-const FREQUENCY = SITE_DESIGN === 'frequency'
 const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently added' },
   { value: 'last_contacted', label: 'Last contacted' },
@@ -141,9 +137,7 @@ export default async function ConnectionsPage({
               <Link
                 href="/api/integrations/google/start"
                 className={
-                  FREQUENCY
-                    ? buttonClasses('secondary', 'md')
-                    : 'inline-flex items-center gap-1.5 rounded-control border border-border-strong bg-surface px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated sm:px-3.5 sm:py-2'
+                  buttonClasses('secondary', 'md')
                 }
               >
                 <Download className="h-4 w-4" /> Import from Google
@@ -152,9 +146,7 @@ export default async function ConnectionsPage({
             <Link
               href="/connections/new"
               className={
-                FREQUENCY
-                  ? buttonClasses('primary', 'md')
-                  : 'inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-3.5 sm:py-2'
+                buttonClasses('primary', 'md')
               }
             >
               <Plus className="h-4 w-4" /> Add a contact
@@ -173,7 +165,7 @@ export default async function ConnectionsPage({
             count: all.filter((c) => matches(c, t.key, q)).length,
           }))}
         />
-        {FREQUENCY ? (
+        {(
           <div className="chips">
             <FqFacetMenu
               label="Sort"
@@ -190,22 +182,6 @@ export default async function ConnectionsPage({
               placeholder="Search contacts"
               keep={{ status: facet === 'all' ? undefined : facet, sort: sort === 'recent' ? undefined : sort }}
             />
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-end gap-2">
-            <ContactSort value={sort} />
-            <form className="relative pb-2" action="/network/contacts" method="get">
-              {facet !== 'all' && <input type="hidden" name="status" value={facet} />}
-              {sort !== 'recent' && <input type="hidden" name="sort" value={sort} />}
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-[calc(50%+4px)] text-subtle" />
-              <input
-                name="q"
-                defaultValue={q}
-                aria-label="Search contacts"
-                placeholder="Search…"
-                className="w-44 rounded-control border border-border-strong bg-surface py-1.5 pl-8 pr-2 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
-              />
-            </form>
           </div>
         )}
       </div>
@@ -227,9 +203,7 @@ export default async function ConnectionsPage({
               <Link
                 href="/connections/new"
                 className={
-                  FREQUENCY
-                    ? buttonClasses('primary', 'md')
-                    : 'inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover'
+                  buttonClasses('primary', 'md')
                 }
               >
                 <Plus className="h-4 w-4" /> Add a contact
@@ -272,18 +246,18 @@ export default async function ConnectionsPage({
                 meta={
                   <>
                     {c.linkedProfileId && (
-                      <span className={FREQUENCY ? 'tag live' : 'inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 font-medium text-success'}>
+                      <span className={'tag live'}>
                         <UserRoundCheck className="h-3 w-3" /> On Frequency
                       </span>
                     )}
                     {/* Promoted into the shared marketing contacts DB (linked_contact_id), ADR-742. */}
                     {c.linkedContactId && (
-                      <span className={FREQUENCY ? 'tag live' : 'inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 font-medium text-success'}>
+                      <span className={'tag live'}>
                         <ShieldCheck className="h-3 w-3" /> In Frequency contacts
                       </span>
                     )}
                     {c.tags.slice(0, 3).map((t) => (
-                      <span key={t} className={FREQUENCY ? 'tag' : 'rounded-pill bg-primary-bg px-2 py-0.5 font-medium text-primary-strong'}>{t}</span>
+                      <span key={t} className={'tag'}>{t}</span>
                     ))}
                     {c.tags.length > 3 && <span>+{c.tags.length - 3}</span>}
                     {c.city && (c.title || c.company) && (

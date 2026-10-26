@@ -5,11 +5,7 @@ import { getPillars } from '@/lib/pillars'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceListSchema, breadcrumbSchema } from '@/lib/jsonld'
-import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
-import { BetaCTA } from '@/components/marketing/marketing-ui'
-import { PracticeCard, PillarChips } from './practice-card'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyPractices } from '@/components/frequency/site/pages/discover/practices'
 
 export const revalidate = 3600
@@ -43,52 +39,15 @@ export default async function PublicPracticesPage() {
       { name: 'Practices', path: '/discover/practices' },
     ]),
   ]
-
-  // THE DESIGN SWITCH (ADR-1737): the same library, chips and JSON-LD, drawn in the site kit.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd data={schema} />
-        <FrequencyPractices
-          title={TITLE}
-          description={DESCRIPTION}
-          practices={practices}
-          pillars={pillars}
-          image={hero.heroImage}
-        />
-      </>
-    )
-  }
-
   return (
     <>
-      <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
-        <JsonLd data={schema} />
-
-        {/* Public SEO surface: no operator admin bar (that's a member-app control). */}
-        <IndexTemplate
-          {...hero}
-          title={TITLE}
-          description={DESCRIPTION}
-          adminBar={false}
-        >
-          {pillars.length > 0 && <PillarChips pillars={pillars} active="all" />}
-
-          {practices.length === 0 ? (
-            <p className="text-muted">The library&apos;s still filling in. Check back in a few days.</p>
-          ) : (
-            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {practices.map((p) => (
-                <PracticeCard key={p.id} p={p} />
-              ))}
-            </ul>
-          )}
-        </IndexTemplate>
-      </div>
-
-      <BetaCTA
-        heading="Practices are better with people."
-        body="A Practice is one small real-world act, and it sticks when a few neighbors are doing it with you. Join free and find your Circle."
+      <JsonLd data={schema} />
+      <FrequencyPractices
+        title={TITLE}
+        description={DESCRIPTION}
+        practices={practices}
+        pillars={pillars}
+        image={hero.heroImage}
       />
     </>
   )

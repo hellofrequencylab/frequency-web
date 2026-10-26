@@ -127,9 +127,9 @@ describe('the roster renders from data already on the wire', () => {
   })
 
   it('it is reachable on a phone, unlike the page aside it replaces', () => {
-    // The page's roster is `hidden lg:flex`: below 1024px there has never been a way to see
-    // who is in a conversation. The dock version must not inherit that.
-    expect(dmPage).toContain('hidden lg:flex')
+    // The old DAWN page's roster was `hidden lg:flex`: below 1024px there was no way to see who is in
+    // a conversation. The dock version must not inherit that, and the Frequency page draws no aside.
+    expect(dmPage).not.toContain('hidden lg:flex')
     expect(details).not.toContain('hidden lg:')
     expect(details).not.toContain('hidden md:')
   })

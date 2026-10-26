@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 713,
+      "baseline": 707,
       "frozen": {
         "at": "2026-10-26",
-        "value": 713,
+        "value": 707,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "SCAN-1131 removed the legal and capture DAWN class props, retiring 1 literal radius site",
-        "from": 714
+        "reason": "DAWN branches removed from the discover, public share and help pages retired literal radii (SCAN-1128 parts 2 and 3)",
+        "from": 713
       },
       "history": [
         {
@@ -378,6 +378,13 @@
           "to": 713,
           "direction": "lowered",
           "reason": "SCAN-1131 removed the legal and capture DAWN class props, retiring 1 literal radius site"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 713,
+          "to": 707,
+          "direction": "lowered",
+          "reason": "DAWN branches removed from the discover, public share and help pages retired literal radii (SCAN-1128 parts 2 and 3)"
         }
       ]
     },
@@ -1931,14 +1938,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 220,
+      "baseline": 215,
       "frozen": {
         "at": "2026-10-26",
-        "value": 220,
+        "value": 215,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "DAWN branch removed from the marketing and door pages retired one hand-rolled eyebrow (SCAN-1128 part 1)",
-        "from": 221
+        "reason": "DAWN branches removed from the discover, public share and help pages retired hand-rolled eyebrows (SCAN-1128 parts 2 and 3)",
+        "from": 220
       },
       "history": [
         {
@@ -2059,6 +2066,13 @@
           "to": 220,
           "direction": "lowered",
           "reason": "DAWN branch removed from the marketing and door pages retired one hand-rolled eyebrow (SCAN-1128 part 1)"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 220,
+          "to": 215,
+          "direction": "lowered",
+          "reason": "DAWN branches removed from the discover, public share and help pages retired hand-rolled eyebrows (SCAN-1128 parts 2 and 3)"
         }
       ]
     }

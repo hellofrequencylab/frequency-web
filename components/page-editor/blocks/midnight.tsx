@@ -180,6 +180,7 @@ function MidnightHeroBlock({ p, metadata, pad, vis }: Common) {
       )}
       <div className="mn-protect" aria-hidden="true" />
       <div className="mn-mist mn-mist--low" aria-hidden="true" />
+      <div className="mn-smoke" aria-hidden="true" />
       <div className="mn-hero-copy">{text}</div>
     </section>
   )
@@ -400,7 +401,9 @@ function MidnightProofBlock({ p, metadata, pad, vis }: Common) {
   if (!quote) return null
   return (
     <section data-mn="proof" className={cls('mn-section mn-proof mn-grain', pad, vis)}>
+      <div className="mn-moonglow" aria-hidden="true" />
       <div className="mn-mist mn-mist--right" aria-hidden="true" />
+      <div className="mn-stardust" aria-hidden="true" />
       <div className="mn-proof-inner">
         <div className="mn-ornament" role="separator"><span /><i aria-hidden="true">✦</i><span /></div>
         <blockquote className="mn-quote">“{quote}”</blockquote>

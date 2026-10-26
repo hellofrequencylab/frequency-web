@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Config, Data } from '@/lib/page-editor/types'
-import { missingAltText, publishChecks } from './publish-checks'
+import { missingAltText, publishChecks, sampleSections } from './publish-checks'
 
 const config = {
   components: {
@@ -34,5 +34,17 @@ describe('publish checks', () => {
     const bad = publishChecks([{ label: 'Visit', doc: doc([{ type: 'Hero', props: { image: '/a.jpg' } }]), seo: { title: '', description: '' } }], config)
     expect(bad.map((c) => c.ok)).toEqual([false, false])
     expect(bad[1].text).toContain('Visit')
+  })
+
+  it('warns once about sample sections from a starter kit, nested ones included, and stays quiet without them', () => {
+    const d = doc([
+      { type: 'Hero', props: { id: 'a', sample: true } },
+      { type: 'Text', props: { id: 'b' } },
+      { type: 'Columns', props: { id: 'c', left: [{ type: 'Hero', props: { id: 'd', sample: true } }] } },
+    ])
+    expect(sampleSections(d)).toBe(2)
+    const checks = publishChecks([{ label: 'Home', doc: d, seo: { title: 'Home', description: 'Welcome' } }], config)
+    expect(checks.filter((c) => /sample words/.test(c.text))).toEqual([{ ok: false, text: '2 sections still have sample words from a starter kit' }])
+    expect(publishChecks([{ label: 'Home', doc: doc([]), seo: { title: 'Home', description: 'Welcome' } }], config).some((c) => /sample/.test(c.text))).toBe(false)
   })
 })

@@ -15,5 +15,5 @@ export interface JourneyForEdit {
 }
 
 export async function planJourneyEdits(input: { request: string; journey: JourneyForEdit; profileId?: string | null }): Promise<WritingCoaching | null> {
-  return runSpark(writingCoachingSpec('journey', 'journey-edit', 'opus'), { content: JSON.stringify({ request: input.request.slice(0, 1000), journey: input.journey }).slice(0, 16000), profileId: input.profileId })
+  return runSpark(writingCoachingSpec('journey', 'journey-edit', 'sonnet'), { content: JSON.stringify({ request: input.request.slice(0, 1000), journey: input.journey }).slice(0, 16000), profileId: input.profileId })
 }

@@ -3,11 +3,8 @@ import { helpPageMetadata } from '@/lib/help/metadata'
 import { SITE_NAME } from '@/lib/site'
 import { promises as fs } from 'fs'
 import path from 'path'
-import { HelpMarkdown } from '@/components/help/help-markdown'
-import { StreamTemplate } from '@/components/templates'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyHelpChangelog } from '@/components/frequency/site/pages/help/frequency-help-pages'
 
 // "What's new" renders the human-facing CHANGELOG (docs/CHANGELOG.md) directly,
@@ -46,36 +43,15 @@ export default async function ChangelogPage() {
   // The shared header now carries the "What's new" title, so drop a leading H1
   // from the markdown to avoid a duplicate heading.
   const content = body.replace(/^#\s+.*(?:\r?\n)+/, '')
-
-  // The Frequency design (ADR-1737, build-time): the same changelog in the kit's reading column.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <JsonLd
-          data={breadcrumbSchema([
-            { name: 'Help', path: '/help' },
-            { name: "What's new", path: '/help/changelog' },
-          ])}
-        />
-        <FrequencyHelpChangelog body={content} />
-      </>
-    )
-  }
-
   return (
-    <StreamTemplate
-      title="What's new"
-      description="Recent changes and improvements to Frequency."
-    >
+    <>
       <JsonLd
         data={breadcrumbSchema([
           { name: 'Help', path: '/help' },
           { name: "What's new", path: '/help/changelog' },
         ])}
       />
-      <div className="max-w-3xl">
-        <HelpMarkdown>{content}</HelpMarkdown>
-      </div>
-    </StreamTemplate>
+      <FrequencyHelpChangelog body={content} />
+    </>
   )
 }

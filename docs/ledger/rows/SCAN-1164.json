@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1164",
+  "title": "Project model coaching choices into reviewed questions instead of accepting generated wording",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-26",
+  "source": {
+    "file": "lib/ai/coaching-question-catalog.ts",
+    "ref": "Private coaching output-boundary audit2026-10-26; rechecked after SCAN1163 quote filter"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/coaching-selection-contract.mjs",
+    "note": "Executes actual Space, shared writing coach and Practice/Journey Spark projection over inert provider/usage IO; approved IDs become exact reviewed words, unquoted suggested copy/unknown IDs/extra fields reject. Source mutation restoring arbitrary model text fails the same acceptance. Rendered accepted-model tests separately preserve human textarea and empty publication fields. Offline proof, not authenticated provider/production acceptance."
+  },
+  "detail": "Question punctuation and quoted-copy filters do not enforce authorship: unquoted replacement wording such as Would Sunrise Flow work as your title? passed while promising questions-only coaching. Providers now select bounded reviewed questionIds; the server maps those IDs to fixed human-reviewed questions. Model wording, example answers, URLs and made-up claims cannot enter these outputs. Existing UI question arrays, manual author fields, local fallbacks, feature attribution, budgets, tiers and actor throttles are preserved. Journey's separate source-fact settings/meeting extraction remains, projected independently from question choices; this row does not claim those factual fields or every AI feature are closed. Covered Space bio/tagline, shared Circle/listing/importer coaching and Practice/Journey Spark/edit/composition/slot coaching; source and rendered tests exercise accepted output as well as rejection and fallback. No customer data, schema, provider or deployment mutations.",
+  "wave": "W7"
+}

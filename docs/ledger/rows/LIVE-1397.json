@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1397",
+  "title": "Coach website authors with questions while preserving their own words",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-26",
+  "source": {
+    "file": "lib/sites/editor/actions.ts",
+    "ref": "Owner-directed coaching-only Sites editor"
+  },
+  "detail": "Website assistant selects finite reviewed question IDs, never replacement passages. Both editor designs show separate questions without an Apply, content commit or autosave path; manually authored fields and manual editing remain intact. Fresh editor authorization is checked again after provider IO, with existing central accounting, budget and rate gates preserved. Focused server and rendered caller consequences include forged model prose, malformed outputs, permission revocation and concurrent manual editing. Source and mocked verification only; no live provider, browser or production acceptance claimed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/site-author-coaching.mjs",
+    "note": "Executes actual finite-ID parser and caller with inert adversarial provider response; authored content must remain unchanged and no commit/save is allowed."
+  }
+}

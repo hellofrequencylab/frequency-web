@@ -1,16 +1,13 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers, SlidersHorizontal, Tag } from 'lucide-react'
-import { JourneyDetailTemplate } from '@/components/templates'
-import { buttonClasses } from '@/components/ui/button'
+import { Pencil, SlidersHorizontal, Tag } from 'lucide-react'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { ShareImageProvider } from '@/modules/qr'
 import { QrShareDropdown } from '@/modules/qr'
 import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor, listJourneyCoHostSpaces, getCompletedLessonIds, listPublicJourneys } from '@/lib/journey-plans'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { JourneyBody } from '@/components/frequency/members/journey/journey-body'
 import { listFriendsOnJourney } from '@/lib/journeys/friends-on-journey'
 import { buildJourneyTree } from '@/lib/journeys/tree'
@@ -18,11 +15,7 @@ import { JourneyDock } from '@/components/journey/nav/journey-dock'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { readJourneyGuarantee } from '@/lib/journeys/guarantee'
 import { JourneyGuaranteeBlock } from '@/components/journey/guarantee-block'
-import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
-import { accentColor, accentTint } from '@/lib/studio/accents'
-import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { adoptPlanAction, forkPlanAction } from '../actions'
-import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { getJourneyOffer, seatLine, isSoldOut, productIdsForJourneyPlan } from '@/lib/journeys/paid'
 import { checkJourneyTier } from '@/lib/journeys/tier-gate'
 import { BuyButton } from '../../marketplace/buy-button'
@@ -31,17 +24,7 @@ import { ProductReviews } from '@/components/marketplace/product-reviews'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { ListingQna } from '@/components/marketplace/listing-qna'
 import type { ListingComment } from '@/lib/marketplace/listing-comments'
-import {
-  itemsToBlocks,
-  DiscoveryBlocks,
-  OutcomesBlock,
-  InstructorBlock,
-  JourneyFaq,
-  JourneyStatChips,
-  AtAGlanceCard,
-  journeyFacts,
-  primaryPillar,
-} from '@/components/journey/discovery-widgets'
+import { itemsToBlocks, OutcomesBlock, InstructorBlock, JourneyFaq, AtAGlanceCard, journeyFacts } from '@/components/journey/discovery-widgets'
 import { OG_SITE } from '@/lib/site'
 import { QuestSponsorRewards } from '@/components/quest/quest-sponsor-rewards'
 
@@ -52,11 +35,6 @@ export const dynamic = 'force-dynamic'
 // here as the pitch and the till. Enrolled learners (not the author) go to /learn, which is
 // the course. Voice is v2 (Run / Phase / enroll), no em dashes.
 
-const VISIBILITY = {
-  public: { Icon: Globe, label: 'Public' },
-  unlisted: { Icon: Link2, label: 'Unlisted' },
-  private: { Icon: Lock, label: 'Private' },
-} as const
 
 // Per-Journey metadata — a real title, summary, and share card for the tab, history, and any
 // shared link (and ready for a public Journey route). Private plans stay generic.
@@ -122,15 +100,10 @@ export default async function JourneyPlanPage({
   }
 
   // Co-host Spaces (journey_plan_space_shares, accepted only): a credit line, never edit access.
-  const [pillars, author, coHosts] = await Promise.all([
-    getPillars(),
+  const [author, coHosts] = await Promise.all([
     getPlanAuthor(plan.author_id),
     listJourneyCoHostSpaces(plan.id, plan.space_id),
   ])
-  const byId = indexPillars(pillars)
-  const vis = VISIBILITY[plan.visibility]
-  const accent = plan.accent
-  const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
 
   // ACTIVE → the lesson player. An enrolled learner goes to /learn. An author stays on the pitch
   // so they can sell; they reach the course with Continue. `?preview=1` keeps an enrolled member
@@ -140,14 +113,11 @@ export default async function JourneyPlanPage({
   // Derive the at-a-glance facts ONCE; the header chips, the path accordion, and the rail
   // "what's included" list all read from this (so the numbers can never drift).
   const facts = journeyFacts(items)
-  const topPillar = primaryPillar(items, byId)
   const canStart = facts.lessonCount > 0
 
   // The Journey dock (About · Course · Focus · Library) is for someone who is IN this Journey: an
   // enrolled member reading the pitch again, or its author. A visitor gets the sales page alone.
   const docked = adopted || isAuthor
-  const dockPercent =
-    docked && profileId ? buildJourneyTree(itemsToBlocks(items), [...(await getCompletedLessonIds(profileId, plan.id))]).percent : 0
 
   // The standardized admin rail trigger, mirroring /learn (:183) so the scoped Journey rail is reachable
   // from the detail/root page too, not only the player. journey.editSettings resolves to the author,
@@ -218,337 +188,131 @@ export default async function JourneyPlanPage({
   // (/admin/elements), defaulting to identity/standard, so an operator can retune it without a deploy.
   // The author's picked overlay (journey_plans) is the surface default; an operator master value still
   // overrides site-wide. Only none/shadow/fade are honored; anything else falls back to the registry default.
-  // The identity band's chrome through the ONE resolver (PROG-P5, ADR-1136): the Journey's own
-  // cover + focal point is rung 1, the operator's /journeys Settings image stands behind it, and
-  // variant/height/overlay still resolve through the header element exactly as before.
-  const oStyle = plan.header_overlay_style
-  const hero = await resolveDetailHero(`/journeys/${plan.slug}`, {
-    entityImage: plan.cover_image,
-    entityFocus: plan.cover_focus,
-    // The AUTHOR'S stored overlay choice still wins, through the option the standard-cover resolver
-    // has for exactly this (the Circle None/Shade/Blend idiom). Only none/shadow/fade are honoured;
-    // anything else falls back to the header element's registry default, as before.
-    entityOverlayStyle: oStyle === 'none' || oStyle === 'shadow' || oStyle === 'fade' ? oStyle : null,
-  })
-  // ── FREQUENCY (ADR-1737). The same reads, gates and controls, on the Frequency Journey body. The
-  //    DAWN composition below is untouched; SITE_DESIGN is build-time, so only one branch ships live.
-  if (SITE_DESIGN === 'frequency') {
-    const completed = docked && profileId ? [...(await getCompletedLessonIds(profileId, plan.id))] : []
-    const tree = buildJourneyTree(itemsToBlocks(items), completed)
-    const [publicJourneys, friends] = await Promise.all([
-      listPublicJourneys(),
-      profileId ? listFriendsOnJourney(profileId, plan.id) : Promise.resolve([]),
-    ])
-    const more = publicJourneys
-      .filter((j) => j.id !== plan.id)
-      .slice(0, 3)
-      .map((j) => ({ slug: j.slug, title: j.title, coverImage: j.cover_image, adoptCount: j.adopt_count }))
-    const fqActions = (
-      <>
-        {canManageJourney && (
-          <OpenAdminBarButton
-            scope={{ kind: 'journey', id: plan.id }}
-            caps={Array.from(journeyCaps)}
-            label="Manage"
-            icon={<SlidersHorizontal className="h-4 w-4" />}
-            className="btn sm"
-          />
-        )}
-        {canManageJourney && (
-          <OpenAdminBarButton
-            scope={{ kind: 'journey', id: plan.id }}
-            caps={Array.from(journeyCaps)}
-            label={offer ? `${offer.priceLabel}${offer.seatLine ? ` · ${offer.seatLine}` : ''}` : 'Set a price'}
-            icon={<Tag className="h-4 w-4" />}
-            className="btn sm"
-          />
-        )}
-        <QrShareDropdown manager={canManageJourney} />
-      </>
-    )
-    const credits =
-      author || coHosts.length > 0 ? (
-        <span className="stack mc-gap-6">
-          {author && (
-            <Link className="t2" href={`/people/${author.handle}`}>
-              By {author.displayName}
-            </Link>
-          )}
-          {coHosts.map((s) => (
-            <Link key={s.id} className="t2" href={`/spaces/${s.slug}`}>
-              Co-hosted with {s.name}
-            </Link>
-          ))}
-        </span>
-      ) : null
-    return (
-      <>
-        <ShareImageProvider imageUrl={plan.cover_image ?? null}>
-          <JourneyBody
-            plan={{ slug: plan.slug, title: plan.title, summary: plan.summary, adoptCount: plan.adopt_count }}
-            tree={tree}
-            tracked={docked}
-            inside={adopted || isAuthor}
-            offerLabel={offer?.priceLabel ?? null}
-            credits={credits}
-            actions={fqActions}
-            notice={
-              isAuthor && preview ? (
-                <div className="mc-note">
-                  <span className="t2">Preview. How others see your Journey.</span>
-                  <Link className="btn sm" href={`/journeys/${plan.slug}/edit`}>
-                    <Pencil className="h-3.5 w-3.5" /> Back to editing
-                  </Link>
-                </div>
-              ) : null
-            }
-            enrol={
-              <>
-                <AtAGlanceCard
-                  plan={plan}
-                  slug={plan.slug}
-                  facts={facts}
-                  enrolled={adopted}
-                  canStart={canStart}
-                  isAuthor={isAuthor}
-                  progress={null}
-                  enrollAction={adoptPlanAction}
-                  forkAction={forkPlanAction}
-                  offer={offer}
-                  buyControl={buyControl}
-                  tierGate={tierGate}
-                />
-                {plan.official && plan.quest_id && <QuestSponsorRewards questId={plan.quest_id} profileId={profileId} />}
-              </>
-            }
-            details={
-              <>
-                <OutcomesBlock outcomes={readJourneyOutcomes(plan.page_config)} />
-                <InstructorBlock author={author} />
-                {reviewProductId && reviews && (
-                  <ProductReviews
-                    productId={reviewProductId}
-                    productTitle={plan.title}
-                    reviews={reviews}
-                    myReview={myReview}
-                    signedIn={!!profileId}
-                    canReview={!!profileId && !!rawOffer && !canManageJourney && purchased}
-                    canModerate={operator}
-                  />
-                )}
-                <JourneyFaq plan={plan} />
-                {reviewProductId && (
-                  <ListingQna
-                    targetKind="product"
-                    targetId={reviewProductId}
-                    revalidatePath={`/journeys/${plan.slug}`}
-                    comments={comments}
-                    canPost={!!profileId}
-                    canModerate={canManageJourney || operator}
-                    myProfileId={profileId}
-                    isOwner={canManageJourney}
-                  />
-                )}
-                <JourneyGuaranteeBlock guarantee={readJourneyGuarantee(plan.page_config)} />
-              </>
-            }
-            more={more}
-            friends={friends}
-          />
-        </ShareImageProvider>
-        {docked && (
-          <JourneyDock slug={plan.slug} active="about" percent={tree.percent} aboutHref={isAuthor ? `/journeys/${plan.slug}` : undefined} />
-        )}
-      </>
-    )
-  }
-
-  const page = (
-    <JourneyDetailTemplate
-      {...hero}
-      title={
-        <span className="inline-flex items-center gap-3 align-middle">
-          <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-card"
-            style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
-          >
-            <PlanIcon className="h-6 w-6" />
-          </span>
-          <span className="min-w-0 break-words">{plan.title}</span>
-        </span>
-      }
-      badges={
-        <span className="inline-flex flex-wrap items-center gap-1.5">
-          {plan.official && (
-            <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-semibold text-primary-strong">
-              <Sparkles className="h-3 w-3" /> Official
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
-            <vis.Icon className="h-3 w-3" /> {vis.label}
-          </span>
-          {topPillar && (
-            <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
-              {topPillar.name}
-            </span>
-          )}
-        </span>
-      }
-      actions={
-        <>
-          {canManageJourney && (
-            <OpenAdminBarButton
-              scope={{ kind: 'journey', id: plan.id }}
-              caps={Array.from(journeyCaps)}
-              label="Manage"
-              icon={<SlidersHorizontal className="h-4 w-4" />}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-            />
-          )}
-          {canManageJourney && (
-            <OpenAdminBarButton
-              scope={{ kind: 'journey', id: plan.id }}
-              caps={Array.from(journeyCaps)}
-              label={offer ? `${offer.priceLabel}${offer.seatLine ? ` · ${offer.seatLine}` : ''}` : 'Set a price'}
-              icon={<Tag className="h-4 w-4" />}
-              className={
-                offer
-                  ? 'inline-flex items-center gap-1.5 rounded-lg border border-success/40 bg-success-bg px-3 py-1.5 text-body-sm font-semibold text-success transition-colors hover:bg-success-bg/70'
-                  : 'inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text'
-              }
-            />
-          )}
-          <QrShareDropdown manager={canManageJourney} />
-        </>
-      }
-      identity={{
-        promise: plan.summary ? <p className="leading-relaxed text-text">{plan.summary}</p> : undefined,
-        shape: <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />,
-        guide: author || coHosts.length > 0 ? (
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta">
-            {author && (
-              <Link href={`/people/${author.handle}`} className="text-muted transition-colors hover:text-text">
-                By <span className="font-semibold text-text">{author.displayName}</span>
-              </Link>
-            )}
-            {coHosts.map((s) => (
-              <Link key={s.id} href={`/spaces/${s.slug}`} className="text-muted transition-colors hover:text-text">
-                Co-hosted with <span className="font-semibold text-text">{s.name}</span>
-              </Link>
-            ))}
-            <Link href="/crew" className="inline-flex items-center gap-1 text-muted transition-colors hover:text-text">
-              <Flame className="h-3.5 w-3.5" /> Keep your streak in the Quest
-            </Link>
-            <a href="#the-path" className="inline-flex items-center gap-1 text-muted transition-colors hover:text-text">
-              <Layers className="h-3.5 w-3.5" /> The path
-            </a>
-          </span>
-        ) : undefined,
-      }}
-      notices={
-        isAuthor && preview ? (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-2.5">
-            <span className="text-body-sm text-muted">Preview. How others see your Journey.</span>
-            <Link
-              href={`/journeys/${plan.slug}/edit`}
-              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-            >
-              <Pencil className="h-3.5 w-3.5" /> Back to editing
-            </Link>
-          </div>
-        ) : undefined
-      }
-      interiorSide={
-        // 🔴 ONE enrol control on this page, and it lives here (ADR-1401, amending ADR-1396 §4).
-        // There used to be THREE — hero, rail and repeat card — each rendering an EnrollCta, which
-        // since ADR-1400 means each mounting its own Stripe checkout island on a priced Journey.
-        // The cover was the wrong home for it the moment it stopped being a link: card fields
-        // cannot open inside a hero action row, which is what the HERO_CTA_WRAP !important override
-        // existed to paper over. In the side column it is a full-width box, and `order-first` puts
-        // it above the sales copy on a phone anyway, which is where the ruling wanted it.
-        <div id="enrol" className="scroll-mt-6">
-          <AtAGlanceCard
-            plan={plan}
-            slug={plan.slug}
-            facts={facts}
-            enrolled={adopted}
-            canStart={canStart}
-            isAuthor={isAuthor}
-            progress={null}
-            enrollAction={adoptPlanAction}
-            forkAction={forkPlanAction}
-            offer={offer}
-            buyControl={buyControl}
-            tierGate={tierGate}
-          />
-          {/* LIVE-673: what a partner gives for finishing this Journey's Quest. */}
-          {plan.official && plan.quest_id && <QuestSponsorRewards questId={plan.quest_id} profileId={profileId} />}
-        </div>
-      }
-      interiorMain={
-        <div className="max-w-2xl space-y-8">
-          <DiscoveryBlocks
-            plan={plan}
-            items={items}
-            pillars={pillars}
-            facts={facts}
-            accent={accent}
-            afterStory={<OutcomesBlock outcomes={readJourneyOutcomes(plan.page_config)} />}
-          />
-          <InstructorBlock author={author} />
-          {reviewProductId && reviews && (
-            <ProductReviews
-              productId={reviewProductId}
-              productTitle={plan.title}
-              reviews={reviews}
-              myReview={myReview}
-              signedIn={!!profileId}
-              canReview={!!profileId && !!rawOffer && !canManageJourney && purchased}
-              canModerate={operator}
-            />
-          )}
-          <JourneyFaq plan={plan} />
-          {reviewProductId && (
-            <ListingQna
-              targetKind="product"
-              targetId={reviewProductId}
-              revalidatePath={`/journeys/${plan.slug}`}
-              comments={comments}
-              canPost={!!profileId}
-              canModerate={canManageJourney || operator}
-              myProfileId={profileId}
-              isOwner={canManageJourney}
-            />
-          )}
-
-          {/* The refund promise (LIVE-441), last before the CTA: the same block the product
-              sales body renders, reaching the buyer who lands on the Journey itself. Empty
-              unless the host wrote one. */}
-          <JourneyGuaranteeBlock guarantee={readJourneyGuarantee(plan.page_config)} />
-
-          {/* The repeat CTA closes the page. It is an ANCHOR to the one enrol box, never a second
-              copy of it: a repeat CTA on a long sales page is worth having, a second mounted
-              checkout is not. */}
-          {!isAuthor && (
-            <div className="rounded-card border border-border bg-surface p-5 lift-1">
-              <p className="mb-3 text-body-sm font-semibold text-text">
-                Start it solo, or run it with your Circle.
-              </p>
-              <a href="#enrol" className={buttonClasses('primary', 'md')}>
-                {offer ? `Get access · ${offer.priceLabel}` : 'Start this Journey'}
-              </a>
-            </div>
-          )}
-        </div>
-      }
-    />
+  const completed = docked && profileId ? [...(await getCompletedLessonIds(profileId, plan.id))] : []
+  const tree = buildJourneyTree(itemsToBlocks(items), completed)
+  const [publicJourneys, friends] = await Promise.all([
+    listPublicJourneys(),
+    profileId ? listFriendsOnJourney(profileId, plan.id) : Promise.resolve([]),
+  ])
+  const more = publicJourneys
+    .filter((j) => j.id !== plan.id)
+    .slice(0, 3)
+    .map((j) => ({ slug: j.slug, title: j.title, coverImage: j.cover_image, adoptCount: j.adopt_count }))
+  const fqActions = (
+    <>
+      {canManageJourney && (
+        <OpenAdminBarButton
+          scope={{ kind: 'journey', id: plan.id }}
+          caps={Array.from(journeyCaps)}
+          label="Manage"
+          icon={<SlidersHorizontal className="h-4 w-4" />}
+          className="btn sm"
+        />
+      )}
+      {canManageJourney && (
+        <OpenAdminBarButton
+          scope={{ kind: 'journey', id: plan.id }}
+          caps={Array.from(journeyCaps)}
+          label={offer ? `${offer.priceLabel}${offer.seatLine ? ` · ${offer.seatLine}` : ''}` : 'Set a price'}
+          icon={<Tag className="h-4 w-4" />}
+          className="btn sm"
+        />
+      )}
+      <QrShareDropdown manager={canManageJourney} />
+    </>
   )
-
+  const credits =
+    author || coHosts.length > 0 ? (
+      <span className="stack mc-gap-6">
+        {author && (
+          <Link className="t2" href={`/people/${author.handle}`}>
+            By {author.displayName}
+          </Link>
+        )}
+        {coHosts.map((s) => (
+          <Link key={s.id} className="t2" href={`/spaces/${s.slug}`}>
+            Co-hosted with {s.name}
+          </Link>
+        ))}
+      </span>
+    ) : null
   return (
     <>
-      <ShareImageProvider imageUrl={plan.cover_image ?? null}>{page}</ShareImageProvider>
+      <ShareImageProvider imageUrl={plan.cover_image ?? null}>
+        <JourneyBody
+          plan={{ slug: plan.slug, title: plan.title, summary: plan.summary, adoptCount: plan.adopt_count }}
+          tree={tree}
+          tracked={docked}
+          inside={adopted || isAuthor}
+          offerLabel={offer?.priceLabel ?? null}
+          credits={credits}
+          actions={fqActions}
+          notice={
+            isAuthor && preview ? (
+              <div className="mc-note">
+                <span className="t2">Preview. How others see your Journey.</span>
+                <Link className="btn sm" href={`/journeys/${plan.slug}/edit`}>
+                  <Pencil className="h-3.5 w-3.5" /> Back to editing
+                </Link>
+              </div>
+            ) : null
+          }
+          enrol={
+            <>
+              <AtAGlanceCard
+                plan={plan}
+                slug={plan.slug}
+                facts={facts}
+                enrolled={adopted}
+                canStart={canStart}
+                isAuthor={isAuthor}
+                progress={null}
+                enrollAction={adoptPlanAction}
+                forkAction={forkPlanAction}
+                offer={offer}
+                buyControl={buyControl}
+                tierGate={tierGate}
+              />
+              {plan.official && plan.quest_id && <QuestSponsorRewards questId={plan.quest_id} profileId={profileId} />}
+            </>
+          }
+          details={
+            <>
+              <OutcomesBlock outcomes={readJourneyOutcomes(plan.page_config)} />
+              <InstructorBlock author={author} />
+              {reviewProductId && reviews && (
+                <ProductReviews
+                  productId={reviewProductId}
+                  productTitle={plan.title}
+                  reviews={reviews}
+                  myReview={myReview}
+                  signedIn={!!profileId}
+                  canReview={!!profileId && !!rawOffer && !canManageJourney && purchased}
+                  canModerate={operator}
+                />
+              )}
+              <JourneyFaq plan={plan} />
+              {reviewProductId && (
+                <ListingQna
+                  targetKind="product"
+                  targetId={reviewProductId}
+                  revalidatePath={`/journeys/${plan.slug}`}
+                  comments={comments}
+                  canPost={!!profileId}
+                  canModerate={canManageJourney || operator}
+                  myProfileId={profileId}
+                  isOwner={canManageJourney}
+                />
+              )}
+              <JourneyGuaranteeBlock guarantee={readJourneyGuarantee(plan.page_config)} />
+            </>
+          }
+          more={more}
+          friends={friends}
+        />
+      </ShareImageProvider>
       {docked && (
-        <JourneyDock slug={plan.slug} active="about" percent={dockPercent} aboutHref={isAuthor ? `/journeys/${plan.slug}` : undefined} />
+        <JourneyDock slug={plan.slug} active="about" percent={tree.percent} aboutHref={isAuthor ? `/journeys/${plan.slug}` : undefined} />
       )}
     </>
   )
