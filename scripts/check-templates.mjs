@@ -112,6 +112,11 @@ export const SHELLS = [
   // the page's own content, which AdminTemplate and the console templates render now that Frequency is the
   // only design (ADR-1880).
   'AdminPageFrame',
+  // The public legal and lead-capture frames (components/frequency/site/pages/legal/legal-reading.tsx and
+  // the funnel capture shell): the Frequency kit's own page frames, which LegalPage and CaptureShell render now
+  // that Frequency is the only design (ADR-1880).
+  'FrequencyLegalReading',
+  'FrequencyCaptureShell',
   // The editable index's header (PAGE-FRAMEWORK §8.5): a sanctioned composition, not drift. It is a
   // thin wrapper over the kit's PageHero, the same one IndexTemplate's heroOverlay renders, and the
   // body under it is operator-rearrangeable (BlockRender / PageModules). Counted from 2026-10-13 when

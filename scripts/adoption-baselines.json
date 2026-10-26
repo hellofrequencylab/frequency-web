@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 714,
+      "baseline": 713,
       "frozen": {
         "at": "2026-10-26",
-        "value": 714,
+        "value": 713,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "SCAN-1127 removed DAWN branches in components/ui and templates, retiring 3 literal radius sites",
-        "from": 717
+        "reason": "SCAN-1131 removed the legal and capture DAWN class props, retiring 1 literal radius site",
+        "from": 714
       },
       "history": [
         {
@@ -371,6 +371,13 @@
           "to": 714,
           "direction": "lowered",
           "reason": "SCAN-1127 removed DAWN branches in components/ui and templates, retiring 3 literal radius sites"
+        },
+        {
+          "at": "2026-10-26",
+          "from": 714,
+          "to": 713,
+          "direction": "lowered",
+          "reason": "SCAN-1131 removed the legal and capture DAWN class props, retiring 1 literal radius site"
         }
       ]
     },
