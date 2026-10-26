@@ -138,3 +138,20 @@ describe('send_intro_email graduation', () => {
     expect(enqueueEmail).not.toHaveBeenCalled()
   })
 })
+
+
+describe('introduction authorship boundary', () => {
+  it('refuses even a confirmed handle-only introduction without writing or notifying', async () => {
+    const result = await executeConfirmedTool('member', 'draft_intro', { toHandle: 'maya' })
+    expect(result).toEqual({ ok: false, error: 'Write your own introduction in the feed. Vera can help you decide what to say.' })
+    expect(enqueueEmail).not.toHaveBeenCalled()
+    expect(recordContactInteraction).not.toHaveBeenCalled()
+  })
+
+  it('rejects a stale publish-ready proposal, even with send approval', async () => {
+    const result = await executeConfirmedTool('member', 'draft_intro', { toHandle: 'maya', message: 'AI wrote this hello' }, { approvedSend: true })
+    expect(result.ok).toBe(false)
+    expect(enqueueEmail).not.toHaveBeenCalled()
+    expect(recordContactInteraction).not.toHaveBeenCalled()
+  })
+})
