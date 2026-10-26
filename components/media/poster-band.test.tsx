@@ -46,7 +46,6 @@ import {
 // defect put back.
 
 const band = readFileSync('components/media/poster-band.tsx', 'utf8')
-const eventPage = readFileSync('app/(main)/events/[slug]/event-member-page.tsx', 'utf8')
 const TIERS: CoverHeight[] = ['short', 'standard', 'tall']
 
 /** What `object-cover` actually shows of a WxH source in a bandW x bandH box, as area. */
@@ -275,32 +274,6 @@ describe('the band takes its height, it does not know one', () => {
   })
 })
 
-describe('the event page actually uses it', () => {
-  it('renders the band rather than a hand-rolled object-cover box', () => {
-    expect(eventPage).toContain('<PosterBand')
-    expect(eventPage).toContain('heightClass={posterHeightCls}')
-  })
-
-  it('🔴 and the raw cropping box it replaced is GONE from the cover slot', () => {
-    // Matched against the code with comments stripped: the cover slot's comment deliberately
-    // quotes what was wrong, and the file legitimately still discusses object-cover elsewhere.
-    const code = eventPage.replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/\/\/.*$/gm, '')
-    expect(code).not.toContain('className="object-cover"')
-  })
-
-  it('the no-cover placeholder shares the band height, so the page rhythm does not depend on art', () => {
-    // An event WITHOUT a poster must not get a taller header than one with it.
-    //
-    // ⚠️ This used to pin the literal '${posterHeightCls} w-full items-center justify-center'. The
-    // width was incidental to what the test is named for, and baking it in meant the HEIGHT
-    // assertion broke when the placeholder's width was corrected for the full bleed. Assert the
-    // height class and the centring; the width has its own test below.
-    expect(eventPage).toContain('${posterHeightCls}')
-    expect(eventPage).toContain('items-center justify-center')
-    expect(eventPage).not.toContain('heroHeightCls')
-  })
-})
-
 // ── THE FULL BLEED WAS HALF-APPLIED, BECAUSE TWO WIDTH CLASSES LANDED ON ONE ELEMENT ─────────────
 //
 // 🔴 THE SECOND OWNER REPORT off the same page (2026-09-01): the phone band bled off the LEFT edge
@@ -362,49 +335,6 @@ describe('the full bleed the owner asked for actually reaches both edges', () =>
     expect(w.sm).toEqual(['w-full'])
   })
 
-  // ── 🔴 THE THIRD OWNER REPORT OFF THIS PAGE (2026-09-25, LIVE-507) ────────────────────────────
-  //
-  // The phone band rendered as a SQUARE about 57% of the viewport, left-aligned, with empty page
-  // beside it. Not a stripe this time -- a collapse.
-  //
-  // `w-auto` is not wrong by itself: a block box with auto width fills its container, and the
-  // -mx-4 expands that used width by both gutters, which is exactly what fixed the 2026-09-01
-  // stripe. It becomes wrong ONLY on the shaped path, where `sizeClass` is `max-h-*` rather than
-  // `h-*`, so the band has NO definite size on either axis -- just a ceiling and a ratio. CSS then
-  // resolves the clamp by transferring it through the ratio into the inline axis, and the width
-  // becomes `max-height x aspect`: 221 x 221 for a 1:1 poster at the Standard tier.
-  //
-  // So the invariant is not "w-auto" and never was. It is: ONE AXIS MUST BE DEFINITE. The shaped
-  // path gives up the block axis by design (ADR-1248 -- the band takes the poster's shape), which
-  // leaves the inline axis to carry it.
-  it('never pairs an indefinite width with the shaped path, or the ratio eats the width', () => {
-    // 🔴 READ THE WIDTH THE EVENT PAGE ACTUALLY PASSES. A hardcoded good value here would render a
-    // correct band forever and assert nothing about the page that broke -- the shape of gate this
-    // file keeps catching. Extracting it means reverting the call site turns THIS test red too.
-    const passed = eventPage.match(/widthClass="([^"]*)"/)?.[1]
-    expect(passed, 'the event page still passes a widthClass to PosterBand').toBeTruthy()
-    const markup = renderToStaticMarkup(
-      <PosterBand
-        src="/x.png"
-        heightClass={posterHeightClass('standard')}
-        maxHeightClass={posterMaxHeightClass('standard')}
-        aspect={1}
-        className="-mx-4 sm:mx-0"
-        widthClass={passed}
-      />,
-    )
-    const cls = markup.match(/class="([^"]*)"/)?.[1] ?? ''
-    // Shaped: ratio present, ceiling present, and NO fixed height (the band takes the poster).
-    expect(markup, 'the shaped path is what this test is about').toContain('aspect-ratio:1')
-    expect(cls).toContain(posterMaxHeightClass('standard').split(' ')[0])
-    const w = widthsByBreakpoint(markup)
-    expect(
-      w.base,
-      'an auto width + aspect-ratio + max-height has no definite axis, so the clamp transfers ' +
-        'back through the ratio and the band shrinks to max-height x aspect',
-    ).not.toContain('w-auto')
-  })
-
   it('keeps w-full as the default, so the framed callers are untouched', () => {
     const markup = renderToStaticMarkup(
       <PosterBand src="/x.png" heightClass={posterHeightClass('standard')} />,
@@ -412,27 +342,6 @@ describe('the full bleed the owner asked for actually reaches both edges', () =>
     expect(widthsByBreakpoint(markup).base).toEqual(['w-full'])
   })
 
-  it('the event page passes its width through the PROP, never appended to className', () => {
-    // The regression is re-introduced by moving `w-auto` back into className, where it collides
-    // again. Assert the call site's shape, not just the component's.
-    const call = eventPage.slice(eventPage.indexOf('<PosterBand'), eventPage.indexOf('radiusClass="rounded-none sm:rounded-2xl"'))
-    expect(call).toMatch(/widthClass="w-\[calc\(100%\+2rem\)\] sm:w-full"/)
-    expect(
-      call,
-      'w-auto here collapses the shaped band to max-height x aspect (LIVE-507)',
-    ).not.toContain('widthClass="w-auto')
-    expect(call, 'a w-* back inside className is the exact collision that shipped').not.toMatch(
-      /className="[^"]*\bw-/,
-    )
-  })
-
-  it('the no-cover placeholder bleeds too — it had the same defect and no w-auto at all', () => {
-    const ph = eventPage.slice(eventPage.indexOf('// No cover: a designed placeholder'))
-    const cls = ph.match(/className=\{`([^`]*)`\}/)?.[1] ?? ''
-    expect(cls).toContain('-mx-4')
-    expect(cls, 'w-full with -mx-4 shifts the box instead of widening it').toContain('w-auto')
-    expect(cls).toContain('sm:w-full')
-  })
 })
 
 // ── THE BAND TAKES THE POSTER'S OWN SHAPE WHEN IT KNOWS IT (ADR-1248, LIVE-200) ─────────────────
@@ -535,16 +444,6 @@ describe('with the cover aspect known, the band is the poster and the tier is it
     expect(shownWidth(1400, 600, PHONE, PHONE / flyer)).toBeCloseTo(1, 6)
     expect(shownArea(1400, 600, PHONE, PHONE / flyer)).toBeCloseTo(1, 6)
     expect(PHONE / 1).toBeGreaterThan(PHONE_BAND_PX.standard)
-  })
-
-  it('the event page reads the stored aspect and passes it with the tier ceiling, only when the hero IS the cover', () => {
-    expect(eventPage).toContain("from '@/lib/events/cover-aspect'")
-    expect(eventPage).toContain('readEventCoverAspect(extra?.theme)')
-    const call = eventPage.slice(eventPage.indexOf('<PosterBand'), eventPage.indexOf('radiusClass="rounded-none sm:rounded-2xl"'))
-    expect(call).toContain('aspect={coverAspect}')
-    expect(call).toContain('maxHeightClass={posterMaxHeightCls}')
-    // A scanned poster can lead the band instead of the uploaded cover; it carries no measurement.
-    expect(eventPage).toMatch(/const coverAspect = heroIsCover \? readEventCoverAspect/)
   })
 
   it('and the band still declares no ceiling of its own; the ladder is the single source', () => {

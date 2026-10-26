@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Users, QrCode, UserPlus, Filter } from 'lucide-react'
+import { QrCode, UserPlus, Filter } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { rankForCompletion, type SeasonRank } from '@/lib/season-ranks'
@@ -14,15 +14,8 @@ import { getCurrentSeason } from '@/lib/seasons'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
-import { SectionHeader } from '@/components/ui/section-header'
-import { Skeleton } from '@/components/ui/skeleton'
-import { StandingHero } from '@/components/gamification/standing-hero'
-import { CollectiveGoal } from '@/components/quest/collective-goal'
-import { LeaderboardList, type LeaderboardListEntry, type LeaderboardTrack } from '@/components/quest/leaderboard-list'
-import { BoardControls } from '@/components/quest/board-controls'
-import { PageModules } from '@/components/widgets/page-modules'
+import { type LeaderboardListEntry, type LeaderboardTrack } from '@/components/quest/leaderboard-list'
 import { isOptedOut } from './opt-out'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { LeaderboardBody, BoardList } from '@/components/frequency/members/crew/leaderboard-body'
 import { visibleModuleOrder } from '@/components/frequency/members/shared/module-order'
 import { getRankDef } from '@/lib/season-ranks'
@@ -168,63 +161,6 @@ async function getBoard(
     }))
 }
 
-// The board section is awaited behind <Suspense> so the shell + collective goal
-// paint immediately and the list streams in (PAGE-FRAMEWORK §5).
-async function BoardSection({
-  scope,
-  track,
-  profileId,
-  optedOut,
-}: {
-  scope: Scope
-  track: Track
-  profileId: string
-  optedOut: boolean
-}) {
-  const admin = createAdminClient()
-  const limit = scope === 'global' ? 50 : scope === 'hub' ? 30 : 20
-
-  // 🔴 NO COMPETE GATE. A `canCompete` check sat above this read and swapped the ranked rows for a
-  // "join to compete" upgrade card; it went with the `gamification_full` gate (ADR-1295, owner
-  // ruling 2026-09-09, OWN-071). Competing is part of the Quest and the Quest is a side thing we
-  // all do together, so every signed-in member sees the board. Opting out (below) is still theirs.
-  const entries = await getBoard(admin, scope, track, profileId, limit)
-
-  const trackNote =
-    track === 'consistency'
-      ? 'Ranked by your daily practice streak, so showing up steadily counts as much as anything.'
-      : `Season Zaps within ${SCOPE_PHRASE[scope]}. This sits below the shared goal on purpose.`
-
-  return (
-    <section aria-labelledby="board-heading">
-      <SectionHeader title="Where people stand" />
-      <p className="-mt-2 mb-3 text-body-sm text-muted" id="board-heading">
-        {trackNote}
-      </p>
-
-      {entries.length === 0 ? (
-        <EmptyState
-          variant="first-use"
-          icon={Users}
-          title="No one to show yet."
-          description={
-            scope === 'circle'
-              ? 'Join a Circle and log a practice, and the board fills in here.'
-              : 'Once people start logging practices, they show up here.'
-          }
-        />
-      ) : (
-        <LeaderboardList entries={entries} track={track} selfId={profileId} />
-      )}
-
-      {optedOut && (
-        <p className="mt-3 text-meta text-muted">
-          You are hidden from this board right now. You still count toward the shared goal above.
-        </p>
-      )}
-    </section>
-  )
-}
 
 // The same read as BoardSection, drawn as the members kit's rows (Frequency).
 async function FqBoardSection({ scope, track, profileId }: { scope: Scope; track: Track; profileId: string }) {
@@ -233,23 +169,6 @@ async function FqBoardSection({ scope, track, profileId }: { scope: Scope; track
   return <BoardList entries={entries} track={track === 'consistency' ? 'consistency' : 'zaps'} selfId={profileId} scope={scope} />
 }
 
-function BoardSkeleton() {
-  return (
-    <div className="space-y-1.5">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="flex min-h-[3.25rem] items-center gap-3 rounded-card bg-surface-elevated/40 px-3 py-2">
-          <Skeleton className="h-4 w-4 shrink-0" />
-          <Skeleton className="h-9 w-9 shrink-0 rounded-pill" />
-          <div className="flex-1 space-y-1.5">
-            <Skeleton className="h-3.5 w-32" />
-            <Skeleton className="h-3 w-16" />
-          </div>
-          <Skeleton className="h-4 w-12 shrink-0" />
-        </div>
-      ))}
-    </div>
-  )
-}
 
 export default async function LeaderboardPage({
   searchParams,
@@ -294,84 +213,29 @@ export default async function LeaderboardPage({
     getCollective(admin, scope, profile.id),
   ])
   const myStandingRank = rankForCompletion(myFinishedCount)
-
-  // FREQUENCY (ADR-1737): the same reads in the members kit. The consistency layer is the route's one
-  // layout module; it shows when the operator's Layout keeps it on.
-  if (SITE_DESIGN === 'frequency') {
-    const order = await visibleModuleOrder('/crew/leaderboard')
-    return (
-      <LeaderboardBody
-        scope={scope}
-        track={track === 'consistency' ? 'consistency' : 'zaps'}
-        scopePhrase={SCOPE_PHRASE[scope]}
-        seasonName={season?.name ?? null}
-        collective={collective}
-        me={{ zaps: myZaps, gems: myGems, streak: myStreak, rankLabel: getRankDef(myStandingRank).label, finished: myFinishedCount }}
-        hidden={optedOut}
-        board={
-          <Suspense key={`${scope}-${track}`} fallback={null}>
-            <FqBoardSection scope={scope} track={track} profileId={profile.id} />
-          </Suspense>
-        }
-        after={
-          order.includes('leaderboard-consistency') ? (
-            <Suspense fallback={null}>
-              <LeaderboardConsistency />
-            </Suspense>
-          ) : null
-        }
-      />
-    )
-  }
-
-  const hero = await resolveIndexHero('/crew/leaderboard')
-
+  const order = await visibleModuleOrder('/crew/leaderboard')
   return (
-    <IndexTemplate
-      {...hero}
-      title="Leaderboard"
-      description="One shared goal first. Where people stand sits below it, scoped to your Circle, and yours to opt out of."
-    >
-      <div className="space-y-6">
-        {/* 1. The collective goal — the headline. We're doing this together. */}
-        <CollectiveGoal
-          scopeLabel={SCOPE_PHRASE[scope]}
-          total={collective.total}
-          contributors={collective.contributors}
-          seasonName={season?.name}
-        />
-
-        {/* The viewer's own standing — "where am I in the game", de-emphasized
-            beneath the shared goal. */}
-        <StandingHero
-          zaps={myZaps}
-          gems={myGems}
-          streak={myStreak}
-          rank={myStandingRank}
-          journeysFinished={myFinishedCount}
-          seasonName={season?.name}
-          links={{ zaps: '/crew/leaderboard', rank: '/crew', streak: '/crew/leaderboard', gems: '/crew/store' }}
-        />
-
-        {/* 2 + 3. The secondary individual board: local-by-default scope, a Zaps /
-            Consistency track toggle, and a one-tap hide-me control. */}
-        <div className="space-y-4">
-          <BoardControls scope={scope} track={track} hidden={optedOut} />
-          <Suspense key={`${scope}-${track}`} fallback={<BoardSkeleton />}>
-            <BoardSection scope={scope} track={track} profileId={profile.id} optedOut={optedOut} />
+    <LeaderboardBody
+      scope={scope}
+      track={track === 'consistency' ? 'consistency' : 'zaps'}
+      scopePhrase={SCOPE_PHRASE[scope]}
+      seasonName={season?.name ?? null}
+      collective={collective}
+      me={{ zaps: myZaps, gems: myGems, streak: myStreak, rankLabel: getRankDef(myStandingRank).label, finished: myFinishedCount }}
+      hidden={optedOut}
+      board={
+        <Suspense key={`${scope}-${track}`} fallback={null}>
+          <FqBoardSection scope={scope} track={track} profileId={profile.id} />
+        </Suspense>
+      }
+      after={
+        order.includes('leaderboard-consistency') ? (
+          <Suspense fallback={null}>
+            <LeaderboardConsistency />
           </Suspense>
-        </div>
-
-        {/* The consistency layer (folded in from the old Streaks tab): the daily
-            practice streak + weekly rhythms, framed as how the steady person wins.
-            It is an assignable module now (leaderboard-consistency) — keyed only on the
-            viewer, so it self-fetches and an operator can arrange it (Settings ▾ → Page →
-            Layout). The bands above stay hand-composed because they read the scope/track
-            search params a nested module never receives. Each module is Suspense-isolated
-            inside <PageModules>, so it still streams in without blocking the bands above. */}
-        <PageModules route="/crew/leaderboard" />
-      </div>
-    </IndexTemplate>
+        ) : null
+      }
+    />
   )
 }
 

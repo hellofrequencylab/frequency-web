@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { FocusTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqFindField } from '@/components/frequency/members/shared/kit-tools'
 import { FqFocusPage } from '@/components/frequency/members/shared/focus-page'
 
@@ -25,21 +23,12 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
 
   const description =
     'Your record of showing up: every moment you’ve captured, newest first. This is the feed as a journal, not a scroll: proof you were here.'
-
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <FqFocusPage kicker="You · Capture" title="Your Journal" meta={description}>
-        <div className="fqm-tools">
-          <FqFindField action="/journal" value={query} placeholder="Search your journal" keep={{}} />
-        </div>
-        <PageModules route="/journal" />
-      </FqFocusPage>
-    )
-  }
-
   return (
-    <FocusTemplate title="Your Journal" description={description}>
+    <FqFocusPage kicker="You · Capture" title="Your Journal" meta={description}>
+      <div className="fqm-tools">
+        <FqFindField action="/journal" value={query} placeholder="Search your journal" keep={{}} />
+      </div>
       <PageModules route="/journal" />
-    </FocusTemplate>
+    </FqFocusPage>
   )
 }

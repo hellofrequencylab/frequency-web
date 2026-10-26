@@ -221,7 +221,7 @@ export function findViolations(input) {
   // place of the operator grid, so they are rendered even though no <PageModules> mounts their key.
   const fqIds = new Set()
   for (const src of [...appSources, ...fqSources]) {
-    if (!src.includes('<FqModules')) continue
+    if (!src.includes('<FqModules') && !src.includes('visibleModuleOrder(')) continue
     for (const m of stripComments(src).matchAll(/['"]([a-z][a-z0-9-]+)['"]/g)) fqIds.add(m[1])
   }
   const importedInApp = (id) => {
@@ -258,14 +258,14 @@ export function readTree(root = ROOT) {
   const appDir = join(root, 'app')
   const appFiles = existsSync(appDir) ? walk(appDir, ['.ts', '.tsx']) : []
   const appSources = appFiles.map((f) => readFileSync(f, 'utf8'))
+  const fqDir = join(root, 'components/frequency/members')
+  const fqSources = existsSync(fqDir) ? walk(fqDir, ['.tsx']).map((f) => readFileSync(f, 'utf8')) : []
   return {
     routeSets: parseRouteModuleIds(modules),
     bindings: parseComponentBindings(registry),
-    mounted: parseMountedKeys(appSources),
+    mounted: parseMountedKeys([...appSources, ...fqSources]),
     appSources,
-    fqSources: existsSync(join(root, 'components/frequency/members'))
-      ? walk(join(root, 'components/frequency/members'), ['.tsx']).map((f) => readFileSync(f, 'utf8'))
-      : [],
+    fqSources,
     appFileCount: appFiles.length,
   }
 }

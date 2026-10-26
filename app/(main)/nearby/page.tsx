@@ -1,22 +1,13 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { buttonClasses } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Megaphone, Zap, CalendarDays, Users, CircleDot, Radio, ArrowRight } from 'lucide-react'
 import { relativeTime } from '@/lib/utils'
 import { BroadcastCompose } from './broadcast-compose'
-import { ContextActions } from '@/components/context-actions'
-import { EmptyState } from '@/components/ui/empty-state'
-import { EntityCard } from '@/components/cards/entity-card'
-import { SectionHeader } from '@/components/ui/section-header'
-import { ModuleCard } from '@/components/modules/module-card'
 import { StreamTemplate, PageIntro } from '@/components/templates'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { Suspense } from 'react'
-import { NearbyMapHeader, NearbyMapCard } from '@/components/nearby/nearby-map-header'
-import { SITE_DESIGN } from '@/lib/theme/design'
-import { PageHero, type PageHeroSize, type PageHeroVariant } from '@/components/templates/page-hero'
+import { NearbyMapCard } from '@/components/nearby/nearby-map-header'
 import { resolveHeaderElement } from '@/lib/elements/header'
 import {
   collapseSeriesRows,
@@ -28,7 +19,6 @@ import {
   type SeriesRow,
 } from '@/lib/events/series'
 import { pickNewMembers, type NewMemberRow } from '@/lib/nearby/new-members'
-import { Avatar } from '@/components/ui/avatar'
 import { DIRECTORY_VISIBILITY_COLUMNS } from '@/lib/connections/directory-visibility'
 import { scopeDirectoryQuery } from '@/lib/connections/directory-page'
 import { demoModeEnabled } from '@/lib/platform-flags'
@@ -343,269 +333,75 @@ export default async function NearbyPage({
     timeLabel: relativeTime(d.published_at),
     linked: !!d.linked_task,
   }))
+  // LIVE-1073: the area under the map is one board in the members kit. The ticker keeps the latest
+  // Dispatches moving; the four tally tiles are the tabs, so the Dispatch stream, the gatherings,
+  // the circles and the new faces each get the panel to themselves instead of stacking.
+  // Named for what it replaces under this design: SCAN-899's probe reads the map's place above it.
   const dispatchesAndRail = (
-    <div className="space-y-8">
-      {tickerItems.length > 0 && <DispatchMarquee items={tickerItems} />}
-
-      {/* ── The numbers: a tap-through tile each, so the stat row is navigation, not decoration ── */}
-      <div data-visual-mask="nearby-stat-row" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile href="/events" Icon={CalendarDays} label="Upcoming events" value={upcomingEventTotal || upcomingEvents.length} tone="bg-primary-bg text-primary-strong" />
-        <StatTile href="/circles" Icon={CircleDot} label="Circles" value={circlesCountRes.count ?? 0} note={newCirclesCount > 0 ? `${newCirclesCount} new` : undefined} tone="bg-signal-bg text-signal-strong" />
-        <StatTile href="/network" Icon={Users} label="Members" value={membersRes.count ?? 0} note={newMembersCount ? `${newMembersCount} joined this week` : undefined} tone="bg-warning-bg text-warning" />
-        <StatTile href="#dispatches" Icon={Megaphone} label="Dispatches this week" value={broadcastsThisWeek} tone="bg-broadcast-bg text-broadcast-strong" />
-      </div>
-
-      {/* ── Coming up (wide) beside Circles forming (narrow) ── */}
-      <div className="grid items-start gap-6 lg:grid-cols-3">
-        <section className="lg:col-span-2" aria-label="Coming up">
-          <SectionHeader title="Happening near you" count={upcomingEventTotal || undefined} href="/events" />
-          {upcomingEvents.length > 0 ? (
-            <div data-visual-mask="nearby-coming-up" className="grid gap-3 sm:grid-cols-2">
-              {upcomingEvents.map((e) => {
-                const when = dayBadge(e.starts_at, now)
-                return (
-                  <Link
-                    key={e.id}
-                    href={`/events/${e.slug}`}
-                    className="group flex items-center gap-3 rounded-card border border-border bg-surface p-3.5 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
-                  >
-                    <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-control bg-primary-bg text-primary-strong">
-                      <span className="text-3xs font-bold uppercase leading-none">{eventMonth(e.starts_at)}</span>
-                      <span className="text-body font-bold leading-none">{eventDay(e.starts_at)}</span>
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      {when && (
-                        <span className="mb-0.5 inline-block rounded-full bg-primary px-2 py-px text-3xs font-bold uppercase text-on-primary">{when}</span>
-                      )}
-                      <span className="block truncate text-body-sm font-semibold leading-tight text-text">{e.title}</span>
-                      <span className="mt-0.5 block truncate text-meta leading-tight text-subtle">
-                        {eventDate(e.starts_at)}{e.location ? ` · ${e.location}` : ''}
-                      </span>
-                    </span>
-                  </Link>
-                )
-              })}
-            </div>
-          ) : (
-            <EmptyState
-              icon={CalendarDays}
-              title="Nothing on the calendar yet"
-              description="Be the first to put a gathering on it. Hosts can start one in a minute."
-              action={<Link href="/events/new" className={buttonClasses('primary', 'sm')}>Host an event</Link>}
-            />
-          )}
-        </section>
-
-        <section aria-label="Circles forming">
-          <SectionHeader title={formingPick.city ? `Circles forming in ${formingPick.city}` : 'Circles forming'} href="/circles" />
-          {newCircles.length > 0 ? (
-            <ModuleCard title="Newest first" visualMask="nearby-new-circles">
-              <div className="space-y-0.5">
-                {newCircles.map((c) => (
-                  <Link key={c.id} href={`/circles/${c.slug}`} className="flex items-center gap-3 rounded-control px-1 py-2 transition-colors hover:bg-surface-elevated">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-signal-bg text-signal-strong">
-                      <CircleDot className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-body-sm font-semibold text-text">{c.name}</p>
-                      <p className="mt-0.5 truncate text-meta text-subtle">
-                        {c.member_count} {c.member_count === 1 ? 'member' : 'members'}{c.city ? ` · ${c.city}` : ''}
-                      </p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-subtle" />
-                  </Link>
-                ))}
-              </div>
-            </ModuleCard>
-          ) : (
-            <EmptyState
-              icon={CircleDot}
-              title="No new circles this week"
-              description="Start one around something you care about and the first people to find it will be neighbors."
-              action={<Link href="/circles/new" className={buttonClasses('primary', 'sm')}>Start a circle</Link>}
-            />
-          )}
-        </section>
-      </div>
-
-      {/* ── New to the community: faces, not a number. Only members the directory would list. ── */}
-      {newMembers.length > 0 && (
-        <section aria-label="New to the community">
-          <SectionHeader title="New to the community" href="/network" />
-          <ul data-visual-mask="nearby-new-members" className="flex gap-3 overflow-x-auto pb-1">
-            {newMembers.map((m) => (
-              <li key={m.id} className="shrink-0">
-                <Link
-                  href={`/people/${m.handle}`}
-                  className="flex w-28 flex-col items-center gap-1.5 rounded-card border border-border bg-surface p-3 text-center lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
-                >
-                  <Avatar src={m.avatar_url} name={m.display_name ?? ''} size="md" />
-                  <span className="w-full truncate text-body-sm font-semibold text-text">{m.display_name}</span>
-                  <span className="text-meta text-subtle">Joined {relativeTime(m.created_at)}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+    <AroundYouBoard
+      ticker={tickerItems.length > 0 ? <DispatchMarquee items={tickerItems} /> : undefined}
+      tab={parseBoardTab(tabParam, compose === 'true')}
+      counts={{
+        events: upcomingEventTotal || upcomingEvents.length,
+        circles: circlesCountRes.count ?? 0,
+        people: membersRes.count ?? 0,
+        dispatches: broadcastsThisWeek,
+      }}
+      notes={{
+        circles: newCirclesCount > 0 ? `${newCirclesCount} new` : undefined,
+        people: newMembersCount ? `${newMembersCount} joined this week` : undefined,
+      }}
+      events={upcomingEvents.map((e) => ({
+        id: e.id,
+        slug: e.slug,
+        title: e.title,
+        month: eventMonth(e.starts_at),
+        day: eventDay(e.starts_at),
+        when: eventDate(e.starts_at),
+        badge: dayBadge(e.starts_at, now),
+        where: e.location,
+      }))}
+      circles={newCircles.map((c) => ({
+        id: c.id,
+        slug: c.slug,
+        name: c.name,
+        memberLabel: `${c.member_count} ${c.member_count === 1 ? 'member' : 'members'}`,
+        city: c.city,
+      }))}
+      circlesTitle={formingPick.city ? `Circles forming in ${formingPick.city}` : 'Circles forming'}
+      people={newMembers.flatMap((m) =>
+        m.handle
+          ? [{ id: m.id, handle: m.handle, name: m.display_name ?? '', avatarUrl: m.avatar_url, joined: relativeTime(m.created_at) }]
+          : [],
       )}
-
-      {/* ── The Dispatch stream, in two columns so it uses the width ── */}
-      <section id="dispatches" aria-label="Latest Dispatches" className="scroll-mt-24">
-        <SectionHeader
-          title="Latest Dispatches"
-          count={dispatches.length > 0 ? dispatches.length : undefined}
-          action={dispatchActions}
-        />
-        {dispatches.length === 0 ? (
-          <EmptyState
-            icon={Megaphone}
-            title="No Dispatches yet"
-            description="Your hosts and guides post announcements, events, and challenges here. When they do, they scroll across the top of this page."
-          />
-        ) : (
-          /* The cards are the reading, so they are masked; the EmptyState above is design surface
-             and is not (an empty column is the same picture on every capture). */
-          <div data-visual-mask="nearby-dispatch-list" className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {dispatches.slice(0, 8).map((d) => (
-              <DispatchCard key={d.id} dispatch={d} viewerRole={role} myProfileId={profile.id} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── One prompt to act, then the doors to the rest of the community ── */}
-      <section aria-label="Do something" className="grid gap-3 sm:grid-cols-3">
-        <PromptTile href="/events/new" Icon={CalendarDays} title="Host a gathering" body="Put a time and place on the calendar and let the neighborhood find it." tone="bg-primary-bg text-primary-strong" />
-        <PromptTile href="/circles/new" Icon={CircleDot} title="Start a circle" body="Gather a few people around one thing you keep coming back to." tone="bg-signal-bg text-signal-strong" />
-        <PromptTile href="/channels" Icon={Radio} title="Join a conversation" body="Pick a channel by topic and say hello." tone="bg-broadcast-bg text-broadcast-strong" />
-      </section>
-    </div>
+      dispatches={dispatches.slice(0, 8).map((d) => {
+        const isAuthor = d.author_id === profile.id
+        const scope = d.audience_scope ? d.audience_scope.charAt(0).toUpperCase() + d.audience_scope.slice(1) : 'Community'
+        return {
+          id: d.id,
+          title: d.title,
+          excerpt: d.excerpt,
+          context: d.linked_task ? `${scope} · Challenge` : `${scope} Dispatch`,
+          authorName: d.author?.display_name ?? null,
+          time: relativeTime(d.published_at),
+          linked: !!d.linked_task,
+          isAuthor,
+          showActions: isAuthor || HOST_PLUS.includes(role),
+        }
+      })}
+      viewerRole={role}
+      dispatchActions={dispatchActions}
+    />
   )
-
-  // ── FREQUENCY: NO HEADER BAND (owner, 2026-10-14, SCAN-899) ────────────────────────────────────
-  // The page opens on the plain member `.head` (PageHeading under Frequency: kicker, h1, meta), with
-  // the counts on the divider row beneath it. The map moves into the body, directly above the
-  // Dispatches, as a kit panel (NearbyMapCard). Still STREAMED: the fallback is the same card frame
-  // at the same height, so the pin read never holds the page and nothing below jumps when it lands.
-  if (SITE_DESIGN === 'frequency') {
-    // LIVE-1073: the area under the map is one board in the members kit. The ticker keeps the latest
-    // Dispatches moving; the four tally tiles are the tabs, so the Dispatch stream, the gatherings,
-    // the circles and the new faces each get the panel to themselves instead of stacking.
-    // Named for what it replaces under this design: SCAN-899's probe reads the map's place above it.
-    const dispatchesAndRail = (
-      <AroundYouBoard
-        ticker={tickerItems.length > 0 ? <DispatchMarquee items={tickerItems} /> : undefined}
-        tab={parseBoardTab(tabParam, compose === 'true')}
-        counts={{
-          events: upcomingEventTotal || upcomingEvents.length,
-          circles: circlesCountRes.count ?? 0,
-          people: membersRes.count ?? 0,
-          dispatches: broadcastsThisWeek,
-        }}
-        notes={{
-          circles: newCirclesCount > 0 ? `${newCirclesCount} new` : undefined,
-          people: newMembersCount ? `${newMembersCount} joined this week` : undefined,
-        }}
-        events={upcomingEvents.map((e) => ({
-          id: e.id,
-          slug: e.slug,
-          title: e.title,
-          month: eventMonth(e.starts_at),
-          day: eventDay(e.starts_at),
-          when: eventDate(e.starts_at),
-          badge: dayBadge(e.starts_at, now),
-          where: e.location,
-        }))}
-        circles={newCircles.map((c) => ({
-          id: c.id,
-          slug: c.slug,
-          name: c.name,
-          memberLabel: `${c.member_count} ${c.member_count === 1 ? 'member' : 'members'}`,
-          city: c.city,
-        }))}
-        circlesTitle={formingPick.city ? `Circles forming in ${formingPick.city}` : 'Circles forming'}
-        people={newMembers.flatMap((m) =>
-          m.handle
-            ? [{ id: m.id, handle: m.handle, name: m.display_name ?? '', avatarUrl: m.avatar_url, joined: relativeTime(m.created_at) }]
-            : [],
-        )}
-        dispatches={dispatches.slice(0, 8).map((d) => {
-          const isAuthor = d.author_id === profile.id
-          const scope = d.audience_scope ? d.audience_scope.charAt(0).toUpperCase() + d.audience_scope.slice(1) : 'Community'
-          return {
-            id: d.id,
-            title: d.title,
-            excerpt: d.excerpt,
-            context: d.linked_task ? `${scope} · Challenge` : `${scope} Dispatch`,
-            authorName: d.author?.display_name ?? null,
-            time: relativeTime(d.published_at),
-            linked: !!d.linked_task,
-            isAuthor,
-            showActions: isAuthor || HOST_PLUS.includes(role),
-          }
-        })}
-        viewerRole={role}
-        dispatchActions={dispatchActions}
-      />
-    )
-    return (
-      <StreamTemplate eyebrow={HERO_EYEBROW} title={title} description={description} headingLead={glance}>
-        {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
-            this section sets none. */}
-        <PageIntro text={body} />
-
-        <Suspense fallback={<NearbyMapCard pins={null} />}>
-          <NearbyMapCardSection />
-        </Suspense>
-
-        {dispatchesAndRail}
-      </StreamTemplate>
-    )
-  }
-
   return (
-    <StreamTemplate
-      // ── THE HEADER IS THE MAP ────────────────────────────────────────────────────────────
-      // The same header system Events and Circles open on (PageHero, sized and tuned by the
-      // `header` element), with the live map behind the scrim instead of a photograph, and one
-      // control: View the map, which opens the seam's fullscreen popup (ADR-1034).
-      //
-      // STREAMED, and that is load-bearing on THIS page. The pin read spans three tables and the
-      // header must not wait on it: the fallback is the SAME band at the SAME height with the same
-      // eyebrow, heading and subtitle, so the map arrives into a band that is already there and
-      // nothing below it moves.
-      hero={
-        <Suspense
-          fallback={
-            <PageHero
-              eyebrow={HERO_EYEBROW}
-              title={title}
-              subtitle={description}
-              coverImage={heroImage ?? null}
-              rawImg={!!heroImage}
-              variant={header.layout}
-              size={header.height}
-              overlay={header.scrim}
-            />
-          }
-        >
-          <NearbyMapHeaderSection
-            title={title}
-            subtitle={description}
-            coverImage={heroImage}
-            header={header}
-          />
-        </Suspense>
-      }
-      // ── AT A GLANCE, ON THE DIVIDER ROW ──────────────────────────────────────────────────
-      // Owner instruction 2026-08-13: this line sits "in line with the settings button" rather
-      // than on a line of its own beneath it. The header's rule then fills the gap between the
-      // two, so the row still reads as a divider carrying a label, not as a toolbar.
-      headingLead={glance}
-    >
+    <StreamTemplate eyebrow={HERO_EYEBROW} title={title} description={description} headingLead={glance}>
       {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
           this section sets none. */}
       <PageIntro text={body} />
+
+      <Suspense fallback={<NearbyMapCard pins={null} />}>
+        <NearbyMapCardSection />
+      </Suspense>
 
       {dispatchesAndRail}
     </StreamTemplate>
@@ -622,107 +418,9 @@ function dayBadge(iso: string, now: Date): string | null {
   return null
 }
 
-function StatTile({ href, Icon, label, value, note, tone }: {
-  href: string; Icon: React.ElementType; label: string; value: number; note?: string; tone: string
-}) {
-  return (
-    <Link
-      href={href}
-      className="group flex items-center gap-3 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
-    >
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-control ${tone}`}>
-        <Icon className="h-5 w-5" />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-lead font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</span>
-        <span className="mt-1 block truncate text-meta text-muted">{label}</span>
-        {note && <span className="block truncate text-3xs font-semibold text-primary-strong">{note}</span>}
-      </span>
-    </Link>
-  )
-}
 
-function PromptTile({ href, Icon, title, body, tone }: {
-  href: string; Icon: React.ElementType; title: string; body: string; tone: string
-}) {
-  return (
-    <Link
-      href={href}
-      className="group flex flex-col gap-2 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-primary-bg dark:hover:border-primary"
-    >
-      <span className={`flex h-9 w-9 items-center justify-center rounded-control ${tone}`}>
-        <Icon className="h-4 w-4" />
-      </span>
-      <span className="flex items-center gap-1.5 text-body-sm font-bold text-text">
-        {title}
-        <ArrowRight className="h-3.5 w-3.5 text-subtle transition-transform group-hover:translate-x-0.5" />
-      </span>
-      <span className="text-meta leading-relaxed text-muted">{body}</span>
-    </Link>
-  )
-}
 
-function DispatchCard({ dispatch: d, viewerRole, myProfileId }: { dispatch: DispatchRow; viewerRole: CommunityRole; myProfileId: string }) {
-  const isAuthor = d.author_id === myProfileId
-  const showActions = isAuthor || HOST_PLUS.includes(viewerRole)
-  const scope = d.audience_scope
-    ? d.audience_scope.charAt(0).toUpperCase() + d.audience_scope.slice(1)
-    : 'Community'
 
-  return (
-    <EntityCard
-      href={`/nearby/${d.id}`}
-      anchor={
-        <div className="flex h-10 w-10 items-center justify-center rounded-card bg-primary-bg text-primary-strong">
-          {d.linked_task ? <Zap className="h-5 w-5" /> : <Megaphone className="h-5 w-5" />}
-        </div>
-      }
-      title={d.title}
-      context={d.linked_task ? `${scope} · Challenge` : `${scope} Dispatch`}
-      description={d.excerpt ?? undefined}
-      meta={
-        <>
-          {d.author && <span>{d.author.display_name}</span>}
-          <span>{relativeTime(d.published_at)}</span>
-        </>
-      }
-      action={
-        showActions
-          ? <ContextActions role={viewerRole} context={{ type: 'dispatch', id: d.id, isAuthor }} />
-          : undefined
-      }
-    />
-  )
-}
-
-/** The header band's own read, behind its own Suspense boundary so the page paints without it.
- *  Everything the band needs except the pins is already resolved by the page and passed in, which is
- *  why the fallback can render the identical band and the map can land into it without a jump. */
-async function NearbyMapHeaderSection({
-  title,
-  subtitle,
-  coverImage,
-  header,
-}: {
-  title: string
-  subtitle?: string
-  coverImage?: string | null
-  header: { layout: PageHeroVariant; height: PageHeroSize; scrim: boolean }
-}) {
-  const pins = await loadNearbyMapPins()
-  return (
-    <NearbyMapHeader
-      pins={pins}
-      eyebrow={HERO_EYEBROW}
-      title={title}
-      subtitle={subtitle}
-      coverImage={coverImage}
-      variant={header.layout}
-      size={header.height}
-      overlay={header.scrim}
-    />
-  )
-}
 
 /** Frequency's map card, behind its own Suspense boundary: the pin read is the only slow part, and
  *  the fallback is the same card with no map in it (NearbyMapCard pins={null}). */
