@@ -65,3 +65,9 @@ describe('what nodes make possible', () => {
     expect(html).not.toContain('Benched heading')
   })
 })
+
+// These assertions lock the historical DAWN renderer; platform selection is tested separately.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'dawn',
+}))

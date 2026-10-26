@@ -445,3 +445,9 @@ describe('the session is dropped whenever it stops matching the button', () => {
     expect(startTicket, 'and the next press builds a new one').toHaveBeenCalledTimes(2)
   })
 })
+
+// These assertions lock the historical DAWN renderer; platform selection is tested separately.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'dawn',
+}))
