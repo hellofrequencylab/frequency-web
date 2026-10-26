@@ -155,9 +155,11 @@ describe('createMakerProductAction lets a free member list an inquiry (ADR-1709)
 })
 
 describe('the Spark Vera door answers a free member', () => {
-  it('drafts copy for a free member', async () => {
+  it('coaches a free member without returning even a malicious generator title or description', async () => {
     const copy = await draftMakerProductCopyAction({ productKind: 'physical', seed: 'mug' })
-    expect(copy).toEqual({ title: 'Ceramic mug', description: 'A mug.' })
+    expect(copy.title).toBe('')
+    expect(copy.description).toBe('')
+    expect(copy.questions?.every(q => q.endsWith('?'))).toBe(true)
     expect(draftListingCopy).toHaveBeenCalledWith(expect.objectContaining({ profileId: 'profile-free' }))
   })
 

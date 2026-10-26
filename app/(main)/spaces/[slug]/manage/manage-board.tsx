@@ -10,6 +10,8 @@ import { resolveSpaceMenu } from '@/lib/admin/modules/space-menu'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { asHubSection, sectionForModule, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
 import { SpaceResonanceCrm } from '@/modules/crm'
+import { SpaceCoachingCard } from '@/components/spaces/dashboard/space-coaching-card'
+import { readProfileData } from '@/lib/spaces/profile-data'
 import { SpaceDashboard } from '@/components/spaces/dashboard/space-dashboard'
 import { SpaceMarketing } from '@/components/spaces/marketing/space-marketing'
 import { betaWindow } from '@/lib/pricing/beta-state'
@@ -111,11 +113,16 @@ export async function SpaceManageBoard({
   // keeps the command-center dashboard. Same space, same gate, same reads.
   const dashboardEmbed =
     section === 'dashboard' ? (
-      SITE_DESIGN === 'frequency' ? (
-        <FqOverviewBody spaceId={space.id} slug={space.slug} spaceName={brandName} viewerProfileId={viewerProfileId} />
-      ) : (
-        <SpaceDashboard spaceId={space.id} slug={space.slug} spaceName={brandName} />
-      )
+      <div className="space-y-6">
+        <Suspense fallback={null}>
+          <SpaceCoachingCard spaceId={space.id} slug={space.slug} identity={{ name: brandName, tagline: space.tagline ?? null, about: space.about || readProfileData(space.preferences).about || null }} />
+        </Suspense>
+        {SITE_DESIGN === 'frequency' ? (
+          <FqOverviewBody spaceId={space.id} slug={space.slug} spaceName={brandName} viewerProfileId={viewerProfileId} />
+        ) : (
+          <SpaceDashboard spaceId={space.id} slug={space.slug} spaceName={brandName} />
+        )}
+      </div>
     ) : undefined
 
   const crmEmbed =

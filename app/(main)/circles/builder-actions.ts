@@ -1,5 +1,7 @@
 'use server'
 
+import { safeWritingQuestions } from '@/lib/ai/writing-coach'
+
 // Server actions for the Starter Circle BUILDER: the four entry paths (Vera
 // spark / blank / outline upload), autosave, and the apply-to-draft Vera moves
 // (compose a section, edit by instruction). Thin authz wrappers over
@@ -24,10 +26,9 @@ import { draftCircleSpark, type CircleSparkDraft } from '@/lib/ai/circle-spark'
 import {
   composeCircleSection,
   type CircleComposeSection,
-  type CircleComposeContext,
   type CircleComposeResult,
 } from '@/lib/ai/circle-compose'
-import { planCircleEdit, type CircleForEdit, type CircleEditPatch } from '@/lib/ai/circle-edit'
+import { planCircleEdit } from '@/lib/ai/circle-edit'
 import { extractOverviewText } from '@/lib/journeys/extract-text'
 import { normalizeSeedFidelity } from '@/lib/studio/kernel/fidelity'
 
@@ -161,75 +162,23 @@ export async function saveCircleDraftAction(circleId: string, patch: CircleDraft
   return { ok: true }
 }
 
-/** Vera composes ONE section grounded in the draft so far. Host-gated. Does NOT
- *  write — the client merges the returned partial and autosaves. Null when Vera
- *  is offline. */
-export async function composeSectionAction(input: {
-  circleId: string
-  section: CircleComposeSection
-}): Promise<CircleComposeResult | null> {
-  const profileId = await callerProfileId()
-  const draft = await hostedDraft(input.circleId, profileId)
-  const context: CircleComposeContext = {
-    name: draft.name,
-    primaryPillar: draft.primaryPillar,
-    topic: draft.about ?? undefined,
-    audience: draft.sizeLabel ?? undefined,
-    identity: draft.about ?? undefined,
-  }
-  return composeCircleSection({ section: input.section, context, profileId })
+/** Host-gated coaching returns questions only; it never merges a draft or writes fields. */
+export async function composeSectionAction(input: { circleId: string; section: CircleComposeSection }): Promise<CircleComposeResult | null> {
+ const profileId = await callerProfileId()
+ const draft = await hostedDraft(input.circleId, profileId)
+ const advice = await composeCircleSection({ section: input.section, context: { name: draft.name, primaryPillar: draft.primaryPillar, topic: draft.about ?? undefined }, profileId })
+ return { questions: safeWritingQuestions(advice) }
 }
 
-/** Vera applies a plain-language change to the draft. Host-gated. Loads the
- *  draft, asks Vera for the smallest patch, applies it, and returns the fresh
- *  draft. Null when Vera is offline or returns no change. */
-export async function editDraftAction(input: {
-  circleId: string
-  request: string
-}): Promise<{ draft: CircleDraft } | null> {
-  const profileId = await callerProfileId()
-  const draft = await hostedDraft(input.circleId, profileId)
-
-  // Vera reads flat spark-shaped fields (meetup/gathering/thread/format as plain
-  // strings); the draft keeps meetup/gathering as { text } rhythm beats, so pass
-  // their text in and lift the patch's strings back into rhythm beats on the way out.
-  const forEdit: CircleForEdit = {
-    name: draft.name,
-    card: draft.about ?? undefined,
-    identity: draft.about ?? undefined,
-    pillarsInside: draft.pillarsInside,
-    meetup: draft.meetup.text || undefined,
-    gathering: draft.gathering.text || undefined,
-    thread: draft.thread ?? undefined,
-    format: draft.format ?? undefined,
-    sizeLabel: draft.sizeLabel ?? undefined,
-    agreements: draft.agreements,
-    remixOptions: draft.remixOptions,
-  }
-  const patch = await planCircleEdit({ request: input.request, circle: forEdit, profileId })
-  if (!patch) return null
-
-  const draftPatch = editPatchToDraftPatch(patch, draft)
-  if (Object.keys(draftPatch).length) await saveCircleDraft(input.circleId, draftPatch)
-
-  const fresh = await getCircleDraft(input.circleId)
-  return fresh ? { draft: fresh } : null
+/** A requested change becomes coaching, with the original human draft returned unchanged. */
+export async function editDraftAction(input: { circleId: string; request: string }): Promise<{ draft: CircleDraft; questions: string[] } | null> {
+ const profileId = await callerProfileId()
+ const draft = await hostedDraft(input.circleId, profileId)
+ const advice = await planCircleEdit({ request: input.request, circle: { name: draft.name, identity: draft.about ?? undefined }, profileId })
+ return { draft, questions: safeWritingQuestions(advice) }
 }
 
 /** Map Vera's spark-shaped edit patch onto the draft's storage shape: the two
  *  rhythm beats become { text }, carrying the draft's existing length. Drops the
  *  fields a draft does not persist (card/one_liner/identity/audience live on the
  *  `circles` row's name/about, set elsewhere). */
-function editPatchToDraftPatch(patch: CircleEditPatch, draft: CircleDraft): CircleDraftPatch {
-  const out: CircleDraftPatch = {}
-  if (patch.name !== undefined) out.name = patch.name
-  if (patch.pillarsInside !== undefined) out.pillarsInside = patch.pillarsInside
-  if (patch.meetup !== undefined) out.meetup = { text: patch.meetup, length: draft.meetup.length }
-  if (patch.gathering !== undefined) out.gathering = { text: patch.gathering, length: draft.gathering.length }
-  if (patch.thread !== undefined) out.thread = patch.thread
-  if (patch.format !== undefined) out.format = patch.format
-  if (patch.sizeLabel !== undefined) out.sizeLabel = patch.sizeLabel
-  if (patch.agreements !== undefined) out.agreements = patch.agreements
-  if (patch.remixOptions !== undefined) out.remixOptions = patch.remixOptions
-  return out
-}

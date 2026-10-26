@@ -100,6 +100,35 @@ async function space() {
   assert.ok('error' in await saveSpaceCoachProfile('space-A', emptySpaceCoachProfile()))
   console.log('Space editor gate, private narrow write, clear and unavailable store consequences passed (inert DB).')
 }
+async function copilot() {
+  const calls = []
+  const load = harness({
+    './client': { aiEnabled: () => true },
+    './usage': { featureOverBudget: async () => false },
+    './rate-limit': { aiRateLimited: async () => false },
+    './voice': { withVoice: s => s },
+    './complete': { AiUnavailableError: class extends Error {}, completeText: async request => {
+      calls.push(request)
+      return { text: '["What should a newcomer know about your offering?"]' }
+    } },
+  })
+  const coach = load('lib/ai/space-copilot.ts')
+  const ctx = { name: 'Makers', spaceId: 'space-A', profileId: 'owner-A', offerings: ['Event: Sunday community sit', 'Product: Five class pass'] }
+  for (const run of [coach.draftSpaceBio, coach.suggestTagline]) {
+    assert.equal(await run(ctx), 'What should a newcomer know about your offering?')
+    const request = calls.at(-1)
+    for (const offering of ctx.offerings) assert.ok(request.messages[0].content.includes(offering), 'Both coaching paths receive actual offerings')
+    assert.equal(request.accounting.spaceId, ctx.spaceId)
+  }
+  const source = file => fs.readFileSync(path.join(root, file), 'utf8')
+  const action = source('app/(main)/spaces/copilot-actions.ts')
+  assert.ok(/loadSpaceGrounding\(spaceId\)/.test(action) && /offerings: grounding\.offerings/.test(action), 'Authorized action supplies live grounding')
+  assert.ok(/export async function runSpaceCopilotEval/.test(source('lib/ai/space-copilot-eval.ts')))
+  assert.ok(/runSpaceCopilotEval\('bio', fallbackBio\)/.test(source('lib/ai/space-copilot-eval.test.ts')), 'Fixed-set eval runs in tests')
+  assert.equal(coach.parseCoachingQuestions('Ready to publish marketing prose'), null)
+  assert.ok(coach.fallbackBio(ctx).endsWith('?'))
+  console.log('Both actual copilot paths receive live offerings and attributed coaching; fixed-set eval and prose rejection retained (inert model).')
+}
 async function campaign() {
   const load = harness({
     '@/lib/supabase/admin': { createAdminClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { sent_at: '2026-10-01T00:00:00Z' } }) }) }) }) }) },
@@ -117,7 +146,7 @@ async function campaign() {
   assert.ok(result.limitations.some((v) => v.includes('unknown, not zero')))
   console.log('Outcome goal checklist stays useful with AI off; fabricated metric/prose output refused.')
 }
-const modes = { vera, spark, space, campaign }
+const modes = { vera, spark, space, copilot, campaign }
 const mode = process.argv[2]
-assert.ok(Object.hasOwn(modes, mode), 'Choose vera, spark, space or campaign')
+assert.ok(Object.hasOwn(modes, mode), 'Choose vera, spark, space, copilot or campaign')
 await modes[mode]()

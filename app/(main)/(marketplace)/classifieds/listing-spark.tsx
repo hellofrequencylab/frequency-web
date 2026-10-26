@@ -40,7 +40,7 @@ export function ListingSpark() {
         title: 'What are you offering or looking for?',
         description:
           'Free to post. No money changes hands in the app: neighbours message you and you arrange the rest.',
-        veraHint: 'Say roughly what it is and Vera writes the headline and the details for you to edit.',
+        veraHint: 'Get questions to help you explain this in your own words.',
         manualHint: 'Go straight to the form: photos, a headline, and your own words.',
       }}
       details={{

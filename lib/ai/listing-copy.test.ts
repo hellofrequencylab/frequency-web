@@ -1,33 +1,36 @@
-import { describe, it, expect, vi } from 'vitest'
-
-// The listing-copy reply boundary (ADR-1287): a `{title, description}` object, validated by a
-// schema at the edge. The module's other imports touch the ledger, so they are stubbed; only
-// the pure parser is under test here.
-
-vi.mock('./usage', () => ({ recordAiUsage: vi.fn(async () => {}), featureOverBudget: vi.fn(async () => false) }))
-vi.mock('./client', () => ({ aiEnabled: () => false }))
-vi.mock('./rate-limit', () => ({ aiRateLimited: vi.fn(async () => false) }))
-vi.mock('./complete', () => ({ completeText: vi.fn(), AiUnavailableError: class extends Error {} }))
-
-import { parseCopy } from './listing-copy'
-
-describe('parseCopy', () => {
-  it('reads a well-formed reply, with prose and a fence around it', () => {
-    expect(parseCopy('```json\n{"title":"Sunrise swim","description":"Six laps before coffee."}\n```')).toEqual({
-      title: 'Sunrise swim',
-      description: 'Six laps before coffee.',
-    })
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+const state = vi.hoisted(() => ({ on: true, over: false, response: '', calls: vi.fn() }))
+vi.mock('./client', () => ({ aiEnabled: () => state.on }))
+vi.mock('./usage', () => ({ featureOverBudget: async () => state.over }))
+vi.mock('./rate-limit', () => ({ aiRateLimited: async () => false }))
+vi.mock('./complete', () => ({ completeText: async (input: unknown) => { state.calls(input); return { text: state.response } } }))
+import { draftListingCopy, parseCopy } from './listing-copy'
+import { composeCircleSection } from './circle-compose'
+import { planCircleEdit } from './circle-edit'
+import { parseWritingQuestions, WRITING_QUESTIONS } from './writing-questions'
+beforeEach(() => { state.on = true; state.over = false; state.calls.mockClear(); state.response = '{"questions":["What will someone receive?"]}' })
+describe('human-authored listing and Circle coaching', () => {
+  it('refuses invented title/description and extra model fields', () => {
+    expect(parseCopy('{"title":"Invented","description":"A promise"}')).toBeNull()
+    expect(parseCopy('{"questions":["Who is it for?"],"title":"Invented"}')).toBeNull()
+    expect(parseWritingQuestions('{"questions":["Here is your copy."]}')).toBeNull()
+    expect(parseWritingQuestions('{"questions":[12]}')).toBeNull()
   })
-
-  it('accepts one field missing and fills the other with an empty string', () => {
-    expect(parseCopy('{"title":"Only a title"}')).toEqual({ title: 'Only a title', description: '' })
+  it('returns only questions alongside empty legacy content slots', async () => {
+    expect(await draftListingCopy({ kind: 'physical', seed: 'My exact title' })).toEqual({ title: '', description: '', questions: ['What will someone receive?'] })
+    expect(parseCopy(state.response)).toEqual({ title: '', description: '', questions: ['What will someone receive?'] })
   })
-
-  it('refuses a reply with neither field, a wrong-typed field, or no JSON at all', () => {
-    expect(parseCopy('{}')).toBeNull()
-    expect(parseCopy('{"title":42,"description":"x"}')).toBeNull()
-    expect(parseCopy('{"title":"cut')).toBeNull()
-    expect(parseCopy('Sorry, I cannot.')).toBeNull()
-    expect(parseCopy('')).toBeNull()
+  it('falls back to useful questions rather than deterministic fabricated copy', async () => {
+    state.response = '{"title":"Invented","description":"Made up"}'
+    expect(await draftListingCopy({ kind: 'service' })).toEqual({ title: '', description: '', questions: WRITING_QUESTIONS })
+  })
+  it.each(['off', 'budget'])('keeps coaching useful when %s and never calls provider', async mode => {
+    state.on = mode !== 'off'; state.over = mode === 'budget'
+    expect((await draftListingCopy({ kind: 'physical' })).questions).toEqual(WRITING_QUESTIONS)
+    expect(state.calls).not.toHaveBeenCalled()
+  })
+  it('Circle section and edit return no writable patch keys', async () => {
+    expect(await composeCircleSection({ section: 'card', context: { name: 'Human name', primaryPillar: null }, profileId: 'owner' })).toEqual({ questions: ['What will someone receive?'] })
+    expect(await planCircleEdit({ request: 'Improve my explanation', circle: { name: 'Human name' }, profileId: 'owner' })).toEqual({ questions: ['What will someone receive?'] })
   })
 })

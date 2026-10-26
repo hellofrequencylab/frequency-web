@@ -91,8 +91,9 @@ export function SpaceInfoConnectForm({
   const [pending, startSave] = useTransition()
 
   const [bioBusy, startBio] = useTransition()
+  const [coaching, setCoaching] = useState<string | null>(null)
   const [veraError, setVeraError] = useState<string | null>(null)
-  function runDraft(action: () => Promise<ActionResult<string>>, apply: (text: string) => void) {
+  function runDraft(action: () => Promise<ActionResult<string>>) {
     setVeraError(null)
     startBio(async () => {
       const result = await action()
@@ -100,7 +101,7 @@ export function SpaceInfoConnectForm({
         setVeraError(result.error)
         return
       }
-      apply(result.data)
+      setCoaching(result.data)
     })
   }
 
@@ -265,25 +266,22 @@ export function SpaceInfoConnectForm({
               <button
                 type="button"
                 onClick={() =>
-                  runDraft(() => draftSpaceBioAction(spaceId), (t) => {
-                    setBizField('story', t)
-                    // Persist the drafted story (a state change fires no blur to autosave on).
-                    requestAnimationFrame(() => saveRef.current())
-                  })
+                  runDraft(() => draftSpaceBioAction(spaceId, [about, biz.story].filter(Boolean).join("\n\n")))
                 }
                 disabled={bioBusy}
                 className="inline-flex items-center gap-1 text-meta font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
               >
                 {bioBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
-                Draft with Vera
+                Coach me with Vera
               </button>
             }
           />
           <p className="text-meta text-subtle">
-            Vera is AI. The Draft button writes a starting point you review and edit; nothing is saved or
-            published until you do.
+            Vera is AI. Get questions to help you write in your own voice. Coaching never changes your fields.
           </p>
         </section>
+
+        {coaching && <p role="status" className="rounded-card border border-border bg-surface p-3 text-body-sm text-text">{coaching}</p>}
 
         {/* CONTACT + LINKS — the central business block every surface reads. */}
         <section className="space-y-4">

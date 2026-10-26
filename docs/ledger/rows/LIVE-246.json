@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-246",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/space-module-boxes.mjs",
+      "checked": "2026-10-26",
+      "evidence": "AST inspection of the actual Space catalog: unique literal tool IDs, exactly the five canonical boxes, every parent valid and direct, and coach preferences under Your page with protected settings link. Additive tools no longer fail a stale total count."
+    }
+  },
+  "append": {
+    "detail": "2026-10-26: added coach preferences as a child of Your page. Replaced the total-row pin with consequence checks retaining five boxes, unique IDs and valid parents, including the new coach entry. No module/box was removed."
+  },
+  "wave": "W7"
+}
