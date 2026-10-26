@@ -1,0 +1,9 @@
+{
+  "id": "SCAN-595",
+  "patch": {
+    "source": {
+      "file": "scripts/authz-route-ledger.json",
+      "ref": "ADR-1211"
+    }
+  }
+}
