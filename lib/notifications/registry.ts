@@ -29,6 +29,9 @@ export type NotificationEvent =
   | 'guestbook.sign'
   | 'post.mention'
   | 'post.reply'
+  | 'practice.term_complete'
+  | 'practice.reminder'
+  | 'practice.stale_check'
   | 'housing.match'
   | 'plan.share'
   | 'plan.comment'
@@ -56,6 +59,13 @@ export interface NotificationContexts {
   /** Someone replied to the recipient's post (`comments`, in-app). The caller
    *  (app/(main)/feed/actions.ts notifyParentAuthor) hands in the replier and the post. */
   'post.reply': { replierId: string; postId: string }
+  /** A practice term finished, a daily "still waiting" nudge, and the once-ever "still keeping
+   *  this?" prompt (`practice`; lib/practices/lifecycle.ts). The caller authors the sentence
+   *  in-voice and hands the practice; the recipient's own inapp_practice / push_practice
+   *  switches decide. `tag` collapses a repeat push on the device. */
+  'practice.term_complete': { practiceId: string; body: string; tag: string }
+  'practice.reminder': { practiceId: string; body: string; tag: string }
+  'practice.stale_check': { practiceId: string; body: string }
   /** A new housing match that lines up with the recipient (DEF-HOUS, ADR-1278). The caller
    *  (lib/listings/housing-match-alerts.ts) authors the push copy in-voice and renders the email
    *  from lib/email's builder; `tag` collapses a repeat push for the same counterpart on the
@@ -207,6 +217,35 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
         referenceType: 'post',
         referenceId: ctx.postId,
       },
+    }),
+  },
+
+  // The practice lifecycle (lib/practices/lifecycle.ts). All `practice`: the completion and the
+  // daily reminder go in-app and push, the staleness prompt is a quiet in-app note only.
+  'practice.term_complete': {
+    event: 'practice.term_complete',
+    category: 'practice',
+    channels: ['inapp', 'push'],
+    render: (ctx) => ({
+      inapp: { type: 'practice_term_complete', body: ctx.body, referenceType: 'practice', referenceId: ctx.practiceId },
+      push: { title: 'Practice complete', body: ctx.body, url: `/practices/${ctx.practiceId}`, tag: ctx.tag },
+    }),
+  },
+  'practice.reminder': {
+    event: 'practice.reminder',
+    category: 'practice',
+    channels: ['inapp', 'push'],
+    render: (ctx) => ({
+      inapp: { type: 'practice_reminder', body: ctx.body, referenceType: 'practice', referenceId: ctx.practiceId },
+      push: { title: 'Time to practice', body: ctx.body, url: '/on-air', tag: ctx.tag },
+    }),
+  },
+  'practice.stale_check': {
+    event: 'practice.stale_check',
+    category: 'practice',
+    channels: ['inapp'],
+    render: (ctx) => ({
+      inapp: { type: 'practice_stale_check', body: ctx.body, referenceType: 'practice', referenceId: ctx.practiceId },
     }),
   },
 
