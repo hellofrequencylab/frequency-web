@@ -78,10 +78,16 @@ export interface SparkSpec<T, C = undefined> {
    * or Edit, lib/studio/kernel/fidelity.ts). Named so the directive can give the whole text a home.
    */
   proseField?: string
+  /** Coerced result key when it differs from the raw tool field (for example one_liner → oneLiner). */
+  proseResultField?: string
 }
 
 /** One invocation of a declared spark. */
 interface SparkRun<C = undefined> {
+  /** Human prose for spec.proseField. The model may extract other fields but cannot replace this.
+   * Empty string deliberately clears generated prose. A coercer that cannot retain it fails closed. */
+  authoredProse?: string
+
   /** The user turn: plain text, or content blocks when the draft reads images. */
   content: string | Anthropic.MessageParam['content']
   /** Facts the coercer needs that the model must not supply. Omitted when the spec needs none. */
@@ -139,10 +145,14 @@ export async function runSpark<T, C>(spec: SparkSpec<T, C>, run: SparkRun<C>): P
 
   // The mood dial is a kernel capability an entity opts into. Absent, withVoice is called with
   // no mood and the prompt is byte for byte what it was before moods existed.
-  const keep = keepsAuthorWords(run.fidelity)
+  const ownsProse = typeof run.authoredProse === 'string' && !!spec.proseField
+  const keep = ownsProse || keepsAuthorWords(run.fidelity)
   const mood = manifest.steer?.mood && !keep ? (run.mood ?? undefined) : undefined
   const ceiling = run.maxTokens ?? spec.maxTokens
-  const directive = fidelityDirective(run.fidelity, spec.proseField)
+  const directive = fidelityDirective(ownsProse ? 'exact' : run.fidelity, spec.proseField)
+  const extractionOnly = ownsProse
+    ? `AUTHORSHIP BOUNDARY: Do not write any new prose. Extract stated facts only. The server supplies the author's own ${spec.proseField}; omit that field from your output and never invent missing content. Leave unknown fields empty.`
+    : ''
 
   try {
     const system = typeof spec.system === 'function' ? spec.system() : spec.system
@@ -152,7 +162,7 @@ export async function runSpark<T, C>(spec: SparkSpec<T, C>, run: SparkRun<C>): P
       tier: spec.tier,
       maxTokens: keep ? Math.max(ceiling, KEEP_MAX_TOKENS) : ceiling,
       thinking: { type: 'disabled' },
-      system: directive ? `${voiced}\n\n---\n\n${directive}` : voiced,
+      system: [voiced, directive, extractionOnly].filter(Boolean).join('\n\n---\n\n'),
       tools: [spec.tool],
       toolChoice: { type: 'tool', name: spec.tool.name },
       messages: [{ role: 'user', content: run.content }],
@@ -161,7 +171,15 @@ export async function runSpark<T, C>(spec: SparkSpec<T, C>, run: SparkRun<C>): P
     const block = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === spec.tool.name,
     )
-    return block ? spec.coerce(block.input, run.context as C) : null
+    if (!block) return null
+    const raw = ownsProse && block.input && typeof block.input === 'object' && !Array.isArray(block.input)
+      ? { ...block.input, [spec.proseField!]: run.authoredProse }
+      : block.input
+    const coerced = spec.coerce(raw, run.context as C)
+    // No silently shortened text: if the destination cannot hold it, offer manual entry.
+    if (ownsProse && (!coerced || typeof coerced !== 'object' ||
+      (coerced as Record<string, unknown>)[spec.proseResultField ?? spec.proseField!] !== run.authoredProse!.trim())) return null
+    return coerced
   } catch {
     return null
   }

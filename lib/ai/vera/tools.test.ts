@@ -48,10 +48,10 @@ describe('validateToolCall', () => {
     expect(validateToolCall('suggest_circle', { bogus: 'x' }).ok).toBe(false)
   })
 
-  it('draft_intro requires the full drafted message (ONBOARDING-BUILD-LIST §2.2)', () => {
-    expect(validateToolCall('draft_intro', { toHandle: 'maya', message: 'Hey @maya — new here, would love to say hi.' }).ok).toBe(true)
-    const missing = validateToolCall('draft_intro', { toHandle: 'maya' })
-    expect(missing.ok).toBe(false)
-    expect(missing.errors.join(' ')).toContain('message')
+  it('coaches introductions without accepting model-authored text or confirmation', () => {
+    expect(validateToolCall('draft_intro', { toHandle: 'maya' }).ok).toBe(true)
+    expect(validateToolCall('draft_intro', { toHandle: 'maya', message: 'Model-authored hello' }).ok).toBe(false)
+    expect(requiresConfirmation('draft_intro')).toBe(false)
+    expect(getTool('draft_intro')?.mode).toBe('read')
   })
 })

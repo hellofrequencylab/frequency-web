@@ -4,10 +4,10 @@
 // stores a profile_id, which is what keeps it outside the `analytics` consent scope
 // (account-tied data, lib/consent/scopes.ts). Rows land in interaction_events with
 // profile_id NULL and surface NULL so both member rollups ignore them by their
-// existing filters; the 90-day retention purge bounds the table. No rate limiter on
-// purpose: lib/rate-limit fails CLOSED in prod when KV is unconfigured (which would
-// silently drop 100% of vitals) — the batch cap + normalizer bound each request
-// instead, and the payload is 204'd telemetry either way.
+// existing filters; the 90-day retention purge bounds the table. SCAN-1124: ONE shared ceiling
+// (never per caller: this sink must not read the request's headers) bounds the write volume, with `whenUnconfigured: 'allow'` because lib/rate-limit would otherwise
+// fail CLOSED in prod when KV is unconfigured and silently drop 100% of vitals. The batch cap +
+// normalizer still bound each request, and an over-limit beacon is 204'd (never retried).
 //
 // 2026-09-05 (scan2 L2-08): the insert result is read. `.then(undefined, () => {})` handled a
 // rejection, but supabase-js resolves `{ error }` and never rejects, so a failing insert was
@@ -18,10 +18,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizeVitalBatch, vitalProps } from '@/lib/analytics/vitals'
 import { log } from '@/lib/log'
+import { rateLimitOk } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
+  if (!(await rateLimitOk('vitals', 'all', 1200, '60 s', { whenUnconfigured: 'allow' }))) {
+    return new NextResponse(null, { status: 204 })
+  }
   let body: { sessionId?: unknown; events?: unknown }
   try {
     body = await req.json()
