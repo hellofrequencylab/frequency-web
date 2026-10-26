@@ -43,7 +43,6 @@ export default async function EventsPage({
 }) {
   const sp = await searchParams
   const data = await getEventsIndexData(sp)
-  const { myProfileId, userHasEvents } = data
 
 
   // JSON-LD for the self-canonical /events home (the one events URL; the structured data lives on

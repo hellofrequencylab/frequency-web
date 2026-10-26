@@ -8,7 +8,6 @@ import { StreamTemplate, PageIntro } from '@/components/templates'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { Suspense } from 'react'
 import { NearbyMapCard } from '@/components/nearby/nearby-map-header'
-import { resolveHeaderElement } from '@/lib/elements/header'
 import {
   collapseSeriesRows,
   countSeries,
@@ -268,13 +267,8 @@ export default async function NearbyPage({
   }
   const canCompose = isHost && (namedCircles.length > 0 || namedHubs.length > 0 || namedNexuses.length > 0)
 
-  // Operator-editable page header (ADR-180) + the operator-tunable header ELEMENT (ADR-793: which
-  // layout, height and overlay the band paints in). Both are cached reads and neither depends on the
-  // other, so they run together.
-  const [{ title, description, body, heroImage, ctaLabel, ctaHref }, header] = await Promise.all([
-    resolvePageContent('/nearby', CONTENT_FALLBACK),
-    resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } }),
-  ])
+  // Operator-editable page header (ADR-180).
+  const { title, description, body, ctaLabel, ctaHref } = await resolvePageContent('/nearby', CONTENT_FALLBACK)
 
   const showCompose = canCompose || role === 'janitor'
 
