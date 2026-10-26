@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1306 (ADR-1876): Midnight is a registered, fully tokened site theme carrying the design's 13 blocks.
+// LIVE-1365 (ADR-1885): Midnight is a registered, fully tokened site theme carrying the design's 13 blocks.
 //
 // Fails when 'midnight' leaves the site theme registry or the editor theme list, when the contract loses its
 // entry, when a skin or block sheet carries a raw color, when the faces are loaded from the root layout, when a
@@ -31,7 +31,7 @@ if (!r('lib/sites/editor/templates.ts').includes('midnightHomeBlocks()')) bad.pu
 if (!/MIDNIGHT_SURFACE/.test(r('lib/spotlight/theme.ts'))) bad.push('the Spotlight preset no longer reads the Midnight token set')
 
 if (bad.length) {
-  console.error('LIVE-1306: ' + bad.join('; '))
+  console.error('LIVE-1365: ' + bad.join('; '))
   process.exit(1)
 }
 console.log('midnight-theme: registered, tokened, 13 blocks, faces on the site page only')
