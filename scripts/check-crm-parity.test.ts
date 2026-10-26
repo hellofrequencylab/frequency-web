@@ -42,7 +42,7 @@ const ADMIN = 'app/(main)/admin/crm/conversations/actions.ts'
 const SPACE = 'app/(main)/spaces/[slug]/crm/conversations-actions.ts'
 const LEAD = 'app/(main)/lead/inbox/actions.ts'
 
-const DRAFT_PROMPT = 'You draft a reply to a member on behalf of a Frequency team member.'
+const DRAFT_PROMPT = 'Coach the human replying to this conversation. Do not write or rewrite a reply.'
 
 function surface({ compose, emailTemplate = true, multiline = false }: { compose: boolean; emailTemplate?: boolean; multiline?: boolean }): string {
   const vera = multiline
@@ -93,7 +93,7 @@ describe('check-crm-parity · the detector fires on a planted violation (negativ
     expect(violations).toHaveLength(2)
     expect(violations[0]).toContain(LEAD)
     expect(violations[0]).toContain("must import  { renderReplyEmail } from '@/lib/comms/email-template'")
-    expect(violations[1]).toContain('Vera draft prompt: found OUTSIDE the shared module (lib/comms/vera-conversation.ts)')
+    expect(violations[1]).toContain('Vera reply coaching prompt: found OUTSIDE the shared module (lib/comms/vera-conversation.ts)')
     expect(violations[1]).toContain('components/crm/fork.tsx')
   })
 
