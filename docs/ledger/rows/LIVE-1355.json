@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1355",
+  "title": "Midnight niche starter kits: six variants as data on lib/sites/kits (coaches, studios, hosts, venues, nonprofits, networks)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/midnight-variants.ts",
+    "ref": "Mega Theme lead assignment 2026-10-26: build Midnight's six niche variants on the Midnight block family, generic sample copy in the voice guide with slot tokens, no real names or prices, one model with lib/sites/kits."
+  },
+  "detail": "Six kits for the Midnight mega theme, one per niche door, each 3 to 5 pages of Midnight blocks and live Space blocks. Pure data: generic placeholder copy in the house voice (docs/marketing/voice-and-language-guide.md), {{slot|sample}} tokens for facts a Space already stores, no prices, no photos, no real names. Same SiteKit model and lazy registry as the Wildheart kit, so the public site never imports them. A test checks every block is registered, the applied site validates with registry defaults, copy holds no prices or photos, and every internal link lands on a page of the same kit or a platform page. Not built here: the editor panel that applies a kit (next row), a picker, a switcher.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const v=fs.readFileSync('lib/sites/kits/midnight-variants.ts','utf8');const r=fs.readFileSync('lib/sites/kits/registry.ts','utf8');const n=['coaches','studios','hosts','venues','nonprofits','networks'];process.exit(n.every((x)=>v.includes(x+': {')&&r.includes('midnight-'+x))?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Six kits and 11 tests in lib/sites/kits/kits.test.ts pass locally."
+  },
+  "closed": "2026-10-26"
+}
