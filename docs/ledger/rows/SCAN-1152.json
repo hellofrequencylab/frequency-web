@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1152",
+  "title": "A reply notice to a post's author rides the notification router",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/feed/actions.ts",
+    "ref": "Meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md), Phase 4 follow-up: remaining direct bell inserts"
+  },
+  "detail": "notifyParentAuthor read the send-gate by hand and inserted the bell row itself. It now routes the registry row post.reply (comments, in-app), so the author's inapp_comments switch, suppression and the outbox retry all apply through the one seam, and the bell row is unchanged (type reply, post reference, same body). This is the first direct bell insert migrated onto the in-app channel after the Guestbook notice (SCAN-1151). The @mention fan-out in the same file is NOT moved here: doing so makes the Mentions switch real, which flips the pinned wired-switch map in lib/notifications/wired.test.ts and waits for the owner's word on that pin.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));const t=f.readFileSync(\"app/(main)/feed/actions.ts\",\"utf8\");process.exit(/routeNotification\\(\\s*.post\\.reply./.test(t)?0:1)'",
+    "note": "Exits 0 once the reply notice goes through the notification router."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}
