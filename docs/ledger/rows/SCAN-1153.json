@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1153",
+  "title": "Feed @mentions ride the notification router and the Mentions switch works",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/(main)/feed/actions.ts",
+    "ref": "Meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md), Phase 4 follow-up: remaining direct bell inserts"
+  },
+  "detail": "fanOutMentions wrote one batched bell insert that ignored the Mentions setting. It now routes the registry row post.mention (mentions, in-app) once per mentioned member, so each member's own inapp_mentions switch, suppression and the outbox retry apply. The Mentions in-app switch in settings is now real: WIRED_PREFERENCE_CHANNELS lists mentions as in-app, and the pinned hidden-set test in lib/notifications/wired.test.ts moved from nine hidden to eight with the owner's go-ahead (Daniel, 'update the wired-switch pin', 2026-10-26). Mention email and push stay unwired: no emitter exists.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(String.fromCharCode(102,115));const t=f.readFileSync(\"app/(main)/feed/actions.ts\",\"utf8\");process.exit(/routeNotification\\(\\s*.post\\.mention./.test(t)?0:1)'",
+    "note": "Exits 0 once feed @mentions go through the notification router."
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}
