@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1115",
+  "title": "The contrast gate measures the Frequency Stage and Commons token pairs",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "M",
+  "source": {
+    "file": "scripts/check-contrast.mjs",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "check-contrast reads only app/globals.css, so the Frequency tokens have no gate (root cause of the 2026-10-22 contrast finding). Add Stage and Commons pairs from core.css and frequency.css, with waivers listed.\n\nContrast gate reads core.css and frequency.css across Commons day, Commons night and Stage; failing pairs frozen as waivers",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs contrast-gate"
+  },
+  "closed": "2026-10-26",
+  "wave": "W7"
+}

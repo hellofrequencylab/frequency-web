@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1137",
+  "title": "Operator docs and env template stop telling people to select DAWN",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "XS",
+  "source": {
+    "file": "docs/START-HERE.md",
+    "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
+  },
+  "detail": "pnpm design:use dawn now exits 2 but START-HERE:65 and THEME.md still say to run it; .env.example:486-489 says blank is DAWN, the opposite of the code; design_handoff/SYNC.md (the sync DAWN trigger) still instructs the DAWN flow.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs docs-dawn",
+    "note": "Exits 0 only when the repair has landed; fails on main today."
+  },
+  "wave": "W7"
+}

@@ -368,6 +368,7 @@ export function entryToCalendarItem(
     dayKey,
     endDayKey: endDayKey === dayKey ? null : endDayKey,
     timeLabel: row.all_day ? ALL_DAY_LABEL : fmt.timeLabel(row.starts_at, row.time_zone),
+    endTimeLabel: row.all_day ? null : fmt.timeLabel(row.ends_at, row.time_zone),
     whenLabel,
     startInstantIso: row.all_day ? null : fmt.instantIso(row.starts_at, row.time_zone),
     location: row.location,
