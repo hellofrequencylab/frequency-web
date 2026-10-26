@@ -139,19 +139,14 @@ async function fanOutMentions(
   } catch {
     /* non-critical */
   }
-  try {
-    await admin.from('notifications').insert(
-      targets.map((p) => ({
-        recipient_id: p.id,
-        actor_id: authorId,
-        type: 'mention',
-        reference_type: 'post',
-        reference_id: postId,
-        body: `mentioned you in ${context}`,
-      })),
-    )
-  } catch {
-    /* non-critical */
+  // The bell row rides the router, so each mentioned member's own inapp_mentions switch (and
+  // suppression) decides whether it is written. Best-effort per recipient.
+  for (const p of targets) {
+    try {
+      await routeNotification('post.mention', { profileId: p.id }, { authorId, postId, context })
+    } catch {
+      /* non-critical */
+    }
   }
 }
 

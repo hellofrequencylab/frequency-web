@@ -1,0 +1,47 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+const m = vi.hoisted(() => ({ actor: vi.fn(), read: vi.fn(), write: vi.fn(), draft: vi.fn(), plan: vi.fn(), fork: vi.fn(), adopt: vi.fn() }))
+vi.mock('@/lib/auth', () => ({ getMyProfileId: m.actor, getCallerProfile: vi.fn() }))
+vi.mock('@/lib/practices', () => ({ getPractice: m.read, updatePractice: m.write, forkPractice: m.fork, adoptPractice: m.adopt }))
+vi.mock('@/lib/core/load-capabilities', () => ({ getGlobalCapabilities: async () => new Set(), getCircleCapabilities: vi.fn(), canCreate: vi.fn() }))
+vi.mock('@/lib/ai/practice-spark', () => ({ draftPracticeSpark: m.draft, personalizePractice: vi.fn() }))
+vi.mock('@/lib/ai/practice-edit', () => ({ planPracticeEdits: m.plan }))
+vi.mock('@/lib/ai/vera/create-entity', () => ({ proposeAndConfirmCreate: vi.fn() }))
+vi.mock('@/lib/spaces/counted-meters', () => ({ checkPersonalPracticeMeter: vi.fn() }))
+vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: vi.fn() }))
+vi.mock('@/lib/zaps', () => ({ awardZapsForAction: vi.fn() }))
+vi.mock('@/lib/engagement/events', () => ({ recordEngagementEvent: vi.fn() }))
+vi.mock('@/lib/rate-limit', () => ({ rateLimitOk: vi.fn() }))
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('next/navigation', () => ({ redirect: (url: string) => { throw new Error(`redirect:${url}`) } }))
+import { buildPracticeWithVeraAction, applyVeraPracticeChangeAction, redrawPracticeAction, forkPracticeAction } from './actions'
+const current = { id: 'p', created_by: 'owner', title: 'My exact name', summary: 'My hook', description: 'My description', body: '  My exact steps.\n\nKeep my words!  ', cadence: 'Weekly' }
+beforeEach(() => { vi.clearAllMocks(); m.actor.mockResolvedValue('owner'); m.read.mockResolvedValue({ ...current }); m.draft.mockResolvedValue({ questions: ['Who is this for?'], title: 'Attack title', body: 'Replace every step' }); m.plan.mockResolvedValue({ questions: ['What would you change?'], title: 'Attack title', summary: 'Attack hook', description: 'Attack description', body: 'Attack guide', cadence: 'Daily' }) })
+describe('actual Practice server coaching boundaries', () => {
+  it('never writes model fields for build, edit or guided redraw, including malicious multi-field output', async () => {
+    expect(await buildPracticeWithVeraAction('p', 'Help me plan')).toEqual({ data: { aiUsed: true, questions: ['Who is this for?'] } })
+    expect(await applyVeraPracticeChangeAction('p', 'rewrite everything')).toEqual({ data: { applied: 0, questions: ['What would you change?'] } })
+    expect(await redrawPracticeAction('p', { directions: 'rewrite', locked: [] })).toEqual({ data: { changes: [], kept: [], before: {}, questions: ['What would you change?'] } })
+    expect(m.plan.mock.calls[0][0].practice).toEqual({ title: current.title, summary: current.summary, description: current.description, body: current.body, cadence: current.cadence })
+    expect(m.write).not.toHaveBeenCalled()
+  })
+  it('offers deterministic questions without writes when the model is unavailable', async () => {
+    m.draft.mockResolvedValue(null); m.plan.mockResolvedValue(null)
+    expect(await buildPracticeWithVeraAction('p', 'Plan')).toHaveProperty('data.questions.0')
+    expect(await applyVeraPracticeChangeAction('p', 'Review')).toHaveProperty('data.questions.0')
+    expect(m.write).not.toHaveBeenCalled()
+  })
+  it.each([null, 'other-owner'])('refuses actor %s before any model call', async actor => {
+    m.actor.mockResolvedValue(actor)
+    expect(await buildPracticeWithVeraAction('p', 'Plan')).toHaveProperty('error')
+    expect(await applyVeraPracticeChangeAction('p', 'Review')).toHaveProperty('error')
+    expect(await redrawPracticeAction('p', {})).toHaveProperty('error')
+    expect(m.draft).not.toHaveBeenCalled(); expect(m.plan).not.toHaveBeenCalled(); expect(m.write).not.toHaveBeenCalled()
+  })
+  it('copies an allowed template unchanged, without applying a picked remix direction', async () => {
+    m.fork.mockResolvedValue({ id: 'copy' })
+    await expect(forkPracticeAction('template', 'Rewrite my name and every step')).rejects.toThrow('redirect:/practices/copy/edit')
+    expect(m.fork).toHaveBeenCalledWith('owner', 'template')
+    expect(m.adopt).toHaveBeenCalledWith('owner', 'copy')
+    expect(m.draft).not.toHaveBeenCalled(); expect(m.plan).not.toHaveBeenCalled(); expect(m.write).not.toHaveBeenCalled()
+  })
+})

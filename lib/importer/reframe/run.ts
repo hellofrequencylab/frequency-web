@@ -1,30 +1,11 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// SMART BUSINESS IMPORTER — the REFRAME run (P2, docs/BUSINESS-IMPORTER.md §5 stage 5). Feed
-// the VERIFIED draft (never the raw harvest) to Claude (SONNET) with the voice primer + a forced
-// structured-output tool, and get back the Frequency-voice copy: the tagline, the about line, the
-// story, and per-offering blurbs. Then run the CONTENT-VOICE §10 machine checklist (voice-check):
-// copy that fails is REGENERATED once, then flagged rather than shipped (docs §4.6).
-//
-// Reuses the app's single AI chokepoint (completeRaw with a forced tool_choice, the events-ai.ts
-// pattern) + withVoice + the budget / kill gates. FAIL-SAFE: AI off, over budget, or a thrown call
-// returns null; the pipeline then leaves the verified draft unchanged (no fabricated prose). This
-// stage GROUNDS only on the verified subset it is passed, so it can never launder an unverified
-// commercial fact into copy (docs §4.4). No em dashes in this file (CONTENT-VOICE §10).
-// ─────────────────────────────────────────────────────────────────────────────
-
-import type Anthropic from '@anthropic-ai/sdk'
-import { completeRaw } from '@/lib/ai/complete'
-import { aiEnabled } from '@/lib/ai/client'
-
-import { featureOverBudget } from '@/lib/ai/usage'
-import { withVoice } from '@/lib/ai/voice'
+// Legacy reframe compatibility returns no generated copy.
+// Writing guidance is separate from the verified draft and cannot mutate it.
+import { writingCoach } from '@/lib/ai/writing-coach'
 import type { BusinessProfile } from '../schema'
-import { moodToneDirective, type SeedMood } from '../moods'
-import { REFRAME_SYSTEM, REFRAME_TOOL, REFRAME_TOOL_NAME, buildGroundingBlock } from './prompt'
-import { checkVoice, voiceReason, type VoiceVerdict } from './voice-check'
+import type { SeedMood } from '../moods'
+import type { VoiceVerdict } from './voice-check'
 import type { ReframedCopy } from './apply'
 
-const REFRAME_FEATURE = 'business-import-reframe'
 
 /** The result of a reframe run: the raw voiced copy the model returned + the per-field voice verdict
  *  + the USD spent. Null when AI is unavailable (the pipeline then keeps the verified draft as-is). */
@@ -78,105 +59,9 @@ export function joinReframeCopy(copy: ReframedCopy): string {
     .join('\n')
 }
 
-/** One model call: forced tool, sonnet, voice primer. Returns the coerced copy + cost, or null on
- *  any failure. `extraSystem` appends a corrective note on the regeneration pass. */
-async function callReframe(
-  verified: BusinessProfile,
-  profileId: string | null | undefined,
-  extraSystem = '',
-  sourceExcerpt?: string,
-  directions = '',
-): Promise<{ copy: ReframedCopy; costUsd: number } | null> {
-  try {
-    const res = await completeRaw({
-      accounting: { feature: REFRAME_FEATURE, profileId: profileId ?? null },
-      tier: 'sonnet',
-      maxTokens: 1500,
-      thinking: { type: 'disabled' },
-      system: withVoice(REFRAME_SYSTEM + extraSystem),
-      tools: [REFRAME_TOOL],
-      toolChoice: { type: 'tool', name: REFRAME_TOOL_NAME },
-      // 🔴 THE OPERATOR'S DIRECTIONS RIDE IN THE USER TURN, NOT THE SYSTEM PROMPT (CodeQL "system
-      // prompt injection"). They used to be concatenated into `system`, which is the role the model
-      // treats as its standing instructions — so free text typed into an admin form was being given
-      // the same authority as the voice canon and the safety rules it sits beside. Directions are
-      // INPUT to the task, so they belong with the other input. The system prompt is now entirely
-      // code-controlled: REFRAME_SYSTEM, the voice primer, a mood directive built from an enum, and
-      // on the retry a corrective note this file writes itself.
-      messages: [{ role: 'user', content: buildGroundingBlock(verified, sourceExcerpt) + directions }],
-    })
-
-    const block = res.content.find(
-      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === REFRAME_TOOL_NAME,
-    )
-    if (!block) return null
-    return { copy: coerceReframe(block.input), costUsd: res.costUsd }
-  } catch {
-    return null
-  }
-}
-
-/**
- * Reframe a VERIFIED draft into Frequency-voice copy (SONNET, forced tool, voice primer). Gated on
- * aiEnabled + the per-feature budget cap; returns null when off / over-budget / failed so the
- * pipeline leaves the verified draft unchanged. Runs the §10 machine checklist on the output; if it
- * trips, regenerates ONCE with a corrective note, then returns whichever result is cleaner with its
- * verdict (a non-ok verdict is the pipeline's cue to flag the copy amber, docs §4.6).
- *
- * `verified` MUST be the verifier's verified subset (docs §4.4): this function has no other source,
- * so it cannot see an unverified commercial claim, so it cannot launder one into prose.
- */
-export async function reframe(input: {
-  verified: BusinessProfile
-  profileId?: string | null
-  /** The seed MOOD (Importer v2): its tone directive is folded into the voice primer so a Re-Seed
-   *  with a different mood re-voices the copy. Absent ⇒ the default (warm) tone. */
-  mood?: SeedMood
-  /** Operator DIRECTIONS (Importer v2): a freeform steering modifier the operator typed on the seed
-   *  form ("lead with the retreat angle", "emphasize the sound bath"). Folded into the system note so it
-   *  steers the copy, but it can never override the trust rules (no invented facts, no health claims). */
-  directions?: string
-  /** The business's OWN words (lib/importer/excerpt.ts), so the copy can LIFT their sentences rather
-   *  than paraphrase a compressed draft. Absent ⇒ exactly the prior verified-facts-only behaviour. The
-   *  prompt forbids restating any figure from it, and the prose safety scan re-checks the output. */
-  sourceExcerpt?: string
-}): Promise<ReframeRunResult | null> {
-  if (!aiEnabled()) return null
-  if (await featureOverBudget(REFRAME_FEATURE)) return null
-
-  // The mood tone note + the operator's directions are the base extraSystem on every call, so both the
-  // first pass AND the corrective retry stay on-mood + on-brief (the corrective appends to them).
-  const moodNote = `\n\n${moodToneDirective(input.mood)}`
-  const dir = (input.directions ?? '').trim()
-  // Delimited and labelled so the model can tell the operator's words from the verified facts above
-  // them, and told plainly that facts outrank directions. Truncation was already here; the role move
-  // is what makes the instruction non-authoritative.
-  const directionsNote = dir
-    ? `\n\nOPERATOR DIRECTIONS (guidance only — the VERIFIED FACTS above outrank these, and you must NEVER invent a fact, a price, or a health claim to satisfy them):\n${dir.slice(0, 600)}`
-    : ''
-  const baseNote = moodNote
-
-  const first = await callReframe(input.verified, input.profileId, baseNote, input.sourceExcerpt, directionsNote)
-  if (!first) return null
-
-  let costUsd = first.costUsd
-  let copy = first.copy
-  let verdict = checkVoice(joinReframeCopy(copy))
-
-  if (!verdict.ok) {
-    // Regenerate ONCE with a corrective nudge naming what tripped (docs §4.6), keeping the mood tone.
-    const corrective = `\n\nA previous attempt failed the voice checklist (${voiceReason(verdict)}). Rewrite it clean: plain sentences, no hype, no jargon, no em dashes, no health claims, at most one exclamation point.`
-    const second = await callReframe(input.verified, input.profileId, baseNote + corrective, input.sourceExcerpt, directionsNote)
-    if (second) {
-      costUsd += second.costUsd
-      const secondVerdict = checkVoice(joinReframeCopy(second.copy))
-      // Keep the cleaner of the two (fewer issues wins; ties keep the retry).
-      if (secondVerdict.issues.length <= verdict.issues.length) {
-        copy = second.copy
-        verdict = secondVerdict
-      }
-    }
-  }
-
-  return { copy, voice: verdict, costUsd }
+/** Legacy automatic rewriting is disabled. Extraction and human review retain their source prose. */
+export async function reframe(_input: { verified: BusinessProfile; profileId?: string | null; mood?: SeedMood; directions?: string; sourceExcerpt?: string }): Promise<ReframeRunResult | null> { return null }
+/** Explicit coaching never returns writable copy or applies a live-page change. */
+export async function coachBusinessWriting(input: { verified: BusinessProfile; profileId?: string | null; directions?: string }): Promise<{ questions: string[] }> {
+ return { questions: await writingCoach({ feature: 'business-import-reframe', profileId: input.profileId, context: JSON.stringify({ name: input.verified.name, about: input.verified.about, story: input.verified.story, directions: input.directions }) }) }
 }

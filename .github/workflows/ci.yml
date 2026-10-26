@@ -129,6 +129,10 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
       - name: Lint
+        # The floating-promise rule (SCAN-1143) reads type information, which loads the whole program;
+        # Node's default heap is not enough for that.
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: pnpm lint
 
   test:

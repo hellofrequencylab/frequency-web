@@ -16,7 +16,7 @@ import { capsLabel } from '@/components/ui/caps-label'
 // "Remix it" directions (LIVE-645): the first time the dialog opens, Vera is asked for three short
 // directions for THIS practice (remixDirectionsAction), the practice twin of a Starter Circle's
 // Remix it list. They replace the static ideas as choices beside a plain "Just copy it" (the
-// default). Picking one forks the same way and applies the direction to the copy. When AI is off
+// default). Picking one offers an idea; the fork keeps the original text. When AI is off
 // the list comes back empty and the dialog is exactly the plain copy it always was.
 export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
   const [open, setOpen] = useState(false)
@@ -24,8 +24,6 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
   const [asking, startAsking] = useTransition()
   const [asked, setAsked] = useState(false)
   const [directions, setDirections] = useState<string[]>([])
-  // null = "Just copy it".
-  const [picked, setPicked] = useState<string | null>(null)
   const labelId = useId()
 
   function openDialog() {
@@ -46,7 +44,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
     // forkPracticeAction redirects to the new copy's editor on success, so this
     // transition resolves into a navigation — no local "done" state to manage.
     start(async () => {
-      await forkPracticeAction(practiceId, picked)
+      await forkPracticeAction(practiceId)
     })
   }
 
@@ -69,6 +67,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
               <Wand2 className="h-4 w-4" />
             </span>
             <h2 className="text-body-lg font-bold text-text">Remix this practice?</h2>
+          <p className="mt-2 text-body-sm text-muted">Directions are ideas to consider as you edit. Your copy keeps the template unchanged; Vera does not rewrite or save it.</p>
           </div>
           <p className="text-body-sm text-muted">
             Remix makes a new practice you own, starting from this one. Don&apos;t just rework it.
@@ -80,28 +79,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
               Ways to make it yours
             </p>
             {directions.length > 0 ? (
-              <div role="radiogroup" aria-labelledby={labelId} className="mt-2 flex flex-wrap gap-2">
-                {[...directions, null].map((d) => {
-                  const on = picked === d
-                  return (
-                    <button
-                      key={d ?? 'copy'}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      disabled={pending}
-                      onClick={() => setPicked(d)}
-                      className={`rounded-pill border px-3 py-1 text-body-sm font-semibold transition-colors disabled:opacity-60 ${
-                        on
-                          ? 'border-primary bg-primary-bg text-primary-strong'
-                          : 'border-border bg-surface text-text hover:bg-surface-elevated'
-                      }`}
-                    >
-                      {d ?? 'Just copy it'}
-                    </button>
-                  )
-                })}
-              </div>
+              <ul aria-labelledby={labelId} className="mt-2 list-disc space-y-1 pl-4 text-body-sm text-muted">{directions.map(direction => <li key={direction}>{direction}</li>)}</ul>
             ) : (
               <ul className="mt-2 space-y-1 text-body-sm text-muted">
                 <li>A different setting: try it outdoors, before bed, or on a walk.</li>
@@ -114,9 +92,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Vera is picking a few directions for this one.
               </p>
             )}
-            {picked && !pending && (
-              <p className="mt-2 text-body-sm text-muted">Vera will rework your copy that way. The original stays as it is.</p>
-            )}
+
           </div>
           <div className="mt-5 flex items-center justify-end gap-2">
             <button
@@ -129,7 +105,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
             </button>
             <Button type="button" disabled={pending} onClick={confirm}>
               {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-              {pending ? (picked ? 'Remixing your copy…' : 'Making your copy…') : 'Remix it'}
+              {pending ? 'Making your copy…' : 'Make a copy'}
             </Button>
           </div>
         </div>

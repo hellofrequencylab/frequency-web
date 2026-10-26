@@ -39,6 +39,8 @@ export function websiteThemeVars(theme: WebsiteTheme, brandAccent?: string | nul
     tokens['--th-accent-text'] = accent['--color-primary-strong']!
     tokens['--th-on-accent'] = accent['--color-text-on-primary']!
   }
+  // The theme's own accent under a name the editor sheet keeps (.we-shell re-declares --th-accent for its chrome).
+  if (tokens['--th-accent']) tokens['--ed-accent'] = tokens['--th-accent']
   // next/font registers generated family names. Bind the handoff's named faces
   // to those same local font variables, retaining the contract as the fallback.
   const fonts = WEBSITE_THEME_FONT_VARS[theme]

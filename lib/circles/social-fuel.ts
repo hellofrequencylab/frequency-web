@@ -3,7 +3,7 @@
 //
 // Four moves, all serving ACTIVATION (get into a room), never dwell:
 //   1. celebrateInCircleFeed  — fire a Journey / Master-rank celebration into the CIRCLE FEED
-//      (Peloton-style peer recognition, drafted via withVoice), NOT a private modal. The crowd-in
+//      (peer recognition from the human-written operational template), NOT a private modal. The crowd-in
 //      channel: a shoutout the member's Circle sees, so recognition is social.
 //   2. circleStreakWeeks      — a cooperative, LOCAL-ONLY Circle streak: consecutive weeks the
 //      Circle kept at least a quorum of members active together. Social streaks beat solo ones.
@@ -15,7 +15,7 @@
 // Two halves, the testability law (mirroring lib/ai/vera/today.ts + lib/traits/compute.ts):
 //   • PURE helpers (the streak math, the nudge selection, the risk signal) — no IO, unit-tested.
 //   • IO (celebrate / nudge) — service-role, fail-SAFE: a missed celebration / nudge must never
-//     break the act it marks. Drafting is best-effort with a deterministic in-voice fallback.
+//     break the act it marks. Recognition uses the existing human-written operational template.
 //
 // Guardrail (the brand-fatal-otherwise rule): every mechanic serves getting into a room. Vera
 // NEVER writes "earn N Zaps"; the celebration names the achievement + the next room, plainly.
@@ -27,9 +27,6 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isBlockedBetween } from '@/lib/blocking'
-import { withVoice } from '@/lib/ai/voice'
-import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
-import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 
 // ── Pure: the cooperative Circle streak (local-only) ─────────────────────────────
 
@@ -137,9 +134,9 @@ export function structuralRiskBoost(risk: StructuralRisk): number {
   }
 }
 
-// ── IO: the Circle-feed celebration (peer recognition, Vera-drafted) ─────────────
+// ── IO: the Circle-feed celebration (human-written system template) ─────────────
 
-/** What was achieved, for the celebration draft. Plain, in-voice; proper nouns carry the magic. */
+/** What was achieved, for the recognition template. Plain, in-voice; proper nouns carry the magic. */
 interface CelebrationContext {
   /** The member's handle (the @mention the Circle sees), without the leading @. */
   handle: string
@@ -149,7 +146,7 @@ interface CelebrationContext {
   detail?: string | null
 }
 
-/** A deterministic, in-voice celebration line (the fallback when AI is off / over budget). Names
+/** The human-written operational celebration template. Names
  *  the achievement + a light next step into a room. No "earn N Zaps", no narrated feelings, no
  *  dashes. Proper nouns capitalized per the canon. */
 export function deterministicCelebration(ctx: CelebrationContext): string {
@@ -161,38 +158,9 @@ export function deterministicCelebration(ctx: CelebrationContext): string {
   return `${who} just finished ${journey}. Good one to ask them about next time you meet.`
 }
 
-const CELEBRATION_SYSTEM = withVoice(
-  `You write ONE short peer-recognition line for a community Circle feed, celebrating a member's milestone. You get the member's @handle and what they achieved. Write a single plain line, warm and dry, that NAMES the achievement and gently points to a next get-together. Rules: keep the @handle, capitalize proper nouns (Journey, Master, Circle) exactly, never say "earn" or any number of Zaps or Gems, never narrate anyone's feelings, no preamble, no dashes. Return ONLY the one line.`,
-)
-
-/** Draft the celebration line. Best-effort AI, deterministic in-voice fallback. Never throws. */
-async function draftCelebration(ctx: CelebrationContext): Promise<string> {
-  const fallback = deterministicCelebration(ctx)
-  try {
-    if (!(await aiAvailable()) || (await featureOverBudget('social_fuel'))) return fallback
-    const signal = JSON.stringify({ handle: ctx.handle, kind: ctx.kind, detail: ctx.detail ?? null })
-    const res = await completeText({
-      accounting: { feature: 'social_fuel' },
-      system: CELEBRATION_SYSTEM,
-      messages: [{ role: 'user', content: signal }],
-      tier: 'haiku',
-      maxTokens: 80,
-      cacheSystem: true,
-    })
-
-    const line = (res.text ?? '').split('\n').map((l) => l.trim()).find(Boolean)
-    // Keep the draft only if it preserved the @mention (so the Circle actually sees them).
-    if (line && new RegExp(`@${ctx.handle}\\b`, 'i').test(line)) return line
-    return fallback
-  } catch (e) {
-    if (e instanceof AiUnavailableError) return fallback
-    return fallback
-  }
-}
-
 /**
  * Fire a member's milestone celebration into their CIRCLE feeds (peer recognition, crowd-in),
- * authored by the system account, drafted via withVoice. Posts one circle-scoped (`group`) post
+ * authored by the system account, using the human-written operational template. Posts one circle-scoped (`group`) post
  * per Circle the member actively belongs to, so the people who'd cheer them actually see it. A
  * member in no Circle gets no post (nothing private; the recognition is social by design).
  *
@@ -225,7 +193,7 @@ export async function celebrateInCircleFeed(profileId: string, ctx: CelebrationC
     ]
     if (circleIds.length === 0) return 0 // unanchored: no Circle to celebrate in
 
-    const body = await draftCelebration(ctx)
+    const body = deterministicCelebration(ctx)
 
     let posted = 0
     for (const circleId of circleIds) {

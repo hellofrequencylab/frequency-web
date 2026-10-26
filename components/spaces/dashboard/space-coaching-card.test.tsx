@@ -33,3 +33,11 @@ it('loads only the requested Space and reduces attendance to aggregate evidence'
   expect(html).not.toContain('private-event-id')
   expect(profile).not.toHaveProperty('attendance')
 })
+
+
+it('routes the primary-button task to the actual Header button editor instead of Mode presets', () => {
+  const html = renderToStaticMarkup(<SpaceCoachingCardView slug="Thursday / walks" identity={{ name: 'Thursday', tagline: 'Meet weekly', about: 'Walks' }} observed={{ windowDays: 30, observedFrom: '2026-09-25T00:00:00.000Z', observedThrough: '2026-10-25T00:00:00.000Z', profileViews: 7, ctaClicks: 0 }} />)
+  expect(html).toContain('Review your main button')
+  expect(html).toContain('/spaces/Thursday%20%2F%20walks/manage?section=settings#branding-cta-label')
+  expect(html).not.toContain('/manage/mode')
+})

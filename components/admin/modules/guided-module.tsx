@@ -45,6 +45,7 @@ export interface GuidedRedraw<Before> {
   changes: FieldChange[]
   kept: string[]
   before: Before
+  questions?: string[]
 }
 
 export interface GuidedModuleProps<Before> {
@@ -65,6 +66,7 @@ export interface GuidedModuleProps<Before> {
   restore: (entityId: string, before: Before) => Promise<ActionResult>
   /** The button. Defaults to the Spark's own wording. */
   redrawLabel?: string
+  coachingOnly?: boolean
 }
 
 export function GuidedModule<Before>({
@@ -76,6 +78,7 @@ export function GuidedModule<Before>({
   redraw,
   restore,
   redrawLabel = 'Draft it again',
+  coachingOnly = false,
 }: GuidedModuleProps<Before>) {
   const pathname = usePathname()
   const router = useRouter()
@@ -100,7 +103,7 @@ export function GuidedModule<Before>({
       .then(async (id) => {
         if (!active) return
         setEntityId(id)
-        if (id) {
+        if (id && !coachingOnly) {
           // The dials as this author last left them (ADR-996). Absent (or the table not applied
           // yet) simply means the defaults, which is exactly the pre-persistence behaviour.
           const saved = await loadStudioSteerAction(manifest.entity, id)
@@ -118,7 +121,7 @@ export function GuidedModule<Before>({
     return () => {
       active = false
     }
-  }, [key, manifest.entity, resolve])
+  }, [key, manifest.entity, resolve, coachingOnly])
 
   const steer = manifest.steer
   if (!key || !steer) return null
@@ -139,7 +142,7 @@ export function GuidedModule<Before>({
       if ('error' in res) setError(res.error)
       else {
         setResult(res.data)
-        router.refresh()
+        if (!res.data.questions) router.refresh()
       }
     } finally {
       setBusy(false)
@@ -174,7 +177,7 @@ export function GuidedModule<Before>({
       </header>
 
       <SparkSteer
-        steer={steer}
+        steer={coachingOnly ? { directions: true } : steer}
         mood={mood}
         onMood={setMood}
         directions={directions}
@@ -199,7 +202,7 @@ export function GuidedModule<Before>({
         </p>
       )}
 
-      {result && <RedrawDiff result={result} busy={busy} onUndo={putItBack} />}
+      {result?.questions ? <section role="status" aria-label="Coaching questions" className="space-y-2 rounded-control border border-border p-3"><p className="text-meta text-muted">Your content is unchanged. Write and save any changes yourself.</p><ul className="list-disc pl-4">{result.questions.map(q => <li key={q}>{q}</li>)}</ul></section> : result && <RedrawDiff result={result} busy={busy} onUndo={putItBack} />}
     </div>
   )
 }

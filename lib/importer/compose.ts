@@ -1,60 +1,12 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// SMART BUSINESS IMPORTER: the AI MARKETING-PAGE COMPOSER (Importer v2.2). ONE model call acts as the
-// page designer AND the copy editor: it reads what the business IS, in the business's OWN WORDS, and
-// fills a house BAND SPINE with the blocks that fit, then writes the copy for the design blocks
-// (Editorial / Zigzag / Card grid / Features / Accent beat / Text Block / Gallery). The output becomes an
-// EntityLayout the materializer writes to spaces.preferences.profileLayout.
-//
-// WHY THIS FILE WAS REBUILT (three problems, three fixes):
-//   1. The composer never saw the business's own words. It got `brief(profile)` only: name, tagline,
-//      category, about, story, offering titles, hours, three yes/no flags. A real case harvested 21,958
-//      chars from the site and reached the composer as 982 chars of draft prose, so the page came out
-//      generic. FIX: `sourceExcerpt` (built by lib/importer/excerpt.ts) carries the VERBATIM website text
-//      into the prompt, and the copy instruction is NEAR-VERBATIM, TRIMMED TO FIT: lift their sentences,
-//      trim for length, cut hype and em dashes, fix voice breaks. Their words carry the page; the model
-//      writes only the connective tissue and the bands they have nothing for.
-//   2. The page had no house template. FIX: the BAND SPINE (see BAND_SPINE below), modelled on the
-//      owner's own Space: nine bands, each with an intent, a primary block, named alternates the model
-//      may swap in when the content does not fit, and a drop rule. Bands 1 to 3 group into ONE untitled
-//      opening row so the page opens as one continuous read.
-//   3. The composer could not set the controls that make a page look designed (features layout, grid
-//      columns, card shape, photo side, gallery view, a live CTA button). FIX: the tool schema and
-//      `authoredBag` now cover the real block fields, and the ones a SIGNAL can decide are DERIVED in
-//      `planToLayout` (pure, testable) rather than chosen by the model.
-//
-// SAFE BY CONSTRUCTION:
-//   • the model picks from a FIXED block allowlist (an unknown id is dropped) and can never invent a block;
-//   • photos are referenced by INDEX into the selectable gallery, never a url, so no image can be injected;
-//   • every enum control is validated against the REAL field schema (lib/entity-blocks/block-content.ts)
-//     through `sparseEnum`, which mirrors sanitizeBlockContent, so a tampered value can only ever be a
-//     known token, and a value equal to the block default is dropped (the stored blob stays sparse);
-//   • the CTA DESTINATION never comes from the model (a model-chosen url is a dead link). The model writes
-//     a button LABEL; the href comes from the caller's `ctaUrl`, and the button is only ever on when a
-//     safe `ctaUrl` was supplied;
-//   • each block id appears at most once across the whole layout (the content map is keyed by id);
-//   • an authored design block with no usable copy is dropped;
-//   • the THINNESS gate (fewer than 2 real blocks placed) returns null, so the caller falls back to the
-//     deterministic composeLayout (lib/importer/map.ts);
-//   • contact + business are guaranteed to close the page;
-//   • AI off / over budget / a thrown call returns null;
-//   • every string runs through clamp (bound + stripEmDashes).
-// planToLayout is PURE + unit-tested; the materializer additionally runs sanitizeEntityLayout, so a bad
-// bag is dropped a second time. The copy never invents a fact, a price, a statistic, or a health claim.
-//
-// No em dashes anywhere in this file, prompt strings included (docs/CONTENT-VOICE.md §10).
-// ─────────────────────────────────────────────────────────────────────────────
-
-import type Anthropic from '@anthropic-ai/sdk'
-import { completeRaw } from '@/lib/ai/complete'
-import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
-import { withVoice } from '@/lib/ai/voice'
+// Verified-source layout compatibility utilities and human writing guidance.
+// Model layout composition is disabled: advice never becomes persisted page copy.
+import { writingCoach } from '@/lib/ai/writing-coach'
 import { stripEmDashes } from '@/lib/ai/space-copilot'
 import { isReadyMediaUrl, type CommercialPolicy } from './map'
 import { normalizeRowTitle, type EntityLayout, type RowColumns, type RowDef } from '@/lib/entity-blocks/layout'
 import { fieldsForBlock, primitiveValues, safeUrl, type FieldDef } from '@/lib/entity-blocks/block-content'
 import type { BusinessProfile } from './schema'
 
-const FEATURE = 'seed-compose'
 
 /** The blocks the composer may place, with best-practice WHEN-TO-USE guidance. The model chooses from
  *  THIS allowlist only (a returned id not here is dropped), so the composition can never invent a block. */
@@ -153,10 +105,7 @@ function fieldOf(blockId: string, key: string): FieldDef | undefined {
 }
 
 /** The allowed values of an enum control on a block, or [] when the field is not an enum. PURE. */
-function enumValues(blockId: string, key: string): string[] {
-  const field = fieldOf(blockId, key)
-  return field ? [...(primitiveValues(field) ?? [])] : []
-}
+
 
 /**
  * Keep an enum control's value ONLY when it is one of the field's allowed values AND differs from the
@@ -180,14 +129,6 @@ function sparseToggle(blockId: string, key: string, value: unknown): boolean | u
   const def = field.default ?? false
   return typeof value === 'boolean' && value !== def ? value : undefined
 }
-
-const FEATURE_LAYOUTS = enumValues('features', 'layout')
-const GRID_COLUMNS = enumValues('cardGrid', 'columns')
-const CARD_SHAPES = enumValues('cardGrid', 'shape')
-const MEDIA_SIDES = enumValues('zigzag', 'mediaSide')
-const IMAGE_ASPECTS = enumValues('zigzag', 'aspect')
-const GALLERY_VIEWS = enumValues('gallery', 'view')
-const GALLERY_GAPS = enumValues('gallery', 'gap')
 
 // ── The model's shapes ────────────────────────────────────────────────────────────────────────────────
 
@@ -557,90 +498,6 @@ function authoredBag(id: string, s: ComposedBlock, ctx: BagCtx): Record<string, 
 
 // ── The model call ────────────────────────────────────────────────────────────────────────────────────
 
-const TOOL: Anthropic.Tool = {
-  name: 'compose_page',
-  description: 'Return the marketing page as the BANDS of the spine, top to bottom, each carrying its blocks.',
-  input_schema: {
-    type: 'object',
-    properties: {
-      bands: {
-        type: 'array',
-        description:
-          'The page as bands, top to bottom, following the band spine. Skip a band whose content does not exist. Use each block at most once across the whole page.',
-        items: {
-          type: 'object',
-          properties: {
-            band: {
-              type: 'integer',
-              description:
-                'The spine band number this is (1 to 9). Bands 1, 2 and 3 group into one continuous opening section.',
-            },
-            title: {
-              type: 'string',
-              description:
-                'The section heading shown over this band (e.g. "What we offer", "Contact and details"). Leave blank for bands 1 to 3, for a band whose single design block already carries its own heading, and for a pure call-to-action band.',
-            },
-            columns: {
-              type: 'integer',
-              enum: [1, 2],
-              description: 'Set 2 to pair two blocks side by side in this band (offerings + booking, contact + business); else 1.',
-            },
-            blocks: {
-              type: 'array',
-              description: 'The blocks in this band, in order.',
-              items: {
-                type: 'object',
-                properties: {
-                  block: { type: 'string', enum: [...COMPOSER_BLOCK_IDS] },
-                  eyebrow: { type: 'string', description: 'A short lowercase kicker, two to four words.' },
-                  title: { type: 'string', description: 'The block heading, one plain line.' },
-                  subtitle: { type: 'string', description: 'A line under the heading (card grid only).' },
-                  body: {
-                    type: 'string',
-                    description:
-                      'The block copy, lifted near verbatim from their own words and trimmed to fit. Separate paragraphs with <br><br>.',
-                  },
-                  buttonLabel: {
-                    type: 'string',
-                    description: 'The call-to-action button text (accent beat). Write the label only; the destination is set for you.',
-                  },
-                  cards: {
-                    type: 'array',
-                    description: 'The items of a features or card grid block.',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        title: { type: 'string', description: 'The item title, or the figure for a stat ("1,000+").' },
-                        text: { type: 'string', description: 'One plain line saying what it is, or what the figure counts.' },
-                        icon: { type: 'string', description: 'A short icon token: "1", "2", "3" for numbered steps, or a Lucide icon name.' },
-                        imageIndex: { type: 'integer', description: 'Which photo (0-based) sits on this card, or omit.' },
-                      },
-                    },
-                  },
-                  imageIndex: { type: 'integer', description: 'Which photo (0-based) for a zigzag or an image block, or omit.' },
-                  alt: { type: 'string', description: 'A plain description of the photo.' },
-                  layout: { type: 'string', enum: FEATURE_LAYOUTS, description: 'Features only. Leave blank to let the content decide between stats and cards.' },
-                  columns: { type: 'string', enum: GRID_COLUMNS, description: 'How many columns the features or card grid runs.' },
-                  shape: { type: 'string', enum: CARD_SHAPES, description: 'Card grid only: where the card photo sits.' },
-                  rounded: { type: 'boolean', description: 'Card grid only: rounded corners (on by default).' },
-                  shadow: { type: 'boolean', description: 'Card grid only: drop shadow (on by default).' },
-                  mediaSide: { type: 'string', enum: MEDIA_SIDES, description: 'Zigzag only: which side the photo sits on.' },
-                  aspect: { type: 'string', enum: IMAGE_ASPECTS, description: 'The photo shape for a zigzag or an image block.' },
-                  view: { type: 'string', enum: GALLERY_VIEWS, description: 'Gallery only. Leave blank to let the photo count decide.' },
-                  gap: { type: 'string', enum: GALLERY_GAPS, description: 'Gallery only: how much air sits between the photos.' },
-                },
-                required: ['block'],
-              },
-            },
-          },
-          required: ['blocks'],
-        },
-      },
-    },
-    required: ['bands'],
-  },
-}
-
 /** The spine, rendered for the prompt. */
 const SPINE_TEXT = BAND_SPINE.map(
   (b) => `- Band ${b.n}. ${b.intent}. Primary: ${b.primary}. Swap to: ${b.swap}. Drop when: ${b.drop}.`,
@@ -743,47 +600,9 @@ export function buildComposeUserPrompt(
  * (the non-cover gallery); the model references them by index. `policy` is accepted for parity with the
  * deterministic path (the composer only writes prose, never a commercial fact, so it is advisory here).
  */
-export async function composeMarketingLayout(
-  profile: BusinessProfile,
-  galleryImages: string[],
-  opts: {
-    profileId?: string | null
-    directions?: string
-    policy?: CommercialPolicy
-    /** The verbatim website excerpt from lib/importer/excerpt.ts. Absent means today's behaviour. */
-    sourceExcerpt?: string
-    /** Where the call to action sends people, e.g. '/spaces/acme/book'. Absent means no CTA button. */
-    ctaUrl?: string
-    /** Whether the business takes bookings (drives band 6). */
-    bookable?: boolean
-  } = {},
-): Promise<EntityLayout | null> {
-  if (!(profile.name ?? '').trim()) return null
-  if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
-
-  const gallery = galleryImages.filter((u) => isReadyMediaUrl(u))
-  const userText = buildComposeUserPrompt(profile, gallery, opts)
-
-  try {
-    const res = await completeRaw({
-      accounting: { feature: FEATURE, profileId: opts.profileId ?? null },
-      system: withVoice(COMPOSE_SYSTEM),
-      messages: [{ role: 'user', content: userText }],
-      maxTokens: 4000,
-      tools: [TOOL],
-      toolChoice: { type: 'tool', name: 'compose_page' },
-    })
-
-    const call = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'compose_page')
-    // `bands` is the current tool shape; `sections` is accepted as a fallback so an older / retried call
-    // shape still lands rather than dropping the whole page.
-    const input = (call?.input ?? {}) as { bands?: unknown; sections?: unknown }
-    const raw = Array.isArray(input.bands) ? input.bands : input.sections
-    if (!Array.isArray(raw)) return null
-    return planToLayout(raw as ComposedSection[], profile, gallery, { ctaUrl: opts.ctaUrl })
-  } catch {
-    return null
-  }
+export async function composeMarketingLayout(_profile: BusinessProfile, _galleryImages: string[], _opts: { profileId?: string | null; directions?: string; policy?: CommercialPolicy; sourceExcerpt?: string; ctaUrl?: string; bookable?: boolean } = {}): Promise<EntityLayout | null> {
+ // Legacy AI layout entry refuses copy generation. Materialization uses the verified-source map.
+ return null
 }
 
 // ── Per-block copy re-seed (ADR-582, task #17) ────────────────────────────────────────────────────────────
@@ -795,81 +614,12 @@ export async function composeMarketingLayout(
 // block's own field keys, or null when there is nothing to do (no text fields, no profile, AI off / over
 // budget).
 
-const BLOCK_COPY_SYSTEM = `You are a copy editor rewriting the copy of ONE section of a business's page.
-You are given the business brief, sometimes a verbatim excerpt of the words they published themselves, and the section's text fields (each with its current value). Write better copy for EACH field.
-Rules, follow exactly:
-- When you are given their own words, LIFT from them near verbatim and trim to fit. Keep their nouns and their examples.
-- Write ONLY from the brief and that excerpt. NEVER invent a fact, a price, a statistic, a name, or a health or medical claim. If they do not support a field, keep it close to its current value.
-- Never restate a price, a phone number, an address, or opening hours in this copy. Those render from live data elsewhere on the page.
-- Match each field to its role: an eyebrow is a short kicker (two to four words), a heading or title is one plain line, a body or message is one or two short sentences.
-- Plain, honest sentences. No hype, no jargon, no emoji, no em dashes. Do not repeat the same sentence across fields.
-Return the rewritten fields via the block_copy tool. Omit a field to leave it unchanged.`
-
 /** Regenerate ONE block's text copy from the master profile (task #17). Rewrites only the block's `text` /
  *  `textarea` fields, grounded in the brief (and the verbatim excerpt when the caller has one); returns a
  *  partial content bag (the rewritten field values) to merge over the block's current content, or null when
  *  there is nothing to regenerate. PURE of any write: the caller persists the merge through the normal
  *  editor save path. */
-export async function reseedBlockCopy(
-  blockId: string,
-  profile: BusinessProfile,
-  current: Record<string, unknown>,
-  opts: { profileId?: string | null; directions?: string; sourceExcerpt?: string } = {},
-): Promise<Record<string, string> | null> {
-  const textFields = fieldsForBlock(blockId).filter((f) => f.type === 'text' || f.type === 'textarea')
-  if (!textFields.length) return null
-  if (!(profile.name ?? '').trim()) return null
-  if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
-
-  // A tool schema with one optional string per text field, so the model can only ever write to this block's
-  // real field keys (a tampered key can't reach the content bag).
-  const properties: Record<string, unknown> = {}
-  for (const f of textFields) {
-    properties[f.key] = {
-      type: 'string',
-      description: `${f.label}: ${f.type === 'textarea' ? 'one or two short sentences' : 'a short line'}`,
-    }
-  }
-  const TOOL: Anthropic.Tool = {
-    name: 'block_copy',
-    description: 'Return the rewritten copy for this section, one entry per field. Omit a field to leave it as is.',
-    input_schema: { type: 'object', properties, required: [] },
-  }
-
-  const fieldLines = textFields
-    .map((f) => `- ${f.key} (${f.label}): ${(typeof current[f.key] === 'string' ? (current[f.key] as string) : '').trim() || '(empty)'}`)
-    .join('\n')
-  const directions = (opts.directions ?? '').trim()
-  // A single block needs far less source than a whole page, so the excerpt rides in at a quarter budget.
-  const excerpt = (opts.sourceExcerpt ?? '').trim().slice(0, EXCERPT_MAX / 4)
-  const userText = [
-    `BUSINESS BRIEF:\n${brief(profile)}`,
-    excerpt ? `\nTHEIR OWN WORDS (verbatim from their site; lift from this):\n${excerpt}` : '',
-    `\nSECTION: ${blockId}`,
-    `\nFIELDS TO REWRITE:\n${fieldLines}`,
-    directions ? `\nOPERATOR DIRECTIONS (follow where they fit, never invent facts): ${directions.slice(0, 400)}` : '',
-    '\nRewrite the copy now.',
-  ].join('\n')
-
-  try {
-    const res = await completeRaw({
-      accounting: { feature: FEATURE, profileId: opts.profileId ?? null },
-      system: withVoice(BLOCK_COPY_SYSTEM),
-      messages: [{ role: 'user', content: userText }],
-      maxTokens: 800,
-      tools: [TOOL],
-      toolChoice: { type: 'tool', name: 'block_copy' },
-    })
-
-    const call = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'block_copy')
-    const input = (call?.input ?? {}) as Record<string, unknown>
-    const out: Record<string, string> = {}
-    for (const f of textFields) {
-      const v = input[f.key]
-      if (typeof v === 'string' && v.trim()) out[f.key] = stripEmDashes(v.trim())
-    }
-    return Object.keys(out).length ? out : null
-  } catch {
-    return null
-  }
+export async function reseedBlockCopy(blockId: string, profile: BusinessProfile, current: Record<string, unknown>, opts: { profileId?: string | null; directions?: string; sourceExcerpt?: string } = {}): Promise<{ questions: string[] } | null> {
+ if (!fieldsForBlock(blockId).some(field => field.type === 'text' || field.type === 'textarea') || !(profile.name ?? '').trim()) return null
+ return { questions: await writingCoach({ feature: 'seed-compose', profileId: opts.profileId, context: JSON.stringify({ section: blockId, current, source: opts.sourceExcerpt, directions: opts.directions, name: profile.name }) }) }
 }
