@@ -2,13 +2,13 @@
 
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Button } from '@/components/ui/button'
-import { ComingSoonMark } from '@/components/ui/coming-soon-mark'
 import {
   CALENDAR_SURFACE_DEFS,
   CALENDAR_SURFACES,
   type CalendarSurface,
   type CalendarListScope,
 } from '@/lib/calendar/admin-views'
+import { CALENDAR_TIME_VIEW_DEFS, type CalendarTimeView } from '@/lib/calendar/time-views'
 
 // HOW THE CALENDAR IS BEING LOOKED AT (ADR-1389, ADR-1464, ADR-1467; folded into one control by
 // LIVE-490). The kit's segmented box (HYG-105). Buttons, not Links: the parent shell slides panels
@@ -33,6 +33,8 @@ export function CalendarModeToggle({
   scope,
   onScope,
   surfaces = CALENDAR_SURFACES,
+  timeView = null,
+  onTimeView,
 }: {
   surface: CalendarSurface | null
   onSelect: (surface: CalendarSurface) => void
@@ -41,6 +43,10 @@ export function CalendarModeToggle({
   onScope?: (next: CalendarListScope) => void
   /** Which surfaces this audience may pick from. Defaults to all three (the operator's box). */
   surfaces?: readonly CalendarSurface[]
+  /** The Day, Week or Timeline view showing, or null when a surface is (LIVE-1178). */
+  timeView?: CalendarTimeView | null
+  /** Offered to the team only. Without it the box is the three surfaces, as a member sees it. */
+  onTimeView?: (next: CalendarTimeView) => void
 }) {
   const segments = CALENDAR_SURFACE_DEFS.filter((o) => surfaces.includes(o.surface)).map((o) => ({
     value: o.surface,
@@ -50,15 +56,27 @@ export function CalendarModeToggle({
     <span className="inline-flex items-center gap-2">
       <SegmentedControl
         label="How to see the calendar"
-        value={surface ?? ''}
+        value={timeView ? '' : (surface ?? '')}
         onChange={(next) => onSelect(next as CalendarSurface)}
         segments={segments}
       />
+      {/* DAY, WEEK, TIMELINE (LIVE-1178): the team's other three ways of looking, in a box of their
+          own beside the three surfaces. They are not surfaces (CALENDAR_SURFACES stays three, and
+          its pinned order with it), so the two boxes never share a selection: choosing one clears
+          the other. A member is never handed this box. */}
+      {onTimeView ? (
+        <SegmentedControl
+          label="Day, week or timeline"
+          value={timeView ?? ''}
+          onChange={(next) => onTimeView(next as CalendarTimeView)}
+          segments={CALENDAR_TIME_VIEW_DEFS.map((d) => ({ value: d.view, label: d.label }))}
+        />
+      ) : null}
       {/* THE SCOPE RIDES THE SURFACE IT BELONGS TO, and appears nowhere else. This is the one thing
           that used to force a reader to know that two different controls both said "List": the
           all-time index was a PANEL and the month agenda was a SWITCH. Here it is one surface, and
           how much of it you are reading is a choice inside that surface. */}
-      {surface === 'list' && scope && onScope ? (
+      {surface === 'list' && !timeView && scope && onScope ? (
         <span className="inline-flex items-center rounded-control border border-border p-0.5">
           <Button
             type="button"
@@ -80,13 +98,6 @@ export function CalendarModeToggle({
           >
             All
           </Button>
-        </span>
-      ) : null}
-      {/* The design's other three views. Not built, so named and marked rather than hidden. */}
-      {surfaces.length > 2 ? (
-        <span className="inline-flex items-center gap-1.5 text-meta text-muted" data-calendar-soon-views>
-          Day, Week, Timeline
-          <ComingSoonMark />
         </span>
       ) : null}
     </span>

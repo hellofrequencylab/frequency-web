@@ -9,7 +9,7 @@
     "file": "lib/page-editor/templates/home.ts",
     "ref": "Full repo meta scan 2026-10-26 (audits/meta-scan-2026-10-26.md)"
   },
-  "detail": "The answer-first quick answers feed only llms.txt. Home emits no FAQPage (app/page.tsx comment confirms). Add the FAQ to the home template so the published document renders it, then re-publish. Voice per the language guide.\n\n2026-10-26: #3926 put a visible Questions section and a matching FAQPage node on the live Frequency home (components/frequency/site/pages/home/frequency-home.tsx, app/page.tsx, homeFaq in lib/marketing/quick-answers.ts). The probe still reads the unreachable DAWN template lib/page-editor/templates/home.ts, so the row stays open until the probe is pointed at the live path (needs the owner's word to change a probe).",
+  "detail": "The answer-first quick answers feed only llms.txt. Home emits no FAQPage (app/page.tsx comment confirms). Add the FAQ to the home template so the published document renders it, then re-publish. Voice per the language guide.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs home-faq",

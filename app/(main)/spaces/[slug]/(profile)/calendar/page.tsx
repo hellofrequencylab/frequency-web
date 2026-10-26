@@ -27,6 +27,7 @@ import {
   parseConsoleFlag,
   resolveOperatorCalendarView,
 } from '@/lib/calendar/admin-views'
+import { parseTimeView, timeViewCookieName } from '@/lib/calendar/time-views'
 
 // THE MERGED CALENDAR AND EVENTS PAGE (Events EC2, ADR-1385, ADR-1464, ADR-1467; merged by
 // LIVE-520 on the owner's ask, "Calendar & Events should be all one page").
@@ -63,6 +64,7 @@ export default async function SpaceCalendarPage({
     item?: string | string[]
     plan?: string | string[]
     console?: string | string[]
+    look?: string | string[]
     y?: string | string[]
     m?: string | string[]
   }>
@@ -179,6 +181,8 @@ export default async function SpaceCalendarPage({
   const jar = await cookies()
   const remembered = jar.get(calendarViewCookieName(slug))?.value
   const initialView = resolveOperatorCalendarView(query.view, remembered)
+  // Day, Week or Timeline (LIVE-1178): the link names it, otherwise the last one this reader chose.
+  const initialTimeView = parseTimeView(query.look) ?? parseTimeView(jar.get(timeViewCookieName(slug))?.value)
   const admin = await loadAdminCalendar(space.id, {
     canManage,
     year: initialYear,
@@ -202,6 +206,8 @@ export default async function SpaceCalendarPage({
       initialListItem={firstSearchParam(query.item) ?? null}
       initialPlanId={firstSearchParam(query.plan) ?? null}
       initialConsole={parseConsoleFlag(query.console)}
+      initialTimeView={initialTimeView}
+      initialDay={spaceDay}
       initialYear={initialYear}
       initialMonth1={initialMonth1}
       guestEvents={guestEvents}
