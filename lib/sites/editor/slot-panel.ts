@@ -6,7 +6,7 @@ import type { Data } from '@/lib/page-editor/types'
 // There is no write path here on purpose: each fact is saved by the form that already owns it (Identity and
 // branding, Business info, Offerings, Team), so one fact still has one home.
 
-export interface SlotRow { key: string; label: string; saved: string | null; uses: number; href: string }
+interface SlotRow { key: string; label: string; saved: string | null; uses: number; href: string }
 export interface SlotGroupModel { label: string; rows: SlotRow[] }
 
 const LISTS = new Set(['Offers', 'People', 'Schedule'])
