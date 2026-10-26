@@ -1,5 +1,3 @@
-import { Skeleton } from '@/components/ui/skeleton'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqCircleLoading } from '@/components/frequency/members/community-states'
 
 // Instant loading state for ONE circle. Opening a circle card is an App Router navigation, and
@@ -19,43 +17,5 @@ import { FqCircleLoading } from '@/components/frequency/members/community-states
 // badge row, then the tab strip and a body. Skeletons are dimension-matched so nothing jumps when
 // the real header swaps in (PAGE-FRAMEWORK §5.4).
 export default function CircleDetailLoading() {
-  // Under Frequency (build-time) the wait is the kit's Circle: the cover, the meetup, the side panels.
-  if (SITE_DESIGN === 'frequency') return <FqCircleLoading />
-  return (
-    <div>
-      {/* The standard Detail cover (16:6). */}
-      <div className="mb-4 aspect-[16/6] w-full overflow-hidden rounded-card bg-surface-elevated" />
-
-      {/* The identity lockup: title + badges + the quiet fact lines on the left, the one primary
-          action on the right from sm up. */}
-      <header className="pb-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Skeleton className="h-7 w-56" />
-              <Skeleton className="h-5 w-20 rounded-pill" />
-              <Skeleton className="h-5 w-24 rounded-pill" />
-            </div>
-            <Skeleton className="h-4 w-72" />
-            <Skeleton className="h-4 w-40" />
-          </div>
-          <Skeleton className="h-10 w-28 shrink-0 rounded-control" />
-        </div>
-
-        {/* The tab strip. */}
-        <div className="mt-4 flex gap-1 border-b border-border pb-2">
-          <Skeleton className="h-6 w-14" />
-          <Skeleton className="h-6 w-16" />
-          <Skeleton className="h-6 w-18" />
-          <Skeleton className="h-6 w-20" />
-        </div>
-      </header>
-
-      {/* The body. */}
-      <div className="space-y-3 pt-4">
-        <Skeleton className="h-24 w-full rounded-card" />
-        <Skeleton className="h-32 w-full rounded-card" />
-      </div>
-    </div>
-  )
+  return <FqCircleLoading />
 }

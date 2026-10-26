@@ -1,12 +1,5 @@
-import Link from 'next/link'
-import { FolderOpen } from 'lucide-react'
-import { IndexTemplate } from '@/components/templates/index-template'
-import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
 import { canCreate } from '@/lib/core/load-capabilities'
-import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { resolveIndexHero } from '@/lib/layout/index-hero'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { getMyProfileId } from '@/lib/auth'
 import { getMyPlans, listPublicPlans } from '@/lib/journey-plans'
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
@@ -42,86 +35,29 @@ export default async function JourneysPage({ searchParams }: { searchParams: Pro
   const { q } = await searchParams
   const query = (Array.isArray(q) ? q[0] : q)?.trim().slice(0, 80) ?? ''
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, body, heroImage, ctaLabel, ctaHref } =
+  const { title, description, body, ctaLabel, ctaHref } =
     await resolvePageContent('/journeys', CONTENT_FALLBACK)
-  // The uniform overlay Hero Header, resolved by the ONE browse-hero ladder (lib/layout/index-hero,
-  // PROG-P4): operator Settings image, then the page-content hero, then the '/journeys' row of
-  // INDEX_HERO_DEFAULTS ('/images/site/nature-viewing-sunset.jpg'), then the gradient band. The
-  // focal point rides the operator's own upload only. The page-content hero is passed explicitly
-  // because this page has already resolved it for its title and description.
-  const hero = await resolveIndexHero('/journeys', { contentImage: heroImage })
   // Any signed-in member may build (FIRST ONE FREE, ADR-920); signed-out gets a sign-in door.
   const canBuildJourney = await canCreate('journey.create')
-
-  // FREQUENCY (ADR-1737): the same header content, the same three layout modules in the operator's
-  // order, and the member's own progress, in the members kit. DAWN keeps the IndexTemplate below.
-  if (SITE_DESIGN === 'frequency') {
-    const profileId = await getMyProfileId()
-    const [order, progress, mine, library] = await Promise.all([
-      visibleModuleOrder('/journeys'),
-      profileId ? getMemberJourneyProgress(profileId, { activeOnly: false }) : Promise.resolve([]),
-      profileId ? getMyPlans(profileId) : Promise.resolve(null),
-      listPublicPlans(),
-    ])
-    return (
-      <JourneysIndexBody
-        title={title}
-        description={description}
-        intro={body}
-        cta={ctaLabel && ctaHref ? { label: ctaLabel, href: ctaHref } : null}
-        canBuild={canBuildJourney}
-        order={order}
-        progress={progress}
-        mine={mine}
-        library={library.filter((p) => p.author_id !== profileId)}
-        query={query}
-      />
-    )
-  }
-
+  const profileId = await getMyProfileId()
+  const [order, progress, mine, library] = await Promise.all([
+    visibleModuleOrder('/journeys'),
+    profileId ? getMemberJourneyProgress(profileId, { activeOnly: false }) : Promise.resolve([]),
+    profileId ? getMyPlans(profileId) : Promise.resolve(null),
+    listPublicPlans(),
+  ])
   return (
-    <IndexTemplate
-      // Standardized header (PAGE-FRAMEWORK): breadcrumb -> hero band -> title, all from the
-      // template's first-class props, with the band's whole prop bag spread from the resolver.
-      trail={[
-        { href: '/network', label: 'Community' },
-        { href: '/journeys', label: 'Journeys' },
-      ]}
-      {...hero}
+    <JourneysIndexBody
       title={title}
       description={description}
       intro={body}
-      action={
-        <div className="flex items-center gap-2">
-          <NewJourneyButton canCreate={canBuildJourney} />
-          {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
-          {ctaLabel && ctaHref && (
-            <a
-              href={ctaHref}
-              className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
-            >
-              {ctaLabel}
-            </a>
-          )}
-        </div>
-      }
-    >
-      {/* Two-column body: the modules keep their reading width; the page-owned right column
-          carries the member's own management space (store / edit / publish / duplicate / delete)
-          as a full-width button — moved out of the hero action cluster. */}
-      <div className="flex flex-col gap-6 lg:flex-row">
-        <div className="min-w-0 flex-1 lg:max-w-4xl">
-          <PageModules route="/journeys" />
-        </div>
-        <aside className="w-full lg:w-72 lg:shrink-0">
-          <Link
-            href="/journeys/mine"
-            className="flex w-full items-center justify-center gap-2 rounded-control bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
-          >
-            <FolderOpen className="h-4 w-4" /> Your journeys
-          </Link>
-        </aside>
-      </div>
-    </IndexTemplate>
+      cta={ctaLabel && ctaHref ? { label: ctaLabel, href: ctaHref } : null}
+      canBuild={canBuildJourney}
+      order={order}
+      progress={progress}
+      mine={mine}
+      library={library.filter((p) => p.author_id !== profileId)}
+      query={query}
+    />
   )
 }

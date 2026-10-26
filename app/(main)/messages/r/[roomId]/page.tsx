@@ -1,25 +1,13 @@
 import { notFound, redirect } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronLeft, Users, Hash, LogIn, LogOut, MessageCircle, Radio } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getInitials } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { isOnline } from '@/lib/presence'
-import { PresenceDot } from '@/components/presence/presence-dot'
-import { PageHeading } from '@/components/templates'
-import { Counter, CounterRow } from '@/components/ui/counter'
-import { GateNotice } from '@/components/ui/gate-notice'
 import { joinRoom, leaveRoom } from '../../rooms/actions'
 import { RoomThread } from '@/components/rooms/room-thread'
 import { canReadRoom, canPostToRoom, type RoomVisibility } from '@/lib/messages/room-access'
 import { RoomSearch } from '@/components/rooms/room-search'
-import { InviteToRoomButton } from '@/components/rooms/invite-to-room-button'
-import { MemberRowActions } from '@/components/rooms/member-row-actions'
 import { RoomSettings } from '@/components/rooms/room-settings'
-import { Button } from '@/components/ui/button'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqIcon } from '@/components/frequency/icon'
 import { FrequencyMessages } from '@/components/frequency/members/messages/messages-body'
 
@@ -157,11 +145,6 @@ export default async function RoomPage({
   }
   const hereNowCount = onlineIds.size
 
-  // The roster reads "who is here" first: active members lead, then everyone else in
-  // join order (the RPC's order, preserved by the stable sort).
-  const sortedMembers = [...members].sort(
-    (a, b) => (onlineIds.has(b.profile.id) ? 1 : 0) - (onlineIds.has(a.profile.id) ? 1 : 0),
-  )
 
   const weekCount = weekCountRes.count ?? 0
 
@@ -185,233 +168,53 @@ export default async function RoomPage({
 
     messages = rawMsgs.map(m => ({ ...m, author: memberProfileMap.get(m.author_id) ?? null }))
   }
-
-  // The room glyph leads the compact takeover bar beside the shared PageHeading title.
-  // Always the hash — a room never wears a padlock (GateNotice canon); the visibility
-  // badge beside the title already says "private" in words.
-  // THE DESIGN SWITCH (ADR-1737): fixed at build time; a DAWN deploy renders the takeover below.
-  // The room keeps its own live thread (RoomThread: replies, reactions, search); the Frequency body
-  // frames it in the design's two-pane layout.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <FrequencyMessages
-        supabase={supabase}
-        myProfileId={myProfileId}
-        activeKey={`room:${roomId}`}
-        pane={
-          <section className="panel fa-pane" aria-label={r.name}>
-            <div className="row fa-pane-h">
-              <Link href="/messages" className="btn txt sm fqm-msg-back" aria-label="All messages">←</Link>
-              <span className="ic" aria-hidden><FqIcon name="circle" /></span>
-              <span className="grow">
-                <span className="t1" style={{ display: 'block' }}>{r.name}</span>
-                <span className="t2">
-                  {[
-                    `${r.member_count} ${r.member_count === 1 ? 'member' : 'members'}`,
-                    canRead ? `${weekCount} this week` : null,
-                    hereNowCount > 0 ? `${hereNowCount} active now` : null,
-                  ].filter(Boolean).join(' · ')}
-                </span>
-              </span>
-              {canRead && <RoomSearch roomId={roomId} />}
-              {isAdmin && <RoomSettings roomId={roomId} name={r.name} description={r.description} visibility={r.visibility} />}
-              {!isChannel && (isMember ? (
-                <form action={leaveRoom.bind(null, roomId)}>
-                  <button type="submit" className="btn sm">Leave</button>
-                </form>
-              ) : (
-                <form action={joinRoom.bind(null, roomId)}>
-                  <button type="submit" className="btn sm pa">Join</button>
-                </form>
-              ))}
-            </div>
-            {canRead ? (
-              <div className="fa-room">
-                <RoomThread roomId={roomId} initialMessages={messages} myProfileId={myProfileId} canPost={canPost} visibility={r.visibility} />
-              </div>
-            ) : (
-              <div className="fa-pane-empty">
-                <span className="h3">Join to read the room</span>
-                <span className="t2">What gets said in {r.name} stays between its members. Join and the whole conversation opens.</span>
-                <form action={joinRoom.bind(null, roomId)}>
-                  <button type="submit" className="btn pa">Join room</button>
-                </form>
-              </div>
-            )}
-          </section>
-        }
-      />
-    )
-  }
-
-  const roomGlyph = (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-primary-bg">
-      <Hash className="h-4 w-4 text-primary-strong" />
-    </span>
-  )
-
-  const titleNode = (
-    <span className="inline-flex items-center gap-2">
-      {r.name}
-      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs capitalize text-muted">
-        {r.visibility}
-      </span>
-    </span>
-  )
-
-  const subtitle = (
-    <span className="inline-flex items-center">
-      <Users className="mr-1 -mt-px inline h-3 w-3" />
-      {r.member_count} {r.member_count === 1 ? 'member' : 'members'}
-      {r.description && <> &middot; {r.description}</>}
-    </span>
-  )
-
-  // Bleed the chat surface to the shell's edges. The negative margin must MIRROR the shell's
-  // responsive padding (px-4 sm:px-6 lg:px-8); a flat -mx-6 over-pulled on mobile (bleeding 8px
-  // past the viewport and causing a horizontal scroll) and under-pulled at lg. dvh, not vh, so
-  // the iOS dynamic toolbar does not push the composer off-screen.
   return (
-    <div className="-mx-4 -my-6 sm:-mx-6 lg:-mx-8 flex flex-col h-[calc(100dvh-var(--app-header-h)-var(--tab-bar-h))] md:h-[calc(100dvh-var(--app-header-h))]">
-      {/* Takeover chat bar — bespoke, full-bleed chrome (the documented exception,
-          MEMBER-DESIGN-SYSTEM §207), with the room identity title routed through the
-          shared PageHeading grammar instead of a hand-rolled <h1>. */}
-      {/* header-ok: conversation pane, not a page header — bespoke takeover chrome (§207); the title routes through PageHeading */}
-      <header className="flex shrink-0 items-center gap-3 bg-surface px-5 py-3">
-        <Link
-          href="/messages"
-          className="md:hidden -ml-1 rounded-control p-1.5 text-subtle hover:bg-surface-elevated hover:text-muted"
-          aria-label="Back"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
-        {roomGlyph}
-        {/* Compact takeover register: PageHeading carries the title/meta semantics, but
-            the bar tones its page-band scale down (no bottom margin, base title, xs meta). */}
-        <div className="min-w-0 flex-1 [&>div]:mb-0 [&_h1]:mb-0 [&_h1]:truncate [&_h1]:text-body [&_h1]:sm:text-body [&_p]:text-meta">
-          <PageHeading
-            title={titleNode}
-            description={subtitle}
-            divider={false}
-            adminBar={false}
-            inlineActions
-            actions={
-              <div className="flex shrink-0 items-center gap-2">
-                {canRead && <RoomSearch roomId={roomId} />}
-                {isAdmin && (
-                  <RoomSettings roomId={roomId} name={r.name} description={r.description} visibility={r.visibility} />
-                )}
-                {/* Channel rooms aren't "joined" — you tune into the Channel. */}
-                {!isChannel && (isMember ? (
-                  <form action={leaveRoom.bind(null, roomId)}>
-                    <button
-                      type="submit"
-                      className="flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated"
-                    >
-                      <LogOut className="h-3 w-3" /> Leave
-                    </button>
-                  </form>
-                ) : (
-                  <form action={joinRoom.bind(null, roomId)}>
-                    <Button
-                      size="sm"
-                      type="submit"
-                    >
-                      <LogIn className="h-3 w-3" /> Join
-                    </Button>
-                  </form>
-                ))}
-              </div>
-            }
-          />
-        </div>
-      </header>
-
-      {/* The room strip (DAWN room law): three counts so a live room reads differently
-          from a dead one before a single message is read. Every number is a thing that
-          happened — members joined, messages sent, people active now — never a
-          time-on-page. Closed below by the rule-amber chrome band, where the reference
-          separates the room's identity from its conversation. */}
-      <div className="shrink-0 bg-surface px-5 pb-2.5">
-        <CounterRow>
-          <Counter value={r.member_count} label="in the room" glyph={Users} />
-          {canRead && <Counter value={weekCount} label="messages this week" glyph={MessageCircle} />}
-          {hereNowCount > 0 && <Counter value={hereNowCount} label="active now" glyph={Radio} />}
-        </CounterRow>
-      </div>
-      <hr className="rule-amber shrink-0" />
-
-      {/* Body. Three pane (messages + members on the right) */}
-      <div className="flex-1 min-h-0 flex">
-        {canRead ? (
-          <RoomThread
-            roomId={roomId}
-            initialMessages={messages}
-            myProfileId={myProfileId}
-            canPost={canPost}
-            visibility={r.visibility}
-          />
-        ) : (
-          // Non-member previewing a public room: messages are members-only. The gate is
-          // a GateNotice, never a padlock panel (DAWN room law) — say why the room is
-          // closed and what opens it, then offer the door.
-          <div className="flex-1 min-w-0 flex items-center justify-center p-8">
-            <div className="w-full max-w-sm">
-              <GateNotice kind="gated" title="Join to read the room">
-                What gets said in {r.name} stays between its members. Join and the whole
-                conversation opens, along with the composer.
-              </GateNotice>
-              <form action={joinRoom.bind(null, roomId)} className="mt-4 flex justify-center">
-                <Button type="submit" size="sm">
-                  <LogIn className="w-3.5 h-3.5" /> Join room
-                </Button>
+    <FrequencyMessages
+      supabase={supabase}
+      myProfileId={myProfileId}
+      activeKey={`room:${roomId}`}
+      pane={
+        <section className="panel fa-pane" aria-label={r.name}>
+          <div className="row fa-pane-h">
+            <Link href="/messages" className="btn txt sm fqm-msg-back" aria-label="All messages">←</Link>
+            <span className="ic" aria-hidden><FqIcon name="circle" /></span>
+            <span className="grow">
+              <span className="t1" style={{ display: 'block' }}>{r.name}</span>
+              <span className="t2">
+                {[
+                  `${r.member_count} ${r.member_count === 1 ? 'member' : 'members'}`,
+                  canRead ? `${weekCount} this week` : null,
+                  hereNowCount > 0 ? `${hereNowCount} active now` : null,
+                ].filter(Boolean).join(' · ')}
+              </span>
+            </span>
+            {canRead && <RoomSearch roomId={roomId} />}
+            {isAdmin && <RoomSettings roomId={roomId} name={r.name} description={r.description} visibility={r.visibility} />}
+            {!isChannel && (isMember ? (
+              <form action={leaveRoom.bind(null, roomId)}>
+                <button type="submit" className="btn sm">Leave</button>
+              </form>
+            ) : (
+              <form action={joinRoom.bind(null, roomId)}>
+                <button type="submit" className="btn sm pa">Join</button>
+              </form>
+            ))}
+          </div>
+          {canRead ? (
+            <div className="fa-room">
+              <RoomThread roomId={roomId} initialMessages={messages} myProfileId={myProfileId} canPost={canPost} visibility={r.visibility} />
+            </div>
+          ) : (
+            <div className="fa-pane-empty">
+              <span className="h3">Join to read the room</span>
+              <span className="t2">What gets said in {r.name} stays between its members. Join and the whole conversation opens.</span>
+              <form action={joinRoom.bind(null, roomId)}>
+                <button type="submit" className="btn pa">Join room</button>
               </form>
             </div>
-          </div>
-        )}
-
-        {/* Members sidebar (desktop) — "who is here" comes first: active members lead
-            the roster, each wearing the shared PresenceDot. */}
-        <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-border bg-surface/30 dark:bg-canvas/30">
-          <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-2xs font-semibold uppercase tracking-wider text-muted mb-2">
-              In the room ({r.member_count})
-            </h3>
-            {isMember && <InviteToRoomButton roomId={roomId} />}
-          </div>
-          <ul className="flex-1 overflow-y-auto divide-y divide-border/50">
-            {sortedMembers.map(m => {
-              const p = m.profile!
-              const isSelf = p.id === myProfileId
-              return (
-                <li key={p.id}>
-                  <div className="group flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated/50 transition-colors">
-                    <Link href={`/people/${p.handle}`} className="flex items-center gap-2.5 flex-1 min-w-0">
-                      <span className="relative shrink-0">
-                        {p.avatar_url ? (
-                          <Image src={avatarSrc(p.avatar_url)} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-pill object-cover" style={avatarFocusStyle(p.avatar_url)} />
-                        ) : (
-                          <span className="w-7 h-7 rounded-pill bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center select-none">
-                            {getInitials(p.display_name)}
-                          </span>
-                        )}
-                        <PresenceDot online={onlineIds.has(p.id)} />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-meta font-medium text-text truncate">{p.display_name}</p>
-                        {m.is_admin && <p className="text-3xs text-primary-strong">Admin</p>}
-                      </div>
-                    </Link>
-                    {isAdmin && !isSelf && (
-                      <MemberRowActions roomId={roomId} memberId={p.id} isAdmin={m.is_admin} />
-                    )}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        </aside>
-      </div>
-    </div>
+          )}
+        </section>
+      }
+    />
   )
 }

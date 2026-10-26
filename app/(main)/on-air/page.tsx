@@ -4,13 +4,9 @@
 // member's adopted practices + remembered setup; everything live is client.
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { loadOnAirSessionData } from '@/lib/on-air/session-data'
-import { FocusTemplate } from '@/components/templates'
-import { OnAirSession } from '@/components/on-air/session'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { MindlessEmpty } from '@/components/frequency/members/mindless/mindless-empty'
 import { MindlessDoor } from '@/components/frequency/members/mindless/mindless-door'
 
@@ -39,52 +35,15 @@ export default async function OnAirPage({
   // entering Mindless means no app chrome at all. The Focus shell only hosts
   // the empty "adopt a practice first" state.
   if (practices.length === 0) {
-    // FREQUENCY (ADR-1737): the same empty state, in the members kit.
-    if (SITE_DESIGN === 'frequency') return <MindlessEmpty />
-    return (
-      <FocusTemplate
-        eyebrow="Mindless"
-        title="Mindless"
-        description="The world can wait a few minutes. Breathe, log, collect the day."
-        width="narrow"
-        divider={false}
-      >
-        <div className="rounded-card border border-border bg-surface p-6 text-center">
-          <p className="text-body-sm font-medium text-text">Nothing on your list yet.</p>
-          <p className="mt-1 text-body-sm text-muted">
-            Adopt a practice first; then this is where you do it.
-          </p>
-          <Link
-            href="/practices"
-            className="mt-4 inline-block rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
-          >
-            Browse practices
-          </Link>
-        </div>
-      </FocusTemplate>
-    )
+  return <MindlessEmpty />
   }
-
-  // FREQUENCY (ADR-1737): the reference's door (Tune out, a length, Start) in front of the same engine.
-  if (SITE_DESIGN === 'frequency') {
-    const initialId =
-      defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
-    return (
-      <MindlessDoor
-        session={{ practices, defaultPracticeId, prefs, practicedToday, journeyLegs }}
-        initialPracticeId={initialId}
-        rememberedMinutes={prefs.minutes}
-      />
-    )
-  }
-
+  const initialId =
+    defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
   return (
-    <OnAirSession
-      practices={practices}
-      defaultPracticeId={defaultPracticeId}
-      prefs={prefs}
-      practicedToday={practicedToday}
-      journeyLegs={journeyLegs}
+    <MindlessDoor
+      session={{ practices, defaultPracticeId, prefs, practicedToday, journeyLegs }}
+      initialPracticeId={initialId}
+      rememberedMinutes={prefs.minutes}
     />
   )
 }
