@@ -39,24 +39,13 @@ export function CircleLocationSearch({
       if (term.length < 2) {
         setResults([])
         setOpen(false)
-        setLoading(false)
         return
       }
       setLoading(true)
-      try {
-        const r = await searchPlaces(term, ctrl.signal)
-        // An aborted request may still finish parsing or a provider may ignore
-        // cancellation. Only the current effect may publish its answer.
-        if (ctrl.signal.aborted) return
-        setResults(r)
-        setOpen(true)
-      } catch {
-        if (ctrl.signal.aborted) return
-        setResults([])
-        setOpen(false)
-      } finally {
-        if (!ctrl.signal.aborted) setLoading(false)
-      }
+      const r = await searchPlaces(term, ctrl.signal)
+      setResults(r)
+      setLoading(false)
+      setOpen(true)
     }, 280)
     return () => {
       clearTimeout(t)

@@ -10,7 +10,6 @@ import type { PreferenceSubject } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
 import { atLeastRole } from '@/lib/core/roles'
 import { resolvePlaceTreeProfileIds, type PlaceType } from '@/lib/messaging/place-tree'
-import { readAudiencePages, AUDIENCE_PAGE_SIZE, AUDIENCE_ID_BATCH } from '@/lib/messaging/audience-pages'
 import { logDispatchRecipients, type DispatchRecipientRow } from '@/lib/messaging/dispatch-log'
 import { assertCanBroadcastTo } from '@/lib/messaging/broadcast-scope'
 
@@ -93,25 +92,15 @@ export async function createAndPublishDispatch(fd: FormData) {
       // Dispatch and a campaign to the same scope agree on the recipient set.
       let profileIds: string[] = []
       if (isGlobal) {
-        const profiles = await readAudiencePages((after) => {
-          const q = admin.from('profiles').select('id').eq('is_active', true).eq('is_demo', false)
-            .order('id').limit(AUDIENCE_PAGE_SIZE)
-          return after ? q.gt('id', after) : q
-        })
-        profileIds = profiles.map((p) => p.id)
+        const { data } = await admin.from('profiles').select('id').eq('is_active', true).eq('is_demo', false)
+        profileIds = (data ?? []).map((p) => p.id)
       } else if (audience_scope === 'circle' || audience_scope === 'hub' || audience_scope === 'nexus') {
         profileIds = await resolvePlaceTreeProfileIds({ type: audience_scope as PlaceType, id: audience_id })
       }
       profileIds = [...new Set(profileIds)]
       if (!profileIds.length) return
-      const profiles: { id: string; display_name: string | null; auth_user_id: string | null }[] = []
-      for (let offset = 0; offset < profileIds.length; offset += AUDIENCE_ID_BATCH) {
-        const { data, error } = await admin.from('profiles').select('id, display_name, auth_user_id')
-          .in('id', profileIds.slice(offset, offset + AUDIENCE_ID_BATCH))
-        if (error || !data) throw new Error('Could not read the complete dispatch audience')
-        profiles.push(...data)
-      }
-      if (!profiles.length) return
+      const { data: profiles } = await admin.from('profiles').select('id, display_name, auth_user_id').in('id', profileIds)
+      if (!profiles?.length) return
 
       // The Circle this Dispatch is from, so a member who muted it in /settings is skipped on both
       // channels. The gate only consults the per-subject mute when the send names its subject
@@ -135,7 +124,7 @@ export async function createAndPublishDispatch(fd: FormData) {
         const gate = await resolveSendGate(profile.id, 'email', 'dispatches', { email, subject })
         if (gate.allowed && email) {
           try {
-            await sendDispatchNotificationEmail({ to: email, recipientName: profile.display_name ?? 'there', recipientProfileId: profile.id, authorName, dispatchTitle: title, excerpt, dispatchUrl })
+            await sendDispatchNotificationEmail({ to: email, recipientName: profile.display_name, recipientProfileId: profile.id, authorName, dispatchTitle: title, excerpt, dispatchUrl })
             recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'email', status: 'sent', reason: null, email })
           } catch (sendErr) {
             recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'email', status: 'failed', reason: sendErr instanceof Error ? sendErr.message.slice(0, 200) : 'send failed', email })

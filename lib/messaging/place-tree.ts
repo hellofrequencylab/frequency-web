@@ -16,7 +16,6 @@
 // scopes (a circle resolves only its own memberships). Service-role; the CALLER gates authorization.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { readAudiencePages, AUDIENCE_PAGE_SIZE, AUDIENCE_ROW_LIMIT, AUDIENCE_ID_BATCH } from './audience-pages'
 
 // ── Types + pure parsing (no IO, testable) ────────────────────────────────────────────────────
 
@@ -55,6 +54,8 @@ export function isPlaceSelector(raw: unknown): boolean {
   return parsePlaceSelector(raw) !== null
 }
 
+// Hard cap so a malformed / hostile selector can never resolve an unbounded profile list in one pass.
+const MAX_PROFILE_IDS = 20_000
 
 // ── IO: resolve a place selector down to the active-member profile ids ──────────────────────────
 
@@ -76,41 +77,28 @@ export async function resolvePlaceTreeProfileIds(selector: PlaceSelector): Promi
     if (type === 'circle') {
       circleIds = [id]
     } else if (type === 'hub') {
-      const circles = await readAudiencePages((after) => {
-        const q = admin.from('circles').select('id').eq('hub_id', id).order('id').limit(AUDIENCE_PAGE_SIZE)
-        return after ? q.gt('id', after) : q
-      })
-      circleIds = circles.map((circle) => circle.id)
+      const { data } = await admin.from('circles').select('id').eq('hub_id', id)
+      circleIds = (data ?? []).map((c) => c.id as string)
     } else {
-      const hubs = await readAudiencePages((after) => {
-        const q = admin.from('hubs').select('id').eq('nexus_id', id).order('id').limit(AUDIENCE_PAGE_SIZE)
-        return after ? q.gt('id', after) : q
-      })
-      for (let offset = 0; offset < hubs.length; offset += AUDIENCE_ID_BATCH) {
-        const hubIds = hubs.slice(offset, offset + AUDIENCE_ID_BATCH).map((hub) => hub.id)
-        const circles = await readAudiencePages((after) => {
-          const q = admin.from('circles').select('id').in('hub_id', hubIds).order('id').limit(AUDIENCE_PAGE_SIZE)
-          return after ? q.gt('id', after) : q
-        })
-        circleIds.push(...circles.map((circle) => circle.id))
-        if (circleIds.length > AUDIENCE_ROW_LIMIT) throw new Error('Audience scope exceeds the bounded read limit')
-      }
+      // nexus -> hubs -> circles
+      const { data: hubs } = await admin.from('hubs').select('id').eq('nexus_id', id)
+      const hubIds = (hubs ?? []).map((h) => h.id as string)
+      if (hubIds.length === 0) return []
+      const { data } = await admin.from('circles').select('id').in('hub_id', hubIds)
+      circleIds = (data ?? []).map((c) => c.id as string)
     }
     if (circleIds.length === 0) return []
 
-    const ids = new Set<string>()
-    for (let offset = 0; offset < circleIds.length; offset += AUDIENCE_ID_BATCH) {
-      const batch = circleIds.slice(offset, offset + AUDIENCE_ID_BATCH)
-      const memberships = await readAudiencePages((after) => {
-        const q = admin.from('memberships').select('id, profile_id').in('circle_id', batch)
-          .eq('status', 'active').order('id').limit(AUDIENCE_PAGE_SIZE)
-        return after ? q.gt('id', after) : q
-      })
-      for (const membership of memberships) if (membership.profile_id) ids.add(membership.profile_id)
-      if (ids.size > AUDIENCE_ROW_LIMIT) throw new Error('Audience exceeds the bounded read limit')
-    }
-    return [...ids]
+    const { data: mems } = await admin
+      .from('memberships')
+      .select('profile_id')
+      .in('circle_id', circleIds)
+      .eq('status', 'active')
 
+    const ids = [
+      ...new Set((mems ?? []).map((m) => m.profile_id as string).filter((p): p is string => Boolean(p))),
+    ]
+    return ids.slice(0, MAX_PROFILE_IDS)
   } catch {
     return []
   }

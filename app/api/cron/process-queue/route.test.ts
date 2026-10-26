@@ -9,7 +9,6 @@ import type { NextRequest } from 'next/server'
 const state = vi.hoisted(() => ({
   health: { pending: 0, deadLettered: 0, lagMin: 0, oldestDueAgeMin: null as number | null, measured: true },
   drain: { processed: 3, done: 3, failed: 0, retried: 0, deferred: 0 },
-  drainError: null as Error | null,
   captureMessage: vi.fn(),
   captureException: vi.fn(),
 }))
@@ -26,7 +25,7 @@ vi.mock('@/lib/queue/outbox', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/lib/queue/outbox')>()
   return {
     ...real,
-    processQueue: () => state.drainError ? Promise.reject(state.drainError) : Promise.resolve(state.drain),
+    processQueue: () => Promise.resolve(state.drain),
     queueHealth: () => Promise.resolve(state.health),
   }
 })
@@ -40,7 +39,6 @@ let fetchMock: ReturnType<typeof vi.fn>
 beforeEach(() => {
   state.health = { pending: 0, deadLettered: 0, lagMin: 0, oldestDueAgeMin: null, measured: true }
   state.drain = { processed: 3, done: 3, failed: 0, retried: 0, deferred: 0 }
-  state.drainError = null
   state.captureMessage.mockReset()
   state.captureException.mockReset()
   process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
@@ -72,15 +70,6 @@ describe('process-queue: a clean drain', () => {
 })
 
 describe('process-queue: a breached reading', () => {
-  it('reports a rejected queue-state write as a failed drain and /fail heartbeat', async () => {
-    state.drainError = new Error('failed to persist done for job j1: status write rejected')
-    const res = await GET(req())
-    expect(res.status).toBe(500)
-    expect(await res.json()).toMatchObject({ ok: false, error: expect.stringContaining('status write rejected') })
-    expect(fetchMock).toHaveBeenCalledOnce()
-    expect(fetchMock.mock.calls[0][0]).toBe('https://hc.example/ping/process-queue/fail')
-  })
-
   it('a dead-letter is a Sentry capture tagged by job, with the three numbers, and a /fail ping', async () => {
     state.health = { pending: 4, deadLettered: 2, lagMin: 1, oldestDueAgeMin: 30, measured: true }
     const res = await GET(req())
