@@ -1,15 +1,15 @@
 {
   "id": "SEC-007",
   "patch": {
-    "status": "parked",
-    "priority": "P3",
+    "status": "done",
+    "closed": "2026-10-26",
     "verify": {
       "kind": "manual",
       "checked": "2026-10-26",
-      "evidence": "PARKED: production now blocks browser writes to public.spatial_ref_sys (OID 19953) with the enabled triggers sec007_rows and sec007_truncate, so the revoke SQL in scripts/ops/secure-postgis-reference-table.sql is no longer needed. The grants themselves cannot be revoked from the postgres role because supabase_admin issued them. Reopen if either trigger is dropped or Supabase support removes the grants."
+      "evidence": "PASS/production-catalog: public.spatial_ref_sys carries the enabled triggers sec007_rows (BEFORE INSERT/UPDATE/DELETE, per row) and sec007_truncate (BEFORE TRUNCATE) running sec007_block_browser_writes(), so browser writes are blocked while SELECT and extension ownership are unchanged. The table grants themselves stay because supabase_admin issued them and postgres cannot revoke them. Reopen if either trigger is dropped or disabled."
     }
   },
   "append": {
-    "detail": "2026-10-26: addressed in production by the triggers sec007_rows and sec007_truncate on public.spatial_ref_sys, both verified enabled. The browser grants remain (issued by supabase_admin, not revocable from postgres), so effective INSERT/UPDATE/DELETE/TRUNCATE privileges still show in the catalog but are blocked at the trigger. PR #3918 was closed unmerged. The SQL and a Supabase support request draft are in /mnt/project-files/security/sec-007-postgis-sql-and-steps.md."
+    "detail": "2026-10-26: closed by production triggers sec007_rows and sec007_truncate (verified enabled). The revoke SQL in scripts/ops/secure-postgis-reference-table.sql was never applied; PR #3918 was closed unmerged. Effective INSERT/UPDATE/DELETE/TRUNCATE privileges still show in the catalog but are blocked at the trigger. SQL and a Supabase support request draft: /mnt/project-files/security/sec-007-postgis-sql-and-steps.md."
   }
 }
