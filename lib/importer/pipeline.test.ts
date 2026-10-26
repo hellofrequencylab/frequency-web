@@ -206,76 +206,29 @@ describe('runResearch — orchestration', () => {
   })
 })
 
-describe('runResearch — reframe stage (P2)', () => {
-  it('folds reframed copy into the draft and tags it kind:generated', async () => {
-    const out = await runResearch('intake-1', { deps: happyDeps() })
-    expect(out.status).toBe('review')
-    expect(out.reframe).toEqual({ ran: true, voiceOk: true })
-    const draft = state.row?.draft as unknown as BusinessProfile
-    expect(draft.tagline).toBe('A calm place to begin.')
-    expect(draft.about).toBe('A neighborhood studio.')
-    // Every reframed string is tagged generated in the ledger (prose gate still governs it).
-    const ledger = state.row?.ledger as unknown as ProvenanceLedger
-    expect(ledger.tagline[0].kind).toBe('generated')
-    expect(ledger.tagline[0].verifiedBy).toBeUndefined()
-    expect(ledger.about[0].kind).toBe('generated')
-  })
-
-  it('reframe grounds on the VERIFIED draft, never the raw extract', async () => {
-    // The verifier hands reframe a draft with the address STRIPPED (unverified). Assert reframe was
-    // called with that verified subset, not the raw extract that still carried the address.
-    const reframeSpy = vi.fn(async (_input: { verified: BusinessProfile; profileId?: string | null }) =>
-      reframeResult(),
-    )
-    await runResearch('intake-1', {
-      deps: {
-        harvest: async () => harvestResult,
-        extractProfile: async () => extractResult(), // raw extract HAS contact.address
-        // verify STRIPS the address (it did not clear) from the verified draft:
-        verify: async () =>
-          verifyResult({ verifiedDraft: { name: 'Acme', type: 'business' } as BusinessProfile }),
-        reframe: reframeSpy,
-      },
-    })
-    expect(reframeSpy).toHaveBeenCalledOnce()
-    const passed = reframeSpy.mock.calls[0][0]
-    expect(passed.verified.contact).toBeUndefined() // reframe never saw the unverified address
-  })
-
-  it('is fail-safe: a null reframe leaves the verified draft unchanged', async () => {
-    const out = await runResearch('intake-1', {
-      deps: { ...happyDeps(), reframe: async () => null },
-    })
-    expect(out.status).toBe('review')
+describe('runResearch — human authorship', () => {
+  it('never runs an injected prose generator or creates generated ledger entries', async () => {
+    const generate = vi.fn(async () => reframeResult())
+    const out = await runResearch('intake-1', { deps: { ...happyDeps(), reframe: generate } })
+    expect(generate).not.toHaveBeenCalled()
     expect(out.reframe).toBeUndefined()
+    expect(out.budgetSpent).toBeCloseTo(0.5)
+    expect((state.row?.draft as unknown as BusinessProfile).tagline).toBeUndefined()
+    expect((state.row?.ledger as unknown as ProvenanceLedger).tagline).toBeUndefined()
+  })
+  it('preserves verified owner source verbatim and keeps withheld facts out', async () => {
+    const source = { name: 'Acme', type: 'business', about: 'These are our own words.  Keep them.' } as BusinessProfile
+    await runResearch('intake-1', { deps: { ...happyDeps(), verify: async () => verifyResult({ verifiedDraft: source }) } })
     const draft = state.row?.draft as unknown as BusinessProfile
-    expect(draft.tagline).toBeUndefined() // nothing fabricated
+    expect(draft.about).toBe(source.about)
+    expect(draft.contact).toBeUndefined()
   })
-
-  it('flags amber (voiceOk false) when the copy fails the voice check', async () => {
-    const out = await runResearch('intake-1', {
-      deps: { ...happyDeps(), reframe: async () => reframeResult({ voice: { ok: false, issues: [{ kind: 'hype', match: 'unlock' }] } }) },
-    })
-    expect(out.reframe).toEqual({ ran: true, voiceOk: false })
-    expect(out.note).toContain('flagged for a voice edit')
-  })
-
-  it('does not reframe when extract was unavailable (nothing verified to voice)', async () => {
-    const reframeSpy = vi.fn()
-    await runResearch('intake-1', {
-      deps: { ...happyDeps(), extractProfile: async () => null, reframe: reframeSpy as never },
-    })
-    expect(reframeSpy).not.toHaveBeenCalled()
-  })
-
-  it('edit-wins: a prose field the operator edited is not clobbered by reframe', async () => {
-    // A prior review edited `about` and marked it in the draft's _editedProse marker.
+  it('carries operator edits through renewed research without requiring a generator', async () => {
     state.row = baseRow({ draft: { about: 'Operator edited about.', _editedProse: ['about'] } })
     await runResearch('intake-1', { deps: happyDeps() })
-    const draft = state.row?.draft as unknown as BusinessProfile & { _editedProse?: string[] }
-    // reframe wanted to write "A neighborhood studio." but the operator edit wins.
+    const draft = state.row?.draft as unknown as BusinessProfile
     expect(draft.about).toBe('Operator edited about.')
-    expect(draft.tagline).toBe('A calm place to begin.') // a non-preserved field is still voiced
+    expect(draft.tagline).toBeUndefined()
   })
 })
 
@@ -311,70 +264,20 @@ describe('nextEditedProse — the edit-wins marker writer (review board)', () =>
   })
 })
 
-// ── The prose safety scan (ADR-1037) ─────────────────────────────────────────────────────
-// After reframe folds its copy in, the pipeline READS every prose string and stamps the verdict on
-// its ledger entry, so clean copy publishes on Apply without the operator confirming the same three
-// fields on every seed, while copy carrying a claim stays review-required exactly as before.
-describe('runResearch — prose safety scan stamps the ledger', () => {
-  const proseLedger = () => (state.row?.ledger ?? {}) as ProvenanceLedger
-
-  it('marks claim-free reframe copy clean, so it publishes without a human confirm', async () => {
-    const out = await runResearch('intake-1', { deps: happyDeps() })
-    expect(out.ok).toBe(true)
-    expect(proseLedger().tagline?.[0]?.proseScan).toBe('clean')
-    expect(proseLedger().about?.[0]?.proseScan).toBe('clean')
-    expect(out.prose).toEqual({ clean: 2, flagged: 0 })
-  })
-
-  it('flags copy that hides a commercial claim, leaving it review-required', async () => {
-    const out = await runResearch('intake-1', {
-      deps: {
-        ...happyDeps(),
-        reframe: async () =>
-          reframeResult({
-            copy: { tagline: 'A calm place to begin.', about: 'Massages from $95. Call (555) 123-4567.' },
-          }),
-      },
-    })
-    expect(proseLedger().tagline?.[0]?.proseScan).toBe('clean')
-    expect(proseLedger().about?.[0]?.proseScan).toBe('flagged')
-    expect(out.prose).toEqual({ clean: 1, flagged: 1 })
-    expect(out.note).toContain('1 prose field(s) held for review')
-  })
-
-  it('never touches kind or verifiedBy, so the commercial-fact gate is unchanged', async () => {
-    await runResearch('intake-1', { deps: happyDeps() })
-    // Generated prose stays honestly labelled generated.
-    expect(proseLedger().about?.[0]?.kind).toBe('generated')
-    expect(proseLedger().about?.[0]?.verifiedBy).toBeUndefined()
-    // The verified commercial fact is untouched, and carries no scan verdict (it is not prose).
-    expect(proseLedger()['contact.address']?.[0]?.verifiedBy).toBe('auto')
-    expect(proseLedger()['contact.address']?.[0]?.proseScan).toBeUndefined()
-  })
-
-  it('leaves prose with no ledger entry alone (hand-supplied copy is already trusted)', async () => {
-    const out = await runResearch('intake-1', {
-      deps: { ...happyDeps(), reframe: async () => null },
-    })
-    // Reframe did not run, so no prose path was ledgered and there is nothing to stamp.
-    expect(out.prose).toEqual({ clean: 0, flagged: 0 })
-  })
-})
-
-// ── The verbatim source excerpt (ADR-1036) ───────────────────────────────────────────────
-describe('runResearch — reframe is handed the business own words', () => {
-  it('passes a source excerpt built from the harvest cache', async () => {
-    let seen: string | undefined = 'unset'
-    await runResearch('intake-1', {
-      deps: {
-        ...happyDeps(),
-        reframe: async (input: { sourceExcerpt?: string }) => {
-          seen = input.sourceExcerpt
-          return reframeResult()
-        },
-      },
-    })
-    expect(seen).toContain('Acme at 123 Main.')
-    expect(seen).toContain('https://acme.com')
+describe('runResearch — extracted prose safety and provenance', () => {
+  it('scans extracted source without changing its words or fact provenance', async () => {
+    const ledger: ProvenanceLedger = {
+      about: [{ kind: 'fact', confidence: 0.9, sourceUrl: 'https://acme.com', snippet: 'Massages from $95.' }],
+      'contact.address': [{ kind: 'fact', confidence: 0.9, verifiedBy: 'auto', sourceUrl: 'https://acme.com' }],
+    }
+    const out = await runResearch('intake-1', { deps: { ...happyDeps(), verify: async () => verifyResult({
+      verifiedDraft: { name: 'Acme', type: 'business', about: 'Massages from $95.' } as BusinessProfile, ledger,
+    }) } })
+    expect((state.row?.draft as unknown as BusinessProfile).about).toBe('Massages from $95.')
+    const saved = state.row?.ledger as unknown as ProvenanceLedger
+    expect(saved.about[0].proseScan).toBe('flagged')
+    expect(saved.about[0].kind).toBe('fact')
+    expect(saved['contact.address'][0].verifiedBy).toBe('auto')
+    expect(out.prose).toEqual({ clean: 0, flagged: 1 })
   })
 })

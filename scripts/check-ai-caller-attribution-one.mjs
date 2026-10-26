@@ -80,12 +80,12 @@ const sources = new Map([
  ['./usage', 'export const aiAvailable=async()=>globalThis.__legacyCompletionProbe.enabled;export const featureOverBudget=async()=>globalThis.__legacyCompletionProbe.overBudget;export const recordAiUsage=async(row)=>{globalThis.__legacyCompletionProbe.ledger.push(row)}'],
  ['./rate-limit', 'export const aiRateLimited=async()=>globalThis.__legacyCompletionProbe.rateLimited'],
  ['./voice', 'export const withVoice=s=>s'],
- ['@/lib/email-studio/analytics', 'export const getCampaignMetrics=async()=>({hasSent:true,attributionMode:"tracked",delivered:10,openRate:0.4,opened:4,clickRate:0.2,clicked:2,bounceRate:0,bounced:0,unsubscribed:0,complained:0})'],
+ ['@/lib/email-studio/analytics', 'export const getCampaignMetrics=async()=>({hasSent:true,attributionMode:"exact",delivered:10,openRate:0.4,opened:4,clickRate:0.2,clicked:2,bounceRate:0,bounced:0,unsubscribed:0,complained:0})'],
 ])
 registerHooks({resolve(spec, context, next){if(sources.has(spec)&&context.parentURL?.endsWith('/lib/ai/campaign-coach.ts'))return {url:`data:text/javascript,${encodeURIComponent(sources.get(spec))}`,shortCircuit:true};return next(spec,context)}})
 const {analyzeCampaignOpenRate}=await import('../lib/ai/campaign-coach.ts')
-const reset=()=>{state.dispatches=0;state.ledger=[];state.reservations.clear();state.fail=false;state.replies=[{content:[{type:'text',text:'Synthetic coaching'}],usage:{input_tokens:10,output_tokens:2}}]}
-reset();assert.deepEqual(await analyzeCampaignOpenRate('synthetic-campaign','actor'),{ok:true,analysis:'Synthetic coaching'});assert.equal(state.dispatches,1);assert.equal(state.ledger.length,1);assert.equal(state.ledger[0].feature,'campaign-coach');assert.equal(state.ledger[0].profileId,'actor')
-for(const flag of ['enabled','overBudget','rateLimited']){reset();state[flag]=flag!=='enabled';assert.equal((await analyzeCampaignOpenRate('synthetic-campaign','actor')).ok,false);assert.equal(state.dispatches,0);assert.deepEqual(state.ledger,[]);state[flag]=flag==='enabled'}
-reset();state.fail=true;assert.equal((await analyzeCampaignOpenRate('synthetic-campaign','actor')).ok,false);assert.deepEqual(state.ledger,[])
+const reset=()=>{state.dispatches=0;state.ledger=[];state.reservations.clear();state.fail=false;state.replies=[{content:[{type:'text',text:'{"questions":["How will you measure the next gathering?"]}'}],usage:{input_tokens:10,output_tokens:2}}]}
+reset();const coached=await analyzeCampaignOpenRate('synthetic-campaign','actor');assert.equal(coached.ok,true);assert.equal(coached.source,'coach');assert.equal(coached.analysis,'How will you measure the next gathering?');assert.equal(state.dispatches,1);assert.equal(state.ledger.length,1);assert.equal(state.ledger[0].feature,'campaign-coach');assert.equal(state.ledger[0].profileId,'actor')
+for(const flag of ['enabled','overBudget','rateLimited']){reset();state[flag]=flag!=='enabled';assert.equal((await analyzeCampaignOpenRate('synthetic-campaign','actor')).source,'checklist');assert.equal(state.dispatches,0);assert.deepEqual(state.ledger,[]);state[flag]=flag==='enabled'}
+reset();state.fail=true;assert.equal((await analyzeCampaignOpenRate('synthetic-campaign','actor')).source,'checklist');assert.deepEqual(state.ledger,[])
 console.log(`ok: ${calls} migrated completion calls retain attribution without duplicate local writes; actual campaign dispatch meters once and preserves switch/budget/throttle/failure fallback`)

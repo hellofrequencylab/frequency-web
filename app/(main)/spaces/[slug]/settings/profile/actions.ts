@@ -1,5 +1,7 @@
 'use server'
 
+import { safeWritingQuestions } from '@/lib/ai/writing-questions'
+
 // SPACE PROFILE LAYOUT action (Epic 1.7, S3 block-picker editor). The one server action the profile
 // layout editor (/spaces/<slug>/settings/profile) calls to persist the operator's block-picker edits:
 // the ordered list of profile sections + which are hidden. The SERVER is the authority:
@@ -318,20 +320,12 @@ export async function setProfilePublished(
   return {}
 }
 
-/**
- * Re-seed ONE block's copy from the Space's master profile (task #17). Owner/admin/editor-gated
- * (resolveSpaceManageAccess.canManage — a staff preview cannot). Grounds a focused model call in the
- * verified BusinessProfile the Space was seeded from (getIntakeBySpaceId), rewrites only this block's text
- * fields, and RETURNS the rewritten fields — it writes NOTHING itself, so the in-rail editor merges the
- * result over the block's content through its normal debounced save (one write path, no drift). The wire
- * `current` bag is sanitized to the block's schema before it reaches the model. Fail-safe: a Space with no
- * seeded profile, AI off / over budget, or a non-text block returns a plain reason.
- */
+/** Owner/admin/editor-scoped writing questions. Returns no writable content or persistence. */
 export async function reseedSpaceBlockCopy(
   slug: string,
   blockId: string,
   current: Record<string, unknown>,
-): Promise<{ content?: Record<string, string>; error?: string }> {
+): Promise<{ questions?: string[]; error?: string }> {
   const caller = await getCallerProfile()
   const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
   if (!space) return { error: 'Space not found.' }
@@ -351,5 +345,5 @@ export async function reseedSpaceBlockCopy(
   const safeCurrent = sanitizeBlockContent(blockId, current) ?? {}
   const copy = await reseedBlockCopy(blockId, draft, safeCurrent, { profileId: caller?.id ?? null })
   if (!copy) return { error: 'Could not re-seed this block right now. Try again in a moment.' }
-  return { content: copy }
+  return { questions: safeWritingQuestions(copy) }
 }
