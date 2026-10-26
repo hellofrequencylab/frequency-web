@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1361",
+  "title": "A niche starts a Space's tools from an existing preset, and the owner can see it",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/spaces/niche-defaults.ts",
+    "ref": "Mega Theme plan, piece 5 (ADR-1882)"
+  },
+  "detail": "NICHE_DEFAULTS maps each niche to an existing capability bundle. Creation starts the tools from the niche when no explicit preset or Focus did, and Menu and features gets a Starting setup card that saves the niche and applies the preset only to a Space whose switches were never touched. No new writer, no grant.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "evidence": "Probe passes; vitest on niche-defaults, niche-start and provision-core passes.",
+    "cmd": "node scripts/probes/niche-defaults.mjs"
+  }
+}

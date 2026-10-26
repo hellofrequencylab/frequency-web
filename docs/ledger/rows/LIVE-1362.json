@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1362",
+  "title": "Route main-button coaching to the real Header button editor",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/spaces/dashboard/space-coaching-card.tsx",
+    "ref": "Authenticated owner acceptance found Mode/focus destination mismatch2026-10-26"
+  },
+  "detail": "The zero-primary-button-click coaching card used /manage/mode even though Mode/focus has no header-button controls. Canonical source trace verifies /manage?section=settings renders SpaceManageBoard settings -> SpaceIdentityEditor -> SpaceBrandingForm Header button choices. The coaching ranker now names an explicit header destination and the actual card links to that route with existing #branding-cta-label anchor; slug encoding preserved. Corrects the Mode card description so it no longer promises primary-button editing. The form reveals its enclosing Header style details on initial deep-linked mount and native hash change, focuses/scrolls the Header button heading, leaves other folds and manual collapse unchanged, and cleans up its listener. Rendered card and actual branding DOM regressions prove initially closed controls become visible without saving or generating content. A bounded source/AST probe follows the real route/section/component chain and executes the actual reveal effect with inert DOM primitives. Authenticated production observation is the original failure evidence; this fix is local/review-only until released and rechecked. No schema, provider, production settings, content writes, merge or deployment performed.",
+  "closed": "2026-10-26",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-26",
+    "cmd": "node scripts/probes/space-coach-button-route.mjs",
+    "evidence": "Actual ranker/rendered card href plus route/board/identity/form consequence; focused DOM regression lands on Default/Built in/Custom link with no autosave."
+  }
+}

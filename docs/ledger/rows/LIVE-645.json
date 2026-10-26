@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-645",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/practice-coaching-boundaries.mjs",
+      "checked": "2026-10-26",
+      "evidence": "Actual coaching coercion and copy/advice boundary: directions still run capped Haiku Spark, appear separately, and copy preserves lineage/adoption without applying generated prose. Focused server tests assert no model edit on fork."
+    }
+  },
+  "append": {
+    "detail": "2026-10-26 owner-directed authorship policy: Remix directions remain useful advice, while Make a copy preserves original wording and opens manual editing. Replaced obsolete probe requiring model rewrite of the copy with advisory/copy boundary consequences."
+  },
+  "wave": "W7"
+}

@@ -4,9 +4,8 @@
 // ("Two minutes, for mornings", "Gentler", "With a friend") beside a plain "Just copy it".
 //
 // Generated on dialog open and never stored, so there is no column and no migration. Picking one
-// forks through the unchanged fork path (lineage intact) and then applies the direction to the COPY
-// through the existing practice-edit path (lib/ai/practice-edit.ts, `remixRequest` below frames
-// it), so no second editor exists.
+// forks through the unchanged fork path (lineage intact). Directions remain separate advice;
+// copying never applies model prose to the new Practice.
 //
 // One declared spark over the shared runner (lib/ai/spark.ts): the kill switch, the 'practice-remix'
 // daily cap (lib/ai/budget.ts), the per-member window, the forced tool, the voice primer and the
@@ -111,18 +110,4 @@ export async function suggestRemixDirections(input: {
   ].filter(Boolean)
   const content = `${facts.join('\n')}\n\nOffer three directions and call ${TOOL_NAME}.`
   return runSpark(PRACTICE_REMIX, { content, profileId: input.profileId })
-}
-
-/** Bound what the fork action accepts as a direction: a chip label, trimmed, or null. The action
- *  takes any short line (the member owns the copy, the same as typing a change in the editor), so
- *  this bounds its size, not its content. */
-export function normalizeRemixDirection(v: unknown): string | null {
-  if (typeof v !== 'string') return null
-  const line = v.trim().slice(0, REMIX_DIRECTION_MAX)
-  return line || null
-}
-
-/** The plain-language change handed to the practice-edit path for the member's copy. */
-export function remixRequest(direction: string): string {
-  return `Remix this practice in one direction: ${direction}. Change what that direction asks for (length, intensity, setting, or who it is done with) across the name, hook, description, guide and cadence as needed. Keep the same core act and everything the direction does not touch.`
 }

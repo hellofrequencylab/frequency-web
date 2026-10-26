@@ -62,8 +62,8 @@ export interface RawExtraction {
   }
   rating?: { value?: RawExtractedField; count?: RawExtractedField }
   offerings?: RawOffering[]
-  faq?: { q?: string; a?: string }[]
-  events?: { title?: string; startsAt?: string; endsAt?: string; location?: string; blurb?: string }[]
+  faq?: { q?: string; a?: string; sourceUrl?: string; snippet?: string }[]
+  events?: { title?: string; startsAt?: string; endsAt?: string; location?: string; blurb?: string; sourceUrl?: string; snippet?: string }[]
   links?: { platform?: string; url?: string }[]
 }
 
@@ -127,6 +127,21 @@ export function groundField(field: RawExtractedField, sources: HarvestedSource[]
   return entry
 }
 
+/** Project an exact quotation bound to one supplied page or owner paste. No model-written copy. */
+function sourceQuotation(field: RawExtractedField | undefined, sources: HarvestedSource[]): (RawExtractedField & { value: string }) | null {
+  if (!field || field.kind !== 'fact') return null
+  const value = typeof field.value === 'string' ? field.value.trim() : ''
+  const snippet = typeof field.snippet === 'string' ? field.snippet.trim() : ''
+  const sourceUrl = typeof field.sourceUrl === 'string' ? field.sourceUrl.trim() : ''
+  if (!value || !snippet || !snippet.includes(value)) return null
+  const source = sources.find((s) =>
+    (s.kind === 'page' || s.kind === 'paste') &&
+    (s.url ? sourceUrl === s.url : s.kind === 'paste' && !sourceUrl) &&
+    typeof s.text === 'string' && s.text.includes(snippet),
+  )
+  return source ? { ...field, value, sourceUrl: source.url, kind: 'fact' } : null
+}
+
 // ── The coercer: raw model shape -> BusinessProfile draft + ledger ────────────────────
 
 const KNOWN_TYPES = new Set(['business', 'nonprofit'])
@@ -159,19 +174,25 @@ export function coerceExtraction(
     return value
   }
 
+  // Public prose is quoted from supplied source material, never generated or paraphrased.
+  const putQuotedProse = (path: string, field: RawExtractedField | undefined): string | undefined => {
+    const quote = sourceQuotation(field, sources)
+    return quote ? put(path, quote) : undefined
+  }
+
   // Identity
   const name = put('name', raw.name) ?? nameFallback.trim()
   draft.name = name
   const brandName = put('brandName', raw.brandName)
   if (brandName) draft.brandName = brandName
   draft.type = KNOWN_TYPES.has(raw.type ?? '') ? (raw.type as 'business' | 'nonprofit') : 'business'
-  const tagline = put('tagline', raw.tagline)
+  const tagline = putQuotedProse('tagline', raw.tagline)
   if (tagline) draft.tagline = tagline
   const category = put('category', raw.category)
   if (category) draft.category = category
-  const about = put('about', raw.about)
+  const about = putQuotedProse('about', raw.about)
   if (about) draft.about = about
-  const story = put('story', raw.story)
+  const story = putQuotedProse('story', raw.story)
   if (story) draft.story = story
 
   // Contact
@@ -207,22 +228,38 @@ export function coerceExtraction(
   const offerings = coerceOfferings(raw.offerings, sources, ledger)
   if (offerings.length) draft.offerings = offerings
 
-  // FAQ (no per-field citation; light content)
-  const faq = (raw.faq ?? [])
-    .map((f) => ({ q: (f.q ?? '').trim(), a: (f.a ?? '').trim() }))
-    .filter((f) => f.q)
+  // Both halves of an FAQ must occur in the same cited source snippet. Missing answers stay absent.
+  const faq: NonNullable<BusinessProfile['faq']> = []
+  for (const f of raw.faq ?? []) {
+    const citation = { kind: 'fact', sourceUrl: f.sourceUrl, snippet: f.snippet }
+    const q = sourceQuotation({ ...citation, value: f.q }, sources)
+    const a = sourceQuotation({ ...citation, value: f.a }, sources)
+    if (!q || !a) continue
+    const index = faq.length
+    faq.push({ q: q.value, a: a.value })
+    ledger[`faq[${index}].q`] = [groundField(q, sources)]
+    ledger[`faq[${index}].a`] = [groundField(a, sources)]
+  }
   if (faq.length) draft.faq = faq
 
-  // Events (dates validated downstream by the P0 mapper)
-  const events = (raw.events ?? [])
-    .map((e) => ({
-      title: (e.title ?? '').trim(),
+  // Event titles/blurbs are quoted. Factual date parsing and location handling stay downstream.
+  const events: NonNullable<BusinessProfile['events']> = []
+  for (const e of raw.events ?? []) {
+    const citation = { kind: 'fact', sourceUrl: e.sourceUrl, snippet: e.snippet }
+    const title = sourceQuotation({ ...citation, value: e.title }, sources)
+    if (!title) continue
+    const blurb = sourceQuotation({ ...citation, value: e.blurb }, sources)
+    const index = events.length
+    events.push({
+      title: title.value,
       startsAt: (e.startsAt ?? '').trim() || undefined,
       endsAt: (e.endsAt ?? '').trim() || undefined,
       location: (e.location ?? '').trim() || undefined,
-      blurb: (e.blurb ?? '').trim() || undefined,
-    }))
-    .filter((e) => e.title)
+      ...(blurb ? { blurb: blurb.value } : {}),
+    })
+    ledger[`events[${index}].title`] = [groundField(title, sources)]
+    if (blurb) ledger[`events[${index}].blurb`] = [groundField(blurb, sources)]
+  }
   if (events.length) draft.events = events
 
   // Links
@@ -260,10 +297,10 @@ function coerceOfferings(
     const row: NonNullable<BusinessProfile['offerings']>[number] = { title }
     // Title citation (informational; not a commercial fact).
     if (o.title) ledger[`offerings[${idx}].title`] = [groundField(o.title, sources)]
-    const blurb = (o.blurb?.value ?? '').trim()
+    const blurb = sourceQuotation(o.blurb, sources)
     if (blurb) {
-      row.blurb = blurb
-      if (o.blurb) ledger[`offerings[${idx}].blurb`] = [groundField(o.blurb, sources)]
+      row.blurb = blurb.value
+      ledger[`offerings[${idx}].blurb`] = [groundField(blurb, sources)]
     }
     // Price is a COMMERCIAL FACT — ground it and key its ledger at offerings[i].price.
     const priceStr = (o.price?.value ?? '').trim()

@@ -133,6 +133,37 @@ describe('routeNotification — the in-app channel (guestbook.sign)', () => {
   })
 })
 
+describe('routeNotification — post.mention (in-app only)', () => {
+  const ctx = { authorId: 'author-1', postId: 'post-1', context: 'a post' }
+
+  it('enqueues one inapp job in the bell row shape, gated on inapp_mentions', async () => {
+    const { deps, enqueued, gate } = fakeDeps(allow)
+    const result = await routeNotification('post.mention', { profileId: 'member-1' }, ctx, {}, deps)
+    expect(result.outcomes).toEqual([{ channel: 'inapp', reason: 'ok', enqueued: true }])
+    expect(gate).toHaveBeenCalledWith('member-1', 'inapp', 'mentions', expect.anything())
+    expect(enqueued).toEqual([
+      {
+        kind: 'inapp',
+        payload: {
+          profileId: 'member-1',
+          type: 'mention',
+          body: 'mentioned you in a post',
+          actorId: 'author-1',
+          referenceType: 'post',
+          referenceId: 'post-1',
+        },
+      },
+    ])
+  })
+
+  it('writes nothing when the member has the in-app mentions switch off', async () => {
+    const { deps, enqueued } = fakeDeps(deny('pref_off'))
+    const result = await routeNotification('post.mention', { profileId: 'member-1' }, ctx, {}, deps)
+    expect(result.enqueuedCount).toBe(0)
+    expect(enqueued).toEqual([])
+  })
+})
+
 describe('routeNotification — post.reply (in-app only)', () => {
   const ctx = { replierId: 'replier-1', postId: 'post-1' }
 

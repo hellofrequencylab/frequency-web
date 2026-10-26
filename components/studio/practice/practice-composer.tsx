@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { Sparkles, Wand2, ChevronDown } from 'lucide-react'
 import { buildPracticeWithVeraAction, applyVeraPracticeChangeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
@@ -9,22 +8,16 @@ import { Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
 
-// The Vera composer in the Practice editor (ADR-358), the atom-level twin of the Journey composer
-// (components/journey/v2/journey-composer.tsx). Two modes, by whether the Practice has a guide yet:
-//   • EMPTY  — a single "describe it" line; Vera drafts the whole Practice (name, hook, guide,
-//              Pillar, cadence) in place.
-//   • FILLED — a single "tell Vera what to change" line; Vera reads the whole Practice and applies
-//              the edit in place. Collapsed on load.
+// Both empty and existing Practices use separate coaching questions. No fields are applied or saved.
 const PREVIEW: { tag: string; text: string }[] = [
-  { tag: 'Hook', text: 'A short line for the card, for the skeptic.' },
-  { tag: 'Guide', text: 'A few concrete steps in plain words.' },
-  { tag: 'Pillar', text: 'The Pillar the act fits, set for you.' },
-  { tag: 'Cadence', text: 'How often and how long, suggested.' },
+  { tag: 'Hook', text: 'What would make your description clear?' },
+  { tag: 'Guide', text: 'Which steps will you explain?' },
+  { tag: 'Pillar', text: 'Which Pillar do you want to explore?' },
+  { tag: 'Cadence', text: 'What fits your available time?' },
 ]
 
 
 export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean }) {
-  const router = useRouter()
   const [build, setBuild] = useState('')
   const [change, setChange] = useState('')
   const [pending, start] = useTransition()
@@ -38,9 +31,7 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
     start(async () => {
       const res = await buildPracticeWithVeraAction(id, build)
       if (isError(res)) { setError(res.error); return }
-      setBuild('')
-      if (!res.data.aiUsed) setNote('Vera is offline right now, so fill it in below and keep going.')
-      router.refresh()
+      setNote(res.data.questions.join('\n'))
     })
   }
 
@@ -50,9 +41,7 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
     start(async () => {
       const res = await applyVeraPracticeChangeAction(id, change)
       if (isError(res)) { setError(res.error); return }
-      setChange('')
-      setNote(res.data.applied > 0 ? `Vera made ${res.data.applied} ${res.data.applied === 1 ? 'change' : 'changes'}.` : 'Nothing to change there.')
-      router.refresh()
+      setNote(res.data.questions.join('\n'))
     })
   }
 
@@ -60,18 +49,18 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
     <section className="rounded-card border border-primary/30 bg-primary-bg/20 p-4">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-2 text-left">
         <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" />
-        <h2 className="flex-1 text-body font-bold text-text">{isEmpty ? 'Build with Vera' : 'Edit with Vera'}</h2>
+        <h2 className="flex-1 text-body font-bold text-text">{isEmpty ? 'Plan with Vera' : 'Coach me with Vera'}</h2>
         <ChevronDown className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
       </button>
       {!open && (
         <p className="mt-1 text-body-sm text-muted">
-          {isEmpty ? 'Describe the practice in a line and Vera drafts the whole thing.' : 'Tell Vera what to change and she updates the practice.'}
+          {isEmpty ? 'Ask questions about the Practice you want to write.' : 'Ask for feedback. Your Practice stays unchanged.'}
         </p>
       )}
 
       {open && isEmpty && (
         <>
-          <p className="mt-1 text-body-sm text-muted">Describe the practice in plain words. Vera drafts the name, the hook, the guide, the Pillar, and a cadence. Edit anything after.</p>
+          <p className="mt-1 text-body-sm text-muted">Describe what you want to work on. Vera offers questions; you write and save the content yourself.</p>
           <Textarea
             aria-label="Describe the practice"
             value={build}
@@ -81,14 +70,14 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
             placeholder="e.g. A two-minute morning sit for people who wake up wired. Set a timer, breathe, notice the day." className="mt-3 resize-y"
           />
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
-          {note && <p className="mt-1 text-meta text-muted">{note}</p>}
+          {note && <p className="mt-1 whitespace-pre-wrap text-meta text-muted" role="status">{note}</p>}
           <div className="mt-3">
             <Button type="button" disabled={pending || !build.trim()} onClick={runBuild}>
-              <Wand2 className="h-4 w-4" /> {pending ? 'Building…' : 'Build with Vera'}
+              <Wand2 className="h-4 w-4" /> {pending ? 'Thinking…' : 'Plan with Vera'}
             </Button>
           </div>
           <div className="mt-4">
-            <p className={capsLabel('text-2xs font-semibold text-muted')}>What you&apos;ll get</p>
+            <p className={capsLabel('text-2xs font-semibold text-muted')}>Questions to consider</p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {PREVIEW.map((p, i) => (
                 <li key={i} className="flex items-start gap-2 rounded-control border border-border bg-surface px-3 py-2">
@@ -103,20 +92,20 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
 
       {open && !isEmpty && (
         <>
-          <p className="mt-1 text-body-sm text-muted">Tell Vera what to change in plain words. She reads the whole practice and applies it. You can undo by editing any field by hand.</p>
+          <p className="mt-1 text-body-sm text-muted">Tell Vera what you want to review. Questions appear here without replacing or saving any fields.</p>
           <Textarea
-            aria-label="What Vera should change"
+            aria-label="What you want to review"
             value={change}
             disabled={pending}
             onChange={(e) => setChange(e.target.value)}
             rows={2}
-            placeholder="e.g. Make it gentler. Or: shorten the steps. Or: rewrite the hook for someone who can't switch off." className="mt-3 resize-y"
+            placeholder="e.g. What should I check to make the instructions clearer?" className="mt-3 resize-y"
           />
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
-          {note && <p className="mt-1 text-meta text-muted">{note}</p>}
+          {note && <p className="mt-1 whitespace-pre-wrap text-meta text-muted" role="status">{note}</p>}
           <div className="mt-3">
             <Button type="button" disabled={pending || !change.trim()} onClick={apply}>
-              <Wand2 className="h-4 w-4" /> {pending ? 'Applying…' : 'Apply with Vera'}
+              <Wand2 className="h-4 w-4" /> {pending ? 'Thinking…' : 'Get coaching questions'}
             </Button>
           </div>
         </>

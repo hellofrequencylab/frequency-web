@@ -27,6 +27,7 @@ export type NotificationEvent =
   | 'event.dispatch'
   | 'booking.reminder'
   | 'guestbook.sign'
+  | 'post.mention'
   | 'post.reply'
   | 'housing.match'
   | 'plan.share'
@@ -48,6 +49,10 @@ export interface NotificationContexts {
    *  (lib/spotlight/guestbook.ts notifyGuestbookSigned) authors the copy in-voice and the URL of
    *  the owner's own guestbook. */
   'guestbook.sign': { title: string; body: string; url: string; ownerHandle: string; signerProfileId: string }
+  /** Someone @mentioned the recipient in a post or reply (`mentions`, in-app). The caller
+   *  (app/(main)/feed/actions.ts fanOutMentions) hands in the author, the post and where it was
+   *  said ('a post' / 'a reply'); the recipient's own inapp_mentions switch decides. */
+  'post.mention': { authorId: string; postId: string; context: string }
   /** Someone replied to the recipient's post (`comments`, in-app). The caller
    *  (app/(main)/feed/actions.ts notifyParentAuthor) hands in the replier and the post. */
   'post.reply': { replierId: string; postId: string }
@@ -172,6 +177,22 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
     }),
   },
 
+  // An @mention in a post or reply. Its own `mentions` category, in-app only: the recipient's
+  // inapp_mentions switch (default on) decides, so the Mentions row in settings is a real switch.
+  'post.mention': {
+    event: 'post.mention',
+    category: 'mentions',
+    channels: ['inapp'],
+    render: (ctx) => ({
+      inapp: {
+        type: 'mention',
+        body: `mentioned you in ${ctx.context}`,
+        actorId: ctx.authorId,
+        referenceType: 'post',
+        referenceId: ctx.postId,
+      },
+    }),
+  },
   // A reply to your post. `comments`, in-app: inapp_comments decides, as it did when the feed
   // action read the gate by hand.
   'post.reply': {

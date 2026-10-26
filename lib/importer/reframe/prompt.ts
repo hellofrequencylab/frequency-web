@@ -15,71 +15,9 @@
 // No em dashes in any of this file's strings (CONTENT-VOICE §10).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type Anthropic from '@anthropic-ai/sdk'
 import type { BusinessProfile } from '../schema'
 
 export const REFRAME_TOOL_NAME = 'save_reframed_copy'
-
-/**
- * The forced structured-output tool: the voiced strings reframe returns. Each is OPTIONAL, so the
- * model returns only what the grounding supports (an empty grounding yields little or nothing, never
- * a fabricated story). Offering blurbs are keyed by index so they fold back onto the right offering.
- */
-export const REFRAME_TOOL: Anthropic.Tool = {
-  name: REFRAME_TOOL_NAME,
-  description: 'Save the Frequency-voice copy rewritten from the verified business facts.',
-  input_schema: {
-    type: 'object',
-    properties: {
-      tagline: {
-        type: 'string',
-        description:
-          'A short "say what you do" tagline, under 12 words. Plain, concrete, skeptic-proof. No hype, no claim you were not given.',
-      },
-      about: {
-        type: 'string',
-        description:
-          'A 1 to 2 sentence about line: who they are and what to expect, in plain Frequency voice. Grounded only in the verified facts.',
-      },
-      story: {
-        type: 'string',
-        description:
-          'A short narrative (2 to 4 short sentences) of the transformation this business offers. Concrete, honest, never inflated. Only what the facts support.',
-      },
-      offeringBlurbs: {
-        type: 'array',
-        description: 'One rewritten blurb per offering you were given, in the SAME order. Omit an entry to leave an offering blurb unchanged.',
-        items: {
-          type: 'object',
-          properties: {
-            index: { type: 'number', description: 'The 0-based index of the offering in the OFFERINGS list you were given.' },
-            blurb: { type: 'string', description: 'A one-line, plain, honest blurb for that offering. No price claim unless it was in the facts.' },
-          },
-          required: ['index', 'blurb'],
-        },
-      },
-    },
-    required: [],
-  },
-}
-
-export const REFRAME_SYSTEM = `You write a business's own copy into the Frequency voice for the business importer.
-
-You are given a VERIFIED FACTS block: the facts about this business that have already been checked against a source. You may also be given a SOURCE MATERIAL block: the business's own words, lifted verbatim from their website and from what the operator pasted.
-
-How to use the two blocks:
-- SOURCE MATERIAL is how this business actually talks. Prefer THEIR sentences over yours. Lift the good ones close to verbatim, trim them to fit, and cut hype, filler, and em dashes. Write your own sentences only for the connective tissue and for what their words do not cover.
-- VERIFIED FACTS is the fact authority. Where the two disagree about a fact, the verified block wins.
-
-The hard rules (these override everything else):
-- Never invent a fact, a history, an award, a testimonial, a price, or a claim. If it is in neither block, it does not exist for you.
-- You may rephrase, position, compress, reorder, and lift. You may NOT add anything new.
-- Do not restate a specific commercial claim (a price, a phone number, an address, opening hours, a rating) inside the story, about, or tagline. Those live in their own fields on the page. Your prose describes what the business is and what it is like to work with, not its price list.
-- Write the transformation plainly: what changes for the person who uses this business. Concrete and honest, never a promise of transformation, never a health claim.
-- If the verified facts are thin, write LESS. A short honest line beats a padded one. It is fine to leave a field empty.
-- If an audience and positioning steer is given, aim the copy at that reader and match that positioning. It is a private brief, not a fact: never quote it back or name the audience on the page.
-
-Call ${REFRAME_TOOL_NAME} once with the copy you can honestly write from these facts.`
 
 /** How much of the verbatim source excerpt reframe is handed. Reframe writes four short strings, so
  *  it needs a taste of the voice, not the whole site (the page COMPOSER gets the full excerpt). */

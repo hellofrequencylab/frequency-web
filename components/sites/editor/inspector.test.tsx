@@ -106,3 +106,17 @@ it('follows a canvas click into the card it came from, and reports the field the
   expect(focused).toHaveBeenLastCalledWith({ field: 'items', path: [0, 'title'] })
   act(() => root.unmount()); container.remove()
 })
+
+it('shows the resolved words for a kit token and keeps the token on fields the owner did not change', () => {
+  const config: Config = { components: { Text: { fields: { title: { type: 'text' }, body: { type: 'text' } }, render: () => null } } }
+  const block = { type: 'Text', props: { id: 'copy', title: '{{name|Your name}}', body: '{{story|Sample story}}' } }
+  const onChange = vi.fn()
+  const container = document.createElement('div'); document.body.append(container); const root = createRoot(container)
+  act(() => root.render(<WebsiteInspector config={config} block={block} doc={{ root: {}, content: [block] }} device="desktop" onDisplay={vi.fn()} onChange={onChange} metadata={{ space: { identity: { name: 'Salt Studio' } } }} />))
+  const input = (label: string) => container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!
+  expect(input('title').value).toBe('Salt Studio')
+  expect(input('body').value).toBe('Sample story')
+  act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input('title'), 'My title'); input('title').dispatchEvent(new Event('input', { bubbles: true })) })
+  expect(onChange).toHaveBeenLastCalledWith({ id: 'copy', title: 'My title', body: '{{story|Sample story}}' })
+  act(() => root.unmount()); container.remove()
+})

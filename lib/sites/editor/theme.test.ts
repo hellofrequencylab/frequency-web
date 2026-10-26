@@ -17,7 +17,7 @@ describe('website theme handoff', () => {
     expect(WEBSITE_THEME_FONT_VARS.Wildheart).toEqual(['wh-fell', 'wh-garamond', 'wh-hanken'])
     const vars = websiteThemeVars('Wildheart', null, new Date('2027-01-01T12:00:00Z')) as Record<string, string>
     expect(vars['--th-season']).toBe('#A3AEDC')
-    expect(vars['--th-accent']).toBe('#6E4D96')
+    expect(vars['--th-accent']).toBe('#6A3FA0')
     expect(vars['--th-on-accent']).toBe('#FBF7EF')
     expect((websiteThemeVars('Wildheart', '#1D3557') as Record<string, string>)['--th-accent']).toBe('#1D3557')
   })
