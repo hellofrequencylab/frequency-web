@@ -1,5 +1,20 @@
+import Link from 'next/link'
+import { Settings2 } from 'lucide-react'
+import type { Data } from '@/lib/page-editor/types'
+import { BlockRender } from '@/lib/page-editor/block-render'
+import { config } from '@/lib/page-editor/config'
+import { getPublishedData } from '@/lib/page-editor/data'
+import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
+import { MarketHero } from '@/components/marketplace/market-hero'
+import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from '@/components/marketplace/hero-buttons'
+import { PageAdminBar } from '@/components/layout/page-admin-bar'
+import { PageIntro } from '@/components/templates'
+import { DirectorySearch } from '@/components/ui/directory-search'
+import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { pageContentMetadata } from '@/lib/page-content'
 import { getCirclesIndexData, CONTENT_FALLBACK } from '@/lib/circles/index-data'
+import { resolveMarketHero } from '@/lib/layout/index-hero'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqCirclesBody } from '@/components/frequency/members/circles/circles-body'
 import { getCachedViewerProfile } from '@/lib/auth'
 import { listNetworkedSpacesPage } from '@/lib/spaces/discovery'
@@ -14,6 +29,7 @@ import { loadNextMeetups } from '@/lib/circles/next-meetups'
 // rendered through Puck, fed the live index data (getCirclesIndexData) via `metadata.circlesIndex`.
 // Semantic DAWN tokens only, no hex, no em dashes.
 
+const EMPTY: Data = { content: [], root: {} }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2). The default title is
 // the keyword-forward "Circles near you" (CONTENT-VOICE §8a: the phrase people search).
@@ -28,18 +44,90 @@ export default async function CirclesPage({
 }) {
   const sp = await searchParams
   const circlesIndex = await getCirclesIndexData(sp)
-  const [nextMeetups, profile, spacesPage] = await Promise.all([
-    loadNextMeetups(circlesIndex.myCircleIds),
-    getCachedViewerProfile(),
-    listNetworkedSpacesPage({}, { limit: 3 }).catch(() => ({ spaces: [], total: 0 })),
-  ])
-  const home = profile?.home_lat != null && profile?.home_lng != null ? { lat: profile.home_lat, lng: profile.home_lng } : null
-  const featuredSpaces = spacesPage.spaces.map((sp) => ({
-    slug: sp.slug,
-    name: sp.name,
-    tagline: sp.tagline,
-    coverUrl: sp.coverUrl,
-    logoUrl: sp.logoUrl,
-  }))
-  return <FqCirclesBody data={circlesIndex} params={sp} nextMeetups={nextMeetups} home={home} featuredSpaces={featuredSpaces} />
+  const { content, signedIn, interests, canCreate } = circlesIndex
+
+  // THE DESIGN SWITCH (ADR-1737): under Frequency the body is the member kit's Circles page, on the
+  // same live read. Build-time, so the DAWN block layout below is untouched when it is off.
+  if (SITE_DESIGN === 'frequency') {
+    const [nextMeetups, profile, spacesPage] = await Promise.all([
+      loadNextMeetups(circlesIndex.myCircleIds),
+      getCachedViewerProfile(),
+      listNetworkedSpacesPage({}, { limit: 3 }).catch(() => ({ spaces: [], total: 0 })),
+    ])
+    const home = profile?.home_lat != null && profile?.home_lng != null ? { lat: profile.home_lat, lng: profile.home_lng } : null
+    const featuredSpaces = spacesPage.spaces.map((sp) => ({
+      slug: sp.slug,
+      name: sp.name,
+      tagline: sp.tagline,
+      coverUrl: sp.coverUrl,
+      logoUrl: sp.logoUrl,
+    }))
+    return <FqCirclesBody data={circlesIndex} params={sp} nextMeetups={nextMeetups} home={home} featuredSpaces={featuredSpaces} />
+  }
+
+  // Block layout: an operator-published doc wins; else the coded default template.
+  const published = await getPublishedData('circles')
+  const data: Data = isWellFormed(published) ? published : getTemplate('circles') ?? EMPTY
+
+  // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4):
+  // the operator's Settings header image, then the page_content hero, then this page's coded
+  // cover, plus the operator-tunable header element (ADR-793) for layout / height / scrim. It
+  // used to read the element alone, so an operator who uploaded a header image got nothing.
+  const hero = await resolveMarketHero('/circles', { cover: '/images/site/group-of-friends.jpg', contentImage: content.heroImage })
+
+  // The action cluster, matching the Events header grammar:
+  //   • Start a Circle — the full-page builder, gated behind the Crew popup (NewCircleCompose owns the
+  //     canCreate rule; non-Crew get the upgrade lightbox). Shown to any signed-in member.
+  //   • Manage my Circles — the Leadership hub (/lead), shown to the population that can run a circle
+  //     (Crew/steward, canCreate). /lead self-scopes to the caller's own circles.
+  //   • Operator CTA (PX.1) — the optional operator-set link, kept when both label + href are set.
+  const actions =
+    signedIn || (content.ctaLabel && content.ctaHref) ? (
+      <>
+        {signedIn && (
+          <NewCircleCompose
+            interests={interests}
+            buttonLabel="Start a Circle"
+            canCreate={canCreate}
+            buttonClass={HERO_PRIMARY_BTN}
+          />
+        )}
+        {canCreate && (
+          <Link href="/lead" className={HERO_SECONDARY_BTN}>
+            <Settings2 className="h-4 w-4" aria-hidden />
+            Manage my Circles
+          </Link>
+        )}
+        {content.ctaLabel && content.ctaHref && (
+          <a href={content.ctaHref} className={HERO_SECONDARY_BTN}>
+            {content.ctaLabel}
+          </a>
+        )}
+      </>
+    ) : undefined
+
+  return (
+    <div className="space-y-6">
+      <MarketHero
+        {...hero}
+        eyebrow="Community"
+        title={content.title}
+        subtitle={content.description}
+        search={<DirectorySearch placeholder="Search circles by name or place" />}
+        action={actions}
+      />
+
+      {/* The on-page operator Settings affordance IndexTemplate used to draw — re-added under the hero
+          as its divider rule so nothing an operator had was lost in the move to MarketHero. The
+          format/sort + channel controls stay in the body blocks below (already under the hero). */}
+      <PageAdminBar asDivider />
+
+      {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
+          this section sets none. */}
+      <PageIntro text={content.body} className="" />
+
+      {/* The body: the standardized, rearrangeable Circles blocks, fed the live data. */}
+      <BlockRender config={config} data={data} metadata={{ circlesIndex }} />
+    </div>
+  )
 }

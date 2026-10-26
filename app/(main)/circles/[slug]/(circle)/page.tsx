@@ -9,7 +9,15 @@ import { getCircleHealth } from '@/lib/circles/earned'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
+import { CollapsibleAbout } from '@/components/circles/collapsible-about'
+// The circle BODY (feed + info-rail) is the page-settings module engine (ADR-270/294): this tab
+// resolves all the per-viewer data once, stamps it into the request-scoped circle context, and
+// <PageModules> renders the arrangeable blocks (components/widgets/circles/*) — so operators
+// arrange the circle page from Settings → Layout, shared across every /circles/<slug> via the
+// '/circles/*' scope, exactly like the Practices detail page.
+import { PageModules } from '@/components/widgets/page-modules'
 import { setCircleContext } from '@/lib/circles/active-circle'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqModules } from '@/components/frequency/members/modules'
 import { FqCircleFeed } from '@/components/frequency/members/circle/circle-feed'
 
@@ -41,6 +49,34 @@ import { FqCircleFeed } from '@/components/frequency/members/circle/circle-feed'
 // in the report about folding these sets into the route-scoped registry, which is where they
 // belong once the tab routes are known to lib/widgets.
 
+// ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
+// for any future anon carve). Reads the SAME request-memoized shell load the page body uses, so the
+// card costs no extra query, with the same archived filter the body applies.
+// The Feed tab's module set. Order here does not decide layout; the saved '/circles/*' layout
+// still does, and this only filters what it may place. `circle-momentum` is the one deliberate
+// omission — it renders on the Circle Stats tab instead.
+//
+// TWO IDS LEFT THIS LIST ON 2026-09-17 AND NEITHER WAS A BEHAVIOUR CHANGE, which is worth saying
+// because a subset shrinking silently is the thing this comment block exists to prevent:
+//   • `circle-text` was RETIRED with the Page-text block (ADR-1394): it duplicated About, and
+//     About now carries the formatting that was its only advantage.
+//   • `circle-invite` was already a DEAD REFERENCE before that. It was retired from LAYOUT_MODULES
+//     in the Circle rail trim and is absent from `CIRCLE_DETAIL_MODULE_IDS`, so `PageModules` could
+//     never place it however long it sat here. Removing it changes nothing a viewer sees; leaving
+//     it would keep implying there is an invite block on this tab, and there is not (invites live
+//     in the `circle.people` admin module).
+const FEED_TAB_MODULE_IDS = [
+  'circle-feed',
+  'circle-health',
+  'circle-challenges',
+  'circle-map',
+  'circle-meeting',
+  // Space Circles only; self-hides everywhere else (ADR-1393).
+  'circle-space-info',
+  'circle-members',
+  'circle-events',
+  'circle-practice',
+] as const
 
 /** The Frequency Posts pane's blocks after the feed (drawn in the kit by FqCircleFeed, the
  *  `circle-feed` module's behaviour on the same context): the Circle's shared work. */
@@ -178,10 +214,40 @@ export default async function CircleHomePage({
     newThisWeek: health.newThisWeek,
     circlePractice,
   })
+
+  // THE FREQUENCY POSTS PANE (templates/members/Circle.html). About lives in the shell's side panel
+  // and the roster and calendar are their own tabs, so the pane is the conversation first (composer
+  // and stream, the same `circle-feed` module), then the blocks that carry the Circle's shared work.
+  // `#circle-post` stays the Create menu's New post target.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <div id="circle-post" className="stack">
+        <FqCircleFeed />
+        <FqModules ids={FQ_FEED_MODULE_IDS} />
+      </div>
+    )
+  }
+
   return (
-    <div id="circle-post" className="stack">
-      <FqCircleFeed />
-      <FqModules ids={FQ_FEED_MODULE_IDS} />
-    </div>
+    <>
+      {/* ── About (boxless, collapsible) — part of the fixed identity, above the body. It stays on
+              the Home tab rather than in the shell: a roster does not want the circle's story
+              repeated above it. */}
+      {circle.about && (
+        <div className="mb-6">
+          <CollapsibleAbout text={circle.about} />
+        </div>
+      )}
+
+      {/* ── The arrangeable body: the feed + the info-rail blocks that did not become tabs, shared
+              across every /circles/<slug> via the '/circles/*' scope. Operators rearrange it from
+              Settings → Layout.
+
+              `#circle-post` is the header's ONE primary action for a member. The composer is the
+              first thing in the feed block, so the anchor lands on it from any tab. */}
+      <div id="circle-post" className="scroll-mt-24">
+        <PageModules route={`/circles/${circle.slug}`} moduleIds={FEED_TAB_MODULE_IDS} />
+      </div>
+    </>
   )
 }

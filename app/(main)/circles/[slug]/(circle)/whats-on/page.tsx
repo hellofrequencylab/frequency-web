@@ -1,13 +1,18 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { Sprout } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { getCohortProgress } from '@/lib/journeys/runs'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
+import { UpcomingEventRows } from '@/components/events/upcoming-event-rows'
+import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { buttonClasses } from '@/components/ui/button'
 import {
   circleEventInsider,
   loadCircleActiveRun,
@@ -16,6 +21,7 @@ import {
 } from '../tab-facts'
 import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 import { CircleTasksSection } from '@/app/(main)/crew/circle-tasks-section'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqWhatsOnPane } from '@/components/frequency/members/circle/whats-on-pane'
 
 // ── THE PROGRAM TAB ─────────────────────────────────────────────────────────────────────────────
@@ -93,54 +99,164 @@ export default async function CircleWhatsOnPage({
         <CircleTasksSection circleId={circle.id} circleName={circle.name} viewerProfileId={myProfileId} />
       </Suspense>
     ) : null
-  return (
-    <FqWhatsOnPane
-      empty={
-        !practice && !hasEvents && !run ? (
-          <div className="empty stack">
-            <span className="h3">Nothing scheduled yet</span>
-            <span className="t2">
-              {canManage
-                ? 'Set a practice, book an event, or start a journey from the circle tools. Whatever this circle has going shows up here.'
-                : 'The host has not set a practice, booked an event, or started a journey yet. All three show up here when they do.'}
-            </span>
-            {canManage && (
-              <Link href={`/events/new?circle=${circle.id}`} className="btn sm pa">
+
+  // THE FREQUENCY PANE (templates/members/Circle.html, Events tab). Same reads, same gates, same
+  // Log practice / Journey / task actions; the kit's list and panels around them.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqWhatsOnPane
+        empty={
+          !practice && !hasEvents && !run ? (
+            <div className="empty stack">
+              <span className="h3">Nothing scheduled yet</span>
+              <span className="t2">
+                {canManage
+                  ? 'Set a practice, book an event, or start a journey from the circle tools. Whatever this circle has going shows up here.'
+                  : 'The host has not set a practice, booked an event, or started a journey yet. All three show up here when they do.'}
+              </span>
+              {canManage && (
+                <Link href={`/events/new?circle=${circle.id}`} className="btn sm pa">
+                  Create an event
+                </Link>
+              )}
+            </div>
+          ) : null
+        }
+        practice={
+          practice
+            ? {
+                title: practice.title,
+                description: practice.description ?? null,
+                log: isMember ? <LogPracticeButton practiceId={practice.id} circleId={circle.id} /> : null,
+              }
+            : null
+        }
+        events={events.events}
+        hasMore={events.hasMore}
+        journey={
+          run ? (
+            <div className="stack">
+              <div className="sec-h">
+                <span className="h2">{run.plan.emoji ? `${run.plan.emoji} ${run.plan.title}` : run.plan.title}</span>
+                <Link href={`/journeys/${run.plan.slug}`} className="btn sm">
+                  Open the journey
+                </Link>
+              </div>
+              {run.plan.summary && <p className="body">{run.plan.summary}</p>}
+              <Suspense fallback={<Skeleton className="h-28 w-full rounded-card" />}>
+                <RunProgress runId={run.id} planId={run.plan.id} circleName={circle.name} />
+              </Suspense>
+            </div>
+          ) : null
+        }
+        tasks={tasks}
+      />
+    )
+  }
+
+  if (!practice && !hasEvents && !run) {
+    return (
+      <div className="space-y-8">
+        <EmptyState
+          variant="first-use"
+          icon={Sprout}
+          title="Nothing scheduled yet"
+          description={
+            canManage
+              ? 'Set a practice, book an event, or start a journey from the circle tools. Whatever this circle has going shows up here.'
+              : 'The host has not set a practice, booked an event, or started a journey yet. All three show up here when they do.'
+          }
+          action={
+            canManage ? (
+              <Link href={`/events/new?circle=${circle.id}`} className={buttonClasses('primary', 'sm')}>
                 Create an event
               </Link>
+            ) : undefined
+          }
+        />
+        {tasks}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* 1. THIS WEEK. The host-assigned practice, and for a member the one button that turns it
+             into a logged day. */}
+      {practice && (
+        <section aria-labelledby="circle-practice-heading">
+          <SectionHeader id="circle-practice-heading" title="This week's practice" />
+          <div className="rounded-card border border-border bg-surface px-5 py-4">
+            <p className="font-medium text-text">{practice.title}</p>
+            {practice.description && (
+              <p className="mt-0.5 text-body-sm text-muted">{practice.description}</p>
+            )}
+            {isMember && (
+              <div className="mt-3">
+                <LogPracticeButton practiceId={practice.id} circleId={circle.id} />
+              </div>
             )}
           </div>
-        ) : null
-      }
-      practice={
-        practice
-          ? {
-              title: practice.title,
-              description: practice.description ?? null,
-              log: isMember ? <LogPracticeButton practiceId={practice.id} circleId={circle.id} /> : null,
-            }
-          : null
-      }
-      events={events.events}
-      hasMore={events.hasMore}
-      journey={
-        run ? (
-          <div className="stack">
-            <div className="sec-h">
-              <span className="h2">{run.plan.emoji ? `${run.plan.emoji} ${run.plan.title}` : run.plan.title}</span>
-              <Link href={`/journeys/${run.plan.slug}`} className="btn sm">
-                Open the journey
-              </Link>
-            </div>
-            {run.plan.summary && <p className="body">{run.plan.summary}</p>}
-            <Suspense fallback={<Skeleton className="h-28 w-full rounded-card" />}>
-              <RunProgress runId={run.id} planId={run.plan.id} circleName={circle.name} />
-            </Suspense>
+        </section>
+      )}
+
+      {/* 2. THE WEEKS AHEAD. The Circle's own calendar: the same selection rules the info rail's
+             five-row teaser used, thirty rows instead of five, and a repeating series folded to its
+             next date (ADR-897). */}
+      {hasEvents && (
+        <section aria-labelledby="circle-events-heading" className="space-y-4">
+          <div>
+            <SectionHeader
+              id="circle-events-heading"
+              title="Coming up"
+              count={events.events.length}
+            />
+            <p className="-mt-2 text-body-sm text-muted">
+              {isMember || canManage
+                ? 'Every gathering this circle has booked, soonest first. A repeating event shows its next date.'
+                : 'The gatherings this circle has booked, soonest first.'}
+            </p>
           </div>
-        ) : null
-      }
-      tasks={tasks}
-    />
+
+          <UpcomingEventRows events={events.events} />
+          {events.hasMore && (
+            <p className="px-1">
+              <Link href="/events" className="text-meta font-medium text-primary-strong hover:underline">
+                See all events
+              </Link>
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* 3. THE ARC. How far the Circle has got through the Journey it is walking together. The
+             meter is cooperative by design and that is the whole reason it is not a leaderboard:
+             one shared bar for the Circle, no per-member ranking (JOURNEYS.md §3). */}
+      {run && (
+        <section aria-labelledby="circle-journey-heading" className="space-y-3">
+          <div>
+            <SectionHeader
+              id="circle-journey-heading"
+              title={run.plan.emoji ? `${run.plan.emoji} ${run.plan.title}` : run.plan.title}
+              action={
+                <Link href={`/journeys/${run.plan.slug}`} className={buttonClasses('secondary', 'sm')}>
+                  Open the journey
+                </Link>
+              }
+            />
+            {run.plan.summary && <p className="-mt-2 text-body-sm text-muted">{run.plan.summary}</p>}
+          </div>
+
+          {/* The progress read walks every enrolled member's tree, so it streams behind its own
+              boundary while everything above it paints (PAGE-FRAMEWORK §5.2/§5.3). */}
+          <Suspense fallback={<Skeleton className="h-28 w-full rounded-card" />}>
+            <RunProgress runId={run.id} planId={run.plan.id} circleName={circle.name} />
+          </Suspense>
+        </section>
+      )}
+
+      {tasks}
+    </div>
   )
 }
 
