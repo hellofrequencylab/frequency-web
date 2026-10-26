@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-1123",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/sec-ssrf-pinned-fetch.mjs"
+    }
+  },
+  "append": {
+    "detail": "\n\nClosed by SEC-010 (#3932). Daniel approved replacing this row's probe (2026-10-26, 'Two security rows whose checks look for old code: A'). The original ssrf-og probe matched one implementation (remote-logo, isPrivateIp or assertPublic in remote-image.ts); the repair is the shared lib/net/pinned-fetch.ts, so the probe is now scripts/probes/sec-ssrf-pinned-fetch.mjs, which asserts all three call sites."
+  }
+}

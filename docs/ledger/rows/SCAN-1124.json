@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-1124",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/sec-cron-vitals.mjs"
+    }
+  },
+  "append": {
+    "detail": "\n\nClosed by SEC-011 (#3932). Daniel approved replacing this row's probe (2026-10-26, 'Two security rows whose checks look for old code: A'). The original small-hardening probe looked for VERCEL_ENV or ALLOW_UNAUTHENTICATED_CRON in cron-auth.ts; the repair keys on NODE_ENV, so the probe is now scripts/probes/sec-cron-vitals.mjs, which asserts both halves."
+  }
+}
