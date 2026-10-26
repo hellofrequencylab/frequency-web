@@ -35,7 +35,10 @@ vi.mock('@/lib/discover', () => ({
   formatEventDateTime: () => 'Sat, Nov 1 at 6:30 PM',
   hasEventEnded: () => false,
 }))
-vi.mock('@/app/discover/events/_data', () => ({ getEventEnrichment: async () => null }))
+vi.mock('@/app/discover/events/_data', async (original) => ({
+  ...(await original<typeof import('@/app/discover/events/_data')>()),
+  getEventEnrichment: async () => null,
+}))
 vi.mock('@/lib/events/public-venue', () => ({ getPublicEventVenue: async () => venue }))
 vi.mock('@/lib/events/series-seo', () => ({
   seriesRobots: () => undefined,
@@ -68,7 +71,7 @@ describe('the public event page where-line', () => {
     expect(html).toContain('Get directions')
     expect(html).toContain('https://maps.google.com/?q=The%20Loft%2C%203598%20Royal%20Rd%2C%20Vista%2C%2092084')
     // The "shared with members who RSVP" note would be untrue now.
-    expect(html).not.toContain('The exact venue is shared with members who RSVP')
+    expect(html).not.toContain('The exact venue is shared with guests who RSVP')
   })
 
   it('shows the city only, and no street anywhere in the HTML, when the host hid the address', async () => {
@@ -80,7 +83,7 @@ describe('the public event page where-line', () => {
     expect(html).not.toContain('3598 Royal Rd')
     expect(html).not.toContain('The Loft')
     expect(html).not.toContain('Get directions')
-    expect(html).toContain('The exact venue is shared with members who RSVP')
+    expect(html).toContain('The exact venue is shared with guests who RSVP')
   })
 
   it('treats an unset or unread flag as hidden', async () => {
@@ -90,3 +93,11 @@ describe('the public event page where-line', () => {
     expect(html).not.toContain('Get directions')
   })
 })
+
+vi.mock('@/lib/events/public-join-door', () => ({ loadPublicJoinDoor: async () => null }))
+
+// Exercise Frequency's public privacy boundary regardless of the build's default design.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'frequency',
+}))

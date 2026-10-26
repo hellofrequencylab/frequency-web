@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { RowCard } from './row-card'
@@ -97,3 +97,9 @@ describe('RowCard pressed + focus-visible — the shapes that do NOT navigate', 
     expect(c.querySelector('a')?.getAttribute('href')).toBe('/practices/1')
   })
 })
+
+// These assertions lock the historical DAWN renderer; platform selection is tested separately.
+vi.mock('@/lib/theme/design', async (original) => ({
+  ...(await original<typeof import('@/lib/theme/design')>()),
+  SITE_DESIGN: 'dawn',
+}))
