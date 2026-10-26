@@ -4,8 +4,7 @@ import type { SiteLook } from '@/lib/theme/site-style'
 // A kit is a niche starting point (ADR-1726 layering): pages with sample copy, written into a site's
 // draft ONCE. It holds no colours or fonts (the theme owns those) and leaves no live link behind.
 
-const KIT_NICHES = ['coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks'] as const
-export type KitNiche = (typeof KIT_NICHES)[number]
+export type KitNiche = 'coaches' | 'studios' | 'hosts' | 'venues' | 'nonprofits' | 'networks'
 
 interface KitBlock { type: string; props?: Record<string, unknown> }
 interface KitPage {
