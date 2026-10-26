@@ -1,0 +1,19 @@
+{
+  "id": "HYG-174",
+  "title": "Keep preview resolver tests portable, bounded and self-cleaning",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "scripts/e2e-preview-gate.test.ts",
+    "ref": "Full-app test census, 2026-10-23"
+  },
+  "detail": "The full web suite surfaced four preview-resolver fixture failures and a 3,051-second suite run on macOS. The workflow intentionally runs on Ubuntu and formats reset times with GNU date -d, but its fixture mocked gh and sleep while inheriting the host date implementation; BSD date rejects that call. Add a local fake date supporting only the two operations the workflow uses, preserve the actual workflow shell and all existing behavioral assertions, bound each bash child at 25 seconds below the 30-second test timeout, surface child spawn errors and remove every temporary fixture in finally. Focused rerun: all 54 tests pass in 79 seconds under concurrent full-suite load. This does not prove live preview availability, quota capacity, or production deployment. The full-suite initial failures remain historical evidence; the focused rerun validates this repaired fixture. Probe-cost correction on 2026-10-23: the prior ledger command reran the full test runner (node node_modules/vitest/vitest.mjs run --cache=false --fsModuleCachePath .next/cache/audit-vitest --maxWorkers=1 scripts/e2e-preview-gate.test.ts). Keep those comprehensive behavior tests in normal CI; the ledger now executes the actual code/fixture consequence directly without a nested runner. No assertion or application gate is waived.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-test-fixtures.mjs preview",
+    "note": "Execute actual workflow resolver shell against synthetic success, quota refusal, empty deployment, pending build and malformed URL cases using isolated gh/sleep/date commands; retain every consequence assertion. Normal CI retains the fuller test suites; this direct probe keeps the per-row guard bounded."
+  },
+  "closed": "2026-10-23"
+}
