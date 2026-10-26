@@ -34,17 +34,18 @@ export function takeAboutBody(layout: unknown): { body: string | null; layout: u
       const left = withoutBody(v.content as Record<string, unknown>)
       return left ? { ...node, content: left } : node
     }
-    const out: Record<string, unknown> = {}
+    // Built with fromEntries (own data properties), never by assigning a key taken from the input.
+    const entries: [string, unknown][] = []
     for (const [k, child] of Object.entries(v)) {
       // A type-keyed document: content.about = { body }.
       if (k === 'about' && key === 'content' && take(child)) {
         const left = withoutBody(child as Record<string, unknown>)
-        if (left) out[k] = left
+        if (left) entries.push([k, left])
         continue
       }
-      out[k] = walk(child, k)
+      entries.push([k, walk(child, k)])
     }
-    return out
+    return Object.fromEntries(entries)
   }
   const next = walk(layout)
   return body === null ? { body: null, layout } : { body, layout: next }
