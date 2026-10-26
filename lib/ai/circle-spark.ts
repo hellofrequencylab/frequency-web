@@ -1,3 +1,4 @@
+import { writingCoach, WRITING_QUESTIONS, parseWritingQuestions } from './writing-coach'
 // Vera's Circle drafting, two declared sparks (ADR-990) over one shared runner.
 //
 //   • CIRCLE_SPARK ('circle-spark', Sonnet) — the Circle builder's opening step. From a few
@@ -188,6 +189,7 @@ export function coerce(raw: unknown, primaryPillar: PillarSlug | null): CircleSp
 // ── The start-a-circle assist, retired from lib/ai/circle-wizard.ts ───────────────────────────
 
 export interface CircleSuggestion {
+  questions?: string[]
   name: string
   about: string
 }
@@ -196,33 +198,17 @@ const SUGGEST_TOOL_NAME = 'suggest_circle'
 
 const SUGGEST_TOOL: Anthropic.Tool = {
   name: SUGGEST_TOOL_NAME,
-  description: 'Return a suggested name and about blurb for a new local circle.',
+  description: 'Return questions that help the human plan their Circle.',
   input_schema: {
     type: 'object',
-    properties: {
-      name: {
-        type: 'string',
-        description: 'A short, inviting circle name (≤ 50 chars). Evokes the practice + gathering regularly. No surrounding quotes.',
-      },
-      about: {
-        type: 'string',
-        description: 'One or two warm, plain sentences (≤ 240 chars), second person: what they do together and that newcomers are welcome.',
-      },
-    },
-    required: ['name', 'about'],
+    properties: { questions: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 3 } },
+    required: ['questions'], additionalProperties: false,
   },
 }
-
-const SUGGEST_SYSTEM = `You are Vera, Frequency's warm, encouraging guide. A member is starting a CIRCLE, a small local crew (up to ~50 people) who meet regularly around one shared practice. Suggest a name and a short "about" for their circle.
-
-Rules:
-- name: short and inviting, evocative of the practice and of gathering regularly. Avoid a generic "X Group"; prefer something a person would want to join. No surrounding quotes.
-- about: one or two warm, plain sentences on what they do together and that all levels / newcomers are welcome. Second person, no hype, no emoji.
-- Never invent a specific place, day, or any fact you weren't given.
-- Always call the suggest_circle tool.`
+const SUGGEST_SYSTEM = 'Coach the Circle author with one to three questions. Do not draft a name, About, agreement or replacement wording. Call suggest_circle with questions only.'
 
 /** The declared suggest spark. Its own budget key ('circle-create', $1) and its own tier (Haiku:
- *  one short draft per start). Both unchanged from lib/ai/circle-wizard.ts. */
+ *  one short coaching pass per start). Both unchanged from lib/ai/circle-wizard.ts. */
 export const CIRCLE_SUGGEST = defineSpark<CircleSuggestion>({
   entity: 'circle',
   feature: 'circle-create',
@@ -233,42 +219,18 @@ export const CIRCLE_SUGGEST = defineSpark<CircleSuggestion>({
   coerce: coerceSuggestion,
 })
 
-export async function suggestCircleDraft(input: {
-  interest: string
-  type: 'in-person' | 'online'
-  profileId?: string | null
-}): Promise<CircleSuggestion | null> {
-  const interest = input.interest.trim().slice(0, 120)
-  if (!interest) return null
-
-  const userText = [
-    `Interest / practice: ${interest}`,
-    `Format: ${input.type === 'online' ? 'Online (meets virtually)' : 'In-person (meets locally)'}`,
-    '',
-    `Suggest a name and about for this circle and call ${SUGGEST_TOOL_NAME}.`,
-  ].join('\n')
-
-  return runSpark(CIRCLE_SUGGEST, { content: userText, profileId: input.profileId })
+export async function suggestCircleDraft(input: { interest: string; type: 'in-person' | 'online'; profileId?: string | null }): Promise<CircleSuggestion | null> {
+ return { name: '', about: '', questions: await writingCoach({ feature: 'circle-create', context: 'Circle planning: '+input.interest+'; format '+input.type, profileId: input.profileId }) }
 }
 
 /** Re-coerce every field. Never trust the raw model shape. */
 function coerceSuggestion(raw: unknown): CircleSuggestion | null {
-  if (!raw || typeof raw !== 'object') return null
-  const r = raw as Record<string, unknown>
-  const name = sparkStr(r.name, 60).replace(/^["']+|["']+$/g, '')
-  const about = sparkStr(r.about, 280)
-  if (!name) return null
-  return { name, about }
+  const questions = parseWritingQuestions(JSON.stringify(raw))
+  return questions ? { name: '', about: '', questions } : null
 }
 
 /** Deterministic, still-useful suggestion for when Vera (AI) is off or over budget,
  *  so the "Suggest" affordance always returns something the host can edit. */
-export function fallbackCircleSuggestion(interest: string, type: 'in-person' | 'online'): CircleSuggestion {
-  const i = interest.trim() || 'this practice'
-  const name = `${type === 'online' ? 'Online ' : ''}${i} Circle`
-  const about =
-    type === 'online'
-      ? `A crew who gather online to practice ${i.toLowerCase()} together, regularly. Newcomers welcome. You just have to show up.`
-      : `A local crew who meet regularly to practice ${i.toLowerCase()} together. Newcomers welcome. You just have to show up.`
-  return { name, about }
+export function fallbackCircleSuggestion(_interest: string, _type: 'in-person' | 'online'): CircleSuggestion {
+ return { name: '', about: '', questions: [...WRITING_QUESTIONS] }
 }
