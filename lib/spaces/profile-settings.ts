@@ -25,6 +25,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isValidAccent } from '@/lib/spaces/accent'
 import { isSpaceThemeId, DEFAULT_SPACE_THEME, type SpaceThemeId } from '@/lib/theme/space-themes'
+import { withMegaTheme } from '@/lib/theme/mega-theme'
 import { isSiteLookValue, isSiteThemeId, readSiteStyle, withSiteStyle, SITE_LOOK_OPTIONS, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -52,6 +53,10 @@ interface UpdateSpaceProfileInput {
   /** Global styles (ADR-1728): corners, spacing, header, footer. A value sets it; null returns it to the
    *  theme's own. A key left out is unchanged. */
   siteLook?: Partial<Record<SiteLookKey, string | null>>
+  /** The Mega Theme and niche the Space chose (lib/theme/mega-theme.ts, ADR-1881). A value sets it, null
+   *  clears it, an unknown value is ignored, and a key left out is unchanged. Choosing here writes nothing else. */
+  megaTheme?: string | null
+  megaNiche?: string | null
 }
 
 // `spaces` isn't in the generated DB types yet (ADR-246) — reach it through an untyped accessor.
@@ -161,7 +166,8 @@ export async function updateSpaceProfile(
   //     matching hero override so the new value actually shows.
   const touchesStyle =
     input.theme !== undefined || input.siteTheme !== undefined || input.styleSynced !== undefined || input.spaceFonts !== undefined || input.siteLook !== undefined
-  const touchesPrefs = touchesStyle || input.tagline !== undefined || input.brandName !== undefined
+  const touchesMega = input.megaTheme !== undefined || input.megaNiche !== undefined
+  const touchesPrefs = touchesStyle || touchesMega || input.tagline !== undefined || input.brandName !== undefined
   if (touchesPrefs) {
     const prefs =
       space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
@@ -195,6 +201,12 @@ export async function updateSpaceProfile(
       if ('theme' in next) prefs.theme = next.theme
       else delete prefs.theme
       prefs.siteStyle = next.siteStyle
+    }
+
+    if (touchesMega) {
+      const mega = withMegaTheme(prefs, { theme: input.megaTheme, niche: input.megaNiche })
+      if ('megaTheme' in mega) prefs.megaTheme = mega.megaTheme
+      else delete prefs.megaTheme
     }
 
     if (input.tagline !== undefined || input.brandName !== undefined) {

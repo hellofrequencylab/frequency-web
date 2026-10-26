@@ -1,15 +1,11 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
-// FREQUENCY (ADR-1737): the members kit's `.sw` (46x28, the knob is its ::after, `.on` the iridescent
-// fill). Pending dims through `mu-pending`. Inlined at build; DAWN's markup is unchanged.
-const FREQUENCY = SITE_DESIGN === 'frequency'
-
-// A small accessible toggle switch (role="switch"). A native <button> gives keyboard operation (Space /
+// A small accessible toggle switch (role="switch"), the members kit's `.sw` (ADR-1737: 46x28, the knob
+// is its ::after, `.on` the iridescent fill; pending dims through `mu-pending`). A native <button> gives keyboard operation (Space /
 // Enter toggle) and focus for free; `aria-checked` reports the state to assistive tech. Controlled: the
-// caller owns `checked` and flips it in `onCheckedChange`. Semantic tokens only, no hex.
+// caller owns `checked` and flips it in `onCheckedChange`. 
 export function Switch({
   checked,
   onCheckedChange,
@@ -33,22 +29,6 @@ export function Switch({
 }) {
   // Both stop the click; only `disabled` means "you cannot have this".
   const inert = disabled || pending
-  if (FREQUENCY) {
-    return (
-      <button
-        type="button"
-        role="switch"
-        id={id}
-        aria-checked={checked}
-        aria-busy={pending || undefined}
-        aria-label={ariaLabel}
-        aria-labelledby={ariaLabelledBy}
-        disabled={inert}
-        onClick={() => onCheckedChange(!checked)}
-        className={cn('sw', checked && 'on', pending && 'mu-pending')}
-      />
-    )
-  }
   return (
     <button
       type="button"
@@ -60,26 +40,7 @@ export function Switch({
       aria-labelledby={ariaLabelledBy}
       disabled={inert}
       onClick={() => onCheckedChange(!checked)}
-      className={cn(
-        // State set per docs/INTERACTION-STATES.md §2 (Action control): rest · hover · pressed
-        // (`.press`) · focus-visible · optimistic-pending · disabled.
-        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-pill border border-transparent press transition-[background-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-default motion-reduce:transition-none',
-        checked ? 'bg-primary' : 'bg-border-strong',
-        // Hover is gated in TS rather than by a `disabled:` variant because :hover still
-        // matches a disabled <button> — an inert switch must not light up under the pointer.
-        !inert && (checked ? 'hover:bg-primary-hover' : 'hover:bg-subtle/50'),
-        // `.dimmed` for pending (recedes but stays readable); the flat 50% for genuinely
-        // unavailable. Never both — pending is not a refusal.
-        pending ? 'dimmed' : disabled ? 'opacity-50' : null,
-      )}
-    >
-      <span
-        aria-hidden
-        className={cn(
-          'pointer-events-none inline-block h-5 w-5 rounded-pill bg-surface shadow-sm transition-transform motion-reduce:transition-none',
-          checked ? 'translate-x-5' : 'translate-x-0.5',
-        )}
-      />
-    </button>
+      className={cn('sw', checked && 'on', pending && 'mu-pending')}
+    />
   )
 }

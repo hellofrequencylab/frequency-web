@@ -260,6 +260,7 @@ export type Database = {
         Row: {
           space_id: string
           coach_profile: Json | null
+          discovery_consent: Json | null
           website_editor: Json | null
           program_overview: string | null
           updated_at: string
@@ -267,6 +268,7 @@ export type Database = {
         Insert: {
           space_id: string
           coach_profile?: Json | null
+          discovery_consent?: Json | null
           website_editor?: Json | null
           program_overview?: string | null
           updated_at?: string
@@ -274,6 +276,7 @@ export type Database = {
         Update: {
           space_id?: string
           coach_profile?: Json | null
+          discovery_consent?: Json | null
           website_editor?: Json | null
           program_overview?: string | null
           updated_at?: string

@@ -129,7 +129,7 @@ type Query = {
   limit: (n: number) => Query
   update: (patch: Record<string, unknown>) => Query
   maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: unknown }>
-  then: (resolve: (r: { data: Record<string, unknown>[] | null; error: unknown }) => unknown) => Promise<unknown>
+  then: (resolve: (r: { data: Record<string, unknown>[] | null; error: unknown }) => unknown, reject?: (e: unknown) => unknown) => Promise<unknown>
 }
 
 /** The untyped handle: contacts is not in the generated types (ADR-246). Scoped to this module. */
@@ -161,7 +161,7 @@ export async function listSegmentFieldTemplates(spaceId: string): Promise<Segmen
         .select('id, name, field_keys')
         .eq('space_id', spaceId)
         .order('created_at', { ascending: true })
-        .then((r) => resolve(r))
+        .then((r) => resolve(r), () => resolve({ data: null }))
     })
     return (data ?? []).map((r) => ({
       id: String(r.id),

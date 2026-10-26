@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-1343",
+  "title": "Keep Practice authorship intact across coaching, claiming and copying",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-26",
+  "source": { "file": "lib/ai/practice-spark.ts", "ref": "Owner-directed remaining generator conversion" },
+  "detail": "Practice Spark, template claim and edit tools request and return separate coaching questions, with original feature budgets, model tiers and central completion/accounting. Existing-practice build/edit/guided actions perform no content or steer-preference writes; old callers receive zero applied fields. A copied template retains its source text and lineage without applying a chosen model direction. Creation requires the author's own title and reviewed fields; the explicit written-text door carries the author's exact source, never model replacement prose. Claim, composer and Guided surfaces show questions separately; misleading rewrite controls are removed. Manual create, edit, claim and copy remain. Platform operational curation/review templates and optional cover-image tooling are unchanged. Journey generators are a separate packet, not covered by this row. Offline model/server/rendered regressions and bounded source execution pass; no live provider, production mutation, authenticated browser or deployment acceptance is claimed.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/practice-coaching-boundaries.mjs", "note": "Actual coercion/planning with inert model and no provider/DB; server mutation boundary checks plus separate focused rendered/server/model suites." }
+}

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { notifyEventPeople } from '@/lib/notifications/event-notice'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
@@ -111,22 +112,7 @@ async function notify(
   eventId: string,
   body: string,
 ): Promise<void> {
-  try {
-    const to = recipients.filter((id) => id && id !== actorId)
-    if (to.length === 0) return
-    await admin.from('notifications').insert(
-      to.map((recipient_id) => ({
-        recipient_id,
-        actor_id: actorId,
-        type,
-        reference_type: 'event',
-        reference_id: eventId,
-        body,
-      })),
-    )
-  } catch {
-    /* best-effort */
-  }
+  await notifyEventPeople(recipients, actorId, type, eventId, body)
 }
 
 /**

@@ -169,6 +169,7 @@ export function planMensworkPage(blocks: readonly MwBlock[]): MwPlan[] {
 function planOne(type: string, p: Record<string, unknown>, at: number): MwPlan {
   if (type.startsWith('Network')) return { kind: 'own', at, hero: type === 'NetworkHero' }
   if (type.startsWith('Temple')) return { kind: 'own', at, hero: type === 'TempleHero' }
+  if (type.startsWith('Midnight')) return { kind: 'own', at, hero: type === 'MidnightHero' }
   switch (type) {
     case 'PhotoHero':
     case 'Hero':

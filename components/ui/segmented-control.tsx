@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
 // SEGMENTED CONTROL (HYG-105, owner ruling 2026-09-22). THE view-switcher form: one bordered box,
 // the options as segments flush inside it, the selected segment filled. It replaces every
@@ -24,8 +23,7 @@ import { SITE_DESIGN } from '@/lib/theme/design'
 // form is navigation: a <nav> with a name, each segment a real <Link> carrying `aria-current="page"`
 // when it is the page you are on, so the row is crawlable and middle-clickable.
 //
-// The selected look is the brand fill (`bg-primary` / `text-on-primary`), the same pair the Button
-// primitive's `primary` variant wears, unless the caller owns that look elsewhere: the calendar List
+// The selected look is the kit's `.on` fill, unless the caller owns that look elsewhere: the calendar List
 // rail's rows take their selected fill from lib/calendar/registry.ts (ADR-1503), where a cancelled
 // gathering must never go brand blue, so a segment accepts `selectedClassName`. The fill and idle
 // strings live in constants so the opening tag never carries `bg-primary` itself; the adoption
@@ -60,38 +58,18 @@ export type Segment<V extends string> = {
 
 export type SegmentedLink = { href: string; label: ReactNode }
 
-// FREQUENCY (ADR-1737): the members kit's pill rail (the header's `.ap-nav` grammar): a 4% ink track,
-// pill segments, the selected one the kit's ink fill like `.chip.on` (`mu-seg`,
-// app/themes/frequency/members-ui.css). SITE_DESIGN is inlined at build, so DAWN's strings are untouched.
-const FREQUENCY = SITE_DESIGN === 'frequency'
-
-const BOX = FREQUENCY ? 'mu-seg' : 'rounded-control border border-border bg-surface'
-const BOX_BY_ORIENTATION: Record<SegmentedOrientation, string> = FREQUENCY
-  ? { horizontal: 'inline-flex max-w-full flex-wrap', vertical: 'mu-v flex w-full flex-col' }
-  : {
-      horizontal: 'inline-flex max-w-full flex-wrap items-stretch',
-      vertical: 'flex w-full flex-col',
-    }
-const SEGMENT = FREQUENCY
-  ? 'press tap-target focus-visible:z-10'
-  : 'press tap-target font-semibold transition-colors motion-reduce:transition-none focus-visible:z-10'
-const SEGMENT_BY_ORIENTATION: Record<SegmentedOrientation, string> = FREQUENCY
-  ? { horizontal: '', vertical: '' }
-  : {
-      horizontal: 'inline-flex items-center justify-center first:rounded-l-control last:rounded-r-control',
-      vertical:
-        'block w-full border-l-2 border-t border-t-border text-left first:rounded-t-control first:border-t-0 last:rounded-b-control',
-    }
-const SIZE: Record<SegmentedSize, string> = FREQUENCY
-  ? { sm: '', md: 'mu-md' }
-  : {
-      sm: 'px-3 py-1 text-body-sm',
-      md: 'px-3 py-1.5 text-body-sm',
-    }
-// The brand fill. `border-primary` has no width to paint in the horizontal box; in the vertical one
-// it colours the row's left edge the same as its fill.
-const SELECTED = FREQUENCY ? 'on' : 'bg-primary text-on-primary border-primary'
-const IDLE = FREQUENCY ? '' : 'border-l-transparent text-muted hover:bg-surface-elevated hover:text-text'
+// The members kit's pill rail (ADR-1737; the header's `.ap-nav` grammar): a 4% ink track, pill
+// segments, the selected one the kit's ink fill like `.chip.on` (`mu-seg`,
+// app/themes/frequency/members-ui.css).
+const BOX = 'mu-seg'
+const BOX_BY_ORIENTATION: Record<SegmentedOrientation, string> = {
+  horizontal: 'inline-flex max-w-full flex-wrap',
+  vertical: 'mu-v flex w-full flex-col',
+}
+const SEGMENT = 'press tap-target focus-visible:z-10'
+const SIZE: Record<SegmentedSize, string> = { sm: '', md: 'mu-md' }
+// The selected fill: the kit's `.on`. The idle segment carries no class of its own.
+const SELECTED = 'on'
 
 export function SegmentedControl<V extends string>({
   label,
@@ -125,9 +103,8 @@ export function SegmentedControl<V extends string>({
             {...segment.data}
             className={cn(
               SEGMENT,
-              SEGMENT_BY_ORIENTATION[orientation],
               SIZE[size],
-              selected ? (segment.selectedClassName ?? SELECTED) : IDLE,
+              selected && (segment.selectedClassName ?? SELECTED),
               segment.className,
             )}
           >
@@ -167,7 +144,7 @@ export function SegmentedLinks({
             href={link.href}
             scroll={scroll}
             aria-current={current ? 'page' : undefined}
-            className={cn(SEGMENT, SEGMENT_BY_ORIENTATION.horizontal, SIZE[size], current ? SELECTED : IDLE)}
+            className={cn(SEGMENT, SIZE[size], current && SELECTED)}
           >
             {link.label}
           </Link>

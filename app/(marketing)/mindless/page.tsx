@@ -2,8 +2,6 @@
 // The Calm down fast door lands here (LIVE-800). Static: the page is the client timer and its words.
 import type { Metadata } from 'next'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
-import { PublicTimer } from './public-timer'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FnColumn, FnHero } from '@/components/frequency/site/pages/funnel/parts'
 import { FrequencyMindlessTimer } from '@/components/frequency/site/pages/funnel/mindless-timer'
 
@@ -21,32 +19,17 @@ export const metadata: Metadata = {
 }
 
 export default function MindlessPublicPage() {
-  // The Frequency design (ADR-1737): the same 5-minute session and words, in the design's hero and box.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <>
-        <FnHero
-          center
-          kicker="Mindless"
-          title="Five minutes. Just breathe."
-          lede="Breathe in as the rings grow and let go as they settle. When the clock ends, you are done."
-        />
-        <FnColumn label="02 Timer">
-          <FrequencyMindlessTimer />
-        </FnColumn>
-      </>
-    )
-  }
   return (
-    <section className="mx-auto max-w-2xl px-4 py-12 sm:py-16">
-      <header className="mb-8 text-center">
-        <p className="eyebrow text-primary-strong">Mindless</p>
-        <h1 className="mt-2 text-page-title font-semibold text-text">Five minutes. Just breathe.</h1>
-        <p className="mt-3 text-body text-muted">
-          Breathe in as the rings grow and let go as they settle. When the clock ends, you are done.
-        </p>
-      </header>
-      <PublicTimer />
-    </section>
+    <>
+      <FnHero
+        center
+        kicker="Mindless"
+        title="Five minutes. Just breathe."
+        lede="Breathe in as the rings grow and let go as they settle. When the clock ends, you are done."
+      />
+      <FnColumn label="02 Timer">
+        <FrequencyMindlessTimer />
+      </FnColumn>
+    </>
   )
 }

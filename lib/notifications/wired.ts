@@ -31,14 +31,18 @@ import type { NotificationCategory, NotificationChannel } from '@/lib/notificati
 
 export const WIRED_PREFERENCE_CHANNELS: Record<NotificationCategory, readonly NotificationChannel[]> = {
   dispatches: ['email', 'push'],
-  events:     ['email', 'push'],
-  // ⏳ No mention emitter on any channel. Re-enable per channel when one ships (router checklist).
-  mentions:   [],
+  // The `event.notice` registry row (share, placement, host transfer, co-host invites) gates
+  // in-app on inapp_events; email and push are read by the dispatch and reminder paths.
+  events:     ['email', 'push', 'inapp'],
+  // The `post.mention` registry row (feed @mentions) gates in-app on inapp_mentions. No mention
+  // email or push emitter exists, so those stay unwired.
+  mentions:   ['inapp'],
   lifecycle:  ['email', 'push'],
   // The Guestbook sign notice (ADR-1279) reads inapp_comments directly and push_comments through
   // the registry row `guestbook.sign`; no reply EMAIL emitter exists yet.
   comments:   ['inapp', 'push'],
-  // In-app + push are read by lib/practices/lifecycle.ts; email is not read anywhere.
+  // In-app + push are read by the practice.* registry rows (lib/practices/lifecycle.ts routes
+  // them); email is not read anywhere.
   practice:   ['inapp', 'push'],
   // Read by the housing.match registry row (lib/notifications/registry.ts, ADR-1278): the router
   // gates email + push per member. No in-app outbox handler exists yet, so inapp stays unwired.

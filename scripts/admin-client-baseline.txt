@@ -426,6 +426,7 @@
 # or runs behind the Space owner gate (loyaltyOwnerGate); the tap lookup reads one card by its token hash.
 # rewards.ts calls card_meet() and the capped award_zaps_atomic for the two members of one verified tap.
 # LIVE-1347: lib/ai/discovery-guidance-store.ts serves a strict-secret cron and stores only public guidance digests/status in the service-role-only platform_settings key. It has no user/tenant query or session-authorized surface.
+# lib/notifications/inapp.ts (added 2026-10-26, SCAN-1151): the 'inapp' outbox handler that writes the bell row. The caller is the QUEUE DRAIN (lib/queue/handlers.ts, run by the process-queue cron), so there is no session client to prefer and no cookie to run under. The row is addressed to ANOTHER member than whoever triggered it, and `notifications` has no insert policy for anybody. It writes exactly one `notifications` row from ids the router already gated (inapp_<category> switch, suppression, per-subject mute) and reads nothing.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -1108,6 +1109,7 @@ lib/messaging/dispatch-log.ts
 lib/messaging/place-tree.ts
 lib/nearby/map-pins.ts
 lib/notification-preferences.ts
+lib/notifications/inapp.ts
 lib/nurture/enroll.ts
 lib/nurture/runner.ts
 lib/nurture/store.ts

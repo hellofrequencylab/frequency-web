@@ -30,3 +30,11 @@ describe('upcomingEventFloor', () => {
     expect(upcomingEventFloor(new Date('2026-08-21T07:01:00Z'))).toBe('2026-08-21T00:00:00.000Z')
   })
 })
+
+it('honors a supplied Space zone and safely falls back for invalid or unknown metadata', () => {
+  const now = new Date('2026-08-20T15:30:00Z')
+  expect(upcomingEventFloor(now, 'Asia/Tokyo')).toBe('2026-08-21T00:00:00.000Z')
+  expect(upcomingEventFloor(now, 'America/Los_Angeles')).toBe('2026-08-20T00:00:00.000Z')
+  expect(upcomingEventFloor(now, 'Not/AZone')).toBe(upcomingEventFloor(now))
+  expect(upcomingEventFloor(now, null)).toBe(upcomingEventFloor(now))
+})

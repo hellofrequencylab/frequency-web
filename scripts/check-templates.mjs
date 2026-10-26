@@ -108,6 +108,15 @@ export const SHELLS = [
   // template is imported by path rather than through the barrel.
   'AdminPage',
   'ListingDetailTemplate',
+  // The Space console's page frame (components/frequency/admin/admin-page-frame.tsx): the design's head and
+  // the page's own content, which AdminTemplate and the console templates render now that Frequency is the
+  // only design (ADR-1880).
+  'AdminPageFrame',
+  // The public legal and lead-capture frames (components/frequency/site/pages/legal/legal-reading.tsx and
+  // the funnel capture shell): the Frequency kit's own page frames, which LegalPage and CaptureShell render now
+  // that Frequency is the only design (ADR-1880).
+  'FrequencyLegalReading',
+  'FrequencyCaptureShell',
   // The editable index's header (PAGE-FRAMEWORK §8.5): a sanctioned composition, not drift. It is a
   // thin wrapper over the kit's PageHero, the same one IndexTemplate's heroOverlay renders, and the
   // body under it is operator-rearrangeable (BlockRender / PageModules). Counted from 2026-10-13 when
@@ -137,8 +146,8 @@ export const COMPOSITIONS = {
   // The onboarding wizard and the persona sequence runner: both are WizardShell walks.
   OnboardingForm: 'app/onboarding/form.tsx',
   SequenceRunner: 'components/onboarding/sequence-runner.tsx',
-  // The Space console's page templates (ADR-1737): under DAWN each IS FocusTemplate / DashboardTemplate with
-  // the same props; under Frequency the console shell's AdminPageFrame. Both render the DAWN shell tag.
+  // The Space console's page templates: each takes the props of the template it names and renders the
+  // console shell's AdminPageFrame (ADR-1880).
   ConsoleFocusTemplate: 'components/templates/console-templates.tsx',
   ConsoleDashboardTemplate: 'components/templates/console-templates.tsx',
 }

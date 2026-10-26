@@ -9,7 +9,7 @@ import { getSpaceProfileEvidence } from '@/lib/spaces/analytics'
 export function SpaceCoachingCardView({ slug, identity, observed }: { slug: string; identity: SpaceCoachingIdentity | null; observed: ProfileCoachingEvidence }) {
   const task = rankSpaceCoachingTask(identity, observed)
   const root = `/spaces/${encodeURIComponent(slug)}`
-  const destinations = { identity: `${root}/manage?section=settings`, profile: root, mode: `${root}/manage/mode`, coach: `${root}/settings/coach` }
+  const destinations = { identity: `${root}/manage?section=settings`, profile: root, header: `${root}/manage?section=settings#branding-cta-label`, coach: `${root}/settings/coach` }
   return (
     <section aria-label="Your next coaching step">
       <RowCard

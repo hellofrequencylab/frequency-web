@@ -5,9 +5,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { LAUNCH_DOORS, launchDoorBySlug } from '@/lib/marketing/launch-doors'
-import { buttonClasses } from '@/components/ui/button'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FnHero } from '@/components/frequency/site/pages/funnel/parts'
 
 export const dynamicParams = false
@@ -39,27 +37,13 @@ export default async function LaunchDoorPage({ params }: Params) {
   const door = launchDoorBySlug((await params).door)
   if (!door) notFound()
 
-  // The Frequency design (ADR-1737): the same one promise and one button, as the design's hero.
-  if (SITE_DESIGN === 'frequency') {
-    return (
-      <FnHero center full kicker={door.name} title={door.promise} lede={door.detail}>
-        <div className="ctas">
-          <Link className="btn fq-iri-btn" href={door.buttonHref}>
-            {door.buttonLabel} →
-          </Link>
-        </div>
-      </FnHero>
-    )
-  }
-
   return (
-    <section className="mx-auto flex max-w-2xl flex-col items-center px-4 py-16 text-center sm:py-24">
-      <p className="eyebrow text-primary-strong">{door.name}</p>
-      <h1 className="mt-3 text-page-title-lg font-semibold text-text">{door.promise}</h1>
-      <p className="mt-4 max-w-lg text-lead text-muted">{door.detail}</p>
-      <Link href={door.buttonHref} className={buttonClasses('primary', 'md', 'mt-8')}>
-        {door.buttonLabel}
-      </Link>
-    </section>
+    <FnHero center full kicker={door.name} title={door.promise} lede={door.detail}>
+      <div className="ctas">
+        <Link className="btn fq-iri-btn" href={door.buttonHref}>
+          {door.buttonLabel} →
+        </Link>
+      </div>
+    </FnHero>
   )
 }

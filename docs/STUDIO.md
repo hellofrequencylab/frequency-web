@@ -47,7 +47,8 @@ way only, and `pnpm check:studio` fails the build if it ever reverses.
   mood): change the **kernel**, and add a `FIELD_KIND` if it is a new control.
 - **Never** hand-roll a per-entity wizard, review screen, or field style. If you think
   you need to, you need a field kind instead.
-- **Human authorship (owner direction 2026-10-25).** Event and Circle builder text inputs keep the author's description server-side and use Vera for organizing structured facts plus separate coaching questions. Their Rewrite/Edit controls are removed. The shared `runSpark` accepts protected `authoredProse` and optional raw/result field mapping; coercion that cannot retain the text fails to manual entry. Image-only extraction still requires human transcription review. Legacy Practice/Journey and small Circle suggestion/compose flows retain their previous fidelity behavior until separately converted; `lib/studio/kernel/fidelity.ts` remains for those callers.
+- **Human authorship (owner direction 2026-10-25).** Event and Circle builder text inputs keep the author's description server-side and use Vera for organizing structured facts plus separate coaching questions. Their Rewrite/Edit controls are removed. The shared `runSpark` accepts protected `authoredProse` and optional raw/result field mapping; coercion that cannot retain the text fails to manual entry. Image-only extraction still requires human transcription review. Legacy Journey and small Circle suggestion/compose flows retain their previous fidelity behavior until separately converted; `lib/studio/kernel/fidelity.ts` remains for those callers.
+- **Practice coaching:** Spark, claim and editor assistance return separate questions. The author writes and manually saves names, hooks and steps; copying a template never invokes an AI rewrite. The explicit written-text door carries the author's source unchanged. Operational library curation/review and visual cover offers remain separate. Journey prose paths require their own conversion.
 - **The kernel stays pure and entity-blind.** No React, no Next, no Supabase, and never
   an import from `lib/studio/entities/`. `pnpm check:studio` enforces all three, plus
   the drift guards in `lib/studio/registry.test.ts`.
@@ -229,3 +230,5 @@ header/form/footer shell stays, because eight callers legitimately want that sha
 
 That's the whole plan: a new entity's "create/edit" becomes *compose the kit against an
 existing data layer*, not a new screen.
+
+- Journey coaching (LIVE-1344): Spark questions and optional factual settings/meeting extraction are reviewed separately from names, promises, overviews and weekly prose. Source documents remain available for manual use. Composition, week planning, edit, guided and slot questions do not write content or preferences. Creating a Journey seeds only explicit manual/framework structure; it never launches model population. Manual participant prompts, block editing, library selection and deterministic framework templates remain available.

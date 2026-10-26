@@ -47,6 +47,16 @@ const CITED_FIELD = {
   },
 }
 
+const QUOTED_PROSE_FIELD = {
+  ...CITED_FIELD,
+  properties: { ...CITED_FIELD.properties, kind: { type: 'string', enum: ['fact'] } },
+  required: ['value', 'snippet', 'kind'],
+}
+const SOURCE_CITATION_PROPERTIES = {
+  sourceUrl: { type: 'string', description: 'The supplied page URL, absent for an owner paste.' },
+  snippet: { type: 'string', description: 'One exact source snippet containing every quoted prose field in this row.' },
+}
+
 // The forced structured-output tool. Every commercial field is a CITED_FIELD so the model must
 // declare its source. Nothing is trusted raw: coerceExtraction re-validates + grounds every field.
 const EXTRACTION_TOOL: Anthropic.Tool = {
@@ -58,10 +68,10 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
       name: CITED_FIELD,
       brandName: CITED_FIELD,
       type: { type: 'string', enum: ['business', 'nonprofit'] },
-      tagline: CITED_FIELD,
+      tagline: QUOTED_PROSE_FIELD,
       category: CITED_FIELD,
-      about: CITED_FIELD,
-      story: CITED_FIELD,
+      about: QUOTED_PROSE_FIELD,
+      story: QUOTED_PROSE_FIELD,
       contact: {
         type: 'object',
         properties: {
@@ -89,7 +99,7 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
           type: 'object',
           properties: {
             title: CITED_FIELD,
-            blurb: CITED_FIELD,
+            blurb: QUOTED_PROSE_FIELD,
             price: CITED_FIELD,
             priceModel: { type: 'string', enum: ['fixed', 'from', 'free', 'contact'] },
             currency: { type: 'string', description: 'ISO 4217 code, e.g. USD.' },
@@ -99,13 +109,14 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
       },
       faq: {
         type: 'array',
-        items: { type: 'object', properties: { q: { type: 'string' }, a: { type: 'string' } } },
+        items: { type: 'object', properties: { q: { type: 'string' }, a: { type: 'string' }, ...SOURCE_CITATION_PROPERTIES }, required: ['q', 'a', 'snippet'] },
       },
       events: {
         type: 'array',
         items: {
           type: 'object',
           properties: {
+            ...SOURCE_CITATION_PROPERTIES,
             title: { type: 'string' },
             startsAt: { type: 'string', description: 'ISO 8601.' },
             endsAt: { type: 'string', description: 'ISO 8601.' },
@@ -132,7 +143,8 @@ Hard rules:
 - For every field, set kind honestly: "fact" ONLY when you copy a value from a source AND provide the exact snippet you copied it from plus that source's url; "inferred" when you deduce it from the sources; "generated" when you wrote it yourself with no source.
 - A "fact" MUST carry a snippet copied verbatim from a source and that source's url. If you cannot cite it, mark it "inferred" or leave it out. Do not claim a citation you do not have.
 - Commercial facts (address, phone, email, hours, every offering price, rating) are the ones that matter most: only mark them "fact" with a real snippet + url, otherwise omit them. A blank field is better than a wrong one.
-- about and story may be "generated" prose, but keep them grounded in what the sources say. Do not fabricate history, awards, or claims.
+- tagline, about, story and offering blurbs MUST be exact, contiguous quotations from a supplied website page or owner paste, with kind "fact" and the exact containing snippet. For a website page, include that page sourceUrl; an owner paste has no URL. Preserve the original words, case and punctuation. Never summarize, rewrite, invent or use search snippets for these fields; omit them when no suitable quotation exists.
+- FAQ questions and answers, event titles and event blurbs MUST also be exact source quotations. Include sourceUrl (unless owner paste) and one containing snippet for the whole FAQ/event row. Omit unsupported wording or an event without a quoted title. Never invent FAQ answers or event marketing copy.
 - Prefer the operator paste and the business's own website over search snippets when they disagree.
 
 Call save_business_profile once with everything you can support.`

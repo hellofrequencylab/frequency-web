@@ -20,8 +20,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { memberDay } from '@/lib/member-day'
 import { recordEngagementEvent } from '@/lib/engagement/events'
-import { sendPushToProfile } from '@/lib/push'
-import { getPreferences } from '@/lib/notification-preferences'
+import { routeNotification } from '@/lib/notifications/router'
 
 // The typed admin handle: the term columns (source/ends_on/retired_*) are in the generated
 // types, so a misspelt one fails tsc (LIVE-647).
@@ -214,30 +213,19 @@ export async function runPracticeLifecycleSweep(
             continue
           }
           result.completionsRetired++
-          // The completion notice rides the `practice` category (in-app default-on).
-          const prefs = await getPreferences(row.profile_id)
+          // The completion notice rides the `practice` category (in-app and push, default-on)
+          // through the router, so the member's own switches and suppression decide.
           const title = row.practice?.title ?? 'Your practice'
-          if (prefs.inapp_practice) {
-            const { error: noticeErr } = await admin.from('notifications').insert({
-              recipient_id: row.profile_id,
-              actor_id: null,
-              type: 'practice_term_complete',
-              reference_type: 'practice',
-              reference_id: row.practice_id,
-              body: completionBody(title, row.term_weeks),
-            })
-            if (!noticeErr) result.completionNotices++
-          }
-          await sendPushToProfile(
-            row.profile_id,
+          const sent = await routeNotification(
+            'practice.term_complete',
+            { profileId: row.profile_id },
             {
-              title: 'Practice complete',
+              practiceId: row.practice_id,
               body: completionBody(title, row.term_weeks),
-              url: `/practices/${row.practice_id}`,
               tag: `practice-term-${row.profile_id}-${row.practice_id}-${row.ends_on}`,
             },
-            'practice',
-          ).catch(() => 0)
+          )
+          if (sent.outcomes.some((o) => o.channel === 'inapp' && o.enqueued)) result.completionNotices++
         } catch {
           result.errors++
         }
@@ -319,28 +307,17 @@ export async function runPracticeLifecycleSweep(
           type MineRow = { practice_id: string; practice: { title: string } | null }
           const waiting = ((mineRows ?? []) as unknown as MineRow[]).filter((r) => !loggedIds.has(r.practice_id))
           if (!waiting.length) continue
-          const prefs = await getPreferences(profileId)
-          if (!prefs.inapp_practice && !prefs.push_practice) continue
           const first = waiting[0].practice?.title ?? 'your practice'
           const body =
             waiting.length === 1
               ? `${first} is still waiting today.`
               : `${first} and ${waiting.length - 1} more are still waiting today.`
-          if (prefs.inapp_practice) {
-            await admin.from('notifications').insert({
-              recipient_id: profileId,
-              actor_id: null,
-              type: 'practice_reminder',
-              reference_type: 'practice',
-              reference_id: waiting[0].practice_id,
-              body,
-            })
-          }
-          await sendPushToProfile(
-            profileId,
-            { title: 'Time to practice', body, url: '/on-air', tag: `practice-reminder-${today}` },
-            'practice',
-          ).catch(() => 0)
+          const sent = await routeNotification(
+            'practice.reminder',
+            { profileId },
+            { practiceId: waiting[0].practice_id, body, tag: `practice-reminder-${today}` },
+          )
+          if (!sent.enqueuedCount) continue
           result.remindersSent++
         } catch {
           result.errors++
@@ -411,17 +388,16 @@ export async function runPracticeLifecycleSweep(
             actorProfileId: row.profile_id,
           })
           if (!claim.recorded) continue
-          const prefs = await getPreferences(row.profile_id)
-          if (!prefs.inapp_practice) continue
           const title = row.practice?.title ?? 'One of your practices'
-          await admin.from('notifications').insert({
-            recipient_id: row.profile_id,
-            actor_id: null,
-            type: 'practice_stale_check',
-            reference_type: 'practice',
-            reference_id: row.practice_id,
-            body: `${title} has been quiet for two weeks. Keep it, or set it down to make room.`,
-          })
+          const sent = await routeNotification(
+            'practice.stale_check',
+            { profileId: row.profile_id },
+            {
+              practiceId: row.practice_id,
+              body: `${title} has been quiet for two weeks. Keep it, or set it down to make room.`,
+            },
+          )
+          if (!sent.enqueuedCount) continue
           result.stalePrompts++
         } catch {
           result.errors++

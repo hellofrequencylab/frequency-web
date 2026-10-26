@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-1126",
+  "patch": {
+    "title": "Space calendar and discovery upcoming reads use the owning Space local day",
+    "status": "done",
+    "closed": "2026-10-26",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/space-calendar-local-day.mjs",
+      "checked": "2026-10-26",
+      "evidence": "Actual list/presence readers executed with inert DB and pinned clock: Pacific evening after UTC midnight survives, Tokyo zone wins, invalid zones fall back HOME, local midnight advances, explicit windows skip zone lookup, private events remain denied. Focused real-reader/discovery tests additionally cover cancellation paint, accepted shares, home-space walling, limits and exhaustive windows. Source/mocked verification only; no production or SQL change."
+    }
+  },
+  "append": {
+    "detail": "2026-10-26: calendar defaults and calendar-tab presence now floor the owning Space local day using canonical wall-clock UTC-part bounds. Known profile/nav and Network-tools callers pass existing Space zones; id-only callers read only time_zone. Discovery sitemap presence groups already-gated Space IDs by their current local day. Explicit fromDay/toDay browsing, membership/share axes, event/home privacy gates, cancellation paint and pagination limits stay in place. This TypeScript correction is independent of the already-applied SCAN-1037 SQL migration. No production mutation or deploy."
+  },
+  "wave": "W7"
+}

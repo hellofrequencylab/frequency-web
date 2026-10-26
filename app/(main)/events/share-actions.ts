@@ -17,6 +17,7 @@
 // exists) is treated as idempotent success.
 
 import { revalidatePath } from 'next/cache'
+import { notifyEventPeople } from '@/lib/notifications/event-notice'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
@@ -103,22 +104,7 @@ async function notify(
   eventId: string,
   body: string,
 ): Promise<void> {
-  try {
-    const recipients = [...new Set(recipientIds)].filter((id) => id && id !== actorId)
-    if (recipients.length === 0) return
-    await admin.from('notifications').insert(
-      recipients.map((recipient_id) => ({
-        recipient_id,
-        actor_id: actorId,
-        type,
-        reference_type: 'event',
-        reference_id: eventId,
-        body,
-      })),
-    )
-  } catch {
-    /* best-effort */
-  }
+  await notifyEventPeople(recipientIds, actorId, type, eventId, body)
 }
 
 async function eventTitleSlug(admin: AdminClient, eventId: string): Promise<{ title: string; slug: string | null }> {

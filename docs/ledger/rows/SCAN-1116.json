@@ -1,0 +1,11 @@
+{
+  "id": "SCAN-1116",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26"
+  },
+  "append": {
+    "detail": "Closed 2026-10-26 on Daniel's words (\"replace the SCAN-1116 probe\"). The probe asked for renamed state keys (frequency, stage, commons). Every deploy renders Frequency, so the dawn and midnight state ids already measure Commons and Stage, and renaming them would rename about 156 screenshot and test files. The probe now measures coverage: the home page, /discover, /pricing, /help, /join, /accessibility and the six /for doors are all in the a11y ratchet."
+  },
+  "wave": "W7"
+}

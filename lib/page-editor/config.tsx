@@ -28,6 +28,7 @@ import { designComponents } from '@/components/page-editor/blocks/design'
 import { wildheartComponents } from '@/components/page-editor/blocks/wildheart'
 import { networkComponents, NETWORK_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network'
 import { templeComponents, TEMPLE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/temple'
+import { midnightComponents, MIDNIGHT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight'
 import { DESIGN_BLOCK_TYPES } from '@/lib/page-editor/block-limits'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteBlocks } from '@/components/page-editor/site-blocks'
@@ -70,6 +71,7 @@ export const config: Config = {
     ...wildheartComponents,
     ...networkComponents,
     ...templeComponents,
+    ...midnightComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -168,6 +170,11 @@ export const config: Config = {
     temple: {
       title: 'Temple sections',
       components: [...TEMPLE_CATEGORY_COMPONENTS],
+    },
+    // The Midnight theme's section family (the Midnight design system's Web Theme): website pages only.
+    midnight: {
+      title: 'Midnight sections',
+      components: [...MIDNIGHT_CATEGORY_COMPONENTS],
     },
   },
 }

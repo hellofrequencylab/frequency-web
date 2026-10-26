@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, Loader2, PanelTop, Sparkles, Type } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -112,6 +112,24 @@ export function SpaceBrandingForm({
   heroButtonOrientation?: HeroButtonOrientation
   readOnly?: boolean
 }) {
+  const headerStyleRef = useRef<HTMLDetailsElement>(null)
+  // A deep link into the folded editor must reveal its controls, including on same-page navigation.
+  // Keep the normal fold and manual collapse unchanged; opening this UI never writes preferences.
+  useEffect(() => {
+    const revealHeaderButton = () => {
+      if (window.location.hash !== '#branding-cta-label') return
+      const details = headerStyleRef.current
+      if (!details) return
+      details.open = true
+      const target = details.querySelector<HTMLElement>('#branding-cta-label')
+      target?.focus({ preventScroll: true })
+      target?.scrollIntoView({ block: 'start' })
+    }
+    revealHeaderButton()
+    window.addEventListener('hashchange', revealHeaderButton)
+    return () => window.removeEventListener('hashchange', revealHeaderButton)
+  }, [slug])
+
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -435,7 +453,7 @@ export function SpaceBrandingForm({
       {/* HEADER STYLE — a differentiated fold-open EDIT button (border + surface + icon so it reads as a
           button on all-white), CLOSED by default. Folds open to reveal buttons, shade, and the header button.
           Height lives beside the profile image now (item 4). Each control autosaves on pick / blur. */}
-      <details className="group rounded-card border border-border bg-surface-elevated">
+      <details ref={headerStyleRef} className="group rounded-card border border-border bg-surface-elevated">
         <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-control px-4 py-3 text-body-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
           <PanelTop className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <span className="flex-1">Header style</span>
@@ -509,7 +527,7 @@ export function SpaceBrandingForm({
         {/* Header button — the one dominant action on your hero. Autosaves on each pick / blur; a custom
             link only saves once its label + URL are valid. */}
         <div className="space-y-3">
-          <p className={cn(labelClasses, 'block font-semibold')} id="branding-cta-label">Header button</p>
+          <p className={cn(labelClasses, 'block font-semibold')} id="branding-cta-label" tabIndex={-1}>Header button</p>
           <p className="text-meta text-muted">
             The main button on your page. Keep the default, point it at one of your pages, or add your own
             link.

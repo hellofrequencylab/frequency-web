@@ -31,7 +31,13 @@ const checks = {
   'opening-date': () => has('components/frequency/site/pages/home/frequency-home.tsx', /OPENING_DATE_(ISO|LABEL)/),
   'commons-literal': () => !/#7C766F/i.test(read('app/themes/frequency/site-niche.css')),
   'contrast-gate': () => has('scripts/check-contrast.mjs', /themes\/frequency|frequency\.css/),
-  'axe-frequency': () => /\[(frequency|stage|commons)[^\]]*\]/i.test(read('test/e2e/a11y-baselines.json')),
+  // Coverage, not state ids: every deploy renders Frequency, so the dawn and midnight state ids already
+  // measure Commons and Stage. What can go missing is a launch route in the ratchet (SCAN-1116, retired by Daniel).
+  'axe-frequency': () => {
+    const keys = Object.keys(JSON.parse(read('test/e2e/a11y-baselines.json')).surfaces)
+    const paths = ['/', '/discover', '/pricing', '/help', '/join', '/accessibility', ...['coaches-and-healers', 'studios', 'event-hosts', 'venues', 'nonprofits', 'networks'].map((d) => `/for/${d}`)]
+    return paths.every((p) => keys.some((k) => k.startsWith(`${p} [`)))
+  },
   'dialogs-escape': () => ['components/admin/library/apps-lane.tsx', 'components/admin/library/splash-lane.tsx'].every((f) => has(f, /Escape/)),
   'onair-lazy': () => has('components/on-air/mindless.tsx', /dynamic\(/),
   'shell-lazy': () => has('components/layout/app-shell.tsx', /dynamic\([^)]*admin-bar|dynamic\([^)]*search-overlay/s),

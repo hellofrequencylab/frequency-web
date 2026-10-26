@@ -18,11 +18,11 @@ import type { StandingLever } from '@/lib/spaces/standing'
 // Voice canon (CONTENT-VOICE §10): plain sentences, no em dashes, no narrating the operator's
 // feelings, no promises about outcomes we cannot keep.
 
-/** What the network actually sent, over the trailing window. */
+/** Page activity in the trailing window, alongside current audience totals. */
 export interface ReachSummary {
   windowDays: number
-  profileViews: number
-  ctaClicks: number
+  profileViews: number | null
+  ctaClicks: number | null
   /** Members who follow this Space. Null when it was not measured. */
   followers: number | null
   /** Active members of this Space. Null when it was not measured. */
@@ -75,25 +75,27 @@ export function ReachReceipt({
     <div className="space-y-10">
       {/* ── 1. What the network sent ─────────────────────────────────────────────────────────── */}
       <section aria-labelledby="reach-sent">
-        <SectionHeader id="reach-sent" title={`What the network sent you, last ${reach.windowDays} days`} />
+        <SectionHeader id="reach-sent" title={`Your Space page, last ${reach.windowDays} days`} />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
             bordered
-            label="Page views"
-            value={reach.profileViews}
+            label="Daily page views"
+            value={count(reach.profileViews)}
             icon={Eye}
-            detail="Counted once per person per day"
+            detail="One per signed-in account per UTC day. Anonymous views share one daily count."
           />
           <StatCard
             bordered
             label="Button taps"
-            value={reach.ctaClicks}
+            value={count(reach.ctaClicks)}
             icon={MousePointerClick}
-            detail="Your page's main action"
+            detail="Recorded taps on your main action, including repeat taps"
           />
           <StatCard bordered label="Followers" value={count(reach.followers)} icon={Heart} detail="People who asked to hear from you" />
           <StatCard bordered label="Members" value={count(reach.members)} icon={Users} detail="People who joined your Space" />
         </div>
+
+        <p className="mt-3 text-meta text-subtle">These counts are not unique visitors or proof that the network brought someone here. A dash means the count is unavailable. Followers and members are current totals, not new joins in this window.</p>
 
         {/* Placement, said plainly. A number in a list is the honest version of "how visible am I". */}
         <div className="mt-3 rounded-card border border-border bg-surface p-4">
@@ -112,8 +114,8 @@ export function ReachReceipt({
             </p>
           ) : (
             <p className="text-body-sm text-muted">
-              Your Space is not listed in the network directory yet, so nobody is browsing to it. Turn listing on in
-              your Space settings and the signals below start deciding where you land.
+              Your Space is not listed in the network directory. People can still reach it through other links. Turn
+              listing on in your Space settings to appear in the directory.
             </p>
           )}
         </div>
@@ -121,7 +123,7 @@ export function ReachReceipt({
 
       {/* ── 2. What would send more ──────────────────────────────────────────────────────────── */}
       <section aria-labelledby="reach-more">
-        <SectionHeader id="reach-more" title="What would send more" />
+        <SectionHeader id="reach-more" title="Signals behind placement" />
         <p className="mb-4 text-body-sm text-muted">
           The directory orders Spaces by these seven things and nothing else. They are listed weakest first, so the top
           of this list is the next thing worth doing.
@@ -174,9 +176,10 @@ export function ReachReceipt({
             nobody, or gathering a following and never opening the doors, both score lower than doing some of each.
           </li>
           <li>
-            <strong className="font-semibold text-text">Attendance is not counted.</strong> We have no reliable record
-            of who actually turned up to a gathering, so we do not pretend to. Gatherings held counts gatherings that
-            happened, and that is all it claims.
+            <strong className="font-semibold text-text">Host-marked attendance counts when measured.</strong> The roster
+            records seats you marked present at held gatherings. Marked ticket seats also require a succeeded, unrefunded payment.
+            These are attendance records, not unique people across gatherings. Without a complete attendance read,
+            this signal is left out of standing. Gatherings held is a separate count of published gatherings that started.
           </li>
         </ul>
         {computedAt && (

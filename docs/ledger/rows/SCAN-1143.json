@@ -1,0 +1,11 @@
+{
+  "id": "SCAN-1143",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26"
+  },
+  "append": {
+    "detail": "Turned on in eslint.config.mjs as an error, with type information, for the money, notification, webhook, Space automation, CRM and join paths (lib/billing, lib/notifications, lib/spaces, lib/crm, app/api, app/join). Typed linting of the whole app takes about six minutes, so the scope grows path by path as each is cleaned. Ten bare calls in scope were fixed; six query wrappers that would have hung forever on a rejected query now resolve to an empty list. The 335 silent .catch(() => null) sites are a different pattern and are not part of this rule."
+  },
+  "wave": "W7"
+}

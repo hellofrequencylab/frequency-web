@@ -23,6 +23,7 @@ import { FREQUENCY_PAGE_CSS } from '../frequency-page-css'
 import { FQ_EDITOR, k } from './skin'
 import { FqIcon } from '@/components/frequency/icon'
 import { editorBlockMeta } from '@/lib/sites/editor/block-meta'
+import { bindSlots, readSlots } from '@/lib/spaces/content-slots'
 import { NETWORK_BLOCK_CSS, docHasNetworkBlocks } from '../network-css'
 import { SectionIcon } from './section-icon'
 
@@ -356,7 +357,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     const block = doc.content.find((b) => b.props.id === focusField.blockId)
     const section = mount.querySelector<HTMLElement>(`.we-section[data-block-id="${CSS.escape(focusField.blockId)}"]`)
     if (!block || !section) return
-    const targets = new Set(fieldTextTargets(block.props, focusField.field, focusField.path))
+    const targets = new Set(fieldTextTargets(bindSlots(block.props, readSlots(metadata?.space)), focusField.field, focusField.path))
     if (!targets.size) return
     const lit: HTMLElement[] = []
     for (const node of section.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6,p,blockquote,figcaption,li,dt,dd,a,button,label,summary,span,small,strong,em,b')) {
@@ -372,7 +373,10 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     const text = copy.textContent ?? ''
     return node.matches('.mw-strip-end') && text.trimEnd().endsWith('→') ? text.trimEnd().slice(0, -1).trimEnd() : text
   }
-  function editText(event: MouseEvent<HTMLElement>, block: ContentItem): boolean {
+  function editText(event: MouseEvent<HTMLElement>, stored: ContentItem): boolean {
+    // Match and edit the words the owner SEES: a kit's `{{story|...}}` token is resolved first (lib/spaces/content-slots.ts),
+    // so a click finds its field, and typing over the line saves the typed words in place of the token.
+    const block: ContentItem = { ...stored, props: bindSlots(stored.props, readSlots(metadata?.space)) }
     if (preview || editing.current || (event.target as HTMLElement).closest('.we-micro,.we-section-label,.we-pin,.we-layout-handles,.we-spacing-handle')) return false
     const schema = config.components[block.type]?.fields ?? {}
     const fields = { ...schema }
@@ -509,7 +513,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     {mount && createPortal(<div data-website-theme={theme} data-space-theme={spaceTheme} style={themeVars ?? websiteThemeVars(theme, brandAccent)} className="we-canvas-root" onClickCapture={(e) => { const anchor = (e.target as HTMLElement).closest('a'); if (!preview && onChromeSelect && (e.target as HTMLElement).closest('.hs-header,.hs-footer,.hs-footer-top')) { onChromeSelect((e.target as HTMLElement).closest('.hs-header') ? 'header' : 'footer'); onTextSelect?.(null) } if (!anchor) return; e.preventDefault(); if (preview) { const href = safeUrl(anchor.getAttribute('href')); if (href) window.open(new URL(href, origin).href, '_blank', 'noopener,noreferrer') } }}>
       <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' || theme === 'Network' || theme === 'Temple' ? '' : FREQUENCY_PAGE_CSS) + (theme !== 'Network' && docHasNetworkBlocks(doc) ? NETWORK_BLOCK_CSS : '') + (FQ_EDITOR ? FQ_CANVAS_CSS : '')}</style>
       {!preview && onChromeSelect && <button className="we-chrome-edit" type="button" onClick={() => { onTextSelect?.(null); onChromeSelect('header') }}>Edit header</button>}
-      <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : theme === 'Network' ? { theme: 'network', season: mensworkSeason(new Date()), scheme: networkScheme(brandAccent) } : theme === 'Temple' ? { theme: 'temple', season: mensworkSeason(new Date()) } : null}>
+      <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : theme === 'Network' ? { theme: 'network', season: mensworkSeason(new Date()), scheme: networkScheme(brandAccent) } : theme === 'Temple' ? { theme: 'temple', season: mensworkSeason(new Date()) } : theme === 'Midnight' ? { theme: 'midnight', season: mensworkSeason(new Date()) } : null}>
         <WebsiteDocument doc={doc} theme={theme} config={config} metadata={metadata} live={live} links={links} origin={origin} title={title} wrapSection={wrap} />
         {!preview && <div className="we-addend"><button className="we-insert" type="button" aria-label="Insert section at end of page" onClick={() => onInsert(doc.content.length)}>+ Add section</button></div>}
       </SiteChrome>

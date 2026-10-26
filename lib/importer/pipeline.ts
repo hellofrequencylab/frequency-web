@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // SMART BUSINESS IMPORTER — the RESEARCH pipeline orchestrator (P1 + P2,
 // docs/BUSINESS-IMPORTER.md §6). Runs one intake through harvest -> extract -> verify ->
-// reframe and writes the raw sources, the extracted+verified+voiced draft, the ledger, the
+// verification and writes the raw sources, the extracted+verified draft, the ledger, the
 // running budget, and the status transitions back to the business_intake row. This is the
 // body of the durable background job (./queue.ts) the process-queue cron drains.
 //
@@ -17,14 +17,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { BusinessProfile, ProvenanceLedger } from './schema'
-import { buildSourceExcerpt } from './excerpt'
 import { scanProse } from './prose-scan'
 import { harvest, type HarvestDeps, type HarvestResult } from './harvest'
 import { extractProfile, type ExtractRunResult } from './extract'
 import { verify, type VerifyResult } from './verify'
-import { reframe, type ReframeRunResult } from './reframe/run'
+import type { reframe } from './reframe/run'
 import { analyzeDemographic } from './reframe/demographic'
-import { applyReframe } from './reframe/apply'
 import * as store from './store'
 import type { BusinessIntakeRow } from './intake'
 
@@ -54,7 +52,7 @@ interface ResearchOutcome {
   budgetSpent: number
   harvest?: HarvestResult['summary']
   verify?: { fieldsVerified: number; blocked: string[]; withheld: boolean }
-  /** Whether reframe ran + whether its copy passed the §10 voice check (else it is flagged amber). */
+  /** Legacy report slot; prose replacement is disabled and leaves this undefined. */
   reframe?: { ran: boolean; voiceOk: boolean }
   /** The prose safety scan (ADR-1037): how many prose fields cleared to publish vs stayed gated. */
   prose?: { clean: number; flagged: number }
@@ -131,7 +129,6 @@ export async function runResearch(
   const doHarvest = deps.harvest ?? harvest
   const doExtract = deps.extractProfile ?? extractProfile
   const doVerify = deps.verify ?? verify
-  const doReframe = deps.reframe ?? reframe
   const doAnalyzeDemographic = deps.analyzeDemographic ?? analyzeDemographic
 
   const row = await store.getIntake(intakeId)
@@ -191,8 +188,8 @@ export async function runResearch(
 
     // The persisted draft is the VERIFIED subset when verify ran, else the raw extract with an
     // untouched ledger (every commercial fact then remains unverified -> withheld at apply).
-    let finalDraft = verifyResult?.verifiedDraft ?? draft
-    let finalLedger = verifyResult?.ledger ?? ledger
+    const finalDraft = verifyResult?.verifiedDraft ?? draft
+    const finalLedger = verifyResult?.ledger ?? ledger
 
     // ── Stage 4.5: Demographic + positioning pass (Importer v2 #1). A short read of WHO this business
     // serves and HOW it is positioned, grounded ONLY on the verified subset (so it cannot surface an
@@ -208,38 +205,8 @@ export async function runResearch(
       }
     }
 
-    // ── Stage 5: Reframe (sonnet + voice primer). Grounds ONLY on the VERIFIED subset (finalDraft),
-    // never the raw harvest, so it cannot launder an unverified commercial fact into prose (docs
-    // §4.4). Its output is folded back tagged kind:'generated', keeping it under the prose gate. The
-    // demographic steer above sharpens the voice toward the right reader (docs/CONTENT-VOICE.md). ──
-    let reframeResult: ReframeRunResult | null = null
-    const reframeBudget = Math.max(0, cap - budgetSpent)
-    if (extractRan && reframeBudget > 0) {
-      // Steer the reframe TONE by the intake's seed MOOD + operator DIRECTIONS (Importer v2). Absent ⇒
-      // the default warm tone and no extra steering.
-      // The business's OWN words, so the copy LIFTS their sentences instead of paraphrasing a draft
-      // that has already been compressed twice (ADR-1036). Empty when there is nothing usable, which
-      // leaves reframe on exactly its prior verified-facts-only grounding.
-      const sourceExcerpt = buildSourceExcerpt(rawSources)
-      reframeResult = await doReframe({
-        verified: finalDraft,
-        profileId: row.createdBy,
-        mood: row.inputs.mood,
-        directions: row.inputs.directions,
-        sourceExcerpt,
-      })
-      if (reframeResult) {
-        budgetSpent += reframeResult.costUsd
-        // Edit-wins (docs §5): never clobber a prose field an operator already edited in review.
-        // Carry each edited prose value from the persisted (under-review) draft onto the fresh
-        // verified draft, then pass its paths as `preserve` so applyReframe leaves them alone.
-        const preserve = editedProsePaths(row.draft)
-        carryEditedProse(finalDraft, row.draft, preserve)
-        const folded = applyReframe(finalDraft, reframeResult.copy, finalLedger, preserve)
-        finalDraft = folded.draft
-        finalLedger = folded.ledger
-      }
-    }
+    // Research extracts and verifies source facts; it never substitutes generated marketing prose.
+    carryEditedProse(finalDraft, row.draft, editedProsePaths(row.draft))
 
     // Fold captured media into the FINAL draft (harvest already uploaded it to site-media). Media
     // is never a commercial fact, so it is not gated by verify; folding here keeps it regardless.
@@ -264,18 +231,13 @@ export async function runResearch(
     await store.setStatus(intakeId, 'review', { error: null })
 
     const withheld = verifyResult ? verifyResult.commercialPolicy === 'withhold' : true
-    const reframedNote = reframeResult
-      ? reframeResult.voice.ok
-        ? '; voiced'
-        : '; voiced (flagged for a voice edit)'
-      : ''
     const proseNote = proseVerdicts.flagged > 0 ? `; ${proseVerdicts.flagged} prose field(s) held for review` : ''
     return {
       ok: true,
       status: 'review',
       note: extractRan
         ? verifyResult
-          ? `researched; ${verifyResult.fieldsVerified} commercial field(s) checked${reframedNote}${proseNote}`
+          ? `researched; ${verifyResult.fieldsVerified} commercial field(s) checked${proseNote}`
           : 'extracted (verify skipped: budget/AI)'
         : 'degraded to a flagged draft (extract unavailable)',
       budgetSpent,
@@ -283,7 +245,7 @@ export async function runResearch(
       verify: verifyResult
         ? { fieldsVerified: verifyResult.fieldsVerified, blocked: verifyResult.blocked, withheld }
         : undefined,
-      reframe: reframeResult ? { ran: true, voiceOk: reframeResult.voice.ok } : undefined,
+      reframe: undefined,
       prose: proseVerdicts,
     }
   } catch (err) {

@@ -12,11 +12,9 @@
 // Presentational + server-friendly (no hooks).
 
 import { PageHeading } from './page-heading'
-import { SITE_DESIGN } from '@/lib/theme/design'
 
-// FREQUENCY (ADR-1737): the stat row is the kit's `.g4` grid of stat panels and the body flows in the
-// kit's section rhythm (`mu-stats` / `mu-flow`, app/themes/frequency/members-ui.css). Inlined at build.
-const FREQUENCY = SITE_DESIGN === 'frequency'
+// The stat row is the kit's `.g4` grid of stat panels and the body flows in the kit's section rhythm
+// (`mu-stats` / `mu-flow`, app/themes/frequency/members-ui.css).
 
 const WIDTHS = {
   default: 'max-w-5xl',
@@ -56,9 +54,9 @@ export function DashboardTemplate({
       {banner}
       <PageHeading eyebrow={eyebrow} title={title} description={description} actions={actions} back={back} adminBar={adminBar} />
       {stats && (
-        <div className={FREQUENCY ? 'g4 mu-stats' : 'mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4'}>{stats}</div>
+        <div className="g4 mu-stats">{stats}</div>
       )}
-      <div className={FREQUENCY ? 'mu-flow' : 'space-y-8'}>{children}</div>
+      <div className="mu-flow">{children}</div>
     </div>
   )
 }

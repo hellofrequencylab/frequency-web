@@ -11,16 +11,12 @@ const paths = [
   "lib/ai/connections-ai.ts",
   "lib/ai/creator-tips.ts",
   "lib/ai/help-rag.ts",
-  "lib/ai/journey-composition.ts",
-  "lib/ai/journey-edit.ts",
-  "lib/ai/journey-slot-coaching.ts",
   "lib/ai/library-tag.ts",
   "lib/ai/writing-coach.ts",
   "lib/ai/memory-summary.ts",
   "lib/ai/messaging-generator.ts",
   "lib/ai/poster-observer.ts",
   "lib/ai/practice-curate.ts",
-  "lib/ai/practice-edit.ts",
   "lib/ai/practice-publish-screen.ts",
   "lib/ai/quality-gate.ts",
   "lib/ai/space-copilot.ts",
@@ -44,6 +40,31 @@ for (const path of paths) {
     ts.forEachChild(node, visit)
   }
   visit(source); assert.ok(localCalls > 0, `${path} has no inventoried completion`)
+}
+// Explicit delegates retain the existing feature/tier and caller attribution through Spark.
+for (const [file, entity, feature, tier] of [
+  ['practice-edit', 'practice', 'practice-edit', 'opus'],
+  ['journey-edit', 'journey', 'journey-edit', 'opus'],
+  ['journey-composition', 'journey', 'journey-composition', 'opus'],
+  ['journey-slot-coaching', 'journey', 'journey-slot-coaching', 'haiku'],
+]) {
+const practiceEdit = ts.createSourceFile(file + '.ts', readFileSync('lib/ai/' + file + '.ts', 'utf8'), ts.ScriptTarget.Latest, true)
+let sparkImport = false, boundedSpec = false, attributedRun = false
+function verifyPracticeDelegate(node) {
+  if (ts.isImportDeclaration(node) && node.moduleSpecifier.text === './spark') sparkImport = !!node.importClause?.namedBindings?.elements?.some(e => e.name.text === 'runSpark')
+  if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+    const name = node.expression.text
+    assert.ok(!['completeRaw', 'completeText', 'runToolLoop', 'recordAiUsage', 'getAnthropic'].includes(name), 'Practice edit must not bypass shared accounting')
+    if (name === 'writingCoachingSpec') boundedSpec = node.arguments.map(a => a.getText(practiceEdit)).join(',') === [entity, feature, tier].map(v => "'" + v + "'").join(',')
+    if (name === 'runSpark') {
+      const params = node.arguments[1]
+      attributedRun = ts.isObjectLiteralExpression(params) && params.properties.some(p => ts.isPropertyAssignment(p) && p.name.getText(practiceEdit) === 'profileId' && p.initializer.getText(practiceEdit) === 'input.profileId')
+    }
+  }
+  ts.forEachChild(node, verifyPracticeDelegate)
+}
+verifyPracticeDelegate(practiceEdit)
+assert.ok(sparkImport && boundedSpec && attributedRun, file + ' lost its shared, attributed coaching dispatch')
 }
 // These modules delegate their paid work to the inventoried writing-coach seam.
 // Keep the legacy feature attribution and prohibit a second direct completion.
