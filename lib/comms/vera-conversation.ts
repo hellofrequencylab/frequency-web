@@ -24,11 +24,14 @@ One or two plain sentences: what the person wants and where the thread stands. O
 const TRIAGE_SYSTEM = `You classify a conversation's priority. Reply with ONE line: "<priority> — <one short reason>".
 Priority is one of: low, normal, high, urgent. Urgent = money, access loss, or an upset member about to churn.`
 
+/** Guidance must be questions, never quoted replacement text. */
+const QUOTE = /["\u201c\u201d\r\n]/
+
 /** Render the thread as an oldest-first transcript for a prompt (skips internal notes). */
 function transcript(messages: { direction: string; authorName: string; body: string; isInternal: boolean }[]): string {
   return messages
     .filter((m) => !m.isInternal)
-    .map((m) => `${m.direction === 'inbound' ? 'Them' : 'Us'} (${m.authorName}): ${m.body}`)
+    .map((m) => `${m.direction === 'inbound' ? 'Them' : 'Us'}: ${m.body}`)
     .join('\n')
     .slice(0, 8000)
 }
@@ -80,8 +83,8 @@ export async function veraDraftReply(conversationId: string, profileId: string):
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return fail('Vera could not review this thread. Your reply is unchanged.')
     const data = raw as Record<string, unknown>
     if (Object.keys(data).some(k => !['questions', 'checks'].includes(k))) return fail('Vera could not review this thread. Your reply is unchanged.')
-    const questions = Array.isArray(data.questions) ? data.questions.filter((q): q is string => typeof q === 'string' && q.length <= 400 && q.trim().endsWith('?')).slice(0, 4) : []
-    const checks = Array.isArray(data.checks) ? data.checks.filter((q): q is string => typeof q === 'string' && q.trim().length > 0 && q.length <= 400).slice(0, 4) : []
+    const questions = Array.isArray(data.questions) ? data.questions.filter((q): q is string => typeof q === 'string' && q.length <= 400 && q.trim().endsWith('?') && !QUOTE.test(q)).slice(0, 4) : []
+    const checks = Array.isArray(data.checks) ? data.checks.filter((q): q is string => typeof q === 'string' && q.trim().length > 0 && q.length <= 400 && !QUOTE.test(q)).slice(0, 4) : []
     if (!questions.length) return fail('Vera had no useful questions. Your reply is unchanged.')
     // Legacy action field name retained for callers; the UI displays guidance separately.
     return ok({ draft: [...questions, ...checks].join('\n') })

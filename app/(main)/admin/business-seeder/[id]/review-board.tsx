@@ -169,7 +169,7 @@ export function ReviewBoard({
         tone: 'ok',
         text: res.researching
           ? 'Added. Re-reading the sources now. When it lands back in review, check the new facts and Re-apply to push it live.'
-          : 'Directions saved. Pick a mood to re-seed with them.',
+          : 'Directions saved. Write your own copy above, then Re-apply.',
       })
       router.refresh()
     })
@@ -271,7 +271,7 @@ export function ReviewBoard({
       {applied && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
           <p className="text-meta text-muted">
-            Changed the mood or the copy above? Re-apply to push it to the live Space. Verified facts and
+            Changed the copy above? Re-apply to push it to the live Space. Verified facts and
             the commercial-fact gate are re-checked; withheld facts stay withheld.
           </p>
           <Button variant="secondary" onClick={approve} disabled={applying}>

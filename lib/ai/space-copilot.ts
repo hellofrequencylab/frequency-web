@@ -7,7 +7,7 @@ import { featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import type { SpaceType } from '@/lib/spaces/types'
-import type { SpaceCoachProfile } from '@/lib/spaces/coach-profile'
+import { COACH_PROFILE_FIELDS, type SpaceCoachProfile } from '@/lib/spaces/coach-profile'
 
 const FEATURE = 'space-copilot'
 
@@ -96,7 +96,7 @@ export function parseCoachingQuestions(raw: string): string | null {
     const questions: unknown = JSON.parse(raw)
     if (!Array.isArray(questions) || questions.length < 1 || questions.length > 3) return null
     if (!questions.every((q) => typeof q === 'string' && q.length <= 240 &&
-      /^(Who|What|Which|How|Why)\b[^?!.\n]*\?$/i.test(q.trim()))) return null
+      /^(Who|What|Which|How|Why)\b[^?!.\n"\u201c\u201d]*\?$/i.test(q.trim()))) return null
     return questions.map((q: string) => stripEmDashes(q.trim())).join(' ')
   } catch { return null }
 }
@@ -104,7 +104,7 @@ export function parseCoachingQuestions(raw: string): string | null {
 async function coach(ctx: SpaceContext, kind: 'bio' | 'tagline'): Promise<string> {
   const facts = JSON.stringify({ name: brandLabel(ctx), type: typeLabel(ctx.type),
     ownerWords: clean(ctx.about, 600), offerings: offeringFacts(ctx),
-    ownerPreferences: ctx.coachProfile ?? null })
+    ownerPreferences: ctx.coachProfile ? Object.fromEntries(COACH_PROFILE_FIELDS.map(f => [f.key, clean(ctx.coachProfile?.[f.key], f.max)])) : null })
   const text = await draft({
     system: BASE_RULES,
     user: `Help the owner think through their ${kind === 'bio' ? 'About and story' : 'tagline'}. Space facts: ${facts}`,
