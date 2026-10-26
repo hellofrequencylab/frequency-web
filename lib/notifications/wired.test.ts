@@ -200,17 +200,18 @@ describe('lib/notifications/wired.ts agrees with the tree, both ways', () => {
     expect(mismatches, `\n${mismatches.join('\n')}\n`).toEqual([])
   })
 
-  it('pins the hidden set (meta-scan B9 D1/D6, the SCAN-528 shape): eight of twenty-one', () => {
+  it('pins the hidden set (meta-scan B9 D1/D6, the SCAN-528 shape): seven of twenty-one', () => {
     // The in-app switches outside Practice, Replies and Mentions, the Mentions email and push rows, Replies
     // email, and Practice email. TWO emitters landed on 2026-09-08 and this pin carries both: the
     // Guestbook sign notice (ADR-1279) turned the Replies in-app + push pair back on, and Matches
     // (DEF-HOUS, ADR-1278) added three switches of which email and push have readers and the in-app
     // one does not. The post.mention registry row (feed @mentions, SCAN-1153) turned the Mentions
-    // in-app switch on, with Daniel's go-ahead to update this pin. Ten of eighteen before either. If this changes, an emitter shipped (good) or a
+    // in-app switch on, and the event.notice row (SCAN-1161) did the same for Events in-app, each
+    // with Daniel's go-ahead to update this pin. Ten of eighteen before either. If this changes, an emitter shipped (good) or a
     // reader was removed (say so).
     expect(WIRED_PREFERENCE_CHANNELS).toEqual({
       dispatches: ['email', 'push'],
-      events:     ['email', 'push'],
+      events:     ['email', 'push', 'inapp'],
       mentions:   ['inapp'],
       lifecycle:  ['email', 'push'],
       comments:   ['inapp', 'push'],
@@ -221,7 +222,7 @@ describe('lib/notifications/wired.ts agrees with the tree, both ways', () => {
     for (const category of NOTIFICATION_CATEGORIES) {
       for (const channel of CHANNELS) if (!isPreferenceWired(channel, category)) hidden.push(`${channel}_${category}`)
     }
-    expect(hidden).toHaveLength(8)
+    expect(hidden).toHaveLength(7)
     expect(wiredCategories(NOTIFICATION_CATEGORIES)).toEqual(['dispatches', 'events', 'mentions', 'lifecycle', 'comments', 'practice', 'matches'])
   })
 })
