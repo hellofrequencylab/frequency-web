@@ -1,0 +1,19 @@
+{
+  "id": "HYG-195",
+  "title": "Retire orphan account navigation without losing operator and preview controls",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "M",
+  "closed": "2026-10-27",
+  "source": {
+    "file": "components/frequency/members/shell/account-tools.tsx",
+    "ref": "Runtime-root orphan graph + active feature reconciliation"
+  },
+  "detail": "Removed seven unrooted legacy account/mobile/nav/context UI modules after reconciling destinations, theme controls and current mobile registry. Restored missing identity/context, downgrade-only role preview and per-member demo preference controls in the active Frequency avatar sheet, supplied by real server-resolved context/roles. Native selects remain inside the account dialog focus boundary. Existing server actions retain independent authorization and cookie checks. Migrated stale cache/header/tab/rail/account guards to active consumers; no empty-file pass. Source, mocked UI/action authority tests only; no production mutation or authenticated browser acceptance claim.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/frequency-account-wiring.mjs",
+    "note": "Pins live layout-to-shell-to-account wiring, downgrade options and retired-module absence; rendered and actual server-action authority tests run in normal CI."
+  }
+}

@@ -1,7 +1,6 @@
 'use client'
 
-// THE FREQUENCY PHONE TAB BAR: DAWN's bottom bar (components/layout/app-shell-mobile.tsx MobileTabBar,
-// HYG-033) carried into the Frequency member shell. Same five slots in the same order, Menu · Feed ·
+// THE FREQUENCY PHONE TAB BAR: the HYG-033 calm-spine contract carried into the Frequency member shell. Same five slots in the same order, Menu · Feed ·
 // Zap · Events · Marketplace, the destinations read from the ONE registry (calmSpine) and gate-filtered
 // through canSee, so a visitor never sees a member-gated tab. Drawn in the kit's idiom: a floating
 // frosted pill with the iridescent wash, the active tab in the section pill's gradient, and Zap as a

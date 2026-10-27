@@ -34,6 +34,7 @@ import { getInitials } from '@/lib/utils'
 import { CircleMark } from './circle-mark'
 import { MembersKitRoot } from './kit-root'
 import { FqHeader } from './header'
+import type { AccountToolsProps } from './account-tools'
 import { FqAmbient } from './ambient'
 import { FqRailLayout } from './rail-layout'
 import { RailFold, RailVaultTab, RailYouTab } from './rail-tabs'
@@ -60,6 +61,7 @@ import type { AccessLevel } from '@/lib/core/access-matrix'
 type Stats = Promise<DockData | null>
 
 interface FrequencyMembersShellProps {
+  accountTools?: AccountToolsProps
   profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role?: string | null }
   previewVisitor: boolean
   /** Holds Crew (the paid tier), for the "Crew" mark beside the rank. */
@@ -491,6 +493,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           <FqAmbient />
           <FqHeader
             profile={profile}
+            accountTools={props.accountTools}
             profileHref={profileHref}
             navAccess={navAccess}
             unreadCount={props.unreadCount}
