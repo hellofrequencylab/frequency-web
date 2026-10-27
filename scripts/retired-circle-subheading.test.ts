@@ -5,6 +5,7 @@ const read = (p: string) => readFileSync(p, 'utf8')
 it('holds actual active Circle content and surviving engagement contracts', () => expect(retiredCircleSubheading()).toBe(true))
 it('rejects restoring the unused helper', () => expect(() => retiredCircleSubheading({ exists: p => p === 'lib/circles/subheading.ts' || existsSync(p) })).toThrow())
 it.each([
+  ['app/(main)/circles/[slug]/(circle)/layout.tsx', "primary === 'create'", "primary === 'post'"],
   ['app/(main)/circles/[slug]/(circle)/layout.tsx', 'subline={[', 'oldSubline={['],
   ['app/(main)/circles/[slug]/(circle)/layout.tsx', 'about={circle.about}', 'about={null}'],
   ['app/(main)/circles/[slug]/(circle)/layout.tsx', '<FqCircleSpaceHeader spaceSlug={owner}', '<div data-owner={owner}'],

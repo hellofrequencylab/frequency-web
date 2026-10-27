@@ -9,6 +9,7 @@ export function retiredCircleSubheading({ exists = existsSync, read = p => readF
   assert.match(layout, /subline=\{\[\s*`\$\{circle\.member_count\}/, 'actual member metadata subline lost')
   assert.match(layout, /^\s+about=\{circle\.about\}/m, 'human About content lost')
   assert.match(layout, /<FqCircleSpaceHeader spaceSlug=\{owner\}/, 'owning Space context lost')
+  assert.doesNotMatch(layout, /primary === 'post'/, 'Post cannot replace the primary Create menu')
   assert.match(layout, /<CircleCreateMenu/, 'Create entry lost')
   assert.match(layout, /<CircleMemberMenu/, 'member overflow entry lost')
   const shell = uncomment(read('components/frequency/members/circle/circle-shell.tsx'))
