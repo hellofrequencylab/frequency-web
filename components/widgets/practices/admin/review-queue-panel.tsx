@@ -22,6 +22,7 @@ import {
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { capsLabel } from '@/components/ui/caps-label'
+import { buttonClasses } from '@/components/ui/button'
 export interface ReviewRow {
   id: string
   title: string

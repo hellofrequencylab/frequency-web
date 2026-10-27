@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/field'
 import { saveEventsListingHorizon } from './series-actions'
+import { buttonClasses } from '@/components/ui/button'
 
 // The operator control for how far ahead /events looks (owner ruling 2026-08-20). One integer, one
 // save, no deploy. Models series-display-section.tsx beside it: a local editable copy, save on the

@@ -16,6 +16,7 @@ import { Field, Input } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
+import { buttonClasses } from '@/components/ui/button'
 
 const TASK_TYPES = [
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',
@@ -187,7 +188,7 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
             onClick={handleRelease}
             disabled={isPending}
             title="Release claim"
-            className="p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg disabled:opacity-50 transition-colors"
+            className={buttonClasses('ghost', 'xs')}
             aria-label="Release claim"
           >
             <Undo2 className="w-3.5 h-3.5" />

@@ -14,6 +14,7 @@ import {
   MAX_INDEXED_OCCURRENCES,
   type SeriesDisplayConfig,
 } from '@/lib/events/series-config.shared'
+import { buttonClasses } from '@/components/ui/button'
 
 // The operator form for the repeating-events knobs (ADR-897 §7.4): three integers, one save, no
 // deploy. Models app/(main)/admin/ai/autonomy-controls.tsx (local editable copy, save on the

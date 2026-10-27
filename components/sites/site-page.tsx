@@ -408,6 +408,7 @@ export async function SitePage({
         tools={netSite ? networkTools : null}
         footer={skin ? siteFooterFor(readSiteFooter(space.preferences), siteLinks, origin) : null}
         checkIn={checkIn}
+        spaceSlug={space.slug}
         credit={effectiveFooterBadge(readFooterBadge(space.preferences), badgeRemovalHeld(space.plan, space.entitlements))}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
         admin={netSite ? siteAdminLinks(origin, space.slug, siteBase, null, 'network') : siteAdminLinks(origin, space.slug, siteBase, null, wildSite ? 'wildheart' : undefined)}

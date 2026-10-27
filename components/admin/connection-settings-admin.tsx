@@ -11,6 +11,7 @@ import { LOCATION_BAND_OPTIONS, type LocationBand } from '@/lib/connections/loca
 import { saveConnectionSettings } from '@/lib/connections/connection-settings-actions'
 import type { ConnectionSettings } from '@/lib/connections/connection-settings'
 import { Switch } from '@/components/ui/switch'
+import { buttonClasses } from '@/components/ui/button'
 
 // The admin console for the connection-layer singleton (ADR-186). Three groups:
 // Features (the platform-wide master switches that gate whole capabilities), Privacy
