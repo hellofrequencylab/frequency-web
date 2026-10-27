@@ -1,0 +1,11 @@
+{
+  "id": "HYG-201",
+  "title": "Retire unused competitor-cost pricing comparison chain while retaining catalog pricing",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": { "file": "components/frequency/site/pages/pricing/frequency-pricing.tsx", "ref": "Exact f787 runtime/source-reader inventory plus current Frequency pricing route and rendered catalog tests" },
+  "detail": "The old PricingComparison -> ComparisonTable/lib/pricing/comparison chain has no active route, registered CLI/workflow, type API or registry consumer. Remove those three internal modules and their catalog-only legacy tests. Active FrequencyPricing remains fed by actual operator catalog, gates, offerings, annual amounts, extras and calculator. Existing real Frequency pricing/gate tests remain, and a new rendered override control proves an unusual actual catalog amount reaches the active page and its Business door. The historical Value Ladder pointer is clarified; semantic contrast enforcement remains. No billing policy, competitor price assertion, published page override or whole-app acceptance claim changed.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/retired-pricing-comparison.mjs", "note": "Retired module absence plus actual FrequencyPricing route import/render. All-tree AST no-dangling-import checks, actual-route mutation controls and rendered operator-catalog override test supplement existing Frequency pricing tests." }
+}
