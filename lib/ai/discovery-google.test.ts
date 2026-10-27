@@ -42,6 +42,14 @@ describe('Google Search Console bounded observation', () => {
     expect((await run()).status).toBe('unavailable')
     expect(request).not.toHaveBeenCalled()
   })
+  it('rejects scope prefixes, suffixes and mixed arrays before provider IO', async () => {
+    const read = GOOGLE_SEARCH_READ_SCOPE
+    for (const scopes of [[`prefix:${read}`], [`${read}.suffix`], [read.slice(0, -1)], [read, 'unknown'], [read, read]]) {
+      connection.scopes = scopes
+      expect((await run()).status).toBe('unavailable')
+      expect(request).not.toHaveBeenCalled()
+    }
+  })
   it('preserves the Pacific DST day as a 25-hour evidence interval', async () => {
     deps.now = () => new Date('2026-11-05T18:00:00.000Z')
     connection.expiresAt = '2026-11-06T18:00:00.000Z'
