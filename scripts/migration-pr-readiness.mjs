@@ -54,7 +54,7 @@ export function evaluateReadiness(facts, policy) {
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const REPOSITORY = 'hellofrequencylab/frequency-web'
 const POLICY_PATH = 'scripts/migration-readiness-policy.json'
@@ -225,7 +225,7 @@ async function main() {
   if (result.status === 'strict_parity') { console.log('Migration PR historical SQL unchanged; current main/production strict parity VERIFIED.'); return }
   console.log(`Migration PR staging VERIFIED; ${result.pending.length} exact registered migration(s) PENDING APPLY. Production was NOT changed. Main remains strict.`)
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main().catch(() => {
+if (invokedDirectly(import.meta.url)) main().catch(() => {
   // No API body, token, SQL, state or Git command arguments are copied into CI diagnostics.
   console.error('Migration PR readiness failed closed; registration, current base/ledger or exact-head staging proof was not satisfied.')
   process.exitCode = 1

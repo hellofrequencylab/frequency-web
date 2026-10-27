@@ -78,3 +78,23 @@ test('workflow grants check write only to isolated runner, preserves evaluator n
   assert.match(source, /- name: Evaluate migration PR readiness/)
   assert.ok(!/pnpm|npm install|pull_request.head.sha/.test(source))
 })
+test('actual collector and consumer CLIs reached via symlink or encoded filename run and fail closed without credentials', async () => {
+  const { mkdtempSync, symlinkSync, rmSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const { fileURLToPath } = await import('node:url')
+  const { spawnSync } = await import('node:child_process')
+  const dir = mkdtempSync(join(tmpdir(), 'frequency-migration-entry-'))
+  try {
+    for (const file of ['migration-pr-readiness.mjs', 'verify-migration-readiness.mjs']) {
+      const target = fileURLToPath(new URL(`./${file}`, import.meta.url))
+      for (const linkName of [`link-${file}`, `encoded #${file}`]) {
+        const link = join(dir, linkName); symlinkSync(target, link)
+        const result = spawnSync(process.execPath, [link], { env: {}, encoding: 'utf8', timeout: 5000 })
+        assert.equal(result.status, 1)
+        assert.match(result.stderr, /Migration PR readiness (failed closed|proof missing)/)
+        assert.ok(!result.error)
+      }
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})

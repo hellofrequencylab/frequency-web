@@ -2,7 +2,7 @@
 // No production credentials, SQL, candidate approval JSON, downloaded code or artifacts used.
 import { readFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 const repository = 'hellofrequencylab/frequency-web'
 const validSha = /^[a-f0-9]{40}$/
 const requireFact = (condition, message) => { if (!condition) throw Error(message) }
@@ -50,4 +50,4 @@ async function main() {
   requireFact(result?.ok, 'readiness not verified')
   console.log(`Independent current-main migration readiness VERIFIED by Actions run ${result.runId}; no production application claimed.`)
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main().catch(() => { console.error('Migration PR readiness proof missing, stale, failed or unavailable; refusing.'); process.exitCode = 1 })
+if (invokedDirectly(import.meta.url)) main().catch(() => { console.error('Migration PR readiness proof missing, stale, failed or unavailable; refusing.'); process.exitCode = 1 })
