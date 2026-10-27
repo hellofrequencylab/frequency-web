@@ -13,7 +13,7 @@ export async function FqJourneyCompletionBand({ spaceId, slug, statsPromise }: {
         <Link className="t2" href={`/spaces/${slug}/settings/offerings`}>Offerings</Link>
       </div>
       <p className="t2">{stats ? 'All time. Each person is counted once across this Space’s Journeys.' : 'Journey data is unavailable or incomplete.'}</p>
-      <div className="g4 adp-kpi-row">
+      <div data-visual-mask="space-console-journey-stats" className="g4 adp-kpi-row">
         <Kpi label="Enrolled" value={stats ? n(stats.enrolled) : EMPTY} note={stats ? `${stats.paidEnrolled > 0 ? `${n(stats.paidEnrolled)} paid · ` : ''}${n(stats.journeyCount)} ${stats.journeyCount === 1 ? 'Journey' : 'Journeys'}` : undefined} />
         <Kpi label="Finished" value={stats ? n(stats.completed) : EMPTY} />
         <Kpi label="Still going" value={stats ? n(stats.inProgress) : EMPTY} />

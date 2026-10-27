@@ -23,7 +23,7 @@ import { BoostedBadge } from '@/components/crew/boosted-badge'
 // (lib/spaces/directory-sections.ts), so any view is shareable and the page stays a Server Component.
 // A filter change drops `show`, so a new query starts at the top of its results.
 
-const SORTS = [
+export const SORTS = [
   { value: 'standing', label: 'Most active' },
   { value: 'name', label: 'Name (A to Z)' },
   { value: 'newest', label: 'Newest' },

@@ -268,7 +268,7 @@ export async function FqOverviewBody({
         }
       />
 
-      <div className="g4">
+      <div data-visual-mask="space-console-stats" className="g4">
         <Kpi label="Check-ins, 30 days" value={checkins30 === null ? EMPTY : n(checkins30)} trend={checkinsTrend} note={checkins === null ? 'History unavailable or incomplete' : undefined} />
         <Kpi
           label="Came back within 2 weeks"
@@ -284,7 +284,7 @@ export async function FqOverviewBody({
         />
       </div>
 
-      <div className="g4 adp-kpi-row">
+      <div data-visual-mask="space-console-stats" className="g4 adp-kpi-row">
         <Kpi
           label="Followers"
           value={followers ? n(followers.total) : EMPTY}

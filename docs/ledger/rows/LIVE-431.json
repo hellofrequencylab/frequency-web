@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-431",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"lib/commerce/orders.ts\",\"utf8\");if(!s.includes(\"async function donationEarnings\"))fail(\"donationEarnings is gone\");if(!s.includes(\"space_donations\"))fail(\"the donation arm no longer reads space_donations\");if(!s.includes(\"r.source === \\x27network\\x27\"))fail(\"a network gift no longer lands in the network slice\");const t=fs.readFileSync(\"lib/commerce/orders.test.ts\",\"utf8\");if(!t.includes(\"LIVE-431\"))fail(\"no donation earnings test\");if(!t.includes(\"space_donations\"))fail(\"the test mock no longer names space_donations\");const dash=fs.readFileSync(\"components/frequency/admin/pages/overview/overview-body.tsx\",\"utf8\");if(!dash.includes(\"spaceEarningsWindows\"))fail(\"Space Home no longer mounts the complete earnings reader\");if(!s.includes(\"return await spaceEarningsSummary(spaceId, sinceDays, true)\"))fail(\"the complete reader no longer delegates to strict canonical earnings\");if(!s.includes(\"summarizeSpaceEarnings(spaceId, days, true, snapshot)\"))fail(\"actual window reader lost strict completeness\");console.log(\"LIVE-431 ok\")'",
+      "note": "Retargeted by LIVE-1338: Space Home mounts the completeness-aware wrapper; its strict canonical delegation retains the donation arm and network gift checks. The old symbol-only dashboard pin did not recognize that wrapper."
+    }
+  },
+  "append": {
+    "detail": " HYG-215: Actual Frequency overview reads spaceEarningsWindows, whose shared strict snapshot delegates summarizeSpaceEarnings with complete=true; canonical donation/network checks remain."
+  }
+}

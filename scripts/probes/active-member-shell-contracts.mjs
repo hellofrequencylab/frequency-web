@@ -55,7 +55,7 @@ export function activeShellProblems(mode, read, retiredExists = false) {
     check(css.includes('min-height:100dvh;display:flex;flex-direction:column'), 'Active kit must fill one dynamic viewport as a flex column')
     check(/\.fqm-body\{[^}]*\bflex:1;/.test(css), 'Active content must fill the flex remainder, not add another viewport')
     check(!/\.fqm-body\{[^}]*min-height:\s*(?:100v|calc\(100v)/.test(css), 'Content adds a second viewport below the header')
-    for (const file of ['components/layout/admin-bar/admin-bar.tsx', 'app/(main)/admin/layout.tsx', 'components/admin/admin-rail-drawer-column.tsx']) {
+    for (const file of ['components/layout/admin-bar/admin-bar.tsx', 'app/(main)/admin/layout.tsx', 'components/frequency/admin/admin-shell.tsx']) {
       const { reDerivesHeaderHeight } = loadProbeModule('lib/layout/header-offset.ts')
       check(!reDerivesHeaderHeight(read(file)), `${file} subtracts a bare header height`)
     }
