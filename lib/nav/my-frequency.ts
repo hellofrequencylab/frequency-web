@@ -56,7 +56,7 @@ import { listUnclaimedSeededSpaceIds } from '@/lib/spaces/claim'
 import { countMyCreateProposals } from '@/lib/ai/vera/create-entity'
 
 /** One thing the member owns or belongs to, ready to render as a rail row. */
-export interface MyFrequencyEntry {
+interface MyFrequencyEntry {
   /** Stable react key + test handle. */
   key: string
   label: string

@@ -1,0 +1,18 @@
+{
+  "id": "HYG-217",
+  "title": "Keep two navigation-only internal types private after their legacy consumers retire",
+  "status": "done",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "lib/nav/my-frequency.ts",
+    "ref": "Exact dead-export delta after HYG215/HYG213 retirement: two formerly consumed type declarations now used only within their own modules"
+  },
+  "detail": "The fresh identifier census moved from149 to151 because only MyFrequencyEntry in lib/nav/my-frequency.ts and StudioWorldKey in lib/nav/studio.ts lost external consumers when old navigation models retired. Both declarations remain used inside their defining modules. Remove only their export modifiers, preserving every type shape, implementation body, live loader, catalog, exported function and runtime behavior. All-source/docs/script/CLI census established no outside identifier references before editing; declared contract and public API candidates elsewhere remain untouched. The existing150 ceiling and maintenance scanner are unchanged.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-27",
+    "evidence": "Exact text-equivalence checks prove only the two declaration export modifiers change. Existing member Drafts/seeded loader and live operator catalog/gate tests, focused lint and whitespace checks pass. Fresh unchanged dead-export report returns149, below the original150 ceiling. No new consumer references are introduced to hide dead exports, no threshold/guard exclusions change, and no global typing/build, provider, database or production action occurred."
+  }
+}

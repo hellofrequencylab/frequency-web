@@ -24,7 +24,7 @@ import type { StaffDomain, Access } from '@/lib/core/staff-roles'
 
 // ── The five Studio worlds (§5b) — the primary categories the operator spine projects.
 // `key` is the world id; `href` its dashboard landing; `min`/`staffDomain` its floor.
-export type StudioWorldKey = 'overview' | 'community' | 'growth' | 'content' | 'platform'
+type StudioWorldKey = 'overview' | 'community' | 'growth' | 'content' | 'platform'
 
 export type StudioWorld = {
   key: StudioWorldKey
