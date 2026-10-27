@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { type AccentVars, type FrequencyAccentVars } from '@/lib/spaces/accent'
 import { type SpaceThemeId } from '@/lib/theme/space-themes'
-import { LEGACY_THEME_AXES } from '@/lib/theme/design'
 import { surfaceCssVars, type ThemeSurface } from '@/lib/theme/surface-vars'
 import { SITE_FACE_SHEETS, SITE_FACE_VARS, type SiteFacesId } from '@/lib/theme/site-faces'
 
@@ -19,7 +18,7 @@ import { SITE_FACE_SHEETS, SITE_FACE_VARS, type SiteFacesId } from '@/lib/theme/
 // (no Space accent and no role default) it renders its children untouched, so the host amber stands.
 
 export function AccentScope({
-  vars,
+  vars: _vars,
   theme,
   fqAccent,
   siteFaces,
@@ -60,17 +59,16 @@ export function AccentScope({
   // maps onto the design's fill under `data-space-accent`. Its FONT SET does too (owner ruling, 2026-10-13: a Space picks its primary
   // fonts in its theme, never per heading). It rides `data-space-fonts`, which only
   // app/themes/frequency/space-page.css reads, and only for a set other than the house default.
-  const fqVars = !LEGACY_THEME_AXES ? (fqAccent ?? undefined) : undefined
-  const faces = !LEGACY_THEME_AXES && siteFaces ? siteFaces : null
-  const base = LEGACY_THEME_AXES ? (vars ?? undefined) : fqVars
+  const fqVars = fqAccent ?? undefined
+  const faces = siteFaces ?? null
+  const base = fqVars
   const withFaces = faces ? { ...base, ...SITE_FACE_VARS[faces] } : base
   const style = (surface ? { ...withFaces, ...surfaceCssVars(surface) } : withFaces) as CSSProperties | undefined
-  const fqFonts = faces ?? (!LEGACY_THEME_AXES && theme && theme !== 'frequency' ? theme : undefined)
+  const fqFonts = faces ?? (theme && theme !== 'frequency' ? theme : undefined)
   return (
     <div
       className={className}
       style={style}
-      data-space-theme={LEGACY_THEME_AXES ? theme : undefined}
       data-space-fonts={fqFonts}
       data-space-accent={fqVars ? '' : undefined}
       data-space-surface={surface ? (surface.dark ? 'dark' : 'light') : undefined}

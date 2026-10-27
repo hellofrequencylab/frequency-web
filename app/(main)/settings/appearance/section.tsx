@@ -1,6 +1,4 @@
-import { headers } from 'next/headers'
 import { resolveTheme } from '@/lib/theme/server/resolve'
-import { resolveSpaceForHost } from '@/lib/spaces'
 import { ModeSwitcher } from '../mode-switcher'
 import { ThemeSwitcher } from './theme-switcher'
 
@@ -13,30 +11,11 @@ import { ThemeSwitcher } from './theme-switcher'
 // server-resolved axes. The old /settings/appearance route now redirects here.
 
 export async function AppearanceSection() {
-  // Mirror the shell's resolution: read the active Space's skin / generation default for this host
-  // so the picker reflects true precedence. Fail-safe to the system default on any miss.
-  let spaceSkin: string | null = null
-  let spaceGeneration: string | null = null
-  try {
-    const host = (await headers()).get('host')
-    const space = await resolveSpaceForHost(host)
-    if (space) {
-      spaceSkin = space.skin
-      spaceGeneration = (space as { generation?: string | null }).generation ?? null
-    }
-  } catch {
-    /* no Space / pre-migration — system defaults */
-  }
-
-  const theme = await resolveTheme({ spaceSkin, spaceGeneration })
+  const theme = await resolveTheme()
 
   return (
     <div>
-      <ThemeSwitcher
-        initialSkin={theme.skin}
-        initialGeneration={theme.generation}
-        initialOccasion={theme.occasion}
-      />
+      <ThemeSwitcher initialSkin={theme.skin} />
       <div className="mt-6">
         <ModeSwitcher />
       </div>
