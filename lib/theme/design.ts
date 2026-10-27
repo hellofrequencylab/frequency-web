@@ -40,8 +40,6 @@ interface DesignDef {
    * CSS applies, so they cannot read a variable; each mirrors the design's canvas (light) and ink (dark).
    */
   chrome: { light: string; dark: string }
-  /** Do the DAWN-era axes (skins, generations, occasions, Space font sets, Theme Studio) apply? */
-  legacyAxes: boolean
 }
 
 export const DESIGNS: readonly DesignDef[] = [
@@ -49,7 +47,6 @@ export const DESIGNS: readonly DesignDef[] = [
     id: 'dawn',
     label: 'DAWN',
     chrome: { light: '#FBFAF6', dark: '#16130E' }, // token-ok: browser chrome; set before CSS applies
-    legacyAxes: true,
   },
   {
     id: 'frequency',
@@ -57,7 +54,6 @@ export const DESIGNS: readonly DesignDef[] = [
     // The cooled Commons canvas (SCAN-907) and the Stage's blue-black, so an installed app's status bar
     // and splash match the live palette instead of the old sand (SCAN-916).
     chrome: { light: '#F4F6F7', dark: '#070B14' }, // token-ok: browser chrome; set before CSS applies
-    legacyAxes: false,
   },
 ]
 
@@ -81,5 +77,3 @@ export function designDef(id: DesignId): DesignDef {
 /** The design this deploy wears. Read once, at build (NEXT_PUBLIC_ is inlined), so it is static. */
 export const SITE_DESIGN: DesignId = resolveDesign(process.env.NEXT_PUBLIC_SITE_DESIGN)
 
-/** Do skins, generations, occasions, Space font sets and Theme Studio themes apply on this deploy? */
-export const LEGACY_THEME_AXES: boolean = designDef(SITE_DESIGN).legacyAxes
