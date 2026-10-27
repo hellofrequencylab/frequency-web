@@ -653,14 +653,14 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
   self-hash check on an isolated `pull_request_target` runner. It installs and executes no
   candidate code; candidate Git blobs are read as data only. Required candidate CI consumes the
   current-main/current-head workflow proof via GitHub API. Candidate code and approval JSON cannot
-  supply production readiness facts. Existing SQL
+  supply production readiness facts. Migration SQL must be regular Git files, never symlinks. Existing SQL
   cannot be changed, renamed or removed even when version/name parity happens to match.
 
   A pending migration can pass PR readiness only after a separate reviewed policy-only PR adds
   one finite entry for that PR number to main's `scripts/migration-readiness-policy.json`.
   The entry contains `pullRequest`, future `expiresAt`, `migrations` (`file`, whole-file `sha256`),
   `reviewedChanges` (every candidate diff path, `added|modified|removed`, whole-file `sha256`;
-  removals hash the base bytes), `workflowPath` (`.github/workflows/db-tests.yml`), its
+  removals hash the base bytes; pin `baseMode` and `headMode` too), `workflowPath` (`.github/workflows/db-tests.yml`), its
   `workflowSha256`, `apiAcceptanceStep`, and `requiredSteps`. Required steps must include full
   migration replay, pgTAP, stated-skip enforcement, the reviewed real API acceptance step and
   unconditional staging cleanup. Review the API exercise's assertions, not just its step label.

@@ -11,7 +11,7 @@ function fixture() {
   const source = 'trusted collector', sql = 'create table public.fixture(id int);', workflow = 'reviewed full staging workflow'
   const added = 'supabase/migrations/20261027033306_atomic_manual_room_writes.sql'
   const names = Array.from({ length: 400 }, (_, i) => `supabase/migrations/${20240101000000 + i}_old_${i}.sql`)
-  const registration = { pullRequest: 44, expiresAt: '2030-01-01T00:00:00Z', migrations: [{ file: added, sha256: hash(sql) }], reviewedChanges: [{ file: added, status: 'added', sha256: hash(sql) }], workflowPath: '.github/workflows/db-tests.yml', workflowSha256: hash(workflow), requiredSteps: [...core, apiStep], apiAcceptanceStep: apiStep }
+  const registration = { pullRequest: 44, expiresAt: '2030-01-01T00:00:00Z', migrations: [{ file: added, sha256: hash(sql) }], reviewedChanges: [{ file: added, status: 'added', sha256: hash(sql), baseMode: '000000', headMode: '100644' }], workflowPath: '.github/workflows/db-tests.yml', workflowSha256: hash(workflow), requiredSteps: [...core, apiStep], apiAcceptanceStep: apiStep }
   const pr = { state: 'open', draft: false, base: { ref: 'main', sha: base, repo: { full_name: repository } }, head: { sha: head, repo: { full_name: repository } } }
   const run = { id: 100, run_attempt: 1, repository: { full_name: repository }, head_sha: head, event: 'workflow_dispatch', workflow_id: 22, status: 'completed', conclusion: 'success' }
   const job = { head_sha: head, status: 'completed', conclusion: 'success', check_run_url: 'https://api.github.com/repos/test/check-runs/300', steps: [...core, apiStep].map(name => ({ name, conclusion: 'success' })) }
@@ -29,6 +29,11 @@ function fixture() {
       if (args[0] === 'fetch') return ''
       if (args[0] === 'cat-file' && args[1] === '--batch') return Buffer.concat(input.trimEnd().split('\n').map(key => { const body = Buffer.from(blobs.get(key)); return Buffer.concat([Buffer.from(`${'d'.repeat(40)} blob ${body.length}\n`), body, Buffer.from('\n')]) }))
       if (args[0] === 'rev-parse') return base
+      if (args[0] === 'ls-tree' && args.includes('-z')) {
+        const revision = args[3], requested = args.slice(args.indexOf('--') + 1)
+        const entries = [...names, ...(revision === head ? [added] : [])].filter(file => requested.some(path => file === path || file.startsWith(path)))
+        return entries.map(file => `${f.sqlMode ?? '100644'} blob ${'d'.repeat(40)}\t${file}\0`).join('')
+      }
       if (args[0] === 'ls-tree') return [...names, ...(args[3] === head ? [added] : [])].join('\n')
       if (args[0] === 'diff') return `A\0${added}\0`
       if (args[0] === 'show') {
@@ -109,7 +114,7 @@ test('CI fallback is confined to migration PR failure and loads its collector fr
 })
 test('unchanged SQL can prove strict parity without a registration or staging exception', async () => {
   const f = fixture(), git = f.options.git
-  f.options.git = (args, binary, input) => args[0] === 'diff' ? '' : args[0] === 'ls-tree' ? f.names.join('\n') : git(args, binary, input)
+  f.options.git = (args, binary, input) => args[0] === 'diff' ? '' : args[0] === 'ls-tree' && !args.includes('-z') ? f.names.join('\n') : git(args, binary, input)
   const result = await collectReadiness(f.options)
   assert.equal(result.status, 'not_applicable')
   assert.ok(!f.calls.some(c => c[0] === 'api' && c[1].includes('/actions/')))
@@ -117,7 +122,7 @@ test('unchanged SQL can prove strict parity without a registration or staging ex
 test('a historical SQL edit is refused even when all live version/name pairs still match', async () => {
   const f = fixture(), git = f.options.git
   f.blobs.set(`${head}:${f.names[0]}`, 'edited applied body')
-  f.options.git = (args, binary, input) => args[0] === 'diff' ? `M\0${f.names[0]}\0` : args[0] === 'ls-tree' ? f.names.join('\n') : git(args, binary, input)
+  f.options.git = (args, binary, input) => args[0] === 'diff' ? `M\0${f.names[0]}\0` : args[0] === 'ls-tree' && !args.includes('-z') ? f.names.join('\n') : git(args, binary, input)
   await assert.rejects(() => collectReadiness(f.options), /historical SQL changed/)
 })
 test('real disposable Git main checkout and candidate blob reads produce a pending decision without network or SQL execution', async () => {
@@ -217,4 +222,12 @@ test('no-SQL trusted fallback needs no production credential/read or registratio
   f.options.git = (args, binary, input) => args[0] === 'diff' ? `M\0README.md\0` : args[0] === 'show' && args[1] === `${head}:README.md` ? Buffer.from('reviewed documentation') : git(args, binary, input)
   f.options.ledger = async () => { throw Error('production must not be read') }
   assert.equal((await collectReadiness(f.options)).status, 'not_applicable')
+})
+test('SQL symlinks cannot substitute a target-path blob for the SQL staging executes', async () => {
+  const f = fixture(); f.sqlMode = '120000'
+  await assert.rejects(() => collectReadiness(f.options), /regular file/)
+})
+test('candidate Git mode changes must match the reviewed complete diff', async () => {
+  const f = fixture(); f.registration.reviewedChanges[0].headMode = '100755'
+  assert.equal((await collectReadiness(f.options)).ok, false)
 })

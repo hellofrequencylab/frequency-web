@@ -6,7 +6,7 @@ const hash = 'a'.repeat(64)
 const baseRows = Array.from({ length: 400 }, (_, i) => ({ version: String(20240101000000 + i), name: `existing_${i}`, sha256: hash }))
 const added = { version: '20990101000000', name: 'reviewed_probe', sha256: hash }
 const file = `supabase/migrations/${added.version}_${added.name}.sql`
-const changes = [{ file, status: 'added', sha256: hash }]
+const changes = [{ file, status: 'added', sha256: hash, baseMode: '000000', headMode: '100644' }]
 const steps = ['Start local Supabase (applies all migrations)', 'Run pgTAP RLS/RPC tests', 'Refuse an unstated permanent skip in the TAP output', 'Real local service, anon and authenticated room API acceptance', 'Always destroy dispatched staging containers and volumes'].map(name => ({ name, conclusion: 'success' }))
 const facts = { event: 'pull_request', repository: 'hellofrequencylab/frequency-web', sameRepository: true, baseBranch: 'main', baseSha: 'base', currentBase: 'base', headSha: 'head', currentHead: 'head', baseRows, headRows: [...baseRows, added], liveRows: baseRows.map(({ version, name }) => ({ version, name })), migrationChanges: changes, reviewedChanges: changes, staging: { id: 1, repository: 'hellofrequencylab/frequency-web', app: 'github-actions', event: 'workflow_dispatch', headSha: 'head', workflowPath: '.github/workflows/db-tests.yml', status: 'completed', conclusion: 'success', steps } }
 const policy = { trustedMainSnapshot: true, baseSha: 'base', registrations: [{ file, sha256: hash }], reviewedChanges: changes }

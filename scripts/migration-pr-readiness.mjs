@@ -41,8 +41,8 @@ export function evaluateReadiness(facts, policy) {
   }
   // Pin the complete reviewed executable diff (workflow/harness/SQL tests/runtime config),
   // rather than trusting a candidate-controlled workflow merely because it printed SUCCESS.
-  const validChanges = changes => Array.isArray(changes) && changes.every(c => typeof c?.file === 'string' && ['added', 'modified', 'removed'].includes(c.status) && digest.test(c.sha256)) && new Set(changes.map(c => c.file)).size === changes.length
-  if (!validChanges(facts.reviewedChanges) || !validChanges(policy.reviewedChanges) || facts.reviewedChanges.length !== policy.reviewedChanges.length || facts.reviewedChanges.some(c => !policy.reviewedChanges.some(p => p.file === c.file && p.status === c.status && p.sha256 === c.sha256))) return fail('unreviewed_execution_or_source_change')
+  const validChanges = changes => Array.isArray(changes) && changes.every(c => typeof c?.file === 'string' && ['added', 'modified', 'removed'].includes(c.status) && digest.test(c.sha256) && /^(000000|100644|100755|120000)$/.test(c.baseMode) && /^(000000|100644|100755|120000)$/.test(c.headMode)) && new Set(changes.map(c => c.file)).size === changes.length
+  if (!validChanges(facts.reviewedChanges) || !validChanges(policy.reviewedChanges) || facts.reviewedChanges.length !== policy.reviewedChanges.length || facts.reviewedChanges.some(c => !policy.reviewedChanges.some(p => p.file === c.file && p.status === c.status && p.sha256 === c.sha256 && p.baseMode === c.baseMode && p.headMode === c.headMode))) return fail('unreviewed_execution_or_source_change')
   const run = facts.staging
   if (!run || run.repository !== facts.repository || run.app !== 'github-actions' || run.event !== 'workflow_dispatch' || run.headSha !== facts.headSha || run.workflowPath !== '.github/workflows/db-tests.yml' || run.status !== 'completed' || run.conclusion !== 'success' || !Number.isSafeInteger(run.id) || run.id <= 0) return fail('missing_or_stale_staging')
   const steps = policy.requiredSteps ?? ['Start local Supabase (applies all migrations)', 'Run pgTAP RLS/RPC tests', 'Refuse an unstated permanent skip in the TAP output', 'Real local service, anon and authenticated room API acceptance', 'Always destroy dispatched staging containers and volumes']
@@ -81,6 +81,18 @@ export function readGitBlobs(git, revision, paths) {
   return contents
 }
 
+function gitModes(git, revision, paths) {
+  const records = String(git(['ls-tree', '-r', '-z', revision, '--', ...paths])).split('\0').filter(Boolean)
+  const modes = new Map()
+  for (const record of records) {
+    const match = /^([0-7]{6}) (blob|commit) [a-f0-9]{40,64}\t([\s\S]+)$/.exec(record)
+    requireFact(match, 'unreadable Git tree metadata')
+    requireFact(!modes.has(match[3]), 'duplicate Git path')
+    modes.set(match[3], match[1])
+  }
+  return modes
+}
+
 // These are deliberately transport seams for offline integration fixtures, not CLI inputs.
 // Production always supplies its own Git/GitHub/Management API readers below.
 export async function collectReadiness({ env, event, git, api, ledger, collectorSha256, now = Date.now() }) {
@@ -102,10 +114,12 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
     const names = String(git(['ls-tree', '-r', '--name-only', revision, '--', 'supabase/migrations/'])).trim().split('\n')
     const files = names.filter(file => file.endsWith('.sql'))
     requireFact(files.every(file => SQL_PATH.test(file)), 'malformed migration filename')
+    const modes = gitModes(git, revision, ['supabase/migrations/'])
+    requireFact(files.every(file => ['100644', '100755'].includes(modes.get(file))), 'migration SQL must be a regular file')
     const contents = readGitBlobs(git, revision, files)
     const inventoryRows = files.map((file, i) => {
       const match = SQL_PATH.exec(file)
-      return { version: match[1], name: match[2], sha256: hashBytes(contents[i]) }
+      return { version: match[1], name: match[2], sha256: hashBytes(contents[i]), mode: modes.get(file) }
     })
     return inventoryRows
   }
@@ -125,13 +139,16 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
     requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === headSha && finalPr.base.sha === baseSha && finalMain.commit.sha === baseSha, 'branch moved during no-SQL fallback')
     return { ok: true, status: 'not_applicable' }
   }
+  const paths = reviewedChanges.map(change => change.file)
+  const baseModes = gitModes(git, baseSha, paths), headModes = gitModes(git, headSha, paths)
+  for (const change of reviewedChanges) { change.baseMode = baseModes.get(change.file) ?? '000000'; change.headMode = headModes.get(change.file) ?? '000000' }
   const baseRows = inventory(baseSha), headRows = inventory(headSha)
   const liveRows = await ledger()
   const baseInventory = rows(baseRows, true), headInventory = rows(headRows, true), liveInventory = rows(liveRows, false)
   requireFact(baseInventory && headInventory && liveInventory && sameNames(baseInventory, liveInventory), 'current main/production drift')
   for (const [version, old] of baseInventory) {
     const current = headInventory.get(version)
-    requireFact(current && current.name === old.name && current.sha256 === old.sha256, 'historical SQL changed')
+    requireFact(current && current.name === old.name && current.sha256 === old.sha256 && current.mode === old.mode, 'historical SQL changed')
   }
   if (baseInventory.size === headInventory.size) {
     const [finalPr, finalMain, finalLedger] = await Promise.all([readPr(), readMain(), ledger()])
