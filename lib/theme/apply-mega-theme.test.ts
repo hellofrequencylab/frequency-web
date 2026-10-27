@@ -32,9 +32,10 @@ describe('megaThemeSurfaces', () => {
     }
   })
 
-  it('tells the truth about which surfaces exist today', () => {
-    expect(megaThemeSurfaces('midnight')).toMatchObject({ email: true, spotlightPreset: 'midnight' })
-    expect(megaThemeSurfaces('designer')).toMatchObject({ spotlightPreset: 'designer' })
+  it('reaches the Spotlight for every Mega Theme, and says which emails are themed so far', () => {
+    for (const { id } of MEGA_THEMES) expect(megaThemeSurfaces(id).spotlightPreset, id).toBe(id)
+    const themed = MEGA_THEMES.filter(({ id }) => megaThemeSurfaces(id).email).map(({ id }) => id)
+    expect(themed).toEqual(['frequency', 'midnight'])
   })
 })
 
@@ -91,6 +92,7 @@ describe('applyMegaTheme', () => {
     expect(mocks.merges).toHaveLength(1)
     expect(mocks.merges[0]).toMatchObject({ id: 'p1', path: ['spotlight'] })
     await applyMegaTheme('s1', 'bold', { spotlight: { profileId: 'p1', client: {} as never } })
-    expect(mocks.merges).toHaveLength(1)
+    expect(mocks.merges).toHaveLength(2)
+    expect(mocks.merges[1].patch.theme).toMatchObject({ accent: '#00a6c8' })
   })
 })

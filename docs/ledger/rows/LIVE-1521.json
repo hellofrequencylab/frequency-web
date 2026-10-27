@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1521",
+  "title": "Every Mega Theme has a Spotlight preset read from its own token set",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": { "file": "lib/theme/mega-surfaces.ts", "ref": "ADR-1911" },
+  "detail": "SYS-11 of the Mega Theme build plan. lib/theme/mega-surfaces.ts holds the flat token set of Bold, Wildheart, Network (Marigold), Temple, Midnight and Designer, read from each website's palette module, and lib/spotlight/theme.ts gets a preset per theme (Default is the plain Spotlight). applyMegaTheme can now dress an owner's Spotlight under any theme. Email (SYS-12) is NOT in this row: spaces/email-colors.test.ts pins 'leaves every other theme on the DAWN default', so themed email waits for the owner's exact words to rewrite that pin. The Space page and event page still take Midnight's ground only (ADR-578); pageSurface is unchanged and a test holds it.",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "vitest lib/theme/mega-surfaces.test.ts passes: a preset per Mega Theme, AA contrast on every flat set, pageSurface only Midnight.",
+    "cmd": "node -e 'const fs=require(\"fs\");const t=fs.readFileSync(\"lib/spotlight/theme.ts\",\"utf8\");const bad=[\"frequency\",\"bold\",\"wildheart\",\"network\",\"temple\",\"midnight\",\"designer\"].filter((id)=>!new RegExp(\"id: .\"+id+\".\").test(t));if(bad.length){console.error(\"no Spotlight preset for \"+bad.join(\", \"));process.exit(1)}'"
+  }
+}
