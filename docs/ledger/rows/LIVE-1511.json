@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1511",
+  "title": "A website theme never styles the public Space page, the public event page or Network sections on a Frequency page",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": { "file": "app/(main)/no-site-theme-in-member-area.test.ts", "ref": "ADR-1906" },
+  "detail": "Finishes LIVE-1509 under the same owner rule (2026-10-27). The signed-out Space layout takes only the Space's own accent and fonts, the public event page no longer wears its host Space's website ground (lib/events/public-surface.ts is removed), and Network sections on a Frequency Space page take only their structural block sheet instead of the Network paper, scheme and faces. The walking test now covers app/(public)/spaces, app/(public)/events, components/spaces and components/frequency/members. Probe theme-surface.mjs (LIVE-1368) now holds the opposite of what it held, with the owner's word on the probe rewrite.",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "Probe passes; vitest no-site-theme-in-member-area covers all five Frequency-hosted trees.",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>fs.readFileSync(p,\"utf8\");const bad=[];if(/surface=\\{|siteFaces=\\{/.test(r(\"app/(public)/spaces/[slug]/layout.tsx\")))bad.push(\"public Space layout passes a website theme\");if(fs.existsSync(\"lib/events/public-surface.ts\"))bad.push(\"public event surface still exists\");if(/NETWORK_CSS\\b|wearsNetwork/.test(r(\"components/spaces/network-page-scope.tsx\")))bad.push(\"Network scope still wears the website look\");if(bad.length){console.error(bad.join(\"; \"));process.exit(1)}'"
+  }
+}
