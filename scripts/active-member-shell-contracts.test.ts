@@ -25,6 +25,7 @@ describe('retired AppShell consequences move to actual Frequency consumers', () 
   })
   it('retains the 1800 line ceiling and retired-module absence controls', () => {
     expect(activeShellProblems('size', file => file === SOURCES.header ? read(file) + '\n'.repeat(1801) : read(file))).not.toEqual([])
+    expect(activeShellProblems('size', file => file === SOURCES.bell ? read(file) + '\n'.repeat(1801) : read(file))).not.toEqual([])
     expect(activeShellProblems('retirement', read, true)).toContain('Retired AppShell module is present')
   })
 })
