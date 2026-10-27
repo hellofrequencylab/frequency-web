@@ -9,8 +9,6 @@ import {
   serializeThemeCookie,
 } from '@/lib/theme/cookie'
 import { isSkinId, DEFAULT_SKIN } from '@/lib/theme/skins'
-import { isGenerationId, DEFAULT_GENERATION } from '@/lib/theme/generations'
-import { isOccasionId } from '@/lib/theme/occasions'
 
 // The SERVER writer for the member's theme override (the `fxtheme` cookie, docs/THEME.md §6).
 // This is the non-test caller the cookie serializer was missing: the settings switcher calls
@@ -65,32 +63,5 @@ export async function setThemeSkin(id: string): Promise<void> {
   const next: ThemeCookie = { ...current }
   if (isSkinId(id) && id !== DEFAULT_SKIN) next.skin = id
   else delete next.skin
-  await writeCookie(next)
-}
-
-/**
- * Set (or clear) the GENERATION axis (the feel: type scale, density, motion, ornament). `id` must
- * be a known generation id; the system default (`'balanced'`) or an unknown value clears the
- * override so the Space/system default wins.
- */
-export async function setThemeGeneration(id: string): Promise<void> {
-  const current = await readCookie()
-  const next: ThemeCookie = { ...current }
-  if (isGenerationId(id) && id !== DEFAULT_GENERATION) next.gen = id
-  else delete next.gen
-  await writeCookie(next)
-}
-
-/**
- * Pin (or unpin) the OCCASION axis (the seasonal accent). A known non-`none` id pins that accent
- * regardless of the calendar; `'none'` (or an unknown value) clears the pin so the occasion falls
- * back to the calendar window. Pinning `'none'` is meaningful: it suppresses any seasonal accent.
- */
-export async function setThemeOccasion(id: string): Promise<void> {
-  const current = await readCookie()
-  const next: ThemeCookie = { ...current }
-  // A valid pin (incl. 'none', the "no seasonal accent" pin) is stored; an unknown value clears it.
-  if (isOccasionId(id)) next.occ = id
-  else delete next.occ
   await writeCookie(next)
 }
