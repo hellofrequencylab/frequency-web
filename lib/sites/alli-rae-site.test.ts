@@ -31,7 +31,7 @@ describe('the Alli Rae site', () => {
     expect(f?.columns[0].lines).toHaveLength(3)
     expect(f?.columns[0].links.map((l) => l.href)).toEqual(['mailto:alli@alliraebuilddesign.com', 'tel:7607076401'])
     expect(f?.copyright).toBe('© Alli Rae Build + Design Inc.')
-    expect(f?.band?.ctas).toHaveLength(2)
+    expect(f?.band?.ctas.map((c) => c.href)).toEqual(['/spaces/alliraebuilddesign/ready-to-build', '/spaces/alliraebuilddesign/book-a-consultation'])
     expect(f?.subscribe?.success).toBe('Thank you we look forward to cultivating inspiration for you!')
     expect(f?.utility?.items.length).toBe(3)
     expect(f?.logo).toMatch(/^\//)

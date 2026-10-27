@@ -12,6 +12,8 @@ import {
   DESIGNER_QUOTE, DESIGNER_SERVICES, DESIGNER_STATEMENT, DESIGNER_STEPS, DESIGNER_TESTIMONIALS, type DesignerPageSeed,
 } from './designer-home.ts'
 
+/** The Space's address name: alliraebuilddesign.frequencylocal.com (owner ask 2026-10-27; the first seed used alli-rae). */
+export const ALLI_RAE_SLUG = 'alliraebuilddesign'
 const IMG = '/sites/alli-rae'
 const i = (name: string) => `${IMG}/${name}.webp`
 
@@ -179,7 +181,7 @@ export const ALLI_RAE_FOOTER = {
   ],
   band: {
     title: 'Let’s craft your vision *together*',
-    ctas: [{ label: 'Ready to Build Meeting', href: '/spaces/alli-rae/ready-to-build' }, { label: 'Schedule Consultation', href: '/spaces/alli-rae/book-a-consultation' }],
+    ctas: [{ label: 'Ready to Build Meeting', href: `/spaces/${ALLI_RAE_SLUG}/ready-to-build` }, { label: 'Schedule Consultation', href: `/spaces/${ALLI_RAE_SLUG}/book-a-consultation` }],
   },
   subscribe: {
     title: 'Subscribe',
