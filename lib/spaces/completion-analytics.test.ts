@@ -19,6 +19,9 @@ const plans: PlanRow[] = []
 const enrollments: EnrollRow[] = []
 let planError: { message: string } | null = null
 let enrollError: { message: string } | null = null
+let failFrom: number | null = null
+let rowCap: number | null = null
+let missingCount = false
 const queries: Array<{ table: string; spaceId?: string; planIds?: string[] }> = []
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -26,6 +29,8 @@ vi.mock('@/lib/supabase/admin', () => ({
     from: (table: string) => {
       const q: { table: string; spaceId?: string; planIds?: string[] } = { table }
       queries.push(q)
+      let from = 0
+      let to = Number.POSITIVE_INFINITY
       const api = {
         select: () => api,
         eq: (col: string, val: string) => {
@@ -37,14 +42,18 @@ vi.mock('@/lib/supabase/admin', () => ({
           return api
         },
         limit: () => api,
-        then: (resolve: (v: { data: unknown; error: { message: string } | null }) => void) => {
+        order: () => api,
+        range: (start: number, end: number) => { from = start; to = end; return api },
+        then: (resolve: (v: { data: unknown; error: { message: string } | null; count?: number | null }) => void) => {
           if (table === 'journey_plans') {
-            return resolve({ data: planError ? null : plans, error: planError })
+            return resolve({ data: planError ? null : plans, error: planError, count: missingCount ? null : plans.length })
           }
           if (table === 'journey_enrollments') {
             const ids = new Set(q.planIds ?? [])
-            const rows = enrollments.filter((r) => ids.has(r.plan_id))
-            return resolve({ data: enrollError ? null : rows, error: enrollError })
+            const scoped = enrollments.filter((r) => ids.has(r.plan_id))
+            const rows = scoped.slice(from, Math.min(to + 1, rowCap === null ? Number.POSITIVE_INFINITY : from + rowCap))
+            const error = enrollError ?? (failFrom !== null && from >= failFrom ? { message: 'later page unavailable' } : null)
+            return resolve({ data: error ? null : rows, error, count: missingCount ? null : scoped.length })
           }
           throw new Error(`unexpected table ${table}`)
         },
@@ -54,7 +63,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { foldSpaceCompletions, getSpaceCompletionAnalytics } from './completion-analytics'
+import { foldSpaceCompletions, getSpaceCompletionAnalytics, readSpaceCompletionAnalytics } from './completion-analytics'
 
 const row = (
   plan_id: string,
@@ -115,6 +124,9 @@ describe('getSpaceCompletionAnalytics', () => {
     queries.length = 0
     planError = null
     enrollError = null
+    failFrom = null
+    rowCap = null
+    missingCount = false
   })
 
   it('binds the Space, then folds enrollments on those plans', async () => {
@@ -170,4 +182,62 @@ describe('getSpaceCompletionAnalytics', () => {
     expect(errSpy).toHaveBeenCalled()
     errSpy.mockRestore()
   })
+})
+
+describe('availability-aware Frequency completion reader', () => {
+  beforeEach(() => { plans.length = 0; enrollments.length = 0; queries.length = 0; planError = null; enrollError = null; failFrom = null; rowCap = null; missingCount = false })
+  it('distinguishes measured empty data from a failed read', async () => {
+    expect(await readSpaceCompletionAnalytics('space-1')).toMatchObject({ journeyCount: 0, enrolled: 0, completionPct: null })
+    planError = { message: 'unavailable' }
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await readSpaceCompletionAnalytics('space-1')).toBeNull()
+    log.mockRestore()
+  })
+  it('does not expose partial enrollment totals after a failed read', async () => {
+    plans.push({ id: 'j1' })
+    enrollError = { message: 'unavailable' }
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await readSpaceCompletionAnalytics('space-1')).toBeNull()
+    log.mockRestore()
+  })
+  it('reads beyond a single API page while preserving unique-person and owning-Space scope', async () => {
+    plans.push({ id: 'j1' })
+    for (let i = 0; i < 501; i++) enrollments.push(row('j1', `p${i}`, i === 500 ? '2026-09-01T00:00:00Z' : null))
+    enrollments.push(row('j1', 'p0'), row('foreign-plan', 'foreign-person'))
+    expect(await readSpaceCompletionAnalytics('space-1')).toMatchObject({ enrolled: 501, completed: 1, inProgress: 500 })
+    expect(queries.filter(q => q.table === 'journey_enrollments')).toHaveLength(2)
+  })
+  it('reports unavailable when the owning plan population exceeds its bounded read', async () => {
+    for (let i = 0; i < 201; i++) plans.push({ id: `j${i}` })
+    expect(await readSpaceCompletionAnalytics('space-1')).toBeNull()
+    expect(queries.some(q => q.table === 'journey_enrollments')).toBe(false)
+  })
+  it('discards already-read partial people when a later enrollment page fails', async () => {
+    plans.push({ id: 'j1' })
+    for (let i = 0; i < 501; i++) enrollments.push(row('j1', `p${i}`))
+    failFrom = 500
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await readSpaceCompletionAnalytics('space-1')).toBeNull()
+    expect(queries.filter(q => q.table === 'journey_enrollments')).toHaveLength(2)
+    log.mockRestore()
+  })
+  it('does not publish bounded partial totals at the maximum enrollment population', async () => {
+    plans.push({ id: 'j1' })
+    for (let i = 0; i < 10000; i++) enrollments.push(row('j1', `p${i}`))
+    expect(await readSpaceCompletionAnalytics('space-1')).toBeNull()
+    expect(queries.filter(q => q.table === 'journey_enrollments')).toHaveLength(1)
+  })
+
+  it('does not mistake a smaller server row cap for the full population', async () => {
+    plans.push({ id: 'j1' })
+    rowCap = 100
+    for (let i = 0; i < 201; i++) enrollments.push(row('j1', `p${i}`))
+    expect(await readSpaceCompletionAnalytics('space-1')).toMatchObject({ enrolled: 201 })
+    expect(queries.filter(q => q.table === 'journey_enrollments')).toHaveLength(3)
+  })
+  it('fails closed when the server cannot prove exact population coverage', async () => {
+    missingCount = true
+    expect(await readSpaceCompletionAnalytics('space-1')).toBeNull()
+  })
+
 })
