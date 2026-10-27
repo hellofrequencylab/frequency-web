@@ -44,10 +44,11 @@ export async function markAllRead() {
 
   // RLS ("users update own") scopes this to the caller's rows — no recipient filter.
   const supabase = await createClient()
-  await supabase
+  const { error } = await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
     .is('read_at', null)
+  if (error) throw new Error('Could not mark notifications read')
 
   // SCAN-686: the bell clears its own badge locally; only the full page needs a refetch. The
   // root-layout revalidation here refetched the whole RSC tree on every open that had unread rows.

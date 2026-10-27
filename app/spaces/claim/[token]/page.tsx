@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Zap } from 'lucide-react'
 import { OG_SITE, SITE_NAME, SITE_URL } from '@/lib/site'
-import { SHELL_ROW_CLASS, SHELL_CONTENT_WIDTH_CLASS } from '@/lib/layout/shell-metrics'
+import styles from './claim-layout.module.css'
 import { getMyProfileId } from '@/lib/auth'
 import { resolveSpaceClaimAny } from '@/lib/spaces/claim'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -28,23 +28,9 @@ import { ClaimSpaceButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
 
-// THE COLUMN. Same width as the app shell's content column — the region between the two rails on
-// a live Space page — at EVERY breakpoint, and centred.
-//
-// 🔴 WHY IT IS TWO NESTED DIVS AND NOT A max-w CONSTANT. The shell's content column is
-// `flex-1 min-w-0`: it has no width of its own, it is the remainder after the rails, and the rails
-// hide at DIFFERENT breakpoints (left at `md`, right at `lg`). A single constant was tried here
-// (`max-w-[69rem]`, derived by hand from the 105rem case). It lands within 4px on a 1680px monitor
-// and **232px too wide at ~1000px**, where the right rail has already hidden — reported three
-// times by the owner as "still a random width, too wide".
-//
-// So: OUTER reproduces the shell row's box (same max-width, same responsive padding), and INNER
-// subtracts exactly what the rails and gaps take at that breakpoint. `100%` inside the calc is the
-// outer's inner width, which is the same quantity the shell's flex row divides up. The numbers
-// live in lib/layout/shell-metrics.ts and are pinned against app-shell.tsx by a test, so widening
-// a rail there cannot silently desync this page again.
-const CLAIM_ROW = SHELL_ROW_CLASS
-const CLAIM_COLUMN = SHELL_CONTENT_WIDTH_CLASS
+// Match the default Frequency Space content width, without viewer-specific rail preferences.
+const CLAIM_ROW = styles.row
+const CLAIM_COLUMN = styles.column
 
 // ONE `spaces` row read per request, shared by generateMetadata and the page body.
 //
@@ -260,7 +246,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
     <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)}>
       {/* No bottom padding here: the room for the fixed claim bar is reserved by an exact invisible
           clone of it at the end of this column (see ClaimBarContent). */}
-      <div className="min-h-screen bg-canvas px-safe">
+      <div className="min-h-screen bg-canvas">
         {/* Claim ribbon — sets the context above the page it introduces. Its inner content aligns to the
             same column as the page below it. */}
         <div className="border-b border-primary/20 bg-primary-bg/40">
@@ -394,7 +380,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
           landmark, which a landmark-driven scan skips entirely. */}
       <section
         aria-label="Claim this business"
-        className="px-safe fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-pop backdrop-blur">
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-pop backdrop-blur">
         <div className={CLAIM_ROW}>
           <ClaimBarContent token={token} signedIn={!!myProfileId} />
         </div>

@@ -1,5 +1,5 @@
 // Theme token VALIDATION — pure + SECURITY-CRITICAL. Admin-entered token values get
-// rendered straight into a server `<style>` tag (lib/theme/css.ts), so everything that
+// displayed by the janitor ThemePreview as inline custom properties, so everything that
 // crosses this boundary is validated STRICTLY here first: an allowlist of token NAMES a
 // theme may set, and tight per-type VALUE validators that reject anything that could break
 // out of `name: value;` into the surrounding stylesheet (no `;{}<>`, no `url(`, no
@@ -197,7 +197,7 @@ export function validateThemeTokens(input: unknown): {
 
 /**
  * Is this slug safe to interpolate into a `[data-skin="<slug>"]` selector? Lowercase
- * alphanumerics + hyphens, 1–40 chars. Used by lib/theme/css.ts before building the
+ * alphanumerics + hyphens, 1–40 chars. Retained by saved theme actions before accepting the
  * selector so a hostile slug can never break out of the attribute string.
  */
 export function isSafeSlug(slug: string): boolean {
