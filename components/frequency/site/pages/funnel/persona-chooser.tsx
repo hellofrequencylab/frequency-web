@@ -1,7 +1,7 @@
 'use client'
 
 // The lead-flow persona picker (ADR-125) on the Frequency design. The SAME behaviour as the DAWN island
-// (app/(marketing)/start/[flow]/persona-chooser.tsx), drawn in the kit's grammar:
+// (the start flow), drawn in the kit's grammar:
 //   · pick who you are; the induction href carries `?persona=` and `?flow=` exactly as DAWN builds it;
 //   · the optional arrival follow-up reads and writes through the one shared hook (useArrivalFollowUp),
 //     so the archetype cookie can never be written two ways;
