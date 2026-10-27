@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1520",
+  "title": "Choosing a Mega Theme sets the website, email and Spotlight choices and the Space page's font set and accent in one place",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": { "file": "lib/theme/apply-mega-theme.ts", "ref": "ADR-1881" },
+  "detail": "Phase 1 of the Mega Theme build plan (mega-system/05-phased-build-plan.md, SYS-7). applyMegaTheme(spaceId, themeId) writes preferences.megaTheme, the website style and its font set (synced on), fills a blank brand accent with the theme's accent (never replaces an owner's color), and dresses the owner's Spotlight with the preset of the same id when the caller names the profile and a preset exists. It is idempotent and keeps niche, look, per-page themes and every other preferences key. The editor's theme picker (saveWebsiteStyle) now routes a theme change through it. megaThemeSurfaces(theme) reports which surfaces exist today (email, Spotlight preset), so callers and the library page can say ready or on the way. The Space page takes only a font set and an accent; no site skin is imported from the member area. Follow-ups: Spotlight presets and email surfaces for the other themes (SYS-11, SYS-12), then the Wizard (SYS-8, SYS-15).",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "vitest lib/theme/apply-mega-theme.test.ts and lib/sites/editor/style-action.test.ts pass; fence test green.",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>fs.readFileSync(p,\"utf8\");const bad=[];const m=r(\"lib/theme/apply-mega-theme.ts\");if(!/export async function applyMegaTheme/.test(m))bad.push(\"no applyMegaTheme\");if(/components\\/sites\\/[\\w-]*-css/.test(m))bad.push(\"apply imports a site skin\");if(!/applyMegaTheme/.test(r(\"lib/sites/editor/actions.ts\")))bad.push(\"editor picker does not use the one apply\");if(bad.length){console.error(bad.join(\"; \"));process.exit(1)}'"
+  }
+}

@@ -8,7 +8,6 @@
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
-import { OPERATOR_START_HREF } from '@/lib/site'
 import { KIT_INDEX } from '@/lib/sites/kits/registry'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { SITE_THEMES } from '@/lib/theme/site-style'
@@ -48,6 +47,8 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
   const editor = MEGA_THEMES.find((m) => m.id === theme)?.editor
   const kits = KIT_INDEX.filter((k) => k.theme === editor)
   const name = site.label
+  // Start a Space already wearing this theme: Space creation reads ?theme= (and ?niche= for a starter kit).
+  const startHref = `/spaces/new?theme=${theme}`
   return (
     <>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
@@ -69,7 +70,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
             Made for {entry.madeFor}. {site.description} See which matching surfaces are ready below.
           </p>
           <div className="ctas">
-            <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
+            <a className="btn fq-iri-btn" href={startHref}>
               Use {name}
             </a>
             <Link className="btn btn-ghost fq-iri-rim" href="#kits">
@@ -174,7 +175,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
                 <h3>{k.label}</h3>
                 <p>{k.description}</p>
                 <p>
-                  <Link href={`/spaces/new?niche=${k.niche}`}>Start with this kit →</Link>
+                  <Link href={`${startHref}&niche=${k.niche}`}>Start with this kit →</Link>
                 </p>
               </div>
             ))}
@@ -205,7 +206,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
       <KeepGoing
         title={`Start with ${name}.`}
         body="Free to start. Business when you charge."
-        primary={{ href: OPERATOR_START_HREF, label: `Use ${name} →` }}
+        primary={{ href: startHref, label: `Use ${name} →` }}
         secondary={{ href: '/themes', label: 'See every theme' }}
       />
     </>
