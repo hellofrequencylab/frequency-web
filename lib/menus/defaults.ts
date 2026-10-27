@@ -1,3 +1,5 @@
+import { applyRegistryGates } from './gates'
+import { frequencyHeaderDefaults } from '@/lib/frequency/header-defaults'
 // Pure adapters that translate the EXISTING static nav modules into the resolved
 // `ResolvedMenu` shape, per surface. NO database access. Used two ways:
 //   1. As the FALLBACK the reader returns when a surface has no DB rows.
@@ -160,7 +162,7 @@ function category(
 // catalog; the registry seeds only plain-link + single-column triggers, matching the
 // live header exactly.) The synthetic ids stay `default:header:cat:${pi}:item:${ii}` so
 // React keys + the /admin/menu editor rows are unchanged.
-function headerMenu(): ResolvedMenu {
+function legacyHeaderMenu(): ResolvedMenu {
   const categories: ResolvedCategory[] = headerTriggers().map(({ node, items: subLinks }, pi) => {
     const label = node.label
     // Single-column dropdown: sub-pages ride directly on the top category. MegaBar
@@ -391,7 +393,7 @@ function profileMenu(): ResolvedMenu {
 export function defaultMenu(surfaceKey: MenuSurfaceKey): ResolvedMenu {
   switch (surfaceKey) {
     case 'header':
-      return headerMenu()
+      return frequencyHeaderDefaults()
     case 'left':
       return leftMenu()
     case 'footer':
@@ -401,4 +403,13 @@ export function defaultMenu(surfaceKey: MenuSurfaceKey): ResolvedMenu {
     case 'admin_header':
       return adminHeaderMenu()
   }
+}
+
+/** An untouched old materialized default is not an instruction to replace the current
+ * Frequency IA. Compare semantic edits, ignoring database-generated ids. */
+export function isUneditedHeaderDefault(menu: ResolvedMenu): boolean {
+  const normalizeItem = (item: ResolvedItem) => [item.label, item.href, item.icon ?? null, item.subheading ?? null, item.ghostTier ?? null, item.ghostMessage ?? null, item.mode, item.roleModes, item.minAccess ?? 'visitor', item.staffDomain ?? null, item.staffLevel ?? null, item.requiresOperatedSpaces ?? false]
+  const normalizeCategory = (cat: ResolvedCategory): unknown => [cat.label, cat.icon ?? null, cat.blurb ?? null, cat.minAccess ?? 'visitor', cat.staffDomain ?? null, cat.staffLevel ?? null, cat.items.map(normalizeItem), cat.children.map(normalizeCategory)]
+  const shape = (value: ResolvedMenu) => JSON.stringify([value.categories.map(normalizeCategory), value.rootItems.map(normalizeItem), value.railCards])
+  return [legacyHeaderMenu(), frequencyHeaderDefaults()].some(defaults => shape(menu) === shape(applyRegistryGates(defaults)))
 }

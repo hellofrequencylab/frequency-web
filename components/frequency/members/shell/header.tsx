@@ -51,6 +51,7 @@ import { clearAllDrafts } from '@/components/studio/spark/draft/draft-store'
 import { NavProgress } from '@/components/frequency/shared/nav-progress'
 import { FqTabBar, tabActive } from './tab-bar'
 import { ZapSheet } from './zap-sheet'
+import { AccountTools, type AccountToolsProps } from './account-tools'
 
 type Open = FqNavSection['key'] | 'zap' | 'bell' | 'me' | 'drawer' | null
 
@@ -65,6 +66,7 @@ interface FqDrawerCircle {
 }
 
 interface FqHeaderProps {
+  accountTools?: AccountToolsProps
   profile: { display_name: string; handle: string; avatar_url: string | null }
   profileHref: string
   navAccess?: Record<string, string>
@@ -101,6 +103,7 @@ export function FqHeader({
   skins,
   skin,
   standing,
+  accountTools,
 }: FqHeaderProps) {
   const pathname = usePathname() ?? ''
   const router = useRouter()
@@ -363,6 +366,7 @@ export function FqHeader({
               profile={profile}
               profileHref={profileHref}
               groups={accountGroups}
+              accountTools={accountTools}
               skins={skins}
               skin={skin}
               onClose={() => setOpen(null)}
@@ -661,6 +665,7 @@ const MODES: { id: ThemeMode; label: string }[] = [
 /** The avatar menu: who you are, the personal and account rows (grouped as DAWN's account menu
  *  groups them), the look (the skin, and light or dark) and Sign out. */
 function AccountSheet({
+  accountTools,
   profile,
   profileHref,
   groups,
@@ -668,6 +673,7 @@ function AccountSheet({
   skin,
   onClose,
 }: {
+  accountTools?: AccountToolsProps
   profile: FqHeaderProps['profile']
   profileHref: string
   groups: FqMenuGroup[]
@@ -752,6 +758,7 @@ function AccountSheet({
           </div>
         )}
       </div>
+      {accountTools && <AccountTools {...accountTools} />}
       <SignOut className="fqm-acct-row fqm-acct-out" />
       <nav className="fqm-acct-about" aria-label="About Frequency">
         {FQ_ABOUT_LINKS.map((l) => (
