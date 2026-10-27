@@ -1,0 +1,18 @@
+{
+  "id": "HYG-213",
+  "title": "Restore active member focus, notification recovery and help drift; finish wrapper retirement",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "M",
+  "source": {
+    "file": "components/frequency/members/shell/bell.tsx",
+    "ref": "Current-main residual consumer review confirmed three active gaps hidden by old wrapper tests"
+  },
+  "detail": "Behavior slice: active profile focal metadata and URL fallback, notification transport/write recovery with load-before-mark ordering, and active settings help source mapping are repaired. Owner behavior tests are preserved unchanged. Six wrapper deletions and retirement-only proof are deliberately deferred until legacy AppShell and its consumers are retired in the separate bounded successor. No full retirement, production or browser acceptance claim.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-27",
+    "evidence": "Behavior-only focused tests and active bell consequence probe pass locally. Keep OPEN until the AppShell dependency and six wrapper retirement proof land; authenticated production acceptance remains separate."
+  }
+}

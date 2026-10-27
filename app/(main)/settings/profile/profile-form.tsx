@@ -65,7 +65,7 @@ export function ProfileForm({
   const [website,       setWebsite]       = useState(initial.website)
   const [avatarUrl,     setAvatarUrl]     = useState(initial.avatarUrl)
   // Avatar FOCUS — where the photo sits in its round crop. The SAME drag-to-focus control the header uses,
-  // on the existing photo too; debounced to profiles.meta.avatarFocal and applied at render (ProfileAvatar).
+  // on the existing photo too; debounced to profiles.meta.avatarFocal and applied by the active Frequency ProfilePhoto.
   const [avatarFocus,   setAvatarFocus]   = useState(initial.avatarFocal || DEFAULT_OBJECT_POSITION)
   const avatarFocusTimer                  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [headerUrl,     setHeaderUrl]     = useState(initial.headerImageUrl)
