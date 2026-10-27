@@ -55,4 +55,14 @@ describe('profile kits', () => {
       }
     }
   })
+  it('every General kit carries a "join" page with an email sign-up block; no other profile does', async () => {
+    const SIGNUP = new Set(['MidnightLetter', 'TempleFollow', 'SpaceJoinList'])
+    for (const s of PROFILE_KIT_INDEX) {
+      const kit = (await loadKit(s.id))!
+      const join = kit.pages.find((p) => p.slug === 'join')
+      if (s.niche !== 'general') { expect(join, s.id).toBeUndefined(); continue }
+      expect(join, s.id).toBeDefined()
+      expect(join!.blocks.some((b) => SIGNUP.has(b.type)), s.id).toBe(true)
+    }
+  })
 })

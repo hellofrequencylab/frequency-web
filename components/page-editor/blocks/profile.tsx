@@ -27,6 +27,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { normalizeHttpUrl } from '@/lib/safe-url'
 import { focalClass } from '@/lib/page-editor/image-controls'
 import { CtaButton } from '@/components/page-editor/blocks/kit'
+import { ContactFormBlock } from '@/components/spaces/contact-form-block'
 import { loomImageField, loomSquareImageField } from '@/lib/page-editor/loom-image-field'
 import { memberPickerField } from '@/lib/page-editor/member-picker-field'
 // TYPE-ONLY import: erased at build, so this NEVER drags the server reader (createAdminClient) into
@@ -2237,6 +2238,43 @@ export const profileComponents: Record<string, ComponentConfig> = {
             linkLabel={(linkLabel as string) || undefined}
             linkHref={mergeField(linkHref as string, central?.website)}
             editing={puck?.isEditing}
+          />
+        </AnchorSection>
+      )
+    },
+  },
+
+  // The email-only sign-up: a name, an email and the visitor's own opt-in, through the same anonymous lead door
+  // as the Contact form. The Space is the site's own (`metadata.links.slug`); with none, as in the editor canvas,
+  // it draws the dead preview. Neutral on purpose, so any theme's kit can use it.
+  SpaceJoinList: {
+    label: 'Join the list (email sign-up)',
+    fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
+      title: { type: 'text', label: 'Heading' },
+      body: { type: 'textarea', label: 'Intro' },
+      submitLabel: { type: 'text', label: 'Button label' },
+      successMessage: { type: 'text', label: 'Thank-you message' },
+    },
+    defaultProps: {
+      eyebrow: 'Stay close',
+      title: 'Join the list',
+      body: 'Leave your email and we will let you know what is coming up.',
+      submitLabel: 'Join the list',
+      successMessage: 'You are on the list. Thank you.',
+    },
+    render: ({ eyebrow, title, body, submitLabel, successMessage, puck }) => {
+      const slug = ((puck?.metadata?.links as { slug?: string | null } | undefined)?.slug ?? null) || null
+      return (
+        <AnchorSection anchor="join">
+          <ContactFormBlock
+            slug={slug}
+            eyebrow={(eyebrow as string) || undefined}
+            title={(title as string) || undefined}
+            body={(body as string) || undefined}
+            showMessage={false}
+            submitLabel={(submitLabel as string) || undefined}
+            successMessage={(successMessage as string) || undefined}
           />
         </AnchorSection>
       )
