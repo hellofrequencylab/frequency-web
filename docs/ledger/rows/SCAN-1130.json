@@ -1,7 +1,7 @@
 {
   "id": "SCAN-1130",
   "append": {
-    "detail": " 2026-10-26 (SCAN-1129 thread): first slice. The Space AccentScope, resolveTheme and the Settings appearance switcher no longer read LEGACY_THEME_AXES: Feel and Seasonal accent controls and their server actions are gone. Still open: app/(main)/layout.tsx reads LEGACY_THEME_AXES (owned by the admin and layout thread), then delete the export and DesignDef.legacyAxes, then skins, generations, occasions, design-fonts/dawn and the DAWN blocks in app/globals.css.\n\nLEGACY_THEME_AXES and DesignDef.legacyAxes are gone (#4059, #4058, this PR). The generation and occasion CSS blocks, skins and design-fonts/dawn continue as HYG-185."
+    "detail": " 2026-10-26 (SCAN-1129 thread): first slice. The Space AccentScope, resolveTheme and the Settings appearance switcher no longer read LEGACY_THEME_AXES: Feel and Seasonal accent controls and their server actions are gone. Still open: app/(main)/layout.tsx reads LEGACY_THEME_AXES (owned by the admin and layout thread), then delete the export and DesignDef.legacyAxes, then skins, generations, occasions, design-fonts/dawn and the DAWN blocks in app/globals.css.\n\nLEGACY_THEME_AXES and DesignDef.legacyAxes are gone (#4059, #4058, this PR). The generation and occasion CSS blocks, skins and design-fonts/dawn continue as HYG-187."
   },
   "patch": {
     "status": "done",

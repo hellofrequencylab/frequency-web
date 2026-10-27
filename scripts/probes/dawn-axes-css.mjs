@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 
-// HYG-185: the generation and occasion axes are retired (SCAN-1130), so no selector in
+// HYG-187: the generation and occasion axes are retired (SCAN-1130), so no selector in
 // app/globals.css may still key off them. Exits 0 only when none is left.
 const css = readFileSync('app/globals.css', 'utf8')
 const left = css.match(/\[data-(generation|occasion)[^\]]*\]/g) ?? []
