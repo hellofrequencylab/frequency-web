@@ -105,7 +105,7 @@ describe('a deploy built with NEXT_PUBLIC_SITE_DESIGN=frequency', () => {
       const design = await import('./design')
       const skins = await import('./skins')
       expect(design.SITE_DESIGN).toBe('frequency')
-      expect(design.LEGACY_THEME_AXES).toBe(false)
+      expect(design).not.toHaveProperty('LEGACY_THEME_AXES')
       expect(skins.SELECTABLE_SKINS.map((s) => s.id)).toEqual(['default', 'midnight'])
       // The picker names the default skin after the design it is, never "Dawn" under Frequency.
       expect(skins.SELECTABLE_SKINS.map((s) => s.label)).toEqual(['Default', 'Midnight'])
@@ -124,7 +124,7 @@ describe('a deploy built with NEXT_PUBLIC_SITE_DESIGN=frequency', () => {
       const design = await import('./design')
       const skins = await import('./skins')
       expect(design.SITE_DESIGN).toBe('frequency')
-      expect(design.LEGACY_THEME_AXES).toBe(false)
+      expect(design).not.toHaveProperty('LEGACY_THEME_AXES')
       expect(skins.SELECTABLE_SKINS.map((s) => s.id)).toEqual(['default', 'midnight'])
     } finally {
       vi.unstubAllEnvs()
@@ -190,7 +190,7 @@ describe('retired platform selection', () => {
     try {
       const design = await import('./design')
       expect(design.SITE_DESIGN).toBe('frequency')
-      expect(design.LEGACY_THEME_AXES).toBe(false)
+      expect(design).not.toHaveProperty('LEGACY_THEME_AXES')
     } finally { vi.unstubAllEnvs(); vi.resetModules() }
   })
   it('rejects the retired CLI selection before writing an environment file', () => {

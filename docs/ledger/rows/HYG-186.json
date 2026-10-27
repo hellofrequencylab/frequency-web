@@ -1,0 +1,18 @@
+{
+  "id": "HYG-186",
+  "title": "Retire the unused legacy theme-axis feature flag",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "lib/theme/design.ts",
+    "ref": "No remaining runtime readers after Frequency-only layout owner PR4058"
+  },
+  "detail": "Remove the unused LEGACY_THEME_AXES export and its DesignDef.legacyAxes registry field after actual-source review finds no runtime consumers. Canonical environment normalization and active Frequency skin selection remain covered by the existing design suite; three former flag-value assertions now verify the retired API is absent. A bounded direct probe and negative controls reject flag/property restoration or changed canonical selection. SCAN1130 stays open: its probe is strengthened to require the actual legacy CSS and DAWN font-input retirement as well as absence of the flag. No persisted theme data, janitor actions, skin/font registries, CSS, database or provider operations change.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/retired-theme-axis-flag.mjs"
+  },
+  "closed": "2026-10-26"
+}
