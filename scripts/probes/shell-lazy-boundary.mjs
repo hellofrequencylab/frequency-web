@@ -1,6 +1,6 @@
 // SCAN-1119 source boundary only. Real bytes remain the unchanged postbuild shell gate's job.
 import { readFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
 
 export function shellLazyBoundary(shell, bridge, budget) {
   const live = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -22,7 +22,7 @@ export function currentShellLazyBoundary() {
   const read = (p) => readFileSync(p, 'utf8')
   return shellLazyBoundary(read('components/layout/app-shell.tsx'), read('components/layout/admin-bar/lazy-admin-bar.tsx'), read('scripts/check-shell-weight.mjs'))
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (invokedDirectly(import.meta.url)) {
   if (!currentShellLazyBoundary()) { console.error('Shell lazy source boundary failed'); process.exitCode = 1 }
   else console.log('Shell lazy source boundary passed; actual artifact byte gate remains required')
 }
