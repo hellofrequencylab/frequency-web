@@ -1,0 +1,12 @@
+{
+  "id": "HYG-190",
+  "title": "Admin selection controls announce their current state",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-26",
+  "source": { "file": "components/admin/selection-accessibility.test.tsx", "ref": "Frequency full audit conditional-state consumer review" },
+  "detail": "Page status, CRM task filters and header preview sorting now expose selected state through aria-pressed and named groups. The public-practice bulk switch exposes role=switch and aria-checked with a stable name, retaining its opposite-state action and pending gates. Four actual jsdom interaction tests cover selection/content ordering and both switch directions; all four fail against actual pre-repair components and pass after repair. Action boundaries are mocked; no production mutation or browser/assistive-technology acceptance claim.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/admin-selection-state.mjs", "note": "Checks actual control state bindings; paired rendered interaction tests run in normal CI." }
+}
