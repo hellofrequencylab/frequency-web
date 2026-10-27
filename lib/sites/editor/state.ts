@@ -1,5 +1,5 @@
 import type { Data } from '@/lib/page-editor/types'
-import { siteTheme, type SiteThemeId } from '@/lib/theme/site-style'
+import { isSiteLookValue, SITE_LOOK_OPTIONS, siteTheme, type SiteLookKey, type SiteThemeId } from '@/lib/theme/site-style'
 
 // Website-only documents. Never written to pageDocs/profileLayout; public readers
 // consume only published. Bounded snapshots until E0's shared document store lands.
@@ -14,7 +14,23 @@ interface WebsitePage {
 }
 interface WebsiteBrand { logo?: string | null; accent?: string | null }
 export interface WebsiteChrome { name?: string; tagline?: string | null; cta?: { label: string; href: string } | null }
-export interface WebsiteSnapshot { theme: WebsiteTheme; brand?: WebsiteBrand; chrome?: WebsiteChrome; pages: WebsitePage[] }
+/** The global styles a theme draft holds (corners, spacing, header, footer); a key left out is the theme's own. */
+export type WebsiteLook = Partial<Record<SiteLookKey, string>>
+/** A THEME DRAFT: one saved way the same website could look. The pages, words, photos and menu are shared by every
+ *  draft; a draft holds only the theme and its per-theme settings. The snapshot's own `theme`, `brand` and `look`
+ *  are the ACTIVE draft's working values (lib/sites/editor/theme-drafts.ts settles them back into this list). */
+export interface WebsiteThemeDraft { id: string; label: string; theme: WebsiteTheme; brand?: WebsiteBrand; look?: WebsiteLook }
+export interface WebsiteSnapshot {
+  theme: WebsiteTheme; brand?: WebsiteBrand; chrome?: WebsiteChrome; pages: WebsitePage[]
+  /** The global styles the active draft wears; absent on a website that never used drafts (its live style stands). */
+  look?: WebsiteLook
+  /** The owner's theme drafts, only when there is more than one. Private: never on a published snapshot. */
+  themes?: WebsiteThemeDraft[]
+  /** The draft the editor is showing. */
+  activeTheme?: string
+  /** On a published snapshot: the draft that is live, so the editor can mark it. */
+  liveTheme?: string
+}
 interface WebsiteVersion { id: string; createdAt: string; author: string; snapshot: WebsiteSnapshot }
 export interface WebsiteEditorState {
   v: 1; revision: number; draft: WebsiteSnapshot
@@ -86,13 +102,39 @@ function validCommentReplies(replies: unknown): boolean {
   })
 }
 
+export const MAX_THEME_DRAFTS = 6
+const DRAFT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+function validWebsiteBrand(brand: unknown): boolean {
+  if (!record(brand) || Object.keys(brand).some((key) => !['logo', 'accent'].includes(key))) return false
+  if (brand.accent != null && (typeof brand.accent !== 'string' || !/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(brand.accent))) return false
+  return brand.logo == null || (text(brand.logo, 2000) && validWebsiteLogo(brand.logo))
+}
+
+function validWebsiteLook(look: unknown): boolean {
+  return record(look) && Object.entries(look).every(([key, value]) => key in SITE_LOOK_OPTIONS && isSiteLookValue(key as SiteLookKey, value))
+}
+
+function validThemeDrafts(snapshot: Record<string, unknown>): boolean {
+  const { themes, activeTheme, liveTheme, look } = snapshot
+  if (look !== undefined && !validWebsiteLook(look)) return false
+  if (activeTheme !== undefined && (!text(activeTheme, 40) || !DRAFT_ID.test(activeTheme))) return false
+  if (liveTheme !== undefined && (!text(liveTheme, 40) || !DRAFT_ID.test(liveTheme))) return false
+  if (themes === undefined) return true
+  if (!Array.isArray(themes) || themes.length < 2 || themes.length > MAX_THEME_DRAFTS) return false
+  const ids = new Set<string>()
+  for (const t of themes) {
+    if (!record(t) || !text(t.id, 40) || !DRAFT_ID.test(t.id) || ids.has(t.id) || !text(t.label, 60) || !t.label.trim() || !WEBSITE_THEMES.includes(t.theme as WebsiteTheme)) return false
+    if ((t.brand !== undefined && !validWebsiteBrand(t.brand)) || (t.look !== undefined && !validWebsiteLook(t.look))) return false
+    ids.add(t.id)
+  }
+  return activeTheme !== undefined && ids.has(activeTheme as string)
+}
+
 export function validWebsiteSnapshot(v: unknown): v is WebsiteSnapshot {
   if (!record(v) || !WEBSITE_THEMES.includes(v.theme as WebsiteTheme) || !Array.isArray(v.pages) || !v.pages.length || v.pages.length > 30) return false
-  if (v.brand !== undefined) {
-    if (!record(v.brand) || Object.keys(v.brand).some((key) => !['logo', 'accent'].includes(key))) return false
-    if (v.brand.accent != null && (typeof v.brand.accent !== 'string' || !/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(v.brand.accent))) return false
-    if (v.brand.logo != null && (!text(v.brand.logo, 2000) || !validWebsiteLogo(v.brand.logo))) return false
-  }
+  if (v.brand !== undefined && !validWebsiteBrand(v.brand)) return false
+  if (!validThemeDrafts(v)) return false
   if (v.chrome !== undefined && !validWebsiteChrome(v.chrome)) return false
   const slugs = new Set<string>()
   for (const p of v.pages) {
@@ -191,6 +233,10 @@ export function nextWebsiteState(current: WebsiteEditorState, draft: WebsiteSnap
   // carry a private review thread in its published document.
   const publicSnapshot = structuredClone(snapshot)
   publicSnapshot.pages.forEach((page) => { page.comments = [] })
+  // Theme drafts are the owner's private workbench: what the public site reads is the one that went live.
+  delete publicSnapshot.themes
+  delete publicSnapshot.activeTheme
+  if (snapshot.themes && snapshot.activeTheme) publicSnapshot.liveTheme = snapshot.activeTheme
   return {
     v: 1, revision: current.revision + 1, draft: snapshot,
     published: publish ? publicSnapshot : structuredClone(current.published),

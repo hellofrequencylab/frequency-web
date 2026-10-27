@@ -263,5 +263,15 @@ export function houseOfFatesEditorState(now: string, revision = 1): WebsiteEdito
     chrome: { name: HOUSE_OF_FATES.name, tagline: HOUSE_OF_FATES.tagline, cta: { label: 'Book a free consultation', href: HOF_BOOKING_LIVE ? '/book' : '/contact-us' } },
     pages,
   }
-  return { v: 1, revision, draft: snapshot, published: structuredClone(snapshot), versions: [{ id: String(revision), createdAt: now, author: 'Frequency', snapshot: structuredClone(snapshot) }] }
+  // THEME DRAFTS: House of Fates is Daniel's own variant of Nocturne, kept in this Space's editor only (never in the
+  // /themes library or the kit registry). Two drafts over the same pages: the shared Nocturne theme as it ships, and
+  // the House of Fates variant (Nocturne plus the Hypnotist kit's accent). The variant is the one that is live, and
+  // it is exactly the look this Space has always worn, so nothing on the live site changes.
+  const draft: WebsiteSnapshot = {
+    ...structuredClone(snapshot),
+    themes: [{ id: 'nocturne', label: 'Nocturne', theme: 'Midnight' }, { id: 'house-of-fates', label: 'House of Fates', theme: 'Midnight', brand: { accent: HOF_ACCENT } }],
+    activeTheme: 'house-of-fates',
+  }
+  const published: WebsiteSnapshot = { ...structuredClone(snapshot), liveTheme: 'house-of-fates' }
+  return { v: 1, revision, draft, published, versions: [{ id: String(revision), createdAt: now, author: 'Frequency', snapshot: structuredClone(published) }] }
 }

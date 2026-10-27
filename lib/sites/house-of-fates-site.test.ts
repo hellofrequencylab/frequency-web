@@ -8,6 +8,21 @@ import { config } from '@/lib/page-editor/config'
 const state = houseOfFatesEditorState('2026-10-27T00:00:00.000Z')
 
 describe('the House of Fates site', () => {
+  it('is a saved variant of Nocturne beside the shared Nocturne draft, and the variant is live', () => {
+    expect(state.draft.themes?.map((t) => [t.id, t.theme])).toEqual([['nocturne', 'Midnight'], ['house-of-fates', 'Midnight']])
+    expect(state.draft.activeTheme).toBe('house-of-fates')
+    expect(state.published?.liveTheme).toBe('house-of-fates')
+    // The public snapshot carries no draft list, and the look it serves is the one this Space always wore.
+    expect(state.published).not.toHaveProperty('themes')
+    expect(state.published?.brand).toEqual(state.draft.brand)
+    expect(state.published?.theme).toBe('Midnight')
+  })
+  it('stays out of the theme library and the kit registry', async () => {
+    const [{ THEME_LIBRARY }, { KIT_INDEX, PROFILE_KIT_INDEX }] = await Promise.all([import('@/lib/themes/library'), import('@/lib/sites/kits/registry')])
+    const listed = JSON.stringify([THEME_LIBRARY, KIT_INDEX, PROFILE_KIT_INDEX]).toLowerCase()
+    expect(listed).not.toContain('house of fates')
+    expect(listed).not.toContain('house-of-fates')
+  })
   it('is a valid published Midnight website with a Home', () => {
     expect(validWebsiteSnapshot(state.draft)).toBe(true)
     expect(readWebsiteEditor({ websiteEditor: state })).not.toBeNull()

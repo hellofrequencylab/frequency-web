@@ -320,6 +320,23 @@ it('opens Change theme from the Theme tab and switches the draft theme as one un
   expect(button('Close dialog')).toBeTruthy()
 })
 
+it('keeps several theme drafts over the same pages and switches between them without touching the live style', () => {
+  const { node, click, button } = mount({ start: clean })
+  click('Theme')
+  const rows = () => Array.from(node.querySelectorAll('.rail .row')).map((r) => r.textContent ?? '')
+  expect(rows().some((t) => t.startsWith('Bold · Editing'))).toBe(true)
+  click('New draft')
+  const select = node.querySelector<HTMLSelectElement>('.rail select')!
+  act(() => { Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!.call(select, 'Midnight'); select.dispatchEvent(new Event('change', { bubbles: true })) })
+  click('Add draft')
+  expect(rows().some((t) => t.startsWith('Nocturne · Editing'))).toBe(true)
+  expect(rows().some((t) => t.startsWith('Bold') && !t.includes('Editing'))).toBe(true)
+  // Showing the first draft again brings its theme back; the pages are the same document throughout.
+  act(() => (Array.from(node.querySelectorAll('.rail .row')).find((r) => r.textContent?.startsWith('Bold')) as HTMLButtonElement).click())
+  expect(rows().some((t) => t.startsWith('Bold · Editing'))).toBe(true)
+  expect(button('Remove draft')).toBeTruthy()
+})
+
 it('maps the Theme and Site tabs onto the real site settings', () => {
   const { node } = mount({ start: clean })
   act(() => (Array.from(node.querySelectorAll('.rail .tabs button')).find((b) => b.textContent === 'Theme') as HTMLButtonElement).click())

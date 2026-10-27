@@ -16,6 +16,8 @@ import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
 import { KitLibrary } from './kit-library'
 import { ThemeChanger } from './theme-changer'
+import { ThemeDraftsPanel } from './theme-drafts-panel'
+import { activeThemeDraftId, addThemeDraft, draftLook, liveThemeDraftId, removeThemeDraft, renameThemeDraft, switchThemeDraft, themeDrafts } from '@/lib/sites/editor/theme-drafts'
 import type { KitChanges } from '@/lib/sites/kits/apply'
 import type { KitApplyMode, KitNiche } from '@/lib/sites/kits/types'
 import { editorBlockMeta, editorPickerGroups, VERA_SUGGESTIONS } from '@/lib/sites/editor/block-meta'
@@ -168,7 +170,14 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [draft, setDraft] = useState(initial.draft)
   const [style, setStyle] = useState<SiteStyle>(() => siteStyle ?? { ...DEFAULT_STYLE, theme: siteThemeOf(initial.draft.theme) })
   const [styleError, setStyleError] = useState('')
-  const lookStyle = { ...style, theme: siteThemeOf(draft.theme) }
+  // THEME DRAFTS: the canvas wears the ACTIVE draft's theme and global styles. The live style (`style`) is what visitors
+  // see now and changes only on publish, so a draft that is another theme gets that theme's own fonts and styles here.
+  const lookStyle = useMemo<SiteStyle>(() => {
+    const theme = siteThemeOf(draft.theme)
+    const same = theme === style.theme
+    const own = draftLook(draft.look) as SiteStyle['look'] | undefined
+    return { ...style, theme, fonts: same ? style.fonts : SITE_THEMES.find((t) => t.id === theme)!.defaultFonts, look: own ?? (same ? style.look : { corners: null, spacing: null, header: null, footer: null }) }
+  }, [style, draft.theme, draft.look])
   async function saveStyle(patch: Parameters<NonNullable<WebsiteEditorShellProps['onStyle']>>[0], optimistic: SiteStyle) {
     const before = style
     setStyle(optimistic)
@@ -272,9 +281,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // repaints the canvas at once and a Frequency site wears the owner's fonts and accent, not DAWN's defaults.
   const pageTheme = style.pages?.[page.slug] ?? null
   const pageSlugNow = page.slug
-  const draftTheme = draft.theme
   const brandAccentNow = websiteBrand.accent
-  const render = useMemo(() => siteRenderStyle(sitePageStyle({ ...style, theme: siteThemeOf(draftTheme) }, pageSlugNow), brandAccentNow, defaultAccent ?? null), [style, draftTheme, pageSlugNow, brandAccentNow, defaultAccent])
+  const render = useMemo(() => siteRenderStyle(sitePageStyle(lookStyle, pageSlugNow), brandAccentNow, defaultAccent ?? null), [lookStyle, pageSlugNow, brandAccentNow, defaultAccent])
   const canvasTheme = render.editorTheme
   const canvasVars = useMemo(() => siteCanvasVars(render), [render])
   const pageLookStyle = render.lookStyle
@@ -293,7 +301,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const navigationChanged = JSON.stringify(draft.pages.map(({ slug, label }) => ({ slug, label }))) !== JSON.stringify(persisted.published?.pages.map(({ slug, label }) => ({ slug, label })))
   const chromeChanged = JSON.stringify(draft.chrome) !== JSON.stringify(persisted.published?.chrome)
   const brandChanged = JSON.stringify(draft.brand) !== JSON.stringify(persisted.published?.brand)
-  const dirty = changedPages.length > 0 || draft.theme !== persisted.published?.theme || brandChanged || chromeChanged || navigationChanged
+  const lookChanged = JSON.stringify(draft.look ?? null) !== JSON.stringify(persisted.published?.look ?? null)
+  const dirty = changedPages.length > 0 || draft.theme !== persisted.published?.theme || lookChanged || brandChanged || chromeChanged || navigationChanged
 
   // THE CHANGE LOG (Frequency, HANDOFF-PAGE-EDITOR.md §7): each mutation's human label ("Edited Hero",
   // "Reordered sections", "Removed FAQ"), deduped, for the Publish badge and the publish modal. View state only;
@@ -445,9 +454,29 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   function pickTheme(t: (typeof SITE_THEMES)[number]) {
     const theme = EDITOR_THEME[t.id]
     if (theme === draft.theme) return
-    commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }, { label: 'Theme' })
-    void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts })
-    say('Theme updated')
+    // DRAFT ONLY: the live site keeps its theme until this draft is published.
+    commit({ ...draft, theme, look: undefined, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }, { label: 'Theme' })
+    say('Theme changed in this draft')
+  }
+  /** One global style on the ACTIVE draft. It is saved with the draft and goes live when the draft is published. */
+  function setLook(key: SiteLookKey, value: string | null) {
+    const next = Object.entries({ ...lookStyle.look, [key]: value }).filter(([, v]) => v !== null)
+    commit({ ...draft, look: Object.fromEntries(next) as NonNullable<WebsiteSnapshot['look']> }, { label: 'Style' })
+  }
+  // THEME DRAFTS: several themes over the same pages. A switch is one undo step; when the theme differs the element
+  // positions reset to that theme's layout (Undo restores them), exactly as picking a theme does.
+  const [draftError, setDraftError] = useState('')
+  const draftList = themeDrafts(draft)
+  const activeDraftId = activeThemeDraftId(draft)
+  const liveDraftId = liveThemeDraftId(draft, persisted.published)
+  function withLayoutReset(next: WebsiteSnapshot): WebsiteSnapshot {
+    return next.theme === draft.theme ? next : { ...next, pages: next.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }
+  }
+  function changeDrafts(result: { ok: true; snapshot: WebsiteSnapshot } | { ok: false; error: string }, label: string, message: string) {
+    if (!result.ok) { setDraftError(result.error); return }
+    setDraftError('')
+    commit(withLayoutReset(result.snapshot), { label })
+    say(message)
   }
   async function previewKitChoice(id: string): Promise<KitChanges | string> {
     const [{ loadKit }, { kitChanges }] = await Promise.all([import('@/lib/sites/kits/registry'), import('@/lib/sites/kits/apply')])
@@ -460,10 +489,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     if (!kit) return 'That kit could not be loaded. Try again.'
     const result = applyKit(latest.current, kit, mode, (type) => config.components[type]?.defaultProps as Record<string, unknown> | undefined)
     if (!result.ok) return result.error
-    const site = SITE_THEMES.find((t) => EDITOR_THEME[t.id] === kit.theme)
     const themeChanged = kit.theme !== latest.current.theme
-    commit(themeChanged ? { ...result.snapshot, pages: result.snapshot.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) } : result.snapshot, { label: `Applied the ${kit.label} kit` })
-    if (themeChanged && site) void saveStyle({ theme: site.id }, { ...style, theme: site.id, fonts: site.defaultFonts })
+    commit(themeChanged ? { ...result.snapshot, look: undefined, pages: result.snapshot.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) } : result.snapshot, { label: `Applied the ${kit.label} kit` })
     say(`${kit.label} kit applied`)
     return mode === 'theme' ? 'Theme applied. Undo takes it back.' : 'Kit applied. Rewrite the sample words, then publish. Undo takes it back.'
   }
@@ -567,7 +594,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const bodyFont = String(canvasVars['--th-body' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const spaceAccent = brandAccent && /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(brandAccent) ? brandAccent : null
   const changeThemeButton = <button type="button" className={k('we-row')} onClick={() => setModal('theme')}><span>Change theme<small>Now wearing {WEBSITE_THEME_LABEL[draft.theme]}. See every theme and its starter kits.</small></span></button>
+  const draftsPanel = <ThemeDraftsPanel drafts={draftList} activeId={activeDraftId} liveId={liveDraftId} editorTheme={(id) => EDITOR_THEME[id]} error={draftError}
+    onSwitch={(id) => changeDrafts(switchThemeDraft(draft, id), 'Theme draft', 'Showing this theme draft')}
+    onAdd={(theme, label, from) => changeDrafts(addThemeDraft(draft, theme, label, from), 'New theme draft', 'Theme draft added')}
+    onRename={(id, label) => changeDrafts(renameThemeDraft(draft, id, label), 'Theme draft name', 'Draft renamed')}
+    onRemove={(id) => changeDrafts(removeThemeDraft(draft, id, liveDraftId), 'Removed theme draft', 'Draft removed')} />
   const fqThemeTab = <>
+    {draftsPanel}
     <div className="cap">Theme</div>
     {changeThemeButton}
     {SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className={`theme${on(draft.theme === theme)}`} aria-pressed={draft.theme === theme} onClick={() => pickTheme(t)}>
@@ -581,11 +614,11 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     </div>
     <div className="cap">Type</div>
     <div className="row on" role="note"><span className="ic type-aa" aria-hidden>Aa</span><span className="t">{themeFonts}{bodyFont && bodyFont !== themeFonts ? ` + ${bodyFont}` : ''}<small>Comes with the {WEBSITE_THEME_LABEL[draft.theme]} theme</small></span></div>
-    <div className="cap">Style</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="fld"><span className="l">{LOOK_LABEL[key]}</span><div className="seg wrap" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className={on(siteLook(lookStyle)[key] === o.id).trim() || undefined} aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; void saveStyle({ look: { [key]: stored } }, { ...style, look: { ...style.look, [key]: stored } }) }}>{o.label}</button>)}</div></div>)}
+    <div className="cap">Style</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="fld"><span className="l">{LOOK_LABEL[key]}</span><div className="seg wrap" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className={on(siteLook(lookStyle)[key] === o.id).trim() || undefined} aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; setLook(key, stored) }}>{o.label}</button>)}</div></div>)}
     {styleError && <p role="alert" className="note err">{styleError}</p>}
     <div className="cap">Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
     <div className="acts"><button type="button" className="btn sm" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="btn sm" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } }, { label: 'Logo' })}>Remove logo</button>}</div>
-    <div className="note">The theme and styles change your live site as soon as you pick them. Words, photos and live blocks stay as they are.</div>
+    <div className="note">A theme or style you pick changes this draft only. Visitors see it when you publish. Words, photos and live blocks stay as they are.</div>
   </>
   // ── The rail tabs and inspector panels, shared by both designs. Under DAWN the rail tabs are the Site Editor's
   // (LIVE-907); under Frequency, the kit's. Class names go through k() (skin.ts). The handlers are the same either way.
@@ -602,12 +635,12 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <button type="button" className="we-row" disabled={draft.pages.length >= 30} onClick={() => setModal('templates')}><Plus size={15} />New page</button><button type="button" className="we-row" onClick={() => { setPanel('page'); setRight(true) }}><Settings2 size={15} />Page settings</button>
       <div className="we-caption">Site</div><a className="we-row" href={`https://${host}/`} target="_blank" rel="noreferrer"><Globe size={15} />{host}</a><button type="button" className="we-row" onClick={() => { setPanel('seo'); setRight(true) }}><Search size={15} />SEO and sharing</button><button type="button" className="we-row" onClick={() => { setPanel('content'); setRight(true) }}><Settings2 size={15} />Shared content</button></>
   const siteTab = FQ_EDITOR ? fqSiteTab : <><div className="we-caption">Website settings</div><button type="button" className="we-row" onClick={() => openChrome('header')}>Header and navigation</button><button type="button" className="we-row" onClick={() => openChrome('footer')}>Footer</button><button type="button" className="we-row" onClick={() => { setTab('Theme'); setLeft(true) }}>Theme and logo</button><button type="button" className="we-row" onClick={() => { setPanel('page'); setRight(true) }}>Page settings</button><button type="button" className="we-row" onClick={() => { setPanel('seo'); setRight(true) }}>SEO and sharing</button><a className="we-row" href={`https://${host}/`} target="_blank" rel="noreferrer">Open live website</a><a className="we-row" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer">Space home</a></>
-  const themeTab = FQ_EDITOR ? fqThemeTab : <><div className="we-caption">Theme</div>{changeThemeButton}{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => pickTheme(t)}>
+  const themeTab = FQ_EDITOR ? fqThemeTab : <>{draftsPanel}<div className="we-caption">Theme</div>{changeThemeButton}{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => pickTheme(t)}>
       <span className="we-theme-swatch" style={websiteThemeVars(theme)}><i style={{ background: 'var(--ed-chrome)' }} /><i style={{ background: 'var(--th-bg)' }}><b /></i></span><span><strong>{WEBSITE_THEME_LABEL[theme]}</strong><small>{t.description}</small></span>
       </button> })}
       <KitLibrary onApply={applyKitChoice} onPreview={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />
       {/* GLOBAL STYLES (ADR-1728): the same setting Identity and branding edits, live at once. */}
-      <div className="we-caption">Global styles</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="we-field">{LOOK_LABEL[key]}<div className="we-choice-row" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className="we-action secondary" aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; void saveStyle({ look: { [key]: stored } }, { ...style, look: { ...style.look, [key]: stored } }) }}>{o.label}</button>)}</div></div>)}
+      <div className="we-caption">Global styles</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="we-field">{LOOK_LABEL[key]}<div className="we-choice-row" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className="we-action secondary" aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; setLook(key, stored) }}>{o.label}</button>)}</div></div>)}
       {styleError && <p role="alert" className="we-note">{styleError}</p>}
       <div className="we-caption">Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
       <div className="we-actions"><button type="button" className="we-action secondary" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } })}>Remove logo</button>}</div>
@@ -643,7 +676,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const publishAction = () => { if (publishWhen === 'now') void save(true); else if (!scheduledAt || !Number.isFinite(new Date(scheduledAt).getTime()) || new Date(scheduledAt).getTime() <= Date.now()) setError('Choose a future date and time.'); else void save(false, new Date(scheduledAt).toISOString()) }
   const publishDisabled = !dirty || status === 'saving' || status === 'conflict'
   const publishLabel = status === 'saving' ? 'Saving…' : publishWhen === 'schedule' ? 'Schedule publish' : 'Publish now'
-  const changeCount = changedPages.length + removedPages.length + (navigationChanged ? 1 : 0) + (chromeChanged ? 1 : 0) + (brandChanged ? 1 : 0) + (draft.theme !== persisted.published?.theme ? 1 : 0)
+  const changeCount = changedPages.length + removedPages.length + (navigationChanged ? 1 : 0) + (chromeChanged ? 1 : 0) + (brandChanged ? 1 : 0) + (draft.theme !== persisted.published?.theme ? 1 : 0) + (lookChanged ? 1 : 0)
   const versionsList = <>{persisted.versions.length ? persisted.versions.map((v) => <div className={k('we-version')} key={v.id}><div><strong>Published version {v.id}</strong><div className={k('we-note')}>{new Date(v.createdAt).toLocaleString()}</div></div><button type="button" className={k('we-action secondary')} onClick={() => { commit(structuredClone(v.snapshot), { label: 'Restored a published version' }); setModal(null) }}>Restore to draft</button></div>) : <p className={k('we-note')}>Your first publish creates a version you can restore.</p>}</>
   const scheduledNotice = persisted.scheduled && <div><button type="button" className={k('we-action secondary')} disabled={status === 'saving'} onClick={() => void save(false, null)}>Cancel scheduled publish</button><p className={k('we-note')}>Scheduled for {new Date(persisted.scheduled.at).toLocaleString()}. Later draft edits stay separate from that scheduled version.</p></div>
   const previewNote = !WEBSITE_THEMES_LIVE.has(draft.theme) && <p role="note" className={k('we-note')}>The {WEBSITE_THEME_LABEL[draft.theme]} theme is still in preview in the editor. Publishing saves this version, and your live website keeps its current look until this theme is ready.</p>
@@ -741,7 +774,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         {modal === 'insert' && <div className="modal-body">{palette}</div>}
         {modal === 'delete-page' && deletePageBody}
         {modal === 'templates' && <><label className="fld"><span className="l">Page name</span><Input className="in" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="note err">{error}</p>}<div className="blocks">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="blk" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="th" aria-hidden><i className="a s" /><i className="w" /><i /></span>{name}<small>{description}</small></button>)}</div></>}
-        {modal === 'publish' && <>{previewNote}
+        {modal === 'publish' && <>{previewNote}{draftList.length > 1 && <p className="note">Going live: {draftList.find((d) => d.id === activeDraftId)?.label}. Your other theme drafts stay here.</p>}
           <div className="chg">{!dirty ? <div>No changes since last publish</div> : changes.length ? changes.map((label) => <div key={label}><FqIcon name="edit" /><b>{label}</b></div>) : <>{changedPages.map((p) => <div key={p.slug}><FqIcon name="page" /><b>{p.label}</b><span className="sp" />Updated</div>)}{removedPages.map((item) => <div key={item.slug}><FqIcon name="trash" /><b>{item.label}</b><span className="sp" />Removed</div>)}{navigationChanged && <div><FqIcon name="layers" /><b>Navigation</b><span className="sp" />Updated</div>}{chromeChanged && <div><FqIcon name="settings" /><b>Header and footer</b><span className="sp" />Updated</div>}{brandChanged && <div><FqIcon name="palette" /><b>Brand settings</b><span className="sp" />Updated</div>}{draft.theme !== persisted.published?.theme && <div><FqIcon name="palette" /><b>Theme</b><span className="sp" />{WEBSITE_THEME_LABEL[draft.theme]}</div>}</>}</div>
           {publishChecks(draft.pages, config, { otherChanged }).map((check) => <div className="chk" key={check.text}><i className={check.ok ? undefined : 'w'} aria-hidden>{check.ok ? '✓' : '!'}</i>{check.text}</div>)}
           <div className="seg when" role="group" aria-label="When"><button type="button" className={on(publishWhen === 'now').trim() || undefined} aria-pressed={publishWhen === 'now'} onClick={() => setPublishWhen('now')}>Publish now</button><button type="button" className={on(publishWhen === 'schedule').trim() || undefined} aria-pressed={publishWhen === 'schedule'} onClick={() => setPublishWhen('schedule')}>Schedule</button></div>
@@ -819,7 +852,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       {modal === 'insert' && palette}
       {modal === 'delete-page' && deletePageBody}
       {modal === 'templates' && <><label className="we-field">Page name<Input variant="seamless" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="we-error">{error}</p>}<div className="we-template-grid">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="we-template" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="we-template-mark"><span /><span /><span /></span><strong>{name}</strong><small>{description}</small><small>{draft.theme} layout</small></button>)}</div></>}
-      {modal === 'publish' && <>{previewNote}<div className="we-caption">Changes</div>{changedPages.length ? changedPages.map((p) => <div className="we-row" key={p.slug}><FileText size={15} />{p.label}<small>Updated</small></div>) : <p className="we-note">No page content changes.</p>}{removedPages.map((item) => <div className="we-row" key={item.slug}><Trash2 size={15} />{item.label}<small>Removed</small></div>)}{navigationChanged && <div className="we-row"><Layers size={15} />Navigation updated</div>}{chromeChanged && <div className="we-row"><Settings2 size={15} />Header and footer updated</div>}{brandChanged && <div className="we-row"><Palette size={15} />Brand settings updated</div>}{draft.theme !== persisted.published?.theme && <div className="we-row"><Palette size={15} />Theme: {draft.theme}</div>}
+      {modal === 'publish' && <>{previewNote}{draftList.length > 1 && <p className="we-note">Going live: {draftList.find((d) => d.id === activeDraftId)?.label}. Your other theme drafts stay here.</p>}<div className="we-caption">Changes</div>{changedPages.length ? changedPages.map((p) => <div className="we-row" key={p.slug}><FileText size={15} />{p.label}<small>Updated</small></div>) : <p className="we-note">No page content changes.</p>}{removedPages.map((item) => <div className="we-row" key={item.slug}><Trash2 size={15} />{item.label}<small>Removed</small></div>)}{navigationChanged && <div className="we-row"><Layers size={15} />Navigation updated</div>}{chromeChanged && <div className="we-row"><Settings2 size={15} />Header and footer updated</div>}{brandChanged && <div className="we-row"><Palette size={15} />Brand settings updated</div>}{draft.theme !== persisted.published?.theme && <div className="we-row"><Palette size={15} />Theme: {draft.theme}</div>}
         <div className="we-caption">When</div>
         <label className="we-row"><Input variant="seamless" type="radio" name="publish-when" checked={publishWhen === 'now'} onChange={() => setPublishWhen('now')} />Publish now</label>
         <label className="we-row"><Input variant="seamless" type="radio" name="publish-when" checked={publishWhen === 'schedule'} onChange={() => setPublishWhen('schedule')} />Schedule</label>
