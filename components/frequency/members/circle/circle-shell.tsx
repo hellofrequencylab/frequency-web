@@ -1,73 +1,31 @@
 import Link from 'next/link'
 import { richParagraphs } from '@/lib/page-editor/richtext'
 import type { ReactNode } from 'react'
-import { Suspense } from 'react'
 import '@/app/themes/active/members-b'
 import '@/app/themes/active/members-community'
-import { createClient } from '@/lib/supabase/server'
-import { goingCountsByEvent } from '@/lib/events/going-counts'
-import type { CircleUpcomingEvent } from '@/lib/events/circle-upcoming'
-import { meetupWhen } from '@/lib/circles/meetup-when'
-import { GoButton } from '@/components/frequency/members/go-button'
-import { FqRouteTabs } from '@/components/frequency/members/route-tabs'
+import '@/app/themes/active/members-circle'
+import type { CircleChannelChip } from '@/lib/circles/page-facts'
+import { FqIcon } from '@/components/frequency/icon'
+import { FqAvatar } from '@/components/frequency/members/shared/avatar'
+import { FqCircleTabs } from '@/components/frequency/members/circle/circle-tabs'
 
-// CIRCLE, FREQUENCY SHELL (templates/members/Circle.html). The Circle's route-group layout keeps
+// CIRCLE, FREQUENCY SHELL (templates/circles/Circles.dc.html). The Circle's route-group layout keeps
 // every read and gate it had (draft 404, entry verdict, capabilities, tabs) and hands this file the
-// pieces: the cover with its title and buttons, the next meetup, the tab strip over the real tab
-// ROUTES (Feed, What's Happening, Members, Circle Stats), and the About / This Circle side panels.
-// The tab bodies render as `children`, exactly as under DAWN.
+// pieces: the cover with its title, facts and buttons, the Meetups panel, the sticky tab pill over the
+// real tab ROUTES (Feed, What's Happening, Members, Circle Stats), and the side column. The tab
+// bodies render as `children`.
 
-/** The next meetup panel. Streams: the going count and the viewer's own answer are two light reads
- *  the cover should never wait on. Both are the viewer's own RSVP and an event the panel already shows
- *  them, so the session client reads them under RLS; a refused cover read just keeps the bare tile. */
-async function NextMeetup({ event, myProfileId }: { event: CircleUpcomingEvent; myProfileId: string | null }) {
-  const supabase = await createClient()
-  const [counts, mine, cover] = await Promise.all([
-    goingCountsByEvent([event.id]),
-    myProfileId
-      ? supabase
-          .from('event_rsvps')
-          .select('status')
-          .eq('event_id', event.id)
-          .eq('profile_id', myProfileId)
-          .maybeSingle()
-          .then(({ data }) => (data as { status: string } | null)?.status ?? null)
-      : Promise.resolve(null),
-    // The event's own cover for the photo tile (the reference's 88px thumb). Public bucket, so the
-    // URL is the same one the Events list draws; an event with no cover keeps the bare tile.
-    supabase
-      .from('events')
-      .select('cover_image_path')
-      .eq('id', event.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const path = (data as { cover_image_path: string | null } | null)?.cover_image_path
-        return path ? supabase.storage.from('event-media').getPublicUrl(path).data.publicUrl : null
-      }),
-  ])
-  const going = counts[event.id] ?? 0
-  const line = [meetupWhen(event.starts_at, new Date()), event.location, going > 0 ? `${going} going` : null]
-    .filter(Boolean)
-    .join(' · ')
-  return (
-    <div className="panel row wrap fqm-meet">
-      <span className="ph" style={cover ? { backgroundImage: `url('${cover}')` } : undefined} />
-      <span className="grow stack fqm-row-stack">
-        <span className="k">Next meetup</span>
-        <Link className="h3" href={`/events/${event.slug}`}>
-          {event.title}
-        </Link>
-        <span className="t2">{line}</span>
-      </span>
-      {myProfileId ? (
-        <GoButton eventId={event.id} slug={event.slug} going={mine === 'going'} size="md" />
-      ) : (
-        <Link className="btn" href={`/events/${event.slug}`}>
-          See it
-        </Link>
-      )}
-    </div>
-  )
+/** The middle word of a name of three or more words is set in the serif: the page's one soft phrase. */
+function titleWithSerif(name: string): ReactNode {
+  const words = name.trim().split(/\s+/)
+  if (words.length < 3) return name
+  const at = Math.floor(words.length / 2)
+  return words.map((w, i) => (
+    <span key={`${w}-${i}`}>
+      {i > 0 ? ' ' : ''}
+      {i === at ? <span className="serif">{w}</span> : w}
+    </span>
+  ))
 }
 
 export function FqCircleShell({
@@ -75,20 +33,29 @@ export function FqCircleShell({
   coverImage,
   statusLabel,
   live,
+  badge,
+  channels = [],
   name,
   subline,
+  rhythm = null,
+  hostedBy = null,
   invite,
   primary,
   admin,
   sister,
-  nextEvent,
-  myProfileId,
+  meetups = null,
   tabs,
+  tabBase,
   tabTools,
   about,
+  agreements = [],
   hostLine,
   memberCount,
   memberCap,
+  faces = [],
+  place = null,
+  meetLine = null,
+  hostPanel = null,
   inSpace = false,
   children,
 }: {
@@ -97,31 +64,53 @@ export function FqCircleShell({
   statusLabel: string
   /** A live (active, open) Circle wears the breathing dot on its status pill. */
   live: boolean
+  /** The cover's one badge: "6 here this week" with the breathing dot, or the Circle's own status. */
+  badge?: { text: string; live: boolean } | null
+  /** Up to three Channels, the primary first. */
+  channels?: CircleChannelChip[]
   name: string
   subline: string
+  /** The host's written rhythm ("Tue and Fri mornings"). */
+  rhythm?: string | null
+  hostedBy?: ReactNode
   /** QR & Share, the Circle's invite door. */
   invite: ReactNode
   /** Create (members) or Join (visitors), or the Full marker. */
   primary: ReactNode
   /** Edit and Manage, for a manager only. */
   admin: ReactNode
+  /** The sister-Circle offer. */
   sister: ReactNode
-  nextEvent: CircleUpcomingEvent | null
-  myProfileId: string | null
+  /** The Meetups panel (a client component the layout fills with the viewer's own answers). */
+  meetups?: ReactNode
   tabs: { href: string; label: string; count?: number }[]
-  /** Boost and the quiet Leave menu, at the right end of the tab row. */
+  tabBase?: string
+  /** Boost and the quiet Leave menu, under the tab bar at the right. */
   tabTools: ReactNode
   about: string | null
+  /** The host's written agreements, "How we do it". */
+  agreements?: string[]
   hostLine: ReactNode
   memberCount: number
   memberCap: number
+  /** Up to six of the roster, for "Who's here". */
+  faces?: { id: string; name: string; avatarUrl: string | null }[]
+  /** "Bird Rock, La Jolla" or "Meets online". */
+  place?: string | null
+  /** The one plain sentence under the place. */
+  meetLine?: string | null
+  /** Host-only side panels (health). */
+  hostPanel?: ReactNode
   /** The Circle renders under its Space's header (SCAN-881), which owns the page's one h1. */
   inSpace?: boolean
   children: ReactNode
 }) {
   const open = Math.max(0, memberCap - memberCount)
+  const title = titleWithSerif(name)
+  const tags = channels.slice(0, 3)
+  const hasTools = !!tabTools
   return (
-    <>
+    <div className="fqc">
       {/* Under its Space's header the Space's own tabs are the way back (SCAN-910): no "Circles" crumb. */}
       {!inSpace && (
         <Link className="meta fqm-back" href="/circles">
@@ -133,61 +122,141 @@ export function FqCircleShell({
       {/* Under its Space's header the Space cover is the page's one photo (SCAN-900), so the Circle's band is
           the plain kit card: no second image. */}
       <section
-        className={inSpace ? 'fqm-cl-hero is-plain' : 'ph fqm-cl-hero'}
+        className={inSpace ? 'fqm-cl-hero is-plain' : 'fqm-cl-hero fqc-cover'}
         style={!inSpace && coverImage ? { backgroundImage: `url('${coverImage}')` } : undefined}
       >
+        {!inSpace && badge && (
+          <span className={badge.live ? 'fqc-badge live' : 'fqc-badge'}>{badge.text}</span>
+        )}
         <div className="fqm-cl-in">
           <div className="stack">
-            <span className={live ? 'tag glass live' : 'tag glass'}>{statusLabel}</span>
-            {inSpace ? <h2 className="h1">{name}</h2> : <h1 className="h1">{name}</h1>}
-            {subline && <span className="fqm-cl-sub">{subline}</span>}
+            {inSpace && <span className={live ? 'tag glass live' : 'tag glass'}>{statusLabel}</span>}
+            {!inSpace && tags.length > 0 && (
+              <ul className="fqc-tags">
+                {tags.map((c) => (
+                  <li key={c.id}>{c.name}</li>
+                ))}
+              </ul>
+            )}
+            {inSpace ? <h2 className="h1">{name}</h2> : <h1 className="h1">{title}</h1>}
+            <div className="fqc-facts">
+              {rhythm && <span>{rhythm}</span>}
+              {subline && <span className="fqm-cl-sub">{subline}</span>}
+              {hostedBy && <span>{hostedBy}</span>}
+            </div>
           </div>
-          <div className="row wrap">
+          <div className="row wrap fqc-actions">
             {invite}
             {primary}
             {admin}
           </div>
         </div>
       </section>
-      {sister}
 
-      <div className="ap-cols sec">
-        <div>
-          {nextEvent && (
-            <Suspense fallback={null}>
-              <NextMeetup event={nextEvent} myProfileId={myProfileId} />
-            </Suspense>
-          )}
-          <div className="fqm-tabrow fqm-cl-tabs">
-            {tabs.length > 0 ? <FqRouteTabs tabs={tabs} label="Circle sections" /> : <span />}
-            <div className="row">{tabTools}</div>
-          </div>
+      {meetups}
+
+      {tabs.length > 0 && <FqCircleTabs tabs={tabs} label="Circle sections" baseHref={tabBase ?? tabs[0].href} />}
+      {hasTools && <div className="row fqc-tools">{tabTools}</div>}
+
+      <div className="fqc-cols">
+        <div className="fqc-main">
           <div className="fqm-pane">{children}</div>
         </div>
-        <aside className="side">
+        <aside className="fqc-side">
+          {sister}
+          {hostPanel}
           {about && (
             <div className="panel stack">
               <span className="k">About</span>
               <div className="body fqm-about stack">{richParagraphs(about)}</div>
+              {agreements.length > 0 && (
+                <>
+                  <span className="k">How we do it</span>
+                  <ul className="fqc-agree">
+                    {agreements.map((a) => (
+                      <li key={a}>
+                        <FqIcon name="check" />
+                        {a}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
               {hostLine && <span className="t2">{hostLine}</span>}
             </div>
           )}
-          <div className="panel stack">
-            <span className="k">This Circle</span>
-            <div className="g2 fqm-cstats">
-              <div>
-                <span className="num">{memberCount}</span>
-                <div className="t2">{memberCount === 1 ? 'Member' : 'Members'}</div>
-              </div>
-              <div>
-                <span className="num">{open}</span>
-                <div className="t2">{open === 1 ? 'Seat open' : 'Seats open'}</div>
-              </div>
+          {!about && agreements.length > 0 && (
+            <div className="panel stack">
+              <span className="k">How we do it</span>
+              <ul className="fqc-agree">
+                {agreements.map((a) => (
+                  <li key={a}>
+                    <FqIcon name="check" />
+                    {a}
+                  </li>
+                ))}
+              </ul>
             </div>
+          )}
+          {(place || meetLine) && (
+            <div className="panel stack">
+              <span className="k">How we meet</span>
+              {!inSpace && coverImage && place && (
+                <div className="fqc-meet-photo" style={{ backgroundImage: `url('${coverImage}')` }} role="img" aria-label={place}>
+                  <span className="fqc-pin">
+                    <FqIcon name="pin" />
+                    {place}
+                  </span>
+                </div>
+              )}
+              {!(coverImage && !inSpace) && place && (
+                <span className="t1 fqc-place">
+                  <FqIcon name="pin" />
+                  {place}
+                </span>
+              )}
+              {meetLine && <span className="t2">{meetLine}</span>}
+            </div>
+          )}
+          <div className="panel stack">
+            <div className="fqc-side-head">
+              <span className="k">Who&apos;s here</span>
+              <span className="t2">{memberCount}</span>
+            </div>
+            {faces.length > 0 && (
+              <span className="faces">
+                {faces.map((f) => (
+                  <FqAvatar key={f.id} url={f.avatarUrl} name={f.name} size="m" />
+                ))}
+              </span>
+            )}
+            <span className="t2">
+              {open > 0
+                ? `${open} ${open === 1 ? 'seat' : 'seats'} open of ${memberCap}.`
+                : 'Every seat is taken.'}
+            </span>
             {!about && hostLine && <span className="t2">{hostLine}</span>}
           </div>
+          {tags.length > 0 && (
+            <div className="panel stack">
+              <span className="k">Channels</span>
+              <ul className="fqc-channels">
+                {tags.map((c) => (
+                  <li key={c.id}>
+                    <span className="fq-icon-tile">
+                      <FqIcon name="tag" />
+                    </span>
+                    <span>
+                      <span className="t1 fqm-block">{c.name}</span>
+                      {c.primary && <span className="t2">Primary</span>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </aside>
       </div>
-    </>
+    </div>
   )
 }

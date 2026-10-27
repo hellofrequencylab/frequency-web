@@ -31,6 +31,13 @@ import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 import { sisterCircleOffer } from '@/lib/circles/sister'
 import { SisterCirclePrompt } from '@/components/circles/sister-circle-prompt'
 import { FqCircleShell } from '@/components/frequency/members/circle/circle-shell'
+import { FqMeetups, type MeetupView } from '@/components/frequency/members/circle/circle-meetups'
+import { FqCircleHealthPanel } from '@/components/frequency/members/circle/circle-health-panel'
+import { loadAttendanceLine, loadCirclePageFacts, loadMeetupPicks } from '@/lib/circles/page-facts'
+import { getCircleHealth } from '@/lib/circles/earned'
+import { insightAffordance } from '@/lib/core/scoped-surface-ui'
+import { surfaceAccess } from '@/lib/core/viewer-hats'
+import { isoDaysAgo } from '@/lib/utils'
 import { FqCircleSpaceHeader } from '@/components/frequency/members/space/circle-space-header'
 import { owningSpaceSlug } from '@/lib/circles/owning-space'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -213,7 +220,7 @@ export default async function CircleDetailLayout({
   // Round 2. Independent reads in one batch. `user` gates the signed-in-only banners, caps drives the
   // manager rules, and the content facts decide which tabs exist at all. Joining a Circle is free
   // (owner, 2026-10-14): Crew is for hosting one, so Join no longer asks whether the viewer pays.
-  const [user, caps, content, hero] = await Promise.all([
+  const [user, caps, content, hero, pageFacts, insightAccess] = await Promise.all([
     getCachedUser(),
     // Request-memoized, so the tab page under `children` asking the same question is a memo hit
     // rather than a second capability resolution (lib/circles/detail-access.ts).
@@ -240,6 +247,10 @@ export default async function CircleDetailLayout({
       entitySize: hasCircleHeroHeight(theme) ? readCircleHeroHeight(theme) : null,
       entityOverlayStyle: circleHeroOverlayStyle(theme),
     }),
+    // The side column and the cover badge: Channels, the written rhythm and agreements, who logged this week.
+    loadCirclePageFacts(circle.id),
+    // Scoped Insight (ADR-225): the same question the Feed page asks, now for the side column's health panel.
+    surfaceAccess('insight', { type: 'circle', id: circle.id }),
   ])
 
   const canManage = caps.has('circle.editSettings')
@@ -311,6 +322,29 @@ export default async function CircleDetailLayout({
       ? circle.space.brand_name || circle.space.name
       : null
   const place = circle.neighborhood ?? circle.city ?? null
+
+  // The viewer's own view of this page: the same four the design draws (templates/circles/Circles.dc.html).
+  const justJoined =
+    isMember && members.some((m) => m.profile?.id === myProfileId && m.joined_at >= isoDaysAgo(7))
+  const view: MeetupView = canManage || isHost ? 'host' : !isMember ? 'visitor' : justJoined ? 'new' : 'member'
+  const insight = insightAffordance(insightAccess)
+  const showsHealth = canManage || insight.visible
+  const hostFirstName =
+    circle.is_space_primary || !circle.host?.display_name ? null : (circle.host.display_name.split(/\s+/)[0] ?? null)
+  // Meetup answers, who is going (the roster sees names), the viewer's attendance, and the manager's health numbers.
+  const [picks, attendance, health] = await Promise.all([
+    canEnter ? loadMeetupPicks(upcoming.events, myProfileId, isMember || canManage) : Promise.resolve([]),
+    canEnter && isMember && myProfileId && view !== 'new' ? loadAttendanceLine(circle.id, myProfileId) : Promise.resolve(null),
+    showsHealth
+      ? getCircleHealth(
+          circle.id,
+          members.map((m) => m.profile?.id).filter((id): id is string => Boolean(id)),
+          isoDaysAgo(7),
+        )
+      : Promise.resolve({ earnedZaps: 0, activeStreaks: 0, newThisWeek: 0 }),
+  ])
+  const online = circle.type === 'online'
+  const placeLine = online ? 'Meets online' : place
   const circleShell = (
     <FqCircleShell
       inSpace={!!owner}
@@ -377,8 +411,61 @@ export default async function CircleDetailLayout({
         ) : null
       }
       sister={sisterOffer ? <SisterCirclePrompt circleId={circle.id} reason={sisterOffer} /> : null}
-      nextEvent={canEnter ? (upcoming.events[0] ?? null) : null}
-      myProfileId={myProfileId}
+      badge={
+        isDraft || full || circle.status !== 'active'
+          ? { text: nearCap && !full && !isDraft ? `${statusPill.label} · Almost full` : statusPill.label, live: false }
+          : pageFacts.hereThisWeek > 0
+            ? { text: `${pageFacts.hereThisWeek} here this week`, live: true }
+            : nearCap
+              ? { text: 'Almost full', live: false }
+              : null
+      }
+      channels={pageFacts.channels}
+      rhythm={pageFacts.rhythm}
+      hostedBy={
+        spaceName && circle.space ? (
+          <>
+            Hosted by <Link href={`/spaces/${circle.space.slug}`}>{spaceName}</Link>
+          </>
+        ) : circle.host ? (
+          <>
+            Hosted by <Link href={`/people/${circle.host.handle}`}>{circle.host.display_name}</Link>
+          </>
+        ) : null
+      }
+      meetups={
+        picks.length > 0 ? (
+          <FqMeetups
+            picks={picks}
+            view={view}
+            signedIn={!!myProfileId}
+            hostFirstName={hostFirstName}
+            attendance={attendance}
+          />
+        ) : null
+      }
+      agreements={pageFacts.agreements}
+      faces={members
+        .filter((m) => m.profile)
+        .slice(0, 6)
+        .map((m) => ({ id: m.profile.id, name: m.profile.display_name, avatarUrl: m.profile.avatar_url }))}
+      place={canEnter ? placeLine : null}
+      meetLine={
+        canEnter && (place || pageFacts.rhythm)
+          ? `${[online ? 'Online' : 'In person', pageFacts.rhythm].filter(Boolean).join(', ')}.`
+          : null
+      }
+      hostPanel={
+        showsHealth ? (
+          <FqCircleHealthPanel
+            label={insight.visible ? insight.label : 'Circle health'}
+            earnedZaps={health.earnedZaps}
+            activeStreaks={health.activeStreaks}
+            newThisWeek={health.newThisWeek}
+          />
+        ) : null
+      }
+      tabBase={`/circles/${circle.slug}`}
       tabs={canEnter ? tabs : []}
       tabTools={
         <>

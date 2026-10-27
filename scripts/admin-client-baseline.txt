@@ -426,6 +426,10 @@
 # rewards.ts calls card_meet() and the capped award_zaps_atomic for the two members of one verified tap.
 # LIVE-1347: lib/ai/discovery-guidance-store.ts serves a strict-secret cron and stores only public guidance digests/status in the service-role-only platform_settings key. It has no user/tenant query or session-authorized surface.
 # lib/notifications/inapp.ts (added 2026-10-26, SCAN-1151): the 'inapp' outbox handler that writes the bell row. The caller is the QUEUE DRAIN (lib/queue/handlers.ts, run by the process-queue cron), so there is no session client to prefer and no cookie to run under. The row is addressed to ANOTHER member than whoever triggered it, and `notifications` has no insert policy for anybody. It writes exactly one `notifications` row from ids the router already gated (inapp_<category> switch, suppression, per-subject mute) and reads nothing.
+# LIVE-1510 (the Circle page, new Circles design): three reads that the member session cannot serve, all behind the circle page's own member gate, all aggregate or already-visible-to-members. NOT a wider surface than the DAWN circle tab-facts / feed it replaces.
+#   lib/circles/page-facts.ts: the meetup "going" count and (only when the circle shows faces) first names of members going, the viewer's own RSVP, and the count of members who practiced this week; event_rsvps and practice_logs are RLS-readable only to their owner, the same case as lib/events/going-counts.ts. Circle meeting text, agreements and channel names are public circle fields. Writes nothing.
+#   lib/circles/circle-weeks.ts: per-week "did this circle meet quorum" over members' practice_logs for the Stats weeks strip. Reads profile_id and day only, returns booleans per week, never who practiced.
+#   components/frequency/members/circle/circle-nudges.tsx: hands the admin client to loadMatesAtRisk (components/widgets/leaderboard/leaderboard-consistency.tsx, already on this list) scoped to one circle the viewer belongs to; the nudge itself still goes through nudgeStreakMate's own checks.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -1294,3 +1298,6 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
+components/frequency/members/circle/circle-nudges.tsx
+lib/circles/circle-weeks.ts
+lib/circles/page-facts.ts
