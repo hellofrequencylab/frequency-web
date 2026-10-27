@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-1495",
+  "title": "Alli Rae's site address is alliraebuilddesign.frequencylocal.com",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/alli-rae-rename.mjs"
+  },
+  "detail": "Owner ask 2026-10-27. A Space's free site address is its slug, so scripts/seed-alli-rae-rename.mts prints one guarded SQL transaction that moves the live Space from alli-rae to alliraebuilddesign and rewrites the saved footer (its two buttons name the slug). The claim token is untouched. The subdomain was attached to the Vercel project by hand the same day, because the first seed published straight to the database and never ran the attach that the in-app Publish does (LIVE-1496)."
+}

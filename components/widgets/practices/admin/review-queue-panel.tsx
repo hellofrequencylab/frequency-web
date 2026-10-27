@@ -21,6 +21,7 @@ import {
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { capsLabel } from '@/components/ui/caps-label'
+import { buttonClasses } from '@/components/ui/button'
 export interface ReviewRow {
   id: string
   title: string
@@ -197,7 +198,7 @@ function ReviewRowItem({
             onClick={prescreen}
             disabled={screening || disabled}
             title="Pre-screen with Vera (advisory)"
-            className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
+            className={buttonClasses('secondary', 'xs')}
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             {screening ? 'Reading…' : 'Pre-screen'}
