@@ -330,7 +330,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   if (isMegaThemeId(input.theme)) {
     const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
     const applied = await applyMegaTheme(spaceId, input.theme).catch(() => null)
-    if (!applied?.ok) console.error('[createSpace] could not apply theme', input.theme, applied?.error ?? 'threw')
+    if (!applied?.ok) console.error('[createSpace] could not apply the chosen theme to the new space')
   }
 
   // Success: hand the owner to SETUP, then to HOSTING (ADR-1733 amending LIVE-261). This landed
