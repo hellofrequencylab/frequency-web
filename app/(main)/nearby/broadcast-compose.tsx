@@ -1,5 +1,6 @@
 'use client'
 
+import { chipClasses } from '@/components/ui/chip'
 import { useState, useTransition } from 'react'
 import { Plus, Megaphone } from 'lucide-react'
 import { createAndPublishDispatch } from './actions'
@@ -121,11 +122,8 @@ export function BroadcastCompose({
                 key={t}
                 type="button"
                 onClick={() => setType(t)}
-                className={`px-3 py-1.5 rounded-control text-meta font-semibold border transition-colors ${
-                  type === t
-                    ? 'border-primary bg-primary text-on-primary'
-                    : 'border-border bg-surface text-text hover:border-primary'
-                }`}
+                aria-pressed={type === t}
+                className={chipClasses(type === t)}
               >
                 {TYPE_LABELS[t]}
               </button>
