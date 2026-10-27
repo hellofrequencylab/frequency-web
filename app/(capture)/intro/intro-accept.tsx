@@ -6,6 +6,7 @@ import { Check } from 'lucide-react'
 import { acceptIntro } from './actions'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyIntroAccept } from '@/components/frequency/site/pages/funnel/capture'
+import { buttonClasses } from '@/components/ui/button'
 
 // The one-tap confirm for the warm-intro double-opt-in. Consent is an AFFIRMATIVE click, never a
 // side effect of opening the email (a link scanner must not subscribe anyone), so the flip to mailable
@@ -58,7 +59,7 @@ function DawnIntroAccept({ token, spaceName }: { token: string; spaceName: strin
         type="button"
         onClick={onAccept}
         disabled={status === 'loading'}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-body font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className={buttonClasses('primary', 'md', 'w-full')}
       >
         {status === 'loading' ? 'One sec…' : 'Yes, keep me posted'}
       </button>

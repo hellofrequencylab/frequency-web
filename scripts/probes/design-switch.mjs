@@ -25,7 +25,7 @@ assert.match(theme, /--font-sans:\s*var\(--design-font-body\)/, 'font-sans reads
 
 // 3. A design that overrides everything switches the older layers off at every place they apply.
 assert.match(read('lib/theme/server/resolve.ts'), /occasion: 'none'/, 'resolver')
-assert.match(read('app/(main)/layout.tsx'), /LEGACY_THEME_AXES \? await loadActiveThemeCss/, 'Theme Studio <style>')
+assert.doesNotMatch(read('app/(main)/layout.tsx'), /loadActiveThemeCss/, 'Theme Studio <style>')
 assert.match(read('components/spaces/accent-scope.tsx'), /data-space-fonts=\{fqFonts\}/, 'Space font set')
 
 // 4. Midnight is a member theme, scoped to the design it is authored for.

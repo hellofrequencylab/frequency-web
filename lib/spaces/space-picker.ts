@@ -54,12 +54,14 @@ export const PICKER_ACTION_LABEL: Record<MegaActionId, string> = {
 }
 
 /** The feels, in the order shown. Each points at the theme it wears. `live` is the one switch: a feel whose
- *  theme package is not installed yet shows as coming soon and cannot be chosen. Only Midnight is live. */
+ *  theme package is not installed yet shows as coming soon and cannot be chosen. Every theme with starter kits is live. */
 export const PICKER_FEELS: readonly { id: string; label: string; hint: string; theme: MegaThemeId; live: boolean }[] = [
   { id: 'night', label: 'After dark', hint: 'True black, bone type, square frames', theme: 'midnight', live: true },
-  { id: 'warm', label: 'Warm and open', hint: 'Bright, soft and welcoming', theme: 'frequency', live: false },
-  { id: 'bold', label: 'Strong and direct', hint: 'Big type and a firm voice', theme: 'bold', live: false },
-  { id: 'calm', label: 'Calm and ceremonial', hint: 'Gold, stone and room to breathe', theme: 'temple', live: false },
+  { id: 'warm', label: 'Warm and open', hint: 'Bright, soft and welcoming', theme: 'frequency', live: true },
+  { id: 'bold', label: 'Strong and direct', hint: 'Big type and a firm voice', theme: 'bold', live: true },
+  { id: 'calm', label: 'Calm and ceremonial', hint: 'Gold, stone and room to breathe', theme: 'temple', live: true },
+  { id: 'wild', label: 'Earthy and alive', hint: 'Moon phases, ornament and hand-made warmth', theme: 'wildheart', live: true },
+  { id: 'network', label: 'Clear and organised', hint: 'Many chapters, one steady voice', theme: 'network', live: true },
 ]
 
 /** The questions, in the voice guide's words. */

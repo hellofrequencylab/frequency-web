@@ -6,6 +6,7 @@ import { Check } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { SITE_URL } from '@/lib/site'
 import { saveHomeSeo } from './actions'
+import { buttonClasses } from '@/components/ui/button'
 
 // Title + meta description for '/', with a search-result preview so the owner sees
 // what they're shipping. Blank fields fall back to the coded copy.
@@ -88,7 +89,7 @@ export function HomeSeoForm({
             type="button"
             onClick={save}
             disabled={pending}
-            className="rounded-control bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className={buttonClasses('primary', 'md')}
           >
             {pending ? 'Saving…' : 'Save'}
           </button>

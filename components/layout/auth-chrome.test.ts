@@ -76,11 +76,11 @@ describe('every public surface threads the viewer through', () => {
     }
   })
 
-  it('the (main) public chrome uses the same SiteHeader /discover uses (SCAN-641)', () => {
+  it('the (main) public chrome uses the same SiteShell /discover uses (SCAN-641)', () => {
     const main = read('../../app/(main)/layout.tsx')
     const disc = read('../../app/discover/layout.tsx')
-    expect(main).toMatch(/<SiteHeader[\s\S]*authMode="client"/)
-    // /discover wears the public site shell, whose header resolves the viewer after paint.
+    // Both wear the public site shell, whose header resolves the viewer after paint.
+    expect(main).toMatch(/<SiteShell\b/)
     expect(disc).toMatch(/<SiteShell\b/)
     expect(main).not.toMatch(/<MarketingHeader/)
   })

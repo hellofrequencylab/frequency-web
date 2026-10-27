@@ -313,7 +313,7 @@ it('opens Change theme from the Theme tab and switches the draft theme as one un
   const dialog = node.querySelector('[role=dialog]')!
   expect(dialog.getAttribute('aria-label')).toBe('Change theme')
   expect(dialog.textContent).toContain('Bold · Current')
-  expect(dialog.textContent).not.toContain('Starter kits')
+  expect(dialog.textContent).toContain('Starter kits')
   act(() => (Array.from(dialog.querySelectorAll('.theme')).find((b) => b.querySelector('b')?.textContent === 'Midnight') as HTMLButtonElement).click())
   expect(node.querySelector('[role=dialog]')?.textContent).toContain('Midnight · Current')
   expect(node.querySelector('[role=dialog]')?.textContent).toContain('Starter kits')
@@ -323,7 +323,7 @@ it('opens Change theme from the Theme tab and switches the draft theme as one un
 it('maps the Theme and Site tabs onto the real site settings', () => {
   const { node } = mount({ start: clean })
   act(() => (Array.from(node.querySelectorAll('.rail .tabs button')).find((b) => b.textContent === 'Theme') as HTMLButtonElement).click())
-  expect(Array.from(node.querySelectorAll('.rail .theme b')).map((b) => b.textContent)).toEqual(['Default', 'Bold', 'Wildheart', 'Network', 'Temple', 'Midnight'])
+  expect(Array.from(node.querySelectorAll('.rail .theme b')).map((b) => b.textContent)).toEqual(['Default', 'Bold', 'Wildheart', 'Network', 'Temple', 'Midnight', 'Designer'])
   expect(node.querySelector('.rail .theme[aria-pressed=true] b')?.textContent).toBe('Bold')
   expect(node.querySelector('.rail .type-aa + .t small')?.textContent).toBe('Comes with the Bold theme')
   act(() => (Array.from(node.querySelectorAll('.rail .tabs button')).find((b) => b.textContent === 'Site') as HTMLButtonElement).click())
