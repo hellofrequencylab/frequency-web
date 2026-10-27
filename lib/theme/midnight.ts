@@ -104,7 +104,7 @@ const MIDNIGHT_VARS = `
 --mn-size-eyebrow:.6875rem;--mn-size-meta:.75rem;--mn-size-body-sm:.875rem;--mn-size-body:1rem;--mn-size-lead:1.25rem;
 --mn-size-h3:clamp(1.75rem,3vw,2.5rem);--mn-size-h2:clamp(2.25rem,4.5vw,3.75rem);--mn-size-h1:clamp(3rem,6.5vw,5.75rem);--mn-size-hero:clamp(3.5rem,9vw,8.5rem);
 --mn-leading-display:1;--mn-leading-snug:1.2;--mn-leading-body:1.65;--mn-tracking-display:-.02em;--mn-tracking-label:.18em;--mn-tracking-eyebrow:.22em;
---mn-max:96rem;--mn-wide:80rem;--mn-narrow:40rem;--mn-read:46rem;
+--mn-max:96rem;--mn-wide:80rem;--mn-column:68rem;--mn-narrow:40rem;--mn-read:46rem;
 --mn-section-y:clamp(5rem,10vw,9rem);--mn-section-tight:clamp(3rem,6vw,5rem);--mn-gutter:clamp(1.25rem,4vw,3rem);--mn-measure:66ch;
 --mn-r-card:0px;--mn-r-control:2px;--mn-r-pill:9999px;--mn-r-arch:50% 50% 0 0 / 28% 28% 0 0;
 --mn-ease:cubic-bezier(.22,1,.36,1);--mn-ease-in-out:cubic-bezier(.65,0,.35,1);--mn-dur-fast:140ms;--mn-dur-base:320ms;--mn-dur-slow:900ms;
