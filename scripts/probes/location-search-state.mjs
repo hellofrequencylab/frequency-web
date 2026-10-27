@@ -9,6 +9,10 @@ Object.defineProperty(globalThis, 'navigator', { configurable: true, value: dom.
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const require = createRequire(import.meta.url)
 const React = require('react'); const { act } = React
+const button = loadProbeModule('components/ui/button.tsx', {
+  react: React, 'react/jsx-runtime': require('react/jsx-runtime'),
+  '@/lib/utils': loadProbeModule('lib/utils.ts'),
+})
 const { createRoot } = require('react-dom/client')
 const timers = new Map(); const realSet = globalThis.setTimeout; const realClear = globalThis.clearTimeout
 // Intercept only the component's debounce. React's own scheduler retains real timers.
@@ -23,14 +27,15 @@ const { CircleLocationSearch } = loadProbeModule('components/circles/circle-loca
   react: React, 'react/jsx-runtime': require('react/jsx-runtime'),
   'next/navigation': { useRouter: () => ({ push: url => pushes.push(url) }), usePathname: () => '/network', useSearchParams: () => new URLSearchParams('view=circles&online=1') },
   'lucide-react': { Search: icon, LocateFixed: icon, X: icon, Loader2: icon, MapPin: icon },
+  '@/components/ui/button': button,
   '@/lib/geocode': { searchPlaces: (_query, signal) => new Promise((resolve, reject) => pending.push({ resolve, reject, signal })) },
 })
 let root; let container
-async function mount() {
+async function mount(props = {}) {
   if (root) { await act(async () => root.unmount()); container.remove() }
   timers.clear(); pending.length = 0
   container = document.createElement('div'); document.body.append(container); root = createRoot(container)
-  await act(async () => root.render(React.createElement(CircleLocationSearch)))
+  await act(async () => root.render(React.createElement(CircleLocationSearch, props)))
 }
 async function type(value) {
   await act(async () => {
@@ -46,7 +51,7 @@ try {
   assert.equal(pending[0].signal.aborted, true)
   await act(async () => pending[1].resolve([place('London')]))
   await act(async () => pending[0].resolve([place('Vista')]))
-  assert.ok(container.textContent.includes('London')); assert.ok(!container.textContent.includes('Vista'))
+  assert.ok(container.textContent.includes('London') && !container.textContent.includes('Vista'), 'Stale city results must not replace current search')
   await act(async () => container.querySelector('li button').click())
   const url = new URL(pushes[0], 'https://example.test')
   assert.equal(url.searchParams.get('online'), '1'); assert.equal(url.searchParams.get('view'), 'circles')
@@ -59,6 +64,14 @@ try {
   assert.equal(container.querySelector('.animate-spin'), null)
   await type('London'); await act(async () => pending[1].resolve([place('London')]))
   assert.ok(container.textContent.includes('London'))
+  await mount({ activePlace: 'Vista' })
+  const near = [...container.querySelectorAll('button')].find(node => node.textContent.includes('Near Vista'))
+  assert.ok(near, 'Active place clear action must render')
+  for (const cls of ['btn', 'mu-soft', 'sm']) assert.ok(near.classList.contains(cls), `Actual shared button helper must retain ${cls}`)
+  await act(async () => near.click())
+  const cleared = new URL(pushes.at(-1), 'https://example.test')
+  assert.equal(cleared.searchParams.has('near'), false); assert.equal(cleared.searchParams.has('place'), false)
+  assert.equal(cleared.searchParams.get('online'), '1'); assert.equal(cleared.searchParams.get('view'), 'circles')
   console.log('Actual React city search rejects stale responses, clears loading, recovers from rejection and preserves URL filters.')
 } finally {
   if (root) await act(async () => root.unmount())
