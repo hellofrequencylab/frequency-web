@@ -1,7 +1,7 @@
 {
   "id": "HYG-213",
-  "title": "Restore active member focus, notification recovery and help drift; finish wrapper retirement",
-  "status": "open",
+  "title": "Restore active avatar focus, notification failure recovery and settings help drift; retire replaced wrappers",
+  "status": "done",
   "priority": "P2",
   "lane": "hygiene",
   "size": "M",
@@ -9,11 +9,10 @@
     "file": "components/frequency/members/shell/bell.tsx",
     "ref": "Current-main residual consumer review confirmed three active gaps hidden by old wrapper tests"
   },
-  "detail": "Behavior slice: active profile focal metadata and URL fallback, notification transport/write recovery with load-before-mark ordering, and active settings help source mapping are repaired. Owner behavior tests are preserved unchanged. Six wrapper deletions and retirement-only proof are deliberately deferred until legacy AppShell and its consumers are retired in the separate bounded successor. No full retirement, production or browser acceptance claim.",
+  "detail": "The active ProfilePhoto now receives the already-loaded profile metadata focal point and demo flag, strips avatar URL focal fragments and preserves their fallback when no metadata choice exists. Kit geometry and initials remain unchanged; no new profile read. Actual Frequency BellButton/BellSheet are extracted without moving the mounted header doors: unavailable counts remain announced, failed list reads never mark unseen notices, transport/write failures expose generic retry feedback, and unread clears only after successful persistence and mounted buttons track refreshed server counts through the existing store. The existing RLS mark-all-read action now propagates update errors instead of revalidating false success. The initial load runs after effect commit; duplicate/unmounted work is refused. Help drift now maps actual Frequency settings source files to location/resonance articles, with exact-prefix boundaries and real-path checks. Six duplicate internal wrappers are retired only after active rendered/action/source consequences replace their tests: old ConnectionsSection, NotificationBell, UpgradeCrew, ProfileAvatar, HoverTip and UnclaimedBadge. Shared Avatar/Badge, real ticker keyboard/motion behavior, canonical upgrade route/launcher/gates, actual Unclaimed classified tags and all settings controls remain. Canonical SCAN621/686 probes now inspect the mounted bell while retaining discriminated feed/count loader and narrow-revalidation checks. Extracted bell lines remain included under the unchanged 1800-line core chrome ceiling. No production interaction, new privilege, schema or provider operation.",
   "verify": {
     "kind": "manual",
     "checked": "2026-10-27",
-    "evidence": "Behavior-only focused tests and active bell consequence probe pass locally. Keep OPEN until the AppShell dependency and six wrapper retirement proof land; authenticated production acceptance remains separate."
-  },
-  "wave": "W0d"
+    "evidence": "Final wrapper successor: 162 focused tests across 12 suites pass after current-main/account/browse/AppShell dependency integration. Existing owner behavior and retirement proof are retained; current main Drafts/cache and admin negative controls are preserved. Retired-shell and six-residual all-tree import probes, active core chrome size guard, all ledger source-reference structure and scoped lint pass. Evidence covers source and mocked rendered/action consequences only; authenticated browser and production acceptance remain separate. Full exact-head CI and a READY preview are required before release."
+  }
 }

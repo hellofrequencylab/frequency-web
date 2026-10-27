@@ -41,7 +41,6 @@ components/ui/facet-dropdown.tsx
 components/ui/featured-badge.tsx
 components/ui/gate-notice.tsx
 components/ui/header-image-field.tsx
-components/ui/hover-tip.tsx
 components/ui/icon.tsx
 components/ui/image-cropper.tsx
 components/ui/image-focal-picker.tsx
@@ -61,6 +60,5 @@ components/ui/stat-card.tsx
 components/ui/stat.tsx
 components/ui/streak-meter.tsx
 components/ui/toast.tsx
-components/ui/unclaimed-badge.tsx
 components/ui/underline-tabs.tsx
 components/ui/verified-badge.tsx
