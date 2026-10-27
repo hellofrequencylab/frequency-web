@@ -228,6 +228,8 @@ export function HouseHeader({
                 ...links.flatMap((l) => (l.mega ? l.mega.links.map((m) => ({ href: m.href, label: m.label })) : [l])),
                 ...(adminLinks ?? []).map((l) => ({ href: l.href, label: `Admin: ${l.label}`, className: 'hs-nav-admin' })),
               ]}
+              // The header button also rides in the phone menu; only a skin that wants it there shows it (a[data-cta]).
+              cta={cta ? { href: cta.href, label: cta.label } : undefined}
             />
           )}
         </div>

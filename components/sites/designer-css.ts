@@ -72,7 +72,18 @@ ${N} .hs-mega-links a:hover{background:var(--dz-linen)}
 ${N} .hs-mega-label,${N} .hs-mega-feature-title{font-family:var(--dz-display);font-size:20px;font-weight:400;line-height:1.2;letter-spacing:0;text-transform:none}
 ${N} .hs-mega-desc{font-size:13px;line-height:1.3;color:var(--dz-stone)}
 ${N} .hs-member{padding:8px 16px;border-radius:var(--dz-r-pill);background:transparent;border:1px solid var(--dz-line);color:var(--dz-charcoal)}
-@media (max-width:939px){${N} .dz-top .hs-pill{min-height:72px}${N} .hs-nav-track{justify-content:center}${N} .dz-util{display:none}}
+/* Phone (design: the 48px round button and a full-height parchment sheet; the call and the nav live in the sheet). */
+@media (max-width:939px){
+${N} .dz-util{display:none}
+${N} .dz-top .hs-pill{position:static;display:flex;align-items:center;justify-content:space-between;min-height:var(--dz-header-h)}
+${N}[data-scrolled] .dz-top .hs-pill{min-height:76px}
+${N} .dz-top .hs-brand{flex:none}
+${N} .dz-top .hs-nav,${N} .dz-top .hs-header-actions>.hs-btn{display:none}
+${N} .dz-top .hs-menu{position:static}
+${N} .hs-menu-panel{position:absolute;left:0;right:0;top:100%;max-width:none;height:calc(100vh - 76px);margin:0;padding:16px var(--dz-gutter) 40px;gap:6px;overflow-y:auto;border-radius:0;background:var(--dz-parchment);box-shadow:inset 0 1px 0 var(--dz-line-soft)}
+${N} .hs-menu-panel a{padding:14px 0;border-bottom:1px solid var(--dz-line-soft);border-radius:0;font-family:var(--dz-display);font-size:24px;font-weight:400;line-height:1.2;color:var(--dz-charcoal)}
+${N} .hs-menu-panel a[data-cta]{display:block;margin-top:28px;padding:18px;border:0;border-radius:var(--dz-r-1);background:var(--dz-charcoal);text-align:center;color:var(--dz-plaster);box-shadow:var(--dz-shadow-btn);${LABEL};font-size:var(--dz-size-label);letter-spacing:var(--dz-tracking-button);line-height:1}
+}
 
 /* The footer (design: SiteFooter). Deep ink with rounded top corners, a closing band, the brand tile and link
    columns, the letter. The legal row is the house footer's, drawn inside the same container. */
@@ -113,6 +124,9 @@ ${N} .hs-footer>*{position:relative;padding-top:28px}
 ${N} .hs-footer a{color:var(--dz-on-dark-faint)}
 ${N} .hs-footer a:hover{color:var(--dz-sand)}
 ${N} .hs-footer-line,${N} .hs-footer-note{color:var(--dz-on-dark-faint);font-style:italic}
+${N} .hs-footer-line{margin-left:auto}
+/* The design's footer follows the last section directly (no page tail, no footer top margin). */
+${N} .mw-page{padding-bottom:0}
 ${N} .hs-footer a.hs-partner{border-color:var(--dz-rule-dark);background:transparent;color:var(--dz-on-dark-muted)}
 ${N} .hs-footer a.hs-partner b{color:var(--dz-on-dark)}
 @media (max-width:900px){${N} .dz-foot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}${N} .dz-foot-grid:not([data-subscribe]){grid-template-columns:repeat(2,minmax(0,1fr))}}

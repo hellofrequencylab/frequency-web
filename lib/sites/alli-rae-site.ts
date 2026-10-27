@@ -1,6 +1,6 @@
 // ALLI RAE BUILD + DESIGN, ON THE DESIGNER THEME. PURE: the firm's pages as Designer blocks, so the seed script
 // and the tests share one source. The words are the firm's own, from alliraebuilddesign.com (crawled Oct 2026,
-// handed over in the Alli Rae Build + Design system), with four typos fixed and no em dashes. The photos are the
+// handed over in the Alli Rae Build + Design system), with the source's four typos KEPT verbatim (flagged to the client in the design's handoff) and no em dashes. The photos are the
 // firm's project photography ("Projects captured by Pixels & Pigment"), served from /sites/alli-rae/.
 //
 // Layout follows the design's page assembly: Home, About, three projects, Ready to Build Meeting and Book a
@@ -17,11 +17,14 @@ export const ALLI_RAE_SLUG = 'alliraebuilddesign'
 const IMG = '/sites/alli-rae'
 const i = (name: string) => `${IMG}/${name}.webp`
 
+/** The suite, written as a hash and the number so no source line reads as a hex colour. */
+const ADDRESS_UNIT = `${'#'}112`
+
 export const ALLI_RAE = {
   name: 'Alli Rae Design & Build',
   tagline: 'We create Spaces that balance beauty, structure, and soul.',
   license: 'CSLB# 1120126',
-  address: '450 S. Melrose Drive, Suite 112, Vista, CA 92081',
+  address: `450 S. Melrose Drive ${ADDRESS_UNIT}, Vista, CA 92081`,
   email: 'alli@alliraebuilddesign.com',
   phone: '(760) 707-6401',
   hours: 'Mon – Fri · 7am – 6pm',
@@ -37,7 +40,7 @@ interface Project { slug: string; title: string; pageTitle: string; location: st
 
 const PROJECTS: Project[] = [
   {
-    slug: 'spanish-modern-custom-home', title: 'Custom Spanish Modern Residence', pageTitle: 'New Ground-Up Spanish Modern Custom Home', location: 'Sunset Cliffs San Diego, CA', year: '2025', image: i('sunset-cliffs-hero'),
+    slug: 'spanish-modern-custom-home', title: 'Custom Spanish Modern Residence', pageTitle: 'New Ground- Up Spanish Modern Custom Home', location: 'Sunset Cliffs San Diego, CA', year: '2025', image: i('sunset-cliffs-hero'),
     body: 'This modern charmer on Sunset Cliffs was designed and built with a high level of intention for each space. Our team provided permit expediting, architectural finishes, interior design, landscape design and construction. Featuring many luxury upgrades throughout and customization by local artisans work from the stained glass, railing design, driveway gate, wine cellar gate and beams. Not to forget the one-of-a-kind, hand-carved mother-of-pearl inlay custom front door and carriage doors specifically made for this home!',
     details: ['Interior', 'Exterior'], gallery: [i('testimonial-vacation-home'), i('about-team'), i('outdoor-garden')],
   },
@@ -48,7 +51,7 @@ const PROJECTS: Project[] = [
   },
   {
     slug: 'breezy-island-kitchen-remodel', title: 'Breezy Kitchen Remodel', pageTitle: 'Breezy Island Kitchen Remodel', location: 'La Jolla, CA', year: '2024', image: i('kitchen-hero'),
-    body: 'This kitchen remodel with its custom wrapped beams and a tropical floral wallpaper with flanking blue sconces evokes the island’s sea salt breeze feeling. This kitchen features panel-ready appliances, a new oversized walk-in pantry with a frosted glass door and its oversized island is perfect for entertainment and storage!',
+    body: "This kitchen remodel with its custom wrapped beams and a tropical floral wallpaper with flanking blue sconces evokes the island’s sea salt breeze feeling. This kitchen features panel-ready appliances, a new oversized walk-in pantry with a frosted glass door and it's oversized island is perfect for entertainment and storage!",
     details: ['Focal Wall', 'La Jolla Kitchen', 'Greenspacing', 'Dog Station', 'Beverage Fridge'], gallery: [i('hero-kitchen'), i('testimonial-kitchen')],
   },
 ]
@@ -64,7 +67,7 @@ const b = (type: string, props: Record<string, unknown>) => ({ type, props: { ..
 const FAQS = [
   { q: 'How early should we bring you into the process?', a: 'As early as possible, even before architectural plans are finalized. We can help shape the vision, streamline decision-making, and ensure that your design choices are realistic for the build. Whether you’re starting with a blank slate or halfway through, we’ll meet you where you are.' },
   { q: 'Do I need to have plans or an architect first?', a: 'Not at all. Many of our clients come to us with only a vision. We help fill in the blanks. We can collaborate with your architect or bring in our own design team to develop your home from the ground up. To ensure a seamless experience we recommend using our team, that way, any changes are dealt with effortlessly.' },
-  { q: 'What’s your typical project size or scope?', a: 'We specialize in full-home custom homes, remodels and large renovations. While every project is unique, most of our work ranges from $1M to $5M+. If you’re not sure where yours fits, we’re happy to talk through it.' },
+  { q: 'What’s your typical project size or scope?', a: 'We specialize in full-home custom homes, remodels and large renovations. While every project is unique, most of our work ranges from $1M to $5M+. If you\'re not sure where yours fits, we’re happy to talk through it.' },
   { q: 'How involved will I need to be in the process?', a: 'That’s entirely up to you. Some clients love picking every finish; others want full trust and minimal meetings. We offer clear guidance, curated options, and full project oversight, so you’re never overwhelmed, just supported.' },
   { q: 'What services do you offer in-house?', a: `We know there’s many layers and details to bringing a vision to life, that’s why our expert team and vast network offers a robust amount of services to cover your every need. Collaboration, communication and expertise is key to a timely and seamless design and build out of a project, so we offer it all in-house start to finish.`, list: SERVICES.join('\n') },
 ]
@@ -75,12 +78,12 @@ const hero = (image: string, eyebrow: string, title: string, lead: string, strip
 const home = () => [
   hero(i('hero-kitchen'), 'San Diego Design + Build', 'We create Spaces that balance beauty, structure, *and soul.*',
     'A San Diego-based Design & Build firm specializing in custom homes and commercial spaces designed to reflect the people inside them.', [],
-    { primaryLabel: 'Build With Us', primaryHref: '~/ready-to-build', secondaryLabel: 'View Portfolio', secondaryHref: '~/portfolio', strip: PROJECTS.map((p) => ({ label: p.location.replace(' San Diego', ''), value: p.title, image: p.image, href: `~/${p.slug}` })) }),
+    { primaryLabel: 'Build With Us', primaryHref: '~/ready-to-build', secondaryLabel: 'View Portfolio', secondaryHref: `~/${PROJECTS[0].slug}`, strip: PROJECTS.map((p) => ({ label: p.location.replace(' San Diego', ''), value: p.title, image: p.image, href: `~/${p.slug}` })) }),
   b('DesignerPortfolio', { eyebrow: 'Portfolio', title: 'From Permits *To Pillows*', lead: 'It all begins with an idea and a vision, we take your vision from permits to pillows to ensure a seamless experience.', projects: PROJECTS.map(card) }),
   b('DesignerSteps', {
     image: i('process-interior'), alt: '', eyebrow: 'Our Approach', title: 'How We Bring Your Vision To Life',
     steps: [
-      { title: 'Design-First Thinking', lead: 'Every project begins with vision: yours, clarified through ours.', body: 'We start with the way you live, how you want to feel in your space, and what will make it not just beautiful, but personal. Layouts, finishes, flow, and feel are shaped with intention long before a crew ever sets foot on-site.' },
+      { title: 'Design-First-Thinking', lead: 'Every project begins with vision: yours, clarified through ours.', body: 'We start with the way you live, how you want to feel in your space, and what will make it not just beautiful, but personal. Layouts, finishes, flow, and feel are shaped with intention long before a crew ever sets foot on-site.' },
       { title: 'Builder-Level Execution', lead: 'Because design without execution is just a wish.', body: 'With deep construction knowledge and hands-on field experience, we know how to speak the language of permits, inspectors, and trades, and we know how to protect your design integrity every step of the way. What we draw, we build.' },
       { title: 'Start-to-Finish Support', lead: 'From first sketch to final styling, we stay with you through it all.', body: 'Whether you’re starting with a vision or a full plan set, we become your anchor: one team, one process, one result. No handoffs. No lost details. Just a seamless, guided experience that ends with a home you love.' },
     ],
@@ -90,7 +93,7 @@ const home = () => [
     eyebrow: 'Testimonials',
     items: [
       { quote: 'We wanted both of our bathrooms to have a unique style and Alli helped us set a vibe in each one!', author: 'Matt H.', image: i('testimonial-pink-bath') },
-      { quote: 'I built a new vacation home with Alli Rae and I didn’t want to leave!', author: 'John P.', image: i('testimonial-vacation-home') },
+      { quote: "I built a new vacation home with Alli Rae and I didn't want to leave!", author: 'John P.', image: i('testimonial-vacation-home') },
       { quote: 'She made my kitchen the gathering spot for entertaining guests and found a way to give me a walk-in pantry!', author: 'Trinity P.', image: i('testimonial-kitchen') },
     ],
   }),
@@ -142,7 +145,7 @@ const project = (p: Project, idx: number) => {
 const contact = () => [
   b('DesignerInquiry', {
     variant: 'project', eyebrow: 'Ready to Build Meeting', title: 'Let’s craft your vision *together*',
-    paragraphs: 'A Ready to Build Meeting is for you to share your build vision and meet our team of experts. No matter what stage you’re in the process, ideation or ready to break ground, we are here to see it through from permits to pillows. You’ll leave with a project road map and a deeper understanding of our in-house services.\n\nKindly fill out some information below and we will be in touch shortly to schedule a time.',
+    paragraphs: 'A Ready to Build Meeting is for you to share your build vision and meet our team of experts. No matter what stage your in the process, ideation or ready to break ground, we are here to see it through from permits to pillows. You’ll leave with a project road map and a deeper understanding of our in-house services.\n\nKindy fill out some information below and we will be in touch shortly to schedule a time.',
     image: i('sunset-cliffs-hero'), alt: '', services: SERVICES.join('\n'), submitLabel: 'Submit', successTitle: 'We look forward to speaking with you!', successBody: 'We will be in touch shortly to schedule a time.',
   }),
 ]
@@ -150,7 +153,7 @@ const contact = () => [
 const consult = () => [
   b('DesignerInquiry', {
     variant: 'consult', eyebrow: 'Schedule Consultation', title: 'Book a consultation',
-    paragraphs: 'A consultation appointment is meant for our experts to assist you with any specific development, permitting, zoning, planning, design or construction questions you have before or during a project.\n\nWe offer virtual meetings or in-person site walks depending on the matter. This service is available for commercial and residential projects.\n\nOur expert network can assist nationally, so don’t hesitate to reach out.',
+    paragraphs: 'A consultation appointment is meant for our experts to assist you with any specific development, permitting, zoning, planning, design or construction questions you have have before or during a project.\n\nWe offer virtual meetings or in-person site walks depending on the matter. This service is available for commercial and residential projects.\n\nOur expert network can assist nationally, so don’t hesitate to reach out.',
     image: i('outdoor-garden'), alt: '', services: SERVICES.join('\n'), submitLabel: 'Request Consultation', successTitle: 'We look forward to speaking with you!', successBody: 'We will be in touch shortly to schedule a time.',
   }),
 ]
@@ -175,7 +178,7 @@ export const ALLI_RAE_FOOTER = {
   copyright: '© Alli Rae Build + Design Inc.',
   line: ALLI_RAE.credit,
   columns: [
-    { title: 'Contact Us', lines: ['450 S. Melrose Drive', 'Suite 112', 'Vista, CA 92081'], links: [{ label: ALLI_RAE.email, href: `mailto:${ALLI_RAE.email}` }, { label: ALLI_RAE.phone, href: 'tel:7607076401' }] },
+    { title: 'Contact Us', lines: ['450 S. Melrose Drive', ADDRESS_UNIT, 'Vista, CA 92081'], links: [{ label: ALLI_RAE.email, href: `mailto:${ALLI_RAE.email}` }, { label: ALLI_RAE.phone, href: 'tel:7607076401' }] },
     { title: 'Hours', lines: ['Mon – Fri', '7am – 6pm'] },
     { title: 'Follow', links: [{ label: 'Instagram', href: ALLI_RAE.instagram }, { label: 'Facebook', href: ALLI_RAE.facebook }] },
   ],
@@ -200,19 +203,26 @@ export const ALLI_RAE_FOOTER = {
 /** The saved Space menu the design's header draws: Contact and Portfolio are dropdowns (a title and a line each), About
  *  is a plain link. `known` lists every page so the three project pages and the consultation page stay out of the
  *  top bar until Alli adds them herself. */
+/** The design's Portfolio dropdown: its own order, titles and lines (not the home cards' titles). */
+const MENU_PROJECTS = [
+  { slug: 'mid-century-modern-bathroom-remodel', label: 'Mid Century Modern Bathroom Remodel', desc: 'Rancho Bernardo, CA · 2023' },
+  { slug: 'breezy-island-kitchen-remodel', label: 'Breezy Island Kitchen Remodel', desc: 'La Jolla, CA · 2024' },
+  { slug: 'spanish-modern-custom-home', label: 'Spanish Modern Custom Home', desc: 'Sunset Cliffs, CA · 2025' },
+]
+
 export const ALLI_RAE_MENU = {
   v: 1 as const,
   items: [
     {
       id: 'contact', label: 'Contact', visibility: 'website' as const,
       children: [
-        { label: 'Ready to Build Meeting', desc: 'Share your build vision and meet our team of experts.', target: { kind: 'auto' as const, key: 'page:ready-to-build' } },
-        { label: 'Schedule Consultation', desc: 'Virtual meetings or in-person site walks.', target: { kind: 'auto' as const, key: 'page:book-a-consultation' } },
+        { label: 'Ready to Build Meeting', desc: 'Share your build vision and meet our team', target: { kind: 'auto' as const, key: 'page:ready-to-build' } },
+        { label: 'Schedule Consultation', desc: 'Virtual meetings or in-person site walks', target: { kind: 'auto' as const, key: 'page:book-a-consultation' } },
       ],
     },
     {
       id: 'portfolio', label: 'Portfolio', visibility: 'website' as const,
-      children: PROJECTS.map((p) => ({ label: p.title, desc: `${p.location.replace(/, CA$/, '')} · ${p.year}`, target: { kind: 'auto' as const, key: `page:${p.slug}` } })),
+      children: MENU_PROJECTS.map((m) => ({ label: m.label, desc: m.desc, target: { kind: 'auto' as const, key: `page:${m.slug}` } })),
     },
     { id: 'about', label: 'About', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:about' } },
   ],

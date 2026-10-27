@@ -9,6 +9,7 @@ import { InlineText } from '@/components/sites/inline-text'
 import { DesignerInquiryForm } from '@/components/sites/designer-inquiry-form'
 import { DesignerCarousel } from '@/components/sites/designer-carousel'
 import { DesignerParallax } from '@/components/sites/designer-parallax'
+import { DesignerFaqList } from '@/components/sites/designer-faq-list'
 import {
   DESIGNER_BAND, DESIGNER_CLOSING, DESIGNER_FAQ, DESIGNER_FOUNDER, DESIGNER_GALLERY, DESIGNER_HERO, DESIGNER_INQUIRY, DESIGNER_PORTFOLIO,
   DESIGNER_QUOTE, DESIGNER_SERVICES, DESIGNER_STATEMENT, DESIGNER_STEPS, DESIGNER_TESTIMONIALS,
@@ -44,14 +45,14 @@ function hrefOf(raw: string, metadata: Props | undefined): string | null {
 const external = (href: string) => /^https?:\/\//.test(href)
 const rel = (href: string) => (external(href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})
 
-type Kind = 'primary' | 'outline' | 'inverse' | 'light' | 'link'
+type Kind = 'primary' | 'outline' | 'inverse' | 'light' | 'warm' | 'link'
 function Btn({ label, href, kind = 'primary', metadata, arrow = false, large = false }: { label: string; href: string; kind?: Kind; metadata?: Props; arrow?: boolean; large?: boolean }) {
   const to = label ? hrefOf(href, metadata) : null
   if (!to) return null
   return (
     <a className={cls('dz-btn', `dz-btn-${kind}`)} data-size={large ? 'lg' : undefined} href={to} {...rel(to)}>
       {label}
-      {arrow && <span className="dz-arrow" aria-hidden="true">→</span>}
+      {(arrow || kind === 'link') && <span className="dz-arrow" aria-hidden="true">→</span>}
     </a>
   )
 }
@@ -154,7 +155,7 @@ function DesignerStatementBlock({ p, metadata, pad, vis }: Common) {
 
 // ── Portfolio ─────────────────────────────────────────────────────────────────────────────
 
-function ProjectCard({ x, metadata, large }: { x: Props; metadata?: Props; large?: boolean }) {
+function ProjectCard({ x, metadata, size }: { x: Props; metadata?: Props; size?: 'lg' | 'wide' }) {
   const to = hrefOf(str(x.href), metadata)
   const src = img(x.image)
   const inner = (
@@ -164,12 +165,12 @@ function ProjectCard({ x, metadata, large }: { x: Props; metadata?: Props; large
         <span>
           <span className="dz-project-meta">{[str(x.location), str(x.year)].filter(Boolean).join(' · ')}</span>
           <span className="dz-project-title">{str(x.title)}</span>
-          {to && <span className="dz-project-go">Explore this project →</span>}
+          {to && <span className="dz-project-go">Explore this Project →</span>}
         </span>
       </span>
     </>
   )
-  return to ? <a className="dz-project" data-size={large ? 'lg' : undefined} href={to} {...rel(to)}>{inner}</a> : <article className="dz-project" data-size={large ? 'lg' : undefined}>{inner}</article>
+  return to ? <a className="dz-project" data-size={size} href={to} {...rel(to)}>{inner}</a> : <article className="dz-project" data-size={size}>{inner}</article>
 }
 
 function DesignerPortfolioBlock({ p, metadata, pad, vis }: Common) {
@@ -190,7 +191,7 @@ function DesignerPortfolioBlock({ p, metadata, pad, vis }: Common) {
         )}
         {a && (
           <div className="dz-mosaic">
-            <ProjectCard x={a} metadata={metadata} large />
+            <ProjectCard x={a} metadata={metadata} size="lg" />
             {rest.length > 0 && <div className="dz-mosaic-stack">{rest.slice(0, 2).map((x, i) => <ProjectCard key={i} x={x} metadata={metadata} />)}</div>}
           </div>
         )}
@@ -376,21 +377,7 @@ function DesignerFAQBlock({ p, metadata, pad, vis }: Common) {
             </div>
           )}
         </div>
-        <div className="dz-faq">
-          {items.filter((f) => f.q).map((f, i) => (
-            <details key={i} open={i === 0} {...({ name: 'dz-faq' } as object)}>
-              <summary><span>{f.q}</span><span className="dz-plus" aria-hidden="true">+</span></summary>
-              <div className="dz-faq-answer">
-                <p className="dz-body">{f.a}</p>
-                {f.list.length > 0 && (
-                  <ol className="dz-rows">
-                    {f.list.map((name, k) => <li key={k}><b aria-hidden="true">{k + 1}</b>{name}</li>)}
-                  </ol>
-                )}
-              </div>
-            </details>
-          ))}
-        </div>
+        <DesignerFaqList items={items.filter((f) => f.q)} />
       </div>
     </Section>
   )
@@ -445,7 +432,7 @@ function DesignerClosingBlock({ p, metadata, pad, vis }: Common) {
         {hasNext && (
           <div>
             <Eyebrow text={str(p.nextEyebrow)} />
-            <div style={{ marginTop: 24 }}><ProjectCard x={next} metadata={metadata} large /></div>
+            <div style={{ marginTop: 24 }}><ProjectCard x={next} metadata={metadata} size="wide" /></div>
           </div>
         )}
       </div>
@@ -500,7 +487,7 @@ function block<P extends Props>(label: string, fields: Record<string, unknown>, 
 
 export const designerComponents: Record<string, ComponentConfig> = {
   DesignerHero: block('Designer hero', {
-    size: { type: 'select', label: 'Height', options: [{ label: 'Full screen', value: 'full' }, { label: 'Short', value: 'short' }] },
+    size: { type: 'select', label: 'Height', options: [{ label: 'Full screen', value: 'full' }, { label: 'Full screen, smaller heading', value: 'page' }, { label: 'Short', value: 'short' }] },
     eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), lead: area('Intro'),
     primaryLabel: text('Main button'), primaryHref: text('Main button link', LINK_HINT), secondaryLabel: text('Second button'), secondaryHref: text('Second button link', LINK_HINT),
     image, alt,
