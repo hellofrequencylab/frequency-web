@@ -266,6 +266,12 @@ export function spacePageSiteFaces(preferences: unknown): SiteFacesId | null {
   return style.theme === 'network' || style.theme === 'wildheart' || style.theme === 'midnight' ? style.theme : null
 }
 
+/** The font set a Space wears INSIDE Frequency (member and admin routes): its own, never the website's.
+ *  A white-label website theme never styles a Frequency member or admin area (Daniel, 2026-10-27). */
+export function memberSpaceFonts(preferences: unknown): SpaceThemeId {
+  return readSiteStyle(preferences).spaceFonts
+}
+
 /** The font set the SPACE PAGE renders in: the website's while synced, else the Space page's own. */
 export function spacePageFonts(preferences: unknown): SpaceThemeId {
   const style = readSiteStyle(preferences)
