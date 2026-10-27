@@ -1,4 +1,4 @@
-// Bring the LIVE Alli Rae Design & Build Space to the 2026-10-27 header ask (LIVE-1506): the header menu is exactly
+// Bring the LIVE Alli Rae Design & Build Space to the 2026-10-27 header ask (LIVE-1507): the header menu is exactly
 // Home | Portfolio | About, and the Portfolio page lists the three custom builds. Prints ONE SQL transaction the owner
 // pastes into the Supabase SQL editor.
 //
@@ -23,7 +23,7 @@ const now = '2026-10-27T18:00:00.000Z'
 const state = alliRaeEditorState(now)
 
 const sql = `-- Alli Rae Design & Build: header menu Home | Portfolio | About, Portfolio page lists the custom builds.
--- Run AFTER the LIVE-1506 PR is merged and deployed, and after update 2. Safe to re-run: it stops once the saved site is past revision 3 or has an edit that is not ours.
+-- Run AFTER the LIVE-1507 PR is merged and deployed, and after update 2. Safe to re-run: it stops once the saved site is past revision 3 or has an edit that is not ours.
 begin;
 
 create table if not exists zz_backup_alli_rae_update3_20261027 (

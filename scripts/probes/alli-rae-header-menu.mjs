@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1506: the Alli Rae header spans the viewport, the menu is Home | Portfolio | About with no houses in it, the
+// LIVE-1507: the Alli Rae header spans the viewport, the menu is Home | Portfolio | About with no houses in it, the
 // Portfolio page lists the custom builds, and update 3 carries the entitlement a saved menu needs to draw.
 import { readFileSync, existsSync } from 'node:fs'
 

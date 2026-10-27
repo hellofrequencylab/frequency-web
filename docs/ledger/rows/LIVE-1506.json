@@ -1,14 +1,14 @@
 {
   "id": "LIVE-1506",
-  "title": "Alli Rae header runs edge to edge and the menu is Home | Portfolio | About, the custom builds on Portfolio",
+  "title": "House of Fates hero sits in the middle of the photo and inside the page width, not low and hard left",
   "lane": "live",
-  "priority": "P2",
+  "priority": "P1",
   "size": "S",
   "status": "done",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/alli-rae-header-menu.mjs"
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"components/sites/midnight-practice-css.ts\",\"utf8\");if(!/mn-hero--left\\{align-items:center/.test(s)){console.error(\"left hero is not vertically centred\");process.exit(1)}'"
   },
-  "detail": "Daniel, 2026-10-27: make the header full width, take the individual houses out of the menu, menu is Home | Portfolio | About, Portfolio holds the custom builds. The Designer header and utility bar drop their container inset (Designer CSS only; the shared house header is untouched) and keep the fluid gutter padding. ALLI_RAE_NAV is the new saved menu; the Portfolio page heads its three project cards 'Custom Builds'. Root cause of the houses in the top bar: a saved menu draws only on a Space holding the default-deny space_full_website entitlement, which the seed never granted, so the site drew its automatic menu (every page). update-alli-rae-space-3.sql (scripts/seed-alli-rae-update-3.mts) grants it to this comped Business Space and saves the menu. ALLI_RAE_MENU stays for the first seeds and lib/sites/alli-rae-site.test.ts, which pins its two dropdowns.",
+  "detail": "Follows LIVE-1505. The left-aligned Midnight photo hero bottom-aligned its copy, capped it at 44rem (so the title wrapped to three lines) and ran it to the page edge on wide screens. It now centres vertically, lets the title run on two lines at a smaller display size, and insets to the Midnight wide container. Only the opt-in left layout changes; no other Midnight hero moves.",
   "wave": "W7"
 }

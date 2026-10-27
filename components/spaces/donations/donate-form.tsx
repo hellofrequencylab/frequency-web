@@ -1,5 +1,6 @@
 'use client'
 
+import { chipClasses } from '@/components/ui/chip'
 import { useState, useTransition } from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { startSpaceDonationCheckout, settleDonationAction } from '@/lib/billing/donation-actions'
@@ -107,11 +108,7 @@ export function DonateForm({
                   setCustom('')
                   setError(null)
                 }}
-                className={`rounded-control border px-4 py-2 text-body-sm font-semibold transition-colors ${
-                  active
-                    ? 'border-primary bg-primary text-on-primary'
-                    : 'border-border bg-surface text-text hover:bg-surface-elevated'
-                }`}
+                className={chipClasses(active)}
               >
                 {formatPriceCents(amount)}
               </button>

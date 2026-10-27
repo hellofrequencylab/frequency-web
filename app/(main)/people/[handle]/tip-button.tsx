@@ -1,5 +1,6 @@
 'use client'
 
+import { chipClasses } from '@/components/ui/chip'
 import { useState, useTransition } from 'react'
 import { Heart, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/field'
@@ -96,11 +97,8 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
           <button
             key={c}
             onClick={() => { setAmountCents(c); setCustom('') }}
-            className={`rounded-xl px-3 py-1.5 text-body-sm font-semibold transition-colors ${
-              !custom.trim() && amountCents === c
-                ? 'bg-primary text-on-primary'
-                : 'border border-border text-text hover:bg-surface-elevated'
-            }`}
+            aria-pressed={!custom.trim() && amountCents === c}
+            className={chipClasses(!custom.trim() && amountCents === c)}
           >
             ${c / 100}
           </button>
