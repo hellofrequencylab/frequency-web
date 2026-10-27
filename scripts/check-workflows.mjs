@@ -56,7 +56,7 @@ const DIR = '.github/workflows'
  *  this floor, the missing directory — against fixtures that must FAIL, and the block-scalar
  *  false positive above against one that must PASS; until then this script had no sibling and
  *  no proof outside its own header that it could fire. */
-const MIN_WORKFLOWS = 8
+const MIN_WORKFLOWS = 9
 
 /**
  * Blank out the BODY of every block scalar (`key: |`, `key: >`, with any chomp/indent
