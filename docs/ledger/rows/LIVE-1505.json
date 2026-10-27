@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1505",
+  "title": "House of Fates on the Midnight kit: practice blocks, left hero, top bar and footer sign-up, and its eight-page site",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/house-of-fates-site.mjs"
+  },
+  "detail": "Builds the House of Fates design hand-off (Midnight variant) without changing Midnight for anyone else: new Midnight practice sections (page hero, jump bar, welcome, host, pillars, service, recordings, program, statement, event rows, band, sign-up, archive, contact), a left-aligned photo hero with an optional soft photo tone, a glyph set beside the sigils, a first-name field on the letter form, a saved footer utility line in the top bar and a footer sign-up on the Midnight chrome. lib/sites/house-of-fates-site.ts is the eight-page site; scripts/seed-house-of-fates-update.mts prints one guarded SQL transaction for the owner (revision 1 guard, backup table, save_website_editor, siteFooter and siteMenu merge, rollback). The Space subdomain is attached by scripts/attach-site-subdomain.mjs or the Publish button. /book stays off (HOF_BOOKING_LIVE) until Toni's weekly hours are saved. Not run by the PR.",
+  "wave": "W7"
+}

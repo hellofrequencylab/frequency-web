@@ -97,7 +97,8 @@ const MIDNIGHT_VARS = `
 --mn-media-protect:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.78) 100%);
 --mn-shadow-float:0 0 0 1px var(--mn-night-300),0 24px 48px -12px rgba(0,0,0,.9);
 --mn-shadow-menu:0 0 0 1px var(--mn-night-500),0 18px 40px -16px rgba(0,0,0,.95);
---mn-glow:0 0 0 1px color-mix(in srgb,var(--mn-violet-400) 50%,transparent),0 0 24px -4px color-mix(in srgb,var(--mn-violet-400) 45%,transparent);
+--mn-glow:0 0 0 1px color-mix(in srgb,var(--color-accent,var(--mn-violet-400)) 50%,transparent),0 0 24px -4px color-mix(in srgb,var(--color-accent,var(--mn-violet-400)) 45%,transparent);
+--mn-tone-soft:grayscale(.15) contrast(1.05);
 --mn-blur:blur(14px) saturate(1.1);
 --mn-grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 --mn-size-eyebrow:.6875rem;--mn-size-meta:.75rem;--mn-size-body-sm:.875rem;--mn-size-body:1rem;--mn-size-lead:1.25rem;

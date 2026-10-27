@@ -1,5 +1,6 @@
 import { MIDNIGHT_TOKENS_CSS } from '@/lib/theme/midnight'
 import { MIDNIGHT_BLOCKS_CSS } from '@/components/sites/midnight-blocks-css'
+import { MIDNIGHT_PRACTICE_CSS } from '@/components/sites/midnight-practice-css'
 
 // THE MIDNIGHT SKIN. Scoped under [data-house-theme="midnight"] so every house section keeps its markup and
 // content; values come only from the token block (lib/theme/midnight.ts), never raw. It layers after the house
@@ -81,4 +82,5 @@ ${N} .hs-footer a.hs-partner:hover{border-color:var(--color-accent);color:var(--
 @media (max-width:959px){${N} .hs-footer-top{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}${N} .hs-footer-brand{grid-column:1 / -1}}
 @media (max-width:600px){${N} .hs-footer-top{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){${N} *{transition:none!important;animation:none!important}}
-${MIDNIGHT_BLOCKS_CSS}`
+${MIDNIGHT_BLOCKS_CSS}
+${MIDNIGHT_PRACTICE_CSS}`
