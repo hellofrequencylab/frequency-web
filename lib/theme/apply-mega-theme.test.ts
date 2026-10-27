@@ -9,15 +9,11 @@ const mocks = vi.hoisted(() => ({
   merges: [] as { id: string; path: string[]; patch: Record<string, unknown> }[],
   refresh: vi.fn(),
 }))
-vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({
-    from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: mocks.row, error: null }) }) }),
-      update: (v: Record<string, unknown>) => ({ eq: async () => { mocks.updates.push(v); return { error: null } } }),
-    }),
-  }),
+vi.mock('@/lib/spaces/store', () => ({
+  getSpaceById: async () => (mocks.row ? { slug: mocks.row.slug, brandAccent: mocks.row.brand_accent, preferences: mocks.row.preferences } : null),
+  patchSpacePreferences: async (_id: string, p: Record<string, unknown>) => { mocks.patches.push(p); return true },
+  fillSpaceBrandAccent: async (_id: string, accent: string) => { mocks.updates.push({ brand_accent: accent }); return true },
 }))
-vi.mock('@/lib/spaces/store', () => ({ patchSpacePreferences: async (_id: string, p: Record<string, unknown>) => { mocks.patches.push(p); return true } }))
 vi.mock('@/lib/sites/site-cache', () => ({ refreshSite: mocks.refresh }))
 vi.mock('@/lib/profiles/meta', () => ({
   mergeProfileMetaPath: async (_c: unknown, id: string, path: string[], patch: Record<string, unknown>) => { mocks.merges.push({ id, path, patch }); return { meta: {}, error: null } },
@@ -91,10 +87,10 @@ describe('applyMegaTheme', () => {
   it('dresses the Spotlight only when the owner names their profile and a preset exists', async () => {
     await applyMegaTheme('s1', 'midnight')
     expect(mocks.merges).toEqual([])
-    await applyMegaTheme('s1', 'midnight', { spotlightProfileId: 'p1' })
+    await applyMegaTheme('s1', 'midnight', { spotlight: { profileId: 'p1', client: {} as never } })
     expect(mocks.merges).toHaveLength(1)
     expect(mocks.merges[0]).toMatchObject({ id: 'p1', path: ['spotlight'] })
-    await applyMegaTheme('s1', 'bold', { spotlightProfileId: 'p1' })
+    await applyMegaTheme('s1', 'bold', { spotlight: { profileId: 'p1', client: {} as never } })
     expect(mocks.merges).toHaveLength(1)
   })
 })

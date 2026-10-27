@@ -63,28 +63,20 @@ export type ApplyMegaThemeResult =
   | { ok: false; error: string }
 
 /** Apply a Mega Theme to a Space. The caller has already checked the person may edit this Space.
- *  `spotlightProfileId` names the owner's profile when they picked the theme themselves and want their
- *  Spotlight dressed too; leave it out and no profile is touched. */
+ *  `spotlight` names the owner's profile and their own (session) client when they picked the theme themselves
+ *  and want their Spotlight dressed too; leave it out and no profile is touched. */
 export async function applyMegaTheme(
   spaceId: string,
   theme: string,
-  opts: { spotlightProfileId?: string } = {},
+  opts: { spotlight?: { profileId: string; client: Parameters<typeof mergeProfileMetaPath>[0] } } = {},
 ): Promise<ApplyMegaThemeResult> {
   if (!spaceId || !isMegaThemeId(theme)) return { ok: false, error: 'Choose one of the themes.' }
-  const [{ createAdminClient }, { patchSpacePreferences }, { refreshSite }] = await Promise.all([
-    import('@/lib/supabase/admin'),
+  const [{ getSpaceById, patchSpacePreferences, fillSpaceBrandAccent }, { refreshSite }] = await Promise.all([
     import('@/lib/spaces/store'),
     import('@/lib/sites/site-cache'),
   ])
-  const admin = createAdminClient()
-  const db = admin as unknown as {
-    from: (t: string) => {
-      select: (c: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { slug: string; brand_accent: string | null; preferences: unknown } | null; error: unknown }> } }
-      update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> }
-    }
-  }
-  const { data: space, error } = await db.from('spaces').select('slug, brand_accent, preferences').eq('id', spaceId).maybeSingle()
-  if (error || !space) return { ok: false, error: 'Could not find that space.' }
+  const space = await getSpaceById(spaceId)
+  if (!space) return { ok: false, error: 'Could not find that space.' }
 
   const surfaces = megaThemeSurfaces(theme)
   const next = planMegaTheme(space.preferences, theme)
@@ -94,14 +86,11 @@ export async function applyMegaTheme(
 
   // The accent fills a blank only: a brand color the owner picked is never replaced by a theme.
   let accent = false
-  if (surfaces.spacePage.accent && !space.brand_accent) {
-    const res = await db.from('spaces').update({ brand_accent: surfaces.spacePage.accent }).eq('id', spaceId)
-    accent = !res.error
-  }
+  if (surfaces.spacePage.accent && !space.brandAccent) accent = await fillSpaceBrandAccent(spaceId, surfaces.spacePage.accent)
 
   let spotlight = false
   const preset = THEME_PRESETS.find((p) => p.id === surfaces.spotlightPreset)
-  if (opts.spotlightProfileId && preset) spotlight = !(await mergeProfileMetaPath(admin, opts.spotlightProfileId, ['spotlight'], { theme: preset.theme })).error
+  if (opts.spotlight && preset) spotlight = !(await mergeProfileMetaPath(opts.spotlight.client, opts.spotlight.profileId, ['spotlight'], { theme: preset.theme })).error
 
   refreshSite(space.slug)
   return { ok: true, surfaces, wrote: { website: true, spacePage: true, accent, spotlight } }

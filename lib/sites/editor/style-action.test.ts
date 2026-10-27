@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // edits. The editor autosaves its draft into the same preferences row, so the style write is KEY-SCOPED
 // (SCAN-833, ADR-1822): it sends only `theme` and `siteStyle` through set_space_preferences and never
 // rewrites the rest of the blob.
-const mocks = vi.hoisted(() => ({ host: 'hearts.example', allowed: true, preferences: {} as unknown, patches: [] as Record<string, unknown>[], accents: [] as Record<string, unknown>[], results: [] as boolean[], refresh: vi.fn() }))
+const mocks = vi.hoisted(() => ({ host: 'hearts.example', allowed: true, preferences: {} as unknown, patches: [] as Record<string, unknown>[], results: [] as boolean[], refresh: vi.fn() }))
 vi.mock('next/headers', () => ({ headers: async () => ({ get: () => mocks.host }), cookies: async () => ({ get: () => ({ value: 'token' }) }) }))
 vi.mock('@/lib/sites/hosted', () => ({ resolveHostedSpace: async () => ({ id: 'space', slug: 'hearts' }) }))
 vi.mock('@/lib/sites/site-admin-pass', () => ({ SITE_ADMIN_COOKIE: 'admin', readSiteAdminPass: () => ({ staff: false, profileId: 'owner' }), passOpensSite: () => true }))
@@ -13,8 +13,7 @@ vi.mock('@/lib/sites/site-cache', () => ({ refreshSite: mocks.refresh }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { slug: 'hearts', brand_accent: null, preferences: mocks.preferences, owner_profile_id: 'owner' }, error: null }) }) }),
-      update: (v: Record<string, unknown>) => ({ eq: async () => { mocks.accents.push(v); return { error: null } } }),
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { preferences: mocks.preferences, owner_profile_id: 'owner' }, error: null }) }) }),
     }),
     rpc: async (fn: string, args: { p_space_id: string; p_patch: Record<string, unknown> }) => {
       if (fn !== 'set_space_preferences') throw new Error(`unexpected rpc ${fn}`)
@@ -32,7 +31,6 @@ describe('saving the global styles from the website editor', () => {
     mocks.allowed = true
     mocks.preferences = { theme: 'classic', websiteEditor: { revision: 7 }, profileLayout: { rows: [] } }
     mocks.patches = []
-    mocks.accents = []
     mocks.results = []
     mocks.refresh.mockReset()
   })
@@ -54,9 +52,8 @@ describe('saving the global styles from the website editor', () => {
     const result = await saveWebsiteStyle('hearts.example', { theme: 'bold' })
     expect(result).toMatchObject({ ok: true, style: { theme: 'bold', fonts: 'menswork' } })
     expect(mocks.patches[0].theme).toBe('menswork')
-    // One apply (LIVE-SYS-7): the choice record rides with the style, and a blank brand color takes the theme's accent.
+    // One apply (LIVE-SYS-7): the choice record rides with the style, and 
     expect(mocks.patches[0].megaTheme).toMatchObject({ theme: 'bold' })
-    expect(mocks.accents).toHaveLength(1)
   })
 
   it('deletes the fonts key (null) when the style goes back to the default fonts', async () => {
