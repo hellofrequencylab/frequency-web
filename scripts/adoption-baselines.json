@@ -737,14 +737,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 287,
+      "baseline": 262,
       "frozen": {
-        "at": "2026-10-26",
-        "value": 287,
+        "at": "2026-10-27",
+        "value": 262,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "DAWN branches removed from the marketing and door pages retired two raw button backgrounds (SCAN-1128 part 1)",
-        "from": 289
+        "reason": "SCAN-1133 first slice: 21 hand-rolled primary buttons outside admin moved to the kit button classes (#4063). Daniel named the counter: re-freeze raw-button-bg (2026-10-27).",
+        "from": 287
       },
       "history": [
         {
@@ -970,6 +970,13 @@
           "to": 287,
           "direction": "lowered",
           "reason": "DAWN branches removed from the marketing and door pages retired two raw button backgrounds (SCAN-1128 part 1)"
+        },
+        {
+          "at": "2026-10-27",
+          "from": 287,
+          "to": 262,
+          "direction": "lowered",
+          "reason": "SCAN-1133 first slice: 21 hand-rolled primary buttons outside admin moved to the kit button classes (#4063). Daniel named the counter: re-freeze raw-button-bg (2026-10-27)."
         }
       ]
     },

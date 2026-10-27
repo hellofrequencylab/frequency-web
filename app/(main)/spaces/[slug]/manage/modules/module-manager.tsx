@@ -19,6 +19,7 @@ import { TIER_MARKS, type ModuleTierRead } from '@/lib/pricing/tier-marks'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Switch } from '@/components/ui/switch'
 import { setSpaceFeatureEnabled, setSpaceFeatureMinRole, saveSpaceModuleMenu } from './actions'
+import { buttonClasses } from '@/components/ui/button'
 
 // The Module Manager grid (ADR-546, docs/MODULAR-MENU.md — P3, client). The ONE place an owner manages
 // their menu + features (ADR-552 Phase 4 folded the retired settings/features surface in here). Each row
@@ -434,7 +435,7 @@ function ReviewsOffDialog({
           type="button"
           onClick={onKeepOn}
           disabled={pending}
-          className="mt-5 flex w-full items-center justify-center rounded-control bg-primary px-4 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-70"
+          className={buttonClasses('primary', 'md', 'mt-5 w-full')}
         >
           Keep reviews on
         </button>

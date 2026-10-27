@@ -5,6 +5,7 @@ import { Send, Users, Loader2, Check } from 'lucide-react'
 import { Textarea } from '@/components/ui/field'
 import { sendOutreach } from './actions'
 import { isError } from '@/lib/action-result'
+import { buttonClasses } from '@/components/ui/button'
 
 export function OutreachForm({ scope }: { scope: string }) {
   const [message, setMessage] = useState('')
@@ -46,7 +47,7 @@ export function OutreachForm({ scope }: { scope: string }) {
           type="button"
           onClick={submit}
           disabled={isPending || !message.trim()}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className={buttonClasses('primary', 'sm')}
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Send
         </button>

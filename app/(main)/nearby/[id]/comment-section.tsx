@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/field'
 import { Avatar } from '@/components/ui/avatar'
 import { addDispatchComment, deleteDispatchComment } from '../actions'
 import { relativeTime } from '@/lib/utils'
+import { buttonClasses } from '@/components/ui/button'
 
 type Comment = {
   id: string
@@ -126,7 +127,7 @@ export function CommentSection({
           <button
             type="submit"
             disabled={!body.trim() || isPending}
-            className="self-end inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors shrink-0"
+            className={buttonClasses('primary', 'sm', 'self-end shrink-0')}
           >
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Post'}
           </button>

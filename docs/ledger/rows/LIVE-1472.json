@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1472",
+  "title": "Six niche starter kits for the Bold theme",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/bold-variants.ts",
+    "ref": "Mega Theme plan 2026-10-26: each mega theme gets one starting kit per niche door, as Midnight did in LIVE-1355."
+  },
+  "detail": "Coaches, studios, event hosts, venues, nonprofits and networks, as data in Bold's own blocks (PhotoHero, CardGrid, EditorialSection, CallToAction) plus the shared live Space blocks, with the words shared with the Default kits in niche-spec.ts. Generic sample copy in the house voice, no prices, photos or real names. They list in the Change theme dialog and the Starter kits panel for a Bold site. Nothing is applied automatically and existing content is untouched. Bold wears Menswork, which the public site already serves.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('lib/sites/kits/registry.ts','utf8');process.exit(['coaches','studios','hosts','venues','nonprofits','networks'].every((n)=>r.includes(\\\"'bold-\\\"+n+\\\"'\\\"))?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "kits.test.ts and render-smoke.test.tsx pass: one Bold kit per niche, every block registered, every link resolves, every page draws."
+  },
+  "closed": "2026-10-26"
+}

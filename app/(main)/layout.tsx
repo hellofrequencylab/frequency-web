@@ -1,11 +1,10 @@
 import { redirect } from 'next/navigation'
-import { headers, cookies } from 'next/headers'
+import { headers } from 'next/headers'
 import { Suspense } from 'react'
 import { getCachedUser, getCachedViewerProfile } from '@/lib/auth'
 import { resolveSpaceForHost, activeVerticalsForSpace } from '@/lib/spaces'
 import { hasOperatedSpaces } from '@/lib/spaces/operated'
 import { VERTICALS } from '@/lib/verticals'
-import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import { announcementBannerState, countdownLabel } from '@/components/layout/announcement-banner'
 import { AnnouncementBar } from '@/components/layout/announcement-bar'
@@ -18,7 +17,7 @@ import { scopeKeyFor, type AppOverrides } from '@/lib/apps/overrides'
 import { loadCachedChromeOverrides, loadCachedAppOverrides } from '@/lib/layout/chrome-sources'
 import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
-import { LEGACY_THEME_AXES, SITE_DESIGN } from '@/lib/theme/design'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyMembersShell } from '@/components/frequency/members/shell/members-shell'
 import {
   FrequencyAnonRightMicro,
@@ -35,23 +34,13 @@ import type { DockData } from '@/components/sidebar/game-stats-dock'
 // [data-design="frequency"] [data-kit="members"], so under DAWN they match nothing.
 import '@/app/themes/active/kit-members'
 import '@/app/themes/active/members-shell'
-import { structureFor } from '@/lib/theme/structure'
-import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
-import { RAIL_FOLD_COOKIE, readRailFoldCookie } from '@/lib/layout/rail-fold'
-import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
-import RightSidebar, { MobileGameStats, VaultDockSlot, loadGameStats } from '@/components/sidebar/right-sidebar'
-import { isQuestSurface } from '@/lib/layout/rail-panels'
-import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
-import { DispatchTickerReserve, MobileGameStatsReserve } from '@/components/layout/chrome-reserves'
+import { loadGameStats } from '@/components/sidebar/right-sidebar'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getMessagesUnreadCount } from '@/app/(main)/messages/popover-actions'
-import { canReceivePayouts, payoutsLive } from '@/lib/billing/connect'
-import { getAreaPermissions } from '@/lib/permissions'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import type { Capability } from '@/lib/core/capabilities'
 import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
-import { PERSONAL_CONTEXT } from '@/lib/context/operator-context'
 import { resolveOperatorContext } from '@/lib/context/resolve-context'
 import { getStaffMember } from '@/lib/staff'
 import { getViewerHats } from '@/lib/core/viewer-hats'
@@ -70,8 +59,6 @@ import { ObserveProvider } from '@/components/analytics/observe-provider'
 import { GaConsentGate } from '@/components/analytics/ga-consent-gate'
 import { GaStaffOptOut } from '@/components/analytics/ga-staff-optout'
 import { hasConsent } from '@/lib/consent/consent'
-import { demoModeEnabled, demoContentExists } from '@/lib/platform-flags'
-import { viewerHidesDemo } from '@/lib/demo-preference'
 import { getSearchIndex } from '@/lib/help/content'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
 import { TimezoneSync } from '@/components/layout/timezone-sync'
@@ -79,8 +66,7 @@ import { SupportLauncher } from '@/components/support/support-launcher'
 import { UpgradeLauncher } from '@/components/crew/upgrade-launcher'
 import { InviteLauncher } from '@/components/invite/invite-launcher'
 import { DailyCheckIn } from '@/components/daily-check-in'
-import { atLeastRole, asWebRole, isStaff, isJanitor } from '@/lib/core/roles'
-import { openTicketCount } from '@/lib/support/store'
+import { atLeastRole, asWebRole, isStaff } from '@/lib/core/roles'
 import { staffCan } from '@/lib/core/staff-roles'
 import {
   marketplaceVisibility,
@@ -88,13 +74,9 @@ import {
   AREA_NAV_KEY,
   AREA_PREFIX,
 } from '@/lib/marketplace/visibility'
-import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { isAnonPublicDetail } from '@/lib/nav/public-detail-routes'
 import { getMyFrequency } from '@/lib/nav/my-frequency'
-import { viewerRoleFor } from '@/components/layout/menu-role'
-import { SiteHeader } from '@/components/layout/site-header'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
-import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 // A logged-out visitor is normally sent back to the splash, but a NETWORKED Space profile
@@ -196,51 +178,19 @@ export default async function MainLayout({
   // still pay the auth cookie read. Accepted by ADR-1707 (SCAN-788) at the current size.
   // Sitemap share URLs for events + listings moved to app/(public)/ (no cookies/headers).
   const publicChrome = async () => {
-    // THE DESIGN SWITCH (ADR-1737). Under Frequency a signed-out visitor on a leftover public view
-    // (a Space profile tab, the /events index) gets the public Frequency chrome, exactly as
-    // app/(public)/layout.tsx does. The bodies here are members-kit bodies (FqSpaceChrome, FqEventsBody)
-    // that the signed-in shell scopes with MembersKitRoot; without that scope they render unstyled under
-    // DAWN's header, so this wrapper carries the same `data-kit="members"` root on Commons.
-    if (SITE_DESIGN === 'frequency') {
-      return (
-        <ViewerProvider>
-          <SiteShell surface="commons">
-            {/* `.fqm-public-view` (members-shell.css) is the page: the container, the clearance under the
-                fixed site header, the site canvas, and the site kit's class meanings put back (SCAN-912). */}
-            <div data-kit="members" data-theme="commons" data-energy="flow" className="fqm-public-view">
-              {children}
-            </div>
-          </SiteShell>
-        </ViewerProvider>
-      )
-    }
-    // SiteHeader fetches its own header menu. The footer stays the marketing one: this row is
-    // the header split (SCAN-641), not a footer unification.
-    const footerMenu = await getMenu('footer')
+    // A signed-out visitor on a leftover public view (a Space profile tab, the /events index) gets the public
+    // Frequency chrome, exactly as app/(public)/layout.tsx does. The bodies here are members-kit bodies
+    // (FqSpaceChrome, FqEventsBody) that the signed-in shell scopes with MembersKitRoot; without that scope
+    // they render unstyled, so this wrapper carries the same `data-kit="members"` root on Commons.
     return (
       <ViewerProvider>
-        {/* Same header /discover uses: light bar, client auth. Leftover public views
-            in this group still call getCachedUser below; authMode=client keeps this
-            bar one component with /discover. ViewerProvider is what that authMode needs. */}
-        <SiteHeader variant="light" authMode="client" />
-        {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
-            (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch.
-            id="main" is the target of SiteHeader's skip link (WCAG 2.4.1), matching /discover. */}
-        <main id="main" tabIndex={-1} className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-          {/* A public page rides in the SAME centered CONTENT COLUMN as the signed-in shell: the member
-              three-column grid (empty left/right rail gutters flanking a flex-1 center column inside
-              max-w-[105rem]), so a public Space profile is the exact width it is signed in. The public
-              /discover/spaces directory rides in an identical column, so the two line up. NOT full width. */}
-          <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:gap-10 lg:px-8">
-            {/* Empty left gutter — the left-nav column's width (w-48), held blank. */}
-            <div className="hidden w-48 shrink-0 md:block" aria-hidden />
-            {/* Center content column — same flex-1 min-w-0 py-6 as the shell's main. */}
-            <div className="min-w-0 flex-1 py-6">{children}</div>
-            {/* Empty right gutter — the community rail's width (w-72), held blank. */}
-            <div className="hidden w-72 shrink-0 lg:block" aria-hidden />
+        <SiteShell surface="commons">
+          {/* `.fqm-public-view` (members-shell.css) is the page: the container, the clearance under the
+              fixed site header, the site canvas, and the site kit's class meanings put back (SCAN-912). */}
+          <div data-kit="members" data-theme="commons" data-energy="flow" className="fqm-public-view">
+            {children}
           </div>
-        </main>
-        <MarketingFooter menu={footerMenu} />
+        </SiteShell>
       </ViewerProvider>
     )
   }
@@ -351,9 +301,8 @@ export default async function MainLayout({
   // Frequency's rails and header carry the viewer's standing (streak, Zaps, Gems, rank, current
   // Journey). Started here, never awaited by the layout: the shell resolves it behind Suspense, and
   // `loadGameStats` is the same request-cached read the right rail already makes, so it costs no
-  // second query. DAWN never starts it.
-  const fqStats =
-    SITE_DESIGN === 'frequency' ? loadGameStats(profile.id).catch((): DockData | null => null) : null
+  // second query.
+  const fqStats = loadGameStats(profile.id).catch((): DockData | null => null)
 
   // Request headers (host + current route) — read once and reused below.
   const reqHeaders = await headers()
@@ -377,12 +326,9 @@ export default async function MainLayout({
     previewVisitor,
     unreadCount,
     messagesUnread,
-    payoutsEligibleRaw,
-    permissions,
     globalCaps,
     realHats,
     analyticsConsent,
-    [demoMode, demoHidden, hasDemoContent],
     chromeOverrides,
     appOverrides,
     space,
@@ -390,13 +336,7 @@ export default async function MainLayout({
     operatesSpacesRaw,
     operatorContextRaw,
     marketplaceVis,
-    headerMenu,
-    leftMenu,
-    profileMenu,
-    adminHeaderMenu,
-    menuTimings,
     myFrequencyRaw,
-    openTicketsRaw,
   ] = await Promise.all([
     applyViewAs(realRole),
     viewingAsVisitor(realRole),
@@ -404,26 +344,12 @@ export default async function MainLayout({
     // Live Messages unread total for the header badge (surfaced on mobile too). One grouped RPC,
     // fail-safe to 0 (no badge) on any error or pre-migration.
     getMessagesUnreadCount().catch(() => 0),
-    // Real payouts eligibility for the account menu's "Receive payments" item — a host+ OR anyone
-    // holding a live partner persona (lib/billing/connect). Replaces the host-tier proxy gate.
-    // Fetched with the REAL role; suppressed below under a downgrade/visitor preview. Fail-safe false.
-    //
-    // `payoutsLive()` rides alongside it because the item deep-links to the #payouts ANCHOR of
-    // /settings, and the card that owns that anchor renders on exactly `payoutsLive() &&
-    // canReceivePayouts` (app/(main)/settings/billing/section.tsx). Gating the menu on the
-    // eligibility half alone put a live link in every host's account menu that scrolled to nothing
-    // while payouts were off (FINALIZE-PLAN §9.4). The two predicates are now the same predicate.
-    (async () => (await payoutsLive()) && (await canReceivePayouts(profile.id, realRole)))().catch(
-      () => false,
-    ),
-    getAreaPermissions(),
     // Global-scope capabilities for the standardized admin bar (docs/ADMIN-RAIL.md Phase 1), threaded
     // through PageAdminProvider. Per-entity caps ride the open event from each entity page; this is the
     // route-independent set. Request-cached + fail-closed (empty set) in the resolver.
     getGlobalCapabilities().catch((): Set<Capability> => new Set()),
     getViewerHats(),
     hasConsent(profile.id, 'analytics'),
-    Promise.all([demoModeEnabled(), viewerHidesDemo(), demoContentExists()]),
     // The two operator chrome tables, through the shell's CROSS-REQUEST cached readers (ADR-1243,
     // lib/layout/chrome-sources.ts): identical for every viewer, invalidated by the page-layout
     // manager's write path, FAIL-SAFE {} on any error so the code chrome map + catalog defaults win.
@@ -443,16 +369,6 @@ export default async function MainLayout({
     hasOperatedSpaces(profile.id),
     resolveOperatorContext({ id: profile.id, webRole: asWebRole(profile.web_role) }),
     marketplaceVisibility(),
-    // The standardized menu containers (lib/menus, ADR-390). getMenu falls back to the code
-    // defaults on any miss/error, so these reads are safe pre-migration and no menu ever breaks.
-    // The in-app shell uses: header (the mega-menu), left (the rail — admin section entry points
-    // live here, role-gated), profile (the account dropdown), and admin_header (the contextual
-    // admin mega sub-nav). Footer is fetched by its own layouts.
-    getMenu('header'),
-    getMenu('left'),
-    getMenu('profile'),
-    getMenu('admin_header'),
-    getMenuSettings(),
     // Two more speculative reads folded in for the same reason as getStaffMember and the operator
     // trio above: both were the last things still awaited SERIALLY between this wave and the theme
     // chain, so each one pushed the theme (and therefore first paint) back by a full round trip.
@@ -461,12 +377,6 @@ export default async function MainLayout({
     // menu). It is discarded on the previewing-down path, where the rail must not keep a steward's
     // own Spaces.
     getMyFrequency(profile.id, profile.handle),
-    // The janitor bug alert. Gated on the TRUE web role, which is already known here from the
-    // profile row -- NOT on pageWebRole, which is derived from this wave's own result. So this
-    // stays exactly as cheap as before for everyone who is not a janitor (it does not run at all),
-    // and a janitor stops paying a serial hop for it. Suppressed under a downgrade preview where
-    // it is consumed, matching pageWebRole.
-    isJanitor(asWebRole(profile.web_role)) ? openTicketCount().catch(() => 0) : Promise.resolve(0),
   ])
   // Left-rail order/visibility (NAV-SYSTEM-REDESIGN §8, phase 3): the legacy menu_config
   // overlay is retired. lib/menus (getMenu('left')) is the surviving DB override — when a
@@ -493,12 +403,6 @@ export default async function MainLayout({
   const offerState = previewingDown ? null : await offerBarState(profile.id, profile.meta, operatesSpaces)
   const offerBanner = offerState ? <OfferBar href="/offer" endsAtMs={offerState.endsAtMs} pending={offerState.pending} /> : null
 
-  // Payouts eligibility for the account menu's "Receive payments" item. Suppressed under a
-  // downgrade / visitor preview so a steward's "view as" faithfully drops the earner item too,
-  // exactly like operatesSpaces + staffRole above (view-as is downgrade-only, so realRole is the
-  // ceiling and the raw value already reflects this person's true eligibility).
-  const canReceivePayoutsGate = previewingDown ? false : payoutsEligibleRaw
-
   // MY FREQUENCY — the rail's disclosure (you, and what you run). One React-cached read, itself
   // fail-safe (any error resolves to a profile-only menu), so the rail can never block or throw on
   // it. Suppressed under a view-as downgrade / visitor preview for the same reason operatesSpaces
@@ -514,12 +418,6 @@ export default async function MainLayout({
   // persists the opt-out in the browser so even future first-paints are excluded before the page_view.
   const gaStaffExcluded = isStaff(asWebRole(profile.web_role))
 
-  // Janitor Bug Alert (support): the janitor (Executive Admin) gets a prominent header alert the
-  // moment a support ticket is open, so a bug report never sits unseen. One cheap head-count, run
-  // ONLY for a janitor (skipped for everyone else and under a view-as downgrade, since pageWebRole
-  // is 'none' there) and fail-safe to 0 — the header chrome never blocks on the support table.
-  const openSupportTickets = isJanitor(pageWebRole) ? openTicketsRaw : 0
-
   // The operator-identity context (FRAMING ONLY — lib/context/operator-context.ts). Re-derived from
   // REAL authority (owned/admin Spaces + the staff axis) and re-validates the cookie, so the chip +
   // switcher only ever offer contexts the caller genuinely has. It is purely presentational: the
@@ -527,21 +425,7 @@ export default async function MainLayout({
   // Suppressed to personal-only while previewing DOWN, so a steward's "view as" faithfully drops the
   // operator/admin framing too, exactly like staffRole + pageWebRole above. realWebRole is the TRUE
   // staff axis so the Admin context is offered to actual staff regardless of the view-as preview.
-  const { context: operatorContext, available: availableContexts } = previewingDown
-    ? { context: PERSONAL_CONTEXT, available: [] }
-    : operatorContextRaw
-
-  // The viewer collapsed to a single MenuAccess token for the DB-backed header / admin
-  // megas (components/layout/menu-role). View-as aware: a visitor preview reads as
-  // 'visitor', and a downgraded preview rides the effective community role (staff is
-  // already stripped to 'none' above), so "view as" faithfully previews what that role
-  // sees in the menus. Otherwise staff (admin/janitor) is authoritative over the trust role.
-  const menuViewerRole = viewerRoleFor({
-    loggedIn: !previewVisitor,
-    communityRole: effectiveRole,
-    webRole: pageWebRole,
-    previewVisitor,
-  })
+  const availableContexts = previewingDown ? [] : operatorContextRaw.available
 
   // Page status & visibility (ADR-269) moved into the parallel theme wave below —
   // the read overlaps resolveTheme/cookies instead of serializing ahead of them,
@@ -578,57 +462,6 @@ export default async function MainLayout({
   // (components/walkthroughs/feed-walkthrough.tsx), never as an overlay the shell throws at a
   // member. What is left here is the daily check-in, which is a rewards heartbeat, not onboarding.
 
-  // Right sidebar streams in independently. Doesn't block page render
-  const sidebar = (
-    <Suspense fallback={<RightSidebarSkeleton />}>
-      <RightSidebar
-        profileId={profile.id}
-        role={effectiveRole}
-      />
-    </Suspense>
-  )
-
-  // The score, ONCE PER VIEWPORT (three-docks law).
-  //   < 768  → this, the mobile drawer's bottom cluster. The drawer is md:hidden.
-  //   ≥ 768  → the Vault tab below. It is hidden md:block.
-  // The two are mutually exclusive by construction rather than by matching gates, which is what
-  // let the previous split disagree with itself: the tablet block keyed off showLeftRail while
-  // the rail panel keyed off showSidebar, so /crew rendered the score twice at 768-1023 and
-  // /admin rendered it there but not at ≥1024.
-  // isQuestSurface is applied on BOTH so the Quest page, which owns these figures itself, stays
-  // the single source at every width.
-  const mobileStats = isQuestSurface(currentPath ?? '') ? null : (
-    <Suspense fallback={<MobileGameStatsReserve />}>
-      <MobileGameStats profileId={profile.id} />
-    </Suspense>
-  )
-
-  // The ≥ 768 home: the bottom-right canvas tab. Same coordinates as the operator page dock,
-  // which is the point — DAWN's docks card says bottom-right is "The Vault (member) OR this
-  // page (operator)", and showSidebar is false on /admin, so only one can ever mount.
-  // `fallback={null}` and it STAYS null, judged rather than overlooked: this renders inside DockBar,
-  // which is `fixed bottom-0 right-3` (components/layout/dock-bar.tsx). A fixed box is out of normal
-  // flow, so this boundary has no height to reserve and nothing above or below it to push. The
-  // reserve rule is about flow, and this is the one chrome boundary that is not in it.
-  const dock = (
-    <Suspense fallback={null}>
-      <VaultDockSlot profileId={profile.id} />
-    </Suspense>
-  )
-
-  // Community news ticker — streams in independently, never blocks the shell.
-  // Its fallback RESERVES the bar's height rather than being `null`. A null fallback reserves zero,
-  // so the bar does not swap in, it APPENDS — and this boundary sits directly above the page content
-  // in the shell's centre column, so what a member sees is the top of the page jumping. The trade,
-  // named rather than hidden: a member with NO dispatches now gets that reserve collapsing once when
-  // the boundary resolves to nothing, where before they saw no movement at all. Same 41px either
-  // way, and it is the populated case — nearly every member — that the report is about.
-  const ticker = (
-    <Suspense fallback={<DispatchTickerReserve />}>
-      <DispatchTickerSlot profileId={profile.id} />
-    </Suspense>
-  )
-
   // Apply the active Space for this host (resolved in the parallel wave above): use its skin
   // AND hide vertical nav the Space hasn't switched on (ADR-249/250 step 6). Resilient: a null
   // space (lookup failure / pre-migration) falls back to the default skin + no vertical filtering
@@ -636,8 +469,6 @@ export default async function MainLayout({
   // — it only narrows nav for a non-root sub-brand Space. (chromeOverrides also came from the wave.)
   let activeSkin = 'default'
   let activeGeneration: string | null = null
-  let activeBrandName: string | null = null
-  let activeBrandLogoUrl: string | null = null
   try {
     if (space) {
       activeSkin = space.skin
@@ -645,8 +476,6 @@ export default async function MainLayout({
       // Read via an untyped cast until lib/spaces maps the column onto Space (the codebase pattern for a
       // freshly-added column); null = no Space default, so resolveTheme falls back to DEFAULT_GENERATION.
       activeGeneration = (space as { generation?: string | null }).generation ?? null
-      activeBrandName = space.brandName
-      activeBrandLogoUrl = space.brandLogoUrl
       const enabled = new Set(activeVerticalsForSpace(space).map((v) => v.id))
       for (const v of VERTICALS) {
         if (enabled.has(v.id)) continue
@@ -690,37 +519,14 @@ export default async function MainLayout({
   // when there is no pin and no explicit occasion. All fail-safe. The per-request
   // cookie + DB-theme reads live HERE, not in the root layout, so public marketing/
   // discover pages stay static (app/layout.tsx).
-  const [theme, occasionPinned, autoOccasion, pageGate, railFold, announcement] = await Promise.all([
+  const [theme, pageGate, announcement] = await Promise.all([
     resolveTheme({ spaceSkin: activeSkin, spaceGeneration: activeGeneration }),
-    (async () => {
-      try {
-        const jar = await cookies()
-        return parseThemeCookie(jar.get(THEME_COOKIE)?.value).occ !== undefined
-      } catch {
-        return false /* no pin → auto-schedule below */
-      }
-    })(),
-    resolveActiveOccasionSlug(new Date()).catch(() => 'none' as const),
     // Page status & visibility (ADR-269): DRAFT / min-role gating from page_settings.
     // LOCKOUT-PROOF + FAIL-SAFE exactly as before: staff always pass, errors mean no
     // gate, and /feed itself is never gated so a mis-set home can't loop.
     reqPath && reqPath !== '/feed' && isSafeRoute(reqPath) && !isStaff(pageWebRole)
       ? loadPageSettings(reqPath).catch(() => null)
       : Promise.resolve(null),
-    // A folded rail is different MARKUP, not restyled markup, so unlike the theme it cannot be
-    // corrected pre-paint by an inline script — by the time any script runs the open rail is
-    // already in the HTML. The server is the only actor who can paint the fold on frame one, and
-    // this cookie is the client's mirror of its localStorage instruction so the server can.
-    // Without it the shell hydrates from `auto`, then flips a `shrink-0` track from w-48 to w-14
-    // and shoves the whole content column sideways one frame after paint.
-    (async () => {
-      try {
-        const jar = await cookies()
-        return readRailFoldCookie(jar.get(RAIL_FOLD_COOKIE)?.value)
-      } catch {
-        return undefined /* no cookie → Auto, which is the pre-existing first paint */
-      }
-    })(),
     // The beta countdown's date, read HERE rather than inside the banner (ADR-1030). It rides this
     // wave, so it costs no wall-clock — five reads were already in flight. What it buys is that the
     // shell knows whether a banner is coming BEFORE it renders: the banner ships in the first flush
@@ -735,20 +541,7 @@ export default async function MainLayout({
       !atLeastRole(effectiveRole, pageGate.visibility_role as CommunityRole)
     if (draftHidden || roleHidden) redirect('/feed')
   }
-  // Under a design that overrides everything (Frequency, ADR-1737) no occasion and no Theme Studio
-  // <style> apply: both would re-point tokens the design owns.
-  const occasion = !LEGACY_THEME_AXES
-    ? 'none'
-    : occasionPinned || theme.occasion !== 'none' ? theme.occasion : autoOccasion
-  // The STRUCTURE axis (docs/THEME.md): the coarse layout variant the resolved generation maps to
-  // (simple / standard / dense). The shell sets it as [data-structure] alongside [data-generation],
-  // so the calm/kids ends get a roomier composition and the bold preset a denser one. This is the
-  // real (non-test) caller structureFor() was missing (BUILD-CATALOG §A.13 #1).
-  const structure = structureFor(theme.generation)
-  // The active DB skin/occasion theme as a scoped <style> (fail-safe '' until theme rows exist).
-  const themeCss = LEGACY_THEME_AXES ? await loadActiveThemeCss({ skin: theme.skin, occasion }) : ''
-
-  // The app-wide overlays and launchers every member page carries, under either design system's shell.
+  // The app-wide overlays and launchers every member page carries, under the member shell.
   const shellChildren = (
     <>
       <GaConsentGate disabled={!analyticsConsent || gaStaffExcluded} />
@@ -801,7 +594,6 @@ export default async function MainLayout({
 
   return (
     <>
-      {themeCss ? <style id="fx-theme" dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
       {/* ── THE DENSITY AXIS COULD NOT REACH THE ELEMENT THAT READS IT ────────────────────────
           `[data-generation]` is set on the SHELL ROOT (components/layout/app-shell.tsx), and each of the
           eight preset blocks in app/globals.css declares `--density-root` (spacious 112.5%, bold
@@ -842,32 +634,29 @@ export default async function MainLayout({
           __html: `document.documentElement.setAttribute('data-generation',${JSON.stringify(theme.generation)})`,
         }}
       />
-    {/* THE DESIGN SWITCH (ADR-1737). Frequency wears its own member chrome
-        (components/frequency/members/shell, the design handoff's shell.js + Feed rails); DAWN keeps
-        AppShell exactly as it was. Same data, same children, same overlays. */}
-    {SITE_DESIGN === 'frequency' ? (
-      // ALWAYS the member shell, console routes included: a layout does not re-render on a client
-      // navigation, so a bare console render would strand the next member page without its chrome (and
-      // a member render would wrap the console in a second header). The shell reads the live path and
-      // steps aside on console routes itself (lib/nav/console-route.ts: kit root `data-console`, rail
-      // layout edge mode), so the console's own chrome stands alone on every move.
-      // The member's theme (Settings, Appearance: Frequency or Midnight) as [data-skin] on a box-less
-      // wrapper, so the kit's tokens re-resolve for everything inside the shell (app/themes/frequency.css).
+      {/* The member shell is the Frequency design's own chrome (components/frequency/members/shell, the design
+          handoff's shell.js + Feed rails). ALWAYS the member shell, console routes included: a layout does
+          not re-render on a client navigation, so a bare console render would strand the next member page
+          without its chrome (and a member render would wrap the console in a second header). The shell
+          reads the live path and steps aside on console routes itself (lib/nav/console-route.ts: kit root
+          `data-console`, rail layout edge mode), so the console's own chrome stands alone on every move.
+          The member's theme (Settings, Appearance: Frequency or Midnight) is [data-skin] on a box-less
+          wrapper, so the kit's tokens re-resolve for everything inside the shell (app/themes/frequency.css). */}
       <div data-skin={theme.skin} className="contents">
       <FrequencyMembersShell
         profile={{ ...profile, community_role: effectiveRole }}
         previewVisitor={previewVisitor}
         crew={!previewingDown && isPaid(realHats.tier)}
-        stats={fqStats ?? Promise.resolve(null)}
+        stats={fqStats}
         sidebar={
           <FrequencyRightRail
             profileId={profile.id}
             role={effectiveRole}
             pathname={reqPath ?? ''}
-            stats={fqStats ?? Promise.resolve(null)}
+            stats={fqStats}
           />
         }
-        sidebarMicro={<FrequencyRightMicro profileId={profile.id} stats={fqStats ?? Promise.resolve(null)} />}
+        sidebarMicro={<FrequencyRightMicro profileId={profile.id} stats={fqStats} />}
         banner={
   offerBanner ?? (announcement ? (
             <AnnouncementBar message={announcement.message} countLabel={countdownLabel(announcement.ends)} />
@@ -889,67 +678,7 @@ export default async function MainLayout({
         {shellChildren}
       </FrequencyMembersShell>
       </div>
-    ) : (
-    <AppShell
-      railFold={railFold}
-      skin={theme.skin}
-      generation={theme.generation}
-      structure={structure}
-      occasion={occasion}
-      brandName={activeBrandName}
-      brandLogoUrl={activeBrandLogoUrl}
-      chromeOverrides={chromeOverrides}
-      appOverrides={appOverrides}
-      webRole={pageWebRole}
-      openSupportTickets={openSupportTickets}
-      caps={previewingDown ? [] : Array.from(globalCaps)}
-      profile={{ ...profile, community_role: effectiveRole }}
-      realRole={realRole}
-      previewVisitor={previewVisitor}
-      operatorContext={operatorContext}
-      availableContexts={availableContexts}
-      sidebar={sidebar}
-
-      mobileStats={mobileStats}
-      dock={dock}
-      ticker={ticker}
-      banner={
-offerBanner ?? (announcement ? (
-          <AnnouncementBar message={announcement.message} countLabel={countdownLabel(announcement.ends)} />
-        ) : null)
-      }
-      unreadCount={unreadCount}
-      messagesUnread={messagesUnread}
-      canReceivePayouts={canReceivePayoutsGate}
-      permissions={permissions}
-      leftMenu={leftMenu}
-      navAccess={navAccess}
-      staffRole={staffRole}
-      operatesSpaces={operatesSpaces}
-      demoMode={demoMode}
-      demoHidden={demoHidden}
-      hasDemoContent={hasDemoContent}
-      headerMenu={headerMenu}
-      profileMenu={profileMenu}
-      adminHeaderMenu={adminHeaderMenu}
-      menuViewerRole={menuViewerRole}
-      menuTimings={menuTimings}
-      myFrequency={myFrequency}
-    >
-      {shellChildren}
-    </AppShell>
-    )}
     </>
-  )
-}
-
-function RightSidebarSkeleton() {
-  return (
-    <div className="px-4 py-6 space-y-4">
-      <div className="h-48 rounded-card border border-border bg-surface animate-pulse" />
-      <div className="h-36 rounded-card border border-border bg-surface animate-pulse" />
-      <div className="h-28 rounded-card border border-border bg-surface animate-pulse" />
-    </div>
   )
 }
 

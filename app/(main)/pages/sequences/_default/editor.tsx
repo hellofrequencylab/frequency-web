@@ -17,6 +17,7 @@ import type { FunnelOverride } from '@/lib/funnels/overrides'
 import FunnelInduction from '@/app/join/(induction)/induction'
 import { saveDefaultFunnelCopy, resetDefaultFunnelCopy } from './actions'
 import { saveFunnelVersion, renameFunnelSlug } from '@/app/(main)/pages/sequences/builder-actions'
+import { buttonClasses } from '@/components/ui/button'
 
 // Live-preview copy editor for a Funnel. Left: one section per beat with an
 // input for every voiced string. Right: the
@@ -581,7 +582,7 @@ export function SplashCopyEditor({
             type="button"
             onClick={save}
             disabled={pending}
-            className="rounded-control bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className={buttonClasses('primary', 'md')}
           >
             {pending ? 'Working…' : 'Save & publish'}
           </button>
