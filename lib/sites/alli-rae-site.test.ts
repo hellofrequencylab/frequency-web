@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { publishedWebsiteSnapshot, readWebsiteEditor, validWebsiteSnapshot, RESERVED_WEBSITE_SLUGS } from '@/lib/sites/editor/state'
-import { ALLI_RAE_FOOTER, alliRaeEditorState } from './alli-rae-site'
+import { ALLI_RAE_FOOTER, ALLI_RAE_MENU, alliRaeEditorState } from './alli-rae-site'
 import { readSiteFooter } from './site-footer'
+import { readSiteMenu } from '@/lib/spaces/site-menu'
 import { designerComponents } from '@/components/page-editor/blocks/designer'
 
 const state = alliRaeEditorState('2026-10-27T00:00:00.000Z')
@@ -25,6 +26,20 @@ describe('the Alli Rae site', () => {
     for (const [, slug] of JSON.stringify(state.draft).matchAll(/"~\/([a-z-]+)"/g)) expect(slugs.has(slug), `~/${slug}`).toBe(true)
   })
   it('keeps the footer readable by the footer reader', () => {
-    expect(readSiteFooter({ siteFooter: ALLI_RAE_FOOTER })?.columns).toHaveLength(2)
+    const f = readSiteFooter({ siteFooter: ALLI_RAE_FOOTER })
+    expect(f?.columns).toHaveLength(3)
+    expect(f?.columns[0].lines).toHaveLength(2)
+    expect(f?.columns[0].links.map((l) => l.href)).toEqual(['mailto:alli@alliraebuilddesign.com', 'tel:7607076401'])
+    expect(f?.band?.ctas).toHaveLength(2)
+    expect(f?.subscribe?.success).toBe('Thank you we look forward to cultivating inspiration for you!')
+    expect(f?.utility?.items.length).toBe(3)
+    expect(f?.logo).toMatch(/^\//)
+  })
+  it('saves a header menu with two dropdowns and keeps project pages out of the top bar', () => {
+    const m = readSiteMenu({ siteMenu: ALLI_RAE_MENU })
+    expect(m?.items.map((i) => i.label)).toEqual(['Contact', 'Portfolio', 'About'])
+    expect(m?.items[0].children).toHaveLength(2)
+    expect(m?.items[1].children).toHaveLength(3)
+    expect(m?.known).toContain('page:book-a-consultation')
   })
 })

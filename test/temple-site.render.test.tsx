@@ -82,14 +82,18 @@ const metadata = { space: { identity: { name: 'Royal Temple', logoUrl: LOGO }, s
 
 const footer = {
   columns: [
-    { title: 'Gatherings', links: [{ label: 'Community Dinner', href: '/gatherings' }, { label: 'Concert', href: '/gatherings' }, { label: 'Moon Circle', href: '/gatherings' }] },
-    { title: 'The house', links: [{ label: 'Membership', href: '/membership' }, { label: 'The year', href: '/year' }] },
-    { title: 'Visit', links: [{ label: 'Contact', href: '/contact' }, { label: 'Private events', href: '/contact' }] },
+    { title: 'Gatherings', lines: [], links: [{ label: 'Community Dinner', href: '/gatherings' }, { label: 'Concert', href: '/gatherings' }, { label: 'Moon Circle', href: '/gatherings' }] },
+    { title: 'The house', lines: [], links: [{ label: 'Membership', href: '/membership' }, { label: 'The year', href: '/year' }] },
+    { title: 'Visit', lines: [], links: [{ label: 'Contact', href: '/contact' }, { label: 'Private events', href: '/contact' }] },
   ],
   blurb: 'A community house in Vista, California.',
   line: null,
   note: null,
   suffix: null,
+  logo: null,
+  band: null,
+  subscribe: null,
+  utility: null,
 }
 
 function chrome(children: React.ReactNode, accent?: boolean) {

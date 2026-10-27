@@ -8,7 +8,7 @@
 //
 //   node --experimental-strip-types --no-warnings scripts/seed-alli-rae.mts > alli-rae.sql
 
-import { ALLI_RAE, ALLI_RAE_ACCENT, ALLI_RAE_FOOTER, alliRaeEditorState } from '../lib/sites/alli-rae-site.ts'
+import { ALLI_RAE, ALLI_RAE_ACCENT, ALLI_RAE_FOOTER, ALLI_RAE_MENU, alliRaeEditorState } from '../lib/sites/alli-rae-site.ts'
 
 const lit = (v: unknown) => JSON.stringify(v).replace(/'/g, "''")
 const str = (s: string) => s.replace(/'/g, "''")
@@ -18,6 +18,7 @@ const prefs = {
   megaTheme: { theme: 'designer', niche: null, version: 1 },
   siteStyle: { theme: 'designer', synced: true, spaceFonts: 'classic' },
   siteFooter: ALLI_RAE_FOOTER,
+  siteMenu: ALLI_RAE_MENU,
 }
 
 const sql = `-- Alli Rae Design & Build: a new Space and its Designer website. Run AFTER the Designer theme PR is merged and live.

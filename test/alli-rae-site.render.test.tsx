@@ -9,6 +9,7 @@ import type { MwLive } from '@/lib/sites/menswork-data'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { config } from '@/lib/page-editor/config'
+import { readSiteFooter } from '@/lib/sites/site-footer'
 import { alliRaeSitePages, ALLI_RAE, ALLI_RAE_FOOTER } from '@/lib/sites/alli-rae-site'
 import { designerAccentVars } from '@/lib/theme/designer'
 
@@ -31,7 +32,7 @@ const metadata = { space: { identity: { name: ALLI_RAE.name }, slug: 'alli-rae',
 function chrome(children: React.ReactNode) {
   return (
     <div style={designerAccentVars(null) as React.CSSProperties}>
-      <SiteChrome brandName={ALLI_RAE.name} homeHref="/" links={menu} cta={{ href: '/ready-to-build', label: 'Build Your Dream Now', external: false }} themeFonts skin={{ theme: 'designer', season: 'fall' }} logoUrl={ALLI_RAE.logo} tagline={ALLI_RAE.tagline} showBrandFooter footer={{ columns: ALLI_RAE_FOOTER.columns.map((c) => ({ title: c.title, links: [...c.links] })), blurb: ALLI_RAE_FOOTER.blurb, line: ALLI_RAE_FOOTER.line, note: ALLI_RAE_FOOTER.note, suffix: null }}>
+      <SiteChrome brandName={ALLI_RAE.name} homeHref="/" links={menu} cta={{ href: '/ready-to-build', label: 'Build Your Dream Now', external: false }} themeFonts skin={{ theme: 'designer', season: 'fall' }} logoUrl={ALLI_RAE.logo} tagline={ALLI_RAE.tagline} showBrandFooter footer={readSiteFooter({ siteFooter: ALLI_RAE_FOOTER })}>
         {children}
       </SiteChrome>
     </div>

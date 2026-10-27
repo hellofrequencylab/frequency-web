@@ -73,6 +73,8 @@ export const DESIGNER_SERVICES = {
   buttonLabel: 'About our team',
   buttonHref: '~/about',
   closing: '',
+  closingLabel: '',
+  closingHref: '',
 }
 
 export const DESIGNER_TESTIMONIALS = {
