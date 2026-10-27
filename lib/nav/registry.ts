@@ -674,7 +674,7 @@ export function paletteDestinations(viewer: NavViewer, query = ''): PaletteDesti
 // in the header; the member rail count is ADR-1406 (not this cut).
 
 /** One mobile-bar tab: the §5a world name + the calm registry node it projects. */
-export type SpineTab = {
+type SpineTab = {
   /** The §5a canonical world label rendered under the icon (canon-checked, NAMING.md). */
   label: string
   /** The calm registry node this tab lands on (href · gate · icon key). */

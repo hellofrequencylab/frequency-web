@@ -130,8 +130,6 @@ export interface ContextCaller {
 export const PERSONAL_HOME = '/feed'
 /** The admin workspace — where the platform-staff hat lands. */
 export const ADMIN_HOME = '/admin'
-/** The "Spaces you run" hub — the operator's front door, linked from the switcher's Operator section. */
-export const OPERATING_HUB = '/spaces/operating'
 
 /** The resolved result the shell consumes: the EFFECTIVE (re-validated) context + the full set of
  *  contexts available to this caller (so the chip only ever offers real ones). Produced by the
