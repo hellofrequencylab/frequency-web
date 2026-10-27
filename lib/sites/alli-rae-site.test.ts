@@ -28,7 +28,7 @@ describe('the Alli Rae site', () => {
   it('keeps the footer readable by the footer reader', () => {
     const f = readSiteFooter({ siteFooter: ALLI_RAE_FOOTER })
     expect(f?.columns).toHaveLength(3)
-    expect(f?.columns[0].lines).toHaveLength(2)
+    expect(f?.columns[0].lines).toHaveLength(3)
     expect(f?.columns[0].links.map((l) => l.href)).toEqual(['mailto:alli@alliraebuilddesign.com', 'tel:7607076401'])
     expect(f?.band?.ctas).toHaveLength(2)
     expect(f?.subscribe?.success).toBe('Thank you we look forward to cultivating inspiration for you!')
