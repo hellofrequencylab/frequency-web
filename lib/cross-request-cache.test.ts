@@ -221,7 +221,7 @@ describe('the privilege rule: rows cross the boundary, viewers never do', () => 
     const nav = src('components/frequency/members/shell/nav.ts')
     expect(nav).toContain('if (!menuGateOpen(r, v)) continue')
     expect(nav).toContain('if (!canShow(row, v.navAccess)) return false')
-    expect(src('components/frequency/members/shell/members-shell.tsx')).toContain('groupRows(FQ_ACCOUNT_MENU, menuViewer, profileHref)')
+    expect(src('components/frequency/members/shell/members-shell.tsx')).toContain('groupRows(FQ_ACCOUNT_MENU, menuViewer, profileHref, { drafts: myFrequency?.drafts })')
     expect(src(READ)).not.toContain('canSeeMenuItem')
   })
 
