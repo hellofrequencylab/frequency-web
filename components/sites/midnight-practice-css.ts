@@ -142,9 +142,13 @@ ${N} .mn-band .hs-btn-primary:hover{background:var(--color-on-ink-muted);color:v
 /* The sign-up band, the archive and the reader. */
 ${N} .mn-letter--band .mn-letter-form{flex-wrap:wrap;max-width:32.5rem}
 ${N} .mn-letter--band .mn-letter-field{flex:1 1 10rem}
-${N} .mn-hero--left{align-items:center;margin-inline:max(var(--mn-gutter),calc((100% - var(--mn-wide)) / 2));padding-inline:var(--mn-section-tight)}
+${N} .mn-hero--left{align-items:center;padding-inline:max(var(--mn-gutter),calc((100% - var(--mn-column)) / 2))}
 ${N} .mn-hero--left .mn-hero-copy{max-width:52rem;margin-inline:0}
 ${N} .mn-hero--left .mn-display{font-size:clamp(2.75rem,5.2vw,5.25rem);max-width:none}
+/* Section widths: a tight centred column, or a band that runs edge to edge. */
+${N} .mn-frame--column{padding-block:calc(var(--mn-section-y) * .6);padding-inline:max(var(--mn-gutter),calc((100% - var(--mn-column)) / 2))}
+${N} .mn-frame--column.mn-split{align-items:center;gap:clamp(2rem,5vw,4rem)}
+${N} .mn-frame--full{padding-inline:var(--mn-gutter)}
 ${N} .mn-footer-subscribe{margin-top:1.5rem}
 ${N} .mn-footer-subscribe-title{font-family:var(--hs-font-display);font-size:1.125rem;margin:0 0 .75rem}
 ${N} .mn-letter--band .mn-letter-field--wide{flex:2 1 13.75rem}
