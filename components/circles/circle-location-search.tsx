@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Search, LocateFixed, X, Loader2, MapPin } from 'lucide-react'
@@ -170,7 +171,7 @@ export function CircleLocationSearch({
           <button
             type="button"
             onClick={clear}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+            className={buttonClasses('primarySoft', 'sm', 'shrink-0 gap-1.5')}
           >
             Near {activePlace}
             <X className="h-3 w-3" />
