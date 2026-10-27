@@ -1,4 +1,4 @@
-// THE THEME LIBRARY CATALOG (ADR-1907). What each Mega Theme is, in the words a visitor reads, and the slots
+// THE THEME LIBRARY CATALOG (ADR-1910). What each Mega Theme is, in the words a visitor reads, and the slots
 // its pictures fill. The index (/themes) and every kit page (/themes/[theme]) read this one file, plus
 // SITE_THEMES (label, feel) and KIT_INDEX (the niche kits), so neither page can drift from the editor.
 //

@@ -1,4 +1,4 @@
-// /themes/[theme] (LIVE-1511): the sales page for one Mega Theme. A Frequency-only route. Midnight keeps its
+// /themes/[theme] (LIVE-1514): the sales page for one Mega Theme. A Frequency-only route. Midnight keeps its
 // own static page at /themes/midnight, which wins over this segment. Static: the six other themes are known
 // at build time and anything else is a 404.
 import type { Metadata } from 'next'

@@ -1,4 +1,4 @@
-// /themes/[theme] on the Frequency design (LIVE-1511): the sales page for one Mega Theme. One template for
+// /themes/[theme] on the Frequency design (LIVE-1514): the sales page for one Mega Theme. One template for
 // every theme, read from the library catalog, the theme list and the kit index, so a new theme is a new
 // catalog entry and not a new page. Sections: full-kit picture, the four places a theme shows up (with what
 // is ready today), every tool and look control ("turn on only what you need"), the six starter kits, and

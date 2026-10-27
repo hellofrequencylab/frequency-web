@@ -1,4 +1,4 @@
-// /themes on the Frequency design (LIVE-1460, rebuilt LIVE-1511): the theme library index. Two columns, one
+// /themes on the Frequency design (LIVE-1460, rebuilt LIVE-1514): the theme library index. Two columns, one
 // card per Mega Theme with its full-kit picture, read from the theme list, the library catalog and the kit
 // index so the page never drifts from what the editor offers. Built from the template kit only (phero, sec,
 // sh, tg-card, KeepGoing); no page CSS of its own. Copy follows docs/marketing/voice-and-language-guide.md:

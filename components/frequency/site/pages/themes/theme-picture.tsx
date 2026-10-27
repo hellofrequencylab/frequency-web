@@ -1,4 +1,4 @@
-// One theme picture, or its labeled empty slot (ADR-1907). Server component. A picture shows only when
+// One theme picture, or its labeled empty slot (ADR-1910). Server component. A picture shows only when
 // lib/themes/library-assets.ts lists it; until then the slot names itself, so a missing asset reads as
 // "on the way" and never as a broken image.
 import Image from 'next/image'
