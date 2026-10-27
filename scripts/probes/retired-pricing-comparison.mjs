@@ -1,3 +1,4 @@
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import ts from 'typescript'
@@ -14,7 +15,7 @@ export function activePricingMounted(source) {
   visit(ast)
   return ast.parseDiagnostics.length === 0 && imported && rendered
 }
-if (process.argv[1]?.endsWith('/retired-pricing-comparison.mjs')) {
+if (invokedDirectly(import.meta.url)) {
   for (const file of RETIRED_PRICING_COMPARISON) assert.equal(existsSync(file), false, `${file} is retired`)
   assert.ok(activePricingMounted(readFileSync('app/(marketing)/pricing/page.tsx', 'utf8')), 'Actual pricing route must retain its Frequency pricing body')
   console.log('Unused competitor-cost comparison chain is absent; actual Frequency pricing route remains mounted.')
