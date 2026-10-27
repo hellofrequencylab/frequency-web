@@ -35,7 +35,7 @@ export function MidnightKitPicker({ choices }: { choices: MidnightKitChoice[] })
             <b>01 · Spotlight</b>
           </p>
           <h3>{pick.headline}</h3>
-          <p>One main button at the top. Midnight in full.</p>
+          <p>One main button at the top. Nocturne in full.</p>
         </div>
         <div className="tg-card">
           <p className="label">

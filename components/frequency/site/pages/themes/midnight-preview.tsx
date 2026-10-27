@@ -16,7 +16,7 @@ export function MidnightPreview() {
       <button type="button" className="btn btn-ghost fq-iri-rim" aria-haspopup="dialog" onClick={() => setOpen(true)}>
         Live preview
       </button>
-      <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Midnight live preview" align="center" className="max-w-5xl">
+      <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Nocturne live preview" align="center" className="max-w-5xl">
         <div className="flex flex-col gap-3 rounded-card bg-surface p-4 text-text">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-2" role="group" aria-label="Preview width">
@@ -37,7 +37,7 @@ export function MidnightPreview() {
             </div>
           </div>
           <iframe
-            title="Midnight sample website"
+            title="Nocturne sample website"
             src={MIDNIGHT_DEMO_HREF}
             className={`mx-auto h-[70vh] w-full rounded-control border border-border ${phone ? 'max-w-sm' : ''}`}
           />
