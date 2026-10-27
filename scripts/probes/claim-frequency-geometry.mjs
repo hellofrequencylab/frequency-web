@@ -13,4 +13,7 @@ for (const [bp, reserve] of [[768,264],[960,436],[1240,648]]) {
  assert(claim.includes(`calc(100% - ${reserve}px)`))
 }
 assert(claim.includes('max-width: 860px'))
+assert(shell.includes('.fqm-center { max-width: 1040px }'))
+assert(claim.includes('min-width: 1001px'))
+assert(claim.includes('min(1040px, calc(100% - 648px))'))
 console.log('Claim preview uses active Frequency automatic-rail geometry')

@@ -10,6 +10,8 @@ describe('claim preview follows the active Frequency shell', () => {
   it('pins the actual rail widths, gap, cap and automatic breakpoints', () => {
     for (const value of ['--fqm-l:248px', '--fqm-r:288px', 'gap:56px', 'max-width:860px', 'max-width:1239px', 'max-width:959px', 'max-width:767px', '--fqm-lw:76px', '--fqm-rw:76px']) expect(css).toContain(value)
     expect(css).toContain('padding:24px 40px 0')
+    expect(css).toContain('@media (min-width: 1001px)')
+    expect(css).toContain('.fqm-center { max-width: 1040px }')
     const core = readFileSync('app/themes/frequency/core.css', 'utf8')
     expect(core).toContain('--fq-gutter-mobile:18px')
     expect(core).toContain('--fq-gutter-desktop:40px')
@@ -20,6 +22,9 @@ describe('claim preview follows the active Frequency shell', () => {
       expect(claim).toContain(`calc(100% - ${left + right + 2 * 56}px)`)
     }
     expect(claim).toContain('max-width: 860px')
+    expect(claim).toContain('min-width: 1001px')
+    expect(claim).toContain('min(1040px, calc(100% - 436px))')
+    expect(claim).toContain('min(1040px, calc(100% - 648px))')
     expect(claim).not.toContain('rem')
   })
   it('uses the same row and column for ribbon, body and both bar copies', () => {
