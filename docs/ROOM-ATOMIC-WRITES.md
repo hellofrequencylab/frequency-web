@@ -24,7 +24,9 @@ Before activation:
 4. After explicit production rollout approval, apply the registered migration, verify catalog grants and invoker/search-path metadata, deploy the guarded app, and enable the flag only after readiness is confirmed. Verify controlled staging journeys before any authorized production fixture writes.
 5. On activation errors, turn the flag off and preserve evidence; do not execute compensating production deletes or mutate existing rooms automatically. Disabling the flag restores existing behavior and its recorded race, so it is mitigation, not a permanent repair.
 
-## Independent-session staging checks still required
+## Independent-session proof and remaining staging checks
+
+Local PostgreSQL17.7 independent-session proof passed12 checks, including6 observed lock waits and the legacy zero-admin race negative control. The exact proposal SHA256 was80084b74cfc77f21fe0c30d1f20432bdb37524bae88848d5bf5bab5870ca4431. This used a synthetic migrated room fixture, not the full production schema or PostgREST. Runtime provenance, checks and stopped-cluster/closed-port cleanup are recorded in the audit evidence. Repeat against the registered full staging schema before rollout.
 
 Use synthetic profiles and rooms in an isolated database, not customer data. Session A begins a transaction and calls the role-change RPC while holding the parent row lock. Session B attempts the conflicting demotion/removal and must block. Commit A; B must re-check current actor authority/admin count, refuse when necessary, and leave at least one admin. Repeat for self-demotion versus leave, kick versus demotion, and promotion/removal. Test different rooms do not share a lock. Roll back or explicitly remove only the isolated fixtures.
 

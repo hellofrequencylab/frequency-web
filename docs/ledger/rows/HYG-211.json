@@ -1,0 +1,18 @@
+{
+  "id": "HYG-211",
+  "title": "Give manual combined CI the complete candidate history for shipped-id verification",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": ".github/workflows/ci.yml",
+    "ref": "Exact d2ccb8ffc CI40440895475 checks failure: one-commit candidate window remained shallow after dated main/SHA fetch"
+  },
+  "detail": "A manual CI run judges HEAD, but dated main and SHA fetches left the candidate one-commit shallow. The shipped-id guard correctly refused the partial window. After existing fetches, manual runs now unshallow the candidate only when still shallow. PR/main paths, guard seed, floors and enforcement are unchanged. This is runner-history preparation, not a skipped guard or passing claim.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-27",
+    "evidence": "OPEN pending exact combined CI proving seed reachability and required history floors. Existing workflow and shipped-id regression tests remain required; prior partial failure preserved."
+  }
+}

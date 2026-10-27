@@ -254,6 +254,11 @@ jobs:
           git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "+refs/heads/${GITHUB_BASE_REF:-main}:refs/remotes/origin/${GITHUB_BASE_REF:-main}"
           # A manual run judges HEAD; fetching main alone leaves a branch checkout shallow.
           git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "$GITHUB_SHA"
+          # Fetching both refs with a date boundary can retain HEAD's depth-one boundary.
+          # Manual validation must read the actual candidate history, never a partial window.
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+            git fetch --no-tags --filter=tree:0 --unshallow origin "$GITHUB_SHA"
+          fi
 
       - name: Contract guards (all run; every failure reported)
         if: ${{ !cancelled() }}
