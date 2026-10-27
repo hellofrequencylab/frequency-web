@@ -387,8 +387,8 @@ export const WAIVERS = [
   //   success on marketing-canvas  4.05 → 4.936 DAWN light, 3.80 → 4.630 Midnight light
   // The second was "THE PAIRING TO AVOID" and the reason the marketing-canvas family exists. It is
   // now the pairing that passes, so the entry is a plain PAIR above rather than a frozen floor.
-  // components/marketing/comparison-table.tsx still pins its ledger cards to `bg-surface`; that is
-  // now a preference rather than a workaround, and its comment says so.
+  // The retired DAWN comparison renderer used `bg-surface` as a preference rather than a
+  // workaround. The surviving semantic contrast pairing above remains independently enforced.
   {
     fg: '--color-primary',
     bg: '--color-surface',
