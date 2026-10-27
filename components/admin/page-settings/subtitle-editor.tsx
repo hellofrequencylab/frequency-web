@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
@@ -85,7 +86,7 @@ export function SubtitleEditor() {
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className={buttonClasses('primary', 'sm')}
           >
             {pending ? 'Saving…' : 'Save'}
           </button>
