@@ -59,7 +59,7 @@ export function FrequencyThemes() {
           </h1>
           <p>
             Seven looks, designed once for your Spotlight, your website and your emails. Design once, launch tomorrow, with a guided
-            setup that has your whole business running in two hours.
+            setup. Plan on an afternoon.
           </p>
           <div className="ctas">
             <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>

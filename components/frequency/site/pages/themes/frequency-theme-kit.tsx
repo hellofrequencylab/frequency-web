@@ -134,7 +134,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
             <h2 className="h-l">Forty features on day one is a month of setup.</h2>
             <p className="pb-note">
               {name} carries every tool Frequency has, in one account: a complete business and marketing system. The guided setup
-              has your whole business running in two hours. Your kit starts with two or three tools, and the rest are one switch away.
+              takes you from theme to launch, so plan on an afternoon. Your kit starts with two or three tools, and the rest are one switch away.
             </p>
           </div>
           <div className="tg-row two">
