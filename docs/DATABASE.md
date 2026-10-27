@@ -686,7 +686,8 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
   not the actual bytes of historical SQL executed in production. Remove consumed/expired policy
   entries in a policy-only housekeeping change.
 
-  The isolated workflow's job is `migration-readiness-runner` (base SHA). Its main-owned
+  The isolated workflow's job is `migration-readiness-runner`; it checks out trusted base
+  source while Actions run/job/check metadata identifies the candidate SHA. Its main-owned
   publisher explicitly creates the distinct `migration-readiness` check with
   `head_sha` equal to the fresh candidate SHA. Check write permission is confined to that
   isolated job. Completion rechecks current PR/main before and after the API write; stale or
