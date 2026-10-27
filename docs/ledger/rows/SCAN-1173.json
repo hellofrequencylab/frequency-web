@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1173",
+  "title": "Keep one main landmark in embedded Frequency consoles",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-26",
+  "source": {
+    "file": "components/frequency/admin/admin-shell.tsx",
+    "ref": "Authenticated browser audit: Space manage page exposes nested main landmarks"
+  },
+  "detail": "The live signed-in Space manage page rendered the member rail main#main around AdminShell's second main.ad-main. AdminShell now accepts withinMain, preserving main by default for standalone use; both production console builders mark their member-root placement so embedded content uses a div with the existing ad-main class and motion wrapper. Route authorization, navigation, data reads and styles are unchanged. Rendered actual-shell tests check exactly one landmark and retained outer skip-link target, plus standalone main ownership. This is local rendered component evidence; deployed browser acceptance remains separate.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-26",
+    "evidence": "Two rendered actual AdminShell tests pass: member-wrapped console has one main#main with its skip target, standalone shell retains main.ad-main. The actual previous shell fails the nested-landmark regression. Both actual console builders pass withinMain. No production mutation or deployed-fix claim."
+  }
+}

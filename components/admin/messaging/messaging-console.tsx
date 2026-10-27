@@ -13,6 +13,7 @@ import {
   type MessagingStatus,
 } from '@/lib/messaging/status'
 import type { MessagingCampaignItem, MessagingFunnelItem } from '@/lib/messaging/console'
+import { chipClasses } from '@/components/ui/chip'
 
 // The unified Messaging console body (EMAIL-CAMPAIGNS-FUNNELS-PLAN P1, ask #1/#4). ONE
 // home for the two things an operator creates: Campaigns (one-time sends) and Funnels
@@ -428,12 +429,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={cn(
-        'inline-flex items-center gap-1 rounded-pill border px-2.5 py-0.5 text-meta font-semibold transition-colors motion-reduce:transition-none',
-        active
-          ? 'border-primary-strong bg-primary-bg text-primary-strong'
-          : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text',
-      )}
+      className={chipClasses(Boolean(active))}
     >
       {children}
     </button>
