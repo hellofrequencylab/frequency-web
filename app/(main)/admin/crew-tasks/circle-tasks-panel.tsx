@@ -16,7 +16,6 @@ import { Field, Input } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { buttonClasses } from '@/components/ui/button'
 
 const TASK_TYPES = [
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',

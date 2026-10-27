@@ -8,7 +8,6 @@ import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { applyStudioAction, revertStudioChange } from './actions'
 import { isError } from '@/lib/action-result'
 import type { StudioRec, Severity } from '@/lib/studio/recommendations'
-import { buttonClasses } from '@/components/ui/button'
 
 /** Undo a reversible applied change (flag toggles) from the change log. */
 export function RevertButton({ logId }: { logId: string }) {

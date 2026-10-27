@@ -10,7 +10,6 @@ import { setReferralsEnabled, setReferralLanding } from './actions'
 import { SITE_URL } from '@/lib/site'
 import type { getOnboardingControlsData, OnboardingSwitchEvent } from './load'
 import { Input } from '@/components/ui/field'
-import { buttonClasses } from '@/components/ui/button'
 
 const siteHost = SITE_URL.replace(/^https?:\/\//, '')
 

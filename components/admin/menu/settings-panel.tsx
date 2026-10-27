@@ -6,7 +6,6 @@ import { Timer } from 'lucide-react'
 import type { MenuSettings } from '@/lib/menus/types'
 import { setMenuSettings } from '@/lib/menus/actions'
 import { Input } from '@/components/ui/field'
-import { buttonClasses } from '@/components/ui/button'
 
 // The global Open & Dwell speed panel (requirement 2). Numeric sliders + inputs for
 // the three mega-menu timings, saved via setMenuSettings. Ranges mirror the DB CHECK

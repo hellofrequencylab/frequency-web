@@ -16,7 +16,6 @@ import {
   saveVeraAutonomyTuning,
   rearmVeraBreaker,
 } from './actions'
-import { buttonClasses } from '@/components/ui/button'
 
 // Owner controls for Vera autonomous sending (ADR — Vera autonomous-send graduation). SAFETY-CRITICAL,
 // DISABLED-BY-DEFAULT: the master switch is the graduation gate AND the global kill; per-category
