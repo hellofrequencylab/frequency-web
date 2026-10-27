@@ -212,9 +212,11 @@ describe('housing surfaces wiring', () => {
     const src = readFileSync(INDEX_PAGE, 'utf8')
     expect(src).toContain("sp.saved === '1'")
     expect(src).toContain('listSavedListings')
-    expect(src).toContain('SaveListingButton')
-    expect(src).toContain('Nothing saved yet.')
-    expect(src).toContain('Tap the heart on a home to keep it here.')
+    // The hearts and the empty state are drawn by the Frequency marketplace body.
+    const body = readFileSync('components/frequency/members/marketplace/marketplace-body.tsx', 'utf8')
+    expect(body).toContain('SaveListingButton')
+    expect(body).toContain('Nothing saved yet')
+    expect(body).toContain('Tap the heart on a home to keep it here.')
   })
 })
 

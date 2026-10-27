@@ -1,8 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqSpaceLoading } from '@/components/frequency/members/space/space-loading'
-import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
-import { COVER_HEIGHT_DEFAULT, coverHeightClass } from '@/lib/layout/cover-height'
 
 // Instant loading state for ONE Space, and for every owner surface beneath it.
 //
@@ -49,46 +45,5 @@ import { COVER_HEIGHT_DEFAULT, coverHeightClass } from '@/lib/layout/cover-heigh
 // use it (matching BrandAnchor, which is also cover-shaped), and everything else here is shape-free —
 // so the skeleton still cannot drift from the hero it mirrors.
 export default function SpaceDetailLoading() {
-  // Under Frequency (build-time) the wait is the cover card the page paints (SCAN-856).
-  if (SITE_DESIGN === 'frequency') return <FqSpaceLoading />
-  return (
-    <div>
-      {/* The HERO cover at the default height, with the identity overlaid on its bottom edge —
-          the shape (profile)/layout.tsx actually renders. `coverHeightClass(COVER_HEIGHT_DEFAULT)`
-          is the layout's own call, not a copy of its output, so a change to the ladder moves both. */}
-      <div className={`relative w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated ${coverHeightClass(COVER_HEIGHT_DEFAULT)}`}>
-        {/* Same p-6 sm:p-8 inset as the real overlay, so the chip lands on the same pixel. */}
-        <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-          <div className="flex items-end gap-4">
-            <Skeleton className="h-20 w-20 shrink-0 rounded-[var(--radius-cover,1.5rem)] border-4 border-surface lg:h-28 lg:w-28" />
-            <div className="min-w-0 flex-1 space-y-2 pb-1">
-              <Skeleton className="h-7 w-48 max-w-full" />
-              <Skeleton className="h-4 w-64 max-w-full" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* The phone action row (sm:hidden), mirroring the real mobileActionBand: a flexible CTA and
-          two 40px glyph buttons. Desktop shows nothing here — its actions are on the cover above. */}
-      <div className="mt-4 flex items-center gap-2 sm:hidden">
-        <Skeleton className="h-10 min-w-0 flex-1 rounded-control" />
-        <Skeleton className="h-10 w-10 shrink-0 rounded-control" />
-      </div>
-
-      {/* The sticky sub-nav strip, above its hairline. */}
-      <div className="mt-4 flex gap-4 border-b border-border pb-3">
-        <Skeleton className="h-5 w-16" />
-        <Skeleton className="h-5 w-20" />
-        <Skeleton className="h-5 w-14" />
-        <Skeleton className="h-5 w-24" />
-      </div>
-
-      {/* The body — the same skeleton the profile page's own Suspense fallback uses, so the swap
-          from this boundary to that one is invisible. */}
-      <div className="pt-4">
-        <ProfileBodySkeleton />
-      </div>
-    </div>
-  )
+  return <FqSpaceLoading />
 }

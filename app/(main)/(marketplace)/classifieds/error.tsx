@@ -2,10 +2,6 @@
 
 import * as Sentry from '@sentry/nextjs'
 import { useEffect } from 'react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqErrorState } from '@/components/frequency/members/community-error'
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
@@ -16,8 +12,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
     // reporting boundary (nearest-boundary-wins) - without this it was invisible.
     Sentry.captureException(error)
   }, [error])
-  if (SITE_DESIGN === 'frequency')
-    return (
+  return (
       <FqErrorState
         title="Classifieds did not load"
         body="This part of Classifieds hit a snag. Try again, or head back to the full list."
@@ -26,23 +21,4 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         reset={reset}
       />
     )
-  return (
-    <div className="flex min-h-[40vh] flex-col items-center justify-center px-4">
-      <EmptyState
-        variant="error"
-        title="Classifieds didn't load"
-        description="This part of Classifieds hit a snag. Try again, or head back to the full list."
-        action={
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Button variant="secondary" onClick={reset}>
-              Try again
-            </Button>
-            <Button asChild>
-              <Link href="/classifieds">Back to Classifieds</Link>
-            </Button>
-          </div>
-        }
-      />
-    </div>
-  )
 }

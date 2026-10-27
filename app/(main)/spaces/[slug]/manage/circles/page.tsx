@@ -9,8 +9,6 @@ import { listSpaceCirclesWithRuns } from '@/lib/circles/store'
 import { pendingOfferForCircle } from '@/lib/circles/handoff'
 import { journeysOfferedBySpace } from '@/lib/journeys/run-gate'
 import { IndexTemplate } from '@/components/templates'
-import { resolveIndexHero } from '@/lib/layout/index-hero'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { buttonClasses } from '@/components/ui/button'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -69,15 +67,10 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
   const running = circles.filter((c) => c.run).length
   const members = circles.reduce((n, c) => n + (c.member_count ?? 0), 0)
 
-  // The shared hero band (LIVE-117, ADR-1261): the '/spaces/_/manage/circles' row, short utility
-  // band, rung 1 on this Space's own pathname.
-  // Under Frequency a console page needs no photo band (owner, 2026-10-14, SCAN-892): the plain title, meta and
-  // View public page. DAWN keeps its hero.
-  const hero = SITE_DESIGN === 'frequency' ? {} : await resolveIndexHero(`/spaces/${space.slug}/manage/circles`)
+  // A console page needs no photo band (owner, 2026-10-14, SCAN-892): the plain title, meta and View public page.
 
   return (
     <IndexTemplate
-      {...hero}
       back={consoleBackFor(space, 'programs')}
       eyebrow={space.brandName ?? space.name}
       title="Circles"

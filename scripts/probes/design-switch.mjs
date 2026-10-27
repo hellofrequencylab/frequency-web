@@ -24,9 +24,9 @@ for (const s of ['2xs', 'xs', 'sm', 'md', 'lg', 'xl', 'pop', 'pop-lg', 'menu']) 
 assert.match(theme, /--font-sans:\s*var\(--design-font-body\)/, 'font-sans reads the design layer')
 
 // 3. A design that overrides everything switches the older layers off at every place they apply.
-assert.match(read('lib/theme/server/resolve.ts'), /if \(!LEGACY_THEME_AXES\)/, 'resolver')
+assert.match(read('lib/theme/server/resolve.ts'), /occasion: 'none'/, 'resolver')
 assert.doesNotMatch(read('app/(main)/layout.tsx'), /loadActiveThemeCss/, 'Theme Studio <style>')
-assert.match(read('components/spaces/accent-scope.tsx'), /data-space-theme=\{LEGACY_THEME_AXES \? theme : undefined\}/, 'Space font set')
+assert.match(read('components/spaces/accent-scope.tsx'), /data-space-fonts=\{fqFonts\}/, 'Space font set')
 
 // 4. Midnight is a member theme, scoped to the design it is authored for.
 assert.match(read('lib/theme/skins.ts'), /id: 'midnight'[\s\S]*?selectable: true,\s*designs: \['dawn', 'frequency'\]/, 'Midnight offered under DAWN and Frequency')

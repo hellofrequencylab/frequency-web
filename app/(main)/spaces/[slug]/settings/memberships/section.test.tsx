@@ -199,8 +199,8 @@ describe('the tier-creation path carries no lock, and names the wall through the
   })
 })
 
-// These assertions lock the historical DAWN renderer; platform selection is tested separately.
-vi.mock('@/lib/theme/design', async (original) => ({
-  ...(await original<typeof import('@/lib/theme/design')>()),
-  SITE_DESIGN: 'dawn',
+// The Frequency body wraps the tier editor with plan cards and the members table (its own reads);
+// these assertions are about the editor and the notice, so the wrapper renders its children only.
+vi.mock('@/components/frequency/admin/pages/memberships/memberships-body', () => ({
+  FqMembershipsBody: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
