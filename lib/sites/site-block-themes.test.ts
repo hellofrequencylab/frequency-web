@@ -26,7 +26,7 @@ const PAGE_OWN_RENDER = new Set([
   'Container', 'Columns', 'SpaceLayout',
   // Space data cards the Space page already draws from its own rows.
   'SpaceIdentityHeader', 'SpaceCallout', 'SpaceAbout', 'SpaceHighlights', 'SpaceStats', 'SpaceQuickLinks', 'SpaceBooking',
-  'SpaceAction', 'SpaceOfferings', 'SpaceContact', 'SpaceBusiness', 'SpaceTeam', 'SpaceReviews',
+  'SpaceAction', 'SpaceOfferings', 'SpaceContact', 'SpaceJoinList', 'SpaceBusiness', 'SpaceTeam', 'SpaceReviews',
   // Marketing kit sections with a bespoke layout of their own.
   'StoryBeats', 'Quote', 'Buttons', 'FeatureGrid', 'ValueBand', 'BuildTimeline', 'PhotoCardRow', 'DawnHowToSteps',
   'PlanBand', 'PillarNav', 'IllustratedFeature', 'RolePicker', 'Manifesto', 'LeadFunnel', 'Showcase', 'Tiers',
