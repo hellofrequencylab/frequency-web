@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1508",
+  "title": "House of Fates home page: full-bleed hero, tight centred content column, edge-to-edge bands",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"components/sites/midnight-practice-css.ts\",\"utf8\");if(!/mn-frame--column/.test(s)||!/mn-frame--full/.test(s)){console.error(\"width frames missing\");process.exit(1)}'"
+  },
+  "detail": "Follows LIVE-1506. Midnight blocks gain an opt-in Width field (standard, tight centred column, full width band) through the shared block helper, with a --mn-column token. The left photo hero is full bleed again with only its text inset to the column. House of Fates home sets column on its content sections, full on the Experience the magic band and the closing call, and the Hypnotic Sound split centres its head and list and shows a line when there are no dates yet. Other Midnight pages and Spaces are unchanged because the default width is the old one.",
+  "wave": "W7"
+}

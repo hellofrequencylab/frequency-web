@@ -9,6 +9,7 @@
 interface FeatureRoute {
   key: string
   routes: string[]
+  sourcePrefixes?: string[]
 }
 
 interface ArticleRef {
@@ -39,7 +40,8 @@ export function affectedFeatureKeys(changedFiles: string[], features: FeatureRou
   const keys = new Set<string>()
   for (const fk of features) {
     const hit = fk.routes.some((kr) => routes.some((r) => r === kr || r.startsWith(kr + '/')))
-    if (hit) keys.add(fk.key)
+    const sourceHit = fk.sourcePrefixes?.some(prefix => changedFiles.some(file => file === prefix || file.startsWith(prefix + '/')))
+    if (hit || sourceHit) keys.add(fk.key)
   }
   return [...keys]
 }

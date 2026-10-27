@@ -38,9 +38,12 @@ import {
   type SiteLink,
   type Wing,
 } from '@/lib/frequency/site-nav'
+import { EditedHeaderPanel, EditedHeaderLink, EditedHeaderMobile, searchEditedHeader } from './edited-header-menu'
+import type { PublicHeaderMenu } from '@/lib/frequency/header-projection'
+import { anyModalOpen } from '@/lib/ui/modal-stack'
 import { hasAccountSignal } from '@/lib/theme/mode'
 
-type MenuKey = Wing | 'packages'
+type MenuKey = string
 
 const WORDMARK = '/brand/frequency/frequency-wordmark.png'
 const PANEL_ID = 'fq-mm-panel'
@@ -187,7 +190,7 @@ const signedOutOnServer = () => false
 
 // ── The header ─────────────────────────────────────────────────────────────────────────────────────
 
-export function SiteHeader() {
+export function SiteHeader({ initialNavigation = null }: { initialNavigation?: PublicHeaderMenu | null } = {}) {
   const { page, side } = useSite()
   const pathname = usePathname() || '/'
   const router = useRouter()
@@ -201,13 +204,17 @@ export function SiteHeader() {
   const sheetTrigRef = useRef<HTMLButtonElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  const menu = useOverlay(220, pathname)
+  const [timings, setTimings] = useState({openDelayMs:180,dwellMs:280,fadeMs:220})
+  const menu = useOverlay(timings.fadeMs, pathname)
+  const hideMenuRef = useRef(menu.hide)
+  useEffect(() => { hideMenuRef.current = menu.hide }, [menu.hide])
   const search = useOverlay(180, pathname)
   const sheet = useOverlay(220, pathname)
   const [menuKey, setMenuKey] = useState<MenuKey>('people')
   const [query, setQuery] = useState('')
   const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)
+  const [navigation, setNavigation] = useState<PublicHeaderMenu | null>(initialNavigation)
   const [viewer, setViewer] = useState<{ initial: string } | null>(null)
   const member = useSyncExternalStore(noSubscribe, readAccountMarker, signedOutOnServer) || !!viewer
   const feedLink = feedHomeLink(pathname, member)
@@ -229,22 +236,30 @@ export function SiteHeader() {
     search.show()
   }, [hideMenu, search, setQuery])
 
-  // Signed-in state, read after paint from the local session (no network, no request read). The client
-  // module is imported lazily so supabase-js stays off every public page's first load.
+  // One private, scoped response supplies verified identity and already-authorized menu rows.
+  // The current Frequency design remains the static-render and transport-failure fallback.
   useEffect(() => {
     let active = true
-    import('@/lib/supabase/client')
-      .then(({ createClient }) => createClient().auth.getSession())
-      .then(({ data }) => {
-        const u = data.session?.user
-        if (!active || !u) return
-        const name = (u.user_metadata?.full_name as string | undefined) || u.email || ''
-        setViewer({ initial: (name.trim()[0] || 'F').toUpperCase() })
+    fetch('/api/viewer', { credentials: 'same-origin', cache: 'no-store' })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (!active || !data) return
+        if (data.signedIn && data.profile) {
+          const name = String(data.profile.display_name || data.profile.handle || 'F')
+          setViewer({ initial: (name.trim()[0] || 'F').toUpperCase() })
+        }
+        if (data.navigation && Array.isArray(data.navigation.groups) && Array.isArray(data.navigation.links)) {
+          const openKey = navRef.current?.querySelector<HTMLElement>('[data-k][aria-expanded="true"]')?.dataset.k
+          const matching = data.navigation.groups.find((group: PublicHeaderMenu['groups'][number]) => group.id === openKey || group.design === openKey)
+          if (openKey && !matching) hideMenuRef.current()
+          if (matching) setMenuKey(matching.id)
+          setNavigation(data.navigation)
+        }
+        const speed = data.menuTimings
+        if (speed && [speed.openDelayMs,speed.dwellMs,speed.fadeMs].every(value => Number.isFinite(value) && value >= 0) && speed.openDelayMs <= 2000 && speed.dwellMs <= 10000 && speed.fadeMs <= 3000) setTimings(speed)
       })
       .catch(() => {})
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [])
 
   // Scroll: shrink, hide/return, progress. One rAF-throttled read per frame.
@@ -275,14 +290,17 @@ export function SiteHeader() {
   // Outside click closes the menu; Escape closes whatever is open; "/" opens search.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
+      if (anyModalOpen() || (e.target instanceof Element && e.target.closest('[role="dialog"]'))) return
       if (menu.isOpen && navRef.current && !navRef.current.contains(e.target as Node)) hideMenu()
     }
     const onKey = (e: KeyboardEvent) => {
+      if (anyModalOpen() || e.defaultPrevented) return
       if (e.key === 'Escape') {
         if (search.isOpen) search.hide()
         else if (menu.isOpen) {
           hideMenu()
-          navRef.current?.querySelector<HTMLElement>(`[data-k="${menuKey}"]`)?.focus()
+          const trigger = Array.from(navRef.current?.querySelectorAll<HTMLElement>('[data-k]') ?? []).find(button => button.dataset.k === menuKey)
+          trigger?.focus()
         }
         if (sheet.isOpen) sheet.hide()
       }
@@ -310,6 +328,7 @@ export function SiteHeader() {
     inputRef.current?.focus()
     const box = searchRef.current
     const onTab = (e: KeyboardEvent) => {
+      if (anyModalOpen() || e.defaultPrevented) return
       if (e.key !== 'Tab' || !box) return
       const all = [...box.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input')].filter(
         (el) => el.getClientRects().length > 0,
@@ -343,6 +362,7 @@ export function SiteHeader() {
     const box = sheetRef.current
     box?.querySelector<HTMLElement>('.mm-shtop button')?.focus()
     const onTab = (e: KeyboardEvent) => {
+      if (anyModalOpen() || e.defaultPrevented) return
       if (e.key !== 'Tab' || !box) return
       // Links inside a closed accordion have no box, so they are skipped.
       const all = [...box.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),summary')].filter(
@@ -380,7 +400,12 @@ export function SiteHeader() {
     if ((e.target as Element).closest('a')) close()
   }
 
-  const results = searchSite(query)
+  const seenSearch = new Set<string>()
+  const results = [...searchEditedHeader(query, navigation), ...searchSite(query)].filter(link => {
+    if (seenSearch.has(link.href)) return false
+    seenSearch.add(link.href)
+    return true
+  }).slice(0, 9)
   const cta = page.cta ?? 'side'
   const ctaNode =
     cta === 'none' ? null : cta === 'side' ? (
@@ -413,8 +438,9 @@ export function SiteHeader() {
       <header
         ref={navRef}
         id="nav"
+        style={{'--fq-dur-base': `${timings.fadeMs}ms`} as React.CSSProperties}
         className={navClass}
-        onMouseLeave={() => fine() && intent(hideMenu, 280)}
+        onMouseLeave={() => fine() && intent(hideMenu, timings.dwellMs)}
         onMouseEnter={() => clearTimeout(timer.current)}
         onFocus={() => setHidden(false)}
       >
@@ -424,10 +450,13 @@ export function SiteHeader() {
         </Link>
 
         <nav className="mm-bar" aria-label="Main">
-          <Link className="mm-trig" href={feedLink.href} onMouseEnter={() => intent(hideMenu, 180)}>
+          <Link className="mm-trig" href={feedLink.href} onMouseEnter={() => intent(hideMenu, timings.openDelayMs)}>
             {feedLink.label}
           </Link>
-          {([...WING_MENUS.map((m) => [m.key, m.label] as const), ['packages', FEATURES_LABEL] as const]).map(([k, label]) => (
+          {(navigation ? navigation.groups.map(group => [group.id, group.label] as const) : [...WING_MENUS.map((m) => [m.key, m.label] as const), ['packages', FEATURES_LABEL] as const]).map(([k, label]) => {
+            const group = navigation?.groups.find(group=>group.id===k)
+            if(group && !group.children.length && group.items.length===1) return <EditedHeaderLink key={k} link={{...group.items[0],label}} className="mm-trig"/>
+            return (
             <button
               key={k}
               type="button"
@@ -436,7 +465,7 @@ export function SiteHeader() {
               aria-haspopup="true"
               aria-controls={PANEL_ID}
               data-k={k}
-              onMouseEnter={() => fine() && intent(() => showMenu(k), menu.isOpen ? 60 : 180)}
+              onMouseEnter={() => fine() && intent(() => showMenu(k), menu.isOpen ? Math.min(60,timings.openDelayMs) : timings.openDelayMs)}
               onClick={(e) => {
                 e.stopPropagation()
                 clearTimeout(timer.current)
@@ -453,8 +482,9 @@ export function SiteHeader() {
               {label}
               <Chev />
             </button>
-          ))}
-          {DIRECT_LINKS.filter((d) => d.href).map((d) => {
+          )})}
+          {navigation?.links.map(link => <EditedHeaderLink key={link.id} link={link} className="mm-trig"/>)}
+          {!navigation && DIRECT_LINKS.filter((d) => d.href).map((d) => {
             const isHere = pathname === d.href
             return (
               <Link
@@ -462,7 +492,7 @@ export function SiteHeader() {
                 className={`mm-trig${isHere ? ' is-here' : ''}`}
                 href={d.href!}
                 aria-current={isHere ? 'page' : undefined}
-                onMouseEnter={() => intent(hideMenu, 180)}
+                onMouseEnter={() => intent(hideMenu, timings.openDelayMs)}
               >
                 {d.label}
               </Link>
@@ -509,11 +539,11 @@ export function SiteHeader() {
           id={PANEL_ID}
           className={`mm-panel${menu.on ? ' on' : ''}`}
           role="region"
-          aria-label={menuKey === 'packages' ? FEATURES_LABEL : WING_MENUS.find((m) => m.key === menuKey)?.label}
+          aria-label={navigation?.groups.find(group=>group.id===menuKey)?.label ?? (menuKey === 'packages' ? FEATURES_LABEL : WING_MENUS.find((m) => m.key === menuKey)?.label)}
           hidden={!menu.mounted}
           onClick={closeOnLink(hideMenu)}
         >
-          {menu.mounted && (menuKey === 'packages' ? <FeaturesPanel /> : <WingPanel wing={menuKey} />)}
+          {menu.mounted && (navigation ? (()=>{const group=navigation.groups.find(group=>group.id===menuKey);return group?<EditedHeaderPanel group={group} cards={navigation.cards}/>:null})() : menuKey === 'packages' ? <FeaturesPanel /> : <WingPanel wing={menuKey as Wing} />)}
         </div>
         <span className="fq-progress" aria-hidden="true" />
       </header>
@@ -611,6 +641,7 @@ export function SiteHeader() {
             <Link className="mm-shlink" href={feedLink.href}>
               {feedLink.label}
             </Link>
+            {navigation ? <>{navigation.groups.map(group=><EditedHeaderMobile key={group.id} group={group}/>)}{navigation.links.map(link=><EditedHeaderLink key={link.id} link={link} className="mm-shlink"/>)}{navigation.cards?.map(link=><EditedHeaderLink key={link.id} link={link} className="mm-shlink"/>)}</> : <>
             {WING_MENUS.map((m) => (
               <details key={m.key} open={here === m.key}>
                 <summary>{m.label}</summary>
@@ -638,6 +669,7 @@ export function SiteHeader() {
                 {d.label}
               </Link>
             ))}
+            </>}
           </>
         )}
       </div>

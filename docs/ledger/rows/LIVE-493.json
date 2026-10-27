@@ -5,6 +5,10 @@
       "kind": "cmd",
       "cmd": "node scripts/probes/active-member-shell-contracts.mjs viewport",
       "note": "Owner4058 retired legacy AppShell. Probe now measures the same surviving consequence in actual active Frequency consumers; mutation controls in scripts/active-member-shell-contracts.test.ts."
+    },
+    "source": {
+      "file": "scripts/probes/active-member-shell-contracts.mjs",
+      "ref": "Retained active Frequency shell and retirement proof; legacy components/layout/app-shell.tsx is intentionally absent"
     }
   },
   "append": {
