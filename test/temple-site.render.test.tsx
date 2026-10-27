@@ -90,6 +90,7 @@ const footer = {
   line: null,
   note: null,
   suffix: null,
+  copyright: null,
   logo: null,
   band: null,
   subscribe: null,
