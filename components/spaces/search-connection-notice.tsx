@@ -1,4 +1,5 @@
 const notices: Record<string, string> = {
+  provider_invalid_scope: 'The search provider did not accept the read-only connection request. No credentials were saved. Open your Space’s Coach preferences and start a new connection. If this continues, check the provider setup.',
   missing_state: 'The search provider returned without the connection check. No credentials were saved. Open your Space’s Coach preferences and start a new connection.',
   malformed_state: 'The search provider returned an incomplete or changed connection check. No credentials were saved. Open your Space’s Coach preferences and start a new connection.',
   rejected_state: 'This connection attempt could not be confirmed. It may have expired or been replaced, or your sign-in or permissions may have changed. No credentials were saved. Open your Space’s Coach preferences and start a new connection.',

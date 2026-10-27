@@ -791,6 +791,8 @@ The fallback owner hub and Coach preferences render only fixed outcomes: `missin
 
 For provider troubleshooting, record only the fixed outcome and provider name. Do not capture callback URLs, query values, authorization codes, state, raw errors or token payloads in logs or receipts. Bing documentation does not establish PKCE enforcement or state echo, so live owner acceptance remains required; diagnostic categories do not establish a provider bug or a successful connection.
 
+Bing authorization uses wire scope `webmaster.read` (the lowercase form follows the official OAuth request example); the private broker retains canonical `Webmaster.read`. Only the exact read-only token-response aliases `Webmaster.read`, `webmaster.read` and `Read` normalize; unknown, mixed, duplicate and management scopes are rejected. A fixed `provider_invalid_scope` notice means the provider rejected the requested permission. It displays no raw error description and cannot authorize a state-less callback. Confirm the narrower request with an authorized live owner before treating Bing acceptance as complete; never retry with a management scope to work around rejection.
+
 ## Atomic manual room writes
 
 Keep `ROOM_ATOMIC_WRITES` blank/off until the reviewed RPC proposal has a CLI-generated registered migration, independent two-session staging proof, exact app/database readiness verification and explicit rollout authorization. The proposal and no-fallback activation/rollback procedure live in [ROOM-ATOMIC-WRITES.md](ROOM-ATOMIC-WRITES.md), status in HYG-205. No account/profile cascade or system provisioning policy changes are included.
