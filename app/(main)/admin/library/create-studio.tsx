@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Wand2, RotateCcw, Palette, Zap, Loader2, Trash2 } from 'lucide-react'
@@ -368,7 +369,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             type="button"
             onClick={create}
             disabled={busy || !prompt.trim() || engineUnavailable}
-            className="inline-flex items-center gap-2 rounded-card bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+            className={buttonClasses('primary', 'md')}
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
             {createLabel}
