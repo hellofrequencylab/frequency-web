@@ -1,0 +1,19 @@
+{
+  "id": "HYG-210",
+  "title": "Retire stale account exports without changing live rules",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-27",
+  "source": {
+    "file": "scripts/maintenance/dead-exports.mjs",
+    "ref": "Exact integrated dead-export inventory following retired account/mobile navigation"
+  },
+  "detail": "The exact inventory found153 dead outside-file exports against unchanged150 ceiling. Removed one unused legacy switcher hub constant after confirming live operating-hub links elsewhere. Kept the mobile tab return type and stage label/index helpers but made their unused named exports module-private; public tab return shape, unlock behavior, CLI descriptions and genuine API contracts remain intact. All-tree identifier checks covered runtime, scripts/CLI, types, tests, workflow and declared contract extensions. Four named exports retired, not a broad dead-code deletion or budget raise. Focused existing registry, context and unlock tests plus before/after inventory recorded; no build, deployment or production claim.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/retired-account-exports.mjs",
+    "note": "AST-checks private retained declarations and actual live hub/tab/unlock consumers; global SCAN-502 ceiling remains150."
+  }
+}
