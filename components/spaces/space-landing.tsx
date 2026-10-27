@@ -14,7 +14,6 @@ import { readLayoutPreset, applyLayoutPreset } from '@/lib/spaces/layout-presets
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { getSpaceContentData, getSpaceSeriesRows } from '@/lib/spaces/content-data'
 import { resolveTeamPicksForDoc } from '@/lib/spaces/team-picks'
-import { readSiteStyle } from '@/lib/theme/site-style'
 import { docHasNetworkBlocks } from '@/components/sites/network-css'
 import { NetworkPageScope } from '@/components/spaces/network-page-scope'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
@@ -155,7 +154,7 @@ export async function SpaceLanding({
   // wears another theme, their own sheet in its palette), never the bare markup.
   if (site || !docHasNetworkBlocks(data)) return body
   return (
-    <NetworkPageScope wearsNetwork={readSiteStyle(space.preferences).theme === 'network'} accent={space.brandAccent ?? null}>
+    <NetworkPageScope>
       {body}
     </NetworkPageScope>
   )
