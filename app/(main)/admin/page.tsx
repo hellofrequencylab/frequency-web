@@ -1,3 +1,4 @@
+import { AdminDashOrder } from '@/components/frequency/admin/dash-order'
 import { Fragment, Suspense } from 'react'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
@@ -120,7 +121,7 @@ export default async function AdminPageView() {
     ? 'Full platform access. Every surface below.'
     : `Scoped to your ${role} level.`
 
-  // The operator's saved section order (the page-admin dock writes the cookie) and
+  // The operator's saved section order (the home organizer writes the cookie) and
   // the sections it arranges. Vera's read leads by default as the exec summary.
   const sectionOrder = sanitizeDashOrder('home', (await cookies()).get(dashCookie('home'))?.value)
   const janitorSections: Record<string, React.ReactNode> = {
@@ -183,8 +184,9 @@ export default async function AdminPageView() {
     >
       {/* One comprehensive section per primary area (header + instructional copy on
           the canvas; stats, graphs, and lists in white tiles), rendered in the
-          operator's saved order — the page-admin dock's drag-and-drop organizer
+          operator's saved order — the home organizer's native move controls
           writes it; sanitizeDashOrder guarantees every section appears once. */}
+      {staffJanitor && <AdminDashOrder scope="home" initialOrder={sectionOrder} />}
       {staffJanitor &&
         sectionOrder.map((id) => <Fragment key={id}>{janitorSections[id]}</Fragment>)}
       {role === 'host' && <HostPanel profileId={profileId} canManage={staffJanitor} />}
