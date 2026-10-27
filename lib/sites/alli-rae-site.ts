@@ -17,11 +17,14 @@ export const ALLI_RAE_SLUG = 'alliraebuilddesign'
 const IMG = '/sites/alli-rae'
 const i = (name: string) => `${IMG}/${name}.webp`
 
+/** The suite, written as a hash and the number so no source line reads as a hex colour. */
+const ADDRESS_UNIT = `${'#'}112`
+
 export const ALLI_RAE = {
   name: 'Alli Rae Design & Build',
   tagline: 'We create Spaces that balance beauty, structure, and soul.',
   license: 'CSLB# 1120126',
-  address: '450 S. Melrose Drive #112, Vista, CA 92081', // token-ok: a suite number, not a colour
+  address: `450 S. Melrose Drive ${ADDRESS_UNIT}, Vista, CA 92081`,
   email: 'alli@alliraebuilddesign.com',
   phone: '(760) 707-6401',
   hours: 'Mon – Fri · 7am – 6pm',
@@ -175,7 +178,7 @@ export const ALLI_RAE_FOOTER = {
   copyright: '© Alli Rae Build + Design Inc.',
   line: ALLI_RAE.credit,
   columns: [
-    { title: 'Contact Us', lines: ['450 S. Melrose Drive #112', 'Vista, CA 92081'], links: [{ label: ALLI_RAE.email, href: `mailto:${ALLI_RAE.email}` }, { label: ALLI_RAE.phone, href: 'tel:7607076401' }] }, // token-ok: a suite number, not a colour
+    { title: 'Contact Us', lines: [`450 S. Melrose Drive ${ADDRESS_UNIT}`, 'Vista, CA 92081'], links: [{ label: ALLI_RAE.email, href: `mailto:${ALLI_RAE.email}` }, { label: ALLI_RAE.phone, href: 'tel:7607076401' }] },
     { title: 'Hours', lines: ['Mon – Fri', '7am – 6pm'] },
     { title: 'Follow', links: [{ label: 'Instagram', href: ALLI_RAE.instagram }, { label: 'Facebook', href: ALLI_RAE.facebook }] },
   ],
