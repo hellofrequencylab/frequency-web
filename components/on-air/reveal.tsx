@@ -388,7 +388,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
             {payload.bonuses.slice(0, shown).map((b, i) => (
               <div
                 key={`${b.label}-${i}`}
-                className="flex items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
+                className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
               >
                 <span className="font-medium text-text">{b.label}</span>
                 <span className="flex items-center gap-1 font-semibold tabular-nums text-primary-strong">
@@ -506,7 +506,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
         {rows.map(([k, v]) => (
           <div
             key={k}
-            className="flex items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
+            className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
           >
             <span className="truncate text-muted">{k}</span>
             <span className="ml-3 shrink-0 font-semibold tabular-nums text-text">{v}</span>
@@ -514,7 +514,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
         ))}
       </div>
       {nudge && (
-        <div className="mt-3 rounded-xl border border-primary/40 bg-primary-bg/30 px-3 py-2 text-left">
+        <div className="mt-3 rounded-card border border-primary/40 bg-primary-bg/30 px-3 py-2 text-left">
           <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
             <Zap className="h-3.5 w-3.5 text-primary" /> {nudge.reached}
           </p>
