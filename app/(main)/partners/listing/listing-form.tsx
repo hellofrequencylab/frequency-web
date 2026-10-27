@@ -6,6 +6,7 @@ import { Check, EyeOff, Loader2, Store } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { saveListing, unpublishListing, type ListingInput } from './actions'
 import { isError } from '@/lib/action-result'
+import { buttonClasses } from '@/components/ui/button'
 
 const FIELDS: { key: keyof ListingInput; label: string; placeholder: string; textarea?: boolean }[] = [
   { key: 'name', label: 'Name', placeholder: 'Your business name' },
@@ -102,7 +103,7 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
           type="button"
           onClick={submit}
           disabled={isPending || !form.name.trim()}
-          className={`${initial ? '' : 'ml-auto '}inline-flex items-center gap-1.5 rounded-control bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60`}
+          className={buttonClasses('primary', 'md', initial ? undefined : 'ml-auto')}
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
           {initial ? 'Save listing' : 'Publish listing'}

@@ -8,7 +8,7 @@ import { composeJourneyAction, scaffoldJourneyAction, applyVeraChangeAction } fr
 import { createMasterFrameworkAction } from '@/app/(main)/journeys/create-actions'
 import { isError } from '@/lib/action-result'
 import { Input, Textarea } from '@/components/ui/field'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 
 // The Vera composer in the editor (ADR-302). It has two modes, by whether the Journey has content:
 //   • EMPTY  — a few SPECIFIC questions (who / about / outcome); Vera asks planning questions.
@@ -112,7 +112,7 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
             <Button type="button" disabled={pending || !topic.trim()} onClick={build}>
               <Wand2 className="h-4 w-4" /> {pending ? 'Thinking…' : 'Get coaching questions'}
             </Button>
-            <button type="button" disabled={pending} onClick={framework} className="inline-flex items-center gap-1.5 rounded-control border border-primary/40 bg-primary-bg/40 px-3 py-2 text-body-sm font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60">
+            <button type="button" disabled={pending} onClick={framework} className={buttonClasses('primarySoft', 'sm')}>
               <Compass className="h-4 w-4" /> Start from the recommended framework
             </button>
             <button type="button" disabled={pending} onClick={shape} className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60">
