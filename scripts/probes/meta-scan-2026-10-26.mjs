@@ -40,7 +40,6 @@ const checks = {
   },
   'dialogs-escape': () => ['components/admin/library/apps-lane.tsx', 'components/admin/library/splash-lane.tsx'].every((f) => has(f, /Escape/)),
   'onair-lazy': () => has('components/on-air/mindless.tsx', /dynamic\(/),
-  'shell-lazy': async () => (await import('./shell-lazy-boundary.mjs')).currentShellLazyBoundary(),
   'hero-preload': () => filesMatching(['components/frequency/site/pages/home', 'app'], /as=["']image["']|preload\(\s*["'`][^)]*image/).length > 0,
   'asset-cache': () => has('next.config.ts', /\/brand\/|\/images\/site/),
   'proxy-anon': () => has('proxy.ts', /auth-token|hasSessionCookie|sb-.*-auth/),

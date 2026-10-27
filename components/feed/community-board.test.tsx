@@ -171,9 +171,6 @@ describe('the practice board leads the page, and the community board leads the r
     expect(registry).not.toMatch(/<JourneyBoard\b/)
     expect(registry).not.toMatch(/<PracticePrompt\b/)
     expect(registry).not.toMatch(/practice-panel/)
-    // The rail's breakpoint is the whole reason for this rule, so the rule fails loudly if the
-    // rail ever stops being desktop-only and someone forgets this test explains why.
-    expect(code('components/layout/app-shell.tsx')).toMatch(/hidden lg:flex/)
   })
 })
 

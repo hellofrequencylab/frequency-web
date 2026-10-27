@@ -89,10 +89,6 @@ describe('the premise: data-skin really does land on <html> as well as on a desc
   it('the e2e render-state harness stamps the skin onto documentElement too', () => {
     expect(E2E_SURFACES).toMatch(/documentElement[\s\S]{0,400}setAttribute\(\s*'data-skin'/)
   })
-
-  it('the authed shell stamps it on the shell root instead', () => {
-    expect(read('../../components/layout/app-shell.tsx')).toMatch(/data-skin=\{skin\}/)
-  })
 })
 
 describe('every skin dark block matches BOTH places the skin attribute lands', () => {

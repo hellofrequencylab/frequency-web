@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── THE FIRST TAB STOP MUST PAINT SOMETHING ──────────────────────────────────────────────────
 //
@@ -37,8 +36,6 @@ const ROOT = new URL('../../', import.meta.url).pathname
 const read = (p: string) => readFileSync(ROOT + p, 'utf8')
 
 const GLOBALS = read('app/globals.css')
-const BRAND = read('components/layout/brand-mark.tsx')
-const SHELL = read('components/layout/app-shell.tsx')
 
 type Rule = { selector: string; body: string }
 
@@ -129,33 +126,5 @@ describe('every keyboard focus stop paints an indicator', () => {
       onWordmark.map((r) => `${r.selector} { ${r.body} }`),
       'the in-app wordmark is the first tab stop after the skip link; it cannot be the one link that paints nothing',
     ).toEqual([])
-  })
-})
-
-describe('the wordmark is reached by that generic rule, not by a style of its own', () => {
-  it('renders as a real <a> carrying .brandmark-link', () => {
-    // `next/link` renders an anchor, which is what `:where(… a …):focus-visible` matches. If the
-    // wordmark ever became a <div role="link"> the generic ring would stop reaching it.
-    expect(BRAND).toContain("import Link from 'next/link'")
-    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
-    // file, so a bare toContain stayed green with the code deleted.
-    expect(sourceWithoutComments(ROOT + 'components/layout/brand-mark.tsx')).toContain('brandmark-link')
-  })
-
-  it('declares no bespoke focus styling that could drift from the token', () => {
-    expect(BRAND).not.toMatch(/focus-visible:|focus:outline-none|outline-none|shadow-none/)
-    // The `.brandmark-link` block in globals.css styles idle/hover/press only. Comments are
-    // stripped first: globals.css explains this very deletion in prose beside the rules, and a
-    // guard that trips on its own documentation is a guard the next reader deletes.
-    const brandBlocks = GLOBALS.replace(/\/\*[\s\S]*?\*\//g, '').match(/\.brandmark-link[^{}]*\{[^}]*\}/g) ?? []
-    expect(brandBlocks.length).toBeGreaterThan(0)
-    expect(brandBlocks.filter((b) => b.includes(':focus'))).toEqual([])
-  })
-
-  it('sits immediately after the skip link, which is why this matters', () => {
-    const skip = SHELL.indexOf('Skip to content')
-    const mark = SHELL.indexOf('<BrandMark')
-    expect(skip).toBeGreaterThan(-1)
-    expect(mark).toBeGreaterThan(skip)
   })
 })

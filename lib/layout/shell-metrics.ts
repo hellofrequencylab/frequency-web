@@ -29,7 +29,7 @@
  *  claim page renders for a visitor who has no rails at all and no instruction to read, so it
  *  keeps deriving from the open widths. (Same reasoning the right rail already used: its folded
  *  56 has never been part of RIGHT_RAIL_PX either.) */
-export const LEFT_RAIL = 12 // rem
+const LEFT_RAIL = 12 // rem
 
 /** Either rail, FOLDED: the `w-14` strip. Deliberately NOT a number here — it is not part of any
  *  claim-page calc, and stating it as "56" would repeat the unit mistake this file exists to end:
@@ -55,11 +55,11 @@ export const RIGHT_RAIL_PX = 288
 
 /** `lg:ml-3` on the right rail column — 0.75rem, added so the content↔right-rail gap visually
  *  matches the left one (ADR-404). It is real horizontal space and must be subtracted too. */
-export const RIGHT_RAIL_ML = 0.75 // rem
+const RIGHT_RAIL_ML = 0.75 // rem
 
 /** The row gap: `gap-8` (2rem), widening to `lg:gap-10` (2.5rem). Applies once per rail. */
 export const GAP = 2 // rem, below lg
-export const GAP_LG = 2.5 // rem, at lg and up
+const GAP_LG = 2.5 // rem, at lg and up
 
 /** What the rails + gaps take OUT of the row's inner width, per breakpoint band. The content
  *  column is the remainder, so these are exactly what the claim page must subtract to match.

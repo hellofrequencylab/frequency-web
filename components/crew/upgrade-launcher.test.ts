@@ -30,7 +30,6 @@ const stripComments = (src: string): string =>
 const GATES = read('components/crew/upgrade-lightbox.tsx')
 const GATES_CODE = stripComments(GATES)
 const LAUNCHER = read('components/crew/upgrade-launcher.tsx')
-const RAIL = read('components/layout/upgrade-crew.tsx')
 
 describe('the prompt is mounted once and raised by event', () => {
   it('is mounted in the member shell, beside the other app-wide launchers', () => {
@@ -63,28 +62,6 @@ describe('the prompt is mounted once and raised by event', () => {
     expect(LAUNCHER).toMatch(/UPGRADE_COPY\[reason\]/)
     expect(GATES).toMatch(/title \?\? DEFAULT_COPY\.title/)
     expect(GATES).toMatch(/blurb \?\? DEFAULT_COPY\.blurb/)
-  })
-})
-
-describe('the rail is a door, not a second pitch', () => {
-  it('renders a tab that raises the shared prompt', () => {
-    expect(RAIL).toMatch(/openUpgrade\(\)/)
-  })
-
-  it('carries no pitch copy of its own', () => {
-    // The panel it replaced had its own headline and blurb, which is two wordings for one product.
-    expect(stripComments(RAIL)).not.toMatch(/full game|ranks, seasons/i)
-  })
-
-  it('holds no dismissal state, because a tab is not an interruption', () => {
-    expect(stripComments(RAIL)).not.toMatch(/localStorage|dismiss/i)
-  })
-
-  it('is orange: the primary surface with on-primary text, not the pale tint', () => {
-    // The collapsed tab used to be `bg-primary-bg/60` + `text-primary-strong`, which reads as a
-    // muted chip rather than an action.
-    expect(RAIL).toMatch(/bg-primary\b/)
-    expect(RAIL).toMatch(/text-on-primary/)
   })
 })
 

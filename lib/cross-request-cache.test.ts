@@ -218,7 +218,8 @@ describe('the privilege rule: rows cross the boundary, viewers never do', () => 
   })
 
   it('the per-viewer menu filter still runs in the renderer, after both caches', () => {
-    const shellNav = src('components/layout/app-shell-nav.ts')
+    // The old shell's nav builder is gone; the renderers that filter per viewer are the user menu and its role helper.
+    const shellNav = src('components/layout/user-menu.tsx') + src('components/layout/menu-role.ts')
     expect(count(shellNav, /\bcanSeeMenuItem\(/g)).toBeGreaterThanOrEqual(3)
     expect(count(shellNav, /\beffectiveMode\(/g)).toBeGreaterThanOrEqual(1)
     // The reader hands the renderer everything; it does not import the viewer filter.

@@ -79,7 +79,6 @@ describe('the announcement bar never reaches a public surface', () => {
 
   it('is mounted through the shell slot, so signed-in is structural rather than remembered', () => {
     expect(read('app/(main)/layout.tsx')).toMatch(/banner=\{/)
-    expect(read('components/layout/app-shell.tsx')).toContain('{!editorTakeover && banner}')
   })
 })
 

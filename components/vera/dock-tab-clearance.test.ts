@@ -25,7 +25,6 @@ import { existsSync, readFileSync } from 'node:fs'
 
 const globals = readFileSync('app/globals.css', 'utf8')
 const launcher = readFileSync('components/vera/vera-launcher.tsx', 'utf8')
-const shell = readFileSync('components/layout/app-shell.tsx', 'utf8')
 const toastLane = readFileSync('components/toast-lane.tsx', 'utf8')
 const questCta = readFileSync('app/(main)/crew/hub-primary-cta.tsx', 'utf8')
 const contract = readFileSync('components/sidebar/game-stats-dock.tsx', 'utf8')
@@ -138,13 +137,6 @@ describe('the launcher reads the tokens instead of restating them', () => {
 })
 
 describe('everything that must clear the lane reads the one token', () => {
-  it('the shell pads its scrolling content column by the clearance', () => {
-    // The load-bearing consumer, and the reason the fix is a token edit rather than a shell edit:
-    // widening the clearance moves this pad without touching app-shell.tsx at all.
-    expect(shell).toContain('pb-[var(--tab-bar-clearance)] md:pb-0')
-    expect(shell).not.toContain('pb-[var(--tab-bar-h)]')
-  })
-
   it('the toast lane (slot 1) sits --space-3 above it, and is no longer a bottom-32 literal', () => {
     // 🔴 136px was measured against the Zap catch alone and was 10.5px INSIDE slot 0b's waiting
     // hit band by the time the tab arrived. A literal cannot notice a new neighbour.

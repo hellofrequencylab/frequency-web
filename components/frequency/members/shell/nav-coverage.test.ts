@@ -83,20 +83,10 @@ type Dest = { href: string; gate: Gate; from: string }
 /** Literal hrefs drawn in the DAWN shell's JSX (no exported data behind them). `snippet` must appear
  *  verbatim in `file`, so a link removed from the shell drops out of this list loudly. */
 const DAWN_LITERALS: readonly { href: string; file: string; snippet: string; gate?: Gate }[] = [
-  // Phone drawer foot (app-shell.tsx MobileDrawer).
-  { href: '/about', file: 'components/layout/app-shell.tsx', snippet: 'href="/about"' },
-  { href: '/terms', file: 'components/layout/app-shell.tsx', snippet: 'href="/terms"' },
-  { href: '/guidelines', file: 'components/layout/app-shell.tsx', snippet: 'href="/guidelines"' },
-  { href: '/privacy', file: 'components/layout/app-shell.tsx', snippet: 'href="/privacy"' },
-  // Header: the brand mark, the Friends icon, the janitor Bug Alert pill.
-  { href: '/feed', file: 'components/layout/app-shell.tsx', snippet: 'href="/feed"' },
-  { href: '/network/friends', file: 'components/layout/app-shell.tsx', snippet: 'href="/network/friends"' },
-  { href: '/admin/support', file: 'components/layout/app-shell.tsx', snippet: 'href="/admin/support"', gate: { minAccess: 'janitor' } },
   // Header search overlay's "see all results".
   { href: '/search', file: 'components/search/search-overlay.tsx', snippet: 'href={`/search?q=' },
   // Account menu chrome: View profile (UserMenu) and Appearance.
   { href: PROFILE, file: 'components/layout/user-menu.tsx', snippet: 'href={`/people/${profile.handle}`}' },
-  { href: '/settings#appearance', file: 'components/layout/app-shell-account.tsx', snippet: 'href="/settings#appearance"' },
   // Right sidebar panels' "See all" doors and the game dock.
   { href: '/events', file: 'components/sidebar/rail-panels.tsx', snippet: 'href="/events"' },
   { href: '/people', file: 'components/sidebar/rail-panels.tsx', snippet: 'href="/people"', gate: { minAccess: 'member' } },
@@ -180,7 +170,6 @@ function frequencyHrefs(): Set<string> {
 const ALLOWLIST: Readonly<Record<string, string>> = {
   // An alert, not a menu row: the janitor-only red pill drawn only while support tickets are open.
   // The queue itself is an operator tool reached from the Admin world.
-  '/admin/support': 'conditional janitor Bug Alert pill, not navigation',
   // A redirect, not a surface: /people forwards to /network (Members), which the menu carries.
   '/people': 'redirects to /network (Members, Community menu)',
   // Being merged by the cuts pass: The Lab into /vision and The Quest page into /features, both on

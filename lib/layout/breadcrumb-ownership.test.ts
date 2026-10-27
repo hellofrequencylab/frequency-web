@@ -21,7 +21,6 @@ import { ownsBreadcrumb } from './page-chrome'
 // the page that would correct it. So the page renders its own trail and the shell stands down for
 // that route, which is exactly what components/spaces/space-breadcrumbs.tsx has always done.
 
-const shell = readFileSync('components/layout/app-shell.tsx', 'utf8')
 const detail = readFileSync('components/templates/detail-template.tsx', 'utf8')
 const eventPage = readFileSync('app/(main)/events/[slug]/event-member-page.tsx', 'utf8')
 
@@ -62,13 +61,6 @@ describe('ownsBreadcrumb — which routes render their own trail', () => {
 })
 
 describe('both halves are wired, because either alone is broken', () => {
-  it('the shell reads the registry instead of its old hardcoded regex', () => {
-    expect(shell).toContain('!ownsBreadcrumb(pathname) && <Breadcrumbs />')
-    // 🔴 The regex it replaced. Left behind, the shell would keep suppressing ONLY Spaces and the
-    // event page would render two trails — the real one and the one that titleizes the slug.
-    expect(shell).not.toContain("!/^\\/spaces\\/[^/]+/.test(pathname) && <Breadcrumbs />")
-  })
-
   it('the template can render a supplied trail', () => {
     expect(detail).toContain('breadcrumb && breadcrumb.length > 0')
   })
