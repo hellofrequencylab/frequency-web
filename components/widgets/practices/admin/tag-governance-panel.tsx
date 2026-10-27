@@ -6,6 +6,7 @@
 // synonym INTO a canonical tag (a confirmed, re-pointing merge). Every mutation goes through the
 // existing curator-gated actions. Semantic tokens only; plain copy, no em dashes (CONTENT-VOICE).
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Check } from 'lucide-react'
@@ -136,7 +137,7 @@ function PromoteButton({
       type="button"
       disabled={disabled}
       onClick={promote}
-      className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
+      className={buttonClasses('secondary', 'xs')}
     >
       <Check className="h-3.5 w-3.5" aria-hidden /> Promote
     </button>

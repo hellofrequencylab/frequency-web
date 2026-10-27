@@ -1,1 +1,6 @@
-{"id":"SCAN-1133","append":{"detail":"2026-10-27 (SCAN-1129 thread): first slice. 21 hand-rolled primary <button> class strings outside admin now use buttonClasses('primary', size) from the kit (connections, events, settings, spaces, claim and join pages, CRM capture). Remaining raw-button-bg sites are mostly selected-state toggle chips (bg-primary only when active), which need a kit segmented/chip control rather than a Button swap, plus admin files owned by the admin thread. Not re-frozen: the adoption counter needs Daniel to name it."}}
+{
+  "id": "SCAN-1133",
+  "append": {
+    "detail": "2026-10-27 (SCAN-1129 thread): first slice. 21 hand-rolled primary <button> class strings outside admin now use buttonClasses('primary', size) from the kit (connections, events, settings, spaces, claim and join pages, CRM capture). Remaining raw-button-bg sites are mostly selected-state toggle chips (bg-primary only when active), which need a kit segmented/chip control rather than a Button swap, plus admin files owned by the admin thread. Not re-frozen: the adoption counter needs Daniel to name it. Community action follow-up: practice tag Promote and review-queue Pre-screen now use existing secondary buttonClasses, preserving all non-class JSX/logic (TypeScript AST comparison). Journey framework/draft and mobile Publish were independently found already repaired by owner PR4069 during current-main revalidation; no duplicate repair is claimed. Aggregate row remains open; no rendered acceptance claim."
+  }
+}
