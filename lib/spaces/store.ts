@@ -462,6 +462,21 @@ export async function patchSpacePreferences(
   }
 }
 
+/** Give a Space a brand color only while it has none (a theme's accent fills a blank, never replaces an
+ *  owner's pick). One conditional update, so a color saved a moment earlier is never overwritten. */
+export async function fillSpaceBrandAccent(spaceId: string, accent: string): Promise<boolean> {
+  if (!spaceId || !/^#[0-9a-fA-F]{6}$/.test(accent)) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => { is: (c: string, v: null) => Promise<{ error: unknown }> } } }
+    }
+    const { error } = await db.from('spaces').update({ brand_accent: accent }).eq('id', spaceId).is('brand_accent', null)
+    return !error
+  } catch {
+    return false
+  }
+}
+
 /** Write a Space's schedule zone (LIVE-471). `null` clears it back to "never said", where the
  *  calendar falls back to the viewer's browser zone. Returns false when the write failed.
  *
