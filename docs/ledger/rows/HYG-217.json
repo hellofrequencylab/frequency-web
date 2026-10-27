@@ -1,0 +1,8 @@
+{
+  "id": "HYG-217",
+  "title": "Add isolated main-side migration PR readiness and reviewed registration",
+  "status": "done",
+  "priority": "P1",
+  "detail": "Migration-touching PRs use a current-main collector and finite main-side registration of exact SQL and complete candidate diff bytes, independently read live version/name inventory, and exact-head isolated replay/pgTAP/API/cleanup proof. Historical SQL edits, main/live drift and missing or moving facts fail closed. Main pushes and local check:migrations remain strict; pending readiness neither applies SQL nor proves production behavior. Empty bootstrap registration grants no migration exception. Offline decision and transport integration fixtures cover positive pending readiness and adversarial refusals. Bootstrap source only: independent required-context activation and real exact-head GitHub workflow association remain release acceptance steps; this packet changes no ruleset and carries no active registrations.",
+  "verify": "node scripts/probes/migration-main-first-policy.mjs"
+}
