@@ -1,8 +1,7 @@
 import { DraftsCount } from './drafts-count'
 // THE FREQUENCY MEMBER SHELL (design_handoff/frequency/templates/members: shell.js, app.css and the
-// Feed prototype Members.dc.html). The chrome every signed-in page wears when SITE_DESIGN is
-// 'frequency'; app/(main)/layout.tsx picks it over components/layout/app-shell.tsx, which keeps
-// rendering DAWN exactly as before.
+// Feed prototype Members.dc.html). The active chrome for signed-in member pages, selected by
+// app/(main)/layout.tsx. The legacy DAWN AppShell has been retired.
 //
 //   kit root  <div data-kit="members" data-area="…">   (kit-root.tsx; area from the route)
 //     skip link, background wash, the ambient glows + grain (ambient.tsx, the kit's .fq-amb)

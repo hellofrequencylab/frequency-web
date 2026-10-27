@@ -138,7 +138,7 @@ assert.ok(adminBar.includes("wild ? { label: 'Vision' }") && adminBar.includes("
 assert.ok(!/#[0-9a-f]{3,8}\b/i.test(sheet) && !/rgba?\(/.test(sheet), 'the skin carries no colour literal')
 const bytes = Buffer.byteLength(css)
 assert.ok(bytes < 160 * 1024, `the theme CSS is ${bytes} bytes, under 160KB`)
-const shell = readFileSync('components/layout/app-shell.tsx', 'utf8')
+const shell = ['components/frequency/members/shell/members-shell.tsx', 'components/frequency/members/shell/rail-layout.tsx', 'components/frequency/members/shell/header.tsx'].map(file => readFileSync(file, 'utf8')).join('\n')
 assert.ok(!/wildheart/i.test(shell), 'nothing Wildheart is reachable from the app shell')
 for (const island of ['components/sites/wildheart-year-journey.tsx', 'components/sites/wildheart-sky-map.tsx', 'components/sites/wildheart-first-night.tsx']) {
   assert.ok(readFileSync(island, 'utf8').startsWith("'use client'"), `${island} is a client island`)

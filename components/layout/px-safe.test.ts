@@ -43,8 +43,8 @@ const FILES = [...sourceFiles(join(ROOT, 'components')), ...sourceFiles(join(ROO
 describe('px-safe never shares an element with another horizontal padding', () => {
   it('finds the call sites at all (guards against a silently-empty sweep)', () => {
     const users = FILES.filter((f) => readFileSync(f, 'utf8').includes('px-safe'))
-    // The claim page now owns its safe-area geometry; three utility consumers remain.
-    expect(users.length).toBeGreaterThanOrEqual(3)
+    // Claim geometry and legacy AppShell are retired; two utility consumers remain.
+    expect(users.length).toBeGreaterThanOrEqual(2)
   })
 
   it('has no element combining px-safe with px-* / pl-* / pr-*', () => {
