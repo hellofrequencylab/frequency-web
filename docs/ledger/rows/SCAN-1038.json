@@ -1,0 +1,6 @@
+{
+  "id": "SCAN-1038",
+  "append": {
+    "detail": "\n\n2026-10-26 integration probe repair: the city-search component adopted buttonClasses through the Frequency action sweep. The runtime guard now loads actual components/ui/button.tsx and its actual dependency-free cn helper instead of rejecting that dependency or supplying a no-op stub. Existing stale-response, loading-clear, rejection recovery, coordinate rounding and filter-preservation assertions remain. It also renders/clears an active Near action and verifies actual kit geometry. Isolated child-process mutation controls still fail on stale publication and on a real cn helper that drops geometry. No application/geocoding/network behavior changed."
+  }
+}
