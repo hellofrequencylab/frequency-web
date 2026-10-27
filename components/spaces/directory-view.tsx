@@ -27,7 +27,7 @@ import { SpaceCard } from '@/components/spaces/space-card'
 // with no drift. The one thing that differs between the two mounts is the base path every pager / page-size
 // link points at, so every export is parameterized by `basePath` (the in-app '/spaces/directory' vs the
 // public '/discover/spaces'). Everything here is a Server Component (URL-driven, no client JS); the toolbar
-// that writes the filter params is the only client piece and lives beside this (SpacesToolbar, path-relative).
+// that writes the filter params is the only client piece and lives beside this (the active Frequency Spaces body).
 // Semantic DAWN tokens only, no hex; voice canon (no em dashes).
 
 // The page-size options the selector offers; 12 is the default, matching the 3-up grid (multiples of 3).

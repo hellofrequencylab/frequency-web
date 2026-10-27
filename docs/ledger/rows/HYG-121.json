@@ -1,0 +1,13 @@
+{
+  "id": "HYG-121",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/frequency-navigation-retirement.mjs",
+      "note": "Actual Frequency overview/Journey/Reach grids and operator count badges; retired activity/upcoming list markup no longer mounts. Surrounding design stays photographed; visual-masks.test keeps two-way registry correspondence."
+    }
+  },
+  "append": {
+    "detail": " HYG-215: Migrate legacy standalone dashboard masks to actual live Frequency metric regions. Existing mute mask preserved. No whole-page blindfold or baselines recaptured."
+  }
+}

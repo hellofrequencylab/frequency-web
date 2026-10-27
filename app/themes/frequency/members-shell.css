@@ -1065,3 +1065,6 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
   68%{opacity:1;transform:scale(1.06)}84%{opacity:.6;transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){
   [data-design="frequency"] .fqd-orb[data-busy="true"]{animation:none;opacity:.8}}
+
+/* The existing Drafts queue count, shared by account, work and phone menu rows. */
+[data-design="frequency"] [data-kit="members"] .fqm-nav-count{margin-left:auto;border-radius:var(--fq-radius-orb);padding:2px 6px;background:var(--fq-bg-sunken);color:var(--fq-text-body);font:600 var(--fq-text-meta)/1.2 var(--fq-font-sans);font-variant-numeric:tabular-nums}

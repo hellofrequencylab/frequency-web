@@ -1,0 +1,18 @@
+{
+  "id": "HYG-215",
+  "title": "Retire unused navigation UI and restore actual Frequency Drafts badge",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/members/shell/drafts-count.tsx",
+    "ref": "Actual server-resolved Drafts queue and zero runtime consumer audit"
+  },
+  "detail": "Restore existing server-resolved myFrequency.drafts count to actual Frequency account and phone menu rows without new reads; badge hides zero/invalid values, caps display at99+, carries accessible exact count and remains member gated. Retire eight unused UI/model implementations. Keep shared analytics/readers, actual catalog permission reconciliation, Space app/order/scope tests, palette/route coverage and active Frequency replacements. Move historical viewport/event/visual mask probes to active consumers; preserve capture roster and canonical donation/telemetry constraints. Source/rendered/mock proof only; no deployment, production or browser acceptance claimed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/frequency-navigation-retirement.mjs"
+  },
+  "closed": "2026-10-27"
+}

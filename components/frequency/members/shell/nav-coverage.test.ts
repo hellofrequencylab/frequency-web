@@ -4,8 +4,6 @@ import { describe, expect, it, vi } from 'vitest'
 import * as fqNav from './nav'
 import { ACCESS_LEVELS, NAV_AREAS, type NavAccess } from '@/lib/nav-areas'
 import { calmSpine, footerColumns, nodesForSurface, profileSections } from '@/lib/nav/registry'
-import { personalRows } from '@/lib/nav/my-frequency-rows'
-import type { MyFrequency } from '@/lib/nav/my-frequency'
 import { SITE_MAP, websiteLinks } from '@/components/frequency/members/site-map/site-map-body'
 
 // THE NAV COVERAGE GUARD (owner, 2026-10-13: "look at the live site and add all the links in
@@ -128,8 +126,8 @@ function dawnDestinations(): Dest[] {
   // The phone bar.
   for (const t of calmSpine()) out.push({ href: t.node.href, gate: t.node.gate as Gate, from: 'phone-bar' })
   // My Frequency's fixed rows (its Spaces and Circles are the member's own entities, not chrome).
-  const mf = { profileHref: PROFILE, drafts: 0, spaces: [], circles: [], total: 0 } satisfies MyFrequency
-  for (const r of personalRows(mf)) out.push({ href: r.href, gate: { minAccess: 'member' }, from: `my-frequency:${r.key}` })
+  // Frozen destinations from the retired My Frequency menu: active shell must keep every door.
+  for (const href of [PROFILE, '/journal', '/network/contacts', '/drafts']) out.push({ href, gate: { minAccess: 'member' }, from: 'retired My Frequency compatibility baseline' })
   for (const href of RETIRED_SHELL_DESTINATIONS) out.push({ href, gate: { minAccess: 'visitor' }, from: 'retired-shell compatibility baseline' })
   out.push({ href: '/admin/support', gate: { minAccess: 'janitor' }, from: 'retired-shell compatibility baseline' })
   for (const l of DAWN_LITERALS) out.push({ href: l.href, gate: l.gate ?? { minAccess: 'visitor' }, from: `literal:${l.file}` })

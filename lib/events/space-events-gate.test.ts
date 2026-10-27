@@ -84,7 +84,7 @@ describe('exactly one caller opts out, and it is the team calendar loader', () =
       'components/widgets/entity/entity-cta.tsx',
       'lib/spaces/content-data.ts',
       'lib/spaces/profile-stats.ts',
-      'components/spaces/dashboard/space-dashboard.tsx',
+      'components/frequency/admin/pages/overview/overview-body.tsx',
     ]
     for (const f of PUBLIC_READERS) {
       const src = code(readFileSync(f, 'utf8'))
