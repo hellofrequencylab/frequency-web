@@ -1290,12 +1290,6 @@ export const VISUAL_MASK_SITES: readonly {
     why: 'The per-Channel circle tally on ChannelCard, counted off the public_circles read; the card around it is not masked.',
   },
   {
-    value: 'discover-locator-cities',
-    file: 'components/discover/discover-locator.tsx',
-    kind: 'live',
-    why: 'The locator city list: a per-city circle tally, re-ranked by the viewer’s IP-approximate location.',
-  },
-  {
     // Frequency's /discover (PR #3434). Not data: a static brand photo, `loading="lazy"` ~2700 px
     // down a 6206 px full-page capture. Run 38546014243 failed /discover [midnight-light · desktop]
     // on one band, rows 2681-3092 x 677-1191, which is this box exactly, and passed on the retry.
