@@ -1,4 +1,4 @@
-import type { KitNiche, KitPage, SiteKit } from './types'
+import type { CoreKitNiche, KitPage, SiteKit } from './types'
 
 // Network x the six niche doors. One mega theme, six starting points, all DATA: pages of Network blocks
 // (components/page-editor/blocks/network.tsx) plus the shared Space blocks, with generic sample copy in the house
@@ -70,7 +70,7 @@ const membershipPage = (lead: string, list: Parameters<typeof tiers>[2]): KitPag
   blocks: [tiers('Come *and stay*', lead, list)],
 })
 
-const VARIANTS: Record<KitNiche, Omit<SiteKit, 'theme' | 'version' | 'niche'>> = {
+const VARIANTS: Record<CoreKitNiche, Omit<SiteKit, 'theme' | 'version' | 'niche'>> = {
   coaches: {
     id: 'network-coaches',
     label: 'Coaches and healers',
@@ -269,6 +269,6 @@ const VARIANTS: Record<KitNiche, Omit<SiteKit, 'theme' | 'version' | 'niche'>> =
 }
 
 /** The Network kit for one niche door. */
-export function networkKit(niche: KitNiche): SiteKit {
+export function networkKit(niche: CoreKitNiche): SiteKit {
   return { ...VARIANTS[niche], version: 1, theme: 'Network', niche }
 }
