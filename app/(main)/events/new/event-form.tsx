@@ -25,6 +25,7 @@ import { StartPayoutButton } from '@/components/billing/payout-controls'
 import { UpgradeMoment } from '@/components/pricing/upgrade-moment'
 import { isPaymentsRefusal } from '@/lib/pricing/payments-copy'
 import type { UpgradeOffer, UpgradeTarget } from '@/lib/pricing/business-offer'
+import { buttonClasses } from '@/components/ui/button'
 
 // The draggable-pin location picker runs MapLibre, which must never touch the server, so it
 // lazy-mounts client-only (ssr:false) — the same dynamic-import pattern as EventLocationMap.
@@ -1108,7 +1109,7 @@ export function EventForm({
         <button
           type="submit"
           disabled={!title.trim() || !scopeId || !startsAt || !!recurrenceError || isPending}
-          className="rounded-control bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+          className={buttonClasses('primary', 'md')}
         >
           {isPending ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save changes' : 'Create Event'}
         </button>

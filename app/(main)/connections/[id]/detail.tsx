@@ -26,6 +26,7 @@ import {
   updateProfile, setStatus, deleteProfile, addNote, deleteNote, addTag, removeTag,
   addReminder, completeReminder, deleteReminder, briefContact,
 } from '../actions'
+import { buttonClasses } from '@/components/ui/button'
 
 const lbl = 'block text-meta font-medium text-muted mb-1'
 
@@ -330,7 +331,7 @@ export function Detail({
               type="button"
               onClick={onBrief}
               disabled={briefBusy}
-              className="inline-flex items-center gap-1 rounded-control bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className={buttonClasses('primary', 'sm')}
             >
               {briefBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {briefBusy ? 'Thinking…' : 'Prep brief'}
@@ -420,7 +421,7 @@ export function Detail({
             type="button"
             onClick={onAddNote}
             disabled={pending || !noteDraft.trim()}
-            className="inline-flex h-fit items-center gap-1 self-end rounded-control bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className={buttonClasses('primary', 'sm', 'self-end')}
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
           </button>
@@ -525,7 +526,7 @@ function FollowUp({ contactId, reminders }: { contactId: string; reminders: Cont
           type="button"
           onClick={onAdd}
           disabled={pending || !due}
-          className="inline-flex h-fit items-center gap-1 rounded-control bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className={buttonClasses('primary', 'sm')}
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
         </button>
@@ -651,7 +652,7 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
         type="button"
         onClick={save}
         disabled={saving}
-        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+        className={buttonClasses('primary', 'md', 'mt-4')}
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
         {saving ? 'Saving…' : 'Save'}
