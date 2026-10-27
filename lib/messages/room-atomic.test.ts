@@ -24,7 +24,7 @@ describe('opt-in atomic room write adapter', () => {
   it('does not fall back to a non-atomic writer if the migration is missing or refused', async () => {
     vi.stubEnv('ROOM_ATOMIC_WRITES', '1')
     const db = client(null, { code: '42883', message: 'function missing' })
-    await expect(createRoomAtomic(db, 'actor', input)).rejects.toThrow('function missing')
+    await expect(createRoomAtomic(db, 'actor', input)).rejects.toThrow('Could not create room. Please try again.')
     expect(db.rpc).toHaveBeenCalledTimes(1)
   })
   it('requires a confirmed role update and propagates last-admin refusals', async () => {
@@ -40,10 +40,20 @@ describe('opt-in atomic room write adapter', () => {
     const db = client(true)
     await removeRoomMemberAtomic(db, 'actor', room, 'target')
     expect(db.rpc).toHaveBeenCalledWith('room_remove_member_atomic', { _actor_id: 'actor', _room_id: room, _target_id: 'target' })
-    await expect(removeRoomMemberAtomic(client(null, { message: 'Cannot remove the last room admin' }), 'actor', room, 'target')).rejects.toThrow('last room admin')
+    await expect(removeRoomMemberAtomic(client(null, { code: '23514', message: 'Cannot remove the last room admin' }), 'actor', room, 'target')).rejects.toThrow('last room admin')
   })
   it('rejects malformed create acknowledgements', async () => {
     vi.stubEnv('ROOM_ATOMIC_WRITES', 'on')
     await expect(createRoomAtomic(client('not-a-uuid'), 'actor', input)).rejects.toThrow('valid room ID')
   })
+})
+
+it.each(['create', 'role', 'remove'])('does not expose database or transport internals for %s failures', async operation => {
+  vi.stubEnv('ROOM_ATOMIC_WRITES', 'on')
+  const secret = 'internal_schema.private_table connection credential';
+  for (const db of [client(null, { code: '42501', message: secret }), { rpc: vi.fn().mockRejectedValue(new Error(secret)) }]) {
+    const write = operation === 'create' ? createRoomAtomic(db, 'actor', input) : operation === 'role' ? setRoomAdminAtomic(db, 'actor', room, 'target', false) : removeRoomMemberAtomic(db, 'actor', room, 'target');
+    await expect(write).rejects.toThrow(/Could not .*Please try again/)
+    expect(db.rpc).toHaveBeenCalledTimes(1)
+  }
 })
