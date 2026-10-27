@@ -7,7 +7,7 @@ import { isAnonymousRender } from '@/lib/core/anonymous-render'
 // toggle, without affecting anyone else. Stored in a plain cookie (same pattern as
 // fq_streak_collapsed / fq_attr) so it's read server-side with no extra DB round
 // trip. Cookie present + '1' = hide demo content for this viewer.
-export const DEMO_HIDE_COOKIE = 'fq_hide_demo'
+const DEMO_HIDE_COOKIE = 'fq_hide_demo'
 
 /** True when the viewer has turned beta/demo content OFF for themselves.
  *
