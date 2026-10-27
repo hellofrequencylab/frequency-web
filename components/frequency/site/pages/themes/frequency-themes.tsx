@@ -57,7 +57,7 @@ export function FrequencyThemes() {
             Your site should look like you. <em className="fq-iri-text">Pick a feel.</em>
           </h1>
           <p>
-            Six looks for your Spotlight, your Space and your own website. Pick one, change it any time, and your words and photos stay put.
+            Seven looks for your Spotlight, your Space and your own website. Pick one, change it any time, and your words and photos stay put.
           </p>
           <div className="ctas">
             <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
@@ -75,7 +75,7 @@ export function FrequencyThemes() {
         <div className="wrap">
           <div className="sh">
             <div className="label">
-              <b>The themes</b>Six to start from
+              <b>The themes</b>Seven to start from
             </div>
             <h2 className="h-l">One setup. A look that fits.</h2>
             <p className="pb-note">

@@ -1,3 +1,4 @@
+import { SearchConnectionNotice } from '@/components/spaces/search-connection-notice'
 import { notFound } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -30,7 +31,7 @@ export default async function SpaceCoachPage({ params, searchParams }: { params:
   const search = discoveryEditor ? await Promise.all(([['google', 'google_search_console'], ['bing', 'bing_webmaster']] as const).map(async ([provider, id]) => ({ provider, configured: !!searchOAuthConfig(id), status: await readSearchConnectionStatus(space.id, id) }))) : []
   return <ConsoleFocusTemplate back={consoleBack(slug, 'settings')} eyebrow={space.brandName ?? space.name} title="Coach preferences" description="Help Vera ask better questions about your Space." width="wide">
     {staffViewing && <StaffPreviewBanner spaceName={space.brandName ?? space.name} />}
-    <>{outcome && searchNotice[outcome] && <p role="status">{searchNotice[outcome]}</p>}{!coach ? <p role="status">Coach preferences are private to the owner and editors of this Space.</p> : coach.available ? <CoachProfileForm key={space.id} spaceId={space.id} initial={coach.profile} readOnly={false} /> : <p role="status">Coach preferences are unavailable. Your existing Space profile is unchanged. Try again after setup is complete.</p>}
+    <><SearchConnectionNotice outcome={outcome} />{outcome && searchNotice[outcome] && <p role="status">{searchNotice[outcome]}</p>}{!coach ? <p role="status">Coach preferences are private to the owner and editors of this Space.</p> : coach.available ? <CoachProfileForm key={space.id} spaceId={space.id} initial={coach.profile} readOnly={false} /> : <p role="status">Coach preferences are unavailable. Your existing Space profile is unchanged. Try again after setup is complete.</p>}
     {discovery && <DiscoveryCoachingPanel key={`discovery-${space.id}`} spaceId={space.id} initial={discovery.consent} available={discovery.available} />}
     {discoveryEditor && <DiscoverySearchPanel key={`search-${space.id}-${discovery?.consent?.id ?? 'none'}-${discovery?.consent?.revokedAt ?? 'active'}`} spaceId={space.id} allowed={discoveryConsentActive(discovery?.consent ?? null)} providers={search} />}
     </>
