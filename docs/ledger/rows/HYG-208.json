@@ -1,0 +1,19 @@
+{
+  "id": "HYG-208",
+  "title": "Retire duplicate board/About UI and recover failed privacy changes",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-27",
+  "source": {
+    "file": "components/frequency/members/shared/board-visibility.test.tsx",
+    "ref": "Bounded runtime orphan graph and retained-feature reconciliation"
+  },
+  "detail": "Removed unrooted BoardControls and CollapsibleAbout after verifying active Crew scope/track controls, Circle tracks/row gates, current shared privacy actions, and HYG-203 safe About richParagraphs replacement. No runtime import or source reader remained, including all-tree relative/newURL searches; historical comments are not live reachability. Fixed both actual privacy controls so refused or transport-rejected writes restore prior accessible state, display a generic safe failure and permit retry. Six actual control interaction tests plus five consumer-removal mutation controls protect retained behavior. No production writes, authenticated browser acceptance or deployment claim.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/retired-board-about.mjs",
+    "note": "Pins active Crew/Circle scope/track/privacy and safe richtext consumers; exact client interaction tests run in CI."
+  }
+}
