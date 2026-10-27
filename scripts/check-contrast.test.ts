@@ -16,6 +16,10 @@ import {
   RANK_KEYS,
   STATES,
   stripCssComments,
+  aaaGenerationIds,
+  aaaGenerationStates,
+  AAA_GENERATION_PAIRS,
+  splitSelectorList,
 } from './check-contrast.mjs'
 
 /** Every .tsx under a root, recursively. */
@@ -397,5 +401,52 @@ describe('the focus ring is measured AS PAINTED, not as declared', () => {
     for (const r of rows) {
       expect(r.pass, `${r.state}: ${r.pair} = ${r.ratio?.toFixed(2)}:1 (min ${r.min})`).toBe(true)
     }
+  })
+})
+
+// LIVE-658: the AAA presets derive AAA secondary inks, and the gate measures them per mode and skin.
+describe('AAA generation inks', () => {
+  const css = readFileSync(join(process.cwd(), 'app', 'globals.css'), 'utf8')
+  const registry = readFileSync(join(process.cwd(), 'lib', 'theme', 'generations.ts'), 'utf8')
+  const ids = aaaGenerationIds(registry)
+
+  it('reads the AAA presets from the registry, not a restated list', () => {
+    expect(ids).toEqual(['spacious', 'classic', 'kids-early', 'kids-mid', 'kids-tween'])
+  })
+
+  it('keeps :is() in one piece when splitting a selector list', () => {
+    expect(splitSelectorList(':is(html, [data-skin])[data-generation="x"], .dark')).toEqual([
+      ':is(html, [data-skin])[data-generation="x"]',
+      ' .dark',
+    ])
+  })
+
+  it('a generation block applies only to a state that names it, above the skin dark block', () => {
+    const sel = ':is(html, [data-skin])[data-generation="spacious"]'
+    expect(selectorWeight(sel, { mode: 'dark', skin: 'midnight' })).toBeNull()
+    expect(selectorWeight(sel, { mode: 'dark', skin: 'midnight', generation: 'spacious' })).toBe(25)
+  })
+
+  it('resolves a color-mix in srgb on the gamma-encoded channels', () => {
+    const t = new Map([
+      ['--a', '#000000'],
+      ['--b', '#FFFFFF'],
+      ['--m', 'color-mix(in srgb, var(--a) 90%, var(--b))'],
+    ])
+    expect(parseColor(deref(t, '--m'))).toMatchObject({ r: 25.5, g: 25.5, b: 25.5 })
+  })
+
+  it('does not ship retired generation-specific ink overrides', () => {
+    expect(css).not.toMatch(/\[data-generation[^\]]*\]/)
+  })
+
+  it('historical AAA measurement still rejects AA-only inks in explicit parser fixtures', () => {
+    const fixture = ':root { --color-text:#000000; --color-text-muted:#777777; --color-text-subtle:#777777; --color-canvas:#ffffff; --color-surface:#ffffff; --color-surface-elevated:#ffffff; --color-surface-post:#ffffff; --color-chrome:#ffffff; }'
+    const rows = evaluateContrast(fixture, { pairs: AAA_GENERATION_PAIRS, states: aaaGenerationStates(ids) })
+    expect(rows.length).toBe(ids.length * 4 * AAA_GENERATION_PAIRS.length)
+    expect(rows.some((row) => !row.pass)).toBe(true)
+    const aaaFixture = fixture.replaceAll('#777777', '#111111')
+    const passing = evaluateContrast(aaaFixture, { pairs: AAA_GENERATION_PAIRS, states: aaaGenerationStates(ids) })
+    expect(passing.every((row) => row.pass)).toBe(true)
   })
 })
