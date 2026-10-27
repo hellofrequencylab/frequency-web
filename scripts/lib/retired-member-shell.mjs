@@ -18,6 +18,9 @@ export function retiredModuleEdges(file, source, retired = [RETIRED_MEMBER_SHELL
   const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, source)
   let candidate = false
   for (const quote of source.matchAll(/['"`]/g)) {
+    const end = source.indexOf(quote[0], quote.index + 1)
+    const raw = source.slice(quote.index, end < 0 ? undefined : end + 1)
+    if (!raw.includes('\\') && !basenames.some(name => raw.includes(name))) continue
     scanner.setTextPos(quote.index)
     const token = scanner.scan()
     if (token !== ts.SyntaxKind.StringLiteral && token !== ts.SyntaxKind.NoSubstitutionTemplateLiteral) continue
