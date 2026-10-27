@@ -16,6 +16,7 @@ import { DesignerFooterTop, DesignerUtilityBar } from './designer-chrome'
 import { DesignerHeaderState } from './designer-header-state'
 import { MidnightLogo } from './midnight-logo'
 import { MidnightBar } from './midnight-bar'
+import { MidnightLetterForm } from './midnight-letter-form'
 import type { NetworkSchemeId } from '@/lib/theme/network'
 import { WildheartSubBar } from './wildheart-now-line'
 import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
@@ -206,7 +207,7 @@ export function SiteChrome({
     >
       <style>{skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
       {designer && <DesignerHeaderState />}
-      {midnight && <MidnightBar now={new Date()} next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} />}
+      {midnight && <MidnightBar now={new Date()} next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />}
       {wild && <WildheartInkDefs />}
       {wild ? (
         <>
@@ -247,6 +248,12 @@ export function SiteChrome({
               )}
             </a>
             {(footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
+            {midnight && footer?.subscribe && (
+              <div className="mn-footer-subscribe">
+                <p className="mn-footer-subscribe-title">{footer.subscribe.title.replace(/\*/g, '')}</p>
+                <MidnightLetterForm slug={spaceSlug ?? null} placeholder={footer.subscribe.placeholder} buttonLabel={footer.subscribe.button} successMessage={footer.subscribe.success} />
+              </div>
+            )}
           </div>
           {footer?.columns.length ? (
             footer.columns.map((col) => (
