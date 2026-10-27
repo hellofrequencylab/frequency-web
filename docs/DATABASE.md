@@ -686,11 +686,24 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
   not the actual bytes of historical SQL executed in production. Remove consumed/expired policy
   entries in a policy-only housekeeping change.
 
-  The new workflow/job context is `migration-readiness`; its no-SQL fallback is explicit and
+  The isolated workflow's job is `migration-readiness-runner` (base SHA). Its main-owned
+  publisher explicitly creates the distinct `migration-readiness` check with
+  `head_sha` equal to the fresh candidate SHA. Check write permission is confined to that
+  isolated job. Completion rechecks current PR/main before and after the API write; stale or
+  failed evaluation marks the candidate-head check failed. Its finite receipt binds PR/head/base,
+  trusted run/attempt, collector/publisher/workflow/policy hashes, and applicable registration and
+  isolated staging run/attempt. No raw errors, SQL, tokens or provider bodies enter the receipt.
+  The `migration-readiness` no-SQL fallback is explicit and
   reads no production ledger. Bootstrap rollout must prove real exact-head PR association and
-  require this independently trusted context (or its trusted required-workflow equivalent) before
+  require the candidate-head context (or its trusted required-workflow equivalent) before
   claiming enforcement against candidate edits to CI/verifier code. Until then, the candidate CI
   consumer is enforced under the repository's existing guard-code review assumptions only.
+  Expected-source app identity (GitHub Actions) alone is not a workflow-file signature: preserve
+  trusted guard/workflow review restrictions, or use a main-pinned required-workflow mechanism
+  where available, rather than claiming a status name/app alone resists arbitrary workflow edits.
+  Main can advance after the final identity read: before activation, prove strict branch-up-to-date
+  or merge-queue refresh (or a separate trusted base-change invalidation). A completed head check
+  alone does not promise perpetual freshness against later changes to main.
   This packet does not edit rulesets. Existing candidate guard environment credentials are
   unchanged; isolation here describes the new collector, not a complete CI credential redesign.
   This does not change production credentials or

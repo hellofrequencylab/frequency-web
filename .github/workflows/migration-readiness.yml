@@ -13,7 +13,12 @@ concurrency:
   group: migration-readiness-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
-  migration-readiness:
+  migration-readiness-runner:
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      checks: write
     if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 10

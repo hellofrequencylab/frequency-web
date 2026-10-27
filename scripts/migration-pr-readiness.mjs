@@ -137,7 +137,7 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
   if (!reviewedChanges.some(change => change.file.startsWith('supabase/migrations/'))) {
     const [finalPr, finalMain] = await Promise.all([readPr(), readMain()])
     requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === headSha && finalPr.base.sha === baseSha && finalMain.commit.sha === baseSha, 'branch moved during no-SQL fallback')
-    return { ok: true, status: 'not_applicable' }
+    return { ok: true, status: 'not_applicable', proof: { baseSha, headSha, collectorSha256 } }
   }
   const paths = reviewedChanges.map(change => change.file)
   const baseModes = gitModes(git, baseSha, paths), headModes = gitModes(git, headSha, paths)
@@ -154,7 +154,7 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
     const [finalPr, finalMain, finalLedger] = await Promise.all([readPr(), readMain(), ledger()])
     const finalRows = rows(finalLedger, false)
     requireFact(finalRows && sameNames(baseInventory, finalRows) && finalPr.state === 'open' && !finalPr.draft && finalPr.base.ref === 'main' && finalPr.head.repo?.full_name === REPOSITORY && finalPr.head.sha === headSha && finalPr.base.sha === baseSha && finalMain.commit.sha === baseSha, 'branch or ledger moved during strict comparison')
-    return { ok: true, status: 'strict_parity' }
+    return { ok: true, status: 'strict_parity', proof: { baseSha, headSha, collectorSha256 } }
   }
   const policyDocument = JSON.parse(String(blob(baseSha, POLICY_PATH)))
   requireFact(policyDocument?.version === 1 && Array.isArray(policyDocument.registrations), 'unknown main policy format')
@@ -193,7 +193,8 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
   const firstLive = rows(liveRows, false), currentLive = rows(currentLiveRows, false)
   requireFact(firstLive && currentLive && sameNames(firstLive, currentLive), 'production ledger moved during proof collection')
   requireFact(currentPr.state === 'open' && !currentPr.draft && currentPr.base.ref === 'main' && currentPr.head.repo?.full_name === REPOSITORY && currentPr.head.sha === headSha && currentPr.base.sha === baseSha && currentMain.commit.sha === baseSha, 'PR moved during proof collection')
-  return evaluateReadiness({ event: 'pull_request', repository: REPOSITORY, sameRepository: true, baseBranch: 'main', baseSha, currentBase: currentMain.commit.sha, headSha, currentHead: currentPr.head.sha, baseRows, headRows, liveRows, migrationChanges: reviewedChanges.filter(c => c.file.startsWith('supabase/migrations/')), reviewedChanges, staging }, { trustedMainSnapshot: true, baseSha, registrations: registration.migrations, reviewedChanges: registration.reviewedChanges, requiredSteps: registration.requiredSteps, orderingExceptions: registration.orderingExceptions })
+  const decision = evaluateReadiness({ event: 'pull_request', repository: REPOSITORY, sameRepository: true, baseBranch: 'main', baseSha, currentBase: currentMain.commit.sha, headSha, currentHead: currentPr.head.sha, baseRows, headRows, liveRows, migrationChanges: reviewedChanges.filter(c => c.file.startsWith('supabase/migrations/')), reviewedChanges, staging }, { trustedMainSnapshot: true, baseSha, registrations: registration.migrations, reviewedChanges: registration.reviewedChanges, requiredSteps: registration.requiredSteps, orderingExceptions: registration.orderingExceptions })
+  return { ...decision, proof: { baseSha, headSha, collectorSha256, policySha256: hashBytes(blob(baseSha, POLICY_PATH)), registrationSha256: hashBytes(JSON.stringify(registration)), stagingRunId: run.id, stagingAttempt: run.run_attempt, workflowSha256: registration.workflowSha256 } }
 }
 
 async function main() {
@@ -206,17 +207,19 @@ async function main() {
     requireFact(text.length < 16 * 1024 * 1024, 'oversized proof response')
     return JSON.parse(text)
   }
-  const result = await collectReadiness({
+  const collectorArgs = {
     env, collectorSha256: hashBytes(readFileSync(process.argv[1])), event: JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8')),
     git: (args, binary = false, input) => execFileSync('git', ['--no-replace-objects', ...args], { input, encoding: binary ? undefined : 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] }),
-    api: path => request(`https://api.github.com${path}`, env.GITHUB_TOKEN),
+    api: (path, options) => request(`https://api.github.com${path}`, env.GITHUB_TOKEN, options),
     ledger: async () => {
       requireFact(env.SUPABASE_ACCESS_TOKEN && /^[a-z0-9]+$/.test(env.SUPABASE_PROJECT_REF ?? ''), 'live comparison credentials required')
       const payload = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}/database/query`, env.SUPABASE_ACCESS_TOKEN, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: 'select version, name from supabase_migrations.schema_migrations order by version' }) })
       requireFact(Array.isArray(payload), 'unknown live ledger payload')
       return payload
     },
-  })
+  }
+  const { publishReadiness } = await import('./publish-migration-readiness.mjs')
+  const result = await publishReadiness({ ...collectorArgs, publisherSha256: hashBytes(readFileSync(new URL('./publish-migration-readiness.mjs', import.meta.url))), evaluate: () => collectReadiness(collectorArgs) })
   requireFact(result.ok && ['strict_parity', 'registered_pending_apply', 'not_applicable'].includes(result.status), `migration readiness refused: ${result.reason ?? result.status}`)
   if (result.status === 'not_applicable') { console.log('No migration-directory change; readiness fallback only, production ledger NOT compared.'); return }
   if (result.status === 'strict_parity') { console.log('Migration PR historical SQL unchanged; current main/production strict parity VERIFIED.'); return }
