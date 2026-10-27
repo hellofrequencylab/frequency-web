@@ -71,7 +71,7 @@ export function CompactSetup({ practices, initialMode = 'still', initialPractice
         </section>
         <div className="mt-auto space-y-2 pt-2">
           <Button type="button" disabled={!practice || (!locked && !valid)} className="min-h-11 w-full rounded-control px-4 py-3 text-body-sm font-semibold disabled:opacity-50" onClick={() => onStart(choice())}>{logOnly ? 'Open practice' : 'Start timer'}</Button>
-          <button type="button" disabled={!practice} className="min-h-11 w-full rounded-control text-body-sm text-muted" onClick={() => onAdvanced(choice())}>More settings</button>
+          <Button type="button" variant="ghost" disabled={!practice} className="w-full" onClick={() => onAdvanced(choice())}>More settings</Button>
         </div>
       </div>
     </div>
