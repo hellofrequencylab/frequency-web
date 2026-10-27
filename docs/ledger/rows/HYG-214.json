@@ -1,0 +1,19 @@
+{
+  "id": "HYG-214",
+  "title": "Retire orphan public UI while preserving actual Frequency contracts",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "M",
+  "closed": "2026-10-27",
+  "source": {
+    "file": "scripts/probes/frequency-public-retirement.mjs",
+    "ref": "Read-only1e2 orphan acceptance review and explicit human global-ticker ruling"
+  },
+  "detail": "Removed seven unrooted old pricing/header/brand/reserve/global-ticker/niche/poster modules, migrating their real source/test/ledger readers to active Frequency Offering pricing, logo links, phone sheet, NicheDoor routing, FqEventCover focus/aspect and owner whole-artwork contain design. Shared focal-picker geometry tests remain. Human explicitly decided: \"Keep the current Frequency design; retire the old global-ticker requirement.\" Actual Nearby and rail dispatch features remain; Nearby is not represented as an equivalent global ticker. Modal stack, scrollbar reservation and actual calendar-console quiet behavior remain guarded. Canonical retired-source census is empty; original reports preserved in fragment history. Editable public-header configuration is separately authorized and tracked HYG-216, not claimed repaired by this retirement. Focused actual React render/source checks only; no browser, compile, CI, deployment or production mutation claim.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/frequency-public-retirement.mjs",
+    "note": "Actual event/focus/aspect/hero, Offering pricing, niche start, logo and retained Nearby contracts; global ticker absence follows explicit human retirement."
+  }
+}

@@ -17,8 +17,8 @@ export type MarqueeItem = {
 //
 // Pausing (WCAG 2.2.2): hover or keyboard focus on the strip stops it (`animation-play-state`), and
 // under prefers-reduced-motion `.animate-marquee` is `animation: none`, so the strip becomes a plain
-// horizontally scrollable row instead of a frozen one. The shell's own DispatchTicker (one headline
-// at a time, pinned under the header) is a different surface and is untouched.
+// horizontally scrollable row instead of a frozen one. The former global member ticker was a
+// separate surface; the human explicitly retired that requirement on 2026-10-27. This nearby strip remains.
 export function DispatchMarquee({ items }: { items: MarqueeItem[] }) {
   if (items.length === 0) return null
 
