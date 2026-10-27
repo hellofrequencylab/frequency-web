@@ -162,6 +162,8 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      actions: read
+      checks: read
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6.0.9
@@ -419,7 +421,16 @@ jobs:
           for guard in "${guards[@]}"
           do
             (
-              if pnpm "check:${guard}" >"${out}/${guard}.log" 2>&1
+              if [ "$guard" = migrations ] && [ "$GITHUB_EVENT_NAME" = pull_request ] &&
+                 ! git diff --quiet origin/main HEAD -- supabase/migrations; then
+                # Production facts come from the isolated current-main PR-target workflow.
+                # This candidate runner only checks source shape and reads its exact-head proof.
+                if pnpm check:migrations --no-ledger >"${out}/${guard}.log" 2>&1 &&
+                   node scripts/verify-migration-readiness.mjs >>"${out}/${guard}.log" 2>&1; then
+                  echo ok > "${out}/${guard}.status"
+                else echo fail > "${out}/${guard}.status"
+                fi
+              elif pnpm "check:${guard}" >"${out}/${guard}.log" 2>&1
               then echo ok > "${out}/${guard}.status"
               else echo fail > "${out}/${guard}.status"
               fi
