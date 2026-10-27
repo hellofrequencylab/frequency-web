@@ -13,6 +13,8 @@ describe('opt-in atomic room write adapter', () => {
     const db = client()
     expect(roomAtomicWritesEnabled()).toBe(false)
     await expect(createRoomAtomic(db, 'actor', input)).rejects.toThrow('not enabled')
+    await expect(setRoomAdminAtomic(db, 'actor', room, 'target', false)).rejects.toThrow('not enabled')
+    await expect(removeRoomMemberAtomic(db, 'actor', room, 'target')).rejects.toThrow('not enabled')
     expect(db.rpc).not.toHaveBeenCalled()
   })
   it('uses the actual service-only create RPC shape with server-resolved actor identity', async () => {
