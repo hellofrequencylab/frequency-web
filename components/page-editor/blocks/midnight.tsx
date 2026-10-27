@@ -357,6 +357,7 @@ function MidnightGatheringsBlock({ p, metadata, now = new Date(), pad, vis }: Co
             return r.href ? <a key={i} className="mn-row mn-row--event" href={r.href} {...rel(r.href)}>{inner}</a> : <div key={i} className="mn-row mn-row--event">{inner}</div>
           })}
         </div>
+        {!rows.some((r) => r.title) && str(p.empty) && <p className="mn-muted mn-rows-empty">{str(p.empty)}</p>}
         {str(p.actionLabel) && <div className="mn-after"><Btn label={str(p.actionLabel)} href={str(p.actionHref)} kind="ghost" metadata={metadata} /></div>}
       </div>
     </section>
@@ -561,12 +562,18 @@ export const sigil = { type: 'select', label: 'Symbol', options: MIDNIGHT_SIGIL_
 export const head = { eyebrow: text('Small label', 'The short line beside the number.'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading') }
 export const action = { actionLabel: text('Button beside the heading'), actionHref: text('Button beside the heading: where it goes', LINK_HINT) }
 
+const frameField = { type: 'select', label: 'Width', options: [{ label: 'Standard', value: 'default' }, { label: 'Tight centred column', value: 'column' }, { label: 'Full width band', value: 'full' }] } as const
+const frameClass = (v: unknown) => (v === 'column' ? 'mn-frame--column' : v === 'full' ? 'mn-frame--full' : '')
+
 export function block<P extends Props>(label: string, fields: Record<string, unknown>, defaults: P, Comp: (args: Common) => ReactNode): ComponentConfig {
   return {
     label,
-    fields: { ...fields, layout: layoutField },
-    defaultProps: { ...defaults, layout: layoutDefault },
-    render: (props: Props & { puck?: { metadata?: Props } }) => <Comp p={props} metadata={props.puck?.metadata} {...layoutOf(props.layout)} />,
+    fields: { ...fields, frame: frameField, layout: layoutField },
+    defaultProps: { ...defaults, frame: 'default', layout: layoutDefault },
+    render: (props: Props & { puck?: { metadata?: Props } }) => {
+      const { pad, vis } = layoutOf(props.layout)
+      return <Comp p={props} metadata={props.puck?.metadata} pad={cls(pad, frameClass(props.frame))} vis={vis} />
+    },
   } as unknown as ComponentConfig
 }
 
@@ -599,6 +606,7 @@ export const midnightComponents: Record<string, ComponentConfig> = {
   }, { ...MIDNIGHT_JOURNEYS }, MidnightJourneysBlock),
   MidnightGatherings: block('Midnight gatherings (live)', {
     ...head, ...action, count: { type: 'number', label: 'How many to show', min: 1, max: 12 }, image, alt: text('Photo description', 'For screen readers.'),
+    empty: area('Line when there are no dates yet'),
     rows: { type: 'array', label: 'Rows', hint: 'Used when the Space has no upcoming events of its own.', arrayFields: { month: text('Month'), day: text('Day'), title: text('Name'), meta: text('Time and place'), note: text('Price or seats'), href: text('Link', LINK_HINT) } },
   }, { ...MIDNIGHT_GATHERINGS }, MidnightGatheringsBlock),
   MidnightMembership: block('Midnight membership', {
