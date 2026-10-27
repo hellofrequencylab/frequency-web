@@ -81,12 +81,12 @@ export function foldSpaceCompletions(
 function db() {
   return createAdminClient() as unknown as {
     from: (table: string) => {
-      select: (cols: string) => {
+      select: (cols: string, options?: { count: 'exact' }) => {
         eq: (col: string, val: string) => {
-          limit: (n: number) => Promise<{ data: unknown; error: { message: string } | null }>
+          limit: (n: number) => Promise<{ data: unknown; error: { message: string } | null; count: number | null }>
         }
         in: (col: string, vals: string[]) => {
-          order: (col: string) => { range: (from: number, to: number) => Promise<{ data: unknown; error: { message: string } | null }> }
+          order: (col: string) => { range: (from: number, to: number) => Promise<{ data: unknown; error: { message: string } | null; count: number | null }> }
         }
       }
     }
@@ -100,9 +100,9 @@ function db() {
 async function loadSpaceCompletionAnalytics(spaceId: string): Promise<{ stats: SpaceCompletionStats; available: boolean }> {
   if (!spaceId) return { stats: { ...EMPTY }, available: false }
   try {
-    const { data: planData, error: planError } = await db()
+    const { data: planData, error: planError, count: planCount } = await db()
       .from('journey_plans')
-      .select('id')
+      .select('id', { count: 'exact' })
       .eq('space_id', spaceId)
       .limit(PLAN_CAP + 1)
     if (planError) {
@@ -110,25 +110,29 @@ async function loadSpaceCompletionAnalytics(spaceId: string): Promise<{ stats: S
       return { stats: { ...EMPTY }, available: false }
     }
     const planIds = ((planData ?? []) as { id: string }[]).map((p) => p.id).filter(Boolean)
+    if (typeof planCount !== 'number' || planCount !== planIds.length || planCount > PLAN_CAP) return { stats: { ...EMPTY }, available: false }
     if (planIds.length === 0) return { stats: { ...EMPTY }, available: true }
-    if (planIds.length > PLAN_CAP) return { stats: { ...EMPTY }, available: false }
 
     const rows: SpaceCompletionRow[] = []
     // Explicit stable pages avoid silently treating the API's row cap as all-time totals.
+    let population: number | null = null
     for (let page = 0; page < ENROLLMENT_PAGE_CAP; page++) {
-      const { data: rowData, error: rowError } = await db()
+      const { data: rowData, error: rowError, count } = await db()
         .from('journey_enrollments')
-        .select('plan_id, profile_id, completed_at, order_id')
+        .select('plan_id, profile_id, completed_at, order_id', { count: 'exact' })
         .in('plan_id', planIds)
         .order('id')
-        .range(page * ENROLLMENT_PAGE, (page + 1) * ENROLLMENT_PAGE - 1)
+        .range(rows.length, rows.length + ENROLLMENT_PAGE - 1)
       if (rowError) {
         console.error('[spaces/completion-analytics] enrollments failed:', rowError.message)
         return { stats: { ...EMPTY, journeyCount: planIds.length }, available: false }
       }
+      if (typeof count !== 'number' || count >= ENROLLMENT_PAGE * ENROLLMENT_PAGE_CAP || (population !== null && population !== count)) return { stats: { ...EMPTY, journeyCount: planIds.length }, available: false }
+      population = count
       const batch = (rowData ?? []) as SpaceCompletionRow[]
       rows.push(...batch)
-      if (batch.length < ENROLLMENT_PAGE) return { stats: foldSpaceCompletions(planIds, rows), available: true }
+      if (rows.length === count) return { stats: foldSpaceCompletions(planIds, rows), available: true }
+      if (batch.length === 0 || rows.length > count) return { stats: { ...EMPTY, journeyCount: planIds.length }, available: false }
     }
     // A bounded reader must report incomplete, never publish a partial population as a total.
     return { stats: { ...EMPTY, journeyCount: planIds.length }, available: false }

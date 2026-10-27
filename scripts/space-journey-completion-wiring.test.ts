@@ -11,6 +11,8 @@ it.each([
   ['lib/spaces/completion-analytics.ts', ".eq('space_id', spaceId)", ".eq('space_id', 'other-space')"],
   ['lib/spaces/completion-analytics.ts', ".in('plan_id', planIds)", ".in('plan_id', [])"],
   ['lib/spaces/completion-analytics.ts', ".order('id')", ".order('created_at')"],
+  ['lib/spaces/completion-analytics.ts', 'planCount !== planIds.length', 'false'],
+  ['lib/spaces/completion-analytics.ts', 'rows.length === count', 'rows.length > 0'],
   ['lib/spaces/completion-analytics.ts', 'return result.available ? result.stats : null', 'return result.stats'],
 ])('rejects actual wiring regression in %s: %s', (file, original, changed) => {
   expect(read(file)).toContain(original)
