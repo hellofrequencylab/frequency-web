@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { richParagraphs } from '@/lib/page-editor/richtext'
 import type { ReactNode } from 'react'
 import { Suspense } from 'react'
 import '@/app/themes/active/members-b'
@@ -167,7 +168,7 @@ export function FqCircleShell({
           {about && (
             <div className="panel stack">
               <span className="k">About</span>
-              <p className="body fqm-about">{about}</p>
+              <div className="body fqm-about stack">{richParagraphs(about)}</div>
               {hostLine && <span className="t2">{hostLine}</span>}
             </div>
           )}
