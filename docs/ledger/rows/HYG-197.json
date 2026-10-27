@@ -1,0 +1,12 @@
+{
+  "id": "HYG-197",
+  "title": "Retire the unreachable generative Journey template primer",
+  "status": "done",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "S",
+  "source": { "file": "lib/ai/journey-spark.ts", "ref": "Runtime graph f787dd640 and symbol/import review: old prompt has zero consumers" },
+  "detail": "Remove only lib/ai/journey-shape.ts, whose generative template string and wrapper had no runtime, type, CLI, workflow, test or source-reader consumers. Current Journey Spark, edit, composition and slot coaching return selected coaching questions; keep their actual implementations, feature accounting, source-fact extraction and deterministic/manual authoring untouched. Correct live comparison comments and Studio historical context, preserving the historical ADR. Guard controls reject restoring or reattaching the old prompt and losing coaching in any of the four actual modules. Existing adversarial runtime tests reject generated titles, intros, arcs, steps and edits; actual source-backed settings remain allowed. No provider, database, schema or production operations.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/retired-journey-primer.mjs" },
+  "closed": "2026-10-27"
+}

@@ -4,7 +4,7 @@ import { withPracticeShape, PRACTICE_SHAPE_PRIMER } from './practice-shape'
 
 // The Practice builder's Vera surface (ADR-358), the atom-level twin of the Journey builder.
 // These lock the contract that matters without a live model: the budget caps exist, the shape
-// primer prepends (like withJourneyShape), and both AI entry points DEGRADE TO NULL when AI is
+// historical Practice primer prepends, and both AI entry points DEGRADE TO NULL when AI is
 // off, so the builder always falls back to hand-entry.
 
 describe('practice builder budget caps (ADR-358)', () => {
@@ -15,7 +15,7 @@ describe('practice builder budget caps (ADR-358)', () => {
 })
 
 describe('withPracticeShape', () => {
-  it('prepends the Practice-shape primer above the task prompt (twin of withJourneyShape)', () => {
+  it('prepends the Practice-shape primer above the task prompt', () => {
     const out = withPracticeShape('TASK RULES')
     expect(out.startsWith(PRACTICE_SHAPE_PRIMER)).toBe(true)
     expect(out.endsWith('TASK RULES')).toBe(true)
