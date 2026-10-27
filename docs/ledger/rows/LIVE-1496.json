@@ -9,5 +9,6 @@
     "kind": "cmd",
     "cmd": "node -e \"process.exit(require('fs').existsSync('scripts/attach-site-subdomain.mjs') ? 0 : 1)\""
   },
-  "detail": "Found 2026-10-27 when alli-rae.frequencylocal.com closed the connection. The free <slug>.frequencylocal.com address is attached to the Vercel project only when Publish is pressed in the Space panel (setWebsitePublished calls addSiteSubdomain). A seed or SQL that sets the published flag directly never attaches it, so the address has no certificate. Needed: a small script (using lib/sites/vercel-domains.ts addSiteSubdomain) that the seed docs name as the last step, so a seeded site is reachable. Re-test the premise before working it: confirm Publish still attaches and wildcard is still not configured."
+  "detail": "Found 2026-10-27 when alli-rae.frequencylocal.com closed the connection. The free <slug>.frequencylocal.com address is attached to the Vercel project only when Publish is pressed in the Space panel (setWebsitePublished calls addSiteSubdomain). A seed or SQL that sets the published flag directly never attaches it, so the address has no certificate. Needed: a small script (using lib/sites/vercel-domains.ts addSiteSubdomain) that the seed docs name as the last step, so a seeded site is reachable. Re-test the premise before working it: confirm Publish still attaches and wildcard is still not configured.",
+  "wave": "W7"
 }
