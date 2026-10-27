@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1514",
+  "title": "The theme library is a two-column index with a full sales page per theme, read from one catalog",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/themes/library.ts",
+    "ref": "ADR-1910"
+  },
+  "detail": "/themes is a two-column index with a full-kit picture per theme; /themes/[theme] is the sales page for the six themes without their own page (Midnight keeps /themes/midnight). Both read lib/themes/library.ts, SITE_THEMES and KIT_INDEX, mark each surface ready or on the way from what ships, list every tool and look control, and show a labeled empty slot until a picture is listed in lib/themes/library-assets.ts. Open follow-ups from the survey (themes/library/THEME-LIBRARY-SURVEY.md): a General stock kit per theme, Spotlight presets for five themes, email surfaces for six, a theme parameter on Space creation, demos for six themes, 42 pictures from the owner.",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "Probe passes; render tests cover the index and all six kit pages.",
+    "cmd": "node -e 'const f=require(\"fs\");for(const p of [\"app/(marketing)/themes/[theme]/page.tsx\",\"lib/themes/library.ts\",\"lib/themes/library-assets.ts\"])if(!f.existsSync(p)){console.error(p+\" is gone\");process.exit(1)};if(!f.readFileSync(\"components/frequency/site/pages/themes/frequency-themes.tsx\",\"utf8\").includes(\"THEME_LIBRARY\")){console.error(\"index no longer reads the catalog\");process.exit(1)}'"
+  }
+}

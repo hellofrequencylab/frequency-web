@@ -247,6 +247,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/themes`, changeFrequency: "monthly", priority: 0.6 },
           // /themes/midnight (LIVE-1380): the Midnight mega theme's feature page.
           { url: `${SITE_URL}/themes/midnight`, changeFrequency: "monthly", priority: 0.5 },
+          // /themes/[theme] (LIVE-1514): the other six themes' kit pages.
+          ...['frequency', 'bold', 'wildheart', 'network', 'temple', 'designer'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
         ] satisfies MetadataRoute.Sitemap)
       : []),
     { url: `${SITE_URL}/the-community`, lastModified: GUIDE_LAST_MODIFIED["the-community"], changeFrequency: "monthly", priority: 0.8 },
