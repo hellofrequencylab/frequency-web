@@ -19,7 +19,6 @@ function frequencyStyle(selector: string, prop: string | RegExp, value?: string,
 import { DemoBadge } from './demo-badge'
 import { FeaturedBadge } from './featured-badge'
 import { StarterBadge } from './starter-badge'
-import { UnclaimedBadge } from './unclaimed-badge'
 import { SupporterBadge } from '../supporter-badge'
 
 // Locks the DAWN Badge contract (design_handoff/dawn/components/core/Badge.jsx): the tone
@@ -171,12 +170,11 @@ describe('Badge shape', () => {
 
 // The consolidation itself: each status pill still says exactly what it said before, and now
 // says it through the primitive rather than a hand-rolled class string.
-describe('the five status pills compose Badge', () => {
+describe('the mounted status pills compose Badge', () => {
   const CASES = [
     { name: 'Demo', node: <DemoBadge />, tone: 'warning' as const, label: 'Demo' },
     { name: 'Featured', node: <FeaturedBadge />, tone: 'signal' as const, label: 'Featured' },
     { name: 'Starter', node: <StarterBadge />, tone: 'primary' as const, label: 'Starter' },
-    { name: 'Unclaimed', node: <UnclaimedBadge />, tone: 'primary' as const, label: 'Unclaimed' },
     { name: 'Supporter', node: <SupporterBadge />, tone: 'signal' as const, label: 'Supporter' },
   ]
 

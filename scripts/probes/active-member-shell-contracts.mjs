@@ -1,6 +1,5 @@
 import fs from 'node:fs'
-import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
 import ts from 'typescript'
 import { loadProbeModule } from '../lib/probe-module.mjs'
 import { RETIRED_MEMBER_SHELL, retiredShellEdges } from '../lib/retired-member-shell.mjs'
@@ -10,6 +9,7 @@ export const SOURCES = {
   shell: 'components/frequency/members/shell/members-shell.tsx',
   rails: 'components/frequency/members/shell/rail-layout.tsx',
   header: 'components/frequency/members/shell/header.tsx',
+  bell: 'components/frequency/members/shell/bell.tsx',
   tab: 'components/frequency/members/shell/tab-bar.tsx',
   event: 'app/(main)/events/[slug]/event-member-page.tsx',
   registry: 'lib/layout/page-chrome.ts',
@@ -49,14 +49,14 @@ export function activeShellProblems(mode, read, retiredExists = false) {
     for (const href of ['/events/new', '/circles/new']) check(actions.some(line => line.includes(href) && line.includes('EVERYONE')), `${href} lost its every-member gate`)
   } else if (mode === 'size') {
     check(!retiredExists, 'Legacy monolithic client shell returned')
-    const lines = ['header', 'rails', 'tab'].reduce((sum, key) => sum + read(SOURCES[key]).split('\n').length, 0)
+    const lines = ['header', 'bell', 'rails', 'tab'].reduce((sum, key) => sum + read(SOURCES[key]).split('\n').length, 0)
     check(lines <= 1800, `Active core client chrome totals ${lines} lines, over the unchanged 1800 line ceiling`)
   } else if (mode === 'viewport') {
     const css = read(SOURCES.css).replace(/\/\*[\s\S]*?\*\//g, '')
     check(css.includes('min-height:100dvh;display:flex;flex-direction:column'), 'Active kit must fill one dynamic viewport as a flex column')
     check(/\.fqm-body\{[^}]*\bflex:1;/.test(css), 'Active content must fill the flex remainder, not add another viewport')
     check(!/\.fqm-body\{[^}]*min-height:\s*(?:100v|calc\(100v)/.test(css), 'Content adds a second viewport below the header')
-    for (const file of ['components/layout/admin-bar/admin-bar.tsx', 'app/(main)/admin/layout.tsx', 'components/admin/admin-rail-drawer-column.tsx']) {
+    for (const file of ['components/layout/admin-bar/admin-bar.tsx', 'app/(main)/admin/layout.tsx', 'components/frequency/admin/admin-shell.tsx']) {
       const { reDerivesHeaderHeight } = loadProbeModule('lib/layout/header-offset.ts')
       check(!reDerivesHeaderHeight(read(file)), `${file} subtracts a bare header height`)
     }
@@ -64,7 +64,7 @@ export function activeShellProblems(mode, read, retiredExists = false) {
   } else throw new Error(`Unknown contract mode ${mode}`)
   return bad
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+if (invokedDirectly(import.meta.url)) {
   const bad = activeShellProblems(process.argv[2], file => fs.readFileSync(file, 'utf8'), fs.existsSync(RETIRED_MEMBER_SHELL))
   if (bad.length) { console.error(bad.join('\n')); process.exitCode = 1 }
   else console.log(`Active member shell ${process.argv[2]} contract passes`)
