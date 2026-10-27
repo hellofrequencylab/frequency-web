@@ -7,7 +7,7 @@
       "note": "Owner4058 retired legacy AppShell. Probe now measures the same surviving consequence in actual active Frequency consumers; mutation controls in scripts/active-member-shell-contracts.test.ts."
     },
     "source": {
-      "file": "components/frequency/members/shell/members-shell.css",
+      "file": "app/themes/frequency/members-shell.css",
       "ref": "Current Frequency viewport contract; surviving admin offset consumers retain safe-area checks"
     }
   },
