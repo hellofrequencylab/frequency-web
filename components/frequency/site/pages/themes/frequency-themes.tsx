@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { OPERATOR_START_HREF } from '@/lib/site'
-import { KIT_INDEX } from '@/lib/sites/kits/registry'
+import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
 import { ThemePicture } from './theme-picture'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { SITE_THEMES } from '@/lib/theme/site-style'
@@ -23,6 +23,8 @@ export interface ThemeGalleryCard {
   tagline: string
   description: string
   kits: { niche: string; label: string; href: string }[]
+  /** How many kits the theme has in all: the six doors plus a kit per profile (general, creators, ...). */
+  kitCount: number
   href: string
 }
 
@@ -35,6 +37,7 @@ export const THEME_GALLERY: ThemeGalleryCard[] = SITE_THEMES.map((t) => {
     tagline: THEME_LIBRARY.find((l) => l.id === t.id)?.tagline ?? t.description,
     description: t.description,
     kits: KIT_INDEX.filter((k) => k.theme === editor).map((k) => ({ niche: k.niche, label: k.label, href: `/spaces/new?niche=${k.niche}` })),
+    kitCount: [...KIT_INDEX, ...PROFILE_KIT_INDEX].filter((k) => k.theme === editor).length,
     href: `/themes/${t.id}`,
   }
 })
@@ -95,7 +98,7 @@ export function FrequencyThemes() {
                 <h3>{t.label}</h3>
                 <p>{t.tagline}</p>
                 <p>
-                  <b>{t.kits.length} starter kits.</b> {t.description}
+                  <b>{t.kitCount} starter kits.</b> {t.description}
                 </p>
                 <p>
                   <Link href={t.href}>See the {t.label} kit →</Link>
