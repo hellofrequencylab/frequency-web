@@ -1,4 +1,4 @@
-// HYG-187: the empty historical stub is not a runtime font registration.
+// HYG-191: the empty historical stub is not a runtime font registration.
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { invokedDirectly } from '../lib/invoked-directly.mjs'
