@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { operatorStartHref } from '@/lib/site'
 import { SPACE_MANIFEST } from '@/lib/studio/entities/space'
-import { createWizardSteps, parseIntents, parsePlanHint, planWantsBilling, setupFinishFor, suggestModeForIntents, WIZARD_PLANS } from './create-wizard'
+import { withLookStep, chosenWizardTheme, WIZARD_THEMES, createWizardSteps, parseIntents, parsePlanHint, planWantsBilling, setupFinishFor, suggestModeForIntents, WIZARD_PLANS } from './create-wizard'
 
 describe('parsePlanHint', () => {
   it('reads every plan /pricing sells', () => {
@@ -52,5 +52,20 @@ describe('the picks', () => {
     expect(suggestModeForIntents(['events', 'donations'], avail)).toBe('nonprofit:donations')
     expect(suggestModeForIntents(['community', 'email'], avail)).toBeNull()
     expect(suggestModeForIntents([], avail)).toBeNull()
+  })
+})
+
+describe('the look step (LIVE-1531)', () => {
+  it("sits between the name and the start, as the wizard's own step", () => {
+    expect(withLookStep(createWizardSteps(SPACE_MANIFEST)).map((s) => s.key)).toEqual(['intents', 'model', 'identity', 'look', 'start'])
+  })
+  it('offers every Mega Theme with a pitch', () => {
+    expect(WIZARD_THEMES.map((t) => t.id)).toEqual(['frequency', 'bold', 'wildheart', 'network', 'temple', 'midnight', 'designer'])
+    for (const t of WIZARD_THEMES) expect(t.hint.length, t.id).toBeGreaterThan(0)
+  })
+  it("sends the owner's pick, else the theme a /themes page named, else none", () => {
+    expect(chosenWizardTheme('temple', 'midnight')).toBe('temple')
+    expect(chosenWizardTheme(null, 'midnight')).toBe('midnight')
+    expect(chosenWizardTheme('neon', null)).toBeNull()
   })
 })
