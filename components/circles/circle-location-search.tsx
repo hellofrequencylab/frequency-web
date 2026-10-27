@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Search, LocateFixed, X, Loader2, MapPin } from 'lucide-react'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
+import { buttonClasses } from '@/components/ui/button'
 
 // Smart location search: start typing a city and it autocompletes (Photon /
 // OpenStreetMap), or tap "use my location". Choosing a place sets `near` +
@@ -170,7 +171,7 @@ export function CircleLocationSearch({
           <button
             type="button"
             onClick={clear}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-primary-bg px-3 py-1.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+            className={buttonClasses('primarySoft', 'sm', 'shrink-0')}
           >
             Near {activePlace}
             <X className="h-3 w-3" />

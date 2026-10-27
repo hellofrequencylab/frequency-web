@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { UserPlus, Check, Copy } from 'lucide-react'
 import { CreateModal } from '@/components/create-modal'
 import { Field, Input, Textarea } from '@/components/ui/field'
+import { buttonClasses } from '@/components/ui/button'
 
 export function InviteMemberCompose({
   inviterName,
@@ -71,7 +72,7 @@ export function InviteMemberCompose({
           <div className="flex items-center justify-between gap-2">
             <code className="text-2xs text-muted truncate">{signupUrl}</code>
             <button type="button" onClick={handleCopy}
-              className="shrink-0 inline-flex items-center gap-1 rounded px-2 py-1 text-2xs font-medium text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors">
+              className={buttonClasses('ghost', 'xs', 'shrink-0')}>
               {copied ? <><Check className="w-3 h-3" /> Copied</> : <><Copy className="w-3 h-3" /> Copy link</>}
             </button>
           </div>
