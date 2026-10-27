@@ -16,8 +16,8 @@ import { SITE_DESIGN } from '@/lib/theme/design'
 import { siteVerification } from '@/lib/seo/verification'
 // The ACTIVE design's own faces (lib/theme/design-fonts/). `./active` is one static re-export written by
 // scripts/write-design-assets.mjs before the build, so only that design's next/font module is in this
-// graph: under DAWN it is lib/theme/design-fonts/dawn.ts, which registers nothing. DAWN's faces below
-// stay on <html> for every design, because they are the base a design falls back to.
+// graph. Historical registry entries do not need empty font modules. The shared base faces below
+// stay on <html> because Space and Spotlight themes still use them.
 import { DESIGN_FONT_CLASS, FONTS_DESIGN } from '@/lib/theme/design-fonts/active'
 import { INSTALL_CAPTURE_SCRIPT } from '@/lib/pwa/install-capture'
 import { POPOVER_DISMISS_SCRIPT } from '@/lib/ui/popover-dismiss'
