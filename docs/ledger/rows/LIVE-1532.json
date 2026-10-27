@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1532",
+  "title": "A Space's emails wear its Mega Theme, not only Midnight's",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/theme/surface.ts",
+    "ref": "ADR-1911"
+  },
+  "detail": "SYS-12 of the Mega Theme build plan. emailSurface now reads MEGA_SURFACES, so Bold, Wildheart, Network, Temple and Designer seed their emails from their own token set, as Midnight already did. The owner's exact words rewrote the email-colors pin that held every other theme on the house palette; the default theme keeps it. pageSurface is unchanged: a Space page or event page still takes Midnight's ground only (theme fence).",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "vitest lib/spaces/email-colors.test.ts passes: temple email canvas is its own, frequency keeps the house palette.",
+    "cmd": "node -e 'const t=require(\"fs\").readFileSync(\"lib/theme/surface.ts\",\"utf8\");if(!t.includes(\"MEGA_SURFACES[id]\"))process.exit(1)'"
+  }
+}
