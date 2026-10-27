@@ -39,7 +39,7 @@ ${N} .hs-btn-soft:hover{background:var(--dz-charcoal);color:var(--dz-plaster)}
 ${N} .dz-top{position:sticky;top:0;z-index:50;background:var(--dz-parchment);box-shadow:var(--dz-shadow-header);transition:background var(--dz-dur-base) ${EASE},box-shadow var(--dz-dur-base) ${EASE}}
 ${N}:has(#top .dz-hero) .dz-top{position:fixed;left:0;right:0}
 ${N}:has(#top .dz-hero):not([data-scrolled]) .dz-top{background:var(--dz-scrim-header);box-shadow:none}
-${N} .dz-util{display:flex;align-items:center;justify-content:space-between;gap:24px;max-width:var(--dz-container);height:42px;margin:0 auto;padding:0 var(--dz-gutter);border-bottom:1px solid var(--dz-line-soft);font-size:13px;letter-spacing:.04em;color:var(--dz-stone)}
+${N} .dz-util{display:flex;align-items:center;justify-content:space-between;gap:24px;height:42px;padding:0 var(--dz-gutter);border-bottom:1px solid var(--dz-line-soft);font-size:13px;letter-spacing:.04em;color:var(--dz-stone)}
 ${N} .dz-util a{color:inherit;text-decoration:none}
 ${N} .dz-util-left{font-size:11px;letter-spacing:.16em;text-transform:uppercase}
 ${N} .dz-util-items{display:flex;align-items:center;gap:28px}
@@ -47,7 +47,7 @@ ${N}:has(#top .dz-hero):not([data-scrolled]) .dz-util{border-color:var(--dz-util
 ${N}[data-scrolled] .dz-util{display:none}
 ${N} .dz-top .hs-header{position:static;top:auto;z-index:auto;padding:0;background:transparent;transition:none}
 ${N} .dz-top .hs-header[data-hidden]{opacity:1;transform:none;pointer-events:auto}
-${N} .dz-top .hs-pill{max-width:var(--dz-container);margin:0 auto;padding:0 var(--dz-gutter);min-height:var(--dz-header-h);border-radius:0;column-gap:var(--dz-gutter);background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;box-shadow:none;overflow:visible;animation:none;transition:min-height var(--dz-dur-base) ${EASE}}
+${N} .dz-top .hs-pill{width:100%;max-width:none;margin:0;padding:0 var(--dz-gutter);min-height:var(--dz-header-h);border-radius:0;column-gap:var(--dz-gutter);background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;box-shadow:none;overflow:visible;animation:none;transition:min-height var(--dz-dur-base) ${EASE}}
 ${N}[data-scrolled] .dz-top .hs-pill{min-height:76px}
 @media (min-width:${BP + 1}px){${N} .dz-top .hs-pill{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"logo nav cta"}${N} .hs-nav-track{margin:0 0 0 auto}${N} .dz-top .hs-menu{display:none}${N} .dz-top .hs-nav{display:block}}
 ${N} .hs-brand{font-size:26px;letter-spacing:.12em;text-transform:uppercase;color:var(--dz-charcoal)}
