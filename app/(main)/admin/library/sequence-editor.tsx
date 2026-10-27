@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -263,11 +264,7 @@ export function SequenceEditor({
             type="button"
             onClick={togglePublish}
             disabled={pending}
-            className={`inline-flex items-center gap-1.5 rounded-card px-4 py-2 text-body-sm font-semibold disabled:opacity-60 ${
-              live
-                ? 'border border-border-strong text-text hover:bg-surface-elevated'
-                : 'bg-primary text-on-primary hover:opacity-90'
-            }`}
+            className={buttonClasses(live ? 'secondary' : 'primary', 'sm')}
           >
             {live ? 'Unpublish' : 'Publish'}
           </button>
@@ -450,7 +447,7 @@ export function SequenceEditor({
           type="button"
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-card bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-60"
+          className={buttonClasses('primary', 'md')}
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
           Save changes
@@ -522,7 +519,7 @@ export function NewSequenceButton() {
         type="button"
         onClick={create}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-card bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-60"
+        className={buttonClasses('primary', 'sm')}
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
         New onboarding flow

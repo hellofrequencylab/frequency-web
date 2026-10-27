@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Zap } from 'lucide-react'
@@ -83,7 +84,7 @@ export function RecommendationCard({ rec }: { rec: StudioRec }) {
               <button
                 onClick={apply}
                 disabled={isPending}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60 motion-reduce:transition-none"
+                className={buttonClasses('primary', 'sm', 'motion-reduce:transition-none')}
               >
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Confirm: {rec.action.label}
@@ -99,7 +100,7 @@ export function RecommendationCard({ rec }: { rec: StudioRec }) {
           ) : (
             <button
               onClick={() => setConfirming(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+              className={buttonClasses('primary', 'sm', 'motion-reduce:transition-none')}
             >
               <Zap className="h-4 w-4" />
               {rec.action.label}

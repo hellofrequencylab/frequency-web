@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { Check, Loader2, Pencil, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
@@ -110,7 +111,7 @@ function CardRow({ card, onDone }: { card: TodayCard; onDone: (contactId: string
           type="button"
           disabled={pending}
           onClick={doIt}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-body-sm font-medium text-on-primary transition-colors hover:bg-primary-strong disabled:opacity-50"
+          className={buttonClasses('primary', 'sm')}
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           Do it

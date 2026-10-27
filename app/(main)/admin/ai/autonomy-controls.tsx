@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { History, ShieldAlert, ShieldCheck } from 'lucide-react'
@@ -117,7 +118,7 @@ export function AutonomyControls({ data }: { data: AutonomyControlsData }) {
                   type="button"
                   onClick={rearm}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary disabled:opacity-50"
+                  className={buttonClasses('primary', 'sm')}
                 >
                   <ShieldCheck className="h-4 w-4" aria-hidden /> Re-arm breaker
                 </button>
@@ -233,7 +234,7 @@ export function AutonomyControls({ data }: { data: AutonomyControlsData }) {
               type="button"
               onClick={saveTuning}
               disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
+              className={buttonClasses('primary', 'sm')}
             >
               <ShieldAlert className="h-4 w-4" aria-hidden />
               {saved ? 'Saved' : 'Save caps'}

@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 // The approve / reject console for one Non Profit verification (ADR-552, AUDIT #6). Approving grants the
 // discounted Non Profit plan; rejecting requires a short reason the owner sees. The page passes the
 // pending row; this client dispatches the gated actions and refreshes. Strings are CONTENT-VOICE (plain,
@@ -45,7 +46,7 @@ export function ReviewConsole({ id }: { id: string }) {
             type="button"
             onClick={approve}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className={buttonClasses('primary', 'sm')}
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Check className="h-3.5 w-3.5" aria-hidden />}
             Approve and grant Non Profit

@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, Gem, Trash2, Plus, Check, X } from 'lucide-react'
@@ -258,7 +259,7 @@ function RewardTable({
                 type="button"
                 onClick={add}
                 disabled={pending || !draft.action_type.trim()}
-                className="rounded-control bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+                className={buttonClasses('primary', 'xs')}
               >
                 {pending ? 'Adding…' : 'Add'}
               </button>
