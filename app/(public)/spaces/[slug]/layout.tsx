@@ -1,8 +1,6 @@
 import { notFound } from 'next/navigation'
 import { AccentScope } from '@/components/spaces/accent-scope'
-import { spacePageSiteFaces } from '@/lib/theme/site-style'
-import { spacePageDefaultAccent, spacePageFonts } from '@/lib/theme/site-style'
-import { pageSurface } from '@/lib/theme/surface'
+import { memberSpaceFonts } from '@/lib/theme/site-style'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { frequencyAccentVars, resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
@@ -45,11 +43,13 @@ export default async function PublicSpaceLayout({
   const space = await getVisibleSpaceBySlug(slug, null)
   if (!space) notFound()
 
-  const accentVars = resolveAccentVars(space.brandAccent, spacePageDefaultAccent(space.preferences, defaultAccentForType(space.type)))
-  const spaceTheme = spacePageFonts(space.preferences)
+  const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
+  // The Frequency look plus the Space's own accent and fonts; the website theme stays on the stand-alone site
+  // (Daniel, 2026-10-27, LIVE-1509).
+  const spaceTheme = memberSpaceFonts(space.preferences)
 
   return (
-    <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)} siteFaces={spacePageSiteFaces(space.preferences)} surface={pageSurface(space.preferences)}>
+    <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)}>
       {children}
     </AccentScope>
   )
