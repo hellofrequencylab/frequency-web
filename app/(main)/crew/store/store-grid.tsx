@@ -123,7 +123,7 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
                       type="button"
                       onClick={() => handleEquip(false)}
                       disabled={isPending}
-                      className="min-h-11 rounded-control border border-border px-3 py-1 text-meta font-semibold text-muted transition-colors hover:text-text hover:bg-surface-elevated disabled:opacity-50 motion-reduce:transition-none"
+                      className={buttonClasses('secondary', 'sm', 'min-h-11 motion-reduce:transition-none')}
                     >
                       {isPending ? <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" /> : 'Remove'}
                     </button>
@@ -133,7 +133,7 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
                     type="button"
                     onClick={() => handleEquip(true)}
                     disabled={isPending}
-                    className="flex min-h-11 items-center gap-1 rounded-control bg-primary px-3 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 motion-reduce:transition-none"
+                    className={buttonClasses('primary', 'sm', 'min-h-11 motion-reduce:transition-none')}
                   >
                     {isPending ? <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" /> : <Check className="w-3 h-3" />}
                     Equip
