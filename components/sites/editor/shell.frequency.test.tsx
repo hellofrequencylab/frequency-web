@@ -313,7 +313,7 @@ it('opens Change theme from the Theme tab and switches the draft theme as one un
   const dialog = node.querySelector('[role=dialog]')!
   expect(dialog.getAttribute('aria-label')).toBe('Change theme')
   expect(dialog.textContent).toContain('Bold · Current')
-  expect(dialog.textContent).not.toContain('Starter kits')
+  expect(dialog.textContent).toContain('Starter kits')
   act(() => (Array.from(dialog.querySelectorAll('.theme')).find((b) => b.querySelector('b')?.textContent === 'Midnight') as HTMLButtonElement).click())
   expect(node.querySelector('[role=dialog]')?.textContent).toContain('Midnight · Current')
   expect(node.querySelector('[role=dialog]')?.textContent).toContain('Starter kits')

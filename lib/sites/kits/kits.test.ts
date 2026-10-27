@@ -80,7 +80,7 @@ describe('kit block defaults', () => {
 })
 
 describe('niche variants', () => {
-  it.each(['Midnight', 'DAWN'] as const)('there is one %s kit for each niche door', async (theme) => {
+  it.each(['Midnight', 'DAWN', 'Menswork'] as const)('there is one %s kit for each niche door', async (theme) => {
     const kits = KIT_INDEX.filter((k) => k.theme === theme)
     expect(kits.map((k) => k.niche).sort()).toEqual(['coaches', 'hosts', 'networks', 'nonprofits', 'studios', 'venues'])
   })
@@ -94,13 +94,13 @@ describe('niche variants', () => {
     }
   })
   it('kit copy holds no prices, photos or real names', async () => {
-    for (const s of KIT_INDEX.filter((k) => k.theme === 'Midnight' || k.theme === 'DAWN')) {
+    for (const s of KIT_INDEX.filter((k) => k.theme !== 'Wildheart')) {
       const json = JSON.stringify(await loadKit(s.id))
       expect(json, s.id).not.toMatch(/\$\d|\.jpg|\.png|Nocturne|—/)
     }
   })
   it('every link points at a page of the same kit or a platform page', async () => {
-    for (const s of KIT_INDEX.filter((k) => k.theme === 'Midnight' || k.theme === 'DAWN')) {
+    for (const s of KIT_INDEX.filter((k) => k.theme !== 'Wildheart')) {
       const kit = (await loadKit(s.id))!
       const own = new Set([...kit.pages.map((p) => p.slug), 'book', 'contact'])
       const links = [...JSON.stringify(kit).matchAll(/~\/([a-z-]+)/g)].map((m) => m[1])
