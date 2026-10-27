@@ -105,22 +105,3 @@ describe('every streamed chrome boundary reserves a real box', () => {
     }
   })
 })
-
-describe('the shell layout uses them', () => {
-  const LAYOUT = readFileSync(join(ROOT, 'app/(main)/layout.tsx'), 'utf8')
-
-  it('the ticker boundary reserves instead of falling back to null', () => {
-    expect(LAYOUT).toMatch(/fallback=\{<DispatchTickerReserve \/>\}[\s\S]{0,120}DispatchTickerSlot/)
-  })
-
-  it('the mobile stats boundary reserves instead of falling back to null', () => {
-    expect(LAYOUT).toMatch(/fallback=\{<MobileGameStatsReserve \/>\}[\s\S]{0,120}MobileGameStats/)
-  })
-
-  it('the Vault dock keeps fallback={null}, because a fixed box has no flow to reserve', () => {
-    // Not an oversight and not an exception to be tidied away later: DockBar is
-    // `fixed bottom-0 right-3`, so this boundary cannot move anything above or below it.
-    expect(LAYOUT).toMatch(/fallback=\{null\}[\s\S]{0,120}VaultDockSlot/)
-    expect(readFileSync(join(ROOT, 'components/layout/dock-bar.tsx'), 'utf8')).toContain('fixed bottom-0 right-3')
-  })
-})

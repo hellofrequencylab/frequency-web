@@ -243,7 +243,7 @@ export const FINGERPRINTS = [
  *  is missing, the guard is reading the wrong files or the wrong build, and every "absent" verdict
  *  above means "I never looked" rather than "I looked and it was fine". Fail rather than report a
  *  green built on nothing — this is the same non-vacuity floor scripts/guard-wiring.test.ts keeps. */
-export const CONTROL = { text: 'My Frequency', source: 'components/layout/my-frequency-menu.tsx' }
+export const CONTROL = { text: 'Light or dark', source: 'components/frequency/members/shell/header.tsx' }
 
 /** STATIC imports of an `@/components/admin/**` module, as source text.
  *
