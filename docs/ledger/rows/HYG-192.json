@@ -1,0 +1,12 @@
+{
+  "id": "HYG-192",
+  "title": "Timer setup modes and movement presets announce selection",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-26",
+  "source": { "file": "components/on-air/setup-selection-accessibility.test.tsx", "ref": "Independent final Frequency audit review" },
+  "detail": "Seated and movement ModeButton plus movement Chip now expose aria-pressed from Boolean(active), preserving all callbacks, disabled state, button type, existing groups and styling. Render tests compile the actual pure helper bodies from production source rather than copying JSX, exercising false/true selection, click forwarding and the seated disabled gate without mounting a timer engine, audio or persistence. Source guard complements those tests. No browser/assistive-technology acceptance claim.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/timer-selection-state.mjs", "note": "Checks actual helper state/callback/type bindings; rendered helper tests run in CI." }
+}

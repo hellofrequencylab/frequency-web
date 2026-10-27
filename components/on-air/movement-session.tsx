@@ -1612,6 +1612,7 @@ function ModeButton({
   return (
     <button
       type="button"
+      aria-pressed={Boolean(active)}
       onClick={onClick}
       className={`flex flex-col items-center gap-1 rounded-control border px-2 py-2 text-meta transition-colors ${
         active
@@ -1639,6 +1640,7 @@ function Chip({
   return (
     <button
       type="button"
+      aria-pressed={Boolean(active)}
       onClick={onClick}
       title={title}
       className={`min-h-11 rounded-control border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
