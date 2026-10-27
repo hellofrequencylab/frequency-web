@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-247",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/active-member-shell-contracts.mjs zap",
+      "note": "Owner4058 retired legacy AppShell. Probe now measures the same surviving consequence in actual active Frequency consumers; mutation controls in scripts/active-member-shell-contracts.test.ts."
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-27 orphan retirement: legacy AppShell has no runtime callers after the Frequency root migration. Its source-only acceptance dependency is replaced with current active Frequency render-path evidence. Pure reusable helper contracts remain; no production/browser acceptance is inferred."
+  }
+}

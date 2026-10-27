@@ -47,7 +47,8 @@ import {
 //      destroys the node the ride-up observer was watching.
 
 const dock = readFileSync('components/layout/dock-bar.tsx', 'utf8')
-const shell = readFileSync('components/layout/app-shell.tsx', 'utf8')
+// The reusable account dock remains independently consumed/tested after legacy shell retirement.
+const account = readFileSync('components/layout/app-shell-account.tsx', 'utf8')
 const launcher = readFileSync('components/vera/vera-launcher.tsx', 'utf8')
 const vaultSegment = readFileSync('components/sidebar/game-stats-dock.tsx', 'utf8')
 
@@ -516,23 +517,17 @@ describe('the chat panel is sized to its CONTENT, and grows left out of the tab'
   })
 })
 
-describe('both bottom tabs are one height (owner: "both tabs the same height")', () => {
+describe('the reusable account and Vault dock heads retain their shared height', () => {
   it('is a shared class, not a claim in a comment', () => {
     // 🔴 They were 72px (left) and 48px (right) under a comment asserting they matched.
     expect(DOCK_HEAD_H_CLASS).toBe('h-12')
     expect(vaultSegment).toContain('${DOCK_HEAD_H_CLASS}')
-    expect(shell).toContain('${DOCK_HEAD_H_CLASS}')
+    expect(account).toContain('${DOCK_HEAD_H_CLASS}')
   })
 
   it('neither tab hardcodes a head height beside it', () => {
     // The Vault head was `h-10`; the identity bar was a `w-11` avatar in `py-3.5`.
     expect(vaultSegment).not.toContain('flex h-10 w-full items-center')
-    expect(shell).not.toContain('flex items-center gap-2.5 px-3 py-3.5')
-  })
-
-  it('the left tab wears the right tab\'s crest, mirrored', () => {
-    // Owner: "the profile box takes the same radius and styles as the right rail tab."
-    expect(dock).toContain('rounded-tl-card rounded-tr-control border-x border-t border-chrome-border bg-chrome/95')
-    expect(shell).toContain('rounded-tl-control rounded-tr-card border-x border-t border-chrome-border bg-chrome/95')
+    expect(account).not.toContain('flex items-center gap-2.5 px-3 py-3.5')
   })
 })
