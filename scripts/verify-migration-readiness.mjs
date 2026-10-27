@@ -1,6 +1,7 @@
 // Candidate CI consumes only independent metadata from the trusted main-only PR-target run.
 // No production credentials, SQL, candidate approval JSON, downloaded code or artifacts used.
 import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
 const repository = 'hellofrequencylab/frequency-web'
@@ -21,11 +22,35 @@ export async function verifyReadiness({ env, event, api, git }) {
   const run = inventory.workflow_runs.filter(r => r.event === 'pull_request_target' && r.workflow_id === workflow.id && r.head_sha === head && r.repository?.full_name === repository && r.pull_requests?.some(p => p.number === event.number && p.head?.sha === head && p.base?.sha === base)).sort((a, b) => b.id - a.id)[0]
   requireFact(run?.status === 'completed' && run.conclusion === 'success' && Number.isSafeInteger(run.id) && Number.isSafeInteger(run.run_attempt), 'exact-head trusted readiness is not complete')
   const jobs = await api(`/repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`)
-  requireFact(jobs?.total_count === 1 && jobs.jobs?.length === 1 && jobs.jobs[0].status === 'completed' && jobs.jobs[0].conclusion === 'success' && jobs.jobs[0].head_sha === head && jobs.jobs[0].steps?.filter(s => s.name === 'Evaluate migration PR readiness' && s.conclusion === 'success').length === 1, 'trusted evaluator did not complete')
-  const checkId = /\/check-runs\/(\d+)$/.exec(jobs.jobs[0].check_run_url ?? '')?.[1]
+  requireFact(Array.isArray(jobs?.jobs) && jobs.total_count === jobs.jobs.length && [1, 2].includes(jobs.total_count), 'trusted job inventory incomplete or unexpected')
+  // Actions also exposes our explicitly published check as a synthetic job. It is not
+  // a second evaluator: require the unique real evaluator and authenticate that check.
+  const evaluators = jobs.jobs.filter(job => job.steps?.filter(step => step.name === 'Evaluate migration PR readiness' && step.conclusion === 'success').length === 1)
+  requireFact(evaluators.length === 1, 'trusted evaluator did not complete')
+  const evaluator = evaluators[0]
+  requireFact(evaluator.status === 'completed' && evaluator.conclusion === 'success' && evaluator.head_sha === head, 'trusted evaluator did not complete')
+  const checkId = /\/check-runs\/(\d+)$/.exec(evaluator.check_run_url ?? '')?.[1]
   requireFact(checkId, 'trusted job check identity missing')
   const check = await api(`/repos/${repository}/check-runs/${checkId}`)
   requireFact(check?.app?.id === 15368 && check.app.slug === 'github-actions' && check.head_sha === head && check.conclusion === 'success', 'untrusted check publisher')
+  if (jobs.jobs.length === 2) {
+    requireFact(evaluator.name === 'migration-readiness-runner' && evaluator.run_id === run.id && evaluator.run_attempt === run.run_attempt && Number.isSafeInteger(evaluator.runner_id) && evaluator.runner_id > 0, 'unrecognized real evaluator')
+    const synthetic = jobs.jobs.find(job => job !== evaluator)
+    requireFact(synthetic.name === 'migration-readiness' && synthetic.run_id === run.id && synthetic.run_attempt === run.run_attempt && synthetic.head_sha === head && synthetic.runner_id === null && Array.isArray(synthetic.steps) && synthetic.steps.length === 0 && synthetic.status === 'completed' && synthetic.conclusion === 'success', 'unrecognized additional job')
+    const syntheticId = /\/check-runs\/(\d+)$/.exec(synthetic.check_run_url ?? '')?.[1]
+    requireFact(syntheticId && syntheticId !== checkId, 'synthetic check identity missing')
+    const published = await api(`/repos/${repository}/check-runs/${syntheticId}`)
+    requireFact(published?.id === Number(syntheticId) && published.name === 'migration-readiness' && published.app?.id === 15368 && published.app.slug === 'github-actions' && published.head_sha === head && published.status === 'completed' && published.conclusion === 'success' && published.external_id === `migration-readiness:${run.id}:${run.run_attempt}:${event.number}:${base}:${head}`, 'untrusted synthetic publisher')
+    const summary = published.output?.summary
+    requireFact(typeof summary === 'string' && summary.length <= 8192 && summary.split('\n\n').length === 2, 'synthetic receipt missing')
+    const receipt = JSON.parse(summary.split('\n\n')[1])
+    requireFact(receipt?.version === 1 && receipt.pr === event.number && receipt.head === head && receipt.base === base && receipt.trustedRunId === String(run.id) && receipt.trustedRunAttempt === String(run.run_attempt) && ['not_applicable', 'strict_parity', 'registered_pending_apply'].includes(receipt.verdict), 'synthetic receipt binding differs')
+    const sources = ['scripts/migration-pr-readiness.mjs', 'scripts/publish-migration-readiness.mjs', '.github/workflows/migration-readiness.yml', 'scripts/migration-readiness-policy.json']
+    requireFact(receipt.sources && Object.keys(receipt.sources).length === sources.length && sources.every(file => receipt.sources[file] === createHash('sha256').update(git(['show', `${base}:${file}`])).digest('hex')), 'synthetic receipt source differs from current main')
+    if (receipt.verdict === 'registered_pending_apply') {
+      requireFact(/^[a-f0-9]{64}$/.test(receipt.registrationSha256 ?? '') && /^[a-f0-9]{64}$/.test(receipt.workflowSha256 ?? '') && Number.isSafeInteger(receipt.stagingRunId) && receipt.stagingRunId > 0 && Number.isSafeInteger(receipt.stagingAttempt) && receipt.stagingAttempt > 0, 'synthetic staging receipt incomplete')
+    }
+  }
   const [finalPr, finalMain] = await Promise.all([readPr(), readMain()])
   requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === head && finalPr.base.sha === base && finalMain.commit.sha === base, 'branch moved during readiness read')
   return { ok: true, runId: run.id, head, base }
