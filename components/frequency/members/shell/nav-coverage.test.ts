@@ -92,7 +92,7 @@ const DAWN_LITERALS: readonly { href: string; file: string; snippet: string; gat
   { href: '/search', file: 'components/search/search-overlay.tsx', snippet: 'href={`/search?q=' },
   // Account menu chrome: View profile (UserMenu) and Appearance.
   { href: PROFILE, file: 'components/layout/user-menu.tsx', snippet: 'href={`/people/${profile.handle}`}' },
-  { href: '/settings#appearance', file: 'components/layout/app-shell-account.tsx', snippet: 'href="/settings#appearance"' },
+  { href: '/settings#appearance', file: 'components/frequency/members/shell/nav.ts', snippet: "href: '/settings#appearance'" },
   // Right sidebar panels' "See all" doors and the game dock.
   { href: '/events', file: 'components/sidebar/rail-panels.tsx', snippet: 'href="/events"' },
   { href: '/people', file: 'components/sidebar/rail-panels.tsx', snippet: 'href="/people"', gate: { minAccess: 'member' } },
