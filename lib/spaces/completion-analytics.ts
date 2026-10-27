@@ -1,3 +1,5 @@
+import 'server-only'
+
 // Space Journey completion readout (LIVE-422 / ADR-1470).
 //
 // FOCUS-MODEL Q5 said Space analytics was QR-scan-shaped, with no completion or
@@ -7,7 +9,7 @@
 //
 // One reader. Existing rows only: journey_plans.space_id → journey_enrollments.
 // tryCompleteJourney already stamps completed_at. People, not seats: a re-take
-// does not mint a second "started". Fail-safe: zeros, never a throw. The
+// does not mint a second "started". Frequency reads distinguish unavailable from measured zero. The
 // console's manage gate is the door, same as every other Home band.
 //
 // No migration. Do not add a completion table. Do not count QR scans here.
@@ -41,6 +43,8 @@ const EMPTY: SpaceCompletionStats = {
 }
 
 const PLAN_CAP = 200
+const ENROLLMENT_PAGE = 500
+const ENROLLMENT_PAGE_CAP = 20
 
 /** Fold enrollments for the plans this Space owns. Pure. Unique people. */
 export function foldSpaceCompletions(
@@ -77,11 +81,13 @@ export function foldSpaceCompletions(
 function db() {
   return createAdminClient() as unknown as {
     from: (table: string) => {
-      select: (cols: string) => {
+      select: (cols: string, options?: { count: 'exact' }) => {
         eq: (col: string, val: string) => {
-          limit: (n: number) => Promise<{ data: unknown; error: { message: string } | null }>
+          limit: (n: number) => Promise<{ data: unknown; error: { message: string } | null; count: number | null }>
         }
-        in: (col: string, vals: string[]) => Promise<{ data: unknown; error: { message: string } | null }>
+        in: (col: string, vals: string[]) => {
+          order: (col: string) => { range: (from: number, to: number) => Promise<{ data: unknown; error: { message: string } | null; count: number | null }> }
+        }
       }
     }
   }
@@ -91,32 +97,58 @@ function db() {
  * Who started and finished the Journeys this Space owns. All-time. Server-only
  * (admin client). Fail-safe: empty stats, never a throw into Home.
  */
-export async function getSpaceCompletionAnalytics(spaceId: string): Promise<SpaceCompletionStats> {
-  if (!spaceId) return { ...EMPTY }
+async function loadSpaceCompletionAnalytics(spaceId: string): Promise<{ stats: SpaceCompletionStats; available: boolean }> {
+  if (!spaceId) return { stats: { ...EMPTY }, available: false }
   try {
-    const { data: planData, error: planError } = await db()
+    const { data: planData, error: planError, count: planCount } = await db()
       .from('journey_plans')
-      .select('id')
+      .select('id', { count: 'exact' })
       .eq('space_id', spaceId)
-      .limit(PLAN_CAP)
+      .limit(PLAN_CAP + 1)
     if (planError) {
       console.error('[spaces/completion-analytics] plans failed:', planError.message)
-      return { ...EMPTY }
+      return { stats: { ...EMPTY }, available: false }
     }
     const planIds = ((planData ?? []) as { id: string }[]).map((p) => p.id).filter(Boolean)
-    if (planIds.length === 0) return { ...EMPTY }
+    if (typeof planCount !== 'number' || planCount !== planIds.length || planCount > PLAN_CAP) return { stats: { ...EMPTY }, available: false }
+    if (planIds.length === 0) return { stats: { ...EMPTY }, available: true }
 
-    const { data: rowData, error: rowError } = await db()
-      .from('journey_enrollments')
-      .select('plan_id, profile_id, completed_at, order_id')
-      .in('plan_id', planIds)
-    if (rowError) {
-      console.error('[spaces/completion-analytics] enrollments failed:', rowError.message)
-      return { ...EMPTY, journeyCount: planIds.length }
+    const rows: SpaceCompletionRow[] = []
+    // Explicit stable pages avoid silently treating the API's row cap as all-time totals.
+    let population: number | null = null
+    for (let page = 0; page < ENROLLMENT_PAGE_CAP; page++) {
+      const { data: rowData, error: rowError, count } = await db()
+        .from('journey_enrollments')
+        .select('plan_id, profile_id, completed_at, order_id', { count: 'exact' })
+        .in('plan_id', planIds)
+        .order('id')
+        .range(rows.length, rows.length + ENROLLMENT_PAGE - 1)
+      if (rowError) {
+        console.error('[spaces/completion-analytics] enrollments failed:', rowError.message)
+        return { stats: { ...EMPTY, journeyCount: planIds.length }, available: false }
+      }
+      if (typeof count !== 'number' || count >= ENROLLMENT_PAGE * ENROLLMENT_PAGE_CAP || (population !== null && population !== count)) return { stats: { ...EMPTY, journeyCount: planIds.length }, available: false }
+      population = count
+      const batch = (rowData ?? []) as SpaceCompletionRow[]
+      rows.push(...batch)
+      if (rows.length === count) return { stats: foldSpaceCompletions(planIds, rows), available: true }
+      if (batch.length === 0 || rows.length > count) return { stats: { ...EMPTY, journeyCount: planIds.length }, available: false }
     }
-    return foldSpaceCompletions(planIds, (rowData ?? []) as SpaceCompletionRow[])
+    // A bounded reader must report incomplete, never publish a partial population as a total.
+    return { stats: { ...EMPTY, journeyCount: planIds.length }, available: false }
   } catch (err) {
     console.error('[spaces/completion-analytics] getSpaceCompletionAnalytics failed:', err)
-    return { ...EMPTY }
+    return { stats: { ...EMPTY }, available: false }
   }
+}
+
+/** Legacy dashboard compatibility; new surfaces must distinguish unavailable data from measured zero. */
+export async function getSpaceCompletionAnalytics(spaceId: string): Promise<SpaceCompletionStats> {
+  return (await loadSpaceCompletionAnalytics(spaceId)).stats
+}
+
+/** Scoped all-time totals, or null when any read fails or a bounded population is incomplete. */
+export async function readSpaceCompletionAnalytics(spaceId: string): Promise<SpaceCompletionStats | null> {
+  const result = await loadSpaceCompletionAnalytics(spaceId)
+  return result.available ? result.stats : null
 }
