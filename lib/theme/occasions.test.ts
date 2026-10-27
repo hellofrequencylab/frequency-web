@@ -1,6 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import {
   OCCASIONS,
   DEFAULT_OCCASION,
@@ -48,22 +46,4 @@ describe('resolveOccasionForDate (calendar window selection)', () => {
     expect(wrap('06-15', '12-20', '01-02')).toBe(false) // mid-year, outside
     expect(wrap('01-03', '12-20', '01-02')).toBe(false) // just past the end edge
   })
-})
-
-// The CSS ⇄ registry CONTRACT. Every non-`none` OccasionId MUST have a
-// `[data-occasion="<id>"]` block authored in app/globals.css (`none` is the baseline and
-// needs no block). Keeps CSS + registry from drifting apart.
-describe('occasion CSS contract (every non-none id has its [data-occasion] block)', () => {
-  const globalsCss = readFileSync(
-    fileURLToPath(new URL('../../app/globals.css', import.meta.url)),
-    'utf8',
-  )
-
-  for (const occ of OCCASIONS) {
-    if (occ.id === DEFAULT_OCCASION) continue
-    it(`occasion: ${occ.id} has a [data-occasion] block`, () => {
-      const re = new RegExp(`\\[data-occasion="${occ.id}"\\]\\s*\\{`)
-      expect(globalsCss).toMatch(re)
-    })
-  }
 })

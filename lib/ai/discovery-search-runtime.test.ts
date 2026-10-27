@@ -10,9 +10,10 @@ vi.mock('@/lib/sites/host', () => ({ appOrigin: () => 'https://frequencylocal.co
 vi.mock('@/lib/rate-limit', () => ({ rateLimitOk: vi.fn(async () => { m.calls.push('rate'); return m.rate }) }))
 vi.mock('./discovery-connection-store', () => ({ loadSearchConnection: vi.fn(async () => { m.calls.push('private'); return m.loaded ? structuredClone(m.loaded) : null }), refreshSearchConnection: vi.fn(async () => m.refreshSaved) }))
 vi.mock('@/lib/integrations/discovery/oauth', () => ({ refreshSearchTokens: vi.fn(async (_provider: string, tokens: SearchTokens) => ({ ...tokens, accessToken: 'rotated' })) }))
-vi.mock('./discovery-bing', () => ({ observeBingDiscovery: vi.fn(async () => ({ status: 'completed', observations: [], propertyUrl: 'https://owner.example/', limitations: [] })) }))
+vi.mock('./discovery-bing', () => ({ observeBingDiscovery: vi.fn(async () => ({ status: 'completed', observations: [], propertyUrl: 'https://owner.example/', limitations: [] })), verifyBingSearchProperty: vi.fn(async () => ({ status: 'completed', propertyUrl: 'https://owner.example/' })) }))
 vi.mock('./discovery-coach', () => ({ coachDiscovery: vi.fn(() => ({ recommendations: [] })) }))
 import { resolveSearchAccess, searchPropertyAllowed, reviewSearchSignals, searchProviderDependencies, verifySearchConnection } from './discovery-search-runtime'
+import { verifyBingSearchProperty } from './discovery-bing'
 import { coachDiscovery } from './discovery-coach'
 import { refreshSearchConnection } from './discovery-connection-store'
 import { refreshSearchTokens } from '@/lib/integrations/discovery/oauth'
@@ -77,7 +78,26 @@ describe('connected search runtime authority and real Google integration', () =>
   })
   it('verifies a selected custom property before storing tokens without requiring unrelated profile coverage', async () => {
     m.domain = 'owner.example'; m.loaded = null
-    expect(await verifySearchConnection({ ...bound(), propertyUrl: 'https://owner.example/' }, tokens())).toBe(true)
+    expect(await verifySearchConnection({ ...bound(), propertyUrl: 'https://owner.example/' }, tokens())).toEqual({ status: 'verified' })
+    expect(m.calls).not.toContain('private')
+  })
+  it('distinguishes changed property scope without provider requests', async () => {
+    expect(await verifySearchConnection({ ...bound(), propertyUrl: 'https://foreign.example/' }, tokens())).toEqual({ status: 'unavailable', reason: 'property_scope_changed' })
+    expect(verifyBingSearchProperty).not.toHaveBeenCalled()
+    expect(m.calls).not.toContain('provider')
+  })
+  it.each([
+    ['property_unverified', 'provider_property_unverified', undefined],
+    ['not_connected', 'provider_auth_failed', 401],
+    ['provider_error', 'property_provider_unavailable', 400],
+    ['invalid_response', 'property_provider_invalid_response', undefined],
+    ['rate_limited', 'property_provider_rate_limited', 429],
+    ['permission_denied', 'property_scope_changed', undefined],
+  ] as const)('maps Bing %s to a fixed callback stage without payloads', async (reason, expected, providerStatus) => {
+    m.domain = 'owner.example'
+    vi.mocked(verifyBingSearchProperty).mockResolvedValueOnce({ status: 'unavailable', reason, ...(providerStatus ? { providerStatus } : {}) })
+    const out = await verifySearchConnection({ ...bound(), provider: 'bing_webmaster', propertyUrl: 'https://owner.example/', propertyScope: 'dedicated_property' }, { ...tokens(), scopes: ['Webmaster.read'] })
+    expect(out).toEqual({ status: 'unavailable', reason: expected, ...(providerStatus ? { providerStatus } : {}) })
     expect(m.calls).not.toContain('private')
   })
   it.each(['disconnect', 'generation'])('drops provider evidence after a %s during owner-context IO', async change => {
