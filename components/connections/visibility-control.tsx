@@ -6,6 +6,7 @@ import { Globe, Lock, Users } from 'lucide-react'
 import { setVisibility } from '@/app/(main)/connections/actions'
 import type { Visibility } from '@/lib/connections/types'
 import { Select } from '@/components/ui/select'
+import { chipClasses } from '@/components/ui/chip'
 
 // The owner-only visibility control for one capture (ADR-132/154/778). Up to three tiers:
 //   • Private — only you.
@@ -150,11 +151,7 @@ function Choice({
       aria-checked={active}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 ${
-        active
-          ? 'border-primary bg-primary-bg text-primary-strong'
-          : 'border-border-strong text-text hover:bg-surface-elevated'
-      }`}
+      className={chipClasses(Boolean(active))}
     >
       {icon}
       {label}

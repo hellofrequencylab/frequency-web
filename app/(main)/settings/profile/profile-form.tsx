@@ -522,11 +522,7 @@ export function ProfileForm({
               type="button"
               onClick={handleTogglePublish}
               disabled={spotPending}
-              className={`inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 ${
-                spotPublished
-                  ? 'border border-border-strong text-text hover:bg-surface-elevated'
-                  : 'bg-primary text-on-primary hover:bg-primary-hover'
-              }`}
+              className={buttonClasses(spotPublished ? 'secondary' : 'primary', 'sm')}
             >
               {spotPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {spotPublished ? 'Unpublish' : 'Publish'}

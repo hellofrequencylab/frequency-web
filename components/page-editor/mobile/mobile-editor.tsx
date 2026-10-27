@@ -39,6 +39,8 @@ import { BlockList } from './block-list'
 import { BottomSheet } from './bottom-sheet'
 import { Snackbar, type SnackbarState } from './snackbar'
 import { capsLabel } from '@/components/ui/caps-label'
+import { chipClasses } from '@/components/ui/chip'
+import { buttonClasses } from '@/components/ui/button'
 
 /** An extra control surface injected into the dock (e.g. Spotlight's Theme). Each panel
  *  becomes its own dock tab that opens `render()` inside the expandable bottom sheet —
@@ -296,11 +298,7 @@ export function MobileEditor({
           type="button"
           onClick={handlePublish}
           disabled={!dirty && publishState !== 'error'}
-          className={`min-h-[44px] rounded-control px-4 text-body-sm font-semibold transition-colors ${
-            dirty || publishState === 'error'
-              ? 'bg-primary text-on-primary hover:bg-primary-hover'
-              : 'cursor-default bg-surface-elevated text-subtle'
-          }`}
+          className={buttonClasses(dirty || publishState === 'error' ? 'primary' : 'secondary', 'md', !dirty && publishState !== 'error' ? 'cursor-default opacity-60' : undefined)}
         >
           {publishState === 'publishing'
             ? publishBusyLabel
@@ -559,9 +557,7 @@ function DockTab({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-meta font-medium transition-colors ${
-        active ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface hover:text-text'
-      }`}
+      className={chipClasses(active, 'min-h-[52px] h-auto flex-1 flex-col justify-center gap-0.5 rounded-xl px-2 py-1.5')}
     >
       {icon}
       <span className="truncate">{label}</span>

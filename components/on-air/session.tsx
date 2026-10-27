@@ -88,8 +88,9 @@ import {
 } from '@/lib/on-air/active-session'
 import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
 import { Field, Textarea } from '@/components/ui/field'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // What a saved Mindless run carries beyond the shared record fields: the mode + cue settings the
 // live clock is rebuilt from. startedAt/pausedAt/practiceId/banked are on the record itself.
@@ -1530,7 +1531,7 @@ export function OnAirSession({
               <button
                 type="button"
                 onClick={restoreCues}
-                className="rounded-pill border border-primary/50 bg-primary-bg/40 px-3 py-1.5 text-meta font-medium text-primary-strong transition-colors hover:bg-primary-bg/60"
+                className={buttonClasses('primarySoft', 'sm')}
               >
                 Tap to restore sound
               </button>
@@ -1954,7 +1955,7 @@ export function OnAirSession({
                     type="range"
                     min={0}
                     max={100}
-                    step={5}
+                    step={1}
                     value={Math.round(bellVolume * 100)}
                     onChange={(e) => setBellVolume(Number(e.target.value) / 100)}
                     onPointerUp={(e) => {
@@ -2247,11 +2248,7 @@ function ModeButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-meta transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-        active
-          ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-          : 'border-border text-muted hover:bg-surface-elevated disabled:hover:bg-transparent'
-      }`}
+      className={choiceTileClasses(Boolean(active), 'flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-meta')}
     >
       <Icon className="h-4 w-4" />
       {label}
@@ -2278,11 +2275,7 @@ function ToggleChip({
       aria-pressed={active}
       onClick={onClick}
       title={title}
-      className={`min-h-11 flex items-center justify-center gap-2 rounded-xl border px-2 py-2 text-meta transition-colors ${
-        active
-          ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-          : 'border-border text-muted hover:bg-surface-elevated'
-      }`}
+      className={choiceTileClasses(Boolean(active), 'min-h-11 flex items-center justify-center gap-2 rounded-xl px-2 py-2 text-meta')}
     >
       <Icon className="h-4 w-4" />
       {label}

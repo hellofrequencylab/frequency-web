@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Loader2, Zap } from 'lucide-react'
 import { claimEventAction } from './actions'
+import { buttonClasses } from '@/components/ui/button'
 
 export function ClaimButton({ token, size = 'md' }: { token: string; size?: 'md' | 'lg' }) {
   const [pending, startTransition] = useTransition()
@@ -29,9 +30,7 @@ export function ClaimButton({ token, size = 'md' }: { token: string; size?: 'md'
         type="button"
         onClick={handleClaim}
         disabled={pending}
-        className={`inline-flex items-center justify-center gap-2 rounded-control bg-primary font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-40 ${
-          lg ? 'w-full px-8 py-4 text-body' : 'px-5 py-2.5 text-body-sm'
-        }`}
+        className={buttonClasses('primary', lg ? 'lg' : 'md', lg ? 'w-full' : undefined)}
       >
         {pending ? (
           <Loader2 className={lg ? 'h-5 w-5 animate-spin' : 'h-4 w-4 animate-spin'} />

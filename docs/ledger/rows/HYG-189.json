@@ -1,0 +1,19 @@
+{
+  "id": "HYG-189",
+  "title": "Keep bell volume slider aligned with saved percentage",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "components/on-air/session.tsx",
+    "ref": "Live signed-in timer settings:38percent label vs40percent native range"
+  },
+  "detail": "The bell range used a five-percent step although migrated quiet/medium/loud preferences produce38/63/94percent labels. Native browser range sanitization exposed40percent for the observed38percent label. A one-percent step preserves all displayed saved percentages without modifying existing preferences or synth gain. Actual range attributes and DOM step-mismatch tests cover migrated presets, arbitrary38percent and endpoints; restoring step5 is rejected.36focused tests pass. Local fix only; production mismatch remains until release. No timer session, preference write or log created.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/bell-volume-range.mjs",
+    "note": "Reads the actual range attributes; DOM regression tests independently exercise native step validity."
+  },
+  "closed": "2026-10-26"
+}

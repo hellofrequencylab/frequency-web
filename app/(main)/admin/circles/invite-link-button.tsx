@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Link2, Check, Loader2 } from 'lucide-react'
 import { createInviteLink } from '../actions'
+import { buttonClasses } from '@/components/ui/button'
 
 export function InviteLinkButton({ circleId }: { circleId: string }) {
   const [copied, setCopied]     = useState(false)
@@ -32,7 +33,7 @@ export function InviteLinkButton({ circleId }: { circleId: string }) {
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg disabled:opacity-50 transition-colors"
+      className={buttonClasses('ghost', 'xs')}
       aria-label={copied ? 'Link copied!' : 'Copy invite link'}
       title={copied ? 'Link copied!' : 'Copy invite link'}
     >

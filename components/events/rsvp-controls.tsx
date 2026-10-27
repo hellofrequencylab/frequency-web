@@ -15,6 +15,7 @@ import { Select } from '@/components/ui/select'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { DeviceNudge } from '@/components/push/device-nudge'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // Detail-page RSVP controls (event Detail template). Three warm states a member
 // can move between — Going · Interested (maybe) · (Join waitlist when full) —
@@ -301,11 +302,7 @@ export function RsvpControls({
           onClick={onMaybe}
           disabled={pending}
           aria-pressed={isMaybe}
-          className={`flex flex-col items-center justify-center gap-1 rounded-control-nested px-2 py-2.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
-            isMaybe
-              ? 'bg-primary-bg text-primary-strong'
-              : 'text-muted hover:bg-surface-elevated hover:text-text'
-          }`}
+          className={choiceTileClasses(Boolean(isMaybe), 'flex flex-col items-center justify-center gap-1 rounded-control-nested px-2 py-2.5 text-meta')}
         >
           <Star className="h-5 w-5" />
           <span className="text-center leading-tight">Maybe</span>

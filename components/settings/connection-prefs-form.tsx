@@ -11,6 +11,7 @@ import {
 } from '@/lib/connections/location'
 import { saveMyConnectionPrefs } from '@/lib/connections/connection-settings-actions'
 import { isError } from '@/lib/action-result'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 const METRES_PER_MILE = 1609
 
@@ -326,9 +327,7 @@ function OptionRow({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors ${
-        active ? 'bg-primary-bg/60 dark:bg-primary-bg/40' : 'hover:bg-surface-elevated'
-      }`}
+      className={choiceTileClasses(Boolean(active), 'w-full flex items-center gap-3 px-4 py-3.5 text-left')}
     >
       <div className="flex-1 min-w-0">
         <p className={`text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>

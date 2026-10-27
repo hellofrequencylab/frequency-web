@@ -15,9 +15,24 @@ describe('separate read-only discovery OAuth', () => {
   it.each(['google_search_console', 'bing_webmaster'] as const)('requests only the intended read scope at fixed %s endpoint and callback', provider => {
     const url = new URL(searchAuthorizationUrl(provider, 'state-random', 'challenge')!)
     expect(url.hostname).toBe(provider === 'google_search_console' ? 'accounts.google.com' : 'www.bing.com')
-    expect(url.searchParams.get('scope')).toBe(SEARCH_SCOPES[provider]); expect(url.searchParams.get('state')).toBe('state-random')
+    expect(url.searchParams.get('scope')).toBe(provider === 'bing_webmaster' ? 'webmaster.read' : SEARCH_SCOPES[provider]); expect(url.searchParams.get('state')).toBe('state-random')
     expect(url.searchParams.get('redirect_uri')).toBe(`https://frequencylocal.com/api/integrations/discovery/${provider === 'google_search_console' ? 'google' : 'bing'}/callback`)
     expect(url.searchParams.get('code_challenge_method')).toBe('S256'); expect(url.href).not.toContain('secret-')
+  })
+  it.each(['Webmaster.read', 'webmaster.read', 'Read'])('normalizes only Bing read alias %s for exchange and refresh', async scope => {
+    const result = await exchangeSearchCode('bing_webmaster', 'code', 'a'.repeat(43), async () => json(reply({ scope })))
+    expect(result?.scopes).toEqual(['Webmaster.read'])
+    const previous = { accessToken: 'old', refreshToken: 'refresh', scopes: ['Webmaster.read'], expiresAt: new Date().toISOString() }
+    expect((await refreshSearchTokens('bing_webmaster', previous, async () => json(reply({ scope }))))?.scopes).toEqual(['Webmaster.read'])
+  })
+  it.each(['Webmaster.manage', 'webmaster.manage', 'Manage', 'Read Manage', 'webmaster.read webmaster.manage', 'Webmaster.read Read', 'Read Read', 'read', 'READ', '', 'Read,Manage', 'Read\u0000', ['Read'], null])('rejects ambiguous, mixed, write or malformed Bing scope %j', async scope => {
+    const request = async () => json(reply({ scope }))
+    expect(await exchangeSearchCode('bing_webmaster', 'code', 'a'.repeat(43), request)).toBeNull()
+    const previous = { accessToken: 'old', refreshToken: 'refresh', scopes: ['Webmaster.read'], expiresAt: new Date().toISOString() }
+    expect(await refreshSearchTokens('bing_webmaster', previous, request)).toBeNull()
+  })
+  it('does not treat a Bing read alias as a Google permission', async () => {
+    expect(await exchangeSearchCode('google_search_console', 'code', 'a'.repeat(43), async () => json(reply({ scope: 'Read' })))).toBeNull()
   })
   it('does not fall back to sign-in/contacts scopes or another secret when setup is absent', () => { vi.stubEnv('BING_WEBMASTER_CLIENT_SECRET', ''); expect(searchAuthorizationUrl('bing_webmaster', 'state', 'challenge')).toBeNull() })
   it('exchanges a code only in a server POST, with no redirect following and bounded transport', async () => {

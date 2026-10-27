@@ -2,6 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from 'react'
 import { X } from 'lucide-react'
+import { buttonClasses } from '@/components/ui/button'
 
 // ANNOUNCEMENT BAR - the full-width strip directly below the signed-in header, carrying whatever the
 // operator wrote in `platform_settings.announcement_message` (resolved by `announcementBannerState()`
@@ -101,7 +102,7 @@ export function AnnouncementBar({ message, countLabel = null }: { message: strin
           type="button"
           onClick={dismiss}
           aria-label="Dismiss this announcement"
-          className="absolute right-2 top-1/2 -translate-y-1/2 shrink-0 rounded-control p-1.5 text-primary-strong/80 transition-colors hover:bg-primary/10 hover:text-primary-strong sm:right-4"
+          className={buttonClasses('ghost', 'xs', 'absolute right-2 top-1/2 -translate-y-1/2 shrink-0 sm:right-4')}
         >
           <X className="h-4 w-4" aria-hidden />
         </button>

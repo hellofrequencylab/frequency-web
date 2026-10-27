@@ -7,12 +7,14 @@ vi.mock('@/app/(main)/admin/crm/conversations/actions', () => ({ sendConversatio
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/comms/workspace', () => ({ getWorkspaceThread: async () => ({ subject: 'Question', messages: [{direction:'inbound',authorName:'PRIVATE NAME',body:'When?',isInternal:false}] }) }))
 vi.mock('@/lib/comms/conversations', () => ({ updateConversationFields: vi.fn() }))
-vi.mock('@/lib/ai/complete', () => ({ AiUnavailableError: class extends Error {}, completeText: async () => ({text: JSON.stringify({questionIds:['confirm'],checkIds:['facts']})}) }))
+const provider = vi.hoisted(() => ({text: JSON.stringify({questionIds:['confirm'],checkIds:['facts']})}))
+vi.mock('@/lib/ai/complete', () => ({ AiUnavailableError: class extends Error {}, completeText: async () => ({text: provider.text}) }))
 vi.mock('@/lib/ai/usage', () => ({ aiAvailable: async () => true, featureOverBudget: async () => false }))
 vi.mock('@/lib/ai/rate-limit', () => ({ aiRateLimited: async () => false }))
 import { veraDraftReply } from '@/lib/comms/vera-conversation'
 import { ConversationComposer } from './conversation-composer'
-it('keeps authored reply untouched and sends only that reply after separate coaching', async () => {
+it.each(['plain','fenced','invalid'])('keeps authored reply untouched with %s output and sends only after manual action', async mode => {
+ provider.text = mode === 'fenced' ? '```json\n'+JSON.stringify({questionIds:['confirm'],checkIds:['facts']})+'\n```' : mode === 'invalid' ? 'Invented ready to send reply' : JSON.stringify({questionIds:['confirm'],checkIds:['facts']})
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   const host = document.createElement('div'); document.body.append(host); const root = createRoot(host)
   const send = vi.fn(async () => ({ data: undefined })), draft = vi.fn(async (id: string) => veraDraftReply(id, 'owner'))

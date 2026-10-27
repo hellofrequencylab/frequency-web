@@ -1,6 +1,5 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react'
@@ -10,6 +9,7 @@ import { getPageLayoutForEditor, savePageLayout, type LayoutEditorItem, type Slo
 import { MODULE_ROLES, ROW_HEADER_MAX, type ModuleRole } from '@/lib/page-settings/layout'
 import { TEMPLATES, templateMeta, slotIds, defaultSlotId, type TemplateId } from '@/lib/widgets/templates'
 import { Input } from '@/components/ui/field'
+import { buttonClasses } from '@/components/ui/button'
 
 // The live Layout editor for the on-page "Page" settings panel (ADR-270/271/272). Staff pick the
 // interior TEMPLATE, assign each module to one of its AREAS (slots), set order + visibility + a
