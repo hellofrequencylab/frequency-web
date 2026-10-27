@@ -20,6 +20,7 @@ export function MemberRowActions({
   const [isPending, startTransition] = useTransition()
   const ref = useRef<HTMLDivElement>(null)
   const menuId = useId()
+  const restoreFocus = useRef(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export function MemberRowActions({
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { setOpen(false); ref.current?.querySelector('button')?.focus() }
+      if (e.key === 'Escape') { restoreFocus.current = true; setOpen(false) }
     }
     if (open) ref.current?.querySelector<HTMLButtonElement>('[role=group] button')?.focus()
     if (open) document.addEventListener('mousedown', onClick)
@@ -35,11 +36,19 @@ export function MemberRowActions({
     return () => { document.removeEventListener('mousedown', onClick); document.removeEventListener('keydown', onKey) }
   }, [open])
 
+  useEffect(() => {
+    if (!open && !isPending && restoreFocus.current) {
+      ref.current?.querySelector('button')?.focus()
+      restoreFocus.current = false
+    }
+  }, [open, isPending])
+
   function handle(action: () => Promise<void>) {
     setError(null)
     startTransition(async () => {
       try {
         await action()
+        restoreFocus.current = true
         setOpen(false)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not update this member.')

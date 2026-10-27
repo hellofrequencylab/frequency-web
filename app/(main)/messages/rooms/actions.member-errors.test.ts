@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 const state = vi.hoisted(() => ({ caller: { id: 'me' } as { id: string } | null, admin: true, count: 2 as number | null, countError: null as { message: string } | null, writeError: null as { message: string } | null, writes: [] as { mode: string; payload?: unknown; filters: [string, unknown][] }[], revalidatePath: vi.fn() }))
 vi.mock('next/cache', () => ({ revalidatePath: state.revalidatePath }))
 vi.mock('next/navigation', () => ({ redirect: (url: string) => { throw new Error(`redirect:${url}`) } }))
@@ -20,8 +20,9 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: () =>
     },
   }; return q
 } }) }))
-import { removeFromRoom, promoteRoomMember, demoteRoomMember } from './actions'
-beforeEach(() => { state.caller = { id: 'me' }; state.admin = true; state.count = 2; state.countError = null; state.writeError = null; state.writes.length = 0; vi.clearAllMocks() })
+import { removeFromRoom, promoteRoomMember, demoteRoomMember, leaveRoom } from './actions'
+afterEach(() => vi.unstubAllEnvs())
+beforeEach(() => { vi.stubEnv('ROOM_ATOMIC_WRITES', ''); state.caller = { id: 'me' }; state.admin = true; state.count = 2; state.countError = null; state.writeError = null; state.writes.length = 0; vi.clearAllMocks() })
 it.each([removeFromRoom, promoteRoomMember, demoteRoomMember])('refuses an unauthorized caller before any privileged mutation', async action => {
   state.admin = false
   await expect(action('room-A', 'member-B')).rejects.toThrow('room admin')
@@ -49,4 +50,14 @@ it('requires sign-in before all member actions', async () => {
   state.caller = null
   await expect(promoteRoomMember('room-A', 'member-B')).rejects.toThrow('redirect:/sign-in')
   expect(state.writes).toHaveLength(0)
+})
+
+it('leave remains self-scoped for ordinary members and propagates refused writes without success', async () => {
+  state.admin = false
+  await leaveRoom('room-A')
+  expect(state.writes[0].filters).toEqual([['room_id', 'room-A'], ['profile_id', 'me']])
+  expect(state.revalidatePath).toHaveBeenCalledExactlyOnceWith('/messages')
+  state.revalidatePath.mockClear(); state.writeError = { message: 'refused' }
+  await expect(leaveRoom('room-A')).rejects.toThrow('Could not leave this room')
+  expect(state.revalidatePath).not.toHaveBeenCalled()
 })

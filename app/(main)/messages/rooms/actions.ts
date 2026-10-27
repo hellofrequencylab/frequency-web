@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { roomAtomicWritesEnabled, createRoomAtomic, setRoomAdminAtomic, removeRoomMemberAtomic, type RoomAtomicClient } from '@/lib/messages/room-atomic'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
@@ -44,6 +45,16 @@ export async function createRoom(fd: FormData): Promise<ActionResult<{ id: strin
   const visibility: RoomVisibility = rawVisibility === 'private' ? 'private' : 'public'
 
   if (!name) return fail('Name is required')
+
+  if (roomAtomicWritesEnabled()) {
+    try {
+      const id = await createRoomAtomic(createAdminClient() as unknown as RoomAtomicClient, caller.id, { name, description, visibility })
+      revalidatePath('/messages')
+      return ok({ id })
+    } catch (error) {
+      return fail(error instanceof Error ? error.message : 'Could not create room. Please try again.')
+    }
+  }
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -153,13 +164,20 @@ export async function leaveRoom(roomId: string) {
   const caller = await getCallerProfile()
   if (!caller) redirect('/sign-in')
 
+  if (roomAtomicWritesEnabled()) {
+    await removeRoomMemberAtomic(createAdminClient() as unknown as RoomAtomicClient, caller.id, roomId, caller.id)
+    revalidatePath('/messages')
+    return
+  }
+
   const admin = createAdminClient()
-  await admin
+  const { error } = await admin
     .from('room_members')
     .delete()
     .eq('room_id', roomId)
     .eq('profile_id', caller.id)
 
+  if (error) throw new Error('Could not leave this room. Please try again.')
   revalidatePath('/messages')
 }
 
@@ -243,6 +261,11 @@ export async function removeFromRoom(roomId: string, profileId: string) {
   if (!caller) redirect('/sign-in')
   await assertRoomAdmin(roomId, caller.id)
   if (caller.id === profileId) throw new Error('Use Leave to remove yourself')
+  if (roomAtomicWritesEnabled()) {
+    await removeRoomMemberAtomic(createAdminClient() as unknown as RoomAtomicClient, caller.id, roomId, profileId)
+    revalidatePath(`/messages/r/${roomId}`)
+    return
+  }
 
   const admin = createAdminClient()
   const { error } = await admin.from('room_members').delete()
@@ -258,6 +281,12 @@ export async function promoteRoomMember(roomId: string, profileId: string) {
   if (!caller) redirect('/sign-in')
   await assertRoomAdmin(roomId, caller.id)
 
+  if (roomAtomicWritesEnabled()) {
+    await setRoomAdminAtomic(createAdminClient() as unknown as RoomAtomicClient, caller.id, roomId, profileId, true)
+    revalidatePath(`/messages/r/${roomId}`)
+    return
+  }
+
   const admin = createAdminClient()
   const { error } = await admin.from('room_members').update({ is_admin: true })
     .eq('room_id', roomId)
@@ -271,6 +300,12 @@ export async function demoteRoomMember(roomId: string, profileId: string) {
   const caller = await getCallerProfile()
   if (!caller) redirect('/sign-in')
   await assertRoomAdmin(roomId, caller.id)
+
+  if (roomAtomicWritesEnabled()) {
+    await setRoomAdminAtomic(createAdminClient() as unknown as RoomAtomicClient, caller.id, roomId, profileId, false)
+    revalidatePath(`/messages/r/${roomId}`)
+    return
+  }
 
   // Prevent demoting the last admin
   const admin = createAdminClient()

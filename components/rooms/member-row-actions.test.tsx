@@ -48,3 +48,13 @@ it('disables controls while pending and prevents duplicate writes', async () => 
   act(() => button('Make admin').click()); expect(actions.promoteRoomMember).toHaveBeenCalledTimes(1)
   await act(async () => finish()); expect(trigger().disabled).toBe(false)
 })
+
+it('Escape during a pending mutation restores focus after the disabled trigger is usable again', async () => {
+  let finish!: () => void
+  actions.promoteRoomMember.mockImplementation(() => new Promise<void>(resolve => { finish = resolve }))
+  mount(); open(); act(() => button('Make admin').click())
+  act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+  expect(container.querySelector('[role=group]')).toBeNull()
+  await act(async () => finish())
+  expect(trigger().disabled).toBe(false); expect(document.activeElement).toBe(trigger())
+})
