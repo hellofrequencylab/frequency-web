@@ -5,6 +5,7 @@ import { Timer } from 'lucide-react'
 import type { MenuSettings } from '@/lib/menus/types'
 import { setMenuSettings } from '@/lib/menus/actions'
 import { Input } from '@/components/ui/field'
+import { buttonClasses } from '@/components/ui/button'
 
 // The global Open & Dwell speed panel (requirement 2). Numeric sliders + inputs for
 // the three mega-menu timings, saved via setMenuSettings. Ranges mirror the DB CHECK
@@ -138,7 +139,7 @@ export function SettingsPanel({ initial }: { initial: MenuSettings }) {
           type="button"
           onClick={save}
           disabled={isPending || !dirty}
-          className="rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+          className={buttonClasses('primary', 'sm')}
         >
           {isPending ? 'Saving…' : 'Save speed settings'}
         </button>
