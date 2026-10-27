@@ -13,6 +13,7 @@ import {
 } from '@/app/(main)/circles/admin-actions'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { useEntityRailRead } from './entity-rail-data'
+import { buttonClasses } from '@/components/ui/button'
 
 // In-place "Engage" module (ADMIN-RAIL.md Phase 7, the 'engage' spine cell). Renders in the page
 // admin dock on /circles/[slug]; the server returns null unless the caller holds circle.assignTask.
@@ -122,7 +123,7 @@ export function CircleEngageModule() {
                 type="button"
                 onClick={handleAdopt}
                 disabled={pending || !pick}
-                className="inline-flex shrink-0 items-center rounded-control bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                className={buttonClasses('primary', 'sm', 'shrink-0')}
               >
                 Adopt
               </button>

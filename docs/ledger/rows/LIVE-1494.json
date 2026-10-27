@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-1494",
+  "title": "A guarded update script that brings the live Alli Rae Space to the current Designer build",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/alli-rae-update.mjs"
+  },
+  "detail": "Follows LIVE-1493. scripts/seed-alli-rae-update.mts prints one SQL transaction for the owner: it stops unless the Space alli-rae exists once and its saved site is still revision 1, backs up the old preferences and editor state, saves the new site as revision 2 through save_website_editor, and merges the new siteFooter and siteMenu into preferences. Not run by the PR. The claim token and plan are untouched."
+}

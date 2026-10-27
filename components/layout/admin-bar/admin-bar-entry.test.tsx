@@ -59,3 +59,16 @@ it('keeps the typed Page focus and scroll after the real desktop shell opens', (
   expect(document.activeElement).toBe(node.querySelector('[data-admin-app="space.layout"]'))
   expect(top).not.toHaveBeenCalled()
 })
+
+it('accepts the lazy bridge first trigger after all real shell mount listeners are installed', () => {
+  shellModel = { hasContent: true, pageGroup: null, searchApps: [], lockedApps: [], bank: [], hub: null, sections: [
+    { tier: 'standard', slot: 'layout', label: 'Profile', Icon: Settings, nodes: [{ id: 'space.layout', label: 'Page', node: <div>Sidebar page builder</div> }] },
+  ] }
+  const node = document.createElement('div'); document.body.append(node); const root = createRoot(node)
+  cleanup = () => { act(() => root.unmount()); node.remove() }
+  const onListening = () => window.dispatchEvent(new CustomEvent('open-admin-bar', { detail: { appId: 'space.layout', scope: { kind: 'space', id: 'authorized-space' } } }))
+  act(() => root.render(<AdminBar onListening={onListening} />))
+  expect(node.querySelector('[data-admin-app="space.layout"]')).not.toBeNull()
+  expect(document.activeElement).toBe(node.querySelector('[data-admin-app="space.layout"]'))
+  expect(JSON.parse(sessionStorage.getItem('freq-admin-detail')!).detail.appId).toBe('space.layout')
+})

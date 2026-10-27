@@ -64,7 +64,8 @@ import type { AppOverrides } from '@/lib/apps/overrides'
 import { isJanitor, type WebRole } from '@/lib/core/roles'
 import type { Capability } from '@/lib/core/capabilities'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
-import { AdminBar, type AdminBarState } from '@/components/layout/admin-bar/admin-bar'
+import { LazyAdminBar } from '@/components/layout/admin-bar/lazy-admin-bar'
+import type { AdminBarState } from '@/components/layout/admin-bar/admin-bar'
 import { EntityLayoutMount } from '@/components/entity-blocks/profile-layout-context'
 import { MindlessProvider, useMindless } from '@/components/on-air/mindless'
 import { MovementProvider } from '@/components/on-air/movement'
@@ -660,7 +661,7 @@ export default function AppShell({
 
   // The shell-level admin bar (ADR-128, rebuilt; owner revision 2026-06-21; unified in ADMIN-RAIL
   // Phase 2). The AdminBar owns open/persistence + the grab-handle resize + the `open-admin-bar`
-  // event (the old `open-settings` event retired with the SettingsDrawer), and reports its live
+  // event after LazyAdminBar retains the first request during chunk loading, and reports its live
   // { open, width, resizing } up here. The shell sizes
   // the RAIL COLUMN to that width, so the bar slides over the rail at rest (covering it, nothing reflows) and,
   // as the grab handle widens it, the rail column grows and the CENTER CONTENT COMPRESSES to
@@ -1327,7 +1328,7 @@ export default function AppShell({
                 )}
                 {/* The AdminBar slides over THIS column (absolute, full height) on the
                     `open-admin-bar` event, reporting its width up so the column sizes to match. */}
-                <AdminBar onStateChange={setSettings} />
+                <LazyAdminBar onStateChange={setSettings} />
               </div>
             )}
             {/* No member rail here (Focus surfaces, railFor 'none'): STILL mount the
@@ -1343,7 +1344,7 @@ export default function AppShell({
                 }`}
                 style={{ width: settings.open ? settings.width : 0 }}
               >
-                <AdminBar onStateChange={setSettings} />
+                <LazyAdminBar onStateChange={setSettings} />
               </div>
             )}
           </div>

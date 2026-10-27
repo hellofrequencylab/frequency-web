@@ -8,6 +8,7 @@ import { loomImageField } from '@/lib/page-editor/loom-image-field'
 import { InlineText } from '@/components/sites/inline-text'
 import { DesignerInquiryForm } from '@/components/sites/designer-inquiry-form'
 import { DesignerCarousel } from '@/components/sites/designer-carousel'
+import { DesignerParallax } from '@/components/sites/designer-parallax'
 import {
   DESIGNER_BAND, DESIGNER_CLOSING, DESIGNER_FAQ, DESIGNER_FOUNDER, DESIGNER_GALLERY, DESIGNER_HERO, DESIGNER_INQUIRY, DESIGNER_PORTFOLIO,
   DESIGNER_QUOTE, DESIGNER_SERVICES, DESIGNER_STATEMENT, DESIGNER_STEPS, DESIGNER_TESTIMONIALS,
@@ -89,11 +90,12 @@ function DesignerHeroBlock({ p, metadata, pad, vis }: Common) {
   const src = img(p.image)
   const strip = arr(p.strip).slice(0, 3).filter((s) => str(s.label) || str(s.value))
   return (
-    <section data-dz="hero" className={cls('dz-hero', str(p.size) === 'short' && 'dz-hero--short', pad, vis)}>
+    <section data-dz="hero" data-size={str(p.size) || undefined} className={cls('dz-hero', str(p.size) === 'short' && 'dz-hero--short', pad, vis)}>
       {src && (
         // eslint-disable-next-line @next/next/no-img-element -- owner photo on an arbitrary host
         <img className="dz-hero-photo" src={src} alt={str(p.alt)} />
       )}
+      {src && <DesignerParallax />}
       <div className="dz-wrap dz-hero-copy">
         <Eyebrow text={str(p.eyebrow)} />
         <h1 className="dz-display"><InlineText text={str(p.title)} /></h1>
@@ -114,7 +116,7 @@ function DesignerHeroBlock({ p, metadata, pad, vis }: Common) {
               const inner = (
                 <>
                   {thumb && <span className="dz-strip-thumb"><Photo src={thumb} alt="" /></span>}
-                  <span className="dz-strip-text">
+                  <span className="dz-strip-text" data-flip={thumb ? '' : undefined}>
                     <span className="dz-strip-label">{str(s.label)}</span>
                     <span className="dz-strip-value">{str(s.value)}</span>
                   </span>
@@ -122,6 +124,7 @@ function DesignerHeroBlock({ p, metadata, pad, vis }: Common) {
               )
               return to ? <a key={i} className="dz-strip-item" href={to} {...rel(to)}>{inner}</a> : <div key={i} className="dz-strip-item">{inner}</div>
             })}
+            <div className="dz-strip-scroll" aria-hidden="true">Scroll<span /></div>
           </div>
         </div>
       )}
@@ -235,12 +238,12 @@ function DesignerServicesBlock({ p, metadata, pad, vis }: Common) {
   return (
     <Section kind="services" tone={light ? undefined : 'deep'} slab={!light} pad={pad} vis={vis}>
       <div className="dz-wrap">
-        <div className="dz-bar">
+        <div className="dz-bar" data-split={str(p.lead) ? '' : undefined}>
           <div className="dz-bar-copy">
             <Eyebrow text={str(p.eyebrow)} />
             {str(p.title) && <h2 className="dz-title"><InlineText text={str(p.title)} /></h2>}
-            {str(p.lead) && <p className="dz-lead">{str(p.lead)}</p>}
           </div>
+          {str(p.lead) && <p className="dz-body dz-bar-lead">{str(p.lead)}</p>}
           <Btn label={str(p.buttonLabel)} href={str(p.buttonHref)} kind={light ? 'outline' : 'light'} metadata={metadata} arrow />
         </div>
         <ul className={cls('dz-services', light && 'dz-services--light')} style={{ '--dz-cols': cols } as React.CSSProperties}>
@@ -251,6 +254,7 @@ function DesignerServicesBlock({ p, metadata, pad, vis }: Common) {
         {str(p.closing) && (
           <div className="dz-closing">
             <p>{str(p.closing)}</p>
+            <Btn label={str(p.closingLabel)} href={str(p.closingHref)} kind="inverse" metadata={metadata} arrow large />
           </div>
         )}
       </div>
@@ -267,11 +271,11 @@ function DesignerTestimonialsBlock({ p, pad, vis }: Common) {
     const src = img(t.image)
     return (
       <figure key={i} className="dz-quote-card" data-solo={src ? undefined : ''} style={{ margin: 0 }}>
-        {src && <div className="dz-quote-photo"><Photo src={src} alt="" /></div>}
+        {src && <div className="dz-quote-photo"><Arch src={src} alt="" /></div>}
         <div className="dz-quote-text">
           <span className="dz-quote-mark" aria-hidden="true">“</span>
           <blockquote className="dz-quote" style={{ margin: 0 }}>{str(t.quote)}</blockquote>
-          {str(t.author) && <figcaption className="dz-quote-by">{str(t.author)}</figcaption>}
+          {str(t.author) && <figcaption className="dz-quote-by" data-rule="">{str(t.author)}</figcaption>}
         </div>
       </figure>
     )
@@ -296,7 +300,7 @@ function DesignerFounderBlock({ p, metadata, pad, vis }: Common) {
         <div className="dz-founder-copy">
           <Eyebrow text={str(p.eyebrow)} />
           {str(p.title) && <h2 className="dz-title dz-title--italic"><InlineText text={str(p.title)} /></h2>}
-          {str(p.lead) && <p className="dz-founder-lead">{str(p.lead)}</p>}
+          {str(p.lead) && <p className="dz-founder-lead"><InlineText text={str(p.lead)} /></p>}
           {body.map((t, i) => <p key={i} className="dz-body">{t}</p>)}
           <div><Btn label={str(p.buttonLabel)} href={str(p.buttonHref)} kind="outline" metadata={metadata} arrow /></div>
         </div>
@@ -353,7 +357,7 @@ interface FaqBag { faqs?: { id: string; question: string; answer: string }[] }
 
 function DesignerFAQBlock({ p, metadata, pad, vis }: Common) {
   const own = ((metadata?.space ?? undefined) as FaqBag | undefined)?.faqs ?? []
-  const items = own.length ? own.map((f) => ({ q: f.question, a: f.answer })) : arr(p.items).map((f) => ({ q: str(f.q), a: str(f.a) }))
+  const items = own.length ? own.map((f) => ({ q: f.question, a: f.answer, list: [] as string[] })) : arr(p.items).map((f) => ({ q: str(f.q), a: str(f.a), list: lines(f.list) }))
   if (!items.length) return null
   const phone = str(p.phone)
   const email = str(p.email)
@@ -367,16 +371,23 @@ function DesignerFAQBlock({ p, metadata, pad, vis }: Common) {
             <div className="dz-card">
               {str(p.contactLabel) && <div className="dz-eyebrow">{str(p.contactLabel)}</div>}
               {phone && <a className="dz-card-phone" href={`tel:${phone.replace(/[^\d+]/g, '')}`}>{phone}</a>}
-              {email && <a href={`mailto:${email}`}>{email}</a>}
+              {email && <a className="dz-card-mail" href={`mailto:${email}`}>{email}</a>}
               <div><Btn label={str(p.buttonLabel)} href={str(p.buttonHref)} kind="primary" metadata={metadata} arrow /></div>
             </div>
           )}
         </div>
         <div className="dz-faq">
           {items.filter((f) => f.q).map((f, i) => (
-            <details key={i} open={i === 0}>
-              <summary>{f.q}</summary>
-              <div className="dz-faq-answer"><p className="dz-body">{f.a}</p></div>
+            <details key={i} open={i === 0} {...({ name: 'dz-faq' } as object)}>
+              <summary><span>{f.q}</span><span className="dz-plus" aria-hidden="true">+</span></summary>
+              <div className="dz-faq-answer">
+                <p className="dz-body">{f.a}</p>
+                {f.list.length > 0 && (
+                  <ol className="dz-rows">
+                    {f.list.map((name, k) => <li key={k}><b aria-hidden="true">{k + 1}</b>{name}</li>)}
+                  </ol>
+                )}
+              </div>
             </details>
           ))}
         </div>
@@ -511,7 +522,7 @@ export const designerComponents: Record<string, ComponentConfig> = {
     eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading'),
     columns: { type: 'number', label: 'Columns', min: 2, max: 4 },
     services: { type: 'array', label: 'Services', arrayFields: { name: text('Name') } },
-    buttonLabel: text('Button'), buttonHref: text('Button link', LINK_HINT), closing: area('Closing line'),
+    buttonLabel: text('Button'), buttonHref: text('Button link', LINK_HINT), closing: area('Closing line'), closingLabel: text('Closing button'), closingHref: text('Closing button link', LINK_HINT),
   }, { ...DESIGNER_SERVICES }, DesignerServicesBlock),
   DesignerTestimonials: block('Designer testimonials', {
     eyebrow: text('Small label'),
@@ -528,7 +539,7 @@ export const designerComponents: Record<string, ComponentConfig> = {
   }, { ...DESIGNER_BAND }, DesignerBandBlock),
   DesignerFAQ: block('Designer questions (live)', {
     title: text('Heading'), contactLabel: text('Contact card label'), phone: text('Phone'), email: text('Email'), buttonLabel: text('Button'), buttonHref: text('Button link', LINK_HINT),
-    items: { type: 'array', label: 'Questions', hint: 'Used when the Space has no questions of its own.', arrayFields: { q: text('Question'), a: area('Answer') } },
+    items: { type: 'array', label: 'Questions', hint: 'Used when the Space has no questions of its own.', arrayFields: { q: text('Question'), a: area('Answer'), list: area('Numbered list under the answer', 'One per line.') } },
   }, { ...DESIGNER_FAQ }, DesignerFAQBlock),
   DesignerQuote: block('Designer quote and arch', {
     title: area('Quote'), body: area('Words under it'), image, alt,
