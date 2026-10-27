@@ -42,14 +42,16 @@ assert.equal(await runtime.searchPropertyAllowed('space', 'google_search_console
 console.log('Connected search: real sealed-state isolation, malformed-state denial, permission/consent ordering and property scope (offline)')
 // Execute the actual callback with inert secret/provider IO. State diagnostics must not authorize.
 let consumeCalls = 0
+let callbackMode = 'reject'
+const callbackCalls = []
 const callback = load('app/api/integrations/discovery/[provider]/callback/route.ts', key => {
   if (key === 'next/server') return { NextResponse: { redirect: url => ({ headers: new Headers({ location: url }) }) } }
   if (key.includes('discovery-oauth-state')) return crypto
   if (key.includes('/host')) return { appOrigin: () => 'https://frequencylocal.com' }
-  if (key.includes('connection-store')) return { consumeSearchConnection: async () => { consumeCalls++; return null }, saveSearchConnection: () => { throw Error('must not save') }, invalidateSearchConnection: () => { throw Error('must not invalidate another attempt') } }
-  if (key.includes('/oauth')) return { searchProvider: value => value === 'bing' ? 'bing_webmaster' : 'google_search_console', exchangeSearchCode: () => { throw Error('must not exchange') } }
-  if (key.includes('discovery-access')) return { authorizeDiscoveryEditor: () => { throw Error('must not query editor before consumed attempt') } }
-  if (key.includes('discovery-search-runtime')) return { resolveSearchAccess: () => { throw Error('must not resolve access before consumed attempt') }, verifySearchConnection: () => { throw Error('must not verify before consumed attempt') } }
+  if (key.includes('connection-store')) return { consumeSearchConnection: async provider => { consumeCalls++; return callbackMode === 'reject' ? null : { binding: { ...binding, provider }, verifier: state.verifier } }, saveSearchConnection: () => { callbackCalls.push('save'); assert.equal(callbackMode, 'storage'); return false }, invalidateSearchConnection: () => { assert.notEqual(callbackMode, 'reject'); callbackCalls.push('invalidate'); return true } }
+  if (key.includes('/oauth')) return { searchProvider: value => value === 'bing' ? 'bing_webmaster' : 'google_search_console', exchangeSearchCode: () => { assert.notEqual(callbackMode, 'reject'); callbackCalls.push('exchange'); return callbackMode === 'token' ? null : { accessToken: 'inert-access' } } }
+  if (key.includes('discovery-access')) return { authorizeDiscoveryEditor: () => { assert.notEqual(callbackMode, 'reject'); return { actor: 'owner', space: { slug: 'owned' } } } }
+  if (key.includes('discovery-search-runtime')) return { resolveSearchAccess: () => { assert.notEqual(callbackMode, 'reject'); return { actorProfileId: 'owner', consent: { id: 'grant' } } }, verifySearchConnection: () => { callbackCalls.push('verify'); assert.notEqual(callbackMode, 'token'); return callbackMode === 'property' ? { status: 'unavailable', reason: 'provider_auth_failed', providerStatus: 401 } : { status: 'verified' } } }
   throw Error(`Unexpected callback dependency: ${key}`)
 })
 for (const provider of ['google', 'bing']) {
@@ -86,3 +88,15 @@ for (const invalid of ['Webmaster.manage', 'webmaster.manage', 'Read Manage', 'R
   assert.equal(await oauth.exchangeSearchCode('bing_webmaster', 'inert-code', state.verifier, tokenReply(invalid)), null)
 }
 console.log('Bing scope: lowercase wire read, exact canonical aliases only, no mixed/manage/prefix/suffix acceptance (offline)')
+
+for (const [mode, outcome, expected] of [
+  ['token', 'token_exchange_failed', ['exchange', 'invalidate']],
+  ['property', 'provider_auth_failed&provider_status=401', ['exchange', 'verify', 'invalidate']],
+  ['storage', 'storage_failed', ['exchange', 'verify', 'save', 'invalidate']],
+]) {
+  callbackMode = mode; callbackCalls.length = 0
+  const response = await callback.GET({ url: `https://frequencylocal.com/api/integrations/discovery/bing/callback?state=${state.state}&code=inert-code` }, { params: Promise.resolve({ provider: 'bing' }) })
+  assert.equal(response.headers.get('location'), `https://frequencylocal.com/spaces/owned/settings/coach?search=${outcome}`)
+  assert.deepEqual(callbackCalls, expected)
+}
+console.log('Callback stages: actual callback keeps token/property/storage failures distinct, never skips verification, and exposes only fixed stages/bounded HTTP status (offline)')
