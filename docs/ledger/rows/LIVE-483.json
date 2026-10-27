@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-483",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/frequency-public-retirement.mjs ticker",
+      "note": "Human retired global ticker on 2026-10-27; actual Nearby ticker is CSS-driven, paused for focus/hover and has no headline-rotation DOM interval."
+    },
+    "source": {
+      "file": "components/nearby/dispatch-marquee.tsx",
+      "ref": "Retained actual Nearby dispatch surface; global ticker requirement retired by human 2026-10-27"
+    }
+  },
+  "append": {
+    "detail": " HYG-214 2026-10-27: actual consumer guard/source migrated off orphan UI. Human explicitly ruled: \"Keep the current Frequency design; retire the old global-ticker requirement.\" Nearby and rail Dispatch features remain; Nearby is not claimed as a global-ticker equivalent. Shared modal/scrollbar/accessibility consequences remain guarded."
+  }
+}
