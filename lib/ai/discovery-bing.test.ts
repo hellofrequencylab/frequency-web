@@ -43,6 +43,14 @@ describe('Bing dedicated-property read-only observations', () => {
     expect((await observeBingDiscovery('A', period, deps)).status).toBe('unavailable')
     expect(request).not.toHaveBeenCalled()
   })
+  it('rejects scope prefixes, suffixes and mixed arrays before provider IO', async () => {
+    const read = 'Webmaster.read'
+    for (const scopes of [[`prefix:${read}`], [`${read}.suffix`], [read.slice(0, -1)], [read, 'unknown'], [read, read]]) {
+      connection.scopes = scopes
+      expect((await observeBingDiscovery('A', period, deps)).status).toBe('unavailable')
+      expect(request).not.toHaveBeenCalled()
+    }
+  })
   it.each(['shared_host', 'path_prefix', 'page_scope', 'unowned_property'])('refuses %s without broad site reads', async kind => {
     if (kind === 'shared_host') { connection.propertyUrl = 'https://frequencylocal.com/'; access.authorizedPageUrls = [connection.propertyUrl] }
     if (kind === 'path_prefix') { connection.propertyUrl = 'https://owner.example/spaces/A'; access.authorizedPageUrls = [connection.propertyUrl] }
