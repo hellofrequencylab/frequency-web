@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-621",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/active-notification-bell.mjs",
+      "note": "Actual Frequency BellSheet; preserves discriminated feed/count loaders, failed-read refusal, load-before-mark ordering, safe transport retry and narrow revalidation. Rendered tests exercise behavior independently."
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-27 HYG213: verification moved from unmounted DAWN bell to actual Frequency header bell. Current sheet catches transport failures, offers retry, never marks an unsuccessful list read, and clears unread only after successful persistence. Generic action error propagation prevents false persistence success; source controls reject early marking and dropped failed-read return."
+  }
+}

@@ -1,3 +1,4 @@
+import { avatarSrc, readAvatarFocus } from '@/lib/images/avatar-focus'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
@@ -123,13 +124,13 @@ export function ProfileBody({
 }
 
 /** The photo, in the kit's xl avatar. Initials when there is no photo. */
-export function ProfilePhoto({ src, initials, name }: { src: string | null; initials: string; name: string }) {
+export function ProfilePhoto({ src, initials, name, focus, dimmed = false }: { src: string | null; initials: string; name: string; focus?: string | null; dimmed?: boolean }) {
   return src ? (
     <span
-      className="av xl mc-photo"
+      className={`av xl mc-photo${dimmed ? ' dimmed' : ''}`}
       role="img"
       aria-label={name}
-      style={{ backgroundImage: `url(${JSON.stringify(src)})` }}
+      style={{ backgroundImage: `url(${JSON.stringify(avatarSrc(src))})`, backgroundPosition: focus ?? readAvatarFocus(src) ?? undefined }}
     />
   ) : (
     <span className="av xl mc-photo mc-initials" role="img" aria-label={name}>
