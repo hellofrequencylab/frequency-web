@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { retiredModuleEdges } from '@/scripts/lib/retired-member-shell.mjs'
 
 // THE EVENTS DISCOVERY LAYER MUST STAY MOUNTED.
 //
@@ -33,14 +34,13 @@ const FILES = ROOTS.flatMap(walk).map((f) => ({ path: f, src: readFileSync(f, 'u
 
 /** Non-test files importing a module by its `@/` alias, excluding the module itself. */
 function importersOf(mod: string): string[] {
-  const needle = `from '@/${mod}'`
-  return FILES.filter((f) => f.src.includes(needle) && !f.path.startsWith(mod)).map((f) => f.path)
+  return FILES.filter((f) => f.src.includes(mod.split('/').at(-1)!) && retiredModuleEdges(f.path, f.src, [mod + '.tsx']).length > 0).map((f) => f.path)
 }
 
 const DISCOVERY_MODULES = [
-  'components/events/events-map-client', // the list/map toggle
-  'components/events/event-connectors', // "People to meet"
-  'components/events/events-for-you', // the ranked lane
+  'components/frequency/members/events/events-map-lightbox', // active map door
+  'components/frequency/members/events/events-lanes', // People to meet
+  'components/frequency/members/events/around-you', // ranked lane
   'lib/events/matching', // the hybrid interest+social+context score
   'lib/ai/event-blurb', // the "why you'd vibe" blurb
   'lib/events/connectors', // the connector query behind EventConnectors
@@ -54,10 +54,10 @@ describe('the events discovery layer is reachable from a real route', () => {
   }
 
   it('the events surface mounts the map toggle and both personalized lanes', () => {
-    const surface = readFileSync('components/marketplace/events-surface.tsx', 'utf8')
-    expect(surface).toContain('<EventsMapToggle')
-    expect(surface).toContain('<EventsForYou')
-    expect(surface).toContain('<EventConnectors')
+    const surface = readFileSync('components/frequency/members/events/events-body.tsx', 'utf8')
+    expect(surface).toContain('<FqEventsMapLightbox')
+    expect(surface).toContain('<FqAroundYou')
+    expect(surface).toContain('<FqPeopleToMeet')
     // Both slow lanes must stream rather than block the shell (PAGE-FRAMEWORK §5).
     expect(surface).toContain('Suspense')
   })

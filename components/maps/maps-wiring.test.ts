@@ -87,7 +87,7 @@ describe('the map seam is the only door to a map engine', () => {
 describe('each migrated surface composes the template rather than hand-rolling a map', () => {
   const MIGRATED = [
     'components/circles/circle-map.tsx',
-    'components/discover/discover-map.tsx',
+    'components/frequency/site/pages/shared/whats-on-map.tsx',
     'app/(main)/admin/qr/scan-map.tsx',
     'components/events/event-venue-map.tsx',
     'components/events/events-map.tsx',
