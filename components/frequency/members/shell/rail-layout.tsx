@@ -28,7 +28,8 @@ import {
 } from '@/lib/layout/page-chrome'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
 import { EntityLayoutMount } from '@/components/entity-blocks/profile-layout-context'
-import { AdminBar, type AdminBarState } from '@/components/layout/admin-bar/admin-bar'
+import { LazyAdminBar } from '@/components/layout/admin-bar/lazy-admin-bar'
+import type { AdminBarState } from '@/components/layout/admin-bar/admin-bar'
 import type { AppOverrides } from '@/lib/apps/overrides'
 import type { Capability } from '@/lib/core/capabilities'
 import type { WebRole } from '@/lib/core/roles'
@@ -317,7 +318,7 @@ export function FqRailLayout({
           )}
           {!isAdminRoute && !takeover && (
             <div className="fqm-adminbar" style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: settings.open ? settings.width : 0 }}>
-              <AdminBar onStateChange={setSettings} />
+              <LazyAdminBar onStateChange={setSettings} />
             </div>
           )}
         </div>
