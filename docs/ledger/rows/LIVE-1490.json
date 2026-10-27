@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1490",
+  "title": "The Designer mega theme: the Alli Rae Build + Design system as a stock site theme, with its 13 sections as editor blocks",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/designer-theme.mjs"
+  },
+  "detail": "Owner ask 2026-10-26: a seventh mega theme called Designer, built from the Alli Rae Build + Design system, following the Midnight pattern. ADR-1900. lib/theme/designer.ts holds the palette, the ochre accent rule, DESIGNER_SURFACE (the one flat token set Spotlight reads) and every --dz-* token. components/sites/designer-css.ts is the skin and designer-blocks-css.ts the block sheet, both tokens only and scoped under [data-house-theme=\"designer\"]. Cormorant and Jost load only on the site page. components/page-editor/blocks/designer.tsx registers the 13 sections (hero with strip, statement, portfolio, arch and steps, services, testimonials, founder, photo band, questions, quote, gallery, closing, inquiry form); the questions read the Space's own rows first. lib/sites/designer-home.ts holds plain placeholder copy for the Program template and a five page set. Not built here: the six niche kits and the gallery card (LIVE-1491), the Alli Rae Space (LIVE-1492).",
+  "wave": "W7"
+}

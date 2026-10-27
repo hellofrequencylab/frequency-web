@@ -9,6 +9,8 @@ import { config } from '@/lib/page-editor/config'
 import { publishPage, unpublishPage } from '@/app/(main)/edit/actions'
 import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
 import { DesktopEditor, useEditorDoc } from '@/components/page-editor/desktop/desktop-editor'
+import { buttonClasses } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 // Dynamic publish button: full-colour "Publish now" when there are unpublished
 // edits OR the page is not live, dim "Published" (with a check) when the live page
@@ -62,11 +64,7 @@ function PublishButton({ slug, published }: { slug: string; published: boolean }
       onClick={handlePublish}
       disabled={!active || status === 'publishing'}
       title={publishable ? 'Publish your changes. They go live immediately' : 'No changes to publish'}
-      className={`inline-flex items-center gap-1.5 rounded-control px-4 py-1.5 text-body-sm font-semibold transition-colors ${
-        active
-          ? 'bg-primary text-on-primary shadow-sm hover:bg-primary-hover'
-          : 'bg-surface-elevated text-subtle cursor-default'
-      } ${status === 'publishing' ? 'opacity-70' : ''}`}
+      className={buttonClasses(active ? 'primary' : 'secondary', 'sm', cn(!active && 'cursor-default opacity-60', status === 'publishing' && 'opacity-70'))}
     >
       {!publishable && status === 'idle' && <Check className="h-4 w-4" />}
       {label}

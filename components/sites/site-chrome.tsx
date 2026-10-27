@@ -11,6 +11,7 @@ import { WILDHEART_CSS } from './wildheart-css'
 import { NETWORK_CSS } from './network-css'
 import { TEMPLE_CSS } from './temple-css'
 import { MIDNIGHT_CSS } from './midnight-css'
+import { DESIGNER_CSS } from './designer-css'
 import { MidnightLogo } from './midnight-logo'
 import { MidnightBar } from './midnight-bar'
 import type { NetworkSchemeId } from '@/lib/theme/network'
@@ -70,7 +71,7 @@ export type SiteLink = HouseHeaderLink
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart' | 'network' | 'temple' | 'midnight'
+  theme: 'menswork' | 'wildheart' | 'network' | 'temple' | 'midnight' | 'designer'
   season: MensworkSeason
   /** Network only: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
@@ -82,6 +83,7 @@ function skinCss(skin: SiteSkin | null): string {
   if (skin.theme === 'network') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NETWORK_CSS
   if (skin.theme === 'temple') return HOUSE_CSS + FREQUENCY_PAGE_CSS + TEMPLE_CSS
   if (skin.theme === 'midnight') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MIDNIGHT_CSS
+  if (skin.theme === 'designer') return HOUSE_CSS + FREQUENCY_PAGE_CSS + DESIGNER_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
 
@@ -161,6 +163,8 @@ export function SiteChrome({
   const temple = skin?.theme === 'temple'
   // Midnight draws the ringed moon seal, the name and the Space's tagline as one lockup, in the header and the footer.
   const midnight = skin?.theme === 'midnight'
+  // Designer draws the Space's logo as a mark beside a quiet name (logo image alone when it has one).
+  const designer = skin?.theme === 'designer'
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
   // that reserves its height, so nothing shifts when the date line folds away on scroll.
   const header = (
@@ -172,7 +176,7 @@ export function SiteChrome({
       adminCheck={adminLinks?.check ?? null}
       cta={cta}
       logoUrl={logoUrl}
-      logoMode={temple ? (logoUrl ? 'logo' : 'name') : skin && !net ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
+      logoMode={temple || designer ? (logoUrl ? 'logo' : 'name') : skin && !net ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
       skinned={!!skin}
       fadeOnPause={fadeOnPause}
       member={member}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { BookUp, Check, Clock, Loader2 } from 'lucide-react'
 import { submitToLibrary } from '@/app/(main)/library/actions'
 import { isError } from '@/lib/action-result'
+import { buttonClasses } from '@/components/ui/button'
 
 // The member "propose to the Community Library" control (P4.8). Shown on a member's own
 // practice / journey. Proposing flips its review status to 'pending' (server-side,
@@ -58,7 +59,7 @@ export function ProposeToLibraryButton({
         onClick={propose}
         disabled={isPending}
         title="Submit this to the Community Library for review"
-        className="inline-flex items-center gap-1.5 rounded-control border border-primary-bg bg-primary-bg px-3 py-1.5 text-body-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70 disabled:opacity-60"
+        className={buttonClasses('primarySoft', 'sm')}
       >
         {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BookUp className="h-3.5 w-3.5" />}
         Propose to Library

@@ -23,6 +23,7 @@ import { updateDraft, publishDraft } from '../../scan/actions'
 import { isoToWallClockInput, wallClockToIso } from '@/lib/events/datetime'
 import { OutreachCard } from './outreach-card'
 import { Button } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 export interface DraftEditorData {
   id: string
@@ -791,11 +792,7 @@ function OwnershipOption({
       onClick={onSelect}
       disabled={disabled}
       aria-pressed={selected}
-      className={`rounded-xl border p-3 text-left transition-colors ${
-        selected
-          ? 'border-primary bg-primary-bg/60'
-          : 'border-border bg-surface hover:border-border-strong'
-      }`}
+      className={choiceTileClasses(Boolean(selected), 'rounded-xl p-3 text-left')}
     >
       <span className="block text-body-sm font-semibold text-text">{title}</span>
       <span className="mt-0.5 block text-meta text-muted">{blurb}</span>

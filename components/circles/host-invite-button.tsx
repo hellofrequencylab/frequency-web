@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Link2, Check, Loader2 } from 'lucide-react'
 import { createHostInviteLink } from '@/app/(main)/circles/actions'
 import { isError } from '@/lib/action-result'
+import { buttonClasses } from '@/components/ui/button'
 
 // Generate + copy a circle invite link. Every failure is RENDERED: a refusal from the
 // server gate used to land in console.error, so a manager the old host-only gate turned
@@ -47,7 +48,7 @@ export function HostInviteButton({ circleId }: { circleId: string }) {
       <button
         onClick={handleClick}
         disabled={isPending}
-        className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-muted hover:border-primary hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg disabled:opacity-50 transition-colors"
+        className={buttonClasses('secondary', 'sm')}
         title={copied ? 'Link copied!' : 'Generate invite link'}
       >
         {isPending ? (
