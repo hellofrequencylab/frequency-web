@@ -203,7 +203,9 @@ All four data layers + server actions **already exist**: the work is the builder
    ChangeAction`). All paths reuse the shared Vera infra (`withVoice`, `completeRaw`,
    the usage ledger + budget caps) and degrade to hand-entry when Vera is off. New AI
    modules mirror the Journey ones: `lib/ai/practice-spark.ts`, `practice-edit.ts`,
-   `practice-shape.ts` (the `withPracticeShape` primer, the twin of `withJourneyShape`).
+   `practice-shape.ts` (the historical `withPracticeShape` primer). The former unused
+   Journey generative primer was retired by HYG-197; current Journey AI returns coaching
+   questions and explicitly sourced settings, never drafted publication prose or weekly arcs.
 4. **Circle** ← next. Adds geo + topic; high leverage (the member-create flywheel). Replace
    `NewCircleCompose` (CreateModal) + inline edit.
 5. **Event**: adds date/recurrence; host+. Replace `/events/new` + inline edit.

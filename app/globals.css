@@ -296,7 +296,7 @@
   --density-root: 106.25%;
 
   /* ── Generation/feel axis tokens (DAWN baseline) ────────────────────────────
-     The GENERATION axis (retired, see HYG-187) owns the
+     The GENERATION axis (data-generation, see the unlayered blocks below) owns the
      "feel": type scale, ornamentation, and the interactive-target floor. Defined here
      as the `balanced` baseline; each generation preset overrides them in its block.
 
@@ -415,9 +415,9 @@
   /* The sticky app header, same reasoning: 3.5rem plus the TOP inset under viewport-fit=cover. */
   --app-header-h:      calc(3.5rem + env(safe-area-inset-top));
 
-  /* ── Structure axis token (docs/THEME.md, lib/theme/structure.ts) ────────────
+  /* ── Structure axis token (docs/THEME.md; historical structure metadata) ────────────
      The STRUCTURE axis is the coarse COMPOSITION knob, orthogonal to the feel knobs
-     above: the resolved generation maps (via structureFor) to one of simple /
+     above: historical generation metadata mapped to one of simple /
      standard / dense, set as [data-structure] on the shell root. --structure-rhythm
      is a unitless multiplier on the vertical rhythm BETWEEN templated sections, so
      the calm + kids ends (simple) get a roomier flow and the bold preset (dense) a
@@ -986,32 +986,15 @@
   --radius-pill:    9999px;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   ADAPTIVE THEMING — mode and palette.
-
-   Two axes compose through the CSS custom-property cascade, both unlayered at equal
-   specificity so SOURCE ORDER decides: class="dark" (MODE; :root / .dark above) then
-   data-skin (PALETTE). The generation and occasion axes are retired (SCAN-1130, HYG-187).
-   Author any new axis block unlayered, AFTER the ones it must override: UNLAYERED styles
-   beat any @layer.
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* ── Reduced-motion override for the motion tokens ─────────────────────────────────
-   prefers-reduced-motion must win regardless of preset. The existing per-animation
-   guards in this file already set `animation: none`; here we additionally neutralize
-   the motion-DURATION tokens for EVERY generation (esp. the motion-heavy bold /
-   playful / kids presets) so any transition that consumes --motion-* collapses to a
-   near-instant beat. It is authored AFTER every preset so, by source order, it
-   overrides each preset's own --motion-* values. */
+/* Retired generation/occasion presets are saved-data compatibility metadata only.
+   The live Frequency resolver renders balanced/none; preserve reduced motion at
+   the root without requiring a retired generation attribute. */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --motion-fast: 0ms;
     --motion-base: 0ms;
     --motion-slow: 0ms;
   }
-  /* Tailwind's stock looping utilities aren't covered by the per-keyframe guards
-     below (those only neutralize our bespoke @keyframes). Stop them here too so the
-     Movement timer pulse, the feed spinners, and the mega-menu skeleton all halt. */
   .animate-pulse,
   .animate-spin {
     animation: none !important;
@@ -1019,14 +1002,13 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   STRUCTURE axis — data-structure (docs/THEME.md, lib/theme/structure.ts). The coarse
-   COMPOSITION knob, orthogonal to the generation feel tokens above. The resolved
-   generation maps (structureFor) to one of three buckets; each just retunes the rhythm
+   STRUCTURE axis — data-structure (docs/THEME.md; historical structure metadata). The coarse
+   COMPOSITION knob. Historical generation metadata mapped to three
+   buckets; each just retunes the rhythm
    multiplier --structure-rhythm, so the SAME content flows roomier (simple, the calm +
    kids ends) or tighter (dense, bold) without changing what is shown. 'standard' is the
    proven default and authors no override (it inherits the :root value of 1). Authored
-   after the generation blocks so it is unlayered + later in source order, consistent with
-   the rest of the four-axis cascade. */
+   unlayered so the existing rhythm consumers retain their specificity. */
 [data-structure="simple"] {
   --structure-rhythm: 1.25; /* roomier flow — lowers density at the calm/kids ends */
 }
@@ -1471,7 +1453,7 @@
 
   /* Generation/feel axis → utilities. The same var() bridge as radius/motion: these
      reference the :root (or generation-overridden) custom properties, so any utility
-     built on them re-resolves from the root tokens. --type-scale and --tap-min are
+     built on them re-resolves per `data-generation`. --type-scale and --tap-min are
      exposed so the `text-scaled-*` / `tap-target` helpers below pick up the active
      preset; --ornament stays a CSS-consumed var (decorative layers read it directly). */
   --type-scale: var(--type-scale);
@@ -1480,7 +1462,7 @@
 
   /* Type roles → `text-*` utilities. Tailwind v4 synthesizes a font-size utility from
      every `--text-*` here, so `text-page-title` / `text-lead` / `text-body-sm` exist as
-     classes and each re-resolves from the root tokens (the roles are calc'd against
+     classes and each re-resolves per data-generation (the roles are calc'd against
      --type-scale at :root). This is the bridge that turns the ported vocabulary from
      "defined" into "usable at a call site". */
   --text-display-hero: var(--text-display-hero);
@@ -1826,7 +1808,7 @@
 }
 
 /* Generation-scaled type — opt-in utilities that multiply a base size by the active
-   `--type-scale` (set on the root). A surface that adopts these grows/shrinks
+   `--type-scale` (set per data-generation). A surface that adopts these grows/shrinks
    its type with the chosen generation WITHOUT touching spacing (density is the separate
    --density-root lever). Plain `text-*` utilities are unaffected, so adoption is
    incremental and nothing regresses. */
@@ -1841,7 +1823,7 @@
 }
 
 /* Tap-target floor — clamps an interactive element to at least the active
-   `--tap-min` (set on the root; large at the spacious + kids ends, smaller in
+   `--tap-min` (set per data-generation; large at the spacious + kids ends, smaller in
    the dense middle, never below the 24px AA floor). Opt-in so it can't shift existing
    layouts; consume on buttons/links/controls that want the per-generation floor. */
 /* `chisel` (a 1px inset highlight + shade on filled controls) was REMOVED 2026-08-21 (ADR-1096)

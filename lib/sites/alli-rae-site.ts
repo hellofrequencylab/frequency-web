@@ -128,7 +128,7 @@ const about = () => [
 
 const portfolio = () => [
   hero(i('hero-kitchen'), 'Portfolio', 'From Permits *To Pillows*', 'Three projects, from the first sketch to the last pillow.', [], { size: 'short' }),
-  b('DesignerPortfolio', { eyebrow: '', title: '', lead: '', projects: PROJECTS.map(card) }),
+  b('DesignerPortfolio', { eyebrow: 'Custom Builds', title: 'Our Projects', lead: '', projects: PROJECTS.map(card) }),
   b('DesignerClosing', { title: 'Let’s craft your vision together', buttonLabel: 'Ready to Build Meeting', buttonHref: '~/ready-to-build', nextEyebrow: '', next: { image: '', title: '', location: '', year: '', href: '' } }),
 ]
 
@@ -227,6 +227,20 @@ export const ALLI_RAE_MENU = {
     { id: 'about', label: 'About', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:about' } },
   ],
   known: ['home', 'portfolio', 'about', ...PROJECTS.map((p) => p.slug), 'ready-to-build', 'book-a-consultation'].map((k) => `page:${k}`),
+}
+
+/** The header menu Daniel set on 2026-10-27: Home | Portfolio | About, nothing else. No dropdown of houses and no project
+ *  at the top level: the three custom builds are the Portfolio page's cards. `known` lists every page so none joins the
+ *  end of the bar on its own. (ALLI_RAE_MENU above is the first seed's two-dropdown menu, kept because the first
+ *  seed scripts and their pinned test read it; the live Space runs this one from update 3.) */
+export const ALLI_RAE_NAV = {
+  v: 1 as const,
+  items: [
+    { id: 'home', label: 'Home', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'home' } },
+    { id: 'portfolio', label: 'Portfolio', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:portfolio' } },
+    { id: 'about', label: 'About', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:about' } },
+  ],
+  known: ALLI_RAE_MENU.known,
 }
 
 /** The published website state the editor stores: every page's blocks with stable ids, no comments, one version. */
