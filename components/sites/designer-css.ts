@@ -8,6 +8,9 @@ import { DESIGNER_BLOCKS_CSS } from '@/components/sites/designer-blocks-css'
 
 const N = '[data-house-theme="designer"]'
 const EASE = 'var(--dz-ease)'
+/** The design's header collapse (responsive.css hide-m / show-m): desktop above it, the phone sheet at and below it. The shared house
+ *  header collapses at 940 (and its hover logic reads 940); this skin overrides only its own layout, so no other theme moves. */
+const BP = 900
 const LABEL = 'font-family:var(--dz-sans);text-transform:uppercase;letter-spacing:.16em;font-weight:500'
 
 export const DESIGNER_CSS = `${DESIGNER_TOKENS_CSS}
@@ -19,7 +22,10 @@ ${N} .hs-h1 em,${N} .hs-h2 em{font-style:italic}
 ${N} .hs-eyebrow,${N} .hs-label,${N} .hs-badge{${LABEL};letter-spacing:var(--dz-tracking-label)}
 ${N} .hs-card{background:var(--dz-parchment);border:0;border-radius:var(--dz-r-2);box-shadow:var(--dz-shadow-1)}
 ${N} a{transition:color var(--dz-dur-base) ${EASE}}
-${N} a:hover{color:var(--dz-terracotta-deep)}
+${N} a:hover{color:var(--dz-link-hover)}
+/* The link (design: a{color:terracotta;underline 1px, offset 3px}): prose and unclassed links in the page body only; the chrome's own anchors keep their rules. */
+${N} .mw-page a:not([class]),${N} .dz-body a,${N} .dz-lead a,${N} .dz-statement-lead a,${N} .dz-faq-answer a,${N} .dz-form-note a{color:var(--dz-link);text-decoration:underline;text-decoration-thickness:var(--dz-link-weight);text-underline-offset:var(--dz-link-offset)}
+${N} .mw-page a:not([class]):hover,${N} .dz-body a:hover,${N} .dz-lead a:hover,${N} .dz-statement-lead a:hover,${N} .dz-faq-answer a:hover,${N} .dz-form-note a:hover{color:var(--dz-link-hover)}
 ${N} :focus-visible{outline:2px solid var(--dz-ochre);outline-offset:3px}
 ${N} .hs-btn,${N} .hs-btn-primary,${N} .hs-btn-dark{${LABEL};font-size:var(--dz-size-label);letter-spacing:var(--dz-tracking-button);min-height:48px;padding:0 26px;border-radius:var(--dz-r-1)}
 ${N} .hs-btn-primary,${N} .hs-btn-dark{background:var(--dz-charcoal);color:var(--dz-plaster);border:1px solid var(--dz-charcoal);box-shadow:var(--dz-shadow-btn)}
@@ -33,7 +39,7 @@ ${N} .hs-btn-soft:hover{background:var(--dz-charcoal);color:var(--dz-plaster)}
 ${N} .dz-top{position:sticky;top:0;z-index:50;background:var(--dz-parchment);box-shadow:var(--dz-shadow-header);transition:background var(--dz-dur-base) ${EASE},box-shadow var(--dz-dur-base) ${EASE}}
 ${N}:has(#top .dz-hero) .dz-top{position:fixed;left:0;right:0}
 ${N}:has(#top .dz-hero):not([data-scrolled]) .dz-top{background:var(--dz-scrim-header);box-shadow:none}
-${N} .dz-util{display:flex;align-items:center;justify-content:space-between;gap:24px;max-width:var(--dz-container);height:42px;margin:0 auto;padding:0 var(--dz-gutter);border-bottom:1px solid var(--dz-line-soft);font-size:13px;letter-spacing:.04em;color:var(--dz-stone)}
+${N} .dz-util{display:flex;align-items:center;justify-content:space-between;gap:24px;height:42px;padding:0 var(--dz-gutter);border-bottom:1px solid var(--dz-line-soft);font-size:13px;letter-spacing:.04em;color:var(--dz-stone)}
 ${N} .dz-util a{color:inherit;text-decoration:none}
 ${N} .dz-util-left{font-size:11px;letter-spacing:.16em;text-transform:uppercase}
 ${N} .dz-util-items{display:flex;align-items:center;gap:28px}
@@ -41,9 +47,9 @@ ${N}:has(#top .dz-hero):not([data-scrolled]) .dz-util{border-color:var(--dz-util
 ${N}[data-scrolled] .dz-util{display:none}
 ${N} .dz-top .hs-header{position:static;top:auto;z-index:auto;padding:0;background:transparent;transition:none}
 ${N} .dz-top .hs-header[data-hidden]{opacity:1;transform:none;pointer-events:auto}
-${N} .dz-top .hs-pill{max-width:var(--dz-container);margin:0 auto;padding:0 var(--dz-gutter);min-height:var(--dz-header-h);border-radius:0;column-gap:var(--dz-gutter);background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;box-shadow:none;overflow:visible;animation:none;transition:min-height var(--dz-dur-base) ${EASE}}
+${N} .dz-top .hs-pill{width:100%;max-width:none;margin:0;padding:0 var(--dz-gutter);min-height:var(--dz-header-h);border-radius:0;column-gap:var(--dz-gutter);background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;box-shadow:none;overflow:visible;animation:none;transition:min-height var(--dz-dur-base) ${EASE}}
 ${N}[data-scrolled] .dz-top .hs-pill{min-height:76px}
-@media (min-width:940px){${N} .dz-top .hs-pill{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"logo nav cta"}${N} .hs-nav-track{margin:0 0 0 auto}}
+@media (min-width:${BP + 1}px){${N} .dz-top .hs-pill{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"logo nav cta"}${N} .hs-nav-track{margin:0 0 0 auto}${N} .dz-top .hs-menu{display:none}${N} .dz-top .hs-nav{display:block}}
 ${N} .hs-brand{font-size:26px;letter-spacing:.12em;text-transform:uppercase;color:var(--dz-charcoal)}
 ${N} .hs-brand-name{font-family:var(--dz-display);font-weight:500}
 ${N} .hs-logo-image{border-radius:0;max-height:48px;width:auto;mix-blend-mode:multiply}
@@ -72,7 +78,22 @@ ${N} .hs-mega-links a:hover{background:var(--dz-linen)}
 ${N} .hs-mega-label,${N} .hs-mega-feature-title{font-family:var(--dz-display);font-size:20px;font-weight:400;line-height:1.2;letter-spacing:0;text-transform:none}
 ${N} .hs-mega-desc{font-size:13px;line-height:1.3;color:var(--dz-stone)}
 ${N} .hs-member{padding:8px 16px;border-radius:var(--dz-r-pill);background:transparent;border:1px solid var(--dz-line);color:var(--dz-charcoal)}
-@media (max-width:939px){${N} .dz-top .hs-pill{min-height:72px}${N} .hs-nav-track{justify-content:center}${N} .dz-util{display:none}}
+/* Phone (design: the 48px round button and a full-height parchment sheet; the call and the nav live in the sheet). */
+@media (max-width:${BP}px){
+${N} .dz-util{display:none}
+${N} .dz-top .hs-pill{position:static;display:flex;align-items:center;justify-content:space-between;min-height:var(--dz-header-h)}
+${N}[data-scrolled] .dz-top .hs-pill{min-height:76px}
+${N} .dz-top .hs-brand{flex:none}
+${N} .dz-top .hs-nav,${N} .dz-top .hs-header-actions>.hs-btn{display:none}
+${N} .dz-top .hs-menu{position:static}
+${N} .hs-menu-panel{position:absolute;left:0;right:0;top:100%;max-width:none;height:calc(100vh - 76px);margin:0;padding:16px var(--dz-gutter) 40px;gap:6px;overflow-y:auto;border-radius:0;background:var(--dz-parchment);box-shadow:inset 0 1px 0 var(--dz-line-soft)}
+${N} .hs-menu-panel a{padding:14px 0;border-bottom:1px solid var(--dz-line-soft);border-radius:0;font-family:var(--dz-display);font-size:24px;font-weight:400;line-height:1.2;color:var(--dz-charcoal)}
+${N} .hs-menu-panel [data-menu-group]{display:block;padding:22px 0 8px;font:500 11px/1 var(--dz-sans);letter-spacing:.2em;text-transform:uppercase;color:var(--dz-ochre-deep)}
+${N} .hs-menu-panel>a:not([data-grouped]):not([data-cta]){padding:22px 0 14px}
+${N} .hs-menu-panel [data-menu-foot]{display:flex;flex-direction:column;gap:8px;margin-top:24px;font:400 var(--dz-size-small)/1.5 var(--dz-sans);color:var(--dz-stone)}
+${N} .hs-menu-panel [data-menu-foot] a{padding:0;border:0;font:inherit;color:inherit;text-decoration:none}
+${N} .hs-menu-panel a[data-cta]{display:block;margin-top:28px;padding:18px;border:0;border-radius:var(--dz-r-1);background:var(--dz-charcoal);text-align:center;color:var(--dz-plaster);box-shadow:var(--dz-shadow-btn);${LABEL};font-size:var(--dz-size-label);letter-spacing:var(--dz-tracking-button);line-height:1}
+}
 
 /* The footer (design: SiteFooter). Deep ink with rounded top corners, a closing band, the brand tile and link
    columns, the letter. The legal row is the house footer's, drawn inside the same container. */
@@ -113,6 +134,9 @@ ${N} .hs-footer>*{position:relative;padding-top:28px}
 ${N} .hs-footer a{color:var(--dz-on-dark-faint)}
 ${N} .hs-footer a:hover{color:var(--dz-sand)}
 ${N} .hs-footer-line,${N} .hs-footer-note{color:var(--dz-on-dark-faint);font-style:italic}
+${N} .hs-footer-line{margin-left:auto}
+/* The design's footer follows the last section directly (no page tail, no footer top margin). */
+${N} .mw-page{padding-bottom:0}
 ${N} .hs-footer a.hs-partner{border-color:var(--dz-rule-dark);background:transparent;color:var(--dz-on-dark-muted)}
 ${N} .hs-footer a.hs-partner b{color:var(--dz-on-dark)}
 @media (max-width:900px){${N} .dz-foot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}${N} .dz-foot-grid:not([data-subscribe]){grid-template-columns:repeat(2,minmax(0,1fr))}}

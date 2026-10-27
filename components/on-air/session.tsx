@@ -1557,24 +1557,26 @@ export function OnAirSession({
             clock lands. Finish and Close BOTH log and move on — ending early is never punished.
             Pinned to the bottom and always visible even when the content above scrolls. */}
         <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-canvas px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
-          <button
+          <Button
             type="button"
             onClick={() => {
               if (preroll !== null) { begin(); return } // override the countdown, begin now
               if (ended) { void finish(false); return }
               togglePause()
             }}
-            className="min-w-44 rounded-pill bg-primary px-10 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            size="lg"
+            className="min-w-44"
           >
             {preroll !== null ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => void finish(!ended)}
-            className="rounded-pill px-4 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text"
+            variant="ghost"
+            size="sm"
           >
             Close &amp; Log Session
-          </button>
+          </Button>
           {/* Cancel: leave the sit WITHOUT logging (item #3) — drops the run, banks nothing.
               Kept visually subordinate to Close & Log so the default stays "log it". */}
           <button
@@ -1710,7 +1712,7 @@ export function OnAirSession({
                   type="button"
                   onClick={() => setPatternSlug(p.slug)}
                   title={p.blurb}
-                  className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
+                  className={`min-h-11 rounded-control border px-2 py-1.5 text-body-sm transition-colors ${
                     p.slug === patternSlug
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -1723,7 +1725,7 @@ export function OnAirSession({
                 type="button"
                 onClick={() => setPatternSlug('custom')}
                 title="Your counts. Set each phase to what fits."
-                className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm transition-colors ${
+                className={`min-h-11 rounded-control border px-2 py-1.5 text-body-sm transition-colors ${
                   patternSlug === 'custom'
                     ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                     : 'border-border text-muted hover:bg-surface-elevated'
@@ -1776,7 +1778,7 @@ export function OnAirSession({
                   key={m}
                   type="button"
                   onClick={() => setMinutes(m)}
-                  className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
+                  className={`min-h-11 rounded-control border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
                     m === minutes
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -1846,7 +1848,7 @@ export function OnAirSession({
                     type="button"
                     aria-pressed={w === warmupSec}
                     onClick={() => setWarmupSec(w)}
-                    className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
+                    className={`min-h-11 rounded-control border px-2 py-1.5 text-meta tabular-nums transition-colors ${
                       w === warmupSec
                         ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                         : 'border-border text-muted hover:bg-surface-elevated'
@@ -1867,7 +1869,7 @@ export function OnAirSession({
                     <button
                       type="button"
                       onClick={() => selectAmbient(null)}
-                      className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta transition-colors ${
+                      className={`min-h-11 rounded-control border px-2 py-1.5 text-meta transition-colors ${
                         ambientSlug === null
                           ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                           : 'border-border text-muted hover:bg-surface-elevated'
@@ -1880,7 +1882,7 @@ export function OnAirSession({
                         key={t.slug}
                         type="button"
                         onClick={() => selectAmbient(t.slug)}
-                        className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta transition-colors ${
+                        className={`min-h-11 rounded-control border px-2 py-1.5 text-meta transition-colors ${
                           ambientSlug === t.slug
                             ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                             : 'border-border text-muted hover:bg-surface-elevated'
@@ -1932,7 +1934,7 @@ export function OnAirSession({
                             // preview is a nicety
                           }
                         }}
-                        className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta transition-colors ${
+                        className={`min-h-11 rounded-control border px-2 py-1.5 text-meta transition-colors ${
                           t.slug === bellToneSlug
                             ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                             : 'border-border text-muted hover:bg-surface-elevated'
@@ -1955,7 +1957,7 @@ export function OnAirSession({
                     type="range"
                     min={0}
                     max={100}
-                    step={5}
+                    step={1}
                     value={Math.round(bellVolume * 100)}
                     onChange={(e) => setBellVolume(Number(e.target.value) / 100)}
                     onPointerUp={(e) => {
@@ -1984,7 +1986,7 @@ export function OnAirSession({
                           key={iv.value}
                           type="button"
                           onClick={() => setBellEveryMin(iv.value)}
-                          className={`min-h-11 rounded-xl border px-2 py-1.5 text-meta tabular-nums transition-colors ${
+                          className={`min-h-11 rounded-control border px-2 py-1.5 text-meta tabular-nums transition-colors ${
                             iv.value === bellEveryMin
                               ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                               : 'border-border text-muted hover:bg-surface-elevated'
@@ -2003,7 +2005,7 @@ export function OnAirSession({
                   aria-pressed={endBell}
                   onClick={() => setEndBell(!endBell)}
                   title="A double strike when the sit ends."
-                  className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-meta transition-colors ${
+                  className={`flex w-full items-center justify-between rounded-control border px-3 py-2 text-meta transition-colors ${
                     endBell
                       ? 'border-primary bg-primary-bg/40 font-semibold text-text'
                       : 'border-border text-muted hover:bg-surface-elevated'
@@ -2246,9 +2248,10 @@ function ModeButton({
   return (
     <button
       type="button"
+      aria-pressed={Boolean(active)}
       onClick={onClick}
       disabled={disabled}
-      className={choiceTileClasses(Boolean(active), 'flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-meta')}
+      className={choiceTileClasses(Boolean(active), 'flex flex-col items-center gap-1 rounded-control px-2 py-2 text-meta')}
     >
       <Icon className="h-4 w-4" />
       {label}
@@ -2275,7 +2278,7 @@ function ToggleChip({
       aria-pressed={active}
       onClick={onClick}
       title={title}
-      className={choiceTileClasses(Boolean(active), 'min-h-11 flex items-center justify-center gap-2 rounded-xl px-2 py-2 text-meta')}
+      className={choiceTileClasses(Boolean(active), 'min-h-11 flex items-center justify-center gap-2 rounded-control px-2 py-2 text-meta')}
     >
       <Icon className="h-4 w-4" />
       {label}

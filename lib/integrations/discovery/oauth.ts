@@ -24,7 +24,7 @@ export function searchAuthorizationUrl(provider: DiscoverySearchProvider, state:
   const config = searchOAuthConfig(provider)
   if (!config) return null
   const url = new URL(provider === 'google_search_console' ? 'https://accounts.google.com/o/oauth2/v2/auth' : 'https://www.bing.com/webmasters/oauth/authorize')
-  const query = { client_id: config.clientId, response_type: 'code', redirect_uri: searchRedirectUri(provider), scope: SEARCH_SCOPES[provider], state, code_challenge: challenge, code_challenge_method: 'S256' }
+  const query = { client_id: config.clientId, response_type: 'code', redirect_uri: searchRedirectUri(provider), scope: provider === 'bing_webmaster' ? 'webmaster.read' : SEARCH_SCOPES[provider], state, code_challenge: challenge, code_challenge_method: 'S256' }
   for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value)
   if (provider === 'google_search_console') { url.searchParams.set('access_type', 'offline'); url.searchParams.set('prompt', 'consent'); url.searchParams.set('include_granted_scopes', 'false') }
   return url.href
@@ -47,7 +47,12 @@ async function tokenRequest(provider: DiscoverySearchProvider, grant: Record<str
     reader = response.body.getReader(); const chunks: Uint8Array[] = []; let bytes = 0
     while (true) { const chunk = await reader.read(); if (chunk.done) break; bytes += chunk.value.byteLength; if (bytes > 32_768) return null; chunks.push(chunk.value) }
     const data = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-    const scopes = typeof data.scope === 'string' ? data.scope.split(/\s+/).filter(Boolean) : previous?.scopes ?? [SEARCH_SCOPES[provider]]
+    if (data.scope !== undefined && typeof data.scope !== 'string') return null
+    const reportedScopes = typeof data.scope === 'string' ? data.scope.split(/\s+/).filter(Boolean) : previous?.scopes ?? [SEARCH_SCOPES[provider]]
+    // Bing's wire example uses lowercase; keep the broker's established canonical read permission.
+    // Only the three explicit read aliases normalize. Mixed, management and unknown scopes fail.
+    const scopes = provider === 'bing_webmaster' && reportedScopes.length === 1 && ['Webmaster.read', 'webmaster.read', 'Read'].includes(reportedScopes[0])
+      ? [SEARCH_SCOPES.bing_webmaster] : reportedScopes
     if (!token(data.access_token) || (data.refresh_token !== undefined && !token(data.refresh_token)) || !Number.isInteger(data.expires_in) || data.expires_in < 10 || data.expires_in > 86_400 || typeof data.token_type !== 'string' || data.token_type.toLowerCase() !== 'bearer' || scopes.length !== 1 || scopes[0] !== SEARCH_SCOPES[provider]) return null
     return { accessToken: data.access_token, ...(data.refresh_token || previous?.refreshToken ? { refreshToken: data.refresh_token ?? previous?.refreshToken } : {}), expiresAt: new Date(Date.now() + data.expires_in * 1000).toISOString(), scopes }
   } catch { return null }

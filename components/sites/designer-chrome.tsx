@@ -5,6 +5,12 @@ import { DesignerLetterForm } from './designer-letter-form'
 // THE DESIGNER CHROME PIECES (design: the header's utility bar and the footer). Server components over the
 // Space's own words (lib/sites/site-footer.ts); every look is the Designer skin's (designer-css.ts).
 
+/** A line that is only a unit (a hash and a number) belongs to the street line before it: the design sets the street and unit as one
+ *  line that wraps on its own. The saved footer keeps the lines apart. */
+function joinUnits(lines: string[]): string[] {
+  return lines.reduce<string[]>((out, l) => (out.length > 0 && l.startsWith('#') ? [...out.slice(0, -1), `${out[out.length - 1]} ${l}`] : [...out, l]), [])
+}
+
 /** The strip above the header: the licence on the left, hours, phone and email on the right. */
 export function DesignerUtilityBar({ utility }: { utility: NonNullable<SiteFooter['utility']> }) {
   return (
@@ -15,6 +21,13 @@ export function DesignerUtilityBar({ utility }: { utility: NonNullable<SiteFoote
       </span>
     </div>
   )
+}
+
+/** The phone sheet's contact block (design: the call, the email, then the hours): linked items first, plain lines last. */
+export function phoneMenuFoot(utility: SiteFooter['utility'] | null): { label: string; href?: string }[] | null {
+  if (!utility || utility.items.length === 0) return null
+  const items = utility.items.map((i) => ({ label: i.label, ...(i.href ? { href: i.href } : {}) }))
+  return [...items.filter((i) => i.href), ...items.filter((i) => !i.href)]
 }
 
 /** The footer: the closing band, the brand tile and link columns, the letter sign-up. The legal row is the house footer's. */
@@ -51,7 +64,7 @@ export function DesignerFooterTop({ footer, brandName, homeHref, logoUrl, slug }
         {footer?.columns.map((col) => (
           <nav key={col.title} aria-label={col.title} className="hs-footer-col">
             <span className="hs-footer-col-title">{col.title}</span>
-            {col.lines.length > 0 && <p>{col.lines.map((l, i) => <span key={i}>{l}{i < col.lines.length - 1 && <br />}</span>)}</p>}
+            {col.lines.length > 0 && <p>{joinUnits(col.lines).map((l, i, all) => <span key={i}>{l}{i < all.length - 1 && <br />}</span>)}</p>}
             {col.links.length > 0 && (
               <p>{col.links.map((l, i) => <span key={`${l.href}:${l.label}`}><a href={l.href}>{l.label}</a>{i < col.links.length - 1 && <br />}</span>)}</p>
             )}

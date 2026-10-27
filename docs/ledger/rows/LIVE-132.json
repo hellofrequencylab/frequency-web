@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-132",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"components/layout/app-shell.tsx\")?1:0)'"
+    }
+  },
+  "append": {
+    "detail": "2026-10-27: the old app shell (components/layout/app-shell.tsx) was deleted on Daniel's words \"rewrite the shell probes\"; this probe now guards that it stays gone."
+  }
+}

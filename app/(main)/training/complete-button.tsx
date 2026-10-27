@@ -3,6 +3,7 @@
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check } from 'lucide-react'
+import { buttonClasses } from '@/components/ui/button'
 import { markTrainingComplete } from './actions'
 
 export function CompleteButton({ reward }: { reward: number }) {
@@ -18,7 +19,7 @@ export function CompleteButton({ reward }: { reward: number }) {
           if (r.ok) router.refresh()
         })
       }
-      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+      className={buttonClasses('primary')}
     >
       <Check className="h-4 w-4" aria-hidden />
       {pending ? 'Saving…' : `I’ve done these. Finish (+${reward} Gems)`}

@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { FolderPlus, Plus, Trash2 } from 'lucide-react'
 import type { ResolvedItem, ResolvedMenu } from '@/lib/menus/types'
@@ -414,7 +415,7 @@ export function MenuGroupsEditor({
             type="button"
             onClick={() => addItem(null)}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className={buttonClasses('secondary', 'sm')}
           >
             <Plus className="h-4 w-4" aria-hidden />
             Menu-level link
@@ -423,7 +424,7 @@ export function MenuGroupsEditor({
             type="button"
             onClick={() => addCategory(null)}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className={buttonClasses('primary', 'sm')}
           >
             <FolderPlus className="h-4 w-4" aria-hidden />
             Add group
@@ -508,7 +509,7 @@ export function MenuGroupsEditor({
             <button
               type="button"
               onClick={() => addCategory(null)}
-              className="rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className={buttonClasses('primary', 'sm')}
             >
               Add a group
             </button>

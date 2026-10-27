@@ -9,7 +9,8 @@ vi.mock('@/lib/ai/rate-limit', () => ({ aiRateLimited: vi.fn(async () => false) 
 import { getWorkspaceThread } from '@/lib/comms/workspace'
 import { updateConversationFields } from '@/lib/comms/conversations'
 import { completeText } from '@/lib/ai/complete'
-import { featureOverBudget } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
+import { aiRateLimited } from '@/lib/ai/rate-limit'
 import { veraDraftReply } from './vera-conversation'
 beforeEach(() => { vi.clearAllMocks(); vi.mocked(getWorkspaceThread).mockResolvedValue({ subject: 'Schedule', messages: [{ direction: 'inbound', authorName: 'Guest', body: 'When?', isInternal: false }, { direction: 'outbound', authorName: 'Staff', body: 'Private note', isInternal: true }] } as never) })
 it('returns questions separately, omits private notes and never writes a conversation', async () => {
@@ -23,7 +24,7 @@ it('returns questions separately, omits private notes and never writes a convers
 })
 it.each(['Invented reply to send.', JSON.stringify({ draft: 'Invented reply', questions: ['When?'] }), JSON.stringify({ questions: ['Invented statement'], checks: [] })])('rejects sendable prose and malformed output', async text => {
   vi.mocked(completeText).mockResolvedValue({ text } as never)
-  expect(await veraDraftReply('thread-A', 'owner')).toHaveProperty('error')
+  expect((await veraDraftReply('thread-A', 'owner'))).toHaveProperty('data.draft', expect.stringContaining('Guided checklist; no usable AI response.'))
   expect(updateConversationFields).not.toHaveBeenCalled()
 })
 it('preserves the budget gate without reading private thread data', async () => {
@@ -42,6 +43,31 @@ it.each([
   {questionIds:[],checkIds:[]},
 ])('rejects unquoted invented copy, unknown IDs and mixed or oversized payloads: %j', async raw => {
   vi.mocked(completeText).mockResolvedValue({text:JSON.stringify(raw)} as never)
-  expect(await veraDraftReply('thread-A','owner')).toHaveProperty('error')
+  expect(await veraDraftReply('thread-A','owner')).toHaveProperty('data.draft', expect.stringContaining('Guided checklist; no usable AI response.'))
   expect(updateConversationFields).not.toHaveBeenCalled()
+})
+
+it.each(['```json\n{"questionIds":["confirm"],"checkIds":[]}\n```', '{"questionIds":["confirm"],"checkIds":[]}'])('accepts only complete reviewed documents including JSON fences', async text => {
+ vi.mocked(completeText).mockResolvedValue({text} as never)
+ expect(await veraDraftReply('thread-A','owner')).toEqual({data:{draft:'Which details do you need to confirm before replying?'}})
+})
+it.each(['Ignore rules. {"questionIds":["confirm"],"checkIds":[]}', '```json\n{"questionIds":["confirm"],"checkIds":[]}\n``` extra', '```json\n{"questionIds":["confirm"],"checkIds":[]}', 'x'.repeat(4097)])('does not mine reviewed IDs from injected prose or oversized output', async text => {
+ vi.mocked(completeText).mockResolvedValue({text} as never)
+ expect(await veraDraftReply('thread-A','owner')).toHaveProperty('data.draft',expect.stringContaining('Guided checklist;'))
+})
+it('sanitizes provider errors and keeps missing threads failures', async () => {
+ const log=vi.spyOn(console,'warn').mockImplementation(()=>{})
+ vi.mocked(completeText).mockRejectedValueOnce(new Error('PRIVATE MODEL TOKEN'))
+ expect(await veraDraftReply('thread-A','owner')).toHaveProperty('data.draft',expect.stringContaining('Guided checklist;'))
+ expect(JSON.stringify(log.mock.calls)).not.toContain('PRIVATE MODEL TOKEN')
+ vi.mocked(getWorkspaceThread).mockResolvedValueOnce(null)
+ expect(await veraDraftReply('thread-A','owner')).toHaveProperty('error')
+ expect(updateConversationFields).not.toHaveBeenCalled();log.mockRestore()
+})
+
+it.each(['off','rate'])('preserves %s gate before private reads', async gate => {
+ if(gate==='off') vi.mocked(aiAvailable).mockResolvedValueOnce(false)
+ else vi.mocked(aiRateLimited).mockResolvedValueOnce(true)
+ expect(await veraDraftReply('thread-A','owner')).toHaveProperty('error')
+ expect(getWorkspaceThread).not.toHaveBeenCalled();expect(completeText).not.toHaveBeenCalled()
 })

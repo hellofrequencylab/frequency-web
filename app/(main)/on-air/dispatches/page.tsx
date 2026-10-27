@@ -11,6 +11,7 @@ import { listDispatches } from '@/lib/vera-dispatch'
 import { dispatchDay } from '@/lib/on-air/dispatch-day'
 import { FocusTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { buttonClasses } from '@/components/ui/button'
 
 export const metadata: Metadata = {
   title: 'Dispatches from Vera',
@@ -64,7 +65,7 @@ export default async function DispatchesPage() {
           action={
             <Link
               href="/on-air"
-              className="rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
+              className={buttonClasses('primary')}
             >
               Tune out
             </Link>

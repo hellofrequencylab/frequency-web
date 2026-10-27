@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Check, X, CalendarPlus } from 'lucide-react'
@@ -132,7 +133,7 @@ export function VenueHoldsPanel({
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => acceptVenueHold(h.id))}
-                    className="inline-flex items-center gap-1 rounded-control bg-primary px-3 py-1.5 text-meta font-bold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+                    className={buttonClasses('primary', 'sm')}
                   >
                     <Check className="h-3.5 w-3.5" aria-hidden /> Approve
                   </button>
@@ -140,7 +141,7 @@ export function VenueHoldsPanel({
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => declineVenueHold(h.id))}
-                    className="inline-flex items-center gap-1 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
+                    className={buttonClasses('secondary', 'sm')}
                   >
                     <X className="h-3.5 w-3.5" aria-hidden /> Decline
                   </button>
@@ -229,7 +230,7 @@ export function VenueHoldsPanel({
                 },
               )
             }
-            className="mt-3 inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+            className={buttonClasses('primary', 'md', 'mt-3')}
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <CalendarPlus className="h-4 w-4" aria-hidden />}
             Send request
@@ -262,7 +263,7 @@ export function VenueHoldsPanel({
                       if (!window.confirm('Cancel this venue hold? The other space is notified it is off.')) return
                       run(() => cancelVenueHold(h.id))
                     }}
-                    className="rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted hover:bg-surface-elevated disabled:opacity-50"
+                    className={buttonClasses('secondary', 'sm')}
                   >
                     Cancel
                   </button>

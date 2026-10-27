@@ -84,6 +84,7 @@ html:has([data-house-site]),body:has([data-house-site]){background:var(--color-c
 .hs-mega-feature-desc{position:relative;font-size:14px;line-height:1.5;color:var(--color-on-ink-muted)}
 .hs-menu-button{width:44px;height:44px;border-radius:50%;border:0;cursor:pointer;background:var(--color-surface-elevated);color:var(--color-text);display:flex;align-items:center;justify-content:center}
 .hs-menu-panel{position:absolute;left:clamp(12px,3vw,32px);right:clamp(12px,3vw,32px);top:76px;max-width:1240px;margin:0 auto;padding:8px;border-radius:24px;background:${a('surface', 94)};-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 24px 50px -20px ${a('text', 35)};display:flex;flex-direction:column}
+.hs-menu-panel a[data-cta],.hs-menu-panel [data-menu-group],.hs-menu-panel [data-menu-foot]{display:none}
 .hs-menu-panel a{padding:14px 18px;border-radius:16px;font-weight:500;font-size:18px;color:var(--color-text)}
 @media (min-width:940px){.hs-pill{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"logo nav cta";border-radius:999px}.hs-mega{padding-left:calc(clamp(10px,3vw,32px) + 32px);padding-right:calc(clamp(10px,3vw,32px) + 32px)}.hs-mega-panel{max-width:calc(1240px - 64px)}.hs-mega-panel[data-feature]{grid-template-columns:minmax(0,2.2fr) minmax(0,1fr)}.hs-menu{display:none}}
 

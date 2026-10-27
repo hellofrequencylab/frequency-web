@@ -58,6 +58,7 @@ export function DesignerInquiryForm({ slug, variant, services, submitLabel, succ
   if (status === 'done') {
     return (
       <div className="dz-done" role="status">
+        <span className="dz-done-mark" aria-hidden="true">✓</span>
         <h3>{successTitle}</h3>
         <p className="dz-body">{successBody}</p>
       </div>
@@ -69,8 +70,8 @@ export function DesignerInquiryForm({ slug, variant, services, submitLabel, succ
   const chip = (on: boolean) => <span className="dz-box" aria-hidden="true">{on ? '✓' : ''}</span>
   return (
     <form className="dz-form" onSubmit={onSubmit}>
-      <Field label={req('First name')}><Input className="dz-input" required autoComplete="given-name" value={first} onChange={(e) => setFirst(e.target.value)} disabled={off} /></Field>
-      <Field label={req('Last name')}><Input className="dz-input" required autoComplete="family-name" value={last} onChange={(e) => setLast(e.target.value)} disabled={off} /></Field>
+      <Field label={req('First Name')}><Input className="dz-input" required autoComplete="given-name" value={first} onChange={(e) => setFirst(e.target.value)} disabled={off} /></Field>
+      <Field label={req('Last Name')}><Input className="dz-input" required autoComplete="family-name" value={last} onChange={(e) => setLast(e.target.value)} disabled={off} /></Field>
       <Field label={req('Email')}><Input className="dz-input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={off} /></Field>
       <Field label="Phone"><Input className="dz-input" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={off} /></Field>
       {consult ? (

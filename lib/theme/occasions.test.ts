@@ -50,20 +50,10 @@ describe('resolveOccasionForDate (calendar window selection)', () => {
   })
 })
 
-// The CSS ⇄ registry CONTRACT. Every non-`none` OccasionId MUST have a
-// `[data-occasion="<id>"]` block authored in app/globals.css (`none` is the baseline and
-// needs no block). Keeps CSS + registry from drifting apart.
-describe('occasion CSS contract (every non-none id has its [data-occasion] block)', () => {
-  const globalsCss = readFileSync(
-    fileURLToPath(new URL('../../app/globals.css', import.meta.url)),
-    'utf8',
-  )
-
-  for (const occ of OCCASIONS) {
-    if (occ.id === DEFAULT_OCCASION) continue
-    it(`occasion: ${occ.id} has a [data-occasion] block`, () => {
-      const re = new RegExp(`\\[data-occasion="${occ.id}"\\]\\s*\\{`)
-      expect(globalsCss).toMatch(re)
-    })
-  }
+// Persisted identifiers stay readable; the Frequency resolver no longer renders these overlays.
+describe('historical occasion registry does not require runtime preset CSS', () => {
+  it('keeps retired selectors out of the platform stylesheet', () => {
+    const css = readFileSync(fileURLToPath(new URL('../../app/globals.css', import.meta.url)), 'utf8')
+    expect(css).not.toMatch(/\[data-occasion[^\]]*\]/)
+  })
 })

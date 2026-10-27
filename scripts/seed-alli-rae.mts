@@ -7,6 +7,9 @@
 // table records the new Space, and the rollback at the foot of the output removes it. Nothing existing is edited.
 //
 //   node --experimental-strip-types --no-warnings scripts/seed-alli-rae.mts > alli-rae.sql
+//
+// LAST STEP after the paste (LIVE-1496): node scripts/attach-site-subdomain.mjs <slug>. A SQL publish never attaches the
+// address to Vercel, and there is no wildcard domain.
 
 import { ALLI_RAE, ALLI_RAE_ACCENT, ALLI_RAE_FOOTER, ALLI_RAE_MENU, alliRaeEditorState } from '../lib/sites/alli-rae-site.ts'
 
