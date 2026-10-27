@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1492",
+  "title": "Alli Rae Design & Build: the firm's real site on the Designer theme, and a script that creates its Space",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/alli-rae-site.mjs"
+  },
+  "detail": "Follows LIVE-1490 and LIVE-1491. lib/sites/alli-rae-site.ts holds the firm's own words as Designer blocks (home, portfolio, about, three project pages, Ready to Build Meeting, Schedule Consultation) with its photos in public/sites/alli-rae, four typos fixed. scripts/seed-alli-rae.mts prints one guarded SQL transaction that adds the Space alli-rae (Business plan, comped, owned by the owner's profile, claim token minted) and publishes the site through save_website_editor, the function the editor's Publish button calls. Not run by the PR: the owner pastes the SQL after the Designer theme is live. The Space is handed to Alli with /spaces/claim/<token>.",
+  "wave": "W7"
+}
