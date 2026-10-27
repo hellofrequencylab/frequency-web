@@ -1,5 +1,7 @@
 'use client'
 
+import { DraftsCount } from './drafts-count'
+
 // THE FREQUENCY MEMBER HEADER, on the members kit's official app shell (templates/members/app/shell.js;
 // kit-members.css `.ap-hdr`, `.ap-nav`, `.ap-mega`, `.ap-sheets`, `.ap-scrim`).
 //
@@ -467,7 +469,7 @@ function Drawer({
       <Link key={href + label} href={href} className={on ? 'rl-row on' : 'rl-row'} aria-current={on ? 'page' : undefined}>
         <FqIcon name={icon} />
         <span>{label}</span>
-        {count > 0 && (
+        {href === '/drafts' ? <DraftsCount href={href} count={count} /> : count > 0 && (
           <b className="rl-n" aria-label={`${count} new`}>
             {count}
           </b>
@@ -572,7 +574,7 @@ function Drawer({
             <span className="rl-h">{g.label}</span>
             {rows.map((r) =>
               r.href ? (
-                row(r.href, r.label, r.icon)
+                row(r.href, r.label, r.icon, r.count)
               ) : (
                 <button key={r.key} type="button" className="rl-row" onClick={() => r.action && onAction(r.action)}>
                   <FqIcon name={r.icon} />
@@ -714,6 +716,7 @@ function AccountSheet({
                 <Link key={r.key} href={r.href} className="fqm-acct-row">
                   <FqIcon name={r.icon} />
                   <span>{r.label}</span>
+                  <DraftsCount href={r.href} count={r.count} />
                 </Link>
               ) : (
                 <button

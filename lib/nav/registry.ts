@@ -468,7 +468,7 @@ const PROFILE_LINK_SEEDS: readonly {
   // You (View profile + Appearance are fixed chrome woven in by the renderer)
   // DRAFTS HAS MOVED TO MY FREQUENCY (owner ruling 2026-08-12: "wire the badge into the My
   // Frequency menu, alongside the /drafts entrance"). It sits beside Journal and My Contacts in
-  // lib/nav/my-frequency-rows.ts, wearing the open-proposal count from countMyCreateProposals —
+  // the active Frequency menu groupRows/count renderer, wearing the open-proposal count from countMyCreateProposals —
   // which is exactly the move the interim note here always described: "a render edit plus a
   // count on getMyFrequency, not a seed."
   //
