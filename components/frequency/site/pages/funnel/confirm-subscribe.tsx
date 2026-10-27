@@ -1,7 +1,7 @@
 'use client'
 
 // The /subscribe/confirm button on the Frequency design. The SAME affirmative confirm as
-// app/(marketing)/subscribe/confirm/confirm-button.tsx: consent flips on THIS click (the confirmSubscribe
+// the subscription confirmation flow: consent flips on THIS click (the confirmSubscribe
 // POST re-verifies the token), never on page load, so a link scanner opening the email cannot subscribe
 // anyone.
 
