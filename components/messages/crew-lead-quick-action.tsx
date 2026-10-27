@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import type { createClient } from '@/lib/supabase/server'
 import { NewGroupDMCompose } from '@/components/compose/new-group-dm-compose'
+import { buttonClasses } from '@/components/ui/button'
 
 /**
  * Server component that detects if the viewer is a crew lead in any
@@ -9,22 +9,16 @@ import { NewGroupDMCompose } from '@/components/compose/new-group-dm-compose'
  * Sub-group = all other active members in the same circle, excluding
  * the host. Capped at the group DM cap.
  */
-export async function CrewLeadQuickAction() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const admin = createAdminClient()
-  const { data: myProfile } = await admin
-    .from('profiles')
-    .select('id, is_crew_lead')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!myProfile || !myProfile.is_crew_lead) return null
-  const myProfileId = myProfile.id
+export async function CrewLeadQuickAction({ supabase, myProfileId, isCrewLead }: {
+  supabase: Awaited<ReturnType<typeof createClient>>
+  myProfileId: string
+  /** Trusted inbox profile read, never supplied through a client action. */
+  isCrewLead: boolean
+}) {
+  if (!isCrewLead || !myProfileId) return null
 
   // Crew lead is a global profile flag; surface their active circle(s).
-  const { data: leadMemberships } = await admin
+  const { data: leadMemberships } = await supabase
     .from('memberships')
     .select('circle_id, circles!circle_id(id, name, host_id)')
     .eq('profile_id', myProfileId)
@@ -38,7 +32,7 @@ export async function CrewLeadQuickAction() {
   if (!circle) return null
 
   // Get other active members in the circle (excluding self)
-  const { data: otherMembers } = await admin
+  const { data: otherMembers } = await supabase
     .from('memberships')
     .select('profile_id, profiles!profile_id(id, display_name, handle, avatar_url)')
     .eq('circle_id', circle.id)
@@ -59,7 +53,7 @@ export async function CrewLeadQuickAction() {
   // circle full of non-friends made "Message my circle" dead-end on submit. Pre-filter
   // the default invitees to accepted friends so the primary path goes through (the
   // compose still surfaces the friendship error if a member adds a non-friend by hand).
-  const { data: friendRows } = await admin
+  const { data: friendRows } = await supabase
     .from('friendships')
     .select('user_a_id, user_b_id')
     .eq('status', 'accepted')
@@ -68,16 +62,16 @@ export async function CrewLeadQuickAction() {
     ((friendRows ?? []) as { user_a_id: string; user_b_id: string }[])
       .map(f => (f.user_a_id === myProfileId ? f.user_b_id : f.user_a_id)),
   )
-  const friendRecipients = recipients.filter(r => friendIds.has(r.id))
+  const friendRecipients = recipients.filter(r => friendIds.has(r.id) && r.id !== circle.host_id && r.id !== myProfileId)
 
   if (friendRecipients.length === 0) return null
 
   return (
     <NewGroupDMCompose
-      buttonLabel="Message my circle"
-      buttonClass="inline-flex items-center gap-1.5 rounded-control border border-primary-bg bg-primary-bg px-3 py-1.5 text-meta font-semibold text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg/50 transition-colors whitespace-nowrap"
+      buttonLabel="Message circle friends"
+      buttonClass={buttonClasses('secondary', 'sm')}
       defaultRecipients={friendRecipients}
-      defaultName={`${circle.name} Crew`}
+      defaultName={`${circle.name} friends`}
     />
   )
 }

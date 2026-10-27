@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { roomAtomicWritesEnabled, createRoomAtomic, setRoomAdminAtomic, removeRoomMemberAtomic } from '@/lib/messages/room-atomic'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
+import { canEditRoomVisibility } from '@/lib/messages/room-settings-policy'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
 import { belongsToRoomScope, isScopedRoomVisibility, scopedRoomRefusal } from '@/lib/messages/room-scope'
@@ -32,18 +34,30 @@ export async function createRoom(fd: FormData): Promise<ActionResult<{ id: strin
   const caller = await getCallerProfile()
   if (!caller) return fail('Not signed in')
 
-  const name = (fd.get('name') as string)?.trim().slice(0, 120)
-  const description = (fd.get('description') as string)?.trim().slice(0, 500) || null
+  const rawName = fd.get('name'), rawDescription = fd.get('description'), submittedVisibility = fd.get('visibility')
+  if (typeof rawName !== 'string' || (rawDescription !== null && typeof rawDescription !== 'string') || (submittedVisibility !== null && typeof submittedVisibility !== 'string')) return fail('Please provide valid room details.')
+  const name = rawName.trim().slice(0, 120)
+  const description = rawDescription?.trim().slice(0, 500) || null
   // Member-created rooms are public or private, full stop — the same coercion updateRoom
   // applies. Scoped visibilities ('circle'/'hub'/'channel'/…) pair with a scope_id and are
   // provisioned server-side; accepting either from the form let a caller mint a room that
   // MATCHES a scope's official-room lookup (e.g. a channel's open room resolves purely by
   // visibility+scope_id) with themselves seeded as its admin. The compose UI only ever
   // offers public/private, so nothing legitimate loses anything.
-  const rawVisibility = (fd.get('visibility') as string) || 'public'
+  const rawVisibility = submittedVisibility || 'public'
   const visibility: RoomVisibility = rawVisibility === 'private' ? 'private' : 'public'
 
   if (!name) return fail('Name is required')
+
+  if (roomAtomicWritesEnabled()) {
+    try {
+      const id = await createRoomAtomic(createAdminClient(), caller.id, { name, description, visibility })
+      revalidatePath('/messages')
+      return ok({ id })
+    } catch (error) {
+      return fail(error instanceof Error ? error.message : 'Could not create room. Please try again.')
+    }
+  }
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -92,18 +106,21 @@ export async function updateRoom(roomId: string, fd: FormData): Promise<ActionRe
     .maybeSingle()
   if (!membership?.is_admin) return fail('You must be a room admin to edit this room')
 
-  const name = (fd.get('name') as string)?.trim().slice(0, 120)
-  const description = (fd.get('description') as string)?.trim().slice(0, 500) || null
-  const visibility = ((fd.get('visibility') as string) || 'public') as RoomVisibility
+  const rawName = fd.get('name'), rawDescription = fd.get('description'), submittedVisibility = fd.get('visibility')
+  if (typeof rawName !== 'string' || (rawDescription !== null && typeof rawDescription !== 'string') || (submittedVisibility !== null && typeof submittedVisibility !== 'string')) return fail('Please provide valid room details.')
+  const name = rawName.trim().slice(0, 120)
+  const description = rawDescription?.trim().slice(0, 500) || null
   if (!name) return fail('Name is required')
-  // Only public/private are user-editable; scope-derived visibilities are managed elsewhere.
-  const safeVisibility: RoomVisibility = visibility === 'private' ? 'private' : 'public'
-
-  const { error } = await admin
-    .from('rooms')
-    .update({ name, description, visibility: safeVisibility })
-    .eq('id', roomId)
-  if (error) return fail(error.message)
+  // The stored room, never submitted visibility/scope fields, decides whether visibility is editable.
+  const { data: room, error: roomError } = await admin.from('rooms').select('visibility, scope_id').eq('id', roomId).maybeSingle()
+  if (roomError || !room) return fail('Could not read this room. Please try again.')
+  const editable = canEditRoomVisibility(room)
+  const patch = { name, description, ...(editable ? { visibility: submittedVisibility === 'private' ? 'private' : 'public' } : {}) }
+  let write = admin.from('rooms').update(patch).eq('id', roomId)
+  // A concurrent scope conversion must not make a previously manual room public.
+  if (editable) write = write.eq('visibility', room.visibility).is('scope_id', null)
+  const { data: updated, error } = await write.select('id').maybeSingle()
+  if (error || !updated) return fail('Could not save this room. Please try again.')
 
   revalidatePath('/messages')
   revalidatePath(`/messages/r/${roomId}`)
@@ -140,10 +157,11 @@ export async function joinRoom(roomId: string) {
   }
 
   // Insert membership (UNIQUE on PK prevents duplicates)
-  await admin.from('room_members').upsert(
+  const { error: joinError } = await admin.from('room_members').upsert(
     { room_id: roomId, profile_id: caller.id, is_admin: false },
     { onConflict: 'room_id,profile_id', ignoreDuplicates: true }
-  )
+  ).then(result => result, () => { throw new Error('Could not join this room. Please try again.') })
+  if (joinError) throw new Error('Could not join this room. Please try again.')
 
   revalidatePath('/messages')
   revalidatePath(`/messages/r/${roomId}`)
@@ -153,13 +171,20 @@ export async function leaveRoom(roomId: string) {
   const caller = await getCallerProfile()
   if (!caller) redirect('/sign-in')
 
+  if (roomAtomicWritesEnabled()) {
+    await removeRoomMemberAtomic(createAdminClient(), caller.id, roomId, caller.id)
+    revalidatePath('/messages')
+    return
+  }
+
   const admin = createAdminClient()
-  await admin
+  const { error } = await admin
     .from('room_members')
     .delete()
     .eq('room_id', roomId)
     .eq('profile_id', caller.id)
 
+  if (error) throw new Error('Could not leave this room. Please try again.')
   revalidatePath('/messages')
 }
 
@@ -243,11 +268,17 @@ export async function removeFromRoom(roomId: string, profileId: string) {
   if (!caller) redirect('/sign-in')
   await assertRoomAdmin(roomId, caller.id)
   if (caller.id === profileId) throw new Error('Use Leave to remove yourself')
+  if (roomAtomicWritesEnabled()) {
+    await removeRoomMemberAtomic(createAdminClient(), caller.id, roomId, profileId)
+    revalidatePath(`/messages/r/${roomId}`)
+    return
+  }
 
   const admin = createAdminClient()
-  await admin.from('room_members').delete()
+  const { error } = await admin.from('room_members').delete()
     .eq('room_id', roomId)
     .eq('profile_id', profileId)
+  if (error) throw new Error('Could not remove this member. Please try again.')
 
   revalidatePath(`/messages/r/${roomId}`)
 }
@@ -257,10 +288,17 @@ export async function promoteRoomMember(roomId: string, profileId: string) {
   if (!caller) redirect('/sign-in')
   await assertRoomAdmin(roomId, caller.id)
 
+  if (roomAtomicWritesEnabled()) {
+    await setRoomAdminAtomic(createAdminClient(), caller.id, roomId, profileId, true)
+    revalidatePath(`/messages/r/${roomId}`)
+    return
+  }
+
   const admin = createAdminClient()
-  await admin.from('room_members').update({ is_admin: true })
+  const { error } = await admin.from('room_members').update({ is_admin: true })
     .eq('room_id', roomId)
     .eq('profile_id', profileId)
+  if (error) throw new Error('Could not make this member an admin. Please try again.')
 
   revalidatePath(`/messages/r/${roomId}`)
 }
@@ -270,18 +308,26 @@ export async function demoteRoomMember(roomId: string, profileId: string) {
   if (!caller) redirect('/sign-in')
   await assertRoomAdmin(roomId, caller.id)
 
+  if (roomAtomicWritesEnabled()) {
+    await setRoomAdminAtomic(createAdminClient(), caller.id, roomId, profileId, false)
+    revalidatePath(`/messages/r/${roomId}`)
+    return
+  }
+
   // Prevent demoting the last admin
   const admin = createAdminClient()
-  const { count } = await admin
+  const { count, error: countError } = await admin
     .from('room_members')
     .select('profile_id', { count: 'exact', head: true })
     .eq('room_id', roomId)
     .eq('is_admin', true)
+  if (countError) throw new Error('Could not check room admins. Please try again.')
   if ((count ?? 0) <= 1) throw new Error('Cannot demote the last admin')
 
-  await admin.from('room_members').update({ is_admin: false })
+  const { error } = await admin.from('room_members').update({ is_admin: false })
     .eq('room_id', roomId)
     .eq('profile_id', profileId)
+  if (error) throw new Error('Could not remove this admin role. Please try again.')
 
   revalidatePath(`/messages/r/${roomId}`)
 }
@@ -292,7 +338,9 @@ export async function deleteRoom(roomId: string) {
   await assertRoomAdmin(roomId, caller.id)
 
   const admin = createAdminClient()
-  await admin.from('rooms').delete().eq('id', roomId)
+  const { error } = await admin.from('rooms').delete().eq('id', roomId)
+    .then(result => result, () => { throw new Error('Could not delete this room. Please try again.') })
+  if (error) throw new Error('Could not delete this room. Please try again.')
   revalidatePath('/messages')
   redirect('/messages')
 }
@@ -346,10 +394,11 @@ export async function inviteToRoom(roomId: string, profileId: string) {
     .maybeSingle()
   if (!friendship) throw new Error('You can only invite people you are friends with')
 
-  await admin.from('room_members').upsert(
+  const { error: inviteError } = await admin.from('room_members').upsert(
     { room_id: roomId, profile_id: profileId, is_admin: false },
     { onConflict: 'room_id,profile_id', ignoreDuplicates: true }
-  )
+  ).then(result => result, () => { throw new Error('Could not invite this person. Please try again.') })
+  if (inviteError) throw new Error('Could not invite this person. Please try again.')
 
   revalidatePath(`/messages/r/${roomId}`)
 }

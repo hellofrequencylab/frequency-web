@@ -14,7 +14,7 @@ There is no trigger. Account/profile deletion, creator-room cascades, system pro
 
 ## Adapter and activation
 
-This foundation registers the SQL and isolated acceptance harness only. It does not include the proposed `lib/messages/room-atomic.ts` adapter or change server actions. The dependent application packet must resolve identity and validate inputs at the existing caller boundary, use genuine generated RPC types after database application, and fail closed on missing functions, authorization errors or unconfirmed results. It must never retry through separate legacy writes. Until that packet and rollout are accepted, the existing implementation and its known race remain recorded in HYG-205; the flag stays blank/off.
+This foundation registers the SQL and isolated acceptance harness only. The dependent application packet now includes `lib/messages/room-atomic.ts` and the guarded server-action branches, using the three exact room RPC type declarations extracted from the genuine post-migration live generator artifact. Unrelated catalog changes were not copied. Actions resolve identity at the existing caller boundary and fail closed on missing functions, authorization errors or unconfirmed results. Optional descriptions use an empty string because the generated RPC argument is a string; the registered SQL normalizes it to NULL. It must never retry through separate legacy writes. Until that packet and rollout are accepted, the existing implementation and its known race remain recorded in HYG-205; the flag stays blank/off.
 
 Before activation:
 
