@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1512",
+  "title": "Seven business profiles join the six niche doors (general, creators, schools, clubs, faith, wellness, markets)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-27",
+  "source": {
+    "file": "lib/theme/mega-theme.ts",
+    "ref": "Owner 2026-10-27: each theme gets a version for every profile, with a general Business profile, covering the full range of businesses"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/profile-niches.mjs",
+    "note": "Each of the seven profiles is a Mega niche id, has kit words in niche-spec.ts (so the Default, Bold and Designer kits can derive from them), a starting-setup row in niche-defaults.ts and a Space picker card. The six core doors keep their hand-written kits (CoreKitNiche). Per-theme kits, registry entries and /for doors for the profiles are follow-up rows owned by the theme library thread and the doors PR."
+  },
+  "detail": "MEGA_NICHES now joins MEGA_CORE_NICHES (the six doors every theme hand-writes a kit for) and MEGA_PROFILE_NICHES (the seven profiles). KitNiche is the Mega niche id; Midnight, Network and Temple variants are typed on CoreKitNiche so adding a profile does not force hand-written pages. Niche words for the seven follow the voice guide (pain first, no hard claims, no prices, slot tokens). Starting setups borrow the closest honest bundle (schools and wellness: practice; clubs: studio; faith: nonprofit; markets: venue; general and creators: none, because everything-on is the default and the Shop is tier-marked). Profiles table and rationale: /mnt/project-files/mega-system/08-profiles.md.",
+  "wave": "W7"
+}

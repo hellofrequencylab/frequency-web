@@ -18,7 +18,7 @@ describe('one theme id model (ADR-1881)', () => {
 
   it('names the niches the site kits use', () => {
     for (const k of KIT_INDEX) expect(isMegaNicheId(k.niche)).toBe(true)
-    expect(MEGA_NICHES).toHaveLength(6)
+    expect(MEGA_NICHES).toHaveLength(13)
   })
 })
 

@@ -1,4 +1,4 @@
-import type { KitNiche, KitPage, SiteKit } from './types'
+import type { CoreKitNiche, KitPage, SiteKit } from './types'
 
 // Temple x the six niche doors. One mega theme, six starting points, all DATA: pages of Temple blocks
 // (components/page-editor/blocks/temple.tsx) plus the shared Space blocks, with generic sample copy in the house
@@ -61,7 +61,7 @@ const membershipPage = (lead: string, list: Parameters<typeof tiers>[2]): KitPag
   blocks: [tiers('Come *and stay*', lead, list), faq('Before you *join*', [{ q: 'Can I change my mind?', a: 'Yes. Write to us and we will sort it out.' }])],
 })
 
-const VARIANTS: Record<KitNiche, Omit<SiteKit, 'theme' | 'version' | 'niche'>> = {
+const VARIANTS: Record<CoreKitNiche, Omit<SiteKit, 'theme' | 'version' | 'niche'>> = {
   coaches: {
     id: 'temple-coaches',
     label: 'Coaches and healers',
@@ -252,6 +252,6 @@ const VARIANTS: Record<KitNiche, Omit<SiteKit, 'theme' | 'version' | 'niche'>> =
 }
 
 /** The Temple kit for one niche door. */
-export function templeKit(niche: KitNiche): SiteKit {
+export function templeKit(niche: CoreKitNiche): SiteKit {
   return { ...VARIANTS[niche], version: 1, theme: 'Temple', niche }
 }

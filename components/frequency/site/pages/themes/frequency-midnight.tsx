@@ -7,7 +7,7 @@ import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { OPERATOR_START_HREF } from '@/lib/site'
 import { midnightKit } from '@/lib/sites/kits/midnight-variants'
-import type { KitNiche } from '@/lib/sites/kits/types'
+import type { CoreKitNiche } from '@/lib/sites/kits/types'
 import { MidnightPreview } from './midnight-preview'
 import { MidnightKitPicker, type MidnightKitChoice } from './midnight-kit-picker'
 
@@ -82,7 +82,7 @@ export const MIDNIGHT_CARRIES: { what: string; where: string }[] = [
   { what: 'Page frame', where: 'Midnight on Spotlight and website; Frequency on your Space' },
 ]
 
-const KIT_NICHES: KitNiche[] = ['coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks']
+const KIT_NICHES: CoreKitNiche[] = ['coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks']
 
 /** One choice per niche kit, read from the kit data so the picker never drifts from what a site is given. */
 export const MIDNIGHT_KIT_CHOICES: MidnightKitChoice[] = KIT_NICHES.map((niche) => {
