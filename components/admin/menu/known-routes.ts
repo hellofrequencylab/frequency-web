@@ -6,8 +6,9 @@ import type { MenuAccess, MenuMode, MenuSurfaceKey } from '@/lib/menus/types'
 
 // Which surfaces render as a true grid (so column / row / span placement is meaningful)
 // vs. a linear list. The left rail, footer, and profile menu are linear lists, so their
-// grid-placement controls are hidden (point 4); the mega-menus (header + admin header) are grids.
-const GRID_SURFACES: readonly MenuSurfaceKey[] = ['header', 'admin_header']
+// grid-placement controls are hidden. The public header keeps Frequency kit geometry; only
+// the admin header exposes arbitrary grid placement.
+const GRID_SURFACES: readonly MenuSurfaceKey[] = ['admin_header']
 
 /** Does this surface lay items out on a grid (vs. a linear list)? */
 export function isGridSurface(surfaceKey: MenuSurfaceKey): boolean {
