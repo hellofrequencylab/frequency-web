@@ -6,6 +6,7 @@
 // Every mutation goes through the existing curator-gated actions; the screen is ADVISORY and
 // never blocks a decision. Semantic tokens only; copy is plain, no em dashes (CONTENT-VOICE).
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -197,7 +198,7 @@ function ReviewRowItem({
             onClick={prescreen}
             disabled={screening || disabled}
             title="Pre-screen with Vera (advisory)"
-            className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
+            className={buttonClasses('secondary', 'xs')}
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             {screening ? 'Reading…' : 'Pre-screen'}
