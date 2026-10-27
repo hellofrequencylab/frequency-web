@@ -1,0 +1,6 @@
+{
+  "id": "SCAN-1129",
+  "append": {
+    "detail": "2026-10-26 partial Frequency-only member-root cleanup: removed the unreachable DAWN publicChrome header/footer fallback from app/(main)/layout.tsx. The exact selected Frequency ViewerProvider/SiteShell/members scope remains; public-route classification, session reads, redirects, anonymous feed and signed-in member data paths are unchanged. The retired fallback no longer imports SiteHeader/MarketingFooter or fetches its footer menu. This bounded cleanup does not close the full member-theme row or establish browser/production acceptance."
+  }
+}

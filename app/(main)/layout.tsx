@@ -92,9 +92,7 @@ import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { isAnonPublicDetail } from '@/lib/nav/public-detail-routes'
 import { getMyFrequency } from '@/lib/nav/my-frequency'
 import { viewerRoleFor } from '@/components/layout/menu-role'
-import { SiteHeader } from '@/components/layout/site-header'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
-import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 // A logged-out visitor is normally sent back to the splash, but a NETWORKED Space profile
@@ -195,55 +193,17 @@ export default async function MainLayout({
   // getCachedUser below, so leftover public views (Space profile tabs, the /events index)
   // still pay the auth cookie read. Accepted by ADR-1707 (SCAN-788) at the current size.
   // Sitemap share URLs for events + listings moved to app/(public)/ (no cookies/headers).
-  const publicChrome = async () => {
-    // THE DESIGN SWITCH (ADR-1737). Under Frequency a signed-out visitor on a leftover public view
-    // (a Space profile tab, the /events index) gets the public Frequency chrome, exactly as
-    // app/(public)/layout.tsx does. The bodies here are members-kit bodies (FqSpaceChrome, FqEventsBody)
-    // that the signed-in shell scopes with MembersKitRoot; without that scope they render unstyled under
-    // DAWN's header, so this wrapper carries the same `data-kit="members"` root on Commons.
-    if (SITE_DESIGN === 'frequency') {
-      return (
-        <ViewerProvider>
-          <SiteShell surface="commons">
-            {/* `.fqm-public-view` (members-shell.css) is the page: the container, the clearance under the
-                fixed site header, the site canvas, and the site kit's class meanings put back (SCAN-912). */}
-            <div data-kit="members" data-theme="commons" data-energy="flow" className="fqm-public-view">
-              {children}
-            </div>
-          </SiteShell>
-        </ViewerProvider>
-      )
-    }
-    // SiteHeader fetches its own header menu. The footer stays the marketing one: this row is
-    // the header split (SCAN-641), not a footer unification.
-    const footerMenu = await getMenu('footer')
-    return (
-      <ViewerProvider>
-        {/* Same header /discover uses: light bar, client auth. Leftover public views
-            in this group still call getCachedUser below; authMode=client keeps this
-            bar one component with /discover. ViewerProvider is what that authMode needs. */}
-        <SiteHeader variant="light" authMode="client" />
-        {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
-            (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch.
-            id="main" is the target of SiteHeader's skip link (WCAG 2.4.1), matching /discover. */}
-        <main id="main" tabIndex={-1} className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-          {/* A public page rides in the SAME centered CONTENT COLUMN as the signed-in shell: the member
-              three-column grid (empty left/right rail gutters flanking a flex-1 center column inside
-              max-w-[105rem]), so a public Space profile is the exact width it is signed in. The public
-              /discover/spaces directory rides in an identical column, so the two line up. NOT full width. */}
-          <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:gap-10 lg:px-8">
-            {/* Empty left gutter — the left-nav column's width (w-48), held blank. */}
-            <div className="hidden w-48 shrink-0 md:block" aria-hidden />
-            {/* Center content column — same flex-1 min-w-0 py-6 as the shell's main. */}
-            <div className="min-w-0 flex-1 py-6">{children}</div>
-            {/* Empty right gutter — the community rail's width (w-72), held blank. */}
-            <div className="hidden w-72 shrink-0 lg:block" aria-hidden />
-          </div>
-        </main>
-        <MarketingFooter menu={footerMenu} />
-      </ViewerProvider>
-    )
-  }
+  // Frequency is the only deployable design. Keep the member-kit scope on public
+  // views in this group so their bodies match the signed-in shell.
+  const publicChrome = () => (
+    <ViewerProvider>
+      <SiteShell surface="commons">
+        <div data-kit="members" data-theme="commons" data-energy="flow" className="fqm-public-view">
+          {children}
+        </div>
+      </SiteShell>
+    </ViewerProvider>
+  )
 
   // Leftover public views still in this group (Space profile tabs, /events index).
   // headers() + getCachedUser still run here. Share event, listing, and Space
