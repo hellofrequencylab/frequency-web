@@ -7,6 +7,9 @@
 // link keeps working.
 //
 //   node --experimental-strip-types --no-warnings scripts/seed-alli-rae-rename.mts > alli-rae-rename.sql
+//
+// LAST STEP after the paste (LIVE-1496): node scripts/attach-site-subdomain.mjs alliraebuilddesign   (a SQL change never
+// attaches the address to Vercel; there is no wildcard domain).
 
 import { ALLI_RAE_FOOTER, ALLI_RAE_SLUG } from '../lib/sites/alli-rae-site.ts'
 
