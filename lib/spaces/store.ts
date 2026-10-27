@@ -477,6 +477,22 @@ export async function fillSpaceBrandAccent(spaceId: string, accent: string): Pro
   }
 }
 
+/** Save a brand-new Space's first website through the editor's own RPC (the state is built by
+ *  lib/spaces/starter-site.ts). Expected revision 0: a Space that already has a website refuses, so a
+ *  starter kit can never replace pages an owner wrote. Returns whether it landed. */
+export async function saveStarterWebsiteState(spaceId: string, state: unknown): Promise<boolean> {
+  if (!spaceId) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: boolean | null; error: unknown }>
+    }
+    const { data, error } = await db.rpc('save_website_editor', { p_space_id: spaceId, p_expected_revision: 0, p_state: state, p_publish: true })
+    return !error && data === true
+  } catch {
+    return false
+  }
+}
+
 /** Write a Space's schedule zone (LIVE-471). `null` clears it back to "never said", where the
  *  calendar falls back to the viewer's browser zone. Returns false when the write failed.
  *

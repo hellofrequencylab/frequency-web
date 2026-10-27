@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1533",
+  "title": "A new Space that picked a look starts with that theme's General kit as its published website",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": { "file": "lib/spaces/starter-site.ts", "ref": "ADR-1911" },
+  "detail": "SYS-8 (website half) of the Mega Theme build plan. createSpace, after applyMegaTheme lands, calls publishStarterSite: it loads the theme's niche-free General kit, applies it with the editor's block defaults, and saves it as the published website through save_website_editor at revision 0, so a Space that already has a website is never replaced. Blocks stay flagged sample. Best-effort and logged. NOT in this row: the lead page and the welcome email (SYS-8 remainder, SYS-17), the subdomain attach (an ops step, never called live until the URL loads), and the headless Wizard probe.",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "vitest lib/spaces/starter-site.test.ts passes: a General kit per Mega Theme that applies to a publishable website on its own theme.",
+    "cmd": "node -e 'const t=require(\"fs\").readFileSync(\"lib/spaces/provision.ts\",\"utf8\");if(!t.includes(\"publishStarterSite\"))process.exit(1)'"
+  }
+}
