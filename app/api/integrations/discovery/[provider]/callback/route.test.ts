@@ -17,6 +17,27 @@ const validState = '00000000-0000-4000-8000-000000000001.' + 'a'.repeat(43)
 const get = (query = `state=${validState}&code=private-code`, provider = 'google') => GET(new Request('https://frequencylocal.com/api/integrations/discovery/' + provider + '/callback?' + query.replaceAll('state=opaque', `state=${validState}`)), { params: Promise.resolve({ provider }) })
 beforeEach(() => { vi.clearAllMocks(); m.allowed = true; m.actor = 'owner'; m.consumed = false; m.verify = true; m.save = true; m.freshGrant = 'grant'; m.events = [] })
 describe('discovery OAuth callback boundaries', () => {
+  it.each(['google', 'bing'])('shows only the finite invalid-scope outcome without consuming or exchanging for %s', async provider => {
+    for (const state of ['', `&state=${validState}`]) {
+      const response = await get(`error=invalid_scope&error_description=private-provider-message${state}`, provider)
+      expect(response.headers.get('location')).toBe('https://frequencylocal.com/spaces/operating?search=provider_invalid_scope')
+      expect(response.headers.get('cache-control')).toBe('no-store')
+      expect(response.headers.get('referrer-policy')).toBe('no-referrer')
+      expect(JSON.stringify([...response.headers])).not.toMatch(/private-provider-message|00000000/)
+    }
+    expect(consumeSearchConnection).not.toHaveBeenCalled()
+    expect(exchangeSearchCode).not.toHaveBeenCalled()
+    expect(saveSearchConnection).not.toHaveBeenCalled()
+    expect(invalidateSearchConnection).not.toHaveBeenCalled()
+  })
+  it('does not accept arbitrary or duplicate provider errors as finite diagnostics or grants', async () => {
+    for (const query of ['error=private-provider-message', 'error=invalid_scope&error=other', 'error=INVALID_SCOPE']) {
+      expect((await get(query, 'bing')).headers.get('location')).toContain('search=missing_state')
+    }
+    expect((await get(`error=invalid_scope&code=private-code&state=${validState}`, 'bing')).headers.get('location')).toContain('search=cancelled')
+    expect(exchangeSearchCode).not.toHaveBeenCalled()
+    expect(saveSearchConnection).not.toHaveBeenCalled()
+  })
   it.each(['google', 'bing'])('distinguishes absent, malformed and rejected state without token exchange for %s', async provider => {
     for (const query of ['code=private-code&error=private-provider-error', 'state=&code=private-code']) {
       const response = await get(query, provider)

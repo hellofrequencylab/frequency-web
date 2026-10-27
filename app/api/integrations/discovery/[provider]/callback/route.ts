@@ -17,6 +17,9 @@ function back(path = '/spaces/operating', outcome = 'unavailable') {
 export async function GET(request: Request, { params }: { params: Promise<{ provider: string }> }) {
   const provider = searchProvider((await params).provider), query = new URL(request.url).searchParams
   if (!provider) return back()
+  // Error display only: never consume an attempt, exchange a code or trust an error as a grant.
+  const errors = query.getAll('error')
+  if (errors.length === 1 && errors[0] === 'invalid_scope' && !query.has('code')) return back('/spaces/operating', 'provider_invalid_scope')
   const states = query.getAll('state')
   if (states.length === 0 || (states.length === 1 && states[0] === '')) return back('/spaces/operating', 'missing_state')
   if (states.length !== 1 || !parseSearchOAuthState(states[0])) return back('/spaces/operating', 'malformed_state')

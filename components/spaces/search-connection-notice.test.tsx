@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { SearchConnectionNotice } from './search-connection-notice'
 describe('fixed search callback notices', () => {
-  it.each(['missing_state', 'malformed_state', 'rejected_state'])('renders a useful safe notice for %s', outcome => {
+  it.each(['provider_invalid_scope', 'missing_state', 'malformed_state', 'rejected_state'])('renders a useful safe notice for %s', outcome => {
     const html = renderToStaticMarkup(<SearchConnectionNotice outcome={outcome} />)
     expect(html).toContain('role="status"')
     expect(html).toContain('No credentials were saved.')

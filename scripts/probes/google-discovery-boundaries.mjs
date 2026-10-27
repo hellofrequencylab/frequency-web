@@ -58,3 +58,10 @@ consent.revokedAt = null; foreignRows = true
 const foreign = await run()
 assert.equal(foreign.status, 'completed'); assert.equal(foreign.imported.observations.length, 0)
 console.log('Google exact-page/private-consent/no-secret boundaries PASS (offline; no provider request)')
+
+foreignRows = false
+for (const scopes of [[`prefix:${GOOGLE_SEARCH_READ_SCOPE}`], [`${GOOGLE_SEARCH_READ_SCOPE}.suffix`], [GOOGLE_SEARCH_READ_SCOPE, 'unknown'], [GOOGLE_SEARCH_READ_SCOPE, GOOGLE_SEARCH_READ_SCOPE]]) {
+  connection.scopes = scopes; calls = 0
+  assert.equal((await run()).status, 'unavailable'); assert.equal(calls, 0)
+}
+console.log('Provider scope: exact single permission only; substring and mixed arrays denied before IO (offline)')
