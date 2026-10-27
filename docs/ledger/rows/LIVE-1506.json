@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1506",
+  "title": "House of Fates hero sits in the middle of the photo and inside the page width, not low and hard left",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"components/sites/midnight-practice-css.ts\",\"utf8\");if(!/mn-hero--left\\{align-items:center/.test(s)){console.error(\"left hero is not vertically centred\");process.exit(1)}'"
+  },
+  "detail": "Follows LIVE-1505. The left-aligned Midnight photo hero bottom-aligned its copy, capped it at 44rem (so the title wrapped to three lines) and ran it to the page edge on wide screens. It now centres vertically, lets the title run on two lines at a smaller display size, and insets to the Midnight wide container. Only the opt-in left layout changes; no other Midnight hero moves.",
+  "wave": "W7"
+}
