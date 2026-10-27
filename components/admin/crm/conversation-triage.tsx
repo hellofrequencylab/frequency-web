@@ -5,6 +5,7 @@
 // stays clean; the operator expands it only to change something. The triage action is INJECTED (default
 // operator) so the leader / Space inboxes reuse this with their own gate.
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Sparkles, Wand2, SlidersHorizontal, ChevronUp } from 'lucide-react'
@@ -197,7 +198,7 @@ export function ConversationTriage({
             type="button"
             onClick={() => patch({ assignedTo: tradeTo ?? null, handoffNote: handoff })}
             disabled={pending}
-            className="inline-flex items-center gap-1 rounded-control bg-primary px-2.5 py-1 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+            className={buttonClasses('primary', 'xs')}
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             {tradeTo ? 'Trade' : 'Unassign'}
