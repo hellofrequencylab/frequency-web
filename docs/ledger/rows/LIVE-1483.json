@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1483",
+  "title": "New-Space picker: every feel is live (warm, bold, calm, plus earthy and clear), with the test pin updated",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/spaces/space-picker.ts",
+    "ref": "Mega theme rollout 2026-10-26: every theme now has niche starter kits, so the picker's feel step offers them. Owner's words: update the picker feel pin."
+  },
+  "detail": "PICKER_FEELS marks Default (warm), Bold, Temple (calm) live and adds Wildheart (earthy) and Network (clear) beside Midnight. The pin that said only Midnight is live now expects all six, and the calm-is-not-live assertion became a calm-resolves-to-Temple assertion. Existing Spaces are untouched; the feel only sets the starting theme of a new Space.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/spaces/space-picker.ts','utf8');process.exit(!s.includes('live: false')&&s.includes(\\\"theme: 'wildheart', live: true\\\")&&s.includes(\\\"theme: 'network', live: true\\\")?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "lib/spaces/space-picker.test.ts passes with the updated pin."
+  },
+  "closed": "2026-10-26"
+}
