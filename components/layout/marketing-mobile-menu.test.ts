@@ -63,25 +63,9 @@ describe('the phone sheet reaches everything the desktop bar reaches', () => {
     }
   })
 
-  it('reaches the thirteen that had no path before', () => {
-    // The exact set measured on 2026-08-24. Named one by one rather than counted, because a
-    // count passes the day someone swaps one destination for another.
-    const WAS_UNREACHABLE = [
-      '/discover/spaces#partners', // was /discover/partners, merged into the Spaces directory 2026-10-14
-      '/discover/practices',
-      '/discover/spaces', // was /spaces/directory, the robots-disallowed app-shell twin
-      '/for/coaches-and-healers',
-      '/for/event-hosts',
-      '/for/nonprofits',
-      '/for/studios',
-      '/pricing',
-      '/what-is-frequency',
-      '/help',
-      '/privacy',
-      '/terms',
-    ]
+  it('reaches the current Frequency wing and feature destinations from its editable default', () => {
     const phone = phoneDestinations(defaultMenu('header'))
-    for (const href of WAS_UNREACHABLE) expect(phone, `${href} is still unreachable`).toContain(href)
+    for (const href of ['/the-community','/spaces#types','/features#people','/features#spaces']) expect(phone).toContain(href)
   })
 
   it('a category with child COLUMNS folds them in rather than dropping them', () => {

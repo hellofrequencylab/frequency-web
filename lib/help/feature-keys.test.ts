@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readdirSync } from 'node:fs'
+import { readdirSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { FEATURE_KEYS } from './feature-keys'
 import { fileToRoute, affectedFeatureKeys, affectedArticles } from './drift'
@@ -58,8 +58,8 @@ describe('the real surfaces flag their article keys (scan2 L4-05)', () => {
   it('the membership page flags `vault`', () => {
     expect(affectedFeatureKeys(['app/(main)/upgrade/page.tsx'], FEATURE_KEYS)).toContain('vault')
   })
-  it('the Connections settings section flags `location` and `resonance`', () => {
-    const keys = affectedFeatureKeys(['app/(main)/settings/connections/section.tsx'], FEATURE_KEYS)
+  it('the actual Frequency settings panes flag `location` and `resonance`', () => {
+    const keys = affectedFeatureKeys(['components/frequency/members/settings/connection-panes.tsx'], FEATURE_KEYS)
     expect(keys).toContain('location')
     expect(keys).toContain('resonance')
   })
@@ -113,4 +113,22 @@ describe('the money surfaces resolve to the right key and the right article (LIV
     expect(slugs).toContain('spaces/plans-and-pricing')
     expect(slugs).not.toContain('spaces/get-paid')
   })
+})
+
+it('actual Frequency settings implementation edits flag location/resonance, unrelated/lookalike paths do not', () => {
+  for (const file of ['components/frequency/members/settings/connection-panes.tsx', 'components/frequency/members/settings/settings-body.tsx']) {
+    expect(affectedFeatureKeys([file], FEATURE_KEYS)).toEqual(expect.arrayContaining(['location', 'resonance']))
+  }
+  expect(affectedFeatureKeys(['components/settings/live-location-toggle.tsx'], FEATURE_KEYS)).toContain('location')
+  expect(affectedFeatureKeys(['components/settings/resonance-matching-toggle.tsx'], FEATURE_KEYS)).toContain('resonance')
+  for (const file of ['components/frequency/members/settings/connection-panes.tsx-other', 'components/unrelated.tsx']) {
+    const keys = affectedFeatureKeys([file], FEATURE_KEYS)
+    expect(keys).not.toContain('location'); expect(keys).not.toContain('resonance')
+  }
+})
+
+it('every declared active source prefix exists, so help drift cannot pin another removed renderer', () => {
+  const sources = FEATURE_KEYS.flatMap(feature => feature.sourcePrefixes ?? [])
+  expect(sources.length).toBeGreaterThan(0)
+  for (const source of sources) expect(existsSync(join(ROOT, source)), source).toBe(true)
 })

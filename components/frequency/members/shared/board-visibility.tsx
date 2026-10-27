@@ -23,13 +23,15 @@ export function BoardVisibilitySwitch({ hidden, label = 'Show me on leaderboards
         const next = !shown
         setShown(next)
         start(async () => {
-          const res = await setLeaderboardVisibility(!next)
-          if (!res.ok) {
-            setShown(!next)
-            fqToast('That did not save. Try again.')
-            return
-          }
-          fqToast(next ? 'You are back on the board.' : 'You are hidden from the board. You still count toward the shared goal.')
+          try {
+            const res = await setLeaderboardVisibility(!next)
+            if (res.ok) {
+              fqToast(next ? 'You are back on the board.' : 'You are hidden from the board. You still count toward the shared goal.')
+              return
+            }
+          } catch { /* A rejected action has the same recovery as a refused write. */ }
+          setShown(!next)
+          fqToast('That did not save. Try again.')
         })
       }}
     />
