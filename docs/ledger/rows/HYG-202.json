@@ -1,0 +1,12 @@
+{
+  "id": "HYG-202",
+  "title": "Restore active message group and caller-gated room member controls",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": { "file": "components/rooms/room-members.tsx", "ref": "Actual Frequency inbox and RLS-gated room roster wiring" },
+  "detail": "Restore the group-message compose door and room invite/member-management UI using the existing caller-gated public roster, never a new privileged read. Read-denied and Channel rooms show no roster controls; private invite/admin/self affordances mirror existing server checks. Member controls are visible and keyboard reachable, focus their actions, close on Escape, disable duplicate pending mutations and expose inline errors. Server member mutations propagate read/write errors without false success revalidation. The crew-lead shortcut is restored only on inbox using its existing trusted profile read and RLS client; accepted friends only, excluding self/host, and no extra reads for nonleads. Existing server group-DM friend constraints remain. BoardControls was reviewed: active Frequency Crew/Circle boards already retain scope/track/opt-out replacements, so no feature was blindly deleted. Atomic room mutations are a separate default-off HYG205 proposal and production rollout still requires explicit approval. Rendered/mocked/source proof only; authenticated browser and production acceptance remain separate.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/messages-member-controls.mjs" },
+  "closed": "2026-10-27"
+}

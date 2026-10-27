@@ -26,7 +26,7 @@ export default async function MessagesPage() {
   // cross-region viewers, come from the message_peer_profiles DEFINER RPC.
   const { data: myProfile, error: myProfileErr } = await supabase
     .from('profiles')
-    .select('id, community_role, membership_tier')
+    .select('id, community_role, membership_tier, is_crew_lead')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -37,7 +37,7 @@ export default async function MessagesPage() {
   noteFailedRead('my profile', myProfileErr)
   if (!myProfile) redirect('/onboarding')
   const myProfileId = myProfile.id as string
-  return <FrequencyMessages supabase={supabase} myProfileId={myProfileId} />
+  return <FrequencyMessages supabase={supabase} myProfileId={myProfileId} isCrewLead={myProfile.is_crew_lead === true} />
 }
 
 

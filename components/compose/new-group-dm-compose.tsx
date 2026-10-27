@@ -11,7 +11,7 @@ import { startGroupConversation } from '@/app/(main)/messages/actions'
 import { sendFriendRequest } from '@/app/(main)/people/friend-actions'
 import { CreateModal, cmLabel } from '@/components/create-modal'
 import { Field, Input } from '@/components/ui/field'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 
 type FriendStatus = 'none' | 'pending_outgoing' | 'pending_incoming' | 'accepted'
 
@@ -27,7 +27,7 @@ const GROUP_DM_CAP = 25
 
 export function NewGroupDMCompose({
   buttonLabel = 'New Group DM',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = buttonClasses('secondary', 'sm'),
   defaultRecipients = [],
   defaultName = '',
 }: {

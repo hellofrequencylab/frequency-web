@@ -245,9 +245,10 @@ export async function removeFromRoom(roomId: string, profileId: string) {
   if (caller.id === profileId) throw new Error('Use Leave to remove yourself')
 
   const admin = createAdminClient()
-  await admin.from('room_members').delete()
+  const { error } = await admin.from('room_members').delete()
     .eq('room_id', roomId)
     .eq('profile_id', profileId)
+  if (error) throw new Error('Could not remove this member. Please try again.')
 
   revalidatePath(`/messages/r/${roomId}`)
 }
@@ -258,9 +259,10 @@ export async function promoteRoomMember(roomId: string, profileId: string) {
   await assertRoomAdmin(roomId, caller.id)
 
   const admin = createAdminClient()
-  await admin.from('room_members').update({ is_admin: true })
+  const { error } = await admin.from('room_members').update({ is_admin: true })
     .eq('room_id', roomId)
     .eq('profile_id', profileId)
+  if (error) throw new Error('Could not make this member an admin. Please try again.')
 
   revalidatePath(`/messages/r/${roomId}`)
 }
@@ -272,16 +274,18 @@ export async function demoteRoomMember(roomId: string, profileId: string) {
 
   // Prevent demoting the last admin
   const admin = createAdminClient()
-  const { count } = await admin
+  const { count, error: countError } = await admin
     .from('room_members')
     .select('profile_id', { count: 'exact', head: true })
     .eq('room_id', roomId)
     .eq('is_admin', true)
+  if (countError) throw new Error('Could not check room admins. Please try again.')
   if ((count ?? 0) <= 1) throw new Error('Cannot demote the last admin')
 
-  await admin.from('room_members').update({ is_admin: false })
+  const { error } = await admin.from('room_members').update({ is_admin: false })
     .eq('room_id', roomId)
     .eq('profile_id', profileId)
+  if (error) throw new Error('Could not remove this admin role. Please try again.')
 
   revalidatePath(`/messages/r/${roomId}`)
 }
