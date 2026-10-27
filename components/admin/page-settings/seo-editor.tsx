@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
@@ -164,7 +165,7 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
             type="button"
             onClick={save}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className={buttonClasses('primary', 'sm')}
           >
             {pending ? 'Saving…' : 'Save'}
           </button>
