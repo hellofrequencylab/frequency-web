@@ -20,7 +20,6 @@ app/(main)/admin/crm/members/member-detail-actions.ts
 app/(main)/admin/crm/relationship-actions.ts
 app/(main)/admin/crm/tasks/actions.ts
 app/(main)/admin/crm/today/actions.ts
-app/(main)/admin/dash-order-actions.ts
 app/(main)/admin/demo/actions.ts
 app/(main)/admin/demo/studio/actions.ts
 app/(main)/admin/elements/actions.ts
