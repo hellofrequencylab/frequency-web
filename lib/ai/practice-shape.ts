@@ -4,9 +4,9 @@
 // loud. Prompt-only — it never makes AI a hard dependency. When AI is off, the builder's own
 // hand-entry takes over and this string is never read.
 //
-// Mirrors lib/ai/journey-shape.ts: a lean, model-ready string plus a `withPracticeShape` wrapper
-// that prepends it, exactly like JOURNEY_TEMPLATE_PRIMER / withJourneyShape. Keep this terse; the
-// source of truth is docs/NAMING.md + docs/CONTENT-VOICE.md.
+// Historical Practice shape contract retained for its callers/tests. The former Journey
+// generative primer was retired when Journey authoring became question-only coaching.
+// Source of truth for names is docs/NAMING.md + docs/CONTENT-VOICE.md.
 
 /** The recommended Practice shape, imperative and model-ready. Prepend it to any system prompt that
  *  drafts a Practice's content (the Spark identity, the "build with Vera" body, an edit), framed as
