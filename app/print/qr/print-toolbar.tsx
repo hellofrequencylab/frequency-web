@@ -1,6 +1,8 @@
 'use client'
 
 import { Printer } from 'lucide-react'
+import { buttonClasses } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 
 // The only interactive bit of the print sheet — a toolbar that's hidden when the
 // sheet actually prints (`print:hidden`). Layout is chosen via the page's query
@@ -15,11 +17,7 @@ export function PrintToolbar({
   const tab = (value: 'tent' | 'stickers' | 'poster', label: string) => (
     <a
       href={`${base}&layout=${value}`}
-      className={`rounded-md border px-3 py-1.5 text-meta font-semibold transition-colors ${
-        layout === value
-          ? 'border-primary bg-primary text-on-primary'
-          : 'border-border text-muted hover:bg-surface-elevated hover:text-text'
-      }`}
+      className={chipClasses(layout === value)}
     >
       {label}
     </a>
@@ -33,7 +31,7 @@ export function PrintToolbar({
       {tab('poster', 'Poster')}
       <button
         onClick={() => window.print()}
-        className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className={buttonClasses('primary', 'sm', 'ml-auto')}
       >
         <Printer className="h-3.5 w-3.5" /> Print
       </button>

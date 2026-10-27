@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 
 // The house website's phone menu (components/sites/house-chrome.tsx): a round button under 940px that opens
 // a frosted panel of the same links. A client island only so tapping a link closes the panel, which a plain
 // <details> cannot do. The links themselves are the server's, passed in as data.
 
-export function HouseMenu({ label, links }: { label: string; links: { href: string; label: string; className?: string }[] }) {
+export function HouseMenu({ label, links, cta, foot }: { label: string; links: { href: string; label: string; className?: string; group?: string }[]; cta?: { href: string; label: string }; foot?: { label: string; href?: string }[] }) {
   const [open, setOpen] = useState(false)
   if (links.length === 0) return null
   return (
@@ -25,11 +25,20 @@ export function HouseMenu({ label, links }: { label: string; links: { href: stri
       </button>
       {open && (
         <nav id="hs-menu-panel" aria-label={label} className="hs-menu-panel">
-          {links.map((l) => (
-            <a key={l.href} href={l.href} className={l.className} onClick={() => setOpen(false)}>
-              {l.label}
-            </a>
+          {links.map((l, i) => (
+            <Fragment key={l.href}>
+              {l.group && l.group !== links[i - 1]?.group && <span data-menu-group="">{l.group}</span>}
+              <a href={l.href} className={l.className} data-grouped={l.group ? '' : undefined} onClick={() => setOpen(false)}>
+                {l.label}
+              </a>
+            </Fragment>
           ))}
+          {cta && <a href={cta.href} data-cta="" onClick={() => setOpen(false)}>{cta.label}</a>}
+          {foot && foot.length > 0 && (
+            <div data-menu-foot="">
+              {foot.map((f) => (f.href ? <a key={f.label} href={f.href} onClick={() => setOpen(false)}>{f.label}</a> : <span key={f.label}>{f.label}</span>))}
+            </div>
+          )}
         </nav>
       )}
     </div>

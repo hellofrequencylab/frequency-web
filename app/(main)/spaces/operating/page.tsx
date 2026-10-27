@@ -1,3 +1,4 @@
+import { SearchConnectionNotice } from '@/components/spaces/search-connection-notice'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import {
@@ -193,7 +194,8 @@ async function OperatedGrid({ profileId }: { profileId: string | null }) {
   )
 }
 
-export default async function SpacesOperatingPage() {
+export default async function SpacesOperatingPage({ searchParams }: { searchParams?: Promise<{ search?: string | string[] }> }) {
+  const outcome = (await searchParams)?.search
   // Gate: signed in. The list is naturally scoped to the Spaces the caller operates.
   const profileId = await getMyProfileId()
 
@@ -211,6 +213,7 @@ export default async function SpacesOperatingPage() {
         </Link>
       }
     >
+      <SearchConnectionNotice outcome={outcome} />
       <Suspense fallback={<GridSkeleton />}>
         <OperatedGrid profileId={profileId} />
       </Suspense>

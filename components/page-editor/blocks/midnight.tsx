@@ -8,6 +8,7 @@ import { storedWallClock } from '@/lib/sites/site-events'
 import { loomImageField } from '@/lib/page-editor/loom-image-field'
 import { InlineText } from '@/components/sites/inline-text'
 import { MidnightLetterForm } from '@/components/sites/midnight-letter-form'
+import { MidnightGlyph, MIDNIGHT_GLYPH_NAMES } from '@/components/sites/midnight-glyph'
 import { MidnightSeal, MidnightSigil, MIDNIGHT_SIGIL_NAMES } from '@/components/sites/midnight-sigil'
 import {
   MIDNIGHT_CTA, MIDNIGHT_DOORS, MIDNIGHT_FAQ, MIDNIGHT_GATHERINGS, MIDNIGHT_HERO, MIDNIGHT_JOURNEYS, MIDNIGHT_LETTER, MIDNIGHT_LIBRARY,
@@ -22,15 +23,15 @@ import {
 // questions, highlights) and fall back to the cards the owner wrote. Every look is the Midnight skin's
 // (components/sites/midnight-blocks-css.ts), tokens only.
 
-type Props = Record<string, unknown>
-const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
-const arr = (v: unknown): Props[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === 'object') as Props[]) : [])
-const img = (v: unknown) => safeImageSrc(safeImageUrl(v) || null)
-const cls = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ')
-const layoutOf = (layout: unknown) => ({ pad: padClass(layout as LayoutValue), vis: visClass(layout as LayoutValue) })
+export type Props = Record<string, unknown>
+export const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+export const arr = (v: unknown): Props[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === 'object') as Props[]) : [])
+export const img = (v: unknown) => safeImageSrc(safeImageUrl(v) || null)
+export const cls = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ')
+export const layoutOf = (layout: unknown) => ({ pad: padClass(layout as LayoutValue), vis: visClass(layout as LayoutValue) })
 
 /** A link through the site's link map. `~/page` means "this Space's page". Kept as written without a map. */
-function hrefOf(raw: string, metadata: Props | undefined): string | null {
+export function hrefOf(raw: string, metadata: Props | undefined): string | null {
   if (!raw) return null
   if (raw.startsWith('#')) return raw
   const links = metadata?.links as SiteLinkMap | undefined
@@ -40,9 +41,9 @@ function hrefOf(raw: string, metadata: Props | undefined): string | null {
   return siteLocalHref(own, links)?.href ?? (/^\/(?:spaces|circles|events|market)(?:\/|[?#]|$)|^\/sign-in(?:[?#]|$)/.test(own) ? `${links.origin}${own}` : null)
 }
 const external = (href: string) => /^https?:\/\//.test(href)
-const rel = (href: string) => (external(href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})
+export const rel = (href: string) => (external(href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})
 
-function Arrow() {
+export function Arrow() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M7 17 17 7" />
@@ -51,11 +52,11 @@ function Arrow() {
   )
 }
 
-function Btn({ label, href, kind = 'primary', metadata, arrow = false }: { label: string; href: string; kind?: 'primary' | 'secondary' | 'ghost'; metadata?: Props; arrow?: boolean }) {
+export function Btn({ label, href, kind = 'primary', metadata, arrow = false, size }: { label: string; href: string; kind?: 'primary' | 'secondary' | 'ghost'; metadata?: Props; arrow?: boolean; size?: 'sm' | 'lg' }) {
   const to = label ? hrefOf(href, metadata) : null
   if (!to) return null
   return (
-    <a className={cls('hs-btn', kind === 'primary' ? 'hs-btn-primary' : kind === 'ghost' ? 'hs-btn-ghost' : 'hs-btn-soft')} href={to} {...rel(to)}>
+    <a className={cls('hs-btn', kind === 'primary' ? 'hs-btn-primary' : kind === 'ghost' ? 'hs-btn-ghost' : 'hs-btn-soft', size && `hs-btn--${size}`)} href={to} {...rel(to)}>
       {label}
       {arrow && <Arrow />}
     </a>
@@ -63,7 +64,7 @@ function Btn({ label, href, kind = 'primary', metadata, arrow = false }: { label
 }
 
 /** The section head (design SectionHeading): a roman index, a star, the eyebrow, the big title, an italic kicker, and an optional button to the right. */
-function Head({ p, metadata, numbered = true, button }: { p: Props; metadata?: Props; numbered?: boolean; button?: ReactNode }) {
+export function Head({ p, metadata, numbered = true, button }: { p: Props; metadata?: Props; numbered?: boolean; button?: ReactNode }) {
   if (!str(p.eyebrow) && !str(p.title) && !str(p.lead)) return null
   const action = button ?? (str(p.actionLabel) ? <Btn label={str(p.actionLabel)} href={str(p.actionHref)} kind="secondary" metadata={metadata} /> : null)
   return (
@@ -89,9 +90,9 @@ function Head({ p, metadata, numbered = true, button }: { p: Props; metadata?: P
 }
 
 /** The arch (design ArchFrame): a photo in an arched window with an offset hairline. */
-function Arch({ src, alt, ratio = 'tall', children }: { src: string | null; alt: string; ratio?: 'tall' | 'portrait'; children?: ReactNode }) {
+export function Arch({ src, alt, ratio = 'tall', children, soft = false, caption }: { src: string | null; alt: string; ratio?: 'tall' | 'portrait'; children?: ReactNode; soft?: boolean; caption?: string }) {
   return (
-    <figure className={cls('mn-arch', `mn-arch--${ratio}`)}>
+    <figure className={cls('mn-arch', `mn-arch--${ratio}`)} data-tone={soft ? 'soft' : undefined}>
       <div className="mn-arch-frame">
         {src && (
           // eslint-disable-next-line @next/next/no-img-element -- owner photo on an arbitrary host
@@ -100,6 +101,7 @@ function Arch({ src, alt, ratio = 'tall', children }: { src: string | null; alt:
         <div className="mn-mist mn-mist--low" aria-hidden="true" />
         {children}
       </div>
+      {caption && <figcaption className="mn-arch-caption">{caption}</figcaption>}
     </figure>
   )
 }
@@ -141,13 +143,14 @@ function eventHref(e: EventRow, metadata: Props | undefined): string | null {
   return origin ? `${origin}/events/${e.slug}` : `/events/${e.slug}`
 }
 
-type Common = { p: Props; metadata?: Props; now?: Date; pad?: string; vis?: string }
+export type Common = { p: Props; metadata?: Props; now?: Date; pad?: string; vis?: string }
 
 // ── Hero ─────────────────────────────────────────────────────────────────────────────────
 
 function MidnightHeroBlock({ p, metadata, pad, vis }: Common) {
-  const layout = str(p.layout) === 'banner' ? 'banner' : str(p.layout) === 'center' ? 'center' : 'split'
+  const layout = str(p.layout) === 'banner' ? 'banner' : str(p.layout) === 'center' ? 'center' : str(p.layout) === 'left' ? 'left' : 'split'
   const src = img(p.image)
+  const pos = /^[a-z0-9% .-]{1,30}$/i.test(str(p.pos)) ? str(p.pos) : ''
   const text = (
     <>
       {str(p.eyebrow) && <div className="mn-eyebrow">{str(p.eyebrow)}</div>}
@@ -157,8 +160,8 @@ function MidnightHeroBlock({ p, metadata, pad, vis }: Common) {
       {str(p.lead) && <p className="mn-lead">{str(p.lead)}</p>}
       {(str(p.primaryLabel) || str(p.secondaryLabel)) && (
         <div className="mn-actions">
-          <Btn label={str(p.primaryLabel)} href={str(p.primaryHref)} metadata={metadata} />
-          <Btn label={str(p.secondaryLabel)} href={str(p.secondaryHref)} kind="secondary" metadata={metadata} />
+          <Btn label={str(p.primaryLabel)} href={str(p.primaryHref)} metadata={metadata} size={layout === 'left' ? 'lg' : undefined} />
+          <Btn label={str(p.secondaryLabel)} href={str(p.secondaryHref)} kind="secondary" metadata={metadata} size={layout === 'left' ? 'lg' : undefined} />
         </div>
       )}
     </>
@@ -168,15 +171,15 @@ function MidnightHeroBlock({ p, metadata, pad, vis }: Common) {
       <section data-mn="hero" className={cls('mn-section mn-hero mn-grain', pad, vis)}>
         <div className="mn-mist" aria-hidden="true" />
         <div className="mn-hero-copy">{text}</div>
-        <Arch src={src} alt={str(p.alt)} ratio="portrait" />
+        <Arch src={src} alt={str(p.alt)} ratio="portrait" soft={str(p.tone) === 'soft'} />
       </section>
     )
   }
   return (
-    <section data-mn="hero" className={cls('mn-hero mn-hero--photo mn-grain', layout === 'center' && 'mn-hero--center', layout === 'banner' && 'mn-hero--banner', pad, vis)}>
+    <section data-mn="hero" data-tone={str(p.tone) === 'soft' ? 'soft' : undefined} className={cls('mn-hero mn-hero--photo mn-grain', layout === 'center' && 'mn-hero--center', layout === 'banner' && 'mn-hero--banner', layout === 'left' && 'mn-hero--left', pad, vis)}>
       {src && (
         // eslint-disable-next-line @next/next/no-img-element -- owner photo on an arbitrary host
-        <img className="mn-hero-photo" src={src} alt={str(p.alt)} />
+        <img className="mn-hero-photo" src={src} alt={str(p.alt)} style={pos ? { objectPosition: pos } : undefined} />
       )}
       <div className="mn-protect" aria-hidden="true" />
       <div className="mn-mist mn-mist--low" aria-hidden="true" />
@@ -208,7 +211,7 @@ function MidnightLiveBlock({ p, metadata, now = new Date(), pad, vis }: Common) 
       {items.map((it, i) => {
         const inner = (
           <>
-            <span className="mn-live-icon"><MidnightSigil name={it.sigil} size={18} /></span>
+            <span className="mn-live-icon"><MidnightGlyph name={it.sigil} size={18} /></span>
             <span>
               <span className="mn-eyebrow mn-eyebrow--block">{it.label}</span>
               <span className="mn-live-value">{it.value}</span>
@@ -549,16 +552,16 @@ function MidnightCTABlock({ p, metadata, pad, vis }: Common) {
 
 // ── Registry ─────────────────────────────────────────────────────────────────────────────
 
-const text = (label: string, hint?: string) => ({ type: 'text', label, ...(hint ? { hint } : {}) }) as const
-const area = (label: string, hint?: string) => ({ type: 'textarea', label, ...(hint ? { hint } : {}) }) as const
-const image = { ...loomImageField, label: 'Photo' }
-const VOICE_HINT = 'Wrap words in *stars* to set them in the italic.'
-const LINK_HINT = 'Start with ~/ for a page of this site, like ~/book.'
-const sigil = { type: 'select', label: 'Symbol', options: MIDNIGHT_SIGIL_NAMES.map((v) => ({ label: v, value: v })) } as const
-const head = { eyebrow: text('Small label', 'The short line beside the number.'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading') }
-const action = { actionLabel: text('Button beside the heading'), actionHref: text('Button beside the heading: where it goes', LINK_HINT) }
+export const text = (label: string, hint?: string) => ({ type: 'text', label, ...(hint ? { hint } : {}) }) as const
+export const area = (label: string, hint?: string) => ({ type: 'textarea', label, ...(hint ? { hint } : {}) }) as const
+export const image = { ...loomImageField, label: 'Photo' }
+export const VOICE_HINT = 'Wrap words in *stars* to set them in the italic.'
+export const LINK_HINT = 'Start with ~/ for a page of this site, like ~/book.'
+export const sigil = { type: 'select', label: 'Symbol', options: MIDNIGHT_SIGIL_NAMES.map((v) => ({ label: v, value: v })) } as const
+export const head = { eyebrow: text('Small label', 'The short line beside the number.'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading') }
+export const action = { actionLabel: text('Button beside the heading'), actionHref: text('Button beside the heading: where it goes', LINK_HINT) }
 
-function block<P extends Props>(label: string, fields: Record<string, unknown>, defaults: P, Comp: (args: Common) => ReactNode): ComponentConfig {
+export function block<P extends Props>(label: string, fields: Record<string, unknown>, defaults: P, Comp: (args: Common) => ReactNode): ComponentConfig {
   return {
     label,
     fields: { ...fields, layout: layoutField },
@@ -569,15 +572,17 @@ function block<P extends Props>(label: string, fields: Record<string, unknown>, 
 
 export const midnightComponents: Record<string, ComponentConfig> = {
   MidnightHero: block('Midnight hero', {
-    layout: { type: 'select', label: 'Layout', options: [{ label: 'Split with the arch', value: 'split' }, { label: 'Photo, text on the photo', value: 'center' }, { label: 'Banner', value: 'banner' }] },
+    layout: { type: 'select', label: 'Layout', options: [{ label: 'Split with the arch', value: 'split' }, { label: 'Photo, text on the photo', value: 'center' }, { label: 'Photo, text on the left', value: 'left' }, { label: 'Banner', value: 'banner' }] },
     eyebrow: text('Small label'), title: area('Heading', `${VOICE_HINT} A new line starts a new row.`), lead: area('Intro'),
     primaryLabel: text('Main button'), primaryHref: text('Main button link', LINK_HINT), secondaryLabel: text('Second button'), secondaryHref: text('Second button link', LINK_HINT),
     image, alt: text('Photo description', 'For screen readers.'),
-  }, { ...MIDNIGHT_HERO }, MidnightHeroBlock),
+    pos: text('Photo crop', 'Where the photo is held when it is cropped, like center 40%.'),
+    tone: { type: 'select', label: 'Photo tone', options: [{ label: 'Black and white', value: 'mono' }, { label: 'Soft colour', value: 'soft' }] },
+  }, { ...MIDNIGHT_HERO, pos: '', tone: 'mono' }, MidnightHeroBlock),
   MidnightLive: block('Midnight liveness strip (live)', {
     items: { type: 'array', label: 'Up to four facts', hint: 'A fact set to a live source shows the Space\'s own next event, Journeys or members when there are any.', arrayFields: {
       source: { type: 'select', label: 'Source', options: [{ label: 'Written by hand', value: 'custom' }, { label: 'Next event', value: 'nextEvent' }, { label: 'Journeys open', value: 'journeys' }, { label: 'Members', value: 'members' }] },
-      sigil, label: text('Label'), value: text('Words'), href: text('Link', LINK_HINT),
+      sigil: { ...sigil, options: MIDNIGHT_GLYPH_NAMES.map((v) => ({ label: v, value: v })) }, label: text('Label'), value: text('Words'), href: text('Link', LINK_HINT),
     } },
   }, { ...MIDNIGHT_LIVE }, MidnightLiveBlock),
   MidnightDoors: block('Midnight ways in', {

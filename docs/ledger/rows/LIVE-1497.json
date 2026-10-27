@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1497",
+  "title": "Alli Rae and the Designer theme match the design system after the 2026-10-27 audit",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/alli-rae-audit-fidelity.mjs"
+  },
+  "detail": "Follows LIVE-1493. A line-by-line audit of the design zip (tokens, every component and state, every page) against the build found: button sizes, hover and link variants; the arch frame and zoom; the overlay project card; the numbered step sizes; the FAQ as a one-open grid-rows accordion; the inquiry card texture, success tick and select caret; the phone header (round button, parchment sheet, call inside it); the footer joining the last section; the page hero scrim and heading shadow; extra tokens (h3, h4, loose leading, page scrim, band shadow). The firm's words return to the source's wording (four typos kept, the Portfolio dropdown's own titles, order and lines, the address as #112). Live Space data needs scripts/seed-alli-rae-update.mts output (update 2) after this merges.",
+  "wave": "W7"
+}

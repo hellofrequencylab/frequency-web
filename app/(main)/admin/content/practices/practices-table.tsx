@@ -119,7 +119,9 @@ function MasterSwitch({
       disabled={disabled}
       onClick={() => onToggle(!on)}
       title={`Turn ${label} ${on ? 'off' : 'on'} for all ${count} in view`}
-      aria-label={`All ${label} ${on ? 'off' : 'on'}`}
+      role="switch"
+      aria-checked={on}
+      aria-label={`All ${label}`}
       className={`relative mx-auto mt-1 block h-3.5 w-7 rounded-pill transition-colors disabled:opacity-50 motion-reduce:transition-none ${
         on ? 'bg-primary' : 'bg-border-strong'
       }`}

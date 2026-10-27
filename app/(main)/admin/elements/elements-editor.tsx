@@ -10,6 +10,7 @@ import type { ResolvedElement, StoredElementConfig } from '@/lib/elements/config
 import { ElementPreview } from '@/components/elements/previews'
 import { saveElementSettings } from './actions'
 import { Switch } from '@/components/ui/switch'
+import { buttonClasses } from '@/components/ui/button'
 
 // One card per registered element: edit its feature settings (toggles / choices) + per-feature ROLE
 // GATE (who may use each). Saving writes the PLATFORM MASTER, so every occurrence of the element
@@ -101,7 +102,7 @@ export function ElementEditor({ def, resolved }: { def: ElementDef; resolved: Re
           type="button"
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className={buttonClasses('primary', 'sm')}
         >
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Save master
         </button>

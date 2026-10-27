@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 // Host flow for circle-task assignment (BUILD-LIST P4.7): create a task scoped
 // to a circle you host, see who claimed what, release a stalled claim, or
 // remove a task. Server actions re-check circle.assignTask on every write —
@@ -104,7 +105,7 @@ function NewCircleTaskForm({
         <button
           type="submit"
           disabled={!name.trim() || isPending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+          className={buttonClasses('primary', 'sm')}
         >
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Creating…' : 'Create task'}
@@ -186,7 +187,7 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
             onClick={handleRelease}
             disabled={isPending}
             title="Release claim"
-            className="p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg disabled:opacity-50 transition-colors"
+            className={buttonClasses('ghost', 'xs')}
             aria-label="Release claim"
           >
             <Undo2 className="w-3.5 h-3.5" />
@@ -223,7 +224,7 @@ export function CircleTasksPanel({ circles }: { circles: HostedCircleTasks[] }) 
             {composingFor !== circle.id && (
               <button
                 onClick={() => setComposingFor(circle.id)}
-                className="inline-flex items-center gap-1 rounded-control bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+                className={buttonClasses('primary', 'sm')}
               >
                 <Plus className="w-3.5 h-3.5" /> New circle task
               </button>

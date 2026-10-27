@@ -11,6 +11,8 @@ import { publishSpaceLanding, resetSpaceLanding } from '@/app/(main)/spaces/[slu
 import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
 import { SpaceEditorProvider } from '@/lib/page-editor/space-editor-context'
 import { DesktopEditor, useEditorDoc } from '@/components/page-editor/desktop/desktop-editor'
+import { buttonClasses } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 // THE OPERATOR EDITOR for a Space's public PAGE (multi-page model). Reuses the shared Puck
 // config + the marketing editor's publish/baseline pattern, but writes to
@@ -62,11 +64,7 @@ function PublishButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
       onClick={handlePublish}
       disabled={!active || status === 'publishing'}
       title={dirty ? 'Publish your changes. They go live immediately' : 'No changes to publish'}
-      className={`inline-flex items-center gap-1.5 rounded-control px-4 py-1.5 text-body-sm font-semibold transition-colors ${
-        active
-          ? 'bg-primary text-on-primary lift-1 hover:bg-primary-hover'
-          : 'bg-surface-elevated text-subtle cursor-default'
-      } ${status === 'publishing' ? 'opacity-70' : ''}`}
+      className={buttonClasses(active ? 'primary' : 'secondary', 'sm', cn(!active && 'cursor-default opacity-60', status === 'publishing' && 'opacity-70'))}
     >
       {!dirty && status === 'idle' && <Check className="h-4 w-4" />}
       {label}

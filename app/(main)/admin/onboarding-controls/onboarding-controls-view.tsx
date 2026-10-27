@@ -9,6 +9,7 @@ import { setReferralsEnabled, setReferralLanding } from './actions'
 import { SITE_URL } from '@/lib/site'
 import type { getOnboardingControlsData, OnboardingSwitchEvent } from './load'
 import { Input } from '@/components/ui/field'
+import { buttonClasses } from '@/components/ui/button'
 
 const siteHost = SITE_URL.replace(/^https?:\/\//, '')
 
@@ -125,7 +126,7 @@ export function OnboardingControlsView({ data }: { data: Data }) {
           />
           <button
             type="submit"
-            className="rounded-control bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className={buttonClasses('primary', 'sm')}
           >
             Save
           </button>

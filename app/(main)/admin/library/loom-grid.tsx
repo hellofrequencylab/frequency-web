@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -529,7 +530,7 @@ function BulkBar({
                     type="button"
                     onClick={trainStyle}
                     disabled={pending || !styleName.trim()}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+                    className={buttonClasses('primary', 'sm', 'w-full')}
                   >
                     <Palette className="h-4 w-4" /> Train style
                   </button>
@@ -1015,7 +1016,7 @@ function DetailDrawer({
                   onClick={() => askVera('tweak')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
                   title="A small, surgical change that keeps the graphic nearly identical"
-                  className="inline-flex items-center gap-1.5 rounded-card bg-primary px-3 py-1.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+                  className={buttonClasses('primary', 'sm')}
                 >
                   {veraBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                   {veraBusy ? 'Working…' : 'Tweak'}
@@ -1177,7 +1178,7 @@ function DetailDrawer({
               type="button"
               onClick={save}
               disabled={pending}
-              className="rounded-card bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+              className={buttonClasses('primary', 'sm')}
             >
               {pending ? 'Saving…' : 'Save'}
             </button>

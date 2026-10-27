@@ -21,7 +21,7 @@ import { publishCircleAction, generateCircleEventsAction } from '@/app/(main)/ci
 import { CircleCallouts } from './circle-callouts'
 import { CircleVeraPanel } from './circle-vera-panel'
 import { Input, Textarea } from '@/components/ui/field'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { FunnelNextStep } from '@/components/funnels/next-step-link'
 
 // The member-facing Starter Circle BUILDER (Stage 4). A full-page editor that
@@ -460,7 +460,7 @@ function CircleActions({
                 type="button"
                 onClick={generateEvents}
                 disabled={pending}
-                className={`${btn} border border-primary/40 bg-primary-bg/40 text-primary-strong hover:bg-primary-bg`}
+                className={buttonClasses('primarySoft', 'sm')}
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <CalendarPlus className="h-4 w-4" aria-hidden />}{' '}
                 Generate the standing events
