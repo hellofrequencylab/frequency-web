@@ -52,6 +52,18 @@ function replyGuidance(raw: unknown): { questions: string[]; checks: string[] } 
   return questions && checks ? { questions, checks } : null
 }
 
+/** Parse only a complete bounded JSON document or one complete JSON fence, never a mined span. */
+function parseReplyGuidance(text: string) {
+  if (typeof text !== 'string' || text.length > 4096) return null
+  const trimmed = text.trim()
+  const fence = /^```(?:json)?\s*\n?([\s\S]*?)\n?```$/.exec(trimmed)
+  try { return replyGuidance(JSON.parse(fence ? fence[1].trim() : trimmed)) }
+  catch { return null }
+}
+function replyChecklist(): ActionResult<{ draft: string }> {
+  return ok({ draft: ['Guided checklist; no usable AI response.', REPLY_QUESTIONS.confirm, REPLY_CHECKS.facts, REPLY_CHECKS.privacy].join('\n') })
+}
+
 /** Render the thread as an oldest-first transcript for a prompt (skips internal notes). */
 function transcript(messages: { direction: string; authorName: string; body: string; isInternal: boolean }[]): string {
   return messages
@@ -86,6 +98,7 @@ function parseTriage(text: string): { priority: ConversationPriority; reason: st
 export async function veraDraftReply(conversationId: string, profileId: string): Promise<ActionResult<{ draft: string }>> {
   const id = (conversationId ?? '').trim()
   if (!id) return fail('Pick a conversation first.')
+  let reviewedThread = false
   try {
     if (!(await aiAvailable()) || (await featureOverBudget('conversation-draft'))) {
       return fail('Vera coaching is unavailable right now. Write your reply and send it.')
@@ -96,6 +109,7 @@ export async function veraDraftReply(conversationId: string, profileId: string):
     }
     const thread = await getWorkspaceThread(id)
     if (!thread) return fail('That conversation no longer exists.')
+    reviewedThread = true
     const res = await completeText({
       accounting: { feature: 'conversation-draft', profileId },
       system: withVoice(DRAFT_SYSTEM),
@@ -104,14 +118,15 @@ export async function veraDraftReply(conversationId: string, profileId: string):
       maxTokens: 320,
     })
 
-    const guidance = replyGuidance(JSON.parse(res.text))
-    if (!guidance) return fail('Vera could not review this thread. Your reply is unchanged.')
+    const guidance = parseReplyGuidance(res.text)
+    if (!guidance) { console.warn('[vera-conversation] reply coaching unavailable: invalid_response'); return replyChecklist() }
     const { questions, checks } = guidance
     // Legacy action field name retained for callers; the UI displays guidance separately.
     return ok({ draft: [...questions, ...checks].join('\n') })
   } catch (err) {
+    console.warn('[vera-conversation] reply coaching unavailable:', reviewedThread ? 'provider_failure' : 'preparation_failure')
+    if (reviewedThread) return replyChecklist()
     if (err instanceof AiUnavailableError) return fail('Vera coaching is unavailable right now.')
-    console.error('[vera-conversation] draft failed:', err)
     return fail('Could not review this thread. Try again.')
   }
 }
