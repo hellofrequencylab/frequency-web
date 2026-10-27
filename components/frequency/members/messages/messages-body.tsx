@@ -1,13 +1,15 @@
 import '@/app/themes/active/members-a'
 import '@/app/themes/active/members-b'
 import Link from 'next/link'
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
+import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-action'
 import { FqIcon } from '@/components/frequency/icon'
 import { loadInbox } from '@/app/(main)/messages/inbox-data'
 import { dmThreadHref } from '@/lib/messages/dm-destination'
 import { relativeTime } from '@/lib/utils'
 import type { createClient } from '@/lib/supabase/server'
 import { NewRoomCompose } from '@/components/compose/new-room-compose'
+import { NewGroupDMCompose } from '@/components/compose/new-group-dm-compose'
 import { FqToaster } from '../shared/toast'
 import { InboxList, type ThreadLite } from './inbox-list'
 import { AskVeraButton } from './ask-vera-button'
@@ -29,11 +31,13 @@ import { PageHeading } from '@/components/templates/page-heading'
 export async function FrequencyMessages({
   supabase,
   myProfileId,
+  isCrewLead = false,
   activeKey = null,
   pane = null,
 }: {
   supabase: Awaited<ReturnType<typeof createClient>>
   myProfileId: string
+  isCrewLead?: boolean
   /** `dm:<id>` or `room:<id>` for the open conversation, so its row reads selected. */
   activeKey?: string | null
   pane?: ReactNode
@@ -142,6 +146,8 @@ export async function FrequencyMessages({
           actions={
             <div className="fa-msg-actions">
               {newMessage}
+              <NewGroupDMCompose buttonLabel="Group message" buttonClass="btn sm" />
+              {isCrewLead && <Suspense fallback={null}><CrewLeadQuickAction supabase={supabase} myProfileId={myProfileId} isCrewLead={isCrewLead} /></Suspense>}
               <NewRoomCompose buttonLabel="Start a room" buttonClass="btn sm" />
               <AskVeraButton className="btn sm" />
             </div>

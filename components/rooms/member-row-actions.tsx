@@ -1,55 +1,78 @@
 'use client'
 
-import { useState, useRef, useEffect, useTransition } from 'react'
+import { useState, useRef, useEffect, useTransition, useId } from 'react'
 import { MoreVertical, Shield, ShieldOff, UserX, Loader2 } from 'lucide-react'
 import { promoteRoomMember, demoteRoomMember, removeFromRoom } from '@/app/(main)/messages/rooms/actions'
+import { Button } from '@/components/ui/button'
 
 export function MemberRowActions({
   roomId,
   memberId,
   isAdmin,
+  memberName,
 }: {
   roomId: string
   memberId: string
   isAdmin: boolean
+  memberName?: string
 }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const ref = useRef<HTMLDivElement>(null)
+  const menuId = useId()
+  const restoreFocus = useRef(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { restoreFocus.current = true; setOpen(false) }
+    }
+    if (open) ref.current?.querySelector<HTMLButtonElement>('[role=group] button')?.focus()
     if (open) document.addEventListener('mousedown', onClick)
-    return () => document.removeEventListener('mousedown', onClick)
+    if (open) document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onClick); document.removeEventListener('keydown', onKey) }
   }, [open])
 
+  useEffect(() => {
+    if (!open && !isPending && restoreFocus.current) {
+      ref.current?.querySelector('button')?.focus()
+      restoreFocus.current = false
+    }
+  }, [open, isPending])
+
   function handle(action: () => Promise<void>) {
+    setError(null)
     startTransition(async () => {
       try {
         await action()
+        restoreFocus.current = true
         setOpen(false)
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Failed')
+        setError(err instanceof Error ? err.message : 'Could not update this member.')
       }
     })
   }
 
   return (
     <div ref={ref} className="relative shrink-0">
-      <button
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(v => !v) }}
-        className="p-1 rounded text-subtle hover:text-text hover:bg-border-strong transition-colors opacity-0 group-hover:opacity-100"
-        aria-label="Member actions"
+      <Button
+        type="button" variant="ghost" size="sm" disabled={isPending}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setError(null); setOpen(v => !v) }}
+        className="min-h-11 min-w-11"
+        aria-label={memberName ? `Member actions for ${memberName}` : 'Member actions'}
+        aria-expanded={open} aria-controls={menuId}
       >
         {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MoreVertical className="w-3.5 h-3.5" />}
-      </button>
+      </Button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-border bg-surface lift-3 z-30 overflow-hidden">
+        <div id={menuId} role="group" aria-label="Room member actions" className="absolute right-0 top-full mt-1 w-40 rounded-card border border-border bg-surface lift-3 z-30 overflow-hidden">
           {isAdmin ? (
             <button
+              type="button" disabled={isPending}
               onClick={(e) => { e.preventDefault(); handle(() => demoteRoomMember(roomId, memberId)) }}
               className="flex items-center gap-2 w-full px-3 py-2 text-meta text-text hover:bg-surface-elevated transition-colors"
             >
@@ -57,6 +80,7 @@ export function MemberRowActions({
             </button>
           ) : (
             <button
+              type="button" disabled={isPending}
               onClick={(e) => { e.preventDefault(); handle(() => promoteRoomMember(roomId, memberId)) }}
               className="flex items-center gap-2 w-full px-3 py-2 text-meta text-text hover:bg-surface-elevated transition-colors"
             >
@@ -64,6 +88,7 @@ export function MemberRowActions({
             </button>
           )}
           <button
+            type="button" disabled={isPending}
             onClick={(e) => { e.preventDefault(); handle(() => removeFromRoom(roomId, memberId)) }}
             className="flex items-center gap-2 w-full px-3 py-2 text-meta text-danger hover:bg-danger-bg transition-colors border-t border-border"
           >
@@ -71,6 +96,7 @@ export function MemberRowActions({
           </button>
         </div>
       )}
+      {error && <p role="alert" className="text-meta text-danger">{error}</p>}
     </div>
   )
 }

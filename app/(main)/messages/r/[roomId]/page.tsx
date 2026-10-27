@@ -8,6 +8,7 @@ import { RoomThread } from '@/components/rooms/room-thread'
 import { canReadRoom, canPostToRoom, type RoomVisibility } from '@/lib/messages/room-access'
 import { RoomSearch } from '@/components/rooms/room-search'
 import { RoomSettings } from '@/components/rooms/room-settings'
+import { RoomMembers } from '@/components/rooms/room-members'
 import { FqIcon } from '@/components/frequency/icon'
 import { FrequencyMessages } from '@/components/frequency/members/messages/messages-body'
 
@@ -189,7 +190,7 @@ export default async function RoomPage({
               </span>
             </span>
             {canRead && <RoomSearch roomId={roomId} />}
-            {isAdmin && <RoomSettings roomId={roomId} name={r.name} description={r.description} visibility={r.visibility} />}
+            {isAdmin && <RoomSettings roomId={roomId} name={r.name} description={r.description} visibility={r.visibility} scopeId={r.scope_id} />}
             {!isChannel && (isMember ? (
               <form action={leaveRoom.bind(null, roomId)}>
                 <button type="submit" className="btn sm">Leave</button>
@@ -200,6 +201,7 @@ export default async function RoomPage({
               </form>
             ))}
           </div>
+          <RoomMembers roomId={roomId} myProfileId={myProfileId} canRead={canRead} isMember={isMember} isAdmin={isAdmin} visibility={r.visibility} members={members} totalMembers={r.member_count} />
           {canRead ? (
             <div className="fa-room">
               <RoomThread roomId={roomId} initialMessages={messages} myProfileId={myProfileId} canPost={canPost} visibility={r.visibility} />

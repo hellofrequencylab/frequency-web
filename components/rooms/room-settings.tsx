@@ -9,6 +9,8 @@ import { Input, Textarea, Field, labelClasses } from '@/components/ui/field'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
 import { updateRoom, deleteRoom } from '@/app/(main)/messages/rooms/actions'
+import { canEditRoomVisibility } from '@/lib/messages/room-settings-policy'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { Button } from '@/components/ui/button'
 
 // Room (message board) settings — the room-admin's edit + delete, in the shared Studio popup.
@@ -19,12 +21,15 @@ export function RoomSettings({
   name,
   description,
   visibility,
+  scopeId,
 }: {
   roomId: string
   name: string
   description: string | null
   visibility: string
+  scopeId: string | null
 }) {
+  const editableVisibility = canEditRoomVisibility({ visibility, scope_id: scopeId })
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -40,19 +45,19 @@ export function RoomSettings({
       const fd = new FormData()
       fd.set('name', n.trim())
       fd.set('description', d.trim())
-      fd.set('visibility', vis)
-      const r = await updateRoom(roomId, fd)
-      if (isError(r)) setError(r.error)
-      else {
-        setOpen(false)
-        router.refresh()
-      }
+      if (editableVisibility) fd.set('visibility', vis)
+      try {
+        const r = await updateRoom(roomId, fd)
+        if (isError(r)) setError(r.error)
+        else { setOpen(false); router.refresh() }
+      } catch { setError('Could not save this room. Please try again.') }
     })
   }
 
   function remove() {
     start(async () => {
-      await deleteRoom(roomId) // redirects to /messages on success
+      try { await deleteRoom(roomId) }
+      catch (error) { if (isRedirectError(error)) throw error; setConfirmDelete(false); setError('Could not delete this room. Please try again.') } // Success redirects to /messages.
     })
   }
 
@@ -115,7 +120,7 @@ export function RoomSettings({
               />
             </Field>
 
-            <div className="space-y-1.5">
+            {editableVisibility ? <div className="space-y-1.5">
               {/* A pair of toggle buttons is not a labelable control, so the name comes from
                   role="group" + aria-labelledby, not from a <label> with nothing to point at. */}
               <p className={labelClasses} id="room-visibility-label">Who can see it</p>
@@ -139,7 +144,7 @@ export function RoomSettings({
                   </button>
                 ))}
               </div>
-            </div>
+            </div> : <p className="text-meta text-muted">Who can see this board is managed by its community.</p>}
 
             <div className="border-t border-border pt-4">
               <button

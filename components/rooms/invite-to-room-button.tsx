@@ -106,6 +106,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
               return (
                 <button
                   key={r.id} type="button"
+                  aria-pressed={isSelected}
                   disabled={wasInvited}
                   onClick={() => setSelected(r)}
                   className={`flex items-center gap-2.5 w-full px-3 py-2.5 text-left transition-colors ${

@@ -20276,6 +20276,28 @@ export type Database = {
         Args: { _order: string }
         Returns: undefined
       }
+      room_create_atomic: {
+        Args: {
+          _actor_id: string
+          _description: string
+          _name: string
+          _visibility: string
+        }
+        Returns: string
+      }
+      room_remove_member_atomic: {
+        Args: { _actor_id: string; _room_id: string; _target_id: string }
+        Returns: boolean
+      }
+      room_set_member_admin_atomic: {
+        Args: {
+          _actor_id: string
+          _is_admin: boolean
+          _room_id: string
+          _target_id: string
+        }
+        Returns: boolean
+      }
       room_unread_counts: {
         Args: { _rooms: string[] }
         Returns: {
