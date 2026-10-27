@@ -115,7 +115,7 @@ From the feature survey, the gaps and their fixes (all small):
 | Bottom-bar tabs (HYG-033 five) | `lib/nav/registry.ts` (`CALM_SPINE_ROOTS`) + `MobileTabBar` | data + split |
 | Messages → header icon on mobile; badges | `components/layout/app-shell.tsx` (unhide `hidden sm:`) | class flip |
 | User-menu order + gating + Context Switcher/View-as on mobile | `lib/nav/registry.ts` (`PROFILE_LINK_SEEDS`) + `app-shell.tsx` (`AccountDropdown`) | data + render |
-| About/Legal in the drawer footer | `components/layout/member-footer.tsx` / drawer | data edit |
+| About/Legal in the drawer footer | Historical DAWN footer; current `components/frequency/members/shell/members-shell.tsx` mounts `FqMegaFooter` with role-filtered columns | data edit |
 
 ## Rollout
 
