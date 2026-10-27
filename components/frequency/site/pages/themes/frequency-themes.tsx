@@ -11,7 +11,7 @@ import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
 import { ThemePicture } from './theme-picture'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { SITE_THEMES } from '@/lib/theme/site-style'
-import { THEME_LIBRARY } from '@/lib/themes/library'
+import { THEME_LIBRARY, themeDisplayName } from '@/lib/themes/library'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
@@ -33,7 +33,7 @@ export const THEME_GALLERY: ThemeGalleryCard[] = SITE_THEMES.map((t) => {
   const editor = MEGA_THEMES.find((m) => m.id === t.id)?.editor
   return {
     id: t.id,
-    label: t.label,
+    label: themeDisplayName(t.id, t.label),
     tagline: THEME_LIBRARY.find((l) => l.id === t.id)?.tagline ?? t.description,
     description: t.description,
     kits: KIT_INDEX.filter((k) => k.theme === editor).map((k) => ({ niche: k.niche, label: k.label, href: `/spaces/new?niche=${k.niche}` })),
@@ -55,7 +55,7 @@ export function FrequencyThemes() {
             <span aria-hidden="true">/</span>
             <Link href="/spaces">For Spaces</Link>
             <span aria-hidden="true">/</span>
-            <span aria-current="page">Themes</span>
+            <span aria-current="page">Theme Kits</span>
           </nav>
           <h1 className="h-xl">
             Your site should look like you. <em className="fq-iri-text">Pick a feel.</em>
@@ -69,7 +69,7 @@ export function FrequencyThemes() {
               Start free
             </a>
             <Link className="btn btn-ghost fq-iri-rim" href="#themes">
-              See the themes
+              See the Theme Kits
             </Link>
           </div>
         </div>
@@ -80,11 +80,11 @@ export function FrequencyThemes() {
         <div className="wrap">
           <div className="sh">
             <div className="label">
-              <b>The themes</b>Seven to start from
+              <b>The Theme Kits</b>Seven to start from
             </div>
             <h2 className="h-l">One look. A clear place to start.</h2>
             <p className="pb-note">
-              Choose a theme for your website and see which matching Spotlight and email surfaces are ready. Each theme page labels what
+              Choose a Theme Kit for your website and see which matching Spotlight and email surfaces are ready. Each Theme Kit page labels what
               ships now and what is on the way. Switch on the tools you need, and use Change theme in your editor when you want a
               different feel.
             </p>

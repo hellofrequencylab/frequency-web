@@ -123,28 +123,28 @@ export const FREQUENCY_PAGE_SEO = {
   },
   themes: {
     path: '/themes',
-    title: 'Themes: pick the look for your Spotlight, Space and website',
+    title: 'Theme Kits: pick the look for your Spotlight, Space and website',
     description:
       'Seven looks for your website, with matching Spotlight and email surfaces where available. See what is ready and what is on the way.',
-    shareTitle: 'Frequency themes: pick a feel for your whole site',
+    shareTitle: 'Frequency Theme Kits: pick a feel for your whole site',
     headline: 'Your site should look like you. Pick a feel.',
     lede: 'Seven looks for your website, with matching Spotlight and email surfaces where available. Pick a feel, then check what is ready and what is on the way.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
-      { name: 'Themes', path: '/themes' },
+      { name: 'Theme Kits', path: '/themes' },
     ],
   },
   midnight: {
     path: '/themes/midnight',
-    title: 'Midnight: one site for your Spotlight, Space and website',
+    title: 'Nocturne: one site for your Spotlight, Space and website',
     description:
-      'Midnight is a mega theme for guides, teachers and healers. Set up once, and your Spotlight, your Space on Frequency and your own website stay in step.',
-    shareTitle: 'Midnight: set it up once, run three surfaces',
-    headline: 'Midnight, a mega theme. Set it up once.',
+      'Nocturne is a Theme Kit for guides, teachers and healers. Set up once, and your Spotlight, your Space on Frequency and your own website stay in step.',
+    shareTitle: 'Nocturne: set it up once, run three surfaces',
+    headline: 'Nocturne, a Theme Kit. Set it up once.',
     lede: 'For guides, teachers and healers. Your Spotlight, your Space on Frequency and your own website, kept in step.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
-      { name: 'Midnight', path: '/themes/midnight' },
+      { name: 'Nocturne', path: '/themes/midnight' },
     ],
   },
 } as const satisfies Record<string, FrequencyPageSeo>

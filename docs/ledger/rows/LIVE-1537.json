@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1537",
+  "title": "The Wizard publish runs headlessly: a Theme Kit gives a served website with a join page on its own theme",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": { "file": "lib/spaces/starter-site-publish.test.ts", "ref": "ADR-1911" },
+  "detail": "SYS-8 probe, website half. For every Theme Kit, publishStarterSite writes a website that the public gate (publishedWebsiteSnapshot) serves under the site style applyMegaTheme wrote, with a home page and the join page, on the Space's own theme. Still open under SYS-8: the themed welcome email (SYS-17) is not built, so this probe does not cover it.",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "vitest lib/spaces/starter-site-publish.test.ts passes for all seven Theme Kits.",
+    "cmd": "node -e 'const t=require(\"fs\").readFileSync(\"lib/spaces/starter-site-publish.test.ts\",\"utf8\");if(!t.includes(\"join\"))process.exit(1)'"
+  }
+}
