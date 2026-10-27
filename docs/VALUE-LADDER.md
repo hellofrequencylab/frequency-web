@@ -647,7 +647,7 @@ ADR-918, which meant the marketing page and the actual upgrade screen were selli
 | 4 | `FEATURE_METERS` (22 ladders) | `lib/pricing/feature-meters.ts` | ⚠️ hardcoded quantities |
 | 5 | `FEATURE_GATES` | `lib/pricing/gates.ts` | ✅ the only structure enforcement reads |
 | 6 | `PlanLadder` in-app rungs | `…/settings/billing/plan-ladder.tsx` | ⚠️ prices now derived, but it renders the LIST price, so Business read its list price against /pricing's beta price. One line to fix (`spacePlanPriceCents`) |
-| 7 | Value comparison anchors | `lib/pricing/comparison.ts` | ✅ Phase 5: read from the catalog through the beta window |
+| 7 | Historical value comparison anchors | Retired competitor-cost comparison; current body: `components/frequency/site/pages/pricing/frequency-pricing.tsx` | Current plan amounts derive from the catalog through `pricing-grid.ts`; the historical unused competitor catalog is retired |
 | 8 | Puck pricing template | `lib/page-editor/templates/pricing.ts` | ⚠️ reachable from `/pages` (ADR-915), inert output; its `$90` literals are gone |
 | 9 | Funnel plan rows (5 niches) | `lib/marketing/funnel-config.ts` | ✅ Phase 5: on the one rate vector, no literals |
 

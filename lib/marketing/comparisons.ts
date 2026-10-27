@@ -46,7 +46,7 @@ export interface Comparison {
   moneyBeat?: string
 }
 
-export interface ComparisonRow {
+interface ComparisonRow {
   /** The dimension being compared, in plain words. */
   dimension: string
   /** What the other tool does on this dimension. Honest, not a strawman. */

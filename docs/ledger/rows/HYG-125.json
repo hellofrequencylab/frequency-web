@@ -1,0 +1,4 @@
+{
+  "id": "HYG-125",
+  "append": { "detail": "\n\n2026-10-27 audit follow-up: active-member-shell-contracts, retired-browse-wrappers, retired-pricing-comparison and retired-shell-wrappers all use the existing invokedDirectly helper. Actual probes stay silent on import and execute through renamed Unicode symlinks. Existing helper tests preserve paired broken-comparison negative controls. Thirty-one focused helper/probe/retirement tests pass; initial old-comparison offender and output-assertion failure are preserved in audit evidence. No exclusion or non-triviality threshold changed." }
+}
