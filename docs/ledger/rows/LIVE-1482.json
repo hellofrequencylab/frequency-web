@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1482",
+  "title": "Wildheart niche starter kits: five more variants as data on lib/sites/kits (studios, hosts, venues, nonprofits, networks)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/wildheart-variants.ts",
+    "ref": "Mega theme rollout 2026-10-26: Wildheart niche variants on the Wildheart block family, the same model as the Midnight kits."
+  },
+  "detail": "Five kits for the Wildheart mega theme (studios, hosts, venues, nonprofits, networks) beside the existing coaches kit, each 3 to 4 pages of Wildheart blocks and shared Space blocks. Pure data on the SiteKit model, loaded lazily by the registry so the public site never imports them. Generic copy in the house voice (docs/marketing/voice-and-language-guide.md), slot tokens for facts a Space already stores, no prices, photos or real names. They appear in the editor's Starter kits panel beside the Midnight kits. Not built here: flipping the picker's feel to live (a test pin needs the owner's words), a Wildheart feature page.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const v=fs.readFileSync('lib/sites/kits/wildheart-variants.ts','utf8');const r=fs.readFileSync('lib/sites/kits/registry.ts','utf8');const n=['studios','hosts','venues','nonprofits','networks'];process.exit(n.every((x)=>v.includes(x+': {')&&r.includes('wildheart-'+x))?0:1)\"",
+    "checked": "2026-10-26",
+    "evidence": "Five kits; four tests in lib/sites/kits/wildheart-variants.test.ts and the shared kit tests pass locally."
+  },
+  "closed": "2026-10-26"
+}
