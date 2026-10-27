@@ -36,7 +36,7 @@ import type { OnAirSessionData } from '@/lib/on-air/session-data'
 import { LotusIcon } from '@/components/on-air/icons'
 import { loadLiveSession, type LiveSessionRecord } from '@/lib/on-air/live-session'
 import type { MovementMode } from '@/lib/movement'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 
 // SCAN-1118: both engines are heavy and only one runs per open, so they load on demand. This file
 // is reachable from the app shell on every member route; static imports put ~30-40 KB gzip of
@@ -445,7 +445,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
                 <Link
                   href="/practices"
                   onClick={close}
-                  className="mt-4 inline-block rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
+                  className={buttonClasses('primary', 'md', 'mt-4')}
                 >
                   Browse practices
                 </Link>
