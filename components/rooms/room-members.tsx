@@ -23,7 +23,7 @@ export function RoomMembers({ roomId, myProfileId, canRead, isMember, isAdmin, v
         <ul aria-label="Room members" className="space-y-1">
           {members.map(({ profile, is_admin }) => (
             <li key={profile.id} className="flex items-center justify-between gap-2">
-              <Link href={`/people/${encodeURIComponent(profile.handle)}`} className="min-w-0 truncate text-meta">
+              <Link href={`/people/${encodeURIComponent(profile.handle)}`} className="block min-w-0 truncate text-meta">
                 {profile.display_name}{profile.id === myProfileId ? ' (you)' : ''}{is_admin ? ' · Admin' : ''}
               </Link>
               {isAdmin && profile.id !== myProfileId && (
