@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 // Detect executable platform-design branches rather than comments, display labels or
 // the shared anonymous-feed access predicate. This checks route source, not rendered styling.
+/** @param {string} source @returns {Array<{file: string, line: number, expression: string}>} */
 export function memberDesignBranches(source, file = 'route.tsx') {
   const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   if (tree.parseDiagnostics.length) return tree.parseDiagnostics.map(error => ({ file, line: tree.getLineAndCharacterOfPosition(error.start ?? 0).line + 1, expression: `Parse error: ${ts.flattenDiagnosticMessageText(error.messageText, ' ')}` }))
@@ -64,6 +65,7 @@ export function memberDesignBranches(source, file = 'route.tsx') {
   return failures
 }
 
+/** @returns {{scanned: number, failures: Array<{file: string, line: number, expression: string}>}} */
 export function memberDesignBranchReport(root = 'app/(main)') {
   const failures = []
   let scanned = 0
