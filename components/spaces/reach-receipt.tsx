@@ -76,7 +76,7 @@ export function ReachReceipt({
       {/* ── 1. What the network sent ─────────────────────────────────────────────────────────── */}
       <section aria-labelledby="reach-sent">
         <SectionHeader id="reach-sent" title={`Your Space page, last ${reach.windowDays} days`} />
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div data-visual-mask="space-console-profile-stats" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
             bordered
             label="Daily page views"

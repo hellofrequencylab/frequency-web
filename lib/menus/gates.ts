@@ -44,7 +44,7 @@ type RegistryGate = {
 }
 
 /** Strip query + fragment + a trailing slash so a row addressing a tab (`/admin/vera-ai?tab=x`)
- *  resolves to the same gate as the bare page. Mirrors normalizeAdminHref in lib/nav/admin-nesting
+ *  resolves to the same gate as the bare page. Mirrors normalizeAdminHref in the active menu gate resolver
  *  deliberately: two normalizers that disagree would nest a row under one page and gate it as
  *  another. PURE. */
 export function normalizeGateHref(href: string): string {
@@ -62,7 +62,7 @@ function isOperatorHref(href: string): boolean {
 const UNKNOWN_OPERATOR_FLOOR: MenuAccess = 'admin'
 
 // href -> gate, from every node the registry declares. FIRST declaration wins, matching how
-// lib/nav/admin-nesting resolves the same kind of tie: several nodes can normalize onto one page
+// the active menu gate resolver resolves the same kind of tie: several nodes can normalize onto one page
 // (a world's landing and a leaf addressing it by tab), and registry declaration order is the
 // answer every other reader of that catalog already uses.
 function buildGateMap(): Map<string, RegistryGate> {

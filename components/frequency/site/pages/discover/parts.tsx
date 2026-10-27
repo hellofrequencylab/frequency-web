@@ -301,7 +301,7 @@ export function DxSpaceCards({ spaces }: { spaces: NetworkedSpace[] }) {
 /** Towns as link cards with their two live counts. */
 export function DxTowns({ towns, base }: { towns: { city: string; slug: string; circles?: number; events?: number }[]; base: string }) {
   return (
-    <ul className="dx-towns">
+    <ul className="dx-towns" data-visual-mask="discover-locator-cities">
       {towns.map((t) => (
         <li key={t.slug}>
           <Link className="dx-town" href={`${base}/${t.slug}`}>

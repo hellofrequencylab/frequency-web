@@ -49,7 +49,7 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
               <Link href={item.href} transitionTypes={slide} className={on ? 'on' : undefined} aria-current={on && !activeLeafKey ? 'page' : undefined}>
                 <FqIcon name={item.icon} />
                 {item.label}
-                {badge > 0 && <b aria-label={`${badge} waiting`}>{badge}</b>}
+                {badge > 0 && <b data-visual-mask="admin-rail" aria-label={`${badge} waiting`}>{badge}</b>}
               </Link>
             )}
             {groups.length > 0 && (
@@ -60,7 +60,7 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
                   return (
                     <Link key={g.label} href={g.leaves[0].href} transitionTypes={slideTypes(order, activeLeafKey ?? 'home', g.leaves[0].key)} className={here ? 'on' : undefined} aria-current={here && g.leaves.length === 1 ? 'page' : undefined}>
                       {g.label}
-                      {waiting > 0 ? <b aria-label={`${waiting} waiting`}>{waiting}</b> : <small aria-label={`${g.leaves.length} pages`}>{g.leaves.length}</small>}
+                      {waiting > 0 ? <b data-visual-mask="admin-rail" aria-label={`${waiting} waiting`}>{waiting}</b> : <small aria-label={`${g.leaves.length} pages`}>{g.leaves.length}</small>}
                     </Link>
                   )
                 })}
@@ -73,7 +73,7 @@ export function AdminNavList({ items, label, activeKey = null, activeLeafKey = n
                     {leaf.group && leaf.group !== all[i - 1]?.group && <span className="ad-sub-h">{leaf.group}</span>}
                     <Link href={leaf.href} className={leaf.key === activeLeafKey ? 'on' : undefined} aria-current={leaf.key === activeLeafKey ? 'page' : undefined}>
                       {leaf.label}
-                      {!!leaf.badge && <b aria-label={`${leaf.badge} waiting`}>{leaf.badge}</b>}
+                      {!!leaf.badge && <b data-visual-mask="admin-rail" aria-label={`${leaf.badge} waiting`}>{leaf.badge}</b>}
                     </Link>
                   </Fragment>
                 ))}
@@ -110,7 +110,7 @@ export function AdminPhoneStrip({ items }: { items: AdminNavItem[] }) {
       {item.children.map((child) => (
         <Link key={child.key} href={child.href} className={child.key === leafKey ? 'on' : undefined} aria-current={child.key === leafKey ? 'page' : undefined}>
           {child.label}
-          {!!child.badge && <b aria-label={`${child.badge} waiting`}>{child.badge}</b>}
+          {!!child.badge && <b data-visual-mask="admin-rail" aria-label={`${child.badge} waiting`}>{child.badge}</b>}
         </Link>
       ))}
     </nav>
@@ -168,7 +168,7 @@ export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
   const page = (l: AdminNavLeaf) => (
     <Link key={l.key} href={l.href} transitionTypes={slideTypes(order, here, l.key)} className={!onHome && l.key === leaf?.key ? 'on' : undefined} aria-current={!onHome && l.key === leaf?.key ? 'page' : undefined}>
       {l.label}
-      {!!l.badge && <b aria-label={`${l.badge} waiting`}>{l.badge}</b>}
+      {!!l.badge && <b data-visual-mask="admin-rail" aria-label={`${l.badge} waiting`}>{l.badge}</b>}
     </Link>
   )
   if (!grouped) {
@@ -191,7 +191,7 @@ export function AdminTopMenu({ items }: { items: AdminNavItem[] }) {
           return (
             <Link key={g.label} href={g.leaves[0].href} transitionTypes={slideTypes(order, here, g.leaves[0].key)} className={on ? 'on' : undefined} aria-current={on && g.leaves.length === 1 ? 'page' : undefined}>
               {g.label}
-              {badge > 0 && <b aria-label={`${badge} waiting`}>{badge}</b>}
+              {badge > 0 && <b data-visual-mask="admin-rail" aria-label={`${badge} waiting`}>{badge}</b>}
             </Link>
           )
         })}
@@ -269,7 +269,7 @@ export function AdminPhoneBar({ items, label, space, links }: AdminPhoneBarProps
             ) : (
               <Link key={m.key} className={rowClass(current?.key === m.key)} href={m.href} aria-current={current?.key === m.key ? 'page' : undefined}>
                 <FqIcon name={m.icon} size={20} /><span>{m.label}</span>
-                {itemBadge(m) > 0 && <b aria-label={`${itemBadge(m)} waiting`}>{itemBadge(m)}</b>}
+                {itemBadge(m) > 0 && <b data-visual-mask="admin-rail" aria-label={`${itemBadge(m)} waiting`}>{itemBadge(m)}</b>}
               </Link>
             ),
           )}

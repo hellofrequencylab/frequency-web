@@ -177,7 +177,7 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // 'platform'), so only Admin + Janitor see it. Telescopes like the rest of the Admin section.
   { key: 'admin-spaces',     href: '/admin/spaces',     label: 'Manage Spaces', section: 'Admin', defaultAccess: 'janitor', surface: 'platformSpaces' },
   // Labeled "Commerce" (ADR-1746), the console group it sits in (Platform · Commerce, ADR-1745), and it
-  // nests under the Platform row on the rail (lib/nav/admin-rail.ts). It was "Market admin" because the
+  // nests under the Platform row on the rail (the Studio world catalog). It was "Market admin" because the
   // member commerce row (the `market` vertical, /marketplace) owns the word Market and the two read
   // identically in a folded rail; the section-and-group name keeps them apart without a suffix.
   { key: 'admin-marketplace', href: '/admin/marketplace', label: 'Commerce', section: 'Admin', defaultAccess: 'admin', staffDomain: 'platform', surface: 'platformManage' },

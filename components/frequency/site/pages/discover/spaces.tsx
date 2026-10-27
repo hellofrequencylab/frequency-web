@@ -31,7 +31,7 @@ const BASE = '/discover/spaces'
 /** The plural a type door reads ("Businesses", "Non Profits"), as the type hubs title themselves. */
 const TYPE_PLURAL: Record<string, string> = { business: 'Businesses', nonprofit: 'Non Profits' }
 
-/** The sort labels SpacesSort shows (components/spaces/spaces-sort.tsx). Restated, not imported: that
+/** The sort labels SpacesSort shows (components/frequency/members/spaces/spaces-body.tsx). Restated, not imported: that
  *  module is a client component, so its constant reaches a server component as a reference, not an
  *  array. Keyed by SpaceSort, so a new sort fails the type check here until it has a label. */
 const SORT_LABEL: Record<SpaceSort, string> = {
