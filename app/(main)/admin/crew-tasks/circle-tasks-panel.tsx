@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 // Host flow for circle-task assignment (BUILD-LIST P4.7): create a task scoped
 // to a circle you host, see who claimed what, release a stalled claim, or
 // remove a task. Server actions re-check circle.assignTask on every write —
@@ -15,7 +16,6 @@ import { Field, Input } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { buttonClasses } from '@/components/ui/button'
 
 const TASK_TYPES = [
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',
@@ -224,7 +224,7 @@ export function CircleTasksPanel({ circles }: { circles: HostedCircleTasks[] }) 
             {composingFor !== circle.id && (
               <button
                 onClick={() => setComposingFor(circle.id)}
-                className="inline-flex items-center gap-1 rounded-control bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+                className={buttonClasses('primary', 'sm')}
               >
                 <Plus className="w-3.5 h-3.5" /> New circle task
               </button>
