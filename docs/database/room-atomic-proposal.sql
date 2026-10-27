@@ -1,4 +1,4 @@
--- REVIEW PROPOSAL ONLY. Not a registered migration; do not execute against production.
+-- REVIEW COPY. Registered staging-only in 20261027033306_atomic_manual_room_writes.sql; no production execution authorized.
 -- HYG-205 records approval, migration registration and rollout status.
 -- Service-only RPCs are invoker functions. No grants or RLS policies on application tables change.
 -- Only manual room actions change. No triggers, account/profile cascade or provisioning changes.
