@@ -468,7 +468,7 @@ const PROFILE_LINK_SEEDS: readonly {
   // You (View profile + Appearance are fixed chrome woven in by the renderer)
   // DRAFTS HAS MOVED TO MY FREQUENCY (owner ruling 2026-08-12: "wire the badge into the My
   // Frequency menu, alongside the /drafts entrance"). It sits beside Journal and My Contacts in
-  // lib/nav/my-frequency-rows.ts, wearing the open-proposal count from countMyCreateProposals —
+  // the active Frequency menu groupRows/count renderer, wearing the open-proposal count from countMyCreateProposals —
   // which is exactly the move the interim note here always described: "a render edit plus a
   // count on getMyFrequency, not a seed."
   //
@@ -674,7 +674,7 @@ export function paletteDestinations(viewer: NavViewer, query = ''): PaletteDesti
 // in the header; the member rail count is ADR-1406 (not this cut).
 
 /** One mobile-bar tab: the §5a world name + the calm registry node it projects. */
-export type SpineTab = {
+type SpineTab = {
   /** The §5a canonical world label rendered under the icon (canon-checked, NAMING.md). */
   label: string
   /** The calm registry node this tab lands on (href · gate · icon key). */

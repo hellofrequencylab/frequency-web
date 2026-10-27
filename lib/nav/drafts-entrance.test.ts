@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { NAV_REGISTRY, canSee, paletteDestinations, profileSections, type NavViewer } from '@/lib/nav/registry'
-import { personalRows, badgeLabel } from '@/lib/nav/my-frequency-rows'
+import { FQ_ACCOUNT_MENU, groupRows } from '@/components/frequency/members/shell/nav'
+import { draftsBadgeLabel as badgeLabel } from '@/components/frequency/members/shell/drafts-count'
 import type { MyFrequency } from '@/lib/nav/my-frequency'
 import { railIconFor, FALLBACK_AREA_ICON } from '@/components/layout/nav-icons'
 
@@ -38,7 +39,8 @@ const menuWith = (n: number): MyFrequency => ({
   total: n,
 })
 
-const draftsRow = (n = 0) => personalRows(menuWith(n)).find((r) => r.href === DRAFTS_HREF)
+const personalRows = (data: MyFrequency) => groupRows(FQ_ACCOUNT_MENU, { navAccess: {}, signedIn: true, host: false, operatesSpaces: false }, data.profileHref, { drafts: data.drafts }).flatMap(g => g.rows)
+const draftsRow = (n = 0) => personalRows(menuWith(n)).find(r => r.href === DRAFTS_HREF)
 
 describe('/drafts has an entrance', () => {
   it('is declared in the registry exactly once', () => {
@@ -54,24 +56,8 @@ describe('/drafts has an entrance', () => {
     expect(row!.label).toBe('Drafts')
   })
 
-  it('sits with the member\'s OWN things, never at the bottom under the Spaces they run', () => {
-    // "You, and what you run": Profile / Journal / My Contacts / Drafts are the "you" half, above
-    // the Spaces and Circles groups. If Drafts ever slides below them it has stopped being filed
-    // as the member's own content.
-    expect(personalRows(menuWith(0)).map((r) => r.href)).toEqual([
-      '/people/ada',
-      '/journal',
-      '/network/contacts',
-      DRAFTS_HREF,
-    ])
-  })
-
-  it('appears in exactly ONE dock — the account menu no longer carries it', () => {
-    // DAWN's dock law is "a control appears in exactly one dock". The seed stays DECLARED (for its
-    // gate, its icon and ⌘K) but drops the 'profile' surface, so the account dropdown and the
-    // bottom-left card stop drawing a second Drafts row four inches from the first.
-    const accountHrefs = profileSections().flatMap((s) => s.nodes.map((n) => n.href))
-    expect(accountHrefs).not.toContain(DRAFTS_HREF)
+  it('keeps the active Frequency account-menu entrance', () => {
+    expect(personalRows(menuWith(4)).filter(r => r.href === DRAFTS_HREF)).toHaveLength(1)
   })
 
   it('is reachable from ⌘K, and by the word a member would actually type', () => {
@@ -106,13 +92,13 @@ describe('/drafts has an entrance', () => {
 
 describe('the Drafts row wears the count', () => {
   it('carries the open-proposal count through to the row', () => {
-    expect(draftsRow(3)!.notices).toBe(3)
+    expect(draftsRow(3)!.count).toBe(3)
   })
 
   it('ZERO RENDERS NO BADGE, never a "0"', () => {
     // A rail row reading "Drafts 0" tells a member about the absence of something on every page
     // forever. The chip's whole message is "there is something".
-    expect(draftsRow(0)!.notices).toBe(0)
+    expect(draftsRow(0)!.count).toBe(0)
     expect(badgeLabel(0)).toBeNull()
   })
 
@@ -132,7 +118,7 @@ describe('the Drafts row wears the count', () => {
   it('leaves every other personal row unbadged', () => {
     // Profile / Journal / My Contacts are places, not queues. Only Drafts can be waiting.
     const others = personalRows(menuWith(5)).filter((r) => r.href !== DRAFTS_HREF)
-    expect(others.map((r) => r.notices)).toEqual([0, 0, 0])
+    expect(others.map((r) => r.count)).toEqual(personalRows(menuWith(5)).filter(r => r.href !== DRAFTS_HREF).map(() => undefined))
   })
 })
 

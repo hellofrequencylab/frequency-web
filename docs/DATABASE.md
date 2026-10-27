@@ -647,6 +647,67 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
   ALONE, naming files that exist on another open PR, is an ordering fact rather than a defect in
   that branch. The gate is symmetric — a committed-but-unapplied migration fails it from the other
   side — so the file and the apply always travel together.
+- **Reviewed main-first readiness (HYG-217).** The production comparison remains strict on
+  main, pushes, local `check:migrations`, and after application. Migration-touching PRs additionally
+  use `scripts/migration-pr-readiness.mjs` materialized from the current **main** Git blob, with a
+  self-hash check on an isolated `pull_request_target` runner. It installs and executes no
+  candidate code; candidate Git blobs are read as data only. Required candidate CI consumes the
+  current-main/current-head workflow proof via GitHub API. Candidate code and approval JSON cannot
+  supply production readiness facts. Migration SQL must be regular Git files, never symlinks. Existing SQL
+  cannot be changed, renamed or removed even when version/name parity happens to match.
+
+  A pending migration can pass PR readiness only after a separate reviewed policy-only PR adds
+  one finite entry for that PR number to main's `scripts/migration-readiness-policy.json`.
+  The entry contains `pullRequest`, future `expiresAt`, `migrations` (`file`, whole-file `sha256`),
+  `reviewedChanges` (every candidate diff path, `added|modified|removed`, whole-file `sha256`;
+  removals hash the base bytes; pin `baseMode` and `headMode` too), `workflowPath` (`.github/workflows/db-tests.yml`), its
+  `workflowSha256`, `apiAcceptanceStep`, and `requiredSteps`. Required steps must include full
+  migration replay, pgTAP, stated-skip enforcement, the reviewed real API acceptance step and
+  unconditional staging cleanup. Review the API exercise's assertions, not just its step label.
+  Pin the **complete** candidate diff so an unreviewed workflow, harness, dependency, test or
+  runtime change cannot inherit approval. Never generate these pins from an unreviewed branch
+  and call that approval. The bootstrap policy has no registrations and grants no exception.
+
+  After the policy merges, update the candidate to current main, rerun isolated database staging
+  on its exact head, then rerun PR checks. The collector independently reads Git blobs, current
+  PR/main identities, the live version/name ledger and GitHub Actions run/job/check identities.
+  Main must already match production exactly; no orphan, name mismatch or unrelated pending
+  migration is allowed. Only exact registered add-only SQL with versions later than every main migration may be
+  reported **pending apply**. An earlier stamp requires a separate explicit
+  main-side `orderingExceptions` entry containing that exact `file`, `sha256` and reviewed `reason`;
+  its count and bytes must match exactly the earlier additions. A wildcard or blanket permission
+  is unavailable. It still requires the same exact-head full replay and real API proof.
+  A moved branch/ledger, unavailable read, missing proof, skipped cleanup or expired approval
+  fails closed. Neither staging success nor this verdict applies SQL or authorizes a merge.
+
+  Root coordinates the separately approved merge and canonical application after every other
+  exact-head release gate passes, then immediately runs strict live parity. Until application,
+  main's strict check correctly remains red. The ledger proves version/name correspondence,
+  not the actual bytes of historical SQL executed in production. Remove consumed/expired policy
+  entries in a policy-only housekeeping change.
+
+  The isolated workflow's job is `migration-readiness-runner` (base SHA). Its main-owned
+  publisher explicitly creates the distinct `migration-readiness` check with
+  `head_sha` equal to the fresh candidate SHA. Check write permission is confined to that
+  isolated job. Completion rechecks current PR/main before and after the API write; stale or
+  failed evaluation marks the candidate-head check failed. Its finite receipt binds PR/head/base,
+  trusted run/attempt, collector/publisher/workflow/policy hashes, and applicable registration and
+  isolated staging run/attempt. No raw errors, SQL, tokens or provider bodies enter the receipt.
+  The `migration-readiness` no-SQL fallback is explicit and
+  reads no production ledger. Bootstrap rollout must prove real exact-head PR association and
+  require the candidate-head context (or its trusted required-workflow equivalent) before
+  claiming enforcement against candidate edits to CI/verifier code. Until then, the candidate CI
+  consumer is enforced under the repository's existing guard-code review assumptions only.
+  Expected-source app identity (GitHub Actions) alone is not a workflow-file signature: preserve
+  trusted guard/workflow review restrictions, or use a main-pinned required-workflow mechanism
+  where available, rather than claiming a status name/app alone resists arbitrary workflow edits.
+  Main can advance after the final identity read: before activation, prove strict branch-up-to-date
+  or merge-queue refresh (or a separate trusted base-change invalidation). A completed head check
+  alone does not promise perpetual freshness against later changes to main.
+  This packet does not edit rulesets. Existing candidate guard environment credentials are
+  unchanged; isolation here describes the new collector, not a complete CI credential redesign.
+  This does not change production credentials or
+  the existing apply workflow's own preconditions; never bypass them to emulate this path.
 - **The apply itself runs from GitHub Actions** (`.github/workflows/apply-migration.yml`, Run
   workflow, PR number). It holds the production URL as the `SUPABASE_DB_URL` secret on the protected
   `production-db` environment, applies only files the PR ADDS, only when they are stamped above

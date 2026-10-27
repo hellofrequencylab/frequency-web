@@ -1,3 +1,4 @@
+import { DraftsCount } from './drafts-count'
 // THE FREQUENCY MEMBER SHELL (design_handoff/frequency/templates/members: shell.js, app.css and the
 // Feed prototype Members.dc.html). The active chrome for signed-in member pages, selected by
 // app/(main)/layout.tsx. The legacy DAWN AppShell has been retired.
@@ -205,12 +206,12 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
     // drafts rows (SCAN-912).
     signedIn: !props.anonymous && !props.previewVisitor,
   }
-  const accountGroups = groupRows(FQ_ACCOUNT_MENU, menuViewer, profileHref)
+  const accountGroups = groupRows(FQ_ACCOUNT_MENU, menuViewer, profileHref, { drafts: myFrequency?.drafts })
   // Bottom left: each Space the member runs, straight into its console, then the work rows.
   const spaceRows: FqMenuRow[] = props.availableContexts.flatMap((c) =>
     c.kind === 'operator' ? [{ group: 'Your Spaces', label: c.label, href: c.href, icon: 'space' as const }] : [],
   )
-  const workGroups = groupRows([...spaceRows, ...FQ_WORK_MENU], menuViewer, profileHref)
+  const workGroups = groupRows([...spaceRows, ...FQ_WORK_MENU], menuViewer, profileHref, { drafts: myFrequency?.drafts })
   const skins = SELECTABLE_SKINS.map((s) => ({ id: s.id, label: s.label }))
 
   // ── Left rail ────────────────────────────────────────────────────────────────────────────────────
@@ -339,6 +340,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
                 <Link key={g.label} href={g.rows[0]!.href} className="rl-row">
                   {icon}
                   <span>{g.rows[0]!.label}</span>
+                  <DraftsCount href={g.rows[0]!.href} count={g.rows[0]!.count} />
                 </Link>
               )
             }
@@ -347,6 +349,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
                 {g.rows.map((r) => (
                   <Link key={r.key} href={r.href ?? '#'} className="rl-sub">
                     {r.label}
+                    <DraftsCount href={r.href} count={r.count} />
                   </Link>
                 ))}
               </RailFold>

@@ -35,7 +35,7 @@ redeploy (a rebuild: the value is inlined). The gate, go-live and roll back: [RU
 
 | Piece | Where |
 |---|---|
-| The switch, the browser-chrome colours, `LEGACY_THEME_AXES` | `lib/theme/design.ts` |
+| The switch and browser-chrome colours | `lib/theme/design.ts` |
 | DAWN's tokens (the base every design falls back to) | `app/globals.css`, unscoped `:root` / `.dark` |
 | The design layer: radius steps, shadows, fonts, map paint | `app/globals.css`, `--design-*` |
 | Another design's tokens | `app/themes/<id>.css`, under `:root[data-design="<id>"]` and `.dark[data-design="<id>"]` |
@@ -547,8 +547,8 @@ save, not a deploy.
    sanitized subset is saved.
 3. **Store.** The sanitized `{ light, dark, feel }` lands in the row's `tokens` (JSONB).
 4. **Historical render path.** The former in-app layout loaded active skin/occasion rows,
-   validated them again, and rendered scoped CSS through [`themeToCss`](../lib/theme/css.ts).
-   Frequency removed that integration, and the unused reader has been retired. The CSS formatting contract
+   validated them again, and rendered scoped CSS through the historical `themeToCss` formatter (retired with its zero-consumer helper by HYG-198).
+   Frequency removed that integration, and the unused reader has been retired. The inline janitor preview
    and saved-data token validator remain. A saved row's `active` status
    does not cause it to apply to Frequency.
 
@@ -690,7 +690,7 @@ and the operator layer is a fail-safe **merge over** them, never a replacement. 
 | Historical occasion auto-resolution from DB `MM-DD` windows | Retired from the Frequency member render path; saved windows remain janitor-managed data (§6) |
 | Template-per-page (a theme scoped to a page template) | 🔴 not built |
 | Client `ThemeProvider` / View-Transitions switch (`ThemeProvider` has no consumers after the injection moved to the `(main)` shell, so it is not currently mounted) | ⏳ tracked in §7 (the switcher itself is shipped; only the animated cross-fade remains) |
-| **Structure axis wired** (`structureFor` → `data-structure` on the shell root) | ✅ shipped: the `(main)` shell maps the resolved generation through `structureFor` and sets `data-structure`; `[data-structure]` retunes `--structure-rhythm`, consumed by the shared `PageHeading` header-to-body gap (the helper's first non-test caller) |
+| **Historical structure axis** | Retired: the active Frequency shell no longer maps generation metadata into a layout variant. HYG-198 removed the unused `structureFor` helper; saved identifiers and existing CSS consumers remain compatible. |
 
 ---
 
