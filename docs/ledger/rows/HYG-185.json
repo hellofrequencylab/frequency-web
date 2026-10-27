@@ -1,0 +1,12 @@
+{
+  "id": "HYG-185",
+  "title": "Retire the unused privileged DB theme style and occasion reader",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": { "file": "lib/theme/server/resolve.ts", "ref": "Source reachability after owner Frequency-only member layout PR4058" },
+  "detail": "The Frequency-only member layout removed the final runtime callers of loadActiveThemeCss and resolveActiveOccasionSlug. The isolated source scan found only their own definitions, historical documentation and the administrative-client allowance. Remove the unused lib/theme/server/themes.ts and its one exact privileged-import allowance, and correct the live THEME/Space-build documentation to explain current Frequency rendering and the historical DB injection path. The actual janitor saved-data actions, their gate, token validation, delete cleanup and all tables/migrations/data remain untouched. A direct consequence probe and negative controls hold the retired reader and baseline absent, prevent runtime reader restoration, and retain the real janitor and validation boundaries. This is bounded orphan retirement, not closure of SCAN1130 or proof that all legacy CSS, fonts and theme registries can be removed. No database/provider request or production mutation.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/retired-theme-reader.mjs", "note": "Reads actual source/allowance paths; holds the unused reader absent while preserving Frequency resolver and janitor saved-data controls. No Supabase calls." },
+  "closed": "2026-10-26"
+}
