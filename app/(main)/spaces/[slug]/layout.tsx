@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { spacePageDefaultAccent, spacePageFonts } from '@/lib/theme/site-style'
-import { pageSurface } from '@/lib/theme/surface'
+import { memberSpaceFonts } from '@/lib/theme/site-style'
 import { getVisibleSpaceForRequest } from '@/lib/spaces/visible-space-for-request'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
@@ -9,7 +8,6 @@ import { spaceManageHref } from '@/lib/spaces/types'
 import { frequencyAccentVars, resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { AccentScope } from '@/components/spaces/accent-scope'
-import { spacePageSiteFaces } from '@/lib/theme/site-style'
 import { SpaceBreadcrumbs } from '@/components/spaces/space-breadcrumbs'
 
 // ── THE SPACE ROOT LAYOUT (thin, chrome-free) ───────────────────────────────────────────────────
@@ -81,15 +79,19 @@ export default async function SpaceRootLayout({
   //    per-type default. Tokens only, never a hex in markup (lib/spaces/accent.ts).
   //  · the page THEME id (ADR-578) — read fail-safe off preferences, `bold` (today's look) default.
   // Both ride the one AccentScope wrapper below.
-  const accentVars = resolveAccentVars(space.brandAccent, spacePageDefaultAccent(space.preferences, defaultAccentForType(space.type)))
-  const spaceTheme = spacePageFonts(space.preferences)
+  const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
+  // 🔴 A WHITE-LABEL WEBSITE THEME NEVER STYLES Frequency's MEMBER OR ADMIN AREA (Daniel, 2026-10-27). This layout
+  // wraps the Space console, so it takes NO website surface (Midnight's ground), NO website faces, NO website
+  // accent and NO website font set: only the Space's own brand accent and its own Space-page fonts.
+  // `no-site-theme-in-member-area.test.ts` holds it.
+  const spaceTheme = memberSpaceFonts(space.preferences)
 
   // The breadcrumb stays OUTSIDE the scope: it is the app shell's wayfinding trail into the Space,
   // not part of the Space's own page, and it renders identically on every entity area.
   return (
     <>
       <SpaceBreadcrumbs slug={slug} brandName={brandName} manageHref={spaceManageHref(space.type, slug)} />
-      <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)} siteFaces={spacePageSiteFaces(space.preferences)} surface={pageSurface(space.preferences)}>
+      <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)}>
         {children}
       </AccentScope>
     </>

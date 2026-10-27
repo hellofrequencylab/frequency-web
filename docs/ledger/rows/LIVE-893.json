@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-893",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const ss=r('lib/theme/site-style.ts');if(!/id: 'frequency',\\s*label: '(?:Frequency|Default)'/.test(ss)||!/id: 'bold',\\s*label: 'Bold'/.test(ss))miss.push('the two themes are not named Default (Frequency until ADR-1748) and Bold');const st=r('lib/theme/space-themes.ts');if(!/DEFAULT_SPACE_THEME: SpaceThemeId = 'frequency'/.test(st))miss.push('Frequency is not the default');if(!/id: 'menswork',\\s*label: 'Bold'/.test(st))miss.push('Menswork is not labelled Bold');if(!/synced/.test(ss)||!/memberSpaceFonts/.test(r('app/(main)/spaces/[slug]/layout.tsx')))miss.push('the member Space page does not wear the own Space fonts');if(!/Use the same style on my Space page/.test(r('components/spaces/space-branding-form.tsx')))miss.push('no sync toggle');if(/data-space-theme=\\\"bold\\\"\\]/.test(r('app/globals.css')))miss.push('the retired Anton set is still styled');if(miss.length){console.error('LIVE-893: '+miss.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": " 2026-10-27 (LIVE-1509, ADR-1906, owner: \"rewrite the website theme probes\"): the probe now holds that the member Space layout wears no website theme."
+  }
+}
