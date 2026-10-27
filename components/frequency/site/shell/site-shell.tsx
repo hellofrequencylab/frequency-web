@@ -1,3 +1,5 @@
+import { Suspense } from 'react'
+import { PublicHeader } from './public-header'
 // THE FREQUENCY PUBLIC SITE SHELL: the kit root, skip link, header + mega menu + sheet + search, the
 // page in <main id="main">, the footer, and the FX island. Rendered by every public layout when
 // SITE_DESIGN is 'frequency' (app/(marketing), app/(help), app/(public), app/discover, the legal and
@@ -58,7 +60,7 @@ export function SiteShell({
       </a>
       {chrome && (
         <div data-surface="stage" className="fq-stage-band">
-          <SiteHeader />
+          <Suspense fallback={<SiteHeader />}><PublicHeader /></Suspense>
         </div>
       )}
       <main id="main" className={chrome ? 'fq-main' : 'fq-main fq-bare'}>

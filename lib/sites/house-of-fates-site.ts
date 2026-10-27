@@ -56,7 +56,14 @@ const customPanel = () => ({
 })
 const recordingPanel = () => b('MidnightCustomRecording', { sigil: 'mic', meta: `${HOF_CUSTOM.meta} · recorded for you`, title: 'Custom hypnosis *recording*', body: HOF_CUSTOM.body, buttonLabel: 'Get my 20 min hypnosis audio', buttonHref: '~/contact-us', price: money(HOF_CUSTOM.price) })
 
-const home = (): BlockSeed[] => [
+/** Width per block on the home page: content sits in a tight centred column, the bands run edge to edge. */
+const HOME_FRAMES: Record<string, 'column' | 'full'> = {
+  MidnightWelcome: 'column', MidnightOfferings: 'column', MidnightHost: 'column', MidnightJourneys: 'column',
+  MidnightGatherings: 'column', MidnightRecordings: 'column', MidnightPillars: 'full', MidnightFAQ: 'column', MidnightLetter: 'column', MidnightCTA: 'full',
+}
+const framed = (blocks: BlockSeed[]): BlockSeed[] => blocks.map((x) => (HOME_FRAMES[x.type] ? b(x.type, { ...x.props, frame: HOME_FRAMES[x.type] }) : x))
+
+const home = (): BlockSeed[] => framed([
   b('MidnightHero', {
     layout: 'left', eyebrow: HOUSE_OF_FATES.tagline, title: 'Step into your\n*empowerment odyssey.*', lead: HOUSE_OF_FATES.line,
     primaryLabel: 'Book a free consultation', primaryHref: BOOK, secondaryLabel: 'Explore services', secondaryHref: '~/services',
@@ -100,7 +107,7 @@ const home = (): BlockSeed[] => [
   }),
   b('MidnightGatherings', {
     eyebrow: 'Events', title: 'Hypnotic Sound *on Frequency*', lead: 'Live group hypnosis held over sound. Join from anywhere.',
-    actionLabel: 'All events', actionHref: '~/hypnotic-sound', count: 4, image: i('stairs.jpg'), alt: '', rows: [],
+    actionLabel: 'All events', actionHref: '~/hypnotic-sound', count: 4, image: i('stairs.jpg'), alt: '', rows: [], empty: 'New dates are on the way. Join the email list and you will hear first.',
   }),
   b('MidnightRecordings', {
     eyebrow: 'Pre recorded hypnosis programs', title: 'Powerful transformation *at your fingertips*', lead: '',
@@ -113,7 +120,7 @@ const home = (): BlockSeed[] => [
     placeholder: 'you@email.com', buttonLabel: 'Subscribe', successMessage: 'You are in. The next letter arrives on the 1st.',
   }),
   b('MidnightCTA', { title: 'Ready to embark on your inner odyssey?\n*Book a free consultation.*', buttonLabel: 'Book a free consultation', buttonHref: BOOK }),
-]
+])
 
 const services = (): BlockSeed[] => [
   pageHero('Unlock your personal power', 'Reclaim your *magic*', 'Discover the transformative power of Reiki, Hypnosis, and HypnoReiki! Each session is designed to help you release the weight of the past, reclaim your energy, and connect with your inner strength.', 'banner.jpg'),

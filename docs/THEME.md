@@ -3,6 +3,7 @@
 > Current implementation and remaining work are recorded in the [merged backlog](BUILD-BACKLOG.json).
 > Frequency is the platform design. The four-axis sections retain historical design context;
 > saved Theme Studio rows are janitor-managed data and do not inject styles or auto-schedule occasions.
+> HYG-187 retired the platform generation/occasion CSS blocks. Historical IDs and cookie/Space validation remain compatible; their registry no longer implies a rendered preset. Root reduced-motion durations and animation cancellation remain active without those attributes.
 
 > **The model, in one line.** A surface's look is composed from **four orthogonal axes**:
 > mode, skin, occasion, and generation, each one attribute on the shell root, resolved
@@ -34,7 +35,7 @@ redeploy (a rebuild: the value is inlined). The gate, go-live and roll back: [RU
 
 | Piece | Where |
 |---|---|
-| The switch, the browser-chrome colours, `LEGACY_THEME_AXES` | `lib/theme/design.ts` |
+| The switch and browser-chrome colours | `lib/theme/design.ts` |
 | DAWN's tokens (the base every design falls back to) | `app/globals.css`, unscoped `:root` / `.dark` |
 | The design layer: radius steps, shadows, fonts, map paint | `app/globals.css`, `--design-*` |
 | Another design's tokens | `app/themes/<id>.css`, under `:root[data-design="<id>"]` and `.dark[data-design="<id>"]` |

@@ -1,0 +1,19 @@
+{
+  "id": "HYG-216",
+  "title": "Wire editable public menus into the current Frequency header",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "M",
+  "closed": "2026-10-27",
+  "source": {
+    "file": "components/frequency/site/shell/public-header.tsx",
+    "ref": "Explicit human choice: Make it editable while preserving the current Frequency design"
+  },
+  "detail": "Current Frequency code defaults seed the existing menu editor. Untouched legacy materialized defaults retain the current design. Edited header rows flow through cached visitor-only server markup and the private validated-session viewer endpoint; own-profile roles and existing menu visibility predicates remove hidden/private/unsafe destinations before serialization. Current Frequency desktop panels, mobile disclosures, search, ghost upgrade dialogs and timing controls consume authorized rows. Public header arbitrary grid/column controls are explicitly unavailable because the current Frequency design is retained. Tests cover edited/new/hidden/role-gated links, request failure fallback, actual mobile Escape/focus, nested ghost dialog keyboard ownership, settings and rendered server links. No production seeding or menu writes performed. Source, actual React SSR/jsdom and mocked SDK/API evidence only; integrated compile/CI, real authenticated browser and deployment acceptance remain separate. Pre-repair actual header negative control fails edited-menu tests.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/frequency-editable-header.mjs",
+    "note": "Source wiring guard; run focused header projection, viewer route, actual SSR/client/admin menu tests for behavioral evidence."
+  }
+}
