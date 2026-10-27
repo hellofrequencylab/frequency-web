@@ -1,0 +1,27 @@
+/* Default Frequency member geometry. Keep aligned with members-shell.css; the
+   claim preview has no viewer-specific rail folding or resizing preferences. */
+.row {
+  width: 100%;
+  padding-inline: max(var(--fq-gutter-mobile), env(safe-area-inset-left));
+}
+.column {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 860px;
+}
+@media (min-width: 768px) {
+  .row { padding-inline: var(--fq-gutter-desktop); }
+  /* Two 76px micro rails plus two 56px gaps. */
+  .column { max-width: min(860px, calc(100% - 264px)); }
+}
+@media (min-width: 960px) {
+  /* 248px left rail, 76px right rail, two 56px gaps. */
+  .column { max-width: min(860px, calc(100% - 436px)); }
+}
+@media (min-width: 1001px) {
+  .column { max-width: min(1040px, calc(100% - 436px)); }
+}
+@media (min-width: 1240px) {
+  /* Both open rails: 248px + 288px + two 56px gaps. */
+  .column { max-width: min(1040px, calc(100% - 648px)); }
+}

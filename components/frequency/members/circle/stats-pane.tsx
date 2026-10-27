@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
 import '@/app/themes/active/members-b'
+import '@/app/themes/active/members-circle'
 import { getCircleMomentum } from '@/lib/connections/metrics'
 import { loadCircleBoard, type CircleBoardMember } from '@/lib/circles/effort-board'
 import { MIN_BOARD_CONTRIBUTORS } from '@/lib/quest/effort'
@@ -8,6 +9,9 @@ import { nextMilestone } from '@/components/quest/collective-goal'
 import { EFFORT_BAND_CHIP } from '@/components/quest/leaderboard-list'
 import { FqAvatar } from '@/components/frequency/members/shared/avatar'
 import { FqBoardHide } from './board-hide'
+import { loadCircleWeeks } from '@/lib/circles/circle-weeks'
+import { weeksTogether } from '@/lib/circles/circle-weeks-pure'
+import { getCircleChallenges } from '@/lib/circles/challenges'
 
 // CIRCLE STATS, IN THE KIT (the Circle's fourth tab; the reference's "This Circle" numbers panel
 // grown into a page). The route (app/(main)/circles/[slug]/(circle)/stats/page.tsx) keeps every read
@@ -44,6 +48,67 @@ async function Momentum({ circleId }: { circleId: string }) {
             <div className="t2">{label}</div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+/** "7 weeks together": the last ten weeks as cells, a kept week lit and a missed one dashed. The rule is the
+ *  cooperative quorum (at least half the circle logs a practice, two or more members). Hidden until the
+ *  Circle has two people, because a room of one has no "together" to count. */
+async function Weeks({ circleId }: { circleId: string }) {
+  const weeks = await loadCircleWeeks(circleId)
+  if (weeks.length === 0 || weeks[0].circleSize < 2) return null
+  const kept = weeksTogether(weeks)
+  const [current] = weeks
+  return (
+    <div className="panel stack fqc-weeks">
+      <div className="fqc-weeks-head">
+        <h2 className="h3">
+          {kept} {kept === 1 ? 'week' : 'weeks'} together
+        </h2>
+        <span className="t2">A week counts when at least half the circle logs a practice.</span>
+      </div>
+      <ol className="fqc-week-cells" aria-label="The last ten weeks, oldest first">
+        {[...weeks].reverse().map((w, i, all) => (
+          <li
+            key={w.start}
+            className={i === all.length - 1 ? 'is-now' : w.met ? 'is-met' : 'is-miss'}
+            title={`Week of ${w.start}: ${w.activeMembers} of ${w.circleSize}`}
+          />
+        ))}
+      </ol>
+      <span className="t2">
+        This week: {current.activeMembers} of {current.circleSize} so far
+      </span>
+    </div>
+  )
+}
+
+/** The shared challenges the Circle has taken on, each with "N of M done" (the old Challenges block). */
+async function Challenges({ circleId }: { circleId: string }) {
+  const list = await getCircleChallenges(circleId).catch(() => [])
+  if (list.length === 0) return null
+  return (
+    <div className="stack fqc-sec">
+      <h2 className="h2">Challenges we&apos;re taking on</h2>
+      <div className="panel stack fqc-challenges">
+        {list.map((c) => {
+          const pct = c.memberCount > 0 ? Math.min(100, Math.round((c.membersCompleted / c.memberCount) * 100)) : 0
+          return (
+            <div key={c.id} className="fqc-challenge">
+              <div className="fqc-challenge-h">
+                <span className="t1">{c.name}</span>
+                <span className="t2">
+                  {c.membersCompleted} of {c.memberCount} done
+                </span>
+              </div>
+              <div className="meter" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${c.name}: ${c.membersCompleted} of ${c.memberCount} done`}>
+                <i style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -211,6 +276,10 @@ export function FqCircleStatsPane({
         </div>
       </div>
 
+      <Suspense fallback={null}>
+        <Weeks circleId={circleId} />
+      </Suspense>
+
       {!canSeeRows ? (
         <div className="panel stack fqm-gap-sm">
           <span className="h3">The board is for people in this Circle</span>
@@ -235,6 +304,9 @@ export function FqCircleStatsPane({
           </Suspense>
         </>
       )}
+      <Suspense fallback={null}>
+        <Challenges circleId={circleId} />
+      </Suspense>
     </div>
   )
 }

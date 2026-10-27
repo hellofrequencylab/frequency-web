@@ -40,7 +40,7 @@ type StreakRow = {
 }
 
 /** One Circle mate flagged for the one-tap nudge row, resolved for display. */
-type MateAtRisk = { profileId: string; name: string; current: number }
+export type MateAtRisk = { profileId: string; name: string; current: number }
 
 /** How many Circle mates the at-risk scan covers before the selector picks its (capped) few. The
  *  scan is bounded because a Circle is a small room and the nudge row only ever shows the top three
@@ -81,16 +81,17 @@ type MateProfileRow = {
  * FAIL-SAFE: any read error returns an empty list — a missing nudge row must never take the
  * Consistency module down with it.
  */
-async function loadMatesAtRisk(
+export async function loadMatesAtRisk(
   admin: ReturnType<typeof createAdminClient>,
   profileId: string,
+  /** Narrow the scan to ONE Circle (the Circle's own Members tab). The caller has already shown the
+   *  viewer is on that roster; the nudge action still re-checks a shared active Circle. */
+  onlyCircleId?: string,
 ): Promise<MateAtRisk[]> {
   try {
-    const { data: mine } = await admin
-      .from('memberships')
-      .select('circle_id')
-      .eq('profile_id', profileId)
-      .eq('status', 'active')
+    const { data: mine } = onlyCircleId
+      ? { data: [{ circle_id: onlyCircleId }] }
+      : await admin.from('memberships').select('circle_id').eq('profile_id', profileId).eq('status', 'active')
     const circleIds = [
       ...new Set(((mine ?? []) as { circle_id: string | null }[]).map((m) => m.circle_id).filter(Boolean) as string[]),
     ]

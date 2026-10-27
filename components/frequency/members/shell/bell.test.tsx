@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 const mocks = vi.hoisted(() => ({ list: vi.fn(), mark: vi.fn() }))
 vi.mock('@/app/(main)/notifications/actions', () => ({ getMyNotifications: mocks.list, markAllRead: mocks.mark }))
 import { BellButton, BellSheet } from './bell'
-globalThis.IS_REACT_ACT_ENVIRONMENT = true
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 let root: Root; let host: HTMLDivElement
 function Bell({ unread }: { unread: number }) { const [open, setOpen] = useState(false); return <><BellButton unreadCount={unread} open={open} onToggle={() => setOpen(v => !v)} />{open && <BellSheet />}</> }
 function mount(unread = 0) { host = document.createElement('div'); document.body.append(host); root = createRoot(host); act(() => root.render(<Bell unread={unread} />)) }

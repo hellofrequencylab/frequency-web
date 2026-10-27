@@ -92,9 +92,6 @@ import { nextOccurrence, recurrenceLineFor } from '@/lib/events/recurrence'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
 import { isAdmitted } from '@/lib/events/admission'
-import { pageSurface } from '@/lib/theme/surface'
-import type { ThemeSurface } from '@/lib/theme/surface-vars'
-import { AccentScope } from '@/components/spaces/accent-scope'
 import { FqEventBody } from '@/components/frequency/members/event/event-body'
 import {
   FQ_EVENT_JOIN_ID,
@@ -462,7 +459,6 @@ export default async function EventDetailPage({
   const eventVenueSpaceId = venueSpaceId(spaceAxes, rootSpaceId)
   let spaceHost: SpaceHostLite | null = null
   // The hosting Space's Mega Theme ground (Midnight), so its event page reads in the same room.
-  let hostSurface: ThemeSurface | null = null
   // The HOSTING space's owner: for an explicitly space-hosted event (host_space_id set) this is
   // the payee whose Connect account tickets pay into (ADR-819) — the payout-readiness check below
   // must key on it, not on the personal organizer.
@@ -493,7 +489,6 @@ export default async function EventDetailPage({
       id ? rows.find((r) => r.id === id && r.status === 'active') ?? null : null
     const s = activeSpace(eventSpaceId)
     if (s) {
-      hostSurface = pageSurface(s.preferences)
       spaceHost = { id: s.id, slug: s.slug, name: s.brand_name ?? s.name ?? 'Space', logoUrl: s.brand_logo_url }
       if (extra?.host_space_id === s.id) hostSpaceOwnerId = s.owner_profile_id
     }
@@ -2088,7 +2083,8 @@ export default async function EventDetailPage({
   // event page keeps the original EventDetailTemplate layout below, styled by the Frequency primitives
   // and app/themes/frequency/event-detail.css, instead of the Event.html kit anatomy. The kit body is
   // kept, switched off, so the decision can be reversed in one line.
-  const themed = (page: ReactNode) => (hostSurface ? <AccentScope vars={null} surface={hostSurface}>{page}</AccentScope> : page)
+  // A host Space's website theme never styles this member page (Daniel, 2026-10-27).
+  const themed = (page: ReactNode) => page
 
   if (FQ_EVENT_KIT_LAYOUT) {
     const cadenceLine =

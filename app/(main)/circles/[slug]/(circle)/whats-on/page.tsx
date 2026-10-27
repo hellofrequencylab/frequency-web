@@ -140,6 +140,7 @@ export default async function CircleWhatsOnPage({
         ) : null
       }
       tasks={tasks}
+      viewerId={myProfileId}
     />
   )
 }

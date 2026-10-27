@@ -1,0 +1,19 @@
+{
+  "id": "HYG-194",
+  "title": "Claim preview follows active Frequency member geometry",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-27",
+  "source": {
+    "file": "lib/layout/shell-metrics.test.ts",
+    "ref": "Full audit active shell consumer parity"
+  },
+  "detail": "Claim ribbon, profile body and fixed action bar now use the active Frequency automatic rail widths, 768/960/1240 breakpoints and 860px / wide-screen 1040px content caps, in pixel units independent of root density. Safe-area padding is owned once. Retired AppShell source assertions replaced with active shell/claim consequence guards; live mega-menu exports preserved. Four focused source tests pass. Browser fixture results are recorded separately; this does not assert production claim acceptance.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/claim-frequency-geometry.mjs",
+    "note": "Pins actual Frequency geometry and the live claim consumer; focused tests cover width arithmetic and preserved menu constants."
+  }
+}

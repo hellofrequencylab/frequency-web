@@ -1,0 +1,12 @@
+{
+  "id": "HYG-198",
+  "title": "Retire unused platform theme formatter and generation structure mapper",
+  "status": "done",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "S",
+  "source": { "file": "lib/theme/validate.ts", "ref": "Exact runtime graph and actual janitor read/action/preview consumers" },
+  "detail": "After explicit platform DB CSS reader and generation-axis retirement, lib/theme/css.ts and structure.ts had no code/CLI/dynamic importers beyond their own unit tests. Remove only these helper/test pairs and correct historical references. Preserve saved theme validation, cookie/Space identifiers, janitor-gated create/update/delete actions, admin-read validation and actual inline light/dark/feel preview. Strengthen the surviving consequence guard to reject helper restoration, lost janitor read/write validation and lost preview token application. Existing validation/action boundary tests and rendered preview mode controls remain required. Active Default/Midnight, Space themes, CSS rules and saved production data are untouched.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/retired-theme-reader.mjs" },
+  "closed": "2026-10-27"
+}

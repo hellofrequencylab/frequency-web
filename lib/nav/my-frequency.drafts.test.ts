@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── THE DRAFTS COUNT IS ACTUALLY FETCHED (owner ruling 2026-08-12, CP-4) ──────────────
 //
-// lib/nav/my-frequency-rows.ts proves the ROW carries whatever count it is handed. This proves
+// components/frequency/members/shell/drafts-count.test.tsx proves the ROW carries whatever count it is handed. This proves
 // the menu resolver actually goes and gets one — the half that would silently regress to a
 // permanent 0 if someone dropped the read while keeping the field.
 //
