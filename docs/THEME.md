@@ -34,7 +34,7 @@ redeploy (a rebuild: the value is inlined). The gate, go-live and roll back: [RU
 
 | Piece | Where |
 |---|---|
-| The switch, the browser-chrome colours, `LEGACY_THEME_AXES` | `lib/theme/design.ts` |
+| The switch and browser-chrome colours | `lib/theme/design.ts` |
 | DAWN's tokens (the base every design falls back to) | `app/globals.css`, unscoped `:root` / `.dark` |
 | The design layer: radius steps, shadows, fonts, map paint | `app/globals.css`, `--design-*` |
 | Another design's tokens | `app/themes/<id>.css`, under `:root[data-design="<id>"]` and `.dark[data-design="<id>"]` |
