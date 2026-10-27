@@ -1,4 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { expect, it } from 'vitest'
 import { shellLazyBoundary } from './probes/shell-lazy-boundary.mjs'
 const read = (p: string) => readFileSync(p, 'utf8')
@@ -17,4 +20,23 @@ it.each([
   ['raised ceiling', shell, bridge, budget.replace('BUDGET_KB = 1100', 'BUDGET_KB = 1400')],
 ])('rejects %s regression', (_, changedShell, changedBridge, changedBudget) => {
   expect(shellLazyBoundary(changedShell, changedBridge, changedBudget)).toBe(false)
+})
+
+it('executes the actual probe through a symlink with spaces and Unicode, while imports remain inert', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'shell entry ü '))
+  const real = join(tmp, 'real')
+  try {
+    for (const dir of ['scripts/probes', 'scripts/lib', 'components/layout/admin-bar']) mkdirSync(join(real, dir), { recursive: true })
+    for (const file of ['scripts/probes/shell-lazy-boundary.mjs', 'scripts/lib/invoked-directly.mjs']) writeFileSync(join(real, file), read(file))
+    writeFileSync(join(real, 'components/layout/app-shell.tsx'), shell)
+    writeFileSync(join(real, 'components/layout/admin-bar/lazy-admin-bar.tsx'), bridge)
+    writeFileSync(join(real, 'scripts/check-shell-weight.mjs'), budget)
+    const entry = join(tmp, 'boundary ü.mjs')
+    symlinkSync(join(real, 'scripts/probes/shell-lazy-boundary.mjs'), entry)
+    const run = () => execFileSync(process.execPath, [entry], { cwd: real, encoding: 'utf8', stdio: 'pipe' })
+    expect(run()).toContain('Shell lazy source boundary passed')
+    writeFileSync(join(real, 'components/layout/admin-bar/lazy-admin-bar.tsx'), bridge.replace('return requested ?', 'return true ?'))
+    expect(run).toThrow()
+    expect(execFileSync(process.execPath, ['--input-type=module', '-e', 'await import("./scripts/probes/shell-lazy-boundary.mjs")'], { cwd: real, encoding: 'utf8' })).toBe('')
+  } finally { rmSync(tmp, { recursive: true, force: true }) }
 })
