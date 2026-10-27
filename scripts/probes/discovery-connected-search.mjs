@@ -40,3 +40,29 @@ assert.deepEqual(Array.from((await runtime.resolveSearchAccess('space')).authori
 assert.equal(await runtime.searchPropertyAllowed('space', 'bing_webmaster', 'https://frequencylocal.com/'), null)
 assert.equal(await runtime.searchPropertyAllowed('space', 'google_search_console', 'https://foreign.example/'), null)
 console.log('Connected search: real sealed-state isolation, malformed-state denial, permission/consent ordering and property scope (offline)')
+// Execute the actual callback with inert secret/provider IO. State diagnostics must not authorize.
+let consumeCalls = 0
+const callback = load('app/api/integrations/discovery/[provider]/callback/route.ts', key => {
+  if (key === 'next/server') return { NextResponse: { redirect: url => ({ headers: new Headers({ location: url }) }) } }
+  if (key.includes('discovery-oauth-state')) return crypto
+  if (key.includes('/host')) return { appOrigin: () => 'https://frequencylocal.com' }
+  if (key.includes('connection-store')) return { consumeSearchConnection: async () => { consumeCalls++; return null }, saveSearchConnection: () => { throw Error('must not save') }, invalidateSearchConnection: () => { throw Error('must not invalidate another attempt') } }
+  if (key.includes('/oauth')) return { searchProvider: value => value === 'bing' ? 'bing_webmaster' : 'google_search_console', exchangeSearchCode: () => { throw Error('must not exchange') } }
+  if (key.includes('discovery-access')) return { authorizeDiscoveryEditor: () => { throw Error('must not query editor before consumed attempt') } }
+  if (key.includes('discovery-search-runtime')) return { resolveSearchAccess: () => { throw Error('must not resolve access before consumed attempt') }, verifySearchConnection: () => { throw Error('must not verify before consumed attempt') } }
+  throw Error(`Unexpected callback dependency: ${key}`)
+})
+for (const provider of ['google', 'bing']) {
+  const call = query => callback.GET({ url: `https://frequencylocal.com/api/integrations/discovery/${provider}/callback?${query}` }, { params: Promise.resolve({ provider }) })
+  const before = consumeCalls
+  assert.equal((await call('code=inert&error=must-never-render')).headers.get('location'), 'https://frequencylocal.com/spaces/operating?search=missing_state')
+  assert.equal((await call('state=invalid-sensitive-value&code=inert')).headers.get('location'), 'https://frequencylocal.com/spaces/operating?search=malformed_state')
+  assert.equal((await call(`state=${state.state}&state=${state.state}`)).headers.get('location'), 'https://frequencylocal.com/spaces/operating?search=malformed_state')
+  assert.equal(consumeCalls, before)
+  const rejected = await call(`state=${state.state}&code=inert&error=must-never-render`)
+  assert.equal(rejected.headers.get('location'), 'https://frequencylocal.com/spaces/operating?search=rejected_state')
+  assert.equal(consumeCalls, before + 1)
+  assert.equal(rejected.headers.get('cache-control'), 'no-store')
+  assert.equal(rejected.headers.get('referrer-policy'), 'no-referrer')
+}
+console.log('OAuth diagnostics: actual Google/Bing callback emits fixed state outcomes only and never exchanges without a valid consumed attempt (offline)')
