@@ -59,7 +59,16 @@ jobs:
       # Boots the full local stack (Postgres + auth + extensions like PostGIS) and applies every
       # supabase/migrations file in order. A migration that can't apply fails the job here.
       - name: Start local Supabase (applies all migrations)
-        run: pnpm exec supabase db start
+        env:
+          FREQUENCY_EPHEMERAL_ROOM_STAGING: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
+        run: |
+          if [ "$FREQUENCY_EPHEMERAL_ROOM_STAGING" = "1" ]; then
+            pnpm exec supabase --version
+            node scripts/staging/atomic-room-registration.mjs
+            node scripts/staging/atomic-room-start.mjs
+          else
+            pnpm exec supabase db start
+          fi
       # Runs every supabase/tests/*.test.sql through pgTAP against the freshly-migrated DB. The
       # output is kept: the step below reads it, because pg_prove prints a file's SKIP reason as
       # a diag line and then `ok`, so a file that skipped every assertion is green here.
@@ -76,3 +85,14 @@ jobs:
       # whose file no longer skips, so the list cannot outlive its reason.
       - name: Refuse an unstated permanent skip in the TAP output
         run: node scripts/check-pgtap-skips.mjs pgtap.log
+
+      # Explicit dispatch on this branch is authorized isolated staging. PR runs retain DB-only
+      # behavior. No linked project, hosted credentials, provider sends or app rollout flag.
+      - name: Real local service, anon and authenticated room API acceptance
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          FREQUENCY_EPHEMERAL_ROOM_STAGING: '1'
+        run: node scripts/staging/atomic-room-api.mjs
+      - name: Always destroy dispatched staging containers and volumes
+        if: always() && github.event_name == 'workflow_dispatch'
+        run: pnpm exec supabase stop --no-backup
