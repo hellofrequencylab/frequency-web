@@ -5,6 +5,7 @@ import { wildheartAccentVars } from '@/lib/theme/wildheart'
 import { networkAccentVars } from '@/lib/theme/network'
 import { templeAccentVars } from '@/lib/theme/temple'
 import { midnightAccentVars } from '@/lib/theme/midnight'
+import { designerAccentVars } from '@/lib/theme/designer'
 import { SPACE_THEMES, SPACE_THEME_FONT_VARS, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteStyle, SiteThemeId } from '@/lib/theme/site-style'
 import { websiteThemeVars } from '@/lib/sites/editor/theme'
@@ -20,7 +21,7 @@ import type { WebsiteTheme } from '@/lib/sites/editor/state'
 // default accent.
 
 /** The editor's stored theme id for each site theme (ADR-1726): Bold is Menswork, Frequency is DAWN. */
-export const EDITOR_THEME_OF: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', temple: 'Temple', midnight: 'Midnight' }
+export const EDITOR_THEME_OF: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', temple: 'Temple', midnight: 'Midnight', designer: 'Designer' }
 
 interface SiteRenderStyle {
   /** The site theme this page wears. */
@@ -54,7 +55,9 @@ export function siteRenderStyle(pageStyle: SiteStyle, accent: string | null | un
             ? templeAccentVars(brandAccent)
             : theme === 'midnight'
               ? midnightAccentVars(brandAccent)
-              : resolveAccentVars(brandAccent, typeDefaultAccent)
+              : theme === 'designer'
+                ? designerAccentVars(brandAccent)
+                : resolveAccentVars(brandAccent, typeDefaultAccent)
   return {
     theme,
     editorTheme: EDITOR_THEME_OF[theme],

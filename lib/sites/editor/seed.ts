@@ -93,11 +93,13 @@ export function initialWebsiteTheme(preferences: unknown): WebsiteTheme {
   const p = preferences && typeof preferences === 'object' ? preferences as Record<string, unknown> : {}
   const theme = typeof p.websiteTheme === 'string' ? p.websiteTheme : typeof p.theme === 'string' ? p.theme : ''
   if (theme.toLowerCase() === 'midnight') return 'Midnight'
+  if (theme.toLowerCase() === 'designer') return 'Designer'
   if (theme.toLowerCase() === 'dawn') return 'DAWN'
   // Only a SAVED site style reads as Wildheart: nothing applies the theme on its own (owner ruling 2026-10-12).
   if (siteTheme(preferences) === 'wildheart') return 'Wildheart'
   if (siteTheme(preferences) === 'network') return 'Network'
   if (siteTheme(preferences) === 'temple') return 'Temple'
   if (siteTheme(preferences) === 'midnight') return 'Midnight'
+  if (siteTheme(preferences) === 'designer') return 'Designer'
   return siteTheme(preferences) === 'bold' || theme.toLowerCase() === 'menswork' ? 'Menswork' : 'DAWN'
 }

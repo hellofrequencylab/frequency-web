@@ -10,6 +10,7 @@
 
 import type { CSSProperties } from 'react'
 import { MIDNIGHT_ACCENT, MIDNIGHT_SURFACE } from '@/lib/theme/midnight'
+import { DESIGNER_ACCENT, DESIGNER_SURFACE } from '@/lib/theme/designer'
 
 // ── Curated fonts. Real web fonts are self-hosted via next/font in app/layout.tsx and
 // exposed as CSS variables on <html> (so they cascade to the public Spotlight route); each
@@ -117,6 +118,13 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
     id: 'midnight', label: 'Midnight',
     theme: { accent: MIDNIGHT_ACCENT.accent.toLowerCase(), surface: MIDNIGHT_SURFACE.raised, text: MIDNIGHT_SURFACE.text, font: { heading: 'serif', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 200, focusY: 50 },
       bg: { kind: 'solid', color: MIDNIGHT_SURFACE.canvas } },
+  },
+  // Designer: plaster ground, charcoal type, one ochre accent, soft cards (lib/theme/designer.ts is the one token set;
+  // Cormorant and Jost load on websites only, so the nearest allowlisted faces stand in).
+  {
+    id: 'designer', label: 'Designer',
+    theme: { accent: DESIGNER_ACCENT.accent.toLowerCase(), surface: DESIGNER_SURFACE.raised.toLowerCase(), text: DESIGNER_SURFACE.text.toLowerCase(), font: { heading: 'serif', body: 'sans' }, card: { radius: 'lg', shadow: 'soft', style: 'solid' }, header: { show: true, height: 200, focusY: 50 },
+      bg: { kind: 'solid', color: DESIGNER_SURFACE.canvas.toLowerCase() } },
   },
   {
     id: 'mono', label: 'Mono',

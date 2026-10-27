@@ -109,10 +109,10 @@ function subscribeViewport(callback: () => void) {
 }
 
 /** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. */
-const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', Temple: 'Temple' }
+const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', Temple: 'Temple', Designer: 'Designer' }
 const EDITOR_THEME = EDITOR_THEME_OF
 /** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
-const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'Temple' ? 'temple' : theme === 'Midnight' ? 'midnight' : 'frequency')
+const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'Temple' ? 'temple' : theme === 'Midnight' ? 'midnight' : theme === 'Designer' ? 'designer' : 'frequency')
 /** A page's publish state in the design's words (Pages tab and page menu dots). */
 type PageState = 'live' | 'changed' | 'draft'
 const PAGE_STATE_LABEL: Record<PageState, string> = { live: 'Published', changed: 'Draft changes', draft: 'Not published yet' }
