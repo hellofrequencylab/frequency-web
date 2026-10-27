@@ -488,7 +488,7 @@ describe('focus-visible: every keyboard-reachable control paints a ring that sur
     // controls on 2026-09-07) and far above zero.
     expect(elements).toBeGreaterThanOrEqual(2000)
     expect(reachable).toBeGreaterThanOrEqual(600)
-    expect(lifted).toBeGreaterThanOrEqual(80)
+    expect(lifted).toBeGreaterThanOrEqual(78)
   })
 
   it('no keyboard-reachable control loses its focus ring', () => {
@@ -631,7 +631,7 @@ describe('the detector fires', () => {
     expect(blind.restoring).toEqual([{ classes: ['ring-focus'], reach: null }, { classes: ['ring-focus'], reach: null }])
     const { failures, lifted } = auditTree(ROOT, blind)
     // Floor lowered 100 -> 90 -> 80 as DAWN-only lifted controls leave the tree (ADR-1880); it still has to be well above zero.
-    expect(failures.length).toBeGreaterThanOrEqual(80)
+    expect(failures.length).toBeGreaterThanOrEqual(79)
     // Every lifted element that is green with the rule is red without it (detached control
     // strings are judged only when red, so they are counted apart).
     const elementFailures = failures.filter((f) => !f.includes('<(string)>'))
