@@ -1,26 +1,18 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import '@/app/themes/active/members-b'
+import '@/app/themes/active/members-circle'
 import type { CircleUpcomingEvent } from '@/lib/events/circle-upcoming'
-import { goingCountsByEvent } from '@/lib/events/going-counts'
-import { HOME_TZ, dayInZone } from '@/lib/time/zone'
+import { loadMeetupPicks } from '@/lib/circles/page-facts'
+import { meetupParts } from '@/lib/circles/meetup-when'
+import { FqIcon } from '@/components/frequency/icon'
+import { GoButton } from '@/components/frequency/members/go-button'
 
-// CIRCLE WHAT'S HAPPENING PANE (templates/members/Circle.html, the Events tab): this week's practice,
-// the Circle's calendar as day / title / going rows, then the Journey it is walking and its tasks.
-// The page keeps every read and gate and passes the action nodes (Log practice, the Journey meter,
-// the task list) through untouched.
-
-const DAY_MS = 24 * 60 * 60 * 1000
-
-function dayCell(iso: string, now: Date): string {
-  // Stored as the event's wall clock in UTC parts.
-  const d = new Date(iso)
-  const weekday = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
-  const out = Math.round(
-    (Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) - Date.parse(`${dayInZone(now, HOME_TZ)}T00:00:00Z`)) / DAY_MS,
-  )
-  return out >= 0 && out < 7 ? weekday : `${weekday} ${d.getUTCDate()}`
-}
+// CIRCLE WHAT'S HAPPENING PANE (templates/circles/Circles.dc.html, the What's happening tab): This week
+// (the practice), Coming up (the Circle's calendar as date-tile rows with a Go toggle), the Journey it is
+// walking, then How to help. Each section hides when it has nothing. The page keeps every read and gate and
+// passes the action nodes (Log practice, the Journey meter, the task list) through untouched. The Go
+// toggles share their answers with the Meetups panel: both write the viewer's RSVP.
 
 export async function FqWhatsOnPane({
   practice,
@@ -29,6 +21,7 @@ export async function FqWhatsOnPane({
   journey,
   tasks,
   empty,
+  viewerId = null,
 }: {
   practice: { title: string; description: string | null; log: ReactNode } | null
   events: CircleUpcomingEvent[]
@@ -36,41 +29,83 @@ export async function FqWhatsOnPane({
   journey: ReactNode
   tasks: ReactNode
   empty: ReactNode | null
+  /** The viewer, for their own Go / Going answers. */
+  viewerId?: string | null
 }) {
-  const counts = events.length > 0 ? await goingCountsByEvent(events.map((e) => e.id)) : {}
   const now = new Date()
+  const rows = events.length > 0 ? await loadMeetupPicks(events, viewerId, false, events.length) : []
+  const byId = new Map(rows.map((r) => [r.id, r]))
   return (
-    <div className="stack fqm-secs">
+    <div className="stack fqm-secs fqc-whats">
       {empty}
       {practice && (
-        <div className="panel stack">
-          <span className="k">This week&apos;s practice</span>
-          <span className="h3">{practice.title}</span>
-          {practice.description && <span className="t2">{practice.description}</span>}
-          {practice.log}
-        </div>
+        <section className="stack fqc-sec" aria-label="This week">
+          <div>
+            <h2 className="h2">This week</h2>
+            <p className="fqc-sec-sub">Log it any day, anywhere.</p>
+          </div>
+          <div className="panel fqc-practice">
+            <span className="fq-icon-tile fqc-tile-soft">
+              <FqIcon name="breath" />
+            </span>
+            <div className="fqc-practice-body">
+              <span className="t1">{practice.title}</span>
+              {practice.description && <span className="t2">{practice.description}</span>}
+            </div>
+            {practice.log}
+          </div>
+        </section>
       )}
       {events.length > 0 && (
-        <div className="stack">
-          <span className="h2">Coming up</span>
-          <div className="list">
-            {events.map((e) => (
-              <Link key={e.id} href={`/events/${e.slug}`}>
-                <span className="t2 fqm-time">{dayCell(e.starts_at, now)}</span>
-                <span className="t1 grow">{e.title}</span>
-                {(counts[e.id] ?? 0) > 0 && <span className="t2">{counts[e.id]} going</span>}
-              </Link>
-            ))}
+        <section className="stack fqc-sec" aria-label="Coming up">
+          <div className="fqc-sec-head">
+            <div>
+              <h2 className="h2">
+                Coming up <span className="fqc-sec-n">{events.length}</span>
+              </h2>
+              <p className="fqc-sec-sub">Every gathering this circle has booked, soonest first. A repeating event shows its next date.</p>
+            </div>
+            <Link className="fqc-meet-all" href="/events">
+              All events
+            </Link>
           </div>
+          <ul className="panel fqc-rows">
+            {events.map((e) => {
+              const r = byId.get(e.id)
+              const parts = meetupParts(e.starts_at, now)
+              const meta = [parts.time, e.location, r && r.going > 0 ? `${r.going} going` : null].filter(Boolean).join(' · ')
+              return (
+                <li key={e.id}>
+                  <span className="fqc-daytile">
+                    <span>{parts.weekday}</span>
+                    <b>{parts.day}</b>
+                  </span>
+                  <Link className="fqc-row-main" href={`/events/${e.slug}`}>
+                    <span className="t1">{e.title}</span>
+                    <span className="t2">{meta}</span>
+                  </Link>
+                  {viewerId ? <GoButton eventId={e.id} slug={e.slug} going={r?.mine === 'going'} /> : null}
+                </li>
+              )
+            })}
+          </ul>
           {hasMore && (
             <Link className="btn sm fqm-tag-start" href="/events">
               See all events
             </Link>
           )}
-        </div>
+        </section>
       )}
-      {journey}
-      {tasks}
+      {journey && <section className="stack fqc-sec fqc-journey">{journey}</section>}
+      {tasks && (
+        <section className="stack fqc-sec fqc-help" aria-label="How to help">
+          <div>
+            <h2 className="h2">How to help</h2>
+            <p className="fqc-sec-sub">Small jobs that keep the circle going. Claim one.</p>
+          </div>
+          {tasks}
+        </section>
+      )}
     </div>
   )
 }

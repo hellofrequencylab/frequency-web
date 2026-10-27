@@ -66,6 +66,10 @@ export const PARKED = new Map([
   ['circle-momentum', 'a DAWN-only Circle block; the Frequency Circle shell draws its own stats on the Stats tab'],
   ['circle-events', 'a DAWN-only Circle block; the Frequency What\'s Happening tab draws the Circle events'],
   ['circle-map', 'a DAWN-only Circle block; the Frequency Circle shell has no map pane'],
+  ['circle-health', 'the Circle health block; the redesigned Circle shell draws it in its side column (FqCircleHealthPanel, LIVE-1510)'],
+  ['circle-practice', 'the weekly practice block; the redesigned What\'s Happening tab draws it as its This week panel (LIVE-1510)'],
+  ['circle-meeting', 'the How we meet block; the redesigned Circle shell draws it in its side column (LIVE-1510)'],
+  ['circle-challenges', 'the Challenges block; the redesigned Circle Stats tab draws it (LIVE-1510)'],
   ['channels-list', 'the DAWN Channels browse; the Frequency forum board (FqChannelsBody) draws its own pillars, so /channels has no Layout panel (SCAN-1129)'],
   ['event-checkin', 'the check-in notice + door note; moved into the event header surface (ADR-1315)'],
 ])

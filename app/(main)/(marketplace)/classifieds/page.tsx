@@ -34,7 +34,7 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
 
   const { body, ctaLabel, ctaHref } = await resolvePageContent('/classifieds', CONTENT_FALLBACK)
   // One unfiltered read powers the stats; the grid filters to the active kind in-process. The hero
-  // search bar filters the grid instantly on the client (MarketGrid reads the shared query).
+  // search bar filters the grid instantly on the client (the Frequency item grid filters its query locally).
   const [profileId, allListings] = await Promise.all([getMyProfileId(), listListings({})])
   const kindCount = (k: string) => allListings.filter((l) => l.kind === k).length
   const listings = allListings.filter((l) => (activeKind ? l.kind === activeKind : true))

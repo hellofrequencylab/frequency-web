@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import '@/app/themes/active/members-a'
 import '@/app/themes/active/members-b'
-import { Composer } from '@/components/feed/composer'
+import '@/app/themes/active/members-circle'
+import { FqCircleCompose } from '@/components/frequency/members/circle/circle-compose'
 import { getCircleContext } from '@/lib/circles/active-circle'
 import { ARRIVAL_NAMES_SHOWN, ARRIVAL_WINDOW_DAYS, arrivalNames, newArrivals } from '@/lib/circles/arrivals'
 import { getMyDispatchScopes } from '@/lib/feed/my-dispatch-scopes'
@@ -22,6 +23,12 @@ import { FqAvatar } from '@/components/frequency/members/shared/avatar'
 //   · each row drawn by the Member Feed's PostItem, whose reactions, replies, polls and post menu are
 //     the live components.
 // The empty state says something different to a host, a member and a visitor, as the module does.
+
+const STARTER_PROMPTS = [
+  { label: 'Say where you live', text: "Hi, I'm new here. I live near " },
+  { label: 'Ask what to bring', text: 'What should I bring to the first one?' },
+  { label: 'Find a walking buddy', text: 'Anyone want to walk in together this week?' },
+]
 
 export async function FqCircleFeed() {
   const ctx = getCircleContext()
@@ -48,38 +55,40 @@ export async function FqCircleFeed() {
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
 
   return (
-    <section aria-label="Posts">
+    <section aria-label="Posts" className="fqc-feed">
       {isMember && justJoined && !canManage && (
-        <div className="soft stack fqm-gap-sm">
-          <span className="h3">Welcome to {circle.name}</span>
-          <span className="t2">
-            You are in. Say hello below so the Circle knows who just arrived. A quick intro is the easiest way to start
-            showing up here.
-          </span>
-          {names && (
+        <div className="fqc-strip">
+          <div className="fqc-strip-body">
+            <span className="t1">You&apos;re in. Say hello so everyone knows who just arrived.</span>
             <span className="t2">
-              {names} {arrivalTotal === 1 ? 'is' : 'are'} new here too.
+              {names
+                ? `${names} joined this week too. Intros and questions get the most replies.`
+                : 'Intros and questions get the most replies.'}
             </span>
-          )}
+          </div>
         </div>
       )}
       {isMember && !justJoined && arrivals.length > 0 && (
-        <div className="panel row">
+        <div className="fqc-strip">
           <span className="faces">
             {arrivals.map((a) => (
-              <FqAvatar key={a.id} url={a.avatarUrl} name={a.displayName} size="s" />
+              <FqAvatar key={a.id} url={a.avatarUrl} name={a.displayName} size="m" />
             ))}
           </span>
-          <span className="grow">
-            <span className="t1 fqm-block">{names} just joined</span>
-            <span className="t2">Say hello below. A new member who gets a reply in their first week usually comes back.</span>
-          </span>
+          <div className="fqc-strip-body">
+            <span className="t1">{names} just joined</span>
+            <span className="t2">Say hello. A new member who gets a reply in their first week usually comes back.</span>
+          </div>
+          <a className="btn sm fqc-strip-btn" href="#circle-post">
+            Say hello
+          </a>
         </div>
       )}
 
       {isMember ? (
         <div className="fa-capture fqm-cl-compose">
-          <Composer
+          <FqCircleCompose
+            prompts={justJoined && !canManage ? STARTER_PROMPTS : []}
             scopeId={circle.id}
             visibility="group"
             placeholder={
@@ -115,7 +124,7 @@ export async function FqCircleFeed() {
                 : 'Sign in to see what this Circle is talking about.'}
         </p>
       ) : (
-        <div>
+        <div className="fqc-posts">
           {[...pinned, ...rest].map((p) => (
             <PostItem
               key={p.id}
