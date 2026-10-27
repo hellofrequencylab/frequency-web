@@ -1,27 +1,10 @@
-// The GENERATION registry — the single typed place a "generation" (the feel/age axis
-// applied via [data-generation] on the shell root) is declared, so the core never edits
-// to add one (docs/SPACES.md, docs/DECISIONS.md). A generation is the "who is this for /
-// how dense should it feel" axis: orthogonal to the light/dark MODE (.dark on <html>) and
-// to the SKIN palette ([data-skin]), it tunes type scale, ornamentation, interactive
-// target size, and the accessibility-contrast floor for the in-app subtree.
-//
-// Evidence basis (kept brief, cited per docs/PRESENTATION.md): the kids spectrum follows
-// Nielsen Norman Group's age-band guidance (distinct UI needs for ages 3-5 / 6-8 / 9-12 —
-// bigger targets, lower density, plainer affordances for younger children); every preset
-// carries a contrast FLOOR (minContrast) so the feel knob can never drop a surface below
-// the accessibility line — WCAG AA (4.5:1) for the dense adult middle, AAA (7:1) for the
-// calm adult ends and for ALL kids presets, where comprehension and motor skills are still
-// developing. See the SPACES adaptive-theming ADR for the precedence + cookie story.
-//
-// This registry is the typed mirror of the CSS: every id here MUST have a matching
-// `[data-generation="<id>"]` block in app/globals.css. The guardrail test in
-// generations.test.ts reads globals.css from disk and enforces that pairing forever, so
-// the CSS and the registry can never quietly drift apart.
-//
-// Imported statically (no runtime registration), so the registry is deterministic
-// regardless of import order — same pattern as lib/verticals/registry.ts and skins.ts.
+// Historical generation identifiers remain readable for saved cookies, Space rows and
+// janitor-managed metadata. Frequency resolves every request to balanced; these IDs
+// no longer require platform CSS presets or promise a rendered contrast variant.
+// Keep validation and saved-data cleanup compatible; runtime retirement is tested in
+// retired-axis-runtime.test.ts and the actual CSS absence in generations.test.ts.
 
-/** The set of authored generation ids. Add one = author its CSS block AND extend this union. */
+/** The set of authored generation ids. Retained for saved-data validation and cleanup compatibility. */
 export type GenerationId =
   | 'spacious'
   | 'classic'

@@ -102,7 +102,7 @@ export function MenuLayoutPanel({
   return (
     <AdminSection
       title="Layout & defaults"
-      description="Set how many columns this menu spreads across, then seed or reset it from today's site nav."
+      description={surfaceKey === 'header' ? 'The public header keeps the Frequency layout. Edit its groups and links, or reset them to the current site navigation.' : "Set how many columns this menu spreads across, then seed or reset it from today's site nav."}
       actions={
         <div className="flex items-center gap-2">
           {status && (
@@ -130,7 +130,7 @@ export function MenuLayoutPanel({
           {error}
         </p>
       )}
-      <div className="flex flex-wrap items-end gap-4 rounded-card border border-border bg-surface p-4 sm:p-5">
+      {surfaceKey !== 'header' && <div className="flex flex-wrap items-end gap-4 rounded-card border border-border bg-surface p-4 sm:p-5">
         <div className="min-w-0">
           <label htmlFor={`cols-${surfaceKey}`} className="mb-1 flex items-center gap-2 text-meta font-semibold text-subtle">
             <Columns3 className="h-3.5 w-3.5" aria-hidden />
@@ -155,7 +155,7 @@ export function MenuLayoutPanel({
             <span className="text-meta text-subtle">1 to 12, default 6</span>
           </div>
         </div>
-      </div>
+      </div>}
     </AdminSection>
   )
 }
