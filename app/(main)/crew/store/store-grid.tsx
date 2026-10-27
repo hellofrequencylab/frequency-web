@@ -9,6 +9,7 @@ import {
 import { redeemItem, equipCosmetic } from './actions'
 import { isError } from '@/lib/action-result'
 import type { CosmeticType } from '@/lib/store/cosmetics'
+import { buttonClasses } from '@/components/ui/button'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   circle: Circle, flame: Flame, star: Star, crown: Crown, zap: Zap,
@@ -157,11 +158,7 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
               <button
                 onClick={handleRedeem}
                 disabled={!canAfford || isPending}
-                className={`flex min-h-11 items-center gap-1 rounded-control px-3 py-1 text-meta font-semibold transition-colors motion-reduce:transition-none ${
-                  canAfford
-                    ? 'bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-50'
-                    : 'bg-surface-elevated text-subtle cursor-not-allowed'
-                }`}
+                className={buttonClasses(canAfford ? 'primary' : 'secondary', 'sm', canAfford ? undefined : 'cursor-not-allowed opacity-60')}
               >
                 {isPending ? (
                   <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" />

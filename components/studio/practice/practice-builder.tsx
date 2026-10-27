@@ -38,6 +38,7 @@ import {
 } from '@/lib/movement'
 import { Button } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
+import { chipClasses } from '@/components/ui/chip'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
 // fields, footer) against the existing practice actions; mirrors the old
@@ -999,9 +1000,7 @@ function MoveChip({ active, onClick, title, children }: { active: boolean; onCli
       aria-checked={active}
       title={title}
       onClick={onClick}
-      className={`min-h-9 rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors ${
-        active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
-      }`}
+      className={chipClasses(Boolean(active))}
     >
       {children}
     </button>

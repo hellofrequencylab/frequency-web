@@ -10,6 +10,7 @@ import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace-core'
 import { useMarketQuery, marketMatch } from '@/components/marketplace/market-search'
 import { UnclaimedBadge } from '@/components/ui/unclaimed-badge'
 import { capsLabel } from '@/components/ui/caps-label'
+import { chipClasses } from '@/components/ui/chip'
 
 const KIND_LABEL: Record<ListingKind, string> = Object.fromEntries(LISTING_KINDS.map((k) => [k.key, k.label])) as Record<ListingKind, string>
 
@@ -135,7 +136,7 @@ export function MarketGrid({
           type="button"
           onClick={nearMe}
           disabled={locating}
-          className={`inline-flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-60 motion-reduce:transition-none ${coords ? 'bg-primary text-on-primary' : 'border border-border text-text hover:bg-surface-elevated'}`}
+          className={chipClasses(Boolean(coords), 'shrink-0 disabled:opacity-60')}
         >
           {locating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Navigation className="h-4 w-4" aria-hidden />}
           {coords ? 'Sorted by distance' : 'Near me'}
