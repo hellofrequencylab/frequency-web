@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process'
 
 const bad = []
 const src = readFileSync('scripts/attach-site-subdomain.mjs', 'utf8')
-if (!src.includes('/domains?teamId=') || !src.includes('frequencylocal.com')) bad.push('the script no longer posts <slug>.frequencylocal.com to the project domains')
+if (!src.includes('/domains?teamId=') || !/BASE_DOMAIN\s*=\s*'frequencylocal\.com'/.test(src)) bad.push('the script no longer posts <slug>.frequencylocal.com to the project domains')
 const run = (args) => spawnSync('node', ['scripts/attach-site-subdomain.mjs', ...args], { encoding: 'utf8', env: { PATH: process.env.PATH } })
 if (run(['Bad_Slug']).status !== 1) bad.push('a malformed slug is no longer refused')
 const noCfg = run(['alliraebuilddesign'])
