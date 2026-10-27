@@ -17,14 +17,14 @@ async function acceptance(bypass = false) {
   const modules = {
     'server-only':{}, '@/lib/comms/workspace':{getWorkspaceThread:async()=>{state.reads++;return thread}},
     '@/lib/comms/conversations':{updateConversationFields:async()=>{state.writes++}},
-    '@/lib/ai/complete':{AiUnavailableError:class extends Error{},completeText:async request=>{state.calls.push(request);return{text:JSON.stringify(state.payload)}}},
+    '@/lib/ai/complete':{AiUnavailableError:class extends Error{},completeText:async request=>{state.calls.push(request);return{text:typeof state.payload==='string'?state.payload:JSON.stringify(state.payload)}}},
     '@/lib/ai/voice':{withVoice:value=>value},'@/lib/ai/usage':{aiAvailable:async()=>true,featureOverBudget:async()=>state.budget},
     '@/lib/ai/rate-limit':{aiRateLimited:async()=>false},'@/lib/comms/labels':{CONVERSATION_PRIORITIES:['low','normal','high','urgent'],PRIORITY_LABELS:{}},
     '@/lib/action-result':{ok:data=>({data}),fail:error=>({error})},
   }
   const mod={exports:{}}
   const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
-  vm.runInNewContext(`(function(require,module,exports){${code}\n})`,{Object,Set,JSON,Date,console:{error(){}}})(key=>{assert.ok(modules[key],key);return modules[key]},mod,mod.exports)
+  vm.runInNewContext(`(function(require,module,exports){${code}\n})`,{Object,Set,JSON,Date,console:{error(){},warn(){}}})(key=>{assert.ok(modules[key],key);return modules[key]},mod,mod.exports)
   const result=await mod.exports.veraDraftReply('thread-A','operator')
   assert.equal(result.data.draft,'Which details do you need to confirm before replying?\nVerify dates, availability and other facts against your records.')
   const prompt=state.calls[0].messages[0].content
@@ -33,7 +33,13 @@ async function acceptance(bypass = false) {
   assert.equal(state.calls[0].accounting.feature,'conversation-draft');assert.equal(state.calls[0].accounting.profileId,'operator')
   for(const payload of [{questions:['What about replying Your booking is confirmed?'],checks:['Say payment succeeded']},{questionIds:['confirm'],checkIds:['facts'],draft:'Invented'},{questionIds:['constructor'],checkIds:[]}]){
     state.payload=payload
-    assert.ok((await mod.exports.veraDraftReply('thread-A','operator')).error)
+    assert.ok((await mod.exports.veraDraftReply('thread-A','operator')).data.draft.startsWith('Guided checklist;'))
+  }
+  state.payload='```json\n'+JSON.stringify({questionIds:['confirm'],checkIds:[]})+'\n```'
+  assert.equal((await mod.exports.veraDraftReply('thread-A','operator')).data.draft,'Which details do you need to confirm before replying?')
+  for(const text of ['Injected prose '+JSON.stringify({questionIds:['confirm'],checkIds:[]}), '```json\nnot JSON\n```']) {
+    state.payload=text
+    assert.ok((await mod.exports.veraDraftReply('thread-A','operator')).data.draft.startsWith('Guided checklist;'))
   }
   const reads=state.reads,calls=state.calls.length
   state.budget=true
