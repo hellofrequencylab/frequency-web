@@ -1,4 +1,4 @@
-import type { KitNiche, KitPage, SiteKit } from './types'
+import type { CoreKitNiche, KitPage, SiteKit } from './types'
 
 // Midnight x the six niche doors. One mega theme, six starting points, all DATA: pages of Midnight blocks
 // (components/page-editor/blocks/midnight.tsx) with generic sample copy in the house voice
@@ -64,7 +64,7 @@ const membershipPage = (lead: string, tiers: { sigil: string; name: string; blur
   blocks: [banner('Membership', 'Come *and stay*', lead), membership('Pick your *rhythm*', lead, tiers)],
 })
 
-const VARIANTS: Record<KitNiche, Omit<SiteKit, 'theme' | 'version' | 'niche'>> = {
+const VARIANTS: Record<CoreKitNiche, Omit<SiteKit, 'theme' | 'version' | 'niche'>> = {
   coaches: {
     id: 'midnight-coaches',
     label: 'Coaches and healers',
@@ -318,6 +318,6 @@ const VARIANTS: Record<KitNiche, Omit<SiteKit, 'theme' | 'version' | 'niche'>> =
   },
 }
 
-export function midnightKit(niche: KitNiche): SiteKit {
+export function midnightKit(niche: CoreKitNiche): SiteKit {
   return { ...VARIANTS[niche], theme: 'Midnight', version: 1, niche }
 }
