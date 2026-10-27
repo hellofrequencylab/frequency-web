@@ -16,16 +16,16 @@ export async function verifyReadiness({ env, event, api, git }) {
   const parents = String(git(['cat-file', '-p', 'HEAD'])).split('\n').filter(line => line.startsWith('parent ')).map(line => line.slice(7))
   requireFact(parents.length === 2 && parents[0] === base && parents[1] === head, 'CI merge tree is stale')
   requireFact(Number.isSafeInteger(workflow?.id) && workflow.path === '.github/workflows/migration-readiness.yml', 'trusted workflow identity unavailable')
-  const inventory = await api(`/repos/${repository}/actions/workflows/${workflow.id}/runs?event=pull_request_target&head_sha=${base}&per_page=100`)
+  const inventory = await api(`/repos/${repository}/actions/workflows/${workflow.id}/runs?event=pull_request_target&head_sha=${head}&per_page=100`)
   requireFact(Number.isSafeInteger(inventory?.total_count) && Array.isArray(inventory.workflow_runs) && inventory.total_count === inventory.workflow_runs.length && inventory.total_count <= 100, 'run inventory incomplete')
-  const run = inventory.workflow_runs.filter(r => r.event === 'pull_request_target' && r.workflow_id === workflow.id && r.head_sha === base && r.repository?.full_name === repository && r.pull_requests?.some(p => p.number === event.number && p.head?.sha === head && p.base?.sha === base)).sort((a, b) => b.id - a.id)[0]
+  const run = inventory.workflow_runs.filter(r => r.event === 'pull_request_target' && r.workflow_id === workflow.id && r.head_sha === head && r.repository?.full_name === repository && r.pull_requests?.some(p => p.number === event.number && p.head?.sha === head && p.base?.sha === base)).sort((a, b) => b.id - a.id)[0]
   requireFact(run?.status === 'completed' && run.conclusion === 'success' && Number.isSafeInteger(run.id) && Number.isSafeInteger(run.run_attempt), 'exact-head trusted readiness is not complete')
   const jobs = await api(`/repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`)
-  requireFact(jobs?.total_count === 1 && jobs.jobs?.length === 1 && jobs.jobs[0].status === 'completed' && jobs.jobs[0].conclusion === 'success' && jobs.jobs[0].head_sha === base && jobs.jobs[0].steps?.filter(s => s.name === 'Evaluate migration PR readiness' && s.conclusion === 'success').length === 1, 'trusted evaluator did not complete')
+  requireFact(jobs?.total_count === 1 && jobs.jobs?.length === 1 && jobs.jobs[0].status === 'completed' && jobs.jobs[0].conclusion === 'success' && jobs.jobs[0].head_sha === head && jobs.jobs[0].steps?.filter(s => s.name === 'Evaluate migration PR readiness' && s.conclusion === 'success').length === 1, 'trusted evaluator did not complete')
   const checkId = /\/check-runs\/(\d+)$/.exec(jobs.jobs[0].check_run_url ?? '')?.[1]
   requireFact(checkId, 'trusted job check identity missing')
   const check = await api(`/repos/${repository}/check-runs/${checkId}`)
-  requireFact(check?.app?.id === 15368 && check.app.slug === 'github-actions' && check.head_sha === base && check.conclusion === 'success', 'untrusted check publisher')
+  requireFact(check?.app?.id === 15368 && check.app.slug === 'github-actions' && check.head_sha === head && check.conclusion === 'success', 'untrusted check publisher')
   const [finalPr, finalMain] = await Promise.all([readPr(), readMain()])
   requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === head && finalPr.base.sha === base && finalMain.commit.sha === base, 'branch moved during readiness read')
   return { ok: true, runId: run.id, head, base }

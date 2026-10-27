@@ -184,9 +184,9 @@ test('trusted workflow installs and executes no candidate program before reading
 import { verifyReadiness } from './verify-migration-readiness.mjs'
 function consumerFixture() {
   const f = fixture()
-  const proof = { id: 200, run_attempt: 1, workflow_id: 55, head_sha: base, event: 'pull_request_target', repository: { full_name: repository }, status: 'completed', conclusion: 'success', pull_requests: [{ number: 44, head: { sha: head }, base: { sha: base } }] }
-  const job = { head_sha: base, status: 'completed', conclusion: 'success', check_run_url: 'https://api.github.com/repos/test/check-runs/600', steps: [{ name: 'Evaluate migration PR readiness', conclusion: 'success' }] }
-  const check = { app: { id: 15368, slug: 'github-actions' }, head_sha: base, conclusion: 'success' }
+  const proof = { id: 200, run_attempt: 1, workflow_id: 55, head_sha: head, event: 'pull_request_target', repository: { full_name: repository }, status: 'completed', conclusion: 'success', pull_requests: [{ number: 44, head: { sha: head }, base: { sha: base } }] }
+  const job = { head_sha: head, status: 'completed', conclusion: 'success', check_run_url: 'https://api.github.com/repos/test/check-runs/600', steps: [{ name: 'Evaluate migration PR readiness', conclusion: 'success' }] }
+  const check = { app: { id: 15368, slug: 'github-actions' }, head_sha: head, conclusion: 'success' }
   const oldApi = f.options.api
   f.options.env.GITHUB_EVENT_NAME = 'pull_request'
   f.options.git = () => `tree abc\nparent ${base}\nparent ${head}\n\nCI merge`
@@ -206,7 +206,7 @@ test('candidate consumer accepts only completed independent current-main/current
 })
 for (const [name, mutate] of [
   ['candidate workflow event', x => { x.proof.event = 'pull_request' }],
-  ['stale main', x => { x.proof.head_sha = 'c'.repeat(40) }],
+  ['stale run head', x => { x.proof.head_sha = 'c'.repeat(40) }],
   ['old candidate head', x => { x.proof.pull_requests[0].head.sha = 'c'.repeat(40) }],
   ['another PR', x => { x.proof.pull_requests[0].number = 45 }],
   ['unassociated run', x => { x.proof.pull_requests = [] }],
@@ -214,7 +214,7 @@ for (const [name, mutate] of [
   ['running proof', x => { x.proof.status = 'in_progress' }],
   ['skipped evaluator', x => { x.job.steps[0].conclusion = 'skipped' }],
   ['wrong check app', x => { x.check.app.id = 1 }],
-  ['forged job head', x => { x.job.head_sha = head }],
+  ['forged job head', x => { x.job.head_sha = base }],
   ['stale CI merge tree', x => { x.f.options.git = () => `parent ${base}\nparent ${'c'.repeat(40)}\n` }],
 ]) test(`candidate consumer rejects ${name}`, async () => { const x = consumerFixture(); mutate(x); await assert.rejects(() => verifyReadiness(x.f.options)) })
 test('no-SQL trusted fallback needs no production credential/read or registration', async () => {
