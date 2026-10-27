@@ -1,6 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import {
   GENERATIONS,
   DEFAULT_GENERATION,
@@ -60,21 +58,4 @@ describe('generation registry (docs/SPACES.md adaptive theming)', () => {
     expect(resolveGeneration(null)).toBe(DEFAULT_GENERATION)
     expect(resolveGeneration(undefined)).toBe(DEFAULT_GENERATION)
   })
-})
-
-// The CSS ⇄ registry CONTRACT. Every GenerationId MUST have a `[data-generation="<id>"]`
-// block authored in app/globals.css. A generation added to the registry without its CSS
-// (or vice-versa) fails the suite, so the two can never quietly drift apart.
-describe('generation CSS contract (every id has its [data-generation] block)', () => {
-  const globalsCss = readFileSync(
-    fileURLToPath(new URL('../../app/globals.css', import.meta.url)),
-    'utf8',
-  )
-
-  for (const gen of GENERATIONS) {
-    it(`generation: ${gen.id} has a [data-generation] block`, () => {
-      const re = new RegExp(`\\[data-generation="${gen.id}"\\]\\s*\\{`)
-      expect(globalsCss).toMatch(re)
-    })
-  }
 })

@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { getPageStatusForEditor, savePageStatus } from '@/lib/page-settings/actions'
 import { VISIBILITY_ROLES } from '@/lib/page-settings/status'
+import { buttonClasses } from '@/components/ui/button'
 
 // The live Status & visibility editor for the on-page "Page" settings panel (ADR-269).
 // Draft hides the page from everyone but staff (who can still preview it); visibility sets
@@ -109,7 +110,7 @@ export function StatusEditor({ spaceId }: { spaceId?: string }) {
           type="button"
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className={buttonClasses('primary', 'sm')}
         >
           {pending ? 'Saving…' : 'Save'}
         </button>

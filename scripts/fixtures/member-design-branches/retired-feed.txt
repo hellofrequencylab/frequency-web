@@ -1,0 +1,3 @@
+// Exact historical statement from 5dce680c8:app/(main)/feed/page.tsx:63
+import { SITE_DESIGN } from '@/lib/theme/design'
+if (SITE_DESIGN === 'frequency' && !profile) return <FrequencyAnonFeed sort={sort} />
