@@ -14,5 +14,6 @@
     "kind": "manual",
     "checked": "2026-10-27",
     "evidence": "Partial review state: actual Drafts badge/wiring tests and existing nav compatibility tests must pass. Keep OPEN until the dependent eight-module retirement/guard migration patch is present and verified. No production, deployment or browser acceptance claim."
-  }
+  },
+  "wave": "W7"
 }
