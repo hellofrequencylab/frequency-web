@@ -1957,7 +1957,7 @@ export function OnAirSession({
                     type="range"
                     min={0}
                     max={100}
-                    step={5}
+                    step={1}
                     value={Math.round(bellVolume * 100)}
                     onChange={(e) => setBellVolume(Number(e.target.value) / 100)}
                     onPointerUp={(e) => {
