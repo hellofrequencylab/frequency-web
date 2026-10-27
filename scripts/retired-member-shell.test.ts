@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { RETIRED_BROWSE_WRAPPERS } from './lib/retired-browse-wrappers.mjs'
+import { RETIRED_PRICING_COMPARISON } from './probes/retired-pricing-comparison.mjs'
 import { RETIRED_MEMBER_SHELL, retiredShellEdges, retiredModuleEdges } from './lib/retired-member-shell.mjs'
 function modules(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
@@ -11,7 +12,7 @@ function modules(dir: string): string[] {
 }
 describe('legacy AppShell retirement', () => {
   it('has no runtime module left and no dangling consumers anywhere in application source', () => {
-    const retired = [RETIRED_MEMBER_SHELL, 'components/admin/admin-auto-back-link.tsx', 'components/admin/admin-sub-nav.tsx', ...RETIRED_BROWSE_WRAPPERS]
+    const retired = [RETIRED_MEMBER_SHELL, 'components/admin/admin-auto-back-link.tsx', 'components/admin/admin-sub-nav.tsx', ...RETIRED_BROWSE_WRAPPERS, ...RETIRED_PRICING_COMPARISON]
     for (const file of retired) expect(existsSync(file), file).toBe(false)
     const edges = ['app', 'components', 'lib'].flatMap(modules).flatMap(file => retiredModuleEdges(file, readFileSync(file, 'utf8'), retired))
     expect(edges).toEqual([])
