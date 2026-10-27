@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { parseSearchOAuthState } from '@/lib/ai/discovery-oauth-state'
 import { appOrigin } from '@/lib/sites/host'
 import { authorizeDiscoveryEditor } from '@/lib/spaces/discovery-access'
 import { consumeSearchConnection, invalidateSearchConnection, saveSearchConnection } from '@/lib/ai/discovery-connection-store'
@@ -16,9 +17,12 @@ function back(path = '/spaces/operating', outcome = 'unavailable') {
 export async function GET(request: Request, { params }: { params: Promise<{ provider: string }> }) {
   const provider = searchProvider((await params).provider), query = new URL(request.url).searchParams
   if (!provider) return back()
+  const states = query.getAll('state')
+  if (states.length === 0 || (states.length === 1 && states[0] === '')) return back('/spaces/operating', 'missing_state')
+  if (states.length !== 1 || !parseSearchOAuthState(states[0])) return back('/spaces/operating', 'malformed_state')
   // Atomic consume binds the current actor, Space, purpose grant and one-time PKCE verifier.
-  const attempt = await consumeSearchConnection(provider, query.get('state') ?? '')
-  if (!attempt) return back()
+  const attempt = await consumeSearchConnection(provider, states[0])
+  if (!attempt) return back('/spaces/operating', 'rejected_state')
   const editor = await authorizeDiscoveryEditor(attempt.binding.spaceId)
   const freshAccess = await resolveSearchAccess(attempt.binding.spaceId)
   const path = editor ? `/spaces/${encodeURIComponent(editor.space.slug)}/settings/coach` : '/spaces/operating'
