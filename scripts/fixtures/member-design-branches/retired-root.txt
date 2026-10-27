@@ -1,0 +1,15 @@
+// Exact historical statement from 7e2016d48:app/(main)/layout.tsx:204
+import { SITE_DESIGN } from '@/lib/theme/design'
+if (SITE_DESIGN === 'frequency') {
+      return (
+        <ViewerProvider>
+          <SiteShell surface="commons">
+            {/* `.fqm-public-view` (members-shell.css) is the page: the container, the clearance under the
+                fixed site header, the site canvas, and the site kit's class meanings put back (SCAN-912). */}
+            <div data-kit="members" data-theme="commons" data-energy="flow" className="fqm-public-view">
+              {children}
+            </div>
+          </SiteShell>
+        </ViewerProvider>
+      )
+    }
