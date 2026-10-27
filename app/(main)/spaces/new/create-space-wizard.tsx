@@ -19,7 +19,7 @@ import {
   type WizardPlan,
 } from '@/lib/spaces/create-wizard'
 import { Field, TextField } from '@/components/spaces/space-form'
-import type { MegaNicheId } from '@/lib/theme/mega-theme'
+import type { MegaNicheId, MegaThemeId } from '@/lib/theme/mega-theme'
 import { SpacePicker, type PickerDone } from './space-picker'
 
 // The SPACE CREATION WIZARD (client). Step-by-step on the Spark kit, like every other seeder
@@ -84,12 +84,16 @@ export function CreateSpaceWizard({
   heardAboutOptions = [],
   pickerEnabled = false,
   arrivedNiche = null,
+  arrivedTheme = null,
 }: {
   /** Show the four-question picker before the wizard (ADR-1883, behind SPACE_PICKER_ENABLED). */
   pickerEnabled?: boolean
   /** The niche a /for door named (query or funnel cookie), already validated by the page. Saved on the
    *  Space whether or not the picker is on. */
   arrivedNiche?: MegaNicheId | null
+  /** The Mega Theme a /themes page named (`?theme=`), already validated by the page. The new Space is dressed in it
+   *  (applyMegaTheme) right after it is created. */
+  arrivedTheme?: MegaThemeId | null
   choices: SpaceModeChoice[]
   heardAboutOptions?: readonly string[]
   /** The Mode a niche funnel pre-selected (`${type}:${variant}`), already validated by the page. */
@@ -158,6 +162,7 @@ export function CreateSpaceWizard({
         plan,
         intents,
         niche: picked.niche,
+        theme: arrivedTheme,
         action: picked.action,
         feel: picked.feel,
         site: picked.site,
