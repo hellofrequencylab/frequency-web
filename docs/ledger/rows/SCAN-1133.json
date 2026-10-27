@@ -1,0 +1,6 @@
+{
+  "id": "SCAN-1133",
+  "append": {
+    "detail": "2026-10-26 timer navigation token pass: the empty-practice Browse practices link and completed-session contextual Dispatch link now share buttonClasses primary styling instead of hand-rolled palette, padding and radius utilities. Link hrefs, labels, overlay-close callbacks and anchor semantics are unchanged. This is two bounded action sites, not app-wide completion; SCAN-1133 remains open."
+  }
+}
