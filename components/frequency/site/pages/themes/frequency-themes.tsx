@@ -1,29 +1,29 @@
-// /themes on the Frequency design (LIVE-1460): the theme gallery. One card per Mega Theme, read from the
-// theme list and the kit index so the page never drifts from what the editor offers. Built from the template
-// kit only (phero, sec, sh, tg-card, KeepGoing); no page CSS of its own. Copy follows
-// docs/marketing/voice-and-language-guide.md: pain point first, plain words, no claims we cannot stand behind.
+// /themes on the Frequency design (LIVE-1460, rebuilt LIVE-1514): the theme library index. Two columns, one
+// card per Mega Theme with its full-kit picture, read from the theme list, the library catalog and the kit
+// index so the page never drifts from what the editor offers. Built from the template kit only (phero, sec,
+// sh, tg-card, KeepGoing); no page CSS of its own. Copy follows docs/marketing/voice-and-language-guide.md:
+// pain point first, plain words, no claims we cannot stand behind.
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { OPERATOR_START_HREF } from '@/lib/site'
 import { KIT_INDEX } from '@/lib/sites/kits/registry'
-import { MidnightPreview } from './midnight-preview'
+import { ThemePicture } from './theme-picture'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { SITE_THEMES } from '@/lib/theme/site-style'
+import { THEME_LIBRARY } from '@/lib/themes/library'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
 }
 
-/** The feature page a theme has, if it has one. Every other theme opens the setup door. */
-const THEME_PAGES: Record<string, string> = { midnight: '/themes/midnight' }
-
 export interface ThemeGalleryCard {
   id: string
   label: string
+  tagline: string
   description: string
   kits: { niche: string; label: string; href: string }[]
-  href: string | null
+  href: string
 }
 
 /** One card per theme, in the order the editor lists them. */
@@ -32,9 +32,10 @@ export const THEME_GALLERY: ThemeGalleryCard[] = SITE_THEMES.map((t) => {
   return {
     id: t.id,
     label: t.label,
+    tagline: THEME_LIBRARY.find((l) => l.id === t.id)?.tagline ?? t.description,
     description: t.description,
     kits: KIT_INDEX.filter((k) => k.theme === editor).map((k) => ({ niche: k.niche, label: k.label, href: `/spaces/new?niche=${k.niche}` })),
-    href: THEME_PAGES[t.id] ?? null,
+    href: `/themes/${t.id}`,
   }
 })
 
@@ -57,14 +58,15 @@ export function FrequencyThemes() {
             Your site should look like you. <em className="fq-iri-text">Pick a feel.</em>
           </h1>
           <p>
-            Seven looks for your Spotlight, your Space and your own website. Pick one, change it any time, and your words and photos stay put.
+            Seven looks for your website, with matching Spotlight and email surfaces where available. Pick a feel, then check what is ready
+            and what is on the way.
           </p>
           <div className="ctas">
             <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
               Start free
             </a>
-            <Link className="btn btn-ghost fq-iri-rim" href="/themes/midnight">
-              See Midnight
+            <Link className="btn btn-ghost fq-iri-rim" href="#themes">
+              See the themes
             </Link>
           </div>
         </div>
@@ -77,35 +79,27 @@ export function FrequencyThemes() {
             <div className="label">
               <b>The themes</b>Seven to start from
             </div>
-            <h2 className="h-l">One setup. A look that fits.</h2>
+            <h2 className="h-l">One look. A clear place to start.</h2>
             <p className="pb-note">
-              A theme dresses everything at once: website, Space page, emails and event pages. Switching never rewrites what you wrote, and the Change theme button in your editor takes you back.
+              Choose a theme for your website and see which matching Spotlight and email surfaces are ready. Each theme page labels what
+              ships now and what is on the way. Switch on the tools you need, and use Change theme in your editor when you want a
+              different feel.
             </p>
           </div>
           <div className="tg-row two">
             {THEME_GALLERY.map((t) => (
               <div className="tg-card" key={t.id} id={t.id}>
+                <Link href={t.href} aria-label={`See the ${t.label} kit`}>
+                  <ThemePicture theme={t.id} label={t.label} slot="kit" />
+                </Link>
                 <h3>{t.label}</h3>
-                <p>{t.description}</p>
-                {t.kits.length ? (
-                  <p>
-                    <b>Start from a kit.</b>{' '}
-                    {t.kits.map((k, i) => (
-                      <span key={k.niche}>
-                        {i > 0 && ', '}
-                        <Link href={k.href}>{k.label}</Link>
-                      </span>
-                    ))}
-                  </p>
-                ) : (
-                  <p>
-                    <b>Starter kits.</b> Coming soon. Start from the theme and add pages as you go.
-                  </p>
-                )}
+                <p>{t.tagline}</p>
                 <p>
-                  {t.href ? <Link href={t.href}>See {t.label} →</Link> : <a href={OPERATOR_START_HREF}>Start with {t.label} →</a>}
+                  <b>{t.kits.length} starter kits.</b> {t.description}
                 </p>
-                {t.id === 'midnight' && <MidnightPreview />}
+                <p>
+                  <Link href={t.href}>See the {t.label} kit →</Link>
+                </p>
               </div>
             ))}
           </div>
