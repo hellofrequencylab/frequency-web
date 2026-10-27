@@ -6,8 +6,8 @@
   "lane": "hygiene",
   "size": "M",
   "source": {
-    "file": "components/layout/app-shell.tsx",
-    "ref": "Current2522edaeb all-tree runtime-import inventory"
+    "file": "scripts/probes/active-member-shell-contracts.mjs",
+    "ref": "Existing active-shell retirement consequence and all-tree importer proof; components/layout/app-shell.tsx is intentionally absent"
   },
   "detail": "AppShell has no runtime imports after owner4058 selected FrequencyMembersShell. Delete only that module; retain reusable DockBar/account/nav/metrics helpers. Migrate source assertions to real active Frequency consumers and preserve retired navigation destinations solely as explicit compatibility inventory. Active rendered rail tests cover landmark, content, camera hooks, rail faces, docks, route edge takeover and footer. No production/browser certification or whole-app orphan-free claim.",
   "verify": {
