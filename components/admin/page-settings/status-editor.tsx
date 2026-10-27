@@ -63,12 +63,13 @@ export function StatusEditor({ spaceId }: { spaceId?: string }) {
 
   return (
     <div className="space-y-3 rounded-card border border-border bg-surface p-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" role="group" aria-label="Page status">
         {(['published', 'draft'] as const).map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => setStatus(s)}
+            aria-pressed={status === s}
             disabled={pending}
             className={`rounded-control px-3 py-1.5 text-meta font-semibold transition-colors ${
               status === s ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:text-text'

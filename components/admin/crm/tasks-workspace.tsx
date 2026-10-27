@@ -83,12 +83,13 @@ export function TasksWorkspace({ tasks, viewerId }: { tasks: CrmTask[]; viewerId
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Task filter">
         {TABS.map((t) => (
           <button
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
+            aria-pressed={tab === t.key}
             className={`rounded-pill px-3 py-1 text-body-sm ${
               tab === t.key ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:text-text'
             }`}
