@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { Zap, Check, AlertCircle } from 'lucide-react'
 import { claimNode, type ClaimResult } from './actions'
@@ -111,7 +112,7 @@ export function ClaimButton({ nodeId, secret, medium }: { nodeId: string; secret
           }
         })
       }
-      className="inline-flex items-center gap-2 rounded-control bg-primary hover:bg-primary-hover text-on-primary text-body-sm font-semibold px-5 py-3 lift-1 transition-colors disabled:opacity-60"
+      className={buttonClasses('primary', 'lg', 'lift-1')}
     >
       <Zap className="w-4 h-4" strokeWidth={2.5} />
       {pending ? 'Claiming…' : 'Claim'}
