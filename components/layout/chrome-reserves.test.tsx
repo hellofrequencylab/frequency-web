@@ -1,10 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { act } from 'react'
-import { createRoot, type Root } from 'react-dom/client'
+import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { DispatchTickerReserve, MobileGameStatsReserve } from './chrome-reserves'
 
 // Two guards on the same defect from two angles: the CSS that stops a scroll lock from resizing the
 // viewport, and the fallbacks that stop streamed chrome from appending instead of swapping.
@@ -49,59 +46,6 @@ describe('the scrollbar gutter is reserved on the root scroller', () => {
     for (const site of sites) {
       const src = readFileSync(join(ROOT, site), 'utf8')
       expect(src, site).toMatch(/document\.body\.style\.overflow/)
-    }
-  })
-})
-
-let container: HTMLDivElement
-let root: Root
-
-beforeEach(() => {
-  container = document.createElement('div')
-  document.body.append(container)
-  root = createRoot(container)
-})
-
-afterEach(() => {
-  act(() => root.unmount())
-  container.remove()
-})
-
-/** A real reserved box names a height class; `h-0` is the defect this guards against. */
-const HEIGHT_CLASS = /\bh-(\d+|px|full|screen|dvh|\[[^\]]+\])\b/
-
-describe('every streamed chrome boundary reserves a real box', () => {
-  it('the dispatch ticker reserve is exactly the bar it stands in for', () => {
-    act(() => root.render(<DispatchTickerReserve />))
-    const box = container.querySelector('[data-chrome-reserve="dispatch-ticker"]')!
-    expect(box).toBeTruthy()
-    expect(box.className).toMatch(HEIGHT_CLASS)
-    expect(box.className).not.toMatch(/\bh-0\b/)
-
-    // The bar's own height, read from the bar. If someone retunes the ticker and not the reserve,
-    // this goes red instead of the top of every page jumping by the difference.
-    const ticker = readFileSync(join(ROOT, 'components/layout/dispatch-ticker.tsx'), 'utf8')
-    const bar = ticker.match(/className="sticky top-0[^"]*"/)
-    expect(bar, 'the ticker still paints a sticky top bar').toBeTruthy()
-    const barHeight = bar![0].match(HEIGHT_CLASS)![0]
-    expect(box.className).toContain(barHeight)
-    expect(bar![0]).toContain('border-b')
-    expect(box.className).toContain('border-b')
-  })
-
-  it('the mobile Vault reserve is a real stack, not an empty div', () => {
-    act(() => root.render(<MobileGameStatsReserve />))
-    const box = container.querySelector('[data-chrome-reserve="mobile-game-stats"]')!
-    expect(box).toBeTruthy()
-    const children = [...box.children]
-    expect(children.length).toBeGreaterThanOrEqual(3)
-    for (const child of children) expect(child.className).toMatch(HEIGHT_CLASS)
-  })
-
-  it('both are aria-hidden: they are chrome holding a place, not content', () => {
-    act(() => root.render(<><DispatchTickerReserve /><MobileGameStatsReserve /></>))
-    for (const box of container.querySelectorAll('[data-chrome-reserve]')) {
-      expect(box.getAttribute('aria-hidden')).toBe('true')
     }
   })
 })

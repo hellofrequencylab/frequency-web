@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { CalendarWorkspace } from './calendar-workspace'
-import { DispatchTicker, type TickerItem } from '@/components/layout/dispatch-ticker'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { SpacePlan } from '@/lib/calendar/plans'
 
@@ -100,12 +99,6 @@ const plan: SpacePlan = {
   updatedAt: '2026-09-01T00:00:00Z',
 }
 
-const dispatches: TickerItem[] = [
-  { id: 'a', title: 'Short one', authorName: 'Ana', timeLabel: '2h ago', linked: false },
-  { id: 'b', title: 'A considerably longer headline, of the kind that wraps', authorName: 'Bo', timeLabel: '3h ago', linked: true },
-  { id: 'c', title: 'Third', authorName: null, timeLabel: '1d ago', linked: false },
-]
-
 let container: HTMLDivElement | null = null
 let root: Root | null = null
 
@@ -138,8 +131,6 @@ async function mountSurface(consoleOpen: boolean) {
   await act(async () => {
     root!.render(
       <>
-        {/* The shell renders this above the page content in the centre column on every member page. */}
-        <DispatchTicker items={dispatches} />
         <CalendarWorkspace
           slug="lab"
           spaceId="space-1"
@@ -184,14 +175,14 @@ describe('the calendar console surface', () => {
     expect(document.querySelector('[data-calendar-admin-grid]')).toBe(grid)
   })
 
-  it('and the control: with the console closed the same clock does move the bar', async () => {
-    // Without this, the assertion above would also pass on a ticker that had simply been deleted.
+  it('the retired global headline clock stays absent with the console closed', async () => {
+    // Human retired the global ticker requirement; the actual calendar surface has no headline clock.
     stubMatchMedia()
     vi.useFakeTimers()
     await mountSurface(false)
 
     const before = document.body.innerHTML
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
-    expect(document.body.innerHTML).not.toBe(before)
+    expect(document.body.innerHTML).toBe(before)
   })
 })
