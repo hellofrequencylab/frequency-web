@@ -36,7 +36,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Suspense, use, useEffect, useRef, useState, useTransition } from 'react'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
-import { SearchOverlay } from '@/components/search/search-overlay'
+import { MemberSearch } from './member-search'
 import { calmSpine, type NavViewer } from '@/lib/nav/registry'
 import { getMyNotifications, markAllRead } from '@/app/(main)/notifications/actions'
 import type { NotificationItem } from '@/lib/notifications-map'
@@ -113,7 +113,6 @@ export function FqHeader({
   const [shown, setShown] = useState<FqNavSection | null>(null)
   const [scrolled, setScrolled] = useState(false)
   const [moving, setMoving] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)
   const hdrRef = useRef<HTMLElement>(null)
   const menuRef = useRef<HTMLButtonElement>(null)
@@ -152,22 +151,11 @@ export function FqHeader({
     }
   }, [])
 
-  // ⌘K and the app-wide 'open-search' event open the search overlay (the DAWN shell's contract).
+  // Header sheets keep their own Escape handler; MemberSearch owns search requests and dismissal.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        setSearchOpen(true)
-      }
-      if (e.key === 'Escape') setOpen(null)
-    }
-    const onOpen = () => setSearchOpen(true)
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(null) }
     window.addEventListener('keydown', onKey)
-    window.addEventListener('open-search', onOpen)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      window.removeEventListener('open-search', onOpen)
-    }
+    return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   // The phone drawer (shell.js `rl-drawer`): the kit slides `.ap-rail-l` in when the kit root carries
@@ -429,7 +417,7 @@ export function FqHeader({
         />
       )}
 
-      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} viewer={viewer} />}
+      <MemberSearch viewer={viewer} />
     </>
   )
 }
