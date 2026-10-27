@@ -1,6 +1,6 @@
 'use client'
 
-// The /subscribe form on the Frequency design. The SAME behaviour as components/marketing/subscribe-form.tsx:
+// The active /subscribe form on the Frequency design:
 // one call to requestSubscribe, ONE success state for every outcome (anti-enumeration: the page never says
 // whether the address was new, already subscribed or opted out), and nothing is on the list until the
 // emailed confirm link is clicked. There is no consent checkbox: submitting your own address asks for the
@@ -21,11 +21,16 @@ export function FrequencySubscribeForm() {
     e.preventDefault()
     setError(null)
     setStatus('loading')
-    const res = await requestSubscribe({ email, name })
-    if (res.ok) {
-      setStatus('done')
-    } else {
-      setError(res.error)
+    try {
+      const res = await requestSubscribe({ email, name })
+      if (res.ok) {
+        setStatus('done')
+      } else {
+        setError(res.error)
+        setStatus('idle')
+      }
+    } catch {
+      setError('We could not send the confirmation link. Please try again.')
       setStatus('idle')
     }
   }
