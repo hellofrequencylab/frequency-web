@@ -28,7 +28,7 @@ export interface MegaThemeSurfaces {
   theme: MegaThemeId
   /** The website's theme. */
   website: SiteThemeId
-  /** True once the theme has an email surface registered; false means emails keep the house palette. */
+  /** True once the theme's emails wear it (the house palette for Frequency, a registered surface for the rest). */
   email: boolean
   /** The Spotlight preset id of the same name, or null until the theme has one. */
   spotlightPreset: string | null
@@ -43,7 +43,8 @@ export function megaThemeSurfaces(theme: MegaThemeId): MegaThemeSurfaces {
   return {
     theme,
     website,
-    email: emailSurface({ megaTheme: { theme } }) !== null,
+    // Frequency's email IS the house palette, so it is ready without an entry of its own.
+    email: theme === 'frequency' || emailSurface({ megaTheme: { theme } }) !== null,
     spotlightPreset: THEME_PRESETS.some((p) => p.id === theme) ? theme : null,
     spacePage: { fonts: site?.defaultFonts ?? 'frequency', accent: accent || null },
   }
