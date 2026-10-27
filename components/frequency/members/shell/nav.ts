@@ -290,7 +290,7 @@ export const FQ_ACCOUNT_MENU: readonly FqMenuRow[] = [
   { group: 'Account', label: 'Settings', href: '/settings', icon: 'settings' },
   { group: 'Account', label: 'Appearance', href: '/settings#appearance', icon: 'sun' },
   { group: 'Account', label: 'Plan & billing', href: '/settings/billing', icon: 'wallet' },
-  { group: 'Account', label: 'Drafts', href: '/drafts', icon: 'edit' },
+  { group: 'Account', label: 'Drafts', href: '/drafts', icon: 'edit', gate: 'member' },
   { group: 'Account', label: 'Help & support', href: '/help', icon: 'help' },
   { group: 'Account', label: 'Report a bug', action: 'bug', icon: 'flag' },
 ]
@@ -389,11 +389,11 @@ export function hubLinks(hub: string, v: FqMenuViewer): FqHubLink[] {
 /** A resolved menu group, ready to draw. Plain data, so it crosses into the header island. */
 export interface FqMenuGroup {
   label: string
-  rows: { key: string; label: string; icon: FqIconName; href?: string; action?: FqMenuRow['action'] }[]
+  rows: { key: string; label: string; icon: FqIconName; href?: string; action?: FqMenuRow['action']; count?: number }[]
 }
 
 /** Group rows by `group`, in first-seen order, dropping hidden rows and repeated hrefs. */
-export function groupRows(rows: readonly FqMenuRow[], v: FqMenuViewer, profileHref: string): FqMenuGroup[] {
+export function groupRows(rows: readonly FqMenuRow[], v: FqMenuViewer, profileHref: string, counts: { drafts?: number } = {}): FqMenuGroup[] {
   const out: FqMenuGroup[] = []
   const seen = new Set<string>()
   for (const r of rows) {
@@ -405,7 +405,7 @@ export function groupRows(rows: readonly FqMenuRow[], v: FqMenuViewer, profileHr
     }
     let g = out.find((x) => x.label === r.group)
     if (!g) out.push((g = { label: r.group, rows: [] }))
-    g.rows.push({ key: href ?? `action:${r.action}`, label: r.label, icon: r.icon, href, action: r.action })
+    g.rows.push({ key: href ?? `action:${r.action}`, label: r.label, icon: r.icon, href, action: r.action, ...(href === '/drafts' ? { count: counts.drafts } : {}) })
   }
   return out
 }
