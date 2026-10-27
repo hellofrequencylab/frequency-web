@@ -7,6 +7,7 @@
 
 import type { ThemeSurface } from '@/lib/theme/surface-vars'
 import { readMegaTheme, type MegaThemeId } from '@/lib/theme/mega-theme'
+import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
 import { MIDNIGHT_SURFACE } from '@/lib/theme/midnight'
 import { readSiteStyle } from '@/lib/theme/site-style'
 
@@ -23,9 +24,11 @@ export function pageSurface(preferences: unknown): ThemeSurface | null {
   return style.synced ? (SURFACES[style.theme as MegaThemeId] ?? null) : null
 }
 
-/** The surface a Space's emails wear. Email has no "synced" switch: the Space's theme is its brand. */
+/** The surface a Space's emails wear. Email has no "synced" switch: the Space's theme is its brand, and every Mega
+ *  Theme with a flat token set dresses it (lib/theme/mega-surfaces.ts, LIVE-1521). The page surface above stays
+ *  Midnight's alone. */
 export function emailSurface(preferences: unknown): ThemeSurface | null {
   const mega = readMegaTheme(preferences).theme
   const id = (mega ?? readSiteStyle(preferences).theme) as MegaThemeId
-  return SURFACES[id] ?? null
+  return MEGA_SURFACES[id] ?? null
 }
