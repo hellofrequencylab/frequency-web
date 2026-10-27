@@ -241,9 +241,9 @@ export const NICHE_SPECS: Record<KitNiche, NicheSpec> = {
   schools: {
     id: 'schools',
     label: 'Schools and programs',
-    description: 'For workshops, cohorts, camps and training: what you teach, when the next one starts and how to enroll.',
+    description: 'For workshops, courses, camps and training: what you teach, when the next one starts and how to enroll.',
     home: {
-      seoTitle: 'Programs and how to enroll', seoDescription: 'What we teach, when the next cohort starts and how to join.',
+      seoTitle: 'Programs and how to enroll', seoDescription: 'What we teach, when the next one starts and how to join.',
       eyebrow: 'Learn with us', title: 'Learning sticks when you do it with other people.', accent: 'with other people',
       lead: '{{tagline|Small groups, a clear path and a teacher who knows your name. See what starts next and save your place.}}',
       primary: { label: 'See the programs', href: '~/programs' }, secondary: { label: 'Ask a question', href: '~/contact' },
