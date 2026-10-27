@@ -1,19 +1,8 @@
-// The OCCASION registry — the single typed place a seasonal/temporal "occasion" (a
-// time-boxed accent applied via [data-occasion] on the shell root) is declared, so the
-// core never edits to add one (docs/SPACES.md, docs/DECISIONS.md). An occasion is the
-// time axis of the theme: orthogonal to the light/dark MODE, the SKIN palette, and the
-// GENERATION feel, it layers a light seasonal touch (e.g. a solstice accent) for the
-// in-app subtree during its calendar window, then falls back to `none`.
-//
-// This registry is the typed mirror of the CSS: every non-`none` id here MUST have a
-// matching `[data-occasion="<id>"]` block in app/globals.css (`none` is the baseline and
-// needs no block). The guardrail test in occasions.test.ts reads globals.css from disk and
-// enforces that pairing forever, so the CSS and the registry can never quietly drift apart.
-//
-// Imported statically (no runtime registration), so the registry is deterministic
-// regardless of import order — same pattern as lib/verticals/registry.ts and skins.ts.
+// Historical occasion identifiers remain readable for saved cookies and janitor data.
+// Frequency renders occasion none; seasonal metadata no longer injects platform CSS.
+// Keep validation and cleanup compatibility without reactivating retired overlays.
 
-/** The set of authored occasion ids. Add one = author its CSS block AND extend this union. */
+/** The set of authored occasion ids. Retained for saved-data validation and cleanup compatibility. */
 export type OccasionId = 'none' | 'solstice'
 
 /** The full declaration of an occasion — its id, member-facing label, and active window. */
