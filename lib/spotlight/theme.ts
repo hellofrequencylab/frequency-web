@@ -11,6 +11,7 @@
 import type { CSSProperties } from 'react'
 import { MIDNIGHT_ACCENT, MIDNIGHT_SURFACE } from '@/lib/theme/midnight'
 import { DESIGNER_ACCENT, DESIGNER_SURFACE } from '@/lib/theme/designer'
+import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
 
 // ── Curated fonts. Real web fonts are self-hosted via next/font in app/layout.tsx and
 // exposed as CSS variables on <html> (so they cascade to the public Spotlight route); each
@@ -94,6 +95,15 @@ export const EMPTY_THEME: SpotlightTheme = {
   header: { show: true, height: 160, focusY: 50 },
 }
 
+/** A Spotlight preset read from a Mega Theme's flat token set. */
+function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'temple', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
+  const s = MEGA_SURFACES[id]!
+  return {
+    accent: s.accent.accent.toLowerCase(), surface: s.raised.toLowerCase(), text: s.text.toLowerCase(), font, card,
+    header: { show: true, height: 200, focusY: 50 }, bg: { kind: 'solid', color: s.canvas.toLowerCase() },
+  }
+}
+
 // One-tap starting points. Each is a partial theme merged over EMPTY_THEME by the editor.
 export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }[] = [
   {
@@ -126,6 +136,14 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
     theme: { accent: DESIGNER_ACCENT.accent.toLowerCase(), surface: DESIGNER_SURFACE.raised.toLowerCase(), text: DESIGNER_SURFACE.text.toLowerCase(), font: { heading: 'serif', body: 'sans' }, card: { radius: 'lg', shadow: 'soft', style: 'solid' }, header: { show: true, height: 200, focusY: 50 },
       bg: { kind: 'solid', color: DESIGNER_SURFACE.canvas.toLowerCase() } },
   },
+  // The other Mega Themes (LIVE-1521): each preset reads its theme's flat token set (lib/theme/mega-surfaces.ts), so the
+  // Spotlight, the email and the website agree. Faces are the nearest of the allowlist (a theme's own faces load on
+  // its website only); Bold and Network keep square and soft cards the way their websites do.
+  { id: 'frequency', label: 'Default', theme: EMPTY_THEME },
+  { id: 'bold', label: 'Bold', theme: surfacePreset('bold', { heading: 'display', body: 'sans' }, { radius: 'sm', shadow: 'none', style: 'solid' }) },
+  { id: 'wildheart', label: 'Wildheart', theme: surfacePreset('wildheart', { heading: 'serif', body: 'serif' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
+  { id: 'network', label: 'Network', theme: surfacePreset('network', { heading: 'rounded', body: 'rounded' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
+  { id: 'temple', label: 'Temple', theme: surfacePreset('temple', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) },
   {
     id: 'mono', label: 'Mono',
     theme: { accent: '#111111', surface: '#ffffff', text: '#111111', font: { heading: 'sans', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },

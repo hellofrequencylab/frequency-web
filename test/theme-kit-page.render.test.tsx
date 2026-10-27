@@ -12,6 +12,9 @@ describe('the theme kit page', () => {
     const html = renderToStaticMarkup(<FrequencyThemeKit theme={id} />)
     for (const t of THEME_TOOLS) expect(html).toContain(t.name.replace(/&/g, '&amp;'))
     expect(html.match(/Start with this kit/g)).toHaveLength(6)
+    // Every way in starts a Space wearing this theme (Space creation reads ?theme=).
+    expect(html).toContain(`/spaces/new?theme=${id}`)
+    expect(html.match(new RegExp(`/spaces/new\\?theme=${id}&amp;niche=`, 'g'))).toHaveLength(6)
     expect(html).not.toMatch(/—/)
     expect(html).not.toMatch(/#[0-9a-fA-F]{6}/)
   })

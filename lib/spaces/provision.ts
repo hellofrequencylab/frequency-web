@@ -40,7 +40,7 @@ import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-l
 import { postCreateLanding } from '@/lib/spaces/setup'
 import { startSpaceFromNiche } from '@/lib/spaces/niche-start'
 import { resolvePicker } from '@/lib/spaces/space-picker'
-import { withMegaTheme } from '@/lib/theme/mega-theme'
+import { isMegaThemeId, withMegaTheme } from '@/lib/theme/mega-theme'
 import { parseIntents, parsePlanHint, planWantsBilling } from '@/lib/spaces/create-wizard'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { sendOperatorEmailForSpace } from '@/lib/marketing/operator-lifecycle'
@@ -73,6 +73,9 @@ export interface CreateSpaceInput {
   /** The niche door the owner came through (`coaches`, `studios`, ...). Kept on the Space as
    *  `preferences.megaTheme.niche` (ADR-1881); an unknown value stores nothing. First-party only. */
   niche?: string | null
+  /** The Mega Theme a /themes page named. The new Space is dressed in it once it exists (applyMegaTheme: website,
+   *  fonts, accent). An unknown value does nothing. */
+  theme?: string | null
   /** The picker's other answers (lib/spaces/space-picker.ts, ADR-1883): the one thing people should do, a
    *  feel id, and an optional existing site. Each is re-validated here and an invalid one stores nothing. */
   action?: string | null
@@ -322,6 +325,13 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   await finishSpaceBirth(spaceId, type, birth)
   // The niche door starts the tools only when no explicit choice or Focus already picked a preset (ADR-1882).
   if (!birth.presetId) await startSpaceFromNiche(spaceId, picked.niche)
+  // The theme the owner chose on /themes dresses the new Space (LIVE-SYS-7). Best-effort and logged: a failed
+  // theme write never blocks the Space, and the owner can pick the theme again from the editor.
+  if (isMegaThemeId(input.theme)) {
+    const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
+    const applied = await applyMegaTheme(spaceId, input.theme).catch(() => null)
+    if (!applied?.ok) console.error('[createSpace] could not apply the chosen theme to the new space')
+  }
 
   // Success: hand the owner to SETUP, then to HOSTING (ADR-1733 amending LIVE-261). This landed
   // on `/manage` until 2026-09-09, the console's command center (revenue, pipeline, contacts), and
