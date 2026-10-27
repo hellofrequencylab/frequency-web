@@ -11,7 +11,7 @@
 // server as a number, the server VALIDATES it (it arrives from a client, so it is untrusted) and
 // never computes it. The same shape lib/library/image-describe.ts uses for blurhash and palette.
 //
-// The consumer is components/media/poster-band.tsx: with the aspect known, the band becomes the
+// The live consumer is FqEventCover (components/frequency/members/event/event-header.tsx): with the aspect known, the band becomes the
 // poster's own shape (capped by the host's height tier) instead of a tier-shaped guess.
 
 /** The sanest ratio a cover can carry. 1:5 portrait to 5:1 panorama; anything outside is treated
