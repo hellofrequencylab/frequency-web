@@ -1,9 +1,8 @@
 // THE FLAT TOKEN SET OF EVERY MEGA THEME (LIVE-1521). Midnight and Designer keep theirs beside their palette
 // (MIDNIGHT_SURFACE, DESIGNER_SURFACE); the other themes get theirs here, read from the one palette module each
 // website already wears, so a token round is one edit and no surface keeps a copy. The Spotlight presets read
-// these values today. Email will read the same literals (a mail client cannot resolve a CSS variable) once the
-// pin in spaces/email-colors.test.ts that holds every theme but Midnight on the house palette is rewritten
-// (it needs the owner's exact words; see LIVE-1521).
+// these values, and so does email (lib/theme/surface.ts emailSurface; a mail client cannot resolve a CSS
+// variable, so it takes the literals). The email-colors pin was rewritten on the owner's words (LIVE-1521).
 //
 // NOT A PAGE GROUND. lib/theme/surface.ts decides which of these a Space page or event page may wear; today that
 // is Midnight's alone (ADR-578, ADR-1906). A theme added here dresses email and Spotlight, and nothing else.

@@ -32,10 +32,10 @@ describe('megaThemeSurfaces', () => {
     }
   })
 
-  it('reaches the Spotlight for every Mega Theme, and says which emails are themed so far', () => {
+  it('reaches the Spotlight for every Mega Theme, and to email', () => {
     for (const { id } of MEGA_THEMES) expect(megaThemeSurfaces(id).spotlightPreset, id).toBe(id)
     const themed = MEGA_THEMES.filter(({ id }) => megaThemeSurfaces(id).email).map(({ id }) => id)
-    expect(themed).toEqual(['frequency', 'midnight'])
+    expect(themed).toEqual(MEGA_THEMES.map(({ id }) => id))
   })
 })
 
