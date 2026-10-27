@@ -9,6 +9,7 @@ import { Field, Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Switch } from '@/components/ui/switch'
+import { buttonClasses } from '@/components/ui/button'
 
 const TASK_TYPES = [
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',
@@ -112,7 +113,7 @@ function TaskForm({
         <button
           type="submit"
           disabled={!name.trim() || isPending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+          className={buttonClasses('primary', 'sm')}
         >
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Saving…' : initial ? 'Save changes' : 'Create task'}

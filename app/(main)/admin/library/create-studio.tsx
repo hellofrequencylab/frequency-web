@@ -10,6 +10,7 @@ import { generateWithRecraft, listBrandStyles, deleteBrandStyle } from './recraf
 import { describeGeneratedAssets } from '@/lib/library/describe-generated'
 import type { BrandStyle } from '@/lib/library/styles'
 import { Input, Textarea } from '@/components/ui/field'
+import { buttonClasses } from '@/components/ui/button'
 
 // One smart "Create" surface for the whole Loom. You pick WHAT you're making; the studio picks the
 // engine: Vera draws quick house-style line marks (icons / spot art) as inline SVG, and the Image
@@ -368,7 +369,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             type="button"
             onClick={create}
             disabled={busy || !prompt.trim() || engineUnavailable}
-            className="inline-flex items-center gap-2 rounded-card bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+            className={buttonClasses('primary', 'sm')}
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
             {createLabel}
