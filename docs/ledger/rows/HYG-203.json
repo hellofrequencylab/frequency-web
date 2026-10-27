@@ -1,0 +1,18 @@
+{
+  "id": "HYG-203",
+  "title": "Retire unused Circle header helper and restore active About formatting",
+  "status": "done",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/members/circle/circle-shell.tsx",
+    "ref": "Actual Frequency metadata subline, human About and owning Space context"
+  },
+  "detail": "The old PageHero-specific purpose-summary helper had only its own unit-test importer. The active Frequency Circle already renders member/type/place metadata under the title and retains human About content separately, with an owning Space header when appropriate. Remove only the obsolete helper/test pair, correct historical layout commentary, and migrate LIVE385's stale helper-name guard to actual JSX plus all surviving content/storage/engagement boundaries. Actual server-rendered fixtures hold metadata, escaped human content, one primary heading and Space-context h2 behavior. The same review found the active Frequency About had regressed to a raw text paragraph while the old guard checked an unused formatter. Restore the existing richParagraphs safe parser in the active shell: actual rendered fixtures cover paragraphs, bold, italic, safe links, rejected unsafe protocols and escaped HTML. No raw HTML, saved Circle data or database changes; browser acceptance remains distinct.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/retired-circle-subheading.mjs"
+  },
+  "closed": "2026-10-27"
+}
