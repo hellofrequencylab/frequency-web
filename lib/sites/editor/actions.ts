@@ -14,6 +14,13 @@ export async function saveWebsiteDraft(host: string, expectedRevision: number, d
   const auth = await authorizeWebsiteEditor(host)
   if (!auth) return { ok: false, error: 'Your editing session ended. Reopen the builder to sign in.' }
   if (typeof publish !== 'boolean' || (scheduledAt !== undefined && publish) || (scheduledAt != null && (typeof scheduledAt !== 'string' || !Number.isFinite(Date.parse(scheduledAt)) || Date.parse(scheduledAt) <= Date.now()))) return { ok: false, error: 'Choose a future date and time for publishing.' }
+  if (scheduledAt) {
+    // A scheduled publish goes live without this session, and the live theme is written at publish time here.
+    const { MEGA_THEMES } = await import('@/lib/theme/mega-theme')
+    const { readSiteStyle } = await import('@/lib/theme/site-style')
+    const site = MEGA_THEMES.find((m) => m.editor === draft.theme)?.site
+    if (site && site !== readSiteStyle(auth.preferences).theme) return { ok: false, error: 'A scheduled publish keeps the theme your site wears now. Publish now to switch themes.' }
+  }
   const existing = readWebsiteEditor(auth.preferences)
   const current = existing ?? { v: 1 as const, revision: 0, draft, published: null, versions: [] }
   if (current.revision !== expectedRevision) return { ok: false, conflict: true, error: 'Someone saved a newer draft. Reload before continuing; your changes have not been overwritten.' }
@@ -51,8 +58,38 @@ export async function saveWebsiteDraft(host: string, expectedRevision: number, d
     const { error } = await spaces.from('spaces').update({ about: shared.body }).eq('id', auth.space.id)
     if (error) return { ok: false, error: 'Your website published, but its About could not be saved to your Space. Publish again.' }
   }
-  if (publish) refreshSite(auth.space.slug)
+  if (publish) {
+    // THEME DRAFTS: picking a theme in the editor changes the draft only. Publishing is when the site wears it.
+    const styled = await publishDraftStyle(auth, draft)
+    if (!styled.ok) return { ok: false, error: styled.error }
+    refreshSite(auth.space.slug)
+  }
   return { ok: true, state: next }
+}
+
+/** Make the live site wear the theme and global styles of the draft that was just published. The pages are already
+ *  saved; a theme the site already wears needs no write. A theme change goes through the one apply (applyMegaTheme),
+ *  so the website, email and Space page font set follow it exactly as they do from the Wizard. */
+async function publishDraftStyle(auth: NonNullable<Awaited<ReturnType<typeof authorizeWebsiteEditor>>>, draft: WebsiteSnapshot): Promise<{ ok: true } | { ok: false; error: string }> {
+  const [{ MEGA_THEMES }, { readSiteStyle, withSiteStyle }, { draftLook }] = await Promise.all([import('@/lib/theme/mega-theme'), import('@/lib/theme/site-style'), import('./theme-drafts')])
+  const site = MEGA_THEMES.find((m) => m.editor === draft.theme)?.site
+  if (!site) return { ok: true }
+  const prefs = auth.preferences && typeof auth.preferences === 'object' && !Array.isArray(auth.preferences) ? (auth.preferences as Record<string, unknown>) : {}
+  let base: unknown = prefs
+  if (site !== readSiteStyle(prefs).theme) {
+    const { applyMegaTheme, planMegaTheme } = await import('@/lib/theme/apply-mega-theme')
+    const applied = await applyMegaTheme(auth.space.id, site)
+    if (!applied.ok) return { ok: false, error: 'Your website published, but its theme could not be switched. Publish again.' }
+    base = planMegaTheme(prefs, site)
+  }
+  const look = draftLook(draft.look)
+  if (!look || JSON.stringify(look) === JSON.stringify(readSiteStyle(base).look)) return { ok: true }
+  const next = withSiteStyle(base, { look: look as ReturnType<typeof readSiteStyle>['look'] })
+  // KEY-SCOPED (SCAN-833): the style owns exactly `theme` and `siteStyle`; every other key stays as stored.
+  const db = auth.db as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }
+  const result = await db.rpc('set_space_preferences', { p_space_id: auth.space.id, p_patch: { theme: next.theme ?? null, siteStyle: next.siteStyle ?? null } })
+  if (result.error || result.data !== true) return { ok: false, error: 'Your website published, but its styles could not be saved. Publish again.' }
+  return { ok: true }
 }
 
 /** Legacy action name retained for callers; the response contains reviewed coaching IDs only. */

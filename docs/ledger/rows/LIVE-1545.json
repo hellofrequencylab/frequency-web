@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1545",
+  "title": "Let owners keep several themes over one website and publish the one they like",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-27",
+  "source": {
+    "file": "lib/sites/editor/theme-drafts.ts",
+    "ref": "Daniel 2026-10-27: activate and edit multiple themes with the same content, publish the one you like; House of Fates is its own variant of Nocturne, outside the library"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-drafts.mjs",
+    "note": "Source probe: snapshot draft fields, theme and style picks stay in the draft, Publish applies the draft's theme through applyMegaTheme, and House of Fates is an editor-only Nocturne variant. Behaviour is pinned by lib/sites/editor/theme-drafts.test.ts, publish-theme.test.ts and the shell test."
+  },
+  "detail": "The website editor held one theme, and picking a theme or a global style wrote the LIVE site at once. A website snapshot now carries theme drafts beside its pages: `themes` and `activeTheme` once there is more than one, with the snapshot's own theme, brand and look as the active draft's working values, so autosave, undo and versions carry it. Pages, words, photos, menu and header are shared; a draft holds the theme, brand accent and logo and the corners, spacing, header and footer choices. The Theme tab lists drafts (new, rename, remove, switch); picking a theme or a style changes the draft only. Publishing marks the draft live (`liveTheme`), strips the draft list from the public snapshot, and writes the live theme through applyMegaTheme and the draft's global styles key-scoped; a scheduled publish cannot switch themes. No migration: the private editor row stores the snapshot as is. House of Fates is seeded as two drafts of Nocturne (the shared theme and its own House of Fates variant, live), kept out of /themes and the kit registry; the live row is updated by /mnt/project-files/house-of-fates/add-nocturne-variant.sql, which touches only the private draft. Site themes still style the stand-alone site render and the editor canvas only, never a member, Space console or admin area.",
+  "wave": "W7"
+}
