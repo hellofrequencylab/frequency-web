@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1538",
+  "title": "A new Space gets a Theme Kit welcome sequence that links its Space page and the member's Spotlight",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": { "file": "lib/spaces/automation-types.ts", "ref": "ADR-1911" },
+  "detail": "SYS-17 of the Mega Theme build plan. A 'kit-welcome' automation template (member.joined) whose first email links the Space page, where what is coming up lives, and the member's own Spotlight settings page. Link tokens are filled once at add time with the Space's real URLs; a link with no value drops its line. createSpace adds it right after the starter website, OFF like every template, so the owner turns it on; it is best-effort and logged. The email wears the Space's Theme Kit through spaceEmailColors (LIVE-1532), so no new colour path exists. The Spotlight link is the settings page every member can open, not a per-member public URL.",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "vitest lib/spaces/kit-welcome.test.ts passes: the template links both pages and never leaves a bare token.",
+    "cmd": "node -e 'const t=require(\"fs\").readFileSync(\"lib/spaces/provision.ts\",\"utf8\");if(!t.includes(\"kit-welcome\"))process.exit(1)'"
+  }
+}

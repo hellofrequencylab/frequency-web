@@ -126,6 +126,20 @@ export const SPACE_AUTOMATION_TEMPLATES: readonly SpaceAutomationTemplate[] = [
     ],
   },
   {
+    id: 'kit-welcome',
+    title: 'Theme Kit welcome',
+    name: 'Theme Kit welcome',
+    description: 'Sends when someone joins your list or Space. Links your Space page, with what is coming up, and their own Spotlight. Wears your Theme Kit.',
+    triggerEvent: 'member.joined',
+    steps: [
+      {
+        delayHours: 0,
+        subject: 'You are in. Here is where to start.',
+        body: 'Glad you found us. Here is where to start.\n\nSee what is coming up: {{space_url}}\n\nMake your Spotlight, a page that says who you are: {{spotlight_url}}\n\nReply to this email if you have a question. We read every one.',
+      },
+    ],
+  },
+  {
     id: 'onboarding',
     title: 'First-week onboarding',
     name: 'First-week onboarding',
@@ -169,3 +183,15 @@ export const SPACE_AUTOMATION_TEMPLATES: readonly SpaceAutomationTemplate[] = [
     ],
   },
 ] as const
+
+/** Fill a template body's link tokens for one Space ({{space_url}}, {{spotlight_url}}). A token with no value stays
+ *  out of the copy: its whole line goes, so a body never carries a bare `{{...}}`. PURE. */
+export function fillTemplateLinks(body: string, links: { space_url?: string | null; spotlight_url?: string | null }): string {
+  return body
+    .split('\n')
+    .filter((line) => ![...line.matchAll(/\{\{(\w+)\}\}/g)].some((m) => !links[m[1] as keyof typeof links]))
+    .map((line) => line.replace(/\{\{(\w+)\}\}/g, (_, k: string) => links[k as keyof typeof links] ?? ''))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
