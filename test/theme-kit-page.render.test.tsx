@@ -1,0 +1,25 @@
+import { describe, expect, it } from 'vitest'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { FrequencyThemeKit, THEME_KIT_PAGE_IDS } from '@/components/frequency/site/pages/themes/frequency-theme-kit'
+import { THEME_TOOLS } from '@/lib/themes/library'
+
+describe('the theme kit page', () => {
+  it('covers every theme except Midnight, which keeps its own page', () => {
+    expect(THEME_KIT_PAGE_IDS).toEqual(['frequency', 'bold', 'wildheart', 'network', 'temple', 'designer'])
+  })
+
+  it.each(THEME_KIT_PAGE_IDS)('draws %s with every tool, six kits, no em dash and no inline colour', (id) => {
+    const html = renderToStaticMarkup(<FrequencyThemeKit theme={id} />)
+    for (const t of THEME_TOOLS) expect(html).toContain(t.name.replace(/&/g, '&amp;'))
+    expect(html.match(/Start with this kit/g)).toHaveLength(6)
+    // Every way in starts a Space wearing this theme (Space creation reads ?theme=).
+    expect(html).toContain(`/spaces/new?theme=${id}`)
+    expect(html.match(new RegExp(`/spaces/new\\?theme=${id}&amp;niche=`, 'g'))).toHaveLength(6)
+    expect(html).not.toMatch(/—/)
+    expect(html).not.toMatch(/#[0-9a-fA-F]{6}/)
+  })
+
+  it('says the Space page keeps the Frequency frame', () => {
+    expect(renderToStaticMarkup(<FrequencyThemeKit theme="temple" />)).toContain('Frequency page people know')
+  })
+})
