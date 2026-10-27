@@ -1125,7 +1125,7 @@ Not assumed. Each was read before being relied on.
 | `usePathname()` is called inline and bound to nothing | `components/vera/vera-launcher.tsx:45` |
 | ESC closes the whole panel today | `vera-launcher.tsx:105-114` |
 | The profile's hero variant comes from an operator-overridable config | `page.tsx:423`; `lib/elements/header.ts:87` |
-| `ProfileAvatar` is a `next/image` `<Image>` (so a bare `querySelector('img')` finds it) | `components/profile/profile-avatar.tsx:28-38` |
+| Historical DAWN `ProfileAvatar` used `next/image`; current Frequency `ProfilePhoto` preserves metadata/URL focus on its kit background (HYG213) | `components/frequency/members/profile/profile-body.tsx` |
 | The `{n} circles` band line reads unfiltered `memberships` and deep-links a lone circle | `page.tsx:191,457-464` |
 | Rail widths for the 388px arithmetic | `components/layout/app-shell.tsx:1927,1936,2003` |
 | `Message Boards` is the rail and footer label for `/messages` | `lib/nav/registry.ts:305`; `lib/nav-areas.ts:88` |

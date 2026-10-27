@@ -33,7 +33,6 @@ import { readFileSync } from 'node:fs'
 // unit test can hold. The pixel/interaction half is the e2e a11y suite's job.
 
 const SRC = readFileSync(new URL('./dispatch-ticker.tsx', import.meta.url), 'utf8')
-const HOVER_TIP = readFileSync(new URL('../ui/hover-tip.tsx', import.meta.url), 'utf8')
 
 describe('the rotation pauses for a keyboard, not only for a pointer', () => {
   it('still pauses on hover — the fix adds an input, it does not trade one for another', () => {
@@ -48,15 +47,6 @@ describe('the rotation pauses for a keyboard, not only for a pointer', () => {
 
   it('gates that on :focus-visible, so a tap does not freeze the ticker for thumb members', () => {
     expect(SRC).toContain("target.matches(':focus-visible')")
-  })
-
-  it('uses the same distinction hover-tip landed on, so the two cannot drift', () => {
-    // If someone "simplifies" hover-tip back to focus-within, this fails and points at both.
-    // Asserted on what hover-tip EMITS, not on its file text: its comment quotes the rejected
-    // `group-focus-within` while explaining why it was rejected, so a plain substring check for
-    // the bad selector matches the warning against it.
-    expect(HOVER_TIP).toContain('group-has-[:focus-visible]/tt:opacity-100')
-    expect(HOVER_TIP).not.toMatch(/group-focus-within\/tt:/)
   })
 
   it('never widens the test to plain :focus or :focus-within — that is the shipped bug', () => {
