@@ -22,7 +22,7 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
 /** The themes that get this template. Midnight keeps its own richer page at /themes/midnight. */
 export const THEME_KIT_PAGE_IDS = SITE_THEMES.map((t) => t.id).filter((id) => id !== 'midnight')
 
-export const THEME_KIT_FAQ: { q: string; a: (name: string) => string }[] = [
+const THEME_KIT_FAQ: { q: string; a: (name: string) => string }[] = [
   {
     q: 'Do I have to use every tool?',
     a: () => 'No. A kit starts with two or three. Switch on the rest from Menu and features when you are ready, and nothing is lost when you do.',

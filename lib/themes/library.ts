@@ -12,10 +12,10 @@
 
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 
-export type SurfaceId = 'spotlight' | 'website' | 'email' | 'space'
-export type SurfaceStatus = 'ready' | 'soon'
+type SurfaceId = 'spotlight' | 'website' | 'email' | 'space'
+type SurfaceStatus = 'ready' | 'soon'
 
-export interface ThemeSurface {
+interface ThemeSurface {
   id: SurfaceId
   name: string
   status: SurfaceStatus
@@ -23,7 +23,7 @@ export interface ThemeSurface {
   carries: string
 }
 
-export interface ThemeLibraryEntry {
+interface ThemeLibraryEntry {
   id: MegaThemeId
   /** One line, 70 characters or less. */
   tagline: string
