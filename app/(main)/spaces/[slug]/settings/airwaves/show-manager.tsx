@@ -43,7 +43,7 @@ import {
   reorderEpisodeAction,
   setEpisodePublishAction,
 } from './actions'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 
 // Apple Podcasts' top-level categories — the value Apple and Spotify read from the feed. Kept to the
 // primary tier so the owner picks one clean label; the lib defaults to Society & Culture.
@@ -397,7 +397,7 @@ export function ShowManager({
                       type="button"
                       onClick={() => openEdit(show)}
                       disabled={pending}
-                      className="rounded-control border border-border px-2.5 py-1 text-2xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
+                      className={buttonClasses('secondary', 'xs')}
                     >
                       Edit
                     </button>
@@ -422,7 +422,7 @@ export function ShowManager({
                       <button
                         type="button"
                         onClick={() => copyFeed(feedUrlFor(show))}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-control border border-border px-2 py-1 text-3xs font-semibold text-text transition-colors hover:border-border-strong"
+                        className={buttonClasses('secondary', 'xs', 'shrink-0')}
                       >
                         <Copy className="h-3 w-3" aria-hidden /> {copied === feedUrlFor(show) ? 'Copied' : 'Copy'}
                       </button>
@@ -582,7 +582,7 @@ function EpisodePanel({
                         type="button"
                         disabled={pending}
                         onClick={() => onSetVisibility(ep.id, 'public', new Date().toISOString())}
-                        className="rounded-control border border-border px-2 py-1 text-3xs font-semibold text-primary-strong transition-colors hover:border-border-strong disabled:opacity-50"
+                        className={buttonClasses('secondary', 'xs')}
                       >
                         Publish now
                       </button>
@@ -617,7 +617,7 @@ function EpisodePanel({
                   type="button"
                   disabled={pending}
                   onClick={() => onAdd(r.id)}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-control bg-primary px-2.5 py-1 text-3xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+                  className={buttonClasses('primary', 'xs', 'shrink-0')}
                 >
                   <Plus className="h-3 w-3" aria-hidden /> Add
                 </button>
@@ -800,7 +800,7 @@ function ShowFormDialog({
             type="button"
             onClick={onCancel}
             disabled={pending}
-            className="rounded-control px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:text-text disabled:opacity-50"
+            className={buttonClasses('ghost')}
           >
             Cancel
           </button>
