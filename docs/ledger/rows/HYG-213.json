@@ -13,6 +13,6 @@
   "verify": {
     "kind": "manual",
     "checked": "2026-10-27",
-    "evidence": "181 focused tests across11files pass, plus15 bell/count-refresh and retained ticker rendered-motion checks. Focused rendered/action/source regression suites and existing primitive/help/upgrade/ticker tests pass. Planted active-bell early-read and dropped-error-return mutations fail; retired-module reimports fail for each of six actual-root samples; actual classified body/grid renders Unclaimed only for true input. Actual metadata focus/demo forwarding, URL fallback and initials pass. New source-prefix mappings reject unrelated/lookalike edits and require real files. Focused lint, direct active-bell/retirement probes, unchanged shell-size guard and whitespace checks pass. Evidence is source/mocked rendered/action only, not authenticated browser or deployment acceptance. Independent broad typing/build/CI belongs to the final integration head."
+    "evidence": "Final wrapper successor: 162 focused tests across 12 suites pass after current-main/account/browse/AppShell dependency integration. Existing owner behavior and retirement proof are retained; current main Drafts/cache and admin negative controls are preserved. Retired-shell and six-residual all-tree import probes, active core chrome size guard, all ledger source-reference structure and scoped lint pass. Evidence covers source and mocked rendered/action consequences only; authenticated browser and production acceptance remain separate. Full exact-head CI and a READY preview are required before release."
   }
 }
