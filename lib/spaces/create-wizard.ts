@@ -18,6 +18,8 @@
 
 import type { EntityManifest } from '@/lib/studio/kernel/manifest'
 import { asSpacePlan, SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
+import { THEME_LIBRARY } from '@/lib/themes/library'
+import { MEGA_THEMES, isMegaThemeId, type MegaThemeId } from '@/lib/theme/mega-theme'
 
 /** The plans /pricing sells a Space on, in the order the wizard offers them. */
 export const WIZARD_PLANS = ['free', 'business', 'collective', 'nonprofit', 'network'] as const
@@ -57,7 +59,7 @@ export function setupFinishFor(slug: string, plan: string | null | undefined, fi
   return planWantsBilling(plan) ? `/spaces/${slug}/settings/billing?plan=${parsePlanHint(plan ?? undefined)}` : finish
 }
 
-type CreateWizardStepKey = 'intents' | 'model' | 'identity' | 'start'
+type CreateWizardStepKey = 'intents' | 'model' | 'identity' | 'look' | 'start'
 
 interface CreateWizardStep {
   key: CreateWizardStepKey
@@ -69,6 +71,7 @@ const STEP_COPY: Record<CreateWizardStepKey, { title: string; desc: string }> = 
   intents: { title: 'What do you want to do here?', desc: 'Pick everything that fits, or skip it. You are not choosing a niche, and you can add more any time.' },
   model: { title: 'How should we set up your tools?', desc: 'We start you with the tools that fit your picks. Not sure? Leave it on the general choice. You can switch it later.' },
   identity: { title: 'Name it', desc: 'The name people will see across the network, and the handle it lives at.' },
+  look: { title: 'Pick your look', desc: 'One choice dresses your website, your Spotlight and your Space page. Not sure? Skip it and pick later.' },
   start: { title: 'Ready to start', desc: 'Here is what we will set up. Then we walk you through your story, look, and offerings.' },
 }
 
@@ -81,6 +84,14 @@ export function createWizardSteps(manifest: EntityManifest): CreateWizardStep[] 
   if (declared.has('identity')) keys.push('identity')
   keys.push('start')
   return keys.map((key) => ({ key, ...STEP_COPY[key] }))
+}
+
+/** The look step (LIVE-1531) is the wizard's own, like `start`: it is added beside the manifest's steps, just before
+ *  `start`, so the manifest-only list stays what the manifest declares. PURE. */
+export function withLookStep(steps: CreateWizardStep[]): CreateWizardStep[] {
+  const at = steps.findIndex((s) => s.key === 'start')
+  const look: CreateWizardStep = { key: 'look', ...STEP_COPY.look }
+  return at < 0 ? [...steps, look] : [...steps.slice(0, at), look, ...steps.slice(at)]
 }
 
 /** What an owner can say they want to do here. One entry per thing the product offers; the `mode` is the
@@ -129,4 +140,16 @@ export function suggestModeForIntents(picks: readonly string[], available: reado
     if (mode && available.includes(mode)) return mode
   }
   return null
+}
+
+/** The themes the look step offers: every Mega Theme, in the library's order, with its one-line pitch. */
+export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.map(({ id }) => ({
+  id,
+  label: id === 'frequency' ? 'Default' : id.charAt(0).toUpperCase() + id.slice(1),
+  hint: THEME_LIBRARY.find((t) => t.id === id)?.tagline ?? '',
+}))
+
+/** The theme the wizard sends: the owner's pick, else the one a /themes page named, else none. Total. PURE. */
+export function chosenWizardTheme(picked: string | null | undefined, arrived: MegaThemeId | null | undefined): MegaThemeId | null {
+  return isMegaThemeId(picked) ? picked : (arrived ?? null)
 }

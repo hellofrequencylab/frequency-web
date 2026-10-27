@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1531",
+  "title": "The Space creation Wizard has a Your look step that picks the Mega Theme",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": { "file": "app/(main)/spaces/new/create-space-wizard.tsx", "ref": "ADR-1911" },
+  "detail": "SYS-8 (first half) of the Mega Theme build plan. The Wizard gains a Your look step between Name and Ready: the seven Mega Themes as chips with their library pitch, a Pick later choice, and the theme a /themes page named (?theme=, LIVE-1530) as the starting pick. The final pick travels in the same `theme` field to createSpace, which applies it with applyMegaTheme once the Space exists. The step is added by withLookStep beside the manifest's steps, so the manifest-only step list pin is unchanged. Still to come from SYS-8: a General kit and a lead page at publish, and the headless end-to-end probe (waits on the General kit, SYS-16).",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "vitest lib/spaces/create-wizard.test.ts passes the look step cases.",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>fs.readFileSync(p,\"utf8\");const bad=[];const w=r(\"app/(main)/spaces/new/create-space-wizard.tsx\");if(!/step\\.key === .look./.test(w))bad.push(\"wizard has no look step\");if(!/chosenWizardTheme\\(theme, arrivedTheme\\)/.test(w))bad.push(\"final pick is not sent as theme\");if(!/withLookStep/.test(w))bad.push(\"look step not added\");if(bad.length){console.error(bad.join(\"; \"));process.exit(1)}'"
+  }
+}
