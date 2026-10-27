@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, X, Loader2 } from 'lucide-react'
@@ -23,7 +24,7 @@ export function ReviewActions({ type, id }: { type: ContentType; id: string }) {
         type="button"
         disabled={pending}
         onClick={() => act('approve')}
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+        className={buttonClasses('primary', 'sm')}
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Approve
       </button>
@@ -31,7 +32,7 @@ export function ReviewActions({ type, id }: { type: ContentType; id: string }) {
         type="button"
         disabled={pending}
         onClick={() => act('reject')}
-        className="inline-flex items-center gap-1.5 rounded-control border border-danger px-3 py-1.5 text-body-sm font-semibold text-danger transition-colors hover:bg-danger-bg/30 disabled:opacity-50"
+        className={buttonClasses('dangerOutline', 'sm')}
       >
         <X className="h-4 w-4" /> Reject
       </button>

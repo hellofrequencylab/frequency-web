@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { UserPlus, Check, Clock, X, UserMinus, UserCheck } from 'lucide-react'
 import { isError, type ActionResult } from '@/lib/action-result'
@@ -56,7 +57,7 @@ export function FriendButton({
         type="button"
         disabled={isPending}
         onClick={() => run(() => sendFriendRequest(targetProfileId))}
-        className="flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
+        className={buttonClasses('primary', 'sm')}
       >
         <UserPlus className="w-3.5 h-3.5" />
         Add Friend
@@ -85,7 +86,7 @@ export function FriendButton({
           type="button"
           disabled={isPending}
           onClick={() => run(() => acceptFriendRequest(targetProfileId))}
-          className="flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
+          className={buttonClasses('primary', 'sm')}
         >
           <Check className="w-3.5 h-3.5" />
           Accept

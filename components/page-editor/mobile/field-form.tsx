@@ -17,6 +17,7 @@
 // (PAGE-FRAMEWORK / the mobile spec). The caller owns the screen stack; this component
 // asks to push via `onPushScreen`.
 
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { useId } from 'react'
 import { ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { Textarea, Input } from '@/components/ui/field'
@@ -170,11 +171,7 @@ function FieldControl({
                   role="radio"
                   aria-checked={active}
                   onClick={() => onChange(o.value)}
-                  className={`min-h-[44px] rounded-control border px-4 text-body-sm font-medium transition-colors ${
-                    active
-                      ? 'border-primary bg-primary text-on-primary'
-                      : 'border-border bg-surface text-text hover:bg-surface-elevated'
-                  }`}
+                  className={choiceTileClasses(active, 'min-h-11 rounded-control px-4 text-body-sm font-medium')}
                 >
                   {o.label}
                 </button>

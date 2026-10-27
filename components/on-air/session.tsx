@@ -1955,7 +1955,7 @@ export function OnAirSession({
                     type="range"
                     min={0}
                     max={100}
-                    step={5}
+                    step={1}
                     value={Math.round(bellVolume * 100)}
                     onChange={(e) => setBellVolume(Number(e.target.value) / 100)}
                     onPointerUp={(e) => {
@@ -2246,6 +2246,7 @@ function ModeButton({
   return (
     <button
       type="button"
+      aria-pressed={Boolean(active)}
       onClick={onClick}
       disabled={disabled}
       className={choiceTileClasses(Boolean(active), 'flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-meta')}

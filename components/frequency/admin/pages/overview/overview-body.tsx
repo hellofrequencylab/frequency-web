@@ -1,4 +1,6 @@
 import { Suspense } from 'react'
+import { FqJourneyCompletionBand } from './journey-completion-band'
+import { readSpaceCompletionAnalytics } from '@/lib/spaces/completion-analytics'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { SpaceDispatchBand } from '@/components/spaces/dashboard/space-dispatch-band'
@@ -17,10 +19,11 @@ import { checkinsByEvent, countBetween, firstTimers, percentChange, repeatShare,
 import { loadGoingRsvps, loadHostSpaces, loadSpaceCheckins, loadSpaceCircleTotals, loadSpaceFollowerCounts, loadSpaceMembershipBilling } from '../space-reads'
 
 // THE SPACE OVERVIEW, FREQUENCY (design_handoff/frequency/templates/admin/Overview.html). The console's
-// Home tab under SITE_DESIGN=frequency; DAWN keeps components/spaces/dashboard/space-dashboard.tsx. The
-// reads are the ones the DAWN Home already makes (earnings, Space health, the active-member ids, the
+// Active Home tab. The historical DAWN dashboard remains separate; live
+// reads preserve its existing scoped facts (earnings, Space health, the active-member ids, the
 // worklist, the conversations queue, the Space's events), plus the shared going-count helper for the
-// RSVP column. The console's manage gate authorized the caller before this renders.
+// RSVP column. LIVE-422 Journey participation is restored through a separately streamed
+// availability-aware band. The console's manage gate authorized the caller before this renders.
 //
 // CHECK-INS (space-reads.ts loadSpaceCheckins): the verified check-in ledger on this Space's events feeds
 // Check-ins, 30 days (with its change on the 30 days before), Came back within 2 weeks, the Check-ins by
@@ -84,6 +87,7 @@ export async function FqOverviewBody({
   spaceName: string
   viewerProfileId: string | null
 }) {
+  const journeyStats = readSpaceCompletionAnalytics(spaceId)
   const now = new Date()
   const today = dayInZone(now, HOME_TZ)
   const [money, health, memberIds, worklist, conversations, weekEvents, viewer, checkins, memberships, monthEvents, pastEvents, followers, billing, circles] = await Promise.all([
@@ -294,6 +298,10 @@ export async function FqOverviewBody({
         />
         <Kpi label="Events, next 30 days" value={n(upcoming30)} note={noHost > 0 ? `${n(noHost)} this week ${noHost === 1 ? 'needs' : 'need'} a host` : undefined} />
       </div>
+
+      <Suspense fallback={null}>
+        <FqJourneyCompletionBand spaceId={spaceId} slug={slug} statsPromise={journeyStats} />
+      </Suspense>
 
       <div className="ap-cols adp-split sec adp-gap">
         <div className="stack adp-wide">

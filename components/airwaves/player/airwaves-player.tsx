@@ -12,6 +12,7 @@
 // keep playing under screen lock; a persistent shell mount is a later composition of this same
 // component.
 
+import { chipClasses } from '@/components/ui/chip'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Play,
@@ -606,9 +607,9 @@ export function AirwavesPlayer({
                   type="button"
                   onClick={toggleCaptions}
                   aria-pressed={captionsOn}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-control border px-2.5 py-1.5 text-meta font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                    captionsOn ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:bg-surface-elevated',
+                  className={chipClasses(
+                    captionsOn,
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                   )}
                 >
                   <CaptionsIcon className="h-3.5 w-3.5" aria-hidden /> Captions

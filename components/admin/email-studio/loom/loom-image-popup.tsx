@@ -327,7 +327,7 @@ export function LoomImagePopup({
                   type="button"
                   onClick={commit}
                   disabled={!selectedUrl}
-                  className={buttonClasses('primary', 'sm')}
+                  className={buttonClasses('primary', 'sm', 'w-full')}
                 >
                   Use this photo
                 </button>
@@ -335,7 +335,7 @@ export function LoomImagePopup({
                   <button
                     type="button"
                     onClick={clear}
-                    className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-medium text-danger transition-colors hover:bg-danger-bg"
+                    className={buttonClasses('dangerOutline', 'sm', 'w-full')}
                   >
                     <Trash2 className="h-4 w-4" aria-hidden /> Remove photo
                   </button>
