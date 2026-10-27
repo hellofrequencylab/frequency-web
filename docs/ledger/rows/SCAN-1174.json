@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1174",
+  "title": "Recover reply coaching from fenced JSON without accepting authored model prose",
+  "status": "done",
+  "closed": "2026-10-27",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/comms/vera-conversation.ts",
+    "ref": "Production self-test fenced JSON parse error2026-10-27"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/conversation-coaching-selection.mjs",
+    "note": "Actual callback projection plus malicious free-text source bypass control; focused tests cover whole fenced JSON, rejected commentary/extra keys/oversize, safe labeled fallback, sanitized logs and unchanged human composer."
+  },
+  "detail": "Production self-test encountered fenced JSON under direct JSON.parse. Accept only bounded whole JSON or one complete JSON fence, then exact reviewed IDs. No prose mining or raw model wording. Unusable responses after authorized thread load return a fixed explicitly labeled checklist. Budget, availability, rate and missing-thread failures remain typed; no reply writes/send and no raw exception logging. Offline evidence only until root production acceptance.",
+  "wave": "W7"
+}
