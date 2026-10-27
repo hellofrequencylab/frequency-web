@@ -3,6 +3,7 @@
 // Exit 0 only when the named repair has landed; each key fails on main today.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { withinRawPrimaryButtonBudget } from '../lib/raw-primary-button-count.mjs'
 
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')
 const has = (p, re) => re.test(read(p))
@@ -18,8 +19,6 @@ const walk = (dir, out = []) => {
   return out
 }
 const filesMatching = (dirs, re) => dirs.flatMap((d) => walk(d)).filter((f) => re.test(read(f)))
-const countMatches = (dirs, re) =>
-  dirs.flatMap((d) => walk(d)).reduce((n, f) => n + (read(f).match(re) || []).length, 0)
 
 const checks = {
   'adr-frequency-only': () =>
@@ -54,7 +53,7 @@ const checks = {
   'legacy-axes': () => filesMatching(['lib', 'app', 'components'], /LEGACY_THEME_AXES/).length === 0,
   'kit-chrome': () => !/prose-gray/.test(read('components/legal/legal-page.tsx')) && !/min-h-screen/.test(read('components/crm/leads/capture-shell.tsx')),
   'shell-px': () => ['components/layout/app-shell-mobile.tsx', 'components/layout/app-shell-nav-list.tsx'].every((f) => !/\[\d+px\]/.test(read(f))),
-  'raw-buttons': () => countMatches(['app', 'components'], /<button[^>]*?bg-primary/gs) < 30,
+  'raw-buttons': () => withinRawPrimaryButtonBudget(['app', 'components'].flatMap((dir) => walk(dir)).map(read)),
   'calendar-views': () => !/ComingSoonMark/.test(read('components/spaces/calendar-mode-toggle.tsx')),
   'money-tests': () => existsSync('lib/commerce/disputes.test.ts') && existsSync('lib/spaces/booking-actions.test.ts'),
   'e2e-surfaces': () => has('test/e2e/surfaces.ts', /\/offer/) && has('test/e2e/surfaces.ts', /\/for\//),
