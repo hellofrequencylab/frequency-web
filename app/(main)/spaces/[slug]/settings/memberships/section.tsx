@@ -28,7 +28,6 @@ import { SectionHeader } from '@/components/ui/section-header'
 import type { Space } from '@/lib/spaces/types'
 import type { UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { loadUpgradeOffer } from '@/lib/pricing/business-offer'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqMembershipsBody } from '@/components/frequency/admin/pages/memberships/memberships-body'
 
 // MEMBERSHIPS section BODY (extracted from memberships/page.tsx so the unified Offerings surface can
@@ -126,9 +125,8 @@ export async function MembershipsSection({
   // 30 row event list and the members table in one scroll. Each is a view of its own now, behind a
   // `?view=` bar, and only the open one loads. Under Frequency the members table already leads the Plans
   // view, so that design has no Members view.
-  const isFrequency = SITE_DESIGN === 'frequency'
   const requested = asMembershipView(view)
-  const open = isFrequency && requested === 'members' ? 'plans' : requested
+  const open = requested === 'members' ? 'plans' : requested
 
   const plans = (
     <div className="space-y-8">
@@ -150,19 +148,17 @@ export async function MembershipsSection({
     </div>
   )
 
-  // THE FREQUENCY BODY (SITE_DESIGN, build-time): the Member Admin Memberships page leads (plan cards and
-  // the members table), and the tier editor follows it unchanged. DAWN renders the editor alone.
-  const plansView = isFrequency ? (
+  // The Member Admin Memberships page leads (plan cards and the members table), and the tier editor
+  // follows it unchanged.
+  const plansView = (
     <FqMembershipsBody spaceId={space.id} tiers={tiers}>
       {plans}
     </FqMembershipsBody>
-  ) : (
-    plans
   )
 
   return (
     <div className="space-y-6">
-      <MembershipViews active={open} includeMembers={!isFrequency} />
+      <MembershipViews active={open} includeMembers={false} />
       {open === 'plans' && plansView}
       {open === 'benefits' && (
         <section>
@@ -200,13 +196,6 @@ export async function MembershipsSection({
           </p>
           <Suspense fallback={<MembersSkeleton />}>
             <EventAccessLoader space={space} tiers={tiers} staffViewing={staffViewing} />
-          </Suspense>
-        </section>
-      )}
-      {open === 'members' && (
-        <section>
-          <Suspense fallback={<MembersSkeleton />}>
-            <MembershipOwnerList spaceId={space.id} />
           </Suspense>
         </section>
       )}

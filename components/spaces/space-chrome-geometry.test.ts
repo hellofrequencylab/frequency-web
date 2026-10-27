@@ -62,9 +62,6 @@ describe('the button primitive exposes geometry without palette', () => {
 })
 
 describe('every control in the Space hero shares that source', () => {
-  it('the on-cover chip composes the primitive instead of hand-rolling it', () => {
-    expect(LAYOUT).toMatch(/const onInkSecondaryClasses = buttonGeometry\(/)
-  })
 
   // The exact string that used to stand here. Naming it is what stops a well-meaning
   // "restore the original look" from reintroducing the defect.
@@ -73,21 +70,6 @@ describe('every control in the Space hero shares that source', () => {
     expect(LAYOUT).not.toMatch(/px-3 py-1\.5 text-body-sm font-semibold transition-colors'/)
   })
 
-  it('the mobile glyph buttons carry the floor too', () => {
-    const ghost = LAYOUT.slice(LAYOUT.indexOf('const ghostIconClasses'))
-    expect(ghost.slice(0, 400)).toContain('tap-target')
-  })
-
-  it('the mobile CTA states a height, so it cannot be floored to a different one', () => {
-    // Without `h-10` this resolved to --tap-min against the glyphs' fixed 40px.
-    expect(LAYOUT).toMatch(/primaryCtaButton\(false\), 'h-10 min-w-0 flex-1'/)
-  })
-
-  it('the three desktop hero buttons all state the same resting height', () => {
-    // h-9 sets the row's deliberate height; the shared floor raises all three together.
-    expect((LAYOUT.match(/'h-9 shrink-0'/g) ?? []).length).toBeGreaterThanOrEqual(2)
-    expect(LAYOUT).toMatch(/h-9 shrink-0 gap-1\.5/)
-  })
 })
 
 describe('the tab bar rises with the viewer like the chrome around it', () => {

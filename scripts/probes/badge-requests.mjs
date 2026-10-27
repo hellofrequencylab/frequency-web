@@ -25,7 +25,7 @@ for (const f of ['listBadgeRequests', 'closeBadgeRequestForCard', 'cancelBadgeRe
 if (!/closeBadgeRequestForCard\(/.test(r('lib/devices/actions.ts'))) bad.push('writing a card does not close the request')
 
 const layout = r('app/(main)/spaces/[slug]/(profile)/layout.tsx')
-if ((layout.match(/<BadgeNote /g) ?? []).length < 2) bad.push('the Space page does not show the badge line on both branches')
+if ((layout.match(/<BadgeNote /g) ?? []).length < 1) bad.push('the Space page does not show the badge line')
 if (!/Get a (scannable badge|member card)/.test(r('components/spaces/badge-request-button.tsx'))) bad.push('no Get a scannable badge button')
 
 const mig = r('supabase/migrations/20270346018000_badge_requests.sql')

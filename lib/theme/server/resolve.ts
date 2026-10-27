@@ -1,10 +1,8 @@
 import 'server-only'
 import { cookies } from 'next/headers'
-import { type GenerationId, DEFAULT_GENERATION, resolveGeneration } from '../generations'
-import { LEGACY_THEME_AXES } from '../design'
-import { communityDefaultGeneration } from './default-generation'
-import { type SkinId, DEFAULT_SKIN, resolveSkin } from '../skins'
-import { type OccasionId, resolveOccasionForDate } from '../occasions'
+import { type GenerationId, DEFAULT_GENERATION } from '../generations'
+import { type SkinId, resolveSkin } from '../skins'
+import { type OccasionId } from '../occasions'
 import { THEME_COOKIE, parseThemeCookie } from '../cookie'
 
 // The server THEME RESOLVER — the one place the three theme axes are resolved for a
@@ -46,34 +44,17 @@ export interface ResolvedTheme {
  * @param input.spaceGeneration the Space's `spaces.generation` value, if any (precedence 2).
  * @param input.now             clock override for the occasion window (defaults to new Date()).
  */
-export async function resolveTheme(input?: {
+export async function resolveTheme(_input?: {
   spaceSkin?: string | null
   spaceGeneration?: string | null
   now?: Date
 }): Promise<ResolvedTheme> {
   const cookie = await readThemeCookie()
-  const now = input?.now ?? new Date()
 
   // A design that overrides everything (Frequency, ADR-1737): no Space skin, no Space or community
   // generation, no occasion. Only the member's own skin survives, and only if it is authored for this
   // design (resolveSkin checks SkinDef.designs). `balanced` is the generation with no overrides.
-  if (!LEGACY_THEME_AXES) {
-    return { skin: resolveSkin(cookie.skin ?? null), generation: DEFAULT_GENERATION, occasion: 'none' }
-  }
-
-  // generation: member cookie → Space default → community default (Theme Studio, LIVE-658).
-  // The community read only happens when neither of the first two answered.
-  const generation = resolveGeneration(
-    cookie.gen ?? input?.spaceGeneration ?? (await communityDefaultGeneration()),
-  )
-
-  // skin: member cookie → Space default → system default.
-  const skin = resolveSkin(cookie.skin ?? input?.spaceSkin ?? DEFAULT_SKIN)
-
-  // occasion: member cookie pin → otherwise whatever the calendar window says.
-  const occasion: OccasionId = cookie.occ ?? resolveOccasionForDate(now)
-
-  return { skin, generation, occasion }
+  return { skin: resolveSkin(cookie.skin ?? null), generation: DEFAULT_GENERATION, occasion: 'none' }
 }
 
 /** Read + validate the `fxtheme` cookie. Never throws (cookies() can throw out of scope). */
