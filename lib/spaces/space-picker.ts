@@ -36,6 +36,13 @@ export const PICKER_NICHES: readonly PickerNiche[] = [
   { id: 'venues', label: 'A venue', hint: 'A room other people fill', actions: ['tour', 'ask', 'book'] },
   { id: 'nonprofits', label: 'A nonprofit', hint: 'A mission, programs and a fund', actions: ['donate', 'join', 'list'] },
   { id: 'networks', label: 'A network', hint: 'Many chapters under one name', actions: ['chapter', 'list', 'ask'] },
+  { id: 'general', label: 'A local business', hint: 'A cafe, shop or service with things on', actions: ['ask', 'list', 'book'] },
+  { id: 'creators', label: 'Art, music or making', hint: 'Your work, your shows and your list', actions: ['list', 'tickets', 'ask'] },
+  { id: 'schools', label: 'A school or program', hint: 'Workshops, cohorts, camps and training', actions: ['book', 'list', 'ask'] },
+  { id: 'clubs', label: 'A club or group', hint: 'Regular meetups and members who pay dues', actions: ['join', 'list', 'ask'] },
+  { id: 'faith', label: 'A faith community', hint: 'Weekly gatherings, small groups and giving', actions: ['join', 'donate', 'list'] },
+  { id: 'wellness', label: 'A spa or retreat center', hint: 'Treatments, packages and retreats', actions: ['book', 'list', 'ask'] },
+  { id: 'markets', label: 'A market or festival', hint: 'Market days, vendors and visitors', actions: ['list', 'ask', 'tickets'] },
 ]
 
 /** Shown for "Something else": no niche, so no starting tools, and a general set of actions. */

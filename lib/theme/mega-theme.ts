@@ -17,8 +17,20 @@
 import type { WebsiteTheme } from '@/lib/sites/editor/state'
 import type { SiteThemeId } from '@/lib/theme/site-style'
 
-/** The six core niches, one per /for door. The same ids the funnel sequences and the site kits use. */
-export const MEGA_NICHES = ['coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks'] as const
+/** The six core niches, one per /for door. The same ids the funnel sequences and the site kits use.
+ *  Every theme carries a hand-written kit for each of these. */
+export const MEGA_CORE_NICHES = ['coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks'] as const
+export type MegaCoreNicheId = (typeof MEGA_CORE_NICHES)[number]
+
+/** The profiles added 2026-10-27 (owner ruling: cover the full range of businesses that gather people).
+ *  `general` is the plain Business profile and the Wizard's fallback. Each is its own profile because it
+ *  starts different tools and asks for a different first action, not because the audience has a new name.
+ *  Kits for these are built from the niche words (lib/sites/kits/niche-spec.ts) until a theme writes its own. */
+export const MEGA_PROFILE_NICHES = ['general', 'creators', 'schools', 'clubs', 'faith', 'wellness', 'markets'] as const
+export type MegaProfileNicheId = (typeof MEGA_PROFILE_NICHES)[number]
+
+/** Every niche a Space can say it is building: the six core doors plus the seven profiles. */
+export const MEGA_NICHES = [...MEGA_CORE_NICHES, ...MEGA_PROFILE_NICHES] as const
 export type MegaNicheId = (typeof MEGA_NICHES)[number]
 
 export type MegaThemeId = SiteThemeId | 'midnight' | 'designer'
