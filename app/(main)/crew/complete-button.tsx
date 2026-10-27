@@ -4,6 +4,7 @@ import { useTransition } from 'react'
 import { CheckCircle, Loader2, RotateCcw } from 'lucide-react'
 import { logCompletion } from './actions'
 import { useAchievementCheck } from '@/lib/use-achievement-check'
+import { buttonClasses } from '@/components/ui/button'
 
 interface CompleteButtonProps {
   taskId: string
@@ -40,11 +41,7 @@ export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerificat
     <button
       onClick={handleClick}
       disabled={isPending}
-      className={`shrink-0 flex min-h-11 items-center gap-1 rounded-control px-3 py-1 text-meta font-semibold transition-colors disabled:opacity-50 motion-reduce:transition-none ${
-        isDone
-          ? 'bg-surface-elevated text-muted hover:bg-border-strong hover:text-text'
-          : 'bg-primary text-on-primary hover:bg-primary-hover'
-      }`}
+      className={buttonClasses(isDone ? 'secondary' : 'primary', 'sm', 'shrink-0')}
     >
       {isPending ? (
         <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" />

@@ -15,6 +15,7 @@ import type { ExtractedContact, ContactDetails, ContactSource, Visibility } from
 import { scanCard, veraAssist, createProfile } from '../actions'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Button } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 
 const BUCKET = 'network-contacts'
 const lbl = 'block text-meta font-medium text-muted mb-1'
@@ -873,9 +874,7 @@ function TabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onCli
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-control-nested px-3 py-2 text-body-sm font-medium transition-colors ${
-        active ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
-      }`}
+      className={chipClasses(active, 'flex-1 justify-center')}
     >
       <Icon className="h-4 w-4" /> {label}
     </button>

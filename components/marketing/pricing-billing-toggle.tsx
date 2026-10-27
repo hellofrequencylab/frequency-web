@@ -19,6 +19,7 @@
 // (no hex). Voice: plain labels, no em dashes.
 
 import { createContext, useContext, useState } from 'react'
+import { chipClasses } from '@/components/ui/chip'
 
 export type BillingIntervalUI = 'month' | 'year'
 
@@ -94,9 +95,7 @@ function IntervalButton({
       role="radio"
       aria-checked={active}
       onClick={onClick}
-      className={`rounded-xl px-5 py-2 text-body-sm font-bold transition-colors ${
-        active ? 'bg-primary text-on-primary lift-1' : 'text-muted hover:text-text'
-      }`}
+      className={chipClasses(active)}
     >
       {label}
     </button>
