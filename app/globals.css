@@ -415,9 +415,9 @@
   /* The sticky app header, same reasoning: 3.5rem plus the TOP inset under viewport-fit=cover. */
   --app-header-h:      calc(3.5rem + env(safe-area-inset-top));
 
-  /* ── Structure axis token (docs/THEME.md, lib/theme/structure.ts) ────────────
+  /* ── Structure axis token (docs/THEME.md; historical structure metadata) ────────────
      The STRUCTURE axis is the coarse COMPOSITION knob, orthogonal to the feel knobs
-     above: the resolved generation maps (via structureFor) to one of simple /
+     above: historical generation metadata mapped to one of simple /
      standard / dense, set as [data-structure] on the shell root. --structure-rhythm
      is a unitless multiplier on the vertical rhythm BETWEEN templated sections, so
      the calm + kids ends (simple) get a roomier flow and the bold preset (dense) a
@@ -1002,8 +1002,8 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   STRUCTURE axis — data-structure (docs/THEME.md, lib/theme/structure.ts). The coarse
-   COMPOSITION knob. Historical generation metadata maps (structureFor) to three
+   STRUCTURE axis — data-structure (docs/THEME.md; historical structure metadata). The coarse
+   COMPOSITION knob. Historical generation metadata mapped to three
    buckets; each just retunes the rhythm
    multiplier --structure-rhythm, so the SAME content flows roomier (simple, the calm +
    kids ends) or tighter (dense, bold) without changing what is shown. 'standard' is the
