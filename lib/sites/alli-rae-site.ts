@@ -178,7 +178,7 @@ export const ALLI_RAE_FOOTER = {
   copyright: '© Alli Rae Build + Design Inc.',
   line: ALLI_RAE.credit,
   columns: [
-    { title: 'Contact Us', lines: [`450 S. Melrose Drive ${ADDRESS_UNIT}`, 'Vista, CA 92081'], links: [{ label: ALLI_RAE.email, href: `mailto:${ALLI_RAE.email}` }, { label: ALLI_RAE.phone, href: 'tel:7607076401' }] },
+    { title: 'Contact Us', lines: ['450 S. Melrose Drive', ADDRESS_UNIT, 'Vista, CA 92081'], links: [{ label: ALLI_RAE.email, href: `mailto:${ALLI_RAE.email}` }, { label: ALLI_RAE.phone, href: 'tel:7607076401' }] },
     { title: 'Hours', lines: ['Mon – Fri', '7am – 6pm'] },
     { title: 'Follow', links: [{ label: 'Instagram', href: ALLI_RAE.instagram }, { label: 'Facebook', href: ALLI_RAE.facebook }] },
   ],
