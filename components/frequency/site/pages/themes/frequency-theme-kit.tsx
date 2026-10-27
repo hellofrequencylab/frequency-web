@@ -66,7 +66,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
             {name}. <em className="fq-iri-text">{entry.tagline}</em>
           </h1>
           <p>
-            Made for {entry.madeFor}. {site.description}
+            Made for {entry.madeFor}. {site.description} Design once, launch tomorrow.
           </p>
           <div className="ctas">
             <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
@@ -89,7 +89,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
             <div className="label">
               <b>The whole kit</b>Everything in one look
             </div>
-            <h2 className="h-l">Your link page, your site and your emails, all dressed alike.</h2>
+            <h2 className="h-l">Design once. Your link page, site and emails all wear it.</h2>
             <p className="pb-note">{entry.signature}</p>
           </div>
           <ThemePicture theme={theme} label={name} slot="kit" priority />
@@ -133,7 +133,8 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
             </div>
             <h2 className="h-l">Forty features on day one is a month of setup.</h2>
             <p className="pb-note">
-              {name} carries every tool Frequency has. Your kit starts with two or three, and the rest are one switch away.
+              {name} carries every tool Frequency has, in one account: a complete business and marketing system. The guided setup
+              has your whole business running in two hours. Your kit starts with two or three tools, and the rest are one switch away.
             </p>
           </div>
           <div className="tg-row two">

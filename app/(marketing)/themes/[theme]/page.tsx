@@ -26,7 +26,7 @@ function seoFor(theme: string): FrequencyPageSeo | null {
     description: `${site.label} is a complete look for your Spotlight, website and emails. Start with the tools you need and turn on the rest later.`,
     shareTitle: `${site.label}: a complete look for your whole site`,
     headline: `${site.label}. ${entry.tagline}`,
-    lede: `Made for ${entry.madeFor}. ${site.description}`,
+    lede: `Made for ${entry.madeFor}. ${site.description} Design once, launch tomorrow.`,
     crumbs: [
       { name: 'Themes', path: '/themes' },
       { name: site.label, path: `/themes/${theme}` },
