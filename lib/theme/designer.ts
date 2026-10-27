@@ -17,7 +17,7 @@
 import { HEX_ACCENT, contrastRatio, type AccentVars } from '@/lib/spaces/accent'
 
 /** The palette, as the design system's tokens/colors.css names it. */
-export const DESIGNER_PALETTE = {
+const DESIGNER_PALETTE = {
   charcoal: '#343736', charcoal80: '#4A4E4C', ink: '#262827', stone: '#5F625F', walnut: '#5A4533', travertine: '#E4D8C4',
   parchment: '#FBF8F2', sage: '#9DB2B4', sageSoft: '#D6E0E0', sageDeep: '#4E6E71', sand: '#F2DCB8', sandSoft: '#F8ECD8',
   ochre: '#D3A03F', ochreDeep: '#9A6C1C', terracotta: '#A65A3A', terracottaDeep: '#874429',

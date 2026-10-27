@@ -10,7 +10,7 @@
 //
 // Links start with `~/` for a page of this site. Wrap words in *stars* to set them in the italic.
 
-export interface DesignerBlockSeed { type: string; props: Record<string, unknown> }
+interface DesignerBlockSeed { type: string; props: Record<string, unknown> }
 export interface DesignerPageSeed { slug: string; title: string; nav: boolean; seo?: { title: string; description: string }; blocks: DesignerBlockSeed[] }
 
 export const DESIGNER_HERO = {
