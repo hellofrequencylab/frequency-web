@@ -8,6 +8,7 @@ import { RoomThread } from '@/components/rooms/room-thread'
 import { canReadRoom, canPostToRoom, type RoomVisibility } from '@/lib/messages/room-access'
 import { RoomSearch } from '@/components/rooms/room-search'
 import { RoomSettings } from '@/components/rooms/room-settings'
+import { RoomMembers } from '@/components/rooms/room-members'
 import { FqIcon } from '@/components/frequency/icon'
 import { FrequencyMessages } from '@/components/frequency/members/messages/messages-body'
 
@@ -200,6 +201,7 @@ export default async function RoomPage({
               </form>
             ))}
           </div>
+          <RoomMembers roomId={roomId} myProfileId={myProfileId} canRead={canRead} isMember={isMember} isAdmin={isAdmin} visibility={r.visibility} members={members} totalMembers={r.member_count} />
           {canRead ? (
             <div className="fa-room">
               <RoomThread roomId={roomId} initialMessages={messages} myProfileId={myProfileId} canPost={canPost} visibility={r.visibility} />
