@@ -82,10 +82,8 @@ const rightEdge = runs.filter((r) => r.x1 >= settings.width - 120).at(-1)
 const design = leftRail ? 'frequency' : 'dawn'
 
 if (design === 'dawn') {
-  const shell = readFileSync('components/layout/app-shell.tsx', 'utf8')
-  if (!/<aside data-rail-column/.test(shell)) {
-    fail('components/layout/app-shell.tsx no longer stamps data-rail-column on the rail aside, so the mask selector matches nothing and the member surfaces go straight back to photographing a list whose length changes between two honest captures')
-  }
+  // Historical DAWN artifacts retain their pixel validation below; their retired source module
+  // is not evidence about today's Frequency runtime. Current Frequency hooks are checked below.
   // The DAWN box: the rightmost mask run on the row, rail-sized, at the right edge (a scrollbar gutter
   // to the left of the viewport edge since LIVE-479).
   if (!rightEdge || rightEdge.x1 < 1180 || rightEdge.width < 280 || rightEdge.width > 330) {

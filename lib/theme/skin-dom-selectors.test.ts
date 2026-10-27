@@ -90,8 +90,8 @@ describe('the premise: data-skin really does land on <html> as well as on a desc
     expect(E2E_SURFACES).toMatch(/documentElement[\s\S]{0,400}setAttribute\(\s*'data-skin'/)
   })
 
-  it('the authed shell stamps it on the shell root instead', () => {
-    expect(read('../../components/layout/app-shell.tsx')).toMatch(/data-skin=\{skin\}/)
+  it('the member layout scopes the resolved skin around the active shell', () => {
+    expect(read('../../app/(main)/layout.tsx')).toContain('<div data-skin={theme.skin} className="contents">')
   })
 })
 
