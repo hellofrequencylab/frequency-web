@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/field'
 // THE MARKETPLACE GRID, IN THE KIT (templates/members/Marketplace.html: four-up portrait cards, the
 // title and price on one line, "who · how far" under it, one button). The DAWN pages' instant search
 // and Near me are kept and drawn in the kit's row: the find pill filters every card on each
-// keystroke (no round trip, the same plain contains-match MarketGrid uses), and Near me asks the
+// keystroke (a local plain contains-match, with no round trip), and Near me asks the
 // browser for a position and sorts by distance, printing the miles the reference shows. Listings
 // without a point sink to the end. A Market page passes its groups as sections, each with See all.
 
