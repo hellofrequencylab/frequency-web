@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition, type ReactNode } from 'react'
 import { Check, MapPin, Radar, ShieldCheck, Sparkles } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
@@ -216,7 +217,7 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className={buttonClasses('primary', 'sm')}
         >
           {pending ? 'Saving…' : 'Save changes'}
         </button>
