@@ -11,6 +11,7 @@ import { Check, Loader2, X } from 'lucide-react'
 import { Field, Textarea, fieldClasses } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { approveNonprofitVerification, rejectNonprofitVerification } from './actions'
+import { buttonClasses } from '@/components/ui/button'
 
 export function ReviewConsole({ id }: { id: string }) {
   const router = useRouter()
@@ -45,7 +46,7 @@ export function ReviewConsole({ id }: { id: string }) {
             type="button"
             onClick={approve}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className={buttonClasses('primary', 'sm')}
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Check className="h-3.5 w-3.5" aria-hidden />}
             Approve and grant Non Profit

@@ -6,7 +6,6 @@
 // Every mutation goes through the existing curator-gated actions; the screen is ADVISORY and
 // never blocks a decision. Semantic tokens only; copy is plain, no em dashes (CONTENT-VOICE).
 
-import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -22,6 +21,7 @@ import {
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { capsLabel } from '@/components/ui/caps-label'
+import { buttonClasses } from '@/components/ui/button'
 export interface ReviewRow {
   id: string
   title: string

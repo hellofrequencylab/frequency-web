@@ -15,6 +15,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
+import { chipClasses } from '@/components/ui/chip'
 
 type LaneFilter = PipelineLane | 'all'
 
@@ -191,9 +192,7 @@ function LaneTab({ active, onClick, children }: { active: boolean; onClick: () =
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-pill border px-3 py-1 text-meta font-semibold transition-colors ${
-        active ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:text-text'
-      }`}
+      className={chipClasses(Boolean(active))}
     >
       {children}
     </button>
