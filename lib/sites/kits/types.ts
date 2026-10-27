@@ -1,10 +1,15 @@
 import type { WebsiteChrome, WebsiteTheme } from '@/lib/sites/editor/state'
 import type { SiteLook } from '@/lib/theme/site-style'
+import type { MegaCoreNicheId, MegaNicheId } from '@/lib/theme/mega-theme'
 
 // A kit is a niche starting point (ADR-1726 layering): pages with sample copy, written into a site's
 // draft ONCE. It holds no colours or fonts (the theme owns those) and leaves no live link behind.
 
-export type KitNiche = 'coaches' | 'studios' | 'hosts' | 'venues' | 'nonprofits' | 'networks'
+/** A kit's niche is one of the Mega Theme niches (lib/theme/mega-theme.ts): the six core doors every theme
+ *  hand-writes a kit for, plus the profiles whose kits derive from niche-spec.ts. */
+export type KitNiche = MegaNicheId
+/** The six niches every theme carries a hand-written kit for. */
+export type CoreKitNiche = MegaCoreNicheId
 
 interface KitBlock { type: string; props?: Record<string, unknown> }
 export interface KitPage {

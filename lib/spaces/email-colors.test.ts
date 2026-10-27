@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { DEFAULT_EMAIL_COLORS } from '@/lib/email-studio/render'
+import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
 import { MIDNIGHT_ACCENT, MIDNIGHT_SURFACE } from '@/lib/theme/midnight'
 import {
   spaceEmailColors,
@@ -158,7 +159,8 @@ describe('a Space on the Midnight theme', () => {
     expect(colors.canvas).toBe(MIDNIGHT_SURFACE.canvas)
   })
 
-  it('leaves every other theme on the DAWN default', () => {
-    expect(spaceEmailColors({ preferences: { megaTheme: { theme: 'temple' } } }).canvas).toBe(DEFAULT_EMAIL_COLORS.canvas)
+  it('dresses every other Mega Theme from its own token set; the default keeps the house palette', () => {
+    expect(spaceEmailColors({ preferences: { megaTheme: { theme: 'temple' } } }).canvas).toBe(MEGA_SURFACES.temple!.canvas)
+    expect(spaceEmailColors({ preferences: { megaTheme: { theme: 'frequency' } } }).canvas).toBe(DEFAULT_EMAIL_COLORS.canvas)
   })
 })

@@ -30,6 +30,15 @@ export const NICHE_DEFAULTS: Readonly<Record<MegaNicheId, NicheDefault>> = {
   venues: { label: 'Venues', preset: 'venue' },
   nonprofits: { label: 'Nonprofits', preset: 'nonprofit' },
   networks: { label: 'Networks', preset: null },
+  // The seven profiles (2026-10-27). Each borrows the closest honest preset; where the defining tool is
+  // tier-marked (the Shop for creators) or everything-on is already the default (general), it is null.
+  general: { label: 'Business', preset: null },
+  creators: { label: 'Creators', preset: null },
+  schools: { label: 'Schools and programs', preset: 'practice' },
+  clubs: { label: 'Clubs and groups', preset: 'studio' },
+  faith: { label: 'Faith and spiritual communities', preset: 'nonprofit' },
+  wellness: { label: 'Wellness and retreats', preset: 'practice' },
+  markets: { label: 'Markets and festivals', preset: 'venue' },
 }
 
 /** The bundle a niche starts from, or null. Total: an unknown niche reads as none. */
