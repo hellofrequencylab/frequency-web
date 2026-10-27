@@ -116,6 +116,7 @@ export async function FrequencySpaceConsole({ slug, children }: { slug: string; 
 
   return (
     <AdminShell
+      withinMain
       homeHref={`/spaces/${space.slug}/manage`}
       crumbRoot={name}
       navLabel={`${name} console`}

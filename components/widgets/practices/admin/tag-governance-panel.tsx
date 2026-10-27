@@ -15,6 +15,7 @@ import { IconButton } from '@/components/ui/icon-button'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { promoteTagAction, mergeTagsAction } from '@/app/(main)/admin/content/actions'
+import { buttonClasses } from '@/components/ui/button'
 
 export interface TagRow {
   id: string
@@ -136,7 +137,7 @@ function PromoteButton({
       type="button"
       disabled={disabled}
       onClick={promote}
-      className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
+      className={buttonClasses('secondary', 'xs')}
     >
       <Check className="h-3.5 w-3.5" aria-hidden /> Promote
     </button>

@@ -64,6 +64,7 @@ import {
   bulkArchive,
   bulkDelete,
 } from './collections-actions'
+import { buttonClasses } from '@/components/ui/button'
 
 // The crop/rotate editor (HYG-109, ADR-1592) is fetched only when an operator opens it: its code is a
 // separate chunk the grid never ships. Keep it behind this boundary; do not import it statically.
@@ -529,7 +530,7 @@ function BulkBar({
                     type="button"
                     onClick={trainStyle}
                     disabled={pending || !styleName.trim()}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+                    className={buttonClasses('primary', 'sm', 'w-full')}
                   >
                     <Palette className="h-4 w-4" /> Train style
                   </button>
@@ -1177,7 +1178,7 @@ function DetailDrawer({
               type="button"
               onClick={save}
               disabled={pending}
-              className="rounded-card bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+              className={buttonClasses('primary', 'sm')}
             >
               {pending ? 'Saving…' : 'Save'}
             </button>

@@ -11,6 +11,7 @@ import { scannabilityWarnings } from '@/lib/qr/scannability'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { shortLinkUrl } from '@/lib/qr/links'
 import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
+import { chipClasses } from '@/components/ui/chip'
 
 // The QR generator at the TOP of the Studio. It's a compact, three-column
 // rectangle that reads left→right:
@@ -168,9 +169,7 @@ function Seg({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-2xs font-semibold transition-colors ${
-        active ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
-      }`}
+      className={chipClasses(Boolean(active), 'flex-1')}
     >
       <Icon className="h-3.5 w-3.5" /> {label}
     </button>
