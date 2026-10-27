@@ -1,6 +1,5 @@
 import fs from 'node:fs'
-import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
 import ts from 'typescript'
 import { loadProbeModule } from '../lib/probe-module.mjs'
 import { RETIRED_MEMBER_SHELL, retiredShellEdges } from '../lib/retired-member-shell.mjs'
@@ -64,7 +63,7 @@ export function activeShellProblems(mode, read, retiredExists = false) {
   } else throw new Error(`Unknown contract mode ${mode}`)
   return bad
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+if (invokedDirectly(import.meta.url)) {
   const bad = activeShellProblems(process.argv[2], file => fs.readFileSync(file, 'utf8'), fs.existsSync(RETIRED_MEMBER_SHELL))
   if (bad.length) { console.error(bad.join('\n')); process.exitCode = 1 }
   else console.log(`Active member shell ${process.argv[2]} contract passes`)

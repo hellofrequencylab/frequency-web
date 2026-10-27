@@ -1,3 +1,4 @@
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import ts from 'typescript'
@@ -27,7 +28,7 @@ export function withheldPriceForwarded(source) {
   visit(ast)
   return ast.parseDiagnostics.length === 0 && direct && conditional
 }
-if (process.argv[1]?.endsWith('/retired-browse-wrappers.mjs')) {
+if (invokedDirectly(import.meta.url)) {
   assert.ok(withheldPriceForwarded(readFileSync('components/frequency/members/events/event-card.tsx', 'utf8')), 'Active Frequency card must forward and conditionally render withheld prices')
   for (const file of RETIRED_BROWSE_WRAPPERS) assert.equal(existsSync(file), false, `${file} is retired`)
   for (const { route, symbol } of BROWSE_REPLACEMENTS) assert.ok(replacementMounted(readFileSync(route, 'utf8'), symbol, route), `${route} must import and render ${symbol}`)
