@@ -1,5 +1,7 @@
 # Navigation System Redesign: one registry, one language, many surfaces
 
+> **Implementation history:** the DAWN admin sub-nav described below is retired. Current admin routes compose `FrequencyAdminConsole` and its gated `AdminNav`; see [MENU-CONTRACT.md](MENU-CONTRACT.md). This document preserves the original design rationale.
+
 > **Status:** ✅ SHIPPED (2026-07-01). Supersedes the admin-only `ADMIN-IA-PROPOSAL.md` and
 > extends the member-side `IA-RESTRUCTURE.md` (owner-approved 2026-06-06) into ONE site-wide
 > model, with names drawn from `docs/NAMING.md` (the locked canon wins on every name).
