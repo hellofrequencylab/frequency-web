@@ -1,4 +1,125 @@
 {
   "version": 1,
-  "registrations": []
+  "registrations": [
+    {
+      "pullRequest": 4137,
+      "expiresAt": "2026-10-30T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20261027033306_atomic_manual_room_writes.sql",
+          "sha256": "b258276008bd70828573253666309d8a2135ea678444eac104fe7a9a20575740"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": ".env.example",
+          "status": "modified",
+          "sha256": "59544e4274e477d73de6c132ff34e3a68eb8b014fd8d0ffa39a7d88bed61ef8d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": ".github/workflows/db-tests.yml",
+          "status": "modified",
+          "sha256": "787ba24583782fd22e2172ba08f6172966d4dc896662faafe233bb113b1b31b5",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ROOM-ATOMIC-WRITES.md",
+          "status": "added",
+          "sha256": "4b44ec4670ea32691f16b3e3d5a78ece8a3753fafef6fe216ca7e8c2df0fc805",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "e0fd5fa80e8a9493b111d7ae0421b5b3091ba965fcd617c0f269a4d593fc69d1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/database/room-atomic-proposal.sql",
+          "status": "added",
+          "sha256": "b40ded326b10d49fa8997c9f4e550edeb2e4593c2c052b0ee34daedeb4e3c67c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/HYG-205.json",
+          "status": "added",
+          "sha256": "2a721a33fc7673ebff9dad186f6c24d11baed25ca6cb3c62a11a68ed3a8aeea0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "ffea6397aef718e878c07b50683e0b47b9fd2bc30c8095a75bb0f81a6cdf2f52",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/proposals/check-room-atomic-sql.mjs",
+          "status": "added",
+          "sha256": "de83e8b792e93dec7cecc1c34e437df7ea4f1969be51b3d83af3189bc825bfe7",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/atomic-room-api.mjs",
+          "status": "added",
+          "sha256": "6be66169ff957f758b5b57d0c451b8ef15e5ad4851328c16f4bd8c7e7318f47a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/atomic-room-registration.mjs",
+          "status": "added",
+          "sha256": "2c7ace2569bb41d05548fe453daf2f38fd92a57a118f00a02abc2de3749244e8",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/atomic-room-start.mjs",
+          "status": "added",
+          "sha256": "b7c56d376b3ba7baa14fad990cf2988f8ed3657e109f2d92f0ef43e0de2f0bcc",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20261027033306_atomic_manual_room_writes.sql",
+          "status": "added",
+          "sha256": "b258276008bd70828573253666309d8a2135ea678444eac104fe7a9a20575740",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/atomic_manual_room_writes.test.sql",
+          "status": "added",
+          "sha256": "eb24b4a8b6831010936d636f70fd8c20953057d752f7c3c6df86587c9212ed29",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "787ba24583782fd22e2172ba08f6172966d4dc896662faafe233bb113b1b31b5",
+      "apiAcceptanceStep": "Real local service, anon and authenticated room API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated room API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ],
+      "orderingExceptions": [
+        {
+          "file": "supabase/migrations/20261027033306_atomic_manual_room_writes.sql",
+          "sha256": "b258276008bd70828573253666309d8a2135ea678444eac104fe7a9a20575740",
+          "reason": "Explicit reviewed one-time historical-stamp ordering exception for the frozen atomic manual room RPC foundation. Its registered transaction matches the reviewed proposal; full fresh replay and exact-head authenticated local API acceptance plus cleanup are mandatory before any pending-apply verdict."
+        }
+      ]
+    }
+  ]
 }
