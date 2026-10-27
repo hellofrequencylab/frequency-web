@@ -89,7 +89,7 @@ const DESIGNER_VARS = `
 --dz-size-display:clamp(56px,7vw,104px);--dz-size-hero:clamp(52px,6.2vw,96px);--dz-size-display-l:clamp(44px,5vw,72px);--dz-size-h1:clamp(38px,4vw,56px);--dz-size-h2:clamp(30px,3vw,40px);
 --dz-size-h3:28px;--dz-size-h4:22px;--dz-size-lead:22px;--dz-size-body:18px;--dz-size-small:16px;--dz-size-label:13px;--dz-size-micro:12px;
 --dz-leading-tight:1.04;--dz-leading-heading:1.15;--dz-leading-body:1.7;--dz-leading-loose:1.8;--dz-tracking-wordmark:.12em;--dz-tracking-display:-.01em;--dz-tracking-label:.22em;--dz-tracking-button:.16em;
---dz-container:1280px;--dz-text:680px;--dz-header-h:84px;
+--dz-link:var(--dz-terracotta);--dz-link-hover:var(--dz-terracotta-deep);--dz-link-weight:1px;--dz-link-offset:3px;--dz-container:1280px;--dz-text:680px;--dz-header-h:84px;
 --dz-section-y:clamp(80px,10vw,144px);--dz-gutter:clamp(20px,4vw,56px);--dz-section-head:clamp(40px,5vw,64px);--dz-slab-gap:clamp(10px,1.4vw,20px);
 --dz-r-1:8px;--dz-r-2:18px;--dz-r-3:28px;--dz-r-section:40px;--dz-r-arch:999px 999px 0 0;--dz-r-pill:999px;
 --dz-ease:cubic-bezier(.4,0,.2,1);--dz-ease-out:cubic-bezier(.22,.61,.36,1);--dz-dur-fast:160ms;--dz-dur-base:280ms;--dz-dur-slow:700ms;

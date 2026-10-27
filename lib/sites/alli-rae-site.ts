@@ -1,6 +1,6 @@
 // ALLI RAE BUILD + DESIGN, ON THE DESIGNER THEME. PURE: the firm's pages as Designer blocks, so the seed script
 // and the tests share one source. The words are the firm's own, from alliraebuilddesign.com (crawled Oct 2026,
-// handed over in the Alli Rae Build + Design system), with the source's four typos KEPT verbatim (flagged to the client in the design's handoff) and no em dashes. The photos are the
+// handed over in the Alli Rae Build + Design system), with the source's typos corrected (owner ruling 2026-10-27) and no em dashes. The photos are the
 // firm's project photography ("Projects captured by Pixels & Pigment"), served from /sites/alli-rae/.
 //
 // Layout follows the design's page assembly: Home, About, three projects, Ready to Build Meeting and Book a
@@ -40,7 +40,7 @@ interface Project { slug: string; title: string; pageTitle: string; location: st
 
 const PROJECTS: Project[] = [
   {
-    slug: 'spanish-modern-custom-home', title: 'Custom Spanish Modern Residence', pageTitle: 'New Ground- Up Spanish Modern Custom Home', location: 'Sunset Cliffs San Diego, CA', year: '2025', image: i('sunset-cliffs-hero'),
+    slug: 'spanish-modern-custom-home', title: 'Custom Spanish Modern Residence', pageTitle: 'New Ground-Up Spanish Modern Custom Home', location: 'Sunset Cliffs San Diego, CA', year: '2025', image: i('sunset-cliffs-hero'),
     body: 'This modern charmer on Sunset Cliffs was designed and built with a high level of intention for each space. Our team provided permit expediting, architectural finishes, interior design, landscape design and construction. Featuring many luxury upgrades throughout and customization by local artisans work from the stained glass, railing design, driveway gate, wine cellar gate and beams. Not to forget the one-of-a-kind, hand-carved mother-of-pearl inlay custom front door and carriage doors specifically made for this home!',
     details: ['Interior', 'Exterior'], gallery: [i('testimonial-vacation-home'), i('about-team'), i('outdoor-garden')],
   },
@@ -51,7 +51,7 @@ const PROJECTS: Project[] = [
   },
   {
     slug: 'breezy-island-kitchen-remodel', title: 'Breezy Kitchen Remodel', pageTitle: 'Breezy Island Kitchen Remodel', location: 'La Jolla, CA', year: '2024', image: i('kitchen-hero'),
-    body: "This kitchen remodel with its custom wrapped beams and a tropical floral wallpaper with flanking blue sconces evokes the island’s sea salt breeze feeling. This kitchen features panel-ready appliances, a new oversized walk-in pantry with a frosted glass door and it's oversized island is perfect for entertainment and storage!",
+    body: "This kitchen remodel with its custom wrapped beams and a tropical floral wallpaper with flanking blue sconces evokes the island’s sea salt breeze feeling. This kitchen features panel-ready appliances, a new oversized walk-in pantry with a frosted glass door and its oversized island is perfect for entertainment and storage!",
     details: ['Focal Wall', 'La Jolla Kitchen', 'Greenspacing', 'Dog Station', 'Beverage Fridge'], gallery: [i('hero-kitchen'), i('testimonial-kitchen')],
   },
 ]
@@ -83,7 +83,7 @@ const home = () => [
   b('DesignerSteps', {
     image: i('process-interior'), alt: '', eyebrow: 'Our Approach', title: 'How We Bring Your Vision To Life',
     steps: [
-      { title: 'Design-First-Thinking', lead: 'Every project begins with vision: yours, clarified through ours.', body: 'We start with the way you live, how you want to feel in your space, and what will make it not just beautiful, but personal. Layouts, finishes, flow, and feel are shaped with intention long before a crew ever sets foot on-site.' },
+      { title: 'Design-First Thinking', lead: 'Every project begins with vision: yours, clarified through ours.', body: 'We start with the way you live, how you want to feel in your space, and what will make it not just beautiful, but personal. Layouts, finishes, flow, and feel are shaped with intention long before a crew ever sets foot on-site.' },
       { title: 'Builder-Level Execution', lead: 'Because design without execution is just a wish.', body: 'With deep construction knowledge and hands-on field experience, we know how to speak the language of permits, inspectors, and trades, and we know how to protect your design integrity every step of the way. What we draw, we build.' },
       { title: 'Start-to-Finish Support', lead: 'From first sketch to final styling, we stay with you through it all.', body: 'Whether you’re starting with a vision or a full plan set, we become your anchor: one team, one process, one result. No handoffs. No lost details. Just a seamless, guided experience that ends with a home you love.' },
     ],
@@ -145,7 +145,7 @@ const project = (p: Project, idx: number) => {
 const contact = () => [
   b('DesignerInquiry', {
     variant: 'project', eyebrow: 'Ready to Build Meeting', title: 'Let’s craft your vision *together*',
-    paragraphs: 'A Ready to Build Meeting is for you to share your build vision and meet our team of experts. No matter what stage your in the process, ideation or ready to break ground, we are here to see it through from permits to pillows. You’ll leave with a project road map and a deeper understanding of our in-house services.\n\nKindy fill out some information below and we will be in touch shortly to schedule a time.',
+    paragraphs: 'A Ready to Build Meeting is for you to share your build vision and meet our team of experts. No matter what stage you’re in the process, ideation or ready to break ground, we are here to see it through from permits to pillows. You’ll leave with a project road map and a deeper understanding of our in-house services.\n\nKindly fill out some information below and we will be in touch shortly to schedule a time.',
     image: i('sunset-cliffs-hero'), alt: '', services: SERVICES.join('\n'), submitLabel: 'Submit', successTitle: 'We look forward to speaking with you!', successBody: 'We will be in touch shortly to schedule a time.',
   }),
 ]
@@ -153,7 +153,7 @@ const contact = () => [
 const consult = () => [
   b('DesignerInquiry', {
     variant: 'consult', eyebrow: 'Schedule Consultation', title: 'Book a consultation',
-    paragraphs: 'A consultation appointment is meant for our experts to assist you with any specific development, permitting, zoning, planning, design or construction questions you have have before or during a project.\n\nWe offer virtual meetings or in-person site walks depending on the matter. This service is available for commercial and residential projects.\n\nOur expert network can assist nationally, so don’t hesitate to reach out.',
+    paragraphs: 'A consultation appointment is meant for our experts to assist you with any specific development, permitting, zoning, planning, design or construction questions you have before or during a project.\n\nWe offer virtual meetings or in-person site walks depending on the matter. This service is available for commercial and residential projects.\n\nOur expert network can assist nationally, so don’t hesitate to reach out.',
     image: i('outdoor-garden'), alt: '', services: SERVICES.join('\n'), submitLabel: 'Request Consultation', successTitle: 'We look forward to speaking with you!', successBody: 'We will be in touch shortly to schedule a time.',
   }),
 ]

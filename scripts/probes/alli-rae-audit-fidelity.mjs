@@ -16,7 +16,7 @@ need('components/sites/designer-blocks-css.ts', ['.dz-btn-warm', 'translate(18px
 need('components/sites/designer-css.ts', ['.mw-page{padding-bottom:0}', 'a[data-cta]'])
 need('components/sites/house-menu.tsx', ['data-cta'])
 need('lib/theme/designer.ts', ['--dz-size-h3', '--dz-scrim-hero-page', '--dz-shadow-slab-band'])
-need('lib/sites/alli-rae-site.ts', ['Design-First-Thinking', 'Kindy fill out', 'your in the process', 'have have', 'MENU_PROJECTS', 'ADDRESS_UNIT'])
+need('lib/sites/alli-rae-site.ts', ['Design-First Thinking', 'Kindly fill out', 'you’re in the process', 'MENU_PROJECTS', 'ADDRESS_UNIT'])
 need('scripts/seed-alli-rae-update-2.mts', ['zz_backup_alli_rae_update2_20261027', 'ALLI_RAE_SLUG'])
 
 if (bad.length) {
