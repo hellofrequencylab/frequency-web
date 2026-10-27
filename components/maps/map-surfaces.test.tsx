@@ -1,7 +1,11 @@
+// @vitest-environment jsdom
 import { renderToStaticMarkup } from 'react-dom/server'
+import { createRoot } from 'react-dom/client'
+import { act } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import type { MapCanvasProps } from './types'
-import DiscoverMap from '@/components/discover/discover-map'
+import { WhatsOnMap } from '@/components/frequency/site/pages/shared/whats-on-map'
+import { eventCityPins } from '@/components/frequency/site/pages/shared/map-pins'
 import CircleMap from '@/components/circles/circle-map'
 import ScanMap from '@/app/(main)/admin/qr/scan-map'
 
@@ -16,11 +20,32 @@ function plot(element: React.ReactNode) {
 }
 
 describe('legacy map surfaces use the provider seam without losing their information', () => {
-  it('discovery preserves coarse centroids, actual city counts and encoded navigation', () => {
-    const map = plot(<DiscoverMap cities={[{ city: 'Ocean & Coast', lat: 33, lng: -117, circles: 12, events: 20 }]} />)
-    expect(map.pins?.[0]).toMatchObject({ lat: 33, lng: -117, count: 12, href: '/discover/circles?city=Ocean%20%26%20Coast' })
-    expect(map.pins?.[0]?.moreCount).toBeUndefined()
-    expect(map.fit).toMatchObject({ maxZoom: 11 })
+  it('current public discovery lazily mounts the shared map with coarse city counts and honest links', () => {
+    let intersect: IntersectionObserverCallback | undefined
+    class Observer {
+      constructor(callback: IntersectionObserverCallback) { intersect = callback }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+      takeRecords() { return [] }
+      root = null; rootMargin = ''; thresholds = []
+    }
+    vi.stubGlobal('IntersectionObserver', Observer)
+    const host = document.createElement('div')
+    const root = createRoot(host)
+    const pins = eventCityPins(['a', 'b'].map(id => ({ id, href: `/events/${id}`, title: id, when: 'Thu', where: 'Encinitas', city: 'Encinitas', icon: 'event' as const, tag: 'Free' })))
+    try {
+      captures.length = 0
+      act(() => root.render(<WhatsOnMap pins={pins} />))
+      expect(captures).toHaveLength(0)
+      expect(intersect).toBeDefined()
+      act(() => intersect!([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver))
+      const map = captures.at(-1)!
+      expect(map.pins?.[0]).toMatchObject({ approximate: true, subtitle: '2 gatherings coming up', href: '/events/a' })
+      expect(map.pins?.[0]?.count).toBeUndefined()
+      expect(map.pins?.[0]?.lat).toBeCloseTo(33.037)
+      expect(map.fit).toMatchObject({ maxZoom: 11 })
+    } finally { act(() => root.unmount()); vi.unstubAllGlobals() }
   })
 
   it('analytics preserves scan totals rather than counting cities as individual scans', () => {
