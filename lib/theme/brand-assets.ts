@@ -2,7 +2,7 @@ import { SITE_DESIGN, type DesignId } from '@/lib/theme/design'
 
 // THE BRAND ASSETS, per design system (ADR-1737). The wordmark and the round icon are raster files,
 // so no token can restyle them: a design that brings new marks swaps them HERE, by value, and every
-// chrome surface that draws the brand (components/layout/wordmark.tsx, brand-mark.tsx) follows.
+// chrome surface that draws the brand (components/layout/wordmark.tsx and the Frequency shell logo links) follows.
 //
 // Keep this module a leaf: it is reachable from components/layout/app-shell.tsx, which
 // check:shell-weight budgets, so it imports one constant and holds data only.

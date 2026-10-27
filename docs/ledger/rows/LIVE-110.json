@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-110",
+  "patch": {
+    "source": {
+      "file": "components/frequency/site/shell/site-header.tsx",
+      "ref": "Actual Frequency public phone sheet, lazy viewer and current navigation; historical old SiteHeader report retained"
+    }
+  },
+  "append": {
+    "detail": " HYG-214 2026-10-27: actual consumer guard/source migrated off orphan UI. Human explicitly ruled: \"Keep the current Frequency design; retire the old global-ticker requirement.\" Nearby and rail Dispatch features remain; Nearby is not claimed as a global-ticker equivalent. Shared modal/scrollbar/accessibility consequences remain guarded."
+  }
+}

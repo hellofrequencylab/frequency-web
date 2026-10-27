@@ -44,7 +44,7 @@ import { CTA_LABEL_COMPACT } from '@/lib/site'
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8')
 
 const MARKETING = read('./marketing-header.tsx')
-const SITE = read('./site-header.tsx')
+const SITE = read('../frequency/site/shell/site-header.tsx')
 const SHELL = read('../frequency/members/shell/header.tsx')
 const TAB_BAR = read('../frequency/members/shell/tab-bar.tsx')
 const MOBILE_MENU = read('./marketing-mobile-menu.tsx')
@@ -85,15 +85,12 @@ describe('MarketingHeader: the wordmark is the only child that may shrink', () =
   })
 })
 
-describe('SiteHeader (/discover and the public shells): the same one contract', () => {
-  it('gives both wordmark links — client-auth and server-auth — a shrinkable box', () => {
-    const shrinkable = SITE.match(/className="min-w-0 shrink"/g) ?? []
-    expect(shrinkable).toHaveLength(2)
-  })
-
-  it('pins both search affordances', () => {
-    expect(SITE).toContain('hidden sm:flex shrink-0 items-center')
-    expect(SITE).toContain('sm:hidden shrink-0 p-2')
+describe('active Frequency public header keeps phone navigation reachable', () => {
+  it('renders the actual logo, search and modal menu trigger', () => {
+    expect(SITE).toContain('className="lg-fx"')
+    expect(SITE).toContain('aria-controls="fq-mm-sheet"')
+    expect(SITE).toContain('aria-modal="true"')
+    expect(SITE).toContain('ref={sheetTrigRef}')
   })
 })
 
