@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-985",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const bad=[];const css=r('app/themes/frequency/space-page.css');const a=r('components/spaces/accent-scope.tsx');const f=r('lib/theme/site-faces.ts');const ss=r('lib/theme/site-style.ts');if(/\\\\.fqs-cols\\\\{[^}]*grid-template-columns:minmax\\\\(0,1fr\\\\) \\\\d+px/.test(css))bad.push('the public body is squeezed beside a facts column');if(!/\\\\.fqs-cols\\\\{display:grid;grid-template-columns:minmax\\\\(0,1fr\\\\);/.test(css))bad.push('the public body does not run full width');if(!/\\\\[data-space-fonts=\\\"network\\\"\\\\]\\\\s*\\\\{[^}]*--font-nw-bricolage/.test(css)||!/\\\\[data-space-fonts=\\\"wildheart\\\"\\\\]\\\\s*\\\\{[^}]*--font-wh-fell/.test(css))bad.push('the Space page has no website faces');if(!f.includes('SITE_FACE_SHEETS')||!a.includes('SITE_FACE_SHEETS[faces]'))bad.push('AccentScope loads no website faces');if(!ss.includes('export function spacePageSiteFaces'))bad.push('no synced-faces reader');if(r('app/(main)/spaces/[slug]/layout.tsx').includes('siteFaces='))bad.push('the member Space layout passes website faces');if(!/\\\\[data-space-fonts\\\\] :is\\\\(\\\\.fqs-card-t/.test(css))bad.push('the facts cards ignore the Space faces');if(bad.length){console.error('SCAN-985: '+bad.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": " 2026-10-27 (LIVE-1509, ADR-1906, owner: \"rewrite the website theme probes\"): the probe now holds that the member Space layout wears no website theme."
+  }
+}
