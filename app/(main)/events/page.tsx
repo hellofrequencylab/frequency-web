@@ -8,7 +8,7 @@ import { FqEventsBody } from '@/components/frequency/members/events/events-body'
 // EVENTS — the one events home, for members and for the commerce hub alike. The hub's Events tab
 // links here and the old /marketplace/events twin 308-redirects here (ADR-866; it rendered this
 // exact surface on this exact data and already canonicaled here). The shared composition lives in
-// components/marketplace/events-surface.tsx (getEventsIndexData + EventCard), topped by the member
+// components/frequency/members/events/events-body.tsx, topped by the member
 // action cluster (New Event always; Manage + My drafts only once they have added an event). What's
 // unique to this canonical home is the JSON-LD below. No business logic is duplicated. No em or en
 // dashes.
