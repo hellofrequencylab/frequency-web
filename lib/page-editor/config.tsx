@@ -132,6 +132,7 @@ export const config: Config = {
         'SpaceAction',
         'SpaceOfferings',
         'SpaceContact',
+        'SpaceJoinList',
         'SpaceBusiness',
         'SpaceTeam',
         'SpaceCTA',

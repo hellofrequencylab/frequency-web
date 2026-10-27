@@ -114,3 +114,24 @@ export function profileKit(theme: Theme, niche: KitNiche): SiteKit {
   const spec = NICHE_SPECS[niche]
   return { id: `${theme.toLowerCase()}-${niche}`, label: spec.label, description: spec.description, theme, version: 1, niche, pages: BUILDERS[theme](spec) }
 }
+
+const JOIN_LEAD = 'Leave your email and we will let you know what is coming up.'
+
+/** The email sign-up page every General kit carries (slug `join`). Midnight and Temple use their own sign-up blocks;
+ *  every other theme uses the neutral Space one. All of them write a lead through the same anonymous door. */
+export function joinListPage(theme: SiteKit['theme']): KitPage {
+  const seo = 'Join the list to hear what is coming up.'
+  if (theme === 'Midnight') {
+    return page('join', 'Join the list', seo, [
+      { type: 'MidnightHero', props: { layout: 'banner', eyebrow: 'Stay close', title: 'Join the list', lead: JOIN_LEAD, primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '', image: '', alt: '' } },
+      { type: 'MidnightLetter', props: { title: 'Join the list.', em: '', lead: JOIN_LEAD, placeholder: 'you@email.com', buttonLabel: 'Join the list', successMessage: 'You are on the list. Thank you.' } },
+    ])
+  }
+  if (theme === 'Temple') {
+    return page('join', 'Join the list', seo, [
+      { type: 'EditorialSection', props: { body: 'lead', eyebrow: 'Stay close', title: 'Join the list', lead: JOIN_LEAD } },
+      { type: 'TempleFollow', props: { eyebrow: 'Stay close', title: 'Hear what is coming up, first.', lead: '', placeholder: 'you@email.com', buttonLabel: 'Join the list', successMessage: 'You are on the list. Thank you.' } },
+    ])
+  }
+  return page('join', 'Join the list', seo, [{ type: 'SpaceJoinList', props: { eyebrow: 'Stay close', title: 'Join the list', body: JOIN_LEAD, submitLabel: 'Join the list', successMessage: 'You are on the list. Thank you.' } }])
+}

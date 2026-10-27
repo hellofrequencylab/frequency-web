@@ -61,7 +61,10 @@ const PROFILE_BUILDERS: { prefix: string; mega: MegaThemeId; build: (niche: KitN
   { prefix: 'wildheart', mega: 'wildheart', build: (n) => import('./profile-variants').then((m) => m.profileKit('Wildheart', n)) },
 ]
 const PROFILE_THEMES = PROFILE_BUILDERS.map((b) => ({ ...b, theme: MEGA_THEMES.find((m) => m.id === b.mega)!.editor }))
-for (const t of PROFILE_THEMES) for (const niche of MEGA_PROFILE_NICHES) LOADERS[`${t.prefix}-${niche}`] = () => t.build(niche)
+// The General kit also carries the email sign-up page ("Join the list"), published with the site.
+const withJoinPage = async (kit: SiteKit, niche: KitNiche): Promise<SiteKit> =>
+  niche === 'general' ? { ...kit, pages: [...kit.pages, (await import('./profile-variants')).joinListPage(kit.theme)] } : kit
+for (const t of PROFILE_THEMES) for (const niche of MEGA_PROFILE_NICHES) LOADERS[`${t.prefix}-${niche}`] = () => t.build(niche).then((k) => withJoinPage(k, niche))
 
 interface KitSummary { id: string; niche: KitNiche; theme: SiteKit['theme']; label: string; description: string }
 
