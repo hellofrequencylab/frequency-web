@@ -3,11 +3,15 @@
   "patch": {
     "verify": {
       "kind": "cmd",
-      "cmd": "node -e 'const fs=require(\"fs\")\nconst D=String.fromCharCode(34)\nconst rd=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch(e){return null}}\nconst b=rd(\"components/media/poster-band.tsx\")\nconst p=rd(\"app/(main)/events/[slug]/event-member-page.tsx\")\nif(b===null)process.exit(1)\nconst ok = b.indexOf(\"widthClass} overflow-hidden\")>=0\n  && b.indexOf(\"w-full overflow-hidden\")<0\n\nprocess.exit(ok?0:1)\n'",
-      "note": "Measures the CONSEQUENCE, not the literal that happened to satisfy it. Widened 2026-09-25 with LIVE-507: this probe used to require the exact string widthClass=\"w-auto sm:w-full\", so fixing the shaped-path collapse (which had to replace w-auto with a DEFINITE width) failed a row that had not regressed -- the same shape of stale assertion LIVE-082 carried. What LIVE-145 is actually about is that the full bleed reaches BOTH edges: the component exposes widthClass and bakes no w-full into its base string (nothing collides), the event page delivers its width through that prop with no w-* left in className, there is EXACTLY ONE base width class, and that width is not plain w-full -- which with -mx-4 shifts the box instead of widening it and leaves the 34px stripe. Any definite bleeding width passes; re-baking w-full, moving the width back into className, adding a second base width, or reverting to plain w-full all fail. components/media/poster-band.test.tsx is the enforcing arm."
+      "cmd": "node scripts/probes/frequency-public-retirement.mjs cover",
+      "note": "Checks actual Frequency artwork/focus/aspect capture and consumers. The later owner whole-artwork contain ruling supersedes old global cover-only style assertions; active shared geometry helpers remain tested."
+    },
+    "source": {
+      "file": "components/frequency/members/event/event-header.tsx",
+      "ref": "Actual FqEventCover; historical PosterBand report retained, later owner whole-artwork contain ruling 2026-10-14"
     }
   },
   "append": {
-    "detail": " 2026-10-26 (SCAN-1129): the event page cover is FqEventCover now (Frequency is the only design, ADR-1880); the PosterBand arms of this probe moved to the component alone."
+    "detail": " 2026-10-26 (SCAN-1129): the event page cover is FqEventCover now (Frequency is the only design, ADR-1880); the PosterBand arms of this probe moved to the component alone. HYG-214 2026-10-27: retired unreachable PosterBand; verification now follows actual FqEventCover, captured aspect/focus and later owner whole-artwork contain treatment. Historical original report is preserved; no browser pixel acceptance is inferred."
   }
 }
