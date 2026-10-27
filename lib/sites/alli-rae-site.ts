@@ -197,4 +197,4 @@ export function alliRaeEditorState(now: string): WebsiteEditorState {
 }
 
 /** The firm's ochre, the Designer theme's own accent. */
-export const ALLI_RAE_ACCENT = '#D3A03F'
+export const ALLI_RAE_ACCENT = '#D3A03F' // token-ok: the stored brand accent is data, the Designer theme's own ochre (lib/theme/designer.ts)
