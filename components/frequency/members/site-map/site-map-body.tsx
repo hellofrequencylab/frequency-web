@@ -13,7 +13,7 @@ import type { DesignId } from '@/lib/theme/design'
 //
 // "Every place" means the union of the live (DAWN) chrome and the Frequency header: the left rail
 // (lib/nav-areas NAV_AREAS), the account menu and the member footer (lib/nav/registry), My Frequency
-// (lib/nav/my-frequency-rows), the header and drawer links, and the right rail's "See all" doors.
+// (the actual Frequency account menu), the header and drawer links, and the right rail's "See all" doors.
 // components/frequency/members/shell/nav-coverage.test.ts collects that set from those modules and
 // fails when one is missing here, and site-map-body.test.ts does the same for the Frequency header.
 //

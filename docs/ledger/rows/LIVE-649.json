@@ -1,0 +1,9 @@
+{
+  "id": "LIVE-649",
+  "patch": {
+    "source": {
+      "file": "components/frequency/members/shell/rail-layout.tsx",
+      "ref": "Retained active Frequency shell and retirement proof; legacy components/layout/app-shell.tsx is intentionally absent"
+    }
+  }
+}

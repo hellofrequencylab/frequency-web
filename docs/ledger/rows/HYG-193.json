@@ -1,0 +1,18 @@
+{
+  "id": "HYG-193",
+  "title": "Retire unreachable legacy member AppShell and move live acceptance to Frequency consumers",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "M",
+  "source": {
+    "file": "scripts/probes/active-member-shell-contracts.mjs",
+    "ref": "Existing active-shell retirement consequence and all-tree importer proof; components/layout/app-shell.tsx is intentionally absent"
+  },
+  "detail": "AppShell has no runtime imports after owner4058 selected FrequencyMembersShell. Delete only that module; retain reusable DockBar/account/nav/metrics helpers. Migrate source assertions to real active Frequency consumers and preserve retired navigation destinations solely as explicit compatibility inventory. Active rendered rail tests cover landmark, content, camera hooks, rail faces, docks, route edge takeover and footer. No production/browser certification or whole-app orphan-free claim.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/active-member-shell-contracts.mjs retirement",
+    "note": "Module absence plus actual active layout consumer; all-tree AST importer guard and alias/reexport/dynamic/require negative controls in scripts/retired-member-shell.test.ts."
+  }
+}

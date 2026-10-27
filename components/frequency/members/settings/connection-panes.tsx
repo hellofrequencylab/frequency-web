@@ -17,7 +17,7 @@ import { hidesFeedWhy } from '@/lib/feed/why-pref'
 import { FqAvatar } from '@/components/frequency/members/shared/avatar'
 
 // The Settings panes that the DAWN suite keeps in ONE "Connections and location" section
-// (app/(main)/settings/connections/section.tsx), split the way the reference names them
+// (the retired DAWN ConnectionsSection), split the way the reference names them
 // (design_handoff/frequency/templates/members/Settings.html): Privacy, Location, Feed. The SAME
 // controls and server actions, regrouped, plus the one privacy switch the reference names that the
 // suite only offered on the board itself (Show me on leaderboards). Each pane is a Server Component the
