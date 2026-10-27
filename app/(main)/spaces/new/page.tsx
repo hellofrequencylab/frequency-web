@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { envFlag } from '@/lib/env/string'
 import { nicheFromHint } from '@/lib/spaces/space-picker'
+import { isMegaThemeId } from '@/lib/theme/mega-theme'
 import { FocusTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
 import { listModeChoices } from '@/lib/spaces/modes'
@@ -31,7 +32,7 @@ export const metadata = {
 export default async function NewSpacePage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string | string[]; plan?: string | string[]; name?: string | string[]; intents?: string | string[]; niche?: string | string[] }>
+  searchParams: Promise<{ mode?: string | string[]; plan?: string | string[]; name?: string | string[]; intents?: string | string[]; niche?: string | string[]; theme?: string | string[] }>
 }) {
   // Gate: only an authenticated member may create a space (the action re-checks server-side).
   // A signed-out operator makes an account and lands back here with the same hints (door mode, plan).
@@ -50,6 +51,10 @@ export default async function NewSpacePage({
   // The niche a /for door named: an explicit `?niche=`, else the funnel sequence the visitor came through
   // (the fq_beta_seq cookie carries the door's slug). Unknown values read as no niche and cannot 404.
   const arrivedNiche = nicheFromHint(params.niche) ?? nicheFromHint((await cookies()).get('fq_beta_seq')?.value)
+
+  // The Mega Theme a /themes page named (`?theme=`). Unknown values read as no theme and cannot 404.
+  const themeHint = Array.isArray(params.theme) ? params.theme[0] : params.theme
+  const arrivedTheme = isMegaThemeId(themeHint) ? themeHint : null
 
   // THE NICHE FUNNEL'S ANSWER, CARRIED THROUGH (ADR-1197). lib/funnels/definitions.ts builds
   // `/spaces/new?mode=<type>:<variant>` so an operator arriving from /for/<niche> lands pre-seeded in
@@ -94,6 +99,7 @@ export default async function NewSpacePage({
         heardAboutOptions={heardAboutOptions}
         pickerEnabled={envFlag('SPACE_PICKER_ENABLED')}
         arrivedNiche={arrivedNiche}
+        arrivedTheme={arrivedTheme}
       />
     </FocusTemplate>
   )
