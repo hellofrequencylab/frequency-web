@@ -9,6 +9,7 @@ export const SOURCES = {
   shell: 'components/frequency/members/shell/members-shell.tsx',
   rails: 'components/frequency/members/shell/rail-layout.tsx',
   header: 'components/frequency/members/shell/header.tsx',
+  bell: 'components/frequency/members/shell/bell.tsx',
   tab: 'components/frequency/members/shell/tab-bar.tsx',
   event: 'app/(main)/events/[slug]/event-member-page.tsx',
   registry: 'lib/layout/page-chrome.ts',
@@ -48,7 +49,7 @@ export function activeShellProblems(mode, read, retiredExists = false) {
     for (const href of ['/events/new', '/circles/new']) check(actions.some(line => line.includes(href) && line.includes('EVERYONE')), `${href} lost its every-member gate`)
   } else if (mode === 'size') {
     check(!retiredExists, 'Legacy monolithic client shell returned')
-    const lines = ['header', 'rails', 'tab'].reduce((sum, key) => sum + read(SOURCES[key]).split('\n').length, 0)
+    const lines = ['header', 'bell', 'rails', 'tab'].reduce((sum, key) => sum + read(SOURCES[key]).split('\n').length, 0)
     check(lines <= 1800, `Active core client chrome totals ${lines} lines, over the unchanged 1800 line ceiling`)
   } else if (mode === 'viewport') {
     const css = read(SOURCES.css).replace(/\/\*[\s\S]*?\*\//g, '')

@@ -23,7 +23,7 @@ import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-c
 import { getRealCallerWebRole } from '@/lib/auth'
 import { actAsMember } from '@/app/(main)/impersonate-actions'
 import { readSpotlightPublished, readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
-import { readProfileHeaderFocus } from '@/lib/profile/header-focus'
+import { readProfileHeaderFocus, readProfileAvatarFocusWithFallback } from '@/lib/profile/header-focus'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ConnectionPanel } from '@/components/people/connection-panel'
 import { ProfileSettingsDrawer } from './profile-settings-drawer'
@@ -581,7 +581,7 @@ export default async function ProfilePage({
         cover={{ image: fqHero.coverImage ?? fqPlaceholderArt(profileId), focus: fqHero.coverFocus }}
         avatar={
           <CosmeticBorder value={equippedBorder}>
-            <ProfilePhoto src={profile.avatar_url} initials={initials} name={profile.display_name} />
+            <ProfilePhoto src={profile.avatar_url} initials={initials} name={profile.display_name} focus={readProfileAvatarFocusWithFallback(profile.meta, profile.avatar_url)} dimmed={isDemo} />
           </CosmeticBorder>
         }
         metaLine={metaLine}
