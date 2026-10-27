@@ -1,0 +1,19 @@
+{
+  "id": "HYG-188",
+  "title": "Keep the raw primary-button source residue budget active",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-26",
+  "source": {
+    "file": "scripts/lib/raw-primary-button-count.mjs",
+    "ref": "Separate source residue budget from SCAN-1133 full-area adoption acceptance"
+  },
+  "detail": "Preserves the original raw-buttons source expression and strict <30 threshold, including source-only limitations. The registered command remains unchanged and active under this narrow done row. Actual retired Create action fixtures prove29passes and30fails through the actual CLI. This does not close SCAN-1133 or claim semantic/rendered kit adoption.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs raw-buttons",
+    "note": "Exact original source-count regression budget;29passes,30fails. Not full adoption or browser acceptance."
+  }
+}
