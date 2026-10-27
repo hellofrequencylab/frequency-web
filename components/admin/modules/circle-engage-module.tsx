@@ -1,6 +1,5 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Trophy, X } from 'lucide-react'
@@ -14,6 +13,7 @@ import {
 } from '@/app/(main)/circles/admin-actions'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { useEntityRailRead } from './entity-rail-data'
+import { buttonClasses } from '@/components/ui/button'
 
 // In-place "Engage" module (ADMIN-RAIL.md Phase 7, the 'engage' spine cell). Renders in the page
 // admin dock on /circles/[slug]; the server returns null unless the caller holds circle.assignTask.

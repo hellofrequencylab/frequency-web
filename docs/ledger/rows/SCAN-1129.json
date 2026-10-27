@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-1129",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-26",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs dawn-member",
+      "note": "Source contract: rejects executable member-route platform-design branches, following selector aliases, namespace and environment reads. Does not claim full theme, visual or authenticated journey acceptance."
+    }
+  },
+  "append": {
+    "detail": "2026-10-26 premise reconciliation: owner member sweeps culminated in PR4058/main09b6ab814 removing the root DAWN shell and public fallback; feed, CRM, manage and calendar now render their Frequency paths directly. Remaining SITE_DESIGN text in those routes is prose. The two real uses are the shared anonymous-feed access predicate and the janitor Theme Studio's read-only design label; neither is an alternative frontend design. Preserve janitor saved-theme CRUD. The former raw text probe falsely counted these uses/comments. Its replacement parses executable selector dependencies and rejects if/ternary/switch/logical design branches, including aliases, namespaces and raw environment reads. Actual historical root and Feed statements plus alias/env controls fail; current member route modules pass. Closing only the retired member-selector-branch source contract. SCAN-1032 and separate visual/token/journey acceptance remain open; no full app theme or deployed acceptance claim."
+  }
+}

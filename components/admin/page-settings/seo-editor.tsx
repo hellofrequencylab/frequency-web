@@ -1,6 +1,5 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
@@ -11,6 +10,7 @@ import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { isError } from '@/lib/action-result'
 import { getPageSeoForEditor, savePageSeo } from '@/lib/page-settings/actions'
 import type { SeoPane } from '@/lib/page-settings/seo'
+import { buttonClasses } from '@/components/ui/button'
 
 // The live SEO editor for the on-page Settings panel (ADR-268). It backs TWO sections of the
 // settings spine, selected by `pane`:

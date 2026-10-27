@@ -11,6 +11,7 @@ import {
 } from '@/lib/email-studio/loom-actions'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { Input, Textarea } from '@/components/ui/field'
+import { buttonClasses } from '@/components/ui/button'
 
 // THE LOOM PHOTO POPUP (Email Studio canvas, Slice B). Clicking an image slot on the WYSIWYG email canvas
 // opens this dialog to manage the slot's photo through Loom (the media library): PICK an existing image from
@@ -326,7 +327,7 @@ export function LoomImagePopup({
                   type="button"
                   onClick={commit}
                   disabled={!selectedUrl}
-                  className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-bold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-40"
+                  className={buttonClasses('primary', 'sm')}
                 >
                   Use this photo
                 </button>

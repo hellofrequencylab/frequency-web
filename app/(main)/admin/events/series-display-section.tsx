@@ -13,6 +13,7 @@ import {
   MAX_INDEXED_OCCURRENCES,
   type SeriesDisplayConfig,
 } from '@/lib/events/series-config.shared'
+import { buttonClasses } from '@/components/ui/button'
 
 // The operator form for the repeating-events knobs (ADR-897 §7.4): three integers, one save, no
 // deploy. Models app/(main)/admin/ai/autonomy-controls.tsx (local editable copy, save on the
@@ -130,7 +131,7 @@ export function SeriesDisplaySection({ config }: { config: SeriesDisplayConfig }
             type="button"
             onClick={save}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary disabled:opacity-50"
+            className={buttonClasses('primary', 'sm')}
           >
             {pending ? 'Saving' : 'Save'}
           </button>

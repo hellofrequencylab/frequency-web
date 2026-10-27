@@ -129,9 +129,12 @@ export interface AdminBarState {
 
 export function AdminBar({
   onStateChange,
+  onListening,
 }: {
   /** Reported up so the shell can size the rail column to the live desktop bar width. */
   onStateChange?: (state: AdminBarState) => void
+  /** The lazy shell replays its queued trigger only after every mount effect is installed. */
+  onListening?: () => void
 }) {
   const [open, setOpen] = useState(false)
   // The pre-scoped detail a typed `open-admin-bar` dispatch carried (scope + caps). Undefined until a
@@ -349,6 +352,8 @@ export function AdminBar({
       setWidth(MAX_WIDTH)
     }
   }, [])
+
+  useEffect(() => { onListening?.() }, [onListening])
 
   // Nothing to manage here, or closed: render nothing — the rail shows normally underneath.
   if (!hasContent) return null
