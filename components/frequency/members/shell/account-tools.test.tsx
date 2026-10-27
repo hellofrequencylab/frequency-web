@@ -8,7 +8,7 @@ vi.mock('@/app/(main)/view-as-actions', () => ({setViewAsRole: viewAs}))
 vi.mock('@/app/(main)/context-actions', () => ({setOperatorContext: context}))
 let root: Root
 let host: HTMLDivElement
-const props: AccountToolsProps = { realRole:'host', currentRole:'host', previewVisitor:false, context:{kind:'personal'}, available:[{kind:'personal', label:'Personal', href:'/feed'},{kind:'operator',spaceId:'space-owned',label:'Owned Space',href:'/spaces/owned'}],demoHidden:true }
+const props: AccountToolsProps = { realRole:'host', currentRole:'host', previewVisitor:false, context:{kind:'personal'}, available:[{kind:'personal', label:'Personal', href:'/feed'},{kind:'operator',spaceId:'space-owned',label:'Owned Space',href:'/spaces/owned',logoUrl:null}],demoHidden:true }
 async function render(overrides: Partial<AccountToolsProps> = {}) {
  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
  host=document.createElement('div'); document.body.append(host); root=createRoot(host)

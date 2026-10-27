@@ -6,7 +6,7 @@ const request = vi.hoisted(() => vi.fn())
 vi.mock('@/app/(marketing)/subscribe/actions', () => ({ requestSubscribe: request }))
 vi.mock('./parts', () => ({ FnOutcome: ({ children, title }: { children: React.ReactNode; title: string }) => <div role="status">{title}{children}</div> }))
 import { FrequencySubscribeForm } from './subscribe-form'
-globalThis.IS_REACT_ACT_ENVIRONMENT = true
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 let root: Root | undefined
 let host: HTMLDivElement
 afterEach(() => { act(() => root?.unmount()); host?.remove(); request.mockReset() })

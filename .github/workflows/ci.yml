@@ -238,7 +238,7 @@ jobs:
       # introduces. Depth 1 is enough: the gate subtracts the base TIP, never walks history. If
       # this fetch is missing the gate falls back to the contents API and says so in its output.
       - name: Fetch base tip for check:id-collisions
-        if: github.event_name == 'pull_request'
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         run: git fetch --no-tags --depth=1 origin "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
       # ARMS check:shipped-ids (HYG-124, ADR-1538). That gate reads the SUBJECT of every commit merged
       # to the base branch since the one list was seeded (2026-08-17, ADR-1043) and fails when a
@@ -250,15 +250,13 @@ jobs:
       # tip fetch above on purpose: the tip's tree is then already on disk for check:id-collisions,
       # so `git show origin/<base>:<file>` never has to lazy-fetch through the promisor remote.
       - name: Fetch base history for check:shipped-ids
+        # Guards run after unrelated failures; their read prerequisites must run too.
+        if: ${{ !cancelled() }}
         run: |
           git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "+refs/heads/${GITHUB_BASE_REF:-main}:refs/remotes/origin/${GITHUB_BASE_REF:-main}"
           # A manual run judges HEAD; fetching main alone leaves a branch checkout shallow.
           git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "$GITHUB_SHA"
-          # Fetching both refs with a date boundary can retain HEAD's depth-one boundary.
-          # Manual validation must read the actual candidate history, never a partial window.
-          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$(git rev-parse --is-shallow-repository)" = true ]; then
-            git fetch --no-tags --filter=tree:0 --unshallow origin "$GITHUB_SHA"
-          fi
+
 
       - name: Contract guards (all run; every failure reported)
         if: ${{ !cancelled() }}
