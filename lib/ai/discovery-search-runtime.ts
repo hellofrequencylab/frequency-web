@@ -65,16 +65,26 @@ export async function searchPropertyAllowed(spaceId: string, provider: Discovery
   } catch { return null }
 }
 /** Provider property verification before credentials become connected. No property stats are persisted. */
-export async function verifySearchConnection(binding: SearchConnectionBinding, tokens: SearchTokens): Promise<boolean> {
+type SearchVerification = { status: 'verified' } | { status: 'unavailable'; reason: 'property_scope_changed' | 'provider_property_unverified' | 'provider_auth_failed' | 'property_provider_unavailable' | 'property_provider_invalid_response' | 'property_provider_rate_limited'; providerStatus?: number }
+/** Collapse provider failures into fixed local stages; never return raw provider bodies/errors. */
+function verificationFailure(reason: string, providerStatus?: number): SearchVerification {
+  const stage = reason === 'permission_denied' || reason === 'consent_required' || reason === 'invalid_context' || reason === 'property_scope_unavailable'
+    ? 'property_scope_changed' : reason === 'property_unverified' || reason === 'property_not_verified' ? 'provider_property_unverified'
+      : reason === 'not_connected' || reason === 'connection_expired' ? 'provider_auth_failed'
+        : reason === 'invalid_response' ? 'property_provider_invalid_response' : reason === 'rate_limited' ? 'property_provider_rate_limited' : 'property_provider_unavailable'
+  return { status: 'unavailable', reason: stage, ...([400, 401, 403, 404, 408, 429, 500, 502, 503, 504].some(status => status === providerStatus) ? { providerStatus } : {}) }
+}
+export async function verifySearchConnection(binding: SearchConnectionBinding, tokens: SearchTokens): Promise<SearchVerification> {
   const allowed = await searchPropertyAllowed(binding.spaceId, binding.provider, binding.propertyUrl)
-  if (!allowed || allowed !== binding.propertyScope) return false
+  if (!allowed || allowed !== binding.propertyScope) return verificationFailure('property_scope_unavailable')
   const deps = searchProviderDependencies(binding.provider, { binding, tokens })
   if (binding.provider === 'google_search_console') {
     const result = await listGoogleSearchConsoleProperties(binding.spaceId, deps)
-    return result.status === 'completed' && result.propertyUrls.includes(binding.propertyUrl)
+    if (result.status !== 'completed') return verificationFailure(result.reason)
+    return result.propertyUrls.includes(binding.propertyUrl) ? { status: 'verified' } : verificationFailure('property_not_verified')
   }
   const result = await verifyBingSearchProperty(binding.spaceId, deps)
-  return result.status === 'completed'
+  return result.status === 'completed' ? { status: 'verified' } : verificationFailure(result.reason, result.providerStatus)
 }
 /** On-demand only. There is no automatic publish, learned rewrite, scheduled polling or query storage. */
 export async function reviewSearchSignals(spaceId: string, provider: DiscoverySearchProvider) {

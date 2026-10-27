@@ -1282,7 +1282,6 @@ lib/support/store.ts
 lib/suppression.ts
 lib/system-line.ts
 lib/theme/server/admin-themes.ts
-lib/theme/server/themes.ts
 lib/this-week-reads.ts
 lib/traits/refresh.ts
 lib/traits/segments.ts
