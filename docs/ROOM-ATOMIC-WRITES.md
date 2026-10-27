@@ -1,0 +1,45 @@
+# Atomic manual room writes
+
+Status lives in [the merged backlog](BUILD-BACKLOG.json), row HYG-205. The trusted Frequency Control overnight handoff records authorization for necessary release merges and migrations. Root must still satisfy commit-main-first, canonical migration preflight and exact readiness gates; this foundation-preparation lane applies nothing and keeps the flag off.
+
+The current room create action writes the room and creator membership in separate requests. A failed second insert leaves a room without its creator membership. The current demotion action reads an admin count and updates later; two callers can both read two admins and then remove both admin flags. The newly registered RPCs provide that transactional boundary, but are not applied in production and the app flag remains off.
+
+The reviewed SQL is [room-atomic-proposal.sql](database/room-atomic-proposal.sql). Supabase CLI2.106.0 generated [20261027033306_atomic_manual_room_writes.sql](../supabase/migrations/20261027033306_atomic_manual_room_writes.sql) after the human approved registration and isolated staging. Its transaction body is byte-for-byte identical (SHA256411eaeec0f1c431df255dc62506697c13c478bd46bab54ce90ff1ccab158f078). The repository now has861 migration files; this one is pending production application, not an orphan. The previously recorded production860 ledger is historical evidence, not a new live check.
+
+## Proposed behavior
+
+Three service-only `SECURITY INVOKER` RPCs create a room with its creator-admin membership, change a member's admin flag, and remove a member through a manual leave/kick action. Role changes and removals lock the room row before checking current caller membership/admin access and the remaining admin. Only the application server may call them; the actor ID must come from `getCallerProfile`, never a request field. Public, anonymous and authenticated execute privileges are revoked. Search paths are pinned empty and table names qualified. Existing table grants and RLS remain unchanged.
+
+There is no trigger. Account/profile deletion, creator-room cascades, system provisioning and direct maintenance SQL keep their existing semantics. Those paths may leave an adminless surviving room; this proposal does not claim a global invariant or silently promote anyone. Existing adminless rooms are not backfilled.
+
+## Adapter and activation
+
+This foundation registers the SQL and isolated acceptance harness only. It does not include the proposed `lib/messages/room-atomic.ts` adapter or change server actions. The dependent application packet must resolve identity and validate inputs at the existing caller boundary, use genuine generated RPC types after database application, and fail closed on missing functions, authorization errors or unconfirmed results. It must never retry through separate legacy writes. Until that packet and rollout are accepted, the existing implementation and its known race remain recorded in HYG-205; the flag stays blank/off.
+
+Before activation:
+
+1. Independently review SQL permissions, actor provenance and manual-action scope. Registration/staging were explicitly approved, and the later trusted overnight release handoff authorizes necessary release migrations. Root must review exact schema/app readiness and migration preflight before any production action.
+2. Use the CLI-generated registered migration only in the approved disposable/staging environment, regenerate RPC types from genuine schema evidence, and run existing database tests plus the independent two-session checks below. Do not infer live acceptance from local PGlite.
+3. Integrate the separately reviewed application packet for create, promote/demote, leave, and kick after genuine RPC type regeneration. Verify the exact deployed app includes those branches and matches the registered RPC signatures. Keep the opt-in `ROOM_ATOMIC_WRITES` blank until the migration, exact deployed app and staging proof agree. Record the database/app identities.
+4. After the authorized release root completes production preflight, apply the registered migration, verify catalog grants and invoker/search-path metadata, deploy the guarded app, and enable the flag only after readiness is confirmed. Verify controlled staging journeys before any authorized production fixture writes.
+5. On activation errors, turn the flag off and preserve evidence; do not execute compensating production deletes or mutate existing rooms automatically. Disabling the flag restores existing behavior and its recorded race, so it is mitigation, not a permanent repair.
+
+## Independent-session proof and remaining staging checks
+
+Local PostgreSQL17.7 independent-session proof passed12 checks, including6 observed lock waits and the legacy zero-admin race negative control. The exact proposal SHA256 was80084b74cfc77f21fe0c30d1f20432bdb37524bae88848d5bf5bab5870ca4431. This used a synthetic migrated room fixture, not the full production schema or PostgREST. Runtime provenance, checks and stopped-cluster/closed-port cleanup are recorded in the audit evidence. Repeat against the registered full staging schema before rollout.
+
+Use synthetic profiles and rooms in an isolated database, not customer data. Session A begins a transaction and calls the role-change RPC while holding the parent row lock. Session B attempts the conflicting demotion/removal and must block. Commit A; B must re-check current actor authority/admin count, refuse when necessary, and leave at least one admin. Repeat for self-demotion versus leave, kick versus demotion, and promotion/removal. Test different rooms do not share a lock. Roll back or explicitly remove only the isolated fixtures.
+
+The reproducible [local harness](../scripts/proposals/check-room-atomic-sql.mjs) takes the isolated checkout path as its sole argument and requires `PGLITE_MODULE` to point to an existing trusted PGlite module; it installs nothing. An optional `ROOM_ATOMIC_RECEIPT_FILE` records its JSON evidence. It uses an in-memory database and makes no network or production connection. The harness tests actual PostgreSQL function syntax, transaction rollback, grants, authorization, last-admin serial behavior and unchanged cascades. Its single embedded session cannot establish independent-transaction blocking or prove the production PostgREST deployment. The old stale-count interleaving is a deterministic negative control, not parallel-session evidence.
+
+## Read-only rollout preflight
+
+Classify existing adminless public/private rooms separately; do not automatically delete them or grant an admin. Confirm the current `room_members` count trigger functions retain their registered search-path pins, because the new invoker RPC uses an empty search path. Check the three RPC signatures, execute ACLs, `prosecdef = false`, and pinned search paths after registration. No direct browser write privilege is added.
+
+References: [Supabase function security](https://supabase.com/docs/guides/database/functions), [PostgreSQL row locking](https://www.postgresql.org/docs/17/explicit-locking.html), [volatile function snapshots](https://www.postgresql.org/docs/17/xfunc-volatility.html).
+
+## Isolated full-stack staging and out-of-order preflight
+
+Dispatch the existing `db-tests.yml` workflow at the exact staging draft head. Dispatch runs start a fresh Docker Supabase database plus Auth/PostgREST, apply the complete ordered migration inventory, run the full pgTAP suite (including24 atomic-room assertions), then exercise real service/anon/authenticated HTTP RPC calls. PR runs keep the existing DB-only behavior. Fixtures are ephemeral confirmed users with `.invalid` email addresses; admin creation and password token exchange request no email/provider send. Cleanup removes fixtures and destroys containers/volumes. Locally generated keys are captured in-process and never printed or uploaded. No hosted credentials, linked project, paid branch or application flag are used. Exact CI receipts, including head identity, ordered replay counts, accepted API results and declared unavailable coverage, are recorded in HYG-205. Future dispatch preparation alone is not passing evidence.
+
+The CLI timestamp sorts at position432 of861, before existing pseudo-future20270346 migrations. Do not rename the generated file or repair production migration history to make it appear applied. Full fresh ordered replay verifies authoring-order compatibility, but does not prove an already-current production database can apply an older pending version safely. Before release-root production execution: refresh the exact remote860+ ledger read-only; compare registered version/body and all other pending migrations; examine the CLI dry-run/include-all plan without applying it; independently review the direct application order against the actual deployed schema and permissions; record exact database/app identities. Do not use an unreviewed blanket `--include-all`, mark history applied, enable `ROOM_ATOMIC_WRITES`, or apply unrelated migrations from this foundation-preparation lane.

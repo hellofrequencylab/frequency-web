@@ -330,3 +330,8 @@ auth_email_exists                    internal
 meet_tap                             internal
 next_member_card_number              internal
 card_meet                            internal
+
+# Manual room write RPCs: caller-gated service role only; no direct browser execution.
+room_create_atomic internal
+room_remove_member_atomic internal
+room_set_member_admin_atomic internal
