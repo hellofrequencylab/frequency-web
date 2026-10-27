@@ -88,9 +88,9 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 //                 above it is now a PILL in the cover's top-left corner (PageHero's `corner` slot),
 //                 on the owner's 2026-09-17 ruling — and on a Space Circle that pill is a link to
 //                 the owning Space.
-//   4. SUBTITLE — one quiet on-ink line on the cover, and it is no longer the place: it is what
-//                 this Circle IS, resolved by `circleSubheading` (lib/circles/subheading.ts). The
-//                 place moved out because the band repeats it three inches lower.
+//   4. HISTORICAL SUBTITLE — the former PageHero purpose-summary rule was retired by HYG-203.
+//                 The active Frequency shell renders member/type/place metadata under the title
+//                 and keeps the human About text in its own panel.
 //   5. BAND     — below the hero, and it is the part that moved. See the next block.
 //   6. BACK     — DetailTemplate's `back` slot, above the band. The breadcrumb and the back link
 //                 coexisted here for a year and the owner reads both as correct; this is not the
