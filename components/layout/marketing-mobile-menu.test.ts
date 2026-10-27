@@ -160,11 +160,38 @@ describe('the sheet gates like the bar, and takes the menu the bar takes', () =>
 // measured as behaviour is measured that way (the gate, below); what cannot is pinned at the
 // wiring, because the two defects LIVE-106 found were both wiring — a prop that was never
 // passed, and a projection that dropped children.
-describe('Frequency public header uses its actual phone sheet and lazy viewer', () => {
-  const header = readFileSync(new URL('../frequency/site/shell/site-header.tsx', import.meta.url), 'utf8')
-  it('keeps real viewer auth hydration and modal navigation', () => {
-    expect(header).toContain("import('@/lib/supabase/client')")
-    expect(header).toContain('aria-modal="true"')
-    expect(header).toContain('ref={sheetRef}')
+describe('the sheet footer follows the viewer, not the surface', () => {
+  it('does not offer an unconditional "Sign in" + join pair', () => {
+    // A member who is already here being invited to sign in, and then to join a beta they are
+    // in, is copy that tells them the product does not know them. The pair must sit behind the
+    // isAuth branch rather than at the top level of the footer.
+    const sheet = readFileSync(new URL('./marketing-mobile-menu.tsx', import.meta.url), 'utf8')
+    expect(sheet).toContain('{isAuth ? (')
+    // Positive control for that branch: the signed-in arm has somewhere to go.
+    expect(sheet).toContain('Your feed')
+  })
+
+  it('a signed-in viewer and a visitor gate to different rows', () => {
+    // The behavioural half — sheetGroups is pure, so this one is measured rather than pinned.
+    const memberOnly: ResolvedMenu = {
+      ...defaultMenu('header'),
+      isDefault: false,
+      categories: [
+        {
+          id: 'c-gate',
+          label: 'Community',
+          position: 0,
+          colSpan: 1,
+          children: [],
+          items: [
+            { id: 'i-pub', label: 'Public', href: '/pub', position: 0, colSpan: 1, mode: 'active', roleModes: {}, minAccess: 'visitor' },
+            { id: 'i-mem', label: 'Members', href: '/mem', position: 1, colSpan: 1, mode: 'active', roleModes: {}, minAccess: 'member' },
+          ],
+        },
+      ],
+    }
+    const seen = (v: MenuViewer) => sheetGroups(memberOnly, v).flatMap((g) => g.items.map((i) => i.href))
+    expect(seen({ viewerRole: 'visitor' })).toEqual(['/pub'])
+    expect(seen({ viewerRole: 'member' })).toEqual(['/pub', '/mem'])
   })
 })
