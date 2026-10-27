@@ -20,7 +20,7 @@ Before activation:
 
 1. Independently review SQL permissions, actor provenance and manual-action scope. Approve SQL registration and deployment separately from this draft publication.
 2. Create the migration with the CLI, apply it only in a disposable/staging environment, regenerate RPC types, and run existing database tests plus the independent two-session checks below. Do not infer live acceptance from local PGlite.
-3. Wire all four manual actions to the adapter: create, promote/demote, leave, and kick. Keep the opt-in `ROOM_ATOMIC_WRITES` blank until the migration, exact deployed app and staging proof agree. Record the database/app identities.
+3. The local app branches now wire all four manual operations to the adapter: create, promote/demote, leave, and kick. Verify the exact deployed app includes those branches and matches the registered RPC signatures. Keep the opt-in `ROOM_ATOMIC_WRITES` blank until the migration, exact deployed app and staging proof agree. Record the database/app identities.
 4. After explicit production rollout approval, apply the registered migration, verify catalog grants and invoker/search-path metadata, deploy the guarded app, and enable the flag only after readiness is confirmed. Verify controlled staging journeys before any authorized production fixture writes.
 5. On activation errors, turn the flag off and preserve evidence; do not execute compensating production deletes or mutate existing rooms automatically. Disabling the flag restores existing behavior and its recorded race, so it is mitigation, not a permanent repair.
 
