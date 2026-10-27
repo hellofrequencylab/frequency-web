@@ -1,5 +1,9 @@
 # Adaptive theming: the four-axis model
 
+> Current implementation and remaining work are recorded in the [merged backlog](BUILD-BACKLOG.json).
+> Frequency is the platform design. The four-axis sections retain historical design context;
+> saved Theme Studio rows are janitor-managed data and do not inject styles or auto-schedule occasions.
+
 > **The model, in one line.** A surface's look is composed from **four orthogonal axes**:
 > mode, skin, occasion, and generation, each one attribute on the shell root, resolved
 > through the CSS custom-property cascade. One canonical DOM, CSS-only variation, no
@@ -381,14 +385,11 @@ generation, occasion }`) that the shell sets as the three data-attributes.
 3. **System / time default**: `DEFAULT_*` for skin and generation; for occasion, the **calendar
    window**, since occasion has no Space default unless the member pins one.
 
-**Occasion is now scheduled end-to-end.** The in-app shell layout ([`app/(main)/layout.tsx`](<../app/(main)/layout.tsx>))
-prefers a **pin** first (a non-`none` occasion `resolveTheme()` already settled from the member
-cookie or a code-registry window match); only when nothing is pinned does it auto-schedule from the
-DB by calling [`resolveActiveOccasionSlug(now)`](../lib/theme/server/themes.ts), which scans the
-active `kind='occasion'` theme rows and returns the first whose inclusive `MM-DD` window contains
-today (**year-wrap aware**, e.g. `12-20`..`01-05`). It is request-cached and **fail-safe**
-(`'none'` on any error or a missing table), so it never blocks render. When the result is `'none'`
-the `data-occasion` attribute is simply omitted, so the baseline renders untouched.
+**Current occasion behavior.** The [server resolver](../lib/theme/server/resolve.ts) returns
+`occasion: 'none'` for Frequency. The member layout no longer reads saved Theme Studio windows
+or injects DB theme CSS. The former request-cached auto-scheduler was retired after its final
+runtime consumer was removed. Saved occasion rows and their windows remain available to the
+janitor for inspection and cleanup; no rows are deleted by this source retirement.
 
 The cookie helper [`lib/theme/cookie.ts`](../lib/theme/cookie.ts) is deliberately client-safe (no
 `server-only`, no `next/headers` import) so the client writer and the server reader share one
@@ -544,43 +545,31 @@ save, not a deploy.
    (`;{}<>`, `url(`, comments, escapes, newlines), is **dropped**, never stored. Only the
    sanitized subset is saved.
 3. **Store.** The sanitized `{ light, dark, feel }` lands in the row's `tokens` (JSONB).
-4. **Inject (per request, in-app only).** The **in-app shell layout**
-   ([`app/(main)/layout.tsx`](<../app/(main)/layout.tsx>)) calls
-   [`loadActiveThemeCss`](../lib/theme/server/themes.ts), which loads the active `skin` theme
-   matched to the resolved `data-skin` (and the active `occasion`), **re-validates** every row,
-   and renders it through [`themeToCss`](../lib/theme/css.ts) into a scoped
-   `<style id="fx-theme">`. This and the personal `fxtheme` cookie read live in the in-app shell,
-   **not** the root layout, so the public marketing/discover pages stay static/prerendered (the
-   root layout has no per-request reads). Each kind is rendered against the **attribute the shell
-   actually sets**: `themeToCss('data-skin', …)` for a skin, `themeToCss('data-occasion', …)` for
-   an occasion overlay (this fixed a bug where occasion themes emitted `[data-skin]` rules and so
-   never matched). The `data-*` axis attributes are set on the **shell root** (a `:root`
-   descendant), and the selectors are deliberately higher-specificity
-   (`:root[<attr>="<slug>"]` / `:root [<attr>="<slug>"]`, `(0,2,0)+`) than the code skin /
-   occasion rules (single attribute, `(0,1,0)`), so the DB theme wins regardless of stylesheet
-   order.
+4. **Historical render path.** The former in-app layout loaded active skin/occasion rows,
+   validated them again, and rendered scoped CSS through [`themeToCss`](../lib/theme/css.ts).
+   Frequency removed that integration, and the unused reader has been retired. The CSS formatting contract
+   and saved-data token validator remain. A saved row's `active` status
+   does not cause it to apply to Frequency.
 
 ### The security boundary
 
-Operator-entered values get written verbatim into a server `<style>`, so validation is the
-hard line. It is enforced **twice**: once on save (`validateThemeTokens`) and again at render
-time before the row reaches the page (the DB is never trusted to be clean). The slug is
-re-guarded by `isSafeSlug` before it builds any selector. Writes are service-role only; the
-table's RLS exposes only `status='active'` rows to reads. The studio itself is **janitor-gated**.
+The remaining saved-data actions call `requireAdmin('janitor')` before service-role access.
+They validate tokens with [`validateThemeTokens`](../lib/theme/validate.ts) and guard slugs with
+`isSafeSlug`; these controls remain unchanged. No member render path reads saved theme rows for
+CSS injection. The table, policies, rows and janitor create/update/archive/default/delete actions
+are preserved.
 
-### Activation rules
+### Saved activation metadata
 
-| Outcome | What it takes |
-|---|---|
-| A skin theme renders for its `data-skin` | `status='active'` **and** its `slug` matches the resolved skin |
-| The global default skin | `is_default=true` (only one row may hold it) |
-| An occasion theme renders | `kind='occasion'`, `status='active'`, slug matches the active `data-occasion` (auto-scheduled from the row's `MM-DD` window via `resolveActiveOccasionSlug`, unless a member/code pin already set the occasion) |
-| Nothing matches | Reader returns `''` → the **code skins** render unchanged (fail-safe) |
+`status`, `is_default` and occasion windows retain their historical meaning in the stored data.
+They are available to the janitor for inspection and cleanup, but do not activate platform CSS.
+Frequency's member Default/Midnight selection remains in its separate skin resolver and stylesheet.
 
 ### Server actions
 
 Create / update / `setStatus` / `setDefault` / delete are server actions, janitor-gated, that
-revalidate the layout so a change shows on the next request.
+revalidate the saved-data views after a change. The existing layout invalidation remains; it does
+not restore the retired CSS injection.
 
 ---
 
@@ -697,7 +686,7 @@ and the operator layer is a fail-safe **merge over** them, never a replacement. 
 | **Member theme switcher** (Settings → Appearance writes the `fxtheme` cookie) | ✅ shipped: the three server-resolved axes are member-pickable; an explicit pin (incl. occasion "Off") wins per §6/§7 (ADR-261) |
 | The **generation / demographic** axis as editable data | 🅿️ deferred (the code axis stands; Theme Studio does not yet manage it) |
 | Per-Space theme assignment | ✅ shipped (it is the existing `spaces.skin`, now set from `/admin/spaces`, §12) |
-| Occasion auto-resolution from the DB `MM-DD` windows | ✅ shipped (`resolveActiveOccasionSlug`, wired in the in-app shell, §§1, 6) |
+| Historical occasion auto-resolution from DB `MM-DD` windows | Retired from the Frequency member render path; saved windows remain janitor-managed data (§6) |
 | Template-per-page (a theme scoped to a page template) | 🔴 not built |
 | Client `ThemeProvider` / View-Transitions switch (`ThemeProvider` has no consumers after the injection moved to the `(main)` shell, so it is not currently mounted) | ⏳ tracked in §7 (the switcher itself is shipped; only the animated cross-fade remains) |
 | **Structure axis wired** (`structureFor` → `data-structure` on the shell root) | ✅ shipped: the `(main)` shell maps the resolved generation through `structureFor` and sets `data-structure`; `[data-structure]` retunes `--structure-rhythm`, consumed by the shared `PageHeading` header-to-body gap (the helper's first non-test caller) |

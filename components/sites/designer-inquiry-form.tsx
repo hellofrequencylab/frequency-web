@@ -58,6 +58,7 @@ export function DesignerInquiryForm({ slug, variant, services, submitLabel, succ
   if (status === 'done') {
     return (
       <div className="dz-done" role="status">
+        <span className="dz-done-mark" aria-hidden="true">✓</span>
         <h3>{successTitle}</h3>
         <p className="dz-body">{successBody}</p>
       </div>
@@ -65,25 +66,27 @@ export function DesignerInquiryForm({ slug, variant, services, submitLabel, succ
   }
 
   const off = slug === null
+  const req = (label: string) => <>{label}<span className="dz-req" aria-hidden="true"> *</span></>
+  const chip = (on: boolean) => <span className="dz-box" aria-hidden="true">{on ? '✓' : ''}</span>
   return (
     <form className="dz-form" onSubmit={onSubmit}>
-      <Field label="First name"><Input required autoComplete="given-name" value={first} onChange={(e) => setFirst(e.target.value)} disabled={off} /></Field>
-      <Field label="Last name"><Input required autoComplete="family-name" value={last} onChange={(e) => setLast(e.target.value)} disabled={off} /></Field>
-      <Field label="Email"><Input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={off} /></Field>
-      <Field label="Phone"><Input type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={off} /></Field>
+      <Field label={req('First Name')}><Input className="dz-input" required autoComplete="given-name" value={first} onChange={(e) => setFirst(e.target.value)} disabled={off} /></Field>
+      <Field label={req('Last Name')}><Input className="dz-input" required autoComplete="family-name" value={last} onChange={(e) => setLast(e.target.value)} disabled={off} /></Field>
+      <Field label={req('Email')}><Input className="dz-input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={off} /></Field>
+      <Field label="Phone"><Input className="dz-input" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={off} /></Field>
       {consult ? (
         <div className="dz-form-wide" role="group" aria-labelledby="dz-meeting">
           <p className="dz-legend" id="dz-meeting">Meeting type</p>
           <div className="dz-chips">
             {MEETINGS.map((m) => (
-              <button key={m} type="button" className="dz-chip" aria-pressed={meeting === m} onClick={() => setMeeting(m)} disabled={off}>{m}</button>
+              <button key={m} type="button" className="dz-chip" aria-pressed={meeting === m} onClick={() => setMeeting(m)} disabled={off}>{chip(meeting === m)}{m}</button>
             ))}
           </div>
         </div>
       ) : (
         <>
-          <Field label="Project type"><Select value={type} onChange={(e) => setType(e.target.value)} options={PROJECT_TYPES} emptyLabel="Choose one" disabled={off} /></Field>
-          <Field label="Where are you in the process?"><Select value={stage} onChange={(e) => setStage(e.target.value)} options={STAGES} emptyLabel="Choose one" disabled={off} /></Field>
+          <Field label="Project type"><Select className="dz-input" value={type} onChange={(e) => setType(e.target.value)} options={PROJECT_TYPES} emptyLabel="Select…" disabled={off} /></Field>
+          <Field label="Where are you in the process?"><Select className="dz-input" value={stage} onChange={(e) => setStage(e.target.value)} options={STAGES} emptyLabel="Select…" disabled={off} /></Field>
         </>
       )}
       {services.length > 0 && (
@@ -91,18 +94,18 @@ export function DesignerInquiryForm({ slug, variant, services, submitLabel, succ
           <p className="dz-legend" id="dz-services">Services of interest</p>
           <div className="dz-chips">
             {services.map((s) => (
-              <button key={s} type="button" className="dz-chip" aria-pressed={picked.includes(s)} onClick={() => toggle(s)} disabled={off}>{s}</button>
+              <button key={s} type="button" className="dz-chip" aria-pressed={picked.includes(s)} onClick={() => toggle(s)} disabled={off}>{chip(picked.includes(s))}{s}</button>
             ))}
           </div>
         </div>
       )}
       <div className="dz-form-wide">
-        <Field label={consult ? 'What questions can we help with?' : 'Tell us about your vision'}><Textarea rows={4} value={note} onChange={(e) => setNote(e.target.value)} disabled={off} /></Field>
+        <Field label={consult ? 'What questions can we help with?' : 'Tell us about your vision'}><Textarea className="dz-input" rows={5} value={note} onChange={(e) => setNote(e.target.value)} disabled={off} /></Field>
       </div>
       <Input className="dz-hp" type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" value={company} onChange={(e) => setCompany(e.target.value)} />
       <div className="dz-form-wide dz-form-foot">
         <span className="dz-form-note">We respect your privacy and do not sell your information.</span>
-        <button type="submit" className="dz-btn dz-btn-primary" data-size="lg" disabled={off || status === 'loading'}>{status === 'loading' ? 'Sending' : submitLabel || 'Send'}</button>
+        <button type="submit" className="dz-btn dz-btn-primary" data-size="lg" disabled={off || status === 'loading'}>{status === 'loading' ? 'Sending' : submitLabel || 'Send'}<span className="dz-arrow" aria-hidden="true">→</span></button>
       </div>
       {error && <p className="dz-form-wide dz-form-note" role="alert">{error}</p>}
     </form>

@@ -18,7 +18,7 @@ import { achievedTier, TIER_LABELS, TIER_ORDER, TIER_FLOOR_MIN } from '@/lib/pra
 import { depthStreakLine } from '@/lib/practices/depth-streak'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { IconButton } from '@/components/ui/icon-button'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { FunnelNextStep } from '@/components/funnels/next-step-link'
 import { capsLabel } from '@/components/ui/caps-label'
 
@@ -388,7 +388,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
             {payload.bonuses.slice(0, shown).map((b, i) => (
               <div
                 key={`${b.label}-${i}`}
-                className="flex items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
+                className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
               >
                 <span className="font-medium text-text">{b.label}</span>
                 <span className="flex items-center gap-1 font-semibold tabular-nums text-primary-strong">
@@ -506,7 +506,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
         {rows.map(([k, v]) => (
           <div
             key={k}
-            className="flex items-center justify-between rounded-2xl border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
+            className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
           >
             <span className="truncate text-muted">{k}</span>
             <span className="ml-3 shrink-0 font-semibold tabular-nums text-text">{v}</span>
@@ -514,7 +514,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
         ))}
       </div>
       {nudge && (
-        <div className="mt-3 rounded-xl border border-primary/40 bg-primary-bg/30 px-3 py-2 text-left">
+        <div className="mt-3 rounded-card border border-primary/40 bg-primary-bg/30 px-3 py-2 text-left">
           <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
             <Zap className="h-3.5 w-3.5 text-primary" /> {nudge.reached}
           </p>
@@ -590,7 +590,7 @@ function DispatchPanel({
             <Link
               href={dispatch.actionHref}
               onClick={() => onAction?.()}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className={buttonClasses('primary', 'md', 'mt-4')}
             >
               {dispatch.actionLabel} <ChevronRight className="h-3.5 w-3.5" />
             </Link>

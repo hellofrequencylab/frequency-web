@@ -100,6 +100,7 @@ export async function FrequencyAdminConsole({ profileId, role, webRole, staffRol
   const name = me?.display_name ?? 'You'
   return (
     <AdminShell
+      withinMain
       homeHref="/admin"
       crumbRoot="Frequency"
       navLabel="Admin"

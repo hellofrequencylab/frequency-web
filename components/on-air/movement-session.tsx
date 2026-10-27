@@ -1040,12 +1040,12 @@ export function MovementSession({
             back to finish for the rest. A top-up (finished) celebrates the rest landing.
             Plain, no shame, no em or en dashes (docs/CONTENT-VOICE.md). */}
         {payload.partial && (
-          <div className="shrink-0 rounded-xl border border-success/40 bg-success-bg/30 px-4 py-2.5 text-center text-body-sm text-text">
+          <div className="shrink-0 rounded-card border border-success/40 bg-success-bg/30 px-4 py-2.5 text-center text-body-sm text-text">
             1 Zap now, and the day is logged. Finish the rest of it later for the full reward.
           </div>
         )}
         {payload.finished && (
-          <div className="shrink-0 rounded-xl border border-success/40 bg-success-bg/30 px-4 py-2.5 text-center text-body-sm text-text">
+          <div className="shrink-0 rounded-card border border-success/40 bg-success-bg/30 px-4 py-2.5 text-center text-body-sm text-text">
             You finished it. The rest of the Zaps just landed.
           </div>
         )}
@@ -1252,7 +1252,7 @@ export function MovementSession({
         {/* Docked action bar — always visible, even as the screen scrolls. Opaque canvas so
             the content above never shows through / overlaps it. */}
         <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-canvas px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
-          <button
+          <Button
             type="button"
             onClick={() => {
               if (warming) { begin(); return } // skip the warm-up, begin now
@@ -1262,17 +1262,19 @@ export function MovementSession({
               }
               togglePause()
             }}
-            className="min-w-44 rounded-pill bg-primary px-10 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            size="lg"
+            className="min-w-44"
           >
             {warming ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => void finish()}
-            className="rounded-pill px-4 py-1.5 text-meta font-medium text-subtle transition-colors hover:text-text"
+            variant="ghost"
+            size="sm"
           >
             Stop &amp; Log
-          </button>
+          </Button>
           {/* Cancel: leave the run WITHOUT logging (item #3) — drops it, banks nothing. Subordinate
               to Stop & Log so the default stays "log it". */}
           <button
@@ -1532,7 +1534,7 @@ export function MovementSession({
             type="button"
             onClick={() => void start()}
             disabled={!practiceId}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-move px-4 py-3.5 text-body-sm font-bold text-on-move transition-colors hover:bg-move-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
+            className="flex w-full items-center justify-center gap-2 rounded-control bg-move px-4 py-3.5 text-body-sm font-bold text-on-move transition-colors hover:bg-move-hover disabled:opacity-50 lg:mx-auto lg:max-w-sm"
           >
             <OnAirIcon className="h-4 w-4" />{' '}
             {activeResume ? 'Continue Practice' : 'Start Practice'}
@@ -1610,8 +1612,9 @@ function ModeButton({
   return (
     <button
       type="button"
+      aria-pressed={Boolean(active)}
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-meta transition-colors ${
+      className={`flex flex-col items-center gap-1 rounded-control border px-2 py-2 text-meta transition-colors ${
         active
           ? 'border-move/60 bg-move-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'
@@ -1637,9 +1640,10 @@ function Chip({
   return (
     <button
       type="button"
+      aria-pressed={Boolean(active)}
       onClick={onClick}
       title={title}
-      className={`min-h-11 rounded-xl border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
+      className={`min-h-11 rounded-control border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
         active
           ? 'border-move/60 bg-move-bg/40 font-semibold text-text'
           : 'border-border text-muted hover:bg-surface-elevated'

@@ -436,16 +436,17 @@ describe('AAA generation inks', () => {
     expect(parseColor(deref(t, '--m'))).toMatchObject({ r: 25.5, g: 25.5, b: 25.5 })
   })
 
-  it('every AAA preset holds 7:1 for all three inks on every text ground in all four states', () => {
-    const rows = evaluateContrast(css, { pairs: AAA_GENERATION_PAIRS, states: aaaGenerationStates(ids) })
-    expect(rows.length).toBe(ids.length * 4 * AAA_GENERATION_PAIRS.length)
-    expect(rows.filter((r) => !r.pass).map((r) => `${r.state} ${r.pair} ${r.ratio}`)).toEqual([])
+  it('does not ship retired generation-specific ink overrides', () => {
+    expect(css).not.toMatch(/\[data-generation[^\]]*\]/)
   })
 
-  it('without the AAA block the base secondary inks are AA only, so the block is what holds the promise', () => {
-    const start = css.indexOf(':is(html, [data-skin])[data-generation="spacious"]')
-    const stripped = css.slice(0, start) + css.slice(css.indexOf('}', start) + 1)
-    const rows = evaluateContrast(stripped, { pairs: AAA_GENERATION_PAIRS, states: aaaGenerationStates(ids) })
-    expect(rows.some((r) => !r.pass)).toBe(true)
+  it('historical AAA measurement still rejects AA-only inks in explicit parser fixtures', () => {
+    const fixture = ':root { --color-text:#000000; --color-text-muted:#777777; --color-text-subtle:#777777; --color-canvas:#ffffff; --color-surface:#ffffff; --color-surface-elevated:#ffffff; --color-surface-post:#ffffff; --color-chrome:#ffffff; }'
+    const rows = evaluateContrast(fixture, { pairs: AAA_GENERATION_PAIRS, states: aaaGenerationStates(ids) })
+    expect(rows.length).toBe(ids.length * 4 * AAA_GENERATION_PAIRS.length)
+    expect(rows.some((row) => !row.pass)).toBe(true)
+    const aaaFixture = fixture.replaceAll('#777777', '#111111')
+    const passing = evaluateContrast(aaaFixture, { pairs: AAA_GENERATION_PAIRS, states: aaaGenerationStates(ids) })
+    expect(passing.every((row) => row.pass)).toBe(true)
   })
 })

@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-422",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/space-journey-completion-wiring.mjs",
+      "note": "Measures the active gated Frequency overview, owning-Space/unique-person reader and unavailable-versus-zero behavior, not the retired dashboard mount."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-27 HYG200: the orphan graph revealed the original completion band existed only in the legacy SpaceDashboard. Restore the live Frequency overview with the same scoped unique-person semantics and paid context; keep failed/partial reads unavailable and stable bounded pages explicit. Existing authorizations remain before rendering. Scripted scoped-reader and rendered widget proof is recorded; authenticated browser/production acceptance is not claimed."
+  }
+}

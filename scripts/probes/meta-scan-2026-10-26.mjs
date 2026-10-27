@@ -3,6 +3,7 @@
 // Exit 0 only when the named repair has landed; each key fails on main today.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { withinRawPrimaryButtonBudget } from '../lib/raw-primary-button-count.mjs'
 
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')
 const has = (p, re) => re.test(read(p))
@@ -18,8 +19,6 @@ const walk = (dir, out = []) => {
   return out
 }
 const filesMatching = (dirs, re) => dirs.flatMap((d) => walk(d)).filter((f) => re.test(read(f)))
-const countMatches = (dirs, re) =>
-  dirs.flatMap((d) => walk(d)).reduce((n, f) => n + (read(f).match(re) || []).length, 0)
 
 const checks = {
   'adr-frequency-only': () =>
@@ -40,7 +39,7 @@ const checks = {
   },
   'dialogs-escape': () => ['components/admin/library/apps-lane.tsx', 'components/admin/library/splash-lane.tsx'].every((f) => has(f, /Escape/)),
   'onair-lazy': () => has('components/on-air/mindless.tsx', /dynamic\(/),
-  'shell-lazy': () => has('components/layout/app-shell.tsx', /dynamic\([^)]*admin-bar|dynamic\([^)]*search-overlay/s),
+  'shell-lazy': async () => (await import('./shell-lazy-boundary.mjs')).currentShellLazyBoundary(),
   'hero-preload': () => filesMatching(['components/frequency/site/pages/home', 'app'], /as=["']image["']|preload\(\s*["'`][^)]*image/).length > 0,
   'asset-cache': () => has('next.config.ts', /\/brand\/|\/images\/site/),
   'proxy-anon': () => has('proxy.ts', /auth-token|hasSessionCookie|sb-.*-auth/),
@@ -50,14 +49,11 @@ const checks = {
   'events-today': () => !/new Date\(\)\.toISOString\(\)\.slice\(0, ?10\)/.test(read('lib/events/store.ts')),
   'dawn-ui': () => filesMatching(['components/ui', 'components/templates'], /SITE_DESIGN/).length === 0,
   'dawn-public': () => filesMatching(['app/(marketing)', 'app/(public)', 'app/discover', 'app/(help)', 'app/for'], /SITE_DESIGN/).length === 0,
-  'dawn-member': () => filesMatching(['app/(main)'], /SITE_DESIGN/).length === 0,
-  // Flag removal alone does not retire the legacy CSS or registered DAWN font input.
-  'legacy-axes': async () => filesMatching(['lib', 'app', 'components'], /LEGACY_THEME_AXES/).length === 0
-    && (await import('./retired-theme-axis-flag.mjs')).legacyThemeResourcesRetired(
-      read('app/globals.css'), existsSync('lib/theme/design-fonts/dawn.ts')),
+  'dawn-member': async () => (await import('../lib/member-design-branches.mjs')).memberDesignBranchReport().failures.length === 0,
+  'legacy-axes': () => filesMatching(['lib', 'app', 'components'], /LEGACY_THEME_AXES/).length === 0,
   'kit-chrome': () => !/prose-gray/.test(read('components/legal/legal-page.tsx')) && !/min-h-screen/.test(read('components/crm/leads/capture-shell.tsx')),
   'shell-px': () => ['components/layout/app-shell-mobile.tsx', 'components/layout/app-shell-nav-list.tsx'].every((f) => !/\[\d+px\]/.test(read(f))),
-  'raw-buttons': () => countMatches(['app', 'components'], /<button[^>]*?bg-primary/gs) < 30,
+  'raw-buttons': () => withinRawPrimaryButtonBudget(['app', 'components'].flatMap((dir) => walk(dir)).map(read)),
   'calendar-views': () => !/ComingSoonMark/.test(read('components/spaces/calendar-mode-toggle.tsx')),
   'money-tests': () => existsSync('lib/commerce/disputes.test.ts') && existsSync('lib/spaces/booking-actions.test.ts'),
   'e2e-surfaces': () => has('test/e2e/surfaces.ts', /\/offer/) && has('test/e2e/surfaces.ts', /\/for\//),

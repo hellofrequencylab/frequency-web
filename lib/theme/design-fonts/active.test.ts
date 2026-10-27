@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { DESIGNS } from '../design'
+import { DESIGNS, resolveDesign } from '../design'
 
 // FONTS PER DESIGN (ADR-1737). app/layout.tsx imports ./active, and ./active is ONE static re-export
 // that scripts/write-design-assets.mjs points at the build's design. These hold the three ways that
@@ -12,8 +12,10 @@ const active = readFileSync('lib/theme/design-fonts/active.ts', 'utf8')
 const layout = readFileSync('app/layout.tsx', 'utf8')
 
 describe('fonts per design', () => {
-  it('gives every registered design a font module that names itself', () => {
-    for (const d of DESIGNS) {
+  it('gives each deployable design a font module; historical registry entries need no empty module', () => {
+    const deployable = DESIGNS.filter((d) => resolveDesign(d.id) === d.id)
+    expect(deployable.map((d) => d.id)).toEqual(['frequency'])
+    for (const d of deployable) {
       const path = `lib/theme/design-fonts/${d.id}.ts`
       expect(existsSync(path), path).toBe(true)
       expect(readFileSync(path, 'utf8')).toContain(`FONTS_DESIGN: DesignId = '${d.id}'`)

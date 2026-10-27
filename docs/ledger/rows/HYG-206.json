@@ -1,0 +1,18 @@
+{
+  "id": "HYG-206",
+  "title": "Retire unused marketing and profile leaves; recover active subscription transport failures",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "components/frequency/site/pages/funnel/subscribe-form.tsx",
+    "ref": "Current-main runtime/source-reader inventory and actual Frequency subscription/pricing replacements"
+  },
+  "detail": "Removed unreferenced old marketing subscribe renderer, old pricing interval/audience contexts, and unused profile tab type leaf. Actual subscribe route mounts FrequencySubscribeForm with the existing confirmation/anti-enumeration action; pricing mounts PlanPeriodScope/Switch and actual catalog-fed plans; profile page mounts current Frequency profile body. No server action, email policy, plan, route or profile tab removed. Actual Frequency form now catches rejected server-action transport, reports a generic retry message and leaves loading state. Mocked rendered tests prove recovery, disabled pending state and existing application error behavior; actual pricing switches remain synchronized across both bands. No provider call or production data change.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-27",
+    "evidence": "21 focused rendered interaction/catalog tests PASS: active subscription rejection recovery, pending/error behavior and synchronized pricing bands; focused lint and whitespace PASS. Actual route imports and all-tree source-reader census verified before retirement. No live email or full-app acceptance claim."
+  }
+}
