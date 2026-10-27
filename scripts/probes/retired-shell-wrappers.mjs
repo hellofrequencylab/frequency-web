@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { RETIRED_SHELL_WRAPPERS } from '../lib/retired-shell-wrappers.mjs'
 import { retiredModuleEdges } from '../lib/retired-member-shell.mjs'
 import { replacementMounted } from './retired-browse-wrappers.mjs'
+/** @param {(file: string) => string} [read] */
 export function retainedShellReplacements(read = file => readFileSync(file, 'utf8')) {
   const shell = read('components/frequency/members/shell/members-shell.tsx')
   const nearby = read('app/(main)/nearby/page.tsx')
