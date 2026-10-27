@@ -71,7 +71,7 @@ const PRIORITY_RANK = { P0: 0, P1: 1, P2: 2, P3: 3 }
 
 /** Surfaces that two agents must never edit in the same merge window. */
 export const SERIAL_SURFACES = [
-  'components/layout/app-shell.tsx',
+  'components/frequency/members/shell/members-shell.tsx',
   'lib/nav/registry.ts',
   'lib/nav-areas.ts',
   'lib/layout/page-chrome.ts',

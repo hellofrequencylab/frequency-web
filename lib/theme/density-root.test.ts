@@ -10,3 +10,8 @@ describe('Frequency root density after historical preset retirement', () => {
     expect(css).not.toMatch(/\[data-generation[^\]]*\]/)
   })
 })
+
+// Per-member theme resolution must not make the public root request-bound.
+it('keeps member theme resolution out of the public root layout', () => {
+  expect(readFileSync(new URL('../../app/layout.tsx', import.meta.url), 'utf8')).not.toContain('resolveTheme')
+})
