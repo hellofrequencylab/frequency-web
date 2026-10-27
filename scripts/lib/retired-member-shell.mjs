@@ -9,7 +9,23 @@ export const RETIRED_MEMBER_SHELL = 'components/layout/app-shell.tsx'
  * @returns {Array<{file:string,line:number,specifier:string}>}
  */
 export function retiredModuleEdges(file, source, retired = [RETIRED_MEMBER_SHELL]) {
-  const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
+  // Inspect each possible literal start independently: a regex, JSX token or template
+  // elsewhere cannot make the scanner skip a later module specifier. Decoding with
+  // TypeScript preserves escaped/unicode paths. Candidates still use the full AST.
+  const basenames = retired.map(file => path.posix.basename(file).replace(/\.(tsx?|jsx?)$/, ''))
+  // Without an escape, a decoded target basename must also exist verbatim.
+  if (!source.includes('\\') && !basenames.some(name => source.includes(name))) return []
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, source)
+  let candidate = false
+  for (const quote of source.matchAll(/['"`]/g)) {
+    scanner.setTextPos(quote.index)
+    const token = scanner.scan()
+    if (token !== ts.SyntaxKind.StringLiteral && token !== ts.SyntaxKind.NoSubstitutionTemplateLiteral) continue
+    const value = scanner.getTokenValue()
+    if (basenames.some(name => value.includes(name))) { candidate = true; break }
+  }
+  if (!candidate) return []
+  const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, false, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
   if (ast.parseDiagnostics.length) throw new Error(`Cannot parse ${file}`)
   /** @type {Array<{file:string,line:number,specifier:string}>} */
   const edges = []
