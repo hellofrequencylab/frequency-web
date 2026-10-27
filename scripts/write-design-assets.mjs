@@ -7,16 +7,13 @@
 //      The PWA manifest is fetched by the browser as a static file, before any CSS applies. Only the
 //      two colour values are rewritten, in place, so every other byte of the file is the author's.
 //   2. lib/theme/design-fonts/active.ts  one static re-export of ./<design>. app/layout.tsx imports
-//      ./active, so the build graph contains ONLY the active design's next/font registrations: a DAWN
-//      deploy never imports lib/theme/design-fonts/frequency.ts, and so never ships its faces.
+//      ./active, so the build graph contains only the deployable design's next/font registrations.
+//      Historical registry entries do not need empty font modules.
 //   3. app/themes/active/<sheet>.ts  one stub per design stylesheet (scripts/lib/design-styles.mjs).
-//      Code imports the stub, never app/themes/<id>/*.css: under the active design the stub imports its
-//      sheet, under any other it is empty. So a DAWN deploy's graph holds NO Frequency CSS (the root
-//      layout's core + alias + members-ui, the site kit every public layout's SiteShell pulled in, the
-//      members kits, the page sheets), and a Frequency deploy loads each sheet where it always did.
+//      Code imports the stub, never app/themes/<id>/*.css. The canonical resolver normalizes retired
+//      or unknown environment values to Frequency before any output path is selected.
 //
-// IDEMPOTENT: a file is written only when its content would change, so a DAWN build on a clean tree
-// leaves the tree clean. The committed copies are DAWN's (lib/theme/design-fonts/active.test.ts).
+// IDEMPOTENT: a file is written only when its content changes. The committed copies load Frequency.
 //
 // The env is read the way Next reads it (process.env first, then .env.<mode>.local, .env.local,
 // .env.<mode>, .env), so a local `.env.local` with the variable set gets the same answer here as in
