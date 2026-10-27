@@ -28,6 +28,11 @@ const LOADERS: Record<string, () => Promise<SiteKit>> = {
   'temple-nonprofits': () => import('./temple-variants').then((m) => m.templeKit('nonprofits')),
   'temple-networks': () => import('./temple-variants').then((m) => m.templeKit('networks')),
   'wildheart-coaches': () => import('./wildheart-coaches').then((m) => m.default),
+  'wildheart-studios': () => import('./wildheart-variants').then((m) => m.wildheartKit('studios')),
+  'wildheart-hosts': () => import('./wildheart-variants').then((m) => m.wildheartKit('hosts')),
+  'wildheart-venues': () => import('./wildheart-variants').then((m) => m.wildheartKit('venues')),
+  'wildheart-nonprofits': () => import('./wildheart-variants').then((m) => m.wildheartKit('nonprofits')),
+  'wildheart-networks': () => import('./wildheart-variants').then((m) => m.wildheartKit('networks')),
 }
 
 interface KitSummary { id: string; niche: KitNiche; theme: SiteKit['theme']; label: string; description: string }
@@ -59,6 +64,11 @@ export const KIT_INDEX: readonly KitSummary[] = [
   { id: 'temple-nonprofits', niche: 'nonprofits', theme: 'Temple', label: 'Nonprofits', description: 'Explain the work plainly and make it easy to say yes: come along, volunteer or give.' },
   { id: 'temple-networks', niche: 'networks', theme: 'Temple', label: 'Networks', description: 'One home for many chapters: find a chapter, start one, and see what is on everywhere.' },
   { id: 'wildheart-coaches', niche: 'coaches', theme: 'Wildheart', label: 'Coaches and healers', description: 'Your story, how you work, what you offer and a way to book.' },
+  { id: 'wildheart-studios', niche: 'studios', theme: 'Wildheart', label: 'Studios', description: 'Classes, a simple schedule and a first visit that feels easy.' },
+  { id: 'wildheart-hosts', niche: 'hosts', theme: 'Wildheart', label: 'Event hosts', description: 'A home for your gatherings: what is coming up, how to join and how to stay in touch.' },
+  { id: 'wildheart-venues', niche: 'venues', theme: 'Wildheart', label: 'Venues', description: 'Show the room, what is on and how to book it.' },
+  { id: 'wildheart-nonprofits', niche: 'nonprofits', theme: 'Wildheart', label: 'Nonprofits', description: 'Explain the work plainly and make it easy to say yes: come along, volunteer or give.' },
+  { id: 'wildheart-networks', niche: 'networks', theme: 'Wildheart', label: 'Networks', description: 'One home for many places: find a chapter, start one, and see what is on everywhere.' },
 ]
 
 export async function loadKit(id: string): Promise<SiteKit | null> {
