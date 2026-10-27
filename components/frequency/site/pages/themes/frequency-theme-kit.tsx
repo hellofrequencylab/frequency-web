@@ -66,7 +66,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
             {name}. <em className="fq-iri-text">{entry.tagline}</em>
           </h1>
           <p>
-            Made for {entry.madeFor}. {site.description} Design once, launch tomorrow.
+            Made for {entry.madeFor}. {site.description} See which matching surfaces are ready below.
           </p>
           <div className="ctas">
             <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
@@ -87,9 +87,9 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
         <div className="wrap">
           <div className="sh">
             <div className="label">
-              <b>The whole kit</b>Everything in one look
+              <b>The kit</b>A look to build on
             </div>
-            <h2 className="h-l">Design once. Your link page, site and emails all wear it.</h2>
+            <h2 className="h-l">One look, across the surfaces marked ready.</h2>
             <p className="pb-note">{entry.signature}</p>
           </div>
           <ThemePicture theme={theme} label={name} slot="kit" priority />
@@ -101,12 +101,12 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
         <div className="wrap">
           <div className="sh">
             <div className="label">
-              <b>Four places</b>One look, set once
+              <b>Four places</b>Check what is ready
             </div>
             <h2 className="h-l">Where {name} shows up.</h2>
             <p className="pb-note">
-              Change a date, a price or a headline once and every place follows. Your Space page stays the Frequency page people know,
-              wearing your fonts and accent.
+              Your theme brings matching colors and type to the surfaces marked ready below. Your Space page stays the Frequency page
+              people know, wearing your fonts and accent.
             </p>
           </div>
           <div className="tg-row two">
@@ -131,10 +131,10 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
             <div className="label">
               <b>Every option</b>Turn on only what you need
             </div>
-            <h2 className="h-l">Forty features on day one is a month of setup.</h2>
+            <h2 className="h-l">Start with what you need.</h2>
             <p className="pb-note">
-              {name} carries every tool Frequency has, in one account: a complete business and marketing system. The guided setup
-              takes you from theme to launch, so plan on an afternoon. Your kit starts with two or three tools, and the rest are one switch away.
+              {name} gives your website a starting look. Choose a starter kit for the tools you need, and add more later. Check the surface
+              labels above for what is ready.
             </p>
           </div>
           <div className="tg-row two">

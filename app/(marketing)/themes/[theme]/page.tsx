@@ -23,10 +23,10 @@ function seoFor(theme: string): FrequencyPageSeo | null {
   return {
     path: `/themes/${theme}`,
     title: `${site.label} theme: ${entry.tagline}`,
-    description: `${site.label} is a complete look for your Spotlight, website and emails. Start with the tools you need and turn on the rest later.`,
-    shareTitle: `${site.label}: a complete look for your whole site`,
+    description: `${site.label} gives your website a starting look. See which matching Spotlight and email surfaces are ready, and what is on the way.`,
+    shareTitle: `${site.label}: a look to build on`,
     headline: `${site.label}. ${entry.tagline}`,
-    lede: `Made for ${entry.madeFor}. ${site.description} Design once, launch tomorrow.`,
+    lede: `Made for ${entry.madeFor}. ${site.description} See which matching surfaces are ready below.`,
     crumbs: [
       { name: 'Themes', path: '/themes' },
       { name: site.label, path: `/themes/${theme}` },

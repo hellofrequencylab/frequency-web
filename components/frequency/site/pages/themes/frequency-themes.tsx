@@ -58,8 +58,8 @@ export function FrequencyThemes() {
             Your site should look like you. <em className="fq-iri-text">Pick a feel.</em>
           </h1>
           <p>
-            Seven looks, designed once for your Spotlight, your website and your emails. Design once, launch tomorrow, with a guided
-            setup. Plan on an afternoon.
+            Seven looks for your website, with matching Spotlight and email surfaces where available. Pick a feel, then check what is ready
+            and what is on the way.
           </p>
           <div className="ctas">
             <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
@@ -79,11 +79,11 @@ export function FrequencyThemes() {
             <div className="label">
               <b>The themes</b>Seven to start from
             </div>
-            <h2 className="h-l">Design once. Not four times.</h2>
+            <h2 className="h-l">One look. A clear place to start.</h2>
             <p className="pb-note">
-              A link page, a profile, a website and an email, each designed on its own, is a month of work. Pick a theme and the guided
-              setup dresses all of them at once. It is a complete business and marketing system, with one account. Switch on only the
-              tools you need, and the Change theme button in your editor takes you back any time.
+              Choose a theme for your website and see which matching Spotlight and email surfaces are ready. Each theme page labels what
+              ships now and what is on the way. Switch on the tools you need, and use Change theme in your editor when you want a
+              different feel.
             </p>
           </div>
           <div className="tg-row two">
