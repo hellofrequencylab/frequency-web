@@ -10,33 +10,14 @@ import { readFileSync } from 'node:fs'
 // was the spelling of a road nobody drove on. Source-shape, because the guard is "no literal survives
 // here", and a literal is exactly what a render test with the right config would not notice.
 
-const sections = readFileSync('components/marketing/funnel/funnel-sections.tsx', 'utf8')
-const template = readFileSync('components/marketing/funnel/niche-funnel.tsx', 'utf8')
+const template = readFileSync('components/frequency/site/pages/funnel/niche/niche-door.tsx', 'utf8')
 const join = readFileSync('app/join/(induction)/page.tsx', 'utf8')
-
-describe('every Start free on a niche door derives its href from the config', () => {
-  it('no button carries a literal start path', () => {
-    expect(sections).not.toMatch(/FUNNEL_START_HREF/)
-    expect(sections).not.toMatch(/href=["']\/spaces["']/)
-    expect(sections).not.toMatch(/href=["']\/join/)
-  })
-
-  it('every Button href on the door is the derived start href', () => {
-    // Anchors to sections (#how-it-works) are the only other hrefs a Button may carry; every other one
-    // must be derived. Count them so a sixth button added with a literal fails here, not in production.
-    const hrefs = [...sections.matchAll(/<Button\s+href=\{?([^}\s>]+)\}?/g)].map((m) => m[1])
-    const derived = hrefs.filter((h) => h === 'funnelStartHref(config)')
-    const anchors = hrefs.filter((h) => h.startsWith('"#'))
-    expect(hrefs.length).toBeGreaterThanOrEqual(5)
-    expect(derived.length + anchors.length).toBe(hrefs.length)
-    expect(derived.length).toBe(5) // header, sticky mobile, hero, pricing, final CTA
-  })
-
-  it('the two chrome pieces that used to render without a config now receive it', () => {
-    expect(sections).toContain('export function SplashHeader({ config }: { config: FunnelConfig })')
-    expect(sections).toContain('export function StickyMobileCta({ config }: { config: FunnelConfig })')
-    expect(template).toContain('<SplashHeader config={config} />')
-    expect(template).toContain('<StickyMobileCta config={config} />')
+describe('active niche doors derive their real induction destination', () => {
+  it('uses the canonical destination in the body and sticky start pill', () => {
+    expect(template).toContain('const start = funnelStartHref(config)')
+    expect(template).toContain('<NicheStartPill href={start}')
+    expect(template).toContain('href={start}')
+    expect(template).not.toMatch(/href=["']\/join/)
   })
 })
 

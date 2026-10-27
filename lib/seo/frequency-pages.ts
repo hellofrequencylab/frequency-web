@@ -125,10 +125,10 @@ export const FREQUENCY_PAGE_SEO = {
     path: '/themes',
     title: 'Themes: pick the look for your Spotlight, Space and website',
     description:
-      'Seven themes for your Spotlight, your Space on Frequency and your own website. Pick a feel, change it any time, and your words and photos stay put.',
+      'Seven looks for your website, with matching Spotlight and email surfaces where available. See what is ready and what is on the way.',
     shareTitle: 'Frequency themes: pick a feel for your whole site',
     headline: 'Your site should look like you. Pick a feel.',
-    lede: 'Seven looks for your Spotlight, your Space and your own website. Pick one, change it any time, and your words and photos stay put.',
+    lede: 'Seven looks for your website, with matching Spotlight and email surfaces where available. Pick a feel, then check what is ready and what is on the way.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },

@@ -3,11 +3,15 @@
   "patch": {
     "verify": {
       "kind": "cmd",
-      "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/media/poster-band.tsx','utf8');const code=s.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const h=fs.readFileSync('lib/layout/cover-height.ts','utf8');const phone=h.match(/POSTER_HEIGHT_CLASS[\\\\s\\\\S]*?standard: '([^']+)'/)[1].split(' ')[0];const px=phone.startsWith('h-[')?parseFloat(phone.slice(3))*17:parseInt(phone.slice(2),10)/4*17;process.exit(412/px>=1&&/aspectRatio/.test(code)&&/shaped \\\\? maxHeightClass : heightClass/.test(code)?0:1)\"",
-      "note": "Measures the consequence a poster's title survives, not the fit keyword that happened to deliver it. Four things together, all against comment-stripped code: the phone band is at least as WIDE as it is tall (412px full bleed against the standard rung parsed out of the ladder itself, at this app's 17px root); the band takes the poster's OWN aspect and swaps the tier height for the tier CEILING when it knows it, which is what makes a clamped band shorter-not-narrower and therefore makes a horizontal crop impossible; the event page actually passes both halves of that; and it renders PosterBand rather than a hand-rolled cropping box. 🔴 TWO EARLIER PROBES ON THIS ROW MATCHED A COMMENT. The first was `b.includes('object-contain sm:object-cover')` against the UNSTRIPPED file, a string that had not been code since LIVE-131. The second asked for `object-contain` in the stripped code, which was right until the owner asked for a crop at every width; it would then have failed a correct file. Both are why this one asserts the geometry rather than a class name."
+      "cmd": "node scripts/probes/frequency-public-retirement.mjs cover",
+      "note": "Checks actual Frequency artwork/focus/aspect capture and consumers. The later owner whole-artwork contain ruling supersedes old global cover-only style assertions; active shared geometry helpers remain tested."
+    },
+    "source": {
+      "file": "components/frequency/members/event/event-header.tsx",
+      "ref": "Actual FqEventCover; historical PosterBand report retained, later owner whole-artwork contain ruling 2026-10-14"
     }
   },
   "append": {
-    "detail": " 2026-10-26 (SCAN-1129): the event page cover is FqEventCover now (Frequency is the only design, ADR-1880); the PosterBand arms of this probe moved to the component alone."
+    "detail": " 2026-10-26 (SCAN-1129): the event page cover is FqEventCover now (Frequency is the only design, ADR-1880); the PosterBand arms of this probe moved to the component alone. HYG-214 2026-10-27: retired unreachable PosterBand; verification now follows actual FqEventCover, captured aspect/focus and later owner whole-artwork contain treatment. Historical original report is preserved; no browser pixel acceptance is inferred."
   }
 }

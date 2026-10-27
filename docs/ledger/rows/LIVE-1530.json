@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1530",
+  "title": "A theme page starts a Space already wearing the theme: Space creation reads ?theme= and applies it",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/spaces/provision.ts",
+    "ref": "LIVE-1514"
+  },
+  "detail": "/spaces/new?theme=<id> (ids from MEGA_THEMES) is read by the page, carried by the Wizard as arrivedTheme, and createSpace calls applyMegaTheme once the Space exists. An unknown id does nothing and cannot 404; a failed apply is logged and never blocks the Space. The kit pages at /themes/<id> link here with ?theme= and, for a starter kit, ?niche= as well.",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "Probe passes; render test pins the kit-page links.",
+    "cmd": "node -e 'const f=require(\"fs\");const r=(p)=>f.readFileSync(p,\"utf8\");if(!r(\"lib/spaces/provision.ts\").includes(\"applyMegaTheme\")){console.error(\"createSpace no longer applies the theme\");process.exit(1)};if(!r(\"app/(main)/spaces/new/page.tsx\").includes(\"arrivedTheme\")){console.error(\"page no longer reads ?theme=\");process.exit(1)}'"
+  }
+}
