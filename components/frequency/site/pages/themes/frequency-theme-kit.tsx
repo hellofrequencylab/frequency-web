@@ -1,14 +1,14 @@
 // /themes/[theme] on the Frequency design (LIVE-1514): the sales page for one Mega Theme. One template for
 // every theme, read from the library catalog, the theme list and the kit index, so a new theme is a new
 // catalog entry and not a new page. Sections: full-kit picture, the four places a theme shows up (with what
-// is ready today), every tool and look control ("turn on only what you need"), the six starter kits, and
+// is ready today), every tool and look control ("turn on only what you need"), a starter kit per kind of business, and
 // questions. Built from the template kit only; no page CSS of its own. Copy follows
 // docs/marketing/voice-and-language-guide.md. THEME FENCE (ADR-1906): the page says plainly that the Space
 // page keeps the Frequency frame and wears fonts and accent only.
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
-import { KIT_INDEX } from '@/lib/sites/kits/registry'
+import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { SITE_THEMES } from '@/lib/theme/site-style'
 import { THEME_LOOK_CONTROLS, THEME_TOOLS, themeLibraryEntry } from '@/lib/themes/library'
@@ -45,7 +45,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
   const entry = themeLibraryEntry(theme)
   if (!site || !entry) return null
   const editor = MEGA_THEMES.find((m) => m.id === theme)?.editor
-  const kits = KIT_INDEX.filter((k) => k.theme === editor)
+  const kits = [...KIT_INDEX, ...PROFILE_KIT_INDEX].filter((k) => k.theme === editor)
   const name = site.label
   // Start a Space already wearing this theme: Space creation reads ?theme= (and ?niche= for a starter kit).
   const startHref = `/spaces/new?theme=${theme}`

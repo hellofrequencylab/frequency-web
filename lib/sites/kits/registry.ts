@@ -1,3 +1,5 @@
+import { MEGA_PROFILE_NICHES, MEGA_THEMES, type MegaThemeId } from '@/lib/theme/mega-theme'
+import { NICHE_SPECS } from './niche-spec'
 import type { KitNiche, SiteKit } from './types'
 
 // Kit CONTENT is loaded on demand, only by the editor and the apply step. The public site never imports
@@ -47,6 +49,20 @@ const LOADERS: Record<string, () => Promise<SiteKit>> = {
   'wildheart-networks': () => import('./wildheart-variants').then((m) => m.wildheartKit('networks')),
 }
 
+// The profile niches (general, creators, ...): every theme has a kit per profile. Default, Bold and Designer lay the
+// niche's words out themselves; the four hand-laid themes use profile-variants.ts. Ids are `<prefix>-<niche>`.
+const PROFILE_BUILDERS: { prefix: string; mega: MegaThemeId; build: (niche: KitNiche) => Promise<SiteKit> }[] = [
+  { prefix: 'default', mega: 'frequency', build: (n) => import('./default-variants').then((m) => m.defaultKit(n)) },
+  { prefix: 'bold', mega: 'bold', build: (n) => import('./bold-variants').then((m) => m.boldKit(n)) },
+  { prefix: 'designer', mega: 'designer', build: (n) => import('./designer-variants').then((m) => m.designerKit(n)) },
+  { prefix: 'midnight', mega: 'midnight', build: (n) => import('./profile-variants').then((m) => m.profileKit('Midnight', n)) },
+  { prefix: 'network', mega: 'network', build: (n) => import('./profile-variants').then((m) => m.profileKit('Network', n)) },
+  { prefix: 'temple', mega: 'temple', build: (n) => import('./profile-variants').then((m) => m.profileKit('Temple', n)) },
+  { prefix: 'wildheart', mega: 'wildheart', build: (n) => import('./profile-variants').then((m) => m.profileKit('Wildheart', n)) },
+]
+const PROFILE_THEMES = PROFILE_BUILDERS.map((b) => ({ ...b, theme: MEGA_THEMES.find((m) => m.id === b.mega)!.editor }))
+for (const t of PROFILE_THEMES) for (const niche of MEGA_PROFILE_NICHES) LOADERS[`${t.prefix}-${niche}`] = () => t.build(niche)
+
 interface KitSummary { id: string; niche: KitNiche; theme: SiteKit['theme']; label: string; description: string }
 
 /** Light index for the library screen; no page content. */
@@ -94,6 +110,11 @@ export const KIT_INDEX: readonly KitSummary[] = [
   { id: 'wildheart-nonprofits', niche: 'nonprofits', theme: 'Wildheart', label: 'Nonprofits', description: 'Explain the work plainly and make it easy to say yes: come along, volunteer or give.' },
   { id: 'wildheart-networks', niche: 'networks', theme: 'Wildheart', label: 'Networks', description: 'One home for many places: find a chapter, start one, and see what is on everywhere.' },
 ]
+
+/** The same index for the profile niches (general, creators, ...), every theme. Kept apart so the six-door index above stays the one each theme's own tests pin. */
+export const PROFILE_KIT_INDEX: readonly KitSummary[] = PROFILE_THEMES.flatMap((t) =>
+  MEGA_PROFILE_NICHES.map((niche) => ({ id: `${t.prefix}-${niche}`, niche, theme: t.theme, label: NICHE_SPECS[niche].label, description: NICHE_SPECS[niche].description })),
+)
 
 export async function loadKit(id: string): Promise<SiteKit | null> {
   const load = Object.hasOwn(LOADERS, id) ? LOADERS[id] : undefined
