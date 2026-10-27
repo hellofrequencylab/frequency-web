@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Suspense, cache } from 'react'
-import { spacePageFonts } from '@/lib/theme/site-style'
+import { memberSpaceFonts } from '@/lib/theme/site-style'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Zap } from 'lucide-react'
@@ -240,7 +240,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
 
   // Match the real profile's accent + typography so the preview reads as the actual page, not a generic one.
   const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
-  const spaceTheme = spacePageFonts(space.preferences)
+  const spaceTheme = memberSpaceFonts(space.preferences)
 
   return (
     <AccentScope vars={accentVars} theme={spaceTheme} fqAccent={frequencyAccentVars(space.brandAccent)}>
