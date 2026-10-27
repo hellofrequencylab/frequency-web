@@ -1,4 +1,4 @@
-// HYG-186 is the unused flag only; SCAN-1130 separately measures CSS/font retirement.
+// HYG-186 is the unused flag only; owner successor HYG-187 separately tracks CSS/font retirement.
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { invokedDirectly } from '../lib/invoked-directly.mjs'
@@ -9,7 +9,7 @@ export function retiredThemeAxisFlag(source = readFileSync('lib/theme/design.ts'
   assert.match(source, /export const DEFAULT_DESIGN: DesignId = 'frequency'/, 'Frequency stays the fallback')
   return true
 }
-// This broader resource check belongs to SCAN-1130, not the bounded flag-retirement row.
+// This broader diagnostic belongs to successor HYG-187, not completed SCAN-1130 or HYG-186.
 export function legacyThemeResourcesRetired(css, dawnFontExists) {
   return !/\[data-(?:generation|occasion)[=\]]/.test(css) && !dawnFontExists
 }
