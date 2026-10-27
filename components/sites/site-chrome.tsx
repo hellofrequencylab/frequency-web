@@ -278,7 +278,7 @@ export function SiteChrome({
       )}
       <footer className="hs-footer">
         <span>
-          © {year} {brandName}
+          {footer?.copyright ?? `© ${year} ${brandName}`}
           {footer?.suffix && (
             <>
               {' · '}

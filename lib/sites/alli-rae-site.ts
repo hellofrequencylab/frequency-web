@@ -170,6 +170,7 @@ export function alliRaeSitePages(): DesignerPageSeed[] {
 export const ALLI_RAE_FOOTER = {
   logo: `${IMG}/logo-build-design.webp`,
   blurb: ALLI_RAE.license,
+  copyright: '© Alli Rae Build + Design Inc.',
   line: ALLI_RAE.credit,
   columns: [
     { title: 'Contact Us', lines: ['450 S. Melrose Drive', 'Suite 112', 'Vista, CA 92081'], links: [{ label: ALLI_RAE.email, href: `mailto:${ALLI_RAE.email}` }, { label: ALLI_RAE.phone, href: 'tel:7607076401' }] },

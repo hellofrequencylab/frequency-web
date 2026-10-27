@@ -47,6 +47,8 @@ export interface SiteFooter {
   note: string | null
   /** The words after the copyright ("A program on Frequency"); the skin links them to Frequency. */
   suffix: string | null
+  /** The copyright line in the Space's own words, in place of "© <year> <name>". */
+  copyright: string | null
   /** A footer mark of its own (the Designer footer's logo tile), in place of the header logo. */
   logo: string | null
   band: SiteFooterBand | null
@@ -128,11 +130,12 @@ export function readSiteFooter(prefs: unknown): SiteFooter | null {
   const note = text(r.note, 200)
   const suffix = text(r.suffix, 80)
   const logo = text(r.logo, 2000)
+  const copyright = text(r.copyright, 120)
   const band = readBand(r.band)
   const subscribe = readSubscribe(r.subscribe)
   const utility = readUtility(r.utility)
-  if (!columns.length && !blurb && !line && !note && !suffix && !logo && !band && !subscribe && !utility) return null
-  return { columns, blurb, line, note, suffix, logo: logo && /^(\/(?!\/)|https:\/\/)\S+$/.test(logo) ? logo : null, band, subscribe, utility }
+  if (!columns.length && !blurb && !line && !note && !suffix && !copyright && !logo && !band && !subscribe && !utility) return null
+  return { columns, blurb, line, note, suffix, copyright, logo: logo && /^(\/(?!\/)|https:\/\/)\S+$/.test(logo) ? logo : null, band, subscribe, utility }
 }
 
 /** The Space's footer with every link pointed at the website: a page of the site stays on the site
