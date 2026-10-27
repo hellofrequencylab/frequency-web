@@ -1,6 +1,5 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -28,6 +27,7 @@ import type { LibraryVersion } from '@/lib/library/versions'
 import { isError } from '@/lib/action-result'
 import { createSequence, updateSequenceConfig, setSequenceStatus } from './sequence-actions'
 import { rollbackAssetVersion } from './recraft-actions'
+import { buttonClasses } from '@/components/ui/button'
 
 // The Loom Studio editor for a managed onboarding flow (Loom kind='sequence'; docs/LOOM-PLATFORM.md
 // §3). It edits ONLY the SequenceDef config — Layer-2 data: order, copy, targeting, gating. This is

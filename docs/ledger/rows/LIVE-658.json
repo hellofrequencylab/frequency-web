@@ -3,10 +3,11 @@
   "patch": {
     "verify": {
       "kind": "cmd",
-      "cmd": "node -e 'const fs=require(\"fs\"),cp=require(\"child_process\");const die=m=>{console.error(m);process.exit(1)};const studio=fs.readdirSync(\"app/(main)/admin/appearance\").filter(f=>/\\.tsx?$/.test(f)).map(f=>fs.readFileSync(\"app/(main)/admin/appearance/\"+f,\"utf8\")).join(\"\\n\");if(!/generation/i.test(studio))die(\"Theme Studio (app/(main)/admin/appearance) never mentions generation, so an operator cannot change it\");const r=fs.readFileSync(\"lib/theme/server/resolve.ts\",\"utf8\");const css=fs.readFileSync(\"app/globals.css\",\"utf8\");if(/FOLLOW-UP \\(deliberately NOT done here\\): per-preset contrast/.test(css))die(\"app/globals.css still describes per-preset contrast tuning as not done\");const reg=fs.readFileSync(\"lib/theme/generations.ts\",\"utf8\");for(const m of reg.matchAll(/id:\\s*\\x27([a-z-]+)\\x27[\\s\\S]*?minContrast:\\s*\\x27(AAA|AA)\\x27/g)){if(m[2]===\"AAA\"&&!css.includes(\"[data-generation=\\\"\"+m[1]+\"\\\"]\")||m[2]===\"AAA\"&&!new RegExp(\":is\\\\(html, \\\\[data-skin\\\\]\\\\)\\\\[data-generation=\\\"\"+m[1]+\"\\\"\\\\]\").test(css))die(\"AAA preset \"+m[1]+\" has no tuned ink block in app/globals.css\")}const out=cp.spawnSync(\"node\",[\"scripts/check-contrast.mjs\"],{encoding:\"utf8\"});if(out.status!==0)die(\"check:contrast fails:\\n\"+(out.stderr||out.stdout).slice(0,800));if(!/· spacious/.test(out.stdout))die(\"check:contrast does not measure the AAA presets as their own states\")'"
+      "cmd": "node scripts/probes/dawn-axes-css.mjs && node scripts/check-contrast.mjs >/dev/null",
+      "note": "HYG-187: the generation axis and its AAA ink blocks are retired; the row now guards that none return and that the contrast gate still passes."
     }
   },
   "append": {
-    "detail": " 2026-10-26 (SCAN-1129): resolveTheme is Frequency-only (no Space or community generation, SCAN-1130), so the community-default-generation arm no longer applies."
+    "detail": "2026-10-27 (HYG-187, Daniel: \"retire the generation axis tests\"): the generation and occasion CSS blocks, including the AAA ink block, are deleted from app/globals.css, with the tests and contrast-gate states that pinned them. This probe was rewritten to match."
   }
 }

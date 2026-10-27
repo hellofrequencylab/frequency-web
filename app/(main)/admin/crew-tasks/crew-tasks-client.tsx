@@ -1,6 +1,5 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import { useId, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { Pencil, Trash2, Check, X, ShieldCheck, ShieldX } from 'lucide-react'
@@ -10,6 +9,7 @@ import { Field, Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Switch } from '@/components/ui/switch'
+import { buttonClasses } from '@/components/ui/button'
 
 const TASK_TYPES = [
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',

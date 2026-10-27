@@ -1,6 +1,5 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import { useId, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Check, Loader2, ExternalLink } from 'lucide-react'
@@ -11,6 +10,7 @@ import type { ResolvedElement, StoredElementConfig } from '@/lib/elements/config
 import { ElementPreview } from '@/components/elements/previews'
 import { saveElementSettings } from './actions'
 import { Switch } from '@/components/ui/switch'
+import { buttonClasses } from '@/components/ui/button'
 
 // One card per registered element: edit its feature settings (toggles / choices) + per-feature ROLE
 // GATE (who may use each). Saving writes the PLATFORM MASTER, so every occurrence of the element

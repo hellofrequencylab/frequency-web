@@ -1,6 +1,5 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import Link from 'next/link'
 import { History, Zap, Route } from 'lucide-react'
 import { FormSection } from '@/components/admin/form-section'
@@ -10,6 +9,7 @@ import { setReferralsEnabled, setReferralLanding } from './actions'
 import { SITE_URL } from '@/lib/site'
 import type { getOnboardingControlsData, OnboardingSwitchEvent } from './load'
 import { Input } from '@/components/ui/field'
+import { buttonClasses } from '@/components/ui/button'
 
 const siteHost = SITE_URL.replace(/^https?:\/\//, '')
 

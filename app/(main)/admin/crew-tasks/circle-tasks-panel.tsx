@@ -187,7 +187,7 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
             onClick={handleRelease}
             disabled={isPending}
             title="Release claim"
-            className="p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg disabled:opacity-50 transition-colors"
+            className={buttonClasses('ghost', 'xs')}
             aria-label="Release claim"
           >
             <Undo2 className="w-3.5 h-3.5" />

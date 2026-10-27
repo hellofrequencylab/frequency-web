@@ -76,6 +76,9 @@ const DESIGNER_VARS = `
 --dz-scrim-hero:linear-gradient(90deg,rgba(26,28,27,.62) 0%,rgba(26,28,27,.32) 48%,rgba(26,28,27,.08) 100%),linear-gradient(180deg,rgba(26,28,27,0) 55%,rgba(26,28,27,.55) 100%);
 --dz-scrim-band:linear-gradient(180deg,rgba(32,34,33,.55),rgba(32,34,33,.7));
 --dz-scrim-card:linear-gradient(180deg,rgba(32,34,33,0) 35%,rgba(32,34,33,.72) 100%);
+--dz-tile-dark:linear-gradient(160deg,rgba(247,243,236,.08),rgba(247,243,236,.02));--dz-tile-dark-hover:linear-gradient(160deg,rgba(247,243,236,.13),rgba(247,243,236,.04));
+--dz-tile-dark-edge:inset 0 1px 0 rgba(255,255,255,.07),inset 0 0 0 1px rgba(247,243,236,.08);--dz-tile-dark-lift:0 24px 40px -24px rgba(0,0,0,.6);
+--dz-text-shadow:0 1px 12px rgba(0,0,0,.35);--dz-outline-light:rgba(247,243,236,.75);--dz-util-edge:rgba(247,243,236,.18);--dz-on-dark-text:rgba(247,243,236,.84);--dz-on-dark-soft:rgba(247,243,236,.78);--dz-on-dark-faint:rgba(247,243,236,.6);--dz-well:rgba(247,243,236,.06);--dz-well-edge:rgba(247,243,236,.2);--dz-well-inset:inset 0 1px 2px rgba(0,0,0,.25);--dz-shadow-tile:0 20px 40px -20px rgba(0,0,0,.6);--dz-glow-foot:radial-gradient(60% 50% at 85% 0%,rgba(211,160,63,.10),transparent 70%);--dz-wash:rgba(255,255,255,.5);--dz-disc-dark:rgba(242,220,184,.06);--dz-disc-dark-edge:rgba(242,220,184,.45);--dz-hairline-dark:rgba(247,243,236,.14);--dz-card-edge:inset 0 1px 0 rgba(255,255,255,.8),0 30px 60px -30px rgba(0,0,0,.55);--dz-scrim-header:linear-gradient(180deg,rgba(26,28,27,.55) 0%,rgba(26,28,27,.18) 70%,rgba(26,28,27,0) 100%);--dz-shadow-tab:0 8px 24px -10px rgba(0,0,0,.45);
 --dz-glass:rgba(247,243,236,.78);--dz-glass-warm:rgba(251,248,242,.86);--dz-glass-dark:rgba(26,28,27,.28);
 --dz-sheen:linear-gradient(180deg,rgba(255,255,255,.65),rgba(255,255,255,0) 40%);
 --dz-plaster-tex:radial-gradient(120% 80% at 15% 0%,rgba(255,255,255,.55),transparent 60%),radial-gradient(90% 70% at 100% 100%,rgba(214,196,170,.22),transparent 65%);

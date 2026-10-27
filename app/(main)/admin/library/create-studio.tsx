@@ -1,6 +1,5 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Wand2, RotateCcw, Palette, Zap, Loader2, Trash2 } from 'lucide-react'
@@ -11,6 +10,7 @@ import { generateWithRecraft, listBrandStyles, deleteBrandStyle } from './recraf
 import { describeGeneratedAssets } from '@/lib/library/describe-generated'
 import type { BrandStyle } from '@/lib/library/styles'
 import { Input, Textarea } from '@/components/ui/field'
+import { buttonClasses } from '@/components/ui/button'
 
 // One smart "Create" surface for the whole Loom. You pick WHAT you're making; the studio picks the
 // engine: Vera draws quick house-style line marks (icons / spot art) as inline SVG, and the Image
@@ -369,7 +369,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             type="button"
             onClick={create}
             disabled={busy || !prompt.trim() || engineUnavailable}
-            className={buttonClasses('primary', 'md')}
+            className={buttonClasses('primary', 'sm')}
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
             {createLabel}

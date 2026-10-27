@@ -1,6 +1,5 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 // The approve / reject console for one Non Profit verification (ADR-552, AUDIT #6). Approving grants the
 // discounted Non Profit plan; rejecting requires a short reason the owner sees. The page passes the
 // pending row; this client dispatches the gated actions and refreshes. Strings are CONTENT-VOICE (plain,
@@ -12,6 +11,7 @@ import { Check, Loader2, X } from 'lucide-react'
 import { Field, Textarea, fieldClasses } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { approveNonprofitVerification, rejectNonprofitVerification } from './actions'
+import { buttonClasses } from '@/components/ui/button'
 
 export function ReviewConsole({ id }: { id: string }) {
   const router = useRouter()

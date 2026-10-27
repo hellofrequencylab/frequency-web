@@ -1,6 +1,5 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { History, ShieldAlert, ShieldCheck } from 'lucide-react'
@@ -16,6 +15,7 @@ import {
   saveVeraAutonomyTuning,
   rearmVeraBreaker,
 } from './actions'
+import { buttonClasses } from '@/components/ui/button'
 
 // Owner controls for Vera autonomous sending (ADR — Vera autonomous-send graduation). SAFETY-CRITICAL,
 // DISABLED-BY-DEFAULT: the master switch is the graduation gate AND the global kill; per-category

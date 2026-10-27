@@ -1,11 +1,10 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, Gem, Trash2, Plus, Check, X } from 'lucide-react'
 import { updateRewardConfig, createRewardConfig, deleteRewardConfig } from './reward-actions'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
@@ -259,7 +258,7 @@ function RewardTable({
                 type="button"
                 onClick={add}
                 disabled={pending || !draft.action_type.trim()}
-                className={buttonClasses('primary', 'xs')}
+                className={buttonClasses('primary', 'sm')}
               >
                 {pending ? 'Adding…' : 'Add'}
               </button>

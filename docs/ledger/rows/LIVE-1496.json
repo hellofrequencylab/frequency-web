@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-1496",
+  "title": "A site published by SQL or a seed script gets its free subdomain attached",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/attach-site-subdomain.mjs"
+  },
+  "detail": "Found 2026-10-27 when alli-rae.frequencylocal.com closed the connection. The free <slug>.frequencylocal.com address is attached to the Vercel project only when Publish is pressed in the Space panel (setWebsitePublished calls addSiteSubdomain). A seed or SQL that sets the published flag directly never attaches it, so the address has no certificate. Needed: a small script (using lib/sites/vercel-domains.ts addSiteSubdomain) that the seed docs name as the last step, so a seeded site is reachable. Re-test the premise before working it: confirm Publish still attaches and wildcard is still not configured.\n\nscripts/attach-site-subdomain.mjs attaches <slug>.frequencylocal.com to the Vercel project (idempotent); both Alli Rae seed scripts name it as the last step. Premise re-tested: Publish still attaches via addSiteSubdomain; no wildcard domain on the project.",
+  "closed": "2026-10-27",
+  "wave": "W7"
+}
