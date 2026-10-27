@@ -14,7 +14,13 @@ export function retiredThemeReader({ exists = existsSync, read = (p) => readFile
   assert.match(actions, /validateThemeTokens\(input\.tokens/, 'saved token writes remain validated')
   assert.match(actions, /export async function deleteTheme\(/, 'saved-data cleanup remains available')
   assert.match(actions, /\.from\('themes'\)\.delete\(\)/, 'saved-data delete still targets themes')
-  assert(exists('lib/theme/css.ts') && exists('lib/theme/validate.ts'), 'CSS formatting and saved-data validation contracts remain')
+  assert.equal(exists('lib/theme/css.ts'), false, 'retired CSS formatter returned')
+  assert.equal(exists('lib/theme/structure.ts'), false, 'retired generation structure mapper returned')
+  assert(exists('lib/theme/validate.ts'), 'saved-data validation remains')
+  assert.match(read('lib/theme/server/admin-themes.ts'), /tokens: validateThemeTokens\(r\.tokens\)/, 'janitor reads retain token validation')
+  const preview = read('components/admin/theme-studio/theme-preview.tsx')
+  assert.match(preview, /for \(const \[k, v\] of Object\.entries\(base\)\) if \(v\) out\[k\] = v/, 'inline preview retains mode tokens')
+  assert.match(preview, /for \(const \[k, v\] of Object\.entries\(tokens\.feel\)\) if \(v\) out\[k\] = v/, 'inline preview retains feel tokens')
   return true
 }
 if (invokedDirectly(import.meta.url)) {

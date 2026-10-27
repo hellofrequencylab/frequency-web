@@ -26,6 +26,8 @@ export interface FeatureKey {
   area: FeatureArea
   /** Representative route(s) this feature documents (for the drift signal). */
   routes: string[]
+  /** Actual non-route implementations whose edits affect these help articles. */
+  sourcePrefixes?: string[]
   /** Core member-facing feature — should have a published, member-voice article. */
   core: boolean
 }
@@ -94,8 +96,8 @@ export const FEATURE_KEYS: FeatureKey[] = [
   { key: 'leaderboard', label: 'Leaderboard', area: 'engagement', routes: ['/crew/leaderboard'], core: true },
   { key: 'profile', label: 'Your profile', area: 'account', routes: ['/profile', '/settings/profile'], core: true },
   { key: 'connections', label: 'Connections', area: 'comms', routes: ['/connections'], core: true },
-  { key: 'location', label: 'Your location', area: 'account', routes: ['/settings/connections'], core: true },
-  { key: 'resonance', label: 'Resonance matching', area: 'discovery', routes: ['/settings/connections'], core: true },
+  { key: 'location', label: 'Your location', area: 'account', routes: ['/settings/connections'], sourcePrefixes: ['components/frequency/members/settings/connection-panes.tsx', 'components/frequency/members/settings/settings-body.tsx', 'components/settings/connection-prefs-form.tsx', 'components/settings/live-location-toggle.tsx', 'components/settings/feed-radius-slider.tsx'], core: true },
+  { key: 'resonance', label: 'Resonance matching', area: 'discovery', routes: ['/settings/connections'], sourcePrefixes: ['components/frequency/members/settings/connection-panes.tsx', 'components/frequency/members/settings/settings-body.tsx', 'components/settings/resonance-matching-toggle.tsx', 'components/settings/match-prefs-form.tsx'], core: true },
   //    2026-09-15 (LIVE-305): `billing` is the money a Space PAYS Frequency (plan, card, invoices, a cash
   //    agreement), and every surface for that sits under /spaces/[slug]/settings/billing. Its prefix
   //    was the bare '/spaces', which made EVERY Space page change flag plans-and-pricing.md and

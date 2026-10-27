@@ -1,3 +1,4 @@
+import { readAvatarFocus } from '@/lib/images/avatar-focus'
 // A member's profile HEADER (hero) FOCAL POINT — where the header banner sits inside its cropped
 // hero window (a CSS `object-position`). Stored on the existing profiles.meta jsonb bag under
 // `headerFocal` — NO new DB column. The centered default ("50% 50%") is dropped when written, so a
@@ -36,6 +37,12 @@ export function readProfileAvatarFocus(meta: unknown): string {
     if (typeof v === 'string' && v.trim()) return v.trim()
   }
   return DEFAULT_OBJECT_POSITION
+}
+
+/** Saved profile metadata wins; otherwise preserve the URL focal fragment used by other avatars. */
+export function readProfileAvatarFocusWithFallback(meta: unknown, url: string | null): string | null {
+  const saved = meta && typeof meta === 'object' ? (meta as Record<string, unknown>).avatarFocal : null
+  return typeof saved === 'string' && saved.trim() ? readProfileAvatarFocus(meta) : readAvatarFocus(url)
 }
 
 /** Merge a chosen AVATAR focal point into an existing meta object, dropping the key when it is the centered
