@@ -38,7 +38,7 @@ const SIZE: Record<ButtonSize, string> = { xs: 'xs', sm: 'sm', md: '', lg: 'lg' 
  *
  *  This exists because `cn` in this repo is a plain `.filter(Boolean).join(' ')` with NO
  *  tailwind-merge semantics (lib/utils.ts:4; the same trap is documented in skeleton.tsx,
- *  select.tsx and poster-band.tsx). A caller that wants the button's SHAPE but its own
+ *  select.tsx). A caller that wants the button's SHAPE but its own
  *  COLOURS therefore cannot pass overrides to `buttonClasses` and expect them to replace a
  *  variant's tokens — both classes survive into the attribute and Tailwind's emit order,
  *  not the call order, decides which paints.

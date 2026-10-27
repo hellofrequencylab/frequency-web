@@ -65,7 +65,7 @@ function valueIn(block: string, token: string): string {
 const source = (p: string) => stripComments(readFileSync(join(root, p), 'utf8'))
 const DETAIL = source('components/templates/detail-template.tsx')
 const EVENT = source('app/(main)/events/[slug]/event-member-page.tsx')
-const PRICING = source('app/(marketing)/pricing/plan-cards.tsx')
+const PRICING = source('components/frequency/site/pages/pricing/frequency-pricing.tsx')
 
 describe('--text-page-title-lg reproduces the ramp it retired', () => {
   it('is a clamp on the generation axis, not a bare clamp', () => {
@@ -127,21 +127,11 @@ describe('the mirrored pair moved together', () => {
   })
 })
 
-describe('pricing sizeFor() stays a fitting algorithm', () => {
-  it('keeps four length-driven branches', () => {
-    // ADR-947: this is not four stray literals, it is a fitting algorithm — four sizes chosen by
-    // label character count so the display face never wraps mid-figure. Collapsing it to one role
-    // is the failure this pins, in either direction.
-    expect(PRICING).toContain('const long = label.length > 8')
-    expect(PRICING).toContain("'text-stat-sm sm:text-stat-md'")
-    expect(PRICING).toContain("'text-stat-sm'")
-    expect(PRICING).toContain("'text-stat-md'")
-  })
-
-  it('leaves the featured/short branch on literals, because no role reaches 3rem/3.75rem', () => {
-    // `stat-md` ends at 2.25rem and the hero `stat` starts at a 3.5rem floor; `page-title-lg`
-    // CEILINGS at 2.25rem, i.e. where this branch begins. Nothing covers it.
-    expect(PRICING).toContain("'text-5xl sm:text-6xl'")
-    expect(valueIn(OUTSIDE, '--text-stat')).toContain('clamp(3.5rem')
+describe('active Frequency pricing keeps price fitting on its actual model', () => {
+  it('classifies numeric prices separately from phrases without typing prices', () => {
+    expect(PRICING).toContain('function PriceBlock(')
+    expect(PRICING).toContain("const big = /\\d/.test(amount) || !/\\s/.test(amount)")
+    expect(PRICING).toContain("'pb-price' : 'pb-price is-text'")
+    expect(PRICING).toContain('price: o.monthly')
   })
 })
