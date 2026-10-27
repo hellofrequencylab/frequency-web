@@ -46,7 +46,7 @@
     "prebuild": "expo prebuild --platform android --clean",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --max-warnings=0 .",
-    "test": "node --experimental-strip-types --no-warnings --test src/**/*.test.ts && node --test scripts/xcode-uuid.test.cjs && node --test scripts/expo-dependency-consumers.test.cjs",
+    "test": "node --experimental-strip-types --no-warnings --test src/**/*.test.ts && node --test scripts/xcode-uuid.test.cjs && node --test scripts/expo-dependency-consumers.test.cjs && node --test scripts/zod-size-gate.test.cjs",
     "gen:icons": "node scripts/gen-icons.mjs",
     "doctor": "expo-doctor",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
@@ -56,6 +56,9 @@
   "pnpm": {
     "overrides": {
       "xcode@3.0.1>uuid": "11.1.1"
+    },
+    "patchedDependencies": {
+      "zod@3.25.76": "patches/zod@3.25.76.patch"
     }
   }
 }
