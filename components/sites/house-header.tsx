@@ -52,6 +52,7 @@ export function HouseHeader({
   member = null,
   tools = null,
   brandMark = null,
+  menuFoot = null,
 }: {
   brandName: string
   homeHref: string
@@ -74,6 +75,8 @@ export function HouseHeader({
   /** A skin's own drawing of the mark for the logo slot (the Wildheart LogoMark), in place of the logo image
    *  and the name. The server draws it; this island only places it. */
   brandMark?: ReactNode
+  /** A skin's lines under the button in the phone menu (the Designer's call, email and hours). */
+  menuFoot?: { label: string; href?: string }[] | null
 }) {
   // SCAN-970: the admin links are the Space admin's alone; a visitor never sees them.
   const adminLinks = useSiteAdmin(adminCheck) ? adminLinksIn : null
@@ -225,11 +228,12 @@ export function HouseHeader({
             <HouseMenu
               label={`${brandName} menu`}
               links={[
-                ...links.flatMap((l) => (l.mega ? l.mega.links.map((m) => ({ href: m.href, label: m.label })) : [l])),
+                ...links.flatMap((l) => (l.mega ? l.mega.links.map((m) => ({ href: m.href, label: m.label, group: l.label })) : [l])),
                 ...(adminLinks ?? []).map((l) => ({ href: l.href, label: `Admin: ${l.label}`, className: 'hs-nav-admin' })),
               ]}
               // The header button also rides in the phone menu; only a skin that wants it there shows it (a[data-cta]).
               cta={cta ? { href: cta.href, label: cta.label } : undefined}
+              foot={menuFoot ?? undefined}
             />
           )}
         </div>

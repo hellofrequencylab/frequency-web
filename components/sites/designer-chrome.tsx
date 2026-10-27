@@ -23,6 +23,13 @@ export function DesignerUtilityBar({ utility }: { utility: NonNullable<SiteFoote
   )
 }
 
+/** The phone sheet's contact block (design: the call, the email, then the hours): linked items first, plain lines last. */
+export function phoneMenuFoot(utility: SiteFooter['utility'] | null): { label: string; href?: string }[] | null {
+  if (!utility || utility.items.length === 0) return null
+  const items = utility.items.map((i) => ({ label: i.label, ...(i.href ? { href: i.href } : {}) }))
+  return [...items.filter((i) => i.href), ...items.filter((i) => !i.href)]
+}
+
 /** The footer: the closing band, the brand tile and link columns, the letter sign-up. The legal row is the house footer's. */
 export function DesignerFooterTop({ footer, brandName, homeHref, logoUrl, slug }: { footer: SiteFooter | null; brandName: string; homeHref: string; logoUrl: string | null; slug: string | null }) {
   const band = footer?.band ?? null

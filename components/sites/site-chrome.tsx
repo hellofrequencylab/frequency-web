@@ -12,7 +12,7 @@ import { NETWORK_CSS } from './network-css'
 import { TEMPLE_CSS } from './temple-css'
 import { MIDNIGHT_CSS } from './midnight-css'
 import { DESIGNER_CSS } from './designer-css'
-import { DesignerFooterTop, DesignerUtilityBar } from './designer-chrome'
+import { DesignerFooterTop, DesignerUtilityBar, phoneMenuFoot } from './designer-chrome'
 import { DesignerHeaderState } from './designer-header-state'
 import { MidnightLogo } from './midnight-logo'
 import { MidnightBar } from './midnight-bar'
@@ -186,6 +186,7 @@ export function SiteChrome({
       fadeOnPause={fadeOnPause}
       member={member}
       tools={tools}
+      menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}
       brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : null}
     />
   )

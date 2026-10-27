@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1498",
+  "title": "Alli Rae phone sheet, 900px header and terracotta link match the design; typos stay corrected",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/alli-rae-audit-followup.mjs"
+  },
+  "detail": "Follows LIVE-1497. The three items it left: the phone sheet gains the design's section labels (Contact, Portfolio) and its contact block (call, email, hours), carried by data attributes on the house menu that every other skin hides; the Designer header collapses at the design's 900px through the skin's own CSS (the shared house header is untouched); the terracotta underlined link is a Designer token applied to prose and unclassed body links. Per the owner's ruling (2026-10-27) the source typos are corrected, as in LIVE-1492, and the Frequency Partner badge stays. Live Space data needs the regenerated update-alli-rae-space-2.sql.",
+  "wave": "W7"
+}
