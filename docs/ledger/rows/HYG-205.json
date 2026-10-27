@@ -1,0 +1,11 @@
+{
+  "id": "HYG-205",
+  "title": "Make manual room creation and admin membership writes atomic",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "M",
+  "source": { "file": "app/(main)/messages/rooms/actions.ts", "ref": "Current createRoom separate inserts and demoteRoomMember stale count/update; no existing registered atomic room RPC" },
+  "detail": "Independent source/migration census confirms room+creator membership are separate writes and demotion checks an admin count before a later update. Local proposal docs/database/room-atomic-proposal.sql defines three service-only SECURITY INVOKER RPCs for create, role changes and manual leave/kick. Parent row locks precede current caller/admin-count checks. No global trigger, account/profile cascade or system provisioning change. Fifteen disposable embedded PostgreSQL checks pass, including actual old failure schedules, rollback, ACLs, role refusals, manual last-admin handling and unchanged cascades; eight guarded adapter tests pass. No independent two-session concurrency or live PostgREST acceptance is claimed. ROOM_ATOMIC_WRITES stays blank/off, SQL is outside the migration directory and the existing860-file inventory is unchanged. App adapter wiring remains conditional and cannot activate before separately approved SQL registration and rollout; enabled RPC errors must fail closed with no legacy-write fallback.",
+  "verify": { "kind": "manual", "evidence": "Close only after independent SQL review, CLI-generated migration registration, real isolated two-session lock/race proof, exact registered database/app readiness and authorized rollout/acceptance. Local proposal, adapter tests and reproducible no-network PGlite harness are complete but do not establish production deployment or a global last-admin invariant. Account/profile and direct maintenance deletions remain unchanged. See docs/ROOM-ATOMIC-WRITES.md.", "checked": "2026-10-27" }
+}
