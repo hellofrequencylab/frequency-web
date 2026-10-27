@@ -114,5 +114,6 @@ export function pendingChangeLabels(draft: WebsiteSnapshot, published: WebsiteSn
   if (JSON.stringify(draft.chrome) !== JSON.stringify(published?.chrome)) labels.push('Header and footer')
   if (JSON.stringify(draft.brand) !== JSON.stringify(published?.brand)) labels.push('Brand settings')
   if (draft.theme !== published?.theme) labels.push('Theme')
+  if (JSON.stringify(draft.look ?? null) !== JSON.stringify(published?.look ?? null)) labels.push('Global styles')
   return labels
 }
