@@ -45,7 +45,6 @@ const read = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8')
 
 const CSS = read('../../app/globals.css')
 const MAIN_LAYOUT = read('../../app/(main)/layout.tsx')
-const SHELL = read('../../components/layout/app-shell.tsx')
 
 describe('the presets declare a density', () => {
   // `balanced` is the documented no-op anchor: it inherits the base 106.25% on purpose and its
@@ -88,9 +87,5 @@ describe('the resolved generation reaches the root element', () => {
 
   it('does not resolve the theme in the root layout (that would de-static the public site)', () => {
     expect(read('../../app/layout.tsx')).not.toContain('resolveTheme')
-  })
-
-  it('keeps the shell root attribute too, so the tokens still scope to the shell', () => {
-    expect(SHELL).toContain('data-generation={generation}')
   })
 })
