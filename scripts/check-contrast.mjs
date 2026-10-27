@@ -828,8 +828,9 @@ function table(rows) {
 }
 
 function main() {
+  // Historical preset identifiers remain parseable, but resolveTheme renders balanced/none.
+  // Runtime tests pin that consequence; do not score unreachable legacy AAA variants as live UI.
   const src = readFileSync(CSS, 'utf8')
-  const aaaStates = aaaGenerationStates(aaaGenerationIds(readFileSync(join('lib', 'theme', 'generations.ts'), 'utf8')))
   // Frequency is the shipped design (SCAN-1115): its Commons and Stage rooms are measured from the
   // same sheets the browser loads (app/themes/frequency/core.css, then app/themes/frequency.css),
   // in the order app/layout.tsx imports them.
@@ -841,10 +842,9 @@ function main() {
   }
   const rows = [
     ...evaluateContrast(src),
-    ...evaluateContrast(src, { pairs: AAA_GENERATION_PAIRS, states: aaaStates }),
     ...evaluateContrast(sheets, { states: FREQUENCY_STATES, resolve: resolveFrequencyTokens }),
   ]
-  const ALL_STATES = [...STATES, ...aaaStates, ...FREQUENCY_STATES]
+  const ALL_STATES = [...STATES, ...FREQUENCY_STATES]
   const report = process.argv.includes('--report')
 
   if (report) {

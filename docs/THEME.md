@@ -1,5 +1,10 @@
 # Adaptive theming: the four-axis model
 
+> Current implementation and remaining work are recorded in the [merged backlog](BUILD-BACKLOG.json).
+> Frequency is the platform design. The four-axis sections retain historical design context;
+> saved Theme Studio rows are janitor-managed data and do not inject styles or auto-schedule occasions.
+> HYG-187 retired the platform generation/occasion CSS blocks. Historical IDs and cookie/Space validation remain compatible; their registry no longer implies a rendered preset. Root reduced-motion durations and animation cancellation remain active without those attributes.
+
 > **The model, in one line.** A surface's look is composed from **four orthogonal axes**:
 > mode, skin, occasion, and generation, each one attribute on the shell root, resolved
 > through the CSS custom-property cascade. One canonical DOM, CSS-only variation, no
