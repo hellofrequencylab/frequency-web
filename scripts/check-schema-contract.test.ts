@@ -298,3 +298,20 @@ describe('the live tree', () => {
     expect(report.skippedSites.filter((s) => s.file === 'lib/outbound/approvals.ts' && s.reason === 'dynamicTable')).toEqual([])
   })
 })
+
+
+describe('unregistered room proposal allowances stay exact and temporary', () => {
+  it('allows only the three named RPCs at the guarded adapter, not other unknown RPCs or files', () => {
+    const names = ['room_create_atomic', 'room_set_member_admin_atomic', 'room_remove_member_atomic']
+    const narrow = ALLOWLIST.filter(entry => entry.owner === 'HYG-205')
+    expect(narrow.map(entry => entry.table)).toEqual(names)
+    for (const entry of narrow) {
+      expect(entry.file).toBe('lib/messages/room-atomic.ts'); expect(entry.kind).toBe('rpc'); expect(entry.added).toBe('2026-10-27')
+      expect(entry.reason).toContain('OPEN HYG205'); expect(entry.reason).toContain('defaults blank/off')
+    }
+    const violations = [...names.map(table => ({ file: 'lib/messages/room-atomic.ts', table, kind: 'rpc' })), { file: 'lib/messages/room-atomic.ts', table: 'unknown_other_rpc', kind: 'rpc' }, { file: 'lib/unrelated.ts', table: names[0], kind: 'rpc' }]
+    const result = applyAllowlist(violations, narrow)
+    expect(result.allowed).toBe(3); expect(result.stale).toEqual([])
+    expect(result.remaining).toEqual(violations.slice(3))
+  })
+})
