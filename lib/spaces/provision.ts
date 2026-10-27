@@ -331,6 +331,11 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
     const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
     const applied = await applyMegaTheme(spaceId, input.theme).catch(() => null)
     if (!applied?.ok) console.error('[createSpace] could not apply the chosen theme to the new space')
+    // The same theme's General kit is the new Space's first published website (LIVE-1533).
+    if (applied?.ok) {
+      const { publishStarterSite } = await import('@/lib/spaces/starter-site')
+      if (!(await publishStarterSite(spaceId, input.theme))) console.error('[createSpace] could not publish the starter website')
+    }
   }
 
   // Success: hand the owner to SETUP, then to HOSTING (ADR-1733 amending LIVE-261). This landed
