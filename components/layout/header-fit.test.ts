@@ -45,9 +45,8 @@ const read = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8')
 
 const MARKETING = read('./marketing-header.tsx')
 const SITE = read('./site-header.tsx')
-const SHELL = read('./app-shell.tsx')
-const TAB_BAR = read('./app-shell-mobile.tsx')
-const BRAND = read('./brand-mark.tsx')
+const SHELL = read('../frequency/members/shell/header.tsx')
+const TAB_BAR = read('../frequency/members/shell/tab-bar.tsx')
 const MOBILE_MENU = read('./marketing-mobile-menu.tsx')
 const USER_MENU = read('./user-menu.tsx')
 
@@ -184,124 +183,23 @@ describe('the mobile menu button is never the give-way point', () => {
   })
 })
 
-describe('AppShell header: the icon cluster holds its width, the brand gives way', () => {
-  it('pins the right cluster — `justify-end` means squeezing it overflows LEFT, over the brand', () => {
-    expect(SHELL).toContain('flex flex-1 shrink-0 items-center justify-end gap-1 pl-1 pr-2')
+describe('active Frequency member header and phone tabs keep their fit contracts', () => {
+  const css = read('../../app/themes/frequency/members-shell.css')
+  it('gives the phone wordmark a shrinkable box and pins the controls', () => {
+    expect(SHELL).toContain('ap-hdr-l')
+    expect(SHELL).toContain('ap-hdr-c')
+    expect(css).toContain('.ap-hdr-l{flex:0 1 144px;min-width:0;width:auto}')
+    expect(css).toContain('.ap-hdr-c{flex:0 0 auto;gap:0;padding:0;margin-left:auto}')
   })
-
-  it('does not leave the cluster shrinkable, which is what let the icons reach the wordmark', () => {
-    expect(SHELL).not.toContain('flex flex-1 min-w-0 items-center justify-end')
+  it('derives the phone destinations and split from the live gated registry', () => {
+    expect(TAB_BAR).toContain('calmSpine().filter((t) => canSee(t.node, viewer))')
+    expect(TAB_BAR).toContain('const split = Math.floor(tabs.length / 2)')
+    expect(TAB_BAR).toContain("aria-current={on ? 'page' : undefined}")
   })
-
-  it('gives the brand link a shrinkable box', () => {
-    expect(BRAND).toContain('flex min-w-0 items-center')
-  })
-
-  it('caps the mark at its box, so `aspect-ratio` stops acting as a floor', () => {
-    expect(BRAND).toContain('brandmark h-[22px] min-w-[6.5rem] max-w-full md:h-8')
-  })
-
-  // ── THE SECOND HALF OF THE SAME FIX (owner, 2026-08-16: "The logo was way too small") ────────
-  // `max-w-full` gave the header an escape valve with no bottom. Height stays pinned at 22px while
-  // width collapses, and the mask is `contain`, so the letterforms shrink to fit the narrower axis
-  // and the box pads out the rest: at ~23px of box the mark draws about 3px tall. A smudge, not a
-  // logo — and SILENT, because nothing overflows when the give-way child gives way completely.
-  // Neither the @overflow gate nor axe has a rule for "the brand is now a smear".
-  it('gives the mark a legibility floor, so the give-way child cannot give way to nothing', () => {
-    expect(BRAND).toContain('min-w-[6.5rem]')
-  })
-
-  // The floor is the backstop; the BUDGET is the fix. These numbers were MEASURED in Chromium
-  // (coarse pointer, this app's 17px root, the real compiled globals.css) rather than added up —
-  // the mark box against the glyph the `contain` mask actually draws inside it:
-  //
-  //     viewport   BEFORE (as shipped in #2137)   AFTER
-  //     320px      61.9 x 8.4                     130.9 x 17.7
-  //     360px      101.9 x 13.8                   163 x 22   (full)
-  //     390px      131.9 x 17.8                   163 x 22   (full)
-  //     412px      153.9 x 20.8                   163 x 22   (full)
-  //
-  // So this was never "a little tight on the smallest phones" — the brand was being cut on EVERY
-  // phone width, and at 320 it drew eight pixels tall. The cluster's min-content is 165.8px against
-  // a 186.3px link, which is why 360 is the first width with any slack.
-  //
-  // Each of the three assertions below is one of the line items that bought that slack. Losing any
-  // one of them puts the header back over 360 and starts eating the brand again, silently.
-  describe('the mobile cluster is small enough that the mark never has to shrink', () => {
-    it('keeps the Mindless lotus off the phone (owner directive, ~42px of the budget)', () => {
-      expect(SHELL).toMatch(/hidden md:inline-flex[\s\S]{0,120}<MindlessLaunch \/>/)
-    })
-
-    it('drops the account divider below sm (~19px) rather than the wordmark', () => {
-      expect(SHELL).toContain('flex items-center gap-1.5 ml-1 sm:ml-2 sm:border-l sm:border-border sm:pl-2.5')
-    })
-
-    it('sizes the bell to match the Friends control beside it instead of 4px wider', () => {
-      expect(read('./notification-bell.tsx')).toContain('relative p-1.5 sm:p-2 rounded-control')
-    })
-  })
-
-  it('truncates a white-label Space name rather than letting it push the icons', () => {
-    expect(BRAND).toContain('truncate font-display')
-  })
-})
-
-describe('MobileTabBar: five equal fifths, whatever the labels say', () => {
-  // Before `min-w-0` each tab was floored at its own LABEL's width. The seven-slot bar summed
-  // to 319px on a 320px screen. HYG-033 cuts the bar to five (Menu · Feed · Zap · Events ·
-  // Marketplace); five equal slots at 320px are 64px, which is the line Marketplace sits on.
-  it('lets every tab shrink to its share', () => {
-    expect(TAB_BAR).toContain('flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium transition-colors')
-  })
-
-  it('lets Menu and Zap shrink too, so the row stays uniform', () => {
-    expect(TAB_BAR).toContain("'flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-medium text-muted")
-    expect(TAB_BAR).toContain('relative flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 pb-2 text-3xs font-semibold')
-  })
-
-  it('clips a long label to one line instead of wrapping or overflowing', () => {
-    const labels = TAB_BAR.match(/className="w-full truncate text-center leading-none"/g) ?? []
-    // Menu, Zap, and the shared destination-tab renderer.
-    expect(labels.length).toBeGreaterThanOrEqual(3)
-  })
-
-  it('never lets an icon absorb the shrink — the glyph is what a thumb aims at', () => {
-    const icons = TAB_BAR.match(/h-5\.5 w-5\.5 shrink-0/g) ?? []
-    expect(icons.length).toBeGreaterThanOrEqual(3)
-  })
-
-  it('splits destinations around Zap from the live tab count, not a leftover seven-slot slice', () => {
-    expect(TAB_BAR).toContain('tabs.slice(0, Math.floor(tabs.length / 2))')
-    expect(TAB_BAR).toContain('tabs.slice(Math.floor(tabs.length / 2))')
-    expect(TAB_BAR).not.toMatch(/tabs\.slice\(0, 2\)/)
-  })
-})
-
-describe('MobileTabBar: 320px label-fit (HYG-033)', () => {
-  // Five flex-1 slots on a 320px bar = 64px each. Marketplace is the widest remaining
-  // label. Upper-bound advances use Inter Medium at 10px (--text-3xs). 0.62em per glyph is
-  // wider than Inter's Latin average (~0.5em), so a pass is not an optimistic estimate.
-  // overflow.spec.ts is the rendered half (scrollWidth vs clientWidth at 320).
-  const SLOT_AT_320 = 320 / 5
-  const TEXT_3XS_PX = 10
-  const INTER_MEDIUM_UPPER_EM = 0.58
-
-  function labelUpperBoundPx(label: string): number {
-    return label.length * TEXT_3XS_PX * INTER_MEDIUM_UPPER_EM
-  }
-
-  it('is still text-3xs on every caption, so the 10px budget is the one we measured', () => {
-    expect(TAB_BAR).toContain('text-3xs font-medium')
-    expect(TAB_BAR).toContain('text-3xs font-semibold')
-  })
-
-  it('keeps every ruled caption inside a fifth of 320px', () => {
-    const captions = ['Menu', 'Feed', 'Zap', 'Events', 'Marketplace']
-    for (const label of captions) {
-      expect(
-        labelUpperBoundPx(label),
-        `${label} upper-bound ${labelUpperBoundPx(label).toFixed(1)}px exceeds the ${SLOT_AT_320}px slot`,
-      ).toBeLessThanOrEqual(SLOT_AT_320)
-    }
+  it('keeps tab labels within their slot with explicit overflow handling', () => {
+    expect(TAB_BAR).toContain('className="fqm-tb-l"')
+    expect(css).toContain('max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap')
+    expect(css).toContain('.fqm-tb{')
+    expect(css).toContain('min-width:0')
   })
 })
