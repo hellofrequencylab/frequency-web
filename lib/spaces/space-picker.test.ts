@@ -20,9 +20,9 @@ describe('the picker config (ADR-1883)', () => {
     expect(Object.keys(PICKER_ACTION_LABEL).sort()).toEqual([...MEGA_ACTIONS].sort())
   })
 
-  it('points every feel at a real theme, and only Midnight is live', () => {
+  it('points every feel at a real theme, and every feel is live', () => {
     for (const f of PICKER_FEELS) expect(MEGA_THEMES.some((t) => t.id === f.theme)).toBe(true)
-    expect(PICKER_FEELS.filter((f) => f.live).map((f) => f.theme)).toEqual(['midnight'])
+    expect(PICKER_FEELS.filter((f) => f.live).map((f) => f.theme)).toEqual(['midnight', 'frequency', 'bold', 'temple', 'wildheart', 'network'])
   })
 
   it('skips question one when a door already named the niche', () => {
@@ -46,7 +46,7 @@ describe('resolvePicker', () => {
   })
 
   it('reads anything invalid as no answer', () => {
-    expect(resolvePicker({ niche: 'bogus', action: 'donate', feel: 'warm', site: 'http://x.com' })).toEqual({
+    expect(resolvePicker({ niche: 'bogus', action: 'donate', feel: 'bogus', site: 'http://x.com' })).toEqual({
       niche: null,
       action: null,
       theme: null,
@@ -55,9 +55,10 @@ describe('resolvePicker', () => {
     expect(resolvePicker({})).toEqual({ niche: null, action: null, theme: null, sourceUrl: null })
   })
 
-  it('drops an action the niche does not offer, and a feel that is not live yet', () => {
+  it('drops an action the niche does not offer, and a feel that does not exist', () => {
     expect(resolvePicker({ niche: 'coaches', action: 'tickets' }).action).toBeNull()
-    expect(resolvePicker({ niche: 'coaches', action: 'book', feel: 'calm' }).theme).toBeNull()
+    expect(resolvePicker({ niche: 'coaches', action: 'book', feel: 'nope' }).theme).toBeNull()
+    expect(resolvePicker({ niche: 'coaches', action: 'book', feel: 'calm' }).theme).toBe('temple')
     expect(actionsForNiche(null)).toContain('ask')
   })
 
