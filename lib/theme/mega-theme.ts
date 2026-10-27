@@ -27,7 +27,6 @@ export type MegaCoreNicheId = (typeof MEGA_CORE_NICHES)[number]
  *  starts different tools and asks for a different first action, not because the audience has a new name.
  *  Kits for these are built from the niche words (lib/sites/kits/niche-spec.ts) until a theme writes its own. */
 export const MEGA_PROFILE_NICHES = ['general', 'creators', 'schools', 'clubs', 'faith', 'wellness', 'markets'] as const
-export type MegaProfileNicheId = (typeof MEGA_PROFILE_NICHES)[number]
 
 /** Every niche a Space can say it is building: the six core doors plus the seven profiles. */
 export const MEGA_NICHES = [...MEGA_CORE_NICHES, ...MEGA_PROFILE_NICHES] as const
