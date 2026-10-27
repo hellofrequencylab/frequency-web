@@ -1,5 +1,6 @@
 'use client'
 
+import { buttonClasses } from '@/components/ui/button'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -64,7 +65,6 @@ import {
   bulkArchive,
   bulkDelete,
 } from './collections-actions'
-import { buttonClasses } from '@/components/ui/button'
 
 // The crop/rotate editor (HYG-109, ADR-1592) is fetched only when an operator opens it: its code is a
 // separate chunk the grid never ships. Keep it behind this boundary; do not import it statically.
@@ -1016,7 +1016,7 @@ function DetailDrawer({
                   onClick={() => askVera('tweak')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
                   title="A small, surgical change that keeps the graphic nearly identical"
-                  className="inline-flex items-center gap-1.5 rounded-card bg-primary px-3 py-1.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+                  className={buttonClasses('primary', 'sm')}
                 >
                   {veraBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                   {veraBusy ? 'Working…' : 'Tweak'}
