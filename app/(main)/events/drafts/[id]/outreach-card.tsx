@@ -5,6 +5,7 @@
 // 'posted' publish and again on the published draft page while the event stays
 // unclaimed. Copy is voice-canon (plain, no em dashes).
 
+import { buttonClasses } from '@/components/ui/button'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Check, Copy, Link2, Zap } from 'lucide-react'
@@ -46,7 +47,7 @@ export function OutreachCard({ claimToken, slug, sentTo }: { claimToken: string;
         <button
           type="button"
           onClick={() => copy('message')}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className={buttonClasses('primary', 'sm')}
         >
           {copied === 'message' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copied === 'message' ? 'Copied' : 'Copy the message'}
@@ -54,7 +55,7 @@ export function OutreachCard({ claimToken, slug, sentTo }: { claimToken: string;
         <button
           type="button"
           onClick={() => copy('link')}
-          className="inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-2 text-meta font-medium text-text transition-colors hover:bg-surface-elevated"
+          className={buttonClasses('secondary', 'sm')}
         >
           {copied === 'link' ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
           {copied === 'link' ? 'Copied' : 'Copy link'}
