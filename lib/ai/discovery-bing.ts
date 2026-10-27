@@ -18,11 +18,11 @@ const LIMITS = [
 ]
 type Reason = 'permission_denied' | 'consent_required' | 'invalid_context' | 'not_connected' | 'connection_expired' | 'property_scope_unavailable' | 'property_unverified' | 'provider_error' | 'rate_limited' | 'invalid_response' | 'no_data'
 type BingDiscoveryResult =
-  | { status: 'unavailable'; reason: Reason; retryAfterSeconds?: number }
+  | { status: 'unavailable'; reason: Reason; retryAfterSeconds?: number; providerStatus?: number }
   | { status: 'completed'; provider: 'bing_webmaster'; propertyUrl: string; observations: ReturnType<typeof validateDiscoveryObservation>[]; limitations: string[] }
 export interface BingDiscoveryDependencies extends DiscoveryProviderDependencies { request?: typeof pinnedFetch }
 type BingUnavailable = Extract<BingDiscoveryResult, { status: 'unavailable' }>
-const unavailable = (reason: Reason): BingUnavailable => ({ status: 'unavailable', reason })
+const unavailable = (reason: Reason, providerStatus?: number): BingUnavailable => ({ status: 'unavailable', reason, ...([400, 401, 403, 404, 408, 429, 500, 502, 503, 504].some(status => status === providerStatus) ? { providerStatus } : {}) })
 const record = (raw: unknown): Record<string, unknown> | null => raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : null
 const count = (raw: unknown): raw is number => typeof raw === 'number' && Number.isSafeInteger(raw) && raw >= 0
 function stamp(raw: unknown): number | null {
@@ -61,11 +61,11 @@ async function openVerifiedBing(spaceId: string, deps: BingDiscoveryDependencies
     if (response.status === 429) {
       const raw = response.headers['retry-after']
       const seconds = /^\d{1,5}$/.test(raw ?? '') ? Number(raw) : NaN
-      requestFailure = { status: 'unavailable', reason: 'rate_limited', ...(Number.isFinite(seconds) ? { retryAfterSeconds: Math.max(1, Math.min(86400, seconds)) } : {}) }
+      requestFailure = { status: 'unavailable', reason: 'rate_limited', providerStatus: 429, ...(Number.isFinite(seconds) ? { retryAfterSeconds: Math.max(1, Math.min(86400, seconds)) } : {}) }
       return null
     }
-    if (response.status === 401 || response.status === 403) { requestFailure = unavailable('not_connected'); return null }
-    if (response.status !== 200 || !/^application\/json(?:;|$)/i.test(response.headers['content-type'] ?? '') || response.body.length > 1_048_576) { requestFailure = unavailable('provider_error'); return null }
+    if (response.status === 401 || response.status === 403) { requestFailure = unavailable('not_connected', response.status); return null }
+    if (response.status !== 200 || !/^application\/json(?:;|$)/i.test(response.headers['content-type'] ?? '') || response.body.length > 1_048_576) { requestFailure = unavailable('provider_error', response.status); return null }
     let body: Record<string, unknown> | null
     try { body = record(JSON.parse(response.body.toString('utf8'))) } catch { body = null }
     if (!body || 'ErrorCode' in body || !Array.isArray(body.d) || body.d.length > MAX_ROWS) { requestFailure = unavailable('invalid_response'); return null }

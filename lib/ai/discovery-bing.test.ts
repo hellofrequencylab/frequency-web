@@ -87,6 +87,20 @@ describe('Bing dedicated-property read-only observations', () => {
     if (status === 429) expect(out).toMatchObject({ retryAfterSeconds: 120 })
     expect(request).toHaveBeenCalledTimes(1); expect(JSON.stringify(out)).not.toContain('PROVIDER_BODY')
   })
+  it.each([400, 401, 403, 429, 500, 503])('preserves only bounded HTTP %i metadata for property verification', async status => {
+    request.mockReset().mockResolvedValue({ status, headers: { 'content-type': 'application/json' }, body: Buffer.alloc(0), finalUrl: 'https://ssl.bing.com/webmaster/api.svc/json/GetUserSites' })
+    const out = await verifyBingSearchProperty('A', deps)
+    expect(out).toMatchObject({ status: 'unavailable', providerStatus: status })
+    expect(Object.keys(out).every(key => ['status', 'reason', 'providerStatus', 'retryAfterSeconds'].includes(key))).toBe(true)
+    expect(request).toHaveBeenCalledTimes(1)
+    // The transport discards error bodies: HTTP400 alone is not proof of InvalidToken.
+    if (status === 400) expect(out).toMatchObject({ reason: 'provider_error' })
+  })
+  it('keeps malformed successful provider responses distinct from HTTP/auth failures', async () => {
+    request.mockReset().mockResolvedValue(json({ ErrorCode: 18, Message: 'PRIVATE_PROVIDER_BODY' }))
+    expect(await verifyBingSearchProperty('A', deps)).toEqual({ status: 'unavailable', reason: 'invalid_response' })
+    expect(JSON.stringify(await verifyBingSearchProperty('A', deps))).not.toContain('PRIVATE_PROVIDER_BODY')
+  })
   it.each(['empty', 'duplicate', 'negative', 'bad_date', 'overflow', 'too_many', 'body_error', 'wrong_type', 'oversize', 'network'])('reports %s honestly without measured zero', async kind => {
     let response = json({ d: [] })
     if (kind === 'duplicate') response = json({ d: [row(), row()] })

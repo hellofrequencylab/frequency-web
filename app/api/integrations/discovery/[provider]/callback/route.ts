@@ -8,8 +8,11 @@ import { exchangeSearchCode, searchProvider } from '@/lib/integrations/discovery
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-function back(path = '/spaces/operating', outcome = 'unavailable') {
-  const response = NextResponse.redirect(`${appOrigin()}${path}${path.includes('?') ? '&' : '?'}search=${outcome}`)
+const outcomes = new Set(['unavailable', 'missing_state', 'malformed_state', 'rejected_state', 'provider_invalid_scope', 'cancelled', 'connected', 'token_exchange_failed', 'property_scope_changed', 'provider_property_unverified', 'provider_auth_failed', 'property_provider_unavailable', 'property_provider_invalid_response', 'property_provider_rate_limited', 'storage_failed'])
+function back(path = '/spaces/operating', outcome = 'unavailable', providerStatus?: number) {
+  const safeOutcome = outcomes.has(outcome) ? outcome : 'unavailable'
+  const status = [400, 401, 403, 404, 408, 429, 500, 502, 503, 504].some(value => value === providerStatus) ? `&provider_status=${providerStatus}` : ''
+  const response = NextResponse.redirect(`${appOrigin()}${path}${path.includes('?') ? '&' : '?'}search=${safeOutcome}${status}`)
   response.headers.set('cache-control', 'no-store')
   response.headers.set('referrer-policy', 'no-referrer')
   return response
@@ -29,11 +32,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   const editor = await authorizeDiscoveryEditor(attempt.binding.spaceId)
   const freshAccess = await resolveSearchAccess(attempt.binding.spaceId)
   const path = editor ? `/spaces/${encodeURIComponent(editor.space.slug)}/settings/coach` : '/spaces/operating'
-  if (!editor || editor.actor !== attempt.binding.actorProfileId || !freshAccess || freshAccess.actorProfileId !== attempt.binding.actorProfileId || freshAccess.consent.id !== attempt.binding.consentId) { await invalidateSearchConnection(attempt.binding); return back() }
+  if (!editor || editor.actor !== attempt.binding.actorProfileId || !freshAccess || freshAccess.actorProfileId !== attempt.binding.actorProfileId || freshAccess.consent.id !== attempt.binding.consentId) { await invalidateSearchConnection(attempt.binding); return back('/spaces/operating', 'property_scope_changed') }
   if (query.has('error') || !query.get('code')) { await invalidateSearchConnection(attempt.binding); return back(path, 'cancelled') }
+  let failure = 'token_exchange_failed'
   try {
     const tokens = await exchangeSearchCode(provider, query.get('code')!, attempt.verifier)
-    if (!tokens || !(await verifySearchConnection(attempt.binding, tokens)) || !(await saveSearchConnection(attempt.binding, tokens))) { await invalidateSearchConnection(attempt.binding); return back(path) }
+    if (!tokens) { await invalidateSearchConnection(attempt.binding); return back(path, 'token_exchange_failed') }
+    failure = 'property_provider_unavailable'
+    const verification = await verifySearchConnection(attempt.binding, tokens)
+    if (verification.status !== 'verified') { await invalidateSearchConnection(attempt.binding); return back(path, verification.reason, verification.providerStatus) }
+    failure = 'storage_failed'
+    if (!(await saveSearchConnection(attempt.binding, tokens))) { await invalidateSearchConnection(attempt.binding); return back(path, 'storage_failed') }
     return back(path, 'connected')
-  } catch { await invalidateSearchConnection(attempt.binding); return back(path) }
+  } catch { await invalidateSearchConnection(attempt.binding); return back(path, failure) }
 }
