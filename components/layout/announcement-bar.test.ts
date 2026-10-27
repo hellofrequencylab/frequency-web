@@ -63,9 +63,9 @@ describe('the announcement bar never reaches a public surface', () => {
   it('the signed-out public-twin branch of the member layout does not mount it either', () => {
     // (main)/layout.tsx serves BOTH the member shell and a logged-out "public twin" of a Space page.
     // The bar belongs to the first and not the second, and they live in one file - so the guard is
-    // that the only mention sits in the AppShell call, not in the early-return branch above it.
+    // that the only mention sits in the member shell call, not in the early-return branch above it.
     const layout = read('app/(main)/layout.tsx')
-    const marker = '<SiteHeader'
+    const marker = 'const publicChrome'
     const twinStart = layout.indexOf(marker)
     expect(twinStart, 'the public-twin branch is gone or restructured; re-derive this guard').toBeGreaterThan(-1)
     const twinEnd = layout.indexOf('</ViewerProvider>', twinStart)

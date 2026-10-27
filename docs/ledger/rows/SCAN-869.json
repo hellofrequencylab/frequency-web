@@ -1,0 +1,9 @@
+{
+  "id": "SCAN-869",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/layout.tsx','utf8');const i=s.indexOf('const publicChrome');const seg=s.slice(i,s.indexOf('const currentPath',i));if(!/<SiteShell surface=.commons.>/.test(seg)||!/data-kit=.members./.test(seg)||/<SiteHeader/.test(s)){console.error('SCAN-869: signed-out public views in (main) still wear DAWN chrome');process.exit(1)}\""
+    }
+  }
+}
