@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1509",
+  "title": "A white-label website theme never styles the Space console or any member page",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/layout.tsx",
+    "ref": "ADR-1906"
+  },
+  "detail": "House of Fates' Midnight theme painted the Space console (washed-out sidebar, low-contrast text) because the Space layout passed the website surface, faces, accent and font set to the AccentScope around every owner route. The member layout, the Space header, the claim page, the spotlight and the member event page now take only the Space's own brand accent and Space-page fonts (memberSpaceFonts). A test walks app/(main) and fails if any route resolves a website theme or imports a site skin outside the public profile group. Still open by design: the signed-out share page under app/(public) and Network blocks on a member profile page keep their theme.",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "Probe passes; vitest no-site-theme-in-member-area walks app/(main) and fails on the old layout.",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/(main)/spaces/[slug]/layout.tsx\",\"utf8\");if(/surface=\\{|siteFaces=\\{|pageSurface|spacePageSiteFaces/.test(s)){console.error(\"Space layout hands a website theme to the console\");process.exit(1)}'"
+  }
+}

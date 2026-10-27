@@ -217,11 +217,11 @@ describe('the privilege rule: rows cross the boundary, viewers never do', () => 
     )
   })
 
-  it('the per-viewer menu filter still runs in the renderer, after both caches', () => {
-    const shellNav = src('components/layout/app-shell-nav.ts')
-    expect(count(shellNav, /\bcanSeeMenuItem\(/g)).toBeGreaterThanOrEqual(3)
-    expect(count(shellNav, /\beffectiveMode\(/g)).toBeGreaterThanOrEqual(1)
-    // The reader hands the renderer everything; it does not import the viewer filter.
+  it('the active renderer filters per viewer, while cached menu rows remain viewer-neutral', () => {
+    const nav = src('components/frequency/members/shell/nav.ts')
+    expect(nav).toContain('if (!menuGateOpen(r, v)) continue')
+    expect(nav).toContain('if (!canShow(row, v.navAccess)) return false')
+    expect(src('components/frequency/members/shell/members-shell.tsx')).toContain('groupRows(FQ_ACCOUNT_MENU, menuViewer, profileHref, { drafts: myFrequency?.drafts })')
     expect(src(READ)).not.toContain('canSeeMenuItem')
   })
 

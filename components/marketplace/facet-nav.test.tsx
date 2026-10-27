@@ -36,7 +36,7 @@ const ALL_HIDDEN: Record<MarketArea, boolean> = {
 
 const NAV = readFileSync(join(process.cwd(), 'components/marketplace/facet-nav.tsx'), 'utf8')
 const GUIDE = readFileSync(
-  join(process.cwd(), 'components/marketplace/marketplace-guide.tsx'),
+  join(process.cwd(), 'components/frequency/members/marketplace/areas.tsx'),
   'utf8',
 )
 
@@ -98,9 +98,9 @@ describe('the two commerce navs are wired to that decision', () => {
     expect(NAV).not.toMatch(/\{AREAS\.map\(/)
   })
 
-  it('MarketplaceGuide filters through the same read', () => {
+  it('Frequency area doors filter through the same read', () => {
     expect(GUIDE).toContain('browsableAreas')
-    expect(GUIDE).toContain('export async function MarketplaceGuide')
+    expect(GUIDE).toContain('export async function FqMarketAreas')
     expect(GUIDE).not.toMatch(/\{SURFACES\.map\(/)
   })
 
@@ -117,6 +117,6 @@ describe('the two commerce navs are wired to that decision', () => {
     // It is a member noun with its own rail row; the marketplace flag set has no events key.
     expect(MARKET_AREAS).not.toContain('events' as MarketArea)
     expect(NAV).toContain('area: null')
-    expect(GUIDE).toContain('area: null')
+    expect(GUIDE).toContain("key: 'events'")
   })
 })

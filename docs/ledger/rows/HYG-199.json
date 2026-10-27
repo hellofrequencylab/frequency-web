@@ -1,0 +1,11 @@
+{
+  "id": "HYG-199",
+  "title": "Retire superseded internal browse wrappers while preserving active Frequency journeys",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "M",
+  "source": { "file": "components/frequency/members/marketplace/marketplace-body.tsx", "ref": "Exact f787 static runtime/import/source-reader inventory and actual Frequency route replacement review" },
+  "detail": "Delete21 internal DAWN marketplace/discovery/help/event wrappers with no active framework or registered CLI/type consumers after checking their full dead clusters. Keep shared providers, map seam, visibility policy, pricing eligibility, event matching/blurb/connectors, data loaders and public APIs. Actual Frequency replacements preserve listing search/detail links, help search/topic links, published marketplace doors/operator hidden notes, event ranked/people/map lanes, and withheld prices. The public discover hub's owner-selected town-list replacement remains; current lazy public maps are verified through the actual shared map seam with coarse city pins. Old source-only feature checks move to real active Frequency consumers; historical destinations are not relabeled live. This is bounded source/rendered-test cleanup, not whole-app orphan-free or production acceptance.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/retired-browse-wrappers.mjs", "note": "Exact21 modules absent; actual routes and event lanes import/render active replacements; actual Frequency card forwards withheld prices. All-tree AST no-dangling-dependency controls, actual-route removal controls, rendered listing/help/visibility/price behavior and lazy public-map tests supplement the source probe. LIVE245/LIVE443 retain their surviving policy/security checks." }
+}

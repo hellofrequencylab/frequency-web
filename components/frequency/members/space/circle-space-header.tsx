@@ -14,7 +14,7 @@ import { readTagline } from '@/lib/spaces/tagline'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { isFollowing } from '@/lib/spaces/follows'
 import { frequencyAccentVars, resolveAccentVars } from '@/lib/spaces/accent'
-import { spacePageDefaultAccent, spacePageFonts } from '@/lib/theme/site-style'
+import { memberSpaceFonts } from '@/lib/theme/site-style'
 import { activeBoostIds } from '@/lib/crew/boost'
 import { foundingBadgeForSpace } from '@/lib/founding/status'
 import { FounderMark } from '@/components/frequency/members/space/founder-mark'
@@ -97,12 +97,12 @@ export async function FqCircleSpaceHeader({ spaceSlug, children }: { spaceSlug: 
   const coverFocus = readCoverFocus(space.preferences)
   const logoBackdrop = readLogoBackdrop(space.preferences)
 
-  const accentVars = resolveAccentVars(space.brandAccent, spacePageDefaultAccent(space.preferences, defaultAccentForType(space.type)))
+  const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
   const frost = 'btn fqs-frost'
 
   return (
     <>
-    <AccentScope vars={accentVars} theme={spacePageFonts(space.preferences)} fqAccent={frequencyAccentVars(space.brandAccent)}>
+    <AccentScope vars={accentVars} theme={memberSpaceFonts(space.preferences)} fqAccent={frequencyAccentVars(space.brandAccent)}>
       <FqSpaceChrome
         coverImage={coverSrc}
         coverFocus={coverFocus}

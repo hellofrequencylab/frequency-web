@@ -1,0 +1,16 @@
+{
+  "id": "HYG-008",
+  "patch": {
+    "verify": {
+      "kind": "grep-absent",
+      "pattern": "still uses its href helpers",
+      "paths": [
+        "lib/nav/admin-rail.ts",
+        "lib/nav/admin-nesting.ts"
+      ]
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-27: removed retired AppShell from source paths after deleting the unreferenced runtime module. The same false-claim absence check remains on both surviving nav helpers; new HYG193 pins module retirement."
+  }
+}

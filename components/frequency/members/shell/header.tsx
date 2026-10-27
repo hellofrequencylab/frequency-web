@@ -1,5 +1,7 @@
 'use client'
 
+import { DraftsCount } from './drafts-count'
+
 // THE FREQUENCY MEMBER HEADER, on the members kit's official app shell (templates/members/app/shell.js;
 // kit-members.css `.ap-hdr`, `.ap-nav`, `.ap-mega`, `.ap-sheets`, `.ap-scrim`).
 //
@@ -37,11 +39,9 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Suspense, use, useEffect, useRef, useState, useTransition } from 'react'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { MemberSearch } from './member-search'
+import { BellButton, BellSheet } from './bell'
 import { calmSpine, type NavViewer } from '@/lib/nav/registry'
-import { getMyNotifications, markAllRead } from '@/app/(main)/notifications/actions'
-import type { NotificationItem } from '@/lib/notifications-map'
-import { notificationHref } from '@/lib/notifications/href'
-import { relativeTime, getInitials } from '@/lib/utils'
+import { getInitials } from '@/lib/utils'
 import { isFullTakeover, isFullViewportEditor, isFullWidthEditor } from '@/lib/layout/page-chrome'
 import { FEED_HREF, FQ_ABOUT_LINKS, FQ_NAV, MESSAGES_HREF, SEARCH_HREF, FQ_SHORTCUTS, FQ_SITE_LINKS, areaFor, canShow, homeFeedItem, photoUrl, resolveHref, type FqMenuGroup, type FqNavSection } from './nav'
 import { avatarBg } from './avatar'
@@ -53,6 +53,7 @@ import { clearAllDrafts } from '@/components/studio/spark/draft/draft-store'
 import { NavProgress } from '@/components/frequency/shared/nav-progress'
 import { FqTabBar, tabActive } from './tab-bar'
 import { ZapSheet } from './zap-sheet'
+import { AccountTools, type AccountToolsProps } from './account-tools'
 
 type Open = FqNavSection['key'] | 'zap' | 'bell' | 'me' | 'drawer' | null
 
@@ -67,6 +68,7 @@ interface FqDrawerCircle {
 }
 
 interface FqHeaderProps {
+  accountTools?: AccountToolsProps
   profile: { display_name: string; handle: string; avatar_url: string | null }
   profileHref: string
   navAccess?: Record<string, string>
@@ -103,6 +105,7 @@ export function FqHeader({
   skins,
   skin,
   standing,
+  accountTools,
 }: FqHeaderProps) {
   const pathname = usePathname() ?? ''
   const router = useRouter()
@@ -365,6 +368,7 @@ export function FqHeader({
               profile={profile}
               profileHref={profileHref}
               groups={accountGroups}
+              accountTools={accountTools}
               skins={skins}
               skin={skin}
               onClose={() => setOpen(null)}
@@ -467,7 +471,7 @@ function Drawer({
       <Link key={href + label} href={href} className={on ? 'rl-row on' : 'rl-row'} aria-current={on ? 'page' : undefined}>
         <FqIcon name={icon} />
         <span>{label}</span>
-        {count > 0 && (
+        {href === '/drafts' ? <DraftsCount href={href} count={count} /> : count > 0 && (
           <b className="rl-n" aria-label={`${count} new`}>
             {count}
           </b>
@@ -572,7 +576,7 @@ function Drawer({
             <span className="rl-h">{g.label}</span>
             {rows.map((r) =>
               r.href ? (
-                row(r.href, r.label, r.icon)
+                row(r.href, r.label, r.icon, r.count)
               ) : (
                 <button key={r.key} type="button" className="rl-row" onClick={() => r.action && onAction(r.action)}>
                   <FqIcon name={r.icon} />
@@ -663,6 +667,7 @@ const MODES: { id: ThemeMode; label: string }[] = [
 /** The avatar menu: who you are, the personal and account rows (grouped as DAWN's account menu
  *  groups them), the look (the skin, and light or dark) and Sign out. */
 function AccountSheet({
+  accountTools,
   profile,
   profileHref,
   groups,
@@ -670,6 +675,7 @@ function AccountSheet({
   skin,
   onClose,
 }: {
+  accountTools?: AccountToolsProps
   profile: FqHeaderProps['profile']
   profileHref: string
   groups: FqMenuGroup[]
@@ -714,6 +720,7 @@ function AccountSheet({
                 <Link key={r.key} href={r.href} className="fqm-acct-row">
                   <FqIcon name={r.icon} />
                   <span>{r.label}</span>
+                  <DraftsCount href={r.href} count={r.count} />
                 </Link>
               ) : (
                 <button
@@ -754,6 +761,7 @@ function AccountSheet({
           </div>
         )}
       </div>
+      {accountTools && <AccountTools {...accountTools} />}
       <SignOut className="fqm-acct-row fqm-acct-out" />
       <nav className="fqm-acct-about" aria-label="About Frequency">
         {FQ_ABOUT_LINKS.map((l) => (
@@ -836,96 +844,4 @@ function MegaMenu({
 function StreakFoot({ streak, line }: { streak: Promise<number>; line: string }) {
   const n = use(streak)
   return <span>{n > 0 ? `Day ${n}. ${line}` : line}</span>
-}
-
-// The bell's state is shared between its button (the dot) and the sheet (the list), so it lives in
-// a tiny module-level store rather than the header: opening the sheet clears the dot the way the
-// DAWN bell does (load the list FIRST, then mark read, SCAN-686).
-let bellUnread = 0
-const bellSubs = new Set<(n: number) => void>()
-function setBellUnread(n: number) {
-  bellUnread = n
-  bellSubs.forEach((f) => f(n))
-}
-
-function BellButton({ unreadCount, open, onToggle }: { unreadCount: number; open: boolean; onToggle: () => void }) {
-  const unavailable = unreadCount < 0
-  const [unread, setUnread] = useState(unavailable ? 0 : unreadCount)
-  useEffect(() => {
-    bellUnread = unavailable ? 0 : unreadCount
-    bellSubs.add(setUnread)
-    return () => {
-      bellSubs.delete(setUnread)
-    }
-  }, [unreadCount, unavailable])
-  return (
-    <button
-      type="button"
-      className="ap-ic"
-      title="Notifications"
-      aria-label={
-        unavailable ? 'Notifications. The unread count could not load.' : unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'
-      }
-      aria-expanded={open}
-      aria-haspopup="dialog"
-      onClick={onToggle}
-    >
-      <FqIcon name="nudge" />
-      {unread > 0 && <i />}
-    </button>
-  )
-}
-
-function noteIcon(type: string): FqIconName {
-  if (/friend|follow|connect/.test(type)) return 'contacts'
-  if (/event|rsvp|ticket/.test(type)) return 'event'
-  if (/badge|achievement|award|streak|rank/.test(type)) return 'standing'
-  if (/zap|gem/.test(type)) return 'zap'
-  if (/message|comment|reply|mention/.test(type)) return 'message'
-  if (/circle/.test(type)) return 'circle'
-  return 'nudge'
-}
-
-/** shell.js's Notifications sheet (`.rr-h` heading, `.ap-note` rows), filled with the viewer's own. */
-function BellSheet() {
-  const [items, setItems] = useState<NotificationItem[] | null>(null)
-  const [failed, setFailed] = useState(false)
-  const [, start] = useTransition()
-
-  useEffect(() => {
-    const hadUnread = bellUnread > 0
-    if (hadUnread) setBellUnread(0)
-    start(async () => {
-      const res = await getMyNotifications()
-      if (res.kind === 'error') setFailed(true)
-      else setItems(res.items)
-      if (hadUnread) await markAllRead()
-    })
-  }, [])
-
-  return (
-    <>
-      <div className="rr-h">
-        <span className="h3">Notifications</span>
-        <Link href="/settings#notifications" className="t2">
-          Manage
-        </Link>
-      </div>
-      {failed && <p className="ap-note">Notifications could not load. Close this and open it again in a moment.</p>}
-      {!failed && items === null && <p className="ap-note">Loading…</p>}
-      {items && items.length === 0 && <p className="ap-note">You&rsquo;re caught up.</p>}
-      {items?.map((n) => (
-        <Link key={n.id} href={notificationHref(n)} className={n.read_at ? 'ap-note' : 'ap-note unread'}>
-          <FqIcon name={noteIcon(n.type)} />
-          <span>
-            <span>
-              {n.actor ? `${n.actor.display_name} ` : ''}
-              {n.body}
-            </span>
-            <span className="t2">{relativeTime(n.created_at)}</span>
-          </span>
-        </Link>
-      ))}
-    </>
-  )
 }

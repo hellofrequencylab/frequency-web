@@ -18,7 +18,7 @@ import { atLeastRole, type CommunityRole } from './core/roles'
 export const STAGE_ORDER = ['newcomer', 'finding_feet', 'regular', 'established', 'anchor'] as const
 export type StageKey = (typeof STAGE_ORDER)[number]
 
-export const STAGE_LABELS: Record<StageKey, string> = {
+const STAGE_LABELS: Record<StageKey, string> = {
   newcomer: 'Newcomer',
   finding_feet: 'Finding your feet',
   regular: 'Regular',
@@ -26,7 +26,7 @@ export const STAGE_LABELS: Record<StageKey, string> = {
   anchor: 'Anchor',
 }
 
-export function stageIndexOf(stage: StageKey): number {
+function stageIndexOf(stage: StageKey): number {
   return STAGE_ORDER.indexOf(stage)
 }
 

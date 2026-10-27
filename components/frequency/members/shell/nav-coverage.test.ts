@@ -82,21 +82,17 @@ type Dest = { href: string; gate: Gate; from: string }
 
 /** Literal hrefs drawn in the DAWN shell's JSX (no exported data behind them). `snippet` must appear
  *  verbatim in `file`, so a link removed from the shell drops out of this list loudly. */
+// Frozen destinations from the retired shell remain the compatibility baseline; they are no longer
+// asserted to be live code. Active reusable surfaces below still require their exact source snippet.
+const RETIRED_SHELL_DESTINATIONS = ['/about', '/terms', '/guidelines', '/privacy', '/feed', '/network/friends']
 const DAWN_LITERALS: readonly { href: string; file: string; snippet: string; gate?: Gate }[] = [
   // Phone drawer foot (app-shell.tsx MobileDrawer).
-  { href: '/about', file: 'components/layout/app-shell.tsx', snippet: 'href="/about"' },
-  { href: '/terms', file: 'components/layout/app-shell.tsx', snippet: 'href="/terms"' },
-  { href: '/guidelines', file: 'components/layout/app-shell.tsx', snippet: 'href="/guidelines"' },
-  { href: '/privacy', file: 'components/layout/app-shell.tsx', snippet: 'href="/privacy"' },
   // Header: the brand mark, the Friends icon, the janitor Bug Alert pill.
-  { href: '/feed', file: 'components/layout/app-shell.tsx', snippet: 'href="/feed"' },
-  { href: '/network/friends', file: 'components/layout/app-shell.tsx', snippet: 'href="/network/friends"' },
-  { href: '/admin/support', file: 'components/layout/app-shell.tsx', snippet: 'href="/admin/support"', gate: { minAccess: 'janitor' } },
   // Header search overlay's "see all results".
   { href: '/search', file: 'components/search/search-overlay.tsx', snippet: 'href={`/search?q=' },
   // Account menu chrome: View profile (UserMenu) and Appearance.
   { href: PROFILE, file: 'components/layout/user-menu.tsx', snippet: 'href={`/people/${profile.handle}`}' },
-  { href: '/settings#appearance', file: 'components/layout/app-shell-account.tsx', snippet: 'href="/settings#appearance"' },
+  { href: '/settings#appearance', file: 'components/frequency/members/shell/nav.ts', snippet: "href: '/settings#appearance'" },
   // Right sidebar panels' "See all" doors and the game dock.
   { href: '/events', file: 'components/sidebar/rail-panels.tsx', snippet: 'href="/events"' },
   { href: '/people', file: 'components/sidebar/rail-panels.tsx', snippet: 'href="/people"', gate: { minAccess: 'member' } },
@@ -134,6 +130,8 @@ function dawnDestinations(): Dest[] {
   // My Frequency's fixed rows (its Spaces and Circles are the member's own entities, not chrome).
   const mf = { profileHref: PROFILE, drafts: 0, spaces: [], circles: [], total: 0 } satisfies MyFrequency
   for (const r of personalRows(mf)) out.push({ href: r.href, gate: { minAccess: 'member' }, from: `my-frequency:${r.key}` })
+  for (const href of RETIRED_SHELL_DESTINATIONS) out.push({ href, gate: { minAccess: 'visitor' }, from: 'retired-shell compatibility baseline' })
+  out.push({ href: '/admin/support', gate: { minAccess: 'janitor' }, from: 'retired-shell compatibility baseline' })
   for (const l of DAWN_LITERALS) out.push({ href: l.href, gate: l.gate ?? { minAccess: 'visitor' }, from: `literal:${l.file}` })
   return out
 }
@@ -247,7 +245,7 @@ describe('the nav coverage guard reads real data', () => {
     expect(FQ.has('/circles') && FQ.has('/feed') && FQ.has(PROFILE)).toBe(true)
   })
 
-  it('every literal DAWN href is still drawn by the file it names', () => {
+  it('each surviving reusable-surface literal is still drawn by its named source', () => {
     const stale = DAWN_LITERALS.filter((l) => !readFileSync(path.join(process.cwd(), l.file), 'utf8').includes(l.snippet))
     expect(stale.map((l) => `${l.file}: ${l.snippet}`)).toEqual([])
   })
@@ -260,7 +258,7 @@ describe('the nav coverage guard reads real data', () => {
 })
 
 describe('the Frequency chrome reaches every DAWN destination', () => {
-  it('nothing the live chrome links to is missing (outside the allowlist and the pending list)', () => {
+  it('the historical destination baseline remains covered by current Frequency navigation', () => {
     const missing = [...DAWN.keys()].filter((h) => !FQ.has(h) && !(h in ALLOWLIST) && !PENDING_NAV_MERGE.includes(h))
     expect(missing).toEqual([])
   })

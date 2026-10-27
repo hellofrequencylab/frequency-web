@@ -1,3 +1,4 @@
+import { viewerHidesDemo } from '@/lib/demo-preference'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { Suspense } from 'react'
@@ -672,6 +673,7 @@ export default async function MainLayout({
         caps={previewingDown ? [] : Array.from(globalCaps)}
         appOverrides={appOverrides}
         chromeOverrides={chromeOverrides}
+        accountTools={{ realRole, currentRole: effectiveRole, previewVisitor, context: previewingDown ? { kind: 'personal' } : operatorContextRaw.context, available: availableContexts, demoHidden: await viewerHidesDemo() }}
         availableContexts={availableContexts}
         skin={theme.skin}
       >

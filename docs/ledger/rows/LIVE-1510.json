@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1510",
+  "title": "Build the Circle page to the new Circles design",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "closed": "2026-10-27",
+  "source": {
+    "file": "components/frequency/members/circle/circle-shell.tsx",
+    "ref": "Daniel's Circles design handoff, 2026-10-27"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/circle-page-design.mjs",
+    "checked": "2026-10-27",
+    "evidence": "Probe fails on main (no cover, tab pill or side column) and passes here. Fixture renders at 1280 and 390 checked beside the design; no production data on the build box, so no real-data render."
+  },
+  "detail": "The Circle page and its four tabs follow the new design. Cover with the next meetups as date cards and in-place RSVP, sticky tab pill with counts, a two-column body with About, How we do it, How we meet, Who's here and Channels beside the feed. Members gets search, Everyone/New chips, Holding the circle, streak nudges and a seats card. What's happening gets a practice panel and date-tile rows. Stats gets weeks together and challenges. Every existing control is kept. Member area only: no Space website theme reaches it. Where the design shows data the app does not hold (ranks, a meetup photo), it is left out rather than faked. No migration.",
+  "wave": "W7"
+}

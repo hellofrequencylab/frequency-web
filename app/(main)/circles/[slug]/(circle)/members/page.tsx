@@ -6,7 +6,10 @@ import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { CircleRoleLegend } from '@/components/circles/circle-role-legend'
 import { CircleRolePicker } from '@/components/circles/circle-role-picker'
 import { circleRoleFromStoredValue, CIRCLE_ROLE_LABEL } from '@/lib/core/circle-roles'
+import { Suspense } from 'react'
 import { FqMembersPane } from '@/components/frequency/members/circle/members-pane'
+import { FqCircleNudges } from '@/components/frequency/members/circle/circle-nudges'
+import { FqCopyLink } from '@/components/frequency/members/shared/copy-link'
 import { ARRIVAL_WINDOW_DAYS } from '@/lib/circles/arrivals'
 import { isoDaysAgo } from '@/lib/utils'
 
@@ -65,6 +68,8 @@ export default async function CircleMembersPage({
           name: m.profile.display_name,
           avatarUrl: m.profile.avatar_url,
           role: !isOwner && rung === 'member' && isNew(m.joined_at) ? 'New' : CIRCLE_ROLE_LABEL[isOwner ? 'host' : rung],
+          holding: isOwner || rung !== 'member',
+          isNew: !isOwner && rung === 'member' && isNew(m.joined_at),
           control:
             canSetRoles && !isOwner ? (
               <CircleRolePicker
@@ -76,6 +81,26 @@ export default async function CircleMembersPage({
             ) : undefined,
         }
       })}
+      seatsOpen={Math.max(0, circle.member_cap - members.length)}
+      nudges={
+        !aloneHere && myProfileId && members.some((m) => m.profile.id === myProfileId) ? (
+          <Suspense fallback={null}>
+            <FqCircleNudges circleId={circle.id} viewerId={myProfileId} />
+          </Suspense>
+        ) : null
+      }
+      invite={
+        canManage ? (
+          <HostInviteButton circleId={circle.id} />
+        ) : myProfileId && members.some((m) => m.profile.id === myProfileId) ? (
+          <FqCopyLink
+            label="Copy invite link"
+            className="btn ink"
+            path={`/circles/${circle.slug}`}
+            done={`Invite link copied. ${Math.max(0, circle.member_cap - members.length)} seats left.`}
+          />
+        ) : null
+      }
       seatsLine={circle.member_cap - members.length > 0 ? `${circle.member_cap - members.length} seats open` : 'Full'}
       empty={
         aloneHere ? (
