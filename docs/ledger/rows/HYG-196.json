@@ -1,0 +1,11 @@
+{
+  "id": "HYG-196",
+  "title": "Retire unreferenced internal admin back-link and sub-navigation components",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": { "file": "components/admin", "ref": "Exact f787dd6402fae0ac3351037ad7af80e11e28a4e7 static graph and all-tree exported-symbol/source-consumer inventory" },
+  "detail": "AdminAutoBackLink and AdminSubNav have no runtime, type-only, test import, registered CLI/workflow, source-reader or registry consumers. Their names occur only in their definitions and historical design documents. Delete exactly those internal leaf components. Active admin routes retain FrequencyAdminConsole, current gated nav/crumb behavior and rendered landmark tests. Historical navigation design is explicitly marked implementation history. The existing all-tree retired-module AST test now also rejects dangling imports of these two paths, including mutation controls applied to the actual current admin entry. No broad helper cascade, CMS/public API removal or whole-app orphan-free claim.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/retired-admin-chrome.mjs", "note": "Both exact modules absent and the real admin route still imports the Frequency console. All-tree static/reexport/dynamic/require edge tests and actual-layout dependency controls supplement this source contract; focused existing admin nav/landmark tests verify active behavior." }
+}
