@@ -7,7 +7,6 @@ import { Check } from 'lucide-react'
 import { Textarea, labelClasses } from '@/components/ui/field'
 import { getEditablePageContent, savePageContent } from '@/lib/page-content-actions'
 import { isError } from '@/lib/action-result'
-import { buttonClasses } from '@/components/ui/button'
 
 // A minimal Subtitle (description-only) editor for the on-page Settings panel (ADR-359). It edits
 // ONLY the page's header subtitle (the description), reusing the existing page-content get/save

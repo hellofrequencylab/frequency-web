@@ -11,7 +11,6 @@ import { generateWithRecraft, listBrandStyles, deleteBrandStyle } from './recraf
 import { describeGeneratedAssets } from '@/lib/library/describe-generated'
 import type { BrandStyle } from '@/lib/library/styles'
 import { Input, Textarea } from '@/components/ui/field'
-import { buttonClasses } from '@/components/ui/button'
 
 // One smart "Create" surface for the whole Loom. You pick WHAT you're making; the studio picks the
 // engine: Vera draws quick house-style line marks (icons / spot art) as inline SVG, and the Image

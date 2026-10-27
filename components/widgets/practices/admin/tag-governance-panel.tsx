@@ -16,7 +16,6 @@ import { IconButton } from '@/components/ui/icon-button'
 import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { promoteTagAction, mergeTagsAction } from '@/app/(main)/admin/content/actions'
-import { buttonClasses } from '@/components/ui/button'
 
 export interface TagRow {
   id: string

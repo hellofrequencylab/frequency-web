@@ -12,7 +12,6 @@ import { Check, Loader2, X } from 'lucide-react'
 import { Field, Textarea, fieldClasses } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { approveNonprofitVerification, rejectNonprofitVerification } from './actions'
-import { buttonClasses } from '@/components/ui/button'
 
 export function ReviewConsole({ id }: { id: string }) {
   const router = useRouter()

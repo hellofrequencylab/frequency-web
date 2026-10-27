@@ -65,7 +65,6 @@ import {
   bulkArchive,
   bulkDelete,
 } from './collections-actions'
-import { buttonClasses } from '@/components/ui/button'
 
 // The crop/rotate editor (HYG-109, ADR-1592) is fetched only when an operator opens it: its code is a
 // separate chunk the grid never ships. Keep it behind this boundary; do not import it statically.

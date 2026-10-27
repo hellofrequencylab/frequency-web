@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({ save: vi.fn(), refresh: vi.fn() }))
 vi.mock('@/app/(main)/admin/dash-order-actions', () => ({ setAdminDashOrder: mocks.save }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: mocks.refresh }) }))
 import { AdminDashOrder } from './dash-order'
-globalThis.IS_REACT_ACT_ENVIRONMENT = true
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 let root: Root; let host: HTMLDivElement
 afterEach(() => { act(() => root?.unmount()); host?.remove(); vi.resetAllMocks() })
 function mount() { host = document.createElement('div'); document.body.append(host); root = createRoot(host); act(() => root.render(<AdminDashOrder scope="home" initialOrder={['growth', 'vera', 'community', 'programs', 'operations']} />)) }

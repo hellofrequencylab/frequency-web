@@ -1,0 +1,18 @@
+{
+  "id": "HYG-212",
+  "title": "Remove duplicate control imports introduced by overlapping audit and owner edits",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "scripts/duplicate-import-bindings.test.ts",
+    "ref": "Isolated5d534 build24 duplicate-binding errors after owner-main integration"
+  },
+  "detail": "Removed24 redundant buttonClasses imports while retaining every actual helper/Button binding and action class. A direct AST test scans actual app/components/lib import bindings, catches aliases/default bindings and allows distinct imports from one module. Initial test correctly found the24th mixed Button import missed by literal deduplication. Prior failed compile/test evidence retained. No callbacks, styling, authority or source budgets changed.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-27",
+    "evidence": "Direct AST positive/negative controls and actual application binding scan; focused lint and next exact compile/CI required for full integrated release proof."
+  }
+}

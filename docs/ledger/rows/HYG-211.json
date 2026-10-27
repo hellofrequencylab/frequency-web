@@ -1,0 +1,18 @@
+{
+  "id": "HYG-211",
+  "title": "Prepare history guards even after an unrelated CI typecheck fails",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": ".github/workflows/ci.yml",
+    "ref": "Exact962 CI40442067567: type fixture failures skipped default-success history preparation, but contract guards correctly still ran"
+  },
+  "detail": "CI guards intentionally run under !cancelled(), but preceding base-tip/history fetches used default success() semantics. When typing failed, the history steps skipped and shipped-id verification correctly refused its one-commit shallow window. Give both fetch prerequisites matching !cancelled() conditions (PR restriction retained for base tip). The earlier dated-fetch diagnosis was not supported: real local dated-fetch fixture succeeded, and completed job logs identify skipped preparation. Remove the redundant conditional-unshallow attempt. No history floor, seed, guard, budget or test skip changed.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-27",
+    "evidence": "OPEN pending exact CI proving history preparation and complete guard window.35 existing workflow/shipped-id tests passed before this condition correction; rerun those plus exact CI. Failed evidence retained."
+  }
+}
