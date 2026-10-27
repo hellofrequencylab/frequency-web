@@ -1,0 +1,10 @@
+{
+  "id": "LIVE-272",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const q=String.fromCharCode(39);const fail=(m)=>{console.error(m);process.exit(1)};const h=fs.readFileSync(\"lib/layout/cover-height.ts\",\"utf8\");if(!h.includes(\"export function posterBandHeightPx\"))fail(\"posterBandHeightPx is gone\");if(!h.includes(\"EVENT_POSTER_PHONE_WIDTH_PX\"))fail(\"the phone width constant is gone\");if(!/surface === .phone./.test(h))fail(\"posterBandHeightPx no longer reads the phone token\");const c=fs.readFileSync(\"components/admin/modules/event-header-controls.tsx\",\"utf8\");if(!c.includes(\"EVENT_POSTER_PHONE_WIDTH_PX\"))fail(\"the control no longer names the phone width\");if(!c.includes(\"EVENT_POSTER_DESKTOP_WIDTH_PX\"))fail(\"the control no longer names the desktop width\");if(!c.includes(q+\"phone\"+q))fail(\"the phone surface is not passed\");if(!c.includes(q+\"desktop\"+q))fail(\"the desktop surface is not passed\");if(/posterBandAspect\\(height,\\s*1044/.test(c))fail(\"the control still hardcodes the desktop width only\");const t=fs.readFileSync(\"lib/layout/cover-height.test.ts\",\"utf8\");if(!t.includes(\"LIVE-272\"))fail(\"the band test no longer names LIVE-272\");if(!t.includes(\"phone WIDTH over a desktop HEIGHT is the wrong frame\"))fail(\"the naive-width control is gone\");console.log(\"LIVE-272 ok\")'",
+      "note": "Passes when the control previews both surfaces through named widths, the phone frame uses the phone height token, and the band test still names the naive-width failure. Written 2026-09-19."
+    }
+  }
+}

@@ -16,7 +16,7 @@ function frequencyStyle(selector: string, prop: string | RegExp, value?: string,
   return frequencyRules.some(rule=>rule.selector.includes(selector) && (!media || (rule.parent.type==='atrule' && rule.parent.params===media)) && rule.nodes.some(node=>node.type==='decl' && (typeof prop === 'string' ? node.prop===prop : prop.test(node.prop ?? '')) && (value===undefined || node.value===value)))
 }
 
-import { ProfileAvatar } from '@/components/profile/profile-avatar'
+import { ProfilePhoto } from '@/components/frequency/members/profile/profile-body'
 import { PulseAvatar } from '@/components/connections/pulse-avatar'
 
 vi.mock('next/image', () => ({
@@ -154,9 +154,9 @@ describe('Avatar', () => {
 // ── The two avatars that compose it, still rendering what they always did ──────
 
 describe('the avatars that compose it', () => {
-  it('ProfileAvatar is the xl ringed step, focus and dimming intact', () => {
+  it('Actual ProfilePhoto keeps its kit geometry, URL focus and dimming', () => {
     const c = mount(
-      <ProfileAvatar
+      <ProfilePhoto
         src="https://cdn.test/p.jpg#fp=45,20"
         name="Maya Ortiz"
         initials="MO"
@@ -164,20 +164,18 @@ describe('the avatars that compose it', () => {
         dimmed
       />,
     )
-    const img = c.querySelector('img')!
-    expect(img.getAttribute('src')).toBe('https://cdn.test/p.jpg')
-    // `focus={null}` means "no explicit choice", so the URL fragment still wins.
-    expect(img.style.objectPosition).toBe('45% 20%')
-    expect(img.className).toContain('h-16 w-16')
-    expect(img.className).toContain('sm:h-20 sm:w-20')
-    expect(img.className).toContain('ring-4 ring-surface')
-    expect(img.className).toContain('dimmed')
+    const face = c.querySelector<HTMLElement>('.mc-photo')!
+    expect(face.style.backgroundImage).toContain('https://cdn.test/p.jpg')
+    expect(face.style.backgroundImage).not.toContain('#fp=')
+    expect(face.style.backgroundPosition).toBe('45% 20%')
+    expect(face.className).toContain('av xl')
+    expect(face.className).toContain('dimmed')
   })
 
-  it('ProfileAvatar still falls back to the initials it was handed', () => {
-    const c = mount(<ProfileAvatar src={null} name="The Collective" initials="TC" />)
+  it('Actual ProfilePhoto still falls back to the initials it was handed', () => {
+    const c = mount(<ProfilePhoto src={null} name="The Collective" initials="TC" />)
     expect(c.firstElementChild!.textContent).toBe('TC')
-    expect(c.firstElementChild!.className).toContain('text-page-title')
+    expect(c.firstElementChild!.className).toContain('mc-initials')
   })
 
   it('PulseAvatar is still a link wrapping the sm step, with derived initials', () => {

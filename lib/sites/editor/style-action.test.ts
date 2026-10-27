@@ -52,6 +52,8 @@ describe('saving the global styles from the website editor', () => {
     const result = await saveWebsiteStyle('hearts.example', { theme: 'bold' })
     expect(result).toMatchObject({ ok: true, style: { theme: 'bold', fonts: 'menswork' } })
     expect(mocks.patches[0].theme).toBe('menswork')
+    // One apply (LIVE-SYS-7): the choice record rides with the style, and 
+    expect(mocks.patches[0].megaTheme).toMatchObject({ theme: 'bold' })
   })
 
   it('deletes the fonts key (null) when the style goes back to the default fonts', async () => {

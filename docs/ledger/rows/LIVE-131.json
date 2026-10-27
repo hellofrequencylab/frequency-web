@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-131",
+  "patch": {
+    "source": {
+      "file": "components/frequency/members/event/event-header.tsx",
+      "ref": "Actual FqEventCover; historical PosterBand report retained, later owner whole-artwork contain ruling 2026-10-14"
+    },
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/frequency-public-retirement.mjs cover",
+      "note": "Checks actual Frequency artwork/focus/aspect capture and consumers. The later owner whole-artwork contain ruling supersedes old global cover-only style assertions; active shared geometry helpers remain tested."
+    }
+  },
+  "append": {
+    "detail": " HYG-214 2026-10-27: retired unreachable PosterBand; verification now follows actual FqEventCover, captured aspect/focus and later owner whole-artwork contain treatment. Historical original report is preserved; no browser pixel acceptance is inferred."
+  }
+}

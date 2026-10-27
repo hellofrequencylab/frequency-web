@@ -14,12 +14,15 @@ import {
   WIZARD_INTENTS,
   WIZARD_PLAN_COPY,
   choiceTypeForPlan,
+  chosenWizardTheme,
   createWizardSteps,
+  WIZARD_THEMES,
+  withLookStep,
   suggestModeForIntents,
   type WizardPlan,
 } from '@/lib/spaces/create-wizard'
 import { Field, TextField } from '@/components/spaces/space-form'
-import type { MegaNicheId } from '@/lib/theme/mega-theme'
+import type { MegaNicheId, MegaThemeId } from '@/lib/theme/mega-theme'
 import { SpacePicker, type PickerDone } from './space-picker'
 
 // The SPACE CREATION WIZARD (client). Step-by-step on the Spark kit, like every other seeder
@@ -42,7 +45,7 @@ export interface SpaceModeChoice {
   hint: string
 }
 
-const STEPS = createWizardSteps(SPACE_MANIFEST)
+const STEPS = withLookStep(createWizardSteps(SPACE_MANIFEST))
 
 function slugify(name: string): string {
   return slugifyShared(name).slice(0, 40).replace(/-+$/g, '')
@@ -84,12 +87,16 @@ export function CreateSpaceWizard({
   heardAboutOptions = [],
   pickerEnabled = false,
   arrivedNiche = null,
+  arrivedTheme = null,
 }: {
   /** Show the four-question picker before the wizard (ADR-1883, behind SPACE_PICKER_ENABLED). */
   pickerEnabled?: boolean
   /** The niche a /for door named (query or funnel cookie), already validated by the page. Saved on the
    *  Space whether or not the picker is on. */
   arrivedNiche?: MegaNicheId | null
+  /** The Mega Theme a /themes page named (`?theme=`), already validated by the page. The new Space is dressed in it
+   *  (applyMegaTheme) right after it is created. */
+  arrivedTheme?: MegaThemeId | null
   choices: SpaceModeChoice[]
   heardAboutOptions?: readonly string[]
   /** The Mode a niche funnel pre-selected (`${type}:${variant}`), already validated by the page. */
@@ -126,6 +133,8 @@ export function CreateSpaceWizard({
   // The picker runs first when it is on; its answers (or the door's niche) ride into createSpace.
   const [picking, setPicking] = useState(pickerEnabled)
   const [picked, setPicked] = useState<PickerDone>({ niche: arrivedNiche, action: null, feel: null, site: null })
+  // The look step: the theme a /themes page named is the starting pick; null means "pick later".
+  const [theme, setTheme] = useState<MegaThemeId | null>(arrivedTheme)
   const [pending, start] = useTransition()
 
   const suggested = suggestModeForIntents(intents, choices.map((c) => c.id))
@@ -158,6 +167,7 @@ export function CreateSpaceWizard({
         plan,
         intents,
         niche: picked.niche,
+        theme: chosenWizardTheme(theme, arrivedTheme),
         action: picked.action,
         feel: picked.feel,
         site: picked.site,
@@ -200,7 +210,7 @@ export function CreateSpaceWizard({
       description={step.desc}
       step={index + 1}
       totalSteps={STEPS.length}
-      stepLabel={step.key === 'intents' ? 'Goals' : step.key === 'model' ? 'Setup' : step.key === 'identity' ? 'Name' : 'Start'}
+      stepLabel={step.key === 'intents' ? 'Goals' : step.key === 'model' ? 'Setup' : step.key === 'identity' ? 'Name' : step.key === 'look' ? 'Look' : 'Start'}
       onBack={index > 0 ? () => setIndex(index - 1) : undefined}
       onNext={last ? submit : () => setIndex(index + 1)}
       nextLabel={last ? 'Create my Space' : 'Continue'}
@@ -327,6 +337,29 @@ export function CreateSpaceWizard({
         </div>
       )}
 
+      {step.key === 'look' && (
+        <div className="space-y-3">
+          <div className="chips flex flex-wrap gap-2" role="group" aria-label="Your look">
+            {WIZARD_THEMES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={theme === t.id ? 'chip on' : 'chip'}
+                aria-pressed={theme === t.id}
+                title={t.hint}
+                onClick={() => setTheme(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+            <button type="button" className={theme === null ? 'chip on' : 'chip'} aria-pressed={theme === null} onClick={() => setTheme(null)}>
+              Pick later
+            </button>
+          </div>
+          <p className="why">{WIZARD_THEMES.find((t) => t.id === theme)?.hint ?? 'We start you on the default look. You can switch any time.'}</p>
+        </div>
+      )}
+
       {step.key === 'start' && (
         <div className="space-y-5">
           <dl className="card divide-y divide-border">
@@ -336,6 +369,7 @@ export function CreateSpaceWizard({
               ['Goals', intents.length ? WIZARD_INTENTS.filter((i) => intents.includes(i.id)).map((i) => i.label.toLowerCase()).join(', ') : 'Not sure yet, and that is fine'],
               ['Tool setup', choice ? `${choice.label}: ${choice.hint}` : ''],
               ['Starting tools', (choice && presetLabels[choice.id]) || 'Every tool on'],
+              ['Look', WIZARD_THEMES.find((t) => t.id === theme)?.label ?? 'Decide later'],
               ['Plan', plan === 'free' ? 'Free, upgrade any time' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`],
               ['Visibility', visibility === 'network' ? 'Listed in the Spaces directory' : 'Private'],
             ].map(([k, v]) => (
