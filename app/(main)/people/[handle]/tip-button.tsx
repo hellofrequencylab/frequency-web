@@ -8,6 +8,7 @@ import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { TIP_PRESETS_CENTS, TIP_MIN_CENTS, TIP_MAX_CENTS } from '@/lib/billing/tips-core'
 import { isError } from '@/lib/action-result'
+import { buttonClasses } from '@/components/ui/button'
 
 // "Tip" entry on a host/partner profile. Opens a small composer (preset chips + custom amount +
 // optional note), then takes the card RIGHT HERE (LIVE-359) or, when the on-page form cannot be
@@ -155,7 +156,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
           onFocus={warmStripeBrowser}
           onTouchStart={warmStripeBrowser}
           disabled={isPending || !valid}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className={buttonClasses('primary', 'sm')}
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Heart className="h-4 w-4" />}
           Tip ${(effectiveCents / 100).toFixed(2)}

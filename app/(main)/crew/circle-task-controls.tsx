@@ -8,6 +8,7 @@
 import { useState, useTransition } from 'react'
 import { Hand, Loader2, Undo2 } from 'lucide-react'
 import { claimCircleTask, releaseCircleTask } from './circle-task-actions'
+import { buttonClasses } from '@/components/ui/button'
 
 export function ClaimTaskButton({ taskId }: { taskId: string }) {
   const [isPending, startTransition] = useTransition()
@@ -26,7 +27,7 @@ export function ClaimTaskButton({ taskId }: { taskId: string }) {
       <button
         onClick={handleClick}
         disabled={isPending}
-        className="shrink-0 flex min-h-11 items-center gap-1 rounded-control px-3 py-1 text-meta font-semibold bg-primary text-on-primary hover:bg-primary-hover transition-colors disabled:opacity-50 motion-reduce:transition-none"
+        className={buttonClasses('primary', 'sm', 'shrink-0')}
       >
         {isPending ? <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" /> : <Hand className="w-3 h-3" />}
         Claim

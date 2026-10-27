@@ -3,11 +3,8 @@
   "patch": {
     "verify": {
       "kind": "cmd",
-      "cmd": "node -e 'const fs=require(\"fs\");const L=fs.readFileSync(\"app/(main)/layout.tsx\",\"utf8\");const D=fs.readFileSync(\"app/discover/layout.tsx\",\"utf8\");const mainUsesSite=/<SiteHeader/.test(L);const discUsesSite=/<SiteShell/.test(D);process.exit(discUsesSite&&mainUsesSite?0:1)'",
+      "cmd": "node -e 'const fs=require(\"fs\");const L=fs.readFileSync(\"app/(main)/layout.tsx\",\"utf8\");const D=fs.readFileSync(\"app/discover/layout.tsx\",\"utf8\");const mainUsesSite=/<SiteShell/.test(L);const discUsesSite=/<SiteShell/.test(D);process.exit(discUsesSite&&mainUsesSite?0:1)'",
       "note": "Passes when both public trees render SiteHeader. Written 2026-09-19 against the two-header split, not a footer unification."
     }
-  },
-  "append": {
-    "detail": " 2026-10-26 (SCAN-1128): the discover layout draws the SiteShell, which carries the same header."
   }
 }

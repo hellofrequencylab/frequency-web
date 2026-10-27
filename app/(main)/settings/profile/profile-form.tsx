@@ -7,7 +7,7 @@ import { updateProfile, setSpotlightPublished, setMySpotlightEnabled, setProfile
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { Input, Textarea } from '@/components/ui/field'
 import { HeaderImageField } from '@/components/ui/header-image-field'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { heroAspect } from '@/lib/spaces/hero-config'
 
@@ -522,11 +522,7 @@ export function ProfileForm({
               type="button"
               onClick={handleTogglePublish}
               disabled={spotPending}
-              className={`inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 ${
-                spotPublished
-                  ? 'border border-border-strong text-text hover:bg-surface-elevated'
-                  : 'bg-primary text-on-primary hover:bg-primary-hover'
-              }`}
+              className={buttonClasses(spotPublished ? 'secondary' : 'primary', 'sm')}
             >
               {spotPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {spotPublished ? 'Unpublish' : 'Publish'}
@@ -570,7 +566,7 @@ export function ProfileForm({
         <button
           type="submit"
           disabled={!canSave}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+          className={buttonClasses('primary', 'md')}
         >
           {isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />

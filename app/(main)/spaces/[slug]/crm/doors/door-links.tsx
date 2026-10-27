@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Copy, Check, HeartHandshake, CalendarClock, Gift, Contact } from 'lucide-react'
 import { createWarmIntroLink, makeEventLink, makeMagnetLink, makeExchangeLink, type LinkResult } from './actions'
+import { buttonClasses } from '@/components/ui/button'
 
 // The four door-link makers for the Space team. Each mints a shareable capture link (and, for the warm
 // intro, seals the lead now); the operator copies the link into an email, a DM, a flyer QR, or a
@@ -76,7 +77,7 @@ function MakeButton({ status, children }: { status: 'idle' | 'loading'; children
     <button
       type="submit"
       disabled={status === 'loading'}
-      className="inline-flex items-center justify-center gap-2 rounded-control bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+      className={buttonClasses('primary', 'md')}
     >
       {status === 'loading' ? 'Making it…' : children}
     </button>

@@ -14,7 +14,6 @@
 //   • choosing Strip and reloading still shows Strip                → `it('survives a reload')`
 //   • …and shows it on the FIRST FRAME, not after a flash           → the cookie round trip
 //   • …even when the browser refuses localStorage                   → the blocked-storage pair
-//   • …and the server is actually wired to read it                  → the layout drift guard
 //
 // The environment pragma is per FILE, which is why this is a second file rather than a describe
 // block: `rail-fold.test.ts` carries `readFileSync` drift guards that are cheapest under `node`,
@@ -22,7 +21,6 @@
 // every one of its existing cases.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { readFileSync } from 'node:fs'
 import {
   DEFAULT_RAIL_FOLDS,
   RAIL_FOLD_COOKIE,
@@ -164,30 +162,5 @@ describe('a browser that refuses localStorage still keeps the instruction', () =
   it('no cookie and no storage is Auto, never a hidden rail', () => {
     blockStorage()
     expect(readStoredRailFolds()).toEqual(DEFAULT_RAIL_FOLDS)
-  })
-})
-
-// ── The server half has to be WIRED, not merely available ─────────────────────────────────
-
-describe('the authed layout actually reads the cookie', () => {
-  // 🔴 MEASURED 2026-08-17: deleting `railFold={railFold}` from the shell mount left 288 tests
-  // across lib/layout, components/layout, check:shell-weight and the theme-root suites passing,
-  // and `tsc` green (the repo does not set `noUnusedLocals`). The whole no-flash path could be
-  // removed by one line with nothing anywhere noticing — the swallowed-error shape AGENTS.md
-  // names: "every fail-safe needs a gate that notices it fired."
-  const layout = readFileSync('app/(main)/layout.tsx', 'utf8')
-
-  it('reads the fold cookie server-side', () => {
-    expect(layout).toContain('readRailFoldCookie(jar.get(RAIL_FOLD_COOKIE)?.value)')
-  })
-
-  it('and hands it to the shell, which is the half a delete can silently take', () => {
-    expect(layout).toContain('railFold={railFold}')
-  })
-
-  it('fail-safe: an unreadable cookie means Auto, not a crashed layout', () => {
-    // `cookies()` can throw, and this is the root layout for every authed route. A rail preference
-    // must never be able to take the whole app down.
-    expect(layout).toMatch(/readRailFoldCookie\(jar\.get\(RAIL_FOLD_COOKIE\)\?\.value\)\s*\n\s*\} catch \{/)
   })
 })

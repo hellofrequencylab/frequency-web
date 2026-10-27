@@ -19,6 +19,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Check, Loader2, Mail } from 'lucide-react'
 import { requestClaimLink } from './claim-actions'
+import { buttonClasses } from '@/components/ui/button'
 
 type State = 'idle' | 'sent' | 'sign_in' | 'no_email_on_file' | 'already_claimed' | 'unavailable'
 
@@ -85,7 +86,7 @@ export function ClaimRequestCta({
             type="button"
             onClick={onRequest}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className={buttonClasses('primary', 'md')}
           >
             {pending ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

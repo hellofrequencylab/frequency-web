@@ -1,6 +1,8 @@
 'use client'
 
 import { Check } from 'lucide-react'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
+import { cn } from '@/lib/utils'
 
 /**
  * The email opt-in card, in ONE place.
@@ -52,9 +54,7 @@ export function EmailOptInCard({
       type="button"
       onClick={onToggle}
       aria-pressed={checked}
-      className={`flex w-full items-start gap-3 rounded-card border p-4 text-left transition-colors ${
-        checked ? 'border-primary bg-primary-bg/40' : 'border-border bg-surface hover:bg-surface-elevated'
-      } ${className}`}
+      className={choiceTileClasses(Boolean(checked), cn('flex w-full items-start gap-3 rounded-card p-4 text-left', className))}
     >
       <span
         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-control border transition-colors ${

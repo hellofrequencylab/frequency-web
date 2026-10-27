@@ -21,6 +21,7 @@ import { MemberDetailCard } from './member-detail-card'
 import { CrmMemberDetailPane } from './crm-member-detail'
 import type { CrmMemberDetail, ListView, MemberViewerProps, SortOption } from './types'
 import { Input } from '@/components/ui/field'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // THE MEMBER-VIEWER BLOCK: a reusable master-detail member browser (list left, viewer right).
 // One presentation-neutral client island (ADR-017/018) reused/reconfigured by many surfaces, not a
@@ -544,10 +545,7 @@ function ViewToggleButton({
       onClick={onClick}
       aria-pressed={active}
       aria-label={label}
-      className={cn(
-        'rounded-md p-1.5 transition-colors',
-        active ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:text-text',
-      )}
+      className={choiceTileClasses(Boolean(active), 'rounded-md p-1.5')}
     >
       {children}
     </button>

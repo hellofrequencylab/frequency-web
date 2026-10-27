@@ -14,7 +14,8 @@ import { Select } from '@/components/ui/select'
 import type { ExtractedContact, ContactDetails, ContactSource, Visibility } from '@/lib/connections/types'
 import { scanCard, veraAssist, createProfile } from '../actions'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 
 const BUCKET = 'network-contacts'
 const lbl = 'block text-meta font-medium text-muted mb-1'
@@ -668,7 +669,7 @@ export function Creator({ userId }: { userId: string }) {
                   type="button"
                   onClick={handleAssist}
                   disabled={assisting || !assistText.trim()}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                  className={buttonClasses('primary', 'sm', 'mt-2')}
                 >
                   {assisting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {assisting ? 'Thinking…' : 'Fill it in with Vera'}
@@ -809,7 +810,7 @@ export function Creator({ userId }: { userId: string }) {
             type="button"
             onClick={handleSave}
             disabled={saving || !form.displayName.trim()}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className={buttonClasses('primary', 'md')}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             {saving ? 'Saving…' : 'Save contact'}
@@ -873,9 +874,7 @@ function TabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onCli
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-control-nested px-3 py-2 text-body-sm font-medium transition-colors ${
-        active ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
-      }`}
+      className={chipClasses(active, 'flex-1 justify-center')}
     >
       <Icon className="h-4 w-4" /> {label}
     </button>

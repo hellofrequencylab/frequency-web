@@ -6,6 +6,7 @@ import { LayoutGrid, Check } from 'lucide-react'
 import { DirectorySearch } from '@/components/ui/directory-search'
 import { SpacesSort } from './spaces-sort'
 import { SUBJECTS } from '@/lib/taxonomy/subjects'
+import { chipClasses } from '@/components/ui/chip'
 
 // The command bar for the Spaces directory — the same standard the Circles/People directories use.
 // Everything is URL-driven (writes the `q` / `subject` / `following` / `sort` params, preserves the
@@ -108,11 +109,7 @@ export function SpacesToolbar({
               type="button"
               onClick={toggleFollowing}
               aria-pressed={following}
-              className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-control border px-3 text-body-sm font-medium transition-colors ${
-                following
-                  ? 'border-primary bg-primary-bg text-primary-strong'
-                  : 'border-border bg-surface text-muted hover:border-primary hover:text-text'
-              }`}
+              className={chipClasses(Boolean(following), 'shrink-0')}
             >
               <Check className="h-3.5 w-3.5 shrink-0" />
               Following

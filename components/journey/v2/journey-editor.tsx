@@ -33,7 +33,7 @@ import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import type { CheckConfig } from '@/lib/journeys/store'
 import { PillarChip } from './pillar-chip'
 import { Input, Textarea } from '@/components/ui/field'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 
 export interface EditorBlock {
   id: string
@@ -176,7 +176,7 @@ function SlotCoaching({
           type="button"
           disabled={disabled || busy}
           onClick={draft}
-          className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-meta font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60"
+          className={buttonClasses('ghost', 'xs')}
         >
           <Sparkles className="h-3.5 w-3.5" /> {busy ? 'Thinking…' : 'Get writing questions'}
         </button>

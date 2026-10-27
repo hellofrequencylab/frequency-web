@@ -7,7 +7,7 @@
   "status": "done",
   "verify": {
     "kind": "cmd",
-    "cmd": "npx vitest run lib/sites/kits/designer-variants.test.ts"
+    "cmd": "node scripts/probes/designer-kits.mjs"
   },
   "detail": "Follows LIVE-1490. lib/sites/kits/designer-variants.ts builds coaches, studios, hosts, venues, nonprofits and networks kits from the shared niche words (niche-spec.ts) in Designer blocks plus the live Space blocks, registered in registry.ts so the editor's Starter kits panel and the Change theme dialog list them and the /themes gallery card shows them. Generic copy, no prices, photos or real names. The gallery lede now says seven looks.",
   "wave": "W7"
