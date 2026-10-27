@@ -19,7 +19,7 @@ export function generateStaticParams() {
 function seoFor(theme: string): FrequencyPageSeo | null {
   const site = SITE_THEMES.find((t) => t.id === theme)
   const entry = themeLibraryEntry(theme)
-  if (!site || !entry || !THEME_KIT_PAGE_IDS.includes(site.id)) return null
+  if (!site || !entry || !THEME_KIT_PAGE_IDS.some((id) => id === site.id)) return null
   return {
     path: `/themes/${theme}`,
     title: `${site.label} theme: ${entry.tagline}`,
