@@ -1,19 +1,10 @@
 {
   "id": "HYG-187",
-  "title": "Remove the retired generation and occasion blocks from app/globals.css",
-  "status": "open",
-  "priority": "P3",
-  "lane": "hygiene",
-  "size": "M",
-  "source": {
-    "file": "app/globals.css",
-    "ref": "SCAN-1130 split (2026-10-27)"
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-27"
   },
-  "detail": "SCAN-1130 closed on its probe (no LEGACY_THEME_AXES reader or export). What it left: the generation and occasion selector blocks in app/globals.css (31 [data-generation] / [data-occasion] hits), then skins other than Default and Midnight, then design-fonts/dawn. Nothing sets data-generation or data-occasion any more (resolveTheme returns the default generation and occasion 'none'), so the blocks are dead CSS. Midnight is live: keep it. Delete the blocks, keep the Frequency tokens, and recapture visual baselines if any move.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node scripts/probes/dawn-axes-css.mjs",
-    "note": "Fails on main today: the generation and occasion selector blocks are still in app/globals.css."
-  },
-  "wave": "W7"
+  "append": {
+    "detail": "2026-10-27: generation and occasion CSS deleted (Daniel: \"retire the generation axis tests\"), pinning tests and AAA contrast states retired. Still standing, not deleted: the generations/occasions registries (lib/theme), cookie and resolve reads, and the admin default-generation picker; they now drive nothing visible."
+  }
 }

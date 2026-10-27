@@ -20,9 +20,7 @@
 // (`[data-skin]` and `.dark` tie on specificity (0,1,0); `.dark` is authored later, so it wins —
 // which is why the dark-midnight overrides need a two-part (0,2,0) selector. This resolver
 // reproduces that rule rather than assuming an order.)
-// The `data-occasion` axis is deliberately OUT of scope: it is an opt-in seasonal overlay. The
-// `data-generation` axis is feel-only EXCEPT the AAA presets, which derive AAA secondary inks
-// (LIVE-658). Those are measured as their own states against a 7:1 floor: see AAA_GENERATION_*.
+// The data-occasion and data-generation axes are retired (HYG-187): no state measures them.
 //
 // THE PAIR TABLE lives in this file, below, with a minimum per ROLE:
 //   body  4.5  — text at normal weight/size (WCAG 1.4.3 AA)
@@ -305,37 +303,6 @@ export const PAIRS = [
 // re-asserting some role and this gate will fail on the difference. Before 2026-08-05 the lock
 // covered 29 of 57 roles and a live funnel rendered warning text at 1.77:1; the fifth state
 // exists so that cannot recur silently.
-// ── The AAA presets (LIVE-658) ─────────────────────────────────────────────────────────────
-// lib/theme/generations.ts gives every generation a `minContrast` floor, and the AAA ones
-// (the calm adult end and every kids band) derive AAA secondary inks in app/globals.css. Each
-// is measured on top of each of the four base states, so a preset whose inks drift below 7:1 in
-// ANY mode or skin fails here. The ids are read from the registry, not restated, so a new AAA
-// preset is measured the day it is declared, and one with no ink block reports unresolved.
-// `aaa` is the role (7:1, WCAG 1.4.6); body text on the grounds a sentence actually sits on.
-export function aaaGenerationIds(registrySrc) {
-  const ids = []
-  for (const m of registrySrc.matchAll(/id:\s*'([a-z-]+)'[\s\S]*?minContrast:\s*'(AAA|AA)'/g)) {
-    if (m[2] === 'AAA') ids.push(m[1])
-  }
-  return ids
-}
-
-export function aaaGenerationStates(ids) {
-  return ids.flatMap((generation) =>
-    STATES.filter((st) => !st.lightLock).map((st) => ({ ...st, key: `${st.key} · ${generation}`, generation })),
-  )
-}
-
-const AAA_GROUNDS = ['--color-canvas', '--color-surface', '--color-surface-elevated', '--color-surface-post', '--color-chrome']
-export const AAA_GENERATION_PAIRS = ['--color-text', '--color-text-muted', '--color-text-subtle'].flatMap((fg) =>
-  AAA_GROUNDS.map((bg) => ({
-    fg,
-    bg,
-    role: 'aaa',
-    note: 'An AAA preset (minContrast in lib/theme/generations.ts) promises 7:1 text. The secondary inks come from the AAA block after kids-tween in app/globals.css.',
-  })),
-)
-
 export const WAIVERS = [
   {
     fg: '--color-text-on-signal',
@@ -829,7 +796,6 @@ function table(rows) {
 
 function main() {
   const src = readFileSync(CSS, 'utf8')
-  const aaaStates = aaaGenerationStates(aaaGenerationIds(readFileSync(join('lib', 'theme', 'generations.ts'), 'utf8')))
   // Frequency is the shipped design (SCAN-1115): its Commons and Stage rooms are measured from the
   // same sheets the browser loads (app/themes/frequency/core.css, then app/themes/frequency.css),
   // in the order app/layout.tsx imports them.
@@ -841,10 +807,9 @@ function main() {
   }
   const rows = [
     ...evaluateContrast(src),
-    ...evaluateContrast(src, { pairs: AAA_GENERATION_PAIRS, states: aaaStates }),
     ...evaluateContrast(sheets, { states: FREQUENCY_STATES, resolve: resolveFrequencyTokens }),
   ]
-  const ALL_STATES = [...STATES, ...aaaStates, ...FREQUENCY_STATES]
+  const ALL_STATES = [...STATES, ...FREQUENCY_STATES]
   const report = process.argv.includes('--report')
 
   if (report) {
