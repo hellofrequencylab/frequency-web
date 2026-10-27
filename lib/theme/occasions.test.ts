@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import {
   OCCASIONS,
   DEFAULT_OCCASION,
@@ -45,5 +47,13 @@ describe('resolveOccasionForDate (calendar window selection)', () => {
     expect(wrap('01-01', '12-20', '01-02')).toBe(true) // after year-end
     expect(wrap('06-15', '12-20', '01-02')).toBe(false) // mid-year, outside
     expect(wrap('01-03', '12-20', '01-02')).toBe(false) // just past the end edge
+  })
+})
+
+// Persisted identifiers stay readable; the Frequency resolver no longer renders these overlays.
+describe('historical occasion registry does not require runtime preset CSS', () => {
+  it('keeps retired selectors out of the platform stylesheet', () => {
+    const css = readFileSync(fileURLToPath(new URL('../../app/globals.css', import.meta.url)), 'utf8')
+    expect(css).not.toMatch(/\[data-occasion[^\]]*\]/)
   })
 })

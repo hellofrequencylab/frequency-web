@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import {
   GENERATIONS,
   DEFAULT_GENERATION,
@@ -57,5 +59,13 @@ describe('generation registry (docs/SPACES.md adaptive theming)', () => {
     expect(resolveGeneration('does-not-exist')).toBe(DEFAULT_GENERATION)
     expect(resolveGeneration(null)).toBe(DEFAULT_GENERATION)
     expect(resolveGeneration(undefined)).toBe(DEFAULT_GENERATION)
+  })
+})
+
+// Persisted identifiers stay readable; the Frequency resolver no longer renders these overlays.
+describe('historical generation registry does not require runtime preset CSS', () => {
+  it('keeps retired selectors out of the platform stylesheet', () => {
+    const css = readFileSync(fileURLToPath(new URL('../../app/globals.css', import.meta.url)), 'utf8')
+    expect(css).not.toMatch(/\[data-generation[^\]]*\]/)
   })
 })
