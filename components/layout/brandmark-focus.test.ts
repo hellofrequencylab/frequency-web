@@ -38,7 +38,7 @@ const read = (p: string) => readFileSync(ROOT + p, 'utf8')
 
 const GLOBALS = read('app/globals.css')
 const BRAND = read('components/layout/brand-mark.tsx')
-const SHELL = read('components/layout/app-shell.tsx')
+const SHELL = read('components/frequency/members/shell/members-shell.tsx')
 
 type Rule = { selector: string; body: string }
 
@@ -154,7 +154,7 @@ describe('the wordmark is reached by that generic rule, not by a style of its ow
 
   it('sits immediately after the skip link, which is why this matters', () => {
     const skip = SHELL.indexOf('Skip to content')
-    const mark = SHELL.indexOf('<BrandMark')
+    const mark = SHELL.indexOf('<FqHeader')
     expect(skip).toBeGreaterThan(-1)
     expect(mark).toBeGreaterThan(skip)
   })
