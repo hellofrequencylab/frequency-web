@@ -131,6 +131,7 @@ const NEXT_DIR = path.join(ROOT, '.next')
 /** The manifest key for the shell layout. Everything under `app/(main)` renders inside it, so a byte
  *  added here is a byte multiplied by every route in the shell — the client-side twin of the
  *  root-layout fan-out rule in DEPLOY-SAFETY.md. */
+// FrequencyMembersShell is the active shell. Read the actual layout manifest, not a legacy component's graph.
 export const SHELL_ENTRY = '[project]/app/(main)/layout'
 
 /** The files on the shell's static path that mount admin bodies. Every admin component they name
@@ -697,7 +698,7 @@ if (shellBytes > BUDGET_KB * 1024) {
       `${chunkPaths.length} chunks, over the ${BUDGET_KB} KB budget.\n\n` +
       '   This is bytes every member parses on every route under app/(main) before the page\n' +
       '   responds to a click. Raising the budget is not the first move: find what became\n' +
-      '   statically reachable from app-shell.tsx and put it behind `next/dynamic`.\n\n' +
+      '   statically reachable from the active app/(main)/layout.tsx client islands and put it behind `next/dynamic`.\n\n' +
       '   Biggest chunks:\n',
   )
   for (const [f, size] of worst) console.error(`     ${kb(size).padStart(6)} KB  ${f}`)
