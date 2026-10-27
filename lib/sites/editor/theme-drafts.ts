@@ -1,3 +1,4 @@
+import { slugify } from '@/lib/utils'
 import { MAX_THEME_DRAFTS, type WebsiteLook, type WebsiteSnapshot, type WebsiteTheme, type WebsiteThemeDraft } from './state'
 
 // THEME DRAFTS (owner ask 2026-10-27): an owner can keep several themes alive over the SAME website, edit and preview
@@ -60,7 +61,7 @@ function assemble(snapshot: WebsiteSnapshot, list: WebsiteThemeDraft[], activeId
 
 /** A draft id for a label: lowercase words, unique among the list. */
 function freeId(label: string, taken: Set<string>): string {
-  const base = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'theme'
+  const base = slugify(label).slice(0, 30).replace(/-+$/, '') || 'theme'
   if (!taken.has(base)) return base
   for (let n = 2; n < 100; n++) if (!taken.has(`${base}-${n}`)) return `${base}-${n}`
   return `${base}-${taken.size}`
