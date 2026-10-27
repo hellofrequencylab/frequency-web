@@ -5,6 +5,7 @@ import { ArrowRight, Check, ExternalLink } from 'lucide-react'
 import { Input } from '@/components/ui/field'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyCaptureForm } from '@/components/frequency/site/pages/funnel/capture'
+import { buttonClasses } from '@/components/ui/button'
 
 // The shared client form behind the public capture doors 3 to 5 (event / lead magnet / share-back).
 // One anti-enumeration, honeypot-guarded form; each door passes its own bound server action, submit
@@ -195,7 +196,7 @@ function DawnCaptureForm({
       <button
         type="submit"
         disabled={status === 'loading'}
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-card bg-primary px-8 py-3.5 text-body font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className={buttonClasses('primary', 'md', 'mt-6 w-full')}
       >
         {status === 'loading' ? 'One sec…' : submitLabel}
         {status !== 'loading' && <ArrowRight className="h-4 w-4" aria-hidden />}
