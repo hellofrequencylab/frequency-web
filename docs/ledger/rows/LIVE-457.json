@@ -5,6 +5,10 @@
       "kind": "cmd",
       "cmd": "node scripts/live-457-probe.mjs",
       "note": "Measures the consequence in the COMMITTED baselines and reads which shell they depict off the pixels (app-settings, dawn-light-desktop, mask runs on row 200). DAWN: one 280-330 px mask box at the right edge, which must be >= 99.9 percent mask colour below the header on app-settings, app-nearby and app-space-console, and <= 95 percent on app-feed; Historical DAWN artifacts retain their pixel-only verification; the retired source is no longer live evidence. FREQUENCY: a rail-sized (200-340 px) mask run at the left edge AND one at the right edge; on app-settings and app-nearby each rail must be a full-width mask rectangle at least 400 rows tall (the sticky rail is 668 px at the desktop viewport; panel-only masks leave gaps and read short), and app-feed's same two boxes must be <= 95 percent masked; components/frequency/members/shell/rail-layout.tsx must stamp data-rail-column on both the .fqm-rail-l and .fqm-rail-r asides. The Space console is skipped under Frequency because it is an edge route with no rails. A PNG set that shows neither shape fails and says to recapture. Mutation-tested against the 351e6997c DAWN set (passes), the first Frequency capture with no rail masks (fails), synthetic Frequency sets with both rails masked (passes), the right rail unmasked (fails), the right rail panel-masked with gaps (fails), and /feed's rails masked (fails). Pure node, scripts/live-457-probe.mjs; LIVE457_DIR points it at another PNG set for those tests."
+    },
+    "source": {
+      "file": "components/frequency/members/shell/rail-layout.tsx",
+      "ref": "Current two-rail masks; historical DAWN artifacts are verified separately"
     }
   },
   "append": {

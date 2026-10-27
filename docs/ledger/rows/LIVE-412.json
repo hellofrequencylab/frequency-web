@@ -5,6 +5,10 @@
       "kind": "cmd",
       "cmd": "node scripts/probes/active-member-shell-contracts.mjs size",
       "note": "Owner4058 retired legacy AppShell. Probe now measures the same surviving consequence in actual active Frequency consumers; mutation controls in scripts/active-member-shell-contracts.test.ts."
+    },
+    "source": {
+      "file": "components/frequency/members/shell/header.tsx",
+      "ref": "Active header/rail/phone client-size contract; historical AppShell split ADR-1477"
     }
   },
   "append": {

@@ -1,0 +1,9 @@
+{
+  "id": "LIVE-649",
+  "patch": {
+    "source": {
+      "file": "instrumentation-client.ts",
+      "ref": "Current global prefetch fuse; historical Vercel incident recorded 2026-09-29 (old AppShell is retired)"
+    }
+  }
+}
