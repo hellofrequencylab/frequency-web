@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict'
+import { existsSync, readFileSync } from 'node:fs'
+const read = file => readFileSync(file,'utf8')
+for (const name of ['app-shell-account.tsx','app-shell-mobile.tsx','app-shell-nav-list.tsx','app-shell-nav.ts','context-switcher.tsx','context-badge.tsx','view-as-control.tsx']) assert(!existsSync(`components/layout/${name}`), name)
+const shell=read('components/frequency/members/shell/members-shell.tsx')
+const header=read('components/frequency/members/shell/header.tsx')
+const tools=read('components/frequency/members/shell/account-tools.tsx')
+const layout=read('app/(main)/layout.tsx')
+assert(shell.includes('accountTools={props.accountTools}'))
+assert(header.includes('{accountTools && <AccountTools {...accountTools} />}'))
+assert(layout.includes('currentRole: effectiveRole'))
+assert(layout.includes('context: previewingDown ?'))
+assert(tools.includes("roleUnlocked('view-as', realRole)"))
+assert(tools.includes('roleRank(role) <= roleRank(realRole)'))
+assert(tools.includes('setOperatorContext(target)'))
+assert(tools.includes('setViewAsRole(target === realRole ? null : target)'))
+assert(tools.includes('<DemoToggle initialHidden={demoHidden} variant="sheet" />'))
+console.log('Frequency account tools are wired; retired account/navigation cluster absent')
