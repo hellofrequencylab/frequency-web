@@ -52,7 +52,7 @@ const checks = {
   'dawn-member': async () => (await import('../lib/member-design-branches.mjs')).memberDesignBranchReport().failures.length === 0,
   'legacy-axes': () => filesMatching(['lib', 'app', 'components'], /LEGACY_THEME_AXES/).length === 0,
   'kit-chrome': () => !/prose-gray/.test(read('components/legal/legal-page.tsx')) && !/min-h-screen/.test(read('components/crm/leads/capture-shell.tsx')),
-  'shell-px': () => ['components/layout/app-shell-mobile.tsx', 'components/layout/app-shell-nav-list.tsx'].every((f) => !/\[\d+px\]/.test(read(f))),
+  'shell-px': () => ['components/frequency/members/shell/tab-bar.tsx', 'components/frequency/members/shell/members-shell.tsx'].every((f) => existsSync(f) && !/\[\d+px\]/.test(read(f))),
   'raw-buttons': () => withinRawPrimaryButtonBudget(['app', 'components'].flatMap((dir) => walk(dir)).map(read)),
   'calendar-views': () => !/ComingSoonMark/.test(read('components/spaces/calendar-mode-toggle.tsx')),
   'money-tests': () => existsSync('lib/commerce/disputes.test.ts') && existsSync('lib/spaces/booking-actions.test.ts'),

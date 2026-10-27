@@ -182,33 +182,12 @@ describe('the control names the rail out loud', () => {
 
 // ── The rail menu has no horizontal rules left (owner, 2026-08-05) ─────────────────────────
 
-describe('the group dividers are gone, and SPACE took over their job', () => {
-  const code = readFileSync('components/layout/app-shell-nav-list.tsx', 'utf8')
-
-  it('neither rail draws a hairline between menu groups', () => {
-    // The two spellings the owner pointed at: the home anchor's trailing rule in the open rail,
-    // and the leading rule before each labelled group in the folded strip.
-    expect(code).not.toContain("mb-1 border-b border-chrome-border")
-    expect(code).not.toContain("mt-2 pt-2 border-t border-chrome-border")
-  })
-
-  it('🔴 the gaps GREW to carry what the lines were carrying', () => {
-    // Removing a divider without compensating turns a grouped menu into one long list. These are
-    // the compensations, and they are the assertion — not the removal, which is the easy half.
-    expect(code).toContain("`space-y-0.5 ${i > 0 ? 'mt-6' : ''}") // open rail: 17px -> 25.5px
-    expect(code).toContain("flex flex-col items-center gap-1 ${i > 0 && section.label ? 'mt-5' : ''}") // strip
-    // The home anchor kept its extra breath: pb-1 + the next group's mt-6 is the 29.75px it ran
-    // at before (pb-2 + mb-1 + mt-4), with no rule.
-    expect(code).toContain("${isHomeAnchor ? 'pb-1' : ''}")
-  })
-
-  it('🔴 and the FOLDED strip still names its groups for a screen reader', () => {
-    // The accessibility job the hairline never did. Folding drops the visible group label, so the
-    // section carries `role="group"` + `aria-label` instead — that is what a screen reader user
-    // has always had, and deleting the line must not take it. This is the silent half of the
-    // instruction, and the one that would go wrong without a test.
-    expect(code).toContain("role={compact && section.label ? 'group' : undefined}")
-    expect(code).toContain('aria-label={compact && section.label ? section.label : undefined}')
+describe('the active Frequency folded rail keeps accessible destinations', () => {
+  const code = readFileSync('components/frequency/members/shell/members-shell.tsx', 'utf8')
+  it('names the shortcuts navigation and each compact destination', () => {
+    expect(code).toContain('<nav aria-label="Shortcuts">')
+    expect(code).toContain('aria-label={s.label}')
+    expect(code).toContain('data-tip={s.label}')
   })
 })
 

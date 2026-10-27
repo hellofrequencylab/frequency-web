@@ -1,0 +1,38 @@
+# Trusted metadata-only migration readiness. Never install or execute candidate code here.
+name: migration-readiness
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+  checks: read
+concurrency:
+  group: migration-readiness-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  migration-readiness-runner:
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      checks: write
+    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Evaluate migration PR readiness
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && vars.SUPABASE_PROJECT_REF || '' }}
+        run: node scripts/migration-pr-readiness.mjs
