@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-513",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst rd=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch(e){return null}}\nconst S=rd(\"test/e2e/surfaces.ts\")\nif(S===null)fail(\"test/e2e/surfaces.ts is gone\")\nconst L=S.split(\"\\n\")\nconst gs=L.findIndex((l)=>l.includes(\"GLOBAL_MASK_SELECTORS: readonly\"))\nif(gs<0)fail(\"GLOBAL_MASK_SELECTORS is gone, so nothing applies any mask at all\")\nconst ge=L.findIndex((l,i)=>i>gs && l.trim()===\"]\")\nif(ge<0)fail(\"could not find the end of GLOBAL_MASK_SELECTORS, so this arm cannot measure anything\")\nif(!L.slice(gs,ge).join(\"\\n\").includes(\"[data-visual-mask]\"))fail(\"GLOBAL_MASK_SELECTORS no longer applies [data-visual-mask], so every registered mask paints nothing and the registry is decorative\")\nfor(const v of [\"admin-rail\",\"admin-kpis\"]){if(!new RegExp(\"value: .?\"+v+\"[^\\\\w-]\").test(S))fail(v+\" is not registered in VISUAL_MASK_SITES\")}\nconst R=rd(\"components/frequency/admin/admin-nav.tsx\")\nif(R===null)fail(\"the admin rail column component is gone\")\nif(!/data-visual-mask=\"admin-rail\"/.test(R))fail(\"the operator info rail is unmasked again: one member joining reds out four blocking admin baselines\")\nconst A=rd(\"app/(main)/admin/page.tsx\")\nif(A===null)fail(\"the admin dashboard page is gone\")\nif(!/data-visual-mask=\"admin-kpis\"/.test(A))fail(\"the /admin header KPIs are unmasked again, which is the extra diff that made /admin differ from its three siblings\")\nconsole.log(\"ok\")'",
+      "note": " Actual Frequency operator count masks replace the retired info-rail wrapper; capture roster, full-page and toolbar checks unchanged."
+    },
+    "source": {
+      "file": "components/frequency/admin/admin-nav.tsx",
+      "ref": "Actual Frequency operator navigation live queue-count masks; legacy unused wrapper retired by HYG-215"
+    }
+  },
+  "append": {
+    "detail": " HYG-215: Legacy wrapper was unmounted. Mask assertion now follows actual Frequency admin navigation live count badges; original roster/capture obligations remain."
+  }
+}

@@ -93,7 +93,7 @@ const REQUIRED_IMPORTS = [
   // Space subject + kind pickers (ADR-887).
   { file: 'components/spaces/space-business-info-form.tsx', module: '@/lib/taxonomy/subjects', symbols: ['SUBJECTS'] },
   { file: 'components/spaces/space-business-info-form.tsx', module: '@/lib/spaces/categories', symbols: ['SPACE_KINDS'] },
-  { file: 'components/spaces/spaces-toolbar.tsx', module: '@/lib/taxonomy/subjects', symbols: ['SUBJECTS'] },
+  { file: 'components/frequency/members/spaces/spaces-body.tsx', module: '@/lib/taxonomy/subjects', symbols: ['SUBJECTS'] },
   // Event category pickers + write gate. The settings rail's picker is the Event MANIFEST's select
   // (ADR-1281): the rail renders EVENT_MANIFEST through the kernel's edit plan, so the manifest is
   // the file that must import the vocabulary, and the module declares no picker of its own.

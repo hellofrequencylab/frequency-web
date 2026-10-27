@@ -86,7 +86,6 @@ const FIELD_CSS_ALLOWLIST = new Map([
   ['components/studio/practice/practice-builder.tsx', 'pre-kit: Practice builder'],
   ['components/studio/practice/practice-composer.tsx', 'pre-kit: Practice composer'],
   ['components/studio/market/listing-builder.tsx', 'pre-kit: Listing builder'],
-  ['components/studio/market/new-listing-button.tsx', 'pre-kit: New listing button'],
 ])
 
 // ── NON-TRIVIALITY FLOORS ────────────────────────────────────────────────────────────────────

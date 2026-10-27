@@ -1,7 +1,7 @@
 {
   "id": "HYG-215",
   "title": "Retire unused navigation UI and restore actual Frequency Drafts badge",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "hygiene",
   "size": "S",
@@ -9,10 +9,10 @@
     "file": "components/frequency/members/shell/drafts-count.tsx",
     "ref": "Actual server-resolved Drafts queue and zero runtime consumer audit"
   },
-  "detail": "Review split part1of2: restore the existing server-resolved myFrequency.drafts count to actual Frequency account and phone menu rows without new reads. Badge hides zero/invalid values, caps display at99+, carries accessible exact count and remains member gated. Actual-count/navigation consequence tests and canonical source comments follow the real consumers. The eight legacy UI/model retirements and associated admin/Space/viewport guard migrations are intentionally pending in the dependent second review patch; this part does not claim HYG215 complete. No product behavior differs from the approved original f6dd66168 patch; only review scope and this interim status differ.",
+  "detail": "Restore existing server-resolved myFrequency.drafts count to actual Frequency account and phone menu rows without new reads; badge hides zero/invalid values, caps display at99+, carries accessible exact count and remains member gated. Retire eight unused UI/model implementations. Keep shared analytics/readers, actual catalog permission reconciliation, Space app/order/scope tests, palette/route coverage and active Frequency replacements. Move historical viewport/event/visual mask probes to active consumers; preserve capture roster and canonical donation/telemetry constraints. Source/rendered/mock proof only; no deployment, production or browser acceptance claimed.",
   "verify": {
-    "kind": "manual",
-    "checked": "2026-10-27",
-    "evidence": "Partial review state: actual Drafts badge/wiring tests and existing nav compatibility tests must pass. Keep OPEN until the dependent eight-module retirement/guard migration patch is present and verified. No production, deployment or browser acceptance claim."
-  }
+    "kind": "cmd",
+    "cmd": "node scripts/probes/frequency-navigation-retirement.mjs"
+  },
+  "closed": "2026-10-27"
 }

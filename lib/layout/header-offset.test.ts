@@ -6,7 +6,7 @@ import { reDerivesHeaderHeight, APP_HEADER_H } from './header-offset'
 const CONSUMERS = [
   'components/frequency/members/shell/rail-layout.tsx',
   'components/layout/admin-bar/admin-bar.tsx',
-  'components/admin/admin-rail-drawer-column.tsx',
+  'components/frequency/admin/admin-shell.tsx',
 ]
 
 describe('the app header has one height (LIVE-492)', () => {

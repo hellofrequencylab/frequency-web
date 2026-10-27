@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-600",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const t=fs.readFileSync('components/spaces/donations/donate-cta-tracker.tsx','utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const d=fs.readFileSync('app/(main)/spaces/[slug]/settings/reach/page.tsx','utf8');process.exit(!/useEffect/.test(t)&&/getSpaceProfileEvidence\\\\(/.test(d)?0:1)\"",
+      "note": "Tracker still must avoid mount firing; actual Reach route reads current availability-aware profile telemetry. Rendered Reach receipt tests preserve metrics."
+    }
+  },
+  "append": {
+    "detail": " HYG-215: Profile telemetry consumption moved to actual Reach route; no privileged query added."
+  }
+}

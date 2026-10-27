@@ -42,7 +42,7 @@ const SURFACES: Surface[] = [
   // LIVE-206: the three list-shaped gaps LIVE-198 enumerated. The two Space surfaces read through
   // lib/events/store.ts listEventsForSpace, whose own COLS carries SERIES_COLUMNS; the public
   // reader folds the anon RPC, which returns the two columns since migration 20270345002100.
-  { path: 'components/spaces/dashboard/space-dashboard.tsx', sizing: 'seriesFetchLimit(', oldLimit: 'limit: 5 }', viaReader: true },
+  // Retired legacy dashboard list has no card-slot consumer. Active Frequency overview intentionally lists individual dated events.
   { path: 'components/widgets/entity/entity-cta.tsx', sizing: 'seriesFetchLimit(', oldLimit: 'limit: 8 }', viaReader: true },
   // No oldLimit on the two RPC readers: the same `_limit` literal legitimately sizes the circles
   // and posts RPCs in the same files.

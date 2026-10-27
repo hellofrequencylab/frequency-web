@@ -1165,9 +1165,9 @@ export const VISUAL_MASK_SITES: readonly {
   // differing by more is the same number rendered a second time.
   {
     value: 'admin-rail',
-    file: 'components/admin/admin-rail-drawer-column.tsx',
+    file: 'components/frequency/admin/admin-nav.tsx',
     kind: 'live',
-    why: 'The operator info rail, in the admin LAYOUT so every admin surface carries it: members, active this week, upcoming events and every attention queue count are live reads on each render.',
+    why: 'Actual Frequency admin navigation queue-count badges; only the live count is masked. Menu labels, links, layout and artwork remain photographed. The old info-rail component is retired.',
   },
   {
     value: 'admin-kpis',
@@ -1291,9 +1291,9 @@ export const VISUAL_MASK_SITES: readonly {
   },
   {
     value: 'discover-locator-cities',
-    file: 'components/discover/discover-locator.tsx',
+    file: 'components/frequency/site/pages/discover/parts.tsx',
     kind: 'live',
-    why: 'The locator city list: a per-city circle tally, re-ranked by the viewer’s IP-approximate location.',
+    why: 'Actual Frequency DxTowns list: live public city clusters and their Circle/event tallies. Town heading, search, privacy copy and Browse every town link remain photographed. The Frequency list does not claim legacy IP ranking.',
   },
   {
     // Frequency's /discover (PR #3434). Not data: a static brand photo, `loading="lazy"` ~2700 px
@@ -1514,33 +1514,21 @@ export const VISUAL_MASK_SITES: readonly {
   },
   {
     value: 'space-console-stats',
-    file: 'components/spaces/dashboard/space-dashboard.tsx',
+    file: 'components/frequency/admin/pages/overview/overview-body.tsx',
     kind: 'live',
-    why: 'The console’s top row: revenue over 30 days, member count, mean health and at-risk count, four DB readings in StatCards. The values are `tabular-nums` and the grid is a fixed 2x2 / 1x4, so the box holds as digits change.',
+    why: 'Actual Frequency overview KPI grids; live scoped readings, fixed grid. Titles and navigation remain photographed.',
   },
   {
     value: 'space-console-profile-stats',
-    file: 'components/spaces/dashboard/space-dashboard.tsx',
+    file: 'components/spaces/reach-receipt.tsx',
     kind: 'live',
-    why: 'Profile views and button clicks over a rolling 30-day window, two telemetry tallies. The grid only, not the section, so the SectionHeader above it stays photographed. `tabular-nums` StatCards; the box holds.',
+    why: 'Profile telemetry moved to Reach; actual receipt metric grid only, with surrounding explanation photographed.',
   },
   {
     value: 'space-console-journey-stats',
-    file: 'components/spaces/dashboard/space-dashboard.tsx',
+    file: 'components/frequency/admin/pages/overview/journey-completion-band.tsx',
     kind: 'live',
-    why: 'Enrolled, finished, still going and finish rate across the Space’s Journeys, four completion tallies. The grid only, not the section, so the SectionHeader stays photographed. `tabular-nums` StatCards; the box holds.',
-  },
-  {
-    value: 'space-console-activity',
-    file: 'components/spaces/dashboard/space-dashboard.tsx',
-    kind: 'live',
-    why: 'Latest activity: up to eight rows of the contact touch stream, each with a summary and relativeTime(). The <ul> only; the EmptyState beside it is not masked. A row-count change is a height the mask cannot hold, and is accepted.',
-  },
-  {
-    value: 'space-console-upcoming',
-    file: 'components/spaces/dashboard/space-dashboard.tsx',
-    kind: 'live',
-    why: 'Coming up: the next five events with their dates, from a `upcomingOnly` window that slides continuously. The <ul> only; the EmptyState beside it is not masked. A row-count change is a height the mask cannot hold, and is accepted.',
+    why: 'Actual Frequency Journey participation KPI grid; heading and Offerings link remain photographed.',
   },
 ]
 

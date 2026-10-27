@@ -307,7 +307,7 @@ import {
 } from './discovery'
 // The sort CONTROL's option list, checked against the reader's own valid set so the menu and the
 // query can never offer different orders.
-import { SPACE_SORT_OPTIONS } from '@/components/spaces/spaces-sort'
+import { SORTS as SPACE_SORT_OPTIONS } from '@/components/frequency/members/spaces/spaces-body'
 
 const VIEWER = 'viewer-0000-4000-a000-0000000viewr'
 
