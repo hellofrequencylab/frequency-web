@@ -31,6 +31,7 @@ import {
   SPACE_AUTOMATION_TRIGGERS,
   SPACE_AUTOMATION_ACTIONS,
   SPACE_AUTOMATION_TEMPLATES,
+  fillTemplateLinks,
   type SpaceAutomationTrigger,
   type SpaceAutomationAction,
   type EmailAudienceConfig,
@@ -593,13 +594,21 @@ export async function instantiateAutomationTemplate(
 
   // 2) The steps, in order (best-effort: the sequence already stands; the operator can add steps by hand
   //    if a step insert fails).
+  // Link tokens ({{space_url}}, {{spotlight_url}}) are filled once, here, with this Space's real pages.
+  let links: { space_url: string | null; spotlight_url: string | null } = { space_url: null, spotlight_url: null }
+  if (template.steps.some((s) => s.body.includes('{{'))) {
+    const { getSpaceById } = await import('@/lib/spaces/store')
+    const { SITE_URL } = await import('@/lib/site')
+    const space = await getSpaceById(spaceId)
+    if (space) links = { space_url: `${SITE_URL}/spaces/${space.slug}`, spotlight_url: `${SITE_URL}/settings/profile/spotlight` }
+  }
   const stepRows = template.steps.map((s, i) => ({
     sequence_id: sequenceId,
     space_id: spaceId,
     step_order: i + 1,
     delay_hours: normalizeDelayHours(s.delayHours),
     subject: normalizeSubject(s.subject),
-    body: normalizeBody(s.body),
+    body: normalizeBody(fillTemplateLinks(s.body, links)),
   }))
   if (stepRows.length > 0) {
     try {

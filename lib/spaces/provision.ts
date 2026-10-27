@@ -335,6 +335,11 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
     if (applied?.ok) {
       const { publishStarterSite } = await import('@/lib/spaces/starter-site')
       if (!(await publishStarterSite(spaceId, input.theme))) console.error('[createSpace] could not publish the starter website')
+      // And the Theme Kit welcome: a sequence that links the Space page and the member's Spotlight. Created OFF
+      // (the owner turns it on), best-effort like the rest of birth. Space email already wears the theme.
+      const { instantiateAutomationTemplate } = await import('@/lib/spaces/automation')
+      const welcome = await instantiateAutomationTemplate(spaceId, 'kit-welcome').catch(() => null)
+      if (!welcome || 'error' in welcome) console.error('[createSpace] could not add the Theme Kit welcome')
     }
   }
 
