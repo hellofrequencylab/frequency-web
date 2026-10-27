@@ -1,0 +1,12 @@
+{
+  "id": "HYG-200",
+  "title": "Restore Journey completion analytics in the active Frequency Space overview",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": { "file": "components/frequency/admin/pages/overview/journey-completion-band.tsx", "ref": "LIVE-422: legacy dashboard reader existed but active gated overview omitted it" },
+  "detail": "The runtime-graph review found a real wiring gap, not disposable dead analytics. Restore enrolled/finished/still-going/finish-rate metrics in the active Frequency overview behind the existing manage/staff gate. Reuse the owning-Space plan/enrollment scope and unique-person folding; preserve legacy API behavior while adding an availability-aware read so errors or bounded partial populations display unavailable rather than fabricated zero. Stable enrollment pages avoid silently reporting the API row cap as all-time totals; more than 200 plans or reaching the 10000-enrollment-row proof bound remains explicitly unavailable. Rendered fixtures cover measured data, measured zero and unavailable; existing cross-Space/retake contracts remain, with additional page/failure bounds. No new data collection, consent change, migration, public endpoint or production operation. Scripted/rendered proof only; authenticated browser/production acceptance remains separate.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/space-journey-completion-wiring.mjs" },
+  "closed": "2026-10-27"
+}
