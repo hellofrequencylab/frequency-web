@@ -1556,17 +1556,18 @@ export function OnAirSession({
             clock lands. Finish and Close BOTH log and move on — ending early is never punished.
             Pinned to the bottom and always visible even when the content above scrolls. */}
         <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-canvas px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
-          <button
+          <Button
             type="button"
             onClick={() => {
               if (preroll !== null) { begin(); return } // override the countdown, begin now
               if (ended) { void finish(false); return }
               togglePause()
             }}
-            className="min-w-44 rounded-pill bg-primary px-10 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+            size="lg"
+            className="min-w-44"
           >
             {preroll !== null ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => void finish(!ended)}
