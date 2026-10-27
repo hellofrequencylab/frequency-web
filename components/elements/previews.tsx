@@ -76,7 +76,7 @@ function HeaderPreview() {
   )
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" role="group" aria-label="Sort header previews">
         <ArrowDownUp className="h-3.5 w-3.5 text-subtle" aria-hidden />
         <span className={capsLabel('text-2xs text-muted')}>Sort</span>
         {(['name', 'type'] as const).map((s) => (
@@ -84,6 +84,7 @@ function HeaderPreview() {
             key={s}
             type="button"
             onClick={() => setSort(s)}
+            aria-pressed={sort === s}
             className={`rounded-md px-2 py-0.5 text-meta font-medium capitalize transition-colors ${sort === s ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'}`}
           >
             {s}

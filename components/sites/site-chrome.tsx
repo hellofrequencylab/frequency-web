@@ -12,8 +12,11 @@ import { NETWORK_CSS } from './network-css'
 import { TEMPLE_CSS } from './temple-css'
 import { MIDNIGHT_CSS } from './midnight-css'
 import { DESIGNER_CSS } from './designer-css'
+import { DesignerFooterTop, DesignerUtilityBar, phoneMenuFoot } from './designer-chrome'
+import { DesignerHeaderState } from './designer-header-state'
 import { MidnightLogo } from './midnight-logo'
 import { MidnightBar } from './midnight-bar'
+import { MidnightLetterForm } from './midnight-letter-form'
 import type { NetworkSchemeId } from '@/lib/theme/network'
 import { WildheartSubBar } from './wildheart-now-line'
 import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
@@ -107,6 +110,7 @@ export function SiteChrome({
   footer = null,
   checkIn = null,
   credit = 'badge',
+  spaceSlug = null,
   children,
 }: {
   brandName: string
@@ -153,6 +157,8 @@ export function SiteChrome({
   /** How the footer credits Frequency (LIVE-1117): the Partner badge (default), a quiet text line, or nothing.
    *  Already gated: the page passes 'none' only for a Space that holds badge removal (lib/sites/site-badge.ts). */
   credit?: FooterBadgeMode
+  /** The Space's slug, for the footer's letter sign-up (Designer). Null in an editor preview, where the form is inert. */
+  spaceSlug?: string | null
   children: ReactNode
 }) {
   const adminLinks = skin ? admin : admin ? { ...admin, menu: admin.menu.filter((l) => l.label === 'Website builder') } : null
@@ -181,6 +187,7 @@ export function SiteChrome({
       fadeOnPause={fadeOnPause}
       member={member}
       tools={tools}
+      menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}
       brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : null}
     />
   )
@@ -200,7 +207,8 @@ export function SiteChrome({
       className="hs-root"
     >
       <style>{skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
-      {midnight && <MidnightBar now={new Date()} next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} />}
+      {designer && <DesignerHeaderState />}
+      {midnight && <MidnightBar now={new Date()} next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />}
       {wild && <WildheartInkDefs />}
       {wild ? (
         <>
@@ -210,6 +218,11 @@ export function SiteChrome({
           </div>
           <div className="wh-fixed-spacer" aria-hidden />
         </>
+      ) : designer ? (
+        <div className="dz-top">
+          {footer?.utility && <DesignerUtilityBar utility={footer.utility} />}
+          {header}
+        </div>
       ) : (
         header
       )}
@@ -218,7 +231,8 @@ export function SiteChrome({
       <main id="top">{children}</main>
 
       <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : undefined}>
-      {(showBrandFooter ?? !!skin) && (
+      {designer && (showBrandFooter ?? !!skin) && <DesignerFooterTop footer={footer} brandName={brandName} homeHref={homeHref} logoUrl={logoUrl ?? null} slug={spaceSlug} />}
+      {!designer && (showBrandFooter ?? !!skin) && (
         <div className="hs-footer-top" data-columns={footer?.columns.length ? '' : undefined}>
           <div className="hs-footer-brand">
             <a href={homeHref} className="hs-brand">
@@ -235,6 +249,12 @@ export function SiteChrome({
               )}
             </a>
             {(footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
+            {midnight && footer?.subscribe && (
+              <div className="mn-footer-subscribe">
+                <p className="mn-footer-subscribe-title">{footer.subscribe.title.replace(/\*/g, '')}</p>
+                <MidnightLetterForm slug={spaceSlug ?? null} placeholder={footer.subscribe.placeholder} buttonLabel={footer.subscribe.button} successMessage={footer.subscribe.success} />
+              </div>
+            )}
           </div>
           {footer?.columns.length ? (
             footer.columns.map((col) => (
@@ -266,7 +286,7 @@ export function SiteChrome({
       )}
       <footer className="hs-footer">
         <span>
-          © {year} {brandName}
+          {footer?.copyright ?? `© ${year} ${brandName}`}
           {footer?.suffix && (
             <>
               {' · '}

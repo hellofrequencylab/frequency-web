@@ -1,7 +1,7 @@
 'use client'
 
 // The public RSVP form (ADR-154) on the Frequency design. The SAME behaviour as
-// app/(marketing)/rsvp/[token]/form.tsx: the inviter and the event ride the signed token only, which goes
+// the signed-token RSVP flow: the inviter and the event ride the signed token only, which goes
 // back to submitEventGuest untouched (the server re-verifies it); one calm confirmation for everyone; no
 // mailing-list sign-up rides on an RSVP.
 

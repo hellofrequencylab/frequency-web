@@ -10,6 +10,7 @@ import { LOCATION_BAND_OPTIONS, type LocationBand } from '@/lib/connections/loca
 import { saveConnectionSettings } from '@/lib/connections/connection-settings-actions'
 import type { ConnectionSettings } from '@/lib/connections/connection-settings'
 import { Switch } from '@/components/ui/switch'
+import { buttonClasses } from '@/components/ui/button'
 
 // The admin console for the connection-layer singleton (ADR-186). Three groups:
 // Features (the platform-wide master switches that gate whole capabilities), Privacy
@@ -216,7 +217,7 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className={buttonClasses('primary', 'sm')}
         >
           {pending ? 'Saving…' : 'Save changes'}
         </button>

@@ -117,6 +117,18 @@ describe('private connection store', () => {
     expect(await saveSearchConnection(consumed.binding, { ...tokens(), scopes: [...tokens().scopes, 'https://www.googleapis.com/auth/webmasters'] })).toBe(false)
     expect(m.rows[0].state).toBe('exchanging')
   })
+  it.each(['google_search_console', 'bing_webmaster'] as const)('persists only an exact single canonical read permission for %s', async selected => {
+    const read = selected === 'google_search_console' ? 'https://www.googleapis.com/auth/webmasters.readonly' : 'Webmaster.read'
+    const write = selected === 'google_search_console' ? 'https://www.googleapis.com/auth/webmasters' : 'Webmaster.manage'
+    const started = (await beginSearchConnection('space', selected, selected === 'google_search_console' ? 'sc-domain:example.com' : 'https://example.com/', selected === 'google_search_console' ? 'page_urls' : 'dedicated_property'))!
+    const consumed = (await consumeSearchConnection(selected, started.state))!
+    for (const scopes of [[`prefix:${read}`], [`${read}.suffix`], [read.slice(0, -1)], [read, write], [read, 'unknown'], [read, read]]) {
+      expect(await saveSearchConnection(consumed.binding, { ...tokens(), scopes })).toBe(false)
+      expect(m.rows[0].tokens_ciphertext).toBeNull()
+    }
+    expect(await saveSearchConnection(consumed.binding, { ...tokens(), scopes: [read] })).toBe(true)
+    expect((await loadSearchConnection('space', selected))?.tokens.scopes).toEqual([read])
+  })
   it('does not persist callback tokens when actor permission disappears during provider IO', async () => {
     const started = (await begin())!, consumed = (await consumeSearchConnection(provider, started.state))!
     m.permitted = false

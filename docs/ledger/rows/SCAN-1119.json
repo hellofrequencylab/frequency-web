@@ -5,6 +5,10 @@
       "kind": "manual",
       "checked": "2026-10-26",
       "evidence": "OPEN: lazy shell source and delayed-trigger regression cases pass, preserving first scoped requests, focus, desktop restore and storage denial. Both AdminBar and SearchOverlay are conditionally mounted behind dynamic imports; the artifact shell ceiling stays 1100 KB. Close only after the exact integrated revision has a fresh real Frequency artifact with measured shell chunks/bytes and all unchanged postbuild gates passing, plus actual settings open/close/resize and search acceptance. The repaired source probe measures the split, not artifact bytes."
+    },
+    "source": {
+      "file": "components/frequency/members/shell/members-shell.tsx",
+      "ref": "Active Frequency header/rail entry; original meta scan 2026-10-26"
     }
   },
   "append": {

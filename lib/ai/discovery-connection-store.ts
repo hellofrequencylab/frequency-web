@@ -71,8 +71,8 @@ async function persist(bound: SearchConnectionBinding, raw: SearchConnectionToke
   try {
     const tokens = tokenValue(raw)
     const required = bound.provider === 'google_search_console' ? 'https://www.googleapis.com/auth/webmasters.readonly' : 'Webmaster.read'
-    const forbidden = bound.provider === 'google_search_console' ? 'https://www.googleapis.com/auth/webmasters' : 'Webmaster.manage'
-    if (!tokens?.scopes.includes(required) || tokens.scopes.includes(forbidden)) return false
+    // Exactly one canonical read permission, never substring/prefix membership or mixed grants.
+    if (!tokens || tokens.scopes.length !== 1 || tokens.scopes[0] !== required) return false
     if (!tokens || !Number.isSafeInteger(bound.revision) || bound.revision < 1 || Date.parse(tokens.expiresAt) <= Date.now() || !providerValid(bound.provider) || !(await authority(bound.spaceId, bound))) return false
     const sealed = sealSearchSecret(bound, 'tokens', tokens)
     if (!sealed || !(await authority(bound.spaceId, bound))) return false

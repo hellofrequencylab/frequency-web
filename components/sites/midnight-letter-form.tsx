@@ -9,7 +9,8 @@ import { submitContactForm } from '@/app/(main)/spaces/[slug]/contact-form-actio
 // Space resolved from the slug server-side, a honeypot and a rate limit above the write). A null slug is the
 // editor's preview: the same markup, inert.
 
-export function MidnightLetterForm({ slug, placeholder, buttonLabel, successMessage }: { slug: string | null; placeholder: string; buttonLabel: string; successMessage: string }) {
+export function MidnightLetterForm({ slug, placeholder, buttonLabel, successMessage, askName = false }: { slug: string | null; placeholder: string; buttonLabel: string; successMessage: string; askName?: boolean }) {
+  const [first, setFirst] = useState('')
   const [email, setEmail] = useState('')
   const [company, setCompany] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle')
@@ -21,7 +22,7 @@ export function MidnightLetterForm({ slug, placeholder, buttonLabel, successMess
     setError(null)
     setStatus('loading')
     try {
-      const res = await submitContactForm({ slug, name: '', email, phone: '', message: '', optIn: true, company })
+      const res = await submitContactForm({ slug, name: first.trim(), email, phone: '', message: '', optIn: true, company })
       if (res.ok) setStatus('done')
       else {
         setError(res.error)
@@ -37,7 +38,12 @@ export function MidnightLetterForm({ slug, placeholder, buttonLabel, successMess
 
   return (
     <form className="mn-letter-form" onSubmit={onSubmit}>
-      <Field label="Email" className="mn-letter-field">
+      {askName && (
+        <Field label="First name" className="mn-letter-field">
+          <Input type="text" required autoComplete="given-name" value={first} onChange={(e) => setFirst(e.target.value)} disabled={slug === null} />
+        </Field>
+      )}
+      <Field label="Email" className="mn-letter-field mn-letter-field--wide">
         <Input type="email" required autoComplete="email" placeholder={placeholder} value={email} onChange={(e) => setEmail(e.target.value)} disabled={slug === null} />
       </Field>
       <Input className="mn-hp" type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" value={company} onChange={(e) => setCompany(e.target.value)} />

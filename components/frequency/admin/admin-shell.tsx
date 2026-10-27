@@ -58,6 +58,8 @@ export interface AdminShellProps {
    *  the sidebar to one row per section. Off, the pages sit under the active sidebar row (the Space console). */
   topMenu?: boolean
   me: { name: string; avatarUrl: string | null; href: string }
+  /** The member rail already owns main#main. Standalone shells keep their own landmark. */
+  withinMain?: boolean
   children: ReactNode
 }
 
@@ -135,7 +137,8 @@ function TopLinks({ links }: { links: AdminShellLink[] }) {
   )
 }
 
-export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search, alerts, links = [], topMenu = false, me, children }: AdminShellProps) {
+export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search, alerts, links = [], topMenu = false, me, withinMain = false, children }: AdminShellProps) {
+  const Content = withinMain ? 'div' : 'main'
   return (
     <div data-kit="members" data-energy="still">
       <div data-kit="admin">
@@ -183,7 +186,7 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
             <Suspense fallback={null}>
               {topMenu ? <AdminTopMenu items={items} /> : <AdminPhoneStrip items={items} />}
             </Suspense>
-            <main className="ad-main"><ConsoleSlide>{children}</ConsoleSlide></main>
+            <Content className="ad-main"><ConsoleSlide>{children}</ConsoleSlide></Content>
           </div>
         </div>
         <Suspense fallback={null}>

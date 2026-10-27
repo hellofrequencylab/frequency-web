@@ -1,6 +1,15 @@
 {
   "id": "SCAN-1130",
   "append": {
-    "detail": " 2026-10-26 (SCAN-1129 thread): first slice. The Space AccentScope, resolveTheme and the Settings appearance switcher no longer read LEGACY_THEME_AXES: Feel and Seasonal accent controls and their server actions are gone. Still open: app/(main)/layout.tsx reads LEGACY_THEME_AXES (owned by the admin and layout thread), then delete the export and DesignDef.legacyAxes, then skins, generations, occasions, design-fonts/dawn and the DAWN blocks in app/globals.css."
+    "detail": " 2026-10-26 (SCAN-1129 thread): first slice. The Space AccentScope, resolveTheme and the Settings appearance switcher no longer read LEGACY_THEME_AXES: Feel and Seasonal accent controls and their server actions are gone. Still open: app/(main)/layout.tsx reads LEGACY_THEME_AXES (owned by the admin and layout thread), then delete the export and DesignDef.legacyAxes, then skins, generations, occasions, design-fonts/dawn and the DAWN blocks in app/globals.css.\n\nLEGACY_THEME_AXES and DesignDef.legacyAxes are gone (#4059, #4058, this PR). The generation and occasion CSS blocks, skins and design-fonts/dawn continue as HYG-187.\n\n 2026-10-26 (SCAN-1129 thread): first slice. The Space AccentScope, resolveTheme and the Settings appearance switcher no longer read LEGACY_THEME_AXES: Feel and Seasonal accent controls and their server actions are gone. Still open: app/(main)/layout.tsx reads LEGACY_THEME_AXES (owned by the admin and layout thread), then delete the export and DesignDef.legacyAxes, then skins, generations, occasions, design-fonts/dawn and the DAWN blocks in app/globals.css. Global error boundary now always renders the existing Frequency document; retired unreachable DAWN fallback removed. Preserves its own html/body, data-design=frequency, token-sheet imports, AuthFrame, reset callback, full-load home link and Sentry effect. Aggregate legacy-axis retirement remains open."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-27",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs legacy-axes",
+      "note": "Passes once no LEGACY_THEME_AXES reader or export is left."
+    }
   }
 }

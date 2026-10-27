@@ -50,7 +50,7 @@ const checks = {
   'events-today': () => !/new Date\(\)\.toISOString\(\)\.slice\(0, ?10\)/.test(read('lib/events/store.ts')),
   'dawn-ui': () => filesMatching(['components/ui', 'components/templates'], /SITE_DESIGN/).length === 0,
   'dawn-public': () => filesMatching(['app/(marketing)', 'app/(public)', 'app/discover', 'app/(help)', 'app/for'], /SITE_DESIGN/).length === 0,
-  'dawn-member': () => filesMatching(['app/(main)'], /SITE_DESIGN/).length === 0,
+  'dawn-member': async () => (await import('../lib/member-design-branches.mjs')).memberDesignBranchReport().failures.length === 0,
   'legacy-axes': () => filesMatching(['lib', 'app', 'components'], /LEGACY_THEME_AXES/).length === 0,
   'kit-chrome': () => !/prose-gray/.test(read('components/legal/legal-page.tsx')) && !/min-h-screen/.test(read('components/crm/leads/capture-shell.tsx')),
   'shell-px': () => ['components/layout/app-shell-mobile.tsx', 'components/layout/app-shell-nav-list.tsx'].every((f) => !/\[\d+px\]/.test(read(f))),
