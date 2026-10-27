@@ -20,6 +20,8 @@ const enrollments: EnrollRow[] = []
 let planError: { message: string } | null = null
 let enrollError: { message: string } | null = null
 let failFrom: number | null = null
+let rowCap: number | null = null
+let missingCount = false
 const queries: Array<{ table: string; spaceId?: string; planIds?: string[] }> = []
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -42,15 +44,16 @@ vi.mock('@/lib/supabase/admin', () => ({
         limit: () => api,
         order: () => api,
         range: (start: number, end: number) => { from = start; to = end; return api },
-        then: (resolve: (v: { data: unknown; error: { message: string } | null }) => void) => {
+        then: (resolve: (v: { data: unknown; error: { message: string } | null; count?: number | null }) => void) => {
           if (table === 'journey_plans') {
-            return resolve({ data: planError ? null : plans, error: planError })
+            return resolve({ data: planError ? null : plans, error: planError, count: missingCount ? null : plans.length })
           }
           if (table === 'journey_enrollments') {
             const ids = new Set(q.planIds ?? [])
-            const rows = enrollments.filter((r) => ids.has(r.plan_id)).slice(from, to + 1)
+            const scoped = enrollments.filter((r) => ids.has(r.plan_id))
+            const rows = scoped.slice(from, Math.min(to + 1, rowCap === null ? Number.POSITIVE_INFINITY : from + rowCap))
             const error = enrollError ?? (failFrom !== null && from >= failFrom ? { message: 'later page unavailable' } : null)
-            return resolve({ data: error ? null : rows, error })
+            return resolve({ data: error ? null : rows, error, count: missingCount ? null : scoped.length })
           }
           throw new Error(`unexpected table ${table}`)
         },
@@ -122,6 +125,8 @@ describe('getSpaceCompletionAnalytics', () => {
     planError = null
     enrollError = null
     failFrom = null
+    rowCap = null
+    missingCount = false
   })
 
   it('binds the Space, then folds enrollments on those plans', async () => {
@@ -180,7 +185,7 @@ describe('getSpaceCompletionAnalytics', () => {
 })
 
 describe('availability-aware Frequency completion reader', () => {
-  beforeEach(() => { plans.length = 0; enrollments.length = 0; queries.length = 0; planError = null; enrollError = null; failFrom = null })
+  beforeEach(() => { plans.length = 0; enrollments.length = 0; queries.length = 0; planError = null; enrollError = null; failFrom = null; rowCap = null; missingCount = false })
   it('distinguishes measured empty data from a failed read', async () => {
     expect(await readSpaceCompletionAnalytics('space-1')).toMatchObject({ journeyCount: 0, enrolled: 0, completionPct: null })
     planError = { message: 'unavailable' }
@@ -220,7 +225,19 @@ describe('availability-aware Frequency completion reader', () => {
     plans.push({ id: 'j1' })
     for (let i = 0; i < 10000; i++) enrollments.push(row('j1', `p${i}`))
     expect(await readSpaceCompletionAnalytics('space-1')).toBeNull()
-    expect(queries.filter(q => q.table === 'journey_enrollments')).toHaveLength(20)
+    expect(queries.filter(q => q.table === 'journey_enrollments')).toHaveLength(1)
+  })
+
+  it('does not mistake a smaller server row cap for the full population', async () => {
+    plans.push({ id: 'j1' })
+    rowCap = 100
+    for (let i = 0; i < 201; i++) enrollments.push(row('j1', `p${i}`))
+    expect(await readSpaceCompletionAnalytics('space-1')).toMatchObject({ enrolled: 201 })
+    expect(queries.filter(q => q.table === 'journey_enrollments')).toHaveLength(3)
+  })
+  it('fails closed when the server cannot prove exact population coverage', async () => {
+    missingCount = true
+    expect(await readSpaceCompletionAnalytics('space-1')).toBeNull()
   })
 
 })

@@ -16,6 +16,9 @@ export function spaceJourneyCompletionWiring(read = p => readFileSync(p, 'utf8')
   assert.match(reader, /\.eq\('space_id', spaceId\)/, 'plan ownership scope missing')
   assert.match(reader, /\.in\('plan_id', planIds\)/, 'enrollment ownership scope missing')
   assert.match(reader, /\.order\('id'\)\s*\.range\(/, 'all-time totals need stable explicit pages')
+  assert.match(reader, /count: 'exact'/, 'server population proof must be explicit')
+  assert.match(reader, /planCount !== planIds\.length/, 'an incomplete plan list cannot become a total')
+  assert.match(reader, /rows\.length === count/, 'population proof must precede publishing totals')
   assert.match(reader, /return result\.available \? result\.stats : null/, 'partial totals cannot masquerade as measured zeros')
   return true
 }
