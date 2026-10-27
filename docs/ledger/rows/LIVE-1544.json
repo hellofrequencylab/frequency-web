@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1544",
+  "title": "Visitors read Theme Kits and Nocturne: the /themes pages, the Nocturne sales page and their SEO titles use the new names",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/themes/library.ts",
+    "ref": "LIVE-1514"
+  },
+  "detail": "Copy only. \"Mega Theme\" reads as Theme Kits and the Midnight theme as Nocturne on /themes, /themes/[theme] and the Midnight feature page (themeDisplayName in lib/themes/library.ts, SEO titles in lib/seo/frequency-pages.ts). Ids, the Midnight editor value, saved site styles and the /themes/midnight address are unchanged. Still on the old name until Daniel releases the pins: the in-product theme picker label (site-style.test.ts pins it) and the /themes/midnight address (midnight-feature-page and midnight-demo probes pin it).",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "lib/themes/library.ts exports themeDisplayName and maps midnight to Nocturne.",
+    "cmd": "node -e 'const f=require(\"fs\");const t=f.readFileSync(\"lib/themes/library.ts\",\"utf8\");if(!t.includes(\"themeDisplayName\")||!t.includes(\"Nocturne\")){console.error(\"the Nocturne display name is gone\");process.exit(1)}'"
+  }
+}

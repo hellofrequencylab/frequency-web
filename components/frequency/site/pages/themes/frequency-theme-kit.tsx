@@ -11,7 +11,7 @@ import '@/app/themes/active/site-pages-b'
 import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { SITE_THEMES } from '@/lib/theme/site-style'
-import { THEME_LOOK_CONTROLS, THEME_TOOLS, themeLibraryEntry } from '@/lib/themes/library'
+import { THEME_LOOK_CONTROLS, THEME_TOOLS, themeDisplayName, themeLibraryEntry } from '@/lib/themes/library'
 import { ThemePicture } from './theme-picture'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
@@ -46,7 +46,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
   if (!site || !entry) return null
   const editor = MEGA_THEMES.find((m) => m.id === theme)?.editor
   const kits = [...KIT_INDEX, ...PROFILE_KIT_INDEX].filter((k) => k.theme === editor)
-  const name = site.label
+  const name = themeDisplayName(site.id, site.label)
   // Start a Space already wearing this theme: Space creation reads ?theme= (and ?niche= for a starter kit).
   const startHref = `/spaces/new?theme=${theme}`
   return (

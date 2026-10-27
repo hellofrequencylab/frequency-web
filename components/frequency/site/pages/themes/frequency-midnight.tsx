@@ -15,7 +15,7 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
 }
 
-/** The pains a guide, teacher or healer names, and what Midnight does about each. Copy only. */
+/** The pains a guide, teacher or healer names, and what Nocturne does about each. Copy only. */
 export const MIDNIGHT_PAINS: { pain: string; why: string; fix: string }[] = [
   {
     pain: 'People tap my bio link, look around, and leave.',
@@ -51,7 +51,7 @@ export const MIDNIGHT_SURFACES: { step: string; name: string; body: string; live
     name: 'Spotlight',
     body: 'Your link-in-bio page. The same hero, doors and featured offer your website opens with.',
     lives: 'Its own Spotlight link',
-    wears: 'Midnight in full',
+    wears: 'Nocturne in full',
     changes: 'Your bio link sells something on the first tap.',
   },
   {
@@ -67,7 +67,7 @@ export const MIDNIGHT_SURFACES: { step: string; name: string; body: string; live
     name: 'Website',
     body: 'Booking, gatherings, Journeys, membership and a shop as you need them. Built from the same blocks, so nothing is written twice.',
     lives: 'Your own domain',
-    wears: 'Midnight in full',
+    wears: 'Nocturne in full',
     changes: 'A complete site, without starting again.',
   },
 ]
@@ -79,7 +79,7 @@ export const MIDNIGHT_CARRIES: { what: string; where: string }[] = [
   { what: 'Accent colour', where: 'All three. On Frequency it paints the buttons and tabs.' },
   { what: 'Offers, dates and prices', where: 'All three' },
   { what: 'Headlines and copy', where: 'Spotlight and website' },
-  { what: 'Page frame', where: 'Midnight on Spotlight and website; Frequency on your Space' },
+  { what: 'Page frame', where: 'Nocturne on Spotlight and website; Frequency on your Space' },
 ]
 
 const KIT_NICHES: CoreKitNiche[] = ['coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks']
@@ -128,15 +128,15 @@ export function FrequencyMidnight() {
             <span aria-hidden="true">/</span>
             <Link href="/spaces">For Spaces</Link>
             <span aria-hidden="true">/</span>
-            <span aria-current="page">Midnight</span>
+            <span aria-current="page">Nocturne</span>
           </nav>
           <h1 className="h-xl">
-            Midnight, a mega theme. <em className="fq-iri-text">Set it up once.</em>
+            Nocturne, a Theme Kit. <em className="fq-iri-text">Set it up once.</em>
           </h1>
           <p>For guides, teachers and healers. Your Spotlight, your Space on Frequency and your own website, kept in step.</p>
           <div className="ctas">
             <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
-              Use Midnight
+              Use Nocturne
             </a>
             <MidnightPreview />
             <Link className="btn btn-ghost fq-iri-rim" href="/pricing">
@@ -155,7 +155,7 @@ export function FrequencyMidnight() {
             </div>
             <h2 className="h-l">The work is good. The setup gets in the way.</h2>
             <p className="pb-note">
-              A link page, a booking tool, a payments app, an email list and a website, all saying slightly different things. Midnight
+              A link page, a booking tool, a payments app, an email list and a website, all saying slightly different things. Nocturne
               replaces the patchwork.
             </p>
           </div>
@@ -165,7 +165,7 @@ export function FrequencyMidnight() {
                 <h3>{p.pain}</h3>
                 <p>{p.why}</p>
                 <p>
-                  <b>With Midnight.</b> {p.fix}
+                  <b>With Nocturne.</b> {p.fix}
                 </p>
               </div>
             ))}
@@ -213,7 +213,7 @@ export function FrequencyMidnight() {
               <b>One site record</b>Three surfaces
             </div>
             <h2 className="h-l">Change it once.</h2>
-            <p className="pb-note">People check you in more than one place. Midnight keeps what they find in step, so you update it one time.</p>
+            <p className="pb-note">People check you in more than one place. Nocturne keeps what they find in step, so you update it one time.</p>
           </div>
           <div className="tg-row two">
             {MIDNIGHT_CARRIES.map((c) => (
@@ -285,7 +285,7 @@ export function FrequencyMidnight() {
       <KeepGoing
         title="Start with your Spotlight."
         body="Free to start. Business when you charge."
-        primary={{ href: OPERATOR_START_HREF, label: 'Use Midnight →' }}
+        primary={{ href: OPERATOR_START_HREF, label: 'Use Nocturne →' }}
         secondary={{ href: '/pricing', label: 'See every plan' }}
       />
     </>
