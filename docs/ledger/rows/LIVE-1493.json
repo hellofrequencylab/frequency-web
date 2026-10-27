@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1493",
+  "title": "Alli Rae and the Designer theme match the design system detail for detail",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/alli-rae-fidelity.mjs"
+  },
+  "detail": "Follows LIVE-1492 after a second side-by-side pass against the Alli Rae design system found the first pass had missed the chrome. Designer now draws a transparent header over the hero that turns solid after 60px, a utility bar, dropdown items with a title and a line, the closing band and footer (brand tile, contact lines, hours, follow, Subscribe through the lead door), the hero parallax, glass service tiles, the testimonial arch overlap, the numbered FAQ with one open at a time, labelled form fields with checkbox chips, and the page-size hero. The saved footer gains logo, band, subscribe and utility; the seed also writes the saved menu (Contact and Portfolio dropdowns, About). Live Space data needs the re-seed update SQL after this merges.",
+  "wave": "W7"
+}

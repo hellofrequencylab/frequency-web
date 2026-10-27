@@ -64,7 +64,7 @@ const FAQS = [
   { q: 'Do I need to have plans or an architect first?', a: 'Not at all. Many of our clients come to us with only a vision. We help fill in the blanks. We can collaborate with your architect or bring in our own design team to develop your home from the ground up. To ensure a seamless experience we recommend using our team, that way, any changes are dealt with effortlessly.' },
   { q: 'What’s your typical project size or scope?', a: 'We specialize in full-home custom homes, remodels and large renovations. While every project is unique, most of our work ranges from $1M to $5M+. If you’re not sure where yours fits, we’re happy to talk through it.' },
   { q: 'How involved will I need to be in the process?', a: 'That’s entirely up to you. Some clients love picking every finish; others want full trust and minimal meetings. We offer clear guidance, curated options, and full project oversight, so you’re never overwhelmed, just supported.' },
-  { q: 'What services do you offer in-house?', a: `We know there’s many layers and details to bringing a vision to life, that’s why our expert team and vast network offers a robust amount of services to cover your every need. Collaboration, communication and expertise is key to a timely and seamless design and build out of a project, so we offer it all in-house start to finish. That includes ${SERVICES.slice(0, -1).join(', ').replace(/,([^,]*)$/, ',$1')} and ${SERVICES[SERVICES.length - 1]}.` },
+  { q: 'What services do you offer in-house?', a: `We know there’s many layers and details to bringing a vision to life, that’s why our expert team and vast network offers a robust amount of services to cover your every need. Collaboration, communication and expertise is key to a timely and seamless design and build out of a project, so we offer it all in-house start to finish.`, list: SERVICES.join('\n') },
 ]
 
 const hero = (image: string, eyebrow: string, title: string, lead: string, strip: { label: string; value: string }[], extra: Record<string, unknown> = {}) =>
@@ -93,7 +93,7 @@ const home = () => [
     ],
   }),
   b('DesignerFounder', {
-    eyebrow: 'Meet the Founder', title: 'Led by Vision. Grounded in Execution.', lead: 'Alli Rae blends creative vision with construction fluency, a rare combination in the world of custom homebuilding.',
+    eyebrow: 'Meet the Founder', title: 'Led by Vision. Grounded in Execution.', lead: '*Alli Rae* blends creative vision with construction fluency, a rare combination in the world of custom homebuilding.',
     paragraphs: 'With over a decade inside every phase of the process, from permitting and structural planning to finish selections and furniture placement, she leads with design, but builds with discipline.\n\nThat’s what makes the results feel so cohesive, and the process feel surprisingly calm.\n\nShe founded Alli Rae Build + Design to be the kind of firm she wished existed. One where the vision is clear, the communication is steady, and the experience is as beautiful as the outcome.',
     buttonLabel: 'Learn More About Me', buttonHref: '~/about', image: i('alli-rae-portrait'), alt: 'Alli Rae, founder', quote: 'She leads with design, but builds with discipline.', quoteBy: 'Alli Rae, Founder',
   }),
@@ -112,14 +112,13 @@ const home = () => [
 const about = () => [
   hero(i('about-team'), 'About', 'A Design + Build Firm that takes you from *Permits to Pillows.*', 'Your experience before, during and after should be navigated with ease and excitement as if you were opening your front door for the first time.',
     [{ label: 'Based in', value: 'Vista, CA' }, { label: 'License', value: ALLI_RAE.license }, { label: 'Hours', value: ALLI_RAE.hours }],
-    { primaryLabel: 'Build Your Dream Now', primaryHref: '~/ready-to-build', secondaryLabel: 'Schedule Consultation', secondaryHref: '~/book-a-consultation' }),
+    { size: 'page', primaryLabel: 'Build Your Dream Now', primaryHref: '~/ready-to-build', secondaryLabel: 'Schedule Consultation', secondaryHref: '~/book-a-consultation' }),
   b('DesignerStatement', { eyebrow: 'Who We Are', title: '', lead: 'When you need a vision, a feeling, an idea translated into reality we come along side you every step of the way. We are the only San Diego Design + Build Firm that has all your needs in-house from permits to pillows.', meta: '', linkLabel: '', linkHref: '' }),
   b('DesignerQuote', { title: 'The same team that makes the vision, builds the vision.', body: 'From the very beginning, the same team that gets to know you personally and makes the vision to transform your space, will be the same team that builds your vision to ensure the end-results you deserve.', image: i('alli-rae-portrait'), alt: 'Alli Rae, founder' }),
   b('DesignerServices', {
     eyebrow: 'In-House', title: 'Services', lead: 'Since collaboration, communication and expertise is key to a seamless design and timely project - we offer it all in-house start to finish. We have expertise in:', tone: 'deep', columns: 4,
-    services: SERVICES.map((name) => ({ name: name === 'Hourly Consulting' ? 'Hourly Consultation' : name })), buttonLabel: '', buttonHref: '', closing: 'We look forward to bringing our experienced and passionate team to your project!',
+    services: SERVICES.map((name) => ({ name: name === 'Hourly Consulting' ? 'Hourly Consultation' : name })), buttonLabel: '', buttonHref: '', closing: 'We look forward to bringing our experienced and passionate team to your project!', closingLabel: 'Build Your Dream Now', closingHref: '~/ready-to-build',
   }),
-  b('DesignerClosing', { title: 'Let’s craft your vision together', buttonLabel: 'Build Your Dream Now', buttonHref: '~/ready-to-build', nextEyebrow: '', next: { image: '', title: '', location: '', year: '', href: '' } }),
 ]
 
 const portfolio = () => [
@@ -131,7 +130,7 @@ const portfolio = () => [
 const project = (p: Project, idx: number) => {
   const next = PROJECTS[(idx + 1) % PROJECTS.length]
   return [
-    hero(p.image, 'Portfolio', p.pageTitle, '', [{ label: 'Location', value: p.location }, { label: 'Completed', value: p.year }, { label: 'Details', value: p.details.slice(0, 3).join(' · ') }]),
+    hero(p.image, 'Portfolio', p.pageTitle, '', [{ label: 'Location', value: p.location }, { label: 'Completed', value: p.year }, { label: 'Details', value: p.details.slice(0, 3).join(' · ') }], { size: 'page' }),
     b('DesignerStatement', { eyebrow: 'The Project', title: p.title, lead: p.body, meta: p.details.join(' · '), linkLabel: 'Ready to Build Meeting', linkHref: '~/ready-to-build' }),
     b('DesignerGallery', { images: p.gallery.map((image) => ({ image, alt: '' })) }),
     b('DesignerClosing', { title: p.cta ?? 'Let’s craft your vision together', buttonLabel: 'Ready to Build Meeting', buttonHref: '~/ready-to-build', nextEyebrow: 'Next Project', next: card(next) }),
@@ -169,14 +168,53 @@ export function alliRaeSitePages(): DesignerPageSeed[] {
 /** The footer the design sets: contact, follow, and the hours as the note. Addresses and numbers open the site's own
  *  contact page (a footer link may be a path or https only). */
 export const ALLI_RAE_FOOTER = {
+  logo: `${IMG}/logo-build-design.webp`,
   blurb: ALLI_RAE.license,
   line: ALLI_RAE.credit,
-  note: `Mon – Fri, 7am – 6pm`,
   columns: [
-    { title: 'Contact Us', links: [{ label: '450 S. Melrose Drive, Suite 112, Vista, CA 92081', href: 'https://www.google.com/maps/search/?api=1&query=450+S+Melrose+Dr+112+Vista+CA+92081' }, { label: ALLI_RAE.email, href: '/contact' }, { label: ALLI_RAE.phone, href: '/contact' }] },
+    { title: 'Contact Us', lines: ['450 S. Melrose Drive', 'Suite 112', 'Vista, CA 92081'], links: [{ label: ALLI_RAE.email, href: `mailto:${ALLI_RAE.email}` }, { label: ALLI_RAE.phone, href: 'tel:7607076401' }] },
+    { title: 'Hours', lines: ['Mon – Fri', '7am – 6pm'] },
     { title: 'Follow', links: [{ label: 'Instagram', href: ALLI_RAE.instagram }, { label: 'Facebook', href: ALLI_RAE.facebook }] },
   ],
+  band: {
+    title: 'Let’s craft your vision *together*',
+    ctas: [{ label: 'Ready to Build Meeting', href: '/spaces/alli-rae/ready-to-build' }, { label: 'Schedule Consultation', href: '/spaces/alli-rae/book-a-consultation' }],
+  },
+  subscribe: {
+    title: 'Subscribe',
+    body: 'Sign up to receive trending design inspiration and construction trade tips for homeowners.',
+    fine: 'We respect your privacy and do not sell your information.',
+    button: 'Sign Up',
+    placeholder: 'Email Address',
+    success: 'Thank you we look forward to cultivating inspiration for you!',
+  },
+  utility: {
+    left: `${ALLI_RAE.license} · Vista, CA`,
+    items: [{ label: ALLI_RAE.hours }, { label: ALLI_RAE.phone, href: 'tel:7607076401' }, { label: ALLI_RAE.email, href: `mailto:${ALLI_RAE.email}` }],
+  },
 } as const
+
+/** The saved Space menu the design's header draws: Contact and Portfolio are dropdowns (a title and a line each), About
+ *  is a plain link. `known` lists every page so the three project pages and the consultation page stay out of the
+ *  top bar until Alli adds them herself. */
+export const ALLI_RAE_MENU = {
+  v: 1 as const,
+  items: [
+    {
+      id: 'contact', label: 'Contact', visibility: 'website' as const,
+      children: [
+        { label: 'Ready to Build Meeting', desc: 'Share your build vision and meet our team of experts.', target: { kind: 'auto' as const, key: 'page:ready-to-build' } },
+        { label: 'Schedule Consultation', desc: 'Virtual meetings or in-person site walks.', target: { kind: 'auto' as const, key: 'page:book-a-consultation' } },
+      ],
+    },
+    {
+      id: 'portfolio', label: 'Portfolio', visibility: 'website' as const,
+      children: PROJECTS.map((p) => ({ label: p.title, desc: `${p.location.replace(/, CA$/, '')} · ${p.year}`, target: { kind: 'auto' as const, key: `page:${p.slug}` } })),
+    },
+    { id: 'about', label: 'About', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:about' } },
+  ],
+  known: ['home', 'portfolio', 'about', ...PROJECTS.map((p) => p.slug), 'ready-to-build', 'book-a-consultation'].map((k) => `page:${k}`),
+}
 
 /** The published website state the editor stores: every page's blocks with stable ids, no comments, one version. */
 export function alliRaeEditorState(now: string): WebsiteEditorState {
