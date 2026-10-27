@@ -127,7 +127,18 @@ export async function saveWebsiteStyle(host: string, patch: { theme?: string; lo
   const current = readSiteStyle(prefs)
   const theme = patch.theme !== undefined && isSiteThemeId(patch.theme) ? patch.theme : current.theme
   const look = { ...current.look, ...(patch.look as Partial<typeof current.look>) }
-  let next = withSiteStyle(prefs, { theme, look, ...(theme !== current.theme ? { fonts: SITE_THEMES.find((t) => t.id === theme)!.defaultFonts } : {}) })
+  let base: unknown = prefs
+  if (theme !== current.theme) {
+    // DESIGN ONCE (LIVE-SYS-7): a new theme goes through the one apply, so the choice record, the website,
+    // email and the Space page's font set and blank accent all follow it. The look and page choices below
+    // are then written on top of what it saved.
+    const { applyMegaTheme, planMegaTheme } = await import('@/lib/theme/apply-mega-theme')
+    const result = await applyMegaTheme(auth.space.id, theme)
+    if (!result.ok) return { ok: false, error: result.error }
+    base = planMegaTheme(prefs, theme)
+    if (patch.look === undefined && pageThemes.length === 0) return { ok: true, style: readSiteStyle(base) }
+  }
+  let next = withSiteStyle(base, { theme, look, ...(theme !== current.theme ? { fonts: SITE_THEMES.find((t) => t.id === theme)!.defaultFonts } : {}) })
   for (const [slug, value] of pageThemes) next = withSitePageTheme(next, slug, value !== null && isSiteThemeId(value) ? value : null)
   // KEY-SCOPED (SCAN-833, ADR-1822): the style owns exactly two preference keys, `theme` (the fonts,
   // absent on the default) and `siteStyle`. set_space_preferences writes those two in one update and

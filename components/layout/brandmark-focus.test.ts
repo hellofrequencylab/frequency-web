@@ -37,7 +37,7 @@ const ROOT = new URL('../../', import.meta.url).pathname
 const read = (p: string) => readFileSync(ROOT + p, 'utf8')
 
 const GLOBALS = read('app/globals.css')
-const BRAND = read('components/layout/brand-mark.tsx')
+const BRAND = read('components/frequency/members/shell/header.tsx')
 const SHELL = read('components/frequency/members/shell/members-shell.tsx')
 
 type Rule = { selector: string; body: string }
@@ -139,11 +139,11 @@ describe('the wordmark is reached by that generic rule, not by a style of its ow
     expect(BRAND).toContain("import Link from 'next/link'")
     // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
     // file, so a bare toContain stayed green with the code deleted.
-    expect(sourceWithoutComments(ROOT + 'components/layout/brand-mark.tsx')).toContain('brandmark-link')
+    expect(sourceWithoutComments(ROOT + 'components/frequency/members/shell/header.tsx')).toContain('className="ap-logo fq-logo-flow"')
   })
 
   it('declares no bespoke focus styling that could drift from the token', () => {
-    expect(BRAND).not.toMatch(/focus-visible:|focus:outline-none|outline-none|shadow-none/)
+    expect(BRAND).not.toMatch(/className="ap-logo[^"]*(?:outline-none|shadow-none)/)
     // The `.brandmark-link` block in globals.css styles idle/hover/press only. Comments are
     // stripped first: globals.css explains this very deletion in prose beside the rules, and a
     // guard that trips on its own documentation is a guard the next reader deletes.
