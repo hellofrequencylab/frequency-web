@@ -21,8 +21,8 @@ describe('the Midnight theme tokens', () => {
   })
 
   it('defaults to the violet, keeps an owner hex and measures its label', () => {
-    expect(midnightAccentVars(null)['--color-primary']).toBe('#A68BF2')
-    expect(midnightAccentVars('#a68bf2')['--color-primary']).toBe('#A68BF2')
+    expect(midnightAccentVars(null)['--color-primary']).toBe('#B094FF')
+    expect(midnightAccentVars('#b094ff')['--color-primary']).toBe('#B094FF')
     expect(midnightAccentVars(null)['--color-text-on-primary']).toBe('#050505')
     const custom = midnightAccentVars('#2F6E80')
     expect(custom['--color-primary']).toBe('#2F6E80')
