@@ -55,8 +55,11 @@ const DIR = '.github/workflows'
  *  not. scripts/check-workflows.test.ts drives every arm — the runless step, the duplicate key,
  *  this floor, the missing directory — against fixtures that must FAIL, and the block-scalar
  *  false positive above against one that must PASS; until then this script had no sibling and
- *  no proof outside its own header that it could fire. */
-const MIN_WORKFLOWS = 9
+ *  no proof outside its own header that it could fire.
+ *
+ *  Raised 9 -> 10 on 2026-10-28: the live count reached 18, so a floor of 9 stopped being above half
+ *  of it, which scripts/check-workflows.test.ts requires of every floor. */
+const MIN_WORKFLOWS = 10
 
 /**
  * Blank out the BODY of every block scalar (`key: |`, `key: >`, with any chomp/indent

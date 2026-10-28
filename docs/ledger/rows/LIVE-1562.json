@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1562",
+  "title": "/system: the whole system in one story, with the shared wired-in list",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "closed": "2026-10-28",
+  "wave": "W7",
+  "source": {
+    "file": "components/frequency/site/pages/system/frequency-system.tsx",
+    "ref": "Owner 2026-10-27 15:56Z: /system, both fee facts, House of Fates and Alli Rae as the named demos; 19:09Z: the Frequency default theme fronts the page. Handoff: /mnt/project-files/mega-system/04-claude-code-handoff.md"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/system-page.mjs",
+    "note": "Twelve sections in ship order, the shared WiredIn list, both fee facts read from the pricing input with no price literal, no em dash, no parked term, no time claim, and the page is in the sitemap, the footer and the SEO table."
+  },
+  "detail": "New Frequency-only route /system on the template kit (phero, sec, tg-card, vz-steps, mx table, KeepGoing): hero, pain (the logins the reader counts), design once (readiness read from THEME_LIBRARY per surface), the hub diagram (inline SVG, token colors), one week with Maya, guided setup (Plan on an afternoon), the kit (Frequency, Nocturne and Designer pictures through ThemePicture, placeholder cards until the assets land), what is inside (the new shared components/frequency/site/pages/shared/wired-in.tsx, seeded from THEME_TOOLS so the kit pages can swap to it), the theme reach table, two labeled demo Spaces (House of Fates on Nocturne, Alli Rae on Designer), the price ladder from pricingTiers plus six fee facts from the catalog and plan constants, five questions, and the close. SEO entry, sitemap row, ROUTES.system and footer links (The whole system, Theme Kits) added. Left for follow-ups: linking /system from Features, Pricing and the doors; the Spotlight layouts strip (five layouts are not built, LIVE-SYS-5 with the library thread); owner pictures once the kit assets exist."
+}

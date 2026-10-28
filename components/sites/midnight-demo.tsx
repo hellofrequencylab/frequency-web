@@ -9,8 +9,9 @@ import { config } from '@/lib/page-editor/config'
 import { planMensworkPage, type MwBlock } from '@/lib/sites/menswork-page'
 import type { MwLive } from '@/lib/sites/menswork-data'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
+import { bindSlots } from '@/lib/spaces/content-slots'
 import { midnightKit } from '@/lib/sites/kits/midnight-variants'
-import { midnightAccentVars } from '@/lib/theme/midnight'
+import { MidnightAccentFrame } from '@/components/sites/midnight-accent-frame'
 
 const NAME = 'Nocturne Studio'
 const TAGLINE = 'Counsel, gatherings and journeys.'
@@ -21,11 +22,12 @@ const METADATA = { space: { identity: { name: NAME }, slug: 'nocturne', tagline:
 
 export function MidnightDemo({ now = new Date() }: { now?: Date }) {
   const home = midnightKit('coaches').pages.find((p) => p.slug === 'home') ?? midnightKit('coaches').pages[0]
-  const blocks = home.blocks.map((b, i) => ({ type: b.type, props: { id: `demo-${i}`, ...b.props } })) as MwBlock[]
+  // No saved slots: every {{slot|sample}} token in the kit draws its sample words.
+  const blocks = home.blocks.map((b, i) => ({ type: b.type, props: bindSlots({ id: `demo-${i}`, ...b.props }, {}) })) as MwBlock[]
   const plan = planMensworkPage(blocks)
   const menu = ['Offerings', 'Gatherings', 'Journeys', 'Membership'].map((label) => ({ href: HOME, label }))
   return (
-    <div style={midnightAccentVars(null) as React.CSSProperties}>
+    <MidnightAccentFrame>
       <SiteChrome
         brandName={NAME}
         homeHref={HOME}
@@ -47,6 +49,6 @@ export function MidnightDemo({ now = new Date() }: { now?: Date }) {
           renderOther={(b) => <BlockRender config={config} data={{ root: {}, content: [b] }} metadata={METADATA} />}
         />
       </SiteChrome>
-    </div>
+    </MidnightAccentFrame>
   )
 }
