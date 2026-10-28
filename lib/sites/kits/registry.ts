@@ -1,4 +1,4 @@
-import { MEGA_PROFILE_NICHES, MEGA_THEMES, type MegaThemeId } from '@/lib/theme/mega-theme'
+import { MEGA_NICHES, MEGA_PROFILE_NICHES, MEGA_THEMES, type MegaThemeId } from '@/lib/theme/mega-theme'
 import { NICHE_SPECS } from './niche-spec'
 import type { KitNiche, SiteKit } from './types'
 
@@ -71,6 +71,11 @@ for (const t of PROFILE_THEMES) for (const niche of MEGA_PROFILE_NICHES) LOADERS
 const DESIGNER_PROFILE_IDS = ['general', 'coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks', 'creators', 'schools', 'clubs', 'faith', 'wellness', 'markets'] as const
 for (const niche of DESIGNER_PROFILE_IDS) LOADERS[`designer-profile-${niche}`] = () => import('./designer-profile-variants').then((m) => m.designerProfileKit(niche))
 
+// The Network Theme Kit's thirteen profile kits, one per niche (`network-kit-<niche>`): the design system's own profiles are
+// exactly the thirteen niches, so the id is `<theme>-<niche>` like every other theme's. `network-kit-general` is the
+// General kit a new Space on this look publishes (lib/spaces/starter-site.ts).
+for (const niche of MEGA_NICHES) LOADERS[`network-kit-${niche}`] = () => import('./network-kit-profile-variants').then((m) => m.networkKitProfileKit(niche))
+
 interface KitSummary { id: string; niche: KitNiche; theme: SiteKit['theme']; label: string; description: string }
 
 /** Light index for the library screen; no page content. */
@@ -125,6 +130,7 @@ export const PROFILE_KIT_INDEX: readonly KitSummary[] = PROFILE_THEMES.flatMap((
 )
 
 export { DESIGNER_PROFILE_KIT_INDEX } from './designer-profile-index'
+export { NETWORK_KIT_PROFILE_KIT_INDEX } from './network-kit-profile-index'
 
 export async function loadKit(id: string): Promise<SiteKit | null> {
   const load = Object.hasOwn(LOADERS, id) ? LOADERS[id] : undefined

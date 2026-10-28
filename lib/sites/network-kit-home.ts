@@ -212,9 +212,9 @@ export const NETWORK_KIT_CTA = {
   band: '',
 }
 
-/** The design's bands: the hero and the liveness strip are plain, every other block alternates paper and sand. */
-const PLAIN = new Set(['NetworkKitHero', 'NetworkKitLive'])
-function withBands(blocks: NetworkKitBlockSeed[]): NetworkKitBlockSeed[] {
+/** The design's bands: the hero, the liveness strip, stats, the featured event, chapters and the podcast are plain (HomePage.jsx `plain`), every other block alternates paper and sand. */
+const PLAIN = new Set(['NetworkKitHero', 'NetworkKitLive', 'NetworkKitStats', 'NetworkKitFeatured', 'NetworkKitChapters', 'NetworkKitPodcast'])
+export function withBands(blocks: NetworkKitBlockSeed[]): NetworkKitBlockSeed[] {
   let i = 0
   return blocks.map((b) => (PLAIN.has(b.type) ? b : { ...b, props: { ...b.props, band: i++ % 2 ? 'sand' : '' } }))
 }

@@ -1,7 +1,7 @@
 import {
-  ArrowUpRight, BookOpen, Building2, CalendarClock, CalendarDays, ChevronDown, CircleDot, Coffee, Compass, FileText, Gift, GraduationCap, Handshake, Headphones,
-  Heart, HeartHandshake, Layers, LayoutGrid, List, Mail, MapPin, MessageCircle, Mic, Network, Route, ShoppingBag, Sparkles, Star, Ticket, TrendingUp, User,
-  UserPlus, Users, Video, type LucideIcon,
+  ArrowUpRight, BookOpen, Building2, CalendarClock, CalendarDays, ChevronDown, CircleDot, Clock, Coffee, Compass, Eye, FileText, Footprints, Gift, GraduationCap, Handshake,
+  Headphones, Heart, HeartHandshake, HeartPulse, House, Layers, LayoutGrid, List, Mail, MapPin, MessageCircle, Mic, Network, Palette, Phone, Play, Rocket, Route, Scale,
+  ShoppingBag, Sparkles, Star, Ticket, TrendingUp, User, UserPlus, Users, Video, type LucideIcon,
 } from 'lucide-react'
 
 // THE NETWORK KIT'S MARKS (design: components/core/Glyph.jsx + Sigil.jsx + elements/Seal.jsx). The design keeps its
@@ -14,6 +14,8 @@ const ICONS: Record<string, LucideIcon> = {
   hexagon: GraduationCap, plus: UserPlus, lines: List, grid: LayoutGrid, wave: Coffee, step: TrendingUp, spark: Sparkles, stack: Layers, nodes: Network, pin: MapPin,
   calendar: CalendarDays, 'calendar-clock': CalendarClock, users: Users, mail: Mail, shop: ShoppingBag, message: MessageCircle, heart: Heart, star: Star, gift: Gift,
   file: FileText, audio: Headphones, mic: Mic, ticket: Ticket, compass: Compass, video: Video,
+  // The marks the extra blocks use (design: Glyph.jsx names kept where a role matches).
+  clock: Clock, phone: Phone, play: Play, coffee: Coffee, eye: Eye, rocket: Rocket, palette: Palette, house: House, 'heart-pulse': HeartPulse, scale: Scale, footprints: Footprints,
 }
 
 export const NETWORK_KIT_GLYPH_NAMES = Object.keys(ICONS)

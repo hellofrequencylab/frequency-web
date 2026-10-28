@@ -23,18 +23,18 @@ import {
 // call (centre, split, band). Server Components, except the letter form. Live blocks read the Space's own rows from
 // `puck.metadata.space` (events, programs, reviews, questions, member count) and fall back to the cards the owner
 // wrote. Every look is the kit's (components/sites/network-kit-blocks-css.ts), tokens only.
-// The thirteen extra Network blocks (chapters, circles, rooms, ...) are a later pass and not here.
+// The thirteen extra blocks (chapters, circles, rooms, ...) are in network-kit-more.tsx and share this file's pieces.
 
 export type Props = Record<string, unknown>
-const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
-const arr = (v: unknown): Props[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === 'object') as Props[]) : [])
-const img = (v: unknown) => safeImageSrc(safeImageUrl(v) || null)
-const cls = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ')
-const layoutOf = (layout: unknown) => ({ pad: padClass(layout as LayoutValue), vis: visClass(layout as LayoutValue) })
-const pick = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T => (allowed as readonly string[]).includes(str(v)) ? (str(v) as T) : fallback
+export const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+export const arr = (v: unknown): Props[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === 'object') as Props[]) : [])
+export const img = (v: unknown) => safeImageSrc(safeImageUrl(v) || null)
+export const cls = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ')
+export const layoutOf = (layout: unknown) => ({ pad: padClass(layout as LayoutValue), vis: visClass(layout as LayoutValue) })
+export const pick = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T => (allowed as readonly string[]).includes(str(v)) ? (str(v) as T) : fallback
 
 /** A link through the site's link map. `~/page` means "this Space's page". Kept as written without a map. */
-function hrefOf(raw: string, metadata: Props | undefined): string | null {
+export function hrefOf(raw: string, metadata: Props | undefined): string | null {
   if (!raw) return null
   if (raw.startsWith('#')) return raw
   const links = metadata?.links as SiteLinkMap | undefined
@@ -43,10 +43,10 @@ function hrefOf(raw: string, metadata: Props | undefined): string | null {
   if (links.contactHref && /^mailto:/i.test(own)) return links.contactHref
   return siteLocalHref(own, links)?.href ?? (/^\/(?:spaces|circles|events|market)(?:\/|[?#]|$)|^\/sign-in(?:[?#]|$)/.test(own) ? `${links.origin}${own}` : null)
 }
-const rel = (href: string) => (/^https?:\/\//.test(href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})
+export const rel = (href: string) => (/^https?:\/\//.test(href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})
 
-type BtnKind = 'primary' | 'secondary' | 'ghost' | 'glass'
-function Btn({ label, href, kind = 'primary', metadata, arrow = false, size }: { label: string; href: string; kind?: BtnKind; metadata?: Props; arrow?: boolean; size?: 'sm' | 'lg' }) {
+export type BtnKind = 'primary' | 'secondary' | 'ghost' | 'glass' | 'dark'
+export function Btn({ label, href, kind = 'primary', metadata, arrow = false, size }: { label: string; href: string; kind?: BtnKind; metadata?: Props; arrow?: boolean; size?: 'sm' | 'lg' }) {
   const to = label ? hrefOf(href, metadata) : null
   if (!to) return null
   return (
@@ -58,12 +58,12 @@ function Btn({ label, href, kind = 'primary', metadata, arrow = false, size }: {
 }
 
 /** A row, card or tile that is a link when it has somewhere to go, and plain when it does not. */
-function Tap({ to, className, children }: { to: string | null; className: string; children: ReactNode }) {
+export function Tap({ to, className, children }: { to: string | null; className: string; children: ReactNode }) {
   return to ? <a className={className} href={to} {...rel(to)}>{children}</a> : <div className={className}>{children}</div>
 }
 
 /** The section head (design SectionHeading): an accent-dot label, the big title with its italic word, a kicker, and an optional button to the right. */
-function Head({ p, metadata, button, center = false, kicker = true }: { p: Props; metadata?: Props; button?: ReactNode; center?: boolean; kicker?: boolean }) {
+export function Head({ p, metadata, button, center = false, kicker = true }: { p: Props; metadata?: Props; button?: ReactNode; center?: boolean; kicker?: boolean }) {
   if (!str(p.eyebrow) && !str(p.title) && !str(p.lead)) return null
   const action = button === undefined ? (str(p.actionLabel) ? <Btn label={str(p.actionLabel)} href={str(p.actionHref)} kind="secondary" metadata={metadata} /> : null) : button
   return (
@@ -83,17 +83,17 @@ function Head({ p, metadata, button, center = false, kicker = true }: { p: Props
 }
 
 /** One block's frame: the band (paper or sand, with the design's wavy top edge) and the layout field's spacing. */
-function Band({ kind, p, variant, pad, vis, className, children }: { kind: string; p: Props; variant?: string; pad?: string; vis?: string; className?: string; children: ReactNode }) {
+export function Band({ kind, p, variant, pad, vis, className, children }: { kind: string; p: Props; variant?: string; pad?: string; vis?: string; className?: string; children: ReactNode }) {
   return (
     <section data-nk={kind} data-variant={variant} className={cls('nk-band', str(p.band) === 'sand' && 'nk-band--sand', className, pad, vis)}>
       {children}
     </section>
   )
 }
-const Section = ({ children, className }: { children: ReactNode; className?: string }) => <div className={cls('nk-section', className)}>{children}</div>
+export const Section = ({ children, className }: { children: ReactNode; className?: string }) => <div className={cls('nk-section', className)}>{children}</div>
 
 /** The design's SplitHead: the heading held in view on the left, the content on the right. */
-function SplitHead({ p, metadata, kicker = true, children }: { p: Props; metadata?: Props; kicker?: boolean; children: ReactNode }) {
+export function SplitHead({ p, metadata, kicker = true, children }: { p: Props; metadata?: Props; kicker?: boolean; children: ReactNode }) {
   return (
     <Section>
       <div className="nk-split nk-split--top">
@@ -106,7 +106,7 @@ function SplitHead({ p, metadata, kicker = true, children }: { p: Props; metadat
 
 // ── Live rows from the data bag ─────────────────────────────────────────────────────────────
 
-interface EventRow { id: string; slug?: string; title: string; startsAt: string; endsAt?: string | null; location?: string | null; priceLabel?: string | null; isCancelled?: boolean; ticketsMode?: boolean }
+export interface EventRow { id: string; slug?: string; title: string; startsAt: string; endsAt?: string | null; location?: string | null; priceLabel?: string | null; isCancelled?: boolean; ticketsMode?: boolean }
 const isRow = (e: unknown): e is EventRow => !!e && typeof (e as EventRow).id === 'string' && typeof (e as EventRow).title === 'string' && typeof (e as EventRow).startsAt === 'string'
 interface SpaceBag {
   events?: unknown
@@ -115,14 +115,14 @@ interface SpaceBag {
   faqs?: { id: string; question: string; answer: string }[]
   highlights?: { label: string; value: number }[]
 }
-const spaceOf = (metadata: Props | undefined) => (metadata?.space ?? undefined) as SpaceBag | undefined
+export const spaceOf = (metadata: Props | undefined) => (metadata?.space ?? undefined) as SpaceBag | undefined
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const clock = (d: Date) => `${d.getUTCHours() % 12 || 12}:${String(d.getUTCMinutes()).padStart(2, '0')}${d.getUTCHours() < 12 ? 'am' : 'pm'}`
+export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+export const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+export const clock = (d: Date) => `${d.getUTCHours() % 12 || 12}:${String(d.getUTCMinutes()).padStart(2, '0')}${d.getUTCHours() < 12 ? 'am' : 'pm'}`
 
 /** The Space's upcoming events, soonest first, each start read as the stored wall clock. */
-function upcoming(metadata: Props | undefined, now: Date): EventRow[] {
+export function upcoming(metadata: Props | undefined, now: Date): EventRow[] {
   const raw = spaceOf(metadata)?.events
   if (!Array.isArray(raw)) return []
   const today = now.toISOString().slice(0, 10)
@@ -130,21 +130,21 @@ function upcoming(metadata: Props | undefined, now: Date): EventRow[] {
 }
 
 /** "Thu 30 Oct · 10:00am". */
-function whenOf(startsAt: string): string {
+export function whenOf(startsAt: string): string {
   const d = storedWallClock(startsAt)
   return d ? `${DAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} · ${clock(d)}` : ''
 }
 
-function eventHref(e: EventRow, metadata: Props | undefined): string | null {
+export function eventHref(e: EventRow, metadata: Props | undefined): string | null {
   if (!e.slug) return null
   const origin = (metadata?.links as SiteLinkMap | undefined)?.origin
   return origin ? `${origin}/events/${e.slug}` : `/events/${e.slug}`
 }
 
-type Common = { p: Props; metadata?: Props; now?: Date; pad?: string; vis?: string }
+export type Common = { p: Props; metadata?: Props; now?: Date; pad?: string; vis?: string }
 
 /** A date tile: month over day. The first is the one solid hero tile, the rest sit on the tint. */
-function DateTile({ month, day, solid = false }: { month: string; day: string; solid?: boolean }) {
+export function DateTile({ month, day, solid = false }: { month: string; day: string; solid?: boolean }) {
   return (
     <span className="nk-date" data-solid={solid ? '' : undefined}>
       <b>{month}</b>
@@ -262,7 +262,7 @@ function NetworkKitLiveBlock({ p, metadata, now = new Date(), pad, vis }: Common
 // ── Steps ──────────────────────────────────────────────────────────────────────────────────
 
 const STEP_VARIANTS = ['grid', 'timeline', 'strip'] as const
-const num = (i: number) => String(i + 1).padStart(2, '0')
+export const num = (i: number) => String(i + 1).padStart(2, '0')
 
 function NetworkKitStepsBlock({ p, metadata, pad, vis }: Common) {
   const variant = pick(p.variant, STEP_VARIANTS, 'grid')
@@ -1017,19 +1017,19 @@ function NetworkKitCTABlock({ p, metadata, pad, vis }: Common) {
 
 // ── Registry ─────────────────────────────────────────────────────────────────────────────
 
-const text = (label: string, hint?: string) => ({ type: 'text', label, ...(hint ? { hint } : {}) }) as const
-const area = (label: string, hint?: string) => ({ type: 'textarea', label, ...(hint ? { hint } : {}) }) as const
-const image = { ...loomImageField, label: 'Photo' }
-const VOICE_HINT = 'Wrap a word in *stars* to set it in the italic.'
-const LINK_HINT = 'Start with ~/ for a page of this site, like ~/book.'
-const glyph = { type: 'select', label: 'Mark', options: NETWORK_KIT_GLYPH_NAMES.map((v) => ({ label: v, value: v })) } as const
-const head = { eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading') }
-const action = { actionLabel: text('Button beside the heading'), actionHref: text('Button beside the heading: where it goes', LINK_HINT) }
-const variantField = (options: [string, string][]) => ({ type: 'select', label: 'Layout', options: options.map(([value, label]) => ({ label, value })) }) as const
-const bandField = { type: 'select', label: 'Ground', options: [{ label: 'Paper', value: '' }, { label: 'Sand, with a wavy top edge', value: 'sand' }] } as const
-const countField = { type: 'number', label: 'How many to show', min: 1, max: 12 } as const
+export const text = (label: string, hint?: string) => ({ type: 'text', label, ...(hint ? { hint } : {}) }) as const
+export const area = (label: string, hint?: string) => ({ type: 'textarea', label, ...(hint ? { hint } : {}) }) as const
+export const image = { ...loomImageField, label: 'Photo' }
+export const VOICE_HINT = 'Wrap a word in *stars* to set it in the italic.'
+export const LINK_HINT = 'Start with ~/ for a page of this site, like ~/book.'
+export const glyph = { type: 'select', label: 'Mark', options: NETWORK_KIT_GLYPH_NAMES.map((v) => ({ label: v, value: v })) } as const
+export const head = { eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading') }
+export const action = { actionLabel: text('Button beside the heading'), actionHref: text('Button beside the heading: where it goes', LINK_HINT) }
+export const variantField = (options: [string, string][]) => ({ type: 'select', label: 'Layout', options: options.map(([value, label]) => ({ label, value })) }) as const
+export const bandField = { type: 'select', label: 'Ground', options: [{ label: 'Paper', value: '' }, { label: 'Sand, with a wavy top edge', value: 'sand' }] } as const
+export const countField = { type: 'number', label: 'How many to show', min: 1, max: 12 } as const
 
-function block<P extends Props>(label: string, fields: Record<string, unknown>, defaults: P, Comp: (args: Common) => ReactNode): ComponentConfig {
+export function block<P extends Props>(label: string, fields: Record<string, unknown>, defaults: P, Comp: (args: Common) => ReactNode): ComponentConfig {
   return {
     label,
     fields: { ...fields, band: bandField, layout: layoutField },
