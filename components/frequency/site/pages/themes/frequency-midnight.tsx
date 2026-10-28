@@ -3,7 +3,7 @@
 // /themes/nocturne (LIVE-1380, rebuilt LIVE-1598), built section by section from the Theme Feature Page of the Default Template design system
 // (docs/design-systems/nocturne). Every picture is a real screenshot of the kit (public/themes/midnight/shots,
 // ids as in lib/themes/nocturne-feature-data.ts); the live sample site is /themes/nocturne/demo. Every button
-// goes to a real route: the Wizard (/spaces/new?niche=<kit>), pricing, the sample site, or an anchor on this page.
+// goes to a real route: the Wizard (/spaces/new?niche=<kit>&theme=midnight), pricing, the sample site, or an anchor on this page.
 // The design page's research figures are left out on purpose (docs/marketing/voice-and-language-guide.md).
 // Styles: nocturne-feature.css, tokens only.
 import Image from 'next/image'
@@ -49,7 +49,7 @@ function shotSrc(kit: string, shot: Shot) {
   return `/themes/midnight/shots/${kit}-${shot}.${shot === 'email' ? 'png' : 'jpg'}`
 }
 function adoptHref(kit: string) {
-  return `/spaces/new?niche=${kit}`
+  return `/spaces/new?niche=${kit}&theme=midnight`
 }
 function pad(n: number) {
   return String(n).padStart(2, '0')
