@@ -3,7 +3,7 @@
   {
    "id": "general",
    "name": "Business",
-   "hex": null,
+   "hex": "#B094FF",
    "who": "Any local business that brings people together: what you do, what is coming up and how to reach you.",
    "packages": [
     "publish",
