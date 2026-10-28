@@ -32,6 +32,7 @@ jobs:
       PW_BASE_URL: http://127.0.0.1:3000
       PW_MEMBER_EMAIL: journeys@example.test
       PW_JOURNEY_WRITES: '1'
+      PW_INBUCKET_URL: http://127.0.0.1:54324
       PW_STRIPE_TEST: ${{ inputs.stripe_test && '1' || '' }}
     steps:
       - uses: actions/checkout@v7

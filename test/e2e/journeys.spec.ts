@@ -154,6 +154,44 @@ test.describe('signed-in journeys @journey @shell', () => {
     }
   })
 
+  test('the rest of the member shell answers (no bounce, no 5xx, no error card)', async ({ page, serverErrors }) => {
+    const paths = [
+      '/nearby', '/friends', '/connections', '/messages', '/notifications', '/settings', '/search', '/discover',
+      '/rewards', '/library', '/journal', '/practices', '/journeys', '/orders', '/marketplace', '/network/contacts',
+      '/channels', '/events', '/events/calendar', '/circles', '/progress', '/people', '/profile', '/support',
+    ]
+    const bad: string[] = []
+    for (const path of paths) {
+      await page.goto(path)
+      await settle(page)
+      const landed = new URL(page.url()).pathname
+      if (landed === '/sign-in') bad.push(`${path} bounced to /sign-in`)
+      if (await page.getByText('Something went wrong on our end').count()) bad.push(`${path} shows the error card`)
+      if (serverErrors.seen.length) {
+        bad.push(`${path} saw ${serverErrors.seen.map((e) => `${e.status} ${e.url}`).join(', ')}`)
+        serverErrors.seen.length = 0
+      }
+    }
+    expect(bad, bad.join('\n')).toEqual([])
+  })
+
+  test('Space pages beyond the console answer for the owner', async ({ page, serverErrors }) => {
+    test.skip(!spaceSlug, 'PW_SPACE_SLUG not set: no Space to open')
+    const subs = ['', '/setup', '/crm', '/marketing', '/settings/websites', '/settings/members', '/settings/email', '/settings/billing', '/settings/payments', '/settings/calendar', '/practices', '/journeys', '/network']
+    const bad: string[] = []
+    for (const sub of subs) {
+      await page.goto(`/spaces/${spaceSlug}${sub}`)
+      await settle(page)
+      if (new URL(page.url()).pathname === '/sign-in') bad.push(`${sub || '/'} bounced to /sign-in`)
+      if (await page.getByText('Something went wrong on our end').count()) bad.push(`${sub || '/'} shows the error card`)
+      if (serverErrors.seen.length) {
+        bad.push(`${sub || '/'} saw ${serverErrors.seen.map((e) => `${e.status} ${e.url}`).join(', ')}`)
+        serverErrors.seen.length = 0
+      }
+    }
+    expect(bad, bad.join('\n')).toEqual([])
+  })
+
   test('CRM pages answer for staff (skips with the cause when the account is not staff)', async ({ page, serverErrors }) => {
     for (const path of ['/admin/crm', '/admin/crm/contacts', '/admin/crm/leads', '/admin/crm/pipeline']) {
       await page.goto(path)
@@ -231,6 +269,23 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     assertNoServerErrors(serverErrors, 'join circle')
   })
 
+  test('import contacts from a CSV: map, review, import, undo', async ({ page, serverErrors }) => {
+    await page.goto('/network/contacts')
+    await settle(page)
+    await page.getByRole('button', { name: 'Import from file' }).click()
+    const csv = `Name,Email,Phone\nQA One ${stamp},qa1-${stamp}@example.test,555-0101\nQA Two ${stamp},qa2-${stamp}@example.test,555-0102\n`
+    await page.locator('input[type="file"]').setInputFiles({ name: 'contacts.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
+    await page.getByRole('button', { name: /Continue to matching/ }).click({ timeout: 30_000 })
+    await expect(page.getByText('Match your columns to contact fields')).toBeVisible()
+    await page.getByRole('button', { name: /Review before import/ }).click()
+    await expect(page.getByText('Here is what will happen')).toBeVisible({ timeout: 30_000 })
+    await page.getByRole('button', { name: /^Import \d+ contacts$/ }).click()
+    await expect(page.getByText('Your contacts are in')).toBeVisible({ timeout: 30_000 })
+    await page.getByRole('button', { name: /Undo this import/ }).click()
+    await expect(page.getByText('Import undone')).toBeVisible({ timeout: 30_000 })
+    assertNoServerErrors(serverErrors, 'crm import')
+  })
+
   test('Crew checkout reaches Stripe test mode', async ({ page }) => {
     test.skip(process.env.PW_STRIPE_TEST !== '1', 'PW_STRIPE_TEST is not 1: the build has no Stripe test keys')
     await page.goto('/crew')
@@ -241,5 +296,45 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
       page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 }),
       page.locator('iframe[src*="js.stripe.com"]').first().waitFor({ timeout: 30_000 }),
     ])
+  })
+})
+
+// BRAND-NEW SIGN-UP, through the local mailbox. No stored session: this is the one journey that starts signed out.
+// Needs the local Supabase's Inbucket (supabase/config.toml [inbucket], port 54324), so it takes PW_INBUCKET_URL
+// and skips without it. Write tier: it creates an auth user.
+test.describe('new member sign-up @journey-write', () => {
+  const gate = writesAllowed()
+  const inbucket = process.env.PW_INBUCKET_URL
+  test.skip(!gate.ok, gate.why)
+  test.skip(!inbucket, 'PW_INBUCKET_URL not set: no mailbox to read the magic link from')
+  test.skip(({}, info) => info.project.name !== 'desktop', 'journeys run on desktop only')
+  test.use({ storageState: { cookies: [], origins: [] } })
+
+  test('unknown email, create account, open the emailed link, arrive signed in', async ({ page, serverErrors }) => {
+    const box = `signup-${Date.now().toString(36)}`
+    const email = `${box}@example.test`
+    await page.goto('/sign-in')
+    await page.getByLabel('Email address').fill(email)
+    await page.getByRole('button', { name: 'Send magic link' }).click()
+    await expect(page.getByText('No account for that email yet')).toBeVisible()
+    await page.getByRole('button', { name: 'Create a new account' }).click()
+
+    // Read the newest message in the mailbox and pull the first link that goes through auth.
+    let link = ''
+    for (let i = 0; i < 20 && !link; i++) {
+      const list = await (await page.request.get(`${inbucket}/api/v1/mailbox/${box}`)).json().catch(() => [])
+      if (Array.isArray(list) && list.length) {
+        const msg = await (await page.request.get(`${inbucket}/api/v1/mailbox/${box}/${list[list.length - 1].id}`)).json()
+        const body: string = `${msg.body?.html ?? ''} ${msg.body?.text ?? ''}`
+        link = (body.match(/https?:\/\/[^\s"'<>]+(?:verify|confirm|callback)[^\s"'<>]*/)?.[0] ?? '').replace(/&amp;/g, '&')
+      }
+      if (!link) await page.waitForTimeout(1000)
+    }
+    expect(link, `no sign-in link arrived in ${box}'s mailbox`).not.toBe('')
+    await page.goto(link)
+    await settle(page)
+    expect(new URL(page.url()).pathname, 'the emailed link did not sign the new member in').not.toBe('/sign-in')
+    assertNoServerErrors(serverErrors, 'sign-up')
+    await expect(page.getByText('Something went wrong on our end')).toHaveCount(0)
   })
 })
