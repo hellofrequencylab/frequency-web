@@ -38,6 +38,7 @@
    them in the website's own `--font-nw-*` / `--font-wh-*` variables. The stand-in set the root layout
    carries follows while the sheet loads. */
 [data-design="frequency"] [data-space-fonts="network"] { --space-font-display: var(--font-nw-bricolage), var(--font-lexend); --space-font-body: var(--font-nw-outfit), var(--font-nunito); }
+[data-design="frequency"] [data-space-fonts="network-kit"] { --space-font-display: var(--font-nk-bricolage), var(--font-lexend); --space-font-body: var(--font-nk-outfit), var(--font-nunito); }
 [data-design="frequency"] [data-space-fonts="wildheart"] { --space-font-display: var(--font-wh-fell), var(--font-playfair); --space-font-body: var(--font-wh-garamond), var(--font-pt-serif); }
 [data-design="frequency"] [data-space-fonts="midnight"] { --space-font-display: var(--font-mn-bodoni), var(--font-playfair); --space-font-body: var(--font-mn-geist), var(--font-nunito); }
 
@@ -89,7 +90,7 @@
    · --space-display-scale lifts a condensed face, whose narrow letters at Unbounded's sizes read a
      size smaller than the scale means. Every heading size below multiplies by it (default 1). */
 [data-design="frequency"] :is([data-space-fonts="editorial"], [data-space-fonts="classic"], [data-space-fonts="wildheart"], [data-space-fonts="midnight"]) { --space-display-track: -0.015em; }
-[data-design="frequency"] :is([data-space-fonts="playful"], [data-space-fonts="accessible"], [data-space-fonts="modern"], [data-space-fonts="network"]) { --space-display-track: -0.02em; }
+[data-design="frequency"] :is([data-space-fonts="playful"], [data-space-fonts="accessible"], [data-space-fonts="modern"], [data-space-fonts="network"], [data-space-fonts="network-kit"]) { --space-display-track: -0.02em; }
 [data-design="frequency"] [data-space-fonts="menswork"] { --space-display-track: 0.005em; --space-display-scale: 1.18; }
 
 /* ══ 1. TYPE: Unbounded titles, Hanken body, Instrument Serif italic accents ══════════════════════ */

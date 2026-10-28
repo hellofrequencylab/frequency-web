@@ -96,7 +96,7 @@ export const EMPTY_THEME: SpotlightTheme = {
 }
 
 /** A Spotlight preset read from a Mega Theme's flat token set. */
-function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'temple', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
+function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
   const s = MEGA_SURFACES[id]!
   return {
     accent: s.accent.accent.toLowerCase(), surface: s.raised.toLowerCase(), text: s.text.toLowerCase(), font, card,
@@ -142,7 +142,8 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   { id: 'frequency', label: 'Default', theme: EMPTY_THEME },
   { id: 'bold', label: 'Bold', theme: surfacePreset('bold', { heading: 'display', body: 'sans' }, { radius: 'sm', shadow: 'none', style: 'solid' }) },
   { id: 'wildheart', label: 'Wildheart', theme: surfacePreset('wildheart', { heading: 'serif', body: 'serif' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
-  { id: 'network', label: 'Network', theme: surfacePreset('network', { heading: 'rounded', body: 'rounded' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
+  // The Network Theme Kit (lib/theme/network-kit.ts): the Marigold scheme as a basic preset; its Spotlight layouts come with the kit.
+  { id: 'network-kit', label: 'Network', theme: surfacePreset('network-kit', { heading: 'rounded', body: 'rounded' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
   { id: 'temple', label: 'Temple', theme: surfacePreset('temple', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) },
   {
     id: 'mono', label: 'Mono',
