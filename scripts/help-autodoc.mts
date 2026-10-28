@@ -3,11 +3,11 @@
 // advisory comment with a staff checklist. Propose-only — never commits or merges (ADR-041/028).
 // Runs in .github/workflows/help-autodoc.yml.
 //
-// Reuses only dependency-free lib modules (so Node type-stripping resolves them).
+// Reuses dependency-free lib modules (so Node type-stripping resolves them).
 // Routes the model call through the shared client (lib/ai/client) so there is no
 // per-call `new Anthropic` and the gateway seam applies here too. It does NOT import
 // lib/ai/complete (whose internal `@/` imports are extensionless and don't resolve
-// under --experimental-strip-types); client.ts only imports the SDK, so it's safe.
+// under --experimental-strip-types); client.ts keeps its shared env dependency relative.
 //
 // 🔴 THE SHAPE OF THE REVIEW LOOP, AND WHY (defect class 4, PR #2539). This used to be ONE call
 // for every affected article. The reply is one JSON object per article, so a ~46-article ask spent
