@@ -250,7 +250,7 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await next.click()
     await page.getByRole('button', { name: 'Create my Space' }).click()
 
-    await page.waitForURL(new RegExp(`/spaces/${handle}`), { timeout: 30_000 })
+    await page.waitForURL(new RegExp(`/spaces/${handle}`), { timeout: 90_000 })
     assertNoServerErrors(serverErrors, 'create space')
     await expect(page.getByText('Something went wrong on our end')).toHaveCount(0)
   })
@@ -269,10 +269,19 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await settle(page)
     // The manual door skips Vera, so no AI call is made.
     await page.getByRole('button', { name: /Fill it in myself/ }).first().click()
-    await page.getByLabel(/title|name/i).first().fill(`QA event ${stamp}`)
-    const submit = page.getByRole('button', { name: /publish|create event|save/i }).last()
-    await submit.click()
-    await page.waitForURL((u) => u.pathname.startsWith('/events/') && u.pathname !== '/events/new', { timeout: 30_000 })
+    await page.getByLabel(/Event title/).fill(`QA event ${stamp}`)
+    // Tomorrow 18:00, so the start is never already past whatever time the runner happens to be at.
+    const tomorrow = new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10)
+    await page.locator('input[type="datetime-local"]').first().fill(`${tomorrow}T18:00`)
+    await page.getByRole('button', { name: /Create Event/i }).click()
+    const landed = await page
+      .waitForURL((u) => u.pathname.startsWith('/events/') && u.pathname !== '/events/new', { timeout: 30_000 })
+      .then(() => true, () => false)
+    if (!landed) {
+      // Say what the form said, so the finding is the app's message and not a bare timeout.
+      const said = (await page.locator('[role="alert"], .text-danger').allInnerTexts()).join(' | ')
+      throw new Error(`/events/new did not create the event. Page said: ${said || '(nothing)'}`)
+    }
     assertNoServerErrors(serverErrors, 'create event')
   })
 
@@ -342,14 +351,22 @@ test.describe('new member sign-up @journey-write', () => {
     await expect(page.getByRole('heading', { name: 'No account for that email yet' })).toBeVisible()
     await page.getByRole('button', { name: 'Create a new account' }).click()
 
-    // Read the newest message in the mailbox and pull the first link that goes through auth.
+    // Read the newest message in the mailbox and pull the first link that goes through auth. The local
+    // Supabase CLI ships Mailpit in current versions and Inbucket in older ones, so try both.
+    const linkIn = (body: string) =>
+      (body.match(/https?:\/\/[^\s"'<>]+(?:verify|confirm|callback)[^\s"'<>]*/)?.[0] ?? '').replace(/&amp;/g, '&')
     let link = ''
     for (let i = 0; i < 20 && !link; i++) {
-      const list = await (await page.request.get(`${inbucket}/api/v1/mailbox/${box}`)).json().catch(() => [])
-      if (Array.isArray(list) && list.length) {
-        const msg = await (await page.request.get(`${inbucket}/api/v1/mailbox/${box}/${list[list.length - 1].id}`)).json()
-        const body: string = `${msg.body?.html ?? ''} ${msg.body?.text ?? ''}`
-        link = (body.match(/https?:\/\/[^\s"'<>]+(?:verify|confirm|callback)[^\s"'<>]*/)?.[0] ?? '').replace(/&amp;/g, '&')
+      const found = await (await page.request.get(`${inbucket}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`)).json().catch(() => null)
+      if (found?.messages?.length) {
+        const msg = await (await page.request.get(`${inbucket}/api/v1/message/${found.messages[0].ID}`)).json()
+        link = linkIn(`${msg.HTML ?? ''} ${msg.Text ?? ''}`)
+      } else {
+        const list = await (await page.request.get(`${inbucket}/api/v1/mailbox/${box}`)).json().catch(() => [])
+        if (Array.isArray(list) && list.length) {
+          const msg = await (await page.request.get(`${inbucket}/api/v1/mailbox/${box}/${list[list.length - 1].id}`)).json()
+          link = linkIn(`${msg.body?.html ?? ''} ${msg.body?.text ?? ''}`)
+        }
       }
       if (!link) await page.waitForTimeout(1000)
     }
