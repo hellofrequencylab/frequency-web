@@ -180,8 +180,14 @@
   --color-cal-works:        #9C86F5;
   --color-cal-works-bg:     #EBE7FF;
   --color-cal-works-strong: #D9D2FF;
+  --cal-production:   #8FA8FF;
   --color-cal-todo:         #9A6200;
   --color-cal-todo-bg:      #FFEBC6;
+  /* Season washes behind a month header (calendar redesign README section 7). Fixed light tints. */
+  --cal-wash-winter: linear-gradient(120deg, rgba(143, 233, 255, .22), rgba(196, 184, 255, .2));
+  --cal-wash-spring: linear-gradient(120deg, rgba(214, 206, 255, .2), rgba(200, 240, 232, .22));
+  --cal-wash-summer: linear-gradient(120deg, rgba(255, 214, 186, .26), rgba(255, 240, 214, .3));
+  --cal-wash-autumn: linear-gradient(120deg, rgba(255, 224, 200, .24), rgba(246, 238, 226, .3));
   --color-presence:         #17788A;
   --color-presence-bg:      #DDF3F5;
 
@@ -920,8 +926,14 @@
   --color-cal-works:        #9C86F5;
   --color-cal-works-bg:     #26224A;
   --color-cal-works-strong: #342E63;
+  --cal-production:   #8FA8FF;
   --color-cal-todo:         #E0A94A;
   --color-cal-todo-bg:      #3D2E0F;
+  /* Night washes: the same hues at about half strength so a month header does not glow on a dark ground. */
+  --cal-wash-winter: linear-gradient(120deg, rgba(143, 233, 255, .1), rgba(196, 184, 255, .1));
+  --cal-wash-spring: linear-gradient(120deg, rgba(214, 206, 255, .1), rgba(200, 240, 232, .1));
+  --cal-wash-summer: linear-gradient(120deg, rgba(255, 214, 186, .12), rgba(255, 240, 214, .12));
+  --cal-wash-autumn: linear-gradient(120deg, rgba(255, 224, 200, .1), rgba(246, 238, 226, .08));
   --color-presence:         #5CC3D6;
   --color-presence-bg:      #0F2E34;
 
