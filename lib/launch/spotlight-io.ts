@@ -5,14 +5,30 @@
 // `spaces` (which has no update policy), so this file adds no RLS bypass of its own. Idempotent: a launch that already has its Space reuses it, so a second tap never makes a second.
 
 import { revalidatePath } from 'next/cache'
-import { createSpaceForLaunch } from '@/lib/spaces/provision'
-import { getSpaceById, patchSpacePreferences } from '@/lib/spaces/store'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
+import { createSpace, type CreateSpaceInput } from '@/lib/spaces/provision'
+import { getSpaceById, getSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
 import { recordLaunchEvent } from './events'
 import type { LaunchSnapshot } from './state'
 import { handleFor, publishedSpotlightPreferences, type SpotlightAnswers } from './spotlight-step'
 import { attachSpace, markStepPublished } from './store'
 
 const HANDLE_TRIES = 4
+
+/** Make the Space through createSpace, the one provisioning path (every guard, the governed write and the birth).
+ *  createSpace ends by redirecting the owner to the Space's setup, which throws; that throw is the signal that it
+ *  succeeded, so it is caught here and the Space read back by its handle and checked to be this person's. Any other
+ *  throw is not ours to swallow. A returned value is createSpace's own failure line. */
+async function makeSpace(profileId: string, input: CreateSpaceInput): Promise<{ spaceId: string } | { error: string }> {
+  try {
+    const res = await createSpace(input)
+    return { error: res && 'error' in res ? res.error : 'We could not make your Space. Try again.' }
+  } catch (err) {
+    if (!isRedirectError(err)) throw err
+    const space = await getSpaceBySlug(input.slug)
+    return space && space.ownerProfileId === profileId ? { spaceId: space.id } : { error: 'We could not make your Space. Try again.' }
+  }
+}
 
 /** Make the Space (or reuse this launch's), publish its Spotlight, and mark the step. The handle is the person's
  *  name; a taken one is retried with a suffix. Returns the Space's handle, or the line to show. */
@@ -22,7 +38,7 @@ export async function publishSpotlightStep(profileId: string, launch: LaunchSnap
   if (!space) {
     let last = 'We could not make your Space. Try again.'
     for (let attempt = 0; attempt < HANDLE_TRIES && !space; attempt++) {
-      const made = await createSpaceForLaunch({ type: 'business', name: answers.name, slug: handleFor(answers.name, attempt), niche: launch.niche, intents: launch.intents })
+      const made = await makeSpace(profileId, { type: 'business', name: answers.name, slug: handleFor(answers.name, attempt), niche: launch.niche, intents: launch.intents })
       if ('error' in made) {
         last = made.error
         if (!/already taken/i.test(made.error)) return { error: made.error }

@@ -6,6 +6,7 @@
 // one link. Nothing is written for them, and no timing or outcome claim is added.
 
 import { nextSpotlightPreferences } from '../spaces/spotlight.ts'
+import { slugify } from '../utils.ts'
 
 export interface SpotlightAnswers {
   name: string
@@ -40,18 +41,10 @@ export function parseSpotlightAnswers(raw: Record<string, unknown> | null | unde
   return { name, line, link: cleanLink(raw?.link) }
 }
 
-/** A Space handle from a name: lowercase letters, numbers and single hyphens, 3 to 40 characters. `attempt` 0 is the
+/** A Space handle from a name: the one slug rule (lib/utils.ts), cut to 32 characters, at least 3. `attempt` 0 is the
  *  plain handle; later attempts add a short suffix, so a taken handle never blocks the step. */
 export function handleFor(name: string, attempt = 0): string {
-  const base =
-    name
-      .normalize('NFKD')
-      .replace(/[̀-ͯ]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 32)
-      .replace(/-+$/g, '') || 'my-space'
+  const base = slugify(name).slice(0, 32).replace(/-+$/g, '') || 'my-space'
   const padded = base.length < 3 ? `${base}-space` : base
   return attempt === 0 ? padded : `${padded}-${attempt + 1}`
 }
