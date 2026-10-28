@@ -18,7 +18,7 @@
 // (host_id === me, the host+ admin gate, crew-can-take-tasks). Tune against
 // product as the inline-admin work (Phase 1) lands.
 
-import { type CommunityRole, type WebRole, isStaff as webIsStaff, isJanitor as webIsJanitor, atLeastRole } from './roles'
+import { type CommunityRole, type WebRole, isStaff as webIsStaff, isJanitor as webIsJanitor } from './roles'
 import { isPaid, type EntitlementTier } from './access-matrix'
 import { type ScopeType } from './stewardship'
 import { circleRoleFromStoredValue } from './circle-roles'
@@ -64,9 +64,9 @@ export type Capability =
   // underlying settings action still enforces auth server-side via the (main) layout.
   | 'account.manage'
   // spotlight — a member's opt-in public mini-site (docs/NAMING.md "Spotlight page").
-  // OFF for everyone by default. `enable` = a Crew+ OWNER may turn their OWN Spotlight
+  // OFF for everyone by default. `enable` = any OWNER may turn their OWN Spotlight
   // on (self-serve setup); `manage` = the owner of an enabled Spotlight (or a janitor)
-  // may build/arrange it; `view` = a Crew+ viewer may see a published Spotlight page.
+  // may build/arrange it; `view` = any viewer may see a published Spotlight page.
   // All three are resolved in the 'profile' scope below.
   | 'spotlight.enable'
   | 'spotlight.manage'
@@ -253,21 +253,12 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       if ((isOwner || (!!profileId && isJanitor)) && scope.ownerSpotlightEnabled === true) {
         caps.add('spotlight.manage')
       }
-      // VIEW is a Crew+ entitlement read from the REAL tier (pre beta-override,
-      // ADR-414) so the beta's open-access grant can't widen who reaches the public
-      // page — the SAME gate shape as the creation caps. Whether a given page is
-      // actually PUBLISHED is enforced at the route; this caps the affordance.
-      const spotlightTier = viewer.realTier ?? viewer.tier
-      const spotlightCrewPlus = isPaid(spotlightTier) || atLeastRole(viewer.role, 'crew') || isStaff
-      if (spotlightCrewPlus) {
-        caps.add('spotlight.view')
-      }
-      // ENABLE: a Crew+ OWNER may turn their OWN Spotlight on — the self-serve switch
-      // that replaces the janitor-only toggle for setup (the owner still publishes
-      // explicitly). Same Crew+ bar as view / the creation caps (realTier, so the beta
-      // open-access grant can't widen who gets the affordance). A janitor can still flip
-      // it for anyone via the admin path (spotlight.manage / member-admin).
-      if (isOwner && spotlightCrewPlus) {
+      // VIEW and ENABLE are open to everyone (owner ruling 2026-10-28, Spotlight split): a free Member's
+      // Spotlight is the front door of the product, so it is no longer a Crew entitlement. The owner turns
+      // their OWN page on (and still publishes explicitly); a janitor can still flip it via the admin path.
+      // Crew's part is the look studio, per-link numbers and bigger caps, never the page itself.
+      caps.add('spotlight.view')
+      if (isOwner) {
         caps.add('spotlight.enable')
       }
       break
