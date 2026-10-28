@@ -140,6 +140,7 @@
 [data-design="frequency"] [data-kit="members"] .rr-dock{position:relative;flex:none;margin-top:12px;border-radius:22px;background:color-mix(in oklab,var(--fq-surface-card) 88%,transparent);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 14px 34px -20px rgba(60,40,20,.45),inset 0 0 0 1px rgba(255,255,255,.9)}
 [data-design="frequency"] [data-kit="members"] .rr-dock-panel{display:none}
 [data-design="frequency"] [data-kit="members"] .rr-dock.open .rr-dock-panel{display:block;animation:rr-up var(--fq-dur-base) var(--fq-ease-out) both}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .rr-dock.open .rr-dock-panel{animation:none}}
 @keyframes rr-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 [data-design="frequency"] [data-kit="members"] .rr-dock-in{display:flex;flex-direction:column;gap:12px;padding:18px 16px 6px;max-height:calc(100vh - 220px);overflow-y:auto;overscroll-behavior:contain}
 [data-design="frequency"] [data-kit="members"] .rr-dock-head{width:100%;height:52px;display:flex;align-items:center;gap:9px;padding:0 14px;border:none;background:none;cursor:pointer;border-radius:22px;font:500 13px/1 var(--fq-font-display);letter-spacing:-.01em;color:var(--fq-text-strong);white-space:nowrap}
