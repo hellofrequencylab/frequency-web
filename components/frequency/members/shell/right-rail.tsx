@@ -41,6 +41,7 @@ import { DemoNotice } from '@/components/sidebar/demo-notice'
 import { InvitePanel, PagePanels, SignaturePanel, type CommunityRole } from '@/components/sidebar/right-sidebar'
 import { buildGoals, plannedDays, weekPlanCount } from '@/lib/feed/frequency-rail-core'
 import { loadLocalBoard, loadPeopleToKnow, loadRailOnboarding, loadYourWeek } from '@/lib/feed/frequency-rail'
+import { launchOwnsNextSteps } from '@/lib/launch/box'
 import { getInitials } from '@/lib/utils'
 import { loadAnonPublicEvents } from '@/lib/feed/anon-feed'
 import { BETA_CTA_HREF } from '@/lib/site'
@@ -73,6 +74,7 @@ function Face({ url, name, size }: { url: string | null; name: string; size: num
 // ── Get started ─────────────────────────────────────────────────────────────────────────────────
 
 async function GetStartedPanel({ profileId }: { profileId: string }) {
+  if (await launchOwnsNextSteps()) return null // the launch box is the list while a launch runs (VLS-11)
   const steps = await loadRailOnboarding(profileId)
   return steps ? <GetStarted steps={steps} /> : null
 }
@@ -303,6 +305,7 @@ function MicroItem({ icon, value, tip, sub }: { icon: FqIconName; value: string;
 }
 
 async function MicroGetStarted({ profileId }: { profileId: string }) {
+  if (await launchOwnsNextSteps()) return null
   const steps = await loadRailOnboarding(profileId)
   if (!steps) return null
   const done = steps.filter((s) => s.done).length
