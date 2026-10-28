@@ -1,9 +1,8 @@
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { PublishedScreen } from '@/components/launch/published-screen'
-import { publishSpotlightFormAction } from '@/lib/launch/actions'
+import { keepSpaceFormAction, publishSpotlightFormAction } from '@/lib/launch/actions'
 import type { FlowView } from '@/lib/launch/flow'
-import type { PublishedView } from '@/lib/launch/published'
 import type { SpotlightAnswers } from '@/lib/launch/spotlight-step'
 
 // THE LAUNCH PAGE (the body; each route wraps it in the Dashboard template): one page that carries the whole launch. The Spotlight form is first; once it is published the same
@@ -22,7 +21,7 @@ const ERRORS: Readonly<Record<string, string>> = {
 }
 
 const LATER: Readonly<Record<'space' | 'website' | 'email', { title: string; blurb: string }>> = {
-  space: { title: 'Your Space', blurb: 'Your Space is made. Open it to add your photo, your hours and what you offer.' },
+  space: { title: 'Your Space', blurb: 'Your Space is made. This is how it starts out; you add photos, hours and offers after the launch.' },
   website: { title: 'Website', blurb: 'Turn your Spotlight into a full website, in your own words.' },
   email: { title: 'Email', blurb: 'Write a first note to the people who find you.' },
 }
@@ -53,7 +52,7 @@ function Phone({ src, live }: { src: string | null; live: boolean }) {
   )
 }
 
-export function LaunchFlow({ view, answers, errorCode, signedIn, published }: { view: FlowView; answers: SpotlightAnswers | null; errorCode?: string; signedIn: boolean; published?: Extract<PublishedView, { kind: 'done' }> }) {
+export function LaunchFlow({ view, answers, errorCode, signedIn }: { view: FlowView; answers: SpotlightAnswers | null; errorCode?: string; signedIn: boolean }) {
   const live = !!view.slug
   const error = errorCode ? ERRORS[errorCode] : undefined
   const done = view.stages.filter((s) => s.state === 'live').length
@@ -100,8 +99,9 @@ export function LaunchFlow({ view, answers, errorCode, signedIn, published }: { 
           </div>
           {signedIn || live ? null : <p className="t2">You make a free account when you publish, so your Spotlight has a home.</p>}
         </form>
-        <div style={{ display: 'grid', justifyItems: 'center' }}>
+        <div style={{ display: 'grid', justifyItems: 'center', gap: 16 }}>
           <Phone src={previewSrc} live={live} />
+          {live && view.spotlightHref ? <PublishedScreen view={{ kind: 'done', label: 'Spotlight', liveHref: view.spotlightHref, next: null }} /> : null}
         </div>
       </section>
 
@@ -116,10 +116,20 @@ export function LaunchFlow({ view, answers, errorCode, signedIn, published }: { 
                   {copy.title}
                 </h2>
                 <p className="t2" style={{ marginTop: 4 }}>
-                  {state === 'later' ? (id === 'space' ? 'After your Spotlight is live.' : 'After your Space.') : copy.blurb}
+                  {state === 'later' ? (id === 'space' ? 'After your Spotlight is live.' : id === 'website' ? 'After your Space.' : 'After your website.') : state === 'live' ? 'Kept. You can change everything in it after the launch.' : copy.blurb}
                 </p>
+                {id === 'space' && state !== 'later' && view.slug && answers ? (
+                  <p className="t2" style={{ marginTop: 12, color: 'var(--fq-text)' }}>
+                    <strong>{answers.name}</strong> · frequencylocal.com/spaces/{view.slug}
+                    {answers.line ? <span style={{ display: 'block', color: 'var(--fq-text-muted)' }}>{answers.line}</span> : null}
+                  </p>
+                ) : null}
               </div>
-              {id === 'space' && state === 'next' && published ? <PublishedScreen view={published} /> : null}
+              {id === 'space' && state === 'next' ? (
+                <form action={keepSpaceFormAction}>
+                  <Button type="submit">Keep my Space</Button>
+                </form>
+              ) : null}
             </div>
           </section>
         )
