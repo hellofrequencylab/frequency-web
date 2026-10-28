@@ -46,11 +46,14 @@ describe('design-system routine', () => {
   })
 })
 
+// Each theme's repo-side token block. A theme whose tokens are not built yet reads as empty (every token is a gap).
+const TOKEN_CSS: Record<string, string> = { nocturne: MIDNIGHT_TOKENS_CSS }
+
 const THEMES = readdirSync(join(process.cwd(), 'docs/design-systems'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
 
 describe.each(THEMES)('design system: %s', (theme) => {
   it('every design-system file is accounted for, and the repo matches it (baseline may only shrink)', () => {
-    const report = repoReport(theme, MIDNIGHT_TOKENS_CSS)
+    const report = repoReport(theme, TOKEN_CSS[theme] ?? '')
     if (process.env.DS_REPORT) for (const v of report.all) console.log(`${v.id}\n    ${v.detail}`)
     // DS_WRITE_BASELINE=1 re-freezes the list of known gaps. It may only be run to shrink it.
     if (process.env.DS_WRITE_BASELINE) {
