@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1630",
+  "title": "A visitor who starts a launch signed out keeps their answers, and signing in claims them into one launch",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/launch/pending.ts",
+    "ref": "Vera guided launch system, VLS-06. The Free Spotlight button (VLS-05) lands on /launch/start, which holds a signed-out visitor's answers here."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-hold.mjs",
+    "note": "Runs the cookie parser under node and reads the module and route source: the hold is httpOnly and not an action file, expires at 30 days, ignores a tampered cookie, and GET /launch/claim makes the one row through startLaunch and clears the hold. Fails on main, where neither file exists."
+  },
+  "detail": "lib/launch/pending.ts holds a signed-out visitor's niche, intents and per-step answers in one httpOnly cookie (fq_pending_launch, 30 days), the same shape as the induction's pending cookie. Answers only: short typed text, capped, never a source file or any Journey or wellness data. Every read drops what is off the closed shapes and ignores a cookie past 30 days. GET /launch/claim (signed in) makes the launch from the hold through startLaunch, which returns the running launch if there is one, so it is claimed once, then clears the cookie and resumes. Signed out it sends the visitor to sign in with next=/launch/claim. Nothing writes the hold yet: the /launch/start route and the Spotlight step (VLS-07) are its callers, so the system stays off until they land.",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}
