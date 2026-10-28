@@ -38,7 +38,6 @@ import { getCircleHealth } from '@/lib/circles/earned'
 import { insightAffordance } from '@/lib/core/scoped-surface-ui'
 import { surfaceAccess } from '@/lib/core/viewer-hats'
 import { isoDaysAgo } from '@/lib/utils'
-import { FqCircleSpaceHeader } from '@/components/frequency/members/space/circle-space-header'
 import { owningSpaceSlug } from '@/lib/circles/owning-space'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
@@ -313,10 +312,10 @@ export default async function CircleDetailLayout({
     loadCircleUpcomingEvents(circle.id, circleEventInsider({ isMember, isHost }), spaceCircleEventScope(circle)),
     loadRootSpaceId(),
   ])
-  // SCAN-881: a Circle that belongs to a Space (its space_id, the root excluded) opens under that
-  // Space's own header, the one its Space pages wear; the Circle's cover, title, tabs and actions
-  // follow below it. A personal Circle renders exactly as before.
+  // A Circle that belongs to a Space (its space_id, the root excluded) keeps its own cover, as the
+  // design draws it, and wears a "Part of <Space>" pill that links to the Space.
   const owner = owningSpaceSlug(circle, rootSpaceId)
+  const spaceDisplayName = circle.space ? circle.space.brand_name || circle.space.name : null
   const spaceName =
     circle.is_space_primary && circle.space && circle.space.type !== 'root'
       ? circle.space.brand_name || circle.space.name
@@ -347,7 +346,7 @@ export default async function CircleDetailLayout({
   const placeLine = online ? 'Meets online' : place
   const circleShell = (
     <FqCircleShell
-      inSpace={!!owner}
+      spaceLink={owner ? { href: `/spaces/${owner}`, name: spaceDisplayName ?? owner } : null}
       notices={
         <>
           {isDraft && (
@@ -368,8 +367,6 @@ export default async function CircleDetailLayout({
         </>
       }
       coverImage={hero.coverImage}
-      statusLabel={nearCap && !full ? `${statusPill.label} · Almost full` : statusPill.label}
-      live={!isDraft && !full && circle.status === 'active'}
       name={circle.name}
       subline={[
         `${circle.member_count} ${circle.member_count === 1 ? 'member' : 'members'}`,
@@ -503,7 +500,7 @@ export default async function CircleDetailLayout({
       )}
     </FqCircleShell>
   )
-  return owner ? <FqCircleSpaceHeader spaceSlug={owner}>{circleShell}</FqCircleSpaceHeader> : circleShell
+  return circleShell
 }
 
 // The demo-claim card's practice picker needs the whole public practice library. Only a claimable
