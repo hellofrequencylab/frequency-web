@@ -1,12 +1,13 @@
 {
   "$comment": [
-    "Lighthouse CI, MOBILE preset, member shell (SCAN-1138). The sibling of lighthouserc.json, which keeps",
+    "Lighthouse CI, mobile defaults, member shell (SCAN-1138). The sibling of lighthouserc.json, which keeps",
     "gating the four anonymous marketing pages on the desktop preset.",
     "",
     "WHY A SECOND FILE. Only four anonymous marketing URLs on the desktop preset were measured, and nothing",
     "asserted JavaScript size, so the member shell (components/layout/app-shell.tsx and everything",
     "statically reachable from it, parsed on every phone on every app/(main) route) was unmeasured. One",
-    "lighthouse-ci config carries one preset, so mobile needs its own file.",
+    "lighthouse-ci config carries one settings object, so mobile needs its own file. Lighthouse defaults",
+    "to mobile emulation; there is no mobile preset in its CLI.",
     "",
     "WHAT IS MEASURED. `/` is the marketing home on a phone. `/feed` signed out renders the REAL member",
     "shell with the viewer drawn as Anonymous (lib/nav/anon-feed.ts, SCAN-889), so it needs no session and",
@@ -29,7 +30,6 @@
     "collect": {
       "numberOfRuns": 3,
       "settings": {
-        "preset": "mobile",
         "chromeFlags": "--no-sandbox --headless=new"
       }
     },
