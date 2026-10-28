@@ -15,7 +15,7 @@ const CAL_VIOLET = 'var(--color-cal-violet)'
 /** The production blue, as a CSS color. */
 const CAL_PRODUCTION = 'var(--color-cal-production)'
 /** The lighter violet a pencil's dot wears. */
-const CAL_PENCIL_DOT = '#B3A3F7'
+const CAL_PENCIL_DOT = 'color-mix(in oklab, var(--color-cal-violet) 70%, var(--color-surface))'
 
 const mix = (color: string, pct: number, base: string) => `color-mix(in oklab, ${color} ${pct}%, ${base})`
 const clear = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`
