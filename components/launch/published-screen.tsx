@@ -16,11 +16,12 @@ export function PublishedScreen({ view }: { view: Extract<PublishedView, { kind:
         ) : null}
         {view.liveHref ? (
           <Button asChild variant="secondary">
-            <Link href={view.liveHref}>See what I made</Link>
+            <Link href={view.liveHref} target="_blank" rel="noopener">
+              Open my Spotlight in a new tab
+            </Link>
           </Button>
         ) : null}
       </div>
-      {view.next ? null : <p className="t2">That is every step. Anything optional you skipped stays in your profile menu.</p>}
     </div>
   )
 }

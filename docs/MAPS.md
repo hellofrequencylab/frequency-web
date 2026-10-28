@@ -208,16 +208,26 @@ Run these in DevTools on the failing page. Each one splits the problem.
 
 ## 7. Surfaces
 
-| State | Surfaces |
+Every map adapter composes `<MapCanvas>`; the inventory below is also pinned by
+`components/maps/maps-wiring.test.ts` so a retired adapter cannot reappear as undocumented map
+engine work.
+
+| Adapter | Surface |
 | --- | --- |
-| ✅ Composes `<MapCanvas>` | event venue map · events library map · event location picker · circle/group venue map · marketplace listing map |
-| ⏳ Pending migration | `components/circles/circle-map.tsx` · `components/discover/discover-map.tsx` · `app/(main)/admin/qr/scan-map.tsx` |
+| `components/circles/circle-map.tsx` | Circle browse and starter Circles, with opt-in device location |
+| `components/frequency/site/pages/shared/whats-on-map.tsx` | Hosted-site “What’s happening” map |
+| `app/(main)/admin/qr/scan-map.tsx` | Coarsened aggregate scan locations |
+| `components/events/event-venue-map.tsx` | Event venue map when its address is visible |
+| `components/events/events-map.tsx` | Events library and Circle-area event pins |
+| `components/events/event-location-picker.tsx` | Host venue selection and pin placement |
+| `components/connections/group-map.tsx` | Group locations |
+| `components/marketplace/listing-location-map-canvas.tsx` | Marketplace listing location |
 
-The three pending canvases import `maplibre-gl` directly (GeoJSON sources, data-driven circle
-paint, symbol layers, which the four-primitive contract does not yet express). They are listed
-in `PENDING_MIGRATION` in the drift guard; deleting a row is how the debt gets paid.
-
-⚠️ **A diagnostic added to `components/maps/maplibre-canvas.tsx` does not cover those three.**
+`/discover/events` and `/discover/spaces` are list-and-card discovery indexes; neither currently
+offers a map view. Public event detail uses the event venue adapter only when the host makes the
+address visible. On member event detail and events-library surfaces, Circle events use the
+Circle’s public area; hidden-address events do not expose the exact venue through the map or
+directions link.
 
 ---
 

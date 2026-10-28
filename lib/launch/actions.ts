@@ -109,3 +109,20 @@ export async function publishSpotlightFormAction(formData: FormData): Promise<vo
   await clearPendingLaunch()
   redirect(launchStepPublishedHref('spotlight'))
 }
+
+/** The Space step's Keep button (VLS-17, first cut). The Space already exists the moment the Spotlight is published, so
+ *  this records that the person has looked it over and opens Website; nothing here leaves the page. It only counts
+ *  once the Spotlight is published, so the order holds. Ends back on the one launch page. */
+export async function keepSpaceFormAction(): Promise<void> {
+  if (!launchSystemEnabled()) redirect('/')
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in')
+  const launch = await store.getActiveLaunch(profileId)
+  const slug = launch?.steps.spotlight?.status === 'published' ? launch.steps.spotlight.ref : undefined
+  if (!launch || !slug) redirect(spotlightStepUrl())
+  if (launch.steps.space?.status !== 'published') {
+    await store.markStepPublished(launch, 'space', slug)
+    await recordLaunchEvent(profileId, { type: 'step_published', launchId: launch.id, step: 'space' })
+  }
+  redirect(spotlightStepUrl())
+}

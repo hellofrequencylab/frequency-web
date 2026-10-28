@@ -10,14 +10,16 @@ const flow = read('components/launch/launch-flow.tsx')
 const start = read('app/(main)/launch/step/spotlight/page.tsx')
 const done = read('app/(main)/launch/step/[step]/published/page.tsx')
 
+if (!/keepSpaceFormAction/.test(flow)) bad.push('the Space step does not open in place on the launch page')
+if (/<Link[^>]*href=\{[^}]*\/spaces\//.test(flow)) bad.push('the launch page links out to the Space')
 if (!/<iframe/.test(flow) || !/\/spotlight\?preview=1|\?preview=1/.test(flow)) bad.push('the page shows no live preview of the real Spotlight')
 if (!/mu-steps/.test(flow)) bad.push('the page has no progress bar across the four stages')
 for (const [name, src] of [['spotlight page', start], ['published page', done]]) {
   if (!/<DashboardTemplate[^>]*adminBar=\{false\}/.test(src)) bad.push(`the ${name} is not composed on a kit template without the admin bar`)
   if (!/LaunchFlow/.test(src)) bad.push(`the ${name} does not render the one launch page`)
   if (/launchStepHref\('space'\)|\/launch\/step\/space/.test(src)) bad.push(`the ${name} links to a step page that does not exist`)
-  if (!/\/spaces\/\$\{encodeURIComponent\(/.test(src)) bad.push(`the ${name} does not send the person on to their own Space`)
+  if (/\/spaces\/\$\{encodeURIComponent\(/.test(src)) bad.push(`the ${name} sends the person out of the launch into their Space`)
 }
 
 if (bad.length) { console.error(bad.map((b) => `✗ ${b}`).join('\n')); process.exit(1) }
-console.log('✓ the launch is one page: form, live preview, the stages to come, and the way on goes to the person’s own Space')
+console.log('✓ the launch is one page: form, live preview, the stages to come, and the Space step opens in place and nothing leads out')
