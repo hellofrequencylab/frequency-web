@@ -1,5 +1,6 @@
 import { TEMPLE_KIT_TOKENS_CSS, TEMPLE_KIT_VARIANTS_CSS } from '@/lib/theme/temple-kit'
 import { TEMPLE_KIT_CHROME_CSS } from '@/components/sites/temple-kit-chrome-css'
+import { TEMPLE_KIT_BLOCKS_CSS } from '@/components/sites/temple-kit-blocks-css'
 
 // THE TEMPLE KIT SKIN, FOUNDATION LAYER. Scoped under [data-house-theme="temple-kit"], so it can only ever dress the
 // stand-alone site render (components/sites/site-chrome.tsx sets that attribute on the site root, and nothing in
@@ -33,4 +34,6 @@ ${N} .hs-btn:active{transform:scale(var(--press-scale))}
 ${N} :focus-visible{outline:none;box-shadow:var(--ring-focus)}
 ${N} ::selection{background:var(--color-selection);color:var(--tk-umber-900)}
 @media (prefers-reduced-motion:reduce){${N},${N} *{--motion-instant:0ms;--motion-fast:0ms;--motion-base:0ms;--motion-slow:0ms;--motion-veil:0ms;animation-duration:.01ms!important;transition-duration:.01ms!important}}
-${TEMPLE_KIT_CHROME_CSS}`
+${TEMPLE_KIT_CHROME_CSS}
+${TEMPLE_KIT_BLOCKS_CSS}
+`
