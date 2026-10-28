@@ -351,7 +351,7 @@ function plantBuild(opts: {
       // "placeholders still ship" control pass.
       files.push(`${up}public/fonts/Nunito-Regular.ttf`)
       files.push(`${up}public/images/Frequency-Logo-Round-Icon-white.png`)
-      for (const cover of ['community-dinner', 'a', 'b', 'c', 'd', 'e']) files.push(`${up}public/images/site/${cover}.jpg`)
+      for (const cover of ['space-cover-default', 'a', 'b', 'c', 'd', 'e']) files.push(`${up}public/images/site/${cover}.jpg`)
     }
     for (const f of opts.extra?.[i] ?? []) files.push(f)
     writeFileSync(join(dir, 'page.js.nft.json'), JSON.stringify({ version: 1, files }))
@@ -412,7 +412,7 @@ describe('check-build-fanout.mjs: a clean artifact passes', () => {
       '/repo/public/fonts/Nunito-Regular.ttf',
       '/repo/public/images/hero.jpg',
       '/repo/public/images/Frequency-Logo-Round-Icon-white.png',
-      '/repo/public/images/site/community-dinner.jpg',
+      '/repo/public/images/site/space-cover-default.jpg',
     ]) expect(sanctionedPublic(ok), ok).toBe(true)
     for (const bad of [
       '/repo/public/maplibre/maplibre-gl-csp-worker.js',
