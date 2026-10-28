@@ -1,4 +1,4 @@
-// LIVE-1672: the Network Theme Kit is registered as a theme beside the classic Network. Measures consequences, not spelling:
+// LIVE-1710: the Network Theme Kit is registered as a theme beside the classic Network. Measures consequences, not spelling:
 //   1. `network-kit` resolves as a site theme, a Mega Theme and an editor theme (NetworkKit), shown as "Network", with the
 //      classic theme still `network`, shown as "Network (classic)", and its page address moved clear of /themes/network;
 //   2. every scheme's text steps clear AA on paper, surface, card tint and pressed tint, the labels clear AA on the fill
