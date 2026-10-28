@@ -235,9 +235,9 @@ describe('every path read out of public/ is a literal, so the tracer never globs
     expect(mod).toBeDefined()
     expect(mod!.src).toContain('export async function coverPlaceholderDataUrl')
     // The readers must actually be reads, and literal ones. A module that stopped calling readFile
-    // would pass every assertion below while shipping cards with no background. The six
+    // would pass every assertion below while shipping cards with no background. The one
     // cover placeholders (the Frequency mark is read in lib/og/stage-card.tsx).
-    expect(mod!.src.match(/readFile\(join\(process\.cwd\(\), 'public\/images/g)?.length).toBe(6)
+    expect(mod!.src.match(/readFile\(join\(process\.cwd\(\), 'public\/images/g)?.length).toBe(1)
   })
 
   it('nothing anywhere builds a process.cwd() path out of a variable', () => {

@@ -370,7 +370,9 @@
 [data-design="frequency"] [data-kit="members"] .fqs-hero-in{position:relative;width:100%;padding:32px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
 [data-design="frequency"] [data-kit="members"] .fqs-id{display:flex;align-items:flex-end;gap:18px;min-width:0;flex:1 1 320px}
 [data-design="frequency"] [data-kit="members"] .fqs-id>.stack{gap:10px;min-width:0}
-[data-design="frequency"] [data-kit="members"] .fqs-id .h1{overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .fqs-id .h1{overflow-wrap:break-word;word-break:normal}
+/* The Hero size seats the logo chip inside the identity, so a 320px basis left the name under 220px and a wide display face split it mid-word (overflow-wrap:anywhere let it). Whole words wrap; the basis leaves the name room. */
+[data-design="frequency"] [data-kit="members"] .fqs-hero .fqs-id{flex-basis:min(100%,480px)}
 [data-design="frequency"] [data-kit="members"] .fqs-hero .fqs-id .h1{color:var(--fq-text-on-accent)}
 [data-design="frequency"] [data-kit="members"] .fqs-k{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fqs-hero .fqs-k{color:color-mix(in oklab,var(--fq-text-on-accent) 82%,transparent)}

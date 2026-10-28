@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-1747",
+  "title": "Default Space cover is the Frequency dark image, not a photo",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": { "file": "lib/spaces/cover-placeholder.ts", "ref": "Owner 2026-10-28: no Frequency photo as the default Space hero" },
+  "detail": "A Space without its own cover showed one of six stock photos as its hero. The placeholder set is now the single dark Frequency image public/images/site/space-cover-default.jpg (ink canvas, the sky/aqua/seaglass pa glow, signal waves), shared by the page hero and the share cards. The Space name in the Hero size now wraps whole words (overflow-wrap break-word, wider basis) instead of splitting mid-word on wide screens.",
+  "verify": { "kind": "cmd", "cmd": "node -e 'const fs=require(\"node:fs\");const s=fs.readFileSync(\"lib/spaces/cover-placeholder.ts\",\"utf8\");const c=fs.readFileSync(\"app/themes/frequency/space-page.css\",\"utf8\");process.exit(s.includes(\"space-cover-default.jpg\")&&!/outdoor-group|lab-lounge|community-dinner/.test(s)&&!c.includes(\".fqs-id .h1{overflow-wrap:anywhere\")?0:1)'", "note": "Holds the photo set out of the placeholder and the mid-word wrap rule gone." },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}
