@@ -441,6 +441,9 @@ export function NicheDoor({ config, week }: { config: FunnelConfig; week: readon
               Every plan
             </Link>
           </div>
+          <p className="nk-pnote">
+            Want it all in one place? <Link href={SITE.system}>See the whole system</Link>.
+          </p>
         </div>
       </section>
 
