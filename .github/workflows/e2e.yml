@@ -649,7 +649,7 @@ jobs:
           PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
         # Production-only host contracts run separately below. The expanded
         # preview-safe public suite remains in this smoke/a11y/overflow run.
-        run: pnpm exec playwright test --grep-invert "@visual|@journey|@public-surface"
+        run: pnpm test:e2e --grep-invert "@visual|@journey|@public-surface"
 
       - name: Public surface -- production contracts
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
