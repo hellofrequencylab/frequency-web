@@ -14,7 +14,7 @@ const doors = [
   ['creators', 'creators'],
   ['schools', 'schools-and-programs'],
   ['clubs', 'clubs-and-groups'],
-  ['faith', 'faith-communities'],
+  ['faith', 'spiritual-community'],
   ['wellness', 'wellness-and-retreats'],
   ['markets', 'markets-and-festivals'],
 ]

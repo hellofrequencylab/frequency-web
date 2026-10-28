@@ -1079,21 +1079,21 @@ const CLUBS_FUNNEL: FunnelConfig = {
 }
 
 const FAITH_FUNNEL: FunnelConfig = {
-  slug: 'faith-communities',
+  slug: 'spiritual-community',
   niche: 'faith',
   archetypes: ['mission_patron'],
   nonprofit: true,
   hero: {
-    eyebrow: 'For churches and faith communities',
+    eyebrow: 'For spiritual communities',
     h1: "Your people already gather. Give them one place to find each other.",
-    seoTitle: "Gatherings, groups and giving for faith communities",
+    seoTitle: "Gatherings, groups and giving for spiritual communities",
     subhead:
       "Share your services and small groups, welcome newcomers and offer giving with no network fee, plus card processing.",
     microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
     trustLine: 'No network fee on what you raise, plus card processing.',
   },
   metaDescription:
-    "Build community through gatherings. Share services, small groups and giving on Frequency. For churches and faith communities. Start with your Space.",
+    "Build community through gatherings. Share services, small groups and giving on Frequency. For spiritual communities. Start with your Space.",
   problem: {
     header: "A newcomer walks in on Sunday. By Wednesday nobody has their name.",
     body: "Service times on a website, small groups in a spreadsheet, giving through a third tool. Keep your gatherings, your groups and your people together so a first visit can become belonging.",
@@ -1345,7 +1345,7 @@ return {
   creators: CREATORS_FUNNEL,
   'schools-and-programs': SCHOOLS_FUNNEL,
   'clubs-and-groups': CLUBS_FUNNEL,
-  'faith-communities': FAITH_FUNNEL,
+  'spiritual-community': FAITH_FUNNEL,
   'wellness-and-retreats': WELLNESS_FUNNEL,
   'markets-and-festivals': MARKETS_FUNNEL,
 }

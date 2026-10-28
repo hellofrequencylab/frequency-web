@@ -516,8 +516,8 @@ export const NICHE_DESIGN: Record<string, NicheDesign> = {
     tools: ['events', 'contacts', 'qr', 'memberships', 'email'],
     featureIcons: ['event', 'contacts', 'qr', 'membership'],
   },
-  'faith-communities': {
-    short: 'Faith communities',
+  'spiritual-community': {
+    short: 'Spiritual community',
     photo: 'day-meditation-circle.jpg',
     interlude: 'gathering-08.jpg',
     you: 'Your community',
