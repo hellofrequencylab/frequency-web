@@ -2,6 +2,7 @@ import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { log } from '@/lib/log'
 import type { PlanCommentRow } from './plan-comments'
+import { subjectColumns, type PlanSubject } from './plan-subject'
 
 // COMMENT IO (PROG-CAL7 Together, LIVE-542). Caller session, never the admin client: RLS on
 // space_plan_comments (20270345009400) is the lock, and it admits exactly the host Space and an
@@ -11,7 +12,7 @@ import type { PlanCommentRow } from './plan-comments'
 // Every failure is logged first (the 2026-09-21 lesson in plans-store.ts): a thread that renders
 // empty over a refused read is an invisible regression.
 
-const COMMENT_COLS = 'id, plan_id, task_id, space_id, author_profile_id, body, created_at, removed_at'
+const COMMENT_COLS = 'id, plan_id, entry_id, task_id, space_id, author_profile_id, body, created_at, removed_at'
 const THREAD_LIMIT = 500
 
 async function db() {
@@ -46,20 +47,46 @@ export async function listPlanCommentRows(planId: string): Promise<PlanCommentRo
   }
 }
 
+/** Every comment under a standalone calendar entry the session may read, oldest first. */
+export async function listEntryCommentRows(entryId: string): Promise<PlanCommentRow[]> {
+  try {
+    const { data, error } = await (await db())
+      .from('space_plan_comments')
+      .select(COMMENT_COLS)
+      .eq('entry_id', entryId)
+      .order('created_at', { ascending: true })
+      .limit(THREAD_LIMIT)
+    if (error || !data) {
+      commentIoFailed('list', error)
+      return []
+    }
+    return data as PlanCommentRow[]
+  } catch (err) {
+    commentIoFailed('list', err)
+    return []
+  }
+}
+
 /** Write one comment as the caller, from the Space they are working the Plan in. The insert
  *  policy proves all three (the Plan is reachable, the Space is theirs, the author is them). */
-export async function insertPlanComment(comment: {
-  planId: string
-  taskId: string | null
-  spaceId: string
-  authorProfileId: string
-  body: string
-}): Promise<{ id: string } | { error: string }> {
+export async function insertPlanComment(
+  comment: PlanSubject & {
+    taskId: string | null
+    spaceId: string
+    authorProfileId: string
+    body: string
+  },
+): Promise<{ id: string } | { error: string }> {
+  const subject = subjectColumns(comment)
+  if (!subject) {
+    commentIoFailed('insert', { message: 'comment needs exactly one of plan and entry' })
+    return { error: 'That comment could not be posted.' }
+  }
   try {
     const { data, error } = await (await db())
       .from('space_plan_comments')
       .insert({
-        plan_id: comment.planId,
+        ...subject,
         task_id: comment.taskId,
         space_id: comment.spaceId,
         author_profile_id: comment.authorProfileId,

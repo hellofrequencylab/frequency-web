@@ -6,7 +6,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, isError, ok, type ActionResult } from '@/lib/action-result'
-import { parsePlanInput, planPublishLag, planTargetDef, type PlanInput } from '@/lib/calendar/plans'
+import { parseHoldUntilInput, parsePlanInput, planPublishLag, planTargetDef, type PlanInput } from '@/lib/calendar/plans'
 import { planStageTransition, type WorkflowStage } from '@/lib/calendar/workflow-board'
 import {
   archiveSpacePlanRows,
@@ -19,6 +19,7 @@ import {
   listPlaybooks,
   listPlanPublishedEventIds,
   planHasPublishedEntry,
+  setPlanHoldRow,
   updateSpacePlan,
   transitionSpacePlanRows,
   answerPlanShareRow,
@@ -170,6 +171,29 @@ export async function transitionPlanStage(
  * through the product. Gated like every other Plan write: `editorPlan` proves the caller may edit
  * THIS Space and that the id is one of this Space's Plans.
  */
+/**
+ * Hold a Plan's dates until a day, or release the hold (null or empty). The Plan must be this
+ * Space's own (`editorPlan`); the day must be a real calendar day. Releasing a LAPSED hold on its
+ * own is the pass 8 cron, not this door. The Plan's record says what the team did.
+ */
+export async function setPlanHold(slug: string, planId: string, rawHoldUntil: unknown): Promise<ActionResult<void>> {
+  const editor = await editorPlan(slug, planId)
+  if ('error' in editor) return fail(editor.error)
+  const parsed = parseHoldUntilInput(rawHoldUntil)
+  if ('error' in parsed) return fail(parsed.error)
+  const res = await setPlanHoldRow(editor.spaceId, planId, parsed.holdUntil)
+  if ('error' in res) return fail(res.error)
+  await recordPlanActivity({
+    planId,
+    actorProfileId: editor.profileId,
+    actorSpaceId: editor.spaceId,
+    kind: 'field',
+    summary: parsed.holdUntil ? `Holding the dates until ${parsed.holdUntil}.` : 'Released the hold on the dates.',
+  })
+  revalidate(slug)
+  return ok()
+}
+
 export async function archiveSpacePlan(slug: string, planId: string): Promise<ActionResult<void>> {
   const editor = await editorPlan(slug, planId)
   if ('error' in editor) return fail(editor.error)

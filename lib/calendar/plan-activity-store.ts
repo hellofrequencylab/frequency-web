@@ -2,6 +2,7 @@ import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { log } from '@/lib/log'
 import { boundSummary, type PlanActivityInput, type PlanActivityRow } from './plan-activity'
+import { subjectColumns } from './plan-subject'
 
 // ACTIVITY IO (PROG-CAL7 Together, LIVE-543). Caller session, never the admin client: RLS on
 // space_plan_activity (20270345009410) admits exactly the host and an accepted guest through the
@@ -11,7 +12,7 @@ import { boundSummary, type PlanActivityInput, type PlanActivityRow } from './pl
 // change already landed), so `recordPlanActivity` returns nothing. It logs one structured line
 // first, because a record that goes quiet is the invisible regression AGENTS.md names.
 
-const ACTIVITY_COLS = 'id, plan_id, actor_profile_id, actor_space_id, kind, summary, created_at'
+const ACTIVITY_COLS = 'id, plan_id, entry_id, actor_profile_id, actor_space_id, kind, summary, created_at'
 const READ_LIMIT = 100
 
 async function db() {
@@ -20,9 +21,20 @@ async function db() {
 
 /** Write one row after a change landed. Every door that changes a Plan calls this. */
 export async function recordPlanActivity(input: PlanActivityInput): Promise<void> {
+  const subject = subjectColumns(input)
+  if (!subject) {
+    // Neither or both: a caller bug the CHECK would refuse. Logged, never thrown (best effort).
+    log.error('calendar.plan_activity.record_failed', {
+      plan_id: input.planId ?? null,
+      kind: input.kind,
+      db_error: 'activity needs exactly one of plan and entry',
+      db_code: null,
+    })
+    return
+  }
   try {
     const { error } = await (await db()).from('space_plan_activity').insert({
-      plan_id: input.planId,
+      ...subject,
       actor_profile_id: input.actorProfileId,
       actor_space_id: input.actorSpaceId,
       kind: input.kind,
@@ -30,7 +42,7 @@ export async function recordPlanActivity(input: PlanActivityInput): Promise<void
     })
     if (error) {
       log.error('calendar.plan_activity.record_failed', {
-        plan_id: input.planId,
+        plan_id: input.planId ?? null,
         kind: input.kind,
         db_error: error.message ?? null,
         db_code: (error as { code?: string }).code ?? null,
@@ -38,7 +50,7 @@ export async function recordPlanActivity(input: PlanActivityInput): Promise<void
     }
   } catch (err) {
     log.error('calendar.plan_activity.record_failed', {
-      plan_id: input.planId,
+      plan_id: input.planId ?? null,
       kind: input.kind,
       db_error: err instanceof Error ? err.message : String(err),
       db_code: null,
@@ -62,6 +74,26 @@ export async function listPlanActivityRows(planId: string): Promise<PlanActivity
     return data as PlanActivityRow[]
   } catch (err) {
     log.error('calendar.plan_activity.list_failed', { plan_id: planId, db_error: err instanceof Error ? err.message : String(err), db_code: null })
+    return []
+  }
+}
+
+/** The latest rows of a standalone calendar entry the session may read, newest first. */
+export async function listEntryActivityRows(entryId: string): Promise<PlanActivityRow[]> {
+  try {
+    const { data, error } = await (await db())
+      .from('space_plan_activity')
+      .select(ACTIVITY_COLS)
+      .eq('entry_id', entryId)
+      .order('created_at', { ascending: false })
+      .limit(READ_LIMIT)
+    if (error || !data) {
+      log.error('calendar.plan_activity.list_failed', { entry_id: entryId, db_error: error?.message ?? null, db_code: (error as { code?: string } | null)?.code ?? null })
+      return []
+    }
+    return data as PlanActivityRow[]
+  } catch (err) {
+    log.error('calendar.plan_activity.list_failed', { entry_id: entryId, db_error: err instanceof Error ? err.message : String(err), db_code: null })
     return []
   }
 }
