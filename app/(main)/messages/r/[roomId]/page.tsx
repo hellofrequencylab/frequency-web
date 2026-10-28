@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isOnline } from '@/lib/presence'
-import { joinRoom, leaveRoom } from '../../rooms/actions'
+import { joinRoom } from '../../rooms/actions'
+import { LeaveRoomControl } from '@/components/rooms/leave-room-control'
 import { RoomThread } from '@/components/rooms/room-thread'
 import { canReadRoom, canPostToRoom, type RoomVisibility } from '@/lib/messages/room-access'
 import { RoomSearch } from '@/components/rooms/room-search'
@@ -192,9 +193,7 @@ export default async function RoomPage({
             {canRead && <RoomSearch roomId={roomId} />}
             {isAdmin && <RoomSettings roomId={roomId} name={r.name} description={r.description} visibility={r.visibility} scopeId={r.scope_id} />}
             {!isChannel && (isMember ? (
-              <form action={leaveRoom.bind(null, roomId)}>
-                <button type="submit" className="btn sm">Leave</button>
-              </form>
+              <LeaveRoomControl roomId={roomId} />
             ) : (
               <form action={joinRoom.bind(null, roomId)}>
                 <button type="submit" className="btn sm pa">Join</button>
