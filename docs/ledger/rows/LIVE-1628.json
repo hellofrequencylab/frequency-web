@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1628",
+  "title": "Move the Nocturne default accent to #B094FF",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/sites/editor/theme-contract.json",
+    "ref": "Owner 2026-10-28: allow #B094FF in the theme contract; rewrite midnight accent test pins"
+  },
+  "detail": "The Midnight (Nocturne) --th-accent in the editor contract moves from #A68BF2 to #B094FF. House of Fates stores its own accent (#B377AF) and is unchanged. The violet guard allows the hex in the contract file only, and the two accent pins in lib/theme/midnight.test.ts follow.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-28",
+    "evidence": "Contract --th-accent reads #B094FF and lib/theme/midnight.test.ts and the violet-family probe pass."
+  },
+  "wave": "W7"
+}
