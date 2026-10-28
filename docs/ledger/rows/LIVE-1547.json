@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1547",
+  "title": "The Vera launch has one list of nine steps, with done read from the real rows",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "lib/launch/steps.ts",
+    "ref": "Vera guided launch system, Phase 0 (VLS-02). Daniel 2026-10-27: Spotlight, Space, Event, Circle, Website, Journey and the other core features, ordered so content cascades from one to the next."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-steps.mjs",
+    "note": "Runs lib/launch/steps.ts and done-checks.ts under node: nine steps, 1, 2, 4 and 8 never skippable, a stable order for all 13 niches, and a Circle, an event or an offer flipping its done check from rows alone. Behaviour is pinned by lib/launch/steps.test.ts and rows.test.ts."
+  },
+  "detail": "No launch list existed; the Get Started checklist is five steps per person. lib/launch/steps.ts is the one list the launch box, step screens, reminder emails and admin funnel will read: Spotlight, Your Space, First offer, Website (Be found), Event, Circle, Journey (Gather people), Your people, Get paid (Keep them). Spotlight, Space, Website and Your people are required to count as launched; the rest can be skipped. A niche reorders the Gather people stage, the owner's starting intents (events, community, programs) lead it, and Journey drops out for venues, event hosts, markets, nonprofits and networks unless the owner asked to teach programs. lib/launch/done-checks.ts derives done from the Space's rows, the way lib/onboarding/status.ts does, so a Circle opened from the Circles page, an event or an offer made outside the launch counts without the launch UI. lib/launch/rows.ts reads those rows (one small count per noun, a failed read is 'not yet'). Pure modules, no migration, no flag, nothing visible yet. The launch row that remembers the cursor and skipped steps is VLS-01.",
+  "wave": "W7"
+}
