@@ -68,7 +68,7 @@ function Phone({ kit, shot, label, tone, priority, sizes }: { kit: NocturneKit; 
         <span className="nf-sb" aria-hidden="true">
           <span>9:41</span>
           <span className="nf-isl" />
-          <span className="nf-ic">
+          <span className="nf-sbi">
             <i />
             <i />
             <i />

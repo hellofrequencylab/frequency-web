@@ -1,7 +1,7 @@
 /* /themes/nocturne, the Theme Feature Page of the Default Template design system, on the Frequency tokens.
    Tokens only: no colour literals, no font names. Every class starts nf- so nothing here reaches another page.
    Kit accent arrives as --c on .nf and on the kit buttons. */
-.nf{--nf-hair:var(--fq-border-hair);--nf-card:var(--fq-surface-card);--nf-wash:color-mix(in oklab,var(--fq-text-strong) 5%,transparent);--nf-wash2:color-mix(in oklab,var(--fq-text-strong) 9%,transparent)}
+.nf{max-width:100%;overflow-x:clip;--nf-hair:var(--fq-border-hair);--nf-card:var(--fq-surface-card);--nf-wash:color-mix(in oklab,var(--fq-text-strong) 5%,transparent);--nf-wash2:color-mix(in oklab,var(--fq-text-strong) 9%,transparent)}
 .nf .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .nf-strong{color:var(--fq-text-strong)}
 .nf-part .nf-sh-p{margin:18px 0 0;font-size:17px;line-height:1.6;color:var(--fq-text-body);max-width:60ch;text-wrap:pretty}
@@ -200,15 +200,16 @@
 /* iPhone frame (the design system's .dv.ios): bezel, status bar with the island, home bar, around a 370 by 824 screen. */
 .nf-dv-spot{overflow:visible;background:none;box-shadow:none;border-radius:0}
 .nf-ios{display:block;width:100%;aspect-ratio:390/844;box-sizing:border-box;padding:2.564%;border-radius:13.85%/6.4%;background:linear-gradient(160deg,var(--fq-surface-raised),var(--fq-bg-canvas) 45%,var(--fq-surface-raised));box-shadow:inset 0 0 0 1px var(--nf-hair),0 50px 90px -40px var(--fq-bg-canvas),0 0 80px -40px var(--c)}
-.nf-ios-scr{position:relative;display:block;container-type:inline-size;overflow:hidden;border-radius:11.9cqw;background:var(--fq-bg-canvas);line-height:0}
+.nf-ios-scr{position:relative;display:block;container-type:inline-size;overflow:hidden;border-radius:11.9%/5.34%;background:var(--fq-bg-canvas);line-height:0}
 .nf-ios-scr img{display:block;width:100%;height:auto}
 .nf-sb{position:absolute;left:0;right:0;top:0;height:13.5cqw;display:flex;align-items:center;justify-content:space-between;padding:0 8.1cqw 0 9.73cqw;font:600 4.05cqw/1 var(--fq-font-sans);color:var(--fq-text-strong);text-shadow:0 1px 2px color-mix(in oklab,var(--fq-bg-canvas) 40%,transparent);pointer-events:none}
 .nf-isl{position:absolute;left:50%;top:2.97cqw;transform:translateX(-50%);width:31.9cqw;height:9.19cqw;border-radius:999px;background:var(--fq-bg-canvas)}
-.nf-ic{display:flex;align-items:flex-end;gap:1.08cqw}
-.nf-ic i{width:1.08cqw;background:currentColor;border-radius:.27cqw}
-.nf-ic i:nth-child(1){height:1.62cqw}.nf-ic i:nth-child(2){height:2.43cqw}
-.nf-ic i:nth-child(3){width:5.95cqw;height:2.97cqw;border-radius:.81cqw;margin-left:1.08cqw}
+.nf-sbi{display:flex;align-items:flex-end;gap:1.08cqw}
+.nf-sbi i{width:1.08cqw;background:currentColor;border-radius:.27cqw}
+.nf-sbi i:nth-child(1){height:1.62cqw}.nf-sbi i:nth-child(2){height:2.43cqw}
+.nf-sbi i:nth-child(3){width:5.95cqw;height:2.97cqw;border-radius:.81cqw;margin-left:1.08cqw}
 .nf-hi{position:absolute;left:50%;bottom:2.16cqw;transform:translateX(-50%);width:36.2cqw;height:1.35cqw;border-radius:999px;background:color-mix(in oklab,var(--fq-text-strong) 85%,transparent);pointer-events:none}
 .nf-ios[data-tone=light] .nf-sb{color:var(--fq-bg-canvas);text-shadow:none}
 .nf-ios[data-tone=light] .nf-hi{background:color-mix(in oklab,var(--fq-bg-canvas) 85%,transparent)}
 .nf-spread .ph .nf-ios{width:100%}
+.nf>*,.nf section{min-width:0}
