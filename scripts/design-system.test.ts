@@ -18,17 +18,17 @@ describe('design-system routine', () => {
   it('the first matching rule wins and an unclaimed file is a violation', () => {
     const rules = [{ glob: 'a/*.txt', kind: 'reference', reason: 'r' }]
     expect(ruleFor(rules, 'a/x.txt')?.kind).toBe('reference')
-    const r = repoViolations({ rules, inventory: [{ path: 'b/y.txt', sha256: 'x' }], read: () => null, bytes: () => null })
+    const r = repoViolations({ rules, inventory: [{ path: 'b/y.txt', sha256: 'x' }], read: () => null, bytes: () => null } as unknown as Parameters<typeof repoViolations>[0])
     expect(r.all.map((v: { id: string }) => v.id)).toEqual(['uncovered:b/y.txt'])
   })
 
   it('a baseline entry that no longer fires is reported as healed', () => {
-    const r = repoViolations({ rules: [], inventory: [], read: () => null, bytes: () => null, baseline: ['missing:gone'] })
+    const r = repoViolations({ rules: [], inventory: [], read: () => null, bytes: () => null, baseline: ['missing:gone'] } as unknown as Parameters<typeof repoViolations>[0])
     expect(r.healed).toEqual(['missing:gone'])
   })
 
   it('tokens: selector scoped, comments dropped, var() chains resolve', () => {
-    const t = extractTokens(':root{--a:#ABCDEF;--b:var(--a);} /* --c:1 */ [data-kit="x"]{--a:#000}')
+    const t = extractTokens(':root{--a:#ABCDEF;--b:var(--a);} /* --c:1 */ [data-kit="x"]{--a:#000}') as Record<string, string>
     expect(t[':root|--a']).toBe('#ABCDEF')
     expect(Object.keys(t)).not.toContain(':root|--c')
     expect(resolveVars({ '--a': '#abcdef', '--b': 'var(--a)', '--c': 'var(--z, 4px)' })).toEqual({ '--a': '#abcdef', '--b': '#abcdef', '--c': '4px' })
