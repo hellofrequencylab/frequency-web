@@ -244,6 +244,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
   )
 
   return (
+    <div className="cal-box">
     <div
       className="cal-suite"
       data-view={view}
@@ -362,6 +363,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
           <EmptyState variant="first-use" icon={Sparkles} title="Ask and search are coming soon" description="For now, switch views or page through the months." />
         </SuiteSheet>
       ) : null}
+    </div>
     </div>
   )
 }

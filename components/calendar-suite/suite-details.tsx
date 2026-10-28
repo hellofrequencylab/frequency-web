@@ -6,7 +6,7 @@ import { FqIcon } from '@/components/frequency/icon'
 import { Avatar } from '@/components/ui/avatar'
 import { IconButton } from '@/components/ui/icon-button'
 import { ProgressTrack } from '@/components/ui/progress-track'
-import type { SuiteItem, SuitePlan, SuiteTask } from '@/lib/calendar/planner/adapters'
+import type { SuiteItem, SuitePlan } from '@/lib/calendar/planner/adapters'
 import { planStats, stageLabel } from '@/lib/calendar/planner/board'
 import { overlapsUnavailable } from '@/lib/calendar/planner/clash'
 import { hostSpaceId, isInvitePending } from '@/lib/calendar/planner/day-items'
@@ -184,10 +184,10 @@ export function SuiteDetails({
   const ownerPlan = ctx.planById.get(item?.plan ?? task?.plan ?? '') ?? null
   const planFor = plan ?? ownerPlan
 
-  const blockers = useMemo(() => {
-    if (!item || !ctx.clashes.has(item.id)) return []
-    return data.items.filter((b) => b.kind === 'unavailable' && overlapsUnavailable(item, b)).map((b) => b.title)
-  }, [item, data.items, ctx.clashes])
+  const blockers =
+    item && ctx.clashes.has(item.id)
+      ? data.items.filter((b) => b.kind === 'unavailable' && overlapsUnavailable(item, b)).map((b) => b.title)
+      : []
 
   return (
     <div className="cal-details-in">

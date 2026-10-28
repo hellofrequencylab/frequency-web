@@ -200,30 +200,40 @@ export function SuiteMonth({
     return true
   }, [])
 
-  // A request from outside (paging, Today, the jump panel, a key): scroll to the block when it is drawn,
-  // otherwise redraw the window around that month and jump.
+  // A request from outside (paging, Today, the jump panel, a key). When its month is not drawn the window
+  // is redrawn around it while this renders (state adjusted from props), and the layout pass below puts
+  // the scroll on it; when it is drawn, the effect scrolls to its block.
+  const [seen, setSeen] = useState(0)
+  const [jump, setJump] = useState<string | null>(null)
+  if (request && request.token !== seen) {
+    setSeen(request.token)
+    const ym = clamp(request.ym)
+    if (!months.includes(ym)) {
+      setWin(windowAround(ym))
+      setJump(ym)
+    }
+  }
   useEffect(() => {
     if (!request || request.token === lastRequest.current) return
     lastRequest.current = request.token
     const ym = clamp(request.ym)
-    if (months.includes(ym)) {
-      scrollToBlock(ym, request.smooth)
-      return
-    }
-    pending.current = { goto: { ym, smooth: false } }
-    setWin(windowAround(ym))
-  }, [request, months, clamp, windowAround, scrollToBlock])
+    if (months.includes(ym)) scrollToBlock(ym, request.smooth)
+  }, [request, months, clamp, scrollToBlock])
 
   useLayoutEffect(() => {
     const job = pending.current
     const box = scroller.current
-    if (!job || !box) return
-    pending.current = null
-    if (job.hold) box.scrollTop = job.hold.top + (box.scrollHeight - job.hold.height)
-    else if (job.goto) scrollToBlock(job.goto.ym, job.goto.smooth)
+    if (!box) return
+    if (job) {
+      pending.current = null
+      if (job.hold) box.scrollTop = job.hold.top + (box.scrollHeight - job.hold.height)
+      else if (job.goto) scrollToBlock(job.goto.ym, job.goto.smooth)
+    } else if (jump) {
+      scrollToBlock(jump, false)
+    }
     // Drawn once it has been put on its month, so the first paint is never the wrong one.
     if (root.current) root.current.dataset.ready = 'true'
-  }, [win, scrollToBlock])
+  }, [win, jump, scrollToBlock])
 
   const onScroll = useCallback(() => {
     if (frame.current) return
