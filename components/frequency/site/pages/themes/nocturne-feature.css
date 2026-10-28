@@ -12,7 +12,10 @@
 .nf-lead{margin:0;font:400 clamp(17px,1.4vw,21px)/1.55 var(--fq-font-sans);color:var(--fq-text-body);max-width:56ch;text-wrap:pretty}
 .nf-top .ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
 /* Cascade: four surfaces down the page */
-.nf-cascade{display:flex;flex-direction:column;gap:clamp(72px,9vw,140px);margin-top:clamp(56px,7vw,110px)}
+.nf-cascade{display:flex;flex-direction:column;margin-top:clamp(56px,7vw,110px)}
+.nf-thread{display:block;width:100%;height:clamp(90px,10vw,150px);overflow:visible}
+.nf-thread path{fill:none;stroke:var(--c);stroke-width:2;stroke-dasharray:2 7;stroke-linecap:round;opacity:.8;filter:drop-shadow(0 0 6px var(--c))}
+@media (max-width:900px){.nf-thread{display:none}.nf-cascade{gap:64px}}
 .nf-cz{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.9fr);gap:clamp(28px,4vw,64px);align-items:center}
 .nf-cz.r{grid-template-columns:minmax(0,.9fr) minmax(0,1.35fr)}.nf-cz.r .nf-cz-dev{order:2}
 .nf-cz-dev{display:flex;justify-content:center}

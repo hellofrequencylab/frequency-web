@@ -8,7 +8,7 @@
 // Styles: nocturne-feature.css, tokens only.
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { Dialog } from '@/components/ui/dialog'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
@@ -333,33 +333,40 @@ export function FrequencyMidnight() {
           </div>
           <div className="nf-cascade">
             {CASCADE.map((c, i) => (
-              <div className={`nf-cz ${i % 2 ? 'r' : 'l'}`} key={c.name}>
-                <div className="nf-cz-dev">
-                  <Device kit={kit} surface={c.surface} priority={i === 0} sizes="(max-width: 900px) 90vw, 560px" />
+              <Fragment key={c.name}>
+                {i > 0 ? (
+                  <svg className={`nf-thread ${i % 2 ? 'lr' : 'rl'}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    <path d={i % 2 ? 'M 24 0 C 24 55, 76 45, 76 100' : 'M 76 0 C 76 55, 24 45, 24 100'} vectorEffect="non-scaling-stroke" />
+                  </svg>
+                ) : null}
+                <div className={`nf-cz ${i % 2 ? 'r' : 'l'}`}>
+                  <div className="nf-cz-dev">
+                    <Device kit={kit} surface={c.surface} priority={i === 0} sizes="(max-width: 900px) 90vw, 560px" />
+                  </div>
+                  <div className="nf-cz-tx">
+                    <span className="jn">{c.n}</span>
+                    <h3>{c.name}</h3>
+                    <p>{c.body}</p>
+                    <ul>
+                      <li>
+                        <b>Lives at</b>
+                        {c.lives}
+                      </li>
+                      <li>
+                        <b>Wears</b>
+                        {c.wears}
+                      </li>
+                    </ul>
+                    <p className="nf-out">
+                      <b>What changes</b>
+                      {c.changes}
+                    </p>
+                    <button type="button" className="btn btn-ghost fq-iri-rim" onClick={() => setPv({ view: c.surface })}>
+                      {c.button}
+                    </button>
+                  </div>
                 </div>
-                <div className="nf-cz-tx">
-                  <span className="jn">{c.n}</span>
-                  <h3>{c.name}</h3>
-                  <p>{c.body}</p>
-                  <ul>
-                    <li>
-                      <b>Lives at</b>
-                      {c.lives}
-                    </li>
-                    <li>
-                      <b>Wears</b>
-                      {c.wears}
-                    </li>
-                  </ul>
-                  <p className="nf-out">
-                    <b>What changes</b>
-                    {c.changes}
-                  </p>
-                  <button type="button" className="btn btn-ghost fq-iri-rim" onClick={() => setPv({ view: c.surface })}>
-                    {c.button}
-                  </button>
-                </div>
-              </div>
+              </Fragment>
             ))}
           </div>
         </div>
