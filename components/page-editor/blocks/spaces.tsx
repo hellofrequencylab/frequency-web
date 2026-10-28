@@ -237,12 +237,15 @@ export function SpaceFaqBlock({
   faqs,
   ink,
   emphasis,
+  schema = true,
 }: {
   eyebrow?: string
   heading?: React.ReactNode
   faqs: SpaceFaqItem[]
   ink?: boolean
   emphasis?: EmphasisValue
+  /** False for a starter kit's sample questions: they are not the operator's, so they carry no FAQPage data. */
+  schema?: boolean
 }) {
   if (faqs.length === 0) return null
   const { accent } = emphasisClasses(emphasis)
@@ -256,7 +259,7 @@ export function SpaceFaqBlock({
     .filter((qa) => qa.q && qa.a)
   return (
     <div>
-      {schemaQas.length > 0 && <JsonLd data={faqSchema(schemaQas)} />}
+      {schema && schemaQas.length > 0 && <JsonLd data={faqSchema(schemaQas)} />}
       <SectionTitle eyebrow={eyebrow} heading={heading} ink={ink} accent={accent} />
       <FaqList items={items} />
     </div>
@@ -354,17 +357,29 @@ export const spacesComponents: Record<string, ComponentConfig> = {
       eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
       heading: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
+      items: {
+        type: 'array',
+        label: 'Starter questions (shown until your own are saved)',
+        arrayFields: { q: { type: 'text', label: 'Question' }, a: { type: 'textarea', label: 'Answer' } },
+      },
       emphasis: emphasisField,
     },
     defaultProps: {
       eyebrow: 'FAQ',
       heading: 'Common questions',
       titleAccent: '',
+      items: [],
       emphasis: emphasisDefault,
     },
-    render: ({ eyebrow, heading, titleAccent, emphasis, puck }) => {
+    render: ({ eyebrow, heading, titleAccent, items, emphasis, puck }) => {
       const d = spaceFrom(puck)
-      if (!d || d.faqs.length === 0) {
+      // The operator's own questions win; a starter kit's sample questions fill in until there are some.
+      const own = d?.faqs ?? []
+      const starter: SpaceFaqItem[] = (Array.isArray(items) ? (items as { q?: unknown; a?: unknown }[]) : [])
+        .map((f, i) => ({ id: `starter-${i}`, question: typeof f?.q === 'string' ? f.q.trim() : '', answer: typeof f?.a === 'string' ? f.a.trim() : '' }))
+        .filter((f) => f.question && f.answer)
+      const faqs = own.length > 0 ? own : starter
+      if (faqs.length === 0) {
         if (!puck?.isEditing) return <></>
         return <EditorStub label="Space FAQ" hint="Your questions show on the live page" />
       }
@@ -375,7 +390,8 @@ export const spacesComponents: Record<string, ComponentConfig> = {
             // Light on purpose: SpaceFaqBlock takes an `ink` prop but no caller sets it,
             // and this block exposes no tone control, so the band is always light.
             heading={heading ? accentize(heading as string, titleAccent as string) : undefined}
-            faqs={d.faqs}
+            faqs={faqs}
+            schema={own.length > 0}
             emphasis={emphasis as EmphasisValue}
           />
         </AnchorSection>
