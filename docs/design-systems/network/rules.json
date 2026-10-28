@@ -43,6 +43,14 @@
       "to": "--nk-red-"
     },
     {
+      "from": "--text-xs",
+      "to": "--nk-size-xs"
+    },
+    {
+      "from": "--text-sm",
+      "to": "--nk-size-sm"
+    },
+    {
       "from": "--text-",
       "to": "--nk-text-"
     },
