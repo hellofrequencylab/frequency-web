@@ -3,6 +3,7 @@ import { templeHomeBlocks } from '@/lib/sites/temple-home'
 import { midnightHomeBlocks } from '@/lib/sites/midnight-home'
 import { templeKitHomeBlocks } from '@/lib/sites/temple-kit-home'
 import { designerHomeBlocks } from '@/lib/sites/designer-home'
+import { networkKitHomeBlocks } from '@/lib/sites/network-kit-home'
 
 export const WEBSITE_PAGE_TEMPLATES = [
   { name: 'Program', description: 'Hero, member path, offerings and FAQ' },
@@ -29,6 +30,7 @@ export function websiteTemplateSections(theme: WebsiteTheme, name: string): { ty
   if (theme === 'TempleKit' && name === 'Program') return templeKitHomeBlocks()
   if (theme === 'Midnight' && name === 'Program') return midnightHomeBlocks()
   if (theme === 'Designer' && name === 'Program') return designerHomeBlocks()
+  if (theme === 'NetworkKit' && name === 'Program') return networkKitHomeBlocks()
   switch (name) {
     case 'Program': return [...wild('WildheartNowLine'), heroSection, { type: cards }, { type: 'FeatureGrid', props: { source: 'offerings', title: 'Offerings' } }, { type: 'SpaceFAQ' }]
     case 'Season': return [heroSection, ...wild('WildheartYearJourney'), { type: 'SpacePractices' }, { type: 'SpaceEvents' }, ...wild('WildheartSkyMap')]

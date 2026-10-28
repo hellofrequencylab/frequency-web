@@ -26,12 +26,12 @@ interface EditorBlockMeta {
 const GROUP_OF_CATEGORY: Record<string, EditorBlockGroup> = {
   sections: 'Sections', blocks: 'Sections', productStory: 'Sections',
   content: 'Content', layout: 'Content', profile: 'Content', linkTree: 'Content',
-  dynamic: 'Live', spaceContent: 'Live', wildheart: 'Live', circles: 'Live', midnight: 'Sections', templeKit: 'Sections', designer: 'Sections',
+  dynamic: 'Live', spaceContent: 'Live', wildheart: 'Live', circles: 'Live', midnight: 'Sections', templeKit: 'Sections', designer: 'Sections', networkKit: 'Sections',
   media: 'Media',
 }
 
 /** Blocks whose rows come from the Space at render time (the design's `live: 1`). */
-const LIVE = /^(Live\w+|SpaceEvents|SpaceCommunity|SpaceTeam|SpaceStats|SpaceOfferings|SpaceReviews|SpaceFAQ|SpacePractices|SpaceBooking|CirclesGrid|CirclesFeatured|CirclesMap|Network(Hero|Events|Circles)|Midnight(Live|Journeys|Gatherings|Proof|FAQ)|Designer(FAQ)|Wildheart(YearJourney|SkyMap|NowLine|MoonPath|Modules|FirstNight|MoonStrip))$/
+const LIVE = /^(Live\w+|SpaceEvents|SpaceCommunity|SpaceTeam|SpaceStats|SpaceOfferings|SpaceReviews|SpaceFAQ|SpacePractices|SpaceBooking|CirclesGrid|CirclesFeatured|CirclesMap|Network(Hero|Events|Circles)|NetworkKit(Hero|Live|Journeys|Gatherings|Proof|FAQ)|Midnight(Live|Journeys|Gatherings|Proof|FAQ)|Designer(FAQ)|Wildheart(YearJourney|SkyMap|NowLine|MoonPath|Modules|FirstNight|MoonStrip))$/
 
 /** Type-name patterns → the design's icon for the same kind of block, first match wins. */
 const ICONS: [RegExp, FqIconName | FqEditorIconName][] = [

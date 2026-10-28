@@ -27,6 +27,7 @@ import { profileComponents } from '@/components/page-editor/blocks/profile'
 import { designComponents } from '@/components/page-editor/blocks/design'
 import { wildheartComponents } from '@/components/page-editor/blocks/wildheart'
 import { networkComponents, NETWORK_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network'
+import { networkKitComponents, NETWORK_KIT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network-kit'
 import { templeComponents, TEMPLE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/temple'
 import { templeKitComponents, TEMPLE_KIT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/temple-kit'
 import { midnightComponents, MIDNIGHT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight'
@@ -73,6 +74,7 @@ export const config: Config = {
     ...designComponents,
     ...wildheartComponents,
     ...networkComponents,
+    ...networkKitComponents,
     ...templeComponents,
     ...templeKitComponents,
     ...midnightComponents,
@@ -172,6 +174,11 @@ export const config: Config = {
     network: {
       title: 'Network sections',
       components: [...NETWORK_CATEGORY_COMPONENTS],
+    },
+    // The Network Theme Kit's home sections (code id network-kit, the Network design system): website pages only.
+    networkKit: {
+      title: 'Network home sections',
+      components: [...NETWORK_KIT_CATEGORY_COMPONENTS],
     },
     // The Temple theme's section family (the Royal Temple design system's Home): website pages only.
     temple: {
