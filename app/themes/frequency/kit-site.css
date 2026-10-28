@@ -256,6 +256,7 @@
 [data-design="frequency"] [data-kit="site"] .acct-av{isolation:isolate}
 [data-design="frequency"] [data-kit="site"] .acct-av.lg{width:48px;height:48px;font-size:19px}
 [data-design="frequency"] [data-kit="site"] .acct-pop{position:absolute;right:0;top:calc(100% + 12px);width:340px;padding:10px;border-radius:24px;background:rgba(14,8,26,.97);backdrop-filter:blur(24px);box-shadow:0 30px 80px -24px rgba(0,0,0,.9),inset 0 0 0 1px rgba(242,245,250,.12);z-index:60;display:flex;flex-direction:column;gap:2px;animation:acctIn .22s var(--fq-ease-out)}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .acct-pop{animation:none}}
 [data-design="frequency"] [data-kit="site"] .acct-pop[hidden]{display:none}
 @keyframes acctIn{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
 [data-design="frequency"] [data-kit="site"] .acct-h{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 10px}
@@ -618,7 +619,8 @@
 }
 @media print{[data-design="frequency"] [data-kit="site"] .pop{opacity:1!important;transform:none!important}}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .pop{opacity:1!important;transform:none!important}
-[data-design="frequency"] [data-kit="site"] .pop>.pglow{animation:none!important;opacity:.2!important}}
+[data-design="frequency"] [data-kit="site"] .pop>.pglow,[data-design="frequency"] [data-kit="site"] .pop>.pglow::after,[data-design="frequency"] [data-kit="site"] .pop.in>.pglow,[data-design="frequency"] [data-kit="site"] .pop.in>.pglow::after{animation:none!important;opacity:.2!important}
+[data-design="frequency"] [data-kit="site"][data-side="p"] .p-only,[data-design="frequency"] [data-kit="site"][data-side="e"] .e-only{animation:none}}
 [data-design="frequency"] [data-kit="site"] .g4f{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 [data-design="frequency"] [data-kit="site"] .g4f a.pop{display:block;text-decoration:none;color:inherit}
 [data-design="frequency"] [data-kit="site"] .g4f .pc{gap:10px;padding:22px}
@@ -698,7 +700,8 @@
 [data-design="frequency"] [data-kit="site"] .tx-film{display:none}}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .tx-halo, [data-design="frequency"] [data-kit="site"] .tx-jewel, [data-design="frequency"] [data-kit="site"] .tx-sphere, [data-design="frequency"] [data-kit="site"] .tx-sphere>i::after, [data-design="frequency"] [data-kit="site"] .tx-sphere::before, [data-design="frequency"] [data-kit="site"] .tx-sphere>b::before, [data-design="frequency"] [data-kit="site"] .tx-film, [data-design="frequency"] [data-kit="site"] .lv-live i, [data-design="frequency"] [data-kit="site"] .fqm-live i, [data-design="frequency"] [data-kit="site"] .live, [data-design="frequency"] [data-kit="site"] .acct-dot, [data-design="frequency"] [data-kit="site"] .wingtag::before, [data-design="frequency"] [data-kit="site"] .lg-sheen::before, [data-design="frequency"] [data-kit="site"] .ft2-roundel{animation:none!important}
 [data-design="frequency"] [data-kit="site"] .photo:hover img{transform:none}
-[data-design="frequency"] [data-kit="site"] .lg-fx:hover .lg-sheen::after{animation:none;opacity:.5;background-position:50% 0}}
+[data-design="frequency"] [data-kit="site"] .lg-fx:hover .lg-sheen::after,[data-design="frequency"] [data-kit="site"] .lg-fx:focus-visible .lg-sheen::after{animation:none;opacity:.5;background-position:50% 0}
+[data-design="frequency"] [data-kit="site"] .photo.fq-iri-rim:not(.fq-iri-sheen):hover::after{animation:none}}
 }
 /* SCAN-1019, phones: the grain film keeps its texture but stops stepping; a fixed full-screen layer repainting five
    times a second under a 320vh pinned scroll is what a phone feels as a stutter. */

@@ -316,6 +316,7 @@
 [data-design="frequency"] [data-kit="site"] .jb-av{width:56px;height:56px}}
 @media (prefers-reduced-motion:reduce){
 [data-design="frequency"] [data-kit="site"] :is(.jb-slide,.jb-reveal){animation:none}
+[data-design="frequency"] [data-kit="site"] .jb-slide,[data-design="frequency"] [data-kit="site"] .jb-reveal{animation:none}
 [data-design="frequency"] [data-kit="site"] .jb-steps i{transition:none}}
 @media (max-width:900px){
 [data-design="frequency"] [data-kit="site"] .jx{grid-template-columns:1fr}
@@ -572,7 +573,6 @@
 @keyframes pm-drift{0%,100%{transform:translate(0,0)}33%{transform:translate(8px,-9px)}66%{transform:translate(-8px,7px)}}
 @keyframes pm-spin{to{transform:translate(0,0) rotate(360deg)}}
 @keyframes pm-travel{from{offset-distance:0%}to{offset-distance:100%}}
-@keyframes pm-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media (max-width:900px){
 [data-design="frequency"] [data-kit="site"] .pm-own{grid-template-columns:minmax(0,1fr)}
 [data-design="frequency"] [data-kit="site"] .pm-ladder{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:28px}
@@ -763,6 +763,7 @@ position:relative;background:var(--pc-void);color:var(--pc-body);font-family:var
 @media (prefers-reduced-motion:reduce){
 [data-design="frequency"] [data-kit="site"] .pc-panel,[data-design="frequency"] [data-kit="site"] .pc-label,[data-design="frequency"] [data-kit="site"] .pc-badge,[data-design="frequency"] [data-kit="site"] .pc-fold,[data-design="frequency"] [data-kit="site"] .pc-rail-btn,[data-design="frequency"] [data-kit="site"] .pc-blips i{transition:none}
 [data-design="frequency"] [data-kit="site"] .pc-cue span,[data-design="frequency"] [data-kit="site"] .pc-launch,[data-design="frequency"] [data-kit="site"] .pcx .fq-iri-text,[data-design="frequency"] [data-kit="site"] .pcx .fq-breathe{animation:none}
+[data-design="frequency"] [data-kit="site"] .pm-trav{animation:none}
 }
 
 /* ── THE ADD-ONS AND FEES under the plan cards (pricing-addons.tsx) ─────────────────────────────────── */
