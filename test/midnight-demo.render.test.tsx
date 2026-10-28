@@ -15,6 +15,6 @@ describe('the Midnight demo site', () => {
     expect(html).toContain('Nocturne Studio')
     expect(html).not.toMatch(/—/)
     const hrefs = [...html.matchAll(/href="([^"]*)"/g)].map((m) => m[1])
-    expect(hrefs.filter((h) => h.startsWith('/') && !h.startsWith('/themes/midnight/demo'))).toEqual([])
+    expect(hrefs.filter((h) => h.startsWith('/') && !h.startsWith('/themes/nocturne/demo'))).toEqual([])
   })
 })

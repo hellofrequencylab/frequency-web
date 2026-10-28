@@ -130,6 +130,10 @@ const VITEST_ENFORCED: Record<string, string> = {
   // Added 2026-10-20 (PROG-E1). A page App's surface resolves to a component, and the count of empty surface
   // descriptors only falls. The catalog is TypeScript, so the enforcing arm runs under vitest where it is importable.
   'check:surface-binding': 'scripts/check-surface-binding.test.ts',
+  // Added 2026-10-28 (LIVE-1570). Every file of a theme's design system is checked against the code. The
+  // enforcing arm needs the repo's token block (TypeScript behind a path alias), so it runs under vitest, where
+  // its sibling test walks the real tree and fails on any gap the baseline does not name.
+  'check:design-system': 'scripts/design-system.test.ts',
   'check:crm-parity': 'scripts/check-crm-parity.test.ts',
   'check:vocab': 'scripts/check-vocab.test.ts',
   'check:studio': 'scripts/check-studio.test.ts',

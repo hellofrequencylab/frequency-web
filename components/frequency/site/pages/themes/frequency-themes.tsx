@@ -11,7 +11,7 @@ import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
 import { ThemePicture } from './theme-picture'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { SITE_THEMES } from '@/lib/theme/site-style'
-import { THEME_LIBRARY, themeDisplayName } from '@/lib/themes/library'
+import { THEME_LIBRARY, themePagePath } from '@/lib/themes/library'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
@@ -33,12 +33,12 @@ export const THEME_GALLERY: ThemeGalleryCard[] = SITE_THEMES.map((t) => {
   const editor = MEGA_THEMES.find((m) => m.id === t.id)?.editor
   return {
     id: t.id,
-    label: themeDisplayName(t.id, t.label),
+    label: t.label,
     tagline: THEME_LIBRARY.find((l) => l.id === t.id)?.tagline ?? t.description,
     description: t.description,
     kits: KIT_INDEX.filter((k) => k.theme === editor).map((k) => ({ niche: k.niche, label: k.label, href: `/spaces/new?niche=${k.niche}` })),
     kitCount: [...KIT_INDEX, ...PROFILE_KIT_INDEX].filter((k) => k.theme === editor).length,
-    href: `/themes/${t.id}`,
+    href: themePagePath(t.id),
   }
 })
 
