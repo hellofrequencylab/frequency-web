@@ -30,6 +30,7 @@ jobs:
     timeout-minutes: 40
     env:
       PW_BASE_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
       PW_MEMBER_EMAIL: journeys@example.test
       PW_JOURNEY_WRITES: '1'
       PW_INBUCKET_URL: http://127.0.0.1:54324

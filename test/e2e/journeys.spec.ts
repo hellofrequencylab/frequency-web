@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { settle, assertNoServerErrors } from './surfaces'
+import { journeyWritesAllowed, localAuthLink, localHttpDestination, stripeDestination } from './journey-safety'
 
 // SIGNED-IN USER JOURNEYS (functional QA, 2026-10-28).
 //
@@ -28,16 +29,8 @@ const hasSession = !!storageState && existsSync(storageState)
 const spaceSlug = process.env.PW_SPACE_SLUG
 const circleSlug = process.env.PW_CIRCLE_SLUG
 
-const PRODUCTION_HOSTS = ['frequencylocal.com', 'www.frequencylocal.com']
-
-function writesAllowed(): { ok: boolean; why: string } {
-  if (process.env.PW_JOURNEY_WRITES !== '1') return { ok: false, why: 'PW_JOURNEY_WRITES is not 1' }
-  if (!baseURL) return { ok: false, why: 'PW_BASE_URL is not set' }
-  const host = new URL(baseURL).hostname
-  if (PRODUCTION_HOSTS.includes(host) || host.endsWith('.frequencylocal.com')) {
-    return { ok: false, why: `${host} is production; write journeys never run there` }
-  }
-  return { ok: true, why: '' }
+function writesAllowed() {
+  return journeyWritesAllowed(process.env.PW_JOURNEY_WRITES, baseURL, process.env.NEXT_PUBLIC_SUPABASE_URL)
 }
 
 test.describe('signed-in journeys @journey @shell', () => {
@@ -293,8 +286,11 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await page.getByRole('button', { name: /crew|join|support/i }).first().click()
     // Hosted Checkout navigates away; the on-page panel embeds a Stripe iframe. Either is a pass.
     await Promise.race([
-      page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 }),
-      page.locator('iframe[src*="js.stripe.com"]').first().waitFor({ timeout: 30_000 }),
+      page.waitForURL(url => stripeDestination(url, 'checkout'), { timeout: 30_000 }),
+      expect.poll(async () => {
+        const sources = await page.locator('iframe').evaluateAll(frames => frames.map(frame => frame.getAttribute('src') ?? ''))
+        return sources.some(src => stripeDestination(src, 'iframe'))
+      }, { timeout: 30_000 }).toBe(true),
     ])
   })
 })
@@ -306,7 +302,7 @@ test.describe('new member sign-up @journey-write', () => {
   const gate = writesAllowed()
   const inbucket = process.env.PW_INBUCKET_URL
   test.skip(!gate.ok, gate.why)
-  test.skip(!inbucket, 'PW_INBUCKET_URL not set: no mailbox to read the magic link from')
+  test.skip(!localHttpDestination(inbucket), 'PW_INBUCKET_URL must be a loopback HTTP mailbox')
   test.skip(({}, info) => info.project.name !== 'desktop', 'journeys run on desktop only')
   test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -331,6 +327,7 @@ test.describe('new member sign-up @journey-write', () => {
       if (!link) await page.waitForTimeout(1000)
     }
     expect(link, `no sign-in link arrived in ${box}'s mailbox`).not.toBe('')
+    expect(localAuthLink(link, baseURL!, process.env.NEXT_PUBLIC_SUPABASE_URL!), 'mailbox link must stay on the local app or local auth verification endpoint').toBe(true)
     await page.goto(link)
     await settle(page)
     expect(new URL(page.url()).pathname, 'the emailed link did not sign the new member in').not.toBe('/sign-in')

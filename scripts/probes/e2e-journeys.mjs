@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 
 const spec = existsSync('test/e2e/journeys.spec.ts') ? readFileSync('test/e2e/journeys.spec.ts', 'utf8') : ''
 assert.ok(spec, 'test/e2e/journeys.spec.ts is missing')
-for (const needle of ['@journey ', '@journey-write', 'PW_JOURNEY_WRITES', 'frequencylocal.com', 'Your look', 'Start with this kit']) {
+for (const needle of ['@journey ', '@journey-write', 'PW_JOURNEY_WRITES', 'journeyWritesAllowed', 'Your look', 'Start with this kit']) {
   assert.ok(spec.includes(needle), `journeys.spec.ts no longer mentions ${needle}`)
 }
 
