@@ -24,6 +24,9 @@ import { TEMPLE_FONT_CLASS } from '@/components/sites/temple-fonts'
 import { TEMPLE_CSS } from '@/components/sites/temple-css'
 import { MIDNIGHT_FONT_CLASS } from '@/components/sites/midnight-fonts'
 import { MIDNIGHT_CSS } from '@/components/sites/midnight-css'
+import { NETWORK_KIT_CSS } from '@/components/sites/network-kit-css'
+import { NETWORK_KIT_FONT_CLASS } from '@/components/sites/network-kit-fonts'
+import { networkKitScheme } from '@/lib/theme/network-kit'
 import { DESIGNER_FONT_CLASS } from '@/components/sites/designer-fonts'
 import { DESIGNER_CSS } from '@/components/sites/designer-css'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
@@ -193,6 +196,9 @@ export async function SitePage({
   // The Network theme (lib/theme/network.ts): light and coastal, one bold color in four schemes. Its faces
   // ride the website root (NETWORK_FONT_CLASS); the scheme follows the owner's accent.
   const netSite = siteStyle.theme === 'network'
+  // The Network Theme Kit (lib/theme/network-kit.ts, code id `network-kit`): paper, card tint and deep ink with one hero
+  // color in four schemes. Its faces ride the website root (NETWORK_KIT_FONT_CLASS); the scheme follows the owner's accent.
+  const networkKitSite = siteStyle.theme === 'network-kit'
   // The Temple theme (lib/theme/temple.ts): a lime-washed house, plaster and umber with one clay color and
   // arched shapes. Its faces ride the website root (TEMPLE_FONT_CLASS); the clay follows the owner's accent.
   const templeSite = siteStyle.theme === 'temple'
@@ -211,6 +217,8 @@ export async function SitePage({
       ? { theme: 'wildheart' as const, season: seasonOf(new Date()) }
       : netSite
         ? { theme: 'network' as const, season: mensworkSeason(new Date()), scheme: networkScheme(websiteBrand.accent) }
+        : networkKitSite
+          ? { theme: 'network-kit' as const, season: mensworkSeason(new Date()), scheme: networkKitScheme(websiteBrand.accent) }
         : templeSite
           ? { theme: 'temple' as const, season: mensworkSeason(new Date()) }
           : midnightSite
@@ -218,7 +226,7 @@ export async function SitePage({
             : designerSite
               ? { theme: 'designer' as const, season: mensworkSeason(new Date()) }
               : null
-  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : templeSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : undefined
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
   const lookOverrides = siteLookOverrides(render.lookStyle)
   const fullFooter = siteLook(render.lookStyle).footer === 'full'
@@ -236,7 +244,7 @@ export async function SitePage({
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
           <div data-house-theme={skin.theme} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
-            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : templeSite ? TEMPLE_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : MENSWORK_CSS}</style>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
@@ -339,6 +347,12 @@ export async function SitePage({
         ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()),
         next: mwLive?.events.find((e) => /circle night/i.test(e.title)) ?? null,
       }
+    : networkKitSite
+      ? (() => {
+          // The kit's announce bar names the Space's next gathering, whatever it is called.
+          const next = mwLive?.events[0] ?? null
+          return { module: next?.title ?? '', theme: null, next }
+        })()
     : midnightSite
       ? (() => {
           // Midnight's top bar names the moon and the Space's next gathering, whatever it is called.
