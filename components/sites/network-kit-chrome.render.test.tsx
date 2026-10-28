@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { SiteChrome } from './site-chrome'
 import { NETWORK_KIT_CSS } from './network-kit-css'
 
-const base = { brandName: 'Harbor Network', homeHref: '/', links: [{ href: '/a', label: 'Meetups' }], cta: null, skin: { theme: 'network-kit' as const, season: 'fall' as const, scheme: 'ocean' as const } }
+const base = { themeFonts: false, brandName: 'Harbor Network', homeHref: '/', links: [{ href: '/a', label: 'Meetups' }], cta: null, skin: { theme: 'network-kit' as const, season: 'fall' as const, scheme: 'ocean' as const } }
 
 describe('the Network Theme Kit chrome', () => {
   it('wears the kit: its theme and scheme on the root, its skin after the owner look sheet, no season attribute', () => {
