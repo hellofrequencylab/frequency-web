@@ -85,7 +85,7 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
     tagline: 'Paper, ink and one solid color. Thirteen ways in.',
     madeFor: 'networking groups, clubs, hosts, studios, schools and anyone who brings people together',
     signature: 'Paper, card tint and deep ink, one hero color in four schemes, pill buttons, with Bricolage Grotesque and Outfit.',
-    surfaces: surfaces('soon', 'soon'),
+    surfaces: surfaces('soon', 'ready'),
   },
   {
     id: 'temple',

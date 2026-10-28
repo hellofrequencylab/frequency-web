@@ -7,6 +7,11 @@ import {
   summarizeTasks,
   mapTaskRow,
   TASK_STATUSES,
+  buildTaskPlanningPatch,
+  normalizeEstMinutes,
+  normalizePhase,
+  normalizeStartMinute,
+  taskPhase,
   type CrmTask,
 } from './tasks'
 
@@ -161,5 +166,80 @@ describe('mapTaskRow', () => {
     expect(mapped.status).toBe('open')
     expect(mapped.contactId).toBe('c')
     expect(TASK_STATUSES).toContain(mapped.status)
+  })
+})
+
+describe('planning fields: phase, estimate, start time', () => {
+  it('normalizes each to a value the column accepts or null', () => {
+    expect(normalizePhase('before')).toBe('before')
+    expect(normalizePhase('day_of')).toBe('day_of')
+    expect(normalizePhase('Day of')).toBeNull()
+    expect(normalizePhase(3)).toBeNull()
+    expect(normalizeEstMinutes(0)).toBe(0)
+    expect(normalizeEstMinutes(90)).toBe(90)
+    expect(normalizeEstMinutes(-1)).toBeNull()
+    expect(normalizeEstMinutes(1.5)).toBeNull()
+    expect(normalizeEstMinutes('30')).toBeNull()
+    expect(normalizeStartMinute(0)).toBe(0)
+    expect(normalizeStartMinute(1439)).toBe(1439)
+    expect(normalizeStartMinute(1440)).toBeNull()
+    expect(normalizeStartMinute(-5)).toBeNull()
+  })
+
+  it('derives the phase from the relative due date when none is stored', () => {
+    expect(taskPhase({ phase: null, dueOffsetDays: -3 })).toBe('before')
+    expect(taskPhase({ phase: null, dueOffsetDays: 0 })).toBe('day_of')
+    expect(taskPhase({ phase: null, dueOffsetDays: 2 })).toBe('after')
+    expect(taskPhase({ phase: null, dueOffsetDays: null })).toBeNull()
+    expect(taskPhase({ phase: 'after', dueOffsetDays: -3 })).toBe('after')
+    expect(taskPhase({ dueOffsetDays: null })).toBeNull()
+  })
+
+  it('writes the planning keys on insert only when a caller set them', () => {
+    const plain = buildTaskInsert({ createdBy: 'me', title: 'Order mats' })
+    expect(plain).not.toBeNull()
+    expect(plain).not.toHaveProperty('phase')
+    expect(plain).not.toHaveProperty('est_minutes')
+    expect(plain).not.toHaveProperty('start_minute')
+    const planned = buildTaskInsert({ createdBy: 'me', title: 'Order mats', phase: 'before', estMinutes: 45, startMinute: 600 })
+    expect(planned).toMatchObject({ phase: 'before', est_minutes: 45, start_minute: 600 })
+    const bad = buildTaskInsert({ createdBy: 'me', title: 'Order mats', phase: 'soon', estMinutes: -1, startMinute: 2000 })
+    expect(bad).not.toHaveProperty('phase')
+    expect(bad).not.toHaveProperty('est_minutes')
+    expect(bad).not.toHaveProperty('start_minute')
+  })
+
+  it('builds an edit patch: a named key is written, null clears, an invalid value refuses', () => {
+    const NOW = Date.parse('2026-10-28T12:00:00.000Z')
+    expect(buildTaskPlanningPatch({ estMinutes: 60 }, NOW)).toEqual({ est_minutes: 60, updated_at: '2026-10-28T12:00:00.000Z' })
+    expect(buildTaskPlanningPatch({ phase: null, startMinute: null }, NOW)).toEqual({
+      phase: null,
+      start_minute: null,
+      updated_at: '2026-10-28T12:00:00.000Z',
+    })
+    expect(buildTaskPlanningPatch({ phase: 'later' })).toBeNull()
+    expect(buildTaskPlanningPatch({ estMinutes: 2.5 })).toBeNull()
+    expect(buildTaskPlanningPatch({ startMinute: 1440 })).toBeNull()
+    expect(buildTaskPlanningPatch({})).toBeNull()
+  })
+
+  it('maps the new columns and tolerates a row from before the migration', () => {
+    const base = {
+      id: 'x',
+      space_id: 's',
+      contact_id: null,
+      assignee_profile_id: null,
+      title: 'T',
+      notes: null,
+      due_at: null,
+      status: 'open',
+      created_by: null,
+      created_at: '2026-07-10T00:00:00.000Z',
+      updated_at: '2026-07-10T00:00:00.000Z',
+      plan_id: null,
+      due_offset_days: null,
+    }
+    expect(mapTaskRow({ ...base, phase: 'after', est_minutes: 30, start_minute: 540 })).toMatchObject({ phase: 'after', estMinutes: 30, startMinute: 540 })
+    expect(mapTaskRow(base)).toMatchObject({ phase: null, estMinutes: null, startMinute: null })
   })
 })
