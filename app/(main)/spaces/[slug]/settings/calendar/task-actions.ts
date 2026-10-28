@@ -4,7 +4,18 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { assignTaskInPlan, getTaskInPlans, getTaskInScope, updateTaskStatusInPlans, updateTaskStatusInScope, type CrmTask } from '@/lib/crm/tasks'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
+import {
+  assignTaskInPlan,
+  buildTaskPlanningPatch,
+  getTaskInPlans,
+  getTaskInScope,
+  updateTaskPlanningInScope,
+  updateTaskStatusInPlans,
+  updateTaskStatusInScope,
+  type CrmTask,
+  type TaskPlanningPatch,
+} from '@/lib/crm/tasks'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { recordPlanActivity } from '@/lib/calendar/plan-activity-store'
 import { getSpacePlan, listPlansSharedWith, listSharedPlanIds } from '@/lib/calendar/plans-store'
@@ -30,12 +41,15 @@ import { notifyPlanMoment } from '@/lib/calendar/plan-notify'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 async function resolveEditor(slug: string): Promise<{ spaceId: string; profileId: string } | null> {
+  if (typeof slug !== 'string') return null
   const caller = await getCallerProfile()
   if (!caller?.id) return null
   const space = await getVisibleSpaceBySlug(slug, caller.id)
   if (!space) return null
   const caps = await getSpaceCapabilities(space, caller.id)
-  if (!caps.canEditProfile) return null
+  // Same two-part gate as plan-actions.ts: the editor role AND the `events` function switch, so a
+  // Space that switched Events off cannot still write to-dos through this door (calendar suite P2).
+  if (!caps.canEditProfile || !spaceFunctionAccess(space, 'events', caps.role)) return null
   return { spaceId: space.id, profileId: caller.id }
 }
 
@@ -151,6 +165,51 @@ export async function assignPlanTodo(slug: string, taskId: string, rawProfileId:
   if (assignee) {
     const plan = (await getSpacePlan(host, task.planId)) ?? null
     await notifyPlanMoment({ event: 'plan.assign', planId: task.planId, planTitle: plan?.title ?? 'a Plan', hostSpaceId: host, actorProfileId: editor.profileId, assigneeProfileId: assignee, todoTitle: task.title })
+  }
+  revalidatePath(`/spaces/${slug}/settings/calendar`)
+  revalidatePath(`/spaces/${slug}/calendar`)
+  return ok()
+}
+
+// ── PHASE, ESTIMATE AND START TIME (calendar suite pass 2) ───────────────────────────────────────
+
+/**
+ * Set a to-do's Before / Day of / After phase, its estimate in minutes, or its start minute of the
+ * day. A key left out is left alone and `null` clears it. The caller must edit the Space that owns
+ * the to-do, or hold an accepted share of its Plan; the write is bound to exactly that scope, and a
+ * value the columns would refuse is told to the person here instead of failing in the database. A
+ * to-do on a Plan writes the Plan's record, so the other team sees the change.
+ */
+export async function setTaskPlanning(slug: string, taskId: string, rawPatch: unknown): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this Space.')
+  if (typeof taskId !== 'string' || !UUID_RE.test(taskId)) return fail('That to-do no longer exists.')
+  if (!rawPatch || typeof rawPatch !== 'object') return fail('There was nothing to change.')
+  // Copy only the three keys this door writes, so nothing else on the object can ride along.
+  const raw = rawPatch as Record<string, unknown>
+  const input: TaskPlanningPatch = {}
+  if ('phase' in raw) input.phase = raw.phase as string | null
+  if ('estMinutes' in raw) input.estMinutes = raw.estMinutes as number | null
+  if ('startMinute' in raw) input.startMinute = raw.startMinute as number | null
+  const patch = buildTaskPlanningPatch(input)
+  if (!patch) return fail('That is not a valid phase, estimate or start time.')
+  const task = await reachableTask(editor, taskId)
+  if (!task) return fail('That to-do no longer exists.')
+  const own = task.spaceId === editor.spaceId
+  const wrote = await updateTaskPlanningInScope(
+    taskId,
+    patch,
+    own ? { spaceId: editor.spaceId } : { planIds: task.planId ? [task.planId] : [] },
+  )
+  if (!wrote) return fail('That to-do could not be updated.')
+  if (task.planId) {
+    await recordPlanActivity({
+      planId: task.planId,
+      actorProfileId: editor.profileId,
+      actorSpaceId: editor.spaceId,
+      kind: 'field',
+      summary: `Changed the timing or estimate on "${task.title}".`,
+    })
   }
   revalidatePath(`/spaces/${slug}/settings/calendar`)
   revalidatePath(`/spaces/${slug}/calendar`)
