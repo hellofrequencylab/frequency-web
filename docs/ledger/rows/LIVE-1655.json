@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1655",
+  "title": "Fix the Nocturne hero headline overlapping the preview on wide screens",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "components/frequency/site/pages/themes/nocturne-feature.css",
+    "ref": "Daniel screenshot 2026-10-28 17:47Z"
+  },
+  "detail": "At about 1500px and wider the Nocturne headline was sized by viewport width (up to 112px) and ran under the preview window. It is now sized from its own column (17cqw, capped at 112px), so a real gutter stays between the columns at every width from 1280 to 2560. Renders at 1280, 1440, 1536, 1920, 2000, 2560 and 390 are in /mnt/project-files/nocturne-ios/wide/.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-28",
+    "evidence": "Measured gap between the headline text and the preview: 71px at 1280, 78 at 1440, 82 at 1536, 92 at 1920, 2000 and 2560."
+  },
+  "wave": "W7"
+}

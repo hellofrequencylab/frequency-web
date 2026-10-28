@@ -14,6 +14,7 @@ import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import './nocturne-feature.css'
 import { NOCTURNE_BLOCKS, NOCTURNE_KITS, NOCTURNE_PACKAGES, NOCTURNE_SWATCHES, type NocturneKit } from '@/lib/themes/nocturne-feature-data'
+import { FREE_SPOTLIGHT_LABEL } from '@/lib/launch/entry'
 
 type Surface = 'site' | 'spacedesk' | 'spotlight' | 'email'
 type Shot = 'site' | 'spacedesk' | 'space' | 'spot' | 'email'
@@ -290,7 +291,9 @@ function Pressed({
   )
 }
 
-export function FrequencyMidnight() {
+/** `spotlightHref` is the "Get a Free Spotlight" address while the doorway is on (LAUNCH_ENTRY_ENABLED), else null.
+ *  The page reads the switch on the server and hands the address down, since this island cannot. */
+export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: string | null }) {
   const [kitId, setKitId] = useState('general')
   const [hv, setHv] = useState<Surface>('site')
   const [ins, setIns] = useState<InsView>('pages')
@@ -358,6 +361,11 @@ export function FrequencyMidnight() {
                 <a className="btn btn-ghost fq-iri-rim" href="#preview">
                   See it live
                 </a>
+                {spotlightHref && (
+                  <Link className="btn btn-ghost fq-iri-rim" href={spotlightHref}>
+                    {FREE_SPOTLIGHT_LABEL}
+                  </Link>
+                )}
               </div>
             </div>
             <div className="nf-hero-shot">

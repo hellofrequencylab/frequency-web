@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { launchEntryEnabled } from "@/lib/launch/enabled";
 import { resolveProfileSiteCanonical } from '@/lib/sites/profile-canonical'
 import { SITE_URL } from "@/lib/site";
 import { SITE_DESIGN } from "@/lib/theme/design";
@@ -245,6 +246,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/networks`, changeFrequency: "monthly", priority: 0.6 },
           // /system (LIVE-1562): the whole system in one story.
           { url: `${SITE_URL}/system`, changeFrequency: "monthly", priority: 0.6 },
+          // /free-spotlight (VLS-05): listed only while the doorway is open; it answers 404 otherwise.
+          ...(launchEntryEnabled() ? [{ url: `${SITE_URL}/free-spotlight`, changeFrequency: "monthly" as const, priority: 0.5 }] : []),
           // /themes (LIVE-1460): the theme gallery.
           { url: `${SITE_URL}/themes`, changeFrequency: "monthly", priority: 0.6 },
           // /themes/nocturne (LIVE-1380): the Nocturne Theme Kit's feature page (it was /themes/midnight).
