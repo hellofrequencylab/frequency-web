@@ -8,6 +8,12 @@
 /* Hero */
 .nf-top{display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px;margin-top:28px}
 .nf-h1{margin:0;font:700 clamp(44px,6.4vw,96px)/.96 var(--fq-font-display);letter-spacing:-.055em;color:var(--fq-text-strong)}
+.nf-name{font-size:clamp(40px,14.5vw,232px);line-height:.9;letter-spacing:-.06em}
+.nf-aft{margin:-6px 0 0;font:600 clamp(15px,1.6vw,20px)/1.2 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+.nf-tagline{margin:0;font:700 clamp(26px,3.6vw,52px)/1.02 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
+.nf-tagline em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}
+.nf-hero-shot{display:flex;justify-content:center;margin-top:44px}.nf-hero-shot .nf-dv{width:100%;max-width:min(100%,980px)}
+.nf-dvlab{display:inline-flex;align-items:center;height:30px;padding:0 14px;border-radius:999px;background:var(--fq-surface-glass);box-shadow:inset 0 0 0 1px var(--nf-hair);font:600 13px/1 var(--fq-font-display);letter-spacing:.08em;text-transform:uppercase;color:var(--fq-text-strong)}
 .nf-h1 em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}
 .nf-lead{margin:0;font:400 clamp(17px,1.4vw,21px)/1.55 var(--fq-font-sans);color:var(--fq-text-body);max-width:56ch;text-wrap:pretty}
 .nf-top .ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
@@ -18,7 +24,7 @@
 @media (max-width:900px){.nf-thread{display:none}.nf-cascade{gap:64px}}
 .nf-cz{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.9fr);gap:clamp(28px,4vw,64px);align-items:center}
 .nf-cz.r{grid-template-columns:minmax(0,.9fr) minmax(0,1.35fr)}.nf-cz.r .nf-cz-dev{order:2}
-.nf-cz-dev{display:flex;justify-content:center}
+.nf-cz-dev{display:flex;flex-direction:column;align-items:center;gap:14px}
 .nf-cz-dev .nf-dv{max-width:min(100%,640px)}
 .nf-cz-dev .nf-dv-spot{max-width:min(100%,300px)}
 .nf-cz-tx .jn{font:600 13px/1 var(--fq-font-display);letter-spacing:.1em;color:var(--fq-x-sun-neon)}

@@ -113,6 +113,7 @@ const CASCADE: {
   n: string
   name: string
   surface: Surface
+  tag: string
   body: string
   lives: string
   wears: string
@@ -123,6 +124,7 @@ const CASCADE: {
     n: '01 · Day one',
     name: 'Spotlight',
     surface: 'spotlight',
+    tag: 'Spotlight (Link Page)',
     body: 'Your link-in-bio page. The same hero, doors and featured offer your website opens with.',
     lives: 'Its own Spotlight link',
     wears: 'Nocturne in full',
@@ -133,6 +135,7 @@ const CASCADE: {
     n: '02 · On the network',
     name: 'Space',
     surface: 'spacedesk',
+    tag: 'Space (Profile)',
     body: 'Your page on Frequency, where your town finds you. Frequency keeps its frame; the page wears your fonts, your accent and your offers.',
     lives: 'frequency.com/spaces/yourbusiness',
     wears: 'Frequency, with your fonts and accent',
@@ -143,6 +146,7 @@ const CASCADE: {
     n: '03 · Your own domain',
     name: 'Website',
     surface: 'site',
+    tag: 'Website',
     body: 'Booking, events, programs, membership and a shop as you need them. Built from the same blocks, so nothing is written twice.',
     lives: 'yourbusiness.com',
     wears: 'Nocturne in full',
@@ -153,6 +157,7 @@ const CASCADE: {
     n: '04 · In the inbox',
     name: 'Email',
     surface: 'email',
+    tag: 'Email template',
     body: 'Four templates that wear your mark, face and accent: the weekly note, a welcome, the next few dates and a booking receipt. Dates, offers and names fill in from the same profile.',
     lives: 'Your subscribers’ inbox',
     wears: 'Nocturne, in tables that survive email clients',
@@ -334,11 +339,13 @@ export function FrequencyMidnight() {
             <div className="label">
               <b>Theme</b>Nocturne · by Frequency
             </div>
-            <h1 className="nf-h1">
+            <h1 className="nf-h1 nf-name">Nocturne</h1>
+            <p className="nf-aft">Nocturne - A Frequency Theme</p>
+            <p className="nf-tagline">
               Design it once.
               <br />
               <em className="fq-iri-text">Same theme everywhere.</em>
-            </h1>
+            </p>
             <p className="nf-lead">
               One complete theme for any business that gathers people. Your link in bio, your Space on Frequency, your own website and your emails,
               all reading one profile. Change it once and every surface follows.
@@ -352,6 +359,9 @@ export function FrequencyMidnight() {
               </a>
             </div>
           </div>
+          <div className="nf-hero-shot">
+            <Device kit={kit} surface="site" priority sizes="(max-width: 900px) 92vw, 980px" />
+          </div>
           <div className="nf-cascade">
             {CASCADE.map((c, i) => (
               <Fragment key={c.name}>
@@ -362,11 +372,12 @@ export function FrequencyMidnight() {
                 ) : null}
                 <div className={`nf-cz ${i % 2 ? 'r' : 'l'}`}>
                   <div className="nf-cz-dev">
+                    <span className="nf-dvlab">{c.tag}</span>
                     <Device kit={kit} surface={c.surface} priority={i === 0} sizes="(max-width: 900px) 90vw, 560px" />
                   </div>
                   <div className="nf-cz-tx">
                     <span className="jn">{c.n}</span>
-                    <h3>{c.name}</h3>
+                    <h3>{c.tag}</h3>
                     <p>{c.body}</p>
                     <ul>
                       <li>
