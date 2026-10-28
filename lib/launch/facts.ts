@@ -6,8 +6,7 @@
 const FACT_SLOTS = ['name', 'tagline', 'intro', 'story', 'contact', 'hours', 'offers', 'events', 'people', 'links'] as const
 type FactSlot = (typeof FACT_SLOTS)[number]
 
-const FACT_STATES = ['suggested', 'accepted', 'dismissed'] as const
-export type FactState = (typeof FACT_STATES)[number]
+export type FactState = 'suggested' | 'accepted' | 'dismissed'
 
 const FACT_LIMITS = { valueMax: 2000, snippetMax: 1000, originMax: 500 } as const
 
