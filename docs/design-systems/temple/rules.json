@@ -1,0 +1,307 @@
+{
+ "theme": "temple",
+ "repoThemeId": "temple-kit",
+ "note": "Every file of the Nocturne design system matches exactly one rule below (first match wins). kind: skip and reference carry a reason; mirror and built require every target to exist; asset also requires identical bytes; tokens are compared value for value against the repo's token block; copy sources must have every sentence present in the rule's targets. `baseline` lists known gaps as kind:key. It can only shrink: a gap that closes must be removed, and a new one fails.",
+ "tokenSources": [
+  "TEMPLE_KIT_TOKENS_CSS"
+ ],
+ "baseline": "docs/design-systems/temple/baseline.json",
+ "tokenMap": [
+  {
+   "from": "--plaster-",
+   "to": "--tk-plaster-"
+  },
+  {
+   "from": "--umber-",
+   "to": "--tk-umber-"
+  },
+  {
+   "from": "--clay-",
+   "to": "--tk-clay-"
+  },
+  {
+   "from": "--saffron-",
+   "to": "--tk-saffron-"
+  },
+  {
+   "from": "--olive-",
+   "to": "--tk-olive-"
+  },
+  {
+   "from": "--aegean-",
+   "to": "--tk-aegean-"
+  },
+  {
+   "from": "--fig-",
+   "to": "--tk-fig-"
+  }
+ ],
+ "rules": [
+  {
+   "glob": "thumbnail.html",
+   "kind": "skip",
+   "reason": "Claude Design's project thumbnail."
+  },
+  {
+   "glob": "_ds_bundle.js",
+   "kind": "reference",
+   "reason": "Generated bundle of the prototype components; never edited and never shipped."
+  },
+  {
+   "glob": "styles.css",
+   "kind": "reference",
+   "reason": "Entry file that @imports the token files, which are compared one by one below."
+  },
+  {
+   "glob": "readme.md",
+   "kind": "reference",
+   "reason": "Voice, colour, type, shape and atmosphere rules. Every value in it is checked through tokens/*.css; the voice rules are checked by the copy rules."
+  },
+  {
+   "glob": "README.md",
+   "kind": "reference",
+   "reason": "Handoff text; every token, screen and interaction in it is checked through the rules for the files it describes."
+  },
+  {
+   "glob": "SKILL.md",
+   "kind": "reference",
+   "reason": "Claude Design skill front page."
+  },
+  {
+   "glob": "HANDOFF.md",
+   "kind": "reference",
+   "reason": "The handoff text; every token, screen and interaction in it is checked through the rules for the files it describes."
+  },
+  {
+   "glob": "handoff/frequency/README.md",
+   "kind": "reference",
+   "reason": "Install steps for the theme package; each file it lists has its own rule."
+  },
+  {
+   "glob": "Design System.html",
+   "kind": "reference",
+   "reason": "Index page of every token card, component and page; each of those has its own rule."
+  },
+  {
+   "glob": "tokens/*.css",
+   "kind": "tokens",
+   "reason": "Compared value for value with the repo's TEMPLE_KIT_TOKENS_CSS under the tokenMap."
+  },
+  {
+   "glob": "guidelines/*.card.html",
+   "kind": "reference",
+   "reason": "Specimen cards for tokens, type, icons, textures and voice. The values they show come from tokens/*.css (checked); the visual pairs run compares the rendered specimens."
+  },
+  {
+   "glob": "guidelines/card.css",
+   "kind": "reference",
+   "reason": "Styles for the specimen cards only."
+  },
+  {
+   "glob": "guidelines/icon-cards.js",
+   "kind": "reference",
+   "reason": "Renders the icon specimen cards only."
+  },
+  {
+   "glob": "assets/fonts/*.ttf",
+   "kind": "reference",
+   "reason": "The same four faces (Branch, Marcellus, Jost, Cormorant Garamond) are already self-hosted as woff2 under app/fonts/temple; the new kit loads those files, so no second copy ships."
+  },
+  {
+   "glob": "assets/fonts/OFL-*.txt",
+   "kind": "reference",
+   "reason": "Font licences; the licences already ship with app/fonts/temple."
+  },
+  {
+   "glob": "assets/images/*.jpg",
+   "kind": "asset",
+   "target": "public/sites/temple-kit/photos/{base}"
+  },
+  {
+   "glob": "assets/textures/*.svg",
+   "kind": "asset",
+   "target": "public/sites/temple-kit/textures/{base}"
+  },
+  {
+   "glob": "assets/glyphs/*.svg",
+   "kind": "asset",
+   "target": "public/sites/temple-kit/glyphs/{base}"
+  },
+  {
+   "glob": "assets/frequency-*",
+   "kind": "reference",
+   "reason": "Frequency's own logo for the 'Runs on Frequency' credit; the repo uses its own copies under public/ and components/frequency."
+  },
+  {
+   "glob": "design_handoff/frequency/**",
+   "kind": "mirror",
+   "target": "{path}",
+   "reason": "A copy of the repo's own Frequency design files; the repo's copy is the authority (it is ahead)."
+  },
+  {
+   "glob": "app/themes/frequency/*.css",
+   "kind": "mirror",
+   "target": "{path}",
+   "reason": "A copy of the repo's Space-page and member kit CSS; the repo's copy is the authority."
+  },
+  {
+   "glob": "handoff/frequency/theme-contract.temple.json",
+   "kind": "built",
+   "target": "lib/themes/temple-kit-contract.json"
+  },
+  {
+   "glob": "handoff/frequency/kits.temple.json",
+   "kind": "built",
+   "target": "lib/themes/temple-kit-kits.json"
+  },
+  {
+   "glob": "components/elements/Seal.*",
+   "kind": "built",
+   "target": "components/sites/temple-kit-glyph.tsx"
+  },
+  {
+   "glob": "components/elements/Ornament.*",
+   "kind": "built",
+   "target": "components/sites/temple-kit-glyph.tsx"
+  },
+  {
+   "glob": "components/elements/ArchFrame.*",
+   "kind": "built",
+   "target": "components/sites/temple-kit-arch.tsx"
+  },
+  {
+   "glob": "components/elements/Mist.*",
+   "kind": "built",
+   "target": "components/sites/temple-kit-css.ts"
+  },
+  {
+   "glob": "components/elements/MoonPhases.*",
+   "kind": "built",
+   "target": "lib/theme/temple-kit-moon.ts"
+  },
+  {
+   "glob": "components/core/Sigil.*",
+   "kind": "built",
+   "target": "components/sites/temple-kit-glyph.tsx"
+  },
+  {
+   "glob": "components/core/Glyph.*",
+   "kind": "built",
+   "target": "components/sites/temple-kit-glyph.tsx"
+  },
+  {
+   "glob": "components/core/BrandMark.*",
+   "kind": "built",
+   "target": "components/sites/temple-kit-logo.tsx"
+  },
+  {
+   "glob": "components/**",
+   "kind": "reference",
+   "reason": "Prototype primitive (Button, Card, Tabs, Input and the rest). The live site draws the same look through registry blocks styled by components/sites/temple-kit-*-css.ts; each specimen is compared in the visual pairs run, not by file."
+  },
+  {
+   "glob": "Theme Feature Page.html",
+   "kind": "copy",
+   "targets": [
+    "components/frequency/site/pages/themes",
+    "lib/themes"
+   ]
+  },
+  {
+   "glob": "sales-page.css",
+   "kind": "built",
+   "target": "app/themes/frequency/site-pages-b.css"
+  },
+  {
+   "glob": "Web Theme.html",
+   "kind": "reference",
+   "reason": "Index of the thirteen business-area sites; each tile opens ui_kits/site, whose files have their own rules."
+  },
+  {
+   "glob": "Templates.html",
+   "kind": "reference",
+   "reason": "Frames Website, Spotlight, Space and Email together; each is checked through ui_kits/products."
+  },
+  {
+   "glob": "Spotlight Layouts.html",
+   "kind": "copy",
+   "targets": [
+    "lib/spotlight",
+    "lib/themes",
+    "components/sites"
+   ]
+  },
+  {
+   "glob": "Site Strategy.html",
+   "kind": "reference",
+   "reason": "Content and feature strategy. The build order and gaps it lists are ledger rows, not files."
+  },
+  {
+   "glob": "ui_kits/site/kits.js",
+   "kind": "built",
+   "target": "lib/themes/temple-kit-kits.json"
+  },
+  {
+   "glob": "ui_kits/site/tweaks-panel.jsx",
+   "kind": "reference",
+   "reason": "Claude Design's Tweaks harness; its controls map to the editor's Theme tab, the scaffold itself is not product."
+  },
+  {
+   "glob": "ui_kits/site/content.js",
+   "kind": "copy",
+   "targets": [
+    "lib/sites",
+    "components/sites",
+    "components/page-editor/blocks",
+    "lib/themes"
+   ]
+  },
+  {
+   "glob": "ui_kits/site/data.js",
+   "kind": "copy",
+   "targets": [
+    "lib/sites",
+    "components/sites",
+    "components/page-editor/blocks",
+    "lib/themes"
+   ]
+  },
+  {
+   "glob": "ui_kits/site/*.jsx",
+   "kind": "copy",
+   "targets": [
+    "lib/sites",
+    "components/sites",
+    "components/page-editor/blocks",
+    "lib/themes"
+   ]
+  },
+  {
+   "glob": "ui_kits/products/*.html",
+   "kind": "copy",
+   "targets": [
+    "lib/themes",
+    "components/sites",
+    "lib/sites",
+    "lib/spotlight",
+    "lib/email-react"
+   ]
+  },
+  {
+   "glob": "ui_kits/products/*.jsx",
+   "kind": "copy",
+   "targets": [
+    "lib/themes",
+    "components/sites",
+    "lib/sites",
+    "lib/spotlight",
+    "lib/email-react"
+   ]
+  },
+  {
+   "glob": "ui_kits/products/space-chrome.css",
+   "kind": "built",
+   "target": "app/themes/frequency/space-page.css"
+  }
+ ]
+}
