@@ -1,0 +1,115 @@
+{
+ "eyebrow": "Spotlight layouts · Networking group · Network",
+ "kits": [
+  {
+   "id": "general",
+   "name": "Networking group",
+   "hex": "#E9B949",
+   "who": "A local group that meets, with a way to show up the first time."
+  },
+  {
+   "id": "networks",
+   "name": "Multi-chapter networks",
+   "hex": "#E9B949",
+   "who": "Many chapters under one name: find a chapter, start one, and see what is happening everywhere."
+  },
+  {
+   "id": "clubs",
+   "name": "Professional associations",
+   "hex": "#E9B949",
+   "who": "Trade and professional associations: meetings, the member directory, dues and how to join."
+  },
+  {
+   "id": "markets",
+   "name": "Local business alliances",
+   "hex": "#E9B949",
+   "who": "Shop-local alliances and business districts: member businesses, perks, the next market day and how to join as a business."
+  },
+  {
+   "id": "hosts",
+   "name": "Mixers and socials",
+   "hex": "#EE7655",
+   "who": "Evening mixers and social nights for professionals: what is on, who comes, and a list to hear about the next one."
+  },
+  {
+   "id": "creators",
+   "name": "Creative collectives",
+   "hex": "#EE7655",
+   "who": "Collectives of artists, makers and freelancers: the members' work, the shows and studio nights, and a way to join."
+  },
+  {
+   "id": "wellness",
+   "name": "Summits and retreats",
+   "hex": "#EE7655",
+   "who": "Summits, retreats and member trips: dates, tickets, the agenda and a simple way to reserve."
+  },
+  {
+   "id": "studios",
+   "name": "Coworking communities",
+   "hex": "#1F6FA8",
+   "who": "Shared workspaces where the community matters as much as the desk: passes, member events and who is in this week."
+  },
+  {
+   "id": "nonprofits",
+   "name": "Community coalitions",
+   "hex": "#1F6FA8",
+   "who": "Coalitions and civic groups that bring organizations together: the work, the meetings and how to take part."
+  },
+  {
+   "id": "schools",
+   "name": "Programs and accelerators",
+   "hex": "#1F6FA8",
+   "who": "Programs, accelerators and host training: what you teach, when the next group starts and how to apply."
+  },
+  {
+   "id": "coaches",
+   "name": "Mentorship circles",
+   "hex": "#22796E",
+   "who": "Mentor-led circles and one-to-one sessions that pair experienced members with people a few steps behind."
+  },
+  {
+   "id": "venues",
+   "name": "Clubhouses and hubs",
+   "hex": "#22796E",
+   "who": "A members' clubhouse or community hub: the space, the calendar, and how to host your own event there."
+  },
+  {
+   "id": "faith",
+   "name": "Peer advisory boards",
+   "hex": "#22796E",
+   "who": "Small, confidential peer boards of owners and leaders who meet to work on real decisions."
+  }
+ ],
+ "layouts": [
+  {
+   "id": "stack",
+   "name": "Stack",
+   "sub": "Every way in, stacked"
+  },
+  {
+   "id": "card-wall",
+   "name": "Card wall",
+   "sub": "Two columns of square cards"
+  },
+  {
+   "id": "story",
+   "name": "Story",
+   "sub": "One photo, a few lines, one button"
+  },
+  {
+   "id": "calendar-first",
+   "name": "Calendar first",
+   "sub": "Dates lead, booking follows"
+  },
+  {
+   "id": "shop-front",
+   "name": "Shop front",
+   "sub": "Sessions as products"
+  },
+  {
+   "id": "profile",
+   "name": "Profile",
+   "sub": "Who you are, then one thing to do"
+  }
+ ]
+}
