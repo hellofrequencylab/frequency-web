@@ -5,7 +5,7 @@ vi.mock('@/app/themes/active/members-community', () => ({}))
 vi.mock('@/lib/supabase/server', () => ({ createClient: () => { throw new Error('No IO for header fixture') } }))
 vi.mock('@/lib/events/going-counts', () => ({ goingCountsByEvent: () => { throw new Error('No IO for header fixture') } }))
 import { FqCircleShell } from './circle-shell'
-const props = { notices: null, coverImage: null, statusLabel: 'Active', live: true, name: 'Human Circle', subline: '8 members · In person · Vista', invite: null, primary: null, admin: null, sister: null, nextEvent: null, myProfileId: null, tabs: [], tabTools: null, about: 'Human words <script>unsafe()</script>', hostLine: null, memberCount: 8, memberCap: 12, children: 'Circle feed' }
+const props = { notices: null, coverImage: null, name: 'Human Circle', subline: '8 members · In person · Vista', invite: null, primary: null, admin: null, sister: null, nextEvent: null, myProfileId: null, tabs: [], tabTools: null, about: 'Human words <script>unsafe()</script>', hostLine: null, memberCount: 8, memberCap: 12, children: 'Circle feed' }
 it('renders actual Frequency title metadata and safe human About content after legacy helper retirement', () => {
   const html = renderToStaticMarkup(FqCircleShell(props))
   expect(html).toContain('<h1 class="h1">Human Circle</h1>')
@@ -14,12 +14,13 @@ it('renders actual Frequency title metadata and safe human About content after l
   expect(html).not.toContain('<script>')
   expect(html).toContain('Circle feed')
 })
-it('under owning Space context uses h2 and omits the duplicate back breadcrumb', () => {
-  const html = renderToStaticMarkup(FqCircleShell({ ...props, inSpace: true }))
-  expect(html).toContain('<h2 class="h1">Human Circle</h2>')
-  expect(html).not.toContain('<h1')
-  expect(html).not.toContain('href="/circles"')
-  expect(html).toContain('fqm-cl-sub')
+it('a Space-owned Circle keeps its own cover and h1, with a Part of pill linking to the Space', () => {
+  const html = renderToStaticMarkup(FqCircleShell({ ...props, spaceLink: { href: '/spaces/mindless', name: 'Mindless' } }))
+  expect(html).toContain('<h1 class="h1">Human Circle</h1>')
+  expect(html).not.toContain('<h2')
+  expect(html).toContain('href="/spaces/mindless"')
+  expect(html).toContain('Part of Mindless')
+  expect(html).toContain('fqc-cover')
 })
 
 it('the actual Frequency About restores paragraphs, bold, italic and safe links with no raw HTML', () => {

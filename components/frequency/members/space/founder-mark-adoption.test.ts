@@ -3,9 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 // LIVE-1077: every Frequency surface that marks a Founding Business draws the pastel FounderMark, never the
 // old gold chip (FoundingBusinessBadge) or a plain-text mark. The Space profile and the share page already
-// do; the Circle header of a Space-owned Circle and the /discover/spaces cards joined them here.
+// do; the /discover/spaces cards joined them here (the Space-owned Circle header is gone, LIVE-1625).
 const SURFACES = [
-  'components/frequency/members/space/circle-space-header.tsx',
   'components/frequency/site/pages/discover/spaces.tsx',
   'components/frequency/members/spaces/spaces-body.tsx',
 ]
