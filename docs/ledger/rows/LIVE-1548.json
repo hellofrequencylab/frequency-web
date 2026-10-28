@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1548",
+  "title": "The launch records its own funnel and step timings without sending anything personal to a pixel",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "lib/launch/events.ts",
+    "ref": "Vera guided launch system, Phase 0 (VLS-03). Brand voice guide: no 'in minutes' claim until our own timings exist. Project rule: no persona, Journey, Circle topic or wellness data to pixels."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-events.mjs",
+    "note": "Runs lib/launch/events.ts under node: every launch event, with persona, topic and answer text offered as extras, comes out carrying only a launch id, a step id and a source kind, unchanged by pixelSafeProps; the median seconds from launch start to a step's publish computes. Behaviour is pinned by lib/launch/events.test.ts."
+  },
+  "detail": "Seven first-party launch events (launch_started, step_started, step_published, step_skipped, source_added, launch_cancelled, launch_completed) are written to the engagement ledger exactly once per launch, event and step through recordLaunchEvent, which never throws so a failed write cannot stop a person mid-launch. An event can carry only an opaque launch id, a step id and a source KIND (website, outline, list, email list, flyer), each checked against a closed list and run through pixelSafeProps; there is no field for anything a person typed, uploaded or chose. medianSecondsToPublish turns the ledger rows into the median seconds from launch start to each step's first publish, which is the number that finally allows or forbids any time-to-launch line on a page (none until it exists). The plan named a SQL view for the median; computing it in the app from the ledger needs no migration and the admin funnel (VLS-28) reads the same function. No UI, no flag, no migration.",
+  "wave": "W7"
+}
