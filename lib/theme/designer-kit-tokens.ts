@@ -13,7 +13,7 @@ export const DESIGNER_KIT_TOKENS_CSS = `
 --amber-700:#6B4A10;
 --card-sheen:linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,0) 40%);
 --color-accent-deep:#6B4A10;
---color-accent-soft:var(--accent-300);
+--color-accent-soft:var(--amber-300);
 --color-danger-soft:#E5BFB4;
 --color-info-soft:#D6E0E0;
 --color-link:#A65A3A;
@@ -107,9 +107,9 @@ export const DESIGNER_KIT_TOKENS_CSS = `
 --texture-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .24 0 0 0 0 .2 0 0 0 0 .16 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 --texture-grain-light:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .97 0 0 0 0 .92 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 --texture-plaster:radial-gradient(120% 80% at 15% 0%, rgba(255,255,255,.55), transparent 60%), radial-gradient(90% 70% at 100% 100%, rgba(214,196,170,.22), transparent 65%);
---th-accent-bg:var(--accent-100);
+--th-accent-bg:var(--amber-100);
 --th-accent-deep:#6B4A10;
---th-accent-soft:var(--accent-300);
+--th-accent-soft:var(--amber-300);
 --th-clip-lg:inset(0 round 28px);
 --th-clip-md:inset(0 round 18px);
 --th-clip-sm:inset(0 round 8px);
