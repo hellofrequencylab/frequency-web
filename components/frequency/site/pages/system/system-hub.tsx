@@ -1,5 +1,5 @@
 // THE HUB DIAGRAM on /system (LIVE-1562): four front doors feed one list of people, and six tools run off it.
-// Inline SVG with token colors only (var(--fq-*)), no hex, no theme CSS. Server component. The same data
+// Inline SVG with token colors only (var(--fq-*)), no hex; text sizes come from the kit's .tg classes. Server component. The same data
 // renders as a text list under the picture, so a screen reader and a crawler read the diagram too.
 import { SYSTEM_HUB } from './system-data'
 
@@ -17,10 +17,10 @@ function Box({ x, y, w, h, title, line, accent }: { x: number; y: number; w: num
     <g>
       <rect x={x} y={y} width={w} height={h} rx={14} fill={CARD} stroke={HAIR} strokeWidth={1.5} />
       <rect x={x} y={y + 14} width={4} height={h - 28} rx={2} fill={accent} />
-      <text x={x + 18} y={y + 26} fill={INK} fontFamily={DISPLAY} fontWeight={600} fontSize={14} letterSpacing="-.02em">
+      <text className="tg-s14" x={x + 18} y={y + 26} fill={INK} fontFamily={DISPLAY} fontWeight={600} letterSpacing="-.02em">
         {title}
       </text>
-      <text x={x + 18} y={y + 45} fill={MUTED} fontFamily={SANS} fontSize={12}>
+      <text className="tg-s13" x={x + 18} y={y + 45} fill={MUTED} fontFamily={SANS}>
         {line}
       </text>
     </g>
@@ -40,13 +40,13 @@ export function SystemHub() {
   const cy = 240
   return (
     <figure data-system-hub>
-      <svg viewBox="0 0 960 480" role="img" aria-labelledby="sys-hub-title" style={{ display: 'block', inlineSize: 'auto' }}>
+      <svg className="tg tg-wide" viewBox="0 0 960 480" role="img" aria-labelledby="sys-hub-title">
         <title id="sys-hub-title">{SYSTEM_HUB.heading}</title>
         <rect x={8} y={8} width={944} height={464} rx={28} fill="none" stroke={HAIR} strokeWidth={1.5} strokeDasharray="6 8" />
-        <text x={32} y={38} fill={MUTED} fontFamily={DISPLAY} fontWeight={600} fontSize={12} letterSpacing=".14em">
+        <text className="tg-s13" x={32} y={38} fill={MUTED} fontFamily={DISPLAY} fontWeight={600} letterSpacing=".14em">
           ONE CONSOLE
         </text>
-        <text x={40} y={doorTop - 14} fill={SIDE} fontFamily={DISPLAY} fontWeight={600} fontSize={11} letterSpacing=".14em">
+        <text className="tg-s13" x={40} y={doorTop - 14} fill={SIDE} fontFamily={DISPLAY} fontWeight={600} letterSpacing=".14em">
           BE FOUND
         </text>
         {doors.map(([title, line], i) => {
@@ -60,16 +60,16 @@ export function SystemHub() {
         })}
         <circle cx={cx} cy={cy} r={88} fill={CARD} stroke={SIDE} strokeWidth={2} />
         <circle cx={cx} cy={cy} r={100} fill="none" stroke={HAIR} strokeWidth={1} strokeDasharray="3 6" />
-        <text x={cx} y={cy - 10} textAnchor="middle" fill={INK} fontFamily={DISPLAY} fontWeight={600} fontSize={18} letterSpacing="-.03em">
+        <text className="tg-s16" x={cx} y={cy - 10} textAnchor="middle" fill={INK} fontFamily={DISPLAY} fontWeight={600} letterSpacing="-.03em">
           {SYSTEM_HUB.people[0]}
         </text>
-        <text x={cx} y={cy + 12} textAnchor="middle" fill={MUTED} fontFamily={SANS} fontSize={12}>
+        <text className="tg-s13" x={cx} y={cy + 12} textAnchor="middle" fill={MUTED} fontFamily={SANS}>
           {SYSTEM_HUB.people[1]}
         </text>
-        <text x={cx} y={cy + 30} textAnchor="middle" fill={MUTED} fontFamily={SANS} fontSize={12}>
+        <text className="tg-s13" x={cx} y={cy + 30} textAnchor="middle" fill={MUTED} fontFamily={SANS}>
           {SYSTEM_HUB.people[2]}
         </text>
-        <text x={690} y={toolTop - 2} fill={WING} fontFamily={DISPLAY} fontWeight={600} fontSize={11} letterSpacing=".14em">
+        <text className="tg-s13" x={690} y={toolTop - 2} fill={WING} fontFamily={DISPLAY} fontWeight={600} letterSpacing=".14em">
           RUNS OFF IT
         </text>
         {tools.map(([title, line], i) => {
