@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1742",
+  "title": "The Designer Theme Kit has thirteen profile starter kits with photography, one for each profile of the design system",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/designer-profile-variants.ts",
+    "ref": "Designer Theme Kit build, pass 2"
+  },
+  "detail": "Pass 2. lib/themes/designer-kits.json is ui_kits/site/kits.js converted word for word (13 profiles with accents, block defaults, sample projects, stock questions; the design's sample testimonials are left out). lib/sites/kits/designer-profile-variants.ts lays each profile out as pages of the existing Designer blocks in the design's home order (hero with the frosted project strip, portfolio mosaic, arch and steps, capabilities slab, proof, founder, photo band, questions, closing call) with the theme's own photographs from /sites/designer/photos. Ids are designer-profile-<id> (the id is also the kit's niche), listed in DESIGNER_PROFILE_KIT_INDEX and shown in the editor's kit library on a Designer site. KIT_INDEX, the six niche doors, the seven niche-spec profile kits, every block default and every saved site are untouched. Where the design breaks docs/marketing/voice-and-language-guide.md the guide wins; SOFTEN in the kit file lists each changed line (durations and timelines such as twenty minutes, eight to twelve weeks, nine to twelve months; 'saves the most money'; 'Ten years') and the sample testimonials became the standard placeholder. The design's shop, membership and journeys areas have no Designer block and carry prices, so shop and membership are left out and shop calls link to the portfolio. Profile accents are carried in the JSON and exposed by designerProfileAccent, but a kit holds no colours and applyKit writes none: painting a Space with its profile accent needs the brand accent write, not done here. Baseline 489 to 464 (the kits.js built target and 24 copy sentences).",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "The profile kit module and the converted kit data exist, and the registry loads designer-profile kits.",
+    "cmd": "node scripts/probes/designer-profile-kits.mjs"
+  },
+  "closed": "2026-10-28"
+}
