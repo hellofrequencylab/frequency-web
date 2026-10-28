@@ -1,5 +1,5 @@
 {
- "ledger": "LIVE-NK-0",
+ "ledger": "LIVE-1671",
  "ids": [
   "copy:Spotlight Layouts.html#0fc6326e",
   "copy:Spotlight Layouts.html#2087e8a0",
@@ -433,25 +433,6 @@
   "copy:ui_kits/site/data.js#fdc00f83",
   "copy:ui_kits/site/data.js#fe75ed2d",
   "copy:ui_kits/site/data.js#ff2fde2b",
-  "missing:assets/images/photo-01.jpg",
-  "missing:assets/images/photo-02.jpg",
-  "missing:assets/images/photo-03.jpg",
-  "missing:assets/images/photo-04.jpg",
-  "missing:assets/images/photo-05.jpg",
-  "missing:assets/images/photo-06.jpg",
-  "missing:assets/images/photo-07.jpg",
-  "missing:assets/images/photo-08.jpg",
-  "missing:assets/images/photo-09.jpg",
-  "missing:assets/images/photo-10.jpg",
-  "missing:assets/images/photo-11.jpg",
-  "missing:assets/images/photo-12.jpg",
-  "missing:assets/images/placeholder-01.png",
-  "missing:assets/images/placeholder-02.png",
-  "missing:assets/images/placeholder-03.png",
-  "missing:assets/images/placeholder-04.png",
-  "missing:assets/images/placeholder-05.png",
-  "missing:assets/images/placeholder-06.png",
-  "missing:assets/images/placeholder-07.png",
   "missing:handoff/frequency/kits.default.json",
   "missing:ui_kits/site/kits.js"
  ]
