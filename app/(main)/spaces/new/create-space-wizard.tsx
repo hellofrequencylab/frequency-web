@@ -207,7 +207,7 @@ export function CreateSpaceWizard({
             {kitLabel.charAt(0)}
           </span>
           <p className="min-w-0 flex-1 text-meta text-muted">
-            <strong className="block text-body-sm text-text-strong">{kitLabel} kit is picked</strong>
+            <strong className="block text-body-sm text-text">{kitLabel} kit is picked</strong>
             Your website, email and Spotlight start in this look. You can change it on the Look step.
           </p>
           <button type="button" className="text-meta font-semibold text-text underline underline-offset-4" onClick={() => setIndex(STEPS.findIndex((x) => x.key === 'look'))}>
@@ -229,7 +229,7 @@ export function CreateSpaceWizard({
             >
               <span
                 aria-hidden
-                className={`grid h-5 w-5 place-items-center rounded-full text-eyebrow ${state === 'todo' ? 'bg-surface-elevated' : 'bg-[image:var(--fq-pa)] text-text-strong'}`}
+                className={`grid h-5 w-5 place-items-center rounded-full text-eyebrow ${state === 'todo' ? 'bg-surface-elevated' : 'bg-[image:var(--fq-pa)] text-text'}`}
               >
                 {i + 1}
               </span>
@@ -285,7 +285,7 @@ export function CreateSpaceWizard({
                     <FqIcon name={INTENT_ICON[i.id] ?? 'plus'} size={18} />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-body-sm font-semibold text-text-strong">{i.label}</span>
+                    <span className="block text-body-sm font-semibold text-text">{i.label}</span>
                     <span className="block text-meta text-muted">{i.hint}</span>
                   </span>
                 </button>
@@ -295,7 +295,7 @@ export function CreateSpaceWizard({
           <button
             type="button"
             aria-pressed={decideLater}
-            className={`mt-4 text-body-sm underline underline-offset-4 ${decideLater ? 'font-semibold text-text-strong' : 'text-muted'}`}
+            className={`mt-4 text-body-sm underline underline-offset-4 ${decideLater ? 'font-semibold text-text' : 'text-muted'}`}
             onClick={() => {
               setDecideLater(true)
               setIntents([])
@@ -447,7 +447,7 @@ export function CreateSpaceWizard({
         </div>
         <aside className="card hidden p-5 @3xl:sticky @3xl:top-6 @3xl:block" aria-label="Your space so far">
           <p className="k">Your space</p>
-          <p className="mt-2 break-words font-display text-h4 font-bold text-text-strong">{name.trim() || 'Not named yet'}</p>
+          <p className="mt-2 break-words font-display text-card-title font-bold text-text">{name.trim() || 'Not named yet'}</p>
           <p className="mt-1 text-meta text-muted">{plan === 'free' ? 'Free to start' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`}</p>
           <dl className="mt-4 divide-y divide-border text-meta">
             {[
@@ -458,7 +458,7 @@ export function CreateSpaceWizard({
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-3 py-2.5">
                 <dt className="text-muted">{k}</dt>
-                <dd className="text-right font-semibold text-text-strong">{v}</dd>
+                <dd className="text-right font-semibold text-text">{v}</dd>
               </div>
             ))}
           </dl>
