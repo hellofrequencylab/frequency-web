@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1561",
+  "title": "Seven profile doors: /for pages and Start free bridges for local businesses, creators, schools, clubs, faith, wellness and markets",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-28",
+  "wave": "W7",
+  "source": {
+    "file": "lib/marketing/funnel-config.ts",
+    "ref": "Owner 2026-10-27: each theme gets a version for every profile; LIVE-1512 added the profiles and left the doors to this row"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/profile-doors.mjs",
+    "note": "Each of the seven profiles has a FunnelConfig in the registry, a NICHE_DESIGN entry (funnel-design.test.ts pins the headline match), and a NICHE_FUNNEL_DESTINATIONS row so Start free lands in a Space Mode. Every trust line keeps the card-processing clause and the /for index counts its doors."
+  },
+  "detail": "Seven new doors on the one funnel template (ADR-591): /for/local-businesses (general, business:service), /for/creators (business:product), /for/schools-and-programs (business:cohort), /for/clubs-and-groups (business:membership), /for/faith-communities (nonprofit:programs, the Non Profit pricing beat), /for/wellness-and-retreats (business:appointments) and /for/markets-and-festivals (business:ticketed). Copy follows the voice guide: pain first, no em dashes, no invented numbers; every fee figure interpolates from the pricing input through the shared helpers. New planet notes for the galaxy (Shop, Courses, Enrollment, Meetups, Dues, Groups, Giving, Retreats, Vendors, Gate, Your page). Photos reuse the shared gathering set until a profile has its own. The /join first question (DOOR_CHOICES) and the footer Who it is for column still list the six core doors; widening them is a separate call."
+}

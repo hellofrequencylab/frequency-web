@@ -737,6 +737,600 @@ const NETWORKS_FUNNEL: FunnelConfig = {
   },
 }
 
+// ── Configs #7 to #13: the seven business profiles (LIVE-1512 follow-up) ──────────────────────────────
+// Each profile from lib/theme/mega-theme.ts gets its own door. Same template, same fee facts (the helpers
+// above), same Start free bridge; only the copy and the Mode a finished operator lands in change. The
+// Mode is declared once, on the NICHE_FUNNEL_DESTINATIONS row, never here.
+
+const GENERAL_FUNNEL: FunnelConfig = {
+  slug: 'local-businesses',
+  niche: 'general',
+  archetypes: ['host_connector'],
+  hero: {
+    eyebrow: 'For local businesses',
+    h1: "You run the business. Keep your people close to it.",
+    seoTitle: "A page, bookings and contacts for local businesses",
+    subhead:
+      "Share your hours and services, take bookings and keep in touch with the customers you meet. Give your regulars a place to find what is on.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+    trustLine: '0% on your own audience, plus card processing.',
+  },
+  metaDescription:
+    "Build a local following. Share dates, take bookings and keep in touch with customers on Frequency. For local businesses. Start with your Space.",
+  problem: {
+    header: "Customers come in, say hi and leave. Keeping in touch afterward is the part that slips.",
+    body: "Your hours are on one site, your bookings on another, and the regulars who would come back never hear from you. Keep your page, your contacts and your dates together so a good visit can turn into the next one.",
+    caption: "Start with the next gathering.",
+  },
+  howItWorks: {
+    header: "Put your business on one page.",
+    steps: [
+      { title: "Describe your business.", body: "Add your name, hours, services and how people can reach you." },
+      { title: "Bring your customers.", body: "Import a list or share your Frequency card after a conversation." },
+      { title: "Open bookings and dates.", body: "Add available times or a gathering. Choose Business when you want to charge." },
+    ],
+    caption: "Start with the next date.",
+  },
+  features: [
+    {
+      icon: "calendar",
+      title: "Let customers book a time.",
+      body: "Share your available times. Customers book from your page, and Business adds payment for services and deposits.",
+    },
+    {
+      icon: "contact",
+      title: "Remember who came in.",
+      body: "Keep customer details and notes in Contacts. Import a list or scan a card when you meet someone new.",
+    },
+    {
+      icon: "qr",
+      title: "Share your page at the counter.",
+      body: "Offer your Frequency card so a customer can find your page and save your details before they leave.",
+    },
+    {
+      icon: "spark",
+      soft: true,
+      title: "Write to the regulars you haven’t seen.",
+      body: "Choose people from Contacts and send a note about a new service, a date or a quiet week. Reminders go out for bookings.",
+    },
+  ],
+  loop: {
+    header: "Meet, remember, invite.",
+    intro: "A visit can become a regular. Give the customer a way to find you again.",
+    payoff: "Share your card, let a customer book a time, and keep their details handy for the next visit.",
+  },
+  pricing: {
+    header: 'One honest price.',
+    intro: pricingIntro('When your business starts charging for bookings or a shop, that is Business.'),
+    rows: [
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
+    ],
+    breakEvenCaption: breakEvenCaption('the customers you bring in yourself'),
+    note: "Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
+  },
+  faq: [
+    { q: 'Do I need to be technical?', a: "No. Start with your name and your hours. Add the rest when you’re ready." },
+    { q: 'What does it actually cost?', a: costAnswer('your own bookings and sales') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. You can open your Space before then, free, and it is ready when the town opens.` },
+    { q: 'Can I take my contacts with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
+    { q: 'Will my customers need to download anything?', a: 'No. They book and pay from a link.' },
+    { q: 'What if I also sell things or run events?', a: "It grows with you. The same Space handles a shop, tickets and check-in when you're ready." },
+    { q: 'Is my customer information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
+  ],
+  finalCta: {
+    header: "Put your business on one page.",
+    subhead: "Share your hours, take bookings and keep in touch with the customers you meet.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+  },
+}
+
+const CREATORS_FUNNEL: FunnelConfig = {
+  slug: 'creators',
+  niche: 'creators',
+  archetypes: ['portfolio_teacher'],
+  hero: {
+    eyebrow: 'For artists, makers and creators',
+    h1: "You make the work. Give it a home that isn’t a feed.",
+    seoTitle: "A page, shop and list for artists and makers",
+    subhead:
+      "Show what you make, share your next show or drop and keep a list of the people who care. Give your audience a place that is yours.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+    trustLine: '0% on your own audience, plus card processing.',
+  },
+  metaDescription:
+    "Build an audience you keep. Share your work, your next show and your list on Frequency. For artists, makers and creators. Start with your Space.",
+  problem: {
+    header: "Your work lives on platforms that decide who sees it. Your people deserve a place you own.",
+    body: "A post disappears in a day, and the people who bought from you last year never hear about the next piece. Keep your work, your dates and your list together so a fan can find you on purpose.",
+    caption: "Start with the next gathering.",
+  },
+  howItWorks: {
+    header: "Give your work a page of its own.",
+    steps: [
+      { title: "Show your work.", body: "Add your name, a few pieces and how people can find you." },
+      { title: "Start your list.", body: "Import the people who already follow you, or share your Frequency card at a show." },
+      { title: "Share the next thing.", body: "Post a show, a workshop or a drop. Choose Business when you want to sell from your page." },
+    ],
+    caption: "Start with the next show.",
+  },
+  features: [
+    {
+      icon: "spark",
+      title: "A page that holds your work.",
+      body: "Show your pieces and your story in one place. Business opens a shop so people can buy from your page.",
+    },
+    {
+      icon: "contact",
+      title: "A list that is yours.",
+      body: "Keep the people who care in Contacts. Export any time, so nothing you build here is locked in.",
+    },
+    {
+      icon: "qr",
+      title: "Share your page at a show.",
+      body: "Offer your Frequency card at a market or an opening so someone can find your work and join your list.",
+    },
+    {
+      icon: "envelope",
+      soft: true,
+      title: "Tell your people about the next drop.",
+      body: "Send a short note from your name about a new piece, a show or a workshop. No algorithm in between.",
+    },
+  ],
+  loop: {
+    header: "Meet, remember, invite.",
+    intro: "Someone who loves a piece can become a collector. Give them a way to find the next one.",
+    payoff: "Share your card, add the person to your list, and tell them when the next show or drop is on.",
+  },
+  pricing: {
+    header: 'One honest price.',
+    intro: pricingIntro('When you start selling from your page or charging for a workshop, that is Business.'),
+    rows: [
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
+    ],
+    breakEvenCaption: breakEvenCaption('the collectors you bring yourself'),
+    note: "Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
+  },
+  faq: [
+    { q: 'Do I need to be technical?', a: "No. Start with your name and a few pieces. Add the rest when you’re ready." },
+    { q: 'What does it actually cost?', a: costAnswer('your own sales') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. You can open your Space before then, free, and it is ready when the town opens.` },
+    { q: 'Can I take my list with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
+    { q: 'Do I have to stop posting elsewhere?', a: 'No. Keep posting where your people are, and give them one place that is yours to land.' },
+    { q: 'What if I also teach or host events?', a: "It grows with you. The same Space handles workshops, tickets and check-in when you're ready." },
+    { q: 'Is my list private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
+  ],
+  finalCta: {
+    header: "Give your work a home that is yours.",
+    subhead: "Show what you make, start your list and share the next show from one page.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+  },
+}
+
+const SCHOOLS_FUNNEL: FunnelConfig = {
+  slug: 'schools-and-programs',
+  niche: 'schools',
+  archetypes: ['portfolio_teacher'],
+  hero: {
+    eyebrow: 'For schools, courses and programs',
+    h1: "You teach the course. Keep the enrollment simple.",
+    seoTitle: "Courses, enrollment and community for schools and programs",
+    subhead:
+      "Share your courses, take enrollment and keep in touch with students between terms. Give your students a place to find the next one.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+    trustLine: '0% on your own audience, plus card processing.',
+  },
+  metaDescription:
+    "Build community through courses. Share dates, take enrollment and keep in touch with students on Frequency. For schools and programs. Start with your Space.",
+  problem: {
+    header: "Teaching is the good part. Enrollment forms, reminders and alumni follow-ups pile up around it.",
+    body: "Sign-ups in a form tool, a roster in a spreadsheet, and students who finished last term never hear about the next one. Keep your courses, your roster and your dates together.",
+    caption: "Start with the next gathering.",
+  },
+  howItWorks: {
+    header: "Put your next course on the calendar.",
+    steps: [
+      { title: "Describe your school.", body: "Add your name, the courses you run and how students can reach you." },
+      { title: "Bring your students.", body: "Import your roster or share your Frequency card at an open day." },
+      { title: "Open enrollment.", body: "Post a course with its dates. Choose Business when you want students to pay for a seat." },
+    ],
+    caption: "Start with the next course.",
+  },
+  features: [
+    {
+      icon: "calendar",
+      title: "Let students enroll from your page.",
+      body: "Share a course with its dates and take sign-ups there. Business adds payment for seats and deposits.",
+    },
+    {
+      icon: "contact",
+      title: "Keep the roster in one place.",
+      body: "Student details, notes and attendance live in Contacts, so you know who finished and who is due back.",
+    },
+    {
+      icon: "qr",
+      title: "Check students in.",
+      body: "Invite students to check in when a session meets. Their check-ins show up on their contact record.",
+    },
+    {
+      icon: "spark",
+      soft: true,
+      title: "Tell alumni about the next course.",
+      body: "Choose the people who finished and send a note about what is next. Reminders go out before each session.",
+    },
+  ],
+  loop: {
+    header: "Meet, remember, invite.",
+    intro: "A student who finishes one course is the first person to invite to the next. Make that easy.",
+    payoff: "Share your course, check students in, and keep their details handy for the next enrollment.",
+  },
+  pricing: {
+    header: 'One honest price.',
+    intro: pricingIntro('When your school starts charging for seats and courses, that is Business.'),
+    rows: [
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
+    ],
+    breakEvenCaption: breakEvenCaption('the students you bring in yourself'),
+    note: "Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
+  },
+  faq: [
+    { q: 'Do I need to be technical?', a: "No. Start with your name and a course. Add the rest when you’re ready." },
+    { q: 'What does it actually cost?', a: costAnswer('your own enrollments') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. You can open your Space before then, free, and it is ready when the town opens.` },
+    { q: 'Can I take my roster with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
+    { q: 'Will students need to download anything?', a: 'No. They enroll and pay from a link.' },
+    { q: 'What if I also run one-off workshops?', a: "It grows with you. The same Space handles workshops, tickets and memberships when you're ready." },
+    { q: 'Is student information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
+  ],
+  finalCta: {
+    header: "Put your next course on the calendar.",
+    subhead: "Share your courses, take enrollment and keep in touch with students between terms.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+  },
+}
+
+const CLUBS_FUNNEL: FunnelConfig = {
+  slug: 'clubs-and-groups',
+  niche: 'clubs',
+  archetypes: ['host_connector'],
+  hero: {
+    eyebrow: 'For clubs and groups',
+    h1: "You keep the group going. Let the admin stop eating the fun.",
+    seoTitle: "Meetups, members and dues for clubs and groups",
+    subhead:
+      "Share your meetups, welcome new members and keep everyone in the loop. Give your group a page that is more than a chat thread.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+    trustLine: '0% on your own audience, plus card processing.',
+  },
+  metaDescription:
+    "Build community through meetups. Share dates, welcome members and keep in touch on Frequency. For clubs and groups. Start with your Space.",
+  problem: {
+    header: "The group runs on one person and a chat thread. New people can’t find it, and dues are a chase.",
+    body: "Meetups get announced three times and still missed. A newcomer asks how to join and nobody answers. Keep your dates, your members and your page together so the group can find itself.",
+    caption: "Start with the next gathering.",
+  },
+  howItWorks: {
+    header: "Give your group a front door.",
+    steps: [
+      { title: "Describe your group.", body: "Add your name, what you do together and how someone joins." },
+      { title: "Bring your members.", body: "Import your list or share your Frequency card at the next meetup." },
+      { title: "Post the next meetup.", body: "Add the date and take RSVPs. Choose Business when you want to collect dues." },
+    ],
+    caption: "Start with the next meetup.",
+  },
+  features: [
+    {
+      icon: "calendar",
+      title: "Post the meetup once.",
+      body: "Share the date on your page and the local calendar. Take RSVPs so you know who is coming.",
+    },
+    {
+      icon: "contact",
+      title: "Know who is in the group.",
+      body: "Members, newcomers and the people who came once live in Contacts, with check-ins on each.",
+    },
+    {
+      icon: "qr",
+      title: "Welcome newcomers at the door.",
+      body: "Offer your Frequency card so a newcomer can find the group and join on the spot.",
+    },
+    {
+      icon: "spark",
+      soft: true,
+      title: "Collect dues without the chase.",
+      body: "On Business, offer a membership and let people pay from your page. Reminders go out before each meetup.",
+    },
+  ],
+  loop: {
+    header: "Meet, remember, invite.",
+    intro: "Someone who shows up once can become a regular. Give them a way to find the next meetup.",
+    payoff: "Share your card, take an RSVP, and keep the newcomer on your list for next time.",
+  },
+  pricing: {
+    header: 'One honest price.',
+    intro: pricingIntro('When your group starts collecting dues or selling tickets, that is Business.'),
+    rows: [
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
+    ],
+    breakEvenCaption: breakEvenCaption('the members you bring in yourself'),
+    note: "Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
+  },
+  faq: [
+    { q: 'Do I need to be technical?', a: "No. Start with your name and a meetup. Add the rest when you’re ready." },
+    { q: 'What does it actually cost?', a: costAnswer('your own dues and tickets') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. You can open your Space before then, free, and it is ready when the town opens.` },
+    { q: 'Can I take my member list with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
+    { q: 'Will members need to download anything?', a: 'No. They RSVP and pay from a link.' },
+    { q: 'Do we have to charge anything?', a: 'No. A free Space runs your page, meetups and member list. Business is there when dues or tickets come up.' },
+    { q: 'Is member information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
+  ],
+  finalCta: {
+    header: "Give your group a front door.",
+    subhead: "Post the next meetup, welcome newcomers and keep the whole group in the loop.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+  },
+}
+
+const FAITH_FUNNEL: FunnelConfig = {
+  slug: 'faith-communities',
+  niche: 'faith',
+  archetypes: ['mission_patron'],
+  nonprofit: true,
+  hero: {
+    eyebrow: 'For churches and faith communities',
+    h1: "Your people gather every week. Give them one place to find each other.",
+    seoTitle: "Gatherings, groups and giving for faith communities",
+    subhead:
+      "Share your services and small groups, welcome newcomers and offer giving with no network fee, plus card processing.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+    trustLine: 'No network fee on what you raise, plus card processing.',
+  },
+  metaDescription:
+    "Build community through gatherings. Share services, small groups and giving on Frequency. For churches and faith communities. Start with your Space.",
+  problem: {
+    header: "A newcomer walks in on Sunday. By Wednesday nobody has their name.",
+    body: "Service times on a website, small groups in a spreadsheet, giving through a third tool. Keep your gatherings, your groups and your people together so a first visit can become belonging.",
+    caption: "Start with the next gathering.",
+  },
+  howItWorks: {
+    header: "Start with your gatherings and your people.",
+    steps: [
+      { title: "Share your community.", body: "Describe who you are, when you gather and how someone can join a group." },
+      { title: "Bring your people.", body: "Import your directory or share your Frequency card after a service." },
+      { title: "Open giving.", body: "Verify your 501(c)(3) status to take one-time and recurring gifts on the Non Profit plan." },
+    ],
+    caption: "Start with the next service.",
+  },
+  features: [
+    {
+      icon: "calendar",
+      title: "Post services and small groups.",
+      body: "Share your gatherings on your page and the local calendar. Take sign-ups for a group or a class.",
+    },
+    {
+      icon: "contact",
+      title: "Know who is new.",
+      body: "Newcomers, members and group leaders live in Contacts, with check-ins so a first visit is remembered.",
+    },
+    {
+      icon: "spark",
+      title: "Offer one-time and recurring giving.",
+      body: "On the Non Profit plan, take gifts from your page. Verified 501(c)(3) organizations pay no network fee on giving, only card processing.",
+    },
+    {
+      icon: "envelope",
+      soft: true,
+      title: "Keep your people informed between gatherings.",
+      body: "Send a note about this week, a group that is starting or a way to help. Receipts and recurring-gift reminders go out on their own.",
+    },
+  ],
+  loop: {
+    header: "Meet, remember, invite.",
+    intro: "A newcomer might join a group, give or bring a friend. Make each next step clear.",
+    payoff: "Share your gatherings and ways to give, remember the people you welcome, then tell them what is on next.",
+  },
+  pricing: {
+    header: 'Free to start. Nothing taken on what you raise.',
+    intro: 'Start free, and host free while you grow. Giving opens on the Non Profit plan, flat and never per seat, for verified 501(c)(3) organizations, with no network fee on what you raise.',
+    rows: [
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'nonprofit', name: 'Non Profit', detail: '0% on what you raise', featured: true },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
+    ],
+    breakEvenCaption: 'No network fee on what you raise, only card processing. Verified 501(c)(3) organizations pay no network take-rate on the Non Profit plan.',
+    note: 'We never take a share of your giving. Your people export any time, so you are never locked in.',
+  },
+  faq: [
+    { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
+    { q: 'What does it actually cost?', a: `${PLAN_STORY.crewSpace} Taking gifts is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no network fee on what you raise. You always see the full number, nothing hidden.` },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. You can open your Space before then, free, and it is ready when the town opens.` },
+    { q: 'Do you take a cut of giving?', a: 'No. We never take a share of a gift. Card processing is the only fee, and it goes to the card processor, not to us.' },
+    { q: 'Can I take my directory with me?', a: 'Yes, any time. Export your whole list whenever you want.' },
+    { q: 'How do we get the Non Profit plan?', a: 'Verify your 501(c)(3) status and the flat Non Profit plan opens, with the full toolkit and giving built in.' },
+    { q: 'Is our directory private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
+  ],
+  finalCta: {
+    header: "Give your people one place to find each other.",
+    subhead: "Share your gatherings, welcome newcomers and offer giving on the Non Profit plan.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+  },
+}
+
+const WELLNESS_FUNNEL: FunnelConfig = {
+  slug: 'wellness-and-retreats',
+  niche: 'wellness',
+  archetypes: ['studio_keeper'],
+  hero: {
+    eyebrow: 'For wellness practices and retreats',
+    h1: "You hold the space. Let the bookings hold themselves.",
+    seoTitle: "Bookings, retreats and community for wellness practices",
+    subhead:
+      "Share your sessions and retreats, take bookings and keep in touch with the people you care for. Give your community a place to find what is next.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+    trustLine: '0% on your own audience, plus card processing.',
+  },
+  metaDescription:
+    "Build community through sessions and retreats. Share dates and keep in touch with clients on Frequency. For wellness practices. Start with your Space.",
+  problem: {
+    header: "You give people your full attention in the room. Outside it, the bookings and follow-ups scatter.",
+    body: "A booking tool, a retreat deposit by hand, a client who loved last spring and never heard about this one. Keep your sessions, your retreats and your people together.",
+    caption: "Start with the next gathering.",
+  },
+  howItWorks: {
+    header: "Put your next session on the calendar.",
+    steps: [
+      { title: "Describe your practice.", body: "Add your name, what you offer and how clients can reach you." },
+      { title: "Bring your clients.", body: "Import your list or share your Frequency card after a session." },
+      { title: "Open your calendar.", body: "Add available times or a retreat date. Choose Business when you want to take payment or deposits." },
+    ],
+    caption: "Start with the next session.",
+  },
+  features: [
+    {
+      icon: "calendar",
+      title: "Let clients choose a time.",
+      body: "Share your available times. Clients book from your page, and Business adds payment for sessions and retreat deposits.",
+    },
+    {
+      icon: "contact",
+      title: "Look back before they walk in.",
+      body: "Client notes, intake and history live in Contacts, ready before the next session.",
+    },
+    {
+      icon: "qr",
+      title: "Share your practice after a session.",
+      body: "Offer your Frequency card so someone can find your page, save your details and book again.",
+    },
+    {
+      icon: "spark",
+      soft: true,
+      title: "Invite past clients to the retreat.",
+      body: "Choose people from Contacts and send a note about a retreat or a new offering. Reminders go out before each booking.",
+    },
+  ],
+  loop: {
+    header: "Meet, remember, invite.",
+    intro: "A good session leads to the next one. Give the client a way to find your practice again.",
+    payoff: "Share your card, let a client choose a time, and keep their notes ready for the next conversation.",
+  },
+  pricing: {
+    header: 'One honest price.',
+    intro: pricingIntro('When your practice starts charging for sessions and retreats, that is Business.'),
+    rows: [
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
+    ],
+    breakEvenCaption: breakEvenCaption('the bookings you bring in yourself'),
+    note: "Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
+  },
+  faq: [
+    { q: 'Do I need to be technical?', a: "No. Start with your name and a session. Add the rest when you’re ready." },
+    { q: 'What does it actually cost?', a: costAnswer('your own bookings') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. You can open your Space before then, free, and it is ready when the town opens.` },
+    { q: 'Can I take my contacts with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
+    { q: 'Will my clients need to download anything?', a: 'No. They book and pay from a link.' },
+    { q: 'What if I also run classes or a retreat?', a: "It grows with you. The same Space handles classes, retreat tickets and check-in when you're ready." },
+    { q: 'Is my client information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
+  ],
+  finalCta: {
+    header: "Put your next session on the calendar.",
+    subhead: "Share your practice, add your available times and let clients book from your page.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+  },
+}
+
+const MARKETS_FUNNEL: FunnelConfig = {
+  slug: 'markets-and-festivals',
+  niche: 'markets',
+  archetypes: ['gathering_host'],
+  hero: {
+    eyebrow: 'For markets, fairs and festivals',
+    h1: "You bring the whole town out. Keep the vendors and the crowd in one place.",
+    seoTitle: "Vendors, tickets and the crowd for markets and festivals",
+    subhead:
+      "Share your market dates, give every vendor a page and keep in touch with the people who came. Give your crowd a place to find the next one.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+    trustLine: '0% on your own audience, plus card processing.',
+  },
+  metaDescription:
+    "Build a crowd that comes back. Share market dates, vendors and tickets on Frequency. For markets, fairs and festivals. Start with your Space.",
+  problem: {
+    header: "Vendors email, the crowd scrolls past, and the day after the market everyone disappears.",
+    body: "Stall applications in an inbox, the lineup on a flyer, and no way to reach the people who came. Keep your dates, your vendors and your crowd together so this market fills the next one.",
+    caption: "Start with the next gathering.",
+  },
+  howItWorks: {
+    header: "Put the market on the calendar.",
+    steps: [
+      { title: "Describe your market.", body: "Add your name, where you set up and when the next one is." },
+      { title: "Add your vendors.", body: "Give each vendor their own page on your lineup, and keep the stall list in Contacts." },
+      { title: "Open the gates.", body: "Share the date and take RSVPs. Choose Business when you want to sell tickets or stall spots." },
+    ],
+    caption: "Start with the next market day.",
+  },
+  features: [
+    {
+      icon: "calendar",
+      title: "Post the market once.",
+      body: "Share the date on your page and the local calendar. Business adds paid tickets and stall fees.",
+    },
+    {
+      icon: "contact",
+      title: "A lineup of vendors, each with a page.",
+      body: "Vendors and makers live on your lineup with their own pages. Keep stall details and payments in Contacts.",
+    },
+    {
+      icon: "qr",
+      title: "Check the crowd in at the gate.",
+      body: "Invite people to check in as they arrive, so you know who came and can reach them next time.",
+    },
+    {
+      icon: "spark",
+      soft: true,
+      title: "Tell the crowd about the next one.",
+      body: "Send a short note to everyone who checked in about the next market day. Vendors hear about applications the same way.",
+    },
+  ],
+  loop: {
+    header: "Meet, remember, invite.",
+    intro: "A visitor who checks in once can come back every month. Give them a way to find the next date.",
+    payoff: "Share the date, check the crowd in, and tell them when the next market is on.",
+  },
+  pricing: {
+    header: 'One honest price.',
+    intro: pricingIntro('When your market starts selling tickets or stall spots, that is Business.'),
+    rows: [
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
+      { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
+    ],
+    breakEvenCaption: breakEvenCaption('the crowd you bring yourself'),
+    note: "Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
+  },
+  faq: [
+    { q: 'Do I need to be technical?', a: "No. Start with your name and a market date. Add the rest when you’re ready." },
+    { q: 'What does it actually cost?', a: costAnswer('your own tickets and stall fees') },
+    { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. You can open your Space before then, free, and it is ready when the town opens.` },
+    { q: 'Can vendors have their own page?', a: 'Yes. Each vendor gets a page on your lineup, and a vendor can open their own Space any time.' },
+    { q: 'Will visitors need to download anything?', a: 'No. They RSVP, check in and pay from a link.' },
+    { q: 'Can I take my contacts with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
+    { q: 'Is visitor information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
+  ],
+  finalCta: {
+    header: "Put the market on the calendar.",
+    subhead: "Share the date, give your vendors a page and keep in touch with the crowd that came.",
+    microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
+  },
+}
+
 // ── The registry (ADR-591): one config per persona door, keyed by the SAME canonical slug the pricing
 // "by who you are" strip and the persona registry use, so every strip card lands on a real, on-topic page
 // (never a 404). Adding a door = one config + one row here. ────────────────────────────────────────────
@@ -747,6 +1341,13 @@ return {
   venues: VENUES_FUNNEL,
   nonprofits: NONPROFITS_FUNNEL,
   networks: NETWORKS_FUNNEL,
+  'local-businesses': GENERAL_FUNNEL,
+  creators: CREATORS_FUNNEL,
+  'schools-and-programs': SCHOOLS_FUNNEL,
+  'clubs-and-groups': CLUBS_FUNNEL,
+  'faith-communities': FAITH_FUNNEL,
+  'wellness-and-retreats': WELLNESS_FUNNEL,
+  'markets-and-festivals': MARKETS_FUNNEL,
 }
 }
 
