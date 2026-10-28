@@ -647,7 +647,16 @@ jobs:
           # floor (HYG-027): from then on a run whose seven operator surfaces bounce off
           # requireAdminFloor() fails instead of announcing. Same two-tab read, same reason.
           PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
-        run: pnpm test:e2e
+        # Production-only host contracts run separately below. The expanded
+        # preview-safe public suite remains in this smoke/a11y/overflow run.
+        run: pnpm exec playwright test --grep-invert "@visual|@journey|@public-surface"
+
+      - name: Public surface -- production contracts
+        if: ${{ always() && steps.preview.outputs.ready == 'true' }}
+        env:
+          PW_BASE_URL: https://frequencylocal.com
+          PW_PROBE_CRON: '0'
+        run: pnpm exec playwright test public-surface.spec.ts --project mobile
 
       # ── THE VISUAL COMPARE, IN TWO TIERS (2026-09-14) ──────────────────────────────────
       #
