@@ -521,7 +521,7 @@ export const NICHE_DESIGN: Record<string, NicheDesign> = {
     photo: 'day-meditation-circle.jpg',
     interlude: 'gathering-08.jpg',
     you: 'Your community',
-    h1: { lead: 'Your people gather every week.', em: ['Give them one place to find each other.'] },
+    h1: { lead: 'Your people already gather.', em: ['Give them one place to find each other.'] },
     events: [
       ['event', 'Service posted', 'Sun 10:00am'],
       ['user', 'Newcomer', 'First visit Sunday'],

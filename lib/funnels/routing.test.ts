@@ -34,7 +34,7 @@ const EXPECTED_NICHE_MODE: Record<string, string> = {
   creators: 'business:product',
   schools: 'business:cohort',
   clubs: 'business:membership',
-  faith: 'nonprofit:programs',
+  faith: 'nonprofit:donations',
   wellness: 'business:appointments',
   markets: 'business:ticketed',
 }

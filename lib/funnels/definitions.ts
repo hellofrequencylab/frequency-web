@@ -163,12 +163,12 @@ export const NICHE_FUNNEL_DESTINATIONS: Record<string, FunnelDestination> = {
   // ADR-1863: communities and teachers were folded into hosts and coaches. A stale ?seq= for either
   // falls back to the general landing.
   // The seven business profiles (LIVE-1512 follow-up): each profile door lands in the Mode closest to how
-  // that business charges. Faith communities take the nonprofit programs Mode, since giving is the step up.
+  // that business charges. Faith communities take the nonprofit donations Mode, since giving is the step up.
   general: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'service' }) },
   creators: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'product' }) },
   schools: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'cohort' }) },
   clubs: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'membership' }) },
-  faith: { mode: 'direct', url: spaceCreatePath({ type: 'nonprofit', variant: 'programs' }) },
+  faith: { mode: 'direct', url: spaceCreatePath({ type: 'nonprofit', variant: 'donations' }) },
   wellness: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'appointments' }) },
   markets: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'ticketed' }) },
 }

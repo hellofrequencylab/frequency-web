@@ -1085,7 +1085,7 @@ const FAITH_FUNNEL: FunnelConfig = {
   nonprofit: true,
   hero: {
     eyebrow: 'For churches and faith communities',
-    h1: "Your people gather every week. Give them one place to find each other.",
+    h1: "Your people already gather. Give them one place to find each other.",
     seoTitle: "Gatherings, groups and giving for faith communities",
     subhead:
       "Share your services and small groups, welcome newcomers and offer giving with no network fee, plus card processing.",
