@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1546",
+  "title": "A starter site asks for its address when it lands and is live only after the address loads",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "lib/spaces/starter-site.ts",
+    "ref": "Vera guided launch system, Phase 0 (VLS-04). Daniel 2026-10-27: a site is not live until its URL loads; there is no wildcard domain, so each address is attached on publish."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/starter-live.mjs",
+    "note": "Runs lib/sites/site-address.ts under node with a stand-in fetch: 200 is live; 404, a redirect, a 502 and an unreachable address are finishing. Also reads that publishStarterSite requests the address. Behaviour is pinned by lib/sites/site-address.test.ts and lib/spaces/starter-site-publish.test.ts."
+  },
+  "detail": "publishStarterSite (the Wizard's first website) saved the site but never attached `<slug>.frequencylocal.com` to the Vercel project, so a Space born with a Theme Kit had a site and no working address until the owner pressed Publish by hand. It now asks for the address once the site lands, through addSiteSubdomain, best effort and logged (`starter_site_address_not_requested`) so a miss is visible. lib/sites/site-address.ts adds `starterSiteState(slug)`: 'live' only when `https://<slug>.frequencylocal.com/` answers 200, otherwise 'finishing' (the certificate follows the attach by a short while). Callers that say 'live' to a person (the launch hub, VLS-09 and VLS-19) read that state instead of assuming it. A reserved or invalid slug has no free address and is never reported live from here. No migration, no flag, no copy change.",
+  "wave": "W7"
+}

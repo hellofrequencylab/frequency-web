@@ -13,6 +13,19 @@ export function generalKitId(theme: MegaThemeId): string {
   return `${theme === 'frequency' ? 'default' : theme}-general`
 }
 
+/** Attach the new site's free address (`<slug>.frequencylocal.com`) to the Vercel project (VLS-04). There is no
+ *  wildcard domain, so a site published without this has no certificate. Best effort and logged: a miss never
+ *  undoes the publish, and `starterSiteState` keeps saying 'finishing' until the address loads. */
+async function attachStarterAddress(slug: string): Promise<void> {
+  const [{ requestSiteAddress }, { addSiteSubdomain }, { log }] = await Promise.all([
+    import('@/lib/sites/site-address'),
+    import('@/lib/sites/vercel-domains'),
+    import('@/lib/log'),
+  ])
+  const asked = await requestSiteAddress(slug, addSiteSubdomain)
+  if (!asked.requested) log.warn('starter_site_address_not_requested', { slug, error: asked.error })
+}
+
 /** Publish the General kit of `theme` as a new Space's first website. Returns whether it landed. */
 export async function publishStarterSite(spaceId: string, theme: string | null | undefined): Promise<boolean> {
   if (!spaceId || !isMegaThemeId(theme)) return false
@@ -32,7 +45,10 @@ export async function publishStarterSite(spaceId: string, theme: string | null |
     const landed = await saveStarterWebsiteState(spaceId, state)
     if (landed) {
       const space = await getSpaceById(spaceId)
-      if (space) refreshSite(space.slug)
+      if (space) {
+        refreshSite(space.slug)
+        await attachStarterAddress(space.slug)
+      }
     }
     return landed
   } catch (err) {
