@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
@@ -360,6 +361,13 @@ test.describe('new member sign-up @journey-write', () => {
       const shown = (await page.locator('main, body').first().innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300)
       throw new Error(`Send magic link did not reach the "No account for that email yet" step. At ${page.url()}. Page says: ${shown}`)
     })
+    // Short fingerprint of the stored sign-in verifier (never the value) so a failure shows whether
+    // "Create a new account" replaced the first flow's verifier or left it in place.
+    const tag = async () => {
+      const v = (await page.context().cookies()).find((c) => /auth-token-code-verifier$/.test(c.name))?.value
+      return v ? createHash('sha256').update(v).digest('hex').slice(0, 6) : 'none'
+    }
+    const afterAskFirst = await tag()
     await page.getByRole('button', { name: 'Create a new account' }).click()
 
     // Read the newest message in the mailbox and pull the first link that goes through auth. The local
@@ -381,6 +389,7 @@ test.describe('new member sign-up @journey-write', () => {
       }
       if (!link) await page.waitForTimeout(1000)
     }
+    const afterCreate = await tag()
     expect(link, `no sign-in link arrived in ${box}'s mailbox`).not.toBe('')
     expect(localAuthLink(link, baseURL!, process.env.NEXT_PUBLIC_SUPABASE_URL!), 'mailbox link must stay on the local app or local auth verification endpoint').toBe(true)
     // Record each hop (status and Location, tokens and codes stripped) and the cookie names the browser
@@ -398,7 +407,7 @@ test.describe('new member sign-up @journey-write', () => {
     // cookie and the per-flow slot hold the same value; if they differ, the fixed one is the first flow's.
     const fixedV = jar.find((c) => /auth-token-code-verifier$/.test(c.name))?.value
     const slotV = jar.find((c) => /-flow-[A-Za-z0-9_-]+-code-verifier$/.test(c.name))?.value
-    const verifiers = `fixed verifier ${fixedV ? 'present' : 'absent'}, flow slot ${slotV ? 'present' : 'absent'}, same value: ${fixedV !== undefined && fixedV === slotV}`
+    const verifiers = `fixed verifier ${fixedV ? 'present' : 'absent'}, flow slot ${slotV ? 'present' : 'absent'}, same value: ${fixedV !== undefined && fixedV === slotV}; fixed verifier after ask-first ${afterAskFirst}, after Create ${afterCreate}, at the link ${fixedV ? createHash('sha256').update(fixedV).digest('hex').slice(0, 6) : 'none'}`
     expect(new URL(page.url()).pathname, `the emailed link did not sign the new member in. Hops: ${hops.join(' | ')}. Cookies: ${held}. Verifiers: ${verifiers}. Ended at ${page.url()}`).not.toBe('/sign-in')
     assertNoServerErrors(serverErrors, 'sign-up')
     await expect(page.getByText('Something went wrong on our end')).toHaveCount(0)

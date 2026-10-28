@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-1201",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.readFileSync(p,'utf8');const w=r('app/(main)/spaces/new/create-space-wizard.tsx')+r('components/spaces/create-flow/create-flow.tsx');const pg=r('app/(main)/spaces/new/page.tsx');const bad=[];if(!w.includes('SparkShell'))bad.push('wizard is not on the Spark kit');if(!pg.includes('parsePlanHint(params.plan)'))bad.push('page does not read ?plan=');if(!w.includes('createWizardSteps(SPACE_MANIFEST)'))bad.push('steps are not read off the manifest');if(bad.length){console.error('LIVE-1201: '+bad.join('; '));process.exit(1)}\"",
+      "note": "Fails when the wizard leaves the Spark kit, stops reading ?plan=, or stops deriving its steps from the manifest."
+    }
+  },
+  "append": {
+    "detail": "2026-10-28 (LIVE-1733): the wizard's step engine moved to components/spaces/create-flow; this probe reads the engine file as well as the wizard. Probe rewritten with the owner's phrase 'rewrite probes LIVE-1201 and LIVE-1531'. Same three checks."
+  }
+}
