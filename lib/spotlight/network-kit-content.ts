@@ -55,7 +55,7 @@ interface ProfileSource {
   cta: string
   descriptor: string
   photo: string
-  labels?: Partial<Record<'gather' | 'belong' | 'book' | 'sell' | 'publish', string>>
+  labels?: Partial<Record<'gather' | 'belong' | 'book' | 'learn' | 'sell' | 'publish', string>>
   hero: { eyebrow: string; title: string; em: string; body: string }
   gatherings: Pair
   offerings?: { label: string; head: Pair }
@@ -117,10 +117,10 @@ const PROFILES: Record<ProfileId, ProfileSource> = {
     letter: { title: 'What members made.', em: 'And what is next.' }, layout: 'shop-front',
   },
   schools: {
-    name: 'Cohorts and accelerators', tools: ['publish', 'learn', 'gather'], cta: 'See the programs', descriptor: 'Cohorts · Demo days · Apply', photo: 'photo-01',
+    name: 'Programs and accelerators', tools: ['publish', 'learn', 'gather'], cta: 'See the programs', descriptor: 'Cohorts · Demo days · Apply', photo: 'photo-01',
     labels: { learn: 'Programs', gather: 'Info sessions' },
-    hero: { eyebrow: 'Grow with a cohort', title: 'Business is better', em: 'with a cohort.', body: 'A small group of founders, a clear plan and one room to work it out in. You leave with a plan, a pitch and a group that keeps meeting after.' },
-    gatherings: { title: 'Come and', em: 'ask us' }, letter: { title: 'Dates for the next cohort.', em: 'When they are set.' }, layout: 'stack',
+    hero: { eyebrow: 'Grow with a group', title: 'Business is better', em: 'with a group.', body: 'A small group of founders, a clear plan and one room to work it out in. You leave with a plan, a pitch and a group that keeps meeting after.' },
+    gatherings: { title: 'Come and', em: 'ask us' }, letter: { title: 'Dates for the next session.', em: 'When they are set.' }, layout: 'stack',
   },
   clubs: {
     name: 'Professional associations', tools: ['publish', 'gather', 'belong'], cta: 'Become a member', descriptor: 'Meetings · Directory · Membership', photo: 'photo-12',
