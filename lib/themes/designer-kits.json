@@ -1,0 +1,1692 @@
+{
+ "theme": "designer",
+ "source": "ui_kits/site/kits.js",
+ "note": "The thirteen Designer profiles, converted from the design system without changing a word. Block defaults, sample projects and the stock questions come with them. lib/sites/kits/designer-profile-variants.ts lays these out as pages of Designer blocks and softens the lines the voice guide forbids. The design system's sample testimonials are not carried: the guide forbids invented ones.",
+ "images": {
+  "photo-01": "dz-house-front",
+  "photo-02": "dz-courtyard-arch",
+  "photo-03": "dz-designer-kitchen-hero",
+  "photo-04": "dz-bath-teal",
+  "photo-05": "dz-bath-blush",
+  "photo-06": "dz-pergola",
+  "photo-07": "dz-outdoor-bar",
+  "photo-08": "dz-designer-sofa",
+  "photo-09": "dz-cabinet-detail",
+  "photo-10": "dz-courtyard-arch",
+  "photo-11": "dz-pergola",
+  "photo-12": "dz-designer-kitchen",
+  "nature-palm": "dz-outdoor-bar",
+  "nature-fern": "dz-cabinet-detail",
+  "nature-dunes": "dz-house-front",
+  "nature-grain": "dz-bath-blush",
+  "industrial-panel": "dz-kitchen-wide",
+  "industrial-ribs": "dz-bath-teal",
+  "industrial-blades": "dz-pergola",
+  "placeholder-01": "dz-kitchen-island",
+  "placeholder-02": "dz-bath-teal",
+  "placeholder-03": "dz-house-front",
+  "placeholder-04": "dz-courtyard-arch",
+  "placeholder-05": "dz-pergola",
+  "placeholder-06": "dz-bath-blush",
+  "placeholder-07": "dz-cabinet-detail",
+  "portrait": "dz-portrait-01",
+  "portrait-2": "dz-portrait-02"
+ },
+ "blocks": {
+  "hero": {
+   "name": "Hero",
+   "fields": {
+    "eyebrow": "Design studio · Your city",
+    "title": "We make spaces that balance beauty, structure,",
+    "em": "and soul.",
+    "body": "One team from the first sketch to the final styling. Tell us what you are dreaming up and we will take it from there.",
+    "cta2": "View portfolio"
+   }
+  },
+  "live": {
+   "name": "Studio strip",
+   "fields": {}
+  },
+  "portfolio": {
+   "name": "Portfolio",
+   "fields": {
+    "eyebrow": "Portfolio",
+    "title": "Our work,",
+    "em": "start to finish",
+    "kicker": "Three recent projects, and what it took to get each one right."
+   }
+  },
+  "steps": {
+   "name": "Our approach",
+   "fields": {
+    "eyebrow": "Our approach",
+    "title": "How we bring your vision",
+    "em": "to life",
+    "s1t": "Start with how you live",
+    "s1l": "Every project begins with you.",
+    "s1b": "We ask how you want to feel in the space before we draw a line. The plan follows from there.",
+    "s2t": "Design what we can build",
+    "s2l": "Because a drawing is only a wish until it is built.",
+    "s2b": "We know permits, inspectors and trades, so the design you approve is the one that gets made.",
+    "s3t": "One team, start to finish",
+    "s3l": "No handoffs. No lost details.",
+    "s3b": "The people who plan your project see it through, and you always know who to call."
+   }
+  },
+  "doors": {
+   "name": "Ways to work",
+   "fields": {
+    "eyebrow": "Ways to work",
+    "title": "Start where",
+    "em": "you are"
+   }
+  },
+  "offerings": {
+   "name": "Services",
+   "fields": {
+    "eyebrow": "Services",
+    "title": "Ways to",
+    "em": "work together",
+    "kicker": "Most projects begin with a free discovery call. From there you choose how much we carry."
+   }
+  },
+  "capabilities": {
+   "name": "Capabilities",
+   "fields": {
+    "eyebrow": "Our capabilities",
+    "title": "Everything in-house,",
+    "em": "start to finish."
+   }
+  },
+  "journeys": {
+   "name": "Courses",
+   "fields": {
+    "eyebrow": "Courses",
+    "title": "Learn to plan",
+    "em": "like a designer",
+    "kicker": "Small online groups, a clear weekly plan and real feedback on your own project."
+   }
+  },
+  "gatherings": {
+   "name": "Events",
+   "fields": {
+    "eyebrow": "Events",
+    "title": "Come and see",
+    "em": "the studio",
+    "kicker": "Open evenings, small workshops and tours of finished projects."
+   }
+  },
+  "membership": {
+   "name": "Membership",
+   "fields": {
+    "eyebrow": "Membership",
+    "title": "Stay close",
+    "em": "between projects",
+    "kicker": "A seasonal letter, a monthly design circle and a care plan for past clients."
+   }
+  },
+  "proof": {
+   "name": "Testimonials",
+   "fields": {
+    "eyebrow": "Testimonials"
+   }
+  },
+  "founder": {
+   "name": "Founder",
+   "fields": {
+    "eyebrow": "Meet the founder",
+    "title": "Led by vision.",
+    "em": "Grounded in execution.",
+    "lead": "Your name pairs a designer’s eye with a builder’s discipline.",
+    "body": "Ten years inside every phase of a project, from structural planning to the last cushion, means the results feel cohesive and the process feels calm.\nThe studio exists to be the kind of firm we always wished we could hire: a clear vision, steady communication and an experience as considered as the outcome.",
+    "quote": "Design without follow-through is only a wish.",
+    "by": "Your name, Founder"
+   }
+  },
+  "band": {
+   "name": "The experience",
+   "fields": {
+    "eyebrow": "The experience",
+    "title": "Bring your vision",
+    "em": "to reality",
+    "c1t": "Dream it",
+    "c1a": "Picture the finished room.",
+    "c1b": "Where does everyone gather? What do you notice first when you walk in?",
+    "c2t": "Build it",
+    "c2a": "One careful choice at a time.",
+    "c2b": "You are involved in what matters without carrying the weight of it all.",
+    "c3t": "Live in it",
+    "c3a": "A space that feels like yours.",
+    "c3b": "It is the whole experience, not only the outcome, and it starts with a conversation.",
+    "cta": "Bring my project to life"
+   }
+  },
+  "shop": {
+   "name": "From the shop",
+   "fields": {
+    "eyebrow": "The shop",
+    "title": "Take the studio",
+    "em": "home"
+   }
+  },
+  "library": {
+   "name": "From the journal",
+   "fields": {
+    "eyebrow": "The journal",
+    "title": "Plan with",
+    "em": "clearer eyes",
+    "kicker": "Free guides and checklists from the studio. Read them before you call anyone, including us."
+   }
+  },
+  "letter": {
+   "name": "Letter sign-up",
+   "fields": {
+    "title": "A letter each season.",
+    "em": "Nothing more.",
+    "body": "What we are sourcing, what we are building and the dates of the next open studio."
+   }
+  },
+  "faq": {
+   "name": "Questions",
+   "fields": {
+    "eyebrow": "Questions",
+    "title": "Before you",
+    "em": "begin"
+   }
+  },
+  "cta": {
+   "name": "Closing call",
+   "fields": {
+    "title": "Let’s craft your vision",
+    "em": "together."
+   }
+  }
+ },
+ "projects": [
+  {
+   "id": "courtyard",
+   "title": "Porch House",
+   "type": "New home",
+   "img": "dz-house-front",
+   "summary": "A new family home planned around a deep cedar porch: white board and batten, black steel windows and a walk lined in lavender."
+  },
+  {
+   "id": "island",
+   "title": "Walnut Island Kitchen",
+   "type": "Kitchen remodel",
+   "img": "dz-kitchen-island",
+   "summary": "A closed kitchen opened into one long room: a walnut island for four, a marble backsplash and black-framed windows onto the trees."
+  },
+  {
+   "id": "tile-bath",
+   "title": "The Gallery House",
+   "type": "Whole-home renovation",
+   "img": "dz-bath-teal",
+   "summary": "A double-height living space rebuilt around one long island, warm oak floors and a dining room that opens to the garden."
+  },
+  {
+   "id": "pergola",
+   "title": "Quiet Bedroom Suite",
+   "type": "Bedroom + living",
+   "img": "dz-kitchen-wide",
+   "summary": "A main suite and family room reworked in soft white, charcoal linen and walnut, with the windows left to do the talking."
+  }
+ ],
+ "capabilities": [
+  "Space planning",
+  "Interior design",
+  "Kitchens + baths",
+  "Permits + approvals",
+  "Construction",
+  "Lighting design",
+  "Furniture + styling",
+  "Project management"
+ ],
+ "faqs": [
+  {
+   "q": "How early should we bring you in?",
+   "a": "As early as you like, even before you have plans. A first conversation costs nothing and saves the most money."
+  },
+  {
+   "q": "Do we need an architect or plans first?",
+   "a": "No. Many clients come to us with only an idea. We handle design, drawings and permits in-house."
+  },
+  {
+   "q": "How involved will we need to be?",
+   "a": "As much as you want. You approve every decision that matters, and we carry the rest."
+  },
+  {
+   "q": "What does a project cost?",
+   "a": "It depends on scope, size and finish level. After the consultation you get a written range, and a fixed proposal before anything starts."
+  }
+ ],
+ "kits": [
+  {
+   "id": "general",
+   "name": "Design studio",
+   "layouts": {
+    "steps": "arch",
+    "portfolio": "mosaic",
+    "capabilities": "slab",
+    "proof": "carousel",
+    "faq": "split",
+    "cta": "center"
+   },
+   "who": "A design studio that plans and finishes whole homes: the work, the approach and an easy first conversation.",
+   "packages": [
+    "publish",
+    "book",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "steps",
+    "capabilities",
+    "proof",
+    "founder",
+    "band",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Start a project",
+    "route": "book",
+    "arg": "intro"
+   },
+   "cta2": {
+    "label": "View portfolio",
+    "route": "portfolio"
+   },
+   "descriptor": "Design · Interiors · Build",
+   "sigil": "sigil:arc",
+   "image": "dz-designer-kitchen-hero",
+   "hero": "full",
+   "announce": "Booking design consultations for spring",
+   "labels": {},
+   "copy": {},
+   "faqs": null,
+   "accent": {
+    "base": "#D3A03F",
+    "hover": "#B8892F",
+    "text": "#9A6C1C",
+    "deep": "#6B4A10",
+    "soft": "#F2DCB8",
+    "bg": "#F8ECD8",
+    "on": "#343736"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "none"
+   }
+  },
+  {
+   "id": "coaches",
+   "name": "Interior designers",
+   "layouts": {
+    "steps": "arch",
+    "portfolio": "mosaic",
+    "offerings": "split",
+    "proof": "carousel",
+    "shop": "grid",
+    "faq": "split",
+    "cta": "split"
+   },
+   "who": "Interior designers who plan rooms, source furniture and style the finished home.",
+   "packages": [
+    "publish",
+    "book",
+    "sell"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "proof",
+    "founder",
+    "shop",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Book a consultation",
+    "route": "book",
+    "arg": "counsel"
+   },
+   "cta2": {
+    "label": "See the work",
+    "route": "portfolio"
+   },
+   "descriptor": "Interiors · Sourcing · Styling",
+   "sigil": "sigil:half",
+   "image": "dz-designer-sofa",
+   "hero": "split",
+   "announce": "Two consultation spots open in November",
+   "labels": {
+    "shop": "The edit"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Interior design",
+     "title": "Rooms that feel like",
+     "em": "they were always yours.",
+     "body": "Layout, colour, furniture and the last styled shelf. We plan every room around how you actually live in it."
+    },
+    "offerings": {
+     "title": "Ways to",
+     "em": "work with us",
+     "kicker": "Start with one room or plan the whole home. Every project begins with a free call."
+    },
+    "shop": {
+     "eyebrow": "The edit",
+     "title": "Pieces we",
+     "em": "keep returning to"
+    },
+    "cta": {
+     "title": "Start with one room.",
+     "em": "See how it feels."
+    }
+   },
+   "faqs": [
+    [
+     "Can you work with furniture we already own?",
+     "Yes. We start with what you love and plan around it, then fill the gaps."
+    ],
+    [
+     "Do you only do whole homes?",
+     "No. Plenty of projects are one room. A consultation is a good place to start."
+    ],
+    [
+     "How do you charge?",
+     "A fixed design fee per room or project, agreed before we start. Furniture is billed at our trade price."
+    ]
+   ],
+   "offers": [
+    [
+     "Discovery call",
+     "Twenty minutes, free, to talk about your rooms and timing."
+    ],
+    [
+     "Room consultation",
+     "Two hours at home and a written plan for one room."
+    ],
+    [
+     "Full-home design",
+     "Every room planned, sourced and styled."
+    ]
+   ],
+   "accent": {
+    "base": "#A65A3A",
+    "hover": "#874429",
+    "text": "#874429",
+    "deep": "#5E2E1B",
+    "soft": "#EBC9B8",
+    "bg": "#F7E9E1",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "veil"
+   }
+  },
+  {
+   "id": "studios",
+   "name": "Architects",
+   "layouts": {
+    "steps": "timeline",
+    "portfolio": "grid",
+    "capabilities": "list",
+    "proof": "quote",
+    "gatherings": "calendar",
+    "faq": "stack",
+    "cta": "center"
+   },
+   "who": "Residential architects: new homes, additions and the permits in between.",
+   "packages": [
+    "publish",
+    "book",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "steps",
+    "capabilities",
+    "proof",
+    "gatherings",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Start a conversation",
+    "route": "book",
+    "arg": "intro"
+   },
+   "cta2": {
+    "label": "See the projects",
+    "route": "portfolio"
+   },
+   "descriptor": "Residential · Planning · Permits",
+   "sigil": "sigil:square",
+   "image": "photo-01",
+   "hero": "left",
+   "announce": "Now taking new home commissions for 2027",
+   "labels": {
+    "workshops": "Talks"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Residential architecture",
+     "title": "A house drawn around",
+     "em": "the life inside it.",
+     "body": "New homes, additions and careful renovations. We draw, we permit and we stay on site until it is built right."
+    },
+    "steps": {
+     "eyebrow": "How a project runs",
+     "title": "From first sketch",
+     "em": "to keys",
+     "s1t": "Brief and site",
+     "s1b": "We walk the site, learn how you live and agree a brief and a budget range.",
+     "s2t": "Design and permits",
+     "s2b": "Concept, drawings and approvals, with a clear decision at every stage.",
+     "s3t": "Built as drawn",
+     "s3b": "We stay through construction so the house matches the drawings."
+    },
+    "capabilities": {
+     "eyebrow": "What we do",
+     "title": "Every stage,",
+     "em": "one studio."
+    },
+    "gatherings": {
+     "eyebrow": "Talks",
+     "title": "Come to",
+     "em": "a talk",
+     "kicker": "Evening talks on houses, planning and building well."
+    },
+    "cta": {
+     "title": "Every house starts",
+     "em": "with a conversation."
+    }
+   },
+   "faqs": [
+    [
+     "How long does a new home take?",
+     "Design and permits usually take six to nine months; building takes twelve to eighteen. We give you a schedule at the start."
+    ],
+    [
+     "Do you work outside the city?",
+     "Yes, within about two hours. Further away, ask and we will say honestly whether we are the right fit."
+    ]
+   ],
+   "events": [
+    "Evening talk: the courtyard house",
+    "Planning a home addition",
+    "Site visit: a house under construction",
+    "Annual open studio"
+   ],
+   "accent": {
+    "base": "#4E6E71",
+    "hover": "#3E5A5D",
+    "text": "#4E6E71",
+    "deep": "#2A3F41",
+    "soft": "#D6E0E0",
+    "bg": "#E9EFEF",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "subtle",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "none"
+   }
+  },
+  {
+   "id": "hosts",
+   "name": "Design + build",
+   "layouts": {
+    "steps": "arch",
+    "portfolio": "mosaic",
+    "capabilities": "slab",
+    "proof": "carousel",
+    "faq": "split",
+    "cta": "center"
+   },
+   "who": "Design + build firms that take a project from permits to pillows with one team.",
+   "packages": [
+    "publish",
+    "book"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "steps",
+    "capabilities",
+    "proof",
+    "founder",
+    "band",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Build your dream now",
+    "route": "book",
+    "arg": "counsel90"
+   },
+   "cta2": {
+    "label": "View portfolio",
+    "route": "portfolio"
+   },
+   "descriptor": "Design · Permits · Build",
+   "sigil": "sigil:target",
+   "image": "photo-08",
+   "hero": "full",
+   "announce": "Booking ready to build meetings for spring",
+   "labels": {
+    "book": "Consult"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Design + build · Your city",
+     "title": "What we draw,",
+     "em": "we build.",
+     "body": "Custom homes, remodels and commercial spaces designed to reflect the people inside them. One team from permits to pillows."
+    },
+    "portfolio": {
+     "eyebrow": "Portfolio",
+     "title": "From permits",
+     "em": "to pillows",
+     "kicker": "It all begins with an idea and a vision. These are three of them, seen all the way through."
+    },
+    "cta": {
+     "title": "Let’s build your vision",
+     "em": "together."
+    }
+   },
+   "faqs": null,
+   "accent": {
+    "base": "#5A4533",
+    "hover": "#463527",
+    "text": "#5A4533",
+    "deep": "#3B2C20",
+    "soft": "#DCCBB8",
+    "bg": "#F1E8DE",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "none"
+   }
+  },
+  {
+   "id": "venues",
+   "name": "Landscape and garden",
+   "layouts": {
+    "steps": "strip",
+    "portfolio": "mosaic",
+    "gatherings": "cards",
+    "proof": "carousel",
+    "faq": "stack",
+    "cta": "band"
+   },
+   "who": "Garden designers and landscape studios: outdoor rooms, planting and the build.",
+   "packages": [
+    "publish",
+    "book",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "steps",
+    "gatherings",
+    "proof",
+    "band",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Book a garden visit",
+    "route": "book",
+    "arg": "counsel"
+   },
+   "cta2": {
+    "label": "See the gardens",
+    "route": "portfolio"
+   },
+   "descriptor": "Gardens · Outdoor rooms · Planting",
+   "sigil": "sigil:wave",
+   "image": "photo-06",
+   "hero": "full",
+   "announce": "Planting season visits open in March",
+   "labels": {
+    "workshops": "Garden tours"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Garden design",
+     "title": "The room you use most",
+     "em": "might be outside.",
+     "body": "Courtyards, pergolas, kitchens under the sky and planting that looks better each year. Designed and built by one team."
+    },
+    "steps": {
+     "eyebrow": "How it works",
+     "title": "From bare yard",
+     "em": "to garden room",
+     "s1t": "Walk the garden",
+     "s1b": "Sun, soil, views and how you want to use it.",
+     "s2t": "Draw the plan",
+     "s2b": "Layout, materials and a planting list that suits your climate.",
+     "s3t": "Build and plant",
+     "s3b": "Hardscape first, planting last, and a first-season check-in."
+    },
+    "gatherings": {
+     "eyebrow": "Garden tours",
+     "title": "Walk a",
+     "em": "finished garden",
+     "kicker": "Small tours of past projects with the designer who planned them."
+    },
+    "band": {
+     "eyebrow": "The experience",
+     "title": "Bring the garden",
+     "em": "to life",
+     "c3t": "Live in it",
+     "c3b": "A garden that grows into itself, with us on call for the first season."
+    },
+    "cta": {
+     "title": "Let’s plan your",
+     "em": "garden room."
+    }
+   },
+   "faqs": [
+    [
+     "When is the best time to start?",
+     "Design in winter, build in spring, plant in autumn. Earlier than you think is right."
+    ],
+    [
+     "Do you maintain gardens?",
+     "We offer a first-season care plan and can introduce a trusted maintenance crew after that."
+    ]
+   ],
+   "events": [
+    "Spring garden tour",
+    "Planting for dry summers",
+    "Outdoor kitchen open day",
+    "Autumn planting walk"
+   ],
+   "accent": {
+    "base": "#6F7A3E",
+    "hover": "#58622F",
+    "text": "#58622F",
+    "deep": "#3A4120",
+    "soft": "#D5DAB5",
+    "bg": "#EEF0E0",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "none"
+   }
+  },
+  {
+   "id": "nonprofits",
+   "name": "Kitchen and bath",
+   "layouts": {
+    "steps": "grid",
+    "portfolio": "grid",
+    "offerings": "cards",
+    "capabilities": "slab",
+    "proof": "carousel",
+    "shop": "grid",
+    "faq": "split",
+    "cta": "split"
+   },
+   "who": "Kitchen and bath specialists: layout, cabinetry, tile and a clean install.",
+   "packages": [
+    "publish",
+    "book",
+    "sell"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "capabilities",
+    "proof",
+    "shop",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Book a design visit",
+    "route": "book",
+    "arg": "counsel"
+   },
+   "cta2": {
+    "label": "See kitchens and baths",
+    "route": "portfolio"
+   },
+   "descriptor": "Kitchens · Baths · Tile",
+   "sigil": "sigil:grid",
+   "image": "photo-04",
+   "hero": "split",
+   "announce": "Showroom open Saturdays 10am – 2pm",
+   "labels": {
+    "shop": "Samples"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Kitchens + baths",
+     "title": "The two rooms you use",
+     "em": "every single day.",
+     "body": "Layout, cabinetry, tile and lighting, planned to the inch and installed by our own team."
+    },
+    "offerings": {
+     "title": "Ways to",
+     "em": "start",
+     "kicker": "A free call, a design visit or a full design and install."
+    },
+    "shop": {
+     "eyebrow": "Samples",
+     "title": "Order samples",
+     "em": "before you choose"
+    },
+    "cta": {
+     "title": "Start with",
+     "em": "a design visit."
+    }
+   },
+   "faqs": [
+    [
+     "How long is a kitchen remodel?",
+     "Usually eight to twelve weeks on site, after design and ordering. We give you a week-by-week schedule."
+    ],
+    [
+     "Can we live at home during the work?",
+     "Most clients do. We set up a temporary kitchen and keep the rest of the house clean."
+    ]
+   ],
+   "offers": [
+    [
+     "Discovery call",
+     "A free twenty-minute call about your room and timing."
+    ],
+    [
+     "Design visit",
+     "Two hours at home, measurements and a first layout."
+    ],
+    [
+     "Design + install",
+     "Drawings, ordering and our own install team."
+    ]
+   ],
+   "accent": {
+    "base": "#2F7F7A",
+    "hover": "#25655F",
+    "text": "#25655F",
+    "deep": "#18433F",
+    "soft": "#BFE0DC",
+    "bg": "#E4F2F0",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "veil"
+   }
+  },
+  {
+   "id": "networks",
+   "name": "Brand and graphic design",
+   "layouts": {
+    "steps": "strip",
+    "portfolio": "grid",
+    "offerings": "list",
+    "journeys": "cards",
+    "proof": "quote",
+    "faq": "stack",
+    "cta": "center"
+   },
+   "who": "Brand and graphic designers: identities, print and packaging for small businesses.",
+   "packages": [
+    "publish",
+    "book",
+    "learn"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "journeys",
+    "proof",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Book a brand call",
+    "route": "book",
+    "arg": "intro"
+   },
+   "cta2": {
+    "label": "See the work",
+    "route": "portfolio"
+   },
+   "descriptor": "Identity · Print · Packaging",
+   "sigil": "sigil:diamond",
+   "image": "photo-09",
+   "hero": "center",
+   "announce": "Booking identity projects from January",
+   "labels": {
+    "journeys": "Workshops"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Brand + graphic design",
+     "title": "A brand that looks",
+     "em": "the way your work feels.",
+     "body": "Identities, print and packaging for independent businesses, made by a small studio that answers its own email."
+    },
+    "steps": {
+     "eyebrow": "How it works",
+     "title": "Three steps",
+     "em": "to a brand",
+     "s1t": "Listen",
+     "s1b": "A workshop on who you serve and what makes you different.",
+     "s2t": "Design",
+     "s2b": "Two directions, one chosen, refined together.",
+     "s3t": "Hand over",
+     "s3b": "Files, a short guide and every format you will need."
+    },
+    "journeys": {
+     "eyebrow": "Workshops",
+     "title": "Learn to",
+     "em": "brand your business",
+     "kicker": "Small online groups for owners doing it themselves."
+    },
+    "cta": {
+     "title": "Let’s make your brand",
+     "em": "look like you."
+    }
+   },
+   "faqs": [
+    [
+     "How long does an identity take?",
+     "Six to eight weeks from the first workshop to final files."
+    ],
+    [
+     "Do you design websites too?",
+     "We design the look and work with a trusted developer to build it."
+    ]
+   ],
+   "offers": [
+    [
+     "Brand call",
+     "A free twenty-minute call about your business."
+    ],
+    [
+     "Brand workshop",
+     "A half-day session and a written direction."
+    ],
+    [
+     "Full identity",
+     "Logo, palette, type, print and a short guide."
+    ]
+   ],
+   "accent": {
+    "base": "#B0645A",
+    "hover": "#8E4A41",
+    "text": "#8E4A41",
+    "deep": "#5F2F29",
+    "soft": "#EDC8C2",
+    "bg": "#F8E9E6",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "subtle",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "none"
+   }
+  },
+  {
+   "id": "creators",
+   "name": "Web and digital design",
+   "layouts": {
+    "steps": "grid",
+    "portfolio": "grid",
+    "offerings": "cards",
+    "journeys": "feature",
+    "shop": "rail",
+    "proof": "wall",
+    "faq": "split",
+    "cta": "split"
+   },
+   "who": "Web and product designers: sites, shops and the systems behind them.",
+   "packages": [
+    "publish",
+    "book",
+    "learn",
+    "sell"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "journeys",
+    "shop",
+    "proof",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Start a website",
+    "route": "book",
+    "arg": "intro"
+   },
+   "cta2": {
+    "label": "See the sites",
+    "route": "portfolio"
+   },
+   "descriptor": "Websites · Shops · Systems",
+   "sigil": "sigil:nodes",
+   "image": "photo-07",
+   "hero": "left",
+   "announce": "One website slot open for February",
+   "labels": {
+    "journeys": "Courses",
+    "shop": "Templates"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Web + digital design",
+     "title": "A website as considered",
+     "em": "as your work.",
+     "body": "Sites and shops for studios, makers and small firms: calm to use, quick to load and easy for you to keep up."
+    },
+    "journeys": {
+     "eyebrow": "Courses",
+     "title": "Build it",
+     "em": "yourself",
+     "kicker": "Four-week courses for owners who want to run their own site."
+    },
+    "shop": {
+     "eyebrow": "Templates",
+     "title": "Start from",
+     "em": "a good template"
+    },
+    "cta": {
+     "title": "Let’s build a site",
+     "em": "that feels like you."
+    }
+   },
+   "faqs": [
+    [
+     "What platform do you build on?",
+     "We recommend one after the first call, based on what you sell and who will update it."
+    ],
+    [
+     "Can I update the site myself?",
+     "Yes. Every site comes with a recorded walk-through and a month of support."
+    ]
+   ],
+   "offers": [
+    [
+     "Discovery call",
+     "Twenty minutes, free, about your site and goals."
+    ],
+    [
+     "Site review",
+     "A recorded review of your current site with clear fixes."
+    ],
+    [
+     "Full website",
+     "Design, build and launch, with a month of support."
+    ]
+   ],
+   "accent": {
+    "base": "#4F6A8A",
+    "hover": "#3F5672",
+    "text": "#3F5672",
+    "deep": "#2A3A4E",
+    "soft": "#C9D5E3",
+    "bg": "#EAF0F6",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "balanced",
+    "header": "pill",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "none"
+   }
+  },
+  {
+   "id": "schools",
+   "name": "Design courses",
+   "layouts": {
+    "journeys": "feature",
+    "steps": "timeline",
+    "gatherings": "calendar",
+    "proof": "stats",
+    "faq": "split",
+    "cta": "center"
+   },
+   "who": "Designers who teach: courses, workshops and studio days for people planning their own projects.",
+   "packages": [
+    "publish",
+    "learn",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "journeys",
+    "steps",
+    "gatherings",
+    "proof",
+    "founder",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "See the courses",
+    "route": "journeys"
+   },
+   "cta2": {
+    "label": "Come to a workshop",
+    "route": "workshops"
+   },
+   "descriptor": "Courses · Workshops · Studio days",
+   "sigil": "sigil:hexagon",
+   "image": "photo-05",
+   "hero": "full",
+   "announce": "Next kitchen course starts Monday 3 November",
+   "labels": {
+    "journeys": "Courses",
+    "workshops": "Workshops"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Learn with a designer",
+     "title": "Plan your own home",
+     "em": "with a designer beside you.",
+     "body": "Small online courses and studio workshops for people planning a remodel. Real feedback on your own rooms."
+    },
+    "steps": {
+     "eyebrow": "How a course runs",
+     "title": "From wish list",
+     "em": "to plan",
+     "s1t": "Pick a course",
+     "s1b": "Kitchens, colour, the calm remodel. Each page says who it is for.",
+     "s2t": "Work on your own home",
+     "s2b": "Weekly lessons, a live session and feedback on your plans.",
+     "s3t": "Leave with a brief",
+     "s3b": "A plan you can take to any builder, or back to us."
+    },
+    "gatherings": {
+     "eyebrow": "Workshops",
+     "title": "Studio",
+     "em": "workshops",
+     "kicker": "Small in-person sessions at the studio."
+    },
+    "cta": {
+     "title": "The next course",
+     "em": "starts soon."
+    }
+   },
+   "faqs": [
+    [
+     "Do I need any design experience?",
+     "No. Each course starts at the beginning and works on your own home."
+    ],
+    [
+     "What if I miss a live session?",
+     "Every session is recorded and yours to keep."
+    ]
+   ],
+   "accent": {
+    "base": "#B3622B",
+    "hover": "#924F21",
+    "text": "#924F21",
+    "deep": "#633514",
+    "soft": "#F0CDB3",
+    "bg": "#F9EADF",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "none"
+   }
+  },
+  {
+   "id": "clubs",
+   "name": "Furniture and makers",
+   "layouts": {
+    "shop": "rail",
+    "portfolio": "grid",
+    "steps": "strip",
+    "offerings": "split",
+    "proof": "quote",
+    "faq": "stack",
+    "cta": "split"
+   },
+   "who": "Furniture makers and craft studios: commissions, made-to-order pieces and the workshop.",
+   "packages": [
+    "publish",
+    "sell",
+    "book"
+   ],
+   "blocks": [
+    "hero",
+    "shop",
+    "portfolio",
+    "steps",
+    "offerings",
+    "proof",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Commission a piece",
+    "route": "book",
+    "arg": "intro"
+   },
+   "cta2": {
+    "label": "Shop the pieces",
+    "route": "shop"
+   },
+   "descriptor": "Commissions · Made to order · Workshop",
+   "sigil": "sigil:stack",
+   "image": "photo-09",
+   "hero": "split",
+   "announce": "Commission book open for spring",
+   "labels": {
+    "shop": "The pieces",
+    "services": "Commissions"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Furniture + making",
+     "title": "Made by hand,",
+     "em": "made to stay.",
+     "body": "Tables, cabinets and built-ins in solid wood and brass, made in our workshop to fit your room."
+    },
+    "shop": {
+     "eyebrow": "The pieces",
+     "title": "Made to",
+     "em": "order"
+    },
+    "steps": {
+     "eyebrow": "How a commission works",
+     "title": "From sketch",
+     "em": "to delivery",
+     "s1t": "Talk it through",
+     "s1b": "Size, wood, finish and how the piece will be used.",
+     "s2t": "Drawings and samples",
+     "s2b": "A drawing and a finish sample before we cut anything.",
+     "s3t": "Made and delivered",
+     "s3b": "Built in the workshop and installed by the maker."
+    },
+    "offerings": {
+     "title": "Ways to",
+     "em": "commission",
+     "kicker": "A free call, a measured visit or a full built-in."
+    },
+    "cta": {
+     "title": "Let’s make something",
+     "em": "for your room."
+    }
+   },
+   "faqs": [
+    [
+     "How long does a commission take?",
+     "Most pieces take eight to twelve weeks from approved drawing to delivery."
+    ],
+    [
+     "Which woods do you use?",
+     "White oak, walnut and ash from responsible suppliers. We send samples first."
+    ]
+   ],
+   "offers": [
+    [
+     "Commission call",
+     "A free twenty-minute call about the piece you want."
+    ],
+    [
+     "Measured visit",
+     "We measure the room and bring wood and finish samples."
+    ],
+    [
+     "Built-in project",
+     "Drawn, made and installed by the workshop."
+    ]
+   ],
+   "accent": {
+    "base": "#9A6B3F",
+    "hover": "#7E5530",
+    "text": "#7E5530",
+    "deep": "#55391F",
+    "soft": "#E6D0B7",
+    "bg": "#F5EBDF",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "veil"
+   }
+  },
+  {
+   "id": "faith",
+   "name": "Event design and florals",
+   "layouts": {
+    "gatherings": "cards",
+    "portfolio": "mosaic",
+    "steps": "arch",
+    "offerings": "cards",
+    "proof": "carousel",
+    "faq": "split",
+    "cta": "band"
+   },
+   "who": "Event designers and florists: weddings, dinners and celebrations, planned and installed.",
+   "packages": [
+    "publish",
+    "book",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "proof",
+    "gatherings",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Enquire about a date",
+    "route": "book",
+    "arg": "intro"
+   },
+   "cta2": {
+    "label": "See past events",
+    "route": "portfolio"
+   },
+   "descriptor": "Weddings · Dinners · Florals",
+   "sigil": "sigil:spark",
+   "image": "photo-02",
+   "hero": "center",
+   "announce": "Booking 2027 dates now",
+   "labels": {
+    "workshops": "Workshops",
+    "services": "Services"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Event design + florals",
+     "title": "A day designed",
+     "em": "down to the last stem.",
+     "body": "Weddings, long-table dinners and celebrations, planned with you and installed by our team on the day."
+    },
+    "offerings": {
+     "title": "Ways to",
+     "em": "work with us",
+     "kicker": "Florals only, full design, or the whole day."
+    },
+    "gatherings": {
+     "eyebrow": "Workshops",
+     "title": "Flower",
+     "em": "workshops",
+     "kicker": "Small seasonal workshops at the studio."
+    },
+    "cta": {
+     "title": "Tell us about",
+     "em": "your day."
+    }
+   },
+   "faqs": [
+    [
+     "How far ahead should we book?",
+     "Nine to twelve months for weddings; a few weeks for dinners."
+    ],
+    [
+     "Do you travel?",
+     "Yes. Travel is quoted at cost and agreed up front."
+    ]
+   ],
+   "offers": [
+    [
+     "Date enquiry",
+     "A free call to check your date and talk ideas."
+    ],
+    [
+     "Floral design",
+     "Flowers for the day, designed and installed."
+    ],
+    [
+     "Full event design",
+     "Tables, light, flowers and the plan for the day."
+    ]
+   ],
+   "events": [
+    "Autumn wreath workshop",
+    "Winter table workshop",
+    "Spring bouquet workshop",
+    "Open studio evening"
+   ],
+   "accent": {
+    "base": "#7E5A73",
+    "hover": "#674860",
+    "text": "#674860",
+    "deep": "#45303F",
+    "soft": "#DCC9D6",
+    "bg": "#F2EAF0",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "none"
+   }
+  },
+  {
+   "id": "wellness",
+   "name": "Home staging and styling",
+   "layouts": {
+    "offerings": "cards",
+    "portfolio": "mosaic",
+    "steps": "arch",
+    "membership": "tiers",
+    "shop": "grid",
+    "proof": "wall",
+    "faq": "split",
+    "cta": "band"
+   },
+   "who": "Home stagers and stylists: listings, refreshes and a seasonal care plan.",
+   "packages": [
+    "publish",
+    "book",
+    "sell",
+    "belong"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "membership",
+    "proof",
+    "shop",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Book a styling visit",
+    "route": "book",
+    "arg": "counsel"
+   },
+   "cta2": {
+    "label": "See the rooms",
+    "route": "portfolio"
+   },
+   "descriptor": "Staging · Styling · Refresh",
+   "sigil": "sigil:ring",
+   "image": "photo-12",
+   "hero": "full",
+   "announce": "Spring refresh visits now booking",
+   "labels": {
+    "membership": "Care plans",
+    "services": "Services"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Staging + styling",
+     "title": "The same rooms,",
+     "em": "seen with fresh eyes.",
+     "body": "Staging for listings and styling for the homes people stay in. Mostly with what you already own."
+    },
+    "offerings": {
+     "title": "Ways to",
+     "em": "refresh",
+     "kicker": "One room, a listing, or a care plan through the year."
+    },
+    "membership": {
+     "eyebrow": "Care plans",
+     "title": "A home that stays",
+     "em": "just right",
+     "kicker": "Seasonal visits to restyle, rotate and refresh."
+    },
+    "cta": {
+     "title": "Let’s look at your rooms",
+     "em": "together."
+    }
+   },
+   "faqs": [
+    [
+     "Will you use our own furniture?",
+     "First, always. We add pieces only where they make a real difference."
+    ],
+    [
+     "How fast can you stage a listing?",
+     "Usually within a week of the first visit."
+    ]
+   ],
+   "offers": [
+    [
+     "Discovery call",
+     "A free call about your home and timing."
+    ],
+    [
+     "Styling visit",
+     "Three hours restyling one or two rooms with what you own."
+    ],
+    [
+     "Listing staging",
+     "Full staging for photos and showings."
+    ]
+   ],
+   "tiers": [
+    [
+     "The letter",
+     "Seasonal styling notes, free."
+    ],
+    [
+     "Seasonal refresh",
+     "Four visits a year to restyle and rotate."
+    ],
+    [
+     "Home care plan",
+     "Seasonal visits plus first call on our trades."
+    ]
+   ],
+   "accent": {
+    "base": "#B08A3E",
+    "hover": "#8A6A2C",
+    "text": "#8A6A2C",
+    "deep": "#5E481D",
+    "soft": "#E9D8B2",
+    "bg": "#F6EEDC",
+    "on": "#343736"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "pill",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "none"
+   }
+  },
+  {
+   "id": "markets",
+   "name": "Textiles and soft goods",
+   "layouts": {
+    "shop": "grid",
+    "portfolio": "grid",
+    "gatherings": "calendar",
+    "membership": "spotlight",
+    "steps": "strip",
+    "proof": "quote",
+    "letter": "card",
+    "faq": "stack",
+    "cta": "split"
+   },
+   "who": "Textile designers and soft-goods studios: fabric, linens and made-to-order upholstery.",
+   "packages": [
+    "publish",
+    "sell",
+    "gather",
+    "belong"
+   ],
+   "blocks": [
+    "hero",
+    "shop",
+    "portfolio",
+    "steps",
+    "gatherings",
+    "membership",
+    "letter",
+    "faq",
+    "cta"
+   ],
+   "cta": {
+    "label": "Shop the collection",
+    "route": "shop"
+   },
+   "cta2": {
+    "label": "Visit the studio",
+    "route": "workshops"
+   },
+   "descriptor": "Fabric · Linens · Upholstery",
+   "sigil": "sigil:lines",
+   "image": "photo-05",
+   "hero": "split",
+   "announce": "New linen colours arrive in November",
+   "labels": {
+    "shop": "The collection",
+    "workshops": "Studio days",
+    "membership": "Swatch club"
+   },
+   "copy": {
+    "hero": {
+     "eyebrow": "Textiles + soft goods",
+     "title": "Fabric you want",
+     "em": "to live with.",
+     "body": "Linens, wovens and made-to-order cushions and upholstery in colours drawn from plaster, clay and stone."
+    },
+    "shop": {
+     "eyebrow": "The collection",
+     "title": "This season’s",
+     "em": "colours"
+    },
+    "gatherings": {
+     "eyebrow": "Studio days",
+     "title": "Visit the",
+     "em": "studio",
+     "kicker": "Open days to see and handle the full range."
+    },
+    "membership": {
+     "eyebrow": "Swatch club",
+     "title": "New colours,",
+     "em": "first",
+     "kicker": "Swatches of every new colour, sent each season."
+    },
+    "cta": {
+     "title": "Feel it",
+     "em": "before you choose."
+    }
+   },
+   "faqs": [
+    [
+     "Can I order samples?",
+     "Yes. Swatches ship within three working days and the cost comes off your first order."
+    ],
+    [
+     "Do you make custom sizes?",
+     "Cushions and curtains are made to order in any size."
+    ]
+   ],
+   "tiers": [
+    [
+     "The letter",
+     "New colours and studio days, free."
+    ],
+    [
+     "Swatch club",
+     "A swatch of every new colour, each season."
+    ],
+    [
+     "Trade account",
+     "Trade pricing for designers and stylists."
+    ]
+   ],
+   "accent": {
+    "base": "#3F4F7A",
+    "hover": "#334066",
+    "text": "#3F4F7A",
+    "deep": "#222B45",
+    "soft": "#C7CDE0",
+    "bg": "#EAEDF5",
+    "on": "#F7F3EC"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "texture": {
+    "hero": "veil"
+   }
+  }
+ ]
+}
