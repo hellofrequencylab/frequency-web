@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1599",
+  "title": "Stop the cacheable /api/status index setting a first-touch cookie",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "proxy.ts",
+    "ref": "Public surface QA 2026-10-28"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('proxy.ts','utf8');const m=s.match(/'(\\/\\(\\(\\?!_next\\/static[^']*)'/);if(!m){console.error('matcher not found');process.exit(1)}const re=new RegExp('^'+m[1]+'$');if(re.test('/api/status')||re.test('/api/status/slos')||!re.test('/api/vitals')){console.error('matcher wrong');process.exit(1)}\"",
+    "note": "The proxy matcher must skip /api/status (so it sets no fq_attr cookie) and still run on other /api paths."
+  },
+  "detail": "The public-surface probe saw `Set-Cookie: fq_attr=...` (landing /api/status) on the force-static, s-maxage=3600 status index. Same defect HYG-048 fixed for crawler files. /api/status is excluded in the proxy matcher; ipapi.co in the CSP is intentional (lib/geolocation.ts, disclosed on /privacy) and left alone. Also fixes the public-surface spec, which wrongly expected maplibre-gl-shared.mjs to be non-empty: maplibre ships it as 0 bytes.",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}
