@@ -27,7 +27,7 @@ export const TEMPLE_KIT_IMG_MAP = {
   group: 'photo-05', planning: 'photo-08', council: 'photo-10', tent: 'photo-11', 'pool-deck': 'photo-13', 'guest-room': 'photo-14',
 } as const
 
-export type TempleKitImageName = keyof typeof TEMPLE_KIT_IMG_MAP
+type TempleKitImageName = keyof typeof TEMPLE_KIT_IMG_MAP
 
 const PHOTOS = '/sites/temple-kit/photos'
 
