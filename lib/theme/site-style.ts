@@ -4,6 +4,7 @@ import { NETWORK_SCHEMES } from '@/lib/theme/network'
 import { NETWORK_KIT_ACCENT } from '@/lib/theme/network-kit-accent'
 import { TEMPLE_ACCENT } from '@/lib/theme/temple'
 import { MIDNIGHT_ACCENT } from '@/lib/theme/midnight'
+import { TEMPLE_KIT_ACCENT } from '@/lib/theme/temple-kit'
 import { DESIGNER_ACCENT } from '@/lib/theme/designer'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteFacesId } from '@/lib/theme/site-faces'
@@ -46,7 +47,7 @@ import { readMegaTheme } from '@/lib/theme/mega-theme'
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
-export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'midnight' | 'designer'
+export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer'
 
 interface SiteThemeDef {
   id: SiteThemeId
@@ -126,6 +127,20 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
   },
 ]
 
+/** THE TEMPLE THEME KIT (id `temple-kit`, shown as Temple). Registered as a site theme id (stored, read, rendered,
+ *  accented) but NOT yet in SITE_THEMES, which is the list owners pick from and which the Mega Theme, library,
+ *  gallery and kit tests hold level with MEGA_THEMES: the kit's starter kits, Spotlight and email surfaces ship in
+ *  later passes, and a theme must not be offered before it has them. The pass that ships them appends this entry to
+ *  SITE_THEMES (and renames the older `temple` entry's label to Royal Temple, an owner call). Typography-only on the
+ *  Space page too (ADR-578): the same four faces as `temple` load on the website alone, so a synced Space page wears
+ *  Classic. */
+export const TEMPLE_KIT_SITE_THEME: SiteThemeDef = {
+  id: 'temple-kit',
+  label: 'Temple',
+  description: 'Warm plaster and umber with one clay color, arches and soft corners, for every kind of gathering.',
+  defaultFonts: 'classic',
+}
+
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` theme is worn by live sites and no longer offered. */
 const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network'])
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
@@ -169,6 +184,7 @@ export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
   network: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   'network-kit': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   temple: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  'temple-kit': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   midnight: { corners: 'square', spacing: 'airy', header: 'bar', footer: 'full' },
   designer: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
 }
@@ -201,7 +217,7 @@ const MAX_PAGE_THEMES = 30
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 export function isSiteThemeId(v: unknown): v is SiteThemeId {
-  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'midnight' || v === 'designer'
+  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer'
 }
 
 export function readSiteStyle(preferences: unknown): SiteStyle {
@@ -325,6 +341,7 @@ export function spacePageDefaultAccent(preferences: unknown, typeDefault: string
   if (style.theme === 'network') return NETWORK_SCHEMES.marigold.accent
   if (style.theme === 'network-kit') return NETWORK_KIT_ACCENT.accent
   if (style.theme === 'temple') return TEMPLE_ACCENT.accent
+  if (style.theme === 'temple-kit') return TEMPLE_KIT_ACCENT.accent
   if (style.theme === 'midnight') return MIDNIGHT_ACCENT.accent
   if (style.theme === 'designer') return DESIGNER_ACCENT.accent
   return style.theme === 'bold' ? MENSWORK_PALETTE.teal : style.theme === 'wildheart' ? WILDHEART_PALETTE.violet : typeDefault
