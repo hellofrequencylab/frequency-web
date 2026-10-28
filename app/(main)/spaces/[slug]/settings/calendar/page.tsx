@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { openingMonth } from '@/lib/calendar/open-month'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
@@ -68,8 +69,7 @@ export default async function SpaceCalendarConsolePage({
   const featureLocked = !staffViewing && !spaceFunctionAccess(space, 'events', caps.role)
 
   const now = new Date()
-  const initialYear = now.getUTCFullYear()
-  const initialMonth1 = now.getUTCMonth() + 1
+  const { year: initialYear, month1: initialMonth1 } = openingMonth(now)
   const nowIso = now.toISOString()
 
   // The team's calendar: every event under this Space, co-hosted events, the private layer and day notes

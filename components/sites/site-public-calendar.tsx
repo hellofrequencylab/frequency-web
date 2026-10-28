@@ -1,4 +1,5 @@
 import { type ProgramEvent, type ProgramMonth } from '@/lib/spaces/leadership'
+import { openingMonth } from '@/lib/calendar/open-month'
 import { loadSpacePageDoc } from '@/lib/spaces/page-doc'
 import { SITE_URL } from '@/lib/site'
 import { appOrigin } from '@/lib/sites/host'
@@ -46,8 +47,7 @@ export async function SitePublicCalendar({
   brandName: string
 }) {
   const now = new Date()
-  const initialYear = now.getUTCFullYear()
-  const initialMonth1 = now.getUTCMonth() + 1
+  const { year: initialYear, month1: initialMonth1 } = openingMonth(now, space.timeZone)
   const grid = monthGridWindow(initialYear, initialMonth1)
   const [guestEvents, upcomingRows] = await Promise.all([
     loadPublicSpaceWindow(space.id, grid.fromDay, grid.toDay),
