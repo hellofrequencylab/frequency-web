@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { openingMonth } from '@/lib/calendar/open-month'
 import { notFound } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -38,7 +39,7 @@ export default async function CollectivePartnersPage({ params }: { params: Promi
   })
   if (!view) notFound()
   const now = new Date()
-  const year = now.getUTCFullYear(), month1 = now.getUTCMonth() + 1
+  const { year, month1 } = openingMonth(now)
   const window = monthGridWindow(year, month1)
   if (view === 'unavailable') {
     const hero = await resolveIndexHero(`/spaces/${hub.slug}/partners`)
