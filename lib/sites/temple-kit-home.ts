@@ -16,6 +16,14 @@
 //   - Live band, "Walk the grounds · Thu 10am · free" -> "Free, ask for a time" (a standing weekday is a weekly promise).
 //   - Gatherings note, "you will sit beside someone new" -> "you may sit beside someone new" (no outcome promise).
 //   - Sound bath, "You leave slower than you came." -> "Come as you are." (no outcome promise).
+// The second half (LIVE-1683) softens these too:
+//   - Gallery, "Photographs from the season, taken by guests." -> "Photographs from the house." (a claim nobody checked).
+//   - Four weeks of breath, "By the end you have a twenty-minute breath practice you can keep without a teacher." ->
+//     "Build a twenty-minute breath practice you can keep without a teacher." (no outcome promise).
+//   - Seven mornings, "It leads into the Tuesday circle." -> "It leads into the circle." (a standing weekday).
+//   - Circle, "A standing place at the weekly practice" and "The Tuesday morning practice, every week" -> "A place at the
+//     morning practice" and "A place at the morning practice" (weekly promises); "Most chosen" -> "Our pick" (a count claim).
+//   - Letter thanks, "The next letter arrives at the solstice." -> "You are on the list for the next letter." (a date promise).
 
 interface TempleKitBlockSeed { type: string; props: Record<string, unknown> }
 
@@ -135,7 +143,101 @@ export const TEMPLE_KIT_STEPS = {
   ],
 }
 
-/** Home: the design's own order (README, "Home (Temple profile)"). The second half joins in the next pass. */
+export const TEMPLE_KIT_GALLERY = {
+  eyebrow: 'Life at the house',
+  title: 'Two acres, kept quietly. Fire in winter, the long table in summer, and the pool court at every hour between.',
+  body: 'Photographs from the house.',
+  photos: [{ image: ph('nature-palm'), alt: '' }, { image: ph('nature-dunes'), alt: '' }, { image: ph('nature-grain'), alt: '' }],
+}
+
+export const TEMPLE_KIT_JOURNEYS = {
+  eyebrow: 'Programs',
+  title: 'Practices *to take home.*',
+  lead: 'Small groups over a few weeks, in the studio and online. Each one ends with a practice you keep.',
+  actionLabel: 'All programs',
+  actionHref: '~/journeys',
+  journeys: [
+    { title: 'Four weeks of breath', outcome: 'Build a twenty-minute breath practice you can keep without a teacher.', weeks: '4', pillar: 'Breath', image: ph('industrial-blades'), host: 'Ines Aldana', price: '$180', href: '~/journeys' },
+    { title: 'The seasonal year', outcome: 'Mark each of the eight turns of the year with a short ritual you can do at home.', weeks: '8', pillar: 'Ritual', image: ph('nature-dunes'), host: 'Ines Aldana', price: '$240', href: '~/journeys' },
+    { title: 'Holding a ceremony', outcome: 'Lead a simple naming, blessing or memorial for the people you love.', weeks: '3', pillar: 'Ceremony', image: ph('council'), host: 'A visiting celebrant', price: '$320', href: '~/journeys' },
+    { title: 'Seven mornings', outcome: 'A free week of ten-minute practices. It leads into the circle.', weeks: '1', pillar: 'Practice', image: ph('nature-palm'), host: 'Ines Aldana', price: 'Free', href: '~/journeys' },
+  ],
+}
+
+export const TEMPLE_KIT_PROOF = {
+  image: ph('tent'),
+  alt: '',
+  eyebrow: 'Kind words',
+  quote: 'We were married under the olive trees with forty people and no microphone. Everyone heard every word.',
+  who: 'Maya and Theo',
+  role: 'Married at the house',
+  stars: '5',
+  more: [
+    { text: 'I burn the candle every morning before I sit. The whole flat smells like the great room.', who: 'Ruth K.', on: 'Olive & Ash Candle' },
+    { text: 'Four weeks in I could sit for twenty minutes without checking the time. I still do it most days.', who: 'Daniel O.', on: 'Four weeks of breath' },
+  ],
+}
+
+export const TEMPLE_KIT_MEMBERSHIP = {
+  eyebrow: 'Membership',
+  title: 'Keep a place *at the house.*',
+  lead: 'Three ways to belong. Each step adds more time in the rooms.',
+  tiers: [
+    {
+      eyebrow: 'To begin', name: 'Friend of the house', price: '$18', unit: 'a month', badge: '', featured: false, button: 'Join Friend of the house', href: '~/membership',
+      summary: 'Keep a thread to the house. The library, the seasonal letter and early word on every date.',
+      perks: 'The full recordings library\nThe seasonal letter, four times a year\n10% off gatherings',
+    },
+    {
+      eyebrow: 'Our pick', name: 'Circle', price: '$54', unit: 'a month', badge: 'First month $27', featured: true, button: 'Join Circle', href: '~/membership',
+      summary: 'For people who come often. A place at the morning practice and one program each season.',
+      perks: 'Everything for friends of the house\nA place at the morning practice\nOne seasonal program included\n20% off gatherings and suppers',
+    },
+    {
+      eyebrow: 'To hold', name: 'Keeper', price: '$220', unit: 'a month', badge: '', featured: false, button: 'Join Keeper', href: '~/membership',
+      summary: 'Hold the house with us. Private time in the rooms, and first seats at every ceremony.',
+      perks: 'Everything in Circle\nTwo private healing sessions a month\nFour hours of room hire each season\nFirst seats at the solstice and equinox',
+    },
+  ],
+}
+
+export const TEMPLE_KIT_FAQ = {
+  eyebrow: 'Questions',
+  title: 'Before *you come.*',
+  image: ph('nature-grain'),
+  alt: '',
+  items: [
+    { q: 'Where is the house, and how do I get there?', a: 'Twelve minutes from the centre of Ojai. Free parking on the lower lawn, and step-free paths to every ground-floor room.' },
+    { q: 'Do I need to book a gathering?', a: 'Yes. Rooms are kept small, so every gathering is booked by the seat. A held seat is yours for 48 hours.' },
+    { q: 'How many people can the house hold?', a: 'Eighty standing in the great room, a hundred and fifty on the garden lawn, twenty-four seated at the long table and thirty mats in the studio.' },
+    { q: 'Can I hold a date while I decide?', a: 'Yes. Any date can be held for 48 hours at no cost. We will write before it lapses.' },
+    { q: 'What happens at a first gathering?', a: 'Arrive ten minutes early, leave your shoes at the door and take any mat. Nobody is asked to share. Tea is in the kitchen after.' },
+    { q: 'Can I pause a membership?', a: 'Members can pause for up to three months a year and keep their rate when they come back.' },
+  ],
+}
+
+export const TEMPLE_KIT_LETTER = {
+  eyebrow: 'The letter',
+  title: 'A letter each season. *Four a year.*',
+  body: 'New dates, a short essay and first word on the solstice and equinox seats. Nothing else.',
+  image: ph('nature-palm'),
+  alt: '',
+  placeholder: 'you@email.com',
+  buttonLabel: 'Keep me posted',
+  successMessage: 'Thank you. You are on the list for the next letter.',
+}
+
+export const TEMPLE_KIT_CTA = {
+  title: 'Come and see it. *The door is open.*',
+  primaryLabel: 'Walk the grounds',
+  primaryHref: '~/book',
+  secondaryLabel: "See what's open",
+  secondaryHref: '~/gatherings',
+  image: ph('council'),
+  alt: '',
+}
+
+/** Home: the design's own order (README, "Home (Temple profile)"). */
 export function templeKitHomeBlocks(): TempleKitBlockSeed[] {
   return [
     { type: 'TempleKitHero', props: { ...TEMPLE_KIT_HERO } },
@@ -144,5 +246,12 @@ export function templeKitHomeBlocks(): TempleKitBlockSeed[] {
     { type: 'TempleKitRooms', props: { ...TEMPLE_KIT_ROOMS } },
     { type: 'TempleKitOfferings', props: { ...TEMPLE_KIT_OFFERINGS } },
     { type: 'TempleKitSteps', props: { ...TEMPLE_KIT_STEPS } },
+    { type: 'TempleKitGallery', props: { ...TEMPLE_KIT_GALLERY } },
+    { type: 'TempleKitJourneys', props: { ...TEMPLE_KIT_JOURNEYS } },
+    { type: 'TempleKitProof', props: { ...TEMPLE_KIT_PROOF } },
+    { type: 'TempleKitMembership', props: { ...TEMPLE_KIT_MEMBERSHIP } },
+    { type: 'TempleKitFaq', props: { ...TEMPLE_KIT_FAQ } },
+    { type: 'TempleKitLetter', props: { ...TEMPLE_KIT_LETTER } },
+    { type: 'TempleKitCta', props: { ...TEMPLE_KIT_CTA } },
   ]
 }

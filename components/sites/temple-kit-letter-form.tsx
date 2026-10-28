@@ -6,10 +6,11 @@ import { submitContactForm } from '@/app/(main)/spaces/[slug]/contact-form-actio
 
 // THE TEMPLE KIT LETTER FORM (design: the footer's Subscribe row). One email field and one button; pressing Subscribe is the
 // visitor's own opt-in to the letter, so it goes through the same anonymous lead door as the Contact form (the Space resolved
-// from the slug server-side, a honeypot and a rate limit above the write). A null slug is the editor's preview: the same markup,
+// from the slug server-side, a honeypot and a rate limit above the write). `banner` is the same form set in the Home's clay letter
+// band (the design's ink button, the label read by screen readers only). A null slug is the editor's preview: the same markup,
 // inert. The field is ui/field's Input, so its error state (aria-invalid) is the design's danger border and hint.
 
-export function TempleKitLetterForm({ slug, label, placeholder, buttonLabel, successMessage }: { slug: string | null; label: string; placeholder: string; buttonLabel: string; successMessage: string }) {
+export function TempleKitLetterForm({ slug, label, placeholder, buttonLabel, successMessage, banner = false }: { slug: string | null; label: string; placeholder: string; buttonLabel: string; successMessage: string; banner?: boolean }) {
   const [email, setEmail] = useState('')
   const [company, setCompany] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle')
@@ -33,15 +34,15 @@ export function TempleKitLetterForm({ slug, label, placeholder, buttonLabel, suc
     }
   }
 
-  if (status === 'done') return <p className="tk-letter-done" role="status">{successMessage}</p>
+  if (status === 'done') return <p className={banner ? 'tk-letter-done tk-letter-done--banner' : 'tk-letter-done'} role="status">{successMessage}</p>
 
   return (
     <form className="tk-letter-form" onSubmit={onSubmit}>
-      <Field label={label} className="tk-letter-field" error={error ?? undefined}>
+      <Field label={label} className="tk-letter-field" labelClassName={banner ? 'tk-sr' : undefined} error={error ?? undefined}>
         <Input type="email" required autoComplete="email" placeholder={placeholder} value={email} aria-invalid={error ? true : undefined} onChange={(e) => setEmail(e.target.value)} disabled={slug === null} />
       </Field>
       <Input className="tk-hp" type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" value={company} onChange={(e) => setCompany(e.target.value)} />
-      <button type="submit" className="hs-btn hs-btn-primary" disabled={slug === null || status === 'loading'}>{status === 'loading' ? 'Subscribing' : buttonLabel}</button>
+      <button type="submit" className={banner ? 'tk-btn tk-btn--ink tk-btn--md' : 'hs-btn hs-btn-primary'} disabled={slug === null || status === 'loading'}>{status === 'loading' ? 'Subscribing' : buttonLabel}</button>
     </form>
   )
 }

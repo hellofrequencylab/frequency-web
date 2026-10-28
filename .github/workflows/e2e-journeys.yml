@@ -80,6 +80,16 @@ jobs:
           eval "$(pnpm exec supabase status -o env)"
           NEXT_PUBLIC_SUPABASE_URL="${API_URL}" SUPABASE_SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY}" \
           NEXT_PUBLIC_SUPABASE_ANON_KEY="${ANON_KEY}" pnpm e2e:session
+      - name: Seed a throwaway Circle to join
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          slug="qa-journey-circle"
+          curl -fsS -X POST "${API_URL}/rest/v1/circles" \
+            -H "apikey: ${SERVICE_ROLE_KEY}" -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+            -H 'Content-Type: application/json' -H 'Prefer: return=minimal' \
+            -d "{\"name\":\"QA journey circle\",\"slug\":\"${slug}\",\"status\":\"active\",\"about\":\"Throwaway Circle on the local stack, destroyed with it.\"}"
+          echo "PW_CIRCLE_SLUG=${slug}" >> "$GITHUB_ENV"
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Walk the journeys

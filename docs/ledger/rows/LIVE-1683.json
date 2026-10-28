@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1683",
+  "title": "The Temple Kit Home, second half: gallery, journeys, proof, membership, questions, the letter band and the closing call are registered blocks in the design's markup",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "L",
+  "wave": "W7",
+  "source": {
+    "file": "docs/design-systems/temple/rules.json",
+    "ref": "LIVE-1640"
+  },
+  "detail": "Pass 3b of the Temple Theme Kit, after LIVE-1682. Adds TempleKitGallery, Journeys, Proof (the one night section), Membership (the featured tier is the clay card), Faq (its own block, native details elements, one open at a time, not SpaceFAQ), Letter (the one clay banner, through the existing anonymous letter form) and Cta to the TempleKit family, and seeds the Home with all thirteen in the design's order. Server Components but for the letter form. Copy deviations from the design, per the voice guide: gallery 'taken by guests' dropped; Four weeks of breath 'By the end you have' reads 'Build'; Seven mornings 'the Tuesday circle' reads 'the circle'; Circle's weekly practice lines read 'a place at the morning practice'; 'Most chosen' reads 'Our pick'; the letter thanks no longer promises a solstice date. Journeys cards are written copy; they do not yet read the Space's own journeys.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "Seven TempleKit blocks registered, sheet tokened, Home seeded with Four weeks of breath.",
+    "cmd": "node scripts/probes/temple-kit-home-b.mjs"
+  },
+  "closed": "2026-10-28"
+}
