@@ -339,7 +339,7 @@ ${SITE_LOOK_CSS}
 [data-house-theme="network-kit"]{color-scheme:light;${schemeVars(M)};
 ${SHARED_VARS}
 --nk-scheme-marigold:${NETWORK_KIT_SCHEMES.marigold.accent};--nk-scheme-coral:${NETWORK_KIT_SCHEMES.coral.accent};--nk-scheme-ocean:${NETWORK_KIT_SCHEMES.ocean.accent};--nk-scheme-lagoon:${NETWORK_KIT_SCHEMES.lagoon.accent};
---nk-display:var(--font-nk-bricolage),'Bricolage Grotesque','Outfit',system-ui,sans-serif;--nk-sans:var(--font-nk-outfit),'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;--nk-accent-face:var(--font-nk-instrument),'Instrument Serif',Georgia,serif;--nk-hand:var(--font-nk-caveat),'Caveat','Bradley Hand',cursive;
+--nk-display:var(--font-nk-bricolage,'Bricolage Grotesque'),'Outfit',system-ui,sans-serif;--nk-sans:var(--font-nk-outfit,'Outfit'),system-ui,-apple-system,'Segoe UI',sans-serif;--nk-accent-face:var(--font-nk-instrument,'Instrument Serif'),Georgia,serif;--nk-hand:var(--font-nk-caveat,'Caveat'),'Bradley Hand',cursive;
 ${FACES}
 ${HOST_ALIASES}
 background:var(--color-canvas);color:var(--color-text);font-family:var(--nk-sans)}

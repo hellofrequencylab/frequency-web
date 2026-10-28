@@ -12,6 +12,10 @@ import { NETWORK_CSS } from './network-css'
 import { TEMPLE_CSS } from './temple-css'
 import { MIDNIGHT_CSS } from './midnight-css'
 import { TEMPLE_KIT_CSS } from './temple-kit-css'
+import { NETWORK_KIT_CSS } from './network-kit-css'
+import { NetworkKitLogo } from './network-kit-logo'
+import { NetworkKitBar } from './network-kit-bar'
+import { NetworkKitHeaderState } from './network-kit-header-state'
 import { DESIGNER_CSS } from './designer-css'
 import { DesignerFooterTop, DesignerUtilityBar, phoneMenuFoot } from './designer-chrome'
 import { DesignerHeaderState } from './designer-header-state'
@@ -75,16 +79,18 @@ export type SiteLink = HouseHeaderLink
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart' | 'network' | 'temple' | 'temple-kit' | 'midnight' | 'designer'
+  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer'
   season: MensworkSeason
-  /** Network only: the scheme the owner's accent picked. */
+  /** Network and Network Theme Kit: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
 }
 
-function skinCss(skin: SiteSkin | null): string {
+function skinCss(skin: SiteSkin | null, look = ''): string {
   if (!skin) return HOUSE_CSS
   if (skin.theme === 'wildheart') return HOUSE_CSS + FREQUENCY_PAGE_CSS + WILDHEART_CSS
   if (skin.theme === 'network') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NETWORK_CSS
+  // The kit's sheet goes AFTER the owner's look sheet, so its shapes follow the --nk-radius-* tokens the axes re-point.
+  if (skin.theme === 'network-kit') return HOUSE_CSS + FREQUENCY_PAGE_CSS + look + NETWORK_KIT_CSS
   if (skin.theme === 'temple') return HOUSE_CSS + FREQUENCY_PAGE_CSS + TEMPLE_CSS
   if (skin.theme === 'temple-kit') return HOUSE_CSS + FREQUENCY_PAGE_CSS + TEMPLE_KIT_CSS
   if (skin.theme === 'midnight') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MIDNIGHT_CSS
@@ -167,6 +173,8 @@ export function SiteChrome({
   const wild = skin?.theme === 'wildheart'
   // Network keeps the house logo slot (the round badge beside the name); the other skins draw the name alone.
   const net = skin?.theme === 'network'
+  // The Network Theme Kit draws its own lockup (accent disc, name, tagline), an announce bar, a wave and an ink footer.
+  const nk = skin?.theme === 'network-kit'
   // Temple draws the Space's logo alone as a one-colour seal (the design's arch lockup), in the header and the footer.
   const temple = skin?.theme === 'temple'
   // Midnight draws the ringed moon seal, the name and the Space's tagline as one lockup, in the header and the footer.
@@ -190,7 +198,7 @@ export function SiteChrome({
       member={member}
       tools={tools}
       menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}
-      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : null}
+      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : null}
     />
   )
   const year = new Date().getFullYear()
@@ -200,16 +208,17 @@ export function SiteChrome({
       data-house-site=""
       data-house-fonts={themeFonts ? 'theme' : 'house'}
       data-house-theme={skin?.theme}
-      data-season={net ? undefined : skin?.season}
-      data-scheme={net ? skin?.scheme : undefined}
+      data-season={net || nk ? undefined : skin?.season}
+      data-scheme={net || nk ? skin?.scheme : undefined}
       data-sign={skin?.theme === 'wildheart' ? sky(new Date()).sign : undefined}
       data-site-corners={look.corners}
       data-site-spacing={look.spacing}
       data-site-header={look.header}
       className="hs-root"
     >
-      <style>{skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
+      <style>{nk ? skinCss(skin, look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '') : skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
       {designer && <DesignerHeaderState />}
+      {nk && <NetworkKitHeaderState />}
       {midnight && <MidnightBar now={new Date()} next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />}
       {wild && <WildheartInkDefs />}
       {wild ? (
@@ -225,6 +234,11 @@ export function SiteChrome({
           {footer?.utility && <DesignerUtilityBar utility={footer.utility} />}
           {header}
         </div>
+      ) : nk ? (
+        <div className="nk-top">
+          <NetworkKitBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />
+          {header}
+        </div>
       ) : (
         header
       )}
@@ -232,7 +246,7 @@ export function SiteChrome({
 
       <main id="top">{children}</main>
 
-      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : undefined}>
+      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : nk ? 'nk-footer-ground' : undefined} data-footer={nk ? ((showBrandFooter ?? !!skin) ? 'full' : 'minimal') : undefined}>
       {designer && (showBrandFooter ?? !!skin) && <DesignerFooterTop footer={footer} brandName={brandName} homeHref={homeHref} logoUrl={logoUrl ?? null} slug={spaceSlug} />}
       {!designer && (showBrandFooter ?? !!skin) && (
         <div className="hs-footer-top" data-columns={footer?.columns.length ? '' : undefined}>
@@ -295,12 +309,18 @@ export function SiteChrome({
               <a href={PARTNER_HREF()}>{footer.suffix}</a>
             </>
           )}
+          {nk && credit !== 'none' && (
+            <>
+              {' · '}
+              <a href={PARTNER_HREF()} className="nk-powered" data-powered-by="">Powered by Frequency</a>
+            </>
+          )}
         </span>
         {footer?.line && <span className="hs-footer-line">{footer.line}</span>}
         {footer?.note && <span className="hs-footer-note">{footer.note}</span>}
         {checkIn && <CheckInBadge href={checkIn.href} line={checkIn.line} />}
         {credit === 'badge' && <PartnerBadge />}
-        {credit === 'line' && <PartnerLine />}
+        {credit === 'line' && !nk && <PartnerLine />}
       </footer>
       </div>
     </div>
