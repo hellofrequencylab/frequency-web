@@ -5,7 +5,7 @@ import { Bricolage_Grotesque, Outfit, Instrument_Serif, Caveat } from 'next/font
 // (DEPLOY-SAFETY, SCAN-676), and these four are worn by one theme. next/font self-hosts them and sets the
 // `--font-nk-*` variables on the site root through NETWORK_KIT_FONT_CLASS; the token block
 // (lib/theme/network-kit.ts) reads those with the named faces as fallbacks, so the editor canvas and a test render
-// fall back to system faces. They are a different set of variables from the classic Network's `--font-nw-*`, so
+// fall back to system faces. They are a different set of variables from the earlier Network theme's `--font-nw-*`, so
 // the two themes never share or shadow a face.
 //
 // ONE TYPE SYSTEM for all thirteen profiles (Daniel's ruling): Bricolage Grotesque (the variable file, the optical size

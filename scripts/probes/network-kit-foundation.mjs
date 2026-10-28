@@ -1,11 +1,11 @@
-// LIVE-1710: the Network Theme Kit is registered as a theme beside the classic Network. Measures consequences, not spelling:
-//   1. `network-kit` resolves as a site theme, a Mega Theme and an editor theme (NetworkKit), shown as "Network", with the
-//      classic theme still `network`, shown as "Network (classic)", and its page address moved clear of /themes/network;
+// LIVE-1710: the Network Theme Kit is registered as a theme, and the earlier `network` theme is out of every picker. Measures consequences, not spelling:
+//   1. `network-kit` resolves as a site theme, a Mega Theme and an editor theme (NetworkKit), shown as "Network" at
+//      /themes/network, while the earlier `network` theme still resolves (live sites wear it) but is offered nowhere;
 //   2. every scheme's text steps clear AA on paper, surface, card tint and pressed tint, the labels clear AA on the fill
 //      and on its hover, and the accent edge holds 3:1 on paper;
 //   3. the theme fence's module list names the kit, so a member page cannot import it;
 //   4. the kit's faces load on the website alone (not the root layout, not the chrome the suite renders);
-//   5. the classic Network is exactly as it was (its contract entry, its scheme values, its accent rule).
+//   5. the earlier Network theme is exactly as it was (its contract entry, its scheme values, its accent rule).
 // Fails on main (the module does not exist). Run: node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/network-kit-foundation.mjs
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
@@ -19,11 +19,13 @@ const kit = await import('../../lib/theme/network-kit.ts')
 const classic = await import('../../lib/theme/network.ts')
 const contract = JSON.parse(readFileSync('lib/sites/editor/theme-contract.json', 'utf8'))
 
-// 1. Registered, beside the classic theme.
+// 1. Registered; the earlier theme resolves but is not offered.
 assert.ok(siteStyle.isSiteThemeId('network-kit') && siteStyle.isSiteThemeId('network'), 'both are site themes')
 assert.equal(siteStyle.readSiteStyle({ siteStyle: { theme: 'network-kit' } }).theme, 'network-kit')
 assert.equal(siteStyle.SITE_THEMES.find((t) => t.id === 'network-kit')?.label, 'Network')
-assert.equal(siteStyle.SITE_THEMES.find((t) => t.id === 'network')?.label, 'Network (classic)')
+assert.ok(!siteStyle.SITE_THEMES.some((t) => t.id === 'network'), 'the earlier network theme is not offered in a picker')
+assert.equal(siteStyle.SITE_THEME_DEFS.find((t) => t.id === 'network')?.label, 'Network', 'but it keeps its own label for the sites that wear it')
+assert.ok(!library.THEME_LIBRARY.some((t) => t.id === 'network'), 'and has no library page')
 assert.deepEqual(siteStyle.THEME_LOOK['network-kit'], { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' })
 assert.ok(mega.isMegaThemeId('network-kit') && mega.MEGA_THEMES.some((t) => t.id === 'network-kit' && t.editor === 'NetworkKit' && t.site === 'network-kit'))
 // site-render-style imports the contract without a JSON attribute node needs, so its table is read as text.
@@ -32,7 +34,7 @@ assert.ok(state.WEBSITE_THEMES.includes('NetworkKit'), 'an editor theme')
 assert.ok(!state.WEBSITE_THEMES_LIVE.has('NetworkKit'), 'not published to a live site until its render is finished')
 assert.ok(library.themeLibraryEntry('network-kit'), 'a library entry')
 assert.equal(library.themePagePath('network-kit'), '/themes/network')
-assert.equal(library.themePagePath('network'), '/themes/network-classic')
+assert.notEqual(library.themeIdFromSlug('network-classic'), 'network')
 assert.equal(library.themeIdFromSlug('network'), 'network-kit')
 assert.equal(siteStyle.spacePageSiteFaces({ siteStyle: { theme: 'network-kit', synced: true } }), 'network-kit')
 assert.ok(readFileSync('next.config.ts', 'utf8').includes("source: '/themes/network-kit', destination: '/themes/network'"), 'the old kit address redirects')
@@ -61,7 +63,7 @@ assert.ok(fonts.includes("'--font-nk-bricolage'") && fonts.includes("'--font-nk-
 assert.ok(!readFileSync('app/layout.tsx', 'utf8').includes('nk-'), 'no kit face on the root layout')
 assert.ok(!readFileSync('components/sites/site-chrome.tsx', 'utf8').includes('network-kit-fonts'), 'the chrome the suite renders never imports next/font')
 
-// 5. The classic Network is as it was.
+// 5. The earlier Network theme is as it was.
 assert.equal(contract.themes.Network['--th-muted'], '#666D72')
 assert.equal(contract.themes.Network['--th-season'], '#22303A')
 assert.equal(contract.themes.Network['--th-clip-lg'], 'inset(0 round 36px)')

@@ -20,10 +20,10 @@ const plan = await import('../../lib/sites/menswork-page.ts')
 const seed = await import('../seed-the-group.mts')
 
 // 1. Registered, selectable, live.
-const def = siteStyle.SITE_THEMES.find((t) => t.id === 'network')
+// Registered but no longer offered in a picker (LIVE-1710): SITE_THEME_DEFS keeps every theme a site can wear.
+const def = siteStyle.SITE_THEME_DEFS.find((t) => t.id === 'network')
 assert.ok(def, 'network is a site theme')
-// Shown as Network (classic) since the Network Theme Kit (network-kit, LIVE-1710) took the name Network.
-assert.equal(def.label, 'Network (classic)')
+assert.equal(def.label, 'Network')
 assert.ok(state.WEBSITE_THEMES.includes('Network') && state.WEBSITE_THEMES_LIVE.has('Network'), 'Network is a live editor theme')
 assert.equal(editorSeed.initialWebsiteTheme({ siteStyle: { theme: 'network' } }), 'Network')
 assert.equal(siteStyle.readSiteStyle({ theme: 'modern' }).theme, 'frequency', 'nothing applies the theme on its own')

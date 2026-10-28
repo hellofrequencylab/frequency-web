@@ -3,8 +3,8 @@
 // Modelled line for line on lib/theme/midnight.ts: the four schemes, the accent rule, the token block a website
 // wears under [data-house-theme="network-kit"], and the flat surface every other surface reads.
 //
-// NOT the old Network theme. lib/theme/network.ts (`network`, `--nw-*`, The Group's live site) is untouched; the
-// two live side by side, the old one shown as "Network (classic)" wherever both appear.
+// NOT the earlier `network` theme. lib/theme/network.ts (`network`, `--nw-*`, The Group's live site) is untouched and
+// still renders, but it is offered in no picker: this kit is the Network a person chooses.
 //
 // The standard, "white, ink, one hero colour":
 //   · About 90% of a page is paper, card tint and deep sea ink. One solid hero colour does the main button, the
@@ -26,6 +26,7 @@
 //      or meter alone, so every scheme carries --nk-accent-edge: the ink when the accent is too light, else the
 //      accent itself.
 
+import { NETWORK_KIT_ACCENT } from '@/lib/theme/network-kit-accent'
 import { HEX_ACCENT, contrastRatio, type AccentVars } from '@/lib/spaces/accent'
 import contract from '../sites/editor/theme-contract.json' with { type: 'json' }
 import type { ThemeSurface } from '@/lib/theme/surface-vars'
@@ -130,7 +131,7 @@ export const NETWORK_KIT_SEASONS = contract.themes.NetworkKit.seasons
 const M = NETWORK_KIT_SCHEMES.marigold
 
 /** The default scheme's accent family, as the other surfaces read it. */
-export const NETWORK_KIT_ACCENT = { accent: M.accent, text: M.accentText, on: M.onAccent, bg: M.accentBg } as const
+export { NETWORK_KIT_ACCENT }
 
 /** THE ONE FLAT TOKEN SET every other Network Kit surface reads: the Spotlight preset, email and event pages take
  *  their literal values from here, so a token round is one edit and no surface keeps a copy. The website reads

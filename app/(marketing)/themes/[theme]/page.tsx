@@ -16,12 +16,12 @@ export function generateStaticParams() {
   return THEME_KIT_PAGE_IDS.map((id) => ({ theme: themeSlug(id) }))
 }
 
-// The address is not always the id: the Network Theme Kit (`network-kit`) lives at /themes/network and the old
-// Network theme at /themes/network-classic (themeSlug in lib/themes/library.ts).
+// The address is not always the id: the Network Theme Kit (`network-kit`) lives at /themes/network (themeSlug in
+// lib/themes/library.ts).
 function seoFor(slug: string): FrequencyPageSeo | null {
   const theme = themeIdFromSlug(slug)
   const site = SITE_THEMES.find((t) => t.id === theme)
-  const entry = themeLibraryEntry(theme)
+  const entry = theme ? themeLibraryEntry(theme) : null
   if (!theme || !site || !entry || !THEME_KIT_PAGE_IDS.some((id) => id === site.id)) return null
   return {
     path: `/themes/${slug}`,

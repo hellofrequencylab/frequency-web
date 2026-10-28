@@ -380,7 +380,7 @@ const nextConfig: NextConfig = {
       // The Midnight theme is Nocturne (2026-10-27). Its id and saved values stay `midnight`; only the address moved.
       { source: '/themes/midnight', destination: '/themes/nocturne', permanent: true },
       { source: '/themes/midnight/demo', destination: '/themes/nocturne/demo', permanent: true },
-      // The Network Theme Kit's address is /themes/network; the old Network theme moved to /themes/network-classic.
+      // The Network Theme Kit's address is /themes/network.
       { source: '/themes/network-kit', destination: '/themes/network', permanent: true },
       // The Quest help category was renamed from the-game -> the-quest (naming canon:
       // the year-round game is "The Quest"). Redirect old help links + bookmarks.

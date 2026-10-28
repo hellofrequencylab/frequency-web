@@ -5,7 +5,7 @@ import { THEME_TOOLS } from '@/lib/themes/library'
 
 describe('the theme kit page', () => {
   it('covers every theme except Midnight, which keeps its own page', () => {
-    expect(THEME_KIT_PAGE_IDS).toEqual(['frequency', 'bold', 'wildheart', 'network', 'network-kit', 'temple', 'designer'])
+    expect(THEME_KIT_PAGE_IDS).toEqual(['frequency', 'bold', 'wildheart', 'network-kit', 'temple', 'designer'])
   })
 
   it.each(THEME_KIT_PAGE_IDS)('draws %s with every tool, thirteen kits, no em dash and no inline colour', (id) => {

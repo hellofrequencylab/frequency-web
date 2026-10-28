@@ -81,13 +81,6 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
     surfaces: surfaces('soon', 'soon'),
   },
   {
-    id: 'network',
-    tagline: 'Coastal, warm and made of real photos.',
-    madeFor: 'chapters, clubs, collectives and anyone who runs many places',
-    signature: 'Butter-cream grounds, one bold color, pill buttons, with Bricolage Grotesque and Outfit.',
-    surfaces: surfaces('soon', 'soon'),
-  },
-  {
     id: 'network-kit',
     tagline: 'Paper, ink and one solid color. Thirteen ways in.',
     madeFor: 'networking groups, clubs, hosts, studios, schools and anyone who brings people together',
@@ -120,10 +113,9 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
 /** The path segment a theme's page lives at. Two ids are named differently from their address; both keep their id,
  *  editor value and every saved site style, and only the address visitors see differs:
  *   · Nocturne is the Midnight theme under its new name (/themes/midnight redirects).
- *   · The Network Theme Kit (`network-kit`) takes /themes/network, the address Daniel named for it, and the old
- *     Network theme (`network`, The Group's live site) moves to /themes/network-classic. /themes/network-kit
- *     redirects (next.config.ts). */
-const THEME_SLUGS: Readonly<Record<string, string>> = { midnight: 'nocturne', network: 'network-classic', 'network-kit': 'network' }
+ *   · The Network Theme Kit (`network-kit`) takes /themes/network, the address Daniel named for it
+ *     (/themes/network-kit redirects, next.config.ts). The earlier `network` theme has no page: it is not offered. */
+const THEME_SLUGS: Readonly<Record<string, string>> = { midnight: 'nocturne', 'network-kit': 'network' }
 export const themeSlug = (id: string): string => THEME_SLUGS[id] ?? id
 
 /** The theme id a /themes/[theme] address stands for (the inverse of themeSlug), or null. */

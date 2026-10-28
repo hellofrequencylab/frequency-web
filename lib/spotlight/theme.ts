@@ -142,7 +142,6 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   { id: 'frequency', label: 'Default', theme: EMPTY_THEME },
   { id: 'bold', label: 'Bold', theme: surfacePreset('bold', { heading: 'display', body: 'sans' }, { radius: 'sm', shadow: 'none', style: 'solid' }) },
   { id: 'wildheart', label: 'Wildheart', theme: surfacePreset('wildheart', { heading: 'serif', body: 'serif' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
-  { id: 'network', label: 'Network (classic)', theme: surfacePreset('network', { heading: 'rounded', body: 'rounded' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
   // The Network Theme Kit (lib/theme/network-kit.ts): the Marigold scheme as a basic preset; its Spotlight layouts come with the kit.
   { id: 'network-kit', label: 'Network', theme: surfacePreset('network-kit', { heading: 'rounded', body: 'rounded' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
   { id: 'temple', label: 'Temple', theme: surfacePreset('temple', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) },

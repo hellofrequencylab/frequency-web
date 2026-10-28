@@ -7,8 +7,10 @@ import { THEME_PRESETS, validateSpotlightTheme } from '@/lib/spotlight/theme'
 import { NETWORK_SCHEMES } from '@/lib/theme/network'
 import { emailSurface, pageSurface } from '@/lib/theme/surface'
 import { isMegaThemeId } from '@/lib/theme/mega-theme'
-import { readSiteStyle, siteLook, spacePageDefaultAccent, spacePageSiteFaces, THEME_LOOK } from '@/lib/theme/site-style'
-import { themeIdFromSlug, themePagePath, themeSlug } from '@/lib/themes/library'
+import { readSiteStyle, sitePageStyle, SITE_THEMES, siteLook, spacePageDefaultAccent, spacePageSiteFaces, THEME_LOOK } from '@/lib/theme/site-style'
+import { THEME_LIBRARY, themeIdFromSlug, themePagePath, themeSlug } from '@/lib/themes/library'
+import { THEME_KIT_PAGE_IDS } from '@/components/frequency/site/pages/themes/frequency-theme-kit'
+import { WIZARD_THEMES } from '@/lib/spaces/create-wizard'
 import {
   NETWORK_KIT_ACCENT,
   NETWORK_KIT_PROFILES,
@@ -57,7 +59,7 @@ describe('the Network Theme Kit schemes', () => {
   it('keeps the design values apart from the two measured deviations', () => {
     // The design's own hero colours, in the design's order.
     expect(NETWORK_KIT_SCHEME_ORDER.map((id) => NETWORK_KIT_SCHEMES[id].accent)).toEqual(['#E9B949', '#EE7655', '#1F6FA8', '#22796E'])
-    // The same hero colours the classic Network wears: one palette, two themes.
+    // The same hero colours the earlier Network theme wears: one palette, two themes.
     for (const id of ['marigold', 'ocean', 'lagoon', 'coral'] as const) expect(NETWORK_KIT_SCHEMES[id].accent).toBe(NETWORK_SCHEMES[id].accent)
     // Only the subtle text and Coral's label differ from the design.
     expect(NETWORK_KIT_SCHEMES.marigold.subtle).not.toBe('#676E73')
@@ -121,6 +123,7 @@ describe('deriving a family from an owner accent', () => {
     const custom = networkKitAccentVars('#7BC47F')
     expect(custom['--color-primary']).toBe('#7BC47F')
     expect(custom['--brand-accent-soft']).toContain('7BC47F 34%')
+    expect(NETWORK_KIT_ACCENT).toEqual({ accent: NETWORK_KIT_SCHEMES.marigold.accent, text: NETWORK_KIT_SCHEMES.marigold.accentText, on: NETWORK_KIT_SCHEMES.marigold.onAccent, bg: NETWORK_KIT_SCHEMES.marigold.accentBg })
     expect(NETWORK_KIT_ACCENT.accent).toBe('#E9B949')
   })
 })
@@ -137,7 +140,7 @@ describe('the Network Theme Kit token block', () => {
     expect(NETWORK_KIT_TOKENS_CSS).not.toMatch(/Literata|Cormorant|Syne|Unbounded|Playfair/)
   })
 
-  it('reads the owner accent through the design brand hooks and keeps the classic Network vocabulary out', () => {
+  it('reads the owner accent through the design brand hooks and keeps the earlier Network vocabulary out', () => {
     // AccentScope wraps the kit root, so the kit root must not hold a literal primary: its primary is the design's chain
     // (--color-primary -> --color-accent -> --brand-accent, which networkKitAccentVars sets on the wrapper).
     expect(NETWORK_KIT_TOKENS_CSS).not.toMatch(/--color-primary[a-z-]*:#/)
@@ -174,7 +177,7 @@ describe('the editor contract', () => {
     }
   })
 
-  it('leaves the classic Network entry as it was', () => {
+  it('leaves the earlier Network entry as it was', () => {
     expect(contract.themes.Network['--th-muted']).toBe('#666D72')
     expect(contract.themes.Network['--th-season']).toBe('#22303A')
     expect(Object.keys(contract.themes.Network)).not.toContain('profiles')
@@ -182,8 +185,8 @@ describe('the editor contract', () => {
   })
 })
 
-describe('registered as a site theme beside the classic Network', () => {
-  it('resolves from a saved site style and keeps the classic theme', () => {
+describe('registered as a site theme, with the earlier network theme still rendering but offered nowhere', () => {
+  it('resolves from a saved site style and keeps the earlier theme', () => {
     expect(readSiteStyle({ siteStyle: { theme: 'network-kit' } }).theme).toBe('network-kit')
     expect(readSiteStyle({ siteStyle: { theme: 'network' } }).theme).toBe('network')
     expect(siteLook(readSiteStyle({ siteStyle: { theme: 'network-kit' } }))).toEqual(THEME_LOOK['network-kit'])
@@ -191,6 +194,23 @@ describe('registered as a site theme beside the classic Network', () => {
     expect(isMegaThemeId('network-kit')).toBe(true)
     expect(initialWebsiteTheme({ siteStyle: { theme: 'network-kit' } })).toBe('NetworkKit')
     expect(initialWebsiteTheme({ siteStyle: { theme: 'network' } })).toBe('Network')
+  })
+
+  it('still resolves and renders a saved network site, and offers it in no picker', () => {
+    const saved = { siteStyle: { theme: 'network', synced: true } }
+    expect(readSiteStyle(saved).theme).toBe('network')
+    expect(readSiteStyle(saved).fonts).toBe('frequency')
+    expect(sitePageStyle(readSiteStyle({ siteStyle: { theme: 'bold', pages: { about: 'network' } } }), 'about')).toMatchObject({ theme: 'network', fonts: 'modern' })
+    expect(spacePageDefaultAccent(saved, '#000000')).toBe('#E9B949')
+    expect(spacePageSiteFaces(saved)).toBe('network')
+    expect(isMegaThemeId('network')).toBe(true)
+    // Pickers: site themes, library and its pages, wizard, Spotlight presets, editor rail, drafts.
+    expect(SITE_THEMES.map((t) => t.id)).not.toContain('network')
+    expect(THEME_LIBRARY.map((t) => t.id)).not.toContain('network')
+    expect(THEME_KIT_PAGE_IDS).not.toContain('network')
+    expect(WIZARD_THEMES.map((t) => t.id)).not.toContain('network')
+    expect(THEME_PRESETS.map((p) => p.id)).not.toContain('network')
+    expect(themeIdFromSlug('network-classic')).not.toBe('network')
   })
 
   it('gives the Space page the kit faces and accent only, never a ground', () => {
@@ -207,19 +227,17 @@ describe('registered as a site theme beside the classic Network', () => {
     expect(contrastRatio(NETWORK_KIT_SURFACE.subtle, NETWORK_KIT_SURFACE.elevated)).toBeGreaterThanOrEqual(4.5)
     const preset = THEME_PRESETS.find((p) => p.id === 'network-kit')!
     expect(preset.label).toBe('Network')
-    expect(THEME_PRESETS.find((p) => p.id === 'network')!.label).toBe('Network (classic)')
     expect(preset.theme.accent).toBe('#e9b949')
     expect(validateSpotlightTheme(preset.theme)).toBeTruthy()
   })
 
-  it('lives at /themes/network, with the classic page moved to /themes/network-classic', () => {
+  it('lives at /themes/network, and the earlier theme has no page', () => {
     expect(themePagePath('network-kit')).toBe('/themes/network')
-    expect(themePagePath('network')).toBe('/themes/network-classic')
     expect(themePagePath('midnight')).toBe('/themes/nocturne')
     expect(themePagePath('temple')).toBe('/themes/temple')
     expect(themeSlug('network-kit')).toBe('network')
     expect(themeIdFromSlug('network')).toBe('network-kit')
-    expect(themeIdFromSlug('network-classic')).toBe('network')
+    expect(themeIdFromSlug('network-classic')).toBe('network-classic')
     expect(themeIdFromSlug('network-kit')).toBeNull()
     expect(themeIdFromSlug('temple')).toBe('temple')
   })
