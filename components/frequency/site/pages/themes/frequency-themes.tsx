@@ -3,62 +3,52 @@
 // index so the page never drifts from what the editor offers. Built from the template kit only (phero, sec,
 // sh, tg-card, KeepGoing); no page CSS of its own. Copy follows docs/marketing/voice-and-language-guide.md:
 // pain point first, plain words, no claims we cannot stand behind.
-import Image from "next/image";
-import Link from "next/link";
-import { KeepGoing } from "@/components/frequency/site/shell/keep-going";
-import "@/app/themes/active/site-pages-b";
-import { OPERATOR_START_HREF } from "@/lib/site";
-import { KIT_INDEX, PROFILE_KIT_INDEX } from "@/lib/sites/kits/registry";
-import { ThemePicture } from "./theme-picture";
-import "./theme-index-shots.css";
-import { MEGA_THEMES } from "@/lib/theme/mega-theme";
-import { SITE_THEMES } from "@/lib/theme/site-style";
-import { THEME_LIBRARY, themePagePath } from "@/lib/themes/library";
+import Image from 'next/image'
+import Link from 'next/link'
+import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
+import '@/app/themes/active/site-pages-b'
+import { OPERATOR_START_HREF } from '@/lib/site'
+import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
+import { ThemePicture } from './theme-picture'
+import './theme-index-shots.css'
+import { MEGA_THEMES } from '@/lib/theme/mega-theme'
+import { SITE_THEMES } from '@/lib/theme/site-style'
+import { THEME_LIBRARY, themePagePath } from '@/lib/themes/library'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
-  return v as React.CSSProperties;
+  return v as React.CSSProperties
 }
 
 export interface ThemeGalleryCard {
-  id: string;
-  label: string;
-  tagline: string;
-  description: string;
-  kits: { niche: string; label: string; href: string }[];
+  id: string
+  label: string
+  tagline: string
+  description: string
+  kits: { niche: string; label: string; href: string }[]
   /** How many kits the theme has in all: the six doors plus a kit per profile (general, creators, ...). */
-  kitCount: number;
-  href: string;
+  kitCount: number
+  href: string
 }
 
 /** One card per theme, in the order the editor lists them. */
 export const THEME_GALLERY: ThemeGalleryCard[] = SITE_THEMES.map((t) => {
-  const editor = MEGA_THEMES.find((m) => m.id === t.id)?.editor;
+  const editor = MEGA_THEMES.find((m) => m.id === t.id)?.editor
   return {
     id: t.id,
     label: t.label,
     tagline: THEME_LIBRARY.find((l) => l.id === t.id)?.tagline ?? t.description,
     description: t.description,
-    kits: KIT_INDEX.filter((k) => k.theme === editor).map((k) => ({
-      niche: k.niche,
-      label: k.label,
-      href: `/spaces/new?niche=${k.niche}`,
-    })),
-    kitCount: [...KIT_INDEX, ...PROFILE_KIT_INDEX].filter(
-      (k) => k.theme === editor,
-    ).length,
+    kits: KIT_INDEX.filter((k) => k.theme === editor).map((k) => ({ niche: k.niche, label: k.label, href: `/spaces/new?niche=${k.niche}` })),
+    kitCount: [...KIT_INDEX, ...PROFILE_KIT_INDEX].filter((k) => k.theme === editor).length,
     href: themePagePath(t.id),
-  };
-});
+  }
+})
 
 export function FrequencyThemes() {
   return (
     <>
-      <section
-        className="phero big"
-        data-energy="charge"
-        data-screen-label="01 Hero"
-      >
-        <div className="fq-aura" style={vars({ "--fq-aura-opacity": 0.3 })} />
+      <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
+        <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.3 })} />
         <div className="shade" />
         <div className="fq-grain" />
         <div className="wrap">
@@ -70,13 +60,11 @@ export function FrequencyThemes() {
             <span aria-current="page">Theme Kits</span>
           </nav>
           <h1 className="h-xl">
-            Your site should look like you.{" "}
-            <em className="fq-iri-text">Pick a feel.</em>
+            Your site should look like you. <em className="fq-iri-text">Pick a feel.</em>
           </h1>
           <p>
-            Seven looks for your website, with matching Spotlight and email
-            surfaces where available. Pick a feel, then check what is ready and
-            what is on the way.
+            Seven looks for your website, with matching Spotlight and email surfaces where available. Pick a feel, then check what is ready
+            and what is on the way.
           </p>
           <div className="ctas">
             <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
@@ -90,7 +78,7 @@ export function FrequencyThemes() {
       </section>
 
       <section className="sec pb-sec" id="themes" data-screen-label="02 Themes">
-        <div className="fq-aura" style={vars({ "--fq-aura-opacity": 0.22 })} />
+        <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -98,10 +86,8 @@ export function FrequencyThemes() {
             </div>
             <h2 className="h-l">One look. A clear place to start.</h2>
             <p className="pb-note">
-              Choose a Theme Kit for your website and see which matching
-              Spotlight and email surfaces are ready. Each Theme Kit page labels
-              what ships now and what is on the way. Switch on the tools you
-              need, and use Change theme in your editor when you want a
+              Choose a Theme Kit for your website and see which matching Spotlight and email surfaces are ready. Each Theme Kit page labels what
+              ships now and what is on the way. Switch on the tools you need, and use Change theme in your editor when you want a
               different feel.
             </p>
           </div>
@@ -111,7 +97,7 @@ export function FrequencyThemes() {
                 <Link href={t.href} aria-label={`See the ${t.label} kit`}>
                   <ThemePicture theme={t.id} label={t.label} slot="kit" />
                 </Link>
-                {t.id === "midnight" && (
+                {t.id === 'midnight' && (
                   <div className="tg-shots">
                     <Image
                       src="/themes/midnight/shots/general-site.jpg"
@@ -153,9 +139,9 @@ export function FrequencyThemes() {
       <KeepGoing
         title="Start with your Spotlight."
         body="Free to start. Pick a theme now or change it later."
-        primary={{ href: OPERATOR_START_HREF, label: "Start free →" }}
-        secondary={{ href: "/pricing", label: "See every plan" }}
+        primary={{ href: OPERATOR_START_HREF, label: 'Start free →' }}
+        secondary={{ href: '/pricing', label: 'See every plan' }}
       />
     </>
-  );
+  )
 }
