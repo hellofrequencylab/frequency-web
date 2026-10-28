@@ -79,6 +79,7 @@
 @keyframes pdflash{0%{opacity:0;transform:scale(.5)}14%{opacity:1;transform:scale(1.18)}100%{opacity:.26;transform:scale(1)}}
 @keyframes pdwhite{0%{opacity:0}10%{opacity:.95}100%{opacity:0}}
 [data-design="frequency"] [data-kit="site"] .pa-home .pdw .pd{position:relative;z-index:1}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .pa-home .pdw.in .pdg,[data-design="frequency"] [data-kit="site"] .pa-home .pdw.in .pdg::after{animation:none}}
 [data-design="frequency"] [data-kit="site"] .pa-home .pdw.in .pd{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-dc) 45%,transparent),0 0 44px -18px var(--fq-dc)}
 [data-design="frequency"] [data-kit="site"] .pa-home .pd img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;transition:opacity var(--fq-dur-slow),transform var(--fq-dur-slow) var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="site"] .pa-home .pd::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,color-mix(in oklab,var(--fq-uv-void) 95%,transparent) 15%,color-mix(in oklab,var(--fq-uv-void) 30%,transparent) 70%)}
@@ -234,6 +235,7 @@
 [data-design="frequency"] [data-kit="site"] .pa-features .ft[open]{background:color-mix(in oklab,var(--fq-surface-card) 88%,var(--fq-side));box-shadow:inset 0 0 0 1.5px var(--fq-side),0 0 60px -30px var(--fq-side)}
 [data-design="frequency"] [data-kit="site"] .pa-features .ft[open] .ic{box-shadow:0 0 0 1px var(--fq-side),0 0 22px -4px var(--fq-side)}
 [data-design="frequency"] [data-kit="site"] .pa-features .fth{padding:0 20px 22px 84px;animation:ftIn .45s var(--fq-ease-out)}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .pa-features .fth{animation:none}}
 @keyframes ftIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 [data-design="frequency"] [data-kit="site"] .pa-features .fth ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 [data-design="frequency"] [data-kit="site"] .pa-features .fth li{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:color-mix(in oklab,var(--fq-text-strong) 4%,transparent);font-size:14.5px;line-height:1.45;color:var(--fq-text-body)}
