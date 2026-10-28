@@ -10,12 +10,12 @@
     "file": "docs/design-systems/nocturne/rules.json",
     "ref": "LIVE-1570"
   },
-  "detail": "public/themes/nocturne/shots holds assets/shots from the Nocturne design system unchanged (site, space, spotlight, email for each of 13 kits). The /themes index and the Nocturne feature page read them in the pages PRs that follow. Mechanical copy, hence [sweep].",
+  "detail": "public/themes/midnight/shots holds assets/shots from the Nocturne design system unchanged (site, space, spotlight, email for each of 13 kits). The /themes index and the Nocturne feature page read them in the pages PRs that follow. Mechanical copy, hence [sweep].",
   "verify": {
     "kind": "cmd",
     "checked": "2026-10-28",
     "evidence": "52 files present.",
-    "cmd": "node -e 'const n=require(\"fs\").readdirSync(\"public/themes/nocturne/shots\").length;if(n<52){console.error(\"shots missing: \"+n);process.exit(1)}'"
+    "cmd": "node -e 'const n=require(\"fs\").readdirSync(\"public/themes/midnight/shots\").length;if(n<52){console.error(\"shots missing: \"+n);process.exit(1)}'"
   },
   "closed": "2026-10-28"
 }
