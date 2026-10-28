@@ -95,7 +95,8 @@ export const SITE_THEMES: readonly SiteThemeDef[] = [
     // Typography-only on the Space page too (ADR-578): Bodoni Moda, Marcellus and Geist load on the website
     // alone, so a synced Space page wears Classic (a serif headline over a quiet body).
     id: 'midnight',
-    label: 'Midnight',
+    // Shown as Nocturne since 2026-10-27. The id stays `midnight`: it is the value every saved site style holds.
+    label: 'Nocturne',
     description: 'After dark: deep night grounds, bone type, one violet accent, square frames and monochrome photos.',
     defaultFonts: 'classic',
   },

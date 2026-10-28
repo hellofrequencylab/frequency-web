@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1546",
+  "title": "The Nocturne page lives at /themes/nocturne and the theme picker says Nocturne; /themes/midnight redirects",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/themes/library.ts",
+    "ref": "LIVE-1544"
+  },
+  "detail": "Daniel released the Midnight to Nocturne pins (2026-10-28). The feature page and its sample site moved to /themes/nocturne and /themes/nocturne/demo, with permanent redirects from the /themes/midnight addresses (next.config.ts). SITE_THEMES now labels the theme Nocturne everywhere the picker reads it. The id, the Midnight editor value and every saved site style stay `midnight`, so House of Fates and stored themes are untouched. themePagePath in lib/themes/library.ts is the one place that maps the id to its address. Pins rewritten with his words: site-style.test.ts label, the gallery and demo render tests, the midnight-feature-page and midnight-demo probes.",
+  "closed": "2026-10-27",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "lib/themes/library.ts maps midnight to /themes/nocturne; next.config.ts redirects the old address.",
+    "cmd": "node -e 'const f=require(\"fs\");const l=f.readFileSync(\"lib/themes/library.ts\",\"utf8\");const n=f.readFileSync(\"next.config.ts\",\"utf8\");if(!l.includes(\"themePagePath\")||!n.includes(\"/themes/nocturne\")){console.error(\"the Nocturne address or its redirect is gone\");process.exit(1)}'"
+  }
+}

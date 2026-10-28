@@ -1,4 +1,4 @@
-// /themes/midnight on the Frequency design (LIVE-1380): the feature page for the Midnight mega theme, the
+// /themes/nocturne on the Frequency design (LIVE-1380): the feature page for the Midnight mega theme, the
 // first of the family. Built from the template kit only (phero, sec, sh, tg-card, KeepGoing); no page CSS of
 // its own. Copy follows docs/marketing/voice-and-language-guide.md: pain point first, no figures we cannot
 // stand behind (the design's research stats are left out on purpose).

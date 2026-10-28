@@ -12,7 +12,7 @@ describe('the theme gallery', () => {
     const midnight = THEME_GALLERY.find((t) => t.id === 'midnight')!
     expect(midnight.kits.map((k) => k.niche).sort()).toEqual(['coaches', 'hosts', 'networks', 'nonprofits', 'studios', 'venues'])
     expect(midnight.kits.every((k) => k.href === `/spaces/new?niche=${k.niche}`)).toBe(true)
-    expect(midnight.href).toBe('/themes/midnight')
+    expect(midnight.href).toBe('/themes/nocturne')
   })
 
   it('draws every theme, without em dashes or inline colour', () => {

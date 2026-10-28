@@ -40,7 +40,7 @@
 #     mini-site (SpotlightShell / SpaceSpotlight), its own identity header and background.
 #   · app/sign-in — a full-screen PhotoHero takeover (marketing kit) around the auth card.
 #   · app/join/(induction)/* — the scripted, light-locked cinematic induction and its finalizer.
-app/(demo)/themes/midnight/demo/page.tsx
+app/(demo)/themes/nocturne/demo/page.tsx
 app/(main)/(marketplace)/classifieds/[id]/edit/page.tsx
 app/(main)/(marketplace)/classifieds/new/page.tsx
 app/(main)/(marketplace)/market/sell/page.tsx
