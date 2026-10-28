@@ -91,7 +91,7 @@ export const NETWORK_KIT_OFFERINGS = {
 export const NETWORK_KIT_JOURNEYS = {
   variant: 'cards',
   eyebrow: 'Programs',
-  title: 'Grow with\n*a cohort*',
+  title: 'Grow with\n*a group*',
   lead: '',
   actionLabel: 'All programs',
   actionHref: '~/journeys',
