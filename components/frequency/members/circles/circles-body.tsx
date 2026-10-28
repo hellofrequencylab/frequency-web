@@ -239,7 +239,11 @@ export function FqCirclesBody({
   const mine = new Set(myCircleIds)
   const yours = cards.filter((c) => mine.has(c.id))
   const starters = cards.filter((c) => c.isStarter && !mine.has(c.id))
-  const near = cards.filter((c) => !c.isStarter && !mine.has(c.id))
+  const nearAll = cards.filter((c) => !c.isStarter && !mine.has(c.id))
+  // A Space's own built-in Circle is its member wall, not a group someone started: it gets its own shelf
+  // and never counts toward the Circles people started on purpose.
+  const spaceShelf = nearAll.filter((c) => c.kind === 'space')
+  const near = nearAll.filter((c) => c.kind !== 'space')
   const shelfOf = (k: CircleKind) => near.filter((c) => c.kind === k)
   const myChannels = new Set(yours.flatMap((c) => c.channelIds ?? []))
   const resonant = resonantFor(near.filter((c) => c.kind === 'community'), home, myChannels).slice(0, 12)
@@ -256,6 +260,7 @@ export function FqCirclesBody({
     frequencyShelf.length > 0 && { id: 'frequency', label: 'Frequency' },
     { id: 'community', label: 'Community' },
     businessShelf.length > 0 && { id: 'business', label: 'Business' },
+    spaceShelf.length > 0 && { id: 'space-circles', label: 'Spaces' },
   ].filter((x): x is { id: string; label: string } => !!x)
   const anyFilter = filtering || !!params.sort
 
@@ -377,7 +382,8 @@ export function FqCirclesBody({
             <SystemNotice icon="circle" title="No community circles yet." body="Be the first to start one." actions={[{ href: '/circles/new', label: 'Start a Circle', primary: true }]} />
           } />
           <Shelf id="frequency" title="Frequency Circles" note="Run by the platform, open to everyone" circles={frequencyShelf} />
-          <Shelf id="business" title="Business Circles" note="Run by Business and Non Profit Spaces" circles={businessShelf} />
+          <Shelf id="business" title="Business Circles" note="Started by Business and Non Profit Spaces" circles={businessShelf} />
+          <Shelf id="space-circles" title="Space Circles" note="The member wall each Space keeps for its own people" circles={spaceShelf} />
           {hitFetchCap && (
             <p className="t2 fqm-cap">
               Showing the first {fetchLimit} Circles. Search or filter to find what you are looking for.
@@ -447,6 +453,7 @@ export function FqCirclesBody({
           />
         )}
       </div>
+      <Shelf id="space-circles" title="Space Circles" note="The member wall each Space keeps for its own people" circles={spaceShelf} />
 
         </>
       )}

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1620",
+  "title": "List each Space's own Circle apart from regular Circles on /circles",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "lib/circles/kind.ts",
+    "ref": "Daniel, 2026-10-28: a Space's built-in Circle is its member wall; list those separately so they do not overwhelm the regular Circles, which crew or Spaces may start"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/circles-space-shelf.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Probe fails on main (no space kind, is_space_primary not read) and passes here; kind and shelf tests pass."
+  },
+  "detail": "circleKind gains a space kind: an owned Circle flagged is_space_primary (the built-in Space Circle, ADR-1391). The index reads the flag, the default view draws those on a Space Circles shelf after Business Circles, and the filtered view draws them in a section under Results. They no longer count toward Results, Near you, Gathering or Community. A Circle a Space started on purpose stays a regular Business Circle. Public /discover/circles and the Space pages are unchanged and still to do if wanted.",
+  "wave": "W7"
+}

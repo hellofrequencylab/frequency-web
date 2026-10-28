@@ -201,8 +201,10 @@ function matchesDynamicPattern(r, patterns) {
 // `${SITE_URL}/spaces/${s.slug}`, …) is registry/DB-driven and is EXCLUDED by construction:
 // the `[^`$]*` class stops at the first `$`, so an interpolated path never reaches the
 // closing backtick and never matches.
-function sitemapLiteralRoutes() {
-  const src = readFileSync(SITEMAP_FILE, 'utf8')
+function sitemapLiteralRoutes(source = readFileSync(SITEMAP_FILE, 'utf8')) {
+  // Sitemap comments often document intentionally removed routes. Parse only executable
+  // source so a commented-out URL cannot become a phantom advertised route.
+  const src = stripComments(source)
   const re = /`\$\{SITE_URL\}(\/[^`$]*)`/g
   const routes = new Set()
   let m
