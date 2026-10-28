@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1570",
+  "title": "Every file of a theme's design system is checked against the code: Nocturne's 348 files get rules, snapshots and a test that lists each gap",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "M",
+  "source": {
+    "file": "docs/DESIGN-SYSTEM-INTAKE.md",
+    "ref": "Nocturne Theme Kit build"
+  },
+  "detail": "scripts/ds-intake.mjs snapshots a design-system folder (inventory with sha256, tokens, copy) and diffs it against the last snapshot; scripts/design-system.test.ts measures the repo against the snapshot in CI. Opening baseline: every gap found on 2026-10-28 (shots, 13 kit accents, violet, kit data, product surfaces, page copy), each closed by the Nocturne build pull requests that follow. ADR-1920.\n\nRoutine, rules for 348 files, snapshots and CI test landed; baseline holds the opening gaps.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "Every file of the Nocturne snapshot is claimed by a rule.",
+    "cmd": "node scripts/probes/design-system-intake.mjs"
+  },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}
