@@ -386,8 +386,14 @@ test.describe('new member sign-up @journey-write', () => {
     })
     await page.goto(link)
     await settle(page)
-    const held = (await page.context().cookies()).map((c) => `${c.name}@${c.domain}`).join(', ')
-    expect(new URL(page.url()).pathname, `the emailed link did not sign the new member in. Hops: ${hops.join(' | ')}. Cookies: ${held}. Ended at ${page.url()}`).not.toBe('/sign-in')
+    const jar = await page.context().cookies()
+    const held = jar.map((c) => `${c.name}@${c.domain}`).join(', ')
+    // Two sign-in flows ran (the ask-first try, then Create a new account). Say whether the fixed verifier
+    // cookie and the per-flow slot hold the same value; if they differ, the fixed one is the first flow's.
+    const fixedV = jar.find((c) => /auth-token-code-verifier$/.test(c.name))?.value
+    const slotV = jar.find((c) => /-flow-[A-Za-z0-9_-]+-code-verifier$/.test(c.name))?.value
+    const verifiers = `fixed verifier ${fixedV ? 'present' : 'absent'}, flow slot ${slotV ? 'present' : 'absent'}, same value: ${fixedV !== undefined && fixedV === slotV}`
+    expect(new URL(page.url()).pathname, `the emailed link did not sign the new member in. Hops: ${hops.join(' | ')}. Cookies: ${held}. Verifiers: ${verifiers}. Ended at ${page.url()}`).not.toBe('/sign-in')
     assertNoServerErrors(serverErrors, 'sign-up')
     await expect(page.getByText('Something went wrong on our end')).toHaveCount(0)
   })
