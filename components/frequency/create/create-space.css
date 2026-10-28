@@ -58,7 +58,7 @@
 .cs-hero-copy{flex:1 1 420px;display:flex;flex-direction:column;gap:clamp(16px,2.8vh,26px);max-width:600px;min-width:0}
 .cs-eyebrow{font:600 13px/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-accent-2);display:flex;align-items:center;gap:10px}
 .cs-dot{width:8px;height:8px;border-radius:50%;background:var(--fq-accent-2);box-shadow:0 0 12px var(--fq-accent-2)}
-.cs-h1{margin:0;font:700 clamp(40px,min(4.8vw,9.6vh),84px)/.98 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong);text-wrap:balance}
+.cs-h1{margin:0;font:700 clamp(36px,min(4.3vw,8.6vh),76px)/.98 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong);text-wrap:wrap}
 .cs-h1 em{font-family:var(--fq-font-serif);font-style:italic;font-weight:400;letter-spacing:-.01em;padding-right:.08em}
 .cs-lead{margin:0;font-size:clamp(17px,1.35vw,19px);line-height:1.55;color:var(--fq-text-body);max-width:46ch;text-wrap:pretty}
 .cs-ctas{display:flex;align-items:center;flex-wrap:wrap;gap:14px 24px}
