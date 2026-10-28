@@ -1,4 +1,4 @@
-// /themes/midnight/demo (LIVE-1382): the sample Midnight website the feature page's live preview opens. Static,
+// /themes/nocturne/demo (LIVE-1382): the sample Midnight website the feature page's live preview opens. Static,
 // anonymous and kept out of search; it has no marketing chrome so the preview frame shows only the site.
 import type { Metadata } from 'next'
 import { MIDNIGHT_FONT_CLASS } from '@/components/sites/midnight-fonts'

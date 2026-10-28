@@ -135,7 +135,7 @@ export const FREQUENCY_PAGE_SEO = {
     ],
   },
   midnight: {
-    path: '/themes/midnight',
+    path: '/themes/nocturne',
     title: 'Nocturne: one site for your Spotlight, Space and website',
     description:
       'Nocturne is a Theme Kit for guides, teachers and healers. Set up once, and your Spotlight, your Space on Frequency and your own website stay in step.',
@@ -144,7 +144,7 @@ export const FREQUENCY_PAGE_SEO = {
     lede: 'For guides, teachers and healers. Your Spotlight, your Space on Frequency and your own website, kept in step.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
-      { name: 'Nocturne', path: '/themes/midnight' },
+      { name: 'Nocturne', path: '/themes/nocturne' },
     ],
   },
 } as const satisfies Record<string, FrequencyPageSeo>

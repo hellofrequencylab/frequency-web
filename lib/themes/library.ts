@@ -110,10 +110,9 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
   },
 ]
 
-/** What a visitor reads on /themes for each theme id. Nocturne is the Midnight theme under its new name; the id, the
- *  editor value and every saved site style stay `midnight`, so a Space's stored theme is untouched. */
-const THEME_DISPLAY_NAME: Readonly<Record<string, string>> = { midnight: 'Nocturne' }
-export const themeDisplayName = (id: string, fallback: string): string => THEME_DISPLAY_NAME[id] ?? fallback
+/** The address of a theme's page. Nocturne is the Midnight theme under its new name: its id, editor value and every
+ *  saved site style stay `midnight`, only the address visitors see moved (/themes/midnight redirects). */
+export const themePagePath = (id: string): string => `/themes/${id === 'midnight' ? 'nocturne' : id}`
 
 export function themeLibraryEntry(id: string): ThemeLibraryEntry | null {
   return THEME_LIBRARY.find((t) => t.id === id) ?? null
