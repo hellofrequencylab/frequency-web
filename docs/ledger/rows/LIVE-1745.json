@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1745",
+  "title": "SpaceFAQ draws a starter kit's questions until the Space has its own",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "components/page-editor/blocks/spaces.tsx",
+    "ref": "LIVE-1578"
+  },
+  "detail": "SpaceFAQ read only the Space's saved FAQs and ignored the `items` the starter kits write (profile kits for Network and Wildheart, the Questions page, every Home FAQ), so a kit's FAQ drew nothing until the owner typed their own. It now declares a `starter questions` array: the Space's own questions win, the kit's draw until there are some, and the kit's sample words carry no FAQPage structured data.",
+  "closed": "2026-10-28",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "spaces.tsx declares the SpaceFAQ items field and the starter fallback.",
+    "cmd": "node -e 'const t=require(\"fs\").readFileSync(\"components/page-editor/blocks/spaces.tsx\",\"utf8\");if(!t.includes(\"starter-${i}\")||!t.includes(\"Starter questions\")){console.error(\"SpaceFAQ lost its starter questions\");process.exit(1)}'"
+  }
+}
