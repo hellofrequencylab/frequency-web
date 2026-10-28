@@ -499,7 +499,7 @@ export const config = {
     // session refresh, the protected-path redirect, tenancy — still runs on every other path exactly
     // as before.
     //
-    // `/api/status` (LIVE-1598) is the uptime and SLO index. It is force-static with s-maxage=3600 for
+    // `/api/status` (LIVE-1599) is the uptime and SLO index. It is force-static with s-maxage=3600 for
     // machine callers, and it was answering with a first-touch `Set-Cookie: fq_attr` whose landing page
     // was an API path: the same noise HYG-048 removed from the crawler files, on a response meant to be
     // cached and shared. It is never a human's landing page and reads no session.

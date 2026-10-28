@@ -146,7 +146,7 @@ describe('the proxy does not run on /api/v1', () => {
     expect(runs('/api/v1')).toBe(false)
     expect(runs('/api/v1/circles/abc/join')).toBe(false)
     // Everything else keeps its session refresh, redirects and attribution.
-    // LIVE-1598: the cacheable status index sets no first-touch cookie, so the proxy skips it too.
+    // LIVE-1599: the cacheable status index sets no first-touch cookie, so the proxy skips it too.
     expect(runs('/api/status')).toBe(false)
     expect(runs('/api/status/slos')).toBe(false)
     expect(runs('/api/statusx')).toBe(true)
