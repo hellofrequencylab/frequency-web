@@ -1,4 +1,4 @@
-// /for on the Frequency design: the index of the six operator doors. Standard site header, footer and
+// /for on the Frequency design: the index of the operator doors (six core niches and seven profiles). Standard site header, footer and
 // kit sections (phero, sec, tg-card, KeepGoing); every colour is a kit token. The cards read the same
 // registry and photo table as the doors themselves, so a door's headline and picture never drift here.
 import Link from 'next/link'
@@ -37,12 +37,12 @@ export function FrequencyForIndex({ doors }: { doors: FunnelConfig[] }) {
         </div>
       </section>
 
-      <section className="sec pb-sec" id="doors" data-screen-label="02 The six doors">
+      <section className="sec pb-sec" id="doors" data-screen-label="02 The doors">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
         <div className="wrap">
           <div className="sh">
             <div className="label">
-              <b>Six doors</b>One home for how you work
+              <b>{doors.length} doors</b>One home for how you work
             </div>
             <h2 className="h-l">Start where you are.</h2>
           </div>

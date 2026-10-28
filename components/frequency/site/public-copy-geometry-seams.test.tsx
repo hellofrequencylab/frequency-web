@@ -82,7 +82,7 @@ describe('Public copy geometry seams', () => {
   })
 
   it('renders all actual niche step cards inside the grid that owns the mobile containment rule', () => {
-    expect(funnelSlugs()).toHaveLength(6)
+    expect(funnelSlugs()).toHaveLength(13)
     for (const slug of funnelSlugs()) {
       const config = getFunnelConfig(slug)!
       const html = renderToStaticMarkup(<NicheDoor config={config} week={[]} />)
