@@ -30,7 +30,7 @@ export function hostSpaceId(plan: PlannerPlan): string | null {
 export function isItemVisible(data: PlannerData, item: PlannerItem, ownSpaceId: string): boolean {
   const hidden = data.hidden ?? {}
   if (hidden[KINDS[item.kind].layer]) return false
-  if (hidden.shared && isShared(data.plans.find((p) => p.id === item.plan), ownSpaceId)) return false
+  if (hidden.shared && (item.shared || isShared(data.plans.find((p) => p.id === item.plan), ownSpaceId))) return false
   return true
 }
 

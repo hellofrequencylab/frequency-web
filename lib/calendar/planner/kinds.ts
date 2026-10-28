@@ -80,7 +80,7 @@ export const KINDS: Record<PlannerKind, KindLook> = {
     word: 'Production',
     short: 'Prod',
     layer: 'works',
-    bg: 'linear-gradient(var(--pa-soft), var(--pa-soft)), var(--surface-card)',
+    bg: 'var(--pa-soft), var(--pa-soft), var(--surface-card)',
     bd: `1px solid ${clear(CAL_PRODUCTION, 24)}`,
     fg: 'var(--text-strong)',
     dot: CAL_PRODUCTION,
