@@ -5,6 +5,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Json } from '@/lib/database.types'
 import { canConfirmCancel, publishStep, resumeStep, stageOf, toSnapshot, type CancelDecision, type LaunchSnapshot } from './state'
+import { expireSources } from './shelf-io'
 import type { LaunchStepId } from './steps'
 
 const COLUMNS =
@@ -56,7 +57,9 @@ export async function confirmCancel(l: LaunchSnapshot, typed: unknown, now = new
   if (!decision.ok) return decision
   const db = await createClient()
   const { error } = await db.from('space_launch').update({ cancelled_at: now.toISOString(), updated_at: now.toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId).is('cancelled_at', null).is('completed_at', null).not('cancel_requested_at', 'is', null)
-  return error ? { ok: false, reason: 'not_active' } : decision
+  if (error) return { ok: false, reason: 'not_active' }
+  await expireSources(l.id, now) // the sources are kept thirty days, then swept
+  return decision
 }
 
 async function writeSteps(l: LaunchSnapshot, steps: LaunchSnapshot['steps'], now: Date): Promise<LaunchSnapshot | null> {
