@@ -22,8 +22,8 @@ import {
 } from './public-surface'
 
 const baseURL = process.env.PW_BASE_URL
-// Request-only checks do not vary by viewport: run them once, under the first project.
-const onlyOnce = ({}, testInfo: { project: { name: string } }) => testInfo.project.name !== 'mobile'
+// Request-only checks do not vary by viewport: run them once, under the mobile-emulating projects only.
+const onlyOnce = ({ isMobile }: { isMobile: boolean }) => !isMobile
 const siteURLs = (process.env.PW_SITE_URLS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
 
 test.describe('public surface (platform host)', { tag: '@public-surface' }, () => {
