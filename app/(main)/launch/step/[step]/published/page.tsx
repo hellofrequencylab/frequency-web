@@ -23,11 +23,9 @@ export default async function PublishedPage({ params }: { params: Promise<{ step
   const view = publishedView(launch, step)
   if (view.kind === 'not_yet') redirect(launchStepHref(step))
   const flow = flowView(launch)
-  // The next step on this page is the person's own Space, which exists the moment the Spotlight is published.
-  const published = flow.slug ? { ...view, next: { label: 'Your Space', href: `/spaces/${encodeURIComponent(flow.slug)}` } } : view
   return (
     <DashboardTemplate {...flowHeading(flow)} adminBar={false} width="default">
-      <LaunchFlow view={flow} answers={await loadSpotlightAnswers(launch)} signedIn published={published} />
+      <LaunchFlow view={flow} answers={await loadSpotlightAnswers(launch)} signedIn />
     </DashboardTemplate>
   )
 }
