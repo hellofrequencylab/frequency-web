@@ -147,6 +147,17 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'The system', path: '/system' },
     ],
   },
+  // components/frequency/site/pages/launch/free-spotlight.tsx (VLS-05). Dark until LAUNCH_ENTRY_ENABLED is on.
+  freeSpotlight: {
+    path: '/free-spotlight',
+    title: 'A free Spotlight: one page to send people to',
+    description:
+      'A Spotlight puts who you are, what you offer and how to reach you on one page. A free Space comes with it, so people who find you have somewhere to land.',
+    shareTitle: 'Get a Free Spotlight: one page to send people to',
+    headline: 'One page to send people to. Free.',
+    lede: 'You do good work, and your links are scattered across six places. A Spotlight puts who you are, what you offer and how to reach you on one page. A free Space comes with it, so the people who find you have somewhere to land.',
+    crumbs: [{ name: 'Free Spotlight', path: '/free-spotlight' }],
+  },
   midnight: {
     path: '/themes/nocturne',
     title: 'Nocturne: design it once, wear it on every surface',

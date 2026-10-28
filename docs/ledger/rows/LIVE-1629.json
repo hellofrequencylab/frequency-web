@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1629",
+  "title": "A Get a Free Spotlight button on the home page, the /for doors and the Theme Kit pages, and its landing, all dark until the doorway switch is on",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "components/marketing/free-spotlight-button.tsx",
+    "ref": "Vera guided launch system, VLS-05. Copy follows docs/marketing/voice-and-language-guide.md. The button's destination, /launch/start, lands with VLS-06 and VLS-07."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/free-spotlight-entry.mjs",
+    "note": "Runs lib/launch/entry.ts and enabled.ts under node and reads the pages: one label, one address that lands on /launch/start with its utm values, the button and the /free-spotlight landing render nothing (404) while LAUNCH_ENTRY_ENABLED is off or the launch itself is off, and the home page, every /for door (niche-door), the Theme Kit index, each Theme Kit page and Nocturne carry the button. Fails on main, where none exists."
+  },
+  "detail": "FreeSpotlightButton (server component, kit button classes, no CSS of its own) reads launchEntryEnabled() and renders nothing while the doorway is off, so every page that carries it is byte-identical until the switch is turned on (a redeploy, since these pages are ISR). Nocturne is a client island, so its page reads the switch and passes the address down. /free-spotlight is a kit landing (phero, sec, tg-card, vz-steps, KeepGoing): pain first, no timing claim, no outcome promise, an account asked for at Publish. docs/marketing/free-spotlight-ad-pack.md holds the ad copy and three asset slots with sizes. Not done here: the visual baselines (nothing renders with the switch off, so none change), a sitemap or menu entry (the page is dark), and the /launch/start route the button points at (VLS-06, VLS-07). lib/funnels/definitions.ts, named in the plan, is the sign-up funnel table and needed no change.",
+  "wave": "W7"
+}
