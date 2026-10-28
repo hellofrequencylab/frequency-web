@@ -85,4 +85,5 @@ body[data-energy-page="charge"]{--tx-d:8s;--tx-b:2.5s;--tx-o:.5}
 @media (prefers-reduced-motion:reduce){
 .tx-halo,.tx-jewel,.tx-sphere,.tx-sphere>i::after,.tx-sphere::before,.tx-sphere>b::before,.tx-film,.lv-live i,.fqm-live i,.live,.acct-dot,.wingtag::before,.lg-sheen::before,.ft2-roundel{animation:none!important}
 .photo:hover img{transform:none}
-.lg-fx:hover .lg-sheen::after{animation:none;opacity:.5;background-position:50% 0}}
+.lg-fx:hover .lg-sheen::after,.lg-fx:focus-visible .lg-sheen::after{animation:none;opacity:.5;background-position:50% 0}
+.photo.fq-iri-rim:not(.fq-iri-sheen):hover::after{animation:none}}
