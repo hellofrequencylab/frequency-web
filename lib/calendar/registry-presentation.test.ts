@@ -39,7 +39,7 @@ describe('the one stage presentation', () => {
     expect(new Set(colours).size, `these three still share a colour: ${colours.join(' | ')}`).toBe(3)
     expect(new Set([planning.tone, priv.tone, todos.tone]).size).toBe(3)
     // And each still carries a form of its own, so the grid reads before any word does.
-    expect(priv.chipClass).toContain('border-border-strong')
+    expect(priv.chipClass).toContain('border-border')
     expect(todos.chipClass).toContain('border-dotted')
     expect(planning.chipClass).not.toContain('border')
   })
@@ -123,6 +123,11 @@ describe('the one stage presentation', () => {
       const look = calendarPresentation({ layer: layer.key }, 'member')
       expect(layer.chipClass, `the ${layer.key} layer keeps a chip class of its own`).toBe(look.chipClass)
     }
+  })
+
+  it('paints the Shared with Spaces layer as an Event, the word a guest reads', () => {
+    expect(calendarPresentation({ layer: 'shared' }, 'member').word).toBe('Event')
+    expect(CALENDAR_LAYERS.find((l) => l.key === 'shared')?.label).toBe('Shared with Spaces')
   })
 
   it('gives a Plan stage the same colour and word as the dates on it', () => {
