@@ -194,6 +194,11 @@ function layoutsFor(p: ProfileSource): LayoutKey[] {
   return out
 }
 
+/** The design's name for a profile ("Networking group", "Mentorship circles"): what its kit is called. */
+export function networkKitProfileName(profile: string): string {
+  return PROFILES[isNetworkKitProfile(profile) ? profile : 'general'].name
+}
+
 function isNetworkKitProfile(id: unknown): id is ProfileId {
   return typeof id === 'string' && (NETWORK_KIT_PROFILES as readonly string[]).includes(id)
 }

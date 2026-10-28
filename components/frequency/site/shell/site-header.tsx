@@ -445,7 +445,7 @@ export function SiteHeader({ initialNavigation = null }: { initialNavigation?: P
         onFocus={() => setHidden(false)}
       >
         <Link href={siteLogoHref(member)} className="lg-fx" aria-label={member ? 'Your feed' : 'Frequency home'}>
-          <Image className="logo" src={WORDMARK} alt="Frequency Community Collective" width={1920} height={389} priority />
+          <Image className="logo" src={WORDMARK} alt="Frequency Community Collective" width={1920} height={389} sizes="(max-width: 760px) 188px, 237px" priority />
           <span className="lg-sheen" aria-hidden="true" style={{ '--fq-lg': `url("${WORDMARK}")` } as React.CSSProperties} />
         </Link>
 
