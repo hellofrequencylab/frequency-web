@@ -10,7 +10,7 @@
     "file": "lib/themes/library.ts",
     "ref": "LIVE-1514"
   },
-  "detail": "Copy only. \"Mega Theme\" reads as Theme Kits and the Midnight theme as Nocturne on /themes, /themes/[theme] and the Midnight feature page (themePagePath in lib/themes/library.ts, SEO titles in lib/seo/frequency-pages.ts). Ids, the Midnight editor value, saved site styles and the /themes/midnight address are unchanged. The address and the picker label followed in LIVE-1546 once Daniel released the pins.",
+  "detail": "Copy only. \"Mega Theme\" reads as Theme Kits and the Midnight theme as Nocturne on /themes, /themes/[theme] and the Midnight feature page (themePagePath in lib/themes/library.ts, SEO titles in lib/seo/frequency-pages.ts). Ids, the Midnight editor value, saved site styles and the /themes/midnight address are unchanged. The address and the picker label followed in LIVE-1553 once Daniel released the pins.",
   "closed": "2026-10-27",
   "verify": {
     "kind": "cmd",
