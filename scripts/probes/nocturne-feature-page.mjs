@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1572: /themes/nocturne is the Theme Feature Page of the Default Template design system, built section by
+// LIVE-1598: /themes/nocturne is the Theme Feature Page of the Default Template design system, built section by
 // section, with every picture present and every button pointing at a real route.
 import { existsSync, readFileSync } from 'node:fs'
 

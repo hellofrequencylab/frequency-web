@@ -1,6 +1,6 @@
 'use client'
 
-// /themes/nocturne (LIVE-1380, rebuilt LIVE-1572), built section by section from the Theme Feature Page of the Default Template design system
+// /themes/nocturne (LIVE-1380, rebuilt LIVE-1598), built section by section from the Theme Feature Page of the Default Template design system
 // (docs/design-systems/nocturne). Every picture is a real screenshot of the kit (public/themes/midnight/shots,
 // ids as in lib/themes/nocturne-feature-data.ts); the live sample site is /themes/nocturne/demo. Every button
 // goes to a real route: the Wizard (/spaces/new?niche=<kit>), pricing, the sample site, or an anchor on this page.
