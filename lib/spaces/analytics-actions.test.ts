@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
     | { status: string; visibility: string | null; type: string }
     | null,
   spaceError: null as { message: string } | null,
+  lookup: vi.fn(),
   dispatchAutomations: vi.fn(),
   recordSpaceCtaClick: vi.fn(async (_spaceId: string, _actorId: string | null, _nonce: string) => {
     mocks.dispatchAutomations()
@@ -18,13 +19,13 @@ vi.mock('@/lib/spaces/analytics', () => ({ recordSpaceCtaClick: mocks.recordSpac
 vi.mock('@/lib/auth', () => ({ getMyProfileId: mocks.getMyProfileId }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimitOk: mocks.rateLimitOk, claimOnce: mocks.claimOnce }))
 vi.mock('next/headers', () => ({ headers: async () => new Headers({ 'x-forwarded-for': '192.0.2.10' }) }))
-vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: async () => ({
     from: (table: string) => {
       if (table !== 'spaces') throw new Error(`unexpected table ${table}`)
       const query = {
         select: () => query,
-        eq: () => query,
+        eq: (column: string, value: string) => { mocks.lookup(column, value); return query },
         maybeSingle: async () => ({ data: mocks.space, error: mocks.spaceError }),
       }
       return query
@@ -45,9 +46,10 @@ beforeEach(() => {
   process.env.UNSUBSCRIBE_SECRET = 'test-secret-for-space-cta-clicks'
   mocks.space = { status: 'active', visibility: 'network', type: 'business' }
   mocks.spaceError = null
+  mocks.lookup.mockClear()
   mocks.dispatchAutomations.mockClear()
   mocks.recordSpaceCtaClick.mockClear()
-  mocks.getMyProfileId.mockClear()
+  mocks.getMyProfileId.mockReset().mockResolvedValue('viewer-1')
   mocks.rateLimitOk.mockReset().mockResolvedValue(true)
   mocks.claimOnce.mockReset().mockResolvedValue(true)
 })
@@ -60,7 +62,21 @@ describe('recordSpaceCtaClickAction', () => {
     expect(mocks.rateLimitOk).toHaveBeenCalledWith('space-cta-click', '192.0.2.10', 60, '60 s')
     expect(mocks.claimOnce).toHaveBeenCalledWith(expect.stringMatching(/^space-cta-click:/), 600)
     expect(mocks.recordSpaceCtaClick).toHaveBeenCalledWith('space-1', 'viewer-1', expect.any(String))
+    expect(mocks.lookup).toHaveBeenCalledWith('id', 'space-1')
     expect(mocks.dispatchAutomations).toHaveBeenCalledTimes(1)
+  })
+
+  it('records an eligible public Space for an anonymous viewer', async () => {
+    mocks.getMyProfileId.mockResolvedValue(null)
+    await recordSpaceCtaClickAction('space-1', tokenFor())
+    expect(mocks.recordSpaceCtaClick).toHaveBeenCalledWith('space-1', null, expect.any(String))
+  })
+
+  it('fails closed when the user-scoped Space lookup errors', async () => {
+    mocks.spaceError = { message: 'permission denied' }
+    await recordSpaceCtaClickAction('space-1', tokenFor())
+    expect(mocks.recordSpaceCtaClick).not.toHaveBeenCalled()
+    expect(mocks.dispatchAutomations).not.toHaveBeenCalled()
   })
 
   it('rejects replayed proof without recording or dispatching automations', async () => {

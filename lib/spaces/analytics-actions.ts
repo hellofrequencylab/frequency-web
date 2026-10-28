@@ -13,7 +13,7 @@
 
 import { recordSpaceCtaClick } from '@/lib/spaces/analytics'
 import { getMyProfileId } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 import { claimOnce, rateLimitOk } from '@/lib/rate-limit'
 import { verifySpaceCtaClickToken } from '@/lib/spaces/cta-click-token'
@@ -30,7 +30,8 @@ export async function recordSpaceCtaClickAction(spaceId: string, token: string):
     const proof = verifySpaceCtaClickToken(token, spaceId)
     if (!proof) return
 
-    const { data, error } = await createAdminClient()
+    const supabase = await createClient()
+    const { data, error } = await supabase
       .from('spaces')
       .select('status, visibility, type')
       .eq('id', spaceId)
