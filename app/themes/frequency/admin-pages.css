@@ -535,19 +535,23 @@ button.cal-tg-head:hover { background: var(--fq-track); }
 .cal-tg-sky { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; color: var(--fq-text-muted); }
 .cal-tg-sky .cal-serif { font-size: var(--fq-text-meta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cal-tg-allday { gap: 2px 0; padding: 4px 0; border-top: 1px solid var(--fq-border-hair); }
-.cal-tg-allday .cal-tg-gutter { align-items: flex-start; padding-top: 6px; }
+.cal-tg-allday .cal-tg-gutter { align-items: flex-start; padding-top: 7px; }
+.cal-suite .cal-tg-allday .cal-tg-gutter { text-transform: none; letter-spacing: 0.02em; font-size: var(--fq-text-meta); font-weight: 500; }
 .cal-tg-cell { min-height: 26px; border-left: 1px solid var(--fq-border-hair); }
 .cal-tg-cell[data-today], .cal-tg-col[data-today] { background-color: color-mix(in oklab, var(--fq-reward) 5%, transparent); }
 .cal-tg-cell[data-drop], .cal-tg-col[data-drop] { background-color: color-mix(in oklab, var(--color-cal-works) 9%, transparent); box-shadow: inset 0 0 0 1.5px var(--cal-select); }
 .cal-tg-band { z-index: 1; margin: 1px 3px; min-width: 0; }
 .cal-suite[data-dragging] .cal-tg-allday .cal-chip { pointer-events: none; }
 .cal-tg-body { position: relative; }
-.cal-tg-hours { display: block; }
+.cal-tg-hours { display: block; z-index: 5; }
 .cal-tg-hour { position: absolute; right: 8px; transform: translateY(-50%); font: 500 11px/1 var(--fq-font-display); letter-spacing: 0.04em; color: var(--fq-text-faint); white-space: nowrap; }
 .cal-tg-hour:first-child { transform: none; margin-top: 4px; }
 .cal-tg-col { position: relative; border-left: 1px solid var(--fq-border-hair); background-image: repeating-linear-gradient(to bottom, var(--fq-border-hair) 0 1px, transparent 1px 52px); }
-.cal-card { position: absolute; z-index: 1; display: flex; align-items: flex-start; gap: 4px; padding: 5px 8px; border-radius: 14px; overflow: hidden; text-align: left; transition: transform var(--fq-dur-fast) var(--fq-ease-out), box-shadow var(--fq-dur-fast) var(--fq-ease-out); }
+.cal-card { position: absolute; z-index: 1; left: var(--l); width: var(--w); display: flex; align-items: flex-start; gap: 4px; padding: 5px 8px; border-radius: 14px; overflow: hidden; text-align: left; transition: transform var(--fq-dur-fast) var(--fq-ease-out), box-shadow var(--fq-dur-fast) var(--fq-ease-out); }
 .cal-card:hover { z-index: 2; transform: translateY(-1px); }
+.cal-card[data-lanes] { padding-inline: 6px; }
+.cal-card[data-lanes]:is(:hover, :focus-visible) { z-index: 4; width: max(var(--w), 156px); box-shadow: 0 10px 24px -14px color-mix(in oklab, var(--fq-text-strong) 45%, transparent); }
+.cal-card[data-lanes] .cal-card-t { white-space: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 .cal-card[data-clash] { box-shadow: inset 0 0 0 1.5px var(--fq-live); }
 .cal-card[data-selected] { z-index: 3; box-shadow: 0 0 0 2px var(--cal-select), 0 10px 24px -14px color-mix(in oklab, var(--color-cal-works) 40%, transparent); }
 .cal-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
@@ -559,10 +563,12 @@ button.cal-tg-head:hover { background: var(--fq-track); }
 .cal-card[data-tier="1"] .cal-card-text { flex-direction: row; align-items: baseline; gap: 6px; }
 .cal-card[data-tier="1"] .cal-card-t { flex: 1; min-width: 0; }
 .cal-card[data-tier="1"] .cal-card-r { flex: none; }
+.cal-card[data-tier="1"][data-lanes] .cal-card-t { display: block; white-space: nowrap; }
 .cal-card[data-struck] .cal-card-t { text-decoration: line-through; }
 .cal-ghost { position: absolute; left: 2px; right: 2px; z-index: 4; display: flex; padding: 4px 8px; border-radius: 14px; pointer-events: none; background: color-mix(in oklab, var(--color-cal-works) 14%, transparent); box-shadow: inset 0 0 0 1.5px var(--cal-select); font: 600 var(--fq-text-meta)/1.25 var(--fq-font-sans); color: var(--fq-text-strong); }
 .cal-now { position: absolute; left: 0; right: 0; z-index: 5; height: 2px; margin-top: -1px; background: var(--fq-pa); pointer-events: none; }
 .cal-now i { position: absolute; left: -6px; top: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--fq-pa-orb); box-shadow: var(--fq-ig-glow); }
+.cal-toast > div { background: var(--fq-surface-card); backdrop-filter: none; }
 .cal-toast { position: absolute; z-index: 50; left: 50%; bottom: 20px; transform: translateX(-50%); width: min(420px, calc(100% - 24px)); }
 
 /* The Details panel */

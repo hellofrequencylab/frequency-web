@@ -101,7 +101,7 @@ export function SuiteAgenda({
                       <span className="cal-at">{row.title}</span>
                       <span className="cal-as">
                         {row.range}
-                        {row.planTitle ? ` · ${row.planTitle}` : ''}
+                        {row.planTitle && row.planTitle !== row.title ? ` · ${row.planTitle}` : ''}
                         {row.going ? ` · ${row.going}` : ''}
                       </span>
                     </span>

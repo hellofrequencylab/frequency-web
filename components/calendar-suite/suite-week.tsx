@@ -358,6 +358,7 @@ export function SuiteWeek({
                         data-selected={isSel || undefined}
                         data-clash={c.clash || undefined}
                         data-tier={tier}
+                        data-lanes={p.lanes > 1 ? p.lanes : undefined}
                         data-struck={c.done || undefined}
                         aria-pressed={isSel}
                         aria-label={`${look.word} · ${c.title} · ${range_}`}
@@ -365,12 +366,12 @@ export function SuiteWeek({
                         style={{
                           top: p.top,
                           height: p.height,
-                          left: `calc(${p.leftPct}% + 2px)`,
-                          width: `calc(${p.widthPct}% - 4px)`,
+                          '--l': `calc(${p.leftPct}% + 2px)`,
+                          '--w': `calc(${p.widthPct}% - 4px)`,
                           background: c.done ? 'var(--bg-sunken)' : look.bg,
                           border: look.bd,
                           color: c.done ? 'var(--text-faint)' : look.fg,
-                        }}
+                        } as CSSProperties}
                         onClick={() => onSelect({ kind: c.src, id: c.id })}
                         {...dnd.dragProps(c.src, c.id, true)}
                       >
@@ -379,9 +380,9 @@ export function SuiteWeek({
                           <span className="cal-card-t">{c.title}</span>
                           {tier === 3 ? <span className="cal-card-r">{range_}</span> : null}
                           {tier === 2 ? <span className="cal-card-r">{`${range_} · ${meta}`}</span> : null}
-                          {tier === 1 ? <span className="cal-card-r">{`${clockLabel(c.startMin)}${c.clash ? ' · Clash' : ''}`}</span> : null}
+                          {tier === 1 && p.lanes === 1 ? <span className="cal-card-r">{`${clockLabel(c.startMin)}${c.clash ? ' · Clash' : ''}`}</span> : null}
                         </span>
-                        {c.partner && tier > 1 ? <PartnerRing name={c.partner} /> : null}
+                        {c.partner && tier > 1 && p.lanes < 3 ? <PartnerRing name={c.partner} /> : null}
                       </button>
                     )
                   })}
@@ -394,7 +395,7 @@ export function SuiteWeek({
                         height: Math.max(24, (ghost.durMin / 60) * HOUR_PX - 4),
                       }}
                     >
-                      <span>{clockLabel(ghost.startMin)}</span>
+                      <span>{`${clockLabel(ghost.startMin)} to ${clockLabel(ghost.startMin + ghost.durMin)}`}</span>
                     </div>
                   ) : null}
                   {at != null ? (
