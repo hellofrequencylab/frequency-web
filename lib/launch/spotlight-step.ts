@@ -62,3 +62,15 @@ export function spotlightLayout(a: SpotlightAnswers): Record<string, unknown> {
 export function publishedSpotlightPreferences(current: Record<string, unknown>, a: SpotlightAnswers): Record<string, unknown> {
   return nextSpotlightPreferences(current, { published: true, layout: spotlightLayout(a) })
 }
+
+/** The answers a saved Spotlight layout was written from, read back so the edit form opens filled in. Tolerant of
+ *  any shape: whatever is not the heading, the text or the first link comes back empty. PURE, never throws. */
+export function answersFromLayout(layout: unknown): SpotlightAnswers {
+  const content = (layout as { content?: Record<string, unknown> } | null)?.content
+  const text = (key: string): string => {
+    const v = (content?.[key] as { text?: unknown } | undefined)?.text
+    return typeof v === 'string' ? v : ''
+  }
+  const first = ((content?.links as { items?: unknown } | undefined)?.items as { url?: unknown }[] | undefined)?.[0]?.url
+  return { name: text('heading'), line: text('text'), link: typeof first === 'string' ? first : '' }
+}
