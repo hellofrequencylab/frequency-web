@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { checkFact, type FactInput, type FactState, type ShelfFact } from './facts'
 import { checkSource, expiryFor, type SourceInput, type SourceKind } from './sources'
 
-export interface ShelfSource {
+interface ShelfSource {
   id: string
   kind: SourceKind
   label: string

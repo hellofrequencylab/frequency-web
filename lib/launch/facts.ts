@@ -3,13 +3,13 @@
 // shelf quotes, it never writes. Each fact is filed under the content slot it could fill (name, tagline, intro ...)
 // and stays "suggested" until the person accepts it. PURE, no imports from the app.
 
-export const FACT_SLOTS = ['name', 'tagline', 'intro', 'story', 'contact', 'hours', 'offers', 'events', 'people', 'links'] as const
-export type FactSlot = (typeof FACT_SLOTS)[number]
+const FACT_SLOTS = ['name', 'tagline', 'intro', 'story', 'contact', 'hours', 'offers', 'events', 'people', 'links'] as const
+type FactSlot = (typeof FACT_SLOTS)[number]
 
-export const FACT_STATES = ['suggested', 'accepted', 'dismissed'] as const
+const FACT_STATES = ['suggested', 'accepted', 'dismissed'] as const
 export type FactState = (typeof FACT_STATES)[number]
 
-export const FACT_LIMITS = { valueMax: 2000, snippetMax: 1000, originMax: 500 } as const
+const FACT_LIMITS = { valueMax: 2000, snippetMax: 1000, originMax: 500 } as const
 
 export interface FactInput {
   slot: string
@@ -18,9 +18,9 @@ export interface FactInput {
   origin: string
 }
 
-export type FactCheck = { ok: true; fact: { slot: FactSlot; value: string; snippet: string; origin: string } } | { ok: false; reason: 'slot' | 'value' | 'snippet' | 'origin' | 'not_quoted' }
+type FactCheck = { ok: true; fact: { slot: FactSlot; value: string; snippet: string; origin: string } } | { ok: false; reason: 'slot' | 'value' | 'snippet' | 'origin' | 'not_quoted' }
 
-export function isFactSlot(v: unknown): v is FactSlot {
+function isFactSlot(v: unknown): v is FactSlot {
   return typeof v === 'string' && (FACT_SLOTS as readonly string[]).includes(v)
 }
 
