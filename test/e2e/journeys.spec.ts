@@ -353,7 +353,13 @@ test.describe('new member sign-up @journey-write', () => {
     await page.goto('/sign-in')
     await page.getByLabel('Email address').fill(email)
     await page.getByRole('button', { name: 'Send magic link' }).click()
-    await expect(page.getByRole('heading', { name: 'No account for that email yet' })).toBeVisible()
+    // The first Send compiles the sign-in action on `next dev`, so give the redirect time and, if it never
+    // lands, say where the page is and what it shows instead of a bare "not found".
+    const askFirst = page.getByRole('heading', { name: 'No account for that email yet' })
+    await askFirst.waitFor({ timeout: 60_000 }).catch(async () => {
+      const shown = (await page.locator('main, body').first().innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300)
+      throw new Error(`Send magic link did not reach the "No account for that email yet" step. At ${page.url()}. Page says: ${shown}`)
+    })
     await page.getByRole('button', { name: 'Create a new account' }).click()
 
     // Read the newest message in the mailbox and pull the first link that goes through auth. The local
