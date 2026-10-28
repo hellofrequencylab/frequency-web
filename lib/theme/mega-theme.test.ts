@@ -7,7 +7,7 @@ import { KIT_INDEX } from '@/lib/sites/kits/registry'
 
 describe('one theme id model (ADR-1881)', () => {
   it('maps every site theme to the editor theme the older tables name', () => {
-    for (const t of MEGA_THEMES) if (t.site) expect(EDITOR_THEME_OF[t.site]).toBe(t.editor)
+    for (const t of MEGA_THEMES) if (t.site) expect(EDITOR_THEME_OF[t.site as keyof typeof EDITOR_THEME_OF]).toBe(t.editor)
   })
 
   it('covers every site theme and every editor theme', () => {
