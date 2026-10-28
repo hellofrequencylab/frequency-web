@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1640",
+  "title": "The Temple Theme Kit's 268 design-system files are on file, each claimed by a rule, with every gap listed",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "docs/design-systems/temple/rules.json",
+    "ref": "Temple Theme Kit build"
+  },
+  "detail": "Intake of the new Temple Theme Kit (a theme of its own, code id temple-kit; the existing temple theme that Royal Temple wears is untouched). docs/design-systems/temple holds the rules, the inventory with hashes, tokens, copy and a baseline of 455 known gaps (75 missing targets, 380 copy sentences), which the build passes below can only shrink. The four faces are the ones already self-hosted under app/fonts/temple; the 24 textures and 10 glyphs differ from the old theme's and ship under public/sites/temple-kit. scripts/design-system.test.ts now reads each theme's token block from a table instead of assuming Nocturne's.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "All 268 files are claimed; the baseline lists the rest.",
+    "cmd": "node scripts/probes/temple-design-system-intake.mjs"
+  },
+  "closed": "2026-10-28"
+}
