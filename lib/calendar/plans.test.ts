@@ -3,6 +3,9 @@ import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import {
   derivePlanStage,
+  mapPlanRow,
+  normalizeHoldUntil,
+  parseHoldUntilInput,
   parsePlanFiles,
   PLAN_MAX_FILES,
   keepExplicitExceptions,
@@ -223,5 +226,47 @@ describe('planTargetDef', () => {
     // the Production road loses the Plan on the one entry point that matters.
     const modal = readFileSync(join(ROOT, 'app/(main)/@wizard/(.)journeys/new/page.tsx'), 'utf8')
     expect(modal).toMatch(/searchParams: Promise<\{[^}]*\bplan\?: string/)
+  })
+})
+
+describe('the hold date', () => {
+  it('accepts only a real calendar day', () => {
+    expect(normalizeHoldUntil('2026-11-04')).toBe('2026-11-04')
+    expect(normalizeHoldUntil(' 2028-02-29 ')).toBe('2028-02-29')
+    expect(normalizeHoldUntil('2027-02-29')).toBeNull()
+    expect(normalizeHoldUntil('2026-13-01')).toBeNull()
+    expect(normalizeHoldUntil('2026-11-04T10:00:00Z')).toBeNull()
+    expect(normalizeHoldUntil('next week')).toBeNull()
+    expect(normalizeHoldUntil(null)).toBeNull()
+  })
+
+  it('treats an empty value as a release and a bad day as an error, never a silent clear', () => {
+    expect(parseHoldUntilInput('2026-11-04')).toEqual({ holdUntil: '2026-11-04' })
+    expect(parseHoldUntilInput(null)).toEqual({ holdUntil: null })
+    expect(parseHoldUntilInput('')).toEqual({ holdUntil: null })
+    expect(parseHoldUntilInput('   ')).toEqual({ holdUntil: null })
+    expect(parseHoldUntilInput('2026-02-31')).toEqual({ error: 'Pick a real day for the hold.' })
+    expect(parseHoldUntilInput(42)).toEqual({ error: 'Pick a real day for the hold.' })
+  })
+
+  it('reads hold_until into a Plan and tolerates a row from before the migration', () => {
+    const row = {
+      id: 'p',
+      space_id: 's',
+      title: 'Retreat',
+      stage: 'pencil',
+      notes: null,
+      links: [],
+      files: [],
+      target_kind: 'event',
+      playbook_id: null,
+      owner_profile_id: null,
+      created_by: null,
+      archived_at: null,
+      created_at: '2026-10-01T00:00:00.000Z',
+      updated_at: '2026-10-01T00:00:00.000Z',
+    }
+    expect(mapPlanRow({ ...row, hold_until: '2026-11-04' }).holdUntil).toBe('2026-11-04')
+    expect(mapPlanRow(row).holdUntil).toBeNull()
   })
 })
