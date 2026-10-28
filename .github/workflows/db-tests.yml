@@ -93,6 +93,11 @@ jobs:
         env:
           FREQUENCY_EPHEMERAL_ROOM_STAGING: '1'
         run: node scripts/staging/atomic-room-api.mjs
+      - name: Real local service, anon and authenticated Launch API acceptance
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          FREQUENCY_EPHEMERAL_ROOM_STAGING: '1'
+        run: node scripts/staging/launch-api.mjs
       - name: Always destroy dispatched staging containers and volumes
         if: always() && github.event_name == 'workflow_dispatch'
         run: pnpm exec supabase stop --no-backup
