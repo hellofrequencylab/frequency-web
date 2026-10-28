@@ -5,6 +5,7 @@ import { wildheartAccentVars } from '@/lib/theme/wildheart'
 import { networkAccentVars } from '@/lib/theme/network'
 import { networkKitAccentVars } from '@/lib/theme/network-kit'
 import { templeAccentVars } from '@/lib/theme/temple'
+import { templeKitAccentVars } from '@/lib/theme/temple-kit'
 import { midnightAccentVars } from '@/lib/theme/midnight'
 import { designerAccentVars } from '@/lib/theme/designer'
 import { SPACE_THEMES, SPACE_THEME_FONT_VARS, type SpaceThemeId } from '@/lib/theme/space-themes'
@@ -22,7 +23,11 @@ import type { WebsiteTheme } from '@/lib/sites/editor/state'
 // default accent.
 
 /** The editor's stored theme id for each site theme (ADR-1726): Bold is Menswork, Frequency is DAWN. */
-export const EDITOR_THEME_OF: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', 'network-kit': 'NetworkKit', temple: 'Temple', midnight: 'Midnight', designer: 'Designer' }
+export const EDITOR_THEME_OF: Record<Exclude<SiteThemeId, 'temple-kit'>, WebsiteTheme> & { 'temple-kit'?: undefined } = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', 'network-kit': 'NetworkKit', temple: 'Temple', midnight: 'Midnight', designer: 'Designer' }
+
+/** The editor's id for any site theme. The Temple Theme Kit is held out of EDITOR_THEME_OF (the table the Mega Theme
+ *  model is held level with) until it joins the owner-facing lists. */
+export const editorThemeOf = (theme: SiteThemeId): WebsiteTheme => (theme === 'temple-kit' ? 'TempleKit' : EDITOR_THEME_OF[theme])
 
 interface SiteRenderStyle {
   /** The site theme this page wears. */
@@ -56,14 +61,16 @@ export function siteRenderStyle(pageStyle: SiteStyle, accent: string | null | un
           ? networkKitAccentVars(brandAccent)
           : theme === 'temple'
             ? templeAccentVars(brandAccent)
-            : theme === 'midnight'
-              ? midnightAccentVars(brandAccent)
-              : theme === 'designer'
-                ? designerAccentVars(brandAccent)
-                : resolveAccentVars(brandAccent, typeDefaultAccent)
+            : theme === 'temple-kit'
+              ? templeKitAccentVars(brandAccent)
+              : theme === 'midnight'
+                ? midnightAccentVars(brandAccent)
+                : theme === 'designer'
+                  ? designerAccentVars(brandAccent)
+                  : resolveAccentVars(brandAccent, typeDefaultAccent)
   return {
     theme,
-    editorTheme: EDITOR_THEME_OF[theme],
+    editorTheme: editorThemeOf(theme),
     skinned: theme !== 'frequency',
     fonts: theme === 'bold' ? 'menswork' : pageStyle.fonts,
     accentVars,
