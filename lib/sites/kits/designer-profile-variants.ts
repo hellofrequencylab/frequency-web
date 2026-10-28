@@ -97,7 +97,7 @@ const LOOK: Record<string, Look> = {
   networks: { hero: 'portrait-02', projects: [['Your first project', 'Identity', 'cabinet-detail'], ['Your second project', 'Packaging', 'bath-blush'], ['Your third project', 'Print', 'pergola']], steps: 'cabinet-detail', proof: 'kitchen-wide', band: 'courtyard-arch', founder: 'portrait-01' },
   creators: { hero: 'designer-kitchen', projects: [['Your first project', 'Website', 'kitchen-wide'], ['Your second project', 'Shop', 'cabinet-detail'], ['Your third project', 'System', 'pergola']], steps: 'portrait-02', proof: 'kitchen-island', band: 'courtyard-arch', founder: 'portrait-01' },
   schools: { hero: 'bath-teal', projects: [['Plan your kitchen', 'Kitchens', 'kitchen-island'], ['The calm remodel', 'Process', 'house-front'], ['Colour, light and finish', 'Materials', 'bath-blush']], steps: 'portrait-02', proof: 'kitchen-wide', band: 'kitchen-island', founder: 'portrait-01' },
-  clubs: { hero: 'kitchen-island', projects: [['The Walnut Island', 'Built-in', 'kitchen-island'], ['The Long Table', 'Made to order', 'cabinet-detail'], ['The Oak Shelves', 'Commission', 'pergola']], steps: 'portrait-02', proof: 'kitchen-wide', band: 'kitchen-island', founder: 'portrait-01' },
+  clubs: { hero: 'kitchen-island', projects: [['The Walnut Island', 'Built-in', 'kitchen-island'], ['The Long Table', 'Made to order', 'cabinet-detail'], ['The Oak Shelves', 'Custom', 'pergola']], steps: 'portrait-02', proof: 'kitchen-wide', band: 'kitchen-island', founder: 'portrait-01' },
   faith: { hero: 'portrait-01', projects: [['Courtyard Dinner', 'Dinner', 'courtyard-arch'], ['Garden Wedding', 'Wedding', 'house-front'], ['Flowers on the Lawn', 'Florals', 'outdoor-bar']], steps: 'portrait-02', proof: 'kitchen-wide', band: 'courtyard-arch', founder: 'designer-sofa' },
   wellness: { hero: 'kitchen-wide', projects: [['The Kitchen, restyled', 'Refresh', 'kitchen-wide'], ['Quiet Bedroom', 'Staging', 'bath-blush'], ['Living Room Refresh', 'Styling', 'pergola']], steps: 'portrait-02', proof: 'designer-kitchen', band: 'kitchen-island', founder: 'portrait-01' },
   markets: { hero: 'designer-sofa', projects: [['The Linen Living Room', 'Collection', 'kitchen-wide'], ['The Linen Bedroom', 'Bedding', 'bath-blush'], ['Made-to-order Cushions', 'Soft goods', 'pergola']], steps: 'portrait-02', proof: 'kitchen-island', band: 'kitchen-island', founder: 'portrait-01' },
@@ -309,5 +309,5 @@ export const designerProfileAccent = (niche: string) => DATA.kits.find((k) => k.
 export function designerProfileKit(niche: KitNiche): SiteKit {
   const row = DATA.kits.find((k) => k.id === niche)
   if (!row) throw new Error(`No Designer profile kit for ${niche}`)
-  return { id: `designer-profile-${niche}`, label: row.name, description: row.who, theme: 'Designer', version: 1, niche, pages: pages(row) }
+  return { id: `designer-profile-${niche}`, label: row.name, description: row.who.replace(/\bcom{2}is{2}ions\b/i, 'custom work'), theme: 'Designer', version: 1, niche, pages: pages(row) }
 }

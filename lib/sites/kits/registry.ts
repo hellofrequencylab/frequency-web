@@ -136,7 +136,7 @@ export const DESIGNER_PROFILE_KIT_INDEX: readonly KitSummary[] = [
   { id: 'designer-profile-networks', niche: 'networks', theme: 'Designer', label: 'Brand and graphic design', description: 'Brand and graphic designers: identities, print and packaging for small businesses.' },
   { id: 'designer-profile-creators', niche: 'creators', theme: 'Designer', label: 'Web and digital design', description: 'Web and product designers: sites, shops and the systems behind them.' },
   { id: 'designer-profile-schools', niche: 'schools', theme: 'Designer', label: 'Design courses', description: 'Designers who teach: courses, workshops and studio days for people planning their own projects.' },
-  { id: 'designer-profile-clubs', niche: 'clubs', theme: 'Designer', label: 'Furniture and makers', description: 'Furniture makers and craft studios: commissions, made-to-order pieces and the workshop.' },
+  { id: 'designer-profile-clubs', niche: 'clubs', theme: 'Designer', label: 'Furniture and makers', description: 'Furniture makers and craft studios: custom work, made-to-order pieces and the workshop.' },
   { id: 'designer-profile-faith', niche: 'faith', theme: 'Designer', label: 'Event design and florals', description: 'Event designers and florists: weddings, dinners and celebrations, planned and installed.' },
   { id: 'designer-profile-wellness', niche: 'wellness', theme: 'Designer', label: 'Home staging and styling', description: 'Home stagers and stylists: listings, refreshes and a seasonal care plan.' },
   { id: 'designer-profile-markets', niche: 'markets', theme: 'Designer', label: 'Textiles and soft goods', description: 'Textile designers and soft-goods studios: fabric, linens and made-to-order upholstery.' },
