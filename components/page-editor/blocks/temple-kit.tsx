@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ArrowRight, Calendar, Clock, MapPin, Users } from 'lucide-react'
+import { ArrowRight, Calendar, ChevronDown, Clock, MapPin, Users } from 'lucide-react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 import { layoutField, layoutDefault } from '@/lib/page-editor/layout'
 import { type SiteLinkMap } from '@/lib/sites/house-theme'
@@ -7,14 +7,17 @@ import { expandSiteSeries, storedWallClock } from '@/lib/sites/site-events'
 import { templeStamp, templeSpan } from '@/lib/sites/temple-events'
 import { InlineText } from '@/components/sites/inline-text'
 import { LINK_HINT, VOICE_HINT, area, arr, cls, hrefOf, image, img, layoutOf, rel, str, text, type Props } from './midnight'
+import { TempleKitLetterForm } from '@/components/sites/temple-kit-letter-form'
 import {
-  TEMPLE_KIT_GATHERINGS, TEMPLE_KIT_HERO, TEMPLE_KIT_LIVE, TEMPLE_KIT_OFFERINGS, TEMPLE_KIT_ROOMS, TEMPLE_KIT_STEPS,
+  TEMPLE_KIT_CTA, TEMPLE_KIT_FAQ, TEMPLE_KIT_GALLERY, TEMPLE_KIT_GATHERINGS, TEMPLE_KIT_HERO, TEMPLE_KIT_JOURNEYS, TEMPLE_KIT_LETTER,
+  TEMPLE_KIT_LIVE, TEMPLE_KIT_MEMBERSHIP, TEMPLE_KIT_OFFERINGS, TEMPLE_KIT_PROOF, TEMPLE_KIT_ROOMS, TEMPLE_KIT_STEPS,
 } from '@/lib/sites/temple-kit-home'
 
 // ── The Temple Kit block family (Temple Theme Kit design system, "Web Theme", 2026-10) ────────────────────────
 // Every section of the design's Home is one registered block here, in the design's markup (ui_kits/site/
 // TempleBlocks.jsx): the hero with the next-gathering card, the frosted live band, gatherings, rooms, offerings and
-// steps. Server Components. Live blocks read the Space's own events from `puck.metadata.space` and fall back to
+// steps, then the gallery, journeys, proof (the one night section), membership, questions, the letter (the one clay
+// banner) and the closing call. Server Components, but for the letter's own form. Live blocks read the Space's own events from `puck.metadata.space` and fall back to
 // the cards the owner wrote. It is a family of its own: the older Temple family (./temple.tsx, Royal Temple) is not
 // touched. Every look is the Temple Kit skin's (components/sites/temple-kit-blocks-css.ts), tokens only.
 
@@ -412,6 +415,225 @@ function TempleKitStepsBlock({ p, metadata, pad, vis }: Common) {
   )
 }
 
+// ── Gallery ────────────────────────────────────────────────────────────────────────────────
+
+function TempleKitGalleryBlock({ p, pad, vis }: Common) {
+  const photos = arr(p.photos).slice(0, 3)
+  const shapes = ['tall', 'media', 'tall'] as const
+  return (
+    <section data-tk="gallery" className={cls('tk-sec tk-gallery', pad, vis)}>
+      <div className="tk-inner tk-gallery-grid">
+        {photos.map((ph, i) => (
+          <Pic key={i} src={img(ph.image)} alt={str(ph.alt)} shape={shapes[i]} className={`tk-gallery-photo tk-gallery-photo--${i + 1}`} />
+        ))}
+        {(str(p.title) || str(p.eyebrow)) && (
+          <div className="tk-gallery-note">
+            {str(p.eyebrow) && <div className="tk-eyebrow">{str(p.eyebrow)}</div>}
+            {str(p.title) && <p className="tk-quote tk-gallery-quote">{str(p.title)}</p>}
+            {str(p.body) && <p className="tk-gallery-body">{str(p.body)}</p>}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+// ── Journeys ───────────────────────────────────────────────────────────────────────────────
+
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+
+function TempleKitJourneysBlock({ p, metadata, pad, vis }: Common) {
+  const journeys = arr(p.journeys).filter((j) => str(j.title)).slice(0, 4)
+  return (
+    <section data-tk="journeys" className={cls('tk-sec tk-journeys tk-motif tk-motif--left tk-motif--agave', pad, vis)}>
+      <div className="tk-inner">
+        <Head p={p} metadata={metadata} />
+        <div className="tk-journey-grid">
+          {journeys.map((j, i) => {
+            const to = hrefOf(str(j.href), metadata)
+            const weeks = Number(str(j.weeks))
+            const tag = [weeks > 0 ? `${weeks} ${weeks === 1 ? 'week' : 'weeks'}` : '', str(j.pillar)].filter(Boolean).join(' · ')
+            const inner = (
+              <>
+                <Pic src={img(j.image)} shape="soft" ratio="4-5">
+                  {tag && <span className="tk-glass tk-journey-tag">{tag}</span>}
+                </Pic>
+                <span className="tk-journey-body">
+                  <span className="tk-display tk-journey-title">{str(j.title)}</span>
+                  {str(j.outcome) && <span className="tk-journey-outcome">{str(j.outcome)}</span>}
+                  <span className="tk-journey-foot">
+                    {str(j.host) && <span className="tk-journey-host"><span className="tk-avatar" aria-hidden="true">{initials(str(j.host))}</span>{str(j.host)}</span>}
+                    {str(j.price) && <span className="tk-display tk-journey-price">{str(j.price)}</span>}
+                  </span>
+                </span>
+              </>
+            )
+            return to ? <a key={i} className="tk-journey" href={to} {...rel(to)}>{inner}</a> : <div key={i} className="tk-journey">{inner}</div>
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Proof ──────────────────────────────────────────────────────────────────────────────────
+
+/** Five small sparks, the first `n` full (design Stars). Nothing when there is no rating to show. */
+function Sparks({ n }: { n: number }) {
+  if (!(n > 0)) return null
+  return (
+    <span className="tk-sparks" role="img" aria-label={`${n} out of 5`}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <svg key={i} className={i < Math.round(n) ? undefined : 'tk-spark-off'} width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 14.2 9.8 21.5 12 14.2 14.2 12 21.5 9.8 14.2 2.5 12 9.8 9.8Z" /></svg>
+      ))}
+    </span>
+  )
+}
+
+function TempleKitProofBlock({ p, pad, vis }: Common) {
+  const more = arr(p.more).filter((m) => str(m.text)).slice(0, 3)
+  const by = [str(p.who), str(p.role)].filter(Boolean).join(' · ')
+  return (
+    <section data-tk="proof" className={cls('tk-sec tk-proof tk-wash tk-wash--grit tk-wash--grit-ink tk-motif tk-motif--fan tk-motif--on-ink', pad, vis)}>
+      <div className="tk-inner tk-proof-grid">
+        <Pic src={img(p.image)} alt={str(p.alt)} shape="arch" ratio="4-5" className="tk-proof-photo" />
+        <div className="tk-proof-copy">
+          {str(p.eyebrow) && <div className="tk-eyebrow tk-eyebrow--light">{str(p.eyebrow)}</div>}
+          {str(p.quote) && <blockquote className="tk-quote tk-proof-quote">“{str(p.quote)}”</blockquote>}
+          {(by || Number(p.stars) > 0) && (
+            <div className="tk-proof-by">
+              <Sparks n={Number(p.stars)} />
+              {by && <span className="tk-eyebrow tk-proof-who">{by}</span>}
+            </div>
+          )}
+          {more.length > 0 && (
+            <div className="tk-proof-more">
+              {more.map((m, i) => (
+                <figure key={i} className="tk-proof-small">
+                  <blockquote>“{str(m.text)}”</blockquote>
+                  <figcaption className="tk-eyebrow tk-eyebrow--light tk-eyebrow--sm">{[str(m.who), str(m.on)].filter(Boolean).join(' · ')}</figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Membership ─────────────────────────────────────────────────────────────────────────────
+
+function TempleKitMembershipBlock({ p, metadata, pad, vis }: Common) {
+  const tiers = arr(p.tiers).filter((t) => str(t.name)).slice(0, 4)
+  return (
+    <section data-tk="membership" className={cls('tk-sec tk-pattern tk-pattern--star tk-membership', pad, vis)}>
+      <div className="tk-inner">
+        <Head p={p} metadata={metadata} center />
+        <div className="tk-tiers">
+          {tiers.map((t, i) => {
+            const featured = t.featured === true
+            const to = hrefOf(str(t.href), metadata)
+            return (
+              <div key={i} className={cls('tk-tier', featured && 'tk-tier--featured')}>
+                <span className="tk-tier-frame" aria-hidden="true" />
+                <div className="tk-tier-top">
+                  <span className="tk-eyebrow tk-tier-eyebrow">{str(t.eyebrow)}</span>
+                  {str(t.badge) && <span className="tk-badge tk-tier-badge">{str(t.badge)}</span>}
+                </div>
+                <h3 className="tk-display tk-tier-name">{str(t.name)}</h3>
+                <div className="tk-tier-price"><span className="tk-display tk-tier-amount">{str(t.price)}</span>{str(t.unit) && <span className="tk-tier-unit">{str(t.unit)}</span>}</div>
+                {str(t.summary) && <p className="tk-tier-summary">{str(t.summary)}</p>}
+                {lines(t.perks).length > 0 && (
+                  <ul className="tk-tier-perks">
+                    {lines(t.perks).map((x) => <li key={x}><span className="tk-tier-spark" aria-hidden="true">✦</span>{x}</li>)}
+                  </ul>
+                )}
+                {to && str(t.button) && (
+                  <a className={cls('tk-btn tk-btn--md tk-tier-button', featured ? 'tk-btn--light' : 'tk-btn--primary')} href={to} {...rel(to)}><span>{str(t.button)}</span></a>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Questions ──────────────────────────────────────────────────────────────────────────────
+
+function TempleKitFaqBlock({ p, metadata, pad, vis }: Common) {
+  const items = arr(p.items).filter((x) => str(x.q) && str(x.a))
+  return (
+    <section data-tk="faq" className={cls('tk-sec tk-wash tk-wash--linen tk-faq', pad, vis)}>
+      <div className="tk-inner tk-faq-grid">
+        <div className="tk-faq-aside">
+          <Head p={{ ...p, lead: '' }} metadata={metadata} />
+          <Pic src={img(p.image)} alt={str(p.alt)} shape="arch" ratio="4-5" className="tk-faq-photo" />
+        </div>
+        <div className="tk-faq-card">
+          {items.map((x, i) => (
+            // One open at a time: the browser closes a sibling that shares the name.
+            <details key={i} className="tk-faq-item" open={i === 0} {...{ name: 'tk-faq' }}>
+              <summary className="tk-faq-q">
+                <span>{str(x.q)}</span>
+                <ChevronDown className="tk-faq-chev" size={16} strokeWidth={1.5} aria-hidden="true" />
+              </summary>
+              <p className="tk-faq-a">{str(x.a)}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Letter ─────────────────────────────────────────────────────────────────────────────────
+
+function TempleKitLetterBlock({ p, metadata, pad, vis }: Common) {
+  const slug = (metadata?.links as SiteLinkMap | undefined)?.slug ?? null
+  return (
+    <section data-tk="letter" className={cls('tk-sec tk-letter-sec', pad, vis)}>
+      <div className="tk-inner tk-ltr-band tk-wash tk-wash--grit tk-motif tk-motif--rays tk-motif--on-ink">
+        <div className="tk-ltr-copy">
+          {str(p.eyebrow) && <div className="tk-eyebrow tk-ltr-eyebrow">{str(p.eyebrow)}</div>}
+          {str(p.title) && <h2 className="tk-display tk-h2 tk-ltr-title"><InlineText text={str(p.title)} /></h2>}
+          {str(p.body) && <p className="tk-ltr-body">{str(p.body)}</p>}
+          <TempleKitLetterForm banner slug={slug} label="Your email" placeholder={str(p.placeholder) || 'you@email.com'} buttonLabel={str(p.buttonLabel) || 'Keep me posted'} successMessage={str(p.successMessage) || 'Thank you. You are on the list for the next letter.'} />
+        </div>
+        <div className="tk-ltr-photo"><Pic src={img(p.image)} alt={str(p.alt)} shape="xl" /></div>
+      </div>
+    </section>
+  )
+}
+
+// ── Closing call ───────────────────────────────────────────────────────────────────────────
+
+function TempleKitCtaBlock({ p, metadata, pad, vis }: Common) {
+  const src = img(p.image)
+  return (
+    <section data-tk="cta" className={cls('tk-cta', pad, vis)}>
+      {src && (
+        // eslint-disable-next-line @next/next/no-img-element -- owner photo on an arbitrary host
+        <img className="tk-cta-photo" src={src} alt={str(p.alt)} loading="lazy" />
+      )}
+      <div className="tk-cta-veil" aria-hidden="true" />
+      <div className="tk-cta-fade" aria-hidden="true" />
+      <div className="tk-cta-inner">
+        <span className="tk-cta-star" aria-hidden="true">✦</span>
+        <h2 className="tk-display-hero tk-cta-title"><InlineText text={str(p.title)} /></h2>
+        {(str(p.primaryLabel) || str(p.secondaryLabel)) && (
+          <div className="tk-actions tk-cta-actions">
+            <Btn label={str(p.primaryLabel)} href={str(p.primaryHref)} size="lg" metadata={metadata} />
+            <Btn label={str(p.secondaryLabel)} href={str(p.secondaryHref)} kind="glass" size="lg" metadata={metadata} />
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 // ── Registry ───────────────────────────────────────────────────────────────────────────────
 
 const head = { eyebrow: text('Small label', 'The short line beside the numeral.'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading') }
@@ -463,6 +685,39 @@ export const templeKitComponents: Record<string, ComponentConfig> = {
     ...head,
     steps: { type: 'array', label: 'Steps', arrayFields: { title: text('Name'), body: area('Line under the name'), image } },
   }, { ...TEMPLE_KIT_STEPS }, TempleKitStepsBlock),
+  TempleKitGallery: block('Temple gallery', {
+    eyebrow: text('Small label'), title: area('Line beside the photos'), body: text('Small line under it'),
+    photos: { type: 'array', label: 'Three photos', hint: 'The first and third are tall arches, the second is wide.', arrayFields: { image, alt: text('Photo description', 'For screen readers.') } },
+  }, { ...TEMPLE_KIT_GALLERY }, TempleKitGalleryBlock),
+  TempleKitJourneys: block('Temple journeys', {
+    ...head, ...action,
+    journeys: { type: 'array', label: 'Programs', hint: 'Up to four.', arrayFields: { title: text('Name'), outcome: area('What it is'), weeks: text('Weeks', 'A number.'), pillar: text('Kind', 'Like Breath.'), image, host: text('Led by'), price: text('Price', 'Like $180, or Free.'), href: text('Link', LINK_HINT) } },
+  }, { ...TEMPLE_KIT_JOURNEYS }, TempleKitJourneysBlock),
+  TempleKitProof: block('Temple kind words', {
+    image, alt: text('Photo description', 'For screen readers.'), eyebrow: text('Small label'), quote: area('The main quote'), who: text('Who said it'), role: text('Who they are'),
+    stars: text('Sparks out of five', 'A number from 0 to 5. Leave 0 to show none.'),
+    more: { type: 'array', label: 'Smaller quotes', hint: 'Up to three.', arrayFields: { text: area('Quote'), who: text('Who said it'), on: text('About') } },
+  }, { ...TEMPLE_KIT_PROOF }, TempleKitProofBlock),
+  TempleKitMembership: block('Temple membership', {
+    ...head,
+    tiers: { type: 'array', label: 'Tiers', hint: 'Up to four. The featured one is the clay card.', arrayFields: {
+      eyebrow: text('Small label'), name: text('Name'), price: text('Price'), unit: text('After the price', 'Like a month.'), badge: text('Badge'),
+      featured: { type: 'radio', label: 'Featured', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] },
+      summary: area('Summary'), perks: area('What is included', 'One per line.'), button: text('Button'), href: text('Link', LINK_HINT),
+    } },
+  }, { ...TEMPLE_KIT_MEMBERSHIP }, TempleKitMembershipBlock),
+  TempleKitFaq: block('Temple questions', {
+    eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), image, alt: text('Photo description', 'For screen readers.'),
+    items: { type: 'array', label: 'Questions', hint: 'The first one opens first.', arrayFields: { q: text('Question'), a: area('Answer') } },
+  }, { ...TEMPLE_KIT_FAQ }, TempleKitFaqBlock),
+  TempleKitLetter: block('Temple letter sign-up', {
+    eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), body: area('Line under the heading'), image, alt: text('Photo description', 'For screen readers.'),
+    placeholder: text('Email field hint'), buttonLabel: text('Button'), successMessage: text('Thank-you line'),
+  }, { ...TEMPLE_KIT_LETTER }, TempleKitLetterBlock),
+  TempleKitCta: block('Temple closing call', {
+    title: area('Heading', VOICE_HINT), image, alt: text('Photo description', 'For screen readers.'),
+    primaryLabel: text('Main button'), primaryHref: text('Main button link', LINK_HINT), secondaryLabel: text('Second button'), secondaryHref: text('Second button link', LINK_HINT),
+  }, { ...TEMPLE_KIT_CTA }, TempleKitCtaBlock),
 }
 
 export const TEMPLE_KIT_CATEGORY_COMPONENTS = Object.keys(templeKitComponents)
