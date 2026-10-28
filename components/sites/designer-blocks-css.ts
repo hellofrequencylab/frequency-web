@@ -138,14 +138,16 @@ ${N} .dz-arch img{transition:transform 1.2s var(--dz-ease-out)}
 ${N} .dz-arch:hover img{transform:scale(1.03)}
 ${N} .dz-arch img{display:block;width:100%;height:100%;object-fit:cover}
 ${N} .dz-panel{padding:4px clamp(24px,3vw,40px);background:var(--dz-sheen),var(--dz-glass-warm);border-radius:var(--dz-r-3);box-shadow:var(--dz-shadow-2)}
-${N} .dz-step{display:grid;grid-template-columns:52px minmax(0,1fr);gap:24px;padding:32px 0;border-top:${HAIR}}
+${N} .dz-step{display:grid;grid-template-columns:52px minmax(0,1fr);gap:20px;padding:22px 0;border-top:${HAIR}}
 ${N} .dz-step:first-child{border-top:0}
 ${N} .dz-disc{display:grid;place-items:center;width:48px;height:48px;border-radius:var(--dz-r-pill);border:1px solid var(--dz-ochre);background:var(--dz-paper);font-family:var(--dz-display);font-style:italic;font-size:22px;line-height:1;color:var(--dz-ochre-deep)}
 ${N} .dz-step .dz-disc{width:52px;height:52px;box-shadow:var(--dz-shadow-1)}
-${N} .dz-step>div{display:flex;flex-direction:column;gap:12px;min-width:0}
+${N} .dz-step>div{display:flex;flex-direction:column;gap:8px;min-width:0}
 ${N} .dz-step-title{margin:0;font-family:var(--dz-display);font-weight:400;font-size:var(--dz-size-h3);line-height:1.15}
 ${N} .dz-step-lead{margin:0;font-family:var(--dz-display);font-style:italic;font-size:var(--dz-size-h4);line-height:1.4;color:var(--dz-walnut)}
 ${N} .dz-step .dz-body{max-width:580px}
+/* The steps section: the portrait stretches to the height of the heading and panel, so both columns align top and bottom. */
+@media (min-width:901px){${N} .dz-sec[data-dz="steps"] .dz-split{align-items:stretch}${N} .dz-sec[data-dz="steps"] .dz-arch,${N} .dz-sec[data-dz="steps"] .dz-arch-frame{height:100%}${N} .dz-sec[data-dz="steps"] .dz-arch-frame{aspect-ratio:auto;min-height:420px}}
 
 /* Service tiles on the dark slab. */
 ${N} .dz-bar{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:40px;margin-bottom:var(--dz-section-head)}

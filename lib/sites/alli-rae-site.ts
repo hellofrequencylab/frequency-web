@@ -83,9 +83,9 @@ const home = () => [
   b('DesignerSteps', {
     image: i('process-interior'), alt: '', eyebrow: 'Our Approach', title: 'How We Bring Your Vision To Life',
     steps: [
-      { title: 'Design-First Thinking', lead: 'Every project begins with vision: yours, clarified through ours.', body: 'We start with the way you live, how you want to feel in your space, and what will make it not just beautiful, but personal. Layouts, finishes, flow, and feel are shaped with intention long before a crew ever sets foot on-site.' },
-      { title: 'Builder-Level Execution', lead: 'Because design without execution is just a wish.', body: 'With deep construction knowledge and hands-on field experience, we know how to speak the language of permits, inspectors, and trades, and we know how to protect your design integrity every step of the way. What we draw, we build.' },
-      { title: 'Start-to-Finish Support', lead: 'From first sketch to final styling, we stay with you through it all.', body: 'Whether you’re starting with a vision or a full plan set, we become your anchor: one team, one process, one result. No handoffs. No lost details. Just a seamless, guided experience that ends with a home you love.' },
+      { title: 'Design-First Thinking', lead: 'Every project begins with your vision, clarified through ours.', body: 'We start with the way you live and how you want to feel in your space. Layouts, finishes, and flow are shaped long before a crew sets foot on-site.' },
+      { title: 'Builder-Level Execution', lead: 'Because design without execution is just a wish.', body: 'With deep construction knowledge and hands-on field experience, we protect your design integrity every step of the way. What we draw, we build.' },
+      { title: 'Start-to-Finish Support', lead: 'First sketch to final styling, we stay with you.', body: 'One team, one process, one result. No handoffs. No lost details. Just a guided experience that ends with a home you love.' },
     ],
   }),
   b('DesignerServices', { eyebrow: 'Our Capabilities', title: 'Everything in-house, *start to finish.*', lead: '', tone: 'deep', columns: 4, services: SERVICES.map((name) => ({ name })), buttonLabel: 'About Our Team', buttonHref: '~/about', closing: '' }),
