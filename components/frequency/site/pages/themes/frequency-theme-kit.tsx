@@ -5,6 +5,7 @@
 // questions. Built from the template kit only; no page CSS of its own. Copy follows
 // docs/marketing/voice-and-language-guide.md. THEME FENCE (ADR-1906): the page says plainly that the Space
 // page keeps the Frequency frame and wears fonts and accent only.
+import { FreeSpotlightButton } from '@/components/marketing/free-spotlight-button'
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
@@ -79,6 +80,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
             <Link className="btn btn-ghost fq-iri-rim" href="/themes">
               All themes
             </Link>
+            <FreeSpotlightButton surface="theme" detail={theme} />
           </div>
         </div>
       </section>
