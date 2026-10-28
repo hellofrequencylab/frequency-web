@@ -365,7 +365,7 @@ export function SuiteWeek({
                         title={`${look.word} · ${c.title} · ${range_}`}
                         style={{
                           top: p.top,
-                          height: p.height,
+                          height: Math.max(22, p.height),
                           '--l': `calc(${p.leftPct}% + 2px)`,
                           '--w': `calc(${p.widthPct}% - 4px)`,
                           background: c.done ? 'var(--bg-sunken)' : look.bg,
