@@ -8,6 +8,8 @@
 // a to-do ticked, the stage changed, a share offered. The row is the fact; the notification a fact
 // deserves (LIVE-545) fans out from it.
 
+import type { PlanSubject } from './plan-subject'
+
 export const PLAN_ACTIVITY_KINDS = [
   'stage',
   'date_added',
@@ -28,8 +30,7 @@ export const PLAN_ACTIVITY_SUMMARY_MAX = 500
 export const PLAN_ACTIVITY_SHOWN = 20
 
 /** What a door hands the store after its change landed. */
-export interface PlanActivityInput {
-  planId: string
+export type PlanActivityInput = PlanSubject & {
   actorProfileId: string
   actorSpaceId: string
   kind: PlanActivityKind
@@ -39,7 +40,9 @@ export interface PlanActivityInput {
 /** A `space_plan_activity` row as the session client returns it. */
 export interface PlanActivityRow {
   id: string
-  plan_id: string
+  /** Exactly one of plan_id and entry_id is set (20270346027000). */
+  plan_id: string | null
+  entry_id?: string | null
   actor_profile_id: string | null
   actor_space_id: string
   kind: string
@@ -50,7 +53,9 @@ export interface PlanActivityRow {
 /** One row as the drawer renders it, names resolved server-side. */
 export interface PlanActivityView {
   id: string
-  planId: string
+  planId: string | null
+  /** Set when the record is about a standalone calendar entry instead of a Plan. */
+  entryId?: string | null
   kind: PlanActivityKind
   summary: string
   createdAt: string
@@ -78,6 +83,7 @@ export function mapPlanActivityRow(
   return {
     id: row.id,
     planId: row.plan_id,
+    entryId: row.entry_id ?? null,
     kind: planActivityKind(row.kind) ?? 'field',
     summary: row.summary,
     createdAt: row.created_at,

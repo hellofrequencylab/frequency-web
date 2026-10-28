@@ -17,7 +17,7 @@ ${N} .nk-band--ink .nk-btn--secondary{color:var(--color-on-ink);box-shadow:inset
 ${N} .nk-band--ink .nk-btn--secondary:hover{background:var(--color-ink-elevated);color:var(--color-on-ink)}
 
 /* Featured event: the accent card, words on the left, the leaf photo on the right. */
-${N} .nk-featured{position:relative;overflow:hidden;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:clamp(24px,4vw,64px);box-sizing:border-box;padding:clamp(28px,4vw,56px);border-radius:var(--nk-radius-cover);background:var(--color-accent);color:var(--color-text-on-accent);box-shadow:var(--nk-shadow-md)}
+${N} .nk-featured{position:relative;overflow:hidden;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:clamp(24px,4vw,64px);box-sizing:border-box;padding:clamp(28px,4vw,56px);border-radius:var(--nk-radius-cover);background:var(--color-accent);color:var(--color-text-on-accent);box-shadow:var(--nk-depth-md)}
 ${N} .nk-featured>*{position:relative;z-index:2}
 ${N} .nk-featured .nk-eyebrow{color:var(--color-text-on-accent)}
 ${N} .nk-featured .nk-eyebrow::before{background:currentColor}
@@ -29,13 +29,13 @@ ${N} .nk-featured-when-text{min-width:0;font-size:16px;font-weight:var(--nk-weig
 ${N} .nk-featured .nk-actions{margin-top:32px}
 ${N} .nk-featured .nk-btn--secondary{color:var(--color-text-on-accent);box-shadow:inset 0 0 0 1.5px currentColor}
 ${N} .nk-featured .nk-btn--secondary:hover{background:color-mix(in srgb,var(--color-surface) 24%,transparent);color:var(--color-text-on-accent)}
-${N} .nk-featured-media{aspect-ratio:4/3;border-radius:var(--nk-radius-leaf);box-shadow:var(--nk-shadow-lg)}
+${N} .nk-featured-media{aspect-ratio:4/3;border-radius:var(--nk-radius-leaf);box-shadow:var(--nk-depth-lg)}
 ${N} .nk-featured-media img{position:absolute;inset:0}
 ${N} .nk-featured[data-flip] .nk-featured-copy{order:2}
 ${N} .nk-featured[data-flip] .nk-featured-media{order:1;border-radius:160px 28px 28px 28px}
 
 /* Where and when: the photo, the headline and four fact tiles. */
-${N} .nk-venue-media{min-height:360px;border-radius:var(--nk-radius-cover);box-shadow:var(--nk-shadow-md)}
+${N} .nk-venue-media{min-height:360px;border-radius:var(--nk-radius-cover);box-shadow:var(--nk-depth-md)}
 ${N} .nk-venue-media img{position:absolute;inset:0}
 ${N} .nk-venue[data-flip] .nk-venue-media{order:2}
 ${N} .nk-venue-copy{display:flex;flex-direction:column;justify-content:center}
@@ -82,7 +82,7 @@ ${N} .nk-stat-big{display:block;font-size:var(--nk-text-stat);line-height:1;font
 ${N} .nk-stat-caption{display:block;margin-top:8px;color:var(--color-text-muted)}
 
 /* Organizer note. */
-${N} .nk-note-media{aspect-ratio:4/3;border-radius:var(--nk-radius-leaf);box-shadow:var(--nk-shadow-md)}
+${N} .nk-note-media{aspect-ratio:4/3;border-radius:var(--nk-radius-leaf);box-shadow:var(--nk-depth-md)}
 ${N} .nk-note-media img{position:absolute;inset:0}
 ${N} .nk-note[data-flip] .nk-note-media{order:2;border-radius:160px 28px 28px 28px}
 ${N} .nk-note-quote{margin:18px 0 0;font-size:clamp(1.75rem,1.2rem + 1.6vw,2.6rem);line-height:1.12}
@@ -95,7 +95,7 @@ ${N} .nk-avatar{flex:none;display:inline-flex;align-items:center;justify-content
 ${N} .nk-avatar img{width:100%;height:100%;object-fit:cover}
 
 /* What we stand for. */
-${N} .nk-pillars-media{aspect-ratio:4/3;border-radius:var(--nk-radius-cover);box-shadow:var(--nk-shadow-md)}
+${N} .nk-pillars-media{aspect-ratio:4/3;border-radius:var(--nk-radius-cover);box-shadow:var(--nk-depth-md)}
 ${N} .nk-pillars-media img{position:absolute;inset:0}
 ${N} .nk-pillar{padding:24px 26px;border-radius:26px}
 ${N} .nk-pillar b{display:block;font-size:26px}
@@ -104,7 +104,7 @@ ${N} .nk-pillars-closing{max-width:26em;margin:56px auto 0;text-align:center;fon
 
 /* Host here: three rooms, the middle one inverted. */
 ${N} .nk-room{display:flex;flex-direction:column;gap:10px;padding:28px;border-radius:28px}
-${N} .nk-room[data-ink]{background:var(--color-ink);color:var(--color-on-ink);box-shadow:var(--nk-shadow-lg)}
+${N} .nk-room[data-ink]{background:var(--color-ink);color:var(--color-on-ink);box-shadow:var(--nk-depth-lg)}
 ${N} .nk-room-name{font-size:15px;font-weight:var(--nk-weight-medium);color:var(--color-text-muted)}
 ${N} .nk-room[data-ink] .nk-room-name{color:var(--color-on-ink-muted)}
 ${N} .nk-room-price{font-size:44px}
@@ -115,7 +115,7 @@ ${N} .nk-room-foot .nk-btn{width:100%}
 
 /* Podcast: episode cards on the ink band. */
 ${N} .nk-episode{display:block;overflow:hidden;border-radius:24px;background:var(--color-ink-elevated);color:var(--color-on-ink);text-align:left;text-decoration:none;transition:transform var(--nk-motion-base) var(--nk-ease-out),box-shadow var(--nk-motion-base) var(--nk-ease-out)}
-${N} .nk-episode:hover{transform:translateY(-3px);box-shadow:var(--nk-shadow-md)}
+${N} .nk-episode:hover{transform:translateY(-3px);box-shadow:var(--nk-depth-md)}
 ${N} .nk-episode-cover{display:block;aspect-ratio:16/10}
 ${N} .nk-episode-cover img{position:absolute;inset:0}
 ${N} .nk-play{position:absolute;z-index:2;left:14px;bottom:14px;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--color-accent);color:var(--color-text-on-accent)}
@@ -144,7 +144,7 @@ ${N} .nk-contact-photo{aspect-ratio:4/3;border-radius:20px}
 ${N} .nk-contact-photo img{position:absolute;inset:0}
 ${N} .nk-hand{font-family:var(--nk-hand);font-size:30px;line-height:1.1;color:var(--color-accent-strong)}
 ${N} .nk-contact-coffee p,${N} .nk-contact-card p{margin:0;font-size:16px;color:var(--color-text-muted)}
-${N} .nk-contact-card{display:flex;flex-direction:column;gap:14px;box-sizing:border-box;padding:clamp(24px,3vw,36px);border-radius:28px;background:var(--color-surface);box-shadow:var(--nk-shadow-md)}
+${N} .nk-contact-card{display:flex;flex-direction:column;gap:14px;box-sizing:border-box;padding:clamp(24px,3vw,36px);border-radius:28px;background:var(--color-surface);box-shadow:var(--nk-depth-md)}
 ${N} .nk-contact-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:18px;background:var(--color-canvas);box-shadow:inset 0 0 0 1px var(--color-border);font-size:16px}
 ${N} .nk-contact-row>span:first-child{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:var(--color-accent-bg);color:var(--color-accent-strong)}
 ${N} .nk-contact-row a{color:inherit;text-decoration:none;overflow-wrap:anywhere}
