@@ -97,6 +97,24 @@ function run(root: HTMLElement): () => void {
     return e
   }
 
+  // Read section styles before adding any decoration. Interleaving these reads with each
+  // inserted field forces the browser to recalculate the large marketing page repeatedly.
+  const q = (sel: string) =>
+    Array.from(root.querySelectorAll<HTMLElement>(sel)).filter((e) => !e.closest('[data-kit]:not([data-kit="site"])'))
+  const fieldHosts = q('.hero,.phero,.hp-hero,.half,.chap,.sec,.lv,.closer')
+  const joinPanel = root.querySelector<HTMLElement>('.jx-panel')
+  if (joinPanel) fieldHosts.push(joinPanel)
+  const staticHosts = new WeakSet<HTMLElement>()
+  const borderlessSections = new WeakSet<HTMLElement>()
+  for (const host of fieldHosts) {
+    const needsPosition = !host.querySelector(':scope>.wrap')
+    const needsBorder = host.classList.contains('sec') && !host.classList.contains('kg')
+    if (!needsPosition && !needsBorder) continue
+    const style = getComputedStyle(host)
+    if (needsPosition && style.position === 'static') staticHosts.add(host)
+    if (needsBorder && style.borderTopStyle === 'none') borderlessSections.add(host)
+  }
+
   // The shared noise tile. (fx.js also painted <html> with the canvas; site-shell.css does that in CSS.)
   const tile = noiseTile()
   if (tile) {
@@ -114,7 +132,7 @@ function run(root: HTMLElement): () => void {
     if (!w) {
       f.classList.add('under')
       addClass(host, 'tx-host')
-      if (getComputedStyle(host).position === 'static') {
+      if (staticHosts.has(host)) {
         host.style.position = 'relative'
         offs.push(() => (host.style.position = ''))
       }
@@ -149,9 +167,6 @@ function run(root: HTMLElement): () => void {
   // Website effects dress website markup only. A page that nests another kit (the public Space page's
   // members-kit body under the site header) keeps its own markup: these selectors (.panel, .block) are
   // that kit's class names too, and touching them before hydration is a hydration mismatch.
-  const q = (sel: string) =>
-    Array.from(root.querySelectorAll<HTMLElement>(sel)).filter((e) => !e.closest('[data-kit]:not([data-kit="site"])'))
-
   // Heroes: one signature sphere.
   q('.hero,.phero,.hp-hero').forEach((h) => {
     const f = field(h)
@@ -202,7 +217,7 @@ function run(root: HTMLElement): () => void {
       halo(f, c1, 'clamp(380px,52vw,780px)', L ? '88%' : '12%', '34%', quiet ? 0.22 : null, -i * 1.7)
       if (!quiet) halo(f, c2, 'clamp(260px,34vw,520px)', L ? '8%' : '92%', '86%', 0.22, -i * 2.3)
       jewels(f, quiet ? 1 : jn, isLv ? [c1, c2, H.v] : [c1, c2, P[2]])
-      if (s.classList.contains('sec') && !s.classList.contains('kg') && getComputedStyle(s).borderTopStyle === 'none') mk('span', 'tx-seam', s)
+      if (borderlessSections.has(s)) mk('span', 'tx-seam', s)
       i++
     })
   }
