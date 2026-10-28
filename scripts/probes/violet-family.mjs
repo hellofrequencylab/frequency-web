@@ -17,6 +17,8 @@ const SKIP = new Set(['lib/theme/wildheart.ts', 'lib/theme/cyberunicorn.ts', 'li
 // theme's accent, and a Space accent overrides it). The exception is explicit and per hex, in the one file
 // that holds theme palettes: any other violet in theme-contract.json fails like it does anywhere else.
 const THEME_PALETTE_VIOLET = {
+  // Owner 2026-10-28: "allow #B094FF for the Business kit". The one hex, in the one file that holds the kit accents.
+  'lib/themes/nocturne-feature-data.json': new Set(['B094FF']),
   'lib/sites/editor/theme-contract.json': new Set(['1C1424', '261C31', '654590', '6E4D96', 'C7ADE8', '6A3FA0', '5F3694', '1C1430', '7D5FD3', 'A68BF2', 'CDBDFB']),
 }
 const files = execSync('git ls-files app components lib').toString().split('\n').filter(Boolean)

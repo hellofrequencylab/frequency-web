@@ -31,8 +31,8 @@ interface NocturneBlock {
   stage: string
 }
 
-/** The Business kit wears the Nocturne violet, read from the editor contract (the one file the violet-family probe lets
- *  carry it), so the open accent question is one swap there. */
+/** The Business kit wears the violet the owner allowed on 2026-10-28, set in the kit data, the one file besides the editor contract that
+ *  the violet-family probe lets carry a violet. A kit with no accent falls back to the editor contract's. */
 export const NOCTURNE_KITS: NocturneKit[] = data.kits.map((k) => ({ ...k, hex: k.hex ?? contract.themes.Midnight['--th-accent'] }))
 export const NOCTURNE_PACKAGES: NocturnePackage[] = data.packages
 export const NOCTURNE_BLOCKS: NocturneBlock[] = data.blocks
