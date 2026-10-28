@@ -359,8 +359,7 @@ export const spacesComponents: Record<string, ComponentConfig> = {
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
       items: {
         type: 'array',
-        label: 'Starter questions',
-        hint: 'Shown until your own questions are added. Once you have saved questions, those show instead.',
+        label: 'Starter questions (shown until your own are saved)',
         arrayFields: { q: { type: 'text', label: 'Question' }, a: { type: 'textarea', label: 'Answer' } },
       },
       emphasis: emphasisField,
