@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1733",
+  "title": "One shared create-flow engine for Create a Space and the launch page",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/spaces/create-flow/create-flow.tsx",
+    "ref": "Daniel, 2026-10-28: one progressive creation builder, the same builder with different styles and layouts, matching the marketing side"
+  },
+  "detail": "The step list, kit banner, step bodies and summary slot were inside the Create a Space wizard, so the launch page would have needed its own. They are now CreateFlow (components/spaces/create-flow): the caller owns the values and passes FlowStep entries, and the engine has a framed layout (one step in a card, /spaces/new) and a stacked layout (every step an open section on one page, for the launch skin). Name, Look and the choice tile are embeddable bodies. The launch thread registers Spotlight, Website and Email as further steps and keeps its own saved progress.\n\nThe LIVE-1731 and LIVE-1732 probes now read the engine files as well, because the code they look for moved there.\n\nThe same PR moves the Setup, who-can-find-it and Look choices from pill chips to the Goals tile, with the hint always visible and the arriving kit tagged 'Your kit'; the second probe covers that.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/create-flow-engine.mjs && node scripts/probes/create-space-choice-tiles.mjs",
+    "note": "Fails on the layout PR (own step list, pill chips on three steps); passes here."
+  },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}
