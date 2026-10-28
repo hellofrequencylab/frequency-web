@@ -6,6 +6,8 @@ import type { SiteFooter } from '@/lib/sites/site-footer'
 // own menu, footer and next gathering. PURE: components/sites/temple-kit-*.tsx draw it, temple-kit-chrome-css.ts dresses it.
 
 export const TEMPLE_KIT_CHROME_COPY = {
+  /** The line under the wordmark when the Space has not written its own tagline (the design's default). */
+  tagline: 'Gatherings · Ceremonies · The house',
   /** The letter in the footer, the design's own default (the Space's saved footer sign-up wins). */
   letter: { title: 'A letter each season.', em: 'Four a year.', label: 'Email', placeholder: 'you@email.com', button: 'Subscribe', done: 'Thanks. You are on the list.' },
   columns: { work: 'Work with us', learn: 'Learn', about: 'About' },
