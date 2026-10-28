@@ -25,6 +25,7 @@ const BODIES: Record<keyof typeof FREQUENCY_PAGE_SEO, string> = {
   themes: 'components/frequency/site/pages/themes/frequency-themes.tsx',
   designer: 'components/frequency/site/pages/themes/frequency-designer.tsx',
   createSpace: 'components/frequency/create/create-space-studio.tsx',
+  network: 'components/frequency/site/pages/themes/frequency-network.tsx',
   system: 'components/frequency/site/pages/system/frequency-system.tsx',
   freeSpotlight: 'components/frequency/site/pages/launch/free-spotlight.tsx',
 }

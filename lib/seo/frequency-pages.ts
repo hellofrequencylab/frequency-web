@@ -199,6 +199,20 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'Designer', path: '/themes/designer' },
     ],
   },
+  network: {
+    path: '/themes/network',
+    title: 'Network: design it once, wear it on every surface',
+    description:
+      'The Network Theme Kit is for networking groups, clubs and mixers. Your Spotlight, Space, website and emails wear one look, changed once.',
+    shareTitle: 'Network: design it once, same theme everywhere',
+    headline: 'Design it once. Same theme everywhere.',
+    lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Network Theme Kit gives networking groups, clubs, mixers, coworking spaces and the people who run them one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Themes', path: '/themes' },
+      { name: 'Network', path: '/themes/network' },
+    ],
+  },
 } as const satisfies Record<string, FrequencyPageSeo>
 
 /** The page's Metadata under Frequency: title, description, canonical, OpenGraph and X card, all from

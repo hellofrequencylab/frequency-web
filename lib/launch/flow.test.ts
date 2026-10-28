@@ -20,6 +20,13 @@ it('shows the Spotlight live with its page, and Your Space next, once it is publ
   expect(v.spotlightHref).toBe('/spaces/mara-rios/spotlight')
 })
 
+it('opens Website once the Space is kept, and never before the Spotlight', () => {
+  const kept = flowView(launch({ spotlight: { status: 'published', ref: 'mara-rios' }, space: { status: 'published', ref: 'mara-rios' } } as LaunchSnapshot['steps']))
+  expect(kept.stages.map((s) => s.state)).toEqual(['live', 'live', 'next', 'later'])
+  const early = flowView(launch({ space: { status: 'published', ref: 'x' } } as LaunchSnapshot['steps']))
+  expect(early.stages.map((s) => s.state)).toEqual(['next', 'later', 'later', 'later'])
+})
+
 it('reads the typed answers back out of the layout they were written into', () => {
   const answers = { name: 'Mara Rios', line: 'I help people sleep.', link: 'https://example.com/book' }
   expect(answersFromLayout(spotlightLayout(answers))).toEqual(answers)

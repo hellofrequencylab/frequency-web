@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1747",
+  "title": "The launch never leaves its page: the Space step opens in place, and Website opens after it",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/launch/launch-flow.tsx",
+    "ref": "Vera guided launch system. The owner ruled on 2026-10-28 that nobody leaves the guided launch until it is launched; the Get Started list comes after."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-onepage.mjs",
+    "note": "The stage order (Website opens only once the Space is kept, never before the Spotlight) is pinned by lib/launch/flow.test.ts, run by the test job. The probe reads the wiring: the Space step is a form on the launch page, and neither launch route nor the page links out to the Space. Fails on main, where Next: Your Space led to the unfinished Space page."
+  },
+  "detail": "Publishing the Spotlight now keeps the person on /launch/step/spotlight. The Your Space card shows what was made (name, address, their line) with a Keep my Space button that records the step and opens Website, all in place; the Spotlight preview stays visible with a link that opens it in a new tab. The Next: Your Space and See what I made links are gone. Not here: the Website and Email steps themselves, the required photos and details, and the assessment-and-build step that fills the profiles.",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}
