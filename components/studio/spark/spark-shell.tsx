@@ -78,6 +78,12 @@ export interface SparkShellProps {
    * flow that should not hand one Space's typing to another).
    */
   draftScopeKey?: string | null
+  /**
+   * Drop the centered column, the page padding and the progress bar, for a Spark that sits inside a
+   * layout of its own (a card beside a summary, with its own step list). The step heading, footer and
+   * autosave are unchanged. Defaults to the standard column every other Spark uses.
+   */
+  bare?: boolean
   children: ReactNode
 }
 
@@ -99,6 +105,7 @@ export function SparkShell({
   error,
   exits,
   draftScopeKey,
+  bare,
   children,
 }: SparkShellProps) {
   // Move focus to the top of each step as it mounts, so keyboard and screen-reader users land on
@@ -147,7 +154,7 @@ export function SparkShell({
   )
 
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-10">
+    <div className={bare ? undefined : 'mx-auto w-full max-w-lg px-4 py-10'}>
       {draft.phase === 'offer' && (
         <SparkResumeOffer
           savedLabel={draft.savedLabel}
@@ -165,7 +172,7 @@ export function SparkShell({
         />
       )}
 
-      <WizardProgress current={step} total={totalSteps} label={stepLabel} />
+      {!bare && <WizardProgress current={step} total={totalSteps} label={stepLabel} />}
       <SparkDraftCue saveState={draft.saveState} restored={draft.restored} />
 
       <div
@@ -174,7 +181,7 @@ export function SparkShell({
         tabIndex={-1}
         role="group"
         aria-label={stepLabel ? `Step ${step} of ${totalSteps}: ${stepLabel}` : `Step ${step} of ${totalSteps}`}
-        className="mt-7 animate-[slideUp_0.35s_ease-out] outline-none motion-reduce:animate-none"
+        className={`${bare ? '' : 'mt-7 '}animate-[slideUp_0.35s_ease-out] outline-none motion-reduce:animate-none`}
       >
         <p className={FREQUENCY ? 'k mb-3' : 'eyebrow mb-1.5 text-primary-strong'}>{eyebrow}</p>
         {headingLevel === 1 ? (

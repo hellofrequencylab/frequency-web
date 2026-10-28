@@ -25,6 +25,8 @@ import { Field, TextField } from '@/components/spaces/space-form'
 import type { MegaNicheId, MegaThemeId } from '@/lib/theme/mega-theme'
 import { SpacePicker, type PickerDone } from './space-picker'
 
+const STEP_LABEL: Record<string, string> = { intents: 'Goals', model: 'Setup', identity: 'Name', look: 'Look', start: 'Start' }
+
 // The SPACE CREATION WIZARD (client). Step-by-step on the Spark kit, like every other seeder
 // (docs/STUDIO.md): What you want to do, Tool setup, Name it, Ready. The steps are read off the Space manifest by
 // lib/spaces/create-wizard.ts, and the last step hands off to the setup walk (/spaces/<slug>/setup),
@@ -193,24 +195,65 @@ export function CreateSpaceWizard({
     )
   }
 
+  const kitLabel = arrivedTheme ? (WIZARD_THEMES.find((t) => t.id === arrivedTheme)?.label ?? null) : null
+  const goalsLine = intents.length ? `${intents.length} ${intents.length === 1 ? 'goal' : 'goals'}` : 'Goals open'
+  const lookLabel = WIZARD_THEMES.find((t) => t.id === theme)?.label ?? 'Pick later'
+
   return (
-    <div className="relative">
-      {/* Kit design elements: a soft pastel wash behind the card and the glowing orb. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 -top-10 -z-10 h-72 opacity-80 blur-2xl"
-        // token-ok: a mask only reads the alpha channel, so any opaque colour works; it paints nothing.
-        style={{ background: 'var(--fq-pa-soft)', maskImage: 'radial-gradient(ellipse at 50% 0%, #000 0%, transparent 70%)' }}
-      />
-      <span aria-hidden className="orb pointer-events-none absolute right-6 top-14 sm:right-2" />
+    <div className="@container space-y-6">
+      {kitLabel && (
+        <div className="flex items-center gap-3 rounded-2xl border border-border bg-[image:var(--fq-pa-soft)] p-3">
+          <span aria-hidden className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-ink font-display text-body-sm font-bold text-on-ink">
+            {kitLabel.charAt(0)}
+          </span>
+          <p className="min-w-0 flex-1 text-meta text-muted">
+            <strong className="block text-body-sm text-text">{kitLabel} kit is picked</strong>
+            Your website, email and Spotlight start in this look. You can change it on the Look step.
+          </p>
+          <button type="button" className="text-meta font-semibold text-text underline underline-offset-4" onClick={() => setIndex(STEPS.findIndex((x) => x.key === 'look'))}>
+            Change
+          </button>
+        </div>
+      )}
+
+      <ol className="flex flex-wrap gap-2" aria-label="Steps">
+        {STEPS.map((st, i) => {
+          const state = i === index ? 'on' : i < index ? 'done' : 'todo'
+          return (
+            <li
+              key={st.key}
+              aria-current={state === 'on' ? 'step' : undefined}
+              className={`flex h-9 items-center gap-2 rounded-full border px-2.5 text-meta font-semibold sm:px-3.5 ${
+                state === 'on' ? 'border-ink bg-ink text-on-ink' : 'border-border text-muted'
+              }`}
+            >
+              <span
+                aria-hidden
+                className={`grid h-5 w-5 place-items-center rounded-full text-eyebrow ${state === 'todo' ? 'bg-surface-elevated' : 'bg-[image:var(--fq-pa)] text-text'}`}
+              >
+                {i + 1}
+              </span>
+              <span className={state === 'on' ? undefined : 'hidden sm:inline'}>{STEP_LABEL[st.key]}</span>
+            </li>
+          )
+        })}
+      </ol>
+
+      <p className="text-meta text-muted @3xl:hidden">
+        {[goalsLine, choice?.label, lookLabel, plan === 'free' ? 'Free to start' : WIZARD_PLAN_COPY[plan].label].filter(Boolean).join(' · ')}
+      </p>
+
+      <div className="grid items-start gap-6 @3xl:grid-cols-[minmax(0,1fr)_16.5rem]">
+        <div className="card @container p-5 sm:p-7">
       <SparkShell
+      bare
       eyebrow="New Space"
       headingLevel={2}
       title={lockup(step.title)}
       description={step.desc}
       step={index + 1}
       totalSteps={STEPS.length}
-      stepLabel={step.key === 'intents' ? 'Goals' : step.key === 'model' ? 'Setup' : step.key === 'identity' ? 'Name' : step.key === 'look' ? 'Look' : 'Start'}
+      stepLabel={STEP_LABEL[step.key]}
       onBack={index > 0 ? () => setIndex(index - 1) : undefined}
       onNext={last ? submit : () => setIndex(index + 1)}
       nextLabel={last ? 'Create my Space' : 'Continue'}
@@ -221,37 +264,44 @@ export function CreateSpaceWizard({
     >
       {/* The kit's `.chip` / `.chip.on` pills (members kit): small, a selected one is solid ink. */}
       {step.key === 'intents' && (
-        <div className="chips flex flex-wrap gap-2" role="group" aria-label="What you want to do here">
-          {WIZARD_INTENTS.map((i) => {
-            const on = intents.includes(i.id)
-            return (
-              <button
-                key={i.id}
-                type="button"
-                className={on ? 'chip on' : 'chip'}
-                aria-pressed={on}
-                title={i.hint}
-                onClick={() => {
-                  setDecideLater(false)
-                  setIntents(on ? intents.filter((x) => x !== i.id) : [...intents, i.id])
-                }}
-              >
-                <FqIcon name={INTENT_ICON[i.id] ?? 'plus'} size={16} />
-                {i.label}
-              </button>
-            )
-          })}
+        <div>
+          <div className="grid gap-3 @xl:grid-cols-2" role="group" aria-label="What you want to do here">
+            {WIZARD_INTENTS.map((i) => {
+              const on = intents.includes(i.id)
+              return (
+                <button
+                  key={i.id}
+                  type="button"
+                  aria-pressed={on}
+                  className={`flex items-start gap-3 rounded-2xl border p-3.5 text-left transition-colors ${
+                    on ? 'border-ink bg-[image:var(--fq-pa-soft)] ring-1 ring-ink' : 'border-border bg-surface-elevated/50 hover:bg-surface-elevated'
+                  }`}
+                  onClick={() => {
+                    setDecideLater(false)
+                    setIntents(on ? intents.filter((x) => x !== i.id) : [...intents, i.id])
+                  }}
+                >
+                  <span aria-hidden className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-[image:var(--fq-pa-soft)]">
+                    <FqIcon name={INTENT_ICON[i.id] ?? 'plus'} size={18} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-body-sm font-semibold text-text">{i.label}</span>
+                    <span className="block text-meta text-muted">{i.hint}</span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
           <button
             type="button"
-            className={decideLater ? 'chip on' : 'chip'}
             aria-pressed={decideLater}
-            title="Skip this. We start you on the general setup, and you can change it any time."
+            className={`mt-4 text-body-sm underline underline-offset-4 ${decideLater ? 'font-semibold text-text' : 'text-muted'}`}
             onClick={() => {
               setDecideLater(true)
               setIntents([])
             }}
           >
-            Decide later
+            Not sure yet? Decide later
           </button>
         </div>
       )}
@@ -394,8 +444,29 @@ export function CreateSpaceWizard({
         </div>
       )}
       </SparkShell>
+        </div>
+        <aside className="card hidden p-5 @3xl:sticky @3xl:top-6 @3xl:block" aria-label="Your space so far">
+          <p className="k">Your space</p>
+          <p className="mt-2 break-words font-display text-card-title font-bold text-text">{name.trim() || 'Not named yet'}</p>
+          <p className="mt-1 text-meta text-muted">{plan === 'free' ? 'Free to start' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`}</p>
+          <dl className="mt-4 divide-y divide-border text-meta">
+            {[
+              ['Goals', intents.length ? WIZARD_INTENTS.filter((i) => intents.includes(i.id)).map((i) => i.label).join(', ') : 'Open'],
+              ['Tools', choice?.label ?? ''],
+              ['Look', lookLabel],
+              ['Listed', visibility === 'network' ? 'In the directory' : 'Private'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-3 py-2.5">
+                <dt className="text-muted">{k}</dt>
+                <dd className="text-right font-semibold text-text">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </aside>
+      </div>
+
       {index === 0 && (
-        <p className="why mx-auto max-w-lg px-4 pb-8 text-center">
+        <p className="text-center text-meta text-muted">
           Rather not fill it in by hand?{' '}
           <Link href="/spaces/launch" className="underline">
             Let Vera draft your page
