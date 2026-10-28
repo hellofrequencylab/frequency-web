@@ -29,6 +29,8 @@ export interface HouseHeaderLink {
   mega?: SiteMegaMenu | null
   /** An off-site custom link: opens in a new tab. */
   external?: boolean
+  /** The page being read, so a skin can mark it (aria-current="page"). Set only by a skin that styles it. */
+  current?: boolean
 }
 
 export type SiteLogoMode = 'name' | 'avatar' | 'logo'
@@ -60,7 +62,7 @@ export function HouseHeader({
   adminLinks: SiteAdminNavLink[] | null
   /** The site's admin check (site-admin-gate.tsx): the admin links show only once it confirms the reader. */
   adminCheck?: string | null
-  cta: { href: string; label: string; external: boolean } | null
+  cta: { href: string; label: string; external: boolean; short?: string } | null
   logoUrl: string | null
   logoMode: SiteLogoMode
   /** A themed skin (Menswork) draws its own bar: phone menu button, no fade. */
@@ -191,7 +193,7 @@ export function HouseHeader({
                     </svg>
                   </button>
                 ) : (
-                  <a key={l.href} href={l.href} onMouseEnter={closeMega} {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                  <a key={l.href} href={l.href} aria-current={l.current ? 'page' : undefined} onMouseEnter={closeMega} {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
                     {l.label}
                   </a>
                 ),
@@ -221,7 +223,14 @@ export function HouseHeader({
               className="hs-btn hs-btn-dark"
               {...(cta.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             >
-              {cta.label}
+              {cta.short ? (
+                <>
+                  <span className="hs-cta-long">{cta.label}</span>
+                  <span className="hs-cta-short" aria-hidden>{cta.short}</span>
+                </>
+              ) : (
+                cta.label
+              )}
             </a>
           )}
           {skinned && (
