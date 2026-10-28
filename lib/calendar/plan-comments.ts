@@ -17,7 +17,9 @@ export const PLAN_COMMENT_MAX = 4000
 /** A `space_plan_comments` row as the session client returns it. */
 export interface PlanCommentRow {
   id: string
-  plan_id: string
+  /** Exactly one of plan_id and entry_id is set (20270346027000). */
+  plan_id: string | null
+  entry_id?: string | null
   task_id: string | null
   space_id: string
   author_profile_id: string | null
@@ -29,7 +31,9 @@ export interface PlanCommentRow {
 /** One comment as the drawer renders it, with the names already resolved server-side. */
 export interface PlanCommentView {
   id: string
-  planId: string
+  planId: string | null
+  /** Set when the thread is under a standalone calendar entry instead of a Plan. */
+  entryId?: string | null
   taskId: string | null
   spaceId: string
   authorProfileId: string | null
@@ -58,6 +62,7 @@ export function mapPlanCommentRow(
   return {
     id: row.id,
     planId: row.plan_id,
+    entryId: row.entry_id ?? null,
     taskId: row.task_id,
     spaceId: row.space_id,
     authorProfileId: row.author_profile_id,
