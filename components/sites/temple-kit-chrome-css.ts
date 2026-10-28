@@ -108,7 +108,7 @@ ${T} .hs-menu-button:focus-visible{box-shadow:var(--ring-focus)}
 ${T} .hs-menu-panel{position:absolute;left:0;right:0;top:100%;max-width:none;margin:0;padding:20px var(--space-gutter) 28px;gap:14px;border:0;border-top:1px solid var(--color-border);border-bottom:1px solid var(--color-border-strong);border-radius:0;background:var(--color-surface-elevated);box-shadow:var(--shadow-float);display:flex;flex-direction:column}
 ${T} .hs-menu-panel a{display:flex;align-items:center;gap:8px;padding:6px 0;border-radius:0;${LABEL};font-size:13px;color:var(--color-text-muted)}
 ${T} .hs-menu-panel a:hover,${T} .hs-menu-panel a[aria-current="page"]{color:var(--color-text);background:none}
-${T} .hs-menu-panel a[aria-current="page"]::before{content:"";width:5px;height:5px;border-radius:var(--radius-pill);background:var(--color-accent)}
+${T} .hs-menu-panel a[data-cta]{display:none}
 ${T} .hs-menu-panel [data-menu-group]{display:block;${LABEL};font-size:10px;color:var(--color-text-subtle)}
 ${T} .hs-mega-panel{border-radius:var(--radius-card);background:var(--color-surface-elevated);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:var(--shadow-menu)}
 ${T} .hs-mega-links a{border-radius:var(--radius-control);color:var(--color-text-muted)}
