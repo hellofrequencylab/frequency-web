@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowUpRight, Calendar, LayoutGrid, Package, Settings, ShoppingBag, User, X } from 'lucide-react'
+import { Calendar, LayoutGrid, Package, Settings, ShoppingBag, User, X } from 'lucide-react'
 import { TEMPLE_KIT_CHROME_COPY as COPY, templeKitInitials } from '@/lib/sites/temple-kit-chrome'
 
 // THE TEMPLE KIT HEADER TOOLS (design: HeaderIcon bag + account, CartDrawer, AccountMenu). Two icon buttons ahead of the
@@ -173,7 +173,7 @@ export function TempleKitTools({ origin, slug, shopHref, items = [] }: { origin:
               <div className="tk-menu-in">
                 <p className="tk-menu-welcome">{A.welcome} <em>{A.welcomeEm}</em></p>
                 <p className="tk-menu-body">{A.signedOutBody}</p>
-                <a role="menuitem" className="hs-btn hs-btn-primary" data-size="sm" href={logIn} onClick={comeBack}>{A.emailLink}<ArrowUpRight aria-hidden size={14} /></a>
+                <a role="menuitem" className="hs-btn hs-btn-primary" data-size="sm" href={logIn} onClick={comeBack}>{A.emailLink}</a>
               </div>
             )}
           </div>

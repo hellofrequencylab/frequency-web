@@ -48,7 +48,7 @@ export function ProfileForm({
     website: string
     spotlightEnabled: boolean
     spotlightPublished: boolean
-    /** Crew+ self-serve: may this member turn their own Spotlight on? (ADR-431) */
+    /** Self-serve: may this member turn their own Spotlight on? (ADR-431) */
     canEnableSpotlight: boolean
     profileTheme: string | null
   }
