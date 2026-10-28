@@ -1,0 +1,101 @@
+# Signed-in user journeys (test/e2e/journeys.spec.ts) against a LOCAL build over a LOCAL Supabase.
+#
+# Dispatch only. A preview talks to the production database, so the journeys that create records (a Space,
+# an event, a Circle join) never run there: they run here, on a throwaway stack that is destroyed at the end.
+# The read-only tier (`@journey`) can also be pointed at a preview by hand:
+#   PW_BASE_URL=… PW_STORAGE_STATE=… pnpm test:e2e:journeys
+#
+# Needs no repository secret: the member is created on the local stack. Stripe test-mode checkout only runs
+# when the dispatcher passes stripe_test and the repo has STRIPE_TEST_SECRET_KEY / STRIPE_TEST_PUBLISHABLE_KEY.
+name: e2e-journeys
+
+on:
+  workflow_dispatch:
+    inputs:
+      stripe_test:
+        description: 'Also walk Crew checkout into Stripe test mode (needs the test keys as secrets)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-journeys
+  cancel-in-progress: false
+
+jobs:
+  journeys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PW_BASE_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      PW_MEMBER_EMAIL: journeys@example.test
+      PW_JOURNEY_WRITES: '1'
+      PW_INBUCKET_URL: http://127.0.0.1:54324
+      PW_STRIPE_TEST: ${{ inputs.stripe_test && '1' || '' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.0.9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Start local Supabase (all migrations)
+        run: pnpm exec supabase start
+      - name: Point the app at the local stack and create the journey member
+        env:
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
+            echo "NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000"
+          } > .env.local
+          if [ "${PW_STRIPE_TEST}" = "1" ]; then
+            case "${STRIPE_TEST_SECRET_KEY}" in sk_test_*) ;; *) echo "Stripe test secret required"; exit 1 ;; esac
+            case "${STRIPE_TEST_PUBLISHABLE_KEY}" in pk_test_*) ;; *) echo "Stripe test publishable key required"; exit 1 ;; esac
+            {
+              printf 'STRIPE_SECRET_KEY=%s\n' "${STRIPE_TEST_SECRET_KEY}"
+              printf 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=%s\n' "${STRIPE_TEST_PUBLISHABLE_KEY}"
+            } >> .env.local
+          fi
+          curl -fsS -X POST "${API_URL}/auth/v1/admin/users" \
+            -H "apikey: ${SERVICE_ROLE_KEY}" -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"${PW_MEMBER_EMAIL}\",\"email_confirm\":true}" > /dev/null
+      - name: Start the app
+        run: |
+          nohup pnpm dev -H 127.0.0.1 -p 3000 > dev.log 2>&1 &
+          for i in $(seq 1 90); do curl -fs -o /dev/null http://127.0.0.1:3000/ && exit 0; sleep 2; done
+          cat dev.log; exit 1
+      - name: Mint the member session
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="${API_URL}" SUPABASE_SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY}" \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="${ANON_KEY}" pnpm e2e:session
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Walk the journeys
+        env:
+          PW_STORAGE_STATE: ${{ github.workspace }}/test/e2e/.auth/member.json
+        run: pnpm test:e2e:journeys
+      - name: Keep the evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: journeys-report
+          path: |
+            playwright-report
+            test-results
+            dev.log
+          if-no-files-found: ignore
+      - name: Destroy the local stack
+        if: always()
+        run: pnpm exec supabase stop --no-backup
