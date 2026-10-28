@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1625",
+  "title": "A Space-owned Circle opens on its own design cover, with a Part of Space pill",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "app/(main)/circles/[slug]/(circle)/layout.tsx",
+    "ref": "Daniel, 2026-10-28: the live Circle page is NOT the Circles design; he gave the phrase rewrite probe SCAN-881"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/circle-own-cover.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Probe fails on main (FqCircleSpaceHeader stacked above the Circle, shell strips the cover under a Space) and passes here."
+  },
+  "detail": "SCAN-881 (14 Oct) put a Space's full header above every Space-owned Circle and turned the Circle's own cover photo, tags and badge off under it, so the page read as a Space page with a plain card under it and nothing like the design. The Circle layout no longer renders FqCircleSpaceHeader (component deleted); the shell always draws the design cover with its h1, tags, badge and actions, and a Part of <Space> pill over the cover links to the owning Space. Follow and Boost stay on the Space's own pages. Owner phrase given 2026-10-28: rewrite probe SCAN-881.",
+  "wave": "W7"
+}

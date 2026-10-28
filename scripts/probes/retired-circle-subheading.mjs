@@ -8,7 +8,7 @@ export function retiredCircleSubheading({ exists = existsSync, read = p => readF
   assert.match(layout, /<FqCircleShell/, 'active Frequency Circle shell lost')
   assert.match(layout, /subline=\{\[\s*`\$\{circle\.member_count\}/, 'actual member metadata subline lost')
   assert.match(layout, /^\s+about=\{circle\.about\}/m, 'human About content lost')
-  assert.match(layout, /<FqCircleSpaceHeader spaceSlug=\{owner\}/, 'owning Space context lost')
+  assert.match(layout, /spaceLink=\{owner \?/, 'owning Space pill lost')
   assert.doesNotMatch(layout, /primary === 'post'/, 'Post cannot replace the primary Create menu')
   assert.match(layout, /<CircleCreateMenu/, 'Create entry lost')
   assert.match(layout, /<CircleMemberMenu/, 'member overflow entry lost')
@@ -16,7 +16,7 @@ export function retiredCircleSubheading({ exists = existsSync, read = p => readF
   assert.match(shell, /\{subline && <span className="fqm-cl-sub">\{subline\}<\/span>\}/, 'active shell no longer renders its subline')
   assert.match(shell, /<div className="body fqm-about stack">\{richParagraphs\(about\)\}<\/div>/, 'active shell no longer safely formats human About text')
   assert.doesNotMatch(shell, /dangerouslySetInnerHTML/, 'raw HTML must not replace the safe parser')
-  assert.match(shell, /inSpace \? <h2 className="h1">/, 'owning Space keeps its single primary heading')
+  assert.match(shell, /<h1 className="h1">\{title\}<\/h1>/, 'the Circle owns its one primary heading')
   // Preserve the surviving LIVE-385 content/engagement retirement contract.
   assert.match(read('components/circles/circle-create-menu.tsx'), /New post/, 'posting door lost')
   assert.equal(exists('lib/circles/circle-text.ts'), false, 'retired page-text storage returned')
