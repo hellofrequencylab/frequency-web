@@ -3,7 +3,9 @@
 // (when a cancel may finish) are lib/launch/state.ts. Server-only.
 
 import { createClient } from '@/lib/supabase/server'
-import { canConfirmCancel, toSnapshot, type CancelDecision, type LaunchSnapshot } from './state'
+import type { Json } from '@/lib/database.types'
+import { canConfirmCancel, publishStep, resumeStep, stageOf, toSnapshot, type CancelDecision, type LaunchSnapshot } from './state'
+import type { LaunchStepId } from './steps'
 
 const COLUMNS =
   'id, owner_id, space_id, niche, intents, stage, current_step, steps, minimized, started_at, updated_at, cancel_requested_at, cancelled_at, completed_at'
@@ -55,4 +57,31 @@ export async function confirmCancel(l: LaunchSnapshot, typed: unknown, now = new
   const db = await createClient()
   const { error } = await db.from('space_launch').update({ cancelled_at: now.toISOString(), updated_at: now.toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId).is('cancelled_at', null).is('completed_at', null).not('cancel_requested_at', 'is', null)
   return error ? { ok: false, reason: 'not_active' } : decision
+}
+
+async function writeSteps(l: LaunchSnapshot, steps: LaunchSnapshot['steps'], now: Date): Promise<LaunchSnapshot | null> {
+  const next = resumeStep(l.niche, l.intents, steps) ?? l.currentStep
+  const db = await createClient()
+  const { data, error } = await db
+    .from('space_launch')
+    .update({ steps: steps as unknown as Json, current_step: next, stage: stageOf(next), updated_at: now.toISOString() })
+    .eq('id', l.id)
+    .eq('owner_id', l.ownerId)
+    .is('cancelled_at', null)
+    .is('completed_at', null)
+    .select(COLUMNS)
+    .maybeSingle()
+  return error ? null : toSnapshot(data as Record<string, unknown> | null)
+}
+
+/** A step's real thing now exists. Called by the step's own server code, never from the client. */
+export function markStepPublished(l: LaunchSnapshot, id: LaunchStepId, ref?: string, now = new Date()) {
+  return writeSteps(l, publishStep(l.steps, id, now, ref), now)
+}
+
+/** Remember which Space belongs to this launch, once the Spotlight step has made it. */
+export async function attachSpace(l: LaunchSnapshot, spaceId: string): Promise<boolean> {
+  const db = await createClient()
+  const { error } = await db.from('space_launch').update({ space_id: spaceId, updated_at: new Date().toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId)
+  return !error
 }
