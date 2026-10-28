@@ -1,0 +1,22 @@
+{
+  "id": "LIVE-1753",
+  "title": "The /themes/designer page redone to the design system's Theme Feature Page, section for section, in its order",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "docs/design-systems/designer/rules.json",
+    "ref": "Daniel, 2026-10-28: the Designer theme page must have the exact same layout as the Design System (Theme Feature Page.html). Redo of LIVE-1743."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/designer-theme-page.mjs",
+    "checked": "2026-10-28",
+    "evidence": "The page carries the design's twelve sections in its order (centred hero with the four surfaces walking down it, Five tools, Try it on, More than a homepage, Your accent. Your face. Your corners., See it. Preview it. Make it yours., One profile, The parts you should never have to think about, Good to know, Live in an afternoon, Start your Spotlight), the four email templates and the thirteen profiles each have a picture on disk, and the page carries no raw colour."
+  },
+  "detail": "LIVE-1743 put a split hero first, then Five tools, Where Designer shows up, Try it on, Six ways to lay out your Spotlight, and left out More than a homepage, The parts you should never have to think about, Live in an afternoon and the Start your Spotlight closer. This rebuilds frequency-designer.tsx on the shared page frame Nocturne uses (nocturne-feature.css, nf- classes) with Designer's deltas in designer-feature.css, from the design's own copy. lib/themes/designer-feature-data.json now carries the design's kits (tools, blocks, layout variants, fonts, look, hero lines) the way Nocturne's does. New pictures: a phone-sized Space shot per profile (the design's compact Space) and the other three email templates per profile (welcome, dates, receipt), 13 by 4 emails and 13 by 4 other surfaces under public/themes/designer/shots; the six Spotlight layout pictures and designer-preview.tsx are gone, since the design's theme page has no such section. HONEST DEVIATIONS from the design, each small: the Email surface and any surface the theme library still lists as on the way carry a tucked 'On the way' label; Spotlight lives at 'Its own Spotlight link' (the design's spotlight.frequency address does not exist); the Colour card of Built right says each ramp is checked for contrast on its own ground, not on black and bone (that line is Nocturne's); Make it yours shows the kit default with the other accents, faces and corners present but disabled, since nothing carries into the editor yet (the design's own note says so); the design's gallery caption shows 'undefined undefined', and ours shows the profile's headline; the page has no Keep going band, because the design ends on Start your Spotlight; the preview dialog shows pictures only, with no sample site to embed. The four Theme Feature Page copy lines of the other kits that this page now matches shrink the Network and Temple baselines. Probe rewritten in place for the new structure (same row, same consequence)."
+  ,
+  "wave": "W7"
+}

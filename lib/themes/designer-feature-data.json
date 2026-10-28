@@ -1,26 +1,747 @@
 {
- "eyebrow": "Spotlight layouts · Interior designers · Designer",
  "kits": [
-  { "id": "general", "name": "Design studio", "hex": "#D3A03F", "who": "A design studio that plans and finishes whole homes: the work, the approach and an easy first conversation." },
-  { "id": "coaches", "name": "Interior designers", "hex": "#A65A3A", "who": "Interior designers who plan rooms, source furniture and style the finished home." },
-  { "id": "studios", "name": "Architects", "hex": "#4E6E71", "who": "Residential architects: new homes, additions and the permits in between." },
-  { "id": "hosts", "name": "Design + build", "hex": "#5A4533", "who": "Design + build firms that take a project from permits to pillows with one team." },
-  { "id": "venues", "name": "Landscape and garden", "hex": "#6F7A3E", "who": "Garden designers and landscape studios: outdoor rooms, planting and the build." },
-  { "id": "nonprofits", "name": "Kitchen and bath", "hex": "#2F7F7A", "who": "Kitchen and bath specialists: layout, cabinetry, tile and a clean install." },
-  { "id": "networks", "name": "Brand and graphic design", "hex": "#B0645A", "who": "Brand and graphic designers: identities, print and packaging for small businesses." },
-  { "id": "creators", "name": "Web and digital design", "hex": "#4F6A8A", "who": "Web and product designers: sites, shops and the systems behind them." },
-  { "id": "schools", "name": "Design courses", "hex": "#B3622B", "who": "Designers who teach: courses, workshops and studio days for people planning their own projects." },
-  { "id": "clubs", "name": "Furniture and makers", "hex": "#9A6B3F", "who": "Furniture makers and craft studios: commissions, made-to-order pieces and the workshop." },
-  { "id": "faith", "name": "Event design and florals", "hex": "#7E5A73", "who": "Event designers and florists: weddings, dinners and celebrations, planned and installed." },
-  { "id": "wellness", "name": "Home staging and styling", "hex": "#B08A3E", "who": "Home stagers and stylists: listings, refreshes and a seasonal care plan." },
-  { "id": "markets", "name": "Textiles and soft goods", "hex": "#3F4F7A", "who": "Textile designers and soft-goods studios: fabric, linens and made-to-order upholstery." }
+  {
+   "id": "general",
+   "name": "Design studio",
+   "hex": "#D3A03F",
+   "who": "A design studio that plans and finishes whole homes: the work, the approach and an easy first conversation.",
+   "packages": [
+    "publish",
+    "book",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "steps",
+    "capabilities",
+    "proof",
+    "founder",
+    "band",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "arch",
+    "portfolio": "mosaic",
+    "capabilities": "slab",
+    "proof": "carousel",
+    "faq": "split",
+    "cta": "center"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "We make spaces that balance beauty, structure,",
+    "em": "and soul."
+   }
+  },
+  {
+   "id": "coaches",
+   "name": "Interior designers",
+   "hex": "#A65A3A",
+   "who": "Interior designers who plan rooms, source furniture and style the finished home.",
+   "packages": [
+    "publish",
+    "book",
+    "sell"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "proof",
+    "founder",
+    "shop",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "arch",
+    "portfolio": "mosaic",
+    "offerings": "split",
+    "proof": "carousel",
+    "shop": "grid",
+    "faq": "split",
+    "cta": "split"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Rooms that feel like",
+    "em": "they were always yours."
+   }
+  },
+  {
+   "id": "studios",
+   "name": "Architects",
+   "hex": "#4E6E71",
+   "who": "Residential architects: new homes, additions and the permits in between.",
+   "packages": [
+    "publish",
+    "book",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "steps",
+    "capabilities",
+    "proof",
+    "gatherings",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "timeline",
+    "portfolio": "grid",
+    "capabilities": "list",
+    "proof": "quote",
+    "gatherings": "calendar",
+    "faq": "stack",
+    "cta": "center"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "subtle",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "A house drawn around",
+    "em": "the life inside it."
+   }
+  },
+  {
+   "id": "hosts",
+   "name": "Design + build",
+   "hex": "#5A4533",
+   "who": "Design + build firms that take a project from permits to pillows with one team.",
+   "packages": [
+    "publish",
+    "book"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "steps",
+    "capabilities",
+    "proof",
+    "founder",
+    "band",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "arch",
+    "portfolio": "mosaic",
+    "capabilities": "slab",
+    "proof": "carousel",
+    "faq": "split",
+    "cta": "center"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "What we draw,",
+    "em": "we build."
+   }
+  },
+  {
+   "id": "venues",
+   "name": "Landscape and garden",
+   "hex": "#6F7A3E",
+   "who": "Garden designers and landscape studios: outdoor rooms, planting and the build.",
+   "packages": [
+    "publish",
+    "book",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "steps",
+    "gatherings",
+    "proof",
+    "band",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "strip",
+    "portfolio": "mosaic",
+    "gatherings": "cards",
+    "proof": "carousel",
+    "faq": "stack",
+    "cta": "band"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "The room you use most",
+    "em": "might be outside."
+   }
+  },
+  {
+   "id": "nonprofits",
+   "name": "Kitchen and bath",
+   "hex": "#2F7F7A",
+   "who": "Kitchen and bath specialists: layout, cabinetry, tile and a clean install.",
+   "packages": [
+    "publish",
+    "book",
+    "sell"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "capabilities",
+    "proof",
+    "shop",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "grid",
+    "portfolio": "grid",
+    "offerings": "cards",
+    "capabilities": "slab",
+    "proof": "carousel",
+    "shop": "grid",
+    "faq": "split",
+    "cta": "split"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "The two rooms you use",
+    "em": "every single day."
+   }
+  },
+  {
+   "id": "networks",
+   "name": "Brand and graphic design",
+   "hex": "#B0645A",
+   "who": "Brand and graphic designers: identities, print and packaging for small businesses.",
+   "packages": [
+    "publish",
+    "book",
+    "learn"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "journeys",
+    "proof",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "strip",
+    "portfolio": "grid",
+    "offerings": "list",
+    "journeys": "cards",
+    "proof": "quote",
+    "faq": "stack",
+    "cta": "center"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "subtle",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "A brand that looks",
+    "em": "the way your work feels."
+   }
+  },
+  {
+   "id": "creators",
+   "name": "Web and digital design",
+   "hex": "#4F6A8A",
+   "who": "Web and product designers: sites, shops and the systems behind them.",
+   "packages": [
+    "publish",
+    "book",
+    "learn",
+    "sell"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "journeys",
+    "shop",
+    "proof",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "grid",
+    "portfolio": "grid",
+    "offerings": "cards",
+    "journeys": "feature",
+    "shop": "rail",
+    "proof": "wall",
+    "faq": "split",
+    "cta": "split"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "balanced",
+    "header": "pill",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "A website as considered",
+    "em": "as your work."
+   }
+  },
+  {
+   "id": "schools",
+   "name": "Design courses",
+   "hex": "#B3622B",
+   "who": "Designers who teach: courses, workshops and studio days for people planning their own projects.",
+   "packages": [
+    "publish",
+    "learn",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "journeys",
+    "steps",
+    "gatherings",
+    "proof",
+    "founder",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "journeys": "feature",
+    "steps": "timeline",
+    "gatherings": "calendar",
+    "proof": "stats",
+    "faq": "split",
+    "cta": "center"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Plan your own home",
+    "em": "with a designer beside you."
+   }
+  },
+  {
+   "id": "clubs",
+   "name": "Furniture and makers",
+   "hex": "#9A6B3F",
+   "who": "Furniture makers and craft studios: commissions, made-to-order pieces and the workshop.",
+   "packages": [
+    "publish",
+    "sell",
+    "book"
+   ],
+   "blocks": [
+    "hero",
+    "shop",
+    "portfolio",
+    "steps",
+    "offerings",
+    "proof",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "shop": "rail",
+    "portfolio": "grid",
+    "steps": "strip",
+    "offerings": "split",
+    "proof": "quote",
+    "faq": "stack",
+    "cta": "split"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Made by hand,",
+    "em": "made to stay."
+   }
+  },
+  {
+   "id": "faith",
+   "name": "Event design and florals",
+   "hex": "#7E5A73",
+   "who": "Event designers and florists: weddings, dinners and celebrations, planned and installed.",
+   "packages": [
+    "publish",
+    "book",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "proof",
+    "gatherings",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "gatherings": "cards",
+    "portfolio": "mosaic",
+    "steps": "arch",
+    "offerings": "cards",
+    "proof": "carousel",
+    "faq": "split",
+    "cta": "band"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "A day designed",
+    "em": "down to the last stem."
+   }
+  },
+  {
+   "id": "wellness",
+   "name": "Home staging and styling",
+   "hex": "#B08A3E",
+   "who": "Home stagers and stylists: listings, refreshes and a seasonal care plan.",
+   "packages": [
+    "publish",
+    "book",
+    "sell",
+    "belong"
+   ],
+   "blocks": [
+    "hero",
+    "portfolio",
+    "offerings",
+    "steps",
+    "membership",
+    "proof",
+    "shop",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "offerings": "cards",
+    "portfolio": "mosaic",
+    "steps": "arch",
+    "membership": "tiers",
+    "shop": "grid",
+    "proof": "wall",
+    "faq": "split",
+    "cta": "band"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "pill",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "The same rooms,",
+    "em": "seen with fresh eyes."
+   }
+  },
+  {
+   "id": "markets",
+   "name": "Textiles and soft goods",
+   "hex": "#3F4F7A",
+   "who": "Textile designers and soft-goods studios: fabric, linens and made-to-order upholstery.",
+   "packages": [
+    "publish",
+    "sell",
+    "gather",
+    "belong"
+   ],
+   "blocks": [
+    "hero",
+    "shop",
+    "portfolio",
+    "steps",
+    "gatherings",
+    "membership",
+    "letter",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "shop": "grid",
+    "portfolio": "grid",
+    "gatherings": "calendar",
+    "membership": "spotlight",
+    "steps": "strip",
+    "proof": "quote",
+    "letter": "card",
+    "faq": "stack",
+    "cta": "split"
+   },
+   "fonts": {
+    "display": "Cormorant",
+    "label": "Jost"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Fabric you want",
+    "em": "to live with."
+   }
+  }
  ],
- "layouts": [
-  { "id": "stack", "name": "Stack", "sub": "Every way in, stacked" },
-  { "id": "card-wall", "name": "Card wall", "sub": "Two columns of square cards" },
-  { "id": "story", "name": "Story", "sub": "One photo, a few lines, one button" },
-  { "id": "calendar-first", "name": "Calendar first", "sub": "Dates lead, booking follows" },
-  { "id": "shop-front", "name": "Shop front", "sub": "Sessions as products" },
-  { "id": "profile", "name": "Profile", "sub": "Who you are, then one thing to do" }
+ "packages": [
+  {
+   "id": "publish",
+   "name": "Journal & letter",
+   "stage": "Attract · Capture · Nurture",
+   "blurb": "Guides, essays, recordings and the seasonal letter. Every site has this.",
+   "locked": true
+  },
+  {
+   "id": "book",
+   "name": "Consultations",
+   "stage": "Convert · Deliver",
+   "blurb": "Services, consultation booking, intake questions, deposits and reminders.",
+   "locked": false
+  },
+  {
+   "id": "gather",
+   "name": "Events",
+   "stage": "Deliver · Keep",
+   "blurb": "Open studios, workshops and project tours with seats and tickets.",
+   "locked": false
+  },
+  {
+   "id": "learn",
+   "name": "Courses",
+   "stage": "Nurture · Deliver",
+   "blurb": "Design courses with a landing page, player and progress.",
+   "locked": false
+  },
+  {
+   "id": "belong",
+   "name": "Membership",
+   "stage": "Keep",
+   "blurb": "A design circle and a home care plan, with yearly pricing.",
+   "locked": false
+  },
+  {
+   "id": "sell",
+   "name": "Shop",
+   "stage": "Convert · Return",
+   "blurb": "Samples, workbooks, recorded consultations and gift cards.",
+   "locked": false
+  }
+ ],
+ "blocks": [
+  {
+   "id": "hero",
+   "name": "Hero",
+   "pkg": "core",
+   "stage": "Attract"
+  },
+  {
+   "id": "live",
+   "name": "Studio strip",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "portfolio",
+   "name": "Portfolio",
+   "pkg": "core",
+   "stage": "Attract"
+  },
+  {
+   "id": "steps",
+   "name": "Our approach",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "doors",
+   "name": "Ways to work",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "offerings",
+   "name": "Services",
+   "pkg": "book",
+   "stage": "Convert"
+  },
+  {
+   "id": "capabilities",
+   "name": "Capabilities",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "journeys",
+   "name": "Courses",
+   "pkg": "learn",
+   "stage": "Deliver"
+  },
+  {
+   "id": "gatherings",
+   "name": "Events",
+   "pkg": "gather",
+   "stage": "Deliver"
+  },
+  {
+   "id": "membership",
+   "name": "Membership",
+   "pkg": "belong",
+   "stage": "Keep"
+  },
+  {
+   "id": "proof",
+   "name": "Testimonials",
+   "pkg": "core",
+   "stage": "Return"
+  },
+  {
+   "id": "founder",
+   "name": "Founder",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "band",
+   "name": "The experience",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "shop",
+   "name": "From the shop",
+   "pkg": "sell",
+   "stage": "Convert"
+  },
+  {
+   "id": "library",
+   "name": "From the journal",
+   "pkg": "publish",
+   "stage": "Attract"
+  },
+  {
+   "id": "letter",
+   "name": "Letter sign-up",
+   "pkg": "publish",
+   "stage": "Capture"
+  },
+  {
+   "id": "faq",
+   "name": "Questions",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "cta",
+   "name": "Closing call",
+   "pkg": "core",
+   "stage": "Convert"
+  }
+ ],
+ "swatches": [
+  "#D3A03F",
+  "#A65A3A",
+  "#4E6E71",
+  "#5A4533",
+  "#6F7A3E"
  ]
 }

@@ -179,7 +179,7 @@ export const FREQUENCY_PAGE_SEO = {
       'The Designer Theme Kit is for studios, interiors, architecture, gardens and brands. Spotlight, Space, website and emails wear one look, changed once.',
     shareTitle: 'Designer: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
-    lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Designer Theme Kit gives studios, interiors, architecture, gardens and brands one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
+    lede: 'One complete theme for designers who sell their services: studios, interiors, architecture, gardens and brands. Your link in bio, your Space on Frequency, your own website and your emails, all reading one profile. Change it once and every surface follows.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
