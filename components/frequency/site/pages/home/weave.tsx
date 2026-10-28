@@ -67,11 +67,17 @@ export function Weave({ stages }: { stages: WeaveStage[] }) {
     const s = svg.current
     if (!host || !s) return
     const R = host.getBoundingClientRect()
+    // Read each card once and build paths off-DOM, avoiding a layout after every path.
+    const boxes = new Map<Element, { x: number; y: number; w: number; h: number; cx: number; cy: number }>()
     const box = (el: Element) => {
+      const cached = boxes.get(el)
+      if (cached) return cached
       const r = el.getBoundingClientRect()
-      return { x: r.left - R.left, y: r.top - R.top, w: r.width, h: r.height, cx: r.left - R.left + r.width / 2, cy: r.top - R.top + r.height / 2 }
+      const result = { x: r.left - R.left, y: r.top - R.top, w: r.width, h: r.height, cx: r.left - R.left + r.width / 2, cy: r.top - R.top + r.height / 2 }
+      boxes.set(el, result)
+      return result
     }
-    s.replaceChildren()
+    const paths = document.createDocumentFragment()
     const add = (d: string, colour: string, cols: number[], lane: Row, cls: string[]) => {
       const p = document.createElementNS(SVG_NS, 'path')
       p.setAttribute('d', d)
@@ -79,7 +85,7 @@ export function Weave({ stages }: { stages: WeaveStage[] }) {
       cls.forEach((c) => p.classList.add(c))
       p.dataset.cols = cols.join(',')
       p.dataset.lane = lane
-      s.appendChild(p)
+      paths.appendChild(p)
     }
     const link = (a: Element | null, b: Element | null, colour: string, cols: number[], flow: boolean, lane: Row) => {
       if (!a || !b) return
@@ -123,6 +129,7 @@ export function Weave({ stages }: { stages: WeaveStage[] }) {
       setStageBoxes([])
       setLoopTops(null)
     }
+    s.replaceChildren(paths)
   }, [mobile, stages])
 
   // Draw after layout, on resize (debounced), and once the web fonts settle the boxes.
