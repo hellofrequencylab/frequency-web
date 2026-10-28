@@ -6,7 +6,6 @@ import { launchSystemEnabled } from '@/lib/launch/enabled'
 import { flowHeading, flowView } from '@/lib/launch/flow'
 import { loadSpotlightAnswers } from '@/lib/launch/flow-io'
 import { readPendingLaunch } from '@/lib/launch/pending-io'
-import { publishedView } from '@/lib/launch/published'
 import { getActiveLaunch } from '@/lib/launch/store'
 
 // The launch page (VLS-07, VLS-09): one page for the whole launch. The Spotlight form first; once it is published the
@@ -22,11 +21,9 @@ export default async function SpotlightStepPage({ searchParams }: { searchParams
   const saved = view.slug ? await loadSpotlightAnswers(launch) : null
   const typed = (await readPendingLaunch())?.answers.spotlight
   const held = saved ?? (typed ? { name: typed.name ?? '', line: typed.line ?? '', link: typed.link ?? '' } : null)
-  const pv = launch && view.slug ? publishedView(launch, 'spotlight') : null
-  const published = pv?.kind === 'done' && view.slug ? { ...pv, next: { label: 'Your Space', href: `/spaces/${encodeURIComponent(view.slug)}` } } : undefined
   return (
     <DashboardTemplate {...flowHeading(view)} adminBar={false} width="default">
-      <LaunchFlow view={view} answers={held} errorCode={typeof e === 'string' ? e : undefined} signedIn={!!profileId} published={published} />
+      <LaunchFlow view={view} answers={held} errorCode={typeof e === 'string' ? e : undefined} signedIn={!!profileId} />
     </DashboardTemplate>
   )
 }
