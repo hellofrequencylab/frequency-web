@@ -108,6 +108,13 @@ describe('each migrated surface composes the template rather than hand-rolling a
       expect(src).not.toContain('setHTML')
     })
   }
+
+  it('the operating guide lists the same adapters and has no retired pending-migration inventory', () => {
+    const guide = readFileSync('docs/MAPS.md', 'utf8')
+    expect(guide).not.toContain('⏳ Pending migration')
+    expect(guide).not.toContain('components/discover/discover-map.tsx')
+    for (const rel of MIGRATED) expect(guide, `${rel} missing from docs/MAPS.md`).toContain(`\`${rel}\``)
+  })
 })
 
 describe('the seam degrades instead of breaking', () => {
