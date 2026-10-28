@@ -18,6 +18,7 @@ const WIDTHS = {
   narrow: 'max-w-lg',
   default: 'max-w-2xl',
   wide: 'max-w-3xl',
+  xl: 'max-w-5xl',
 } as const
 
 export function FocusTemplate({
@@ -28,6 +29,7 @@ export function FocusTemplate({
   back,
   width = 'default',
   divider = true,
+  adminBar,
   children,
 }: {
   eyebrow?: React.ReactNode
@@ -38,6 +40,8 @@ export function FocusTemplate({
   back?: { href: string; label: string }
   width?: keyof typeof WIDTHS
   divider?: boolean
+  /** Forwarded to PageHeading: false drops the operator Settings bar on a compose surface. */
+  adminBar?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -49,6 +53,7 @@ export function FocusTemplate({
         actions={actions}
         back={back}
         divider={divider}
+        adminBar={adminBar}
       />
       {children}
     </div>

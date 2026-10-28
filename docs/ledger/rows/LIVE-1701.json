@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1701",
+  "title": "The Space Calendar as one full-screen surface: sidebar, Month and Agenda, Needs you and read-only Details",
+  "lane": "live",
+  "priority": "P2",
+  "size": "L",
+  "status": "done",
+  "source": {
+    "file": "components/calendar-suite/calendar-suite.tsx",
+    "ref": "Daniel, 2026-10-28: redesign the Space calendar with the Calendar system handoff; every Space gets the full calendar and project suite (pass 1 of 9)"
+  },
+  "detail": "Pass 1 of the Space calendar and project suite. The Space console's Calendar page now opens the full-screen Calendar (layout 1a Sidebar) in place of CalendarPlanner: a 252px rail with the Space chip, Pencil it in, a mini month, six Show layers with counts (Shared with Spaces is the sixth), Plans, Team this week with the pace card and the Inbox; a header with the month title and jump panel, the sign line, paging, a seven-view control and Ask; the Needs you row; an infinite Month (nine months, six more near either end, scroll held, season wash and phrase in flow, moons and Sun ingress, +N more, cancelled footer, today ring) and the Agenda; a read-only Details panel for an item, a to-do or a Plan. Keys D W M A I B L T P / and the arrows. Under 820px the rail and Details are bottom sheets and the Agenda opens first under 720px. Day, Week, List, Kanban and Timeline show a Coming soon state, Pencil it in and Ask are placeholder sheets, and nothing edits yet (later passes). The month scroll is capped to the operator horizon the page loads (3 months back, 15 forward). The remembered view cookie keeps CALENDAR_ADMIN_VIEWS as it was and stores Kanban as workflow. Plan: /mnt/project-files/calendar-suite/PLAN.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const page=fs.readFileSync('app/(main)/spaces/[slug]/settings/calendar/page.tsx','utf8');const need=['calendar-suite','suite-month','suite-agenda','suite-details','suite-rail','suite-header','suite-needs-you'];const miss=need.filter(n=>!fs.existsSync('components/calendar-suite/'+n+'.tsx'));if(miss.length){console.error('missing',miss);process.exit(1)}if(/CalendarPlanner/.test(page)||!/CalendarSuite/.test(page)){console.error('page still mounts the old planner');process.exit(1)}if(fs.existsSync('components/frequency/admin/calendar-planner.tsx')){console.error('old planner file remains');process.exit(1)}\"",
+    "note": "Fails on main (no components/calendar-suite/, the page mounts CalendarPlanner); passes here. The month, adapter and key tests run in CI."
+  },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}

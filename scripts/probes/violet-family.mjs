@@ -13,11 +13,14 @@ import { readFileSync } from 'node:fs'
 // Space websites wear; Frequency overrides them in app/themes/frequency.css. lib/theme/cyberunicorn.ts is
 // the CyberUnicorn 5000 device skin (its synthwave sky is the firmware's own colour), worn by one panel only.
 const SKIP = new Set(['lib/theme/wildheart.ts', 'lib/theme/cyberunicorn.ts', 'lib/spotlight/theme.ts', 'app/globals.css', 'lib/maps/pin-kinds.ts', 'app/dev/og-root-card/route.tsx'])
-// A stock website theme's own palette may carry violet (ADR-1885: Midnight keeps its violet #A68BF2 as the
+// A stock website theme's own palette may carry violet (ADR-1885: Midnight's violet is #B094FF (owner 2026-10-28), as the
 // theme's accent, and a Space accent overrides it). The exception is explicit and per hex, in the one file
 // that holds theme palettes: any other violet in theme-contract.json fails like it does anywhere else.
 const THEME_PALETTE_VIOLET = {
-  'lib/sites/editor/theme-contract.json': new Set(['1C1424', '261C31', '654590', '6E4D96', 'C7ADE8', '6A3FA0', '5F3694', '1C1430', '7D5FD3', 'A68BF2', 'CDBDFB']),
+  // Owner 2026-10-28: "allow #B094FF for the Business kit". The one hex, in the one file that holds the kit accents.
+  'lib/themes/nocturne-feature-data.json': new Set(['B094FF']),
+  // Owner 2026-10-28: "allow #B094FF in the theme contract". Replaces the older Midnight accent in the same file.
+  'lib/sites/editor/theme-contract.json': new Set(['1C1424', '261C31', '654590', '6E4D96', 'C7ADE8', '6A3FA0', '5F3694', '1C1430', '7D5FD3', 'B094FF', 'CDBDFB']),
 }
 const files = execSync('git ls-files app components lib').toString().split('\n').filter(Boolean)
 const bad = []

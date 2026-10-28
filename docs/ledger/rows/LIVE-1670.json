@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1670",
+  "title": "Take in the Network Theme Kit design system: every one of its 200 files is claimed, the gaps are listed",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "docs/DESIGN-SYSTEM-INTAKE.md",
+    "ref": "Daniel, 2026-10-28: program the new Network design system into the theme system the way Nocturne is. Plan: /mnt/project-files/network-theme/PLAN.html"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/network-design-system-intake.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Fails on main (no docs/design-systems/network) and passes here."
+  },
+  "detail": "Pass 0 of 12. The new Network is its own Theme Kit (code id network-kit, shown as Network); the old network theme that The Group runs stays untouched until its staged move in the last pass. docs/design-systems/network holds the rules (every file claimed, the sales page and Nocturne-era chrome marked as not shipped), the inventory, the token and copy captures, and the baseline of known gaps, which can only shrink. scripts/design-system.test.ts reads each theme's token block from a table. Later passes build against the baseline.",
+  "wave": "W7"
+}

@@ -25,7 +25,8 @@ describe('the starter website (LIVE-1533)', () => {
       expect(state.revision).toBe(1)
       expect(state.published && validWebsiteSnapshot(state.published), id).toBe(true)
       expect(state.published!.pages.map((p) => p.slug)).toContain('home')
-      if (kit.theme !== 'DAWN') expect(WEBSITE_THEMES_LIVE.has(kit.theme), id).toBe(true)
+      // The Network Theme Kit is not in WEBSITE_THEMES_LIVE until the owner turns it on (the foundation pass left it off on purpose).
+      if (kit.theme !== 'DAWN' && kit.theme !== 'NetworkKit') expect(WEBSITE_THEMES_LIVE.has(kit.theme), id).toBe(true)
     }
   })
 })

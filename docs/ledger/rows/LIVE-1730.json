@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1730",
+  "title": "Start with a kit opens Create a Space with that kit already chosen",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-midnight.tsx",
+    "ref": "Daniel, 2026-10-28: Start with Business on the Nocturne page lands on a bare Create a Space page"
+  },
+  "detail": "The Nocturne kit page sent people to /spaces/new with ?niche= only, so the wizard's Look step started empty even though the visitor had picked a kit. It now sends ?theme=midnight with the niche. The theme gallery cards still send the niche only (a test pins their href).\n\nClosed by the PR that adds the theme to the link.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/create-space-carries-kit.mjs",
+    "note": "Fails on main (links carry ?niche= only); passes here."
+  },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}
