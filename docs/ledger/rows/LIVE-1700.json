@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1700",
+  "title": "The Space calendar planner engine: lane layout, boards, timeline, Needs you, team load and a safer command parser",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/calendar/planner/week-layout.ts",
+    "ref": "Daniel, 2026-10-28: redesign the Space calendar with the Calendar system handoff; every Space gets the full calendar and project suite (pass 0 of 9)"
+  },
+  "detail": "Pass 0 of the Space calendar and project suite: pure, UI-free code for Week and Day lane layout, Agenda, Kanban and List grouping, Timeline, Needs you, clash, team load and pace, hold days, playbook scheduling, an Inbox drop that updates the same to-do, and a command parser that no longer misreads titles like Sunset stretch. Plus the calendar violet, Production blue and season wash tokens. Nothing renders yet; later passes build the full-screen Calendar on it. Plan: /mnt/project-files/calendar-suite/PLAN.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const d='lib/calendar/planner/';const need=['week-layout','board','timeline','needs-you','team-load','command-parse','inbox-drop','hold'];const miss=need.filter(n=>!fs.existsSync(d+n+'.ts')||!fs.existsSync(d+n+'.test.ts'));if(miss.length){console.error('missing',miss);process.exit(1)}\"",
+    "note": "Fails on main (no planner engine files or tests); passes here. The tests themselves run in CI."
+  },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}
