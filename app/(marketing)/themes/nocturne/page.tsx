@@ -3,6 +3,8 @@
 import type { Metadata } from 'next'
 import { JsonLd } from '@/components/json-ld'
 import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '@/lib/seo/frequency-pages'
+import { launchEntryEnabled } from '@/lib/launch/enabled'
+import { freeSpotlightHref } from '@/lib/launch/entry'
 import { FrequencyMidnight } from '@/components/frequency/site/pages/themes/frequency-midnight'
 
 export const revalidate = 3600
@@ -13,7 +15,7 @@ export default function MidnightThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.midnight)} />
-      <FrequencyMidnight />
+      <FrequencyMidnight spotlightHref={launchEntryEnabled() ? freeSpotlightHref('theme', 'nocturne') : null} />
     </>
   )
 }

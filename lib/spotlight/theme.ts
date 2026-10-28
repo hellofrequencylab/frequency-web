@@ -12,6 +12,7 @@ import type { CSSProperties } from 'react'
 import { MIDNIGHT_ACCENT, MIDNIGHT_SURFACE } from '@/lib/theme/midnight'
 import { DESIGNER_ACCENT, DESIGNER_SURFACE } from '@/lib/theme/designer'
 import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
+import { asSpotlightLayoutId, type SpotlightLayoutId } from '@/lib/spotlight/layouts'
 
 // ── Curated fonts. Real web fonts are self-hosted via next/font in app/layout.tsx and
 // exposed as CSS variables on <html> (so they cascade to the public Spotlight route); each
@@ -83,6 +84,10 @@ export interface SpotlightTheme {
   font: { heading: SpotlightFontId; body: SpotlightFontId }
   card: SpotlightCard
   header: SpotlightHeader
+  /** A whole-page layout from the registry (lib/spotlight/layouts.ts). Absent on every theme without layouts. */
+  layout?: SpotlightLayoutId
+  /** The Network Theme Kit profile the layout's sample copy and ways in follow (lib/spotlight/network-kit-content.ts). */
+  kit?: string
 }
 
 export const EMPTY_THEME: SpotlightTheme = {
@@ -96,7 +101,7 @@ export const EMPTY_THEME: SpotlightTheme = {
 }
 
 /** A Spotlight preset read from a Mega Theme's flat token set. */
-function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'temple', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
+function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
   const s = MEGA_SURFACES[id]!
   return {
     accent: s.accent.accent.toLowerCase(), surface: s.raised.toLowerCase(), text: s.text.toLowerCase(), font, card,
@@ -142,7 +147,8 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   { id: 'frequency', label: 'Default', theme: EMPTY_THEME },
   { id: 'bold', label: 'Bold', theme: surfacePreset('bold', { heading: 'display', body: 'sans' }, { radius: 'sm', shadow: 'none', style: 'solid' }) },
   { id: 'wildheart', label: 'Wildheart', theme: surfacePreset('wildheart', { heading: 'serif', body: 'serif' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
-  { id: 'network', label: 'Network', theme: surfacePreset('network', { heading: 'rounded', body: 'rounded' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
+  // The Network Theme Kit (lib/theme/network-kit.ts): the Marigold scheme as a basic preset; its Spotlight layouts come with the kit.
+  { id: 'network-kit', label: 'Network', theme: { ...surfacePreset('network-kit', { heading: 'rounded', body: 'rounded' }, { radius: 'xl', shadow: 'soft', style: 'solid' }), layout: 'network-kit:stack', kit: 'general' } },
   { id: 'temple', label: 'Temple', theme: surfacePreset('temple', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) },
   {
     id: 'mono', label: 'Mono',
@@ -205,7 +211,9 @@ export function validateSpotlightTheme(raw: unknown): SpotlightTheme {
   const font = (t.font ?? {}) as Record<string, unknown>
   const card = (t.card ?? {}) as Record<string, unknown>
   const header = (t.header ?? {}) as Record<string, unknown>
+  const layout = asSpotlightLayoutId(t.layout)
   return {
+    ...(layout ? { layout, kit: typeof t.kit === 'string' && /^[a-z]{3,12}$/.test(t.kit) ? t.kit : 'general' } : {}),
     accent: safeHex(t.accent),
     surface: safeHex(t.surface),
     text: safeHex(t.text),
@@ -277,7 +285,7 @@ interface SpotlightThemeStyles {
  */
 export function spotlightThemeStyles(theme: SpotlightTheme): SpotlightThemeStyles {
   const isDefault =
-    !theme.accent && !theme.surface && !theme.text && theme.bg.kind === 'none' &&
+    !theme.layout && !theme.accent && !theme.surface && !theme.text && theme.bg.kind === 'none' &&
     theme.font.heading === 'sans' && theme.font.body === 'sans' &&
     theme.card.radius === 'lg' && theme.card.shadow === 'soft' && theme.card.style === 'solid'
   if (isDefault) return { hasTheme: false, wrapper: {}, card: {} }

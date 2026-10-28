@@ -3,6 +3,7 @@
 // index so the page never drifts from what the editor offers. Built from the template kit only (phero, sec,
 // sh, tg-card, KeepGoing); no page CSS of its own. Copy follows docs/marketing/voice-and-language-guide.md:
 // pain point first, plain words, no claims we cannot stand behind.
+import { FreeSpotlightButton } from '@/components/marketing/free-spotlight-button'
 import Image from 'next/image'
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
@@ -73,6 +74,7 @@ export function FrequencyThemes() {
             <Link className="btn btn-ghost fq-iri-rim" href="#themes">
               See the Theme Kits
             </Link>
+            <FreeSpotlightButton surface="themes" />
           </div>
         </div>
       </section>
@@ -94,9 +96,17 @@ export function FrequencyThemes() {
           <div className="tg-row two">
             {THEME_GALLERY.map((t) => (
               <div className="tg-card" key={t.id} id={t.id}>
-                <Link href={t.href} aria-label={`See the ${t.label} kit`}>
-                  <ThemePicture theme={t.id} label={t.label} slot="kit" />
-                </Link>
+                {t.id === 'designer' ? (
+                  <Link href={t.href} className="tg-shots" aria-label={`See the ${t.label} kit`}>
+                    <Image src="/themes/designer/shots/general-site.jpg" alt="Designer website" width={1280} height={800} sizes="(max-width: 960px) 50vw, 25vw" />
+                    <Image src="/themes/designer/shots/general-spot.jpg" alt="Designer Spotlight" width={740} height={1648} sizes="(max-width: 960px) 25vw, 12vw" />
+                    <Image src="/themes/designer/shots/general-email.jpg" alt="Designer email" width={900} height={1140} sizes="(max-width: 960px) 25vw, 12vw" />
+                  </Link>
+                ) : (
+                  <Link href={t.href} aria-label={`See the ${t.label} kit`}>
+                    <ThemePicture theme={t.id} label={t.label} slot="kit" />
+                  </Link>
+                )}
                 {t.id === 'midnight' && (
                   <div className="tg-shots">
                     <Image

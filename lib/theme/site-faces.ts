@@ -12,12 +12,14 @@
 // fonts.gstatic.com). spacePageSiteFaces (lib/theme/site-style.ts) picks the id; app/themes/frequency/space-page.css maps each id onto the page's display and body
 // faces under `data-space-fonts`.
 
-export type SiteFacesId = 'network' | 'wildheart' | 'midnight'
+export type SiteFacesId = 'network' | 'network-kit' | 'wildheart' | 'midnight'
 
 /** The Google Fonts sheet that loads each theme's faces. */
 export const SITE_FACE_SHEETS: Record<SiteFacesId, string> = {
   network:
     'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Serif:ital@0;1&family=Outfit:wght@400..700&display=swap',
+  'network-kit':
+    'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700..800&family=Instrument+Serif:ital@0;1&family=Outfit:wght@300..700&display=swap',
   wildheart:
     'https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IM+Fell+English:ital@0;1&display=swap',
   midnight:
@@ -28,6 +30,7 @@ export const SITE_FACE_SHEETS: Record<SiteFacesId, string> = {
  *  the page's CSS can read the same variables the website does. */
 export const SITE_FACE_VARS: Record<SiteFacesId, Record<string, string>> = {
   network: { '--font-nw-bricolage': "'Bricolage Grotesque'", '--font-nw-outfit': "'Outfit'", '--font-nw-instrument': "'Instrument Serif'" },
+  'network-kit': { '--font-nk-bricolage': "'Bricolage Grotesque'", '--font-nk-outfit': "'Outfit'", '--font-nk-instrument': "'Instrument Serif'" },
   wildheart: { '--font-wh-fell': "'IM Fell English'", '--font-wh-garamond': "'EB Garamond'" },
   midnight: { '--font-mn-bodoni': "'Bodoni Moda'", '--font-mn-geist': "'Geist'", '--font-mn-marcellus': "'Marcellus'" },
 }

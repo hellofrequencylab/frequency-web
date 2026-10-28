@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1713",
+  "title": "Build the Network Theme Kit's first fourteen home blocks with their layout variants (hero, liveness strip, steps, ways in, offerings, programs, meetups, membership, proof, shop, library, letter, questions, closing call)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "docs/DESIGN-SYSTEM-INTAKE.md",
+    "ref": "Daniel, 2026-10-28: program the new Network design system into the theme system the way Nocturne is. Plan: /mnt/project-files/network-theme/PLAN.html"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/network-kit-home-blocks.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Fails on main (components/page-editor/blocks/network-kit.tsx does not exist) and passes here."
+  },
+  "detail": "Pass 3 of 12 (home blocks, part 1). The design's fourteen base blocks (HomePage.jsx BLOCK_VIEWS) are one registered Puck block each: NetworkKitHero, Live, Steps, Doors, Offerings, Journeys, Gatherings, Membership, Proof, Shop, Library, Letter, FAQ, CTA (components/page-editor/blocks/network-kit.tsx), with the layout variants the design's kits pick between (hero split/full/center/left; steps grid/timeline/strip; doors grid/list/tiles; offerings list/cards/split; programs cards/feature; meetups split/calendar/cards; membership tiers/table/spotlight; proof quote/wall/stats; shop grid/rail; library grid/list; letter band/card; questions split/stack; closing call center/split/band). Skin: components/sites/network-kit-blocks-css.ts, merged into the kit skin, scoped and token-only. Defaults and the Program template: lib/sites/network-kit-home.ts. Wiring is additive: config.tsx (components and a 'Network home sections' category), palette-scope.ts (website surface only), block-meta.ts, templates.ts (NetworkKit Program = the home), menswork-page.ts (NetworkKit* are own blocks, hero first, before the old Network line). The variant prop is named variant, not layout, to avoid the planner's own layout field. Live data: next event, programs, reviews, questions and highlights come from the Space; the cards in the defaults are only the empty state. The letter form posts through the contact lead door (opt-in is the press of Subscribe). Read at /mnt/project-files/network-theme/renders/home1/: default, variants-a, b and c at 1280 and 390, no horizontal overflow at 390. VOICE CHANGES against the design's demo copy (the voice guide wins): dropped the avatar row and '1,200+ members, 300 most Fridays' from the hero; dropped '4.9 from 318 member reviews' and the invented stats (stats are owner-written or the Space's own highlights); dropped the invented testimonials (proof shows live reviews only); replaced 'Your first two visits are free', 'Your seat every week' and the 'Free' claims with plain lines; replaced 'The weekly email', '4,800 readers' and the Thursday success line with 'News from the group, when there is some' and 'Thanks. You are on the list.'; replaced 'We reply in two days' and the FAQ 'within two working days' with 'an organizer will reply'; dropped invented live tiles such as 'This Friday 9:00 AM, 38 going' (tiles read the next event, programs and member count, or show owner text); the hero CTA reads 'See what is on'; prices are blank by default and a block draws no price line without one. DECISIONS: (1) the fourteen base blocks only; the 13 extra Network blocks (featured, venue, calendar, chapters, circles, stats, note, pillars, rooms, podcast, social, merch, contact) are pass 4. (2) The design was not executed, so renders are build-only at 1280 and 390, checked against the design's markup and CSS spec, not side by side. NOT DONE: kit loaders and the profile registry (pass 4); WEBSITE_THEMES_LIVE stays without NetworkKit. Space console: no file under app/(main), app/(public), components/spaces or components/frequency changed and the fence test passes.",
+  "wave": "W7"
+}

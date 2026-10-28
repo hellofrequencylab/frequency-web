@@ -28,7 +28,7 @@ const SITE_THEME_RESOLVERS = /\b(pageSurface|emailSurface|spacePageSiteFaces|spa
 
 /** Site theme skins and their CSS: only the site renderer may import them. */
 const SITE_THEME_MODULES =
-  /from '@\/(components\/sites\/(?:midnight|designer|temple|house|menswork|wildheart|site-look|frequency-page)[\w-]*-css|lib\/theme\/(?:midnight|designer|temple|menswork|wildheart|network|surface|site-faces)(?:-[\w-]+)?)'/
+  /from '@\/(components\/sites\/(?:midnight|designer|temple|network-kit|house|menswork|wildheart|site-look|frequency-page)[\w-]*-css|lib\/theme\/(?:midnight|designer|temple|menswork|wildheart|network|surface|site-faces)(?:-[\w-]+)?)'/
 
 /** Names imported from components/sites/network-css that are more than the block sheet. */
 function networkOverreach(src: string): string[] {

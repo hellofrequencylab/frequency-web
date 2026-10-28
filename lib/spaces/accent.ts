@@ -290,10 +290,12 @@ export interface FrequencyAccentVars {
   '--space-accent-strong': string
 }
 
-// The Frequency button label is ink on the iridescent fill. On an owner's accent the label is whichever
-// of that ink and white reads better, so a yellow keeps dark text (as its website draws it) and a purple
-// gets white.
+// The Frequency button label is ink on the iridescent fill. On an owner's accent the label is white,
+// except on a near-white accent where it falls back to that ink.
 const FQ_INK = '#1E1B18'
+// Owner ruling 2026-10-28 (Daniel): the label on a solid accent button is WHITE, gold included. Only a
+// near-white fill, where white would vanish, keeps the ink (same floor as readableTextOn).
+const FQ_WHITE_MIN = 1.5
 
 /** The Frequency accent override for a Space's OWN brand accent (never a role default: an un-customized
  *  Space keeps the design's iridescent fill). Null when unset or not a supported value. */
@@ -301,7 +303,7 @@ export function frequencyAccentVars(brandAccent: string | null | undefined): Fre
   const vars = accentVars(brandAccent)
   if (!vars || !brandAccent) return null
   const on = HEX_ACCENT.test(brandAccent)
-    ? contrastRatio(FQ_INK, brandAccent) >= contrastRatio('#ffffff', brandAccent) ? FQ_INK : '#ffffff'
+    ? contrastRatio('#ffffff', brandAccent) >= FQ_WHITE_MIN ? '#ffffff' : FQ_INK
     : vars['--color-text-on-primary']
   return { '--space-accent': vars['--color-primary'], '--space-accent-on': on, '--space-accent-strong': vars['--color-primary-strong'] }
 }

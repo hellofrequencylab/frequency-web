@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1741",
+  "title": "The Designer Theme Kit declares the design system's own token vocabulary, 118 of its 194 token gaps closed",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/theme/designer-kit-tokens.ts",
+    "ref": "Designer Theme Kit build, pass 1"
+  },
+  "detail": "Pass 1. lib/theme/designer-kit-tokens.ts copies, value for value, the handoff's tokens that the scoped Designer block did not declare (gray, accent, amber, info, green and red ramps, 13 profile accents, space, radius, shadow and texture names) and DESIGNER_TOKENS_CSS appends them under [data-house-theme=designer]. Nothing that Alli Rae's saved site reads changes: names that shared site CSS already reads (the --text-*, --th-*, --mn-* and --color-primary families) and names whose repo value differs on purpose (--color-ink, --color-border-strong, the state backgrounds) stay in the baseline until the pass that re-points their readers. Baseline 607 to 489.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "The kit token module exists and holds the ramps.",
+    "cmd": "node scripts/probes/designer-kit-tokens.mjs"
+  },
+  "closed": "2026-10-28"
+}

@@ -15,6 +15,7 @@
 // terracotta-deep on plaster 6.1:1 · plaster on charcoal 10.9:1.
 
 import { HEX_ACCENT, contrastRatio, type AccentVars } from '@/lib/spaces/accent'
+import { DESIGNER_KIT_TOKENS_CSS } from './designer-kit-tokens'
 
 /** The palette, as the design system's tokens/colors.css names it. */
 const DESIGNER_PALETTE = {
@@ -119,7 +120,7 @@ export const DESIGNER_TOKENS_CSS = `
 --motion-fast:var(--dz-dur-fast);--motion-base:var(--dz-dur-base);--motion-slow:var(--dz-dur-slow);--ease-out:var(--dz-ease-out);--ease-in-out:var(--dz-ease);
 --shadow-float:var(--dz-shadow-3);--shadow-menu:var(--dz-shadow-3);
 background:var(--color-canvas);color:var(--color-text);font-family:var(--dz-sans)}
-[data-house-theme="designer"][data-site-corners="subtle"]{--dz-r-1:4px;--dz-r-2:10px;--dz-r-3:16px;--dz-r-section:24px}
+${DESIGNER_KIT_TOKENS_CSS}[data-house-theme="designer"][data-site-corners="subtle"]{--dz-r-1:4px;--dz-r-2:10px;--dz-r-3:16px;--dz-r-section:24px}
 [data-house-theme="designer"][data-site-corners="square"]{--dz-r-1:0px;--dz-r-2:0px;--dz-r-3:0px;--dz-r-section:0px}
 [data-house-theme="designer"][data-site-spacing="balanced"]{--dz-section-y:clamp(64px,7.5vw,104px)}
 [data-house-theme="designer"][data-site-spacing="compact"]{--dz-section-y:clamp(48px,5vw,72px)}

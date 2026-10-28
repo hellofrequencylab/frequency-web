@@ -76,12 +76,14 @@ export function RailYouTab({
   panel: React.ReactNode
 }) {
   const { open, setOpen, ref } = useDock()
+  const descriptionId = useId()
   return (
     <div className="fqm-tab-wrap" ref={ref}>
+      <span id={descriptionId} className="sr-only">{label}</span>
       <div className="fqm-rise" data-open={open ? '' : undefined} id="fqm-you" inert={!open}>
         <div className="fqm-rise-card">{panel}</div>
       </div>
-      <button type="button" className="fqm-tab fqm-tab-you fqm-full" aria-haspopup="true" aria-expanded={open} aria-controls="fqm-you" aria-label={label} onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="fqm-tab fqm-tab-you fqm-full" aria-haspopup="true" aria-expanded={open} aria-controls="fqm-you" aria-describedby={descriptionId} onClick={() => setOpen((o) => !o)}>
         {face}
         {CHEV}
       </button>
@@ -140,13 +142,15 @@ export function RailVaultTab({
       <div className="fqm-tab fqm-tab-split fqm-full">
         {orb}
         <span className="fqm-tab-sep" />
-        <button type="button" className="fqm-vault-btn" aria-expanded={open} aria-controls="fqm-vault" aria-label={label} onClick={() => setOpen((o) => !o)}>
+        <button type="button" className="fqm-vault-btn" aria-expanded={open} aria-controls="fqm-vault" onClick={() => setOpen((o) => !o)}>
+          <span className="sr-only">{label}</span>
           {face}
         </button>
       </div>
       <div className="fqm-tab fqm-tab-split micro fqm-micro">
         {orb}
-        <button type="button" className="fqm-vault-btn" aria-expanded={open} aria-controls="fqm-vault" aria-label={label} data-tip="The Vault" onClick={() => setOpen((o) => !o)}>
+        <button type="button" className="fqm-vault-btn" aria-expanded={open} aria-controls="fqm-vault" data-tip="The Vault" onClick={() => setOpen((o) => !o)}>
+          <span className="sr-only">{label}</span>
           {microFace}
         </button>
       </div>

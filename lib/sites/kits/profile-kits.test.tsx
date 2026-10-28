@@ -10,8 +10,10 @@ import { PROFILE_KIT_INDEX, loadKit } from './registry'
 // Every theme x every profile niche (general, creators, schools, clubs, faith, wellness, markets): one kit each.
 describe('profile kits', () => {
   it('every theme has a kit for every profile, with id <prefix>-<niche>', () => {
-    expect(PROFILE_KIT_INDEX).toHaveLength(MEGA_THEMES.length * MEGA_PROFILE_NICHES.length)
-    for (const niche of MEGA_PROFILE_NICHES) expect(PROFILE_KIT_INDEX.filter((k) => k.niche === niche)).toHaveLength(MEGA_THEMES.length)
+    // The Network Theme Kit (`network-kit`) is registered as a theme first and gets its thirteen kits with the kit registry pass.
+    const withKits = MEGA_THEMES.filter((t) => t.id !== 'network-kit')
+    expect(PROFILE_KIT_INDEX).toHaveLength(withKits.length * MEGA_PROFILE_NICHES.length)
+    for (const niche of MEGA_PROFILE_NICHES) expect(PROFILE_KIT_INDEX.filter((k) => k.niche === niche)).toHaveLength(withKits.length)
     expect(new Set(PROFILE_KIT_INDEX.map((k) => k.id)).size).toBe(PROFILE_KIT_INDEX.length)
   })
 
