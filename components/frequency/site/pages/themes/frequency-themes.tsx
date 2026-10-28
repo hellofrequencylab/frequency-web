@@ -107,17 +107,17 @@ export function FrequencyThemes() {
                       sizes="(max-width: 960px) 50vw, 25vw"
                     />
                     <Image
-                      src="/themes/midnight/shots/general-space.png"
+                      src="/themes/midnight/shots/general-space.jpg"
                       alt="Nocturne Space page"
-                      width={390}
-                      height={540}
+                      width={740}
+                      height={1648}
                       sizes="(max-width: 960px) 25vw, 12vw"
                     />
                     <Image
-                      src="/themes/midnight/shots/general-spot.png"
+                      src="/themes/midnight/shots/general-spot.jpg"
                       alt="Nocturne Spotlight"
-                      width={390}
-                      height={540}
+                      width={740}
+                      height={1648}
                       sizes="(max-width: 960px) 25vw, 12vw"
                     />
                   </div>
