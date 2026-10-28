@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1549",
+  "title": "The Vera launch ships dark behind two switches, with a staged turn-on",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "lib/launch/enabled.ts",
+    "ref": "Vera guided launch system, Phase 8 (VLS-30), pulled forward so every later visible piece lands behind it. AGENTS.md: rollout switches read envFlag, are listed blank in .env.example, with the activation gate in docs/RUNBOOKS.md."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-switch.mjs",
+    "note": "Runs lib/launch/enabled.ts under node: unset switches are off, the doorway never opens while the launch is off, only 1/true/on read as on, and .env.example lists both blank with a RUNBOOKS gate. Behaviour is pinned by lib/launch/enabled.test.ts."
+  },
+  "detail": "Two env switches, read through envFlag in lib/launch/enabled.ts. LAUNCH_SYSTEM_ENABLED runs the launch (the box, the step screens, the reminder cron). LAUNCH_ENTRY_ENABLED opens the public Get a Free Spotlight buttons and does nothing while the first is off. With the first on and the second off only a person with the /launch/start link gets in, which is the staff-only stage. Both are listed blank in .env.example. docs/RUNBOOKS.md 'Vera guided launch' holds the three-stage gate (staff only, new Spaces from the /for doors, the lead button) and the turn-off. Nothing reads the switches yet; the box (VLS-08), the lead button (VLS-05) and the reminder cron (VLS-26) each wire to them in their own PR. No migration.",
+  "wave": "W7"
+}
