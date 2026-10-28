@@ -12,7 +12,7 @@ export interface NocturneKit {
   who: string
   packages: string[]
   blocks: string[]
-  layouts: Record<string, string>
+  layouts: Record<string, string | undefined>
   fonts: { display: string; label: string }
   look: { corners: string; spacing: string; header: string; footer: string }
   hero: { title: string; em: string }

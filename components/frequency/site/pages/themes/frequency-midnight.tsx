@@ -254,7 +254,7 @@ function Pressed({
   ...rest
 }: {
   on: boolean
-  children: React.ReactNode
+  children?: React.ReactNode
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button type="button" aria-pressed={on} {...rest}>
