@@ -45,6 +45,7 @@ animation:fq-drift var(--aura-speed) var(--ease-breath) infinite alternate}
 .fq-iri-text.on-light,.fq-light .fq-iri-text{background-image:var(--iridescent-sweep-deep)}
 @keyframes fq-sweep{to{background-position:220% 0}}
 @media (prefers-reduced-motion:reduce){.fq-iri-text,.fq-iri-btn,.fq-iri-rim::before,.fq-iri-sheen::after,.fq-iridescent{animation:none}}
+@media (prefers-reduced-motion:reduce){.fq-aura,.fq-breathe{animation:none}}
 
 /* In-house icons: <svg class="fq-icon"><use href="assets/icons/frequency-icons.svg#qr"/></svg> + <script src="assets/icons/icons.js"> to inline the sprite */
 .fq-icon{width:24px;height:24px;flex:none;display:inline-block;vertical-align:middle;color:inherit}
