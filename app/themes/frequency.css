@@ -385,11 +385,16 @@
 :root[data-design="frequency"]:not(.dark) {
   --fq-accent: #3A8C99; /* export aqua deep, softened toward seaglass (owner: no harsh blue) */
   --fq-accent-soft: #E4F3F4; /* export accent-soft in sky */
-  /* Text step of the accent (SCAN-1115, owner 2026-10-26): the fill aqua reads 3.4 to 3.9:1 as words. Text only; fills keep --fq-accent. */
-  --color-primary-strong: #26636F; /* token-ok: palette literal, the text step of the accent */
   --color-move-strong: #1F6F64; /* token-ok: palette literal, the text step of the second accent */
   --fq-bg-canvas: #F4F6F7; /* export canvas, cooled */
   --fq-bg-sunken: #E9EEF1; /* export sunken, cooled */
+}
+/* The member layout rebinds aliases on its default skin wrapper. Keep the same
+   daytime text step there; the brighter accent remains a fill, not small text.
+   Stage and explicit night surfaces keep their own high-contrast accent. */
+:root[data-design="frequency"]:not(.dark),
+:root[data-design="frequency"]:not(.dark) [data-skin="default"]:not([data-surface="stage"], [data-surface="stage"] *, [data-time="night"], [data-time="night"] *) {
+  --color-primary-strong: #26636F; /* token-ok: existing daytime accent text step */
 }
 .dark[data-design="frequency"] {
   --fq-accent: var(--fq-x-aqua-neon);

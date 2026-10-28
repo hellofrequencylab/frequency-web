@@ -276,7 +276,7 @@ export function FqHeader({
             })}
           </nav>
           <span className="ap-sp" />
-          <Link href={SEARCH_HREF} className="ap-search" title="Search ⌘K" aria-label="Search">
+          <Link href={SEARCH_HREF} className="ap-search" title="Search ⌘K">
             <FqIcon name="search" />
             <span>Search</span>
             <kbd>⌘K</kbd>
