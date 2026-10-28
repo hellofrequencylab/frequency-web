@@ -369,6 +369,10 @@ test.describe('new member sign-up @journey-write', () => {
     }
     const afterAskFirst = await tag()
     await page.getByRole('button', { name: 'Create a new account' }).click()
+    // The mailbox shows the link before the action's response (and its new verifier cookie) reaches the
+    // browser. A person opens the mail seconds later; the test must wait for the cookie, or it presents the
+    // first flow's verifier and the exchange fails with bad_code_verifier.
+    await expect.poll(tag, { timeout: 60_000, message: 'Create a new account never replaced the stored verifier' }).not.toBe(afterAskFirst)
 
     // Read the newest message in the mailbox and pull the first link that goes through auth. The local
     // Supabase CLI ships Mailpit in current versions and Inbucket in older ones, so try both.

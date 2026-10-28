@@ -24,13 +24,13 @@ export const NETWORK_KIT_LAYOUTS_CSS = `
 .nks-btn--sm{min-height:var(--nk-control-h-sm);padding:0 20px;font-size:15px}
 .nks-btn--secondary{background:transparent;color:var(--color-text);box-shadow:inset 0 0 0 1px var(--color-border-strong)}
 .nks-btn--inverse{background:var(--color-on-ink);color:var(--color-ink)}
-.nks-seal{display:inline-flex;align-items:center;justify-content:center;flex:none;border-radius:32%;background:var(--color-surface);color:var(--color-text);box-shadow:var(--nk-shadow-sm)}
+.nks-seal{display:inline-flex;align-items:center;justify-content:center;flex:none;border-radius:32%;background:var(--color-surface);color:var(--color-text);box-shadow:var(--nk-depth-sm)}
 .nks-badge{display:inline-flex;align-items:center;min-height:28px;padding:0 12px;border-radius:var(--nk-radius-pill);background:var(--color-accent-bg);color:var(--color-accent-strong);font-size:13px;font-weight:500;white-space:nowrap}
 .nks-name{display:flex;align-items:center;gap:12px}
 .nks-name span{font-family:var(--font-display,'Bricolage Grotesque','Outfit',system-ui,sans-serif);font-weight:700;letter-spacing:-.035em;line-height:1}
 .nks-name--media span{color:var(--color-on-media);text-shadow:0 1px 12px var(--color-scrim)}
 .nks-mark{display:flex;align-items:center;justify-content:center;flex:none;border-radius:999px;background:var(--color-accent);color:var(--color-text-on-accent);box-shadow:0 0 0 3px var(--color-surface),0 0 0 4px var(--color-border)}
-.nks-hero{position:relative;display:flex;align-items:flex-end;overflow:hidden;border-radius:0 0 var(--nk-radius-card) var(--nk-radius-card);box-shadow:var(--nk-shadow-md)}
+.nks-hero{position:relative;display:flex;align-items:flex-end;overflow:hidden;border-radius:0 0 var(--nk-radius-card) var(--nk-radius-card);box-shadow:var(--nk-depth-md)}
 .nks-hero--flat{border-radius:0;box-shadow:none}
 .nks-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .nks-hero::before{content:"";position:absolute;inset:0;z-index:1;background:var(--nk-gradient-media-protect),linear-gradient(180deg,var(--color-scrim),transparent 32%)}
@@ -38,11 +38,11 @@ export const NETWORK_KIT_LAYOUTS_CSS = `
 .nks-hero-body{position:relative;z-index:2;width:100%;padding:0 20px 28px}
 .nks-hero h1{margin-top:14px;font-size:40px;line-height:1.02;color:var(--color-on-media);text-wrap:balance;text-shadow:0 1px 18px var(--color-scrim)}
 .nks-stack-list{display:flex;flex-direction:column;gap:8px;padding:16px 20px 0}
-.nks-door{display:flex;align-items:center;gap:14px;min-height:58px;padding:0 14px;border-radius:var(--nk-radius-card);background:var(--color-surface);box-shadow:var(--nk-shadow-sm)}
+.nks-door{display:flex;align-items:center;gap:14px;min-height:58px;padding:0 14px;border-radius:var(--nk-radius-card);background:var(--color-surface);box-shadow:var(--nk-depth-sm)}
 .nks-door > span:nth-child(2){flex:1;min-width:0}
 .nks-door b{display:block;font-family:var(--font-display,'Bricolage Grotesque','Outfit',system-ui,sans-serif);font-weight:700;font-size:17px;letter-spacing:-.02em;line-height:1.15}
 .nks-door small{display:block;font-size:13px;color:var(--color-text-muted)}
-.nks-letter{border-radius:var(--nk-radius-card);background:var(--color-surface);padding:18px;box-shadow:var(--nk-shadow-sm)}
+.nks-letter{border-radius:var(--nk-radius-card);background:var(--color-surface);padding:18px;box-shadow:var(--nk-depth-sm)}
 .nks-letter form{display:flex;gap:10px;align-items:flex-end;margin-top:12px}
 .nks-input{flex:1;min-width:0;min-height:var(--nk-control-h-sm);padding:0 18px;border:0;border-radius:var(--nk-radius-field);background:var(--color-surface);color:var(--color-text);font:400 16px var(--font-sans,'Outfit',system-ui,sans-serif);box-shadow:inset 0 0 0 1px var(--color-border);outline:none}
 .nks-foot{padding:22px 20px 24px;text-align:center}
@@ -53,7 +53,7 @@ export const NETWORK_KIT_LAYOUTS_CSS = `
 .nks-foot small{display:block;margin-top:12px;font-size:13px;color:var(--color-text-subtle)}
 .nks-wall-head{display:flex;flex-direction:column;gap:10px;padding:66px 20px 0}
 .nks-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:16px 20px 0}
-.nks-card{display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:1.34;padding:14px;border-radius:var(--nk-radius-card);background:var(--color-surface);box-shadow:var(--nk-shadow-sm)}
+.nks-card{display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:1.34;padding:14px;border-radius:var(--nk-radius-card);background:var(--color-surface);box-shadow:var(--nk-depth-sm)}
 .nks-card b{display:block;font-family:var(--font-display,'Bricolage Grotesque','Outfit',system-ui,sans-serif);font-weight:700;font-size:18px;letter-spacing:-.025em;line-height:1.1}
 .nks-card small{display:block;margin-top:4px;font-size:13px;color:var(--color-text-muted)}
 .nks-card--wide{grid-column:1/-1;aspect-ratio:2.6/1;background:var(--color-ink);color:var(--color-on-ink);box-shadow:none}
@@ -88,7 +88,7 @@ export const NETWORK_KIT_LAYOUTS_CSS = `
 .nks-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .nks-chip{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:var(--nk-radius-pill);background:var(--color-surface);box-shadow:inset 0 0 0 1px var(--color-border);font-size:12px}
 .nks-chip svg{color:var(--color-accent-strong)}
-.nks-prod{display:flex;flex-direction:column;overflow:hidden;border-radius:var(--nk-radius-card);background:var(--color-surface);box-shadow:var(--nk-shadow-sm)}
+.nks-prod{display:flex;flex-direction:column;overflow:hidden;border-radius:var(--nk-radius-card);background:var(--color-surface);box-shadow:var(--nk-depth-sm)}
 .nks-prod--first{grid-column:1/-1}
 .nks-prod img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
 .nks-prod--first img{aspect-ratio:16/5}
@@ -101,11 +101,11 @@ export const NETWORK_KIT_LAYOUTS_CSS = `
 .nks-gift{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border-radius:var(--nk-radius-card);background:var(--color-accent-bg)}
 .nks-gift b{display:block;margin-top:4px;font-family:var(--font-display,'Bricolage Grotesque','Outfit',system-ui,sans-serif);font-weight:700;font-size:18px;letter-spacing:-.025em;line-height:1.1}
 .nks-profile-head{display:flex;flex-direction:column;align-items:center;gap:14px;padding:70px 20px 0;text-align:center}
-.nks-portrait{width:112px;height:112px;border-radius:50%;overflow:hidden;box-shadow:var(--nk-shadow-sm),0 0 0 4px var(--color-surface),0 0 0 5px var(--color-border)}
+.nks-portrait{width:112px;height:112px;border-radius:50%;overflow:hidden;box-shadow:var(--nk-depth-sm),0 0 0 4px var(--color-surface),0 0 0 5px var(--color-border)}
 .nks-portrait img{width:100%;height:100%;object-fit:cover}
 .nks-profile-name{font-size:28px;line-height:1.05}
 .nks-profile-head p{max-width:300px;font-size:15px;line-height:1.55;color:var(--color-text-muted)}
-.nks-list{margin-top:8px;overflow:hidden;border-radius:var(--nk-radius-card);background:var(--color-surface);box-shadow:var(--nk-shadow-sm)}
+.nks-list{margin-top:8px;overflow:hidden;border-radius:var(--nk-radius-card);background:var(--color-surface);box-shadow:var(--nk-depth-sm)}
 .nks-list a{display:flex;align-items:center;gap:14px;padding:14px 16px}
 .nks-list a + a{border-top:1px solid var(--color-border)}
 .nks-list a svg:first-child{color:var(--color-accent-strong)}

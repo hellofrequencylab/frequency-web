@@ -37,12 +37,15 @@ export interface SpacePlan {
   ownerProfileId: string | null
   createdBy: string | null
   archivedAt: string | null
+  /** The day a Pencil hold lapses (yyyy-mm-dd), or null when the Plan holds nothing. Optional so a
+   *  Plan built before the calendar suite migration still satisfies the type. */
+  holdUntil?: string | null
   createdAt: string
   updatedAt: string
 }
 
 export const PLAN_COLS =
-  'id, space_id, title, stage, notes, links, files, target_kind, playbook_id, owner_profile_id, created_by, archived_at, created_at, updated_at'
+  'id, space_id, title, stage, notes, links, files, target_kind, playbook_id, owner_profile_id, created_by, archived_at, hold_until, created_at, updated_at'
 
 export interface PlanInput {
   title: string
@@ -210,6 +213,29 @@ export function parsePlanInput(input: PlanInput): { data: PlanWrite } | { error:
   }
 }
 
+/**
+ * A hold date the `hold_until` date column takes: a real calendar day written yyyy-mm-dd, or null.
+ * `2027-02-30` is not a day and is refused (null), the same as a time or free text; the caller
+ * decides whether null means "clear" or "not valid" (see `parseHoldUntilInput`). Pure.
+ */
+export function normalizeHoldUntil(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw.trim())
+  if (!m) return null
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const t = new Date(Date.UTC(y, mo - 1, d))
+  if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d) return null
+  return `${m[1]}-${m[2]}-${m[3]}`
+}
+
+/** What the hold door takes: a day, or an empty value / null to release the hold. A string that is
+ *  not a day is an error rather than a silent clear. */
+export function parseHoldUntilInput(raw: unknown): { holdUntil: string | null } | { error: string } {
+  if (raw === null || raw === undefined || (typeof raw === 'string' && raw.trim() === '')) return { holdUntil: null }
+  const day = normalizeHoldUntil(raw)
+  return day ? { holdUntil: day } : { error: 'Pick a real day for the hold.' }
+}
+
 export type PlanWrite = {
   title: string
   notes: string | null
@@ -233,6 +259,7 @@ export function mapPlanRow(r: {
   owner_profile_id: string | null
   created_by: string | null
   archived_at: string | null
+  hold_until?: string | null
   created_at: string
   updated_at: string
 }): SpacePlan {
@@ -249,6 +276,7 @@ export function mapPlanRow(r: {
     ownerProfileId: r.owner_profile_id,
     createdBy: r.created_by,
     archivedAt: r.archived_at,
+    holdUntil: normalizeHoldUntil(r.hold_until),
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
