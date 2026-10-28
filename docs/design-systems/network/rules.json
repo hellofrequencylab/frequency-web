@@ -1,0 +1,393 @@
+{
+  "theme": "network",
+  "repoThemeId": "network-kit",
+  "note": "Every file of the Network design system matches exactly one rule below (first match wins). kind: skip and reference carry a reason; mirror and built require every target to exist; asset also requires identical bytes; tokens are compared value for value against the repo's token block; copy sources must have every sentence present in the rule's targets. `baseline` lists known gaps as kind:key. It can only shrink: a gap that closes must be removed, and a new one fails.",
+  "tokenSources": [
+    "NETWORK_KIT_TOKENS_CSS"
+  ],
+  "tokenMap": [
+    {
+      "from": "--tg-white",
+      "to": "--nk-tg-surface"
+    },
+    {
+      "from": "--tg-",
+      "to": "--nk-tg-"
+    },
+    {
+      "from": "--gray-",
+      "to": "--nk-gray-"
+    },
+    {
+      "from": "--acc",
+      "to": "--nk-acc"
+    },
+    {
+      "from": "--scheme-",
+      "to": "--nk-scheme-"
+    },
+    {
+      "from": "--info-",
+      "to": "--nk-info-"
+    },
+    {
+      "from": "--green-",
+      "to": "--nk-green-"
+    },
+    {
+      "from": "--amber-",
+      "to": "--nk-amber-"
+    },
+    {
+      "from": "--red-",
+      "to": "--nk-red-"
+    },
+    {
+      "from": "--text-xs",
+      "to": "--nk-size-xs"
+    },
+    {
+      "from": "--text-sm",
+      "to": "--nk-size-sm"
+    },
+    {
+      "from": "--text-",
+      "to": "--nk-text-"
+    },
+    {
+      "from": "--space-",
+      "to": "--nk-space-"
+    },
+    {
+      "from": "--weight-",
+      "to": "--nk-weight-"
+    },
+    {
+      "from": "--leading-",
+      "to": "--nk-leading-"
+    },
+    {
+      "from": "--tracking-",
+      "to": "--nk-tracking-"
+    },
+    {
+      "from": "--icon-",
+      "to": "--nk-icon-"
+    },
+    {
+      "from": "--width-",
+      "to": "--nk-width-"
+    },
+    {
+      "from": "--control-",
+      "to": "--nk-control-"
+    },
+    {
+      "from": "--target-",
+      "to": "--nk-target-"
+    },
+    {
+      "from": "--ring-",
+      "to": "--nk-ring-"
+    },
+    {
+      "from": "--glow-",
+      "to": "--nk-glow-"
+    },
+    {
+      "from": "--season-",
+      "to": "--nk-season-"
+    },
+    {
+      "from": "--tex-",
+      "to": "--nk-tex-"
+    },
+    {
+      "from": "--kit-",
+      "to": "--nk-kit-"
+    },
+    {
+      "from": "--th-",
+      "to": "--nk-th-"
+    },
+    {
+      "from": "--site-",
+      "to": "--nk-site-"
+    },
+    {
+      "from": "--display-",
+      "to": "--nk-display-"
+    },
+    {
+      "from": "--on-ink-",
+      "to": "--nk-on-ink-"
+    },
+    {
+      "from": "--measure",
+      "to": "--nk-measure"
+    },
+    {
+      "from": "--mist-",
+      "to": "--nk-mist-"
+    },
+    {
+      "from": "--shadow-",
+      "to": "--nk-shadow-"
+    },
+    {
+      "from": "--motion-",
+      "to": "--nk-motion-"
+    },
+    {
+      "from": "--ease-",
+      "to": "--nk-ease-"
+    },
+    {
+      "from": "--radius-",
+      "to": "--nk-radius-"
+    },
+    {
+      "from": "--gradient-",
+      "to": "--nk-gradient-"
+    }
+  ],
+  "tokenDeviations": [
+    {
+      "name": "--gray-500",
+      "reason": "Subtle text darkened one step in every scheme so it reads 4.5:1 or more on the card tint and its pressed step (the design measures 4.12 to 4.48:1, Coral 4.34, Ocean 4.39, Lagoon 4.35). Marigold #676E73 -> #61676C."
+    },
+    {
+      "name": "--tg-subtle",
+      "reason": "Subtle text darkened one step in every scheme so it reads 4.5:1 or more on the card tint and its pressed step (the design measures 4.12 to 4.48:1, Coral 4.34, Ocean 4.39, Lagoon 4.35). Marigold #676E73 -> #61676C."
+    },
+    {
+      "name": "--color-text-subtle",
+      "reason": "Subtle text darkened one step in every scheme so it reads 4.5:1 or more on the card tint and its pressed step (the design measures 4.12 to 4.48:1, Coral 4.34, Ocean 4.39, Lagoon 4.35). Marigold #676E73 -> #61676C."
+    },
+    {
+      "name": "--th-muted",
+      "reason": "Subtle text darkened one step in every scheme so it reads 4.5:1 or more on the card tint and its pressed step (the design measures 4.12 to 4.48:1, Coral 4.34, Ocean 4.39, Lagoon 4.35). Marigold #676E73 -> #61676C."
+    }
+  ],
+  "skipFontAliases": true,
+  "rules": [
+    {
+      "glob": ".thumbnail",
+      "kind": "skip",
+      "reason": "Claude Design's project thumbnail."
+    },
+    {
+      "glob": "thumbnail.html",
+      "kind": "skip",
+      "reason": "Claude Design's project thumbnail."
+    },
+    {
+      "glob": "_ds_bundle.js",
+      "kind": "reference",
+      "reason": "Generated bundle of the prototype components; never edited and never shipped."
+    },
+    {
+      "glob": "styles.css",
+      "kind": "reference",
+      "reason": "Entry file that @imports the token files, which are compared one by one below."
+    },
+    {
+      "glob": "readme.md",
+      "kind": "reference",
+      "reason": "Voice, colour, type and layout rules; they govern the build and are enforced by tokens, copy and the voice guide."
+    },
+    {
+      "glob": "SKILL.md",
+      "kind": "reference",
+      "reason": "Claude Design's skill file for this theme."
+    },
+    {
+      "glob": "HANDOFF.md",
+      "kind": "reference",
+      "reason": "File map and token tables; read in the plan, enforced through the token and copy rules."
+    },
+    {
+      "glob": "CLAUDE-CODE-HANDOFF.md",
+      "kind": "reference",
+      "reason": "Layout rules and block order; followed by the site build passes."
+    },
+    {
+      "glob": "handoff/frequency/README.md",
+      "kind": "reference",
+      "reason": "Install guide; the steps are built by the passes in the plan."
+    },
+    {
+      "glob": "tokens/*.css",
+      "kind": "tokens"
+    },
+    {
+      "glob": "guidelines/*.card.html",
+      "kind": "reference",
+      "reason": "Specimen cards for the design system viewer."
+    },
+    {
+      "glob": "guidelines/card.css",
+      "kind": "reference",
+      "reason": "Styles for the specimen cards."
+    },
+    {
+      "glob": "guidelines/icon-cards.js",
+      "kind": "reference",
+      "reason": "Script for the specimen cards."
+    },
+    {
+      "glob": "assets/images/photo-*.jpg",
+      "kind": "asset",
+      "target": "public/sites/network-kit/photos/{base}"
+    },
+    {
+      "glob": "assets/images/placeholder-*.png",
+      "kind": "asset",
+      "target": "public/sites/network-kit/photos/{base}"
+    },
+    {
+      "glob": "assets/images/README.md",
+      "kind": "reference",
+      "reason": "Notes on the photography; focal points are carried by the site build."
+    },
+    {
+      "glob": "assets/shots/*",
+      "kind": "asset",
+      "target": "public/themes/network-kit/shots/{base}"
+    },
+    {
+      "glob": "assets/frequency-*",
+      "kind": "reference",
+      "reason": "Frequency's own platform marks, not used in tenant sites."
+    },
+    {
+      "glob": "handoff/frequency/theme-contract.default.json",
+      "kind": "built",
+      "target": "lib/sites/editor/theme-contract.json"
+    },
+    {
+      "glob": "handoff/frequency/kits.default.json",
+      "kind": "built",
+      "target": "lib/themes/network-kit-kits.json"
+    },
+    {
+      "glob": "components/**",
+      "kind": "reference",
+      "reason": "Prototype components; the production components are the kit blocks and Frequency's own."
+    },
+    {
+      "glob": "Theme Feature Page.html",
+      "kind": "copy",
+      "targets": [
+        "components/frequency/site/pages/themes",
+        "lib/themes"
+      ]
+    },
+    {
+      "glob": "sales-page.css",
+      "kind": "reference",
+      "reason": "Dark Frequency Stage styling for the sales page; the production page uses the kit components and tokens only."
+    },
+    {
+      "glob": "Web Theme.html",
+      "kind": "reference",
+      "reason": "Index of the thirteen sites; each opens the full site built from ui_kits/site."
+    },
+    {
+      "glob": "Templates.html",
+      "kind": "reference",
+      "reason": "Framed website, Spotlight, Space and email together; the surfaces are built from ui_kits/products."
+    },
+    {
+      "glob": "Spotlight Layouts.html",
+      "kind": "copy",
+      "targets": [
+        "lib/spotlight",
+        "lib/themes",
+        "components/sites"
+      ]
+    },
+    {
+      "glob": "Site Strategy.html",
+      "kind": "reference",
+      "reason": "Strategy document; informs the build, nothing to ship."
+    },
+    {
+      "glob": "ui_kits/site/kits.js",
+      "kind": "built",
+      "target": "lib/themes/network-kit-kits.json"
+    },
+    {
+      "glob": "ui_kits/site/tweaks-panel.jsx",
+      "kind": "reference",
+      "reason": "Generic prototype scaffold the site never loads."
+    },
+    {
+      "glob": "ui_kits/site/Builder.jsx",
+      "kind": "reference",
+      "reason": "Prototype editing drawer; the production editor already exists."
+    },
+    {
+      "glob": "ui_kits/site/*.jsx",
+      "kind": "copy",
+      "targets": [
+        "lib/sites",
+        "components/sites",
+        "components/page-editor/blocks",
+        "lib/themes"
+      ]
+    },
+    {
+      "glob": "ui_kits/site/content.js",
+      "kind": "copy",
+      "targets": [
+        "lib/sites",
+        "components/sites",
+        "components/page-editor/blocks",
+        "lib/themes"
+      ]
+    },
+    {
+      "glob": "ui_kits/site/data.js",
+      "kind": "copy",
+      "targets": [
+        "lib/sites",
+        "components/sites",
+        "components/page-editor/blocks",
+        "lib/themes"
+      ]
+    },
+    {
+      "glob": "ui_kits/products/ios-frame.jsx",
+      "kind": "reference",
+      "reason": "Phone frame for prototypes; the repo uses the DS iPhone frame at 390x844."
+    },
+    {
+      "glob": "ui_kits/products/space-chrome.css",
+      "kind": "built",
+      "target": "app/themes/frequency/space-page.css"
+    },
+    {
+      "glob": "ui_kits/products/*.html",
+      "kind": "copy",
+      "targets": [
+        "lib/themes",
+        "components/sites",
+        "lib/sites",
+        "lib/spotlight",
+        "lib/email-react"
+      ]
+    },
+    {
+      "glob": "ui_kits/products/*.jsx",
+      "kind": "copy",
+      "targets": [
+        "lib/themes",
+        "components/sites",
+        "lib/sites",
+        "lib/spotlight",
+        "lib/email-react"
+      ]
+    }
+  ]
+}

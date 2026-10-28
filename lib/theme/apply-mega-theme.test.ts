@@ -33,7 +33,8 @@ describe('megaThemeSurfaces', () => {
   })
 
   it('reaches the Spotlight for every Mega Theme, and to email', () => {
-    for (const { id } of MEGA_THEMES) expect(megaThemeSurfaces(id).spotlightPreset, id).toBe(id)
+    // The earlier network theme is no longer a Spotlight preset: it is offered nowhere.
+    for (const { id } of MEGA_THEMES) expect(megaThemeSurfaces(id).spotlightPreset, id).toBe(id === 'network' ? null : id)
     const themed = MEGA_THEMES.filter(({ id }) => megaThemeSurfaces(id).email).map(({ id }) => id)
     expect(themed).toEqual(MEGA_THEMES.map(({ id }) => id))
   })

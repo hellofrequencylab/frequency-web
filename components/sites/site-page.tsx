@@ -7,6 +7,7 @@ import { ArrowRight, Radio } from 'lucide-react'
 import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
 import { HOUSE_NAV, SITE_ACCOUNT_SLUG, SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteServesContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { readProfileData } from '@/lib/spaces/profile-data'
+import { isEmptyServicesPage } from '@/lib/sites/empty-services'
 import { readSiteBooking } from '@/lib/sites/site-booking'
 import { SiteBooking } from '@/components/sites/site-booking'
 import { buildHouseContact, buildHouseHome, HouseHome } from '@/components/sites/house-home'
@@ -21,8 +22,12 @@ import { networkScheme } from '@/lib/theme/network'
 import { NETWORK_FONT_CLASS } from '@/components/sites/network-fonts'
 import { TEMPLE_FONT_CLASS } from '@/components/sites/temple-fonts'
 import { TEMPLE_CSS } from '@/components/sites/temple-css'
+import { TEMPLE_KIT_CSS } from '@/components/sites/temple-kit-css'
 import { MIDNIGHT_FONT_CLASS } from '@/components/sites/midnight-fonts'
 import { MIDNIGHT_CSS } from '@/components/sites/midnight-css'
+import { NETWORK_KIT_CSS } from '@/components/sites/network-kit-css'
+import { NETWORK_KIT_FONT_CLASS } from '@/components/sites/network-kit-fonts'
+import { networkKitScheme } from '@/lib/theme/network-kit'
 import { DESIGNER_FONT_CLASS } from '@/components/sites/designer-fonts'
 import { DESIGNER_CSS } from '@/components/sites/designer-css'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
@@ -192,11 +197,16 @@ export async function SitePage({
   // The Network theme (lib/theme/network.ts): light and coastal, one bold color in four schemes. Its faces
   // ride the website root (NETWORK_FONT_CLASS); the scheme follows the owner's accent.
   const netSite = siteStyle.theme === 'network'
+  // The Network Theme Kit (lib/theme/network-kit.ts, code id `network-kit`): paper, card tint and deep ink with one hero
+  // color in four schemes. Its faces ride the website root (NETWORK_KIT_FONT_CLASS); the scheme follows the owner's accent.
+  const networkKitSite = siteStyle.theme === 'network-kit'
   // The Temple theme (lib/theme/temple.ts): a lime-washed house, plaster and umber with one clay color and
   // arched shapes. Its faces ride the website root (TEMPLE_FONT_CLASS); the clay follows the owner's accent.
   const templeSite = siteStyle.theme === 'temple'
   // The Midnight theme (lib/theme/midnight.ts): a house after dark, true black and bone with one violet accent.
   const midnightSite = siteStyle.theme === 'midnight'
+  // The Temple Theme Kit (lib/theme/temple-kit.ts): the same four faces as Temple, its own tokens, skin and blocks.
+  const templeKitSite = siteStyle.theme === 'temple-kit'
   // The Designer theme (lib/theme/designer.ts): limewash and daylight, plaster grounds, charcoal type and one ochre accent.
   const designerSite = siteStyle.theme === 'designer'
   // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
@@ -210,14 +220,18 @@ export async function SitePage({
       ? { theme: 'wildheart' as const, season: seasonOf(new Date()) }
       : netSite
         ? { theme: 'network' as const, season: mensworkSeason(new Date()), scheme: networkScheme(websiteBrand.accent) }
+        : networkKitSite
+          ? { theme: 'network-kit' as const, season: mensworkSeason(new Date()), scheme: networkKitScheme(websiteBrand.accent) }
         : templeSite
           ? { theme: 'temple' as const, season: mensworkSeason(new Date()) }
+          : templeKitSite
+            ? { theme: 'temple-kit' as const, season: mensworkSeason(new Date()) }
           : midnightSite
             ? { theme: 'midnight' as const, season: mensworkSeason(new Date()) }
             : designerSite
               ? { theme: 'designer' as const, season: mensworkSeason(new Date()) }
               : null
-  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : templeSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : undefined
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
   const lookOverrides = siteLookOverrides(render.lookStyle)
   const fullFooter = siteLook(render.lookStyle).footer === 'full'
@@ -235,7 +249,7 @@ export async function SitePage({
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
           <div data-house-theme={skin.theme} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
-            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : templeSite ? TEMPLE_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : MENSWORK_CSS}</style>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
@@ -291,9 +305,12 @@ export async function SitePage({
   // A Menswork site's menu is its pages, the same on every page (the design system's site nav); the house
   // look's Home section anchors stay on Home.
   // A Business Space's SAVED menu (shared with its Space page) wins; otherwise the site's own menu.
-  const links =
+  const menu =
     siteMenuLinks(space, { homeHref, pages, hasContact, booking, origin }, siteBase, model?.nav ?? []) ??
     (skin && pageLinks.length > 0 ? mensworkSiteMenu(homeHref, pages, pageLinks) : [...(model?.nav ?? []), ...pageLinks])
+  // The Temple Kit header marks the page being read (its clay underline); other skins draw their menu as it was.
+  const here = siteHref(siteBase, pageSlug)
+  const links = templeKitSite ? menu.map((l) => (l.href === here ? { ...l, current: true } : l)) : menu
   const headerLogo = siteLogo(space, website ? websiteBrand.logo : space.brandLogoUrl)
 
   // A custom page draws its blocks as the site page sections (components/sites/menswork-page.tsx), with the
@@ -338,6 +355,12 @@ export async function SitePage({
         ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()),
         next: mwLive?.events.find((e) => /circle night/i.test(e.title)) ?? null,
       }
+    : networkKitSite
+      ? (() => {
+          // The kit's announce bar names the Space's next gathering, whatever it is called.
+          const next = mwLive?.events[0] ?? null
+          return { module: next?.title ?? '', theme: null, next }
+        })()
     : midnightSite
       ? (() => {
           // Midnight's top bar names the moon and the Space's next gathering, whatever it is called.
@@ -557,7 +580,7 @@ export async function siteChromeBasics(space: Space, siteBase: string) {
     email: readProfileData(space.preferences).email?.trim() || null,
   }
   const pageLinks = pages
-    .filter((p) => p.slug !== HOME_SLUG)
+    .filter((p) => p.slug !== HOME_SLUG && !hiddenFromMenu(space, p))
     .map((p) => ({ href: siteHref(siteBase, p.slug), label: p.label }))
   if (hasContact) pageLinks.push({ href: siteHref(siteBase, SITE_CONTACT_SLUG), label: 'Contact' })
   return {
@@ -571,6 +594,12 @@ export async function siteChromeBasics(space: Space, siteBase: string) {
     pageLinks,
     tagline: await readTagline(space.id),
   }
+}
+
+/** A page the menu leaves out: the kit's Services page while the Space lists no service (lib/sites/empty-services.ts). */
+function hiddenFromMenu(space: Space, p: { slug: string }): boolean {
+  const doc = 'doc' in p ? (p as { doc: unknown }).doc : readPageDoc(space.preferences, p.slug)
+  return isEmptyServicesPage(p.slug, doc, readProfileData(space.preferences))
 }
 
 /** The Space's features the website can link on the Space page when it has no page of its own for them
@@ -602,7 +631,7 @@ export function siteMenuLinks(
   const catalog: MenuCatalogEntry[] = [
     { key: 'home', label: chrome.pages[0]?.label ?? 'Home', href: chrome.homeHref },
     ...homeNav.map((n) => ({ key: `anchor:${n.anchor}`, label: n.label, href: `${chrome.homeHref === '/' ? '' : chrome.homeHref}#${n.anchor}` })),
-    ...chrome.pages.filter((p) => p.slug !== HOME_SLUG).map((p) => ({ key: `page:${p.slug}`, label: p.label, href: siteHref(siteBase, p.slug) })),
+    ...chrome.pages.filter((p) => p.slug !== HOME_SLUG && !hiddenFromMenu(space, p)).map((p) => ({ key: `page:${p.slug}`, label: p.label, href: siteHref(siteBase, p.slug) })),
     ...(chrome.hasContact ? [{ key: 'feature:contact', label: 'Contact', href: siteHref(siteBase, SITE_CONTACT_SLUG) }] : []),
     ...(chrome.booking.takesBookings ? [{ key: 'feature:book', label: 'Book', href: siteHref(siteBase, SITE_BOOK_SLUG) }] : []),
   ]

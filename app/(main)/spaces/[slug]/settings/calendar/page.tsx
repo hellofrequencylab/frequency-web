@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { openingMonth } from '@/lib/calendar/open-month'
+import { cookies } from 'next/headers'
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -12,7 +12,6 @@ import { countSeries, type SeriesRow } from '@/lib/events/series'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 import { SITE_URL } from '@/lib/site'
 import type { CalendarEvent } from '@/components/events/event-calendar'
-import { StaffCalendar } from './staff-calendar'
 import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
 import { formatEventWhen } from '@/lib/time/zone'
 import { DayNotesField } from './day-notes-field'
@@ -20,7 +19,6 @@ import { SpaceTimeZoneField } from './space-time-zone-field'
 import { SkyMarkersField } from './sky-markers-field'
 import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
 import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers'
-import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
 import { CalendarSyncSoon } from './calendar-sync-soon'
@@ -33,7 +31,11 @@ import { CalendarPlansPanel } from './calendar-plans-panel'
 import { SpaceTodosPanel } from './space-todos-panel'
 import { listTasksWithShared } from '@/lib/calendar/shared-tasks'
 import { dayKeyIn } from '@/lib/calendar/day-grid-nav'
-import { CalendarPlanner, type PlannerUpNext } from '@/components/frequency/admin/calendar-planner'
+import { operatorHorizonWindow } from '@/lib/calendar/month-window'
+import { calendarViewCookieName } from '@/lib/calendar/admin-views'
+import { adaptCalendar } from '@/lib/calendar/planner/adapters'
+import { getSpaceTeam } from '@/lib/spaces/content-data'
+import { CalendarSuite } from '@/components/calendar-suite/calendar-suite'
 import { consoleBack } from '@/lib/spaces/console-back'
 
 // THE SPACE CALENDAR CONSOLE (Events EC2/EC3/EC5, upgraded 2026-07-25). The MANAGEMENT calendar for a
@@ -50,7 +52,7 @@ export default async function SpaceCalendarConsolePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ plan?: string | string[] }>
+  searchParams: Promise<{ plan?: string | string[]; view?: string | string[]; y?: string | string[]; m?: string | string[] }>
 }) {
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const caller = await getCallerProfile()
@@ -68,15 +70,17 @@ export default async function SpaceCalendarConsolePage({
   const featureLocked = !staffViewing && !spaceFunctionAccess(space, 'events', caps.role)
 
   const now = new Date()
-  const initialYear = now.getUTCFullYear()
-  const initialMonth1 = now.getUTCMonth() + 1
+  const { year: initialYear, month1: initialMonth1 } = openingMonth(now, space.timeZone, query)
+  // The month scroll reads the operator horizon (3 months back, 15 forward), so every month the calendar
+  // can scroll to has its rows.
+  const horizon = operatorHorizonWindow(now)
   const nowIso = now.toISOString()
 
   // The team's calendar: every event under this Space, co-hosted events, the private layer and day notes
   // (lib/calendar/admin-calendar.ts, shared with the Admin mode of the public Calendar tab).
   const { events, ownedRows, dayNotes } = featureLocked
     ? { events: [] as CalendarEvent[], ownedRows: [], dayNotes: [] }
-    : await loadAdminCalendar(space.id, { canManage, year: initialYear, month1: initialMonth1, now })
+    : await loadAdminCalendar(space.id, { canManage, year: initialYear, month1: initialMonth1, now, entryWindow: horizon })
 
   // THE SPACE'S OWN ZONE (LIVE-471): what a new Pencil is written in, and what the field below edits.
   // Null when the Space has never said, and only then does the viewer's browser zone decide. It
@@ -87,11 +91,7 @@ export default async function SpaceCalendarConsolePage({
   // rather than at a description of it. Computed server-side over a window wider than the opening
   // month for the reason the public page gives: astronomy-engine is 116 KB minified in the browser
   // build and these markers are 9.3 KB of JSON over 26 months.
-  const settingsSkyWindow = widenDayRange(
-    `${initialYear}-${String(initialMonth1).padStart(2, '0')}-01`,
-    `${initialYear}-${String(initialMonth1).padStart(2, '0')}-28`,
-    13,
-  )
+  const settingsSkyWindow = widenDayRange(horizon.fromDay, horizon.toDay, 1)
   const settingsSky =
     !featureLocked && readSkyMarkersEnabled(space.preferences)
       ? astroMarkersInRange(settingsSkyWindow[0], settingsSkyWindow[1], space.timeZone)
@@ -120,11 +120,8 @@ export default async function SpaceCalendarConsolePage({
   // manager gate the Plans read sits behind, and scoped to this Space's own id.
   const todos = featureLocked || !canManage ? [] : await listTasksWithShared(space.id)
 
-  // "N upcoming events." — GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT).
-  // Recurrence is materialised (ADR-007), so a weekly series is ~9 rows inside the cron's 60-day
-  // horizon and the operator's own console told them they had nine events when they have one. The
-  // fold owns both gates (cancelled + the floor), so this is one call rather than a hand-rolled
-  // filter that could drift from the lists on the same page.
+  // "N upcoming events." — GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT). Recurrence is
+  // materialised (ADR-007), so a weekly series is ~9 rows; the fold owns both gates (cancelled + the floor).
   const upcomingCount = countSeries(ownedRows as SeriesRow[], { upcomingFrom: upcomingEventFloor(now) })
 
   // The deep-management table below the calendar: duplicate / cancel / delete per event.
@@ -141,25 +138,30 @@ export default async function SpaceCalendarConsolePage({
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://')
   const newEventHref = `/events/new?space=${space.id}`
 
-  // THE FREQUENCY PLANNER (components/frequency/admin/calendar-planner.tsx). Under SITE_DESIGN=frequency the
-  // calendar is a full-width planning surface with its own toolbar and side bar; everything below it (the
-  // to-dos, Plans, settings and the manage table) is the same set DAWN shows. Its today is the Space's own
-  // day (America/Los_Angeles when the Space has none), so the server and the browser shade the same days.
-  const planner = !featureLocked
+  // THE CALENDAR (components/calendar-suite/). Its today is the Space's own day (America/Los_Angeles when
+  // the Space has none), so the server and the browser shade the same days.
   const todayKey = dayKeyIn(space.timeZone, now)
-  const upNext: PlannerUpNext[] = planner
-    ? ownedRows
-        .filter((ev) => !ev.is_cancelled && ev.starts_at >= nowIso)
-        .sort((a, b) => (a.starts_at < b.starts_at ? -1 : a.starts_at > b.starts_at ? 1 : 0))
-        .slice(0, 5)
-        .map((ev) => ({
-          id: ev.id,
-          title: ev.title,
-          whenLabel: formatEventWhen(ev.starts_at, ev.time_zone, { style: 'dayTime' }),
-          href: canManage ? `/events/${ev.slug}/manage?section=settings` : `/events/${ev.slug}`,
-          isDraft: ev.status === 'draft',
-        }))
-    : []
+  const openYm = `${initialYear}-${String(initialMonth1).padStart(2, '0')}`
+  const ymOf = (day: string) => day.slice(0, 7)
+  const jar = await cookies()
+  const asked = Array.isArray(query.view) ? query.view[0] : query.view
+  const initialView = asked ?? jar.get(calendarViewCookieName(slug))?.value ?? null
+  const zoneLabel = (() => {
+    try {
+      return (
+        new Intl.DateTimeFormat('en-US', { timeZone: space.timeZone || 'America/Los_Angeles', timeZoneName: 'long' })
+          .formatToParts(now)
+          .find((p) => p.type === 'timeZoneName')?.value ?? 'Local time'
+      )
+    } catch {
+      return 'Local time'
+    }
+  })()
+  const adapted = featureLocked
+    ? null
+    : adaptCalendar({ ownSpaceId: space.id, events, plans, todos: canManage ? todos : [], incoming: incomingShares, sharedPlans })
+  const team = featureLocked ? [] : await getSpaceTeam(space.id)
+  const teamForSuite = team.map((m) => ({ id: m.profileId, name: m.name, avatarUrl: m.avatarUrl }))
 
   return (
     <ConsoleFocusTemplate
@@ -168,7 +170,8 @@ export default async function SpaceCalendarConsolePage({
       title="Calendar"
       description="Run your space's calendar. Your public events, plus private entries and unavailable time only your team can see."
       width={featureLocked ? undefined : 'wide'}
-      consoleMeasure={planner ? 'full' : 'focus'}
+      consoleMeasure={featureLocked ? 'focus' : 'full'}
+      headless={!featureLocked}
     >
       {featureLocked ? (
         <FeatureLockedNotice
@@ -181,71 +184,30 @@ export default async function SpaceCalendarConsolePage({
         />
       ) : (
         <div className="space-y-4">
-          {planner ? (
-            <CalendarPlanner
+          {adapted ? (
+            <CalendarSuite
               slug={space.slug}
               spaceId={space.id}
               brandName={brandName}
-              events={events}
-              initialYear={initialYear}
-              initialMonth1={initialMonth1}
               todayKey={todayKey}
-              canEdit={canManage}
-              spaceTimeZone={spaceTimeZone}
+              openYm={openYm}
+              minYm={ymOf(horizon.fromDay)}
+              maxYm={ymOf(horizon.toDay)}
+              zoneLabel={zoneLabel}
+              data={adapted}
+              team={teamForSuite}
               dayNotes={dayNotes}
-              skyMarkers={settingsSky}
-              plans={plans}
-              pencilByPlan={pencilByPlan}
-              upNext={upNext}
-              todos={canManage ? todos : []}
+              sky={settingsSky}
+              initialView={initialView}
+              initialPlanId={Array.isArray(query.plan) ? query.plan[0] : query.plan}
               upcomingCount={upcomingCount}
               newEventHref={newEventHref}
               httpsUrl={httpsUrl}
               webcalUrl={webcalUrl}
             />
-          ) : (
-          <>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-body-sm text-muted">
-              {upcomingCount > 0
-                ? `${upcomingCount} upcoming event${upcomingCount === 1 ? '' : 's'}.`
-                : 'No upcoming events yet. Create your first one.'}
-            </p>
-            <div className="flex items-center gap-2">
-              <CalendarSubscribeMenu
-                httpsUrl={httpsUrl}
-                webcalUrl={webcalUrl}
-                title={`${brandName} in your calendar`}
-                description={`Subscribe once and ${brandName}'s events show up in Google or Apple Calendar, and stay current on their own.`}
-              />
-              <Link
-                href={newEventHref}
-                className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-              >
-                <Plus className="h-4 w-4" aria-hidden /> New event
-              </Link>
-            </div>
-          </div>
+          ) : null}
 
-          {/* Pending co-host requests (renders nothing when the inbox is empty). */}
           <EventShareApprovals spaceId={space.id} />
-
-          <StaffCalendar
-            slug={space.slug}
-            spaceId={space.id}
-            events={events}
-            initialYear={initialYear}
-            initialMonth1={initialMonth1}
-            canEdit={canManage}
-            spaceTimeZone={spaceTimeZone}
-            dayNotes={dayNotes}
-            skyMarkers={settingsSky}
-            plans={plans}
-          />
-          </>
-          )}
-
-          {planner && <EventShareApprovals spaceId={space.id} />}
 
           <div id="calendar-settings" className="space-y-4">
           <SpaceTimeZoneField slug={space.slug} timeZone={spaceTimeZone} canEdit={canManage} />
@@ -268,7 +230,11 @@ export default async function SpaceCalendarConsolePage({
             </div>
           )}
 
-          {canManage && <SharedPlansPanel slug={space.slug} incoming={incomingShares} sharedPlans={sharedPlans} />}
+          {canManage && (
+            <div id="calendar-shared-plans">
+              <SharedPlansPanel slug={space.slug} incoming={incomingShares} sharedPlans={sharedPlans} />
+            </div>
+          )}
 
           {canManage && (
             <div id="calendar-plans">

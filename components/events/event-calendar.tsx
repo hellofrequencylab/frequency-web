@@ -214,6 +214,7 @@ export function EventCalendar({
   eventOrigin = '',
   initialYear,
   initialMonth1,
+  monthPinned = false,
   initialView = 'grid',
   onSelectEvent,
   repeats,
@@ -249,6 +250,9 @@ export function EventCalendar({
   eventOrigin?: string
   initialYear: number
   initialMonth1: number
+  /** The link named this month (`?y=&m=`), so the browser must not move it to the viewer's current
+   *  month. Absent, the grid opens on the viewer's current month (lib/calendar/open-month.ts). */
+  monthPinned?: boolean
   /** Which view opens first: the month grid (default) or the list. */
   initialView?: 'grid' | 'list'
   /** The series behind the Repeats strip (LIVE-081). Scope today is /events/calendar. */
@@ -446,12 +450,10 @@ export function EventCalendar({
   }, [refreshKey])
 
   useEffect(() => {
-    // The server cannot know the browser's calendar day. Only correct the initial
-    // viewport when it was derived from the current UTC month and the viewer's
-    // local month differs (the few hours around a month boundary).
-    const now = new Date()
-    if (initialYear !== now.getUTCFullYear() || initialMonth1 !== now.getUTCMonth() + 1) return
-    const local = localToday()
+    // The server cannot know the browser's calendar day, and a tab can sit open past the end of
+    // the month it rendered. Unless the link named the month, open on the viewer's current one.
+    if (monthPinned) return
+    const local = todayKey ?? localToday()
     const localYear = Number(local.slice(0, 4))
     const localMonth1 = Number(local.slice(5, 7))
     if (!localYear || !localMonth1 || (localYear === initialYear && localMonth1 === initialMonth1)) return
@@ -461,7 +463,7 @@ export function EventCalendar({
       setJumpYear(localYear)
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [initialYear, initialMonth1, onMonthChange])
+  }, [initialYear, initialMonth1, onMonthChange, monthPinned, todayKey])
 
   // THE MOUNT IS WHAT ENDS A REQUEST, NOT THE MONTH (LIVE-528, a deliberate behaviour change).
   // The loader used to live in an effect keyed on the shown month, so its cleanup ran on every step

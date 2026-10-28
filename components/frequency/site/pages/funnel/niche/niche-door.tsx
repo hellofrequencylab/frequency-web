@@ -10,6 +10,7 @@
 // Server component. The motion lives in five small client islands next to this file (hero card, galaxy,
 // tool tabs, loop ring, guide form) and the pill; the kit's FX layer supplies the [data-px] parallax and the
 // `.pop` reveals. Under DAWN this file is never rendered (app/for/[niche]/page.tsx picks the body).
+import { FreeSpotlightButton } from '@/components/marketing/free-spotlight-button'
 import Image from 'next/image'
 import Link from 'next/link'
 import { SitePage } from '@/components/frequency/site/shell/site-page'
@@ -208,6 +209,7 @@ export function NicheDoor({ config, week }: { config: FunnelConfig; week: readon
               <a className="nk-quiet" href="#kit">
                 {FUNNEL_SECONDARY_LABEL}
               </a>
+              <FreeSpotlightButton surface="door" detail={config.slug} />
             </div>
             <p className="nk-micro">
               <span>{hero.microcopy}</span>

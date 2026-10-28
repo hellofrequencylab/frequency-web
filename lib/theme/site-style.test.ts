@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readSitePageStyle, readSiteStyle, siteLook, siteLookOverrides, siteTheme, spacePageDefaultAccent, spacePageFonts, spacePageSiteFaces, withSitePageTheme, withSiteStyle, SITE_THEMES, THEME_LOOK } from './site-style'
+import { readSitePageStyle, readSiteStyle, siteLook, siteLookOverrides, siteTheme, spacePageDefaultAccent, spacePageFonts, spacePageSiteFaces, withSitePageTheme, withSiteStyle, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK } from './site-style'
 import { MENSWORK_PALETTE } from './menswork'
 import { WILDHEART_PALETTE } from './wildheart'
 
@@ -38,16 +38,19 @@ describe('the site style', () => {
     expect(prefs.siteStyle).toEqual({ theme: 'frequency', synced: true, spaceFonts: 'classic' })
   })
 
-  it('names the seven themes Default, Bold, Wildheart, Network, Temple, Nocturne and Designer, each with its own default fonts', () => {
+  it('offers the seven themes Default, Bold, Wildheart, Network, Temple, Nocturne and Designer, each with its own default fonts', () => {
     expect(SITE_THEMES.map((t) => [t.id, t.label, t.defaultFonts])).toEqual([
       ['frequency', 'Default', 'frequency'],
       ['bold', 'Bold', 'menswork'],
       ['wildheart', 'Wildheart', 'classic'],
-      ['network', 'Network', 'modern'],
+      ['network-kit', 'Network', 'modern'],
       ['temple', 'Temple', 'classic'],
       ['midnight', 'Nocturne', 'classic'],
       ['designer', 'Designer', 'classic'],
     ])
+    // The earlier network theme is worn by live sites but offered nowhere; it still resolves and renders.
+    expect(SITE_THEMES.some((t) => t.id === 'network')).toBe(false)
+    expect(SITE_THEME_DEFS.find((t) => t.id === 'network')).toMatchObject({ label: 'Network', defaultFonts: 'modern' })
     // A stock theme: no stored value from before it existed reads as Wildheart.
     expect(readSiteStyle({ theme: 'classic' }).theme).toBe('frequency')
     expect(readSiteStyle({ siteStyle: { theme: 'wildheart' } })).toMatchObject({ theme: 'wildheart', fonts: 'frequency' })

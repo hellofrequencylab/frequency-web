@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { openingMonth } from '@/lib/calendar/open-month'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
@@ -30,7 +31,7 @@ export default async function CollectiveNetworkPage({ params }: { params: Promis
   if (!parent || !collectiveNetworkOpen(parent)) notFound()
   const name = parent.brandName?.trim() || parent.name
   const now = new Date()
-  const year = now.getUTCFullYear(), month1 = now.getUTCMonth() + 1
+  const { year, month1 } = openingMonth(now)
   const window = monthGridWindow(year, month1)
   const [members, events, hero] = await Promise.all([
     listPublicCollectiveMembers(parent), loadCollectiveNetworkWindow(parent, name, window.fromDay, window.toDay),

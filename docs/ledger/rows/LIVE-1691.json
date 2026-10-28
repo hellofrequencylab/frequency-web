@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1691",
+  "title": "A solid accent button on a Space page reads white, gold included",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": { "file": "lib/spaces/accent.ts", "ref": "owner 2026-10-28" },
+  "detail": "Owner ruling 2026-10-28 (words: flip the accent button label to white). frequencyAccentVars now returns white for --space-accent-on on every picked accent except a near-white fill (under 1.5 to 1 against white), which keeps the ink. Alli Rae gold buttons were dark. The pastel member-action pill is untouched. White on a light gold is below AA, accepted by the owner as with ADR-1031.",
+  "closed": "2026-10-28",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "accent-frequency test pins yellow white and near-white ink.",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/spaces/accent.ts\",\"utf8\");if(!/FQ_WHITE_MIN/.test(s)){console.error(\"accent label is not white-first\");process.exit(1)}'"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1552",
+  "title": "The launch box sits in the members header: open, minimize, and stop in two steps",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "components/frequency/members/shell/launch-box.tsx",
+    "ref": "Vera guided launch system, VLS-08 (with the store and actions VLS-01 was holding for a first consumer). Theme fence: the box lives in the member shell and wears only the member kit."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-box.mjs",
+    "note": "Runs lib/launch/box-state.ts under node and reads the box source: the header mounts the box, the shell loads it only while LAUNCH_SYSTEM_ENABLED is on, there is no dismiss control, the typed-word form only shows after the stop request, and the box CSS holds no raw colour. Behaviour is pinned by lib/launch/box-state.test.ts and launch-box.test.tsx."
+  },
+  "detail": "A pill left of the avatar (ring, count, the words Your launch; the ring alone on phones or once minimized) opens the Bell's kind of sheet: the nine steps by stage with done, skipped and now marked, a Keep going button, Minimize, and Stop my launch. Stopping is the button, then the typed word STOP inside 15 minutes; one click never ends a launch. Minimized and the stop request are saved on the launch row, so both survive navigation and reload. Data is one server read in the members shell (lib/launch/box.ts), null when the switch is off, nobody is signed in, there is no launch or the read fails; the client island gets a plain view. The store and actions (lib/launch/store.ts, actions.ts) arrive with it as their first consumer. Keep going links to /launch/resume, which lands with VLS-10, so the system stays switched off until then. Side-by-side renders at 1280 and 390 are in the project folder vera-launch/box-renders; they draw the real component markup with the real member kit CSS in a header skeleton, not the full app. Not done here: the playwright probe on /feed and /events, which needs a signed-in launch to exist (VLS-05 onward).",
+  "wave": "W7"
+}

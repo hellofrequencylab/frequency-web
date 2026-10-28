@@ -135,6 +135,7 @@ export function StaffCalendar({
   events,
   initialYear,
   initialMonth1,
+  monthPinned,
   canEdit,
   spaceTimeZone = null,
   dayNotes,
@@ -168,6 +169,7 @@ export function StaffCalendar({
   events: CalendarEvent[]
   initialYear: number
   initialMonth1: number
+  monthPinned?: boolean
   /** False for a platform staff preview: the calendar is read-only. */
   canEdit: boolean
   /** The Space's own zone (spaces.time_zone, LIVE-471): what a new date is written in. Null when
@@ -563,6 +565,7 @@ export function StaffCalendar({
         skyMarkers={skyMarkers}
         initialYear={initialYear}
         initialMonth1={initialMonth1}
+        monthPinned={monthPinned}
         loadMonth={loadMonth}
         wheelPaging={wheelPaging}
         swipePaging={wheelPaging}
