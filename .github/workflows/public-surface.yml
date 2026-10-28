@@ -1,0 +1,55 @@
+# Anonymous public-surface probe (LIVE-1595). Dispatch-only, read-only GETs, no secrets.
+# Runs test/e2e/public-surface.spec.ts against a live URL and prints the pass/fail list in the
+# job summary. The cron-auth check stays off unless `probe_cron` is set (a route that wrongly
+# accepted the call would run that cron in production).
+name: public-surface
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Platform origin (use the apex, not www)
+        default: https://frequencylocal.com
+      site_urls:
+        description: Comma-separated Space site origins
+        default: https://house-of-fates.frequencylocal.com,https://alliraebuilddesign.frequencylocal.com,https://royaltemple.frequencylocal.com
+      probe_cron:
+        description: Also check cron routes reject an anonymous call (1 to enable)
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Probe
+        env:
+          PW_BASE_URL: ${{ inputs.base_url }}
+          PW_SITE_URLS: ${{ inputs.site_urls }}
+          PW_PROBE_CRON: ${{ inputs.probe_cron }}
+        run: |
+          set +e
+          pnpm exec playwright test public-surface --reporter=json > "$RUNNER_TEMP/r.json"
+          code=$?
+          node -e "
+            const r=JSON.parse(require('fs').readFileSync(process.env.RUNNER_TEMP+'/r.json','utf8'));
+            const rows=[];
+            const walk=(s)=>{(s.specs||[]).forEach(sp=>sp.tests.forEach(t=>{const x=t.results.at(-1)||{};rows.push([t.status,sp.title,(x.error&&x.error.message||'').split('\n')[0].slice(0,300)])}));(s.suites||[]).forEach(walk)};
+            r.suites.forEach(walk);
+            let o='## public-surface\n| result | test | first error |\n|---|---|---|\n';
+            for(const [s,t,e] of rows) o+='| '+s+' | '+t.replace(/\|/g,'/')+' | '+e.replace(/\|/g,'/')+' |\n';
+            require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY,o);console.log(o)
+          "
+          exit $code

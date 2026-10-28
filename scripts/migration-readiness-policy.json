@@ -120,6 +120,84 @@
           "reason": "Explicit reviewed one-time historical-stamp ordering exception for the frozen atomic manual room RPC foundation. Its registered transaction matches the reviewed proposal; full fresh replay and exact-head authenticated local API acceptance plus cleanup are mandatory before any pending-apply verdict."
         }
       ]
+    },
+    {
+      "pullRequest": 4198,
+      "expiresAt": "2026-10-31T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346026000_vera_launch.sql",
+          "sha256": "c3a10006ddcd50d3e015d4b0e87c9312ea89ff6b8f109fa8d4533dd5d9dc6c1e"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": ".github/workflows/db-tests.yml",
+          "status": "modified",
+          "sha256": "2dd5bb303a57ec05f9f26fd17a4587368a9cf514d4c9035e1fea2a4cb8c1e6f3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-1550.json",
+          "status": "added",
+          "sha256": "f59c8bb4d8e0dec80612d7333a9dc722024536ec87e1e376ab981d7b3e7458ff",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/launch-tables.mjs",
+          "status": "added",
+          "sha256": "b50a0d0982edd01cd76f0c74fd85db91acd6e20699a3fe91d1c5dea9b7488bca",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "55875d492581c7609b1665cda6ecdc47b8953262eb9e64bde06e92f905d4722d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/launch-api.mjs",
+          "status": "added",
+          "sha256": "423640e6838ba5368a274695cb4b0268e698df479a6e03956734511ac7a32ff1",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "2eff1c74a4ce332bd3ab93e66a7119c2f4b10e222722ef811d03cc9794ea3b82",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346026000_vera_launch.sql",
+          "status": "added",
+          "sha256": "c3a10006ddcd50d3e015d4b0e87c9312ea89ff6b8f109fa8d4533dd5d9dc6c1e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/vera_launch.test.sql",
+          "status": "added",
+          "sha256": "dc08fae4d09c28f20bfc9afe4b60dfafbb7414696612d666952087fce9156d9d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "2dd5bb303a57ec05f9f26fd17a4587368a9cf514d4c9035e1fea2a4cb8c1e6f3",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }

@@ -6,7 +6,7 @@ import { getFunnelConfig, funnelSlugs } from '@/lib/marketing/funnel-config'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 import { FrequencyForIndex } from '@/components/frequency/site/pages/funnel/frequency-for-index'
 
-// The index of the six operator doors, so /for is a real page. It sits in the (marketing) group, so it
+// The index of the operator doors (six core niches and seven profiles), so /for is a real page. It sits in the (marketing) group, so it
 // wears the standard site header and footer (the doors themselves stay chrome-free, ADR-591). A Frequency
 // route, like /networks, and the sitemap lists it.
 export const revalidate = 3600

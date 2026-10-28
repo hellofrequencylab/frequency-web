@@ -40,7 +40,7 @@ export const PICKER_NICHES: readonly PickerNiche[] = [
   { id: 'creators', label: 'Art, music or making', hint: 'Your work, your shows and your list', actions: ['list', 'tickets', 'ask'] },
   { id: 'schools', label: 'A school or program', hint: 'Workshops, courses, camps and training', actions: ['book', 'list', 'ask'] },
   { id: 'clubs', label: 'A club or group', hint: 'Regular meetups and members who pay dues', actions: ['join', 'list', 'ask'] },
-  { id: 'faith', label: 'A faith community', hint: 'Weekly gatherings, small groups and giving', actions: ['join', 'donate', 'list'] },
+  { id: 'faith', label: 'A spiritual community', hint: 'Weekly gatherings, small groups and giving', actions: ['join', 'donate', 'list'] },
   { id: 'wellness', label: 'A spa or retreat center', hint: 'Treatments, packages and retreats', actions: ['book', 'list', 'ask'] },
   { id: 'markets', label: 'A market or festival', hint: 'Market days, vendors and visitors', actions: ['list', 'ask', 'tickets'] },
 ]

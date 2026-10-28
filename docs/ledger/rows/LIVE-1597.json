@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1597",
+  "title": "Add the signed-in journey browser tests",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "test/e2e/journeys.spec.ts",
+    "ref": "Functional QA 2026-10-28: another audit was source and metadata only; no authenticated browser flow was exercised"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/e2e-journeys.mjs",
+    "note": "The journey spec exists with a read-only tier and a write tier that refuses production hosts, the default test:e2e run excludes it, and the dispatch-only workflow boots a local Supabase. Proves the harness is wired, not that every journey is green: the first dispatched run is the reading."
+  },
+  "detail": "test/e2e/journeys.spec.ts walks sign-in landing, the Create a Space Wizard through Your look and the review, Start with this kit from /themes, event and Circle forms, Crew and upgrade pages, Space console pages and CRM pages (@journey, read-only, safe on a preview with the e2e member). The @journey-write tier creates a Space from the Nocturne kit, an event, a Circle join and a Stripe test-mode Crew checkout, and runs only with PW_JOURNEY_WRITES=1 on a non-production host, via .github/workflows/e2e-journeys.yml over a throwaway local Supabase. Findings land in /mnt/project-files/audits/functional-qa-2026-10-28/journeys.md. First dispatched run (2026-10-28, run 40636149173): 3 passed, 8 failed, every failure a wrong assumption in the spec, not an app defect. The Wizard presets a tool setup so Continue is never disabled; /themes/nocturne is the rebuilt page with no Start-with-this-kit links (the generic kit pages carry them); /events/new opens on the Vera doors, not a title field; the form probe matched the hidden sign-out form; the sign-up heading text also sits in the route announcer; cold dev routes overran 60s and ERR_ABORTED on first compile. Spec fixed to match; second dispatch is the next reading. Second run (run 40689690791): 9 passed, 2 failed, 1 flaky. Create a Space needed three tries (a cold dev compile, passes on retry; wait raised to 90s). The sign-up mailbox read assumed Inbucket while the local CLI serves Mailpit (reads both now). The event form's submit waits on its own date and a host scope; the test now sets tomorrow 18:00 and reports the form's own message if it does not create. No app defect found yet.",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}
