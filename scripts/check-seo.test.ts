@@ -129,6 +129,14 @@ describe('check-seo — routes and the sitemap', () => {
     for (const r of routes) expect(r, 'an interpolated path is registry-driven, not hand-written').not.toContain('$')
   })
 
+  it('ignores commented-out literal routes while preserving active sitemap entries', () => {
+    const routes = sitemapLiteralRoutes(`
+      // \`\${SITE_URL}/retired-route\`
+      const entries = [\`\${SITE_URL}/active-route\`]
+    `)
+    expect(routes).toEqual(new Set(['/active-route']))
+  })
+
   it('keeps the allowlist honest — every excluded route carries a real reason', () => {
     for (const [route, reason] of INTENTIONALLY_EXCLUDED) {
       expect(route.startsWith('/'), `${route} must be a path`).toBe(true)

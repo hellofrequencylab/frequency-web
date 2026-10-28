@@ -42,7 +42,7 @@ export type CircleCardData = {
    *  (the /circles index) behaves exactly as it did. */
   access?: CircleAccess | string | null
   /** Which shelf the Circles index puts it on (lib/circles/kind.ts). Absent on Starters. */
-  kind?: 'frequency' | 'community' | 'business'
+  kind?: 'frequency' | 'community' | 'business' | 'space'
   /** Where it meets, for ranking near the viewer. */
   latitude?: number | null
   longitude?: number | null

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1580",
+  "title": "Marker: id named in one commit subject on the narrow Circle PR",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "docs/ledger/rows/LIVE-1572.json",
+    "ref": "Renumber commit on #4211"
+  },
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-28",
+    "evidence": "Nothing to build. A commit on the narrow Circle PR briefly named this id when its row was renumbered, and a branch cannot be rewritten here. The work is LIVE-1572."
+  },
+  "detail": "Exists only so the shipped-ids guard finds a row for the one commit subject that names it. The narrow Circle page work is LIVE-1572.",
+  "wave": "W7"
+}
