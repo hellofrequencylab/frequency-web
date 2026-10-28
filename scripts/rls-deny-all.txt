@@ -157,3 +157,6 @@ meet_taps
 
 # LIVE-1378: encrypted OAuth credentials; only fresh-authorized service broker, never browser roles.
 space_discovery_connections
+
+# LIVE-1550: reminder log; only the reminder cron on the service role writes it.
+launch_email_log

@@ -1,0 +1,11 @@
+{
+  "id": "SCAN-900",
+  "patch": {
+    "source": { "file": "components/frequency/members/circle/circle-shell.tsx" },
+    "verify": { "kind": "cmd", "cmd": "node scripts/probes/circle-own-cover.mjs" }
+  },
+  "append": {
+    "detail": "Superseded 2026-10-28 by LIVE-1625: Daniel ruled the Space header off Circle pages (phrase: rewrite probe SCAN-900). A Circle now draws its own cover and no Space header sits above it, so the one-photo rule holds by construction."
+  },
+  "wave": "W7"
+}

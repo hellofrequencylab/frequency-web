@@ -16,19 +16,20 @@ import './nocturne-feature.css'
 import { NOCTURNE_BLOCKS, NOCTURNE_KITS, NOCTURNE_PACKAGES, NOCTURNE_SWATCHES, type NocturneKit } from '@/lib/themes/nocturne-feature-data'
 
 type Surface = 'site' | 'spacedesk' | 'spotlight' | 'email'
-type Shot = 'site' | 'space' | 'spot' | 'email'
+type Shot = 'site' | 'spacedesk' | 'space' | 'spot' | 'email'
 
 const SAMPLE_SITE = '/themes/nocturne/demo'
 const KIT_BY_ID = Object.fromEntries(NOCTURNE_KITS.map((k) => [k.id, k]))
 const SHOT_DIM: Record<Shot, [number, number]> = {
   site: [924, 540],
-  space: [390, 540],
-  spot: [390, 540],
+  spacedesk: [1440, 866],
+  space: [740, 1648],
+  spot: [740, 1648],
   email: [600, 540],
 }
 const SURFACE_SHOT: Record<Surface, Shot> = {
   site: 'site',
-  spacedesk: 'space',
+  spacedesk: 'spacedesk',
   spotlight: 'spot',
   email: 'email',
 }
@@ -44,7 +45,7 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
 }
 function shotSrc(kit: string, shot: Shot) {
-  return `/themes/midnight/shots/${kit}-${shot}.${shot === 'site' ? 'jpg' : 'png'}`
+  return `/themes/midnight/shots/${kit}-${shot}.${shot === 'email' ? 'png' : 'jpg'}`
 }
 function adoptHref(kit: string) {
   return `/spaces/new?niche=${kit}`
@@ -53,35 +54,56 @@ function pad(n: number) {
   return String(n).padStart(2, '0')
 }
 
-function Shot({ kit, shot, priority = false, sizes }: { kit: NocturneKit; shot: Shot; priority?: boolean; sizes: string }) {
+function Shot({ kit, shot, label, priority = false, sizes }: { kit: NocturneKit; shot: Shot; label: string; priority?: boolean; sizes: string }) {
   const [w, h] = SHOT_DIM[shot]
+  return <Image src={shotSrc(kit.id, shot)} alt={`${kit.name}: ${label}`} width={w} height={h} sizes={sizes} priority={priority} />
+}
+
+/** An iPhone: bezel, status bar with the island, and the home bar around a 370 by 824 screen of the kit (the design system's ios frame). */
+function Phone({ kit, shot, label, tone, priority, sizes }: { kit: NocturneKit; shot: 'spot' | 'space'; label: string; tone: 'dark' | 'light'; priority?: boolean; sizes: string }) {
   return (
-    <Image
-      src={shotSrc(kit.id, shot)}
-      alt={`${kit.name}: ${SURFACE_LABEL[Object.keys(SURFACE_SHOT).find((s) => SURFACE_SHOT[s as Surface] === shot) as Surface]}`}
-      width={w}
-      height={h}
-      sizes={sizes}
-      priority={priority}
-    />
+    <span className="nf-ios" data-tone={tone}>
+      <span className="nf-ios-scr">
+        <Shot kit={kit} shot={shot} label={label} priority={priority} sizes={sizes} />
+        <span className="nf-sb" aria-hidden="true">
+          <span>9:41</span>
+          <span className="nf-isl" />
+          <span className="nf-sbi">
+            <i />
+            <i />
+            <i />
+          </span>
+        </span>
+        <span className="nf-hi" aria-hidden="true" />
+      </span>
+    </span>
   )
 }
 
 /** One device frame around a kit screenshot. */
 function Device({ kit, surface, priority, sizes }: { kit: NocturneKit; surface: Surface; priority?: boolean; sizes: string }) {
   const shot = SURFACE_SHOT[surface]
+  const label = SURFACE_LABEL[surface]
+  if (shot === 'spot') {
+    return (
+      <div className="nf-dv nf-dv-spot">
+        <Phone kit={kit} shot="spot" label={label} tone="dark" priority={priority} sizes={sizes} />
+      </div>
+    )
+  }
+  const browser = shot === 'site' || shot === 'spacedesk'
   return (
     <div className={`nf-dv nf-dv-${shot}`}>
-      {shot === 'site' ? (
+      {browser ? (
         <div className="nf-bar" aria-hidden="true">
           <i />
           <i />
           <i />
-          <u>yourbusiness.com</u>
+          <u>{shot === 'site' ? 'yourbusiness.com' : 'frequency.com/spaces/yourbusiness'}</u>
         </div>
       ) : null}
       <div className="nf-scr">
-        <Shot kit={kit} shot={shot} priority={priority} sizes={sizes} />
+        <Shot kit={kit} shot={shot} label={label} priority={priority} sizes={sizes} />
       </div>
     </div>
   )
@@ -91,6 +113,7 @@ const CASCADE: {
   n: string
   name: string
   surface: Surface
+  tag: string
   body: string
   lives: string
   wears: string
@@ -101,6 +124,7 @@ const CASCADE: {
     n: '01 · Day one',
     name: 'Spotlight',
     surface: 'spotlight',
+    tag: 'Spotlight (Link Page)',
     body: 'Your link-in-bio page. The same hero, doors and featured offer your website opens with.',
     lives: 'Its own Spotlight link',
     wears: 'Nocturne in full',
@@ -111,6 +135,7 @@ const CASCADE: {
     n: '02 · On the network',
     name: 'Space',
     surface: 'spacedesk',
+    tag: 'Space (Profile)',
     body: 'Your page on Frequency, where your town finds you. Frequency keeps its frame; the page wears your fonts, your accent and your offers.',
     lives: 'frequency.com/spaces/yourbusiness',
     wears: 'Frequency, with your fonts and accent',
@@ -121,6 +146,7 @@ const CASCADE: {
     n: '03 · Your own domain',
     name: 'Website',
     surface: 'site',
+    tag: 'Website',
     body: 'Booking, events, programs, membership and a shop as you need them. Built from the same blocks, so nothing is written twice.',
     lives: 'yourbusiness.com',
     wears: 'Nocturne in full',
@@ -131,6 +157,7 @@ const CASCADE: {
     n: '04 · In the inbox',
     name: 'Email',
     surface: 'email',
+    tag: 'Email template',
     body: 'Four templates that wear your mark, face and accent: the weekly note, a welcome, the next few dates and a booking receipt. Dates, offers and names fill in from the same profile.',
     lives: 'Your subscribers’ inbox',
     wears: 'Nocturne, in tables that survive email clients',
@@ -312,11 +339,13 @@ export function FrequencyMidnight() {
             <div className="label">
               <b>Theme</b>Nocturne · by Frequency
             </div>
-            <h1 className="nf-h1">
+            <h1 className="nf-h1 nf-name">Nocturne</h1>
+            <p className="nf-aft">Nocturne - A Frequency Theme</p>
+            <p className="nf-tagline">
               Design it once.
               <br />
               <em className="fq-iri-text">Same theme everywhere.</em>
-            </h1>
+            </p>
             <p className="nf-lead">
               One complete theme for any business that gathers people. Your link in bio, your Space on Frequency, your own website and your emails,
               all reading one profile. Change it once and every surface follows.
@@ -330,6 +359,9 @@ export function FrequencyMidnight() {
               </a>
             </div>
           </div>
+          <div className="nf-hero-shot">
+            <Device kit={kit} surface="site" priority sizes="(max-width: 900px) 92vw, 980px" />
+          </div>
           <div className="nf-cascade">
             {CASCADE.map((c, i) => (
               <Fragment key={c.name}>
@@ -340,11 +372,12 @@ export function FrequencyMidnight() {
                 ) : null}
                 <div className={`nf-cz ${i % 2 ? 'r' : 'l'}`}>
                   <div className="nf-cz-dev">
+                    <span className="nf-dvlab">{c.tag}</span>
                     <Device kit={kit} surface={c.surface} priority={i === 0} sizes="(max-width: 900px) 90vw, 560px" />
                   </div>
                   <div className="nf-cz-tx">
                     <span className="jn">{c.n}</span>
-                    <h3>{c.name}</h3>
+                    <h3>{c.tag}</h3>
                     <p>{c.body}</p>
                     <ul>
                       <li>
@@ -690,9 +723,13 @@ export function FrequencyMidnight() {
                   ] as [string, Surface, string, string][]
                 ).map(([cls, s, label, sub]) => (
                   <button type="button" className={cls} key={s} aria-label={`Preview the ${label.toLowerCase()}`} onClick={() => setPv({ view: s })}>
-                    <span className="fr">
-                      <Shot kit={kit} shot={SURFACE_SHOT[s]} sizes="(max-width: 900px) 45vw, 480px" />
-                    </span>
+                    {s === 'spacedesk' || s === 'spotlight' ? (
+                      <Phone kit={kit} shot={s === 'spotlight' ? 'spot' : 'space'} label={label} tone={s === 'spotlight' ? 'dark' : 'light'} sizes="(max-width: 900px) 45vw, 240px" />
+                    ) : (
+                      <span className="fr">
+                        <Shot kit={kit} shot={SURFACE_SHOT[s]} label={label} sizes="(max-width: 900px) 45vw, 480px" />
+                      </span>
+                    )}
                     <span className="lab">
                       <b>{label}</b>
                       <small>{sub}</small>

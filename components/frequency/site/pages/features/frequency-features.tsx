@@ -7,6 +7,7 @@
 // the shell's FX loop; the closing band is the shell's <KeepGoing>.
 
 import '@/app/themes/active/site-pages-a'
+import '@/app/themes/active/site-pages-b'
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
@@ -140,6 +141,14 @@ export function FrequencyFeatures() {
 
       <HalfSection half={PEOPLE} label="02 For people" />
       <HalfSection half={SPACES} label="03 For spaces" />
+
+      <section className="sec">
+        <div className="wrap">
+          <p className="pb-note">
+            Want every feature as one setup? <Link href={ROUTES.system}>See the whole system</Link>.
+          </p>
+        </div>
+      </section>
 
       <KeepGoing
         title="Ready when you are."
