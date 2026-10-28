@@ -139,9 +139,9 @@ jobs:
 
       # ── Live catalog (production pg_catalog ⇄ rules the migration-text gates cannot see) ────
       #
-      # Same credential path and shape as the ledger parity step. SEC-002: two out-of-band backup
-      # tables carried browser grants (one with RLS off) and passed check:rls and check:grants,
-      # because those replay migrations and the tables were in none. This reads the live catalog:
+      # Same credential path and shape as the ledger parity step. SEC-002/SEC-014: out-of-band
+      # backup tables carried browser grants (some with RLS off) and passed check:rls and
+      # check:grants, because those replay migrations and the tables were in none. This reads the live catalog:
       # RLS off on a public table, and a backup-shaped table granting to anon or authenticated.
       - name: Live catalog
         id: livecatalog
