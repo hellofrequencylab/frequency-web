@@ -6,6 +6,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { isRedirectError } from 'next/dist/client/components/redirect-error'
+import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
+import { nextSpotlightPreferences } from '@/lib/spaces/spotlight'
 import { createSpace, type CreateSpaceInput } from '@/lib/spaces/provision'
 import { getSpaceById, getSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
 import { recordLaunchEvent } from './events'
@@ -51,7 +53,9 @@ export async function publishSpotlightStep(profileId: string, launch: LaunchSnap
   }
 
   const current = space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences) ? (space.preferences as Record<string, unknown>) : {}
-  const { spotlight } = publishedSpotlightPreferences(current, answers)
+  // A Spotlight the person arranged in the editor (a native node document) is not rewritten from here: the launch
+  // only keeps it published, so it never overwrites work it cannot read back.
+  const { spotlight } = hasNativeNodeStorage((current.spotlight as { layout?: unknown } | undefined)?.layout) ? nextSpotlightPreferences(current, { published: true }) : publishedSpotlightPreferences(current, answers)
   if (!(await patchSpacePreferences(space.id, { spotlight }))) return { error: 'We made your Space but could not publish the Spotlight. Try again.' }
 
   revalidatePath(`/spaces/${space.slug}/spotlight`)
