@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1731",
+  "title": "Create a Space gets a framed layout, a step list, a summary and a kit banner",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/spaces/new/create-space-wizard.tsx",
+    "ref": "Daniel, 2026-10-28: the second step of the Nocturne funnel looks bad; redesign Create a Space for signed-in people"
+  },
+  "detail": "The wizard floated as a narrow column under the heading with a decorative wash and orb. It now sits in a card under the page heading, with a numbered step list, a 'Your space' summary card beside it where the column is wide enough (a one-line recap otherwise), full-width goal tiles with a hint, and a banner that says which kit is picked when the visitor arrived from a kit page. SparkShell gains an opt-in bare layout, FocusTemplate a wider width and an adminBar pass-through; every other wizard is unchanged. The Look step now names Nocturne, not Midnight.\n\nSteps 3 to 5 (Name, Look, Start) get their own pass in the next PR.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/create-space-framed.mjs",
+    "note": "Fails on main (standard Spark column, no banner, no summary); passes here."
+  },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}
