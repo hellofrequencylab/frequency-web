@@ -134,7 +134,7 @@ export function squash(s) {
 }
 
 /** Resolve var() chains inside one flat name→value map. Unresolvable references are left as written. */
-export function resolveVars(map) {
+export function resolveVars(map, resolveFallbacks = true) {
   const seen = (name, depth = 0) => {
     const v = map[name]
     if (v === undefined || depth > 12) return undefined
@@ -145,7 +145,7 @@ export function resolveVars(map) {
   const sub = (text, depth) =>
     text.replace(/var\((--[\w-]+)(?:\s*,\s*([^()]*(?:\([^()]*\)[^()]*)*))?\)/g, (all, n, fb) => {
       const r = seen(n, depth + 1)
-      return r ?? (fb === undefined ? all : sub(fb, depth + 1))
+      return r ?? (fb === undefined ? all : resolveFallbacks ? sub(fb, depth + 1) : fb)
     })
   return Object.fromEntries(Object.keys(map).map((k) => [k, seen(k)]))
 }
@@ -222,6 +222,10 @@ export function repoViolations({ rules, inventory, tokens, copy, tokenMap = [], 
   if (repoTokenCss && tokens) {
     const ds = resolveVars(scopeMap(tokens, ':root'))
     const repo = resolveVars(flatDeclarations(repoTokenCss))
+    // The fallback left as written is the older reading: a design value var(--brand, var(--acc)) and a repo value var(--acc)
+    // compare equal there when only the design system declares --acc. Either reading may match.
+    const dsPlain = resolveVars(scopeMap(tokens, ':root'), false)
+    const repoPlain = resolveVars(flatDeclarations(repoTokenCss), false)
     // A deliberate difference (an accessibility fix), named in the rule file with its reason. The token must still be declared.
     const deviations = new Set(tokenDeviations.filter((d) => d.reason).map((d) => d.name))
     for (const [name, value] of Object.entries(ds)) {
@@ -234,7 +238,7 @@ export function repoViolations({ rules, inventory, tokens, copy, tokenMap = [], 
       if (skipFontAliases && /var\(--font-/.test(value)) continue
       const got = repo[mapped] ?? repo[name]
       if (got === undefined) add('token', name, `${mapped} is not declared in the repo token block (design system: ${value})`)
-      else if (normValue(got) !== normValue(value) && !deviations.has(name)) add('token', name, `${mapped} is ${got}, design system says ${value}`)
+      else if (normValue(got) !== normValue(value) && !(repoPlain[mapped] !== undefined && dsPlain[name] !== undefined && normValue(repoPlain[mapped] ?? repoPlain[name]) === normValue(dsPlain[name])) && !deviations.has(name)) add('token', name, `${mapped} is ${got}, design system says ${value}`)
     }
   }
   // Copy: every sentence of every copy-checked source must appear in one of its rule's targets.
