@@ -63,7 +63,7 @@
 // prose, which nothing here does.
 
 /** Where a calendar item came from. `events` is the public layer; the rest are private. */
-export type CalendarLayerKey = 'events' | 'pencil' | 'private' | 'unavailable' | 'todos'
+export type CalendarLayerKey = 'events' | 'pencil' | 'shared' | 'private' | 'unavailable' | 'todos'
 
 interface CalendarLayer {
   key: CalendarLayerKey
@@ -160,7 +160,7 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
   },
   private: {
     key: 'private',
-    chipClass: `border border-border-strong bg-surface text-text ${CHIP_HOVER}`,
+    chipClass: `border border-border bg-surface text-text ${CHIP_HOVER}`,
     word: 'Private',
     shortWord: 'Priv',
     tone: 'broadcast',
@@ -168,7 +168,7 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
   },
   unavailable: {
     key: 'unavailable',
-    chipClass: `border border-border bg-surface-elevated text-text ${CHIP_HOVER}`,
+    chipClass: `bg-surface-elevated text-text ${CHIP_HOVER}`,
     word: 'Unavailable',
     shortWord: 'Unav',
     tone: 'warning',
@@ -187,6 +187,8 @@ export const CALENDAR_PRESENTATIONS: Record<CalendarPresentationKey, CalendarPre
 export const CALENDAR_LAYERS: readonly CalendarLayer[] = [
   { key: 'events', label: 'Events', chipClass: CALENDAR_PRESENTATIONS.event.chipClass, private: false },
   { key: 'pencil', label: 'In the works', chipClass: CALENDAR_PRESENTATIONS.pencil.chipClass, private: true },
+  // Dates another Space hosts or co-hosts with this one. It paints as an Event (the guest-facing word).
+  { key: 'shared', label: 'Shared with Spaces', chipClass: CALENDAR_PRESENTATIONS.event.chipClass, private: false },
   { key: 'private', label: 'Private', chipClass: CALENDAR_PRESENTATIONS.private.chipClass, private: true },
   { key: 'unavailable', label: 'Unavailable', chipClass: CALENDAR_PRESENTATIONS.unavailable.chipClass, private: true },
   { key: 'todos', label: 'To-dos', chipClass: CALENDAR_PRESENTATIONS.todos.chipClass, private: true },
@@ -348,7 +350,7 @@ export function calendarPresentation(
   const staged = entryStage(item.stage)
   if (staged) return CALENDAR_PRESENTATIONS[staged.stage]
   const layer = item.layer ?? 'events'
-  if (layer !== 'events') return CALENDAR_PRESENTATIONS[layer]
+  if (layer !== 'events' && layer !== 'shared') return CALENDAR_PRESENTATIONS[layer]
   if (item.statusLabel === 'Draft') return CALENDAR_PRESENTATIONS.draft
   return audience === 'team' ? CALENDAR_PRESENTATIONS.production : CALENDAR_PRESENTATIONS.event
 }

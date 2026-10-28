@@ -44,6 +44,8 @@ export interface PlannerItem {
   option?: string | null
   series?: boolean
   going?: number
+  /** True for a date another Space hosts and this Space co-hosts, which carries no Plan of this Space's own. */
+  shared?: boolean
 }
 
 export interface PlannerTask {
