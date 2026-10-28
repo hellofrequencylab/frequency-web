@@ -80,8 +80,9 @@ function SpaceCard({ space }: { space: AdminShellSpace }) {
   if (space.switchTo.length === 0) return <div className="ad-space">{body}</div>
   return (
     <details className="ad-switch">
-      <summary className="ad-space" aria-label={`${space.name}, switch console`}>
+      <summary className="ad-space">
         {body}
+        <span className="sr-only">Switch console</span>
         <FqIcon name="chevron" className="ad-switch-caret" />
       </summary>
       <div className="ad-switch-menu">
@@ -164,9 +165,10 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
           <div>
             <header className="ad-top" style={{ viewTransitionName: 'ad-top' }}>
               {/* Phone only (CSS): who this console is, one tap to its home. The wordmark and the switcher are in the sidebar on a wide screen and in the More sheet on a phone. */}
-              <Link href={homeHref} className="ad-top-id" aria-label={`${space.name}, console home`}>
+              <Link href={homeHref} className="ad-top-id">
                 <span className="av" style={bg(space.avatarUrl)} aria-hidden />
                 <span className="grow"><b>{space.name}</b><small>{space.role}</small></span>
+                <span className="sr-only">Console home</span>
               </Link>
               <Suspense fallback={<span className="crumb">{crumbRoot}</span>}>
                 <AdminCrumb root={crumbRoot} items={items} />

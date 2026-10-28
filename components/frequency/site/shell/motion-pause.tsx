@@ -49,7 +49,7 @@ export function MotionPause() {
   }
 
   return (
-    <button type="button" className="ft2-pause" aria-pressed={paused} onClick={toggle}>
+    <button type="button" className="ft2-pause min-h-11 min-w-11" aria-pressed={paused} onClick={toggle}>
       {paused ? 'Play motion' : 'Pause motion'}
     </button>
   )
