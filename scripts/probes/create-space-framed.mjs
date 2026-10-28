@@ -3,7 +3,9 @@
 // renders the standard Spark column or has no kit banner.
 import { readFileSync } from 'node:fs'
 
-const wizard = readFileSync('app/(main)/spaces/new/create-space-wizard.tsx', 'utf8')
+// The wizard and the shared create-flow engine it renders through (LIVE-1733 moved the frame into the engine).
+const wizard =
+  readFileSync('app/(main)/spaces/new/create-space-wizard.tsx', 'utf8') + readFileSync('components/spaces/create-flow/create-flow.tsx', 'utf8')
 const shell = readFileSync('components/studio/spark/spark-shell.tsx', 'utf8')
 const problems = []
 if (!/<SparkShell[\s\S]*?\bbare\b/.test(wizard)) problems.push('wizard does not use the bare Spark layout')

@@ -2,12 +2,10 @@
 
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
-import { SparkShell } from '@/components/studio/spark'
 import { Select } from '@/components/ui/select'
-import { FqIcon, type FqIconName } from '@/components/frequency/icon'
+import { type FqIconName } from '@/components/frequency/icon'
 import { isError } from '@/lib/action-result'
 import { isSafeSlug } from '@/lib/theme/validate'
-import { slugify as slugifyShared } from '@/lib/utils'
 import { createSpace } from '@/lib/spaces/provision'
 import { SPACE_MANIFEST } from '@/lib/studio/entities/space'
 import {
@@ -21,37 +19,17 @@ import {
   suggestModeForIntents,
   type WizardPlan,
 } from '@/lib/spaces/create-wizard'
-import { Field, TextField } from '@/components/spaces/space-form'
+import { Field } from '@/components/spaces/space-form'
+import { CreateFlow, type FlowStep } from '@/components/spaces/create-flow/create-flow'
+import { ChoiceTile } from '@/components/spaces/create-flow/choice-tile'
+import { NameStep, handleFromName, type SpaceVisibility } from '@/components/spaces/create-flow/name-step'
+import { LookStep } from '@/components/spaces/create-flow/look-step'
 import type { MegaNicheId, MegaThemeId } from '@/lib/theme/mega-theme'
 import { SpacePicker, type PickerDone } from './space-picker'
 
 const STEP_LABEL: Record<string, string> = { intents: 'Goals', model: 'Setup', identity: 'Name', look: 'Look', start: 'Start' }
 
-// The SPACE CREATION WIZARD (client). Step-by-step on the Spark kit, like every other seeder
-// (docs/STUDIO.md): What you want to do, Tool setup, Name it, Ready. The steps are read off the Space manifest by
-// lib/spaces/create-wizard.ts, and the last step hands off to the setup walk (/spaces/<slug>/setup),
-// which seeds the story, look, contact details and offerings. The server re-validates everything;
-// this mirrors the checks for fast, inline feedback only.
-//
-// The first step is a MULTI-SELECT of what the owner wants to do, never a niche: it suggests the tool
-// setup and is recorded first-party only (createSpace). The plan is a HINT from /pricing (`?plan=`): a
-// Space is always born free, and a paid hint only decides that the setup walk ends on the Space's billing
-// page (kept as preferences.planIntent).
-
-/** One "what do you run?" choice (mirrors lib/spaces/modes.ts ModeChoice). */
-export interface SpaceModeChoice {
-  id: string
-  type: string
-  variant: string
-  label: string
-  hint: string
-}
-
 const STEPS = withLookStep(createWizardSteps(SPACE_MANIFEST))
-
-function slugify(name: string): string {
-  return slugifyShared(name).slice(0, 40).replace(/-+$/g, '')
-}
 
 /** The icon each pick wears, from the design system's sprite. */
 const INTENT_ICON: Record<string, FqIconName> = {
@@ -63,20 +41,6 @@ const INTENT_ICON: Record<string, FqIconName> = {
   community: 'circle',
   email: 'message',
   donations: 'giveback',
-}
-
-/** The kit's heading lockup: Unbounded, with the last word in Instrument Serif italic. */
-function lockup(title: string) {
-  const i = title.lastIndexOf(' ')
-  if (i < 0) return title
-  const last = title.slice(i + 1).replace(/[?.!]+$/, '')
-  const tail = title.slice(i + 1 + last.length)
-  return (
-    <>
-      {title.slice(0, i)} <span className="serif">{last}</span>
-      {tail}
-    </>
-  )
 }
 
 export function CreateSpaceWizard({
@@ -125,9 +89,9 @@ export function CreateSpaceWizard({
   // "Decide later" on the goals step: no picks, the general setup, switchable any time.
   const [decideLater, setDecideLater] = useState(false)
   const [name, setName] = useState(initialName)
-  const [slug, setSlug] = useState(initialName ? slugify(initialName) : '')
+  const [slug, setSlug] = useState(initialName ? handleFromName(initialName) : '')
   const [slugTouched, setSlugTouched] = useState(false)
-  const [visibility, setVisibility] = useState<'network' | 'private'>('network')
+  const [visibility, setVisibility] = useState<SpaceVisibility>('network')
   const [heardAbout, setHeardAbout] = useState('')
   // A plan hint that arrived already chosen starts past the plan step's question, not past the step.
   const [index, setIndex] = useState(0)
@@ -146,13 +110,10 @@ export function CreateSpaceWizard({
   const labelCounts: Record<string, number> = {}
   for (const c of choices) labelCounts[c.label] = (labelCounts[c.label] ?? 0) + 1
   const choice = choices.find((c) => c.id === activeChoiceId) ?? choices[0]
-  const step = STEPS[index]
-  const slugValid = slug === '' || isSafeSlug(slug)
-  const identityOk = name.trim().length > 0 && isSafeSlug(slug)
 
   function onNameChange(v: string) {
     setName(v)
-    if (!slugTouched) setSlug(slugify(v))
+    if (!slugTouched) setSlug(handleFromName(v))
   }
 
   function submit() {
@@ -179,8 +140,8 @@ export function CreateSpaceWizard({
     })
   }
 
-  const last = index === STEPS.length - 1
-  const nextDisabled = (step.key === 'model' && !choice) || (step.key === 'identity' && !identityOk)
+  const identityOk = name.trim().length > 0 && isSafeSlug(slug)
+  const lookLabel = WIZARD_THEMES.find((t) => t.id === theme)?.label ?? 'Pick later'
 
   if (picking) {
     return (
@@ -195,257 +156,124 @@ export function CreateSpaceWizard({
     )
   }
 
+  const bodies: Record<string, React.ReactNode> = {
+    intents: (
+      <div>
+        <div className="grid gap-3 @xl:grid-cols-2" role="group" aria-label="What you want to do here">
+          {WIZARD_INTENTS.map((i) => {
+            const on = intents.includes(i.id)
+            return (
+              <ChoiceTile
+                key={i.id}
+                on={on}
+                icon={INTENT_ICON[i.id] ?? 'plus'}
+                title={i.label}
+                hint={i.hint}
+                onSelect={() => {
+                  setDecideLater(false)
+                  setIntents(on ? intents.filter((x) => x !== i.id) : [...intents, i.id])
+                }}
+              />
+            )
+          })}
+        </div>
+        <button
+          type="button"
+          aria-pressed={decideLater}
+          className={`mt-4 text-body-sm underline underline-offset-4 ${decideLater ? 'font-semibold text-text' : 'text-muted'}`}
+          onClick={() => {
+            setDecideLater(true)
+            setIntents([])
+          }}
+        >
+          Not sure yet? Decide later
+        </button>
+      </div>
+    ),
+    model: (
+      <div className="grid gap-3 @xl:grid-cols-2" role="group" aria-label="Tool setup">
+        {choices.map((c) => (
+          <ChoiceTile
+            key={c.id}
+            on={activeChoiceId === c.id}
+            title={c.label}
+            hint={c.hint}
+            onSelect={() => {
+              setChoiceTouched(true)
+              setChoiceId(c.id)
+            }}
+          />
+        ))}
+      </div>
+    ),
+    identity: (
+      <NameStep
+        name={name}
+        handle={slug}
+        visibility={visibility}
+        onName={onNameChange}
+        onHandle={(v) => {
+          setSlugTouched(true)
+          setSlug(v)
+        }}
+        onVisibility={setVisibility}
+      />
+    ),
+    look: <LookStep value={theme} arrivedTheme={arrivedTheme} onChange={setTheme} />,
+    start: (
+      <div className="space-y-5">
+        <dl className="divide-y divide-border rounded-2xl border border-border">
+          {[
+            ['Space', name.trim() || 'Not named yet'],
+            ['Handle', `/spaces/${slug}`],
+            ['Goals', intents.length ? WIZARD_INTENTS.filter((i) => intents.includes(i.id)).map((i) => i.label.toLowerCase()).join(', ') : 'Not sure yet, and that is fine'],
+            ['Tool setup', choice ? `${choice.label}: ${choice.hint}` : ''],
+            ['Starting tools', (choice && presetLabels[choice.id]) || 'Every tool on'],
+            ['Look', WIZARD_THEMES.find((t) => t.id === theme)?.label ?? 'Decide later'],
+            ['Plan', plan === 'free' ? 'Free, upgrade any time' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`],
+            ['Visibility', visibility === 'network' ? 'Listed in the Spaces directory' : 'Private'],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between gap-4 px-4 py-2.5">
+              <dt className="k self-center">{k}</dt>
+              <dd className="meta text-right font-medium text-text">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="text-meta text-muted">Next we walk you through your story, your look, how people reach you, and what you offer.</p>
+        {heardAboutOptions.length > 0 && (
+          <Field id="space-heard-about" label="How did you hear about us?" hint="Optional. It helps us find more people like you.">
+            <Select id="space-heard-about" value={heardAbout} onChange={(e) => setHeardAbout(e.target.value)} emptyLabel="Skip" options={heardAboutOptions} />
+          </Field>
+        )}
+      </div>
+    ),
+  }
+
+  const flowSteps: FlowStep[] = STEPS.map((st, i) => ({
+    id: st.key,
+    label: STEP_LABEL[st.key],
+    title: st.title,
+    description: st.desc,
+    body: bodies[st.key],
+    done: i < index,
+    canContinue: !((st.key === 'model' && !choice) || (st.key === 'identity' && !identityOk)),
+    ...(st.key === 'start' ? { nextLabel: 'Create my Space', onNext: submit } : {}),
+  }))
+
   const kitLabel = arrivedTheme ? (WIZARD_THEMES.find((t) => t.id === arrivedTheme)?.label ?? null) : null
   const goalsLine = intents.length ? `${intents.length} ${intents.length === 1 ? 'goal' : 'goals'}` : 'Goals open'
-  const lookLabel = WIZARD_THEMES.find((t) => t.id === theme)?.label ?? 'Pick later'
 
   return (
-    <div className="@container space-y-6">
-      {kitLabel && (
-        <div className="flex items-center gap-3 rounded-2xl border border-border bg-[image:var(--fq-pa-soft)] p-3">
-          <span aria-hidden className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-ink font-display text-body-sm font-bold text-on-ink">
-            {kitLabel.charAt(0)}
-          </span>
-          <p className="min-w-0 flex-1 text-meta text-muted">
-            <strong className="block text-body-sm text-text">{kitLabel} kit is picked</strong>
-            Your website, email and Spotlight start in this look. You can change it on the Look step.
-          </p>
-          <button type="button" className="text-meta font-semibold text-text underline underline-offset-4" onClick={() => setIndex(STEPS.findIndex((x) => x.key === 'look'))}>
-            Change
-          </button>
-        </div>
-      )}
-
-      <ol className="flex flex-wrap gap-2" aria-label="Steps">
-        {STEPS.map((st, i) => {
-          const state = i === index ? 'on' : i < index ? 'done' : 'todo'
-          return (
-            <li
-              key={st.key}
-              aria-current={state === 'on' ? 'step' : undefined}
-              className={`flex h-9 items-center gap-2 rounded-full border px-2.5 text-meta font-semibold sm:px-3.5 ${
-                state === 'on' ? 'border-ink bg-ink text-on-ink' : 'border-border text-muted'
-              }`}
-            >
-              <span
-                aria-hidden
-                className={`grid h-5 w-5 place-items-center rounded-full text-eyebrow ${state === 'todo' ? 'bg-surface-elevated' : 'bg-[image:var(--fq-pa)] text-text'}`}
-              >
-                {i + 1}
-              </span>
-              <span className={state === 'on' ? undefined : 'hidden sm:inline'}>{STEP_LABEL[st.key]}</span>
-            </li>
-          )
-        })}
-      </ol>
-
-      <p className="text-meta text-muted @3xl:hidden">
-        {[goalsLine, choice?.label, lookLabel, plan === 'free' ? 'Free to start' : WIZARD_PLAN_COPY[plan].label].filter(Boolean).join(' · ')}
-      </p>
-
-      <div className="grid items-start gap-6 @3xl:grid-cols-[minmax(0,1fr)_16.5rem]">
-        <div className="card @container p-5 sm:p-7">
-      <SparkShell
-      bare
-      eyebrow="New Space"
-      headingLevel={2}
-      title={lockup(step.title)}
-      description={step.desc}
-      step={index + 1}
-      totalSteps={STEPS.length}
-      stepLabel={STEP_LABEL[step.key]}
-      onBack={index > 0 ? () => setIndex(index - 1) : undefined}
-      onNext={last ? submit : () => setIndex(index + 1)}
-      nextLabel={last ? 'Create my Space' : 'Continue'}
-      nextDisabled={nextDisabled}
+    <CreateFlow
+      steps={flowSteps}
+      index={index}
+      onIndexChange={setIndex}
+      kit={kitLabel ? { label: kitLabel, changeStepId: 'look' } : null}
       busy={pending}
       error={error}
-      draftScopeKey={null}
-    >
-      {/* The kit's `.chip` / `.chip.on` pills (members kit): small, a selected one is solid ink. */}
-      {step.key === 'intents' && (
-        <div>
-          <div className="grid gap-3 @xl:grid-cols-2" role="group" aria-label="What you want to do here">
-            {WIZARD_INTENTS.map((i) => {
-              const on = intents.includes(i.id)
-              return (
-                <button
-                  key={i.id}
-                  type="button"
-                  aria-pressed={on}
-                  className={`flex items-start gap-3 rounded-2xl border p-3.5 text-left transition-colors ${
-                    on ? 'border-ink bg-[image:var(--fq-pa-soft)] ring-1 ring-ink' : 'border-border bg-surface-elevated/50 hover:bg-surface-elevated'
-                  }`}
-                  onClick={() => {
-                    setDecideLater(false)
-                    setIntents(on ? intents.filter((x) => x !== i.id) : [...intents, i.id])
-                  }}
-                >
-                  <span aria-hidden className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-[image:var(--fq-pa-soft)]">
-                    <FqIcon name={INTENT_ICON[i.id] ?? 'plus'} size={18} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-body-sm font-semibold text-text">{i.label}</span>
-                    <span className="block text-meta text-muted">{i.hint}</span>
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          <button
-            type="button"
-            aria-pressed={decideLater}
-            className={`mt-4 text-body-sm underline underline-offset-4 ${decideLater ? 'font-semibold text-text' : 'text-muted'}`}
-            onClick={() => {
-              setDecideLater(true)
-              setIntents([])
-            }}
-          >
-            Not sure yet? Decide later
-          </button>
-        </div>
-      )}
-
-      {step.key === 'model' && (
-        <div className="space-y-3">
-          <div className="chips flex flex-wrap gap-2" role="group" aria-label="Tool setup">
-            {choices.map((c) => {
-              const on = activeChoiceId === c.id
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={on ? 'chip on' : 'chip'}
-                  aria-pressed={on}
-                  onClick={() => {
-                    setChoiceTouched(true)
-                    setChoiceId(c.id)
-                  }}
-                >
-                  {labelCounts[c.label] > 1 ? `${c.label}: ${c.hint}` : c.label}
-                </button>
-              )
-            })}
-          </div>
-          {choice && <p className="why">{choice.hint}</p>}
-        </div>
-      )}
-
-      {step.key === 'identity' && (
-        <div className="space-y-5">
-          <TextField
-            id="name"
-            label="Name"
-            hint="The name people will see across the network."
-            value={name}
-            onChange={onNameChange}
-            placeholder="River Yoga"
-            maxLength={200}
-            required
-          />
-          <div>
-            <TextField
-              id="slug"
-              label="Handle"
-              hint="Your space lives at /spaces/your-handle. Lowercase letters, numbers, and hyphens."
-              value={slug}
-              onChange={(v) => {
-                setSlugTouched(true)
-                setSlug(v.toLowerCase())
-              }}
-              placeholder="river-yoga"
-              maxLength={40}
-            />
-            {!slugValid && <p className="mt-1 text-meta font-medium text-danger">Use lowercase letters, numbers, and hyphens only.</p>}
-          </div>
-          <Field id="visibility" label="Who can find it">
-            <div className="chips flex flex-wrap gap-2" role="group" aria-label="Who can find it">
-              {(
-                [
-                  ['network', 'Listed in the directory', 'globe'],
-                  ['private', 'Private', 'shield'],
-                ] as const
-              ).map(([id, label, icon]) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={visibility === id ? 'chip on' : 'chip'}
-                  aria-pressed={visibility === id}
-                  onClick={() => setVisibility(id)}
-                >
-                  <FqIcon name={icon} size={16} />
-                  {label}
-                </button>
-              ))}
-            </div>
-            <p className="why mt-2">
-              {visibility === 'network'
-                ? 'Anyone can find it in the Spaces directory.'
-                : 'Hidden from the directory. Only you and your members can open it.'}
-            </p>
-          </Field>
-        </div>
-      )}
-
-      {step.key === 'look' && (
-        <div className="space-y-3">
-          <div className="chips flex flex-wrap gap-2" role="group" aria-label="Your look">
-            {WIZARD_THEMES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={theme === t.id ? 'chip on' : 'chip'}
-                aria-pressed={theme === t.id}
-                title={t.hint}
-                onClick={() => setTheme(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-            <button type="button" className={theme === null ? 'chip on' : 'chip'} aria-pressed={theme === null} onClick={() => setTheme(null)}>
-              Pick later
-            </button>
-          </div>
-          <p className="why">{WIZARD_THEMES.find((t) => t.id === theme)?.hint ?? 'We start you on the default look. You can switch any time.'}</p>
-        </div>
-      )}
-
-      {step.key === 'start' && (
-        <div className="space-y-5">
-          <dl className="card divide-y divide-border">
-            {[
-              ['Space', name.trim() || 'Not named yet'],
-              ['Handle', `/spaces/${slug}`],
-              ['Goals', intents.length ? WIZARD_INTENTS.filter((i) => intents.includes(i.id)).map((i) => i.label.toLowerCase()).join(', ') : 'Not sure yet, and that is fine'],
-              ['Tool setup', choice ? `${choice.label}: ${choice.hint}` : ''],
-              ['Starting tools', (choice && presetLabels[choice.id]) || 'Every tool on'],
-              ['Look', WIZARD_THEMES.find((t) => t.id === theme)?.label ?? 'Decide later'],
-              ['Plan', plan === 'free' ? 'Free, upgrade any time' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`],
-              ['Visibility', visibility === 'network' ? 'Listed in the Spaces directory' : 'Private'],
-            ].map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-4 px-4 py-2.5">
-                <dt className="k self-center">{k}</dt>
-                <dd className="meta text-right font-medium text-text">{v}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="text-meta text-muted">Next we walk you through your story, your look, how people reach you, and what you offer.</p>
-          {heardAboutOptions.length > 0 && (
-            <Field id="space-heard-about" label="How did you hear about us?" hint="Optional. It helps us find more people like you.">
-              <Select
-                id="space-heard-about"
-                value={heardAbout}
-                onChange={(e) => setHeardAbout(e.target.value)}
-                emptyLabel="Skip"
-                options={heardAboutOptions}
-              />
-            </Field>
-          )}
-        </div>
-      )}
-      </SparkShell>
-        </div>
-        <aside className="card hidden p-5 @3xl:sticky @3xl:top-6 @3xl:block" aria-label="Your space so far">
+      recap={[goalsLine, choice?.label, lookLabel, plan === 'free' ? 'Free to start' : WIZARD_PLAN_COPY[plan].label].filter(Boolean).join(' · ')}
+      summary={
+        <>
           <p className="k">Your space</p>
           <p className="mt-2 break-words font-display text-card-title font-bold text-text">{name.trim() || 'Not named yet'}</p>
           <p className="mt-1 text-meta text-muted">{plan === 'free' ? 'Free to start' : `${WIZARD_PLAN_COPY[plan].label}, checkout after setup`}</p>
@@ -462,17 +290,18 @@ export function CreateSpaceWizard({
               </div>
             ))}
           </dl>
-        </aside>
-      </div>
-
-      {index === 0 && (
-        <p className="text-center text-meta text-muted">
-          Rather not fill it in by hand?{' '}
-          <Link href="/spaces/launch" className="underline">
-            Let Vera draft your page
-          </Link>
-        </p>
-      )}
-    </div>
+        </>
+      }
+      footerNote={
+        index === 0 ? (
+          <>
+            Rather not fill it in by hand?{' '}
+            <Link href="/spaces/launch" className="underline">
+              Let Vera draft your page
+            </Link>
+          </>
+        ) : null
+      }
+    />
   )
 }
