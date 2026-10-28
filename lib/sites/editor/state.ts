@@ -3,7 +3,7 @@ import { isSiteLookValue, SITE_LOOK_OPTIONS, siteTheme, type SiteLookKey, type S
 
 // Website-only documents. Never written to pageDocs/profileLayout; public readers
 // consume only published. Bounded snapshots until E0's shared document store lands.
-export type WebsiteTheme = 'Menswork' | 'DAWN' | 'Midnight' | 'Wildheart' | 'Network' | 'NetworkKit' | 'Temple' | 'Designer'
+export type WebsiteTheme = 'Menswork' | 'DAWN' | 'Midnight' | 'Wildheart' | 'Network' | 'NetworkKit' | 'Temple' | 'TempleKit' | 'Designer'
 export type Device = 'desktop' | 'tablet' | 'phone'
 interface SiteCommentReply { id: string; body: string; author: string; createdAt: string }
 export interface SiteComment { id: string; blockId: string; text: string; author: string; createdAt: string; resolved: boolean; x?: number; y?: number; replies?: SiteCommentReply[] }
@@ -185,7 +185,7 @@ export function readWebsiteEditor(preferences: unknown): WebsiteEditorState | nu
 
 /** The editor's stored theme id for each site theme (ADR-1726); the same table as EDITOR_THEME_OF in
  *  lib/sites/site-render-style.ts, restated here because that module pulls the render styles into every reader of this file. */
-const WORN_EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', 'network-kit': 'NetworkKit', temple: 'Temple', midnight: 'Midnight', designer: 'Designer' }
+const WORN_EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', 'network-kit': 'NetworkKit', temple: 'Temple', 'temple-kit': 'TempleKit', midnight: 'Midnight', designer: 'Designer' }
 
 export function publishedWebsitePage(preferences: unknown, slug: string): WebsitePage | null {
   return publishedWebsiteSnapshot(preferences)?.pages.find((p) => p.slug === slug) ?? null
