@@ -15,7 +15,9 @@ export async function GET() {
   const held = await readPendingLaunch()
   if (held) {
     const launch = await startLaunch(profileId, { niche: held.niche, intents: held.intents })
-    if (launch) await clearPendingLaunch()
+    // Held answers (the Spotlight step's) stay until that step publishes, so signing in does not lose them. startLaunch
+    // returns the running launch, so keeping the cookie cannot make a second row.
+    if (launch && Object.keys(held.answers).length === 0) await clearPendingLaunch()
   }
   redirect('/launch/resume')
 }
