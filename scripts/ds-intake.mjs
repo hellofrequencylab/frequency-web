@@ -79,6 +79,8 @@ export function repoReport(theme, tokenCss = '') {
     tokens: t.tokens,
     copy: t.copy,
     tokenMap: t.rules.tokenMap,
+    tokenDeviations: t.rules.tokenDeviations,
+    skipFontAliases: t.rules.skipFontAliases,
     repoTokenCss: tokenCss,
     read,
     bytes,

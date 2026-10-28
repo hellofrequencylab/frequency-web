@@ -18,3 +18,9 @@ export async function loadLaunchBox(): Promise<LaunchBoxView | null> {
     return null
   }
 }
+
+// A running launch owns the member's "what next" list (VLS-11): the Get Started checklist stands down while the box is
+// up, so the person never sees two lists. Without a launch (or with the launch switched off) the checklist is untouched.
+export async function launchOwnsNextSteps(): Promise<boolean> {
+  return (await loadLaunchBox()) !== null
+}

@@ -3,6 +3,7 @@ import { resolveAccentVars, type AccentVars } from '@/lib/spaces/accent'
 import { mensworkAccentVars } from '@/lib/theme/menswork'
 import { wildheartAccentVars } from '@/lib/theme/wildheart'
 import { networkAccentVars } from '@/lib/theme/network'
+import { networkKitAccentVars } from '@/lib/theme/network-kit'
 import { templeAccentVars } from '@/lib/theme/temple'
 import { templeKitAccentVars } from '@/lib/theme/temple-kit'
 import { midnightAccentVars } from '@/lib/theme/midnight'
@@ -22,7 +23,7 @@ import type { WebsiteTheme } from '@/lib/sites/editor/state'
 // default accent.
 
 /** The editor's stored theme id for each site theme (ADR-1726): Bold is Menswork, Frequency is DAWN. */
-export const EDITOR_THEME_OF: Record<Exclude<SiteThemeId, 'temple-kit'>, WebsiteTheme> & { 'temple-kit'?: undefined } = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', temple: 'Temple', midnight: 'Midnight', designer: 'Designer' }
+export const EDITOR_THEME_OF: Record<Exclude<SiteThemeId, 'temple-kit'>, WebsiteTheme> & { 'temple-kit'?: undefined } = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', 'network-kit': 'NetworkKit', temple: 'Temple', midnight: 'Midnight', designer: 'Designer' }
 
 /** The editor's id for any site theme. The Temple Theme Kit is held out of EDITOR_THEME_OF (the table the Mega Theme
  *  model is held level with) until it joins the owner-facing lists. */
@@ -56,6 +57,8 @@ export function siteRenderStyle(pageStyle: SiteStyle, accent: string | null | un
         ? wildheartAccentVars(brandAccent)
         : theme === 'network'
           ? networkAccentVars(brandAccent)
+          : theme === 'network-kit'
+          ? networkKitAccentVars(brandAccent)
           : theme === 'temple'
             ? templeAccentVars(brandAccent)
             : theme === 'temple-kit'

@@ -19,7 +19,7 @@
 import { mergeProfileMetaPath } from '@/lib/profiles/meta'
 import { THEME_PRESETS } from '@/lib/spotlight/theme'
 import { withMegaTheme, isMegaThemeId, MEGA_THEMES, type MegaThemeId } from '@/lib/theme/mega-theme'
-import { SITE_THEMES, spacePageDefaultAccent, withSiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { SITE_THEME_DEFS, spacePageDefaultAccent, withSiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { emailSurface } from '@/lib/theme/surface'
 import type { SpaceThemeId } from '@/lib/theme/space-themes'
 
@@ -37,7 +37,7 @@ export interface MegaThemeSurfaces {
 }
 
 export function megaThemeSurfaces(theme: MegaThemeId): MegaThemeSurfaces {
-  const site = SITE_THEMES.find((t) => t.id === MEGA_THEMES.find((m) => m.id === theme)?.site)
+  const site = SITE_THEME_DEFS.find((t) => t.id === MEGA_THEMES.find((m) => m.id === theme)?.site)
   const website = site?.id ?? 'frequency'
   const accent = spacePageDefaultAccent({ siteStyle: { theme: website, synced: true } }, '')
   return {
