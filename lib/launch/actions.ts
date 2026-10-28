@@ -15,6 +15,7 @@ import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { launchSystemEnabled } from './enabled'
 import { recordLaunchEvent } from './events'
 import { clearPendingLaunch, readPendingLaunch, writePendingLaunch } from './pending-io'
+import { launchStepPublishedHref } from './published'
 import { parseSpotlightAnswers } from './spotlight-step'
 import { publishSpotlightStep } from './spotlight-io'
 import type { LaunchSnapshot } from './state'
@@ -83,7 +84,7 @@ function spotlightStepUrl(code?: SpotlightErrorCode): string {
 
 /** The Spotlight step's Publish button (VLS-07). Signed out, the answers are held in the launch cookie and the
  *  visitor is sent to sign in, which is the one moment an account is asked for. Signed in, the Space is made if this
- *  launch has none, its Spotlight is published, and the step is recorded. Lands on the public Spotlight. */
+ *  launch has none, its Spotlight is published, and the step is recorded. Lands on the step's published screen. */
 export async function publishSpotlightFormAction(formData: FormData): Promise<void> {
   if (!launchSystemEnabled()) redirect('/')
   const answers = parseSpotlightAnswers({ name: formData.get('name'), line: formData.get('line'), link: formData.get('link') })
@@ -106,5 +107,5 @@ export async function publishSpotlightFormAction(formData: FormData): Promise<vo
   const made = await publishSpotlightStep(profileId, launch, answers)
   if ('error' in made) redirect(spotlightStepUrl('retry'))
   await clearPendingLaunch()
-  redirect(`/spaces/${made.slug}/spotlight`)
+  redirect(launchStepPublishedHref('spotlight'))
 }
