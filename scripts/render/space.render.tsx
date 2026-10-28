@@ -5,7 +5,7 @@
 // (spacePageSiteFaces, spacePageDefaultAccent, memberSpaceFonts), so the console renders with what a console gets.
 // Run: node scripts/render/build-css.mjs $RENDER_OUT/app.css, then
 // RENDER_OUT=<dir> pnpm exec vitest run -c scripts/render/vitest.render.config.ts scripts/render/space.render.tsx
-import { createElement as h } from 'react'
+import { createElement as h, type ComponentProps } from 'react'
 import { prerenderToNodeStream } from 'react-dom/static'
 import { writeFileSync } from 'node:fs'
 import { it, vi } from 'vitest'
@@ -47,7 +47,7 @@ it('renders the Space page and a console pane', async () => {
     const nav = h('nav', { className: 'tabs' }, ['Home', 'Calendar', 'Offerings', 'Membership', 'Library'].map((t, i) => h('a', { key: t, href: '#', className: i === 0 ? 'on' : undefined }, t)))
     const page = h(
       AccentScope,
-      { vars: null, fqAccent: frequencyAccentVars(accent), siteFaces: faces, theme: parseSpaceTheme('frequency') },
+      { vars: null, fqAccent: frequencyAccentVars(accent), siteFaces: faces, theme: parseSpaceTheme('frequency') } as ComponentProps<typeof AccentScope>,
       h(
         FqSpaceChrome,
         {
