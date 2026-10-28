@@ -96,9 +96,9 @@ ${N} .nk-hero--photo{display:flex;align-items:flex-end;justify-content:center;bo
 ${N} .nk-hero--photo[data-variant="center"],${N} .nk-hero--photo[data-variant="left"]{align-items:center}
 ${N} .nk-hero--photo[data-variant="center"]{text-align:center}
 ${N} .nk-hero-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-${N} .nk-hero-scrim{position:absolute;inset:0;z-index:1;background:linear-gradient(to top,color-mix(in srgb,var(--color-ink) 80%,transparent) 0%,color-mix(in srgb,var(--color-ink) 45%,transparent) 45%,color-mix(in srgb,var(--color-ink) 18%,transparent) 100%)}
-${N} .nk-hero--photo[data-variant="left"] .nk-hero-scrim{background:linear-gradient(90deg,color-mix(in srgb,var(--color-ink) 72%,transparent) 0%,color-mix(in srgb,var(--color-ink) 35%,transparent) 55%,color-mix(in srgb,var(--color-ink) 10%,transparent) 100%)}
-${N} .nk-hero--photo[data-variant="center"] .nk-hero-scrim{background:linear-gradient(color-mix(in srgb,var(--color-ink) 45%,transparent),color-mix(in srgb,var(--color-ink) 55%,transparent))}
+${N} .nk-hero-scrim{position:absolute;inset:0;z-index:1;background:linear-gradient(to top,color-mix(in srgb,var(--color-ink) 84%,transparent) 0%,color-mix(in srgb,var(--color-ink) 62%,transparent) 50%,color-mix(in srgb,var(--color-ink) 20%,transparent) 100%)}
+${N} .nk-hero--photo[data-variant="left"] .nk-hero-scrim{background:linear-gradient(90deg,color-mix(in srgb,var(--color-ink) 78%,transparent) 0%,color-mix(in srgb,var(--color-ink) 52%,transparent) 55%,color-mix(in srgb,var(--color-ink) 10%,transparent) 100%)}
+${N} .nk-hero--photo[data-variant="center"] .nk-hero-scrim{background:linear-gradient(color-mix(in srgb,var(--color-ink) 55%,transparent),color-mix(in srgb,var(--color-ink) 66%,transparent))}
 ${N} .nk-hero-inner{position:relative;z-index:2;box-sizing:border-box;width:100%;padding:0 var(--nk-space-gutter) var(--nk-space-16)}
 ${N} .nk-hero--photo[data-variant="center"] .nk-hero-inner,${N} .nk-hero--photo[data-variant="left"] .nk-hero-inner{padding-bottom:0}
 ${N} .nk-hero--photo .nk-hero-title{max-width:11em;color:var(--color-on-media);font-size:var(--nk-text-display-hero)}
