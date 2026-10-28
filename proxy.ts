@@ -499,6 +499,11 @@ export const config = {
     // session refresh, the protected-path redirect, tenancy — still runs on every other path exactly
     // as before.
     //
+    // `/api/status` (LIVE-1599) is the uptime and SLO index. It is force-static with s-maxage=3600 for
+    // machine callers, and it was answering with a first-touch `Set-Cookie: fq_attr` whose landing page
+    // was an API path: the same noise HYG-048 removed from the crawler files, on a response meant to be
+    // cached and shared. It is never a human's landing page and reads no session.
+    //
     // `/api/v1` is the APP CONTRACT (LIVE-715, ADR-1643) and is excluded for the same reason: none
     // of this middleware is for it. A native caller sends a bearer token and no cookie, so the
     // proxy's getUser() would see nobody, write a first-touch record whose landing page is an API
@@ -515,7 +520,7 @@ export const config = {
     // `/.well-known/*` (LIVE-714) are the app association files (app/.well-known/). Apple and Google
     // fetch them with no cookies and need a plain 200 with no hop, so a session refresh and a
     // first-touch cookie on them were pure noise.
-    '/((?!_next/static|_next/image|favicon.ico|api/v1(?:/|$)|\\.well-known/|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|sw\\.js$|offline\\.html$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/v1(?:/|$)|api/status(?:/|$)|\\.well-known/|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|sw\\.js$|offline\\.html$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     // A SPACE WEBSITE'S OWN CRAWLER FILES (PROG-E10 phase 4, LIVE-783). The entry above skips
     // robots.txt, sitemap.xml and llms.txt on every host, so a Space's domain would serve Frequency's. This arm
     // runs the proxy for exactly those two files on any host that is NOT one of Frequency's own, and

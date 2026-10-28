@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1600",
+  "title": "Link the whole-system page from Features, Pricing and the door pages",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/site/pages/funnel/niche/niche-door.tsx",
+    "ref": "Strategy follow-up to LIVE-1562: /system was linked only from the footer"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/system-links.mjs",
+    "note": "Features, Pricing and every /for door link to /system."
+  },
+  "detail": "Owner 2026-10-28: the /join first question and the footer stay at six doors. Both already show the six (DOOR_CHOICES in lib/onboarding/personas.ts, the Who it is for column in lib/frequency/site-nav.ts), so nothing changed there; the seven profile doors stay live on /for and the Space picker. This row adds the quiet links to /system. Closed with the links in place.",
+  "closed": "2026-10-28",
+  "wave": "W7"
+}

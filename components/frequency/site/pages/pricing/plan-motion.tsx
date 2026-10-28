@@ -8,6 +8,7 @@
 // Network base and chapter figures off NETWORK_PLAN, the fee percentages off each offering's rate. The
 // colours are the kit's tokens (see `.pm` in the sheet); there is no hex in this file.
 import Link from 'next/link'
+import { ROUTES } from '@/lib/frequency/site-nav'
 import { formatCents } from '@/lib/pricing/display'
 import { INDEPENDENT_CONTACT_HREF } from '@/lib/pricing/network-contact'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
@@ -296,6 +297,8 @@ export function MotionLinks() {
       <Link href="/help/spaces/collective">How a Collective works</Link>
       {' · '}
       <Link href="/help/spaces/plans-and-pricing">Plans and pricing, in detail</Link>
+      {' · '}
+      <Link href={ROUTES.system}>The whole system</Link>
     </p>
   )
 }
