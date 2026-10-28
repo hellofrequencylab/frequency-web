@@ -93,10 +93,10 @@ jobs:
           grep -nE "auth/callback|Error|⨯| 500 " dev.log | tail -80 || true
           echo "--- local containers"
           docker ps --format '{{.Names}}' || true
-          echo "--- local Auth log (last 120 lines, unfiltered)"
+          echo "--- local Auth log (last 80 lines that are not /user polls or the host notice)"
           for c in $(docker ps --format '{{.Names}}' | grep -i auth); do
             echo "## $c"
-            docker logs --tail 120 "$c" 2>&1 | cut -c1-400 || true
+            docker logs "$c" 2>&1 | grep -v -e '"path":"/user"' -e 'GOTRUE_MAILER_EXTERNAL_HOSTS' | tail -80 | cut -c1-500 || true
           done
       - name: Keep the evidence
         if: always()

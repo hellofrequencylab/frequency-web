@@ -302,8 +302,11 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await page.getByRole('button', { name: 'Import from file' }).click()
     const csv = `Name,Email,Phone\nQA One ${stamp},qa1-${stamp}@example.test,555-0101\nQA Two ${stamp},qa2-${stamp}@example.test,555-0102\n`
     await page.locator('input[type="file"]').setInputFiles({ name: 'contacts.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
-    await page.getByRole('button', { name: /Continue to matching/ }).click({ timeout: 30_000 })
-    await expect(page.getByText('Match your columns to contact fields')).toBeVisible()
+    // A clean file goes straight to matching; "Continue to matching" shows only when a file was skipped.
+    const matching = page.getByText('Match your columns to contact fields')
+    await expect(matching.or(page.getByRole('button', { name: /Continue to matching/ }))).toBeVisible({ timeout: 30_000 })
+    if (!(await matching.isVisible())) await page.getByRole('button', { name: /Continue to matching/ }).click()
+    await expect(matching).toBeVisible()
     await page.getByRole('button', { name: /Review before import/ }).click()
     await expect(page.getByText('Here is what will happen')).toBeVisible({ timeout: 30_000 })
     await page.getByRole('button', { name: /^Import \d+ contacts$/ }).click()
