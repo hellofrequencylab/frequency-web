@@ -585,7 +585,7 @@
 }
 @keyframes cal-rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .cal-suite .cal-rail, .cal-suite .cal-details { animation: none; }
+  .cal-suite[data-rail="open"] .cal-rail, .cal-suite[data-details="open"] .cal-details { animation: none; }
 }
 
 /* Contacts: the Workspace / Table switch sits between the health numbers and the view it picks. */
