@@ -20,8 +20,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { logPractice } from '@/lib/practices'
-import { log as serverLog } from '@/lib/log'
 import { LIVE_SESSION_MAX_AGE_MS, type LiveSessionRecord, type LiveTimerKind } from '@/lib/on-air/live-session'
 
 // The untyped active-timer query builder (practice_timer_sessions is not in the
@@ -137,43 +135,20 @@ export async function cancelTimerSession(): Promise<ActionResult<true>> {
   }
 }
 
-/** Read the caller's active timer session as a LiveSessionRecord (or null), so the
- *  engine can resume it as RUNNING. Self-scoped: returns only the caller's own row. */
+/** Read the caller's active timer session and an expiration notice, so the engine can
+ *  resume a current session as RUNNING or explain why a stale one was cleared. Self-scoped. */
 /** How long an ARMED-but-never-begun row (started_at == paused_at) may live before it is
  *  treated as orphaned. A real warm-up hands over in seconds; this is generous enough to
  *  survive a slow network and short enough that a dead row never outlives one page visit. */
 const ARMED_PREROLL_MAX_AGE_MS = 5 * 60 * 1000
 
-/** A sit the member began and never finished is still a sit they did. When its row ages out
- *  unfinished, bank it as a PARTIAL log (clears the day, ticks the streak, 1 Zap; "Finish
- *  Practice" can still top it up) instead of dropping it silently. Only a sit that actually
- *  began counts: an armed pre-roll that never handed over (the abandoned-tab case) earns nothing.
- *  Attribution rides on the server-stamped started_at (the same ADR-801 clamp: at most one day
- *  back), so a forged row can never backdate further. Best-effort: never blocks the read. */
-async function bankUnfinishedSit(profileId: string, row: TimerRow, armedNeverBegun: boolean): Promise<void> {
-  if (armedNeverBegun || !row.practice_id) return
-  try {
-    const { data } = await createAdminClient()
-      .from('practices')
-      .select('duration_min')
-      .eq('id', row.practice_id)
-      .maybeSingle()
-    const durationMin = (data as { duration_min: number | null } | null)?.duration_min ?? 0
-    const target = row.seconds_target ?? Math.round(durationMin * 60)
-    await logPractice({
-      profileId,
-      practiceId: row.practice_id,
-      secondsDone: 0,
-      secondsTarget: target > 0 ? target : 300,
-      attended: false,
-      startedAt: row.started_at,
-    })
-  } catch (e) {
-    serverLog.warn('on_air.unfinished_sit_bank_failed', { profileId, error: e instanceof Error ? e.message : String(e) })
-  }
+export interface ActiveTimerSessionState {
+  session: LiveSessionRecord | null
+  /** True only when a stale row was successfully cleared and the member should be told. */
+  expired: boolean
 }
 
-export async function getActiveTimerSession(): Promise<ActionResult<LiveSessionRecord | null>> {
+export async function getActiveTimerSession(): Promise<ActionResult<ActiveTimerSessionState>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
   try {
@@ -182,10 +157,10 @@ export async function getActiveTimerSession(): Promise<ActionResult<LiveSessionR
       .eq('profile_id', profileId)
       .maybeSingle()
     if (error) return fail('Could not read the active session')
-    if (!data) return ok(null)
+    if (!data) return ok({ session: null, expired: false })
     const kind: LiveTimerKind = data.mode === 'movement' ? 'movement' : 'mindless'
     const startedMs = Date.parse(data.started_at)
-    if (!Number.isFinite(startedMs)) return ok(null)
+    if (!Number.isFinite(startedMs)) return ok({ session: null, expired: false })
     const pausedMs = data.paused_at ? Date.parse(data.paused_at) : null
 
     // ── STALENESS. This used to read: "the server row IS live by definition (the staleness
@@ -211,16 +186,18 @@ export async function getActiveTimerSession(): Promise<ActionResult<LiveSessionR
     //     cross-device resume this table exists for still works across a normal day.
     const stale = armedNeverBegun ? age > ARMED_PREROLL_MAX_AGE_MS : age > LIVE_SESSION_MAX_AGE_MS
     if (stale) {
-      await bankUnfinishedSit(profileId, data, armedNeverBegun)
-      // Clear it so the next read is clean, and so a member who never opens a support
-      // channel is not stuck behind a row only an operator could see. Best-effort: a failed
-      // delete still returns null, which is the behaviour that matters.
+      // Elapsed wall time after the last durable checkpoint cannot prove that practice
+      // happened. `setup.resumeFromSec` (when present) represents an earlier saved partial
+      // already logged through completeSession; never create another log, streak, or reward
+      // from this stale active row.
+      let expired = false
       try {
-        await timerTable().delete().eq('profile_id', profileId)
+        const { error: clearError } = await timerTable().delete().eq('profile_id', profileId)
+        expired = !clearError
       } catch {
-        /* the null return below is the fix; the delete is housekeeping */
+        /* a failed cleanup must not create practice credit or claim that recovery completed */
       }
-      return ok(null)
+      return ok({ session: null, expired })
     }
 
     const record: LiveSessionRecord = {
@@ -234,7 +211,7 @@ export async function getActiveTimerSession(): Promise<ActionResult<LiveSessionR
       savedAt: Date.now(),
       setup: data.setup?.payload ?? {},
     }
-    return ok(record)
+    return ok({ session: record, expired: false })
   } catch {
     return fail('Could not read the active session')
   }

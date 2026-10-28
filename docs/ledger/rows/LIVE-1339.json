@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-1339",
+  "patch": {
+    "title": "Never credit stale timer time that lacks durable progress",
+    "status": "done",
+    "closed": "2026-10-27",
+    "detail": "A stale active timer used to create a zero-second partial practice with a positive target. That inferred practice, streak activity, and reward from elapsed wall time after the last durable write, even though no verified elapsed progress existed. Stale recovery now clears the timer row without creating a practice log or credit. A prior partial recorded through the normal completion path remains unchanged. A member is told the timer expired and that no additional practice or rewards were added. Repeated reads after cleanup do not repeat the notice or award credit.",
+    "verify": {
+      "kind": "cmd",
+      "checked": "2026-10-27",
+      "evidence": "The stale-run regression asserts no practice log call, confirms previously saved resume progress is not rewritten, verifies the stale row is deleted, and retries to prove cleanup is idempotent.",
+      "cmd": "node -e 'const f=require(\"node:fs\");const a=f.readFileSync(\"app/(main)/on-air/timer-session-actions.ts\",\"utf8\");const t=f.readFileSync(\"app/(main)/on-air/timer-session-actions.test.ts\",\"utf8\");process.exit(!a.includes(\"return ok({ session: null, expired })\")||a.includes(\"bankUnfinishedSit\")||a.includes(\"logPractice\")||!t.includes(\"expect(logPracticeMock).not.toHaveBeenCalled()\")||!t.includes(\"retry.data).toEqual({ session: null, expired: false })\")?1:0)'"
+    }
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "SCAN-1175",
+  "title": "On Air presence counts include practice logs beyond the 1,000-row API cap",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "lib/on-air/session-data.ts",
+    "ref": "practicedToday presence query"
+  },
+  "detail": "The presence query requested up to 10,000 practice_logs rows in one Data API response, but the hosted PostgREST max_rows setting is 1,000. On busy days the member-facing distinct-practitioner total silently omitted everyone after the response cap. It now reads stable ordered pages to completion, counts distinct non-null profile ids, and returns no partial count if a page fails.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-27",
+    "evidence": "Regression tests read more than 1,000 rows across ordered pages, dedupe profiles across the boundary, enforce the requested local date filter, cover the exact-cap empty-page case, and reject partial counts on a later-page error.",
+    "cmd": "node -e 'const f=require(\"node:fs\");const a=f.readFileSync(\"lib/on-air/practice-presence.ts\",\"utf8\");const s=f.readFileSync(\"lib/on-air/session-data.ts\",\"utf8\");const t=f.readFileSync(\"lib/on-air/practice-presence.test.ts\",\"utf8\");process.exit(!a.includes(\".order(\\u0027id\\u0027\")||!a.includes(\".range(from, from + PRACTICE_PRESENCE_PAGE_SIZE - 1)\")||!s.includes(\"countPracticedToday(admin\")||!t.includes(\"PRACTICE_PRESENCE_PAGE_SIZE + 1\")||!t.includes(\"later page fails\")?1:0)'"
+  },
+  "closed": "2026-10-27",
+  "wave": "W7"
+}
