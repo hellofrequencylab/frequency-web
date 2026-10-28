@@ -137,7 +137,7 @@ export async function insertSpacePlan(
  *  union. The serialisation boundary says so here, once, rather than at every call site, and
  *  nowhere else in this file casts the client. An absent key is left absent, so a partial write
  *  still only touches the columns it names. */
-function planWritePayload(write: Partial<PlanWrite> & { archived_at?: string | null }) {
+function planWritePayload(write: Partial<PlanWrite> & { archived_at?: string | null; hold_until?: string | null }) {
   const { links, files, ...rest } = write
   return {
     ...rest,
@@ -149,7 +149,7 @@ function planWritePayload(write: Partial<PlanWrite> & { archived_at?: string | n
 export async function updateSpacePlan(
   spaceId: string,
   planId: string,
-  write: Partial<PlanWrite> & { archived_at?: string | null },
+  write: Partial<PlanWrite> & { archived_at?: string | null; hold_until?: string | null },
 ): Promise<{ data: SpacePlan } | { error: string }> {
   const { data, error } = await (await db())
     .from('space_plans')
@@ -159,6 +159,16 @@ export async function updateSpacePlan(
     .select(PLAN_COLS)
   if (error || !data?.[0]) return planIoFailed('update', 'The Plan could not be saved.', error)
   return { data: mapPlanRow(data[0]) }
+}
+
+/** Set or release a Plan's hold date (`space_plans.hold_until`, calendar suite pass 2). A day holds,
+ *  null releases. Scoped to the Space like every other Plan write. */
+export async function setPlanHoldRow(
+  spaceId: string,
+  planId: string,
+  holdUntil: string | null,
+): Promise<{ data: SpacePlan } | { error: string }> {
+  return updateSpacePlan(spaceId, planId, { hold_until: holdUntil })
 }
 
 /**

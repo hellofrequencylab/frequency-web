@@ -422,7 +422,8 @@ export function PostReplies({
           <ReactionCounts {...reactionState} />
           <button
             onClick={() => setOpen((o) => !o)}
-            aria-label={open ? 'Hide comments' : 'Show comments'}
+            aria-label={`${open ? 'Hide comments' : 'Show comments'}${count > 0 ? ` · ${count}` : ''}`}
+            aria-expanded={open}
             className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-control px-2.5 py-1.5 text-meta font-medium transition-colors sm:min-h-0 ${
               open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
             }`}

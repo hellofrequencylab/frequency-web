@@ -19,7 +19,17 @@ import { createAdminClient } from '@/lib/supabase/admin'
 //    from here would pull the service-role client below into the browser graph. Re-exported so
 //    every server caller is unchanged.
 export * from './tasks-core'
-import { TASK_STATUSES, buildTaskInsert, type CrmTask, type CreateTaskInput, type TaskInsert, type TaskStatus } from './tasks-core'
+import {
+  TASK_STATUSES,
+  buildTaskInsert,
+  normalizeEstMinutes,
+  normalizePhase,
+  normalizeStartMinute,
+  type CrmTask,
+  type CreateTaskInput,
+  type TaskInsert,
+  type TaskStatus,
+} from './tasks-core'
 
 // ── IO: the untyped admin-client seam (crm_tasks is not in generated types yet, ADR-246) ──────────
 
@@ -37,10 +47,13 @@ type TaskRow = {
   updated_at: string
   plan_id: string | null
   due_offset_days: number | null
+  phase?: string | null
+  est_minutes?: number | null
+  start_minute?: number | null
 }
 
 const ROW_COLS =
-  'id, space_id, contact_id, assignee_profile_id, title, notes, due_at, status, created_by, created_at, updated_at, plan_id, due_offset_days'
+  'id, space_id, contact_id, assignee_profile_id, title, notes, due_at, status, created_by, created_at, updated_at, plan_id, due_offset_days, phase, est_minutes, start_minute'
 
 /** The untyped query-builder shape listTasks chains over (crm_tasks is not in generated types yet). */
 interface TaskQuery {
@@ -68,6 +81,9 @@ export function mapTaskRow(r: TaskRow): CrmTask {
     updatedAt: r.updated_at,
     planId: r.plan_id,
     dueOffsetDays: r.due_offset_days,
+    phase: normalizePhase(r.phase),
+    estMinutes: normalizeEstMinutes(r.est_minutes),
+    startMinute: normalizeStartMinute(r.start_minute),
   }
 }
 
@@ -326,6 +342,41 @@ export async function assignTaskInPlan(taskId: string, assigneeProfileId: string
       .eq('id', id)
       .eq('plan_id', plan)
       .select('id')
+    return !error && !!data?.length
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Write the planning fields (phase, estimate, start time) of ONE to-do INSIDE a scope the caller has
+ * already been authorized for: the Space that owns it, or the Plans an accepted share reaches. Same
+ * reason as `updateTaskStatusInScope`: crm_tasks is reached through the service role, so the id from
+ * a browser matches a row only when `space_id` (or `plan_id`) matches too. `patch` comes from
+ * `buildTaskPlanningPatch`; a null patch writes nothing. True only when a row matched.
+ */
+export async function updateTaskPlanningInScope(
+  taskId: string,
+  patch: Record<string, unknown> | null,
+  scope: { spaceId: string } | { planIds: readonly string[] },
+): Promise<boolean> {
+  const id = typeof taskId === 'string' ? taskId.trim() : ''
+  if (!id || !patch) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (p: Record<string, unknown>) => ScopedUpdateQuery }
+    }
+    let q = db.from('crm_tasks').update(patch).eq('id', id)
+    if ('spaceId' in scope) {
+      const spaceId = typeof scope.spaceId === 'string' ? scope.spaceId.trim() : ''
+      if (!spaceId) return false
+      q = q.eq('space_id', spaceId)
+    } else {
+      const ids = [...new Set(scope.planIds.filter(Boolean))]
+      if (ids.length === 0) return false
+      q = q.in('plan_id', ids)
+    }
+    const { data, error } = await q.select('id')
     return !error && !!data?.length
   } catch {
     return false
