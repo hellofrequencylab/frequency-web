@@ -4,7 +4,7 @@
   "lane": "live",
   "priority": "P1",
   "size": "L",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "supabase/migrations/20270346026000_vera_launch.sql",
     "ref": "Vera guided launch system, VLS-01 with VLS-12, VLS-23 and VLS-26 folded into one migration so the whole Launch system crosses the migration gate once (owner chose one combined migration 2026-10-28). docs/DATABASE.md HYG-217 path."
@@ -14,6 +14,7 @@
     "cmd": "node scripts/probes/launch-tables.mjs",
     "note": "Reads the migration for the guarantees the launch leans on (one active launch per owner, cancel needs a prior request, a fact needs a verbatim snippet and origin, consent append-only, service-only reminder log) and fails until lib/database.types.ts lists all five tables, which only happens after the migration is applied and the types are regenerated."
   },
-  "detail": "Five additive tables: space_launch (owner, cursor, per-step state, minimized, cancel_requested_at before cancelled_at), launch_sources (kind, label, size; no text), launch_facts (slot, value, verbatim snippet, origin; removing a source removes its facts), launch_list_attestations (wording version, answer, time; append-only), launch_email_log (unique per launch and trigger; service role only). Owner-only RLS on the session client through private.get_my_profile_id(). pgTAP in supabase/tests/vera_launch.test.sql; real Auth and PostgREST acceptance in scripts/staging/launch-api.mjs, run by the isolated db-tests dispatch. The row stays open until the migration is applied and lib/database.types.ts is regenerated; lib/launch/state.ts and the step screens come in later PRs behind LAUNCH_SYSTEM_ENABLED.",
-  "wave": "W7"
+  "detail": "Five additive tables: space_launch (owner, cursor, per-step state, minimized, cancel_requested_at before cancelled_at), launch_sources (kind, label, size; no text), launch_facts (slot, value, verbatim snippet, origin; removing a source removes its facts), launch_list_attestations (wording version, answer, time; append-only), launch_email_log (unique per launch and trigger; service role only). Owner-only RLS on the session client through private.get_my_profile_id(). pgTAP in supabase/tests/vera_launch.test.sql; real Auth and PostgREST acceptance in scripts/staging/launch-api.mjs, run by the isolated db-tests dispatch. The row stays open until the migration is applied and lib/database.types.ts is regenerated; lib/launch/state.ts and the step screens come in later PRs behind LAUNCH_SYSTEM_ENABLED.\n\nApplied in production by owner paste 2026-10-28, merged #4198, types regenerated from the live schema.",
+  "wave": "W7",
+  "closed": "2026-10-28"
 }

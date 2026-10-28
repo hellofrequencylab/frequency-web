@@ -8,10 +8,10 @@ it.each([
   ['app/(main)/circles/[slug]/(circle)/layout.tsx', "primary === 'create'", "primary === 'post'"],
   ['app/(main)/circles/[slug]/(circle)/layout.tsx', 'subline={[', 'oldSubline={['],
   ['app/(main)/circles/[slug]/(circle)/layout.tsx', 'about={circle.about}', 'about={null}'],
-  ['app/(main)/circles/[slug]/(circle)/layout.tsx', '<FqCircleSpaceHeader spaceSlug={owner}', '<div data-owner={owner}'],
+  ['app/(main)/circles/[slug]/(circle)/layout.tsx', 'spaceLink={owner ?', 'oldLink={owner ?'],
   ['components/frequency/members/circle/circle-shell.tsx', '{subline && <span', '{false && <span'],
   ['components/frequency/members/circle/circle-shell.tsx', 'richParagraphs(about)', 'about'],
-  ['components/frequency/members/circle/circle-shell.tsx', 'inSpace ? <h2', 'inSpace ? <h1'],
+  ['components/frequency/members/circle/circle-shell.tsx', '<h1 className="h1">{title}</h1>', '<h2 className="h1">{title}</h2>'],
   ['components/widgets/circles/circle-feed.tsx', 'just joined', 'unused greeting'],
 ])('rejects losing actual surviving behavior in %s', (file, original, changed) => {
   expect(read(file)).toContain(original)
