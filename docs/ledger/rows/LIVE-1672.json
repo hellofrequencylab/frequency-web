@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1672",
+  "title": "Register the Network Theme Kit as a theme: four schemes, tokens, faces, contract and every list, beside the classic Network",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "docs/design-systems/network/rules.json",
+    "ref": "Daniel, 2026-10-28: program the new Network design system into the theme system the way Nocturne is. Plan: /mnt/project-files/network-theme/PLAN.html, pass 1 (foundation)."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/network-kit-foundation.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Fails on main (lib/theme/network-kit.ts does not exist) and passes here: the theme resolves, every scheme clears AA, the fence lists it, the faces stay off the root layout, the classic Network is unchanged."
+  },
+  "detail": "Pass 1 of 12. lib/theme/network-kit.ts holds the four schemes (Marigold, Coral, Ocean, Lagoon), the thirteen profile to scheme map, NETWORK_KIT_TOKENS_CSS (the design's tokens/*.css renamed under --nk- where a name would collide with Frequency's, set in rules.json tokenMap; every design value equal, so the network design-system test now compares tokens with no new gap), the accent derivation for an owner's accent (hover 86% with black, soft 34% and bg 10% into paper, ink label when Rec. 601 luma is over 0.55 else white and the better of the two when neither reaches AA, text shade darkened 45% for a light accent then until 4.5:1 on paper and card tint), networkKitAccentVars (the Space's --color-primary* plus the design's --brand-* hooks), NETWORK_KIT_SURFACE and a test. components/sites/network-kit-fonts.ts loads Bricolage Grotesque (opsz), Outfit, Instrument Serif italic and Caveat as --font-nk-*, on the website root only; one type system for all thirteen profiles, the per-profile pairs in tokens/kits.css are not ported. Registered as SiteThemeId network-kit (label Network; the old theme keeps id network and reads Network (classic) wherever both are listed: site themes, editor, wizard, Spotlight preset, theme drafts), editor theme NetworkKit (contract entry NetworkKit built from the design's contract; the old Network entry is untouched), MEGA_THEMES, site faces, Space page font mapping (faces and accent only), email and Spotlight surface (MEGA_SURFACES), Spotlight preset, library entry, and the fence regex. NOT in WEBSITE_THEMES_LIVE (the editor says it is in preview and a live site keeps its look until the render is finished), NOT a Space page ground (surface.ts SURFACES stays Midnight's alone, ADR-1906), no kit registry yet. DEVIATIONS FROM THE DESIGN, all measured: (1) subtle text is a shade darker in every scheme (Marigold #676E73 to #61676C, Coral #6A6F76 to #60656B, Ocean #5D6F7B to #566772, Lagoon #5F726E to #576965) because the design reads 4.12 to 4.48:1 on the card tint and its pressed step; the new values clear 4.5:1 on paper, surface, tint and pressed tint; rules.json tokenDeviations lists --gray-500, --tg-subtle, --color-text-subtle and --th-muted with the reason. (2) Coral's label on its accent is #0E1D25 instead of #13232C (4.26:1 on the hover fill, now 4.55). (3) New token --nk-accent-edge: the ink for Marigold and Coral (accent under 3:1 on paper: 1.73 and 2.68), the accent for Ocean and Lagoon, for switch, checkbox and meter edges. The DS test harness gained three opt-in keys (tokenDeviations, skipFontAliases, and var() fallbacks resolved on both sides) documented in docs/DESIGN-SYSTEM-INTAKE.md. ADDRESS: the public page is /themes/network (themePagePath network-kit; /themes/network-kit redirects there); the classic Network page moved to /themes/network-classic, which the sitemap lists. Voice: the library tagline and signature are new copy under the voice guide (no claims, no em dashes); the design's sales copy is not ported in this pass.",
+  "wave": "W7"
+}

@@ -35,6 +35,12 @@ system is revised. Later themes (Designer, Temple, Wildheart and the rest) go th
 
 A file no rule claims fails the run. That is the whole point: nobody can miss a file by not looking.
 
+Three optional keys in `rules.json` shape the token comparison. `tokenMap` renames a design prefix to the repo's (`--text-` to
+`--nk-text-`). `tokenDeviations` (`[{ name, reason }]`) lists a token that must still be declared but may differ in value,
+each with the measured reason (the Network kit darkens its subtle text for AA). `skipFontAliases` ignores the tokens that
+only alias a font role (`--th-display: var(--font-display)`), which the design snapshot cannot resolve. A fallback inside
+`var(--a, var(--b))` is resolved on both sides, so a repo that names its variables differently still compares equal.
+
 ## Steps for a new design system (or a new version of one)
 
 1. Unzip into an **empty** folder outside the repo. Treat it as data; never run its scripts.

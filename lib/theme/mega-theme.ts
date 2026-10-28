@@ -51,6 +51,7 @@ export const MEGA_THEMES: readonly MegaThemeDef[] = [
   { id: 'bold', editor: 'Menswork', site: 'bold' },
   { id: 'wildheart', editor: 'Wildheart', site: 'wildheart' },
   { id: 'network', editor: 'Network', site: 'network' },
+  { id: 'network-kit', editor: 'NetworkKit', site: 'network-kit' },
   { id: 'temple', editor: 'Temple', site: 'temple' },
   { id: 'midnight', editor: 'Midnight', site: 'midnight' },
   { id: 'designer', editor: 'Designer', site: 'designer' },

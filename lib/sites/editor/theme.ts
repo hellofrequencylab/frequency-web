@@ -4,6 +4,7 @@ import { MENSWORK_SEASONS, mensworkSeason, mensworkAccentVars } from '@/lib/them
 import { WILDHEART_SEASONS, wildheartAccentVars } from '@/lib/theme/wildheart'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { networkAccentVars } from '@/lib/theme/network'
+import { networkKitAccentVars } from '@/lib/theme/network-kit'
 import { templeAccentVars } from '@/lib/theme/temple'
 import { midnightAccentVars } from '@/lib/theme/midnight'
 import { designerAccentVars } from '@/lib/theme/designer'
@@ -20,6 +21,7 @@ export const WEBSITE_THEME_FONT_VARS: Record<WebsiteTheme, [display: string, bod
   Midnight: ['mn-bodoni', 'mn-geist', 'mn-marcellus'],
   Wildheart: ['wh-fell', 'wh-garamond', 'wh-hanken'],
   Network: ['nw-bricolage', 'nw-outfit', 'nw-outfit'],
+  NetworkKit: ['nk-bricolage', 'nk-outfit', 'nk-outfit'],
   Temple: ['tp-branch', 'tp-jost', 'tp-marcellus'],
   Designer: ['dz-cormorant', 'dz-jost', 'dz-jost'],
 }
@@ -35,7 +37,7 @@ export function websiteThemeVars(theme: WebsiteTheme, brandAccent?: string | nul
   }
   const hexAccent = typeof brandAccent === 'string' && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(brandAccent)
   // Each skinned theme measures the owner's accent with its own rules; the house themes only take a hex.
-  const accent = theme === 'Wildheart' ? wildheartAccentVars(brandAccent) : theme === 'Network' ? networkAccentVars(brandAccent) : theme === 'Temple' ? templeAccentVars(brandAccent) : theme === 'Midnight' ? midnightAccentVars(brandAccent) : theme === 'Designer' ? designerAccentVars(brandAccent) : theme === 'Menswork' || hexAccent ? mensworkAccentVars(brandAccent) : null
+  const accent = theme === 'Wildheart' ? wildheartAccentVars(brandAccent) : theme === 'Network' ? networkAccentVars(brandAccent) : theme === 'NetworkKit' ? networkKitAccentVars(brandAccent) : theme === 'Temple' ? templeAccentVars(brandAccent) : theme === 'Midnight' ? midnightAccentVars(brandAccent) : theme === 'Designer' ? designerAccentVars(brandAccent) : theme === 'Menswork' || hexAccent ? mensworkAccentVars(brandAccent) : null
   if (accent) {
     tokens['--th-accent'] = accent['--color-primary']!
     tokens['--th-accent-text'] = accent['--color-primary-strong']!

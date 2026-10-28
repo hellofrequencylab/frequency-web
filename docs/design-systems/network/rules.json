@@ -1,11 +1,167 @@
 {
   "theme": "network",
   "repoThemeId": "network-kit",
-  "note": "Every file of the Nocturne design system matches exactly one rule below (first match wins). kind: skip and reference carry a reason; mirror and built require every target to exist; asset also requires identical bytes; tokens are compared value for value against the repo's token block; copy sources must have every sentence present in the rule's targets. `baseline` lists known gaps as kind:key. It can only shrink: a gap that closes must be removed, and a new one fails.",
+  "note": "Every file of the Network design system matches exactly one rule below (first match wins). kind: skip and reference carry a reason; mirror and built require every target to exist; asset also requires identical bytes; tokens are compared value for value against the repo's token block; copy sources must have every sentence present in the rule's targets. `baseline` lists known gaps as kind:key. It can only shrink: a gap that closes must be removed, and a new one fails.",
   "tokenSources": [
     "NETWORK_KIT_TOKENS_CSS"
   ],
-  "tokenMap": [],
+  "tokenMap": [
+    {
+      "from": "--tg-white",
+      "to": "--nk-tg-surface"
+    },
+    {
+      "from": "--tg-",
+      "to": "--nk-tg-"
+    },
+    {
+      "from": "--gray-",
+      "to": "--nk-gray-"
+    },
+    {
+      "from": "--acc",
+      "to": "--nk-acc"
+    },
+    {
+      "from": "--scheme-",
+      "to": "--nk-scheme-"
+    },
+    {
+      "from": "--info-",
+      "to": "--nk-info-"
+    },
+    {
+      "from": "--green-",
+      "to": "--nk-green-"
+    },
+    {
+      "from": "--amber-",
+      "to": "--nk-amber-"
+    },
+    {
+      "from": "--red-",
+      "to": "--nk-red-"
+    },
+    {
+      "from": "--text-",
+      "to": "--nk-text-"
+    },
+    {
+      "from": "--space-",
+      "to": "--nk-space-"
+    },
+    {
+      "from": "--weight-",
+      "to": "--nk-weight-"
+    },
+    {
+      "from": "--leading-",
+      "to": "--nk-leading-"
+    },
+    {
+      "from": "--tracking-",
+      "to": "--nk-tracking-"
+    },
+    {
+      "from": "--icon-",
+      "to": "--nk-icon-"
+    },
+    {
+      "from": "--width-",
+      "to": "--nk-width-"
+    },
+    {
+      "from": "--control-",
+      "to": "--nk-control-"
+    },
+    {
+      "from": "--target-",
+      "to": "--nk-target-"
+    },
+    {
+      "from": "--ring-",
+      "to": "--nk-ring-"
+    },
+    {
+      "from": "--glow-",
+      "to": "--nk-glow-"
+    },
+    {
+      "from": "--season-",
+      "to": "--nk-season-"
+    },
+    {
+      "from": "--tex-",
+      "to": "--nk-tex-"
+    },
+    {
+      "from": "--kit-",
+      "to": "--nk-kit-"
+    },
+    {
+      "from": "--th-",
+      "to": "--nk-th-"
+    },
+    {
+      "from": "--site-",
+      "to": "--nk-site-"
+    },
+    {
+      "from": "--display-",
+      "to": "--nk-display-"
+    },
+    {
+      "from": "--on-ink-",
+      "to": "--nk-on-ink-"
+    },
+    {
+      "from": "--measure",
+      "to": "--nk-measure"
+    },
+    {
+      "from": "--mist-",
+      "to": "--nk-mist-"
+    },
+    {
+      "from": "--shadow-",
+      "to": "--nk-shadow-"
+    },
+    {
+      "from": "--motion-",
+      "to": "--nk-motion-"
+    },
+    {
+      "from": "--ease-",
+      "to": "--nk-ease-"
+    },
+    {
+      "from": "--radius-",
+      "to": "--nk-radius-"
+    },
+    {
+      "from": "--gradient-",
+      "to": "--nk-gradient-"
+    }
+  ],
+  "tokenDeviations": [
+    {
+      "name": "--gray-500",
+      "reason": "Subtle text darkened one step in every scheme so it reads 4.5:1 or more on the card tint and its pressed step (the design measures 4.12 to 4.48:1, Coral 4.34, Ocean 4.39, Lagoon 4.35). Marigold #676E73 -> #61676C."
+    },
+    {
+      "name": "--tg-subtle",
+      "reason": "Subtle text darkened one step in every scheme so it reads 4.5:1 or more on the card tint and its pressed step (the design measures 4.12 to 4.48:1, Coral 4.34, Ocean 4.39, Lagoon 4.35). Marigold #676E73 -> #61676C."
+    },
+    {
+      "name": "--color-text-subtle",
+      "reason": "Subtle text darkened one step in every scheme so it reads 4.5:1 or more on the card tint and its pressed step (the design measures 4.12 to 4.48:1, Coral 4.34, Ocean 4.39, Lagoon 4.35). Marigold #676E73 -> #61676C."
+    },
+    {
+      "name": "--th-muted",
+      "reason": "Subtle text darkened one step in every scheme so it reads 4.5:1 or more on the card tint and its pressed step (the design measures 4.12 to 4.48:1, Coral 4.34, Ocean 4.39, Lagoon 4.35). Marigold #676E73 -> #61676C."
+    }
+  ],
+  "skipFontAliases": true,
   "rules": [
     {
       "glob": ".thumbnail",

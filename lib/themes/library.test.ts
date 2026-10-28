@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
-import { THEME_ASSET_SLOTS, THEME_LIBRARY, themeAssetPath } from './library'
+import { THEME_ASSET_SLOTS, THEME_LIBRARY, themeAssetPath, themeIdFromSlug, themePagePath } from './library'
 import { THEME_ASSETS_READY } from './library-assets'
 
 describe('theme library', () => {
@@ -16,6 +16,14 @@ describe('theme library', () => {
   })
   it('never promises a website theme on the Space page beyond fonts and accent', () => {
     for (const t of THEME_LIBRARY) expect(t.surfaces.find((s) => s.id === 'space')!.carries).toMatch(/fonts, your accent/)
+  })
+  it('gives every theme one address, and the two renamed ones their own (Nocturne, and Network beside the classic)', () => {
+    const paths = THEME_LIBRARY.map((t) => themePagePath(t.id))
+    expect(new Set(paths).size).toBe(paths.length)
+    expect(themePagePath('midnight')).toBe('/themes/nocturne')
+    expect(themePagePath('network-kit')).toBe('/themes/network')
+    expect(themePagePath('network')).toBe('/themes/network-classic')
+    for (const t of THEME_LIBRARY) expect(t.id === 'midnight' ? null : themeIdFromSlug(themePagePath(t.id).slice('/themes/'.length)), t.id).toBe(t.id === 'midnight' ? null : t.id)
   })
   it('lists a picture exactly when its file exists', () => {
     for (const t of THEME_LIBRARY) {
