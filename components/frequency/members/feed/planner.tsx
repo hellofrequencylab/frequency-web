@@ -129,7 +129,7 @@ export function FeedPlanner({
           {/* SCAN-911: an event with no art gets no photo pane (it painted an empty sand block); the
               badge then rides beside the kicker. */}
           {hero.coverUrl ? (
-            <Link href={`/events/${hero.slug}`} className="fa-hero-ph ph" style={phStyle(hero.coverUrl)} aria-label={hero.title}>
+            <Link href={`/events/${hero.slug}`} className="fa-hero-ph ph" style={phStyle(hero.coverUrl)} aria-label={hero.badge ? `${hero.title} · ${hero.badge}` : hero.title}>
               {hero.badge && <span className="fa-badge">{hero.badge}</span>}
             </Link>
           ) : null}
