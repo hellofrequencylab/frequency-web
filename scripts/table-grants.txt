@@ -367,3 +367,10 @@ meet_taps                            internal
 
 # LIVE-1378: sealed OAuth credentials, explicitly revoked from public/anon/authenticated in migration25300.
 space_discovery_connections           internal
+
+# LIVE-1550: the Vera guided launch. Four owner-only tables on the session client, one service-only reminder log.
+space_launch                          authenticated
+launch_sources                        authenticated
+launch_facts                          authenticated
+launch_list_attestations              authenticated
+launch_email_log                      internal
