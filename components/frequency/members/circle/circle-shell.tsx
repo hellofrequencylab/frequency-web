@@ -31,8 +31,6 @@ function titleWithSerif(name: string): ReactNode {
 export function FqCircleShell({
   notices,
   coverImage,
-  statusLabel,
-  live,
   badge,
   channels = [],
   name,
@@ -56,14 +54,11 @@ export function FqCircleShell({
   place = null,
   meetLine = null,
   hostPanel = null,
-  inSpace = false,
+  spaceLink = null,
   children,
 }: {
   notices: ReactNode
   coverImage: string | null
-  statusLabel: string
-  /** A live (active, open) Circle wears the breathing dot on its status pill. */
-  live: boolean
   /** The cover's one badge: "6 here this week" with the breathing dot, or the Circle's own status. */
   badge?: { text: string; live: boolean } | null
   /** Up to three Channels, the primary first. */
@@ -101,8 +96,8 @@ export function FqCircleShell({
   meetLine?: string | null
   /** Host-only side panels (health). */
   hostPanel?: ReactNode
-  /** The Circle renders under its Space's header (SCAN-881), which owns the page's one h1. */
-  inSpace?: boolean
+  /** The Space that owns this Circle: a small "Part of" pill over the cover, linking to the Space. */
+  spaceLink?: { href: string; name: string } | null
   children: ReactNode
 }) {
   const open = Math.max(0, memberCap - memberCount)
@@ -111,34 +106,33 @@ export function FqCircleShell({
   const hasTools = !!tabTools
   return (
     <div className="fqc">
-      {/* Under its Space's header the Space's own tabs are the way back (SCAN-910): no "Circles" crumb. */}
-      {!inSpace && (
-        <Link className="meta fqm-back" href="/circles">
-          ← Circles
-        </Link>
-      )}
+      <Link className="meta fqm-back" href="/circles">
+        ← Circles
+      </Link>
       <div className="fqm-notices">{notices}</div>
 
-      {/* Under its Space's header the Space cover is the page's one photo (SCAN-900), so the Circle's band is
-          the plain kit card: no second image. */}
       <section
-        className={inSpace ? 'fqm-cl-hero is-plain' : 'fqm-cl-hero fqc-cover'}
-        style={!inSpace && coverImage ? { backgroundImage: `url('${coverImage}')` } : undefined}
+        className="fqm-cl-hero fqc-cover"
+        style={coverImage ? { backgroundImage: `url('${coverImage}')` } : undefined}
       >
-        {!inSpace && badge && (
+        {badge && (
           <span className={badge.live ? 'fqc-badge live' : 'fqc-badge'}>{badge.text}</span>
+        )}
+        {spaceLink && (
+          <Link className="fqc-space-pill" href={spaceLink.href}>
+            Part of {spaceLink.name}
+          </Link>
         )}
         <div className="fqm-cl-in">
           <div className="stack">
-            {inSpace && <span className={live ? 'tag glass live' : 'tag glass'}>{statusLabel}</span>}
-            {!inSpace && tags.length > 0 && (
+            {tags.length > 0 && (
               <ul className="fqc-tags">
                 {tags.map((c) => (
                   <li key={c.id}>{c.name}</li>
                 ))}
               </ul>
             )}
-            {inSpace ? <h2 className="h1">{name}</h2> : <h1 className="h1">{title}</h1>}
+            <h1 className="h1">{title}</h1>
             <div className="fqc-facts">
               {rhythm && <span>{rhythm}</span>}
               {subline && <span className="fqm-cl-sub">{subline}</span>}
@@ -201,7 +195,7 @@ export function FqCircleShell({
           {(place || meetLine) && (
             <div className="panel stack">
               <span className="k">How we meet</span>
-              {!inSpace && coverImage && place && (
+              {coverImage && place && (
                 <div className="fqc-meet-photo" style={{ backgroundImage: `url('${coverImage}')` }} role="img" aria-label={place}>
                   <span className="fqc-pin">
                     <FqIcon name="pin" />
@@ -209,7 +203,7 @@ export function FqCircleShell({
                   </span>
                 </div>
               )}
-              {!(coverImage && !inSpace) && place && (
+              {!coverImage && place && (
                 <span className="t1 fqc-place">
                   <FqIcon name="pin" />
                   {place}

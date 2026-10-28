@@ -53,9 +53,11 @@ import { clearAllDrafts } from '@/components/studio/spark/draft/draft-store'
 import { NavProgress } from '@/components/frequency/shared/nav-progress'
 import { FqTabBar, tabActive } from './tab-bar'
 import { ZapSheet } from './zap-sheet'
+import { LaunchPill, LaunchSheet } from './launch-box'
+import type { LaunchBoxView } from '@/lib/launch/box-state'
 import { AccountTools, type AccountToolsProps } from './account-tools'
 
-type Open = FqNavSection['key'] | 'zap' | 'bell' | 'me' | 'drawer' | null
+type Open = FqNavSection['key'] | 'zap' | 'bell' | 'me' | 'launch' | 'drawer' | null
 
 /** A Circle in the phone drawer (My Frequency, the same rows the left rail shows). */
 interface FqDrawerCircle {
@@ -89,6 +91,8 @@ interface FqHeaderProps {
   /** The member's standing (streak, Zaps, Gems), server-rendered behind Suspense, for the phone
    *  drawer's head: on a phone the rails that carry it are away. */
   standing?: React.ReactNode
+  /** The Vera launch box for a member with a launch running, resolved behind Suspense; null otherwise. */
+  launch?: Promise<LaunchBoxView | null>
 }
 
 export function FqHeader({
@@ -106,6 +110,7 @@ export function FqHeader({
   skin,
   standing,
   accountTools,
+  launch,
 }: FqHeaderProps) {
   const pathname = usePathname() ?? ''
   const router = useRouter()
@@ -297,6 +302,11 @@ export function FqHeader({
           </button>
         </div>
         <div className="ap-hdr-r">
+          {launch && (
+            <Suspense fallback={null}>
+              <LaunchSlot launch={launch} render={(v) => <LaunchPill view={v} open={open === 'launch'} onToggle={() => toggle('launch')} />} />
+            </Suspense>
+          )}
           <button
             type="button"
             ref={meBtnRef}
@@ -351,6 +361,22 @@ export function FqHeader({
         >
           {open === 'bell' && <BellSheet />}
         </div>
+        {launch && (
+          <div
+            className={open === 'launch' ? 'ap-sheet fqm-launch on' : 'ap-sheet fqm-launch'}
+            id="fqm-launch"
+            role="dialog"
+            aria-label="Your launch"
+            aria-hidden={open !== 'launch'}
+            inert={open !== 'launch'}
+          >
+            {open === 'launch' && (
+              <Suspense fallback={null}>
+                <LaunchSlot launch={launch} render={(v) => <LaunchSheet view={v} onClose={() => setOpen(null)} />} />
+              </Suspense>
+            )}
+          </div>
+        )}
         <div
           ref={meSheetRef}
           className={meOn ? 'ap-sheet fqm-acct on' : 'ap-sheet fqm-acct'}
@@ -838,6 +864,12 @@ function MegaMenu({
       </nav>
     </>
   )
+}
+
+/** Resolves the launch box promise and draws what the caller gives it; nothing while there is no launch. */
+function LaunchSlot({ launch, render }: { launch: Promise<LaunchBoxView | null>; render: (v: LaunchBoxView) => React.ReactNode }) {
+  const v = use(launch)
+  return v ? <>{render(v)}</> : null
 }
 
 /** "Day 12. You showed up again." with the viewer's real streak; the bare line when there is none. */

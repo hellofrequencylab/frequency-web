@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1551",
+  "title": "A launch remembers where the person stopped, resumes there, and cancels only in two calls",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "lib/launch/state.ts",
+    "ref": "Vera guided launch system, VLS-01 app half. The tables are LIVE-1550; this is the pure state rules on top of them."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-state.mjs",
+    "note": "Runs lib/launch/state.ts under node with no database: a launch published at step 1 and abandoned at step 3 reloads with the cursor at step 3 and step 1 still published; one cancel call, a wrong word or a stale request leaves the launch active; a required step cannot be skipped. Behaviour is pinned by lib/launch/state.test.ts."
+  },
+  "detail": "lib/launch/state.ts is pure: the steps record shape and its defensive reader, start, publish and skip, the resume rule (the first unsettled step in the person's own order), the launch phase, and the two-call cancel (a request, then the typed word STOP inside 15 minutes). A required step cannot be skipped. A row read from space_launch is turned into a snapshot defensively, so a hand-edited row cannot break a screen. No IO and no UI here: the store (reads and writes under the person's own session, RLS as the authorization) and the client actions land with the launch box (VLS-08), their first consumer, because the dead-export ceiling (SCAN-502, 150) has one export of room and unused actions would breach it.",
+  "wave": "W7"
+}

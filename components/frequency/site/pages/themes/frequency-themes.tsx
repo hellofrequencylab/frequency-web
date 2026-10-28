@@ -3,12 +3,14 @@
 // index so the page never drifts from what the editor offers. Built from the template kit only (phero, sec,
 // sh, tg-card, KeepGoing); no page CSS of its own. Copy follows docs/marketing/voice-and-language-guide.md:
 // pain point first, plain words, no claims we cannot stand behind.
+import Image from 'next/image'
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { OPERATOR_START_HREF } from '@/lib/site'
 import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
 import { ThemePicture } from './theme-picture'
+import './theme-index-shots.css'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { SITE_THEMES } from '@/lib/theme/site-style'
 import { THEME_LIBRARY, themePagePath } from '@/lib/themes/library'
@@ -95,6 +97,31 @@ export function FrequencyThemes() {
                 <Link href={t.href} aria-label={`See the ${t.label} kit`}>
                   <ThemePicture theme={t.id} label={t.label} slot="kit" />
                 </Link>
+                {t.id === 'midnight' && (
+                  <div className="tg-shots">
+                    <Image
+                      src="/themes/midnight/shots/general-site.jpg"
+                      alt="Nocturne website"
+                      width={924}
+                      height={540}
+                      sizes="(max-width: 960px) 50vw, 25vw"
+                    />
+                    <Image
+                      src="/themes/midnight/shots/general-space.jpg"
+                      alt="Nocturne Space page"
+                      width={740}
+                      height={1648}
+                      sizes="(max-width: 960px) 25vw, 12vw"
+                    />
+                    <Image
+                      src="/themes/midnight/shots/general-spot.jpg"
+                      alt="Nocturne Spotlight"
+                      width={740}
+                      height={1648}
+                      sizes="(max-width: 960px) 25vw, 12vw"
+                    />
+                  </div>
+                )}
                 <h3>{t.label}</h3>
                 <p>{t.tagline}</p>
                 <p>

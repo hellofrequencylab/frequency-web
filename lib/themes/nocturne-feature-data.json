@@ -1,0 +1,709 @@
+{
+ "kits": [
+  {
+   "id": "general",
+   "name": "Business",
+   "hex": "#B094FF",
+   "who": "Any local business that brings people together: what you do, what is coming up and how to reach you.",
+   "packages": [
+    "publish",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "live",
+    "steps",
+    "gatherings",
+    "doors",
+    "proof",
+    "faq",
+    "letter",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "grid",
+    "gatherings": "calendar",
+    "doors": "grid",
+    "proof": "quote",
+    "faq": "split",
+    "letter": "band",
+    "cta": "center"
+   },
+   "fonts": {
+    "display": "Bodoni Moda",
+    "label": "Marcellus"
+   },
+   "look": {
+    "corners": "square",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Good things happen",
+    "em": "when people show up."
+   }
+  },
+  {
+   "id": "coaches",
+   "name": "Coaches and healers",
+   "hex": "#86D99A",
+   "who": "Coaches, therapists and healers who work one to one and in small groups.",
+   "packages": [
+    "publish",
+    "book",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "steps",
+    "offerings",
+    "proof",
+    "gatherings",
+    "faq",
+    "letter",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "timeline",
+    "offerings": "split",
+    "gatherings": "split",
+    "proof": "quote",
+    "faq": "stack",
+    "letter": "card",
+    "cta": "split"
+   },
+   "fonts": {
+    "display": "Cormorant Garamond",
+    "label": "Tenor Sans"
+   },
+   "look": {
+    "corners": "subtle",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Stuck on the same thing",
+    "em": "for too long?"
+   }
+  },
+  {
+   "id": "studios",
+   "name": "Studios and instructors",
+   "hex": "#7FB8F0",
+   "who": "Yoga, dance, fitness and art studios that run classes and memberships.",
+   "packages": [
+    "publish",
+    "gather",
+    "belong"
+   ],
+   "blocks": [
+    "hero",
+    "live",
+    "gatherings",
+    "steps",
+    "membership",
+    "proof",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "gatherings": "calendar",
+    "steps": "strip",
+    "membership": "table",
+    "proof": "wall",
+    "faq": "split",
+    "cta": "center"
+   },
+   "fonts": {
+    "display": "Syne",
+    "label": "Jost",
+    "upright": true,
+    "weight": 600
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "balanced",
+    "header": "pill",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Find a class",
+    "em": "you will actually go back to."
+   }
+  },
+  {
+   "id": "hosts",
+   "name": "Event hosts",
+   "hex": "#FFB04A",
+   "who": "People who run nights, gatherings and series: what is coming up, how to join, a list to stay in touch.",
+   "packages": [
+    "publish",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "gatherings",
+    "steps",
+    "proof",
+    "letter",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "gatherings": "cards",
+    "steps": "strip",
+    "proof": "wall",
+    "letter": "band",
+    "faq": "stack",
+    "cta": "band"
+   },
+   "fonts": {
+    "display": "DM Serif Display",
+    "label": "Unica One"
+   },
+   "look": {
+    "corners": "square",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Good nights need",
+    "em": "a good home."
+   }
+  },
+  {
+   "id": "venues",
+   "name": "Venues",
+   "hex": "#EA9361",
+   "who": "Rooms, halls and spaces for hire: show the room, the calendar and how to book it.",
+   "packages": [
+    "publish",
+    "gather",
+    "book"
+   ],
+   "blocks": [
+    "hero",
+    "live",
+    "offerings",
+    "steps",
+    "gatherings",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "offerings": "cards",
+    "steps": "timeline",
+    "gatherings": "calendar",
+    "faq": "split",
+    "cta": "split"
+   },
+   "fonts": {
+    "display": "Gloock",
+    "label": "Josefin Sans",
+    "upright": true
+   },
+   "look": {
+    "corners": "square",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "minimal"
+   },
+   "hero": {
+    "title": "Give people a reason",
+    "em": "to walk in."
+   }
+  },
+  {
+   "id": "nonprofits",
+   "name": "Nonprofits",
+   "hex": "#5FD3C1",
+   "who": "Charities and community groups: explain the work plainly and make it easy to come along, volunteer or give.",
+   "packages": [
+    "publish",
+    "gather",
+    "belong"
+   ],
+   "blocks": [
+    "hero",
+    "doors",
+    "steps",
+    "gatherings",
+    "proof",
+    "membership",
+    "letter",
+    "cta"
+   ],
+   "layouts": {
+    "doors": "list",
+    "steps": "strip",
+    "gatherings": "calendar",
+    "proof": "stats",
+    "membership": "spotlight",
+    "letter": "card",
+    "cta": "center"
+   },
+   "fonts": {
+    "display": "Newsreader",
+    "label": "IBM Plex Mono"
+   },
+   "look": {
+    "corners": "subtle",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "People want to help.",
+    "em": "Make it easy to say yes."
+   }
+  },
+  {
+   "id": "networks",
+   "name": "Networks",
+   "hex": "#8FA0FF",
+   "who": "Many chapters under one name: find a chapter, start one, and see what is happening everywhere.",
+   "packages": [
+    "publish",
+    "gather",
+    "belong"
+   ],
+   "blocks": [
+    "hero",
+    "doors",
+    "gatherings",
+    "membership",
+    "steps",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "doors": "tiles",
+    "gatherings": "calendar",
+    "membership": "table",
+    "steps": "strip",
+    "faq": "stack",
+    "cta": "band"
+   },
+   "fonts": {
+    "display": "Young Serif",
+    "label": "Space Grotesk",
+    "upright": true
+   },
+   "look": {
+    "corners": "square",
+    "spacing": "compact",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Many chapters.",
+    "em": "One place to find them."
+   }
+  },
+  {
+   "id": "creators",
+   "name": "Creators",
+   "hex": "#FF8FD2",
+   "who": "Artists, musicians, makers and podcasters: the work, the shows and a list of people who want to hear from you.",
+   "packages": [
+    "publish",
+    "sell",
+    "gather",
+    "belong"
+   ],
+   "blocks": [
+    "hero",
+    "shop",
+    "gatherings",
+    "steps",
+    "membership",
+    "proof",
+    "letter",
+    "cta"
+   ],
+   "layouts": {
+    "shop": "rail",
+    "gatherings": "cards",
+    "steps": "timeline",
+    "membership": "spotlight",
+    "proof": "quote",
+    "letter": "card",
+    "cta": "split"
+   },
+   "fonts": {
+    "display": "Rozha One",
+    "label": "Syncopate",
+    "upright": true
+   },
+   "look": {
+    "corners": "square",
+    "spacing": "compact",
+    "header": "bar",
+    "footer": "minimal"
+   },
+   "hero": {
+    "title": "Making things is lonely.",
+    "em": "Sharing them does not have to be."
+   }
+  },
+  {
+   "id": "schools",
+   "name": "Schools and programs",
+   "hex": "#E8DC6A",
+   "who": "Workshops, courses, camps and training: what you teach, when the next one starts and how to enroll.",
+   "packages": [
+    "publish",
+    "learn",
+    "gather"
+   ],
+   "blocks": [
+    "hero",
+    "live",
+    "journeys",
+    "steps",
+    "gatherings",
+    "proof",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "journeys": "feature",
+    "steps": "timeline",
+    "gatherings": "calendar",
+    "proof": "stats",
+    "faq": "split",
+    "cta": "center"
+   },
+   "fonts": {
+    "display": "EB Garamond",
+    "label": "Overpass Mono"
+   },
+   "look": {
+    "corners": "subtle",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Learning sticks",
+    "em": "when you do it with other people."
+   }
+  },
+  {
+   "id": "clubs",
+   "name": "Clubs and groups",
+   "hex": "#B6E04E",
+   "who": "Hobby clubs, leagues, run and book clubs and co-ops: regular meetups, members and a way to join.",
+   "packages": [
+    "publish",
+    "gather",
+    "belong"
+   ],
+   "blocks": [
+    "hero",
+    "live",
+    "gatherings",
+    "steps",
+    "membership",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "gatherings": "calendar",
+    "steps": "strip",
+    "membership": "table",
+    "faq": "stack",
+    "cta": "split"
+   },
+   "fonts": {
+    "display": "Big Shoulders Display",
+    "label": "Barlow Condensed",
+    "upright": true,
+    "weight": 700,
+    "tracking": "-0.01em"
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "compact",
+    "header": "pill",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "A hundred contacts",
+    "em": "and no one to do the thing with?"
+   }
+  },
+  {
+   "id": "faith",
+   "name": "Spiritual Community",
+   "hex": "#F2D590",
+   "who": "Churches, sanghas, temples and centers: when you gather, the small groups, and a way to give.",
+   "packages": [
+    "publish",
+    "gather",
+    "belong"
+   ],
+   "blocks": [
+    "hero",
+    "steps",
+    "gatherings",
+    "library",
+    "membership",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "steps": "timeline",
+    "gatherings": "calendar",
+    "library": "list",
+    "membership": "tiers",
+    "faq": "split",
+    "cta": "center"
+   },
+   "fonts": {
+    "display": "Gilda Display",
+    "label": "Cinzel",
+    "upright": true
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Come as you are.",
+    "em": "Stay as long as you like."
+   }
+  },
+  {
+   "id": "wellness",
+   "name": "Wellness and retreats",
+   "hex": "#D98FD6",
+   "who": "Spas, retreat centers and wellness studios: treatments, packages, retreats and a simple way to book.",
+   "packages": [
+    "publish",
+    "book",
+    "gather",
+    "sell"
+   ],
+   "blocks": [
+    "hero",
+    "offerings",
+    "steps",
+    "gatherings",
+    "proof",
+    "shop",
+    "faq",
+    "cta"
+   ],
+   "layouts": {
+    "offerings": "cards",
+    "steps": "strip",
+    "gatherings": "cards",
+    "proof": "stats",
+    "shop": "grid",
+    "faq": "split",
+    "cta": "band"
+   },
+   "fonts": {
+    "display": "Italiana",
+    "label": "Raleway",
+    "upright": true
+   },
+   "look": {
+    "corners": "soft",
+    "spacing": "airy",
+    "header": "pill",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "Always wired?",
+    "em": "Give yourself an hour."
+   }
+  },
+  {
+   "id": "markets",
+   "name": "Markets and festivals",
+   "hex": "#FF7355",
+   "who": "Farmers markets, makers markets and festivals: the next dates, who is there, and how to apply as a vendor.",
+   "packages": [
+    "publish",
+    "gather",
+    "sell"
+   ],
+   "blocks": [
+    "hero",
+    "live",
+    "gatherings",
+    "steps",
+    "shop",
+    "faq",
+    "letter",
+    "cta"
+   ],
+   "layouts": {
+    "gatherings": "calendar",
+    "steps": "strip",
+    "shop": "rail",
+    "faq": "stack",
+    "letter": "band",
+    "cta": "split"
+   },
+   "fonts": {
+    "display": "Zilla Slab",
+    "label": "Archivo Narrow",
+    "weight": 500
+   },
+   "look": {
+    "corners": "square",
+    "spacing": "balanced",
+    "header": "bar",
+    "footer": "full"
+   },
+   "hero": {
+    "title": "The same faces every week, ",
+    "em": "and a few new ones."
+   }
+  }
+ ],
+ "packages": [
+  {
+   "id": "publish",
+   "name": "Library & letter",
+   "stage": "Attract · Capture · Nurture",
+   "blurb": "Essays, recordings, free guides and the letter. Every site has this.",
+   "locked": true
+  },
+  {
+   "id": "book",
+   "name": "Sessions",
+   "stage": "Convert · Deliver",
+   "blurb": "Offerings, four-step booking, intake questions, reminders.",
+   "locked": false
+  },
+  {
+   "id": "gather",
+   "name": "Gatherings",
+   "stage": "Deliver · Keep",
+   "blurb": "Dated events with seats, tickets and waitlists.",
+   "locked": false
+  },
+  {
+   "id": "learn",
+   "name": "Journeys",
+   "stage": "Nurture · Deliver",
+   "blurb": "Cohort programs with a landing page, player and progress.",
+   "locked": false
+  },
+  {
+   "id": "belong",
+   "name": "Membership",
+   "stage": "Keep",
+   "blurb": "Three tiers, yearly pricing, member perks and pause.",
+   "locked": false
+  },
+  {
+   "id": "sell",
+   "name": "Shop",
+   "stage": "Convert · Return",
+   "blurb": "Products, downloads, gift cards, bag and checkout.",
+   "locked": false
+  }
+ ],
+ "blocks": [
+  {
+   "id": "hero",
+   "name": "Hero",
+   "pkg": "core",
+   "stage": "Attract"
+  },
+  {
+   "id": "live",
+   "name": "Liveness strip",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "steps",
+   "name": "How it works",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "doors",
+   "name": "Ways in",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "offerings",
+   "name": "Offerings",
+   "pkg": "book",
+   "stage": "Convert"
+  },
+  {
+   "id": "journeys",
+   "name": "Journeys",
+   "pkg": "learn",
+   "stage": "Deliver"
+  },
+  {
+   "id": "gatherings",
+   "name": "Gatherings",
+   "pkg": "gather",
+   "stage": "Deliver"
+  },
+  {
+   "id": "membership",
+   "name": "Membership",
+   "pkg": "belong",
+   "stage": "Keep"
+  },
+  {
+   "id": "proof",
+   "name": "Proof",
+   "pkg": "core",
+   "stage": "Return"
+  },
+  {
+   "id": "shop",
+   "name": "Shop bestsellers",
+   "pkg": "sell",
+   "stage": "Convert"
+  },
+  {
+   "id": "library",
+   "name": "From the library",
+   "pkg": "publish",
+   "stage": "Attract"
+  },
+  {
+   "id": "letter",
+   "name": "Letter sign-up",
+   "pkg": "publish",
+   "stage": "Capture"
+  },
+  {
+   "id": "faq",
+   "name": "Questions",
+   "pkg": "core",
+   "stage": "Convert"
+  },
+  {
+   "id": "cta",
+   "name": "Closing call",
+   "pkg": "core",
+   "stage": "Convert"
+  }
+ ],
+ "swatches": [
+  "#86D99A",
+  "#FFC46B",
+  "#7FD4E8",
+  "#F28CB1"
+ ]
+}
