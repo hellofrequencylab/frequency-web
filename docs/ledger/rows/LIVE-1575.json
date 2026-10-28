@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1575",
+  "title": "The faith profile reads Spiritual Community in the kit spec, the Space defaults and the Space picker",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/niche-spec.ts",
+    "ref": "LIVE-1553"
+  },
+  "detail": "Daniel named the faith profile Spiritual Community everywhere a person reads it (2026-10-28). The kit spec label, the Space niche defaults label and the Space picker option now say it. The code id stays `faith` in MEGA_PROFILE_NICHES, so stored Spaces and kit ids do not move. The door at /for/spiritual-community is its own change.",
+  "closed": "2026-10-28",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "niche-spec.ts, niche-defaults.ts and space-picker.ts carry Spiritual Community; no 'Faith and spiritual communities' label remains.",
+    "cmd": "node -e 'const f=require(\"fs\");const s=[\"lib/sites/kits/niche-spec.ts\",\"lib/spaces/niche-defaults.ts\"].map(p=>f.readFileSync(p,\"utf8\"));if(s.some(t=>t.includes(\"Faith and spiritual communities\"))||!s[0].includes(\"label: \\x27Spiritual Community\\x27\")){console.error(\"the faith profile label drifted from Spiritual Community\");process.exit(1)}'"
+  }
+}

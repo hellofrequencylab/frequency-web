@@ -134,6 +134,19 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'Theme Kits', path: '/themes' },
     ],
   },
+  system: {
+    path: '/system',
+    title: 'One system for your website, Spotlight, people, events and payments',
+    description:
+      'Design it once. Your website, Spotlight, emails and sign-ups from one Theme Kit, and your people, events, tickets, payments and Circles behind one login.',
+    shareTitle: 'Frequency: the whole system, one account',
+    headline: 'Design it once. Launch when you like.',
+    lede: 'Your website, your Spotlight, your emails and your sign-ups, all from one theme. Your people, events, tickets, payments, Circles and teaching, all behind one login. Everything you run, with one account.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'The system', path: '/system' },
+    ],
+  },
   midnight: {
     path: '/themes/nocturne',
     title: 'Nocturne: design it once, wear it on every surface',

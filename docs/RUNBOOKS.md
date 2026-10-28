@@ -454,6 +454,8 @@ Create operational backup tables in a private, non-exposed schema where possible
 
 For the exact allowlist covered by SEC-002 and SEC-014 (the two original backups plus eight separately reviewed out-of-band backups), the repeatable operator repair is [`scripts/ops/secure-frequency-backups.sql`](../scripts/ops/secure-frequency-backups.sql). Review the target and obtain database-change authorization before running it. It changes permissions only, retains the tables and rolls back if any target is missing or effective browser table or column privileges remain. Never widen its name filter without separately reviewing the newly targeted tables.
 
+For the separately reviewed `zz_backup_alli_rae_update4_20261028` table, use [`scripts/ops/secure-frequency-backup-update4.sql`](../scripts/ops/secure-frequency-backup-update4.sql) only after this file is on main and the target project is confirmed. It retains the data and fails closed if the exact table or access postconditions differ.
+
 After any backup creation or permission repair, inspect `pg_class.relrowsecurity`, `has_table_privilege` and `has_any_column_privilege` for both browser roles; check retained operator/service access and run security advisors. Check live catalogs as well as migration parity: operational copies can exist outside the migration ledger. No private-row reads are needed for these permission checks.
 
 **Serves** no SLO row. This is the section for a bad write, a dropped table, a migration that
