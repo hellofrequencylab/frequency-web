@@ -8,6 +8,7 @@ import { loadSpotlightAnswers } from '@/lib/launch/flow-io'
 import { readPendingLaunch } from '@/lib/launch/pending-io'
 import { spaceChoices } from '@/lib/launch/space-choice'
 import { listOwnedSpaces } from '@/lib/launch/spaces-io'
+import { loadClock } from '@/lib/launch/clock-io'
 import { getActiveLaunch } from '@/lib/launch/store'
 
 // The launch page (VLS-07, VLS-09): one page for the whole launch. The Spotlight form first; once it is published the
@@ -28,7 +29,7 @@ export default async function SpotlightStepPage({ searchParams }: { searchParams
   const choices = owned.length > 0 ? spaceChoices(owned) : undefined
   return (
     <DashboardTemplate {...flowHeading(view)} adminBar={false} width="default">
-      <LaunchFlow view={view} answers={held} errorCode={typeof e === 'string' ? e : undefined} signedIn={!!profileId} choices={choices} />
+      <LaunchFlow view={view} answers={held} errorCode={typeof e === 'string' ? e : undefined} signedIn={!!profileId} choices={choices} clock={(await loadClock(launch)) ?? undefined} />
     </DashboardTemplate>
   )
 }

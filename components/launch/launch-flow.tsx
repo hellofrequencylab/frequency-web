@@ -3,6 +3,8 @@ import { Field, Input, Textarea } from '@/components/ui/field'
 import { PublishedScreen } from '@/components/launch/published-screen'
 import { chooseSpaceFormAction, keepSpaceFormAction, publishSpotlightFormAction } from '@/lib/launch/actions'
 import type { FlowView } from '@/lib/launch/flow'
+import { LaunchClock } from '@/components/launch/launch-clock'
+import type { ClockView } from '@/lib/launch/clock'
 import type { SpaceChoice } from '@/lib/launch/space-choice'
 import type { SpotlightAnswers } from '@/lib/launch/spotlight-step'
 
@@ -53,7 +55,7 @@ function Phone({ src, live }: { src: string | null; live: boolean }) {
   )
 }
 
-export function LaunchFlow({ view, answers, errorCode, signedIn, choices }: { view: FlowView; answers: SpotlightAnswers | null; errorCode?: string; signedIn: boolean; choices?: SpaceChoice[] }) {
+export function LaunchFlow({ view, answers, errorCode, signedIn, choices, clock }: { view: FlowView; answers: SpotlightAnswers | null; errorCode?: string; signedIn: boolean; choices?: SpaceChoice[]; clock?: { view: ClockView; variant: 'pill' | 'hero' } }) {
   const live = !!view.slug
   const error = errorCode ? ERRORS[errorCode] : undefined
   const done = view.stages.filter((s) => s.state === 'live').length
@@ -61,6 +63,7 @@ export function LaunchFlow({ view, answers, errorCode, signedIn, choices }: { vi
 
   return (
     <>
+      {clock ? <LaunchClock view={clock.view} stages={view.stages.map((s) => s.label)} done={done} variant={clock.variant} /> : null}
       <div>
         <div className="mu-steps" role="img" aria-label={`${done} of ${view.stages.length} stages done`}>
           {view.stages.map((s) => (
