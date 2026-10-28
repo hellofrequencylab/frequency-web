@@ -29,14 +29,14 @@ export function ChoiceTile({
       onClick={onSelect}
     >
       {icon && (
-        <span aria-hidden className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-[image:var(--fq-pa-soft)]">
+        <span aria-hidden className="grid h-9 w-9 flex-none place-items-center rounded-control bg-[image:var(--fq-pa-soft)]">
           <FqIcon name={icon} size={18} />
         </span>
       )}
       <span className="min-w-0">
         <span className="block text-body-sm font-semibold text-text">
           {title}
-          {tag && <span className="ml-2 rounded-full bg-[image:var(--fq-pa-soft)] px-2 py-0.5 align-middle text-eyebrow font-semibold text-text">{tag}</span>}
+          {tag && <span className="ml-2 rounded-pill bg-[image:var(--fq-pa-soft)] px-2 py-0.5 align-middle text-eyebrow font-semibold text-text">{tag}</span>}
         </span>
         {hint && <span className="block text-meta text-muted">{hint}</span>}
       </span>

@@ -90,7 +90,7 @@ export function CreateFlow({
     <div className="@container space-y-6">
       {kit && (
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-[image:var(--fq-pa-soft)] p-3">
-          <span aria-hidden className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-ink font-display text-body-sm font-bold text-on-ink">
+          <span aria-hidden className="grid h-11 w-11 flex-none place-items-center rounded-control bg-ink font-display text-body-sm font-bold text-on-ink">
             {kit.label.charAt(0)}
           </span>
           <p className="min-w-0 flex-1 text-meta text-muted">
@@ -114,13 +114,13 @@ export function CreateFlow({
             <li
               key={s.id}
               aria-current={state === 'on' ? 'step' : undefined}
-              className={`flex h-9 items-center gap-2 rounded-full border px-2.5 text-meta font-semibold sm:px-3.5 ${
+              className={`flex h-9 items-center gap-2 rounded-pill border px-2.5 text-meta font-semibold sm:px-3.5 ${
                 state === 'on' ? 'border-ink bg-ink text-on-ink' : 'border-border text-muted'
               }`}
             >
               <span
                 aria-hidden
-                className={`grid h-5 w-5 place-items-center rounded-full text-eyebrow ${state === 'todo' ? 'bg-surface-elevated' : 'bg-[image:var(--fq-pa)] text-text'}`}
+                className={`grid h-5 w-5 place-items-center rounded-pill text-eyebrow ${state === 'todo' ? 'bg-surface-elevated' : 'bg-[image:var(--fq-pa)] text-text'}`}
               >
                 {i + 1}
               </span>
