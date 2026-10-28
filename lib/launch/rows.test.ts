@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 
 type Result = { data?: unknown; count?: number | null; error?: unknown }
 const tables: Record<string, Result> = {}
-vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: async () => ({
     from: (t: string) => {
       const chain: Record<string, unknown> = {}
       const result = () => Promise.resolve(tables[t] ?? { data: null, count: 0, error: null })
