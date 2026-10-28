@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 707,
+      "baseline": 603,
       "frozen": {
-        "at": "2026-10-26",
-        "value": 707,
+        "at": "2026-10-28",
+        "value": 603,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "DAWN branches removed from the discover, public share and help pages retired literal radii (SCAN-1128 parts 2 and 3)",
-        "from": 713
+        "reason": "Sweep landed on main: 707 to 603 literal radii retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
+        "from": 707
       },
       "history": [
         {
@@ -385,6 +385,13 @@
           "to": 707,
           "direction": "lowered",
           "reason": "DAWN branches removed from the discover, public share and help pages retired literal radii (SCAN-1128 parts 2 and 3)"
+        },
+        {
+          "at": "2026-10-28",
+          "from": 707,
+          "to": 603,
+          "direction": "lowered",
+          "reason": "Sweep landed on main: 707 to 603 literal radii retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
         }
       ]
     },
@@ -463,14 +470,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 41,
+      "baseline": 38,
       "frozen": {
-        "at": "2026-10-26",
-        "value": 41,
+        "at": "2026-10-28",
+        "value": 38,
         "direction": "lowered",
         "basis": "fa00e74e05ee",
-        "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites",
-        "from": 42
+        "reason": "Sweep landed on main: 41 to 38 shadow literals retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
+        "from": 41
       },
       "history": [
         {
@@ -556,6 +563,13 @@
           "to": 41,
           "direction": "lowered",
           "reason": "SCAN-1127: the DAWN branches removed from ui primitives and templates retired these sites"
+        },
+        {
+          "at": "2026-10-28",
+          "from": 41,
+          "to": 38,
+          "direction": "lowered",
+          "reason": "Sweep landed on main: 41 to 38 shadow literals retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
         }
       ]
     },
@@ -737,14 +751,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 262,
+      "baseline": 166,
       "frozen": {
-        "at": "2026-10-27",
-        "value": 262,
+        "at": "2026-10-28",
+        "value": 166,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 first slice: 21 hand-rolled primary buttons outside admin moved to the kit button classes (#4063). Daniel named the counter: re-freeze raw-button-bg (2026-10-27).",
-        "from": 287
+        "reason": "Sweep landed on main: 262 to 166 raw button backgrounds retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
+        "from": 262
       },
       "history": [
         {
@@ -977,6 +991,13 @@
           "to": 262,
           "direction": "lowered",
           "reason": "SCAN-1133 first slice: 21 hand-rolled primary buttons outside admin moved to the kit button classes (#4063). Daniel named the counter: re-freeze raw-button-bg (2026-10-27)."
+        },
+        {
+          "at": "2026-10-28",
+          "from": 262,
+          "to": 166,
+          "direction": "lowered",
+          "reason": "Sweep landed on main: 262 to 166 raw button backgrounds retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
         }
       ]
     },
@@ -997,13 +1018,13 @@
         "components/ui/meter.tsx",
         "components/ui/streak-meter.tsx"
       ],
-      "baseline": 8,
+      "baseline": 7,
       "frozen": {
-        "at": "2026-08-17",
-        "value": 8,
-        "direction": "rebased",
+        "at": "2026-10-28",
+        "value": 7,
+        "direction": "lowered",
         "basis": "d2ed9520aa4f",
-        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 8 before and 8 after, measured on the committed tree and again in the worktree. Only the fingerprint moves.",
+        "reason": "Sweep landed on main: 8 to 7 sites retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
         "from": 8
       },
       "history": [
@@ -1048,6 +1069,13 @@
           "to": 8,
           "direction": "rebased",
           "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob ending slash-star no longer opens a block comment running to the next JSDoc close. Over app+components+lib that had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 8 before and 8 after, measured on the committed tree and again in the worktree. Only the fingerprint moves."
+        },
+        {
+          "at": "2026-10-28",
+          "from": 8,
+          "to": 7,
+          "direction": "lowered",
+          "reason": "Sweep landed on main: 8 to 7 sites retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
         }
       ]
     },
@@ -1340,14 +1368,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 59,
+      "baseline": 54,
       "frozen": {
-        "at": "2026-10-26",
-        "value": 59,
+        "at": "2026-10-28",
+        "value": 54,
         "direction": "lowered",
         "basis": "8afdfcd88c01",
-        "reason": "SCAN-1132 moved the three tab-bar icon sizes onto spacing tokens",
-        "from": 65
+        "reason": "Sweep landed on main: 59 to 54 arbitrary px values retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
+        "from": 59
       },
       "history": [
         {
@@ -1440,6 +1468,13 @@
           "to": 59,
           "direction": "lowered",
           "reason": "SCAN-1132 moved the three tab-bar icon sizes onto spacing tokens"
+        },
+        {
+          "at": "2026-10-28",
+          "from": 59,
+          "to": 54,
+          "direction": "lowered",
+          "reason": "Sweep landed on main: 59 to 54 arbitrary px values retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
         }
       ]
     },
@@ -1458,14 +1493,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 30,
+      "baseline": 28,
       "frozen": {
-        "at": "2026-10-14",
-        "value": 30,
+        "at": "2026-10-28",
+        "value": 28,
         "direction": "lowered",
         "basis": "64ff33cabd79",
-        "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN",
-        "from": 47
+        "reason": "Sweep landed on main: 30 to 28 display type literals retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
+        "from": 30
       },
       "history": [
         {
@@ -1537,6 +1572,13 @@
           "to": 30,
           "direction": "lowered",
           "reason": "Theme-bulletproofing scans merged (all six areas): role radii, spacing-scale sizes and stat type roles replaced literals, pixel-identical under DAWN"
+        },
+        {
+          "at": "2026-10-28",
+          "from": 30,
+          "to": 28,
+          "direction": "lowered",
+          "reason": "Sweep landed on main: 30 to 28 display type literals retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
         }
       ]
     },

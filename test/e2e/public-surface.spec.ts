@@ -89,6 +89,7 @@ test.describe('public surface (platform host)', { tag: '@public-surface' }, () =
     expect(res.status()).toBe(200)
     expect(res.headers()['content-type']).toContain('application/json')
     expect(res.headers()['cache-control']).toMatch(/s-maxage=\d+/)
+    expect(res.headers()['set-cookie'], 'a cacheable machine endpoint sets no cookie').toBeUndefined()
     const json = await res.json()
     expect(json.service).toBe('frequency')
     expect(json.build.env).toBe('production')
@@ -139,13 +140,15 @@ test.describe('public surface (platform host)', { tag: '@public-surface' }, () =
     }
   })
 
-  test('MapLibre worker and shared chunk are served as JavaScript from /maplibre/', async ({ request }) => {
-    for (const file of ['maplibre-gl-worker.mjs', 'maplibre-gl-shared.mjs']) {
-      const res = await request.get(`/maplibre/${file}`)
-      expect(res.status(), file).toBe(200)
-      expect(res.headers()['content-type'] ?? '', file).toMatch(/javascript/)
-      expect((await res.body()).length, `${file} is not an empty or error body`).toBeGreaterThan(1000)
-    }
+  test('MapLibre worker is served as JavaScript from /maplibre/, and its sibling resolves', async ({ request }) => {
+    const worker = await request.get('/maplibre/maplibre-gl-worker.mjs')
+    expect(worker.status()).toBe(200)
+    expect(worker.headers()['content-type'] ?? '').toMatch(/javascript/)
+    expect((await worker.body()).length, 'worker is not an empty or error body').toBeGreaterThan(100_000)
+    // maplibre-gl ships this sibling as a 0-byte file; what matters is that the worker's
+    // `./maplibre-gl-shared.mjs` import resolves (200) rather than 404ing into a blank map.
+    const shared = await request.get('/maplibre/maplibre-gl-shared.mjs')
+    expect(shared.status()).toBe(200)
   })
 
   // Off by default. A cron route that wrongly accepts an anonymous call would RUN that cron in
