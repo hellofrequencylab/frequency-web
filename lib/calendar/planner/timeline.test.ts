@@ -42,7 +42,7 @@ describe('buildTimeline', () => {
     expect(row.bar.startsBefore).toBe(false)
     expect(row.bar.bd).toContain('24%')
     expect(row.marks[0].widthPct).toBeCloseTo((3 * 100) / 63, 6)
-    expect(row.marks[0].color).toBe('var(--color-cal-production)')
+    expect(row.marks[0].color).toBe('var(--cal-production)')
     expect(row.marks[0].title).toBe('d1 · Mon, Oct 26')
   })
   it('floors a one day mark at 1.6 percent', () => {

@@ -5,17 +5,17 @@ import type { PlannerKind, PlannerLayer } from './types'
 //
 // Every value is a CSS string built from theme tokens, so it follows Commons night by itself. Text
 // always uses `fg`. The violet and the production blue are the two fixed accents the design tokens
-// did not carry; they live in app/globals.css as --color-cal-violet and --color-cal-production.
+// did not carry; they live in app/globals.css as --color-cal-works and --cal-production.
 //
 // This file is separate from lib/calendar/registry.ts on purpose: the registry's pinned strings
 // belong to the existing grid. The UI pass reads this table; the two meet when the grid is replaced.
 
 /** The violet that marks work in progress, as a CSS color. */
-const CAL_VIOLET = 'var(--color-cal-violet)'
+const CAL_VIOLET = 'var(--color-cal-works)'
 /** The production blue, as a CSS color. */
-const CAL_PRODUCTION = 'var(--color-cal-production)'
+const CAL_PRODUCTION = 'var(--cal-production)'
 /** The lighter violet a pencil's dot wears. */
-const CAL_PENCIL_DOT = 'color-mix(in oklab, var(--color-cal-violet) 70%, var(--color-surface))'
+const CAL_PENCIL_DOT = 'color-mix(in oklab, var(--color-cal-works) 70%, var(--color-surface))'
 
 const mix = (color: string, pct: number, base: string) => `color-mix(in oklab, ${color} ${pct}%, ${base})`
 const clear = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`

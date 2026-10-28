@@ -31,8 +31,8 @@ describe('presentation table', () => {
     expect(KINDS.cancelled.bg).toBe('none')
   })
   it('uses tokens for the two fixed accents', () => {
-    expect(KINDS.planning.dot).toBe('var(--color-cal-violet)')
-    expect(KINDS.production.dot).toBe('var(--color-cal-production)')
+    expect(KINDS.planning.dot).toBe('var(--color-cal-works)')
+    expect(KINDS.production.dot).toBe('var(--cal-production)')
   })
   it('hardcodes no hex in a fill, border or text', () => {
     for (const k of KIND_ORDER) {

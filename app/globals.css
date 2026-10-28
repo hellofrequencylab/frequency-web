@@ -180,8 +180,7 @@
   --color-cal-works:        #9C86F5;
   --color-cal-works-bg:     #EBE7FF;
   --color-cal-works-strong: #D9D2FF;
-  --color-cal-violet:       #9C86F5;
-  --color-cal-production:   #8FA8FF;
+  --cal-production:   #8FA8FF;
   --color-cal-todo:         #9A6200;
   --color-cal-todo-bg:      #FFEBC6;
   /* Season washes behind a month header (calendar redesign README section 7). Fixed light tints. */
@@ -927,8 +926,7 @@
   --color-cal-works:        #9C86F5;
   --color-cal-works-bg:     #26224A;
   --color-cal-works-strong: #342E63;
-  --color-cal-violet:       #9C86F5;
-  --color-cal-production:   #8FA8FF;
+  --cal-production:   #8FA8FF;
   --color-cal-todo:         #E0A94A;
   --color-cal-todo-bg:      #3D2E0F;
   /* Night washes: the same hues at about half strength so a month header does not glow on a dark ground. */
@@ -1341,8 +1339,6 @@
   --color-cal-works: var(--color-cal-works);
   --color-cal-works-bg: var(--color-cal-works-bg);
   --color-cal-works-strong: var(--color-cal-works-strong);
-  --color-cal-violet: var(--color-cal-violet);
-  --color-cal-production: var(--color-cal-production);
   --color-cal-todo: var(--color-cal-todo);
   --color-cal-todo-bg: var(--color-cal-todo-bg);
   --color-presence: var(--color-presence);
