@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1633",
+  "title": "The Get Started checklist stands down while a launch box is up, so a member never sees two lists",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/members/shell/right-rail.tsx",
+    "ref": "Vera guided launch system, VLS-11. The launch box (VLS-08) is the running launch's list."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-get-started.mjs",
+    "note": "The decision (a running launch owns the list; no launch, signed out or the switch off leaves Get Started alone) is pinned by lib/launch/box.test.ts; the probe reads the wiring: both the full Get Started panel and the collapsed rail item return nothing while launchOwnsNextSteps is true. Fails on main, where the helper does not exist."
+  },
+  "detail": "launchOwnsNextSteps (lib/launch/box.ts) is true when the signed-in member has an active launch and the launch system is on. GetStartedPanel and MicroGetStarted in the right rail check it first. Members without a launch, and every member while LAUNCH_SYSTEM_ENABLED is off, see exactly today's checklist.",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}
