@@ -12,15 +12,18 @@ import type { DashboardTemplate } from './dashboard-template'
 /** FocusTemplate for a console page: a single task, kept to a readable column in the frame. */
 export function ConsoleFocusTemplate({
   consoleMeasure = 'focus',
+  headless = false,
   ...props
 }: ComponentProps<typeof FocusTemplate> & {
   /** Frequency only: 'full' lets a page that is a working surface rather than a form (the Calendar
    *  planner) use the console's whole width. */
   consoleMeasure?: 'focus' | 'full'
+  /** Frequency only: the title stays for screen readers and the surface starts at the top. */
+  headless?: boolean
 }) {
   const { eyebrow, title, description, actions, back, children } = props
   return (
-    <AdminPageFrame kicker={eyebrow} title={title} meta={description} actions={actions} back={back} measure={consoleMeasure}>
+    <AdminPageFrame kicker={eyebrow} title={title} meta={description} actions={actions} back={back} measure={consoleMeasure} headless={headless}>
       {children}
     </AdminPageFrame>
   )

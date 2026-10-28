@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1743",
+  "title": "The hand-built /themes/designer page: the Designer Theme Kit on every surface, set up the way Nocturne's is",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-designer.tsx",
+    "ref": "Designer Theme Kit build, pass 2"
+  },
+  "detail": "Pass 2. app/(marketing)/themes/designer is its own static route (it wins over /themes/[theme]); FrequencyDesigner is a server page of kit parts with one client island (designer-preview.tsx: Website, Spotlight, Space and Email chips, and a picker for the thirteen profiles). Hero: title and subtitle top left, copy and buttons under, preview right, a lead-in to the next section, all in the first viewport at 1280 to 2000 and stacked at 390. Phones are the design system's iPhone frame (390 by 844, 370 by 824 screen). Pictures are Playwright renders of the Designer design system's own kit surfaces (13 profiles by 4 surfaces, six Spotlight layouts) under public/themes/designer. What is ready and on the way is read from lib/themes/library.ts (Email stays on the way). The /themes index card shows the real shots. Gap: the pictures are the design system's kit renders, not the product's own site renders; the profile names are the design's and the product's Designer starter kits still carry the generic names until the kit content pass.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "Route, page, preview island, CSS, data and 13 by 4 pictures present.",
+    "cmd": "node scripts/probes/designer-theme-page.mjs"
+  },
+  "closed": "2026-10-28"
+}
