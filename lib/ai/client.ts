@@ -15,7 +15,9 @@
 // shapes. Default (flag unset) is the direct Anthropic path, byte-for-byte as today.
 
 import Anthropic from '@anthropic-ai/sdk'
-import { envFlag } from '@/lib/env/string'
+// Keep this shared client importable from Node-based maintenance scripts that use
+// --experimental-strip-types; those scripts do not run through Next's `@/` resolver.
+import { envFlag } from '../env/string.ts'
 
 let cached: Anthropic | null | undefined
 
