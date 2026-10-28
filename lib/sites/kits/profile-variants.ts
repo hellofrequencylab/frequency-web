@@ -40,6 +40,19 @@ function questions(spec: NicheSpec, faq: Block[]): KitPage {
   ])
 }
 
+/** The Services page: what the Space offers, on its own page, for kits whose main page leads with something else
+ *  (events, classes, meetups). Skipped where the main page already is the offerings page. */
+function services(spec: NicheSpec): KitPage[] {
+  if (spec.main.live === 'offerings' || spec.main.slug === 'services') return []
+  return [
+    page('services', 'Services', `What ${spec.label.toLowerCase()} Spaces offer, and how to start.`, [
+      { type: 'EditorialSection', props: { body: 'lead', eyebrow: 'Services', title: 'What we offer.', lead: 'Pick what fits. Not sure which? Ask us and we will point you.' } },
+      { type: 'SpaceOfferings', props: {} },
+      { type: 'SpaceContact', props: { heading: 'Ask us' } },
+    ]),
+  ]
+}
+
 // MIDNIGHT
 const SIGILS = ['moon-new', 'moon-quarter', 'moon-full'] as const
 function midnight(spec: NicheSpec): KitPage[] {
@@ -77,6 +90,7 @@ function network(spec: NicheSpec): KitPage[] {
     page(m.slug, m.label, m.seoDescription, [{ type: 'EditorialSection', props: { body: 'lead', eyebrow: m.eyebrow, title: star(m.title, m.accent), lead: m.lead } }, live(m.live)]),
     page('about', 'About', 'Who we are and how we do things.', [story(spec), contact]),
     questions(spec, [{ type: 'SpaceFAQ', props: { items: h.faqs } }]),
+    ...services(spec),
   ]
 }
 
@@ -98,6 +112,7 @@ function temple(spec: NicheSpec): KitPage[] {
     ]),
     page('about', 'About', 'Who we are and how we do things.', [story(spec), contact]),
     questions(spec, [{ type: 'TempleFAQ', props: { eyebrow: 'Questions', title: h.faqTitle, items: h.faqs } }]),
+    ...services(spec),
   ]
 }
 
@@ -117,6 +132,7 @@ function wildheart(spec: NicheSpec): KitPage[] {
     page(m.slug, m.label, m.seoDescription, [{ type: 'EditorialSection', props: { body: 'lead', eyebrow: m.eyebrow, title: m.title, lead: m.lead } }, live(m.live)]),
     page('about', 'About', 'Who we are and how we do things.', [story(spec), contact]),
     questions(spec, [{ type: 'SpaceFAQ', props: { items: h.faqs } }]),
+    ...services(spec),
   ]
 }
 
