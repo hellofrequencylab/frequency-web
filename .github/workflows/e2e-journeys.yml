@@ -87,7 +87,7 @@ jobs:
           PW_STORAGE_STATE: ${{ github.workspace }}/test/e2e/.auth/member.json
         run: pnpm test:e2e:journeys
       - name: What the app logged
-        if: failure()
+        if: always()
         run: |
           echo "--- app log (errors and 500s)"
           grep -nE "auth/callback|Error|⨯| 500 " dev.log | tail -80 || true
