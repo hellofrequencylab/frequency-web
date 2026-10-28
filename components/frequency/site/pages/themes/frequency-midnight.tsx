@@ -335,33 +335,41 @@ export function FrequencyMidnight() {
             <span aria-hidden="true">/</span>
             <span aria-current="page">Nocturne</span>
           </nav>
-          <div className="nf-top">
-            <div className="label">
-              <b>Theme</b>Nocturne · by Frequency
+          <div className="nf-split">
+            <div className="nf-top">
+              <div className="label">
+                <b>Theme</b>Nocturne · by Frequency
+              </div>
+              <h1 className="nf-h1 nf-name">Nocturne</h1>
+              <p className="nf-aft">A Frequency Theme</p>
+              <p className="nf-tagline">
+                Design it once.
+                <br />
+                <em className="fq-iri-text">Same theme everywhere.</em>
+              </p>
+              <p className="nf-lead">
+                One complete theme for any business that gathers people. Your link in bio, your Space on Frequency, your own website and your emails,
+                all reading one profile. Change it once and every surface follows.
+              </p>
+              <div className="ctas">
+                <a className="btn fq-iri-btn" href="#start">
+                  Start your Spotlight
+                </a>
+                <a className="btn btn-ghost fq-iri-rim" href="#preview">
+                  See it live
+                </a>
+              </div>
             </div>
-            <h1 className="nf-h1 nf-name">Nocturne</h1>
-            <p className="nf-aft">Nocturne - A Frequency Theme</p>
-            <p className="nf-tagline">
-              Design it once.
-              <br />
-              <em className="fq-iri-text">Same theme everywhere.</em>
-            </p>
-            <p className="nf-lead">
-              One complete theme for any business that gathers people. Your link in bio, your Space on Frequency, your own website and your emails,
-              all reading one profile. Change it once and every surface follows.
-            </p>
-            <div className="ctas">
-              <a className="btn fq-iri-btn" href="#start">
-                Start your Spotlight
-              </a>
-              <a className="btn btn-ghost fq-iri-rim" href="#preview">
-                See it live
-              </a>
+            <div className="nf-hero-shot">
+              <Device kit={kit} surface="site" priority sizes="(max-width: 900px) 92vw, 640px" />
             </div>
           </div>
-          <div className="nf-hero-shot">
-            <Device kit={kit} surface="site" priority sizes="(max-width: 900px) 92vw, 980px" />
-          </div>
+          <a className="nf-more" href="#spotlight">
+            <span>See it on every surface</span>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
           <div className="nf-cascade">
             {CASCADE.map((c, i) => (
               <Fragment key={c.name}>
@@ -370,7 +378,7 @@ export function FrequencyMidnight() {
                     <path d={i % 2 ? 'M 24 0 C 24 55, 76 45, 76 100' : 'M 76 0 C 76 55, 24 45, 24 100'} vectorEffect="non-scaling-stroke" />
                   </svg>
                 ) : null}
-                <div className={`nf-cz ${i % 2 ? 'r' : 'l'}`}>
+                <div className={`nf-cz ${i % 2 ? 'r' : 'l'}`} id={i === 0 ? 'spotlight' : undefined}>
                   <div className="nf-cz-dev">
                     <span className="nf-dvlab">{c.tag}</span>
                     <Device kit={kit} surface={c.surface} priority={i === 0} sizes="(max-width: 900px) 90vw, 560px" />
