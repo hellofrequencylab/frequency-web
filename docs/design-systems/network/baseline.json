@@ -1,5 +1,5 @@
 {
- "ledger": "LIVE-1671",
+ "ledger": "LIVE-1711",
  "ids": [
   "copy:Spotlight Layouts.html#0fc6326e",
   "copy:Spotlight Layouts.html#2087e8a0",
@@ -82,7 +82,6 @@
   "copy:ui_kits/products/EmailPage.html#f92e6af0",
   "copy:ui_kits/products/SpacePage.html#88f4fa19",
   "copy:ui_kits/products/SpacePage.html#c860b9f4",
-  "copy:ui_kits/products/Spotlight.jsx#edc7669b",
   "copy:ui_kits/products/shared.jsx#0b1345fb",
   "copy:ui_kits/products/shared.jsx#2674ead7",
   "copy:ui_kits/products/shared.jsx#375a1c81",
@@ -130,7 +129,6 @@
   "copy:ui_kits/site/BookPage.jsx#e5832f45",
   "copy:ui_kits/site/BookPage.jsx#fc3599f7",
   "copy:ui_kits/site/BookPage.jsx#ff1c58ee",
-  "copy:ui_kits/site/Header.jsx#0ddc282a",
   "copy:ui_kits/site/Header.jsx#17770cbb",
   "copy:ui_kits/site/Header.jsx#24c78957",
   "copy:ui_kits/site/Header.jsx#31330b5c",
@@ -159,7 +157,6 @@
   "copy:ui_kits/site/HomePage.jsx#64a9a1f6",
   "copy:ui_kits/site/HomePage.jsx#80436769",
   "copy:ui_kits/site/HomePage.jsx#8f1927b4",
-  "copy:ui_kits/site/HomePage.jsx#959f12fb",
   "copy:ui_kits/site/HomePage.jsx#a567e61c",
   "copy:ui_kits/site/HomePage.jsx#a831c014",
   "copy:ui_kits/site/HomePage.jsx#ac368bc9",
