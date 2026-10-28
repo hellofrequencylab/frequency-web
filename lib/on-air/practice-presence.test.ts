@@ -33,12 +33,14 @@ function presenceClient(rows: { id: string; profile_id: string | null }[], failA
       }
     },
   }
-  return { client, calls }
+  // This intentionally lightweight fluent mock exercises the paging behavior without
+  // implementing Supabase's full PromiseLike query contract. Keep the production seam typed.
+  return { client: client as unknown as Parameters<typeof countPracticedToday>[0], calls }
 }
 
 describe('countPracticedToday', () => {
   it('counts distinct members across pages beyond PostgREST’s 1,000-row cap', async () => {
-    const rows = Array.from({ length: PRACTICE_PRESENCE_PAGE_SIZE + 1 }, (_, i) => ({
+    const rows: { id: string; profile_id: string | null }[] = Array.from({ length: PRACTICE_PRESENCE_PAGE_SIZE + 1 }, (_, i) => ({
       id: String(i).padStart(5, '0'),
       profile_id: `profile-${i}`,
     }))
@@ -52,7 +54,7 @@ describe('countPracticedToday', () => {
   })
 
   it('requests a final empty page when the result exactly fills a page', async () => {
-    const rows = Array.from({ length: PRACTICE_PRESENCE_PAGE_SIZE }, (_, i) => ({
+    const rows: { id: string; profile_id: string | null }[] = Array.from({ length: PRACTICE_PRESENCE_PAGE_SIZE }, (_, i) => ({
       id: String(i).padStart(5, '0'),
       profile_id: `profile-${i}`,
     }))
@@ -64,7 +66,7 @@ describe('countPracticedToday', () => {
   })
 
   it('does not return a partial count if a later page fails', async () => {
-    const rows = Array.from({ length: PRACTICE_PRESENCE_PAGE_SIZE + 1 }, (_, i) => ({
+    const rows: { id: string; profile_id: string | null }[] = Array.from({ length: PRACTICE_PRESENCE_PAGE_SIZE + 1 }, (_, i) => ({
       id: String(i).padStart(5, '0'),
       profile_id: `profile-${i}`,
     }))
