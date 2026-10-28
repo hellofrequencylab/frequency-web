@@ -121,7 +121,6 @@ export const meResponse = envelope(meView)
 
 /** The scopes the capability projection answers for. */
 export const capabilityScopeKind = z.enum(['global', 'circle', 'hub', 'nexus', 'event', 'practice', 'journey', 'profile', 'space'])
-export type CapabilityScopeKind = z.infer<typeof capabilityScopeKind>
 
 /**
  * The caller's capabilities on one scope, the SAME set the web resolves to render its affordances
@@ -167,7 +166,6 @@ export const accountExportResponse = envelope(
 // ── GET /api/v1/app-config: update prompt and client flags (LIVE-722) ───────────────────────────
 
 export const appPlatform = z.enum(['ios', 'android'])
-export type AppPlatform = z.infer<typeof appPlatform>
 
 /**
  * What an app build reads at launch, before sign-in. `updateRequired` is true when the build's
@@ -193,7 +191,6 @@ export const reportInput = z.object({
   reason: z.enum(['spam', 'harassment', 'inappropriate', 'misinformation', 'other']),
   details: z.string().max(2000).optional(),
 })
-export type ReportInput = z.infer<typeof reportInput>
 export const reportResponse = envelope(z.object({ reported: z.literal(true) }))
 
 export const blockInput = z.object({ profileId: z.uuid() })
@@ -385,7 +382,6 @@ export const practiceLogInput = z.object({
 export const practiceLogResponse = envelope(
   z.looseObject({ logged: z.boolean(), zapsAwarded: z.number().optional() }),
 )
-export const practiceUnlogResponse = envelope(z.looseObject({}))
 
 // Messages: GET /api/v1/messages, GET/POST /api/v1/messages/{id}, GET/POST .../rooms/{id}
 

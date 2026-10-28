@@ -11,11 +11,15 @@ vi.mock('@/lib/spaces/store', () => ({
   saveStarterWebsiteState: async (_id: string, state: unknown) => { saved.push(state); return true },
 }))
 vi.mock('@/lib/sites/site-cache', () => ({ refreshSite: () => undefined }))
+const attached: string[] = []
+vi.mock('@/lib/sites/vercel-domains', () => ({
+  addSiteSubdomain: async (host: string) => { attached.push(host); return { ok: true } },
+}))
 
 import { publishStarterSite } from './starter-site'
 
 describe('the Wizard publish, headless', () => {
-  beforeEach(() => { saved.length = 0 })
+  beforeEach(() => { saved.length = 0; attached.length = 0 })
 
   it('publishes a website with a home and a join page, on the theme the Space was dressed in, for every Theme Kit', async () => {
     for (const { id, editor } of MEGA_THEMES) {
@@ -32,8 +36,14 @@ describe('the Wizard publish, headless', () => {
     }
   })
 
+  it('asks for the free address of the new site once it has landed (VLS-04)', async () => {
+    expect(await publishStarterSite('space-1', 'midnight')).toBe(true)
+    expect(attached).toEqual(['starter.frequencylocal.com'])
+  })
+
   it('does nothing for a theme it does not know', async () => {
     expect(await publishStarterSite('space-1', 'not-a-theme')).toBe(false)
     expect(saved).toHaveLength(0)
+    expect(attached).toHaveLength(0)
   })
 })
