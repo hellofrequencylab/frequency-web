@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { DESIGNER_PROFILE_KIT_INDEX, KIT_INDEX } from '@/lib/sites/kits/registry'
+import { DESIGNER_PROFILE_KIT_INDEX, KIT_INDEX, NETWORK_KIT_PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
 import type { KitChanges } from '@/lib/sites/kits/apply'
 import type { KitApplyMode, KitNiche, SiteKit } from '@/lib/sites/kits/types'
 import { k } from './skin'
@@ -32,7 +32,7 @@ export function KitLibrary({ onApply, onPreview, suggestedNiche, theme }: { them
   }
 
   // The kit for the door this Space came in through (its saved niche) leads the list; the rest keep their order.
-  const kits = (theme === 'Designer' ? [...KIT_INDEX, ...DESIGNER_PROFILE_KIT_INDEX] : KIT_INDEX).filter((kit) => !theme || kit.theme === theme).sort((a, b) => Number(b.niche === suggestedNiche) - Number(a.niche === suggestedNiche))
+  const kits = (theme === 'Designer' ? [...KIT_INDEX, ...DESIGNER_PROFILE_KIT_INDEX] : theme === 'NetworkKit' ? NETWORK_KIT_PROFILE_KIT_INDEX : KIT_INDEX).filter((kit) => !theme || kit.theme === theme).sort((a, b) => Number(b.niche === suggestedNiche) - Number(a.niche === suggestedNiche))
 
   if (!kits.length) return null
   return <>
