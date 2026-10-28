@@ -176,6 +176,7 @@
 @keyframes nk-zoom{from{opacity:.2;transform:scale(.92);letter-spacing:-0.02em}to{opacity:1;transform:none}}
 @keyframes nk-tilt{from{transform:perspective(1400px) rotateX(10deg) translateY(30px);opacity:.6}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .nk-fc{animation:none}}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="site"] .nk-gpop{animation:none}}
 /* ===== Evolving "Your practice" block ===== */
 [data-design="frequency"] [data-kit="site"] .nk-float{height:auto;width:330px}
 [data-design="frequency"] [data-kit="site"] .nk-fc{position:relative;width:330px;padding:16px;gap:12px;animation:nk-pop .9s cubic-bezier(.18,1.4,.4,1) .3s both,nk-bob 7s var(--fq-ease-breath,ease-in-out) 1.2s infinite alternate}
