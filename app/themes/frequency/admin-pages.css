@@ -544,7 +544,7 @@ button.cal-tg-head:hover { background: var(--fq-track); }
 .cal-suite[data-dragging] .cal-tg-allday .cal-chip { pointer-events: none; }
 .cal-tg-body { position: relative; }
 .cal-tg-hours { display: block; z-index: 5; }
-.cal-tg-hour { position: absolute; right: 8px; transform: translateY(-50%); font: 500 11px/1 var(--fq-font-display); letter-spacing: 0.04em; color: var(--fq-text-faint); white-space: nowrap; }
+.cal-tg-hour { position: absolute; right: 8px; transform: translateY(-50%); font: 500 11px/1 var(--fq-font-display); letter-spacing: 0.04em; text-transform: uppercase; color: var(--fq-text-faint); white-space: nowrap; }
 .cal-tg-hour:first-child { transform: none; margin-top: 4px; }
 .cal-tg-col { position: relative; border-left: 1px solid var(--fq-border-hair); background-image: repeating-linear-gradient(to bottom, var(--fq-border-hair) 0 1px, transparent 1px 52px); }
 .cal-card { position: absolute; z-index: 1; left: var(--l); width: var(--w); display: flex; align-items: flex-start; gap: 4px; padding: 5px 8px; border-radius: 14px; overflow: hidden; text-align: left; transition: transform var(--fq-dur-fast) var(--fq-ease-out), box-shadow var(--fq-dur-fast) var(--fq-ease-out); }
