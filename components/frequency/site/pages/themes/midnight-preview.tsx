@@ -2,11 +2,11 @@
 
 // THE LIVE PREVIEW on the Midnight feature page (LIVE-1382): the sample Midnight site in a frame, desktop or
 // phone width, with a door to open it in its own tab. Native Dialog from the kit; no site code runs here, the
-// frame only points at /themes/midnight/demo.
+// frame only points at /themes/nocturne/demo.
 import { useState } from 'react'
 import { Dialog } from '@/components/ui/dialog'
 
-export const MIDNIGHT_DEMO_HREF = '/themes/midnight/demo'
+export const MIDNIGHT_DEMO_HREF = '/themes/nocturne/demo'
 
 export function MidnightPreview() {
   const [open, setOpen] = useState(false)

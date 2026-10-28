@@ -1,4 +1,4 @@
-// /themes/midnight (LIVE-1380): the feature page for the Midnight mega theme. A Frequency-only route, like
+// /themes/nocturne (LIVE-1380): the feature page for the Midnight mega theme. A Frequency-only route, like
 // /networks. app/sitemap.ts lists it. Static: no request data.
 import type { Metadata } from 'next'
 import { JsonLd } from '@/components/json-ld'
