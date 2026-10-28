@@ -1,0 +1,19 @@
+{
+  "id": "SEC-015",
+  "title": "Contain newly created Alli Rae backup browser access",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "scripts/ops/secure-frequency-backup-update4.sql",
+    "ref": "Metadata-only Supabase catalog review, 2026-10-28 UTC"
+  },
+  "detail": "Live catalog metadata confirmed the exact public backup table has RLS off and effective anonymous and authenticated table and column privileges, including write and truncate. No rows were accessed. An operator-only transaction is prepared for the one separately reviewed table, preserving data and checking protected role privileges; production repair remains outstanding.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-28",
+    "evidence": "OPEN: After the committed operator repair runs against the confirmed Frequency Community project, verify RLS and effective table and per-column browser privileges, operator/service access and live catalog/advisor results without reading backup rows."
+  },
+  "wave": "W7"
+}
