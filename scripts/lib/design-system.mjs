@@ -87,6 +87,23 @@ function decode(s) {
   })
 }
 
+/** Remove every `<tag ...> ... </tag >` block by scanning, not by regexp, so a closing tag with spaces or odd case still ends it. */
+function stripBlocks(text, tag) {
+  const lower = text.toLowerCase()
+  let out = ''
+  let i = 0
+  for (;;) {
+    const open = lower.indexOf(`<${tag}`, i)
+    if (open < 0) return out + text.slice(i)
+    out += text.slice(i, open)
+    const close = lower.indexOf(`</${tag}`, open)
+    if (close < 0) return out
+    const end = lower.indexOf('>', close)
+    if (end < 0) return out
+    i = end + 1
+  }
+}
+
 /** What a visitor can read in a prototype: text nodes of HTML/JSX plus the sentences in its data files. */
 export function extractCopy(source, file) {
   const found = new Set()
@@ -95,11 +112,11 @@ export function extractCopy(source, file) {
     if (t.length >= 16 && t.split(' ').length >= 3 && /[a-z]/i.test(t) && !/[{}=;]|=>|function|\bconst\b|\breturn\b|https?:|\.(png|jpg|css|js|svg)\b|var\(|\d(px|rem|vw|vh|ms|em)\b|minmax|repeat\(|gradient|rgba?\(|calc\(|cubic|ease-|transform|@ds-adherence|^\/\//.test(t)) found.add(t)
   }
   let text = source
-  if (file.endsWith('.html')) text = text.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<template[\s\S]*?<\/template>/gi, '')
+  if (file.endsWith('.html')) text = stripBlocks(stripBlocks(text, 'style'), 'template')
   // Text between tags (HTML and JSX).
   const nodes = /(?:^|>)([^<>{}]+)(?=<|$)/g
   let m
-  while ((m = nodes.exec(file.endsWith('.html') ? text.replace(/<script[\s\S]*?<\/script>/gi, '') : text))) keep(m[1])
+  while ((m = nodes.exec(file.endsWith('.html') ? stripBlocks(text, 'script') : text))) keep(m[1])
   // Sentences in string literals (data files, JSX props, inline scripts).
   const strings = /(['"`])((?:\\.|(?!\1)[^\\\n])*)\1/g
   while ((m = strings.exec(text))) keep(m[2].replace(/\\'/g, "'").replace(/\\"/g, '"'))
