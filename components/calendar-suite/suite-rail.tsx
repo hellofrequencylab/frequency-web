@@ -104,6 +104,7 @@ export function SuiteRail({
   cursor,
   sel,
   feed,
+  upcomingCount,
   onToggleLayer,
   onPickDay,
   onSelect,
@@ -118,6 +119,8 @@ export function SuiteRail({
   cursor: string
   sel: SuiteSelection
   feed: { httpsUrl: string; webcalUrl: string }
+  /** Upcoming gatherings (a series counts once), counted by the page. */
+  upcomingCount: number
   onToggleLayer: (layer: PlannerLayer) => void
   onPickDay: (day: string) => void
   onSelect: (sel: SuiteSelection) => void
@@ -149,7 +152,9 @@ export function SuiteRail({
         </span>
         <div className="cal-chipspace-text">
           <span className="cal-spacename">{brandName}</span>
-          <span className="cal-serif">What&rsquo;s happening</span>
+          <span className="cal-serif">
+            {upcomingCount > 0 ? `${upcomingCount} upcoming event${upcomingCount === 1 ? '' : 's'}` : 'What\u2019s happening'}
+          </span>
         </div>
       </div>
 

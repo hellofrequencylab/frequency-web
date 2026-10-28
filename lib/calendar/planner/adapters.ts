@@ -48,7 +48,7 @@ export interface AdaptedCalendar {
   spaceNames: Record<string, string>
 }
 
-export interface AdapterInput {
+interface AdapterInput {
   ownSpaceId: string
   events: readonly CalendarEvent[]
   plans: readonly SpacePlan[]

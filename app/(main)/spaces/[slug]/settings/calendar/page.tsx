@@ -8,6 +8,8 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
+import { countSeries, type SeriesRow } from '@/lib/events/series'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 import { SITE_URL } from '@/lib/site'
 import type { CalendarEvent } from '@/components/events/event-calendar'
 import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
@@ -118,6 +120,10 @@ export default async function SpaceCalendarConsolePage({
   // manager gate the Plans read sits behind, and scoped to this Space's own id.
   const todos = featureLocked || !canManage ? [] : await listTasksWithShared(space.id)
 
+  // "N upcoming events." — GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT). Recurrence is
+  // materialised (ADR-007), so a weekly series is ~9 rows; the fold owns both gates (cancelled + the floor).
+  const upcomingCount = countSeries(ownedRows as SeriesRow[], { upcomingFrom: upcomingEventFloor(now) })
+
   // The deep-management table below the calendar: duplicate / cancel / delete per event.
   const managedEvents: ManagedEvent[] = ownedRows.map((ev) => ({
     id: ev.id,
@@ -194,6 +200,7 @@ export default async function SpaceCalendarConsolePage({
               sky={settingsSky}
               initialView={initialView}
               initialPlanId={Array.isArray(query.plan) ? query.plan[0] : query.plan}
+              upcomingCount={upcomingCount}
               newEventHref={newEventHref}
               httpsUrl={httpsUrl}
               webcalUrl={webcalUrl}

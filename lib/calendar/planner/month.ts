@@ -107,7 +107,7 @@ export function seasonOn(day: string, markers: readonly AstroMarker[]): Season {
   return season
 }
 
-export interface MonthSky {
+interface MonthSky {
   season: Season
   /** "Autumn begins Sep 22 · Autumn equinox", or the season's own soft line. */
   line: string

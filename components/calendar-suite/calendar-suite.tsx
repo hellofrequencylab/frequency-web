@@ -68,6 +68,8 @@ export interface CalendarSuiteProps {
   /** The view the link or the cookie asked for, or null to choose by width. */
   initialView: string | null
   initialPlanId?: string | null
+  /** Upcoming gatherings, a series counted once. */
+  upcomingCount?: number
   newEventHref: string
   httpsUrl: string
   webcalUrl: string
@@ -262,6 +264,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
           cursor={cursor}
           sel={sel}
           feed={{ httpsUrl: props.httpsUrl, webcalUrl: props.webcalUrl }}
+          upcomingCount={props.upcomingCount ?? 0}
           onToggleLayer={toggleLayer}
           onPickDay={pickDay}
           onSelect={select}

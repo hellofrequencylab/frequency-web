@@ -57,7 +57,7 @@ export function resolveSuiteView(
   return parseSuiteView(query) ?? parseSuiteView(cookie) ?? (narrow ? 'agenda' : 'month')
 }
 
-export type SuiteKeyAction =
+type SuiteKeyAction =
   | { type: 'view'; view: SuiteView }
   | { type: 'today' }
   | { type: 'page'; delta: -1 | 1 }
@@ -92,7 +92,7 @@ export function suiteKeyAction(e: {
   return KEY_VIEW[k] ? { type: 'view', view: KEY_VIEW[k] } : null
 }
 
-export interface LayerDef {
+interface LayerDef {
   key: PlannerLayer
   label: string
   /** Icon id in the Frequency sprite. */
