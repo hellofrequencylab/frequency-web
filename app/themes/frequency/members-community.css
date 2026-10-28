@@ -22,7 +22,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-sk-head{gap:12px;margin-bottom:32px}
 [data-design="frequency"] [data-kit="members"] .fqm-sk-list{display:flex;flex-direction:column;gap:12px}
 @keyframes fqm-sk{50%{opacity:.55}}
-@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .fqm-sk{animation:none}}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .fqm-sk,[data-design="frequency"] [data-kit="members"] .fq-nearby-map[aria-busy="true"] .fq-nearby-map-frame{animation:none}}
 
 [data-design="frequency"] [data-kit="members"] .fqm-tabrow>.tabs{min-width:0}
 [data-design="frequency"] [data-kit="members"] .fqm-tabrow>.row{flex:none}

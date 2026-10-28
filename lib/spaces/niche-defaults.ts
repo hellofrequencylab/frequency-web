@@ -36,7 +36,7 @@ export const NICHE_DEFAULTS: Readonly<Record<MegaNicheId, NicheDefault>> = {
   creators: { label: 'Creators', preset: null },
   schools: { label: 'Schools and programs', preset: 'practice' },
   clubs: { label: 'Clubs and groups', preset: 'studio' },
-  faith: { label: 'Faith and spiritual communities', preset: 'nonprofit' },
+  faith: { label: 'Spiritual Community', preset: 'nonprofit' },
   wellness: { label: 'Wellness and retreats', preset: 'practice' },
   markets: { label: 'Markets and festivals', preset: 'venue' },
 }
