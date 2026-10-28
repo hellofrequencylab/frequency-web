@@ -46,6 +46,9 @@ jobs:
       - name: Start local Supabase (all migrations)
         run: pnpm exec supabase start
       - name: Point the app at the local stack and create the journey member
+        env:
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STRIPE_TEST_PUBLISHABLE_KEY: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
         run: |
           set -euo pipefail
           eval "$(pnpm exec supabase status -o env)"
@@ -56,9 +59,11 @@ jobs:
             echo "NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000"
           } > .env.local
           if [ "${PW_STRIPE_TEST}" = "1" ]; then
+            case "${STRIPE_TEST_SECRET_KEY}" in sk_test_*) ;; *) echo "Stripe test secret required"; exit 1 ;; esac
+            case "${STRIPE_TEST_PUBLISHABLE_KEY}" in pk_test_*) ;; *) echo "Stripe test publishable key required"; exit 1 ;; esac
             {
-              echo "STRIPE_SECRET_KEY=${{ secrets.STRIPE_TEST_SECRET_KEY }}"
-              echo "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}"
+              printf 'STRIPE_SECRET_KEY=%s\n' "${STRIPE_TEST_SECRET_KEY}"
+              printf 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=%s\n' "${STRIPE_TEST_PUBLISHABLE_KEY}"
             } >> .env.local
           fi
           curl -fsS -X POST "${API_URL}/auth/v1/admin/users" \
