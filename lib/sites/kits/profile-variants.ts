@@ -30,6 +30,16 @@ function page(slug: string, label: string, description: string, blocks: Block[])
   return { slug, label, seo: { title: label, description }, blocks }
 }
 
+/** The Questions page: the Home page's FAQ on its own page, with a way to ask one that is not there. Each theme passes
+ *  its own FAQ block, so the words match the Home page and the look matches the theme. */
+function questions(spec: NicheSpec, faq: Block[]): KitPage {
+  return page('questions', 'Questions', `Answers to what ${spec.label.toLowerCase()} visitors ask most.`, [
+    { type: 'EditorialSection', props: { body: 'lead', eyebrow: 'Questions', title: spec.home.faqTitle, lead: 'The short answers. Ask us anything that is not here.' } },
+    ...faq,
+    { type: 'SpaceContact', props: { heading: 'Ask us' } },
+  ])
+}
+
 // MIDNIGHT
 const SIGILS = ['moon-new', 'moon-quarter', 'moon-full'] as const
 function midnight(spec: NicheSpec): KitPage[] {
@@ -66,6 +76,7 @@ function network(spec: NicheSpec): KitPage[] {
     ]),
     page(m.slug, m.label, m.seoDescription, [{ type: 'EditorialSection', props: { body: 'lead', eyebrow: m.eyebrow, title: star(m.title, m.accent), lead: m.lead } }, live(m.live)]),
     page('about', 'About', 'Who we are and how we do things.', [story(spec), contact]),
+    questions(spec, [{ type: 'SpaceFAQ', props: { items: h.faqs } }]),
   ]
 }
 
@@ -86,6 +97,7 @@ function temple(spec: NicheSpec): KitPage[] {
       live(m.live),
     ]),
     page('about', 'About', 'Who we are and how we do things.', [story(spec), contact]),
+    questions(spec, [{ type: 'TempleFAQ', props: { eyebrow: 'Questions', title: h.faqTitle, items: h.faqs } }]),
   ]
 }
 
@@ -104,6 +116,7 @@ function wildheart(spec: NicheSpec): KitPage[] {
     ]),
     page(m.slug, m.label, m.seoDescription, [{ type: 'EditorialSection', props: { body: 'lead', eyebrow: m.eyebrow, title: m.title, lead: m.lead } }, live(m.live)]),
     page('about', 'About', 'Who we are and how we do things.', [story(spec), contact]),
+    questions(spec, [{ type: 'SpaceFAQ', props: { items: h.faqs } }]),
   ]
 }
 
