@@ -172,6 +172,20 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'Nocturne', path: '/themes/nocturne' },
     ],
   },
+  designer: {
+    path: '/themes/designer',
+    title: 'Designer: design it once, wear it on every surface',
+    description:
+      'The Designer Theme Kit is for studios, interiors, architecture, gardens and brands. Your Spotlight, Space, website and emails wear one look, and you change it once.',
+    shareTitle: 'Designer: design it once, same theme everywhere',
+    headline: 'Design it once. Same theme everywhere.',
+    lede: 'The Designer Theme Kit gives studios, interiors, architecture, gardens and brands one look to wear on their Spotlight, Space, website and emails, read from one profile.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Themes', path: '/themes' },
+      { name: 'Designer', path: '/themes/designer' },
+    ],
+  },
 } as const satisfies Record<string, FrequencyPageSeo>
 
 /** The page's Metadata under Frequency: title, description, canonical, OpenGraph and X card, all from
