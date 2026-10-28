@@ -7,7 +7,7 @@ import { generalKitId } from './starter-site'
 
 describe('the starter website (LIVE-1533)', () => {
   it('names a General kit for every Mega Theme, and each one loads', async () => {
-    for (const { id } of MEGA_THEMES.filter((t) => t.id !== 'network-kit')) { // its kits arrive with the kit registry pass
+    for (const { id } of MEGA_THEMES) {
       const kit = await loadKit(generalKitId(id))
       expect(kit, id).not.toBeNull()
       expect(kit!.niche).toBe('general')
@@ -16,7 +16,7 @@ describe('the starter website (LIVE-1533)', () => {
 
   it('each kit becomes a publishable website that wears its own theme', async () => {
     const { config } = await import('@/lib/page-editor/config')
-    for (const { id, editor } of MEGA_THEMES.filter((t) => t.id !== 'network-kit')) {
+    for (const { id, editor } of MEGA_THEMES) {
       const kit = (await loadKit(generalKitId(id)))!
       expect(kit.theme, id).toBe(editor)
       const applied = applyKit({ theme: kit.theme, pages: [] }, kit, 'replace', (type) => config.components[type]?.defaultProps)
@@ -25,7 +25,8 @@ describe('the starter website (LIVE-1533)', () => {
       expect(state.revision).toBe(1)
       expect(state.published && validWebsiteSnapshot(state.published), id).toBe(true)
       expect(state.published!.pages.map((p) => p.slug)).toContain('home')
-      if (kit.theme !== 'DAWN') expect(WEBSITE_THEMES_LIVE.has(kit.theme), id).toBe(true)
+      // The Network Theme Kit is not in WEBSITE_THEMES_LIVE until the owner turns it on (the foundation pass left it off on purpose).
+      if (kit.theme !== 'DAWN' && kit.theme !== 'NetworkKit') expect(WEBSITE_THEMES_LIVE.has(kit.theme), id).toBe(true)
     }
   })
 })

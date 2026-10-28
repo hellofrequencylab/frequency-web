@@ -31,7 +31,7 @@ const GROUP_OF_CATEGORY: Record<string, EditorBlockGroup> = {
 }
 
 /** Blocks whose rows come from the Space at render time (the design's `live: 1`). */
-const LIVE = /^(Live\w+|SpaceEvents|SpaceCommunity|SpaceTeam|SpaceStats|SpaceOfferings|SpaceReviews|SpaceFAQ|SpacePractices|SpaceBooking|CirclesGrid|CirclesFeatured|CirclesMap|Network(Hero|Events|Circles)|NetworkKit(Hero|Live|Journeys|Gatherings|Proof|FAQ)|Midnight(Live|Journeys|Gatherings|Proof|FAQ)|Designer(FAQ)|Wildheart(YearJourney|SkyMap|NowLine|MoonPath|Modules|FirstNight|MoonStrip))$/
+const LIVE = /^(Live\w+|SpaceEvents|SpaceCommunity|SpaceTeam|SpaceStats|SpaceOfferings|SpaceReviews|SpaceFAQ|SpacePractices|SpaceBooking|CirclesGrid|CirclesFeatured|CirclesMap|Network(Hero|Events|Circles)|NetworkKit(Hero|Live|Journeys|Gatherings|Proof|FAQ|Featured|Calendar|Stats)|Midnight(Live|Journeys|Gatherings|Proof|FAQ)|Designer(FAQ)|Wildheart(YearJourney|SkyMap|NowLine|MoonPath|Modules|FirstNight|MoonStrip))$/
 
 /** Type-name patterns → the design's icon for the same kind of block, first match wins. */
 const ICONS: [RegExp, FqIconName | FqEditorIconName][] = [
