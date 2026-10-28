@@ -14,7 +14,7 @@ import { midnightAccentVars } from '@/lib/theme/midnight'
 
 const NAME = 'Nocturne Studio'
 const TAGLINE = 'Counsel, gatherings and journeys.'
-const HOME = '/themes/midnight/demo'
+const HOME = '/themes/nocturne/demo'
 const LIVE: MwLive = { events: [], circles: [], journeys: [] }
 const LINKS: SiteLinkMap = { origin: 'https://frequency.example', slug: 'nocturne', siteBase: '', pages: ['home'], contactHref: HOME, bookHref: HOME, email: null }
 const METADATA = { space: { identity: { name: NAME }, slug: 'nocturne', tagline: TAGLINE, events: [], series: [], reviews: { count: 0, average: 0, latest: [] } }, links: LINKS }
