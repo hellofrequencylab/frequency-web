@@ -252,6 +252,18 @@ describe('reduced motion: every @keyframes in app/globals.css is neutralized', (
 describe('reduced motion: active shipped Frequency styles are neutralized', () => {
   it('the checked-in active theme entrypoints resolve to a substantial stylesheet set', () => {
     expect(frequencyStyles.length).toBeGreaterThanOrEqual(20)
+    // Protect the production boundary: each stylesheet changed to close a live motion hole must
+    // actually be imported by an active Frequency theme entrypoint, not merely exist on disk.
+    expect(frequencyStyles).toEqual(expect.arrayContaining([
+      'app/themes/frequency/admin-shell.css',
+      'app/themes/frequency/core.css',
+      'app/themes/frequency/kit-members.css',
+      'app/themes/frequency/kit-site.css',
+      'app/themes/frequency/members-community.css',
+      'app/themes/frequency/site-niche.css',
+      'app/themes/frequency/site-pages-a.css',
+      'app/themes/frequency/site-pages-b.css',
+    ]))
     expect(keyframeNames(shippedFrequencyCss).length).toBeGreaterThanOrEqual(40)
     expect(parseRules(stripComments(shippedFrequencyCss)).length).toBeGreaterThanOrEqual(800)
   })
