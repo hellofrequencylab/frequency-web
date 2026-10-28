@@ -84,9 +84,15 @@ export default async function NewSpacePage({
 
   return (
     <FocusTemplate
-      eyebrow="Spaces"
-      title="Create a space"
-      description="Set up a home for your practice, business, or organization. You can change everything later."
+      title={
+        <>
+          Create a <span className="serif">space</span>
+        </>
+      }
+      description="A home for your practice, business, or group. A few short steps, and you can change anything later."
+      width="xl"
+      divider={false}
+      adminBar={false}
       back={{ href: '/spaces/directory', label: 'Spaces' }}
     >
       <CreateSpaceWizard
