@@ -261,6 +261,7 @@ html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top
 @keyframes fq-slide-x{from{translate:var(--fq-slide)}to{translate:0}}
 @media (prefers-reduced-motion:reduce){
 ::view-transition-old(*),::view-transition-new(*),::view-transition-group(*){animation-duration:0s !important;animation-delay:0s !important}
+::view-transition-old(.fq-slide-forward-out),::view-transition-new(.fq-slide-forward-in),::view-transition-old(.fq-slide-back-out),::view-transition-new(.fq-slide-back-in){animation:none!important}
 }
 }
 

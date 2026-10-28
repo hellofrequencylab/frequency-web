@@ -3,6 +3,12 @@ import { envFlag } from '@/lib/env/string'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 
+/** Stable server-side refusal identity; never serialize database errors to the client. */
+export class LastRoomAdminError extends Error {
+  readonly code = 'LAST_ROOM_ADMIN'
+  constructor() { super('Cannot remove the last room admin.') }
+}
+
 export type RoomAtomicClient = Pick<SupabaseClient<Database>, 'rpc'>
 export function roomAtomicWritesEnabled(): boolean { return envFlag('ROOM_ATOMIC_WRITES') }
 function assertEnabled() {
@@ -26,6 +32,7 @@ export async function setRoomAdminAtomic(client: RoomAtomicClient, actorId: stri
 export async function removeRoomMemberAtomic(client: RoomAtomicClient, actorId: string, roomId: string, targetId: string): Promise<void> {
   assertEnabled()
   const { data, error } = await client.rpc('room_remove_member_atomic', { _actor_id: actorId, _room_id: roomId, _target_id: targetId }).then(result => result, () => { throw new Error('Could not remove room member. Please try again.') })
-  if (error) throw new Error(error.code === '23514' ? 'Cannot remove the last room admin.' : 'Could not remove room member. Please try again.')
+  if (error?.code === '23514') throw new LastRoomAdminError()
+  if (error) throw new Error('Could not remove room member. Please try again.')
   if (data !== true) throw new Error('Room member removal was not confirmed')
 }
