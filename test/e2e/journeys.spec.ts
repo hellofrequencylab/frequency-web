@@ -233,7 +233,8 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
   test('create a Space through the Wizard with a kit theme, then land in its setup', async ({ page, serverErrors }) => {
     await page.goto('/themes/nocturne')
     await settle(page)
-    const start = page.getByRole('link', { name: /Start with this kit|Use .* →/ }).first()
+    // The Nocturne page's kit buttons are the "adopt" links into the Wizard; follow the first by its address.
+    const start = page.locator('a[href^="/spaces/new?niche="]').first()
     await start.click()
     await page.waitForURL(/\/spaces\/new/)
 
@@ -374,7 +375,8 @@ test.describe('new member sign-up @journey-write', () => {
     expect(localAuthLink(link, baseURL!, process.env.NEXT_PUBLIC_SUPABASE_URL!), 'mailbox link must stay on the local app or local auth verification endpoint').toBe(true)
     await page.goto(link)
     await settle(page)
-    expect(new URL(page.url()).pathname, 'the emailed link did not sign the new member in').not.toBe('/sign-in')
+    // Say where the link led, so a failure names the redirect and not just the sign-in page.
+    expect(new URL(page.url()).pathname, `the emailed link did not sign the new member in. It went ${link.replace(/token=[^&]+/, 'token=…')} and ended at ${page.url()}`).not.toBe('/sign-in')
     assertNoServerErrors(serverErrors, 'sign-up')
     await expect(page.getByText('Something went wrong on our end')).toHaveCount(0)
   })

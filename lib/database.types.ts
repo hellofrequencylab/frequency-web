@@ -8475,6 +8475,172 @@ export type Database = {
           },
         ]
       }
+      launch_email_log: {
+        Row: {
+          id: string
+          launch_id: string
+          trigger_kind: string
+          message_ref: string | null
+          sent_at: string
+        }
+        Insert: {
+          id?: string
+          launch_id: string
+          trigger_kind: string
+          message_ref?: string | null
+          sent_at?: string
+        }
+        Update: {
+          id?: string
+          launch_id?: string
+          trigger_kind?: string
+          message_ref?: string | null
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launch_email_log_launch_id_fkey"
+            columns: ["launch_id"]
+            isOneToOne: false
+            referencedRelation: "space_launch"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      launch_facts: {
+        Row: {
+          created_at: string
+          id: string
+          launch_id: string
+          origin: string
+          slot: string
+          snippet: string
+          source_id: string
+          state: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          launch_id: string
+          origin: string
+          slot: string
+          snippet: string
+          source_id: string
+          state?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          launch_id?: string
+          origin?: string
+          slot?: string
+          snippet?: string
+          source_id?: string
+          state?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launch_facts_launch_id_fkey"
+            columns: ["launch_id"]
+            isOneToOne: false
+            referencedRelation: "space_launch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "launch_facts_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "launch_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      launch_list_attestations: {
+        Row: {
+          answer: string
+          attested_at: string
+          id: string
+          launch_id: string
+          source_id: string | null
+          wording_version: string
+        }
+        Insert: {
+          answer: string
+          attested_at?: string
+          id?: string
+          launch_id: string
+          source_id?: string | null
+          wording_version: string
+        }
+        Update: {
+          answer?: string
+          attested_at?: string
+          id?: string
+          launch_id?: string
+          source_id?: string | null
+          wording_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launch_list_attestations_launch_id_fkey"
+            columns: ["launch_id"]
+            isOneToOne: false
+            referencedRelation: "space_launch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "launch_list_attestations_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "launch_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      launch_sources: {
+        Row: {
+          char_count: number
+          created_at: string
+          expires_at: string | null
+          id: string
+          kind: string
+          label: string
+          launch_id: string
+          size_bytes: number
+        }
+        Insert: {
+          char_count?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind: string
+          label: string
+          launch_id: string
+          size_bytes?: number
+        }
+        Update: {
+          char_count?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          launch_id?: string
+          size_bytes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launch_sources_launch_id_fkey"
+            columns: ["launch_id"]
+            isOneToOne: false
+            referencedRelation: "space_launch"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_entry_points: {
         Row: {
           captured_at: string
@@ -15733,6 +15899,72 @@ export type Database = {
           },
           {
             foreignKeyName: "space_invites_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_launch: {
+        Row: {
+          cancel_requested_at: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          current_step: string
+          id: string
+          intents: string[]
+          minimized: boolean
+          niche: string | null
+          owner_id: string
+          space_id: string | null
+          stage: string
+          started_at: string
+          steps: Json
+          updated_at: string
+        }
+        Insert: {
+          cancel_requested_at?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          current_step?: string
+          id?: string
+          intents?: string[]
+          minimized?: boolean
+          niche?: string | null
+          owner_id: string
+          space_id?: string | null
+          stage?: string
+          started_at?: string
+          steps?: Json
+          updated_at?: string
+        }
+        Update: {
+          cancel_requested_at?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          current_step?: string
+          id?: string
+          intents?: string[]
+          minimized?: boolean
+          niche?: string | null
+          owner_id?: string
+          space_id?: string | null
+          stage?: string
+          started_at?: string
+          steps?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_launch_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_launch_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
