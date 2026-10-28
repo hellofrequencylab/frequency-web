@@ -7,6 +7,7 @@
 //
 // Use the canonical (apex) host: www redirects to it and Playwright would follow, hiding the
 // redirect assertion below. Self-skips without PW_BASE_URL like the rest of the e2e suite.
+import { readFileSync } from 'node:fs'
 import { test, expect } from './fixtures'
 import {
   BANNED_MACHINE_COPY,
@@ -135,6 +136,26 @@ test.describe('public surface (platform host)', { tag: '@public-surface' }, () =
       expect(canon, `${path} canonical`).toBeTruthy()
       expect(new URL(canon!).pathname, `${path} canonical path`).toBe(path)
       for (const b of jsonLdBlocks(html)) expect(b.error, `${path} JSON-LD`).toBeUndefined()
+    }
+  })
+
+  test('MapLibre worker and shared chunk are served as JavaScript from /maplibre/', async ({ request }) => {
+    for (const file of ['maplibre-gl-worker.mjs', 'maplibre-gl-shared.mjs']) {
+      const res = await request.get(`/maplibre/${file}`)
+      expect(res.status(), file).toBe(200)
+      expect(res.headers()['content-type'] ?? '', file).toMatch(/javascript/)
+      expect((await res.body()).length, `${file} is not an empty or error body`).toBeGreaterThan(1000)
+    }
+  })
+
+  // Off by default. A cron route that wrongly accepts an anonymous call would RUN that cron in
+  // production, so this only fires when someone opts in with PW_PROBE_CRON=1. It sends no secret.
+  test('cron routes reject an unauthenticated call', async ({ request }) => {
+    test.skip(process.env.PW_PROBE_CRON !== '1', 'PW_PROBE_CRON=1 to opt in (see comment).')
+    const { crons } = JSON.parse(readFileSync('vercel.json', 'utf8')) as { crons: { path: string }[] }
+    for (const { path } of crons) {
+      const res = await request.get(path, { maxRedirects: 0 })
+      expect(res.status(), path).toBe(401)
     }
   })
 
