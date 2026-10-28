@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { PublishedScreen } from '@/components/launch/published-screen'
+import { FocusTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
 import { publishedView, stepFromSlug } from '@/lib/launch/published'
@@ -19,5 +20,9 @@ export default async function PublishedPage({ params }: { params: Promise<{ step
   if (!launch) redirect('/launch')
   const view = publishedView(launch, step)
   if (view.kind === 'not_yet') redirect(launchStepHref(step))
-  return <PublishedScreen view={view} />
+  return (
+    <FocusTemplate eyebrow="Be found" title={`Your ${view.label} is live`} description="It is up, in your own words. Look at it, or keep going." width="narrow">
+      <PublishedScreen view={view} />
+    </FocusTemplate>
+  )
 }
