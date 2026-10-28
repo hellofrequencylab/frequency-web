@@ -135,8 +135,8 @@ describe('the Network Theme Kit token block', () => {
     for (const id of NETWORK_KIT_SCHEME_ORDER) expect(NETWORK_KIT_TOKENS_CSS).toContain(`[data-scheme="${id}"]`)
   })
 
-  it('reads the faces from the next/font variables, one type system for every profile', () => {
-    for (const v of ['--font-nk-bricolage', '--font-nk-outfit', '--font-nk-instrument', '--font-nk-caveat']) expect(NETWORK_KIT_TOKENS_CSS).toContain(`var(${v})`)
+  it('reads the faces from the next/font variables, one type system for every profile', () => { // each carries its named face as the var() fallback, so a render with no next/font (the editor canvas, a harness) still reads the faces
+    for (const v of ['--font-nk-bricolage', '--font-nk-outfit', '--font-nk-instrument', '--font-nk-caveat']) expect(NETWORK_KIT_TOKENS_CSS).toContain(`var(${v},`)
     expect(NETWORK_KIT_TOKENS_CSS).not.toMatch(/Literata|Cormorant|Syne|Unbounded|Playfair/)
   })
 
