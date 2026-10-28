@@ -154,7 +154,7 @@ describe('3. the copies that could not be imported here delegate instead (source
   it('the create Space form suggests the handle createSpace will accept', () => {
     // HYG-080 retired uniqueSlugFrom with the second door. The remaining road does not re-derive
     // from the name: the form suggests, the server lowercases and checks isSafeSlug + uniqueness.
-    const form = sourceWithoutComments('app/(main)/spaces/new/create-space-wizard.tsx', { imports: true })
+    const form = sourceWithoutComments('components/spaces/create-flow/name-step.tsx', { imports: true })
     expect(form).toMatch(/\bslugifyShared\(/)
     expect(form).toContain("return slugifyShared(name).slice(0, 40).replace(/-+$/g, '')")
     expect(form).not.toContain(RULE_BODY)
