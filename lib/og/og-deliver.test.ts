@@ -19,12 +19,12 @@ import { OG_CONTENT_TYPE } from './deliver'
 // the missing cache are defects on their own terms.
 
 describe('the claim card is small enough to preview', () => {
-  it('renders a real photographic cover under 400KB', async () => {
+  it('renders the default cover under 400KB', async () => {
     const res = await claimCardResponse({
       name: 'Breathe & Shine',
       pill: 'Business',
       noun: 'business',
-      placeholderRelPath: '/images/site/community-dinner.jpg',
+      placeholderRelPath: '/images/site/space-cover-default.jpg',
       accent: '#1EB6C5',
     })
     const bytes = Buffer.from(await res.arrayBuffer())
@@ -41,7 +41,7 @@ describe('the claim card is small enough to preview', () => {
       name: 'Breathe & Shine',
       pill: 'Business',
       noun: 'business',
-      placeholderRelPath: '/images/site/community-dinner.jpg',
+      placeholderRelPath: '/images/site/space-cover-default.jpg',
       accent: '#1EB6C5',
     })
     const cc = res.headers.get('cache-control') ?? ''
