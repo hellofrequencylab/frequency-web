@@ -13,8 +13,8 @@ export const revalidate = 3600
 export const dynamicParams = false
 
 export function generateStaticParams() {
-  // Designer has its own static page at /themes/designer (LIVE-1743), which wins over this segment.
-  return THEME_KIT_PAGE_IDS.filter((id) => id !== 'designer').map((id) => ({ theme: themeSlug(id) }))
+  // Designer and Network have their own static pages (/themes/designer, /themes/network), which win over this segment.
+  return THEME_KIT_PAGE_IDS.filter((id) => id !== 'designer' && id !== 'network-kit').map((id) => ({ theme: themeSlug(id) }))
 }
 
 // The address is not always the id: the Network Theme Kit (`network-kit`) lives at /themes/network (themeSlug in
