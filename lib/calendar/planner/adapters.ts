@@ -1,4 +1,5 @@
 import type { CalendarEvent } from '../item'
+import type { EntryInput } from '../entries'
 import type { IncomingPlanShare, SharedPlanView } from '../plan-shares'
 import { planTargetDef, type SpacePlan } from '../plans'
 import type { CrmTask } from '@/lib/crm/tasks-core'
@@ -26,6 +27,13 @@ export interface SuiteItem extends PlannerItem {
   note: string
   /** The Space that hosts it, when this Space co-hosts. */
   hostLabel: string | null
+  /** The stored date this item draws, when it is a Pencil, a private entry or an unavailable span:
+   *  the one a drag writes through saveCalendarEntry. Null for a published event. */
+  entryId: string | null
+  /** That entry as the drawer edits it (the MASTER's, on a repeating entry). */
+  entryInput: EntryInput | null
+  /** The day this item stands on when it is one occurrence of a repeating entry. */
+  occurrenceDate: string | null
 }
 
 export interface SuiteTask extends PlannerTask {
@@ -149,6 +157,9 @@ export function adaptCalendar(input: AdapterInput): AdaptedCalendar {
       eventHref: kind === 'event' && (ev.layer ?? 'events') === 'events' ? `/events/${ev.slug}` : null,
       note: ev.statusLabel ?? '',
       hostLabel: ev.sourceLabel === CO_HOSTED_LABEL ? 'Another Space' : null,
+      entryId: ev.entryId ?? null,
+      entryInput: ev.entryId ? (ev.entryInput ?? null) : null,
+      occurrenceDate: ev.occurrenceDate ?? null,
     })
   }
 
