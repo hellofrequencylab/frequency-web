@@ -15,7 +15,7 @@
     "kind": "cmd",
     "checked": "2026-10-28",
     "evidence": "Registration, tokens, skin wiring, contract key and 24 textures present.",
-    "cmd": "node scripts/probes/temple-kit-foundation.mjs"
+    "cmd": "node scripts/probes/temple-kit-assets.mjs textures"
   },
   "closed": "2026-10-28"
 }
