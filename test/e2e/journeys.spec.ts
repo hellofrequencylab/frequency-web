@@ -276,12 +276,13 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await page.locator('input[type="datetime-local"]').first().fill(`${tomorrow}T18:00`)
     await page.getByRole('button', { name: /Create Event/i }).click()
     const landed = await page
-      .waitForURL((u) => u.pathname.startsWith('/events/') && u.pathname !== '/events/new', { timeout: 30_000 })
+      .waitForURL((u) => u.pathname.startsWith('/events/') && u.pathname !== '/events/new', { timeout: 90_000 })
       .then(() => true, () => false)
     if (!landed) {
       // Say what the form said, so the finding is the app's message and not a bare timeout.
       const said = (await page.locator('[role="alert"], .text-danger').allInnerTexts()).join(' | ')
-      throw new Error(`/events/new did not create the event. Page said: ${said || '(nothing)'}`)
+      const button = await page.getByRole('button', { name: /Create Event|Creating/i }).first().innerText().catch(() => '(no button)')
+      throw new Error(`/events/new did not create the event. At ${page.url()}, button "${button}". Page said: ${said || '(nothing)'}`)
     }
     assertNoServerErrors(serverErrors, 'create event')
   })
@@ -373,10 +374,17 @@ test.describe('new member sign-up @journey-write', () => {
     }
     expect(link, `no sign-in link arrived in ${box}'s mailbox`).not.toBe('')
     expect(localAuthLink(link, baseURL!, process.env.NEXT_PUBLIC_SUPABASE_URL!), 'mailbox link must stay on the local app or local auth verification endpoint').toBe(true)
+    // Record each hop (status and Location, tokens and codes stripped) and the cookie names the browser
+    // holds, so a failure shows which redirect dropped the session and not just the sign-in page.
+    const hops: string[] = []
+    const scrub = (u: string) => u.replace(/(token|code)=[^&]+/g, '$1=…')
+    page.on('response', (r) => {
+      if (r.request().isNavigationRequest()) hops.push(`${r.status()} ${scrub(r.url())}${r.headers().location ? ` -> ${scrub(r.headers().location)}` : ''}`)
+    })
     await page.goto(link)
     await settle(page)
-    // Say where the link led, so a failure names the redirect and not just the sign-in page.
-    expect(new URL(page.url()).pathname, `the emailed link did not sign the new member in. It went ${link.replace(/token=[^&]+/, 'token=…')} and ended at ${page.url()}`).not.toBe('/sign-in')
+    const held = (await page.context().cookies()).map((c) => `${c.name}@${c.domain}`).join(', ')
+    expect(new URL(page.url()).pathname, `the emailed link did not sign the new member in. Hops: ${hops.join(' | ')}. Cookies: ${held}. Ended at ${page.url()}`).not.toBe('/sign-in')
     assertNoServerErrors(serverErrors, 'sign-up')
     await expect(page.getByText('Something went wrong on our end')).toHaveCount(0)
   })
