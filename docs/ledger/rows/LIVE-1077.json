@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-1077",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const bad=[];for(const f of ['components/frequency/site/pages/discover/spaces.tsx','components/frequency/members/spaces/spaces-body.tsx']){const s=fs.readFileSync(f,'utf8');if(!s.includes('FounderMark'))bad.push(f+' lost FounderMark');if(s.includes('FoundingBusinessBadge'))bad.push(f+' draws the old chip')}if(bad.length){console.error('LIVE-1077: '+bad.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "2026-10-28 (LIVE-1625): the Circle header of a Space-owned Circle is gone, so its file left this probe and the Founding mark test (phrase: rewrite probe LIVE-1077). The Space profile and the public Spaces cards still draw FounderMark."
+  },
+  "wave": "W7"
+}
