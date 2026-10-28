@@ -40,6 +40,8 @@ export const ROUTES = {
   terms: '/terms',
   /** The Network plan's page (SCAN-961), Frequency-only like /vision. */
   networks: '/networks',
+  /** The whole system in one story (LIVE-1562), Frequency-only like /themes. */
+  system: '/system',
   /** The accessibility statement, a page of its own (app/accessibility). */
   accessibility: '/accessibility' as string | null,
   /** "What we believe" in the footer. */
@@ -326,6 +328,8 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: `${ROUTES.spaces}#types`, label: 'For your type' },
       { href: ROUTES.features ? `${ROUTES.features}#spaces` : null, label: 'Features for Spaces' },
       { href: ROUTES.pricing, label: 'Pricing' },
+      { href: ROUTES.system, label: 'The whole system' },
+      { href: '/themes', label: 'Theme Kits' },
       { href: ROUTES.networks, label: 'Networks' },
     ],
   },

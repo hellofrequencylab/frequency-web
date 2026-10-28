@@ -243,6 +243,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/vision`, changeFrequency: "monthly", priority: 0.5 },
           // /networks (SCAN-961): the Network plan's page, Frequency-only like /vision.
           { url: `${SITE_URL}/networks`, changeFrequency: "monthly", priority: 0.6 },
+          // /system (LIVE-1562): the whole system in one story.
+          { url: `${SITE_URL}/system`, changeFrequency: "monthly", priority: 0.6 },
           // /themes (LIVE-1460): the theme gallery.
           { url: `${SITE_URL}/themes`, changeFrequency: "monthly", priority: 0.6 },
           // /themes/nocturne (LIVE-1380): the Nocturne Theme Kit's feature page (it was /themes/midnight).
