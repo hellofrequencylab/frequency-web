@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1595",
+  "title": "Add a repeatable anonymous test of the public production surface (robots, sitemap, llms.txt, status API, redirects, 404s, head tags)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "test/e2e/public-surface.spec.ts",
+    "ref": "Functional QA 2026-10-28, public surface slice"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('test/e2e/public-surface.spec.ts','utf8');const m=fs.readFileSync('test/e2e/public-surface.ts','utf8');const need=['robots.txt','sitemap.xml','llms.txt','/api/status','/themes/midnight','noindex','canonical','set-cookie'];const miss=need.filter(k=>!s.includes(k));if(miss.length||!m.includes('blockedByRobots')){console.error('missing',miss);process.exit(1)}\"",
+    "note": "The spec file exists and still asserts each public-surface check (robots, sitemap, llms.txt, status, the midnight redirect, noindex 404s, canonical, no Set-Cookie on site renders). Parser logic is pinned offline by test/e2e/public-surface.test.ts in CI vitest. The live half needs PW_BASE_URL and network and is not asserted here."
+  },
+  "detail": "An earlier audit was source-and-metadata only: no production API probe, crawler or indexing behaviour was exercised. This adds test/e2e/public-surface.spec.ts (request-only, anonymous, read-only GETs) covering robots.txt, sitemap.xml vs robots rules, llms.txt and llms-full.txt (banned weekly-promise copy), /api/status, anonymous private-API error behaviour, the /themes/midnight to /themes/nocturne 308s, real 404s with noindex, canonical/title/og/JSON-LD on key pages, www to apex, and per-site robots, sitemap, canonical host, no Set-Cookie on ISR renders and deep 404s. Findings: /mnt/project-files/audits/functional-qa-2026-10-28/public-surface.md.",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}
