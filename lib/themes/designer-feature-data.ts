@@ -5,13 +5,13 @@
 // profile equals the Wizard niche (lib/theme/mega-theme.ts).
 import data from './designer-feature-data.json'
 
-export interface DesignerKit {
+interface DesignerKit {
   id: string
   name: string
   hex: string
   who: string
 }
-export interface DesignerLayout {
+interface DesignerLayout {
   id: string
   name: string
   sub: string
