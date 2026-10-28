@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1684",
+  "title": "Temple Theme Kit inner pages, group A: Ceremonies and hire, About and Contact as TempleKitInner blocks",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "components/page-editor/blocks/temple-kit-inner.tsx",
+    "ref": "LIVE-1642"
+  },
+  "detail": "Seven block types (TempleKitInnerHero, Story, Team, Stats, Service, Faq, Contact), one scoped sheet (components/sites/temple-kit-inner/inner-css.ts, tokens only, tki-* classes) and three page builders (components/sites/temple-kit-inner/pages.ts) for the design's About, Ceremonies and hire and Contact pages. The contact form goes through the anonymous lead door. Owner facts are {{slot|sample}} tokens. Registration (block map into lib/page-editor/config.tsx, the sheet into the skin, the pages into the kit) belongs to the Temple kit registration pass; this row ships the parts it wires in. Groups B to D (Book, Membership and Gatherings, Programs, Shop and Library) follow under LIVE-1685 to 1689.",
+  "closed": "2026-10-28",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "temple-kit-inner.tsx exports the TempleKitInner block map.",
+    "cmd": "node -e 'const t=require(\"fs\").readFileSync(\"components/page-editor/blocks/temple-kit-inner.tsx\",\"utf8\");for(const b of [\"Hero\",\"Story\",\"Team\",\"Stats\",\"Service\",\"Faq\",\"Contact\"])if(!t.includes(\"TempleKitInner\"+b+\":\")){console.error(\"a Temple Kit inner block is missing: \"+b);process.exit(1)}'"
+  }
+}
