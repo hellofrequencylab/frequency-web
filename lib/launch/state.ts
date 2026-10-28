@@ -26,7 +26,7 @@ interface LaunchStepEntry {
 type LaunchSteps = Partial<Record<LaunchStepId, LaunchStepEntry>>
 
 /** The row as the app reads it, camelCased. */
-interface LaunchSnapshot {
+export interface LaunchSnapshot {
   id: string
   ownerId: string
   spaceId: string | null
@@ -77,7 +77,7 @@ export function normalizeSteps(raw: unknown): LaunchSteps {
 }
 
 /** A step is settled once it is published or skipped. */
-function isSettled(entry: LaunchStepEntry | undefined): boolean {
+export function isSettled(entry: LaunchStepEntry | undefined): boolean {
   return entry?.status === 'published' || entry?.status === 'skipped'
 }
 
@@ -132,7 +132,7 @@ export function isActive(l: Pick<LaunchSnapshot, 'cancelledAt' | 'completedAt'>)
   return !l.cancelledAt && !l.completedAt
 }
 
-type CancelDecision = { ok: true } | { ok: false; reason: 'not_requested' | 'expired' | 'wrong_word' | 'not_active' }
+export type CancelDecision = { ok: true } | { ok: false; reason: 'not_requested' | 'expired' | 'wrong_word' | 'not_active' }
 
 /** May this confirmation finish the cancel? Only a request made inside the window, with the typed word. */
 export function canConfirmCancel(
