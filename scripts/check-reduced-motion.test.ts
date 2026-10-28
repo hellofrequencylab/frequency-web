@@ -1,15 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// THE REDUCED-MOTION GATE (HYG-058 · a11y). A SOURCE-reading test, not a build gate.
+// THE REDUCED-MOTION GATE (HYG-058 · a11y). A source-reading test, not a build gate.
 //
-// Every bespoke `@keyframes` in app/globals.css must be neutralized for a member who has asked
-// their OS for less motion. There is no blanket `* { animation: none }` in this repo — the global
-// reduced-motion block only collapses the `--motion-*` duration tokens and Tailwind's stock
-// `.animate-pulse` / `.animate-spin` — so EVERY hand-written keyframe needs its own guard, and a
-// keyframe that never gets one animates for exactly the people who asked it not to.
+// Every bespoke keyframe in app/globals.css and the active shipped Frequency theme styles must be
+// neutralized when the visitor asks their OS for less motion. Explicit `no-preference` consumers
+// are safe by construction; all other consumers need a reduced-motion guard.
 //
 // 🔴 THE BUG THIS WAS WRITTEN AGAINST, and it was live when the gate was written: `slideUp` was
 // the eleventh keyframe and the only one with no guard. Ten of eleven were correct, which is the
@@ -27,13 +25,13 @@ import path from 'node:path'
 // can only run where a build exists.
 //
 // HOW IT DECIDES, and it measures the CONSEQUENCE rather than the presence of the words:
-//   1. Parse globals.css into rules, tracking which sit inside `@media (prefers-reduced-motion:
-//      reduce)`. `@keyframes` bodies are skipped so their `from`/`to`/`0%` steps are never mistaken
-//      for selectors.
+//   1. Parse stylesheet rules, tracking reduced-motion and explicit no-preference contexts.
+//      `@keyframes` bodies are skipped so their `from`/`to`/`0%` steps are never mistaken for
+//      selectors. Active theme entrypoints determine which Frequency sheets ship.
 //   2. A keyframe's CONSUMERS are the rules that actually apply it (`animation: <name> …` or
 //      `animation-name: <name>`), read out of the file rather than guessed from its name.
-//   3. A keyframe is GUARDED when every one of those consumer selectors also appears inside a
-//      reduced-motion block on a rule that sets `animation: none`.
+//   3. A keyframe is GUARDED when every consumer is either explicitly limited to no-preference,
+//      or appears inside a reduced-motion block on a rule that sets `animation: none`.
 //   4. A keyframe applied from OUTSIDE this stylesheet has no consumer rule to find, so it must be
 //      declared in EXTERNALLY_APPLIED below — and the test then verifies that the guard selector
 //      the entry names really is neutralized in the CSS. The map is an index, never the evidence.
@@ -41,6 +39,22 @@ import path from 'node:path'
 
 const ROOT = path.join(import.meta.dirname, '..')
 const GLOBALS = 'app/globals.css'
+const ACTIVE_THEME_DIR = 'app/themes/active'
+
+/** Read only the stylesheet imports in the checked-in active-theme entrypoints. These are the
+ *  shipped Frequency sheets selected by design-styles.mjs, rather than every dormant theme asset. */
+function activeFrequencyStylesheets(): string[] {
+  const activeDir = path.join(ROOT, ACTIVE_THEME_DIR)
+  const files = readdirSync(activeDir).filter((name) => name.endsWith('.ts'))
+  const styles = new Set<string>()
+  for (const file of files) {
+    const source = readFileSync(path.join(activeDir, file), 'utf8')
+    for (const match of source.matchAll(/import\s+['"]\.\.\/frequency\/([^'"]+\.css)['"]/g)) {
+      styles.add(path.join('app/themes/frequency', match[1]))
+    }
+  }
+  return [...styles].sort()
+}
 
 /** Keyframes applied from outside this stylesheet, so step 2 finds no consumer rule for them.
  *  Each entry names the selector that MUST be neutralized under reduced-motion; the test asserts
@@ -72,14 +86,19 @@ const EXTERNALLY_APPLIED: Record<string, { guard: string; why: string }> = {
 
 // ── The analyser (pure; every control below runs it on synthetic CSS) ────────────────────────
 
-type Rule = { selector: string; body: string; inReduced: boolean }
+type Rule = { selector: string; body: string; inReduced: boolean; inMotionSafe: boolean }
 
 const stripComments = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '')
 const norm = (s: string) => s.replace(/\s+/g, ' ').trim()
 
 /** Brace-aware walk. Descends into at-rules (so `@media` nesting is followed), tracks the
  *  reduced-motion context, and never descends into `@keyframes` — its steps are not selectors. */
-export function parseRules(css: string, inReduced = false, out: Rule[] = []): Rule[] {
+export function parseRules(
+  css: string,
+  inReduced = false,
+  out: Rule[] = [],
+  inMotionSafe = false,
+): Rule[] {
   let i = 0
   let start = 0
   while (i < css.length) {
@@ -97,10 +116,15 @@ export function parseRules(css: string, inReduced = false, out: Rule[] = []): Ru
       if (prelude.startsWith('@')) {
         if (!/^@keyframes\b/.test(prelude)) {
           const isReduced = /prefers-reduced-motion\s*:\s*reduce/.test(prelude)
-          parseRules(body, inReduced || isReduced, out)
+          parseRules(
+            body,
+            inReduced || isReduced,
+            out,
+            inMotionSafe || /prefers-reduced-motion\s*:\s*no-preference/.test(prelude),
+          )
         }
       } else if (prelude) {
-        out.push({ selector: prelude, body, inReduced })
+        out.push({ selector: prelude, body, inReduced, inMotionSafe })
       }
       i = j
       start = j
@@ -129,12 +153,12 @@ export function neutralizedSelectors(css: string): Set<string> {
   return out
 }
 
-/** The rules that actually APPLY a keyframe, outside any reduced-motion block. */
+/** The consumers that need a reduced-motion guard; no-preference consumers are safe by definition. */
 export function consumerSelectors(css: string, name: string): string[] {
   const applies = new RegExp(`animation(?:-name)?\\s*:[^;}]*(?<![\\w-])${name}(?![\\w-])`)
   const out = new Set<string>()
   for (const r of parseRules(stripComments(css))) {
-    if (r.inReduced) continue
+    if (r.inReduced || r.inMotionSafe) continue
     if (applies.test(r.body)) for (const part of r.selector.split(',')) out.add(norm(part))
   }
   return [...out]
@@ -151,6 +175,9 @@ export function auditReducedMotion(
   const neutralized = neutralizedSelectors(css)
   return keyframeNames(css).map((name): Verdict => {
     const consumers = consumerSelectors(css, name)
+    const motionSafe = parseRules(stripComments(css)).some(
+      (r) => r.inMotionSafe && new RegExp(`animation(?:-name)?\\s*:[^;}]*(?<![\\w-])${name}(?![\\w-])`).test(r.body),
+    )
     if (consumers.length > 0) {
       const unguarded = consumers.filter((s) => !neutralized.has(s))
       return unguarded.length === 0
@@ -163,6 +190,7 @@ export function auditReducedMotion(
             } not set to \`animation: none\` in any @media (prefers-reduced-motion: reduce) block`,
           }
     }
+    if (motionSafe) return { name, guarded: true, via: 'consumer-guard' }
     const entry = external[name]
     if (!entry) {
       return {
@@ -187,6 +215,10 @@ export function auditReducedMotion(
 // ── The gate ─────────────────────────────────────────────────────────────────────────────────
 
 const css = readFileSync(path.join(ROOT, GLOBALS), 'utf8')
+const frequencyStyles = activeFrequencyStylesheets()
+const shippedFrequencyCss = frequencyStyles
+  .map((file) => readFileSync(path.join(ROOT, file), 'utf8'))
+  .join('\n')
 
 describe('reduced motion: every @keyframes in app/globals.css is neutralized', () => {
   it('the parser is actually reading the stylesheet', () => {
@@ -214,6 +246,21 @@ describe('reduced motion: every @keyframes in app/globals.css is neutralized', (
         `${name} IS applied by a rule in globals.css now — drop its EXTERNALLY_APPLIED entry and guard that rule`,
       ).toEqual([])
     }
+  })
+})
+
+describe('reduced motion: active shipped Frequency styles are neutralized', () => {
+  it('the checked-in active theme entrypoints resolve to a substantial stylesheet set', () => {
+    expect(frequencyStyles.length).toBeGreaterThanOrEqual(20)
+    expect(keyframeNames(shippedFrequencyCss).length).toBeGreaterThanOrEqual(40)
+    expect(parseRules(stripComments(shippedFrequencyCss)).length).toBeGreaterThanOrEqual(800)
+  })
+
+  it('every keyframe consumer across the shipped Frequency sheets is neutralized', () => {
+    const unguarded = auditReducedMotion(shippedFrequencyCss, {}).filter((v) => !v.guarded)
+    expect(
+      unguarded.map((v) => `@keyframes ${v.name} — ${'reason' in v ? v.reason : ''}`),
+    ).toEqual([])
   })
 })
 
@@ -267,5 +314,17 @@ describe('the detector fires', () => {
     expect(selectors).not.toContain('from')
     expect(selectors).not.toContain('to')
     expect(selectors).not.toContain('0%')
+  })
+
+  it('control: motion-safe declarations are not misclassified as unguarded consumers', () => {
+    const safe = '@media (prefers-reduced-motion:no-preference){.motion{animation:move 1s}} @keyframes move{to{opacity:1}}'
+    expect(auditReducedMotion(safe, {})).toEqual([{ name: 'move', guarded: true, via: 'consumer-guard' }])
+  })
+
+  it('control: mixed motion-safe and unguarded consumers still fail', () => {
+    const mixed = '@media (prefers-reduced-motion:no-preference){.safe{animation:move 1s}} .unsafe{animation:move 1s} @keyframes move{to{opacity:1}}'
+    const [verdict] = auditReducedMotion(mixed, {})
+    expect(verdict.guarded).toBe(false)
+    expect('reason' in verdict && verdict.reason).toContain('.unsafe')
   })
 })
