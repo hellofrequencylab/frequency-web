@@ -305,9 +305,12 @@ export async function SitePage({
   // A Menswork site's menu is its pages, the same on every page (the design system's site nav); the house
   // look's Home section anchors stay on Home.
   // A Business Space's SAVED menu (shared with its Space page) wins; otherwise the site's own menu.
-  const links =
+  const menu =
     siteMenuLinks(space, { homeHref, pages, hasContact, booking, origin }, siteBase, model?.nav ?? []) ??
     (skin && pageLinks.length > 0 ? mensworkSiteMenu(homeHref, pages, pageLinks) : [...(model?.nav ?? []), ...pageLinks])
+  // The Temple Kit header marks the page being read (its clay underline); other skins draw their menu as it was.
+  const here = siteHref(siteBase, pageSlug)
+  const links = templeKitSite ? menu.map((l) => (l.href === here ? { ...l, current: true } : l)) : menu
   const headerLogo = siteLogo(space, website ? websiteBrand.logo : space.brandLogoUrl)
 
   // A custom page draws its blocks as the site page sections (components/sites/menswork-page.tsx), with the
