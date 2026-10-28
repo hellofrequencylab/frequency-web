@@ -149,14 +149,15 @@ export const FREQUENCY_PAGE_SEO = {
   },
   midnight: {
     path: '/themes/nocturne',
-    title: 'Nocturne: one site for your Spotlight, Space and website',
+    title: 'Nocturne: design it once, wear it on every surface',
     description:
-      'Nocturne is a Theme Kit for guides, teachers and healers. Set up once, and your Spotlight, your Space on Frequency and your own website stay in step.',
-    shareTitle: 'Nocturne: set it up once, run three surfaces',
-    headline: 'Nocturne, a Theme Kit. Set it up once.',
-    lede: 'For guides, teachers and healers. Your Spotlight, your Space on Frequency and your own website, kept in step.',
+      'Nocturne is a Theme Kit for any business that gathers people. Your Spotlight, Space, website and emails all wear one look, and you change it once.',
+    shareTitle: 'Nocturne: design it once, same theme everywhere',
+    headline: 'Design it once. Same theme everywhere.',
+    lede: 'One complete theme for any business that gathers people. Your link in bio, your Space on Frequency, your own website and your emails, all reading one profile. Change it once and every surface follows.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
+      { name: 'Themes', path: '/themes' },
       { name: 'Nocturne', path: '/themes/nocturne' },
     ],
   },

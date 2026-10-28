@@ -5,7 +5,7 @@
 // summary. Writes triage.md for the issue step to fold in. It ADVISES; it never edits code or
 // opens PRs autonomously (that stays a human-approved / draft-and-approve action).
 //
-// Mirrors scripts/help-autodoc.mts: same client seam (lib/ai/client.ts only imports the SDK, so
+// Mirrors scripts/help-autodoc.mts: same client seam (lib/ai/client.ts uses a relative env import, so
 // it resolves under --experimental-strip-types) and the same messages.create shape. Runs in
 // .github/workflows/maintenance.yml. Fail-safe: any error is non-fatal (the deterministic report
 // still ships).
