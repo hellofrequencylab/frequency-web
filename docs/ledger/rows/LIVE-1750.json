@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1750",
+  "title": "Give the Network Theme Kit its four emails and its Space page skin, and clear the shadow literals its CSS tripped",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "docs/design-systems/network/rules.json",
+    "ref": "Daniel, 2026-10-28: program the new Network design system into the theme system the way Nocturne is. Plan passes 7 and 8: /mnt/project-files/network-theme/PLAN.html. ADR-1728 and ADR-1906 (theme fence)."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/network-kit-email-and-space.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Fails on main (no kit email builders, the Space page takes the kit body face, 41 shadow-* lines in the kit CSS) and passes here."
+  },
+  "detail": "Passes 7 and 8 of 12, plus a cleanup. EMAIL: lib/theme/network-kit-email.ts builds the design's four emails (note, welcome, dates, receipt) as nested tables with inline styles, literal colours from the four schemes, Bricolage, Outfit and Instrument Serif with Helvetica, Arial and Georgia fallbacks, pill buttons, an Outlook ghost table and a phone breakpoint. They ship in the stock catalog (network-kit-note, -welcome, -dates, -receipt) and the Library lists Email as ready for the kit. Voice changes against the design: the welcome lead drops 'one email a week' (a weekly promise); the dates and note leads keep named events only; the note fixture drops 'first ten clients' (an invented number) and 'Forty volunteers' style stats; the member quote is optional and the fixture is a plain line from a first-name member. Cover alt text is the owner's, not the design's 'Swap in a hosted https URL' placeholder. SPACE PAGE: the kit now takes the display face only. app/themes/frequency/space-page.css no longer sets the kit's body face (it stays Frequency's, as the Frequency Space page spec says), sets display weight 700 and tracking -0.035em, and the Space name on the default Header size wears the display face. The accent already rode frequencyAccentVars. The console and every member area read memberSpaceFonts, which never sees the website theme; rendered before and after at 390, 1280, 1440, 1920 and 2000 the console and a no-theme Space page are pixel-identical, and the kit Space page differs only in the display text. CLEANUP: the adoption ratchet's shadow-literals matched the kit's own custom property names (--nk-shadow-sm, -md, -lg, 41 lines in five files), not Tailwind utilities; they are renamed --nk-depth-sm, -md, -lg, so shadow-literals reads 38 again with no baseline change. Later passes must use --nk-depth-*.",
+  "wave": "W7"
+}
