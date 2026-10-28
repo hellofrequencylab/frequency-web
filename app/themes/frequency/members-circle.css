@@ -83,7 +83,10 @@
 [data-design="frequency"] [data-kit="members"] .fqc-channels li{display:flex;align-items:center;gap:12px}
 [data-design="frequency"] [data-kit="members"] .fqc-channels .fq-icon-tile{width:36px;height:36px;border-radius:12px;box-shadow:none;background:color-mix(in oklab,var(--fq-ink) 4%,transparent);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fqc-channels .fq-icon{width:16px;height:16px}
-@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqc-cover::before{background:linear-gradient(180deg,transparent 0%,color-mix(in oklab,var(--fq-ink) 45%,transparent) 35%,color-mix(in oklab,var(--fq-ink) 82%,transparent) 100%)}[data-design="frequency"] [data-kit="members"] .fqc-tab{padding:0 16px;height:48px}[data-design="frequency"] [data-kit="members"] .fqc-meet{padding:16px}[data-design="frequency"] [data-kit="members"] .fqc-detail-act{flex-basis:100%}}
+/* NARROW: the shell's rails leave the page a column of 420 to 720px for every viewport under 1448px (the left rail 248 + the right
+ rail 288 + 192 of gutters come off 1280, and the right rail is on every member page), so the narrow rules key on that viewport
+ range, not on a phone. The design's own 720px rules, moved up to where the column really is. */
+@media (max-width:1447px){[data-design="frequency"] [data-kit="members"] .fqc-cover{min-height:260px}[data-design="frequency"] [data-kit="members"] .fqc-cover::before{background:linear-gradient(180deg,transparent 0%,color-mix(in oklab,var(--fq-ink) 45%,transparent) 35%,color-mix(in oklab,var(--fq-ink) 82%,transparent) 100%)}[data-design="frequency"] [data-kit="members"] .fqc-cover .h1{font-size:clamp(26px,2.4vw,34px)}[data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in{padding:20px 18px}[data-design="frequency"] [data-kit="members"] .fqc-tab{padding:0 14px;height:48px;font-size:var(--fq-text-body-s)}[data-design="frequency"] [data-kit="members"] .fqc-tab .fq-icon{display:none}[data-design="frequency"] [data-kit="members"] .fqc-meet{padding:16px}[data-design="frequency"] [data-kit="members"] .fqc-detail-act{flex-basis:100%}}
 }
 @layer components {
 [data-design="frequency"] [data-kit="members"] .fqc-health{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
