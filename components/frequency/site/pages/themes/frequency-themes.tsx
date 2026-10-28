@@ -3,6 +3,7 @@
 // index so the page never drifts from what the editor offers. Built from the template kit only (phero, sec,
 // sh, tg-card, KeepGoing); no page CSS of its own. Copy follows docs/marketing/voice-and-language-guide.md:
 // pain point first, plain words, no claims we cannot stand behind.
+import { FreeSpotlightButton } from '@/components/marketing/free-spotlight-button'
 import Image from 'next/image'
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
@@ -73,6 +74,7 @@ export function FrequencyThemes() {
             <Link className="btn btn-ghost fq-iri-rim" href="#themes">
               See the Theme Kits
             </Link>
+            <FreeSpotlightButton surface="themes" />
           </div>
         </div>
       </section>
