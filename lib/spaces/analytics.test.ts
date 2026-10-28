@@ -136,6 +136,13 @@ describe('recordSpaceCtaClick', () => {
     expect(first.startsWith('space_cta:space-1:viewer-1:')).toBe(true)
   })
 
+  it('uses the proof nonce as an actor-independent idempotency key', async () => {
+    await recordSpaceCtaClick('space-1', 'viewer-1', 'proof-nonce')
+    expect(lastCall().idempotencyKey).toBe('space_cta:space-1:proof:proof-nonce')
+    await recordSpaceCtaClick('space-1', 'viewer-2', 'proof-nonce')
+    expect(lastCall().idempotencyKey).toBe('space_cta:space-1:proof:proof-nonce')
+  })
+
   it('is a guarded no-op when spaceId is empty', async () => {
     await recordSpaceCtaClick('')
     expect(recordEngagementEvent).not.toHaveBeenCalled()
