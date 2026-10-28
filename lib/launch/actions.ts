@@ -9,6 +9,7 @@
 // What is NOT here on purpose: publishing a step. A step is done when its real thing exists (done-checks.ts),
 // so a step's own server code records it. A client cannot claim it.
 
+import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { launchSystemEnabled } from './enabled'
@@ -54,4 +55,16 @@ export async function confirmCancelAction(typed: string): Promise<ActionResult> 
   if (res.reason === 'wrong_word') return fail('Type STOP to end your launch.')
   if (res.reason === 'expired' || res.reason === 'not_requested') return fail('Ask to stop again, then type STOP.')
   return fail(GONE)
+}
+
+/** The restart card's button (a plain form action): begin again with the stopped launch's niche and starting
+ *  intents, then land on the welcome-back page. A launch already running is picked back up, never doubled. */
+export async function restartLaunchFormAction(): Promise<void> {
+  if (!launchSystemEnabled()) redirect('/launch')
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in')
+  const last = await store.getLaunchForOwner(profileId)
+  const launch = await store.startLaunch(profileId, { niche: last?.niche ?? null, intents: last?.intents ?? [] })
+  if (launch && launch.id !== last?.id) await recordLaunchEvent(profileId, { type: 'launch_started', launchId: launch.id })
+  redirect('/launch')
 }
