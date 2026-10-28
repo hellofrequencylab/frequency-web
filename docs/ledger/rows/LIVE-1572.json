@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1572",
+  "title": "Fit the Circle page to the column the shell leaves it",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "app/themes/frequency/members-circle.css",
+    "ref": "Daniel, 2026-10-28: the live Circle page looked nothing like the design"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/circle-page-narrow.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Probe fails on main (the narrow rules sit at a 720px phone breakpoint) and passes here. Rendered inside the real rail grid at 1280, 1440 and 390: all four tabs fit, the cover tags read."
+  },
+  "detail": "LIVE-1510 was checked only against a bare page 1040px wide. The member shell keeps the right rail on every page, so at 1280 the page body is 552px: the four-tab pill scrolled its last tab out of sight and the cover scrim and title were sized for a wide cover. The narrow rules now key on the viewport range where the rails take the width (under 1448px). The side column stacks under the feed there, as in the design's own narrow layout; it sits beside the feed from about 1590px. The rail stays (owner, 2026-07-28).",
+  "wave": "W7"
+}
