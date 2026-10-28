@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1176",
+  "title": "Lock map seam, nurture runner, season go-live and member day with frozen-clock tests",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "docs/ledger/rows/SCAN-1176.json",
+    "ref": "Functional QA sweep 2026-10-28, map and timer slice"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/functional-qa-map-timer.mjs",
+    "note": "Renders the map seam with both engines stubbed (keyless MapLibre, Google with runtime fallback, expandable dialog) and runs the nurture runner, season auto-go-live and member-day boundaries on a frozen clock against in-memory fakes. No network, no tile provider, no production data."
+  },
+  "detail": "A source and metadata audit did not exercise map rendering or timer journeys. This adds runtime tests for four paths that had only source-reading or no tests: the MapCanvas seam, runDueNurture, promoteDueScheduledSeasons and memberDay. All passed on first run; no product defect was found in these paths. Findings and what cannot be tested from a cloud box are in audits/functional-qa-2026-10-28/map-and-timer.md. No schema, provider, customer data or deployment changes.",
+  "wave": "W7"
+}

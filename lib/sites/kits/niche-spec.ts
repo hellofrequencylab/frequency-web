@@ -290,7 +290,7 @@ export const NICHE_SPECS: Record<KitNiche, NicheSpec> = {
   },
   faith: {
     id: 'faith',
-    label: 'Faith and spiritual communities',
+    label: 'Spiritual Community',
     description: 'For churches, sanghas, temples and centers: when you gather, the small groups, and a way to give.',
     home: {
       seoTitle: 'Gather with us', seoDescription: 'Service times, small groups and how to get involved.',
