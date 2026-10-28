@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { CalendarClock, Sparkles } from 'lucide-react'
+import { moveSpaceTodo } from '@/app/(main)/spaces/[slug]/settings/calendar/task-actions'
+import { saveCalendarEntry, saveCalendarEntryOccurrence } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { AstroMarker } from '@/lib/calendar/astro-markers'
@@ -13,6 +15,7 @@ import { findClashes } from '@/lib/calendar/planner/clash'
 import { addDays } from '@/lib/calendar/planner/days'
 import { needsYou } from '@/lib/calendar/planner/needs-you'
 import { shiftMonth, sunSignOn } from '@/lib/calendar/planner/month'
+import { nowMinutes } from '@/lib/calendar/planner/now'
 import {
   READY_VIEWS,
   SUITE_VIEW_LABEL,
@@ -31,6 +34,8 @@ import { SuiteNeedsYou } from './suite-needs-you'
 import { SuiteRail } from './suite-rail'
 import { SuiteSheet } from './suite-sheet'
 import type { SuiteContext, SuiteSelection, SuiteTeamMember } from './suite-types'
+import { SuiteWeek } from './suite-week'
+import { useSuiteMoves, type SuiteActions } from './use-suite-moves'
 
 // THE SPACE CALENDAR (README 1, layout 1a Sidebar). One full-height surface inside the console: the
 // rail, the header, the Needs-you row, the view, and the Details panel. This part owns what is on
@@ -73,12 +78,45 @@ export interface CalendarSuiteProps {
   newEventHref: string
   httpsUrl: string
   webcalUrl: string
+  /** False for someone who can read the calendar but not change it: nothing is draggable. */
+  canEdit?: boolean
+  /** Minutes since midnight on the Space's clock when the page was made, or null for no now line. */
+  nowMin?: number | null
+  /** The zone's short name for the corner of the time grid, "PDT". */
+  zoneShort?: string
+  /** True stops the now line moving, for a test or a still picture. */
+  frozenClock?: boolean
+  /** The writes a drop makes. Absent means the calendar's own server actions; a test passes stand-ins. */
+  actions?: SuiteActions
 }
 
 type Sheet = 'pencil' | 'ask' | null
 
 export function CalendarSuite(props: CalendarSuiteProps) {
-  const { slug, spaceId, brandName, todayKey, openYm, minYm, maxYm, data, team, dayNotes, sky } = props
+  const { slug, spaceId, brandName, todayKey, openYm, minYm, maxYm, team, dayNotes, sky } = props
+  const canEdit = props.canEdit ?? false
+  const actions = useMemo<SuiteActions>(
+    () =>
+      props.actions ?? {
+        saveEntry: (entryId, input) => saveCalendarEntry(slug, entryId, input),
+        saveOccurrence: (entryId, day, input) => saveCalendarEntryOccurrence(slug, entryId, day, input),
+        moveTodo: (id, due) => moveSpaceTodo(slug, id, due),
+      },
+    [props.actions, slug],
+  )
+  // A drop is shown at once and written through the calendar's own actions (use-suite-moves.tsx).
+  const moves = useSuiteMoves({ base: props.data, actions, canEdit })
+  const data = moves.data
+  const dnd = moves.dnd
+  // The now line: the page's minute carried forward by the browser's own clock, unless frozen.
+  const [elapsedMs, setElapsedMs] = useState(0)
+  useEffect(() => {
+    if (props.frozenClock) return
+    const t0 = Date.now()
+    const id = window.setInterval(() => setElapsedMs(Date.now() - t0), 30_000)
+    return () => window.clearInterval(id)
+  }, [props.frozenClock])
+  const nowMin = props.nowMin == null ? null : nowMinutes(props.nowMin, elapsedMs)
   const todayYm = todayKey.slice(0, 7)
   const narrow = useSyncExternalStore(subscribeNarrow, readNarrow, serverNarrow)
   const [chosen, setChosen] = useState<SuiteView | null>(() => (props.initialView ? resolveSuiteView(props.initialView, null, false) : null))
@@ -265,6 +303,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
           sel={sel}
           feed={{ httpsUrl: props.httpsUrl, webcalUrl: props.webcalUrl }}
           upcomingCount={props.upcomingCount ?? 0}
+          dnd={dnd}
           onToggleLayer={toggleLayer}
           onPickDay={pickDay}
           onSelect={select}
@@ -307,22 +346,44 @@ export function CalendarSuite(props: CalendarSuiteProps) {
               minYm={minYm}
               maxYm={maxYm}
               request={request}
+              dnd={dnd}
               onActiveMonth={onActiveMonth}
               onSelect={(ref) => select(ref)}
               onMore={showMore}
             />
           ) : view === 'agenda' ? (
-            <SuiteAgenda data={plannerData} ctx={ctx} sel={sel} cursor={cursor} focusDay={focusDay} onSelect={(ref) => select(ref)} />
+            <SuiteAgenda data={plannerData} ctx={ctx} sel={sel} cursor={cursor} focusDay={focusDay} dnd={dnd} onSelect={(ref) => select(ref)} />
+          ) : view === 'day' || view === 'week' ? (
+            <SuiteWeek
+              data={plannerData}
+              ctx={ctx}
+              sel={sel}
+              cursor={cursor}
+              days={view === 'week' ? 7 : 1}
+              nowMin={nowMin}
+              sky={sky}
+              dnd={dnd}
+              zoneShort={props.zoneShort ?? ''}
+              onSelect={(ref) => select(ref)}
+              onOpenDay={
+                view === 'week'
+                  ? (day) => {
+                      setCursor(day)
+                      chooseView('day')
+                    }
+                  : undefined
+              }
+            />
           ) : (
             <div className="cal-soon">
               <EmptyState
                 variant="first-use"
                 icon={CalendarClock}
                 title={`${SUITE_VIEW_LABEL[view]} is coming soon`}
-                description={`${READY_VIEWS.map((v) => SUITE_VIEW_LABEL[v]).join(' and ')} are ready now.`}
+                description={`${READY_VIEWS.slice(0, -1).map((v) => SUITE_VIEW_LABEL[v]).join(', ')} and ${SUITE_VIEW_LABEL[READY_VIEWS[READY_VIEWS.length - 1]]} are ready now.`}
                 action={
-                  <Button variant="primarySoft" size="sm" onClick={() => chooseView('month')}>
-                    Open Month
+                  <Button variant="primarySoft" size="sm" onClick={() => chooseView('week')}>
+                    Open Week
                   </Button>
                 }
               />
@@ -336,6 +397,8 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       </aside>
 
       <div className="cal-scrim" onClick={() => (railOpen ? setRailOpen(false) : setSel(null))} aria-hidden />
+
+      {moves.layer}
 
       {sheet === 'pencil' ? (
         <SuiteSheet

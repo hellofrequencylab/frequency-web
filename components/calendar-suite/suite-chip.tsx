@@ -21,12 +21,15 @@ export function SuiteChip({
   selected,
   partner,
   onSelect,
+  dragProps,
 }: {
   model: ChipModel
   selected: boolean
   /** The name of the other Space on the Plan, when there is one. */
   partner?: string | null
   onSelect: (ref: ChipModel['ref']) => void
+  /** What makes the chip draggable (use-suite-dnd), or nothing for a calendar that cannot be moved. */
+  dragProps?: Record<string, unknown>
 }) {
   const look = KINDS[model.kind]
   const done = model.kind === 'todo' && model.struck
@@ -54,6 +57,7 @@ export function SuiteChip({
       title={model.label}
       aria-label={model.label}
       onClick={() => onSelect(model.ref)}
+      {...dragProps}
     >
       <span className="cal-chip-text">
         <span className="cal-chip-t">{model.title || ' '}</span>

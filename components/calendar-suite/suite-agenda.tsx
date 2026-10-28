@@ -11,6 +11,7 @@ import { KINDS } from '@/lib/calendar/planner/kinds'
 import type { PlannerData } from '@/lib/calendar/planner/types'
 import { PartnerRing } from './suite-chip'
 import type { SuiteContext, SuiteSelection } from './suite-types'
+import type { SuiteDnd } from './use-suite-dnd'
 
 // THE AGENDA (README 1.3): the next 45 days as cards, one per day that has anything on it. The date
 // tile and weekday on the left, a row per item on the right: a colour bar, the title, the word pill,
@@ -23,6 +24,7 @@ export function SuiteAgenda({
   sel,
   cursor,
   focusDay,
+  dnd,
   onSelect,
 }: {
   data: PlannerData
@@ -31,6 +33,7 @@ export function SuiteAgenda({
   cursor: string
   /** A day to bring into view, from "+N more" on the month. */
   focusDay: string | null
+  dnd: SuiteDnd
   onSelect: (ref: { kind: 'item' | 'todo'; id: string }) => void
 }) {
   const days = useMemo(() => buildAgenda(data, cursor, ctx.today, ctx.ownSpaceId), [data, cursor, ctx.today, ctx.ownSpaceId])
@@ -59,7 +62,13 @@ export function SuiteAgenda({
         const mon = monthDayLabel(day.key)
         const [month, num] = [mon.slice(0, 3), mon.slice(4)]
         return (
-          <section className="cal-aday" key={day.key} data-day={day.key} data-today={day.key === ctx.today || undefined}>
+          <section
+            className="cal-aday"
+            key={day.key}
+            data-day={day.key}
+            data-today={day.key === ctx.today || undefined}
+            {...dnd.targetProps(() => ({ zone: 'day', day: day.key }))}
+          >
             <div className="cal-aside">
               <span className="cal-caps">{month}</span>
               <span className="cal-atile">{num}</span>
@@ -71,7 +80,8 @@ export function SuiteAgenda({
                 const look = KINDS[row.kind]
                 const item = row.src === 'item' ? ctx.itemById.get(row.id) : null
                 const task = row.src === 'todo' ? ctx.taskById.get(row.id) : null
-                const owner = task?.owner ? ctx.teamById.get(task.owner) : null
+                const ownerId = task?.owner ?? item?.owner ?? null
+                const owner = ownerId ? ctx.teamById.get(ownerId) : null
                 const plan = item?.plan ? ctx.planById.get(item.plan) : task?.plan ? ctx.planById.get(task.plan) : null
                 const partner = ctx.spaceNames[partnerSpaceId(plan, ctx.ownSpaceId) ?? ''] ?? null
                 const selected = sel?.kind === (row.src === 'item' ? 'item' : 'todo') && sel.id === row.id
@@ -84,6 +94,7 @@ export function SuiteAgenda({
                     data-struck={row.cancelled || row.done || undefined}
                     aria-pressed={selected}
                     onClick={() => onSelect({ kind: row.src === 'item' ? 'item' : 'todo', id: row.id })}
+                    {...(row.cancelled ? {} : dnd.dragProps(row.src === 'item' ? 'item' : 'todo', row.id))}
                   >
                     <span className="cal-abar" style={{ background: look.dot }} aria-hidden />
                     <span className="cal-atext">
@@ -97,7 +108,12 @@ export function SuiteAgenda({
                     <span className="cal-pill" style={{ background: look.bg, border: look.bd, color: look.fg }}>
                       {look.word}
                     </span>
-                    {partner ? <PartnerRing name={partner} /> : null}
+                    {partner ? (
+                      <span className="cal-partner" title={`With ${partner}`}>
+                        <PartnerRing name={partner} />
+                        <span className="cal-partner-t">{partner}</span>
+                      </span>
+                    ) : null}
                     {owner ? <Avatar src={owner.avatarUrl} name={owner.name} size="xs" /> : null}
                   </button>
                 )

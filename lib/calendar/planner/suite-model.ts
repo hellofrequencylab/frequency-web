@@ -20,7 +20,7 @@ export const SUITE_VIEW_LABEL: Record<SuiteView, string> = {
 }
 
 /** The views that draw today. The rest show a quiet "coming soon" until their pass lands. */
-export const READY_VIEWS: readonly SuiteView[] = ['month', 'agenda']
+export const READY_VIEWS: readonly SuiteView[] = ['day', 'week', 'month', 'agenda']
 
 const KEY_VIEW: Record<string, SuiteView> = {
   d: 'day',
