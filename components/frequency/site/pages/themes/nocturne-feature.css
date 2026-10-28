@@ -8,9 +8,9 @@
 /* Hero */
 .nf-hero{min-height:calc(100svh - 84px)}
 .nf-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(28px,4vw,72px);align-items:center;margin-top:clamp(12px,3vh,36px)}
-.nf-top{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:16px}
+.nf-top{container-type:inline-size;min-width:0;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:16px}
 .nf-h1{margin:0;font:700 clamp(44px,6.4vw,96px)/.96 var(--fq-font-display);letter-spacing:-.055em;color:var(--fq-text-strong)}
-.nf-name{font-size:clamp(44px,7vw,112px);line-height:.92;letter-spacing:-.06em}
+.nf-name{font-size:clamp(44px,17cqw,112px);line-height:.92;letter-spacing:-.06em}
 .nf-aft{margin:-4px 0 0;font:600 clamp(15px,1.6vw,20px)/1.2 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
 .nf-tagline{margin:6px 0 0;font:700 clamp(22px,2.4vw,36px)/1.08 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
 .nf-tagline em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}
