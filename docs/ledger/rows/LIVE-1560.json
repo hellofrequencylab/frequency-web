@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-1560",
+  "title": "Alli Rae Home steps trimmed so the panel stands about as tall as the portrait",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/alli-rae-steps-trim.mjs"
+  },
+  "detail": "Daniel, 2026-10-28: less content in the Home 'Image + numbered steps' section so the image and content blocks stand about the same height. Each step keeps its title with a shorter italic lead and a tight body (cut, not rewritten). Designer CSS only: step padding 32 to 22px, step gap 24 to 20px, text gap 12 to 8px, and on desktop the portrait stretches to the heading-and-panel column (aspect-ratio auto, 420px floor) so both columns align top and bottom; the phone stack keeps the 4:5 portrait. At 1280 the panel fell from 983px to 685px and the section from 1454px to 1156px. update-alli-rae-space-4.sql (scripts/seed-alli-rae-update-4.mts) carries the copy to the live Space, guarded to revision 3 or 4.",
+  "wave": "W7"
+}
