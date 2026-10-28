@@ -22,7 +22,7 @@ import type { WebsiteTheme } from '@/lib/sites/editor/state'
 // default accent.
 
 /** The editor's stored theme id for each site theme (ADR-1726): Bold is Menswork, Frequency is DAWN. */
-export const EDITOR_THEME_OF: Record<Exclude<SiteThemeId, 'temple-kit'>, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', temple: 'Temple', midnight: 'Midnight', designer: 'Designer' }
+export const EDITOR_THEME_OF: Record<Exclude<SiteThemeId, 'temple-kit'>, WebsiteTheme> & { 'temple-kit'?: undefined } = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', temple: 'Temple', midnight: 'Midnight', designer: 'Designer' }
 
 /** The editor's id for any site theme. The Temple Theme Kit is held out of EDITOR_THEME_OF (the table the Mega Theme
  *  model is held level with) until it joins the owner-facing lists. */
