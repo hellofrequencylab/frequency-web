@@ -88,7 +88,13 @@ jobs:
         run: pnpm test:e2e:journeys
       - name: What the app logged
         if: failure()
-        run: grep -nE "auth/callback|Error|⨯| 500 " dev.log | tail -80 || true
+        run: |
+          echo "--- app log (errors and 500s)"
+          grep -nE "auth/callback|Error|⨯| 500 " dev.log | tail -80 || true
+          echo "--- local Auth log (sign-in code exchange)"
+          for c in $(docker ps --format '{{.Names}}' | grep supabase_auth); do
+            docker logs --tail 400 "$c" 2>&1 | grep -iE "pkce|flow_state|invalid|error|token" | tail -40 || true
+          done
       - name: Keep the evidence
         if: always()
         uses: actions/upload-artifact@v4
