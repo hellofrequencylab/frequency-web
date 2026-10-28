@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1634",
+  "title": "The launch is one progressive page: the Spotlight form, its live preview and the stages still to come, with no page hops",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/launch/launch-flow.tsx",
+    "ref": "Vera guided launch system, VLS-09. The owner ruled on 2026-10-28 that the step-per-page screens read badly and the launch should be one page that progresses in place."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-onepage.mjs",
+    "note": "The stage states and the answers read back out of the saved Spotlight are pinned by lib/launch/flow.test.ts (run by the test job); the probe reads the wiring: both launch routes render the one page, it carries a live preview frame and a progress bar on a kit template without the admin bar, and the way on goes to the person's own Space, never to a step page that does not exist. Fails on main, where the Spotlight form and the published screen are two pages and Next led to a 404."
+  },
+  "detail": "/launch/step/spotlight and /launch/step/spotlight/published render the same LaunchFlow. Before publish: the Spotlight form beside an empty phone frame, a four-segment progress bar (Spotlight, Your Space, Website, Email) and the stages to come. After publish: the same layout with the form filled in from the saved Spotlight (Save changes updates it in place, the Space is reused), the real public Spotlight in the phone frame, and Your Space marked next with a button to the person's own Space. Website and Email wait behind the Space. Not here: the Space, Website and Email steps opening in place, which register as steps in the shared builder the Create a Space thread is extracting (one step engine, two skins); the live preview updating as the person types.",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}
