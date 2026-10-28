@@ -21,7 +21,8 @@ import {
 // here: the general funnel stays on the waitlist/Beta-list landing, every niche funnel routes to its own
 // Space-create section, and every niche destination is a safe in-app path.
 
-// The six launch operator niches and the Space Mode each targets (OPERATOR-FUNNELS.md §5 Start-free bridge).
+// The six launch operator niches and the seven business profiles, with the Space Mode each targets
+// (OPERATOR-FUNNELS.md §5 Start-free bridge; the profiles are the LIVE-1512 follow-up).
 const EXPECTED_NICHE_MODE: Record<string, string> = {
   coaches: 'business:packages',
   studios: 'business:membership',
@@ -29,6 +30,13 @@ const EXPECTED_NICHE_MODE: Record<string, string> = {
   nonprofits: 'nonprofit:donations',
   venues: 'business:ticketed',
   networks: 'business:membership',
+  general: 'business:service',
+  creators: 'business:product',
+  schools: 'business:cohort',
+  clubs: 'business:membership',
+  faith: 'nonprofit:donations',
+  wellness: 'business:appointments',
+  markets: 'business:ticketed',
 }
 
 describe('spaceCreatePath', () => {
@@ -54,7 +62,7 @@ describe('the general funnel keeps the Beta-list landing', () => {
 })
 
 describe('every niche funnel routes to its own section', () => {
-  it('covers exactly the six operator niches', () => {
+  it('covers exactly the thirteen operator niches', () => {
     expect(Object.keys(NICHE_FUNNEL_DESTINATIONS).sort()).toEqual(Object.keys(EXPECTED_NICHE_MODE).sort())
   })
 

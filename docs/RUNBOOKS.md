@@ -672,6 +672,18 @@ The owner ruling of 2026-10-12: every account that messages through Frequency ca
 
 **When a row sticks in `pending`.** Read the row (service role): `select state, dns_written_at, updated_at, dns_records, provider_domain_id from space_inbox_addresses where space_id = ...`. (1) `dns_written_at` null and `updated_at` moving every 15 minutes: the zone write is being refused on every run. Search the runtime logs for `[vercel-domains] zone DNS record write failed`; the line carries the zone, the record name and Vercel's code AND message (`forbidden: You do not have permission...`), which names the fix (the token's team does not hold the zone, the zone is not `frequencylocal.com`, a record name Vercel rejects). Fix the cause; the next run writes the records. (2) `dns_written_at` set and the row still `pending` after an hour: the records are in the zone and Resend has not verified. Confirm with `dig MX <slug>.space.frequencylocal.com` and `dig TXT resend._domainkey.<slug>.space.frequencylocal.com` against `ns1.vercel-dns.com`; if they answer, open the domain in the Resend dashboard, which says which record it is still waiting on. If they do not answer, compare `dns_records` on the row with the zone in the Vercel dashboard. (3) `updated_at` not moving at all: the cron is not running. Check `cron.run` lines for `space-inbox-verify` and the switch in Production. Pressing Check again on the card runs the same check by hand.
 
+### Vera guided launch (VLS-30)
+
+The guided launch ships dark behind two on/off switches, both read through `envFlag` (`1` / `true` / `on`) in `lib/launch/enabled.ts`. `LAUNCH_SYSTEM_ENABLED` runs the launch: the box in the members header, the step screens and the reminder cron. `LAUNCH_ENTRY_ENABLED` opens the public "Get a Free Spotlight" buttons, and does nothing while the first is off. Turn them on in stages, in Vercel Production, redeploying after each.
+
+**Gate before each stage.** All **owner** unless tagged.
+
+1. **Staff only** (`LAUNCH_SYSTEM_ENABLED` on, entry off). Only someone with the `/launch/start` link gets in. Gate: every Launch migration applied (**agent** confirms from `pg_tables`), `pnpm check:backlog` green on main, and one staff walk from the link to a live Spotlight with the address loading.
+2. **New Spaces from the /for doors.** Same switches. Gate: stage one walk repeated on a phone and a desktop, the reminder cron's first run logged (`[launch-reminders] run`), and the admin funnel (`/admin/launch`) showing the staff launch.
+3. **The lead button** (`LAUNCH_ENTRY_ENABLED` on). Gate: stage two ran for a week with no stuck launch, the median time to a first Spotlight is on the admin funnel, and no page claims a time before that median exists.
+
+**Turn it off.** Unset the switch. The box, the step screens and the reminder cron stop; every Spotlight, Space, event and Circle a person made stays live. A launch saved mid-way resumes when the switch is back on.
+
 ### House conversation email bridge (ADR-814)
 
 `CONVERSATION_EMAIL_BRIDGE` defaults off. It is an on/off env switch (`envFlag`: `1` / `true` / `on`). It gates only whether a new member reply is forwarded to the assigned agent's (else owner's) real inbox. A valid house reply-address is always honored: an agent's reply to an in-flight forward still routes outbound if the switch is later unset (`lib/comms/inbound.ts`). Spec: [`COMMS-SYSTEM.md`](COMMS-SYSTEM.md) "Email bridge".
