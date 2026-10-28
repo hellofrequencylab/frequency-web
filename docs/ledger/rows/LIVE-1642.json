@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1642",
+  "title": "The Temple Theme Kit's Foundation: temple-kit is a stored, rendered site theme with scoped tokens, 24 textures and a minimal skin",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "docs/design-systems/temple/rules.json",
+    "ref": "LIVE-1640"
+  },
+  "detail": "Pass 1b of the Temple Theme Kit (code id temple-kit, shown as Temple; the older temple theme is untouched, its token block and skin hash-pinned by a test). Adds TEMPLE_KIT_TOKENS_CSS (the design's :root scope under [data-house-theme=\"temple-kit\"], --tk-* ramps) and TEMPLE_KIT_VARIANTS_CSS (13 profiles, 4 look axes), the 24 textures byte for byte, a minimal skin (plaster ground, type, link, button, focus), and the site theme id with its look, accent, render style, editor contract key and font vars. Not yet in SITE_THEMES, MEGA_THEMES, the library, WEBSITE_THEMES or WEBSITE_THEMES_LIVE: the kits, Spotlight, email and editor passes add it there, so owners are not offered it before it is whole. The design-system baseline closes 29 gaps and opens 36 token gaps that the comparison could not see before (24 texture urls and their hooks, the Space-owned --color-primary family, 3 font-stack aliases).",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "Registration, tokens, skin wiring, contract key and 24 textures present.",
+    "cmd": "node scripts/probes/temple-kit-foundation.mjs"
+  },
+  "closed": "2026-10-28"
+}

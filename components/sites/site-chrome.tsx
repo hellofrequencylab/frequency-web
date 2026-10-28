@@ -11,6 +11,7 @@ import { WILDHEART_CSS } from './wildheart-css'
 import { NETWORK_CSS } from './network-css'
 import { TEMPLE_CSS } from './temple-css'
 import { MIDNIGHT_CSS } from './midnight-css'
+import { TEMPLE_KIT_CSS } from './temple-kit-css'
 import { DESIGNER_CSS } from './designer-css'
 import { DesignerFooterTop, DesignerUtilityBar, phoneMenuFoot } from './designer-chrome'
 import { DesignerHeaderState } from './designer-header-state'
@@ -74,7 +75,7 @@ export type SiteLink = HouseHeaderLink
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart' | 'network' | 'temple' | 'midnight' | 'designer'
+  theme: 'menswork' | 'wildheart' | 'network' | 'temple' | 'temple-kit' | 'midnight' | 'designer'
   season: MensworkSeason
   /** Network only: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
@@ -85,6 +86,7 @@ function skinCss(skin: SiteSkin | null): string {
   if (skin.theme === 'wildheart') return HOUSE_CSS + FREQUENCY_PAGE_CSS + WILDHEART_CSS
   if (skin.theme === 'network') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NETWORK_CSS
   if (skin.theme === 'temple') return HOUSE_CSS + FREQUENCY_PAGE_CSS + TEMPLE_CSS
+  if (skin.theme === 'temple-kit') return HOUSE_CSS + FREQUENCY_PAGE_CSS + TEMPLE_KIT_CSS
   if (skin.theme === 'midnight') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MIDNIGHT_CSS
   if (skin.theme === 'designer') return HOUSE_CSS + FREQUENCY_PAGE_CSS + DESIGNER_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS

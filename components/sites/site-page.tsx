@@ -21,6 +21,7 @@ import { networkScheme } from '@/lib/theme/network'
 import { NETWORK_FONT_CLASS } from '@/components/sites/network-fonts'
 import { TEMPLE_FONT_CLASS } from '@/components/sites/temple-fonts'
 import { TEMPLE_CSS } from '@/components/sites/temple-css'
+import { TEMPLE_KIT_CSS } from '@/components/sites/temple-kit-css'
 import { MIDNIGHT_FONT_CLASS } from '@/components/sites/midnight-fonts'
 import { MIDNIGHT_CSS } from '@/components/sites/midnight-css'
 import { DESIGNER_FONT_CLASS } from '@/components/sites/designer-fonts'
@@ -197,6 +198,8 @@ export async function SitePage({
   const templeSite = siteStyle.theme === 'temple'
   // The Midnight theme (lib/theme/midnight.ts): a house after dark, true black and bone with one violet accent.
   const midnightSite = siteStyle.theme === 'midnight'
+  // The Temple Theme Kit (lib/theme/temple-kit.ts): the same four faces as Temple, its own tokens, skin and blocks.
+  const templeKitSite = siteStyle.theme === 'temple-kit'
   // The Designer theme (lib/theme/designer.ts): limewash and daylight, plaster grounds, charcoal type and one ochre accent.
   const designerSite = siteStyle.theme === 'designer'
   // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
@@ -212,12 +215,14 @@ export async function SitePage({
         ? { theme: 'network' as const, season: mensworkSeason(new Date()), scheme: networkScheme(websiteBrand.accent) }
         : templeSite
           ? { theme: 'temple' as const, season: mensworkSeason(new Date()) }
+          : templeKitSite
+            ? { theme: 'temple-kit' as const, season: mensworkSeason(new Date()) }
           : midnightSite
             ? { theme: 'midnight' as const, season: mensworkSeason(new Date()) }
             : designerSite
               ? { theme: 'designer' as const, season: mensworkSeason(new Date()) }
               : null
-  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : templeSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : undefined
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
   const lookOverrides = siteLookOverrides(render.lookStyle)
   const fullFooter = siteLook(render.lookStyle).footer === 'full'
@@ -235,7 +240,7 @@ export async function SitePage({
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
           <div data-house-theme={skin.theme} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
-            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : templeSite ? TEMPLE_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : MENSWORK_CSS}</style>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
