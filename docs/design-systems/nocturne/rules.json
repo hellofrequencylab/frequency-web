@@ -133,7 +133,7 @@
     {
       "glob": "assets/shots/*",
       "kind": "asset",
-      "target": "public/themes/nocturne/shots/{base}"
+      "target": "public/themes/midnight/shots/{base}"
     },
     {
       "glob": "assets/frequency-*",
