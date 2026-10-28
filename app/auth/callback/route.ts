@@ -43,6 +43,9 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
+    // Name a failed exchange in the server log: the redirect below carries only a code, so a link that
+    // cannot become a session was otherwise invisible to whoever read the logs.
+    if (error) console.error('[auth/callback] code exchange failed:', error.name, error.status, error.message)
 
     if (!error) {
       // No admission check here. This branch used to roll back a brand-new account (sign out +
