@@ -147,8 +147,34 @@ async function rootEntityId(): Promise<string | null> {
  * wizard can surface it inline.
  */
 export async function createSpace(input: CreateSpaceInput): Promise<ActionResult> {
+  const made = await provisionSpace(input)
+  if ('error' in made) return fail(made.error)
+  // Success: hand the owner to SETUP, then to HOSTING (ADR-1733 amending LIVE-261). This landed
+  // on `/manage` until 2026-09-09, the console's command center (revenue, pipeline, contacts), and
+  // on `/manage/circles` until 2026-10-12, which the owner read as "it just created it and dumped
+  // me in a circle". A person who has owned a Space for four seconds has no story, no logo, no
+  // contact details and no offerings, so the first screen is the walk that asks for them
+  // (/spaces/<slug>/setup; every step saves through the existing update actions), and its finish
+  // is the Circles this Space runs, LIVE-261's end state. The rule lives in `postCreateLanding`:
+  // a console type (business / nonprofit) walks setup, any other type lands straight on
+  // /manage/circles exactly as before. Hosting is free; the money surfaces are one click away.
+  // redirect() throws, so it must sit OUTSIDE any try/catch (Next docs: redirecting.md).
+  const { type, slug } = made
+  redirect(postCreateLanding(type, slug))
+}
+
+/**
+ * The same provisioning without the redirect, for a caller that carries on with the new Space (the guided launch's
+ * Spotlight step). Every guard, the governed write and the birth are the ones createSpace runs, because createSpace
+ * calls this. Returns the new Space's id, handle and type, or the line to show.
+ */
+export async function createSpaceForLaunch(input: CreateSpaceInput): Promise<{ spaceId: string; slug: string; type: string } | { error: string }> {
+  return provisionSpace(input)
+}
+
+async function provisionSpace(input: CreateSpaceInput): Promise<{ spaceId: string; slug: string; type: string } | { error: string }> {
   const profileId = await getMyProfileId()
-  if (!profileId) return fail('Sign in to create a space.')
+  if (!profileId) return { error: 'Sign in to create a space.' }
 
   // FUNNEL GATE (ADR-810): cap how many spaces a member may create — Crew unlocks the first space, and
   // owning a paid Business/Non Profit space unlocks unlimited. Gated on featureGatesLive() so while the
@@ -163,25 +189,25 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
       ownedSpaceCount: owned.length,
       ownsPaidSpace: owned.some((r) => isPaidSpacePlan(r.plan)),
     })
-    if (blocked) return fail(blocked)
+    if (blocked) return { error: blocked }
   }
 
   // Type: only a provisionable type may be provisioned (the canonical list; an unknown / non-
   // provisionable type like `root` is rejected).
   const type = (input.type ?? '').trim()
-  if (!isProvisionableType(type)) return fail('Pick a space type from the list.')
+  if (!isProvisionableType(type)) return { error: 'Pick a space type from the list.' }
 
   const name = (input.name ?? '').trim()
-  if (!name) return fail('Give your space a name.')
-  if (name.length > 200) return fail('That name is too long. Keep it under 200 characters.')
+  if (!name) return { error: 'Give your space a name.' }
+  if (name.length > 200) return { error: 'That name is too long. Keep it under 200 characters.' }
 
   // Slug: lowercase, validated, unique. isSafeSlug also caps length + character set.
   const slug = (input.slug ?? '').trim().toLowerCase()
   if (!isSafeSlug(slug)) {
-    return fail('Use a short handle with lowercase letters, numbers, and hyphens only.')
+    return { error: 'Use a short handle with lowercase letters, numbers, and hyphens only.' }
   }
   if (await slugTaken(slug)) {
-    return fail('That handle is already taken. Try another.')
+    return { error: 'That handle is already taken. Try another.' }
   }
 
   // Brand name is no longer collected at create (ADR-552 Phase 4): it defaults to the name and is
@@ -199,7 +225,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   const modeVariant = birth.modeVariant
 
   const entityId = await rootEntityId()
-  if (!entityId) return fail('Spaces are not ready yet. Try again in a moment.')
+  if (!entityId) return { error: 'Spaces are not ready yet. Try again in a moment.' }
 
   // The source answer (LIVE-808), clipped like the signup one (meta.beta.heard_about). Blank = skipped.
   const heardAbout = (input.heardAbout ?? '').trim().slice(0, 120)
@@ -272,7 +298,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
       }
     },
   })
-  if ('error' in governed) return fail(governed.error)
+  if ('error' in governed) return { error: governed.error }
   const spaceId = governed.data
 
   // THE PICKS, FIRST-PARTY ONLY. One ledger row per Space, straight to the engagement ledger and NOT through
@@ -343,17 +369,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
     }
   }
 
-  // Success: hand the owner to SETUP, then to HOSTING (ADR-1733 amending LIVE-261). This landed
-  // on `/manage` until 2026-09-09, the console's command center (revenue, pipeline, contacts), and
-  // on `/manage/circles` until 2026-10-12, which the owner read as "it just created it and dumped
-  // me in a circle". A person who has owned a Space for four seconds has no story, no logo, no
-  // contact details and no offerings, so the first screen is the walk that asks for them
-  // (/spaces/<slug>/setup; every step saves through the existing update actions), and its finish
-  // is the Circles this Space runs, LIVE-261's end state. The rule lives in `postCreateLanding`:
-  // a console type (business / nonprofit) walks setup, any other type lands straight on
-  // /manage/circles exactly as before. Hosting is free; the money surfaces are one click away.
-  // redirect() throws, so it must sit OUTSIDE any try/catch (Next docs: redirecting.md).
-  redirect(postCreateLanding(type, slug))
+  return { spaceId, slug, type }
 }
 
 /**

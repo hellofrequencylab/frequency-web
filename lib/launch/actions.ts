@@ -14,6 +14,9 @@ import { getMyProfileId } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { launchSystemEnabled } from './enabled'
 import { recordLaunchEvent } from './events'
+import { clearPendingLaunch, readPendingLaunch, writePendingLaunch } from './pending-io'
+import { parseSpotlightAnswers } from './spotlight-step'
+import { publishSpotlightStep } from './spotlight-io'
 import type { LaunchSnapshot } from './state'
 import * as store from './store'
 
@@ -67,4 +70,41 @@ export async function restartLaunchFormAction(): Promise<void> {
   const launch = await store.startLaunch(profileId, { niche: last?.niche ?? null, intents: last?.intents ?? [] })
   if (launch && launch.id !== last?.id) await recordLaunchEvent(profileId, { type: 'launch_started', launchId: launch.id })
   redirect('/launch')
+}
+
+const SPOTLIGHT_ERRORS = { name: 'Add the name people know you by.', line: 'Add one line about what you do, in your own words.', retry: 'We could not publish that. Try again.' } as const
+type SpotlightErrorCode = keyof typeof SPOTLIGHT_ERRORS
+
+/** The Spotlight step's address with an error code the page turns into a line. Codes, never text, so the address
+ *  cannot be used to put words on the page. */
+function spotlightStepUrl(code?: SpotlightErrorCode): string {
+  return code ? `/launch/step/spotlight?e=${code}` : '/launch/step/spotlight'
+}
+
+/** The Spotlight step's Publish button (VLS-07). Signed out, the answers are held in the launch cookie and the
+ *  visitor is sent to sign in, which is the one moment an account is asked for. Signed in, the Space is made if this
+ *  launch has none, its Spotlight is published, and the step is recorded. Lands on the public Spotlight. */
+export async function publishSpotlightFormAction(formData: FormData): Promise<void> {
+  if (!launchSystemEnabled()) redirect('/')
+  const answers = parseSpotlightAnswers({ name: formData.get('name'), line: formData.get('line'), link: formData.get('link') })
+  if ('error' in answers) redirect(spotlightStepUrl(answers.error === SPOTLIGHT_ERRORS.name ? 'name' : 'line'))
+
+  const held = await readPendingLaunch()
+  const profileId = await getMyProfileId()
+  if (!profileId) {
+    await writePendingLaunch({ niche: held?.niche ?? null, intents: held?.intents ?? [], answers: { ...held?.answers, spotlight: { name: answers.name, line: answers.line, link: answers.link } } })
+    redirect('/sign-in?next=/launch/claim')
+  }
+
+  let launch = await store.getActiveLaunch(profileId)
+  if (!launch) {
+    launch = await store.startLaunch(profileId, { niche: held?.niche ?? null, intents: held?.intents ?? [] })
+    if (launch) await recordLaunchEvent(profileId, { type: 'launch_started', launchId: launch.id })
+  }
+  if (!launch) redirect(spotlightStepUrl('retry'))
+
+  const made = await publishSpotlightStep(profileId, launch, answers)
+  if ('error' in made) redirect(spotlightStepUrl('retry'))
+  await clearPendingLaunch()
+  redirect(`/spaces/${made.slug}/spotlight`)
 }
