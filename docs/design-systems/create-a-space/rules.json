@@ -1,0 +1,118 @@
+{
+ "theme": "create-a-space",
+ "repoThemeId": "create-a-space",
+ "note": "The Create a Space marketing page (Claude Design, 2026-10-28). Every file matches exactly one rule below (first match wins). See docs/DESIGN-SYSTEM-INTAKE.md. `baseline` lists known gaps as kind:key and can only shrink.",
+ "tokenSources": [],
+ "baseline": "docs/design-systems/create-a-space/baseline.json",
+ "tokenMap": [],
+ "rules": [
+  {
+   "glob": "README.md",
+   "kind": "reference",
+   "reason": "Handoff text for the whole page; every value in it is checked through the files it describes."
+  },
+  {
+   "glob": "COMPONENTS.md",
+   "kind": "reference",
+   "reason": "Component notes for the page; each component is checked through the rule for the file that builds it."
+  },
+  {
+   "glob": "LINKS.md",
+   "kind": "reference",
+   "reason": "Route and link map; the routes are checked by site-nav.test.ts."
+  },
+  {
+   "glob": "PREVIEW-MODE.md",
+   "kind": "reference",
+   "reason": "The --pv-* contract; built in lib/theme/preview-tokens.ts and pinned by preview-tokens.test.ts."
+  },
+  {
+   "glob": "reference/README.md",
+   "kind": "reference",
+   "reason": "Screen-level spec from the earlier pass; the system docs supersede it where they differ."
+  },
+  {
+   "glob": "reference/support.js",
+   "kind": "skip",
+   "reason": "Prototype runtime only; never shipped."
+  },
+  {
+   "glob": "reference/_ds/**",
+   "kind": "reference",
+   "reason": "A copy of the Frequency design-system tokens and bundle; the repo's own files (app/themes/frequency) are the authority."
+  },
+  {
+   "glob": "reference/assets/logo/*",
+   "kind": "reference",
+   "reason": "Frequency's wordmark and icon; the repo uses its own copies."
+  },
+  {
+   "glob": "reference/assets/icons/frequency-icons.svg",
+   "kind": "reference",
+   "reason": "The in-house icon sprite; the repo has its own (components/frequency icons)."
+  },
+  {
+   "glob": "reference/assets/designer/courtyard-arch.webp",
+   "kind": "asset",
+   "target": "public/sites/designer/photos/dz-courtyard-arch.webp"
+  },
+  {
+   "glob": "reference/assets/designer/house-front.webp",
+   "kind": "asset",
+   "target": "public/sites/designer/photos/dz-house-front.webp"
+  },
+  {
+   "glob": "reference/assets/designer/kitchen-hero.webp",
+   "kind": "asset",
+   "target": "public/sites/designer/photos/dz-designer-kitchen-hero.webp"
+  },
+  {
+   "glob": "reference/assets/designer/kitchen-island.webp",
+   "kind": "asset",
+   "target": "public/sites/designer/photos/dz-kitchen-island.webp"
+  },
+  {
+   "glob": "reference/assets/designer/portrait-01.webp",
+   "kind": "asset",
+   "target": "public/sites/designer/photos/dz-portrait-01.webp"
+  },
+  {
+   "glob": "reference/assets/designer/portrait-02.webp",
+   "kind": "asset",
+   "target": "public/sites/designer/photos/dz-portrait-02.webp"
+  },
+  {
+   "glob": "reference/assets/designer/sofa.webp",
+   "kind": "asset",
+   "target": "public/sites/designer/photos/dz-designer-sofa.webp"
+  },
+  {
+   "glob": "reference/assets/photos/*.jpg",
+   "kind": "asset",
+   "target": "public/create-a-space/photos/{base}"
+  },
+  {
+   "glob": "tokens/stage.css",
+   "kind": "reference",
+   "reason": "Mirrors the live Stage values in app/themes/frequency; the repo's file is the authority."
+  },
+  {
+   "glob": "tokens/preview-themes.*",
+   "kind": "built",
+   "target": "lib/theme/preview-tokens.ts",
+   "reason": "Prototype stand-ins; the real tokens are generated from each theme's own palette."
+  },
+  {
+   "glob": "reference/Create a Space.dc.html",
+   "kind": "copy",
+   "targets": [
+    "components/frequency/create",
+    "lib/create-space",
+    "lib/seo/frequency-pages.ts",
+    "lib/spaces/create-wizard.ts",
+    "lib/theme/preview-tokens.ts",
+    "lib/themes"
+   ]
+  }
+ ]
+}
