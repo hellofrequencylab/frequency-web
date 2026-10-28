@@ -27,6 +27,14 @@ import { LookStep } from '@/components/spaces/create-flow/look-step'
 import type { MegaNicheId, MegaThemeId } from '@/lib/theme/mega-theme'
 import { SpacePicker, type PickerDone } from './space-picker'
 
+export interface SpaceModeChoice {
+  id: string
+  type: string
+  variant: string
+  label: string
+  hint: string
+}
+
 const STEP_LABEL: Record<string, string> = { intents: 'Goals', model: 'Setup', identity: 'Name', look: 'Look', start: 'Start' }
 
 const STEPS = withLookStep(createWizardSteps(SPACE_MANIFEST))
