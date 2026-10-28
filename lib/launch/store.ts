@@ -15,6 +15,26 @@ export async function getActiveLaunch(ownerId: string): Promise<LaunchSnapshot |
   return toSnapshot(data as Record<string, unknown> | null)
 }
 
+/** One of this person's launches, active or not: the one named by `launchId`, or their most recent. Null for a
+ *  launch that is not theirs (the owner policy returns no row), so a stranger's link finds nothing. */
+export async function getLaunchForOwner(ownerId: string, launchId?: string): Promise<LaunchSnapshot | null> {
+  const db = await createClient()
+  let q = db.from('space_launch').select(COLUMNS).eq('owner_id', ownerId)
+  q = launchId ? q.eq('id', launchId) : q.order('started_at', { ascending: false }).limit(1)
+  const { data } = await q.maybeSingle()
+  return toSnapshot(data as Record<string, unknown> | null)
+}
+
+/** Start a launch, or hand back the one already running: a second tap never makes a second launch. */
+export async function startLaunch(ownerId: string, input: { niche: string | null; intents: string[] }): Promise<LaunchSnapshot | null> {
+  const existing = await getActiveLaunch(ownerId)
+  if (existing) return existing
+  const db = await createClient()
+  const { data, error } = await db.from('space_launch').insert({ owner_id: ownerId, niche: input.niche, intents: input.intents }).select(COLUMNS).single()
+  if (error) return getActiveLaunch(ownerId) // lost a race with another tap: the unique index kept it to one
+  return toSnapshot(data as Record<string, unknown>)
+}
+
 export async function setMinimized(l: LaunchSnapshot, minimized: boolean): Promise<boolean> {
   const db = await createClient()
   const { error } = await db.from('space_launch').update({ minimized, updated_at: new Date().toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId).is('cancelled_at', null).is('completed_at', null)
