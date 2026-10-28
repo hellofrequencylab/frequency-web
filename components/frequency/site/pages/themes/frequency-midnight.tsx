@@ -393,7 +393,10 @@ export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: st
                   </div>
                   <div className="nf-cz-tx">
                     <span className="jn">{c.n}</span>
-                    <h3>{c.tag}</h3>
+                    <h3>
+                      {c.tag.replace(/ \(.*\)$/, '')}{' '}
+                      {c.tag.includes('(') ? <small className="nf-q">{c.tag.replace(/^.*\(|\)$/g, '')}</small> : null}
+                    </h3>
                     <p>{c.body}</p>
                     <ul>
                       <li>
