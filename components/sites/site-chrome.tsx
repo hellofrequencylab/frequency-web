@@ -22,6 +22,12 @@ import { DesignerHeaderState } from './designer-header-state'
 import { MidnightLogo } from './midnight-logo'
 import { MidnightBar } from './midnight-bar'
 import { MidnightLetterForm } from './midnight-letter-form'
+import { TempleKitLogo } from './temple-kit-logo'
+import { TempleKitBar } from './temple-kit-bar'
+import { TempleKitHeaderState } from './temple-kit-header-state'
+import { TempleKitTools } from './temple-kit-tools'
+import { TempleKitLetterForm } from './temple-kit-letter-form'
+import { TEMPLE_KIT_CHROME_COPY, templeKitFooterColumns, templeKitLetterParts, templeKitShopHref } from '@/lib/sites/temple-kit-chrome'
 import type { NetworkSchemeId } from '@/lib/theme/network'
 import { WildheartSubBar } from './wildheart-now-line'
 import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
@@ -179,6 +185,10 @@ export function SiteChrome({
   const temple = skin?.theme === 'temple'
   // Midnight draws the ringed moon seal, the name and the Space's tagline as one lockup, in the header and the footer.
   const midnight = skin?.theme === 'midnight'
+  // Temple Kit draws the arch-niche mark, the name and the tagline as one lockup, with the announce bar over the header, the bag and
+  // account tools beside the button, and the sunk-plaster footer with the letter (components/sites/temple-kit-*.tsx).
+  const tk = skin?.theme === 'temple-kit'
+  const tkShop = tk ? templeKitShopHref(links) : null
   // Designer draws the Space's logo as a mark beside a quiet name (logo image alone when it has one).
   const designer = skin?.theme === 'designer'
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
@@ -190,18 +200,29 @@ export function SiteChrome({
       links={links}
       adminLinks={adminLinks?.menu ?? null}
       adminCheck={adminLinks?.check ?? null}
-      cta={cta}
+      cta={tk && cta && /^book/i.test(cta.label) ? { ...cta, short: 'Book' } : cta}
       logoUrl={logoUrl}
       logoMode={temple || designer ? (logoUrl ? 'logo' : 'name') : skin && !net ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
       skinned={!!skin}
       fadeOnPause={fadeOnPause}
       member={member}
-      tools={tools}
+      tools={tk ? <TempleKitTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={tkShop} /> : tools}
       menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}
-      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : null}
+      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : null}
     />
   )
   const year = new Date().getFullYear()
+  const tkColumns = tk ? templeKitFooterColumns(links, null) : []
+  const footerColumn = (col: { title: string; links: { label: string; href: string }[] }) => (
+    <nav key={col.title} aria-label={col.title} className="hs-footer-col">
+      <span className="hs-footer-col-title">{col.title}</span>
+      {col.links.map((l) => (
+        <a key={`${l.href}:${l.label}`} href={l.href}>
+          {l.label}
+        </a>
+      ))}
+    </nav>
+  )
   return (
     <div
       data-site-root=""
@@ -219,6 +240,7 @@ export function SiteChrome({
       <style>{nk ? skinCss(skin, look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '') : skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
       {designer && <DesignerHeaderState />}
       {nk && <NetworkKitHeaderState />}
+      {tk && <TempleKitHeaderState />}
       {midnight && <MidnightBar now={new Date()} next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />}
       {wild && <WildheartInkDefs />}
       {wild ? (
@@ -239,6 +261,11 @@ export function SiteChrome({
           <NetworkKitBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />
           {header}
         </div>
+      ) : tk ? (
+        <div className="tk-top">
+          <TempleKitBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />
+          {header}
+        </div>
       ) : (
         header
       )}
@@ -246,7 +273,7 @@ export function SiteChrome({
 
       <main id="top">{children}</main>
 
-      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : nk ? 'nk-footer-ground' : undefined} data-footer={nk ? ((showBrandFooter ?? !!skin) ? 'full' : 'minimal') : undefined}>
+      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : nk ? 'nk-footer-ground' : tk ? 'tk-footer-ground' : undefined} data-footer={nk ? ((showBrandFooter ?? !!skin) ? 'full' : 'minimal') : undefined}>
       {designer && (showBrandFooter ?? !!skin) && <DesignerFooterTop footer={footer} brandName={brandName} homeHref={homeHref} logoUrl={logoUrl ?? null} slug={spaceSlug} />}
       {!designer && (showBrandFooter ?? !!skin) && (
         <div className="hs-footer-top" data-columns={footer?.columns.length ? '' : undefined}>
@@ -260,11 +287,14 @@ export function SiteChrome({
                 <img src={logoUrl} alt={brandName} className="tp-footer-seal" />
               ) : midnight ? (
                 <MidnightLogo name={brandName} tagline={tagline} />
+              ) : tk ? (
+                <TempleKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} />
               ) : (
                 brandName
               )}
             </a>
-            {(footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
+            {(tk ? footer?.blurb : footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
+            {tk && <TempleKitLetter slug={spaceSlug ?? null} subscribe={footer?.subscribe ?? null} />}
             {midnight && footer?.subscribe && (
               <div className="mn-footer-subscribe">
                 <p className="mn-footer-subscribe-title">{footer.subscribe.title.replace(/\*/g, '')}</p>
@@ -273,16 +303,9 @@ export function SiteChrome({
             )}
           </div>
           {footer?.columns.length ? (
-            footer.columns.map((col) => (
-              <nav key={col.title} aria-label={col.title} className="hs-footer-col">
-                <span className="hs-footer-col-title">{col.title}</span>
-                {col.links.map((l) => (
-                  <a key={`${l.href}:${l.label}`} href={l.href}>
-                    {l.label}
-                  </a>
-                ))}
-              </nav>
-            ))
+            footer.columns.map(footerColumn)
+          ) : tk && tkColumns.length ? (
+            tkColumns.map(footerColumn)
           ) : links.length > 0 ? (
             <nav aria-label={`${brandName} pages`} className="hs-footer-links">
               {links.map((l) => (
@@ -315,12 +338,22 @@ export function SiteChrome({
               <a href={PARTNER_HREF()} className="nk-powered" data-powered-by="">Powered by Frequency</a>
             </>
           )}
+          {tk && (
+            <>
+              {[['Privacy', '/privacy'], ['Terms', '/terms'], ['Accessibility', '/accessibility']].map(([label, path]) => (
+                <span key={path}>
+                  {' · '}
+                  <a href={`${appOrigin()}${path}`}>{label}</a>
+                </span>
+              ))}
+            </>
+          )}
         </span>
         {footer?.line && <span className="hs-footer-line">{footer.line}</span>}
         {footer?.note && <span className="hs-footer-note">{footer.note}</span>}
         {checkIn && <CheckInBadge href={checkIn.href} line={checkIn.line} />}
-        {credit === 'badge' && <PartnerBadge />}
-        {credit === 'line' && !nk && <PartnerLine />}
+        {credit === 'badge' && !tk && <PartnerBadge />}
+        {((credit === 'line' && !nk) || (credit === 'badge' && tk)) && <PartnerLine label={tk ? TEMPLE_KIT_CHROME_COPY.credit : undefined} />}
       </footer>
       </div>
     </div>
@@ -331,11 +364,26 @@ export function SiteChrome({
 const PARTNER_HREF = () => `${appOrigin()}/spaces`
 
 /** The quiet credit for a Space that chose a text line over the badge: plain words, still a labeled Frequency link. */
-function PartnerLine() {
+function PartnerLine({ label = 'Built on Frequency' }: { label?: string }) {
   return (
     <a href={PARTNER_HREF()} className="hs-footer-line" data-partner-line="">
-      Built on Frequency
+      {label}
     </a>
+  )
+}
+
+/** The Temple Kit footer's letter: the Space's own sign-up words when it wrote them (a starred phrase is set as the accent), else the
+ *  design's. One email field and one button, through the anonymous lead door. */
+function TempleKitLetter({ slug, subscribe }: { slug: string | null; subscribe: SiteFooter['subscribe'] }) {
+  const L = TEMPLE_KIT_CHROME_COPY.letter
+  const parts = subscribe ? templeKitLetterParts(subscribe.title) : [{ text: `${L.title} `, em: false }, { text: L.em, em: true }]
+  return (
+    <div className="tk-letter">
+      <p className="tk-letter-title">
+        {parts.map((p, i) => (p.em ? <em key={i}>{p.text}</em> : <span key={i}>{p.text}</span>))}
+      </p>
+      <TempleKitLetterForm slug={slug} label={L.label} placeholder={subscribe?.placeholder ?? L.placeholder} buttonLabel={subscribe?.button ?? L.button} successMessage={subscribe?.success ?? L.done} />
+    </div>
   )
 }
 
