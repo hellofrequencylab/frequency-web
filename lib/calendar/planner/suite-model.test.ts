@@ -64,6 +64,8 @@ describe('keys', () => {
     expect(suiteKeyAction({ key: 'b' })).toEqual({ type: 'view', view: 'board' })
     expect(suiteKeyAction({ key: 'l' })).toEqual({ type: 'view', view: 'timeline' })
     expect(suiteKeyAction({ key: 't' })).toEqual({ type: 'today' })
+    expect(suiteKeyAction({ key: 'p' })).toEqual({ type: 'pencil' })
+    expect(suiteKeyAction({ key: '/' })).toEqual({ type: 'ask' })
     expect(suiteKeyAction({ key: 'ArrowLeft' })).toEqual({ type: 'page', delta: -1 })
     expect(suiteKeyAction({ key: 'ArrowRight' })).toEqual({ type: 'page', delta: 1 })
     expect(suiteKeyAction({ key: 'Escape' })).toEqual({ type: 'escape' })

@@ -74,6 +74,13 @@ function ordinal(n: number): string {
   return `${n}${rule === 'one' ? 'st' : rule === 'two' ? 'nd' : rule === 'few' ? 'rd' : 'th'}`
 }
 
+const ZODIAC = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces']
+
+/** The sign's house glyph in the Frequency sprite, 1 to 12 from Aries (the icon is `house-01` to `house-12`). */
+function houseOf(sign: string): number {
+  return ZODIAC.indexOf(sign) + 1
+}
+
 function capital(sign: string): string {
   return sign.charAt(0).toUpperCase() + sign.slice(1)
 }
@@ -106,8 +113,8 @@ export interface MonthSky {
   line: string
   /** "Sun into Scorpio on the 23rd", or empty. */
   ingress: string
-  /** The glyph of the sign entered, or empty. */
-  ingressSymbol: string
+  /** The house glyph of the sign entered, 1 to 12, or 0 when there is none. */
+  ingressHouse: number
   /** "New Oct 10 · Full Oct 25", or empty. */
   moons: string
 }
@@ -142,27 +149,30 @@ export function monthSky(ym: string, markers: readonly AstroMarker[]): MonthSky 
     season,
     line,
     ingress: ingress?.sign ? `Sun into ${capital(ingress.sign)} on the ${ordinal(Number(ingress.day.slice(8, 10)))}` : '',
-    ingressSymbol: ingress?.symbol ?? '',
+    ingressHouse: ingress?.sign ? houseOf(ingress.sign) : 0,
     moons,
   }
 }
 
 /** The Sun's sign on a day: the latest ingress on or before it. Null when the markers do not reach. */
-export function sunSignOn(day: string, markers: readonly AstroMarker[]): { sign: string; symbol: string } | null {
+export function sunSignOn(day: string, markers: readonly AstroMarker[]): { sign: string; house: number } | null {
   let best: AstroMarker | null = null
   for (const m of markers) {
     if (m.kind === 'sign-ingress' && m.sign && m.day <= day && (!best || m.day > best.day)) best = m
   }
-  return best?.sign ? { sign: capital(best.sign), symbol: best.symbol } : null
+  return best?.sign ? { sign: capital(best.sign), house: houseOf(best.sign) } : null
 }
 
 /** The sky on one day, for the cell: a moon, an ingress or a solstice, as the one marker to draw. */
-export function skyOnDay(day: string, markers: readonly AstroMarker[]): { icon: 'moon' | 'sun' | 'sign'; label: string } | null {
+export function skyOnDay(
+  day: string,
+  markers: readonly AstroMarker[],
+): { icon: 'moon' | 'sun' | 'sign'; label: string; house: number } | null {
   const hit = markers.filter((m) => m.day === day)
   const m = hit.find((x) => x.solarPoint) ?? hit.find((x) => x.kind === 'sign-ingress') ?? hit[0]
   if (!m) return null
-  if (m.kind === 'new-moon') return { icon: 'moon', label: 'New moon' }
-  if (m.kind === 'full-moon') return { icon: 'moon', label: 'Full moon' }
-  if (m.solarPoint) return { icon: 'sun', label: SOLAR_POINT[m.solarPoint]?.name ?? m.label }
-  return { icon: 'sign', label: m.sign ? `Sun into ${capital(m.sign)}` : m.label }
+  if (m.kind === 'new-moon') return { icon: 'moon', label: 'New moon', house: 0 }
+  if (m.kind === 'full-moon') return { icon: 'moon', label: 'Full moon', house: 0 }
+  if (m.solarPoint) return { icon: 'sun', label: SOLAR_POINT[m.solarPoint]?.name ?? m.label, house: 0 }
+  return { icon: 'sign', label: m.sign ? `Sun into ${capital(m.sign)}` : m.label, house: m.sign ? houseOf(m.sign) : 0 }
 }

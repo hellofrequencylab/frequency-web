@@ -63,6 +63,7 @@ describe('the sky of a month', () => {
     expect(sky.line).toBe('The light turns. Slow down.')
     expect(sky.ingress).toBe('Sun into Scorpio on the 23rd')
     expect(sky.moons).toBe('New Oct 10 · Full Oct 25')
+    expect(sky.ingressHouse).toBe(8)
   })
   it('says when a season begins inside the month', () => {
     expect(monthSky('2026-12', OCT).line).toBe('Winter begins Dec 21 · Winter solstice')
@@ -81,14 +82,14 @@ describe('the sky of a month', () => {
     expect(sky.moons).toBe('')
   })
   it('finds the Sun sign on a day', () => {
-    expect(sunSignOn('2026-10-21', OCT)).toEqual({ sign: 'Virgo', symbol: 'V' })
-    expect(sunSignOn('2026-10-24', OCT)).toEqual({ sign: 'Scorpio', symbol: 'S' })
+    expect(sunSignOn('2026-10-21', OCT)).toEqual({ sign: 'Virgo', house: 6 })
+    expect(sunSignOn('2026-10-24', OCT)).toEqual({ sign: 'Scorpio', house: 8 })
     expect(sunSignOn('2026-01-01', OCT)).toBeNull()
   })
   it('picks the marker a cell draws', () => {
-    expect(skyOnDay('2026-10-10', OCT)).toEqual({ icon: 'moon', label: 'New moon' })
-    expect(skyOnDay('2026-09-22', OCT)).toEqual({ icon: 'sun', label: 'Autumn equinox' })
-    expect(skyOnDay('2026-10-23', OCT)).toEqual({ icon: 'sign', label: 'Sun into Scorpio' })
+    expect(skyOnDay('2026-10-10', OCT)).toEqual({ icon: 'moon', label: 'New moon', house: 0 })
+    expect(skyOnDay('2026-09-22', OCT)).toEqual({ icon: 'sun', label: 'Autumn equinox', house: 0 })
+    expect(skyOnDay('2026-10-23', OCT)).toEqual({ icon: 'sign', label: 'Sun into Scorpio', house: 8 })
     expect(skyOnDay('2026-10-11', OCT)).toBeNull()
   })
 })

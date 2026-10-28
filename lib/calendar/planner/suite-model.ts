@@ -62,6 +62,7 @@ export type SuiteKeyAction =
   | { type: 'today' }
   | { type: 'page'; delta: -1 | 1 }
   | { type: 'pencil' }
+  | { type: 'ask' }
   | { type: 'escape' }
 
 /** What a keypress means to the calendar, or null to let it through. Keys with a modifier are the
@@ -87,6 +88,7 @@ export function suiteKeyAction(e: {
   const k = e.key.length === 1 ? e.key.toLowerCase() : ''
   if (k === 't') return { type: 'today' }
   if (k === 'p') return { type: 'pencil' }
+  if (e.key === '/') return { type: 'ask' }
   return KEY_VIEW[k] ? { type: 'view', view: KEY_VIEW[k] } : null
 }
 
