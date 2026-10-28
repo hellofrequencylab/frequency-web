@@ -7,6 +7,7 @@ import { ArrowRight, Radio } from 'lucide-react'
 import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
 import { HOUSE_NAV, SITE_ACCOUNT_SLUG, SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteServesContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { readProfileData } from '@/lib/spaces/profile-data'
+import { isEmptyServicesPage } from '@/lib/sites/empty-services'
 import { readSiteBooking } from '@/lib/sites/site-booking'
 import { SiteBooking } from '@/components/sites/site-booking'
 import { buildHouseContact, buildHouseHome, HouseHome } from '@/components/sites/house-home'
@@ -562,7 +563,7 @@ export async function siteChromeBasics(space: Space, siteBase: string) {
     email: readProfileData(space.preferences).email?.trim() || null,
   }
   const pageLinks = pages
-    .filter((p) => p.slug !== HOME_SLUG)
+    .filter((p) => p.slug !== HOME_SLUG && !hiddenFromMenu(space, p))
     .map((p) => ({ href: siteHref(siteBase, p.slug), label: p.label }))
   if (hasContact) pageLinks.push({ href: siteHref(siteBase, SITE_CONTACT_SLUG), label: 'Contact' })
   return {
@@ -576,6 +577,12 @@ export async function siteChromeBasics(space: Space, siteBase: string) {
     pageLinks,
     tagline: await readTagline(space.id),
   }
+}
+
+/** A page the menu leaves out: the kit's Services page while the Space lists no service (lib/sites/empty-services.ts). */
+function hiddenFromMenu(space: Space, p: { slug: string }): boolean {
+  const doc = 'doc' in p ? (p as { doc: unknown }).doc : readPageDoc(space.preferences, p.slug)
+  return isEmptyServicesPage(p.slug, doc, readProfileData(space.preferences))
 }
 
 /** The Space's features the website can link on the Space page when it has no page of its own for them
@@ -607,7 +614,7 @@ export function siteMenuLinks(
   const catalog: MenuCatalogEntry[] = [
     { key: 'home', label: chrome.pages[0]?.label ?? 'Home', href: chrome.homeHref },
     ...homeNav.map((n) => ({ key: `anchor:${n.anchor}`, label: n.label, href: `${chrome.homeHref === '/' ? '' : chrome.homeHref}#${n.anchor}` })),
-    ...chrome.pages.filter((p) => p.slug !== HOME_SLUG).map((p) => ({ key: `page:${p.slug}`, label: p.label, href: siteHref(siteBase, p.slug) })),
+    ...chrome.pages.filter((p) => p.slug !== HOME_SLUG && !hiddenFromMenu(space, p)).map((p) => ({ key: `page:${p.slug}`, label: p.label, href: siteHref(siteBase, p.slug) })),
     ...(chrome.hasContact ? [{ key: 'feature:contact', label: 'Contact', href: siteHref(siteBase, SITE_CONTACT_SLUG) }] : []),
     ...(chrome.booking.takesBookings ? [{ key: 'feature:book', label: 'Book', href: siteHref(siteBase, SITE_BOOK_SLUG) }] : []),
   ]
