@@ -1,4 +1,6 @@
 import { NETWORK_KIT_TOKENS_CSS } from '@/lib/theme/network-kit'
+import { NETWORK_KIT_BLOCKS_CSS } from '@/components/sites/network-kit-blocks-css'
+import { NETWORK_KIT_MORE_CSS } from '@/components/sites/network-kit-more-css'
 
 // THE NETWORK THEME KIT SKIN (code id `network-kit`, shown as Network). Scoped under [data-house-theme="network-kit"]
 // so every house section keeps its markup and content; every value is a token (lib/theme/network-kit.ts), never a
@@ -66,11 +68,11 @@ ${N} .nk-btn__arrow{display:inline-flex;transition:transform var(--nk-motion-fas
 ${N} .nk-btn:hover .nk-btn__arrow{transform:translateX(3px)}
 
 /* Cards: 28px, a soft top highlight and warm low depth. Lift 3px on hover; photos inside ease in 1.035. */
-${N} .hs-card,${N} .nk-card{box-sizing:border-box;background:var(--color-surface);border:0;border-radius:var(--nk-radius-card);box-shadow:var(--nk-shadow-sm);padding:28px;transition:transform var(--nk-motion-base) var(--nk-ease-out),box-shadow var(--nk-motion-base) var(--nk-ease-out)}
-${N} .nk-card--lift:hover{transform:translateY(-3px);box-shadow:var(--nk-shadow-md)}
+${N} .hs-card,${N} .nk-card{box-sizing:border-box;background:var(--color-surface);border:0;border-radius:var(--nk-radius-card);box-shadow:var(--nk-depth-sm);padding:28px;transition:transform var(--nk-motion-base) var(--nk-ease-out),box-shadow var(--nk-motion-base) var(--nk-ease-out)}
+${N} .nk-card--lift:hover{transform:translateY(-3px);box-shadow:var(--nk-depth-md)}
 ${N} .nk-card--tint{background:var(--color-surface-elevated);box-shadow:none}
 ${N} .nk-card--outline{background:transparent;box-shadow:inset 0 0 0 1px var(--color-border-strong)}
-${N} .nk-card--feature{position:relative;overflow:hidden;background:var(--color-ink);color:var(--color-on-ink);box-shadow:var(--nk-shadow-md)}
+${N} .nk-card--feature{position:relative;overflow:hidden;background:var(--color-ink);color:var(--color-on-ink);box-shadow:var(--nk-depth-md)}
 ${N} .nk-card .nk-photo img{transition:transform var(--nk-motion-slow) var(--nk-ease-out)}
 ${N} .nk-card--lift:hover .nk-photo img{transform:scale(1.035)}
 ${N} .nk-badge{display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;min-height:28px;padding:0 12px;border-radius:var(--nk-radius-pill);background:var(--color-surface-elevated);color:var(--color-text-muted);font-family:var(--nk-sans);font-size:var(--nk-text-2xs);font-weight:var(--nk-weight-medium);line-height:1.2;letter-spacing:0;text-transform:none;white-space:nowrap}
@@ -84,7 +86,7 @@ ${N} .nk-input:focus-visible{outline:2px solid var(--color-focus-ring);outline-o
 ${N} [data-grade],${N} .nk-photo{position:relative;isolation:isolate;overflow:hidden;background:var(--color-surface-elevated)}
 ${N} [data-grade] img,${N} .nk-photo img{display:block;width:100%;height:100%;object-fit:cover;filter:saturate(1.05) contrast(1.03)}
 ${N} [data-grade]::before,${N} .nk-photo::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:inherit;background:var(--nk-tg-photo-grade);mix-blend-mode:soft-light}
-${N} .nk-leaf{border-radius:var(--nk-radius-leaf);overflow:hidden;box-shadow:var(--nk-shadow-md)}
+${N} .nk-leaf{border-radius:var(--nk-radius-leaf);overflow:hidden;box-shadow:var(--nk-depth-md)}
 ${N} .nk-frame-media{border-radius:var(--nk-radius-media);overflow:hidden}
 ${N} .nk-protect{position:relative}
 ${N} .nk-protect::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:var(--nk-gradient-media-protect)}
@@ -134,8 +136,8 @@ ${N} .hs-header[data-hidden]{opacity:1;transform:none;pointer-events:auto}
 ${M} .hs-pill{position:relative;box-sizing:border-box;max-width:none;margin:0;height:var(--nk-site-header-height);padding:0 ${COL};column-gap:32px;row-gap:0;border-radius:0;overflow:visible;background:color-mix(in srgb,var(--color-canvas) 88%,transparent);-webkit-backdrop-filter:blur(16px) saturate(1.1);backdrop-filter:blur(16px) saturate(1.1);border-bottom:1px solid var(--color-border);box-shadow:none;animation:none;transition:height var(--nk-motion-fast) var(--nk-ease-out),box-shadow var(--nk-motion-fast) var(--nk-ease-out)}
 ${M}[data-scrolled] .hs-pill{height:calc(var(--nk-site-header-height) - 12px);box-shadow:0 1px 0 var(--color-border),0 10px 26px -18px color-mix(in srgb,var(--color-ink) 30%,transparent)}
 ${M}[data-site-header="pill"] .hs-header{padding:12px var(--nk-space-gutter) 0}
-${M}[data-site-header="pill"] .hs-pill{max-width:var(--nk-column);margin:0 auto;padding:0 12px 0 20px;border:0;border-radius:var(--nk-site-header-radius);background:color-mix(in srgb,var(--color-surface) 92%,transparent);box-shadow:var(--nk-shadow-md)}
-${M}[data-site-header="pill"][data-scrolled] .hs-pill{height:var(--nk-site-header-height);box-shadow:var(--nk-shadow-md)}
+${M}[data-site-header="pill"] .hs-pill{max-width:var(--nk-column);margin:0 auto;padding:0 12px 0 20px;border:0;border-radius:var(--nk-site-header-radius);background:color-mix(in srgb,var(--color-surface) 92%,transparent);box-shadow:var(--nk-depth-md)}
+${M}[data-site-header="pill"][data-scrolled] .hs-pill{height:var(--nk-site-header-height);box-shadow:var(--nk-depth-md)}
 ${N} .hs-header .hs-brand{overflow:visible;padding-left:4px;font-size:inherit;letter-spacing:normal}
 ${N} .nk-logo{display:inline-flex;align-items:center;gap:14px;color:var(--color-text)}
 ${N} .nk-logo-mark{position:relative;flex:none;width:44px;height:44px;border-radius:var(--nk-radius-pill);display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--color-accent);color:var(--color-text-on-accent);box-shadow:0 0 0 3px var(--color-surface),0 0 0 4px var(--color-border)}
@@ -195,6 +197,10 @@ ${N} .hs-footer a.hs-partner svg{color:var(--color-accent)}
 ${N} .hs-footer a.hs-partner:hover{color:var(--color-on-ink);box-shadow:inset 0 0 0 1px var(--color-on-ink-subtle)}
 @media (max-width:1099px){${N} .hs-footer-top{grid-template-columns:repeat(2,minmax(0,1fr))}${N} .hs-footer-brand{grid-column:1 / -1}}
 @media (max-width:559px){${N} .hs-footer-top{grid-template-columns:minmax(0,1fr)}}
+
+${NETWORK_KIT_BLOCKS_CSS}
+
+${NETWORK_KIT_MORE_CSS}
 
 /* Reduced motion: every duration is zero in the token block; here the moves themselves go. */
 @media (prefers-reduced-motion:reduce){${N} *,${N} *::before,${N} *::after{transition:none!important;animation:none!important}${N} :is(.hs-btn,.nk-btn,.hs-card,.nk-card):is(:hover,:active),${N} .nk-card--lift:hover .nk-photo img,${N} .nk-btn:hover .nk-btn__arrow,${N} .hs-header .hs-btn-dark:hover::after{transform:none!important}}`

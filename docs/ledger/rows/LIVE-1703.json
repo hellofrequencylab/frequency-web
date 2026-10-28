@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1703",
+  "title": "The Space calendar suite data model: to-do phase, estimate and start time, Plan hold date, and a record and thread for standalone entries",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "supabase/migrations/20270346027000_calendar_suite_data_model.sql",
+    "ref": "Daniel, 2026-10-28: redesign the Space calendar with the Calendar system handoff; every Space gets the full calendar and project suite (pass 2 of 9, the data model). docs/DATABASE.md HYG-217 path."
+  },
+  "detail": "Pass 2 of the Space calendar and project suite. One additive, idempotent migration: crm_tasks gains phase (before, day_of, after), est_minutes (>= 0) and start_minute (0 to 1439), all nullable; space_plans gains hold_until (date); space_plan_activity and space_plan_comments gain entry_id (cascade) with plan_id made nullable and a CHECK that exactly one is set, and their read and insert policies gain an entry arm through the SECURITY DEFINER private.can_write_entry(), still no update or delete policy. A stored team list on space_plans is deliberately not added: the team is derived from the host and accepted-share Spaces (assigneeChoicesForPlan). Server layer: typed columns in lib/database.types.ts, phase and estimate and start-time normalizers and a scoped writer in lib/crm, hold date parsing and setPlanHold, entry-subject stores and doors (entry-record-actions.ts), and task-actions now gates on the events function switch like plan-actions. pgTAP in supabase/tests/calendar_suite_data_model.test.sql; real Auth and PostgREST acceptance in scripts/staging/calendar-suite-api.mjs. No UI yet: passes 3 to 9 build on it. Releasing lapsed holds is pass 8. Plan: /mnt/project-files/calendar-suite/PLAN.md.\n\nThe migration is applied to production by owner paste before merge (ADR-1111); the paste file is /mnt/project-files/calendar-suite/pass2/APPLY-pass2.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const f='supabase/migrations/20270346027000_calendar_suite_data_model.sql';const s=fs.readFileSync(f,'utf8');const need=['est_minutes','start_minute','hold_until','num_nonnulls(plan_id, entry_id) = 1','private.can_write_entry'];const miss=need.filter(n=>!s.includes(n));if(miss.length){console.error('missing',miss);process.exit(1)}\"",
+    "note": "Fails on main (the migration file does not exist); passes here. The constraints and RLS themselves are proven by supabase/tests/calendar_suite_data_model.test.sql in the db-tests job."
+  },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}

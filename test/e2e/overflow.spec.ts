@@ -222,36 +222,45 @@ function report(surface: Surface, width: number, found: Offender[]): string {
  * for anything that ignores it), so the surfaces stay independent of each other's state.
  */
 async function checkOverlays(page: Page, surface: Surface, width: number): Promise<void> {
-  const triggers = page.locator(
+  // Snapshot element identities: opening a disclosure may change the visible match set.
+  const triggers = await page.locator(
     'button[aria-expanded]:visible, button[aria-haspopup]:visible',
-  )
-  const count = await triggers.count()
+  ).elementHandles()
 
-  for (let i = 0; i < count; i++) {
-    const trigger = triggers.nth(i)
-    const name =
-      (await trigger.getAttribute('aria-label')) ??
-      (await trigger.textContent())?.trim().slice(0, 30) ??
-      `trigger #${i}`
+  try {
+    for (const [i, trigger] of triggers.entries()) {
+      const name =
+        (await trigger.getAttribute('aria-label')) ??
+        (await trigger.textContent())?.trim().slice(0, 30) ??
+        `trigger #${i}`
+      const initiallyExpanded = await trigger.getAttribute('aria-expanded') === 'true'
 
-    try {
-      await trigger.click({ timeout: 5_000 })
-    } catch {
-      // A trigger that moved or is covered by a sibling overlay is not this gate's business.
-      continue
+      try {
+        if (!initiallyExpanded) await trigger.click({ timeout: 5_000 })
+      } catch {
+        // A trigger that moved or is covered by a sibling overlay is not this gate's business.
+        continue
+      }
+      await page.waitForTimeout(350)
+
+      const found = await overflowing(page, width)
+      expect(
+        found.length === 0,
+        found.length
+          ? `${report(surface, width, found)}\n\n  Opened by: "${name}" on ${surface.path}.`
+          : '',
+      ).toBe(true)
+
+      await page.keyboard.press('Escape')
+      // Inline disclosures need their trigger, rather than Escape, to close.
+      if (await trigger.getAttribute('aria-expanded') === 'true') {
+        await trigger.click({ timeout: 5_000 })
+      }
+      if (initiallyExpanded) await trigger.click({ timeout: 5_000 })
+      await page.waitForTimeout(150)
     }
-    await page.waitForTimeout(350)
-
-    const found = await overflowing(page, width)
-    expect(
-      found.length === 0,
-      found.length
-        ? `${report(surface, width, found)}\n\n  Opened by: "${name}" on ${surface.path}.`
-        : '',
-    ).toBe(true)
-
-    await page.keyboard.press('Escape')
-    await page.waitForTimeout(150)
+  } finally {
+    await Promise.all(triggers.map((trigger) => trigger.dispose()))
   }
 }
 

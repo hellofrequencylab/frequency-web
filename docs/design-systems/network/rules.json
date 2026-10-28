@@ -131,6 +131,18 @@
       "to": "--nk-mist-"
     },
     {
+      "from": "--shadow-sm",
+      "to": "--nk-depth-sm"
+    },
+    {
+      "from": "--shadow-md",
+      "to": "--nk-depth-md"
+    },
+    {
+      "from": "--shadow-lg",
+      "to": "--nk-depth-lg"
+    },
+    {
       "from": "--shadow-",
       "to": "--nk-shadow-"
     },
