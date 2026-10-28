@@ -10,7 +10,7 @@ const data = JSON.parse(r('lib/themes/nocturne-feature-data.json'))
 
 if (data.kits.length !== 13) bad.push(`expected 13 kits, found ${data.kits.length}`)
 for (const k of data.kits) {
-  for (const [shot, ext] of [['site', 'jpg'], ['space', 'png'], ['spot', 'png'], ['email', 'png']]) {
+  for (const [shot, ext] of [['site', 'jpg'], ['spacedesk', 'jpg'], ['space', 'jpg'], ['spot', 'jpg'], ['email', 'png']]) {
     const f = `public/themes/midnight/shots/${k.id}-${shot}.${ext}`
     if (!existsSync(f)) bad.push(`missing picture ${f}`)
   }

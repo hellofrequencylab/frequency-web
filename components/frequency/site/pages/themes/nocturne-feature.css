@@ -1,13 +1,19 @@
 /* /themes/nocturne, the Theme Feature Page of the Default Template design system, on the Frequency tokens.
    Tokens only: no colour literals, no font names. Every class starts nf- so nothing here reaches another page.
    Kit accent arrives as --c on .nf and on the kit buttons. */
-.nf{--nf-hair:var(--fq-border-hair);--nf-card:var(--fq-surface-card);--nf-wash:color-mix(in oklab,var(--fq-text-strong) 5%,transparent);--nf-wash2:color-mix(in oklab,var(--fq-text-strong) 9%,transparent)}
+.nf{max-width:100%;overflow-x:clip;--nf-hair:var(--fq-border-hair);--nf-card:var(--fq-surface-card);--nf-wash:color-mix(in oklab,var(--fq-text-strong) 5%,transparent);--nf-wash2:color-mix(in oklab,var(--fq-text-strong) 9%,transparent)}
 .nf .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .nf-strong{color:var(--fq-text-strong)}
 .nf-part .nf-sh-p{margin:18px 0 0;font-size:17px;line-height:1.6;color:var(--fq-text-body);max-width:60ch;text-wrap:pretty}
 /* Hero */
 .nf-top{display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px;margin-top:28px}
 .nf-h1{margin:0;font:700 clamp(44px,6.4vw,96px)/.96 var(--fq-font-display);letter-spacing:-.055em;color:var(--fq-text-strong)}
+.nf-name{font-size:clamp(40px,14.5vw,232px);line-height:.9;letter-spacing:-.06em}
+.nf-aft{margin:-6px 0 0;font:600 clamp(15px,1.6vw,20px)/1.2 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+.nf-tagline{margin:0;font:700 clamp(26px,3.6vw,52px)/1.02 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
+.nf-tagline em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}
+.nf-hero-shot{display:flex;justify-content:center;margin-top:44px}.nf-hero-shot .nf-dv{width:100%;max-width:min(100%,980px)}
+.nf-dvlab{display:inline-flex;align-items:center;height:30px;padding:0 14px;border-radius:999px;background:var(--fq-surface-glass);box-shadow:inset 0 0 0 1px var(--nf-hair);font:600 13px/1 var(--fq-font-display);letter-spacing:.08em;text-transform:uppercase;color:var(--fq-text-strong)}
 .nf-h1 em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}
 .nf-lead{margin:0;font:400 clamp(17px,1.4vw,21px)/1.55 var(--fq-font-sans);color:var(--fq-text-body);max-width:56ch;text-wrap:pretty}
 .nf-top .ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
@@ -18,9 +24,9 @@
 @media (max-width:900px){.nf-thread{display:none}.nf-cascade{gap:64px}}
 .nf-cz{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.9fr);gap:clamp(28px,4vw,64px);align-items:center}
 .nf-cz.r{grid-template-columns:minmax(0,.9fr) minmax(0,1.35fr)}.nf-cz.r .nf-cz-dev{order:2}
-.nf-cz-dev{display:flex;justify-content:center}
+.nf-cz-dev{display:flex;flex-direction:column;align-items:center;gap:14px}
 .nf-cz-dev .nf-dv{max-width:min(100%,640px)}
-.nf-cz-dev .nf-dv-spot,.nf-cz-dev .nf-dv-space{max-width:min(100%,300px)}
+.nf-cz-dev .nf-dv-spot{max-width:min(100%,300px)}
 .nf-cz-tx .jn{font:600 13px/1 var(--fq-font-display);letter-spacing:.1em;color:var(--fq-x-sun-neon)}
 .nf-cz-tx h3{margin:10px 0 0;font:600 clamp(32px,3.6vw,50px)/1 var(--fq-font-display);letter-spacing:-.045em;color:var(--fq-text-strong)}
 .nf-cz-tx p{margin:14px 0 0;font-size:17px;line-height:1.55;color:var(--fq-text-body);max-width:44ch}
@@ -38,8 +44,6 @@
 .nf-dv .nf-bar u{text-decoration:none;margin:0 auto;font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 .nf-dv .nf-scr{position:relative;line-height:0}
 .nf-dv .nf-scr img{width:100%;height:auto;display:block;object-fit:cover;object-position:top}
-.nf-dv-spot,.nf-dv-space{border-radius:36px;padding:8px;background:var(--fq-surface-raised)}
-.nf-dv-spot .nf-scr,.nf-dv-space .nf-scr{border-radius:28px;overflow:hidden}
 .nf-dv-email{border-radius:var(--fq-radius-s)}
 .nf-dv-live .nf-scr{aspect-ratio:1440/900;overflow:hidden}
 .nf-dv-live iframe{position:absolute;left:0;top:0;width:1440px;height:900px;border:0;transform-origin:0 0;transform:scale(var(--nf-live,.44))}
@@ -74,7 +78,7 @@
 .nf-kits-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .nf-kits-grid button{min-height:46px;padding:6px 12px;border-radius:12px;font-size:14px;line-height:1.2;text-align:left}
 .nf-stage{position:relative;display:flex;align-items:center;justify-content:center;min-height:clamp(320px,38vw,520px);padding:clamp(18px,3vw,36px) clamp(18px,3vw,36px) 72px;border-radius:28px;background:radial-gradient(70% 80% at 50% 110%,color-mix(in oklab,var(--c) 22%,transparent),transparent 70%),var(--nf-card);box-shadow:inset 0 0 0 1px var(--nf-hair),0 60px 120px -50px var(--fq-bg-canvas),0 0 140px -60px var(--c)}
-.nf-stage .nf-dv{max-width:640px}.nf-stage .nf-dv-spot,.nf-stage .nf-dv-space{max-width:300px}
+.nf-stage .nf-dv{max-width:640px}.nf-stage .nf-dv-spot{max-width:300px}
 .nf-open{position:absolute;right:18px;bottom:18px}
 @media (max-width:960px){.nf-hv{grid-template-columns:1fr}}
 /* Inside the kit */
@@ -124,8 +128,6 @@
 .nf-spread>button:hover .fr{transform:translateY(-4px)}
 .nf-spread .fr img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
 .nf-spread .web .fr{aspect-ratio:16/10;border-radius:12px}
-.nf-spread .ph .fr{aspect-ratio:9/19.5;border-radius:12%/5.6%;padding:5%;background:var(--fq-surface-raised);box-sizing:border-box}
-.nf-spread .ph .fr img{border-radius:9%/4.2%}
 .nf-spread .mail .fr{aspect-ratio:600/760;border-radius:10px}
 .nf-spread .lab{display:flex;flex-direction:column;gap:4px;padding:0 2px;min-width:0}
 .nf-spread .lab b{font:600 12px/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-strong);display:flex;align-items:center;gap:8px}
@@ -187,7 +189,7 @@
 .nf-pv-body{display:flex;justify-content:center;align-items:flex-start;max-height:72vh;overflow:auto;border-radius:var(--fq-radius-m)}
 .nf-pv-body iframe{width:100%;height:70vh;border:0;border-radius:var(--fq-radius-m);background:var(--fq-bg-canvas)}
 .nf-pv-body.phone iframe{max-width:390px}
-.nf-pv-body .nf-dv{max-width:640px}.nf-pv-body .nf-dv-spot,.nf-pv-body .nf-dv-space{max-width:320px}
+.nf-pv-body .nf-dv{max-width:640px}.nf-pv-body .nf-dv-spot{max-width:320px}
 .nf-pv-note{margin:0;font-size:14px;color:var(--fq-text-muted)}
 .nf-kp{position:relative;display:flex;align-items:center;gap:4px;height:44px;padding:0 4px;border-radius:999px;background:var(--nf-wash);box-shadow:inset 0 0 0 1px var(--nf-hair)}
 .nf-kp button{border:0;cursor:pointer;background:transparent;color:var(--fq-text-strong);font:inherit}
@@ -200,3 +202,20 @@
 .nf-kp-menu button i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--c)}.nf-kp-menu button span{flex:1;min-width:0}.nf-kp-menu button small{color:var(--fq-text-muted);font-size:13px}
 .nf-kp-menu button[aria-selected="true"]{background:color-mix(in oklab,var(--c) 18%,transparent);color:var(--fq-text-strong)}
 @media (max-width:640px){.nf-kp-menu{grid-template-columns:1fr}}
+
+/* iPhone frame (the design system's .dv.ios): bezel, status bar with the island, home bar, around a 370 by 824 screen. */
+.nf-dv-spot{overflow:visible;background:none;box-shadow:none;border-radius:0}
+.nf-ios{display:block;width:100%;aspect-ratio:390/844;box-sizing:border-box;padding:2.564%;border-radius:13.85%/6.4%;background:linear-gradient(160deg,var(--fq-surface-raised),var(--fq-bg-canvas) 45%,var(--fq-surface-raised));box-shadow:inset 0 0 0 1px var(--nf-hair),0 50px 90px -40px var(--fq-bg-canvas),0 0 80px -40px var(--c)}
+.nf-ios-scr{position:relative;display:block;container-type:inline-size;overflow:hidden;border-radius:11.9%/5.34%;background:var(--fq-bg-canvas);line-height:0}
+.nf-ios-scr img{display:block;width:100%;height:auto}
+.nf-sb{position:absolute;left:0;right:0;top:0;height:13.5cqw;display:flex;align-items:center;justify-content:space-between;padding:0 8.1cqw 0 9.73cqw;font:600 4.05cqw/1 var(--fq-font-sans);color:var(--fq-text-strong);text-shadow:0 1px 2px color-mix(in oklab,var(--fq-bg-canvas) 40%,transparent);pointer-events:none}
+.nf-isl{position:absolute;left:50%;top:2.97cqw;transform:translateX(-50%);width:31.9cqw;height:9.19cqw;border-radius:999px;background:var(--fq-bg-canvas)}
+.nf-sbi{display:flex;align-items:flex-end;gap:1.08cqw}
+.nf-sbi i{width:1.08cqw;background:currentColor;border-radius:.27cqw}
+.nf-sbi i:nth-child(1){height:1.62cqw}.nf-sbi i:nth-child(2){height:2.43cqw}
+.nf-sbi i:nth-child(3){width:5.95cqw;height:2.97cqw;border-radius:.81cqw;margin-left:1.08cqw}
+.nf-hi{position:absolute;left:50%;bottom:2.16cqw;transform:translateX(-50%);width:36.2cqw;height:1.35cqw;border-radius:999px;background:color-mix(in oklab,var(--fq-text-strong) 85%,transparent);pointer-events:none}
+.nf-ios[data-tone=light] .nf-sb{color:var(--fq-bg-canvas);text-shadow:none}
+.nf-ios[data-tone=light] .nf-hi{background:color-mix(in oklab,var(--fq-bg-canvas) 85%,transparent)}
+.nf-spread .ph .nf-ios{width:100%}
+.nf>*,.nf section{min-width:0}
