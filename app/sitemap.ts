@@ -255,7 +255,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           // /themes/designer (LIVE-1743): the Designer Theme Kit's feature page.
           { url: `${SITE_URL}/themes/designer`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/[theme] (LIVE-1514): the other six themes' kit pages.
-          ...['frequency', 'bold', 'wildheart', 'network', 'temple'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
+          // /themes/network (LIVE-1751): the Network Theme Kit's feature page.
+          { url: `${SITE_URL}/themes/network`, changeFrequency: "monthly", priority: 0.5 },
+          ...['frequency', 'bold', 'wildheart', 'temple'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
         ] satisfies MetadataRoute.Sitemap)
       : []),
     { url: `${SITE_URL}/the-community`, lastModified: GUIDE_LAST_MODIFIED["the-community"], changeFrequency: "monthly", priority: 0.8 },

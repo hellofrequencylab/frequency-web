@@ -33,9 +33,11 @@ export function flowView(launch: LaunchSnapshot | null): FlowView {
   const entry = launch?.steps.spotlight
   const published = entry?.status === 'published' && !!entry.ref
   const slug = published ? (entry.ref as string) : null
+  const spaceKept = published && launch?.steps.space?.status === 'published'
   const stages: FlowStage[] = STAGES.map((s) => {
     if (s.id === 'spotlight') return { ...s, state: published ? 'live' : 'next' }
-    if (s.id === 'space') return { ...s, state: published ? 'next' : 'later' }
+    if (s.id === 'space') return { ...s, state: spaceKept ? 'live' : published ? 'next' : 'later' }
+    if (s.id === 'website') return { ...s, state: spaceKept ? 'next' : 'later' }
     return { ...s, state: 'later' }
   })
   return { stages, slug, spotlightHref: slug ? `/spaces/${encodeURIComponent(slug)}/spotlight` : null }

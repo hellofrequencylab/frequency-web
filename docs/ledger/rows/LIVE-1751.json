@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1751",
+  "title": "The hand-built /themes/network page: the Network Theme Kit on every surface, set up the way Designer's is",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-network.tsx",
+    "ref": "Network Theme Kit build, pass 5"
+  },
+  "detail": "Pass 5. app/(marketing)/themes/network is its own static route (it wins over /themes/[theme], which no longer lists network-kit); FrequencyNetwork is a server page of kit parts with one client island (network-preview.tsx: Website, Spotlight (Link Page), Space (Profile) and Email template chips, and a picker for the thirteen profiles). Hero: title and subtitle top left, copy and buttons under, preview right, a lead-in to the next section, all in the first viewport at 1280 to 2000 and stacked at 390. Phones are the design system's iPhone frame (390 by 844, 370 by 824 screen). Pictures are Playwright renders of the product's own kit: the thirteen profile home pages through the real SiteChrome and Network blocks, and the Spotlight layouts through the real Spotlight shell (26 shots and six layouts under public/themes/network-kit). Space and Email have no pictures yet, so their chips show a quiet framed 'On the way' card and nothing is invented. What is ready and on the way is read from lib/themes/library.ts. The /themes index card shows the real shots. SEO entry and sitemap entry added. Copy changes against the design's page, per the voice guide: no weekly email, 'this week's meetup' becomes 'next meetup', the design's research and 'Live in an afternoon' setup claim, the 'Inside the kit' counts and the contrast-checked claims are left out. Gap: Space and Email pictures wait for those surfaces; the PR needs a [sweep] title because the 32 pictures count as authored files.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "Route, page, preview island, CSS, data and 13 by 2 pictures plus six layouts present.",
+    "cmd": "node scripts/probes/network-theme-page.mjs"
+  },
+  "closed": "2026-10-28"
+}
