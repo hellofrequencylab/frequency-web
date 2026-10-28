@@ -1,8 +1,10 @@
 import { notFound, redirect } from 'next/navigation'
-import { PublishedScreen } from '@/components/launch/published-screen'
-import { FocusTemplate } from '@/components/templates'
+import { LaunchFlow } from '@/components/launch/launch-flow'
+import { DashboardTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
+import { flowHeading, flowView } from '@/lib/launch/flow'
+import { loadSpotlightAnswers } from '@/lib/launch/flow-io'
 import { publishedView, stepFromSlug } from '@/lib/launch/published'
 import { launchStepHref } from '@/lib/launch/steps'
 import { getActiveLaunch } from '@/lib/launch/store'
@@ -20,9 +22,12 @@ export default async function PublishedPage({ params }: { params: Promise<{ step
   if (!launch) redirect('/launch')
   const view = publishedView(launch, step)
   if (view.kind === 'not_yet') redirect(launchStepHref(step))
+  const flow = flowView(launch)
+  // The next step on this page is the person's own Space, which exists the moment the Spotlight is published.
+  const published = flow.slug ? { ...view, next: { label: 'Your Space', href: `/spaces/${encodeURIComponent(flow.slug)}` } } : view
   return (
-    <FocusTemplate eyebrow="Be found" title={`Your ${view.label} is live`} description="It is up, in your own words. Look at it, or keep going." width="narrow">
-      <PublishedScreen view={view} />
-    </FocusTemplate>
+    <DashboardTemplate {...flowHeading(flow)} adminBar={false} width="default">
+      <LaunchFlow view={flow} answers={await loadSpotlightAnswers(launch)} signedIn published={published} />
+    </DashboardTemplate>
   )
 }
