@@ -417,7 +417,7 @@
 
 /* The main column: the header, the Needs-you row, the view */
 .cal-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.cal-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 14px 10px; }
+.cal-head { position: relative; z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 14px 10px; }
 .cal-titlebox { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 0; }
 .cal-titlewrap { position: relative; min-width: 0; }
 .cal-title { display: inline-flex; align-items: center; gap: 8px; background: none; color: var(--fq-text-strong); padding: 0; }
@@ -432,7 +432,7 @@
 .cal-ask { min-width: 220px; height: 42px; border-radius: 999px; justify-content: flex-start; gap: 10px; padding: 0 12px 0 16px; color: var(--fq-text-body); }
 .cal-ask-t { flex: 1; text-align: left; }
 
-.cal-jump { position: absolute; z-index: 30; top: calc(100% + 8px); left: 0; width: 300px; padding: 12px; border-radius: 24px; box-shadow: var(--fq-glass-panel-shadow); }
+.cal-jump { position: absolute; z-index: 30; top: calc(100% + 8px); left: 0; width: 300px; padding: 12px; border-radius: 24px; background: var(--fq-surface-card); backdrop-filter: none; box-shadow: var(--fq-glass-panel-shadow); }
 .cal-jump-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .cal-jump-year { font: 600 var(--fq-text-body-s)/1 var(--fq-font-display); color: var(--fq-text-strong); }
 .cal-jump-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
