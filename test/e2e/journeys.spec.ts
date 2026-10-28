@@ -43,7 +43,9 @@ function writesAllowed(): { ok: boolean; why: string } {
 test.describe('signed-in journeys @journey @shell', () => {
   test.skip(!baseURL, 'PW_BASE_URL not set')
   test.skip(!hasSession, 'PW_STORAGE_STATE missing: no member session to walk with')
-  test.skip(({}, info) => info.project.name !== 'desktop', 'journeys run on desktop only')
+  test.beforeEach(({}, info) => {
+    test.skip(info.project.name !== 'desktop', 'journeys run on desktop only')
+  })
   test.use({ storageState: hasSession ? storageState : undefined })
 
   /** Open a path as the member and prove the app answered: right path, shell present, no 5xx, no error card. */
@@ -209,7 +211,9 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
   const gate = writesAllowed()
   test.skip(!hasSession, 'PW_STORAGE_STATE missing')
   test.skip(!gate.ok, gate.why)
-  test.skip(({}, info) => info.project.name !== 'desktop', 'journeys run on desktop only')
+  test.beforeEach(({}, info) => {
+    test.skip(info.project.name !== 'desktop', 'journeys run on desktop only')
+  })
   test.use({ storageState: hasSession ? storageState : undefined })
   test.describe.configure({ mode: 'serial' })
 
@@ -307,7 +311,9 @@ test.describe('new member sign-up @journey-write', () => {
   const inbucket = process.env.PW_INBUCKET_URL
   test.skip(!gate.ok, gate.why)
   test.skip(!inbucket, 'PW_INBUCKET_URL not set: no mailbox to read the magic link from')
-  test.skip(({}, info) => info.project.name !== 'desktop', 'journeys run on desktop only')
+  test.beforeEach(({}, info) => {
+    test.skip(info.project.name !== 'desktop', 'journeys run on desktop only')
+  })
   test.use({ storageState: { cookies: [], origins: [] } })
 
   test('unknown email, create account, open the emailed link, arrive signed in', async ({ page, serverErrors }) => {
