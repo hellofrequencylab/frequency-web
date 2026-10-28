@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1595",
+  "title": "Add a repeatable anonymous test of the public production surface (robots, sitemap, llms.txt, status API, redirects, 404s, head tags)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "test/e2e/public-surface.spec.ts",
+    "ref": "Functional QA 2026-10-28, public surface slice"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "pnpm exec vitest run test/e2e/public-surface.test.ts && pnpm exec playwright test --list public-surface",
+    "note": "Offline half: the parsers that judge robots/sitemap/head tags/JSON-LD pass their unit tests. The live half (PW_BASE_URL + PW_SITE_URLS) is collected by Playwright and run against production by whoever has network; it is not asserted here."
+  },
+  "detail": "An earlier audit was source-and-metadata only: no production API probe, crawler or indexing behaviour was exercised. This adds test/e2e/public-surface.spec.ts (request-only, anonymous, read-only GETs) covering robots.txt, sitemap.xml vs robots rules, llms.txt and llms-full.txt (banned weekly-promise copy), /api/status, anonymous private-API error behaviour, the /themes/midnight to /themes/nocturne 308s, real 404s with noindex, canonical/title/og/JSON-LD on key pages, www to apex, and per-site robots, sitemap, canonical host, no Set-Cookie on ISR renders and deep 404s. Findings: /mnt/project-files/audits/functional-qa-2026-10-28/public-surface.md.",
+  "wave": "W7"
+}
