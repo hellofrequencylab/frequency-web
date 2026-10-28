@@ -16,19 +16,20 @@ import './nocturne-feature.css'
 import { NOCTURNE_BLOCKS, NOCTURNE_KITS, NOCTURNE_PACKAGES, NOCTURNE_SWATCHES, type NocturneKit } from '@/lib/themes/nocturne-feature-data'
 
 type Surface = 'site' | 'spacedesk' | 'spotlight' | 'email'
-type Shot = 'site' | 'space' | 'spot' | 'email'
+type Shot = 'site' | 'spacedesk' | 'space' | 'spot' | 'email'
 
 const SAMPLE_SITE = '/themes/nocturne/demo'
 const KIT_BY_ID = Object.fromEntries(NOCTURNE_KITS.map((k) => [k.id, k]))
 const SHOT_DIM: Record<Shot, [number, number]> = {
   site: [924, 540],
-  space: [390, 540],
-  spot: [390, 540],
+  spacedesk: [1440, 866],
+  space: [740, 1648],
+  spot: [740, 1648],
   email: [600, 540],
 }
 const SURFACE_SHOT: Record<Surface, Shot> = {
   site: 'site',
-  spacedesk: 'space',
+  spacedesk: 'spacedesk',
   spotlight: 'spot',
   email: 'email',
 }
@@ -44,7 +45,7 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
 }
 function shotSrc(kit: string, shot: Shot) {
-  return `/themes/midnight/shots/${kit}-${shot}.${shot === 'site' ? 'jpg' : 'png'}`
+  return `/themes/midnight/shots/${kit}-${shot}.${shot === 'email' ? 'png' : 'jpg'}`
 }
 function adoptHref(kit: string) {
   return `/spaces/new?niche=${kit}`
@@ -53,35 +54,56 @@ function pad(n: number) {
   return String(n).padStart(2, '0')
 }
 
-function Shot({ kit, shot, priority = false, sizes }: { kit: NocturneKit; shot: Shot; priority?: boolean; sizes: string }) {
+function Shot({ kit, shot, label, priority = false, sizes }: { kit: NocturneKit; shot: Shot; label: string; priority?: boolean; sizes: string }) {
   const [w, h] = SHOT_DIM[shot]
+  return <Image src={shotSrc(kit.id, shot)} alt={`${kit.name}: ${label}`} width={w} height={h} sizes={sizes} priority={priority} />
+}
+
+/** An iPhone: bezel, status bar with the island, and the home bar around a 370 by 824 screen of the kit (the design system's ios frame). */
+function Phone({ kit, shot, label, tone, priority, sizes }: { kit: NocturneKit; shot: 'spot' | 'space'; label: string; tone: 'dark' | 'light'; priority?: boolean; sizes: string }) {
   return (
-    <Image
-      src={shotSrc(kit.id, shot)}
-      alt={`${kit.name}: ${SURFACE_LABEL[Object.keys(SURFACE_SHOT).find((s) => SURFACE_SHOT[s as Surface] === shot) as Surface]}`}
-      width={w}
-      height={h}
-      sizes={sizes}
-      priority={priority}
-    />
+    <span className="nf-ios" data-tone={tone}>
+      <span className="nf-ios-scr">
+        <Shot kit={kit} shot={shot} label={label} priority={priority} sizes={sizes} />
+        <span className="nf-sb" aria-hidden="true">
+          <span>9:41</span>
+          <span className="nf-isl" />
+          <span className="nf-ic">
+            <i />
+            <i />
+            <i />
+          </span>
+        </span>
+        <span className="nf-hi" aria-hidden="true" />
+      </span>
+    </span>
   )
 }
 
 /** One device frame around a kit screenshot. */
 function Device({ kit, surface, priority, sizes }: { kit: NocturneKit; surface: Surface; priority?: boolean; sizes: string }) {
   const shot = SURFACE_SHOT[surface]
+  const label = SURFACE_LABEL[surface]
+  if (shot === 'spot') {
+    return (
+      <div className="nf-dv nf-dv-spot">
+        <Phone kit={kit} shot="spot" label={label} tone="dark" priority={priority} sizes={sizes} />
+      </div>
+    )
+  }
+  const browser = shot === 'site' || shot === 'spacedesk'
   return (
     <div className={`nf-dv nf-dv-${shot}`}>
-      {shot === 'site' ? (
+      {browser ? (
         <div className="nf-bar" aria-hidden="true">
           <i />
           <i />
           <i />
-          <u>yourbusiness.com</u>
+          <u>{shot === 'site' ? 'yourbusiness.com' : 'frequency.com/spaces/yourbusiness'}</u>
         </div>
       ) : null}
       <div className="nf-scr">
-        <Shot kit={kit} shot={shot} priority={priority} sizes={sizes} />
+        <Shot kit={kit} shot={shot} label={label} priority={priority} sizes={sizes} />
       </div>
     </div>
   )
@@ -690,9 +712,13 @@ export function FrequencyMidnight() {
                   ] as [string, Surface, string, string][]
                 ).map(([cls, s, label, sub]) => (
                   <button type="button" className={cls} key={s} aria-label={`Preview the ${label.toLowerCase()}`} onClick={() => setPv({ view: s })}>
-                    <span className="fr">
-                      <Shot kit={kit} shot={SURFACE_SHOT[s]} sizes="(max-width: 900px) 45vw, 480px" />
-                    </span>
+                    {s === 'spacedesk' || s === 'spotlight' ? (
+                      <Phone kit={kit} shot={s === 'spotlight' ? 'spot' : 'space'} label={label} tone={s === 'spotlight' ? 'dark' : 'light'} sizes="(max-width: 900px) 45vw, 240px" />
+                    ) : (
+                      <span className="fr">
+                        <Shot kit={kit} shot={SURFACE_SHOT[s]} label={label} sizes="(max-width: 900px) 45vw, 480px" />
+                      </span>
+                    )}
                     <span className="lab">
                       <b>{label}</b>
                       <small>{sub}</small>
