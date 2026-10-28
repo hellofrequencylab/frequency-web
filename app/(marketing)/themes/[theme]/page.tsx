@@ -7,21 +7,24 @@ import { JsonLd } from '@/components/json-ld'
 import { frequencyPageJsonLd, frequencyPageMetadata, type FrequencyPageSeo } from '@/lib/seo/frequency-pages'
 import { FrequencyThemeKit, THEME_KIT_PAGE_IDS } from '@/components/frequency/site/pages/themes/frequency-theme-kit'
 import { SITE_THEMES } from '@/lib/theme/site-style'
-import { themeLibraryEntry } from '@/lib/themes/library'
+import { themeIdFromSlug, themeLibraryEntry, themeSlug } from '@/lib/themes/library'
 
 export const revalidate = 3600
 export const dynamicParams = false
 
 export function generateStaticParams() {
-  return THEME_KIT_PAGE_IDS.map((theme) => ({ theme }))
+  return THEME_KIT_PAGE_IDS.map((id) => ({ theme: themeSlug(id) }))
 }
 
-function seoFor(theme: string): FrequencyPageSeo | null {
+// The address is not always the id: the Network Theme Kit (`network-kit`) lives at /themes/network (themeSlug in
+// lib/themes/library.ts).
+function seoFor(slug: string): FrequencyPageSeo | null {
+  const theme = themeIdFromSlug(slug)
   const site = SITE_THEMES.find((t) => t.id === theme)
-  const entry = themeLibraryEntry(theme)
-  if (!site || !entry || !THEME_KIT_PAGE_IDS.some((id) => id === site.id)) return null
+  const entry = theme ? themeLibraryEntry(theme) : null
+  if (!theme || !site || !entry || !THEME_KIT_PAGE_IDS.some((id) => id === site.id)) return null
   return {
-    path: `/themes/${theme}`,
+    path: `/themes/${slug}`,
     title: `${site.label} theme: ${entry.tagline}`,
     description: `${site.label} gives your website a starting look. See which matching Spotlight and email surfaces are ready, and what is on the way.`,
     shareTitle: `${site.label}: a look to build on`,
@@ -29,7 +32,7 @@ function seoFor(theme: string): FrequencyPageSeo | null {
     lede: `Made for ${entry.madeFor}. ${site.description} See which matching surfaces are ready below.`,
     crumbs: [
       { name: 'Themes', path: '/themes' },
-      { name: site.label, path: `/themes/${theme}` },
+      { name: site.label, path: `/themes/${slug}` },
     ],
   }
 }
@@ -40,13 +43,14 @@ export async function generateMetadata({ params }: { params: Promise<{ theme: st
 }
 
 export default async function ThemeKitPage({ params }: { params: Promise<{ theme: string }> }) {
-  const { theme } = await params
-  const seo = seoFor(theme)
-  if (!seo) notFound()
+  const { theme: slug } = await params
+  const seo = seoFor(slug)
+  const id = themeIdFromSlug(slug)
+  if (!seo || !id) notFound()
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(seo)} />
-      <FrequencyThemeKit theme={theme} />
+      <FrequencyThemeKit theme={id} />
     </>
   )
 }

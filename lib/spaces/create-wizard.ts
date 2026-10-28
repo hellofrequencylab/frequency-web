@@ -143,9 +143,9 @@ export function suggestModeForIntents(picks: readonly string[], available: reado
 }
 
 /** The themes the look step offers: every Mega Theme, in the library's order, with its one-line pitch. */
-export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.map(({ id }) => ({
+export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.filter(({ id }) => id !== 'network').map(({ id }) => ({
   id,
-  label: id === 'frequency' ? 'Default' : id.charAt(0).toUpperCase() + id.slice(1),
+  label: id === 'frequency' ? 'Default' : id === 'network-kit' ? 'Network' : id.charAt(0).toUpperCase() + id.slice(1),
   hint: THEME_LIBRARY.find((t) => t.id === id)?.tagline ?? '',
 }))
 

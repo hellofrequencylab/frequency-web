@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DESIGNER_TOKENS_CSS } from '@/lib/theme/designer'
 import { MIDNIGHT_TOKENS_CSS } from '@/lib/theme/midnight'
+import { NETWORK_KIT_TOKENS_CSS } from '@/lib/theme/network-kit'
 import { repoReport } from './ds-intake.mjs'
 import { extractCopy, extractTokens, flatDeclarations, globToRegExp, normValue, repoViolations, resolveVars, ruleFor, squash } from './lib/design-system.mjs'
 
@@ -48,7 +49,7 @@ describe('design-system routine', () => {
 })
 
 // Each theme's repo-side token block. A theme whose tokens are not built yet reads as empty (every token is a gap).
-const TOKEN_CSS: Record<string, string> = { nocturne: MIDNIGHT_TOKENS_CSS, designer: DESIGNER_TOKENS_CSS }
+const TOKEN_CSS: Record<string, string> = { nocturne: MIDNIGHT_TOKENS_CSS, designer: DESIGNER_TOKENS_CSS, network: NETWORK_KIT_TOKENS_CSS }
 
 const THEMES = readdirSync(join(process.cwd(), 'docs/design-systems'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
 
