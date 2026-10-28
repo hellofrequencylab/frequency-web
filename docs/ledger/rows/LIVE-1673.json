@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1673",
+  "title": "A site's menu leaves out the kit Services page until the Space lists a service",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/empty-services.ts",
+    "ref": "LIVE-1672"
+  },
+  "detail": "The kit's Services page is the Space's offerings under a short lead, and the offerings block draws nothing when no service is listed, so the page would be a title over blank space. The site menu (automatic and saved-menu catalog) now skips a page with slug `services` that holds an offerings block while the Space lists no public service. The page stays reachable by URL. Any other page, and a Services page the owner wrote without the offerings block, is never hidden.",
+  "closed": "2026-10-28",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "site-page.tsx filters the menu through isEmptyServicesPage.",
+    "cmd": "node -e 'const t=require(\"fs\").readFileSync(\"components/sites/site-page.tsx\",\"utf8\");if(!t.includes(\"isEmptyServicesPage\")){console.error(\"the menu lost its empty Services filter\");process.exit(1)}'"
+  }
+}
