@@ -293,7 +293,7 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await page.getByRole('button', { name: /crew|join|support/i }).first().click()
     // Hosted Checkout navigates away; the on-page panel embeds a Stripe iframe. Either is a pass.
     await Promise.race([
-      page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 }),
+      page.waitForURL((u) => u.hostname === 'checkout.stripe.com', { timeout: 30_000 }),
       page.locator('iframe[src*="js.stripe.com"]').first().waitFor({ timeout: 30_000 }),
     ])
   })
