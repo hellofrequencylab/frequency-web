@@ -288,9 +288,8 @@ export function FrequencyMidnight() {
     if (!el) return
     const fit = () => el.style.setProperty('--nf-live', String(el.clientWidth / 1440))
     fit()
-    const ro = new ResizeObserver(fit)
-    ro.observe(el)
-    return () => ro.disconnect()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
   }, [])
   const stageVars = vars({ '--c': kit.hex })
 
