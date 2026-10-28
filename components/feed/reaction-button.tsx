@@ -118,7 +118,7 @@ export function ReactionCounts({ base, toggle, failed, compact = false }: Reacti
             type="button"
             onClick={() => toggle(r.key)}
             aria-pressed={t.mine}
-            aria-label={reactionLabel(r.key)}
+            aria-label={`${reactionLabel(r.key)} · ${t.count}`}
             title={failed ? 'That did not save. Tap to try again.' : reactionLabel(r.key)}
             className={`${pill} ${t.mine ? 'bg-primary-bg/60 text-primary-strong' : 'text-muted hover:bg-surface-elevated'}`}
           >

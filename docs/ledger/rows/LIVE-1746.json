@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1746",
+  "title": "The launch has a source shelf: sources keep a kind and size, facts quote the person's own words, and a cancel starts a thirty day clock",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/launch/facts.ts",
+    "ref": "Vera guided launch system, VLS-12. Vera is a coach: she quotes the person's own words with a citation and never writes fresh copy."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-shelf.mjs",
+    "note": "The rules (a fact with no snippet or origin is refused, a snippet that is not in the source is refused, sources keep kind and sizes, a cancel keeps them thirty days) are pinned by lib/launch/shelf.test.ts, run by the test job. The probe reads the wiring: the table refuses a fact without snippet and origin, removing a source removes its facts, the store checks before it writes, a cancel starts the clock and nothing on the shelf imports analytics. Fails on main, where none of it exists."
+  },
+  "detail": "lib/launch/sources.ts and facts.ts are the pure rules, lib/launch/shelf-io.ts the owner-scoped store (addSource, listSources, removeSource, addFacts, listFacts, setFactState, expireSources), and confirmCancel now stamps expires_at on the launch's sources. The tables already exist (the vera_launch migration), so no migration here. Not here: the upload tray and shelf screen (components/launch/source-tray.tsx, shelf.tsx), which need a design render first, document extraction through extractSourceTextAction, and the sweep that deletes sources past expires_at.",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}
