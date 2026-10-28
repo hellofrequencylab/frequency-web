@@ -7,6 +7,8 @@
 
 import { WIZARD_INTENTS, WIZARD_THEMES } from '@/lib/spaces/create-wizard'
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
+import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
+import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 
 type IntentId = (typeof WIZARD_INTENTS)[number]['id']
@@ -83,7 +85,7 @@ interface PreviewAccent {
   text: string | null
 }
 
-/** The accents each kit offers, first = the kit's own. Designer's six are verified against the Designer
+/** The accents each kit offers, first = the kit's own. The violets of Nocturne and Wildheart are read from their palettes, never restated here (LIVE-962). Designer's six are verified against the Designer
  *  handoff; the others are the kit's family as the prototype listed it. */
 const KIT_ACCENTS: Partial<Record<MegaThemeId, readonly PreviewAccent[]>> & Record<Exclude<MegaThemeId, 'temple-kit'>, readonly PreviewAccent[]> = {
   designer: [
@@ -92,7 +94,7 @@ const KIT_ACCENTS: Partial<Record<MegaThemeId, readonly PreviewAccent[]>> & Reco
     { name: 'Olive', fill: '#6F7A3E', text: '#58622F' }, { name: 'Zellige teal', fill: '#2F7F7A', text: '#25655F' },
   ],
   midnight: [
-    { name: 'Violet', fill: '#B094FF', text: null }, { name: 'Moon blue', fill: '#8FB8FF', text: null },
+    { name: 'Violet', fill: MEGA_SURFACES.midnight?.accent.accent ?? '#8FB8FF', text: null }, { name: 'Moon blue', fill: '#8FB8FF', text: null },
     { name: 'Candle', fill: '#E8C27A', text: null }, { name: 'Rose', fill: '#F2A0B8', text: null },
   ],
   'network-kit': [
@@ -109,7 +111,7 @@ const KIT_ACCENTS: Partial<Record<MegaThemeId, readonly PreviewAccent[]>> & Reco
     { name: 'Ice', fill: '#3DD9FF', text: null }, { name: 'Gold', fill: '#FFD23D', text: null },
   ],
   wildheart: [
-    { name: 'Dusk', fill: '#7A5AC8', text: null }, { name: 'Petal', fill: '#B86A8B', text: null },
+    { name: 'Dusk', fill: WILDHEART_PALETTE.violet, text: null }, { name: 'Petal', fill: '#B86A8B', text: null },
     { name: 'Tide', fill: '#3E7C8C', text: null }, { name: 'Harvest', fill: '#A8822F', text: null },
   ],
   frequency: [
