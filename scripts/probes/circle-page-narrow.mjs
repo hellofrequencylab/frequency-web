@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1580: the Circle page is laid out for the column the shell really leaves it.
+// LIVE-1572: the Circle page is laid out for the column the shell really leaves it.
 //
 // The member shell keeps the right rail on every page (page-chrome.ts), so under 1448px the page body is
 // 420 to 720px wide, not the design's 1240px. The narrow rules (a cover scrim that keeps the tags readable,
