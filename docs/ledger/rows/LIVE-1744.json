@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-1744",
+  "title": "Designer kit tokens that name the accent ramp carry the design's own values, so the design-system test is green on main",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "XS",
+  "wave": "W7",
+  "source": { "file": "lib/theme/designer-kit-tokens.ts", "ref": "Designer Theme Kit build, hotfix to LIVE-1741" },
+  "detail": "After LIVE-1741 landed, main's design-system test reported three fresh gaps: --color-accent-soft, --th-accent-bg and --th-accent-soft read var(--accent-300 / --accent-100), which no longer resolve against the repo token block on current main, while the design says #F2DCB8 and #F8ECD8. The three now carry those values. Nothing reads them, so no rendered site changes.",
+  "verify": { "kind": "cmd", "checked": "2026-10-28", "evidence": "The three tokens are literal values.", "cmd": "node scripts/probes/designer-kit-token-values.mjs" },
+  "closed": "2026-10-28"
+}
