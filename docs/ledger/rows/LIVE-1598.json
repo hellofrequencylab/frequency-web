@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1598",
+  "title": "/themes/nocturne is the Theme Feature Page of the Default Template design system, section by section, with working pictures, preview and adopt buttons",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "docs/design-systems/nocturne/rules.json",
+    "ref": "LIVE-1570"
+  },
+  "detail": "components/frequency/site/pages/themes/frequency-midnight.tsx rebuilds the page from the design system's Theme Feature Page: hero with the four surfaces, Today (before and after), Theme preview (surface and kit picker), Inside the kit (pages, home blocks, tools, emails, looks per kit), Make it yours, Thirteen kits gallery, What carries over, Built right, Questions, Setup, Start. Pictures are the kit screenshots (LIVE-1571); the live sample site at /themes/nocturne/demo takes its accent from the page through MidnightAccentFrame; every adopt button goes to /spaces/new?niche=<kit>. Left out on purpose: the three research figures (voice guide) and the display face and corner controls of Make it yours, which need the per-kit fonts and corners that arrive with the token work. The email surface shows the weekly note only; the other three templates need pictures. Replaces the LIVE-1380 page body. Closes 80 copy gaps from the design-system baseline. The kit-picker and Live preview components of LIVE-1382 and LIVE-1383 are replaced by the Theme preview and Thirteen kits sections; their probes read the old files, see the PR.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "Rendered beside the design page at 1440 and 390 wide; every control clicked.",
+    "cmd": "node scripts/probes/nocturne-feature-page.mjs"
+  },
+  "closed": "2026-10-28"
+}
