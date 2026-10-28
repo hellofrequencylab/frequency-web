@@ -161,6 +161,7 @@ export function CalendarWorkspace({
   initialDay,
   initialYear,
   initialMonth1,
+  monthPinned = false,
   guestEvents,
   guestFirstUse,
   adminEvents,
@@ -191,6 +192,8 @@ export function CalendarWorkspace({
   initialDay?: string
   initialYear: number
   initialMonth1: number
+  /** The link named the month (`?y=&m=`): the browser leaves it where the link put it. */
+  monthPinned?: boolean
   guestEvents: CalendarEvent[]
   guestFirstUse: boolean
   adminEvents: CalendarEvent[]
@@ -627,6 +630,7 @@ export function CalendarWorkspace({
         skyMarkers={skyMarkers}
         initialYear={initialYear}
         initialMonth1={initialMonth1}
+        monthPinned={monthPinned}
         loadMonth={loadGuestMonth}
         month={month}
         onMonthChange={setMonth}
@@ -979,6 +983,7 @@ export function CalendarWorkspace({
                     events={currentAdminEvents}
                     initialYear={initialYear}
                     initialMonth1={initialMonth1}
+                    monthPinned={monthPinned}
                     canEdit={canManage}
                     spaceTimeZone={spaceTimeZone}
                     dayNotes={dayNotes}

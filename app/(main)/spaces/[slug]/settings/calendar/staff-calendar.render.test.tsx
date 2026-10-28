@@ -47,6 +47,10 @@ let container: HTMLDivElement | null = null
 let root: Root | null = null
 
 beforeEach(() => {
+  // The fixtures live in September 2026, and a calendar opens on the current month, so the clock
+  // is frozen there (only Date: timers and promises stay real).
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-09-15T19:00:00Z'))
   mocks.saveCalendarEntry.mockClear()
   mocks.createPenciledPlan.mockClear()
   mocks.startPlanFromEntry.mockReset()
@@ -57,6 +61,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   if (root) act(() => root!.unmount())
   if (container) container.remove()
   root = null
