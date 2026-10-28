@@ -101,7 +101,7 @@ export const EMPTY_THEME: SpotlightTheme = {
 }
 
 /** A Spotlight preset read from a Mega Theme's flat token set. */
-function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
+function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple-kit', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
   const s = MEGA_SURFACES[id]!
   return {
     accent: s.accent.accent.toLowerCase(), surface: s.raised.toLowerCase(), text: s.text.toLowerCase(), font, card,
@@ -149,7 +149,10 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   { id: 'wildheart', label: 'Wildheart', theme: surfacePreset('wildheart', { heading: 'serif', body: 'serif' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
   // The Network Theme Kit (lib/theme/network-kit.ts): the Marigold scheme as a basic preset; its Spotlight layouts come with the kit.
   { id: 'network-kit', label: 'Network', theme: { ...surfacePreset('network-kit', { heading: 'rounded', body: 'rounded' }, { radius: 'xl', shadow: 'soft', style: 'solid' }), layout: 'network-kit:stack', kit: 'general' } },
-  { id: 'temple', label: 'Temple', theme: surfacePreset('temple', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) },
+  // The Temple Theme Kit (lib/theme/temple-kit.ts), shown as Temple: plaster ground, umber type, one clay accent, soft cards.
+  // Marcellus and Jost load on websites only, so the nearest allowlisted faces stand in. The earlier Temple (Royal Temple's)
+  // is no longer a preset: it is offered nowhere.
+  { id: 'temple-kit', label: 'Temple', theme: surfacePreset('temple-kit', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) },
   {
     id: 'mono', label: 'Mono',
     theme: { accent: '#111111', surface: '#ffffff', text: '#111111', font: { heading: 'sans', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },

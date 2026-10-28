@@ -60,11 +60,11 @@ describe('the look step (LIVE-1531)', () => {
     expect(withLookStep(createWizardSteps(SPACE_MANIFEST)).map((s) => s.key)).toEqual(['intents', 'model', 'identity', 'look', 'start'])
   })
   it('offers every Mega Theme with a pitch', () => {
-    expect(WIZARD_THEMES.map((t) => t.id)).toEqual(['frequency', 'bold', 'wildheart', 'network-kit', 'temple', 'midnight', 'designer'])
+    expect(WIZARD_THEMES.map((t) => t.id)).toEqual(['frequency', 'bold', 'wildheart', 'network-kit', 'temple-kit', 'midnight', 'designer'])
     for (const t of WIZARD_THEMES) expect(t.hint.length, t.id).toBeGreaterThan(0)
   })
   it("sends the owner's pick, else the theme a /themes page named, else none", () => {
-    expect(chosenWizardTheme('temple', 'midnight')).toBe('temple')
+    expect(chosenWizardTheme('temple-kit', 'midnight')).toBe('temple-kit')
     expect(chosenWizardTheme(null, 'midnight')).toBe('midnight')
     expect(chosenWizardTheme('neon', null)).toBeNull()
   })
