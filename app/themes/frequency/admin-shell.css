@@ -178,9 +178,24 @@ html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top
 /* THE TOP BAR HIDES WHAT SCROLLS UNDER IT (owner screenshot 2026-10-20, the Space Spotlight editor: the
    breadcrumb and nav sat on top of a block's text, both legible at once). The kit paints the bar at 82%
    with a blur, which leaves the page readable through it wherever the blur is not applied. Raising the
-   fill to 96% keeps the glass edge and makes the bar do its job. */
+   fill to 96% keeps the glass edge and makes the bar do its job. 2026-10-29, owner screenshot of /admin:
+   the page title and the big stat numbers still ghosted through at 96%, so the fill is now solid. The blur
+   stays for the edge; nothing scrolls readably under a bar any more. */
 @layer components {
-[data-design="frequency"] [data-kit="admin"] .ad-top{background:color-mix(in oklab,var(--fq-surface-card) 96%,transparent)}
+[data-design="frequency"] [data-kit="admin"] .ad-top{background:var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="admin"] .ad-topmenu{background:var(--fq-surface-card)}
+}
+
+/* ADMIN STAT CHARTS (components/admin/spark-charts.tsx). The charts used the primary TEXT step as a fill, which
+   on Frequency's daytime skin is a dark teal (#26636F), so the area and bars read grey-teal. They now take
+   Frequency's own sky and aqua through these slots; other designs keep the component's fallback. */
+@layer components {
+[data-design="frequency"] [data-kit="admin"]{
+  --chart-line:var(--fq-accent);
+  --chart-fill:color-mix(in oklab,var(--fq-x-sky-neon) 45%,transparent);
+  --chart-fill-bar:color-mix(in oklab,var(--fq-x-sky-neon) 80%,transparent);
+  --chart-fill-now:var(--fq-accent);
+}
 }
 
 /* THE PHONE CONSOLE (owner, 2026-10-20: "the space console experience in Mobile is trash"). Under 960px the
