@@ -5,6 +5,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Json } from '@/lib/database.types'
 import { canConfirmCancel, publishStep, resumeStep, stageOf, toSnapshot, type CancelDecision, type LaunchSnapshot } from './state'
+import { readStoredBuildout, type StoredBuildout } from './buildout'
 import { expireSources } from './shelf-io'
 import type { LaunchStepId } from './steps'
 
@@ -86,5 +87,18 @@ export function markStepPublished(l: LaunchSnapshot, id: LaunchStepId, ref?: str
 export async function attachSpace(l: LaunchSnapshot, spaceId: string): Promise<boolean> {
   const db = await createClient()
   const { error } = await db.from('space_launch').update({ space_id: spaceId, updated_at: new Date().toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId)
+  return !error
+}
+
+/** The draft Vera built from this launch's words, or null if none yet (the column is null until the first build). */
+export async function getBuildout(l: LaunchSnapshot): Promise<StoredBuildout | null> {
+  const db = await createClient()
+  const { data } = await db.from('space_launch').select('buildout').eq('id', l.id).eq('owner_id', l.ownerId).maybeSingle()
+  return readStoredBuildout(data?.buildout)
+}
+
+export async function setBuildout(l: LaunchSnapshot, stored: StoredBuildout): Promise<boolean> {
+  const db = await createClient()
+  const { error } = await db.from('space_launch').update({ buildout: stored as unknown as Json, updated_at: new Date().toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId).is('cancelled_at', null).is('completed_at', null)
   return !error
 }
