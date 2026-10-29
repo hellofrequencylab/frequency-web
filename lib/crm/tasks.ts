@@ -245,6 +245,35 @@ export async function reanchorTaskDuesInScope(
   return moved
 }
 
+/**
+ * Move ONE to-do's due day INSIDE a Space the caller has already been authorized for (the calendar's
+ * drag). `dueAt` null puts it back in the inbox. Scoped by `space_id` beside the row id, so an id from
+ * another Space matches nothing and comes back false rather than moving. FAIL-SAFE: false on any error.
+ */
+export async function moveTaskDueInScope(
+  taskId: string,
+  dueAt: string | null,
+  spaceId: string,
+  startMinute?: number | null,
+): Promise<boolean> {
+  const id = typeof taskId === 'string' ? taskId.trim() : ''
+  const space = typeof spaceId === 'string' ? spaceId.trim() : ''
+  if (!id || !space) return false
+  const base = dueAt === null ? { due_at: null, updated_at: new Date().toISOString() } : taskDuePatch(dueAt)
+  if (!base) return false
+  // A to-do taken off the calendar loses its time; `undefined` leaves the time as it was.
+  const patch = dueAt === null ? { ...base, start_minute: null } : startMinute === undefined ? base : { ...base, start_minute: normalizeStartMinute(startMinute) }
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (p: Record<string, unknown>) => ScopedUpdateQuery }
+    }
+    const { data, error } = await db.from('crm_tasks').update(patch).eq('id', id).eq('space_id', space).select('id')
+    return !error && !!data?.length
+  } catch {
+    return false
+  }
+}
+
 /** Filters for a task read. A Studio read scopes by `spaceId`; a per-contact read adds `contactId`. */
 /**
  * One task, by id, INSIDE a Space: the read behind a Plan-record write (LIVE-543), so an inbox tick

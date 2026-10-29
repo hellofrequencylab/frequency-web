@@ -34,6 +34,7 @@ import { dayKeyIn } from '@/lib/calendar/day-grid-nav'
 import { operatorHorizonWindow } from '@/lib/calendar/month-window'
 import { calendarViewCookieName } from '@/lib/calendar/admin-views'
 import { adaptCalendar } from '@/lib/calendar/planner/adapters'
+import { wallMinutes } from '@/lib/calendar/planner/now'
 import { getSpaceTeam } from '@/lib/spaces/content-data'
 import { CalendarSuite } from '@/components/calendar-suite/calendar-suite'
 import { consoleBack } from '@/lib/spaces/console-back'
@@ -157,6 +158,16 @@ export default async function SpaceCalendarConsolePage({
       return 'Local time'
     }
   })()
+  // The now line: the minute on the Space's own clock, and the zone's short name for the time grid.
+  const clockZone = space.timeZone || 'America/Los_Angeles'
+  const nowMin = wallMinutes(now, clockZone)
+  const zoneShort = (() => {
+    try {
+      return new Intl.DateTimeFormat('en-US', { timeZone: clockZone, timeZoneName: 'short' }).formatToParts(now).find((p) => p.type === 'timeZoneName')?.value ?? ''
+    } catch {
+      return ''
+    }
+  })()
   const adapted = featureLocked
     ? null
     : adaptCalendar({ ownSpaceId: space.id, events, plans, todos: canManage ? todos : [], incoming: incomingShares, sharedPlans })
@@ -204,6 +215,9 @@ export default async function SpaceCalendarConsolePage({
               newEventHref={newEventHref}
               httpsUrl={httpsUrl}
               webcalUrl={webcalUrl}
+              canEdit={canManage}
+              nowMin={nowMin}
+              zoneShort={zoneShort}
             />
           ) : null}
 

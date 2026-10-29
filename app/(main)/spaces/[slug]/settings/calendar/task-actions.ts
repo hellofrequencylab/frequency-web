@@ -10,6 +10,7 @@ import {
   buildTaskPlanningPatch,
   getTaskInPlans,
   getTaskInScope,
+  moveTaskDueInScope,
   updateTaskPlanningInScope,
   updateTaskStatusInPlans,
   updateTaskStatusInScope,
@@ -18,6 +19,7 @@ import {
 } from '@/lib/crm/tasks'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { recordPlanActivity } from '@/lib/calendar/plan-activity-store'
+import { shortDateLabel } from '@/lib/calendar/short-date'
 import { getSpacePlan, listPlansSharedWith, listSharedPlanIds } from '@/lib/calendar/plans-store'
 import { assigneeChoicesForPlan, listTasksWithShared } from '@/lib/calendar/shared-tasks'
 import { assignmentWords, type AssigneeChoice } from '@/lib/calendar/shared-tasks-core'
@@ -92,6 +94,41 @@ export async function setSpaceTaskDone(
       actorSpaceId: editor.spaceId,
       kind: 'todo_done',
       summary: done ? `Ticked off "${task.title}".` : `Put "${task.title}" back on the list.`,
+    })
+  }
+  revalidatePath(`/spaces/${slug}/settings/calendar`)
+  revalidatePath(`/spaces/${slug}/calendar`)
+  return ok()
+}
+
+/**
+ * Give a to-do a due day (or take it back to the inbox with `null`): the write behind dragging a to-do
+ * onto a day, a time, or back. The same to-do is updated, never copied. The day is stored the way every
+ * other due day on a Plan is (noon UTC, so no zone can shift it a day), the row is reached through THIS
+ * Space's id only, and a to-do on a Plan another Space shared is not this Space's to move.
+ */
+export async function moveSpaceTodo(
+  slug: string,
+  taskId: string,
+  day: string | null,
+  startMin?: number | null,
+): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this Space.')
+  if (typeof taskId !== 'string' || !UUID_RE.test(taskId)) return fail('That to-do no longer exists.')
+  if (day !== null && !/^\d{4}-\d{2}-\d{2}$/.test(day)) return fail('Pick a valid day for that to-do.')
+  if (startMin != null && (!Number.isInteger(startMin) || startMin < 0 || startMin > 1439)) return fail('Pick a valid time for that to-do.')
+  const task = await getTaskInScope(taskId, editor.spaceId)
+  if (!task) return fail('That to-do could not be moved.')
+  const moved = await moveTaskDueInScope(taskId, day === null ? null : `${day}T12:00:00.000Z`, editor.spaceId, day === null ? null : startMin)
+  if (!moved) return fail('That to-do could not be moved.')
+  if (task.planId) {
+    await recordPlanActivity({
+      planId: task.planId,
+      actorProfileId: editor.profileId,
+      actorSpaceId: editor.spaceId,
+      kind: 'field',
+      summary: day === null ? `Took "${task.title}" off the calendar.` : `Moved "${task.title}" to ${shortDateLabel(day)}.`,
     })
   }
   revalidatePath(`/spaces/${slug}/settings/calendar`)
