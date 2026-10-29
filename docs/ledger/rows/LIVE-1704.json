@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1704",
+  "title": "The Space calendar is role based: admins get the suite, visitors the public calendar, and an admin can toggle between them",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/calendar/audience.ts",
+    "ref": "Daniel, 2026-10-29: 'The calendar system should be role based. An admin sees the sort functions on their space, a visitor sees the public cal. The admin can toggle back and forth.' Placement A chosen 2026-10-29."
+  },
+  "detail": "[Superseded by LIVE-1715] A Space admin who opens the public Calendar tab is sent to the suite at the console route (the plan, year and month in the link are kept). The suite header carries a Team view / Public view control top right beside Today. Public view is /spaces/[slug]/calendar?as=public: the visitor's own calendar, with the same control above it for the admin to come back. ?view=guest still lands on the public view. Visitors and members never see the control and never load the team calendar. No new design: the control is the kit's SegmentedLinks. The public tab's old admin branch (List, Workflow, console, ?look=) is gone from that page; the suite replaces it. Test pins calendar-admin-views and space-events-gate rewritten on Daniel's phrases of 2026-10-29. Plan: /mnt/project-files/calendar-suite/toggle/. 2026-10-29, later the same day (LIVE-1715): Daniel asked that the Calendar tab stay its own page, so the redirect above is gone and the tab shows the team its own calendar with a Calendar manager button. Public view opens the tab on Guest preview. The test pins and the LIVE-380 and LIVE-1178 probes went back to the tab-keeps-its-admin-read shape on his phrases.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const ok=fs.existsSync('lib/calendar/audience.ts')&&fs.existsSync('components/calendar-suite/audience-toggle.tsx')&&fs.readFileSync('components/calendar-suite/suite-header.tsx','utf8').includes('CalendarAudienceToggle')&&fs.readFileSync('components/spaces/calendar-workspace.tsx','utf8').includes('data-calendar-manager-link');if(!ok){console.error('role based calendar missing');process.exit(1)}\"",
+    "note": "The tab no longer redirects (LIVE-1715); the suite toggle and the tab's Calendar manager button are the two doors."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

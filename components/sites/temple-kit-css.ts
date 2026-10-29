@@ -30,8 +30,8 @@ ${N} blockquote{font-family:var(--font-quote);font-style:italic;font-weight:var(
 ${N} a{color:var(--text-accent);text-decoration:none;transition:color var(--motion-fast) ${EASE},border-color var(--motion-fast) ${EASE}}
 ${N} a:hover{color:var(--tk-clay-700)}
 ${N} .hs-btn,${N} .hs-btn-primary,${N} .hs-btn-dark{font-family:var(--font-label);font-weight:var(--weight-medium);border-radius:var(--radius-control);transition:background-color var(--motion-fast) ${EASE},box-shadow var(--motion-fast) ${EASE},transform var(--motion-fast) ${EASE}}
-${N} .hs-btn-primary,${N} .hs-btn-dark{background:var(--mn-solid);color:var(--mn-on-solid);border:1px solid var(--mn-solid);box-shadow:var(--shadow-button)}
-${N} .hs-btn-primary:hover,${N} .hs-btn-dark:hover{background:var(--mn-solid-hover);border-color:var(--mn-solid-hover);color:var(--mn-on-solid);box-shadow:var(--shadow-button-hover)}
+${N} .hs-btn-primary,${N} .hs-btn-dark{background:var(--mn-solid);color:var(--kit-on-solid);border:1px solid var(--mn-solid);box-shadow:var(--shadow-button)}
+${N} .hs-btn-primary:hover,${N} .hs-btn-dark:hover{background:var(--mn-solid-hover);border-color:var(--mn-solid-hover);color:var(--kit-on-solid);box-shadow:var(--shadow-button-hover)}
 ${N} .hs-btn:active{transform:scale(var(--press-scale))}
 ${N} :focus-visible{outline:none;box-shadow:var(--ring-focus)}
 ${N} ::selection{background:var(--color-selection);color:var(--tk-umber-900)}

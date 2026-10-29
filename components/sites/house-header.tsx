@@ -18,7 +18,12 @@ import { useSiteAdmin } from './site-admin-gate'
 // 940px (house-menu.tsx), and no fade.
 
 export interface SiteMegaMenu {
-  links: { label: string; desc?: string | null; href: string }[]
+  /** `icon` is a skin's own glyph beside the door (the Free Human menu's), drawn by the server. */
+  links: { label: string; desc?: string | null; href: string; icon?: ReactNode }[]
+  /** A skin's lyric line over the doors (the Free Human menu's). */
+  lyric?: string | null
+  /** A skin's pictured tiles beside the doors (the Free Human menu's two), in place of the single feature. */
+  tiles?: { title: string; kicker?: string | null; href: string; img: string; avg?: string | null }[]
   feature?: { title: string; desc?: string | null; href: string; img?: string | null; pos?: string | null } | null
 }
 
@@ -31,6 +36,8 @@ export interface HouseHeaderLink {
   external?: boolean
   /** The page being read, so a skin can mark it (aria-current="page"). Set only by a skin that styles it. */
   current?: boolean
+  /** A skin's own glyph beside a plain link (the Free Human Calendar's), drawn by the server. */
+  icon?: ReactNode
 }
 
 export type SiteLogoMode = 'name' | 'avatar' | 'logo'
@@ -55,6 +62,8 @@ export function HouseHeader({
   tools = null,
   brandMark = null,
   menuFoot = null,
+  megaChevron = null,
+  defaultMega = null,
 }: {
   brandName: string
   homeHref: string
@@ -79,10 +88,14 @@ export function HouseHeader({
   brandMark?: ReactNode
   /** A skin's lines under the button in the phone menu (the Designer's call, email and hours). */
   menuFoot?: { label: string; href?: string }[] | null
+  /** A skin's own chevron after a menu that opens a panel, in place of the house one (the Free Human leaf curve). */
+  megaChevron?: ReactNode
+  /** The menu whose panel starts open, for a static preview or a render test; a visitor never sets it. */
+  defaultMega?: string | null
 }) {
   // SCAN-970: the admin links are the Space admin's alone; a visitor never sees them.
   const adminLinks = useSiteAdmin(adminCheck) ? adminLinksIn : null
-  const [mega, setMega] = useState<string | null>(null)
+  const [mega, setMega] = useState<string | null>(defaultMega)
   const [hidden, setHidden] = useState(false)
   const ref = useRef<HTMLElement>(null)
   // Read inside listeners, so they never go stale and never re-subscribe.
@@ -188,12 +201,15 @@ export function HouseHeader({
                     }}
                   >
                     {l.label}
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
+                    {megaChevron ?? (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    )}
                   </button>
                 ) : (
                   <a key={l.href} href={l.href} aria-current={l.current ? 'page' : undefined} onMouseEnter={closeMega} {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                    {l.icon}
                     {l.label}
                   </a>
                 ),
@@ -249,15 +265,31 @@ export function HouseHeader({
       </div>
       {open?.mega && (
         <div className="hs-mega" id="hs-mega">
-          <div className="hs-mega-panel" data-feature={open.mega.feature ? '' : undefined}>
+          <div className="hs-mega-panel" data-feature={open.mega.feature ? '' : undefined} data-tiles={open.mega.tiles?.length ? '' : undefined}>
             <div className="hs-mega-links">
+              {open.mega.lyric && <p className="hs-mega-lyric">{open.mega.lyric}</p>}
               {open.mega.links.map((m) => (
                 <a key={`${m.href}:${m.label}`} href={m.href} onClick={closeMega}>
+                  {m.icon}
                   <span className="hs-mega-label">{m.label}</span>
                   {m.desc && <span className="hs-mega-desc">{m.desc}</span>}
                 </a>
               ))}
             </div>
+            {open.mega.tiles?.length ? (
+              <div className="hs-mega-tiles">
+                {open.mega.tiles.map((t) => (
+                  <a key={`${t.href}:${t.title}`} href={t.href} onClick={closeMega} className="hs-mega-tile">
+                    <span className="hs-mega-tile-photo" style={t.avg ? { background: t.avg } : undefined}>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- the kit's own picture under /public */}
+                      <img src={t.img} alt="" loading="lazy" decoding="async" />
+                    </span>
+                    {t.kicker && <span className="hs-mega-tile-kicker">{t.kicker}</span>}
+                    <span className="hs-mega-tile-title">{t.title}</span>
+                  </a>
+                ))}
+              </div>
+            ) : null}
             {open.mega.feature && (
               <a href={open.mega.feature.href} onClick={closeMega} className="hs-mega-feature">
                 {open.mega.feature.img && (

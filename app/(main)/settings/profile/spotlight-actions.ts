@@ -23,7 +23,9 @@ import { sanitizeNodeLayout } from '@/lib/entity-blocks/node-ops'
 import { renderPathEnabled } from '@/lib/platform-flags'
 import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
 import { withMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
-import { countPlacedBlocks, growsPastCap, SPOTLIGHT_BLOCKS_MESSAGE } from '@/lib/spotlight/caps'
+import { countPlacedBlocks, growsPastCap, SPOTLIGHT_BLOCKS_MESSAGE, type SpotlightCapReached } from '@/lib/spotlight/caps'
+import { allowanceAt } from '@/lib/pricing/feature-meters'
+import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { memberWithinLeadershipAllowance } from '@/lib/pricing/member-leadership'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 
@@ -37,6 +39,25 @@ import type { EntitlementTier } from '@/lib/core/entitlement'
 // The public page's on/off visibility is gated by setSpotlightEnabled / setSpotlightPublished (kept in
 // ./actions.ts) — those now gate the GRID's public visibility.
 
+/** The typed signal behind a refused block-cap save. Undefined when the meter has no numeric cap to name. */
+async function capReachedFor(tier: EntitlementTier, used: number): Promise<SpotlightCapReached | undefined> {
+  const allowed = allowanceAt('spotlight_blocks', tier)
+  const crewAllowed = allowanceAt('spotlight_blocks', 'crew')
+  if (allowed == null || crewAllowed == null) return undefined
+  let presetCents: number[] = []
+  let suggestedCents = 0
+  let minCents = 0
+  try {
+    const { pwyw } = await loadCatalogConfig()
+    presetCents = pwyw.presetCents
+    suggestedCents = pwyw.suggestedCents
+    minCents = pwyw.minCents
+  } catch {
+    // The panel still names the cap; it points at the membership page when there are no presets to draw.
+  }
+  return { used, allowed, crewAllowed, presetCents, suggestedCents, minCents }
+}
+
 // ── Unified grid layout (ADR-508 U2b · ADR-516 Phase C) ────────────────────────────────────────
 // Save the member's GRID layout — the freeform ROWS from the in-rail Profile page builder. Owner-only and
 // SESSION-DERIVED (no target id) so a caller can only ever write their own row. The layout is SANITIZED to
@@ -44,7 +65,7 @@ import type { EntitlementTier } from '@/lib/core/entitlement'
 // columns clamped to 1-4, cells kept only for known member blocks, deduped, unsafe row ids regenerated —
 // the wire is never trusted) and stored at meta.entityGrid. This is the builder surface, so it does NOT
 // require Spotlight to be enabled (the in-app profile renders it for every member).
-export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?: string }> {
+export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?: string; capReached?: SpotlightCapReached }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
@@ -77,7 +98,11 @@ export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?
   if (nextCount > savedCount) {
     const tier = ((me as { membership_tier?: string | null }).membership_tier ?? 'free') as EntitlementTier
     const allowed = await memberWithinLeadershipAllowance('spotlight_blocks', tier, nextCount - 1)
-    if (growsPastCap(nextCount, savedCount, allowed)) return { error: SPOTLIGHT_BLOCKS_MESSAGE }
+    if (growsPastCap(nextCount, savedCount, allowed)) {
+      // The error string stays (every older caller reads it); `capReached` is what the builder draws the
+      // calm upgrade panel from (SPL-11). Built from the meter and the Crew config, so nothing is typed twice.
+      return { error: SPOTLIGHT_BLOCKS_MESSAGE, capReached: await capReachedFor(tier, savedCount) }
+    }
   }
   // 2026-09-05 (scan2 L6-09): the helper over an EMPTY base says whether `entityGrid` is set or dropped
   // (an empty layout deletes it), and ONLY that key is merged or removed server-side. The RPC checks

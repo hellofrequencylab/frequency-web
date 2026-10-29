@@ -7,6 +7,7 @@
 // page keeps the Frequency frame and wears fonts and accent only.
 import { FreeSpotlightButton } from '@/components/marketing/free-spotlight-button'
 import Link from 'next/link'
+import { createSpaceHref } from '@/lib/create-space/href'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
@@ -48,8 +49,8 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
   const editor = MEGA_THEMES.find((m) => m.id === theme)?.editor
   const kits = [...KIT_INDEX, ...PROFILE_KIT_INDEX].filter((k) => k.theme === editor)
   const name = site.label
-  // Start a Space already wearing this theme: Space creation reads ?theme= (and ?niche= for a starter kit).
-  const startHref = `/spaces/new?theme=${theme}`
+  // Start a Space already wearing this theme: the builder reads ?kit= (a kit it does not offer opens cold).
+  const startHref = createSpaceHref(theme)
   return (
     <>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
@@ -177,7 +178,7 @@ export function FrequencyThemeKit({ theme }: { theme: string }) {
                 <h3>{k.label}</h3>
                 <p>{k.description}</p>
                 <p>
-                  <Link href={`${startHref}&niche=${k.niche}`}>Start with this kit →</Link>
+                  <Link href={startHref}>Start with this kit →</Link>
                 </p>
               </div>
             ))}

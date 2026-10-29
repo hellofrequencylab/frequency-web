@@ -21,6 +21,7 @@ import { useNodeLayout } from './node-layout-store'
 import { BlockEditPanel } from './block-edit-panel'
 import { BlockPill, label, type BuilderRailData } from './profile-page-builder'
 import { capsLabel } from '@/components/ui/caps-label'
+import { SaveErrorOrCapPanel } from './spotlight-cap-panel'
 
 // THE NODE LINK LIST (E0 task 12b, ADR-1854). The one-column half of the builder on the node store: the
 // Space Spotlight's editor, `EntityPageBuilder` with `maxColumns={1}` for nodes. No rows or columns are shown;
@@ -213,11 +214,7 @@ export function NodeLinkListBuilder({
         )}
       </header>
 
-      {store.error && (
-        <p className="rounded-control bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
-          {store.error}
-        </p>
-      )}
+      <SaveErrorOrCapPanel error={store.error} capReached={store.capReached} />
 
       {placed.length === 0 ? (
         <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-meta text-muted">

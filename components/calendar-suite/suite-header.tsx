@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { IconButton, IconLink } from '@/components/ui/icon-button'
 import { SegmentedControl } from '@/components/ui/segmented-control'
+import { CalendarAudienceToggle } from './audience-toggle'
 import { addDays, mondayOnOrBefore, monthDayLabel, weekdayName } from '@/lib/calendar/planner/days'
 import { monthName } from '@/lib/calendar/planner/month'
-import { SUITE_VIEWS, SUITE_VIEW_LABEL, type SuiteView } from '@/lib/calendar/planner/suite-model'
+import { SUITE_VIEWS, SUITE_VIEW_LABEL, isPlanView, type SuiteView } from '@/lib/calendar/planner/suite-model'
 
 // THE HEADER (README 1.2, layout 1a): the month as a title that opens the jump panel, the sign line
 // under it, the paging pill, the seven-segment view control, and the two buttons on the right. On a
@@ -16,6 +17,9 @@ const MONTH_CELLS = Array.from({ length: 12 }, (_, i) => i + 1)
 
 /** The title a view reads: the month, the day, or the week. */
 function titleFor(view: SuiteView, cursor: string): string {
+  if (view === 'list') return 'All Plans'
+  if (view === 'board') return 'Plans by stage'
+  if (view === 'timeline') return 'Next nine weeks'
   if (view === 'day') return `${weekdayName(cursor)}, ${monthDayLabel(cursor)}`
   if (view === 'week') {
     const start = mondayOnOrBefore(cursor)
@@ -106,6 +110,7 @@ export function SuiteHeader({
   onPickMonth,
   onRail,
   onAsk,
+  slug,
 }: {
   view: SuiteView
   cursor: string
@@ -124,8 +129,11 @@ export function SuiteHeader({
   onPickMonth: (ym: string) => void
   onRail: () => void
   onAsk: () => void
+  /** The Space, for the Team view / Public view toggle. */
+  slug: string
 }) {
   const ym = cursor.slice(0, 7)
+  const plans = isPlanView(view)
   return (
     <header className="cal-head">
       <div className="cal-titlebox">
@@ -133,17 +141,24 @@ export function SuiteHeader({
           <FqIcon name="filter" size={16} />
         </IconButton>
         <div className="cal-titlewrap">
-          <button
-            type="button"
-            className="cal-title"
-            data-jump-trigger
-            aria-expanded={jumpOpen}
-            aria-haspopup="dialog"
-            onClick={() => onJump(!jumpOpen)}
-          >
-            <h2>{titleFor(view, cursor)}</h2>
-            <FqIcon name="chevron" size={16} className="cal-down" />
-          </button>
+          {plans ? (
+            // Every Plan, not a month: there is no month to jump to.
+            <div className="cal-title">
+              <h2>{titleFor(view, cursor)}</h2>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="cal-title"
+              data-jump-trigger
+              aria-expanded={jumpOpen}
+              aria-haspopup="dialog"
+              onClick={() => onJump(!jumpOpen)}
+            >
+              <h2>{titleFor(view, cursor)}</h2>
+              <FqIcon name="chevron" size={16} className="cal-down" />
+            </button>
+          )}
           <p className="cal-serif cal-sign">
             {sign ? (
               <>
@@ -154,7 +169,7 @@ export function SuiteHeader({
               zoneLabel
             )}
           </p>
-          {jumpOpen ? (
+          {jumpOpen && !plans ? (
             <JumpPanel
               ym={ym}
               todayYm={todayYm}
@@ -170,17 +185,22 @@ export function SuiteHeader({
           ) : null}
         </div>
       </div>
-      <div className="cal-paging" role="group" aria-label="Page through time">
-        <IconButton label="Previous" variant="plain" onClick={() => onPage(-1)}>
-          <FqIcon name="chevron" size={16} className="cal-flip" />
-        </IconButton>
-        <button type="button" className="cal-today" onClick={onToday}>
-          Today
-        </button>
-        <IconButton label="Next" variant="plain" onClick={() => onPage(1)}>
-          <FqIcon name="chevron" size={16} />
-        </IconButton>
+      <div className="cal-audience">
+        <CalendarAudienceToggle slug={slug} audience="team" />
       </div>
+      {plans ? null : (
+        <div className="cal-paging" role="group" aria-label="Page through time">
+          <IconButton label="Previous" variant="plain" onClick={() => onPage(-1)}>
+            <FqIcon name="chevron" size={16} className="cal-flip" />
+          </IconButton>
+          <button type="button" className="cal-today" onClick={onToday}>
+            Today
+          </button>
+          <IconButton label="Next" variant="plain" onClick={() => onPage(1)}>
+            <FqIcon name="chevron" size={16} />
+          </IconButton>
+        </div>
+      )}
       <div className="cal-views">
         <SegmentedControl
           label="Calendar views"

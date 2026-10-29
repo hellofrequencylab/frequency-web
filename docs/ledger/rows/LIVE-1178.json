@@ -1,0 +1,8 @@
+{
+  "id": "LIVE-1178",
+  "patch": {},
+  "append": {
+    "detail": "2026-10-29: the public Calendar tab no longer mounts the operator calendar (role based ruling, LIVE-1704). An admin is sent to the suite, whose Week and Day views are these time views for the team. The probe checks that redirect and the suite's Week view in place of the page's ?look= read."
+  },
+  "wave": "W7"
+}

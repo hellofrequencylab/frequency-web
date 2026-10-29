@@ -4,6 +4,7 @@
 import type { Metadata } from 'next'
 import { JsonLd } from '@/components/json-ld'
 import { CreateSpaceStudio } from '@/components/frequency/site/pages/create-space/create-space-studio'
+import { Closing, DayOne, FreeToOperate, Questions, SoundFamiliar } from '@/components/frequency/site/pages/create-space/create-space-sections'
 import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '@/lib/seo/frequency-pages'
 
 export const revalidate = 3600
@@ -15,6 +16,11 @@ export default function CreateASpacePage() {
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.createSpace)} />
       <CreateSpaceStudio />
+      <SoundFamiliar />
+      <DayOne />
+      <FreeToOperate />
+      <Questions />
+      <Closing />
     </>
   )
 }

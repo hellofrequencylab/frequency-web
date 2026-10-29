@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P0",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "scripts/ops/secure-frequency-backup-update4.sql",
     "ref": "Metadata-only Supabase catalog review, 2026-10-28 UTC"
   },
-  "detail": "Live catalog metadata confirmed the exact public backup table has RLS off and effective anonymous and authenticated table and column privileges, including write and truncate. No rows were accessed. An operator-only transaction is prepared for the one separately reviewed table, preserving data and checking protected role privileges; production repair remains outstanding.",
+  "detail": "Live catalog metadata confirmed the exact public backup table has RLS off and effective anonymous and authenticated table and column privileges, including write and truncate. No rows were accessed. The committed operator-only repair was applied once and verified after merge; backup data was preserved.",
   "verify": {
     "kind": "manual",
-    "checked": "2026-10-28",
-    "evidence": "OPEN: After the committed operator repair runs against the confirmed Frequency Community project, verify RLS and effective table and per-column browser privileges, operator/service access and live catalog/advisor results without reading backup rows."
+    "checked": "2026-10-29",
+    "evidence": "PR #4208 committed the repair, which was applied once and independently verified in the release ledger. On 2026-10-29 a read-only production catalog query rechecked the named Alli Rae update4 backup table: RLS enabled, no effective anon/authenticated table or column privileges, and service-role SELECT retained. No backup rows were accessed. Earlier post-repair evidence recorded preservation of operator and service privileges. This is not a database-wide security assessment."
   },
-  "wave": "W7"
+  "closed": "2026-10-29"
 }

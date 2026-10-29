@@ -53,8 +53,8 @@ interface PlanStats {
   hold: string
 }
 
-/** Progress, next date, health and hold line for one Plan. Health, first match wins: no dates, then
- *  cancelled, then overdue to-dos, then a lapsed or live hold, then on track. */
+/** Progress, next date, health and hold line for one Plan. Health, first match wins: cancelled, then no
+ *  dates, then overdue to-dos, then a lapsed or live hold, then on track. */
 export function planStats(
   plan: PlannerPlan,
   data: Pick<PlannerData, 'items' | 'tasks'>,
@@ -66,8 +66,9 @@ export function planStats(
   const done = todos.filter((t) => t.done).length
   const late = todos.filter((t) => !t.done && t.due && t.due < today).length
   let health: Health
-  if (!items.length) health = { key: 'needs-date', label: 'Needs a date', ...HEALTH_TONES.needsDate }
-  else if (plan.stage === 'cancelled') health = { key: 'cancelled', label: 'Cancelled', ...HEALTH_TONES.holding }
+  // A Plan that was called off is Cancelled even with no dates left (putting a Plan away drops them).
+  if (plan.stage === 'cancelled') health = { key: 'cancelled', label: 'Cancelled', ...HEALTH_TONES.holding }
+  else if (!items.length) health = { key: 'needs-date', label: 'Needs a date', ...HEALTH_TONES.needsDate }
   else if (late) health = { key: 'overdue', label: `${late} overdue`, ...HEALTH_TONES.overdue }
   else if (plan.stage === 'pencil') {
     health = isHoldLapsed(plan.hold, today)
@@ -98,6 +99,7 @@ interface BoardCard {
   dateCount: number
   /** "3 of 5 to-dos", or "No to-dos yet". */
   tasks: string
+  todoCount: number
   pct: number
   health: Health
   hold: string
@@ -131,6 +133,7 @@ export function buildBoard(data: PlannerData, today: string, ownSpaceId: string)
           when: s.next ? dayLabel(s.next.date) + (s.items.length > 1 ? ` · ${s.items.length} dates` : '') : 'No date yet',
           dateCount: s.items.length,
           tasks: s.todos.length ? `${s.done} of ${s.todos.length} to-dos` : 'No to-dos yet',
+          todoCount: s.todos.length,
           pct: s.pct,
           health: s.health,
           hold: s.hold,

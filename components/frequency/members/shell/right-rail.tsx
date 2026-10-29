@@ -42,6 +42,8 @@ import { InvitePanel, PagePanels, SignaturePanel, type CommunityRole } from '@/c
 import { buildGoals, plannedDays, weekPlanCount } from '@/lib/feed/frequency-rail-core'
 import { loadLocalBoard, loadPeopleToKnow, loadRailOnboarding, loadYourWeek } from '@/lib/feed/frequency-rail'
 import { launchOwnsNextSteps } from '@/lib/launch/box'
+import { launchGetStartedCounts, loadPostPublishList } from '@/lib/launch/get-started-io'
+import { LaunchGetStartedBox } from '@/components/launch/launch-get-started'
 import { getInitials } from '@/lib/utils'
 import { loadAnonPublicEvents } from '@/lib/feed/anon-feed'
 import { BETA_CTA_HREF } from '@/lib/site'
@@ -75,6 +77,9 @@ function Face({ url, name, size }: { url: string | null; name: string; size: num
 
 async function GetStartedPanel({ profileId }: { profileId: string }) {
   if (await launchOwnsNextSteps()) return null // the launch box is the list while a launch runs (VLS-11)
+  // Once the Spotlight is published the list is the launch overview's own to-do (one list, one set of numbers).
+  const published = await loadPostPublishList(profileId)
+  if (published) return <LaunchGetStartedBox sections={published} />
   const steps = await loadRailOnboarding(profileId)
   return steps ? <GetStarted steps={steps} /> : null
 }
@@ -306,6 +311,8 @@ function MicroItem({ icon, value, tip, sub }: { icon: FqIconName; value: string;
 
 async function MicroGetStarted({ profileId }: { profileId: string }) {
   if (await launchOwnsNextSteps()) return null
+  const launched = await launchGetStartedCounts(profileId)
+  if (launched) return launched.left === 0 ? null : <MicroItem icon="compass" value={`${launched.done}/${launched.total}`} tip="Get started" sub={`${launched.left} left`} />
   const steps = await loadRailOnboarding(profileId)
   if (!steps) return null
   const done = steps.filter((s) => s.done).length

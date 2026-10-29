@@ -7,6 +7,7 @@
 
 import { nextSpotlightPreferences } from '../spaces/spotlight.ts'
 import { slugify } from '../utils.ts'
+import { carriedHandle } from './carry.ts'
 
 export interface SpotlightAnswers {
   name: string
@@ -47,6 +48,14 @@ export function handleFor(name: string, attempt = 0): string {
   const base = slugify(name).slice(0, 32).replace(/-+$/g, '') || 'my-space'
   const padded = base.length < 3 ? `${base}-space` : base
   return attempt === 0 ? padded : `${padded}-${attempt + 1}`
+}
+
+/** The handle to try on `attempt`: the one the visitor claimed on /create-a-space when they brought one (first try
+ *  as typed, later tries with a short suffix), else the name's own handle. A taken handle never blocks the step. */
+export function handleCandidate(name: string, attempt: number, claimed?: string | null): string {
+  const base = carriedHandle(claimed)
+  if (!base) return handleFor(name, attempt)
+  return attempt === 0 ? base : `${base.slice(0, 36).replace(/-+$/g, '')}-${attempt + 1}`
 }
 
 /** The Spotlight's layout: heading, text, and the link when there is one. Fed to nextSpotlightPreferences, which

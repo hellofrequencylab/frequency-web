@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1897",
+  "title": "/themes/temple shows the Temple kit's email as a picture",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-temple.tsx",
+    "ref": "Daniel, 2026-10-29: go through the design and get everything working; no 'on the way' where a render exists."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/temple-theme-page-email.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (email is an on-the-way frame) and passes here."
+  },
+  "detail": "The thirteen Temple email pictures landed in #4354. The Temple page now shows the email picture in the hero switcher and in the four-surfaces row. Space stays an on-the-way frame until the Temple Space pictures land (the Space page face is #4359).",
+  "wave": "W7"
+}

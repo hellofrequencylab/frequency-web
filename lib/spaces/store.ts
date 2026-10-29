@@ -262,6 +262,16 @@ export const getSpaceBySlug = cache(async (slug: string): Promise<Space | null> 
   return mapOneSpace(data)
 })
 
+/** Whether a slug is already some Space's, ACTIVE OR NOT (slugs are globally unique, the same rule createSpace's own
+ *  check applies). True or false only; null when the read failed, so a caller never reads a failure as "free". Gives a
+ *  caller a yes or no and never the row, so it is safe behind a public availability check. */
+export async function isSpaceSlugTaken(slug: string): Promise<boolean | null> {
+  const norm = slug.trim().toLowerCase()
+  if (!norm) return null
+  const { data, error } = (await createAdminClient().from('spaces').select('id').eq('slug', norm).maybeSingle()) as { data: { id?: string } | null; error: unknown }
+  return error ? null : !!data
+}
+
 /** The ACTIVE, network-visible Space with this slug as an ANONYMOUS visitor sees it, or null. The
  *  same answer as getVisibleSpaceBySlug(slug, null), in one read, but it THROWS on a failed query
  *  instead of reading as "missing" or "private", because its caller caches the result across
@@ -458,6 +468,30 @@ export async function patchSpacePreferences(
     return data === true
   } catch (err) {
     log.warn('space_preferences_patch_threw', { spaceId, message: err instanceof Error ? err.message : 'unknown' })
+    return false
+  }
+}
+
+/** Write a Space's tagline and/or about (spaces.tagline, spaces.about) by id. Only the keys given are written, so a
+ *  caller that has nothing to say for one leaves what is stored alone. Gating is the CALLER's, as for the writers
+ *  above. Used by the launch's Review + Publish. */
+export async function patchSpaceWords(spaceId: string, words: { tagline?: string; about?: string }): Promise<boolean> {
+  const patch: Record<string, unknown> = {}
+  if (words.tagline !== undefined) patch.tagline = words.tagline
+  if (words.about !== undefined) patch.about = words.about
+  if (!spaceId || Object.keys(patch).length === 0) return Boolean(spaceId)
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: { message: string } | null }> } }
+    }
+    const { error } = await db.from('spaces').update(patch).eq('id', spaceId)
+    if (error) {
+      log.warn('space_words_write_failed', { spaceId, message: error.message })
+      return false
+    }
+    return true
+  } catch (err) {
+    log.warn('space_words_write_threw', { spaceId, message: err instanceof Error ? err.message : 'unknown' })
     return false
   }
 }

@@ -39,7 +39,12 @@ export function applyKit(draft: WebsiteSnapshot, kit: SiteKit, mode: KitApplyMod
     next = { ...structuredClone(draft), theme: kit.theme }
   } else if (mode === 'replace') {
     const pages = kit.pages.map((p) => { added.push(p.slug); return kitPageDoc(p, p.slug, defaults) })
-    next = { ...structuredClone(draft), theme: kit.theme, pages, ...(kit.chrome ? { chrome: { ...kit.chrome } } : {}) }
+    const ownAccent = draft.brand?.accent != null
+    next = {
+      ...structuredClone(draft), theme: kit.theme, pages,
+      ...(kit.chrome ? { chrome: { ...kit.chrome } } : {}),
+      ...(kit.accent && !ownAccent ? { brand: { ...draft.brand, accent: kit.accent } } : {}),
+    }
   } else {
     const taken = new Set(draft.pages.map((p) => p.slug))
     const pages = [...structuredClone(draft.pages)]

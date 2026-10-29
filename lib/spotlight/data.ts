@@ -21,6 +21,8 @@ import { getTopFriendsForOwner, type TopFriend } from './top-friends'
 import { getGuestbookForOwner, type GuestbookEntry } from './guestbook'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
+import { getMemberPrograms } from './programs'
+import { programsOptInFromGrid, type SpotlightPrograms } from './programs.shared'
 
 // Server data for the PUBLIC Spotlight page. Anonymous visitors get no RLS, so this
 // reads through the admin client and is fail-closed: it returns null unless the page
@@ -38,6 +40,11 @@ interface SpotlightHostedEvent {
 export interface SpotlightData {
   profile: SpotlightRow
   hostedEvents: SpotlightHostedEvent[]
+  /** True when the member can receive tips right now (payouts live and their account ready). A boolean
+   *  only, never a Stripe id. Computed for the PUBLIC page; the in-app profile has its own Tip button. */
+  canTip: boolean
+  /** The public Circles, Journeys and Spaces the member opted to show (SPL-04). Empty unless a switch is on. */
+  programs: SpotlightPrograms
   /** The member's validated block layout (empty when they haven't customized). */
   layout: SpotlightLayout
   /** The validated optional background image. */
@@ -48,6 +55,8 @@ export interface SpotlightData {
   theme: SpotlightTheme
   /** Lifetime Zaps earned (one SQL aggregate) — a gamification stat the member can display. */
   totalZaps: number
+  /** Count-only aggregates for the "What I give back" block (no rows, no identities). */
+  contributionCounts: { eventsHosted: number; journeysFinished: number }
   /** The member's ordered Top Friends (the "Top 8"), resolved server-side from the
    *  spotlight_top_friends table joined to each friend's public profile. Empty when none. */
   topFriends: TopFriend[]
@@ -58,6 +67,20 @@ export interface SpotlightData {
    *  absent / malformed so the module render falls back to the fresh member default. DELIBERATELY
    *  separate from the live Puck nodes (meta.spotlight.*): reading it never affects the Puck render. */
   grid: EntityLayout | null
+}
+
+/** Can this member receive a tip right now? The same rule as the in-app profile's `canTipRecipient`
+ *  (payouts live + recipient payouts-ready). Reads only the two readiness booleans through
+ *  getConnectStatus and returns a boolean. FAIL-CLOSED: any error reads as "no". */
+export async function readCanTip(profileId: string): Promise<boolean> {
+  try {
+    const { payoutsLive, getConnectStatus } = await import('@/lib/billing/connect')
+    if (!(await payoutsLive())) return false
+    return (await getConnectStatus(profileId)).ready === true
+  } catch (e) {
+    console.error('[spotlight] canTip read failed; hiding the Tip jar', e instanceof Error ? e.message : e)
+    return false
+  }
 }
 
 /**
@@ -164,27 +187,60 @@ async function loadMemberSpotlight(
   // reactions, joins, etc., so the stat never appeared.)
   const totalZaps = Number(g.lifetime_zaps ?? 0)
 
-  // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel
-  // (both are per-owner reads joined to public profile fields).
-  const [topFriends, guestbook] = await Promise.all([
-    getTopFriendsForOwner(g.id),
-    getGuestbookForOwner(g.id),
-  ])
-
   // The member's saved unified grid layout (U3 module render), read fail-safe off the SAME meta blob the
   // publish/layout gate already loaded — no extra query. Never returned raw; only the parsed layout.
   const grid = readMemberGridLayout(g.meta)
 
+  // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel (both are per-owner
+  // reads joined to public profile fields). The Programs block (SPL-04) reads only what the member switched
+  // on in that block, so it costs nothing for everyone else; it fails closed to empty lists.
+  const [topFriends, guestbook, canTip, programs, contributionCounts] = await Promise.all([
+    getTopFriendsForOwner(g.id),
+    getGuestbookForOwner(g.id),
+    // Public page only: the in-app profile already carries the real Tip button.
+    requirePublished ? readCanTip(g.id) : Promise.resolve(false),
+    getMemberPrograms(g.id, programsOptInFromGrid(grid)),
+    getContributionCounts(g.id),
+  ])
+
   return {
     profile: row as unknown as SpotlightRow,
     hostedEvents: (events ?? []) as SpotlightHostedEvent[],
+    canTip,
+    programs,
     layout,
     background,
     stickers,
     theme,
     totalZaps,
+    contributionCounts,
     topFriends,
     guestbook,
     grid,
+  }
+}
+
+/** The "What I give back" aggregates: two HEAD counts (no rows come back, nothing identifies anyone). Events
+ *  hosted counts the member's public, published, not-cancelled events of all time (the same filter the
+ *  upcoming list uses); Journeys finished counts their stamped-complete enrollments. FAIL CLOSED to 0. */
+async function getContributionCounts(profileId: string): Promise<{ eventsHosted: number; journeysFinished: number }> {
+  try {
+    const admin = createAdminClient()
+    const [events, journeys] = await Promise.all([
+      admin
+        .from('events')
+        .select('id', { count: 'exact', head: true })
+        .eq('host_id', profileId)
+        .eq('status', 'published')
+        .eq('is_cancelled', false),
+      admin
+        .from('journey_enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', profileId)
+        .not('completed_at', 'is', null),
+    ])
+    return { eventsHosted: events.count ?? 0, journeysFinished: journeys.count ?? 0 }
+  } catch {
+    return { eventsHosted: 0, journeysFinished: 0 }
   }
 }

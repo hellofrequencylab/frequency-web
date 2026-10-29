@@ -1,0 +1,162 @@
+{
+ "body-floating": {
+  "w": 1179,
+  "h": 798,
+  "avg": "#5c6461"
+ },
+ "body-flower-back": {
+  "w": 1290,
+  "h": 1472,
+  "avg": "#5c4031"
+ },
+ "body-morning-bed": {
+  "w": 1179,
+  "h": 1557,
+  "avg": "#c1b6b0"
+ },
+ "body-swimmer": {
+  "w": 1179,
+  "h": 1262,
+  "avg": "#697f88"
+ },
+ "craft-beaded-deer": {
+  "w": 1179,
+  "h": 1278,
+  "avg": "#2f3e50"
+ },
+ "craft-cave-nest": {
+  "w": 1290,
+  "h": 1599,
+  "avg": "#6f6155"
+ },
+ "craft-folk-circle": {
+  "w": 1179,
+  "h": 1060,
+  "avg": "#757b54"
+ },
+ "craft-mosaic-sun": {
+  "w": 1400,
+  "h": 1367,
+  "avg": "#76786f"
+ },
+ "craft-yarn-bodies": {
+  "w": 826,
+  "h": 538,
+  "avg": "#c1b0a8"
+ },
+ "founder-audrey": {
+  "w": 928,
+  "h": 1232,
+  "avg": "#727360"
+ },
+ "heritage-a-virgin": {
+  "w": 1284,
+  "h": 1550,
+  "avg": "#886751"
+ },
+ "heritage-carved-madonna": {
+  "w": 1076,
+  "h": 1600,
+  "avg": "#a66f3e"
+ },
+ "heritage-madonna-nursing": {
+  "w": 1251,
+  "h": 825,
+  "avg": "#88755a"
+ },
+ "heritage-magdalene": {
+  "w": 1284,
+  "h": 1466,
+  "avg": "#423931"
+ },
+ "heritage-maiden-sword": {
+  "w": 1054,
+  "h": 1200,
+  "avg": "#6e372a"
+ },
+ "heritage-mosaic-magdalena": {
+  "w": 1284,
+  "h": 1566,
+  "avg": "#786658"
+ },
+ "light-floating-candles": {
+  "w": 1284,
+  "h": 702,
+  "avg": "#302217"
+ },
+ "light-honey-dipper": {
+  "w": 988,
+  "h": 1455,
+  "avg": "#c5984b"
+ },
+ "light-honey-spoon": {
+  "w": 959,
+  "h": 1414,
+  "avg": "#b19b6d"
+ },
+ "light-lanterns": {
+  "w": 1290,
+  "h": 837,
+  "avg": "#713316"
+ },
+ "light-sun": {
+  "w": 1290,
+  "h": 1407,
+  "avg": "#a35201"
+ },
+ "myth-antler-moon": {
+  "w": 1290,
+  "h": 1264,
+  "avg": "#aa8d68"
+ },
+ "myth-bronze-tara": {
+  "w": 856,
+  "h": 1095,
+  "avg": "#b4a78f"
+ },
+ "myth-golden-egg": {
+  "w": 1290,
+  "h": 1268,
+  "avg": "#382519"
+ },
+ "myth-guanyin": {
+  "w": 1094,
+  "h": 1586,
+  "avg": "#82897a"
+ },
+ "myth-serpents": {
+  "w": 1107,
+  "h": 1520,
+  "avg": "#302923"
+ },
+ "place-arched-windows": {
+  "w": 1179,
+  "h": 781,
+  "avg": "#80906e"
+ },
+ "place-daisies": {
+  "w": 1200,
+  "h": 1600,
+  "avg": "#50693a"
+ },
+ "place-fountain-dusk": {
+  "w": 999,
+  "h": 1375,
+  "avg": "#8b7a66"
+ },
+ "place-fruit-branch": {
+  "w": 2400,
+  "h": 1624,
+  "avg": "#a5a8a1"
+ },
+ "place-pastel-sky": {
+  "w": 2400,
+  "h": 1800,
+  "avg": "#8e8c85"
+ },
+ "place-sea-sunset": {
+  "w": 2400,
+  "h": 1800,
+  "avg": "#8f6f53"
+ }
+}
