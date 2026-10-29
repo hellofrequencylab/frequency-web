@@ -39,7 +39,7 @@ export interface TodoPlace {
 export type WriteCall =
   | { type: 'entry'; entryId: string; input: EntryInput }
   | { type: 'occurrence'; entryId: string; day: string; input: EntryInput }
-  | { type: 'todo'; id: string; due: string | null }
+  | { type: 'todo'; id: string; due: string | null; startMin?: number | null }
 
 export interface MovePlan {
   /** Items whose place changes, each with the place it had and the place it takes. */
@@ -223,18 +223,17 @@ export function planTodoDrop(task: SuiteTask, rawTarget: DropTarget): DropOutcom
   const update = target.zone === 'time' ? dropTodoOnTime(task, target.day, target.startMin) : dropTodoOnDay(task, target.day)
   const after: TodoPlace = { due: update.patch.due, startMin: update.patch.startMin ?? task.startMin ?? null }
   if (before.due === after.due && before.startMin === after.startMin) return { kind: 'noop' }
-  // The block's time is not stored yet (crm_tasks has no start column on this branch), so only the
-  // day is written, and the sentence says so rather than promise a time it will not keep.
+  // The block's time rides in crm_tasks.start_minute; the DAY stays in due_at, so the same row updates.
   const timed = target.zone === 'time'
   return {
     kind: 'ready',
     plan: {
       items: [],
       todo: { id: task.id, before, after },
-      write: { type: 'todo', id: task.id, due: update.patch.due },
-      undo: { type: 'todo', id: task.id, due: task.due },
+      write: { type: 'todo', id: task.id, due: update.patch.due, ...(timed ? { startMin: after.startMin } : {}) },
+      undo: { type: 'todo', id: task.id, due: task.due, ...(timed ? { startMin: task.startMin ?? null } : {}) },
       line: timed
-        ? `${title} is due ${dayLabel(update.patch.due)}. The ${clockLabel(target.startMin)} block is not saved yet.`
+        ? `${title} is due ${dayLabel(update.patch.due)} at ${clockLabel(target.startMin)}.`
         : `${title} is due ${dayLabel(update.patch.due)}.`,
     },
   }
@@ -270,7 +269,7 @@ export function planAfter(plan: MovePlan): { items: Record<string, ItemPlace>; t
 export interface WriteDeps {
   saveEntry: (entryId: string, input: EntryInput) => Promise<{ error: string } | { data?: unknown }>
   saveOccurrence: (entryId: string, day: string, input: EntryInput) => Promise<{ error: string } | { data?: unknown }>
-  moveTodo: (id: string, due: string | null) => Promise<{ error: string } | { data?: unknown }>
+  moveTodo: (id: string, due: string | null, startMin?: number | null) => Promise<{ error: string } | { data?: unknown }>
 }
 
 /** Runs one write. Resolves to the error sentence, or null when it saved. A thrown call is an error too. */
@@ -281,7 +280,7 @@ export async function runWrite(call: WriteCall, deps: WriteDeps): Promise<string
         ? await deps.saveEntry(call.entryId, call.input)
         : call.type === 'occurrence'
           ? await deps.saveOccurrence(call.entryId, call.day, call.input)
-          : await deps.moveTodo(call.id, call.due)
+          : await deps.moveTodo(call.id, call.due, call.startMin)
     return 'error' in res ? res.error : null
   } catch {
     return 'Something went wrong. Try again.'

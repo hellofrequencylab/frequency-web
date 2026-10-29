@@ -100,7 +100,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       props.actions ?? {
         saveEntry: (entryId, input) => saveCalendarEntry(slug, entryId, input),
         saveOccurrence: (entryId, day, input) => saveCalendarEntryOccurrence(slug, entryId, day, input),
-        moveTodo: (id, due) => moveSpaceTodo(slug, id, due),
+        moveTodo: (id, due, startMin) => moveSpaceTodo(slug, id, due, startMin),
       },
     [props.actions, slug],
   )

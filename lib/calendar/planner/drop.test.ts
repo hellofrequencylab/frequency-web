@@ -169,11 +169,12 @@ describe('dropping an inbox to-do', () => {
     expect(plan.undo).toEqual({ type: 'todo', id: 't1', due: null })
     expect(plan.line).toBe('Order mats is due Thu, Oct 22.')
   })
-  it('on a time keeps the block in the patch and says only the day is saved', () => {
+  it('on a time saves the day and the start minute together', () => {
     const plan = ready(planTodoDrop(todo, { zone: 'time', day: '2026-10-22', startMin: 13 * 60 + 5 }))
     expect(plan.todo?.after).toEqual({ due: '2026-10-22', startMin: 780 })
-    expect(plan.write).toEqual({ type: 'todo', id: 't1', due: '2026-10-22' })
-    expect(plan.line).toContain('block is not saved yet')
+    expect(plan.write).toEqual({ type: 'todo', id: 't1', due: '2026-10-22', startMin: 780 })
+    expect(plan.undo).toEqual({ type: 'todo', id: 't1', due: null, startMin: null })
+    expect(plan.line).toBe('Order mats is due Thu, Oct 22 at 1 PM.')
   })
   it('leaves a to-do from another Space alone', () => {
     expect(planTodoDrop({ ...todo, sharedFrom: 'Swami' }, { zone: 'day', day: '2026-10-22' }).kind).toBe('refused')
@@ -211,8 +212,8 @@ describe('Undo is one write that restores the snapshot', () => {
     await runWrite(plan.write, d)
     await runWrite(plan.undo!, d)
     expect(d.calls).toEqual([
-      ['todo', 't1', '2026-10-25'],
-      ['todo', 't1', '2026-10-20'],
+      ['todo', 't1', '2026-10-25', undefined],
+      ['todo', 't1', '2026-10-20', undefined],
     ])
     const back = overlayTasks(overlayTasks([t], planAfter(plan).todo), planBefore(plan).todo)
     expect(back[0]).toMatchObject({ due: '2026-10-20', startMin: null })

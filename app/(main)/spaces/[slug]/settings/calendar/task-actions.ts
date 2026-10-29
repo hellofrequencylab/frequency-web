@@ -107,14 +107,20 @@ export async function setSpaceTaskDone(
  * other due day on a Plan is (noon UTC, so no zone can shift it a day), the row is reached through THIS
  * Space's id only, and a to-do on a Plan another Space shared is not this Space's to move.
  */
-export async function moveSpaceTodo(slug: string, taskId: string, day: string | null): Promise<ActionResult<void>> {
+export async function moveSpaceTodo(
+  slug: string,
+  taskId: string,
+  day: string | null,
+  startMin?: number | null,
+): Promise<ActionResult<void>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this Space.')
   if (typeof taskId !== 'string' || !UUID_RE.test(taskId)) return fail('That to-do no longer exists.')
   if (day !== null && !/^\d{4}-\d{2}-\d{2}$/.test(day)) return fail('Pick a valid day for that to-do.')
+  if (startMin != null && (!Number.isInteger(startMin) || startMin < 0 || startMin > 1439)) return fail('Pick a valid time for that to-do.')
   const task = await getTaskInScope(taskId, editor.spaceId)
   if (!task) return fail('That to-do could not be moved.')
-  const moved = await moveTaskDueInScope(taskId, day === null ? null : `${day}T12:00:00.000Z`, editor.spaceId)
+  const moved = await moveTaskDueInScope(taskId, day === null ? null : `${day}T12:00:00.000Z`, editor.spaceId, day === null ? null : startMin)
   if (!moved) return fail('That to-do could not be moved.')
   if (task.planId) {
     await recordPlanActivity({
