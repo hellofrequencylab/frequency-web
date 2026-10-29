@@ -4,7 +4,7 @@
 
 import type { SpotlightAnswers } from './spotlight-step'
 
-export interface KnownSpace {
+interface KnownSpace {
   name: string
   tagline: string | null
   about: string | null
