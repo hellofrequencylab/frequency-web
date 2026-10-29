@@ -21,6 +21,8 @@ export interface SuiteContext {
   ownSpaceId: string
   ownName: string
   today: string
+  /** False for someone who can read the calendar but not change it: Details shows no controls. */
+  canEdit?: boolean
   spaceNames: Readonly<Record<string, string>>
   /** Item ids that overlap unavailable time. */
   clashes: ReadonlySet<string>

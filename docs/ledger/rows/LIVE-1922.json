@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1922",
+  "title": "A Business Space's Spotlight wears its Mega Theme ground, scoped to the Spotlight alone (Spotlight split, SPL-12)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/theme/surface.ts",
+    "ref": "Owner picks 2026-10-28: the Space theme on Spotlight is for Business and up"
+  },
+  "detail": "spotlightSurface(preferences, plan) hands the Space's Mega Theme surface to SpotlightAccent's AccentScope when the plan clears the payments floor (Business and up). The surface is scoped CSS variables on the Spotlight node only: the public page and the console preview box are themed, the console around the preview is not (theme fence). Below Business the Spotlight keeps the app surfaces and the Space accent, so the theme is something a Space plays with and pays for at publish.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');if(!fs.readFileSync('lib/theme/surface.ts','utf8').includes('spotlightSurface')||!fs.readFileSync('components/spotlight/space-spotlight.tsx','utf8').includes('spotlightSurface'))process.exit(1)\"",
+    "note": "Fails on main (no spotlightSurface); passes here."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

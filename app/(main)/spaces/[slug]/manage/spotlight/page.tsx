@@ -29,6 +29,7 @@ import type { UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { siteSubdomainHost } from '@/lib/sites/host'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { DEFAULT_WWW_CNAME } from '@/lib/sites/vercel-domains'
+import { markSpotlightPreview } from '@/lib/spaces/spotlight-site'
 import { readSpotlightClicks } from '@/lib/spaces/spotlight-clicks'
 import { blockDataList } from '@/lib/entity-blocks/block-data-sources'
 import { consoleBack } from '@/lib/spaces/console-back'
@@ -54,6 +55,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
   const { canManage, staffViewing } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage && !staffViewing) notFound()
 
+  markSpotlightPreview()
   const spotlight = readSpaceSpotlight(space.preferences)
   // render_path_spotlight (ADR-1855): switched on, the editor and its preview run on nodes. Off, or on any
   // read error (fail-closed), the type-keyed path below is untouched.

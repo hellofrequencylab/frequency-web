@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
-import { CalendarClock, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { moveSpaceTodo } from '@/app/(main)/spaces/[slug]/settings/calendar/task-actions'
+import { transitionPlanStage } from '@/app/(main)/spaces/[slug]/settings/calendar/plan-actions'
 import { saveCalendarEntry, saveCalendarEntryOccurrence } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
-import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { AstroMarker } from '@/lib/calendar/astro-markers'
 import type { DayNote } from '@/lib/calendar/day-notes'
@@ -17,9 +17,8 @@ import { needsYou } from '@/lib/calendar/planner/needs-you'
 import { shiftMonth, sunSignOn } from '@/lib/calendar/planner/month'
 import { nowMinutes } from '@/lib/calendar/planner/now'
 import {
-  READY_VIEWS,
-  SUITE_VIEW_LABEL,
   countByMonth,
+  isPlanView,
   resolveSuiteView,
   suiteKeyAction,
   viewCookieValue,
@@ -27,12 +26,16 @@ import {
 } from '@/lib/calendar/planner/suite-model'
 import type { PlannerData, PlannerLayer } from '@/lib/calendar/planner/types'
 import { SuiteAgenda } from './suite-agenda'
+import { SuiteBoard } from './suite-board'
 import { SuiteDetails } from './suite-details'
+import { bindDetailsActions, type DetailsActions } from './suite-details-actions'
 import { SuiteHeader } from './suite-header'
+import { SuiteList } from './suite-list'
 import { SuiteMonth, type MonthScrollRequest } from './suite-month'
 import { SuiteNeedsYou } from './suite-needs-you'
 import { SuiteRail } from './suite-rail'
 import { SuiteSheet } from './suite-sheet'
+import { SuiteTimeline } from './suite-timeline'
 import type { SuiteContext, SuiteSelection, SuiteTeamMember } from './suite-types'
 import { SuiteWeek } from './suite-week'
 import { useSuiteMoves, type SuiteActions } from './use-suite-moves'
@@ -41,7 +44,8 @@ import { useSuiteMoves, type SuiteActions } from './use-suite-moves'
 // rail, the header, the Needs-you row, the view, and the Details panel. This part owns what is on
 // screen (the view, the day the calendar is on, the layers switched off, the one thing selected) and
 // the keys that move it. The records come in already adapted (lib/calendar/planner/adapters.ts), so
-// nothing here knows what a row of the database looks like, and nothing here writes.
+// nothing here knows what a row of the database looks like. Writes are the parts' own: a drop through
+// use-suite-moves.tsx, an edit through the Details panel (suite-details.tsx).
 
 /** Under this width the Agenda opens first: a month's cells are too narrow to read there. */
 const NARROW_QUERY = '(max-width: 719px)'
@@ -88,6 +92,8 @@ export interface CalendarSuiteProps {
   frozenClock?: boolean
   /** The writes a drop makes. Absent means the calendar's own server actions; a test passes stand-ins. */
   actions?: SuiteActions
+  /** The writes the Details panel makes. Absent means the calendar's own server actions. */
+  detailsActions?: DetailsActions
 }
 
 type Sheet = 'pencil' | 'ask' | null
@@ -101,11 +107,13 @@ export function CalendarSuite(props: CalendarSuiteProps) {
         saveEntry: (entryId, input) => saveCalendarEntry(slug, entryId, input),
         saveOccurrence: (entryId, day, input) => saveCalendarEntryOccurrence(slug, entryId, day, input),
         moveTodo: (id, due, startMin) => moveSpaceTodo(slug, id, due, startMin),
+        setStage: (planId, stage) => transitionPlanStage(slug, planId, stage),
       },
     [props.actions, slug],
   )
+  const detailsActions = useMemo<DetailsActions>(() => props.detailsActions ?? bindDetailsActions(slug), [props.detailsActions, slug])
   // A drop is shown at once and written through the calendar's own actions (use-suite-moves.tsx).
-  const moves = useSuiteMoves({ base: props.data, actions, canEdit })
+  const moves = useSuiteMoves({ base: props.data, actions, canEdit, ownSpaceId: spaceId })
   const data = moves.data
   const dnd = moves.dnd
   // The now line: the page's minute carried forward by the browser's own clock, unless frozen.
@@ -141,6 +149,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       ownSpaceId: spaceId,
       ownName: brandName,
       today: todayKey,
+      canEdit,
       spaceNames: data.spaceNames,
       clashes: findClashes(data.items),
       teamById: new Map(team.map((m) => [m.id, m])),
@@ -148,7 +157,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       itemById: new Map(data.items.map((i) => [i.id, i])),
       taskById: new Map(data.tasks.map((t) => [t.id, t])),
     }),
-    [spaceId, brandName, todayKey, data, team],
+    [spaceId, brandName, todayKey, canEdit, data, team],
   )
   const needs = useMemo(
     () => needsYou({ items: data.items, tasks: data.tasks, plans: data.plans }, todayKey, spaceId, data.spaceNames),
@@ -185,6 +194,8 @@ export function CalendarSuite(props: CalendarSuiteProps) {
 
   const page = useCallback(
     (delta: -1 | 1) => {
+      // List, Kanban and Timeline hold every Plan, not a stretch of time: there is nothing to page.
+      if (isPlanView(view)) return
       if (view === 'month') goToMonth(shiftMonth(activeYm, delta))
       else if (view === 'day') setCursor((c) => addDays(c, delta))
       else if (view === 'week') setCursor((c) => addDays(c, 7 * delta))
@@ -375,26 +386,28 @@ export function CalendarSuite(props: CalendarSuiteProps) {
                   : undefined
               }
             />
+          ) : view === 'list' ? (
+            <SuiteList data={plannerData} ctx={ctx} sel={sel} onSelect={(ref) => select(ref)} />
+          ) : view === 'board' ? (
+            <SuiteBoard data={plannerData} ctx={ctx} sel={sel} dnd={dnd} onSelect={(ref) => select(ref)} onRestore={moves.restore} />
           ) : (
-            <div className="cal-soon">
-              <EmptyState
-                variant="first-use"
-                icon={CalendarClock}
-                title={`${SUITE_VIEW_LABEL[view]} is coming soon`}
-                description={`${READY_VIEWS.slice(0, -1).map((v) => SUITE_VIEW_LABEL[v]).join(', ')} and ${SUITE_VIEW_LABEL[READY_VIEWS[READY_VIEWS.length - 1]]} are ready now.`}
-                action={
-                  <Button variant="primarySoft" size="sm" onClick={() => chooseView('week')}>
-                    Open Week
-                  </Button>
-                }
-              />
-            </div>
+            <SuiteTimeline data={plannerData} ctx={ctx} sel={sel} onSelect={(ref) => select(ref)} />
           )}
         </div>
       </div>
 
       <aside className="cal-details fq-panel" aria-label="Details" hidden={!sel}>
-        {sel ? <SuiteDetails sel={sel} data={plannerData} ctx={ctx} onSelect={select} onClose={() => setSel(null)} /> : null}
+        {sel ? (
+          <SuiteDetails
+            sel={sel}
+            data={plannerData}
+            ctx={ctx}
+            actions={detailsActions}
+            say={moves.say}
+            onSelect={select}
+            onClose={() => setSel(null)}
+          />
+        ) : null}
       </aside>
 
       <div className="cal-scrim" onClick={() => (railOpen ? setRailOpen(false) : setSel(null))} aria-hidden />

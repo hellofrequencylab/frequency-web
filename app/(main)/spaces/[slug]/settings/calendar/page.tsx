@@ -23,7 +23,7 @@ import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
 import { CalendarSyncSoon } from './calendar-sync-soon'
 import { SpaceEventsManager, type ManagedEvent } from './space-events-manager'
-import { listSpacePlans, listPlaybooks, listPlanPencilEntryIds, listIncomingPlanShareRows, listPlansSharedWith } from '@/lib/calendar/plans-store'
+import { listSpacePlans, listRecentlyCancelledPlans, listPlaybooks, listPlanPencilEntryIds, listIncomingPlanShareRows, listPlansSharedWith } from '@/lib/calendar/plans-store'
 import { resolveShareSubjects } from '@/lib/calendar/plan-share-subjects'
 import { incomingFromRow, type ShareSubject, type SharedPlanView } from '@/lib/calendar/plan-shares'
 import { SharedPlansPanel } from './shared-plans-panel'
@@ -99,6 +99,8 @@ export default async function SpaceCalendarConsolePage({
       : []
 
   const plans = featureLocked || !canManage ? [] : await listSpacePlans(space.id)
+  // Plans called off in the last 90 days, for the Kanban's Cancelled column; every other view leaves them out.
+  const cancelledPlans = featureLocked || !canManage ? [] : await listRecentlyCancelledPlans(space.id, now)
   const playbooks = featureLocked || !canManage ? [] : await listPlaybooks(space.id)
   // Which date each Plan opens its Production from (PROG-CAL3). Read here rather than taken from
   // the month the calendar happens to be showing: a Plan's date is usually in another month, and
@@ -170,7 +172,7 @@ export default async function SpaceCalendarConsolePage({
   })()
   const adapted = featureLocked
     ? null
-    : adaptCalendar({ ownSpaceId: space.id, events, plans, todos: canManage ? todos : [], incoming: incomingShares, sharedPlans })
+    : adaptCalendar({ ownSpaceId: space.id, events, plans: [...plans, ...cancelledPlans], todos: canManage ? todos : [], incoming: incomingShares, sharedPlans })
   const team = featureLocked ? [] : await getSpaceTeam(space.id)
   const teamForSuite = team.map((m) => ({ id: m.profileId, name: m.name, avatarUrl: m.avatarUrl }))
 
