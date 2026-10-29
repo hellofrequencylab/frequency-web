@@ -106,8 +106,8 @@ describe('Network Theme Kit profile kits', () => {
     ]
     for (const s of NETWORK_KIT_PROFILE_KIT_INDEX) {
       const kit = (await loadKit(s.id))!
-      // The numbers a block takes as settings (how many to show) and the photo's crop are not words.
-      const words = JSON.stringify(kit.pages).replace(/"count":\d+|"pos":"[^"]*"|"\/sites\/network-kit\/photos\/[^"]+"/g, '""')
+      // The numbers a block takes as settings (how many to show), the photo's crop and the {{token|fallback}} fields are not words.
+      const words = JSON.stringify(kit.pages).replace(/"count":\d+|"pos":"[^"]*"|\{\{[^}]*\}\}|"\/sites\/network-kit\/photos\/[^"]+"/g, '""')
       for (const re of banned) {
         const hit = words.match(new RegExp(`.{0,24}${re.source}.{0,24}`, 'i'))?.[0] ?? null
         expect(hit, `${s.id} ${re}`).toBeNull()

@@ -43,7 +43,7 @@ it('announces the count, lists the stages and steps, and has no dismiss control'
   expect(host.textContent).toContain('Next up: Website')
   expect(host.querySelector('.ap-launch-row.skipped small')?.textContent).toBe('Skipped')
   expect(host.textContent).not.toMatch(/dismiss|close|hide/i)
-  expect(host.querySelector('a.ap-launch-go')?.getAttribute('href')).toBe('/launch/resume')
+  expect(host.querySelector('a.ap-launch-go')?.getAttribute('href')).toBe('/launch')
 })
 
 it('stopping takes the button, then the typed word; one click never ends it', async () => {

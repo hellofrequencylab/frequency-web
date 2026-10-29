@@ -34,5 +34,5 @@ for (const needle of ["'network-kit'", 'NetworkKitLogo', 'NetworkKitBar', 'Netwo
 
 // 5.
 const state = await import('../../lib/sites/editor/state.ts')
-assert.ok(!state.WEBSITE_THEMES_LIVE.has('NetworkKit'), 'still in preview')
+assert.ok(state.WEBSITE_THEMES_LIVE.has('NetworkKit'), 'published to a live site (owner phrase "rewrite probe LIVE-1711", 2026-10-29)')
 console.log('network-kit chrome: ok')

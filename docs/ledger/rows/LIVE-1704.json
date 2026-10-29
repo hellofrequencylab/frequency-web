@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1704",
+  "title": "The Space calendar is role based: admins get the suite, visitors the public calendar, and an admin can toggle between them",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/calendar/audience.ts",
+    "ref": "Daniel, 2026-10-29: 'The calendar system should be role based. An admin sees the sort functions on their space, a visitor sees the public cal. The admin can toggle back and forth.' Placement A chosen 2026-10-29."
+  },
+  "detail": "A Space admin who opens the public Calendar tab is sent to the suite at the console route (the plan, year and month in the link are kept). The suite header carries a Team view / Public view control top right beside Today. Public view is /spaces/[slug]/calendar?as=public: the visitor's own calendar, with the same control above it for the admin to come back. ?view=guest still lands on the public view. Visitors and members never see the control and never load the team calendar. No new design: the control is the kit's SegmentedLinks. The public tab's old admin branch (List, Workflow, console, ?look=) is gone from that page; the suite replaces it. Test pins calendar-admin-views and space-events-gate rewritten on Daniel's phrases of 2026-10-29. Plan: /mnt/project-files/calendar-suite/toggle/.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('app/(main)/spaces/[slug]/(profile)/calendar/page.tsx','utf8');const ok=fs.existsSync('lib/calendar/audience.ts')&&fs.existsSync('components/calendar-suite/audience-toggle.tsx')&&p.includes('redirect(teamCalendarRedirect(')&&!p.includes('loadAdminCalendar(')&&fs.readFileSync('components/calendar-suite/suite-header.tsx','utf8').includes('CalendarAudienceToggle');if(!ok){console.error('role based calendar missing');process.exit(1)}\"",
+    "note": "Fails on main (the public tab still loads the admin calendar and the suite has no toggle); passes here."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}
