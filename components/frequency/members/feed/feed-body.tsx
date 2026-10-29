@@ -18,6 +18,8 @@ import { CreateButton, FeedComposer, GetStarted, NeedsYou, CaughtUpButton, type 
 import { ExploreSection } from './explore'
 import { FeedStream, type FeedSort, type JourneyRun } from './posts'
 import { FrequencyPhonePanels } from '../shell/right-rail'
+import { loadPostPublishList } from '@/lib/launch/get-started-io'
+import { LaunchGetStartedBox } from '@/components/launch/launch-get-started'
 import { loadGameStats } from '@/components/sidebar/right-sidebar'
 
 // THE FREQUENCY MEMBER FEED (design_handoff/frequency/templates/members/README.md, the centre
@@ -128,7 +130,9 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
           Feed carries the same box inline there and nowhere else (.fqm-gs-inline). It sits above
           Standing for the rail's own order (Get started, then Stats and streaks): on a phone,
           Standing IS the stats box. The rail's other panels follow Up next (FrequencyPhonePanels). */}
-      {p.onboarding && <GetStarted steps={p.onboarding} className="fqm-gs-inline" />}
+      <Suspense fallback={null}>
+        <GetStartedInline profileId={p.profileId} steps={p.onboarding} />
+      </Suspense>
 
       {/* Hidden on desktop while the right rail shows its full Stats & streaks box (members-shell.css). */}
       <div className="fa-standing">
@@ -245,6 +249,14 @@ async function ContextLine({ eventsP }: { eventsP: Promise<HomeEvents> }) {
         ? `Nothing on this minute. ${tonight === 1 ? 'One thing' : `${tonight} things`} later today.`
         : 'A quiet day near you so far.'
   return <span className="fa-ctx">{line}</span>
+}
+
+// Below 768px the rail is hidden, so the Feed repeats Get started inline. After Publish it is the launch
+// overview's own list (one list), otherwise the member's plain checklist.
+async function GetStartedInline({ profileId, steps }: { profileId: string; steps: GsStep[] | null }) {
+  const published = await loadPostPublishList(profileId)
+  if (published) return <LaunchGetStartedBox sections={published} className="fqm-gs-inline" />
+  return steps ? <GetStarted steps={steps} className="fqm-gs-inline" /> : null
 }
 
 async function PlannerSection({ eventsP, hasHome, profileId }: { eventsP: Promise<HomeEvents>; hasHome: boolean; profileId: string }) {
