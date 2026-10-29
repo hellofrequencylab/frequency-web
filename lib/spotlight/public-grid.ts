@@ -10,7 +10,7 @@ import type { EntityLayout, RowDef } from '@/lib/entity-blocks/layout'
 // Guestbook stays out: its block reads the session, and this page is ISR with no cookies().
 
 /** The block types the public default always ends with when the member did not author them. */
-const TAIL = ['links', 'memberEvents', 'tip', 'topfriends'] as const
+const TAIL = ['links', 'memberEvents', 'tip', 'memberContributions', 'topfriends'] as const
 
 export function publicSpotlightGrid(
   saved: EntityLayout | null,
