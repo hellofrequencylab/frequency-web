@@ -56,7 +56,7 @@ export function LaunchLightbox({ children }: { children: ReactNode }) {
     <Dialog open={open} onClose={pause} align="overlay" ariaLabelledBy="launch-lightbox-title" className="w-full">
       <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-card bg-canvas" data-kit="members">
         <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
-          <span id="launch-lightbox-title" className="font-display text-body tracking-tight">
+          <span id="launch-lightbox-title" style={{ fontFamily: 'var(--fq-font-display)', fontWeight: 500, letterSpacing: '-.04em', textTransform: 'uppercase' }}>
             Frequency <span className="t2">· Launch</span>
           </span>
           <button type="button" className="btn txt sm" onClick={pause} aria-label="Pause the launch and go back">
