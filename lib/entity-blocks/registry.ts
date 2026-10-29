@@ -219,7 +219,6 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'events',
   'circles', // The Space's live Circles, drawn as the shared CircleCard (ADR-1094 / ADR-1393).
   'journeys', // The journeys this space hosts (auto-pulled — ADR-542).
-  'donate', // The Space's fund as a card on its Spotlight (SPL-13).
   'team',
   'reviews',
   'faq', // The Space's own space_faqs rows.
