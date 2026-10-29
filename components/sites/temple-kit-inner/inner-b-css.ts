@@ -38,7 +38,13 @@ ${N} .tki-card-title a:hover{color:var(--kit-accent-text)}
 ${N} .tki-card-place{font-size:var(--text-body-sm);color:var(--color-text-subtle)}
 ${N} .tki-card-summary{margin:0;color:var(--color-text-muted)}
 ${N} .tki-card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:var(--space-2);padding-top:var(--space-4);border-top:1px solid var(--line-rule);color:var(--color-text-muted)}
+${N} .tki-programs{max-width:none}
+${N} .tki-cards--three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:1100px){
+${N} .tki-cards--three{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media (max-width:860px){
+${N} .tki-cards--three{grid-template-columns:minmax(0,1fr)}
 ${N} .tki-cards{grid-template-columns:minmax(0,1fr)}
 ${N} .tki-tier{padding:var(--space-6)}
 }
