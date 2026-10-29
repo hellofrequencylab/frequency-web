@@ -10,7 +10,7 @@ import type { InventorySection } from './overview.ts'
 const done = (n: number) => n > 0
 
 /** The module ids these items open, one per item. The coverage test reads this. */
-export const SETUP_ITEM_MODULES = {
+export const SETUP_ITEM_TOOLS = {
   'm-booking': 'space.booking',
   'm-product': 'space.services',
   'm-tier': 'space.memberships',
@@ -21,7 +21,7 @@ export const SETUP_ITEM_MODULES = {
   'r-auto': 'space.automation',
 } as const
 
-type SetupItemId = keyof typeof SETUP_ITEM_MODULES
+type SetupItemId = keyof typeof SETUP_ITEM_TOOLS
 
 export function setupSections(x: SetupExtras, hrefs: Readonly<Record<string, string>>): InventorySection[] {
   const item = (id: SetupItemId, label: string, n: number, found: (n: number) => string) => ({
@@ -29,7 +29,7 @@ export function setupSections(x: SetupExtras, hrefs: Readonly<Record<string, str
     label,
     state: done(n) ? ('done' as const) : ('todo' as const),
     found: done(n) ? found(n) : undefined,
-    href: hrefs[SETUP_ITEM_MODULES[id]],
+    href: hrefs[SETUP_ITEM_TOOLS[id]],
   })
   return [
     {

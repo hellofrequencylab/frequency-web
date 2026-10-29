@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
-import { SETUP_ITEM_MODULES, setupSections } from './setup-items'
+import { SETUP_ITEM_TOOLS, setupSections } from './setup-items'
 
 // Every Space tool either has a Setup item or says why it does not. A new tool in the module catalog fails this test
 // until someone decides which (LIVE-1916), so the Get Started list cannot quietly fall behind the product.
@@ -43,7 +43,7 @@ const EXEMPT: Record<string, string> = {
 }
 
 describe('Setup item coverage of the Space tool catalog', () => {
-  const covered = new Set<string>([...Object.values(SETUP_ITEM_MODULES), ...Object.keys(LAUNCH_COVERED)])
+  const covered = new Set<string>([...Object.values(SETUP_ITEM_TOOLS), ...Object.keys(LAUNCH_COVERED)])
   const exempt = new Set(Object.keys(EXEMPT))
 
   it('every Space tool has a Setup item or a stated reason it does not', () => {
@@ -57,7 +57,7 @@ describe('Setup item coverage of the Space tool catalog', () => {
   })
   it('every Setup item opens a tool that has a link', () => {
     const linked = new Set(SPACE_MODULES.filter((m) => m.deepLink).map((m) => m.id))
-    for (const id of Object.values(SETUP_ITEM_MODULES)) expect(linked.has(id)).toBe(true)
+    for (const id of Object.values(SETUP_ITEM_TOOLS)) expect(linked.has(id)).toBe(true)
   })
 })
 
