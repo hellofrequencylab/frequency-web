@@ -48,6 +48,8 @@
     "check:render-path": "node scripts/check-render-path.mjs",
     "check:help": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-coverage.mts --strict",
     "check:tokens": "node scripts/check-tokens.mjs",
+    "audit:themes": "node scripts/theme-audit.mjs",
+    "gen:theme-manifests": "node scripts/gen-theme-manifests.mjs",
     "check:nested-radius": "node scripts/check-nested-radius.mjs",
     "check:link-truncate": "node scripts/check-link-truncate.mjs",
     "check:templates": "node scripts/check-templates.mjs",

@@ -9,7 +9,7 @@ describe('preview tokens', () => {
   })
 
   it('offers every Mega Theme but the retired classic Network and Temple once, Designer first', () => {
-    expect([...PREVIEW_KIT_ORDER].sort()).toEqual(MEGA_THEMES.map((t) => t.id).filter((i) => i !== 'network' && i !== 'temple').sort())
+    expect([...PREVIEW_KIT_ORDER].sort()).toEqual(MEGA_THEMES.map((t) => t.id).filter((i) => i !== 'network' && i !== 'temple' && i !== 'free-human').sort())
     expect(PREVIEW_KIT_ORDER[0]).toBe('designer')
   })
 

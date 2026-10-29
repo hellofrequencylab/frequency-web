@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "network",
+  "legacyIds": {
+    "editor": "Network",
+    "site": "network"
+  },
+  "offered": false,
+  "site": {
+    "label": "Network",
+    "description": "Coastal and warm: butter-cream grounds, one bold color, pill buttons and real photos up front.",
+    "defaultFonts": "modern"
+  },
+  "library": null,
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "Network"
+      ]
+    }
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "network",
+        "names"
+      ]
+    }
+  }
+}

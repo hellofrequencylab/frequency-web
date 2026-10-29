@@ -88,4 +88,32 @@ describe('buildTimeline', () => {
     const d = data({ plans: [plan({ id: 'a', stage: 'pencil', hold: '2026-10-28' })] })
     expect(buildTimeline(d, today).rows[0].holdPct).toBeCloseTo((16 * 100) / 63, 6)
   })
+  it('says which edge a date or due falls past, so the view does not draw a clamped one', () => {
+    const d = data({
+      plans: [plan({ id: 'a' })],
+      items: [
+        item({ id: 'early', plan: 'a', date: '2026-09-01' }),
+        item({ id: 'late', plan: 'a', date: '2027-02-01' }),
+        item({ id: 'inside', plan: 'a', date: '2026-10-30' }),
+        item({ id: 'runs-in', plan: 'a', date: '2026-10-05', end: '2026-10-14' }),
+      ],
+      tasks: [
+        task({ id: 'before', plan: 'a', due: '2026-10-11' }),
+        task({ id: 'first', plan: 'a', due: '2026-10-12' }),
+        task({ id: 'after', plan: 'a', due: '2026-12-14' }),
+      ],
+    })
+    const [row] = buildTimeline(d, today).rows
+    expect(row.marks.map((m) => [m.id, m.past])).toEqual([
+      ['early', 'before'],
+      ['runs-in', null],
+      ['inside', null],
+      ['late', 'after'],
+    ])
+    expect(row.dues.map((x) => [x.id, x.past])).toEqual([
+      ['before', 'before'],
+      ['first', null],
+      ['after', 'after'],
+    ])
+  })
 })

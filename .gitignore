@@ -50,6 +50,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .next/
+.theme-audit/
 
 # Data snapshots / DB exports are PII — never commit them (see SECURITY).
 supabase/backups/*.json

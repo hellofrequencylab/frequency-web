@@ -5,7 +5,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CalendarDays } from 'lucide-react'
 import { buildAgenda } from '@/lib/calendar/planner/agenda'
-import { partnerSpaceId } from '@/lib/calendar/planner/day-items'
+import { itemPartnerId, partnerSpaceId } from '@/lib/calendar/planner/day-items'
 import { monthDayLabel } from '@/lib/calendar/planner/days'
 import { KINDS } from '@/lib/calendar/planner/kinds'
 import type { PlannerData } from '@/lib/calendar/planner/types'
@@ -83,7 +83,7 @@ export function SuiteAgenda({
                 const ownerId = task?.owner ?? item?.owner ?? null
                 const owner = ownerId ? ctx.teamById.get(ownerId) : null
                 const plan = item?.plan ? ctx.planById.get(item.plan) : task?.plan ? ctx.planById.get(task.plan) : null
-                const partner = ctx.spaceNames[partnerSpaceId(plan, ctx.ownSpaceId) ?? ''] ?? null
+                const partner = ctx.spaceNames[(item ? itemPartnerId(item, plan, ctx.ownSpaceId) : partnerSpaceId(plan, ctx.ownSpaceId)) ?? ''] ?? null
                 const selected = sel?.kind === (row.src === 'item' ? 'item' : 'todo') && sel.id === row.id
                 return (
                   <button

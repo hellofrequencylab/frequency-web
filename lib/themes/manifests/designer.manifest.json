@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "id": "designer",
+  "legacyIds": {
+    "editor": "Designer",
+    "site": "designer"
+  },
+  "offered": true,
+  "site": {
+    "label": "Designer",
+    "description": "Limewash and daylight: plaster grounds, charcoal type, one ochre accent, arched photos and a quiet serif.",
+    "defaultFonts": "classic"
+  },
+  "library": {
+    "tagline": "Limewash and daylight, with one ochre accent.",
+    "madeFor": "designers, builders, makers and anyone selling craft",
+    "signature": "Plaster grounds, charcoal type, arched photos, with Cormorant and Jost.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "ready",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "ready",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/designer"
+  },
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "Designer"
+      ]
+    }
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "designer",
+        "names"
+      ]
+    }
+  }
+}

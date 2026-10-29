@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 import { memberSpaceFonts } from '@/lib/theme/site-style'
+import { spotlightSurface } from '@/lib/theme/surface'
 import Link from 'next/link'
 import type { Space } from '@/lib/spaces/types'
 import { getInitials } from '@/lib/utils'
@@ -25,6 +26,7 @@ export function SpotlightAccent({ space, children }: { space: Space; children: R
       vars={resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))}
       theme={memberSpaceFonts(space.preferences)}
       fqAccent={frequencyAccentVars(space.brandAccent)}
+      surface={spotlightSurface(space.preferences, space.plan)}
     >
       {children}
     </AccentScope>

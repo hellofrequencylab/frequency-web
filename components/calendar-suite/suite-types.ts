@@ -21,6 +21,8 @@ export interface SuiteContext {
   ownSpaceId: string
   ownName: string
   today: string
+  /** False for someone who can read the calendar but not change it: Details shows no controls. */
+  canEdit?: boolean
   spaceNames: Readonly<Record<string, string>>
   /** Item ids that overlap unavailable time. */
   clashes: ReadonlySet<string>
@@ -28,4 +30,19 @@ export interface SuiteContext {
   planById: ReadonlyMap<string, SuitePlan>
   itemById: ReadonlyMap<string, SuiteItem>
   taskById: ReadonlyMap<string, SuiteTask>
+}
+
+/** Where a click on empty calendar asked for a quick add: the day, the half hour (null on a day grid
+ *  or the all-day row), and where on screen the pointer was. */
+export interface QuickAnchor {
+  day: string
+  startMin: number | null
+  x: number
+  y: number
+}
+
+/** True for a click that landed on the empty part of a cell, not on a chip, card or button inside it. */
+export function isEmptyClick(e: { target: EventTarget | null; currentTarget: EventTarget | null }): boolean {
+  const el = e.target as HTMLElement | null
+  return !!el && !el.closest('button, a, [draggable="true"], input, select, textarea')
 }

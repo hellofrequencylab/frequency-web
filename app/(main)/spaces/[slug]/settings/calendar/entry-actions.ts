@@ -60,6 +60,17 @@ async function resolveEditor(slug: string): Promise<{ spaceId: string; profileId
   return { spaceId: space.id, profileId: caller.id }
 }
 
+/** The sentence a standalone date's record keeps for one save: the first thing that changed. */
+function standaloneChangeWords(
+  before: { title: string; starts_at: string; stage: string | null },
+  after: { title: string; starts_at: string; stage: string | null },
+): string {
+  if (before.title !== after.title) return `Renamed to "${after.title}".`
+  if (before.starts_at.slice(0, 10) !== after.starts_at.slice(0, 10)) return `Moved to ${shortDateLabel(after.starts_at.slice(0, 10))}.`
+  if (before.stage !== after.stage) return `Moved to ${entryStage(after.stage)?.label ?? 'a new stage'}.`
+  return 'Saved changes.'
+}
+
 function revalidate(slug: string) {
   revalidatePath(`/spaces/${slug}/settings/calendar`)
   revalidatePath(`/spaces/${slug}/calendar`)
@@ -124,6 +135,8 @@ export async function saveCalendarEntry(
   let res: { data: unknown } | { error: string }
   /** Set when a Plan-linked date actually changed day, so its anchored to-dos follow it. */
   let movedPlanId: string | null = null
+  /** What a standalone date's edit says in its own record (it has no Plan to speak through). */
+  let entryNote: string | null = null
   if (!entryId) {
     res = await insertCalendarEntries(editor.spaceId, [w, ...extra], editor.profileId)
   } else {
@@ -153,8 +166,18 @@ export async function saveCalendarEntry(
     if (!('error' in res) && current.plan_id && current.starts_at.slice(0, 10) !== w.starts_at.slice(0, 10)) {
       movedPlanId = current.plan_id
     }
+    if (!('error' in res) && !current.plan_id) entryNote = standaloneChangeWords(current, w)
   }
   if ('error' in res) return fail(res.error)
+  if (entryId && entryNote) {
+    await recordPlanActivity({
+      entryId,
+      actorProfileId: editor.profileId,
+      actorSpaceId: editor.spaceId,
+      kind: 'field',
+      summary: entryNote,
+    })
+  }
   // THE PLAN'S RECORD (LIVE-543): a date added to a Plan, or a Plan's date moved to another day.
   if (!entryId && w.plan_id) {
     await recordPlanActivity({

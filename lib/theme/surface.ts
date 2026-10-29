@@ -10,6 +10,7 @@ import { readMegaTheme, type MegaThemeId } from '@/lib/theme/mega-theme'
 import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
 import { MIDNIGHT_SURFACE } from '@/lib/theme/midnight'
 import { readSiteStyle } from '@/lib/theme/site-style'
+import { planTakesPayments } from '@/lib/pricing/payments-plan'
 
 const SURFACES: Partial<Record<MegaThemeId, ThemeSurface>> = {
   midnight: MIDNIGHT_SURFACE,
@@ -31,4 +32,11 @@ export function emailSurface(preferences: unknown): ThemeSurface | null {
   const mega = readMegaTheme(preferences).theme
   const id = (mega ?? readSiteStyle(preferences).theme) as MegaThemeId
   return MEGA_SURFACES[id] ?? null
+}
+
+/** The surface a Space's Spotlight wears (SPL-12): the Space's Mega Theme ground, for Business and up. Below the
+ *  line the Spotlight keeps the app's surfaces and the Space's accent, so the theme is the thing a Space plays
+ *  with in the preview and pays for at publish. Scoped by AccentScope to the Spotlight node only. */
+export function spotlightSurface(preferences: unknown, plan: string | null | undefined): ThemeSurface | null {
+  return planTakesPayments(plan) ? emailSurface(preferences) : null
 }

@@ -19,8 +19,11 @@ export const SUITE_VIEW_LABEL: Record<SuiteView, string> = {
   timeline: 'Timeline',
 }
 
-/** The views that draw today. The rest show a quiet "coming soon" until their pass lands. */
-export const READY_VIEWS: readonly SuiteView[] = ['day', 'week', 'month', 'agenda']
+/** The views that show every Plan rather than a stretch of time: List, Kanban and Timeline. They have
+ *  no month to page through, so they print their own title and carry no paging. */
+export function isPlanView(view: SuiteView): boolean {
+  return view === 'list' || view === 'board' || view === 'timeline'
+}
 
 const KEY_VIEW: Record<string, SuiteView> = {
   d: 'day',
@@ -115,6 +118,10 @@ export function layerCounts(data: PlannerData, ym: string, ownSpaceId: string): 
   const out: Record<PlannerLayer, number> = { events: 0, works: 0, shared: 0, private: 0, unavailable: 0, todos: 0 }
   for (const it of data.items) {
     if (it.date.slice(0, 7) !== ym) continue
+    if (it.from) {
+      out.shared += 1
+      continue
+    }
     out[KINDS[it.kind].layer] += 1
     if (it.shared || isShared(data.plans.find((p) => p.id === it.plan), ownSpaceId)) out.shared += 1
   }

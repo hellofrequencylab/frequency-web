@@ -58,7 +58,7 @@ const FREQUENCY_IMAGERY: KitImagery = {
 
 /** Each kit's sample pictures. Designer wears its own library; every other kit wears the gathering photography
  *  until it has a library of its own. A Space's uploads replace these in the setup walk. */
-const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<MegaThemeId, 'temple-kit'>, KitImagery> = {
+const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<MegaThemeId, 'temple-kit' | 'free-human'>, KitImagery> = {
   designer: {
     hero: DESIGNER_PHOTO('dz-designer-kitchen-hero'), heroPos: '38% center',
     portrait: DESIGNER_PHOTO('dz-portrait-01'), portraitPos: '48% 30%',
@@ -87,7 +87,7 @@ interface PreviewAccent {
 
 /** The accents each kit offers, first = the kit's own. The violets of Nocturne and Wildheart are read from their palettes, never restated here (LIVE-962). Designer's six are verified against the Designer
  *  handoff; the others are the kit's family as the prototype listed it. */
-const KIT_ACCENTS: Partial<Record<MegaThemeId, readonly PreviewAccent[]>> & Record<Exclude<MegaThemeId, 'temple-kit'>, readonly PreviewAccent[]> = {
+const KIT_ACCENTS: Partial<Record<MegaThemeId, readonly PreviewAccent[]>> & Record<Exclude<MegaThemeId, 'temple-kit' | 'free-human'>, readonly PreviewAccent[]> = {
   designer: [
     { name: 'Ochre', fill: '#D3A03F', text: '#9A6C1C' }, { name: 'Terracotta', fill: '#A65A3A', text: '#874429' },
     { name: 'Sage', fill: '#4E6E71', text: '#4E6E71' }, { name: 'Walnut', fill: '#5A4533', text: '#5A4533' },
