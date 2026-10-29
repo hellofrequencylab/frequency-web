@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1912",
+  "title": "Merge the duplicate Community tab in the public header",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "supabase/migrations/20270346027500_public_header_merge_second_community_tab.sql",
+    "ref": "Owner report, 2026-10-29: two community tabs in the menu"
+  },
+  "detail": "The live public header menu had a second parentless tab labelled The Community holding two rows (Partners, The Quest) that duplicate rows in the Community tab. The migration moves both rows into the Spaces tab and deletes the stray tab. Code defaults already have one community tab.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-29",
+    "evidence": "Read-only production query of the header menu showed tabs Community (pos 1), Spaces (5), About (6) and a second The Community (7). After the migration is applied, the same query shows three parentless tabs."
+  }
+}

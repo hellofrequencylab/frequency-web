@@ -96,8 +96,8 @@ ${N} .tk-tools-rule{width:1px;height:28px;margin:0 8px;background:var(--color-bo
 ${N} .tk-account{position:relative}
 ${T} .hs-member{padding:0 14px;height:34px;display:inline-flex;align-items:center;border:1px solid var(--line-rule);border-radius:var(--radius-pill);background:transparent;color:var(--color-text);${LABEL};font-size:10px}
 ${T} .hs-member:hover{background:var(--surface-veil);color:var(--color-text)}
-${T} .hs-btn-dark,${T} .hs-btn-primary{flex:none;height:40px;padding:0 20px;font-size:14px;border-radius:var(--radius-control);background:var(--mn-solid);color:var(--mn-on-solid);border-color:var(--mn-solid);box-shadow:var(--shadow-button)}
-${T} .hs-btn-dark:hover,${T} .hs-btn-primary:hover{background:var(--mn-solid-hover);border-color:var(--mn-solid-hover);color:var(--mn-on-solid);box-shadow:var(--shadow-button-hover)}
+${T} .hs-btn-dark,${T} .hs-btn-primary{flex:none;height:40px;padding:0 20px;font-size:14px;border-radius:var(--radius-control);background:var(--mn-solid);color:var(--kit-on-solid);border-color:var(--mn-solid);box-shadow:var(--shadow-button)}
+${T} .hs-btn-dark:hover,${T} .hs-btn-primary:hover{background:var(--mn-solid-hover);border-color:var(--mn-solid-hover);color:var(--kit-on-solid);box-shadow:var(--shadow-button-hover)}
 ${T} .hs-btn-dark:active,${T} .hs-btn-primary:active{background:var(--tk-clay-700);border-color:var(--tk-clay-700);box-shadow:var(--shadow-inset-deep)}
 ${T} .hs-btn-dark:focus-visible,${T} .hs-btn-primary:focus-visible{box-shadow:var(--ring-focus)}
 

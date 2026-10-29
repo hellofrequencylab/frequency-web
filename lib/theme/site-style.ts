@@ -22,7 +22,7 @@ import { readMegaTheme } from '@/lib/theme/mega-theme'
 //     28px cards (components/sites/network-css.ts, lib/theme/network.ts). A stock theme, first worn by The Group.
 //   · Network Theme Kit (2026-10-28, code id `network-kit`, shown as Network; the earlier `network` theme above is no longer offered):
 //     the Network design system's paper, card tint and deep ink with one solid hero color in four schemes
-//     (lib/theme/network-kit.ts). Not published to a live site until its render is finished.
+//     (lib/theme/network-kit.ts). Published to a live site (WEBSITE_THEMES_LIVE).
 //   · Temple Theme Kit (2026-10-28, code id `temple-kit`, shown as Temple; the earlier `temple` theme below is no longer offered):
 //     the Temple design system's plaster, umber and one clay accent, thirteen profile accents (lib/theme/temple-kit.ts).
 //     Not published to a live site until its render is finished.
@@ -96,8 +96,8 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
   },
   {
     // Typography-only on the Space page too (ADR-578): the Network Theme Kit's faces load on the website alone, so
-    // a synced Space page wears Modern, as the earlier Network does. Not published to a live site until its
-    // render is finished (WEBSITE_THEMES_LIVE).
+    // a synced Space page wears Modern, as the earlier Network does. Published to a live site since 2026-10-29
+    // (WEBSITE_THEMES_LIVE), once its pages and thirteen profile kits shipped.
     id: 'network-kit',
     label: 'Network',
     description: 'The new Network Theme Kit: paper, card tint and deep ink with one solid hero color in four schemes, pill buttons and real photos up front.',
@@ -115,8 +115,9 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
   },
   {
     // THE TEMPLE THEME KIT (id `temple-kit`, shown as Temple): the Temple owners pick and the /themes page shows. The
-    // older `temple` entry above (Royal Temple) leaves the pickers. Typography-only on the Space page too (ADR-578): the
-    // same four faces as `temple` load on the website alone, so a synced Space page wears Classic. Not published to a
+    // older `temple` entry above (Royal Temple) leaves the pickers. On the Space page a synced Temple website wears the
+    // kit's DISPLAY face only (Marcellus, spacePageSiteFaces; ADR-1728, ADR-1906): the body, the UI and every size stay
+    // Frequency's, and Branch, Jost and Cormorant load on the website alone. Not published to a
     // live site until its render is finished (WEBSITE_THEMES_LIVE).
     id: 'temple-kit',
     label: 'Temple',
@@ -302,7 +303,7 @@ export function spacePageSiteFaces(preferences: unknown): SiteFacesId | null {
   if (readMegaTheme(preferences).theme === 'midnight') return 'midnight'
   const style = readSiteStyle(preferences)
   if (!style.synced) return null
-  return style.theme === 'network' || style.theme === 'network-kit' || style.theme === 'wildheart' || style.theme === 'midnight' ? style.theme : null
+  return style.theme === 'network' || style.theme === 'network-kit' || style.theme === 'designer' || style.theme === 'temple-kit' || style.theme === 'wildheart' || style.theme === 'midnight' ? style.theme : null
 }
 
 /** The font set a Space wears INSIDE Frequency (member and admin routes): its own, never the website's.

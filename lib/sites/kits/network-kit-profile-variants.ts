@@ -7,6 +7,8 @@ import {
   NETWORK_KIT_CALENDAR, NETWORK_KIT_CHAPTERS, NETWORK_KIT_CIRCLES, NETWORK_KIT_CONTACT, NETWORK_KIT_FEATURED, NETWORK_KIT_MERCH, NETWORK_KIT_NOTE, NETWORK_KIT_PILLARS,
   NETWORK_KIT_PODCAST, NETWORK_KIT_ROOMS, NETWORK_KIT_SOCIAL, NETWORK_KIT_STATS, NETWORK_KIT_VENUE,
 } from '@/lib/sites/network-kit-extras'
+import { networkKitInnerPagesA } from '@/components/sites/network-kit-inner/pages'
+import { networkKitInnerPagesB } from '@/components/sites/network-kit-inner/pages-b'
 import type { KitNiche, KitPage, SiteKit } from './types'
 
 // Network Theme Kit x the thirteen profile starter kits of the design system (ui_kits/site/kits.js). One kit per
@@ -15,7 +17,7 @@ import type { KitNiche, KitPage, SiteKit } from './types'
 // the starter site publishes. Each kit is a home assembled from the Network blocks (components/page-editor/blocks/
 // network-kit.tsx and network-kit-more.tsx) in the design's own order, with the layout variants the design's kit names
 // per block, plus one short page for each tool the profile has on, so every button on the home has somewhere to go.
-// Those pages are plain starters (a header and the matching block); the full inner pages are a later pass.
+// Those pages are the Network inner pages (components/sites/network-kit-inner), the same for every profile.
 //
 // The hero, the ways in, the heads and the letter come from lib/spotlight/network-kit-content.ts, which already holds
 // the thirteen profiles' names and rules in the voice guide's words. The steps, questions, tiers and offers below are
@@ -288,6 +290,7 @@ function pageHeader(x: Ctx, eyebrow: string, title: string, lead: string, photo:
 const withProps = (b: Block, props: Record<string, unknown>): Block => ({ ...b, props: { ...b.props, ...props } })
 
 function pages(x: Ctx): KitPage[] {
+  const innerPages = [...networkKitInnerPagesA(), ...networkKitInnerPagesB()]
   const { row, c, tools } = x
   const closing = build('cta', x)!
   const label = (tool: Tool) => c.doors.find((d) => d.key === tool)?.title ?? TOOL_LABEL[tool]
@@ -296,13 +299,15 @@ function pages(x: Ctx): KitPage[] {
   const bare = (b: Block): Block => (b.type === 'NetworkKitLetter' ? b : { ...b, props: { ...b.props, eyebrow: '', title: '', lead: '' } })
   const add = (slug: string, name: string, eyebrow: string, title: string, lead: string, photo: string, body: Block[]) =>
     out.push({ slug, label: name, seo: { title: name, description: lead || row.who }, blocks: withBands([pageHeader(x, eyebrow, title, lead, photo), ...body.map(bare), closing]) })
-  if (tools.has('gather')) add('workshops', label('gather'), '', star(c.gatherings.title, c.gatherings.em), row.heads.gatherings?.kicker ?? '', 'photo-07', [withProps(build('gatherings', x)!, { variant: 'calendar', count: 12 })])
-  if (tools.has('book')) add('services', label('book'), '', star(c.offeringsHead.title, c.offeringsHead.em), row.heads.offerings?.kicker ?? '', 'photo-10', [build('offerings', x)!])
-  if (tools.has('learn')) add('journeys', label('learn'), '', star(row.heads.journeys?.title ?? 'What we', row.heads.journeys?.em ?? 'run'), row.heads.journeys?.kicker ?? '', 'photo-05', [withProps(build('journeys', x)!, { variant: 'cards' })])
+  // The inner pages are the design's own (components/sites/network-kit-inner): one for each tool the profile has on.
+  const inner = (slug: string) => out.push(innerPages.find((p) => p.slug === slug)!)
+  if (tools.has('gather')) inner('workshops')
+  if (tools.has('book')) inner('services')
+  if (tools.has('learn')) inner('journeys')
   if (tools.has('belong')) add('membership', label('belong'), '', star(row.heads.membership?.title ?? 'Show up,', row.heads.membership?.em ?? 'together'), row.heads.membership?.kicker ?? '', 'photo-12', [withProps(build('membership', x)!, { variant: 'tiers' })])
-  if (tools.has('sell')) add('shop', label('sell'), '', star(row.heads.shop?.title ?? 'Tickets, kits', row.heads.shop?.em ?? 'and gifts'), '', 'photo-08', [withProps(build('shop', x)!, { variant: 'grid' })])
-  add('resources', label('publish'), '', star(row.heads.library?.title ?? 'Share what', row.heads.library?.em ?? 'works'), row.heads.library?.kicker ?? '', 'photo-06', [withProps(build('library', x)!, { variant: 'grid' }), build('letter', x)!])
-  add('about', 'About', '', 'A friendly room,\n*run by people like you.*', row.who, 'photo-09', [{ type: 'NetworkKitPillars', props: { ...NETWORK_KIT_PILLARS } }])
+  if (tools.has('sell')) inner('shop')
+  inner('resources')
+  inner('about')
   return out
 }
 

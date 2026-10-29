@@ -42,6 +42,7 @@
 .nf-fit{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 .nf-stage .nf-ios{width:auto;height:100%}
 .nf-stage .nf-mail{width:auto;height:100%}
+.nf-stage .nf-mail img{width:auto;height:100%}
 .nf-note{margin:0;font-size:14px;line-height:1.5;color:var(--fq-text-muted);min-height:1.5em}
 .nf-note b{color:var(--fq-text-strong);font-weight:600}
 .nf-try{display:block}
@@ -60,6 +61,7 @@
 .nf-scr{position:relative;flex:1 1 auto;min-height:0;aspect-ratio:1280/800;line-height:0;overflow:hidden}
 .nf-scr img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
 .nf-mail{display:block;width:100%;max-width:420px;aspect-ratio:900/1140;overflow:hidden;border-radius:var(--fq-radius-s);background:var(--fq-bg-canvas);box-shadow:inset 0 0 0 1px var(--nf-hair),0 50px 100px -40px var(--fq-bg-canvas);line-height:0}
+.nf-mail img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
 .nf-ios{display:block;container-type:size;width:100%;aspect-ratio:390/844;line-height:0}
 .nf-ios-body{display:block;box-sizing:border-box;width:100%;height:100%;padding:2.564cqw;border-radius:13.846cqw;background:linear-gradient(160deg,var(--fq-surface-raised),var(--fq-bg-canvas) 45%,var(--fq-surface-raised));box-shadow:inset 0 0 0 1px var(--nf-hair),0 50px 90px -40px var(--fq-bg-canvas),0 0 80px -40px var(--c)}
 .nf-ios-scr{position:relative;display:block;container-type:inline-size;width:100%;height:100%;overflow:hidden;border-radius:11.282cqw;background:var(--fq-bg-canvas)}
@@ -75,11 +77,6 @@
 .nf-hi{position:absolute;left:50%;bottom:2.16cqw;transform:translateX(-50%);width:36.2cqw;height:1.35cqw;border-radius:999px;background:color-mix(in oklab,var(--fq-text-strong) 85%,transparent);pointer-events:none}
 
 /* A surface that is on the way: the frame, a quiet card, one word. */
-.nf-soon{display:flex;align-items:center;justify-content:center;background:var(--nf-card)}
-.nf-mail.nf-soon{aspect-ratio:900/1140}
-.nf-soon-tx{margin:0;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;line-height:1.1}
-.nf-soon-tx b{font:600 clamp(22px,2.6vw,32px)/1 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
-.nf-soon-tx small{padding:5px 10px;border-radius:999px;font:600 11px/1 var(--fq-font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--fq-text-muted);box-shadow:inset 0 0 0 1px var(--nf-hair)}
 
 /* Before and after */
 .nf-stack{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:20px;align-items:center;margin-top:36px}

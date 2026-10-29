@@ -10,8 +10,9 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react'
+import Link from 'next/link'
 import { createPortal } from 'react-dom'
-import { Maximize2, Plus } from 'lucide-react'
+import { LayoutDashboard, Maximize2, Plus } from 'lucide-react'
 import { EventCalendar } from '@/components/events/event-calendar'
 import {
   CalendarLayerChips,
@@ -50,6 +51,7 @@ import {
   type CalendarTimeView,
 } from '@/lib/calendar/time-views'
 import { MEMBER_SURFACES } from '@/lib/calendar/member-calendar'
+import { audienceHref } from '@/lib/calendar/audience'
 import { listIndexItems, selectListItem } from '@/lib/calendar/list-index'
 import { workflowBoard } from '@/lib/calendar/workflow-board'
 import type { CalendarEvent } from '@/lib/calendar/item'
@@ -865,6 +867,14 @@ export function CalendarWorkspace({
           {canManage && (
             <Button type="button" size="sm" variant="secondary" onClick={pencilIn}>
               <Plus className="h-4 w-4" aria-hidden /> Pencil it in
+            </Button>
+          )}
+          {adminAllowed && (
+            <Button type="button" size="sm" variant="secondary" asChild data-calendar-manager-link>
+              <Link href={audienceHref(slug, 'team')} title="Open the full calendar manager" aria-label="Calendar manager">
+                <LayoutDashboard className="h-4 w-4" aria-hidden />
+                <span className="hidden sm:inline">Calendar manager</span>
+              </Link>
             </Button>
           )}
           {adminAllowed && (

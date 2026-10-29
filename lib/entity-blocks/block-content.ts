@@ -664,6 +664,14 @@ const DATA_HEADER_FIELDS: readonly FieldDef[] = [
  *  authored bag and rendered by the block, taking precedence over the space's stored about/story data), so
  *  the section is never empty for want of a place to type. The eyebrow/title still lead. */
 const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
+  // WHAT I GIVE BACK (SPL-05): the member only chooses WHICH pills show. The numbers are resolved server-side
+  // and a zero never renders, so a switch can hide a stat but never invent one.
+  memberContributions: [
+    { key: 'showCrew', label: 'Show my Crew badge', type: 'toggle', default: true },
+    { key: 'showEvents', label: 'Show events I have hosted', type: 'toggle', default: false },
+    { key: 'showJourneys', label: 'Show Journeys I have finished', type: 'toggle', default: false },
+    { key: 'showZaps', label: 'Show my Zaps', type: 'toggle', default: true },
+  ],
   about: [
     ...DATA_HEADER_FIELDS,
     { key: 'body', label: 'About text', type: 'textarea', placeholder: 'A short intro to your space' },
@@ -697,6 +705,14 @@ const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   // default so saved pages never shift; Cards = the events index card treatment; Calendar = a month
   // grid) and a Columns count for the Cards layout. Both are declared enum primitives, so the editor
   // renders the shared segmented control and the sanitizer validates the stored value (ADR-569 C6).
+  // MEMBER PROGRAMS (SPL-04): three switches, all OFF until the member turns a kind on. Only public Circles,
+  // Journeys and Spaces ever show, whatever is switched on.
+  memberPrograms: [
+    ...DATA_HEADER_FIELDS,
+    { key: 'showCircles', label: 'Show my Circles', type: 'toggle', default: false },
+    { key: 'showJourneys', label: 'Show my Journeys', type: 'toggle', default: false },
+    { key: 'showSpaces', label: 'Show my Spaces', type: 'toggle', default: false },
+  ],
   events: [
     ...DATA_HEADER_FIELDS,
     { key: 'items', label: 'Events to feature', type: 'picker', pickerBlock: 'events' },
@@ -715,6 +731,8 @@ const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   ],
   team: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Team to feature', type: 'picker', pickerBlock: 'team' }],
   journeys: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Journeys to feature', type: 'picker', pickerBlock: 'journeys' }],
+  // DONATE (Space Spotlight): the header only; the fund and its amounts are set once, in the Donate tab's settings.
+  donate: [...DATA_HEADER_FIELDS],
   // LINK CARDS (Space Spotlight): the header + a picker over every linkable item (block-data-sources
   // listLinkCards), so each card is one product / Journey / event / membership / the Book or Contact door.
   linkCards: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Cards to show', type: 'picker', pickerBlock: 'linkCards' }],

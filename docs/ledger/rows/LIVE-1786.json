@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1786",
+  "title": "Designer Theme Kit polish: close the design-system primitive gaps the kit already builds, explain the two it never draws",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "docs/design-systems/designer/rules.json",
+    "ref": "Daniel, 2026-10-29: fan out into developing the next rounds. Pass 10 of the plan at /mnt/project-files/designer-kit/PLAN.html (polish: every baseline gap closed or explained)."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/designer-kit-polish.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (twelve known gaps for ArchFrame, BrandMark, MoonPhases and Sigil) and passes here."
+  },
+  "detail": "Pass 10, first slice. The intake claimed four design-system primitives with kit files that were never going to exist under those names. ArchFrame is built: the arch frame, its outline and its photo shadow are the .dz-arch rules in components/sites/designer-blocks-css.ts, so the rule now points there. BrandMark is built: the tenant wordmark and the logo tile are the brand block in components/sites/designer-chrome.tsx. MoonPhases and Sigil are carried in the design system's zip from the Nocturne set and no Designer page, kit, Spotlight or email draws either, so they are reference with the reason, not built. The baseline drops twelve ids (434 to 422). Alli Rae's HTML does not change: only the intake rules and the baseline moved. STILL OPEN, and why: nine ids for Glyph, Seal and Ornament (the prototype's small marks, which its Home, About, Services, Book and Shop pages draw; the kit draws its marks with the house icon set); 73 token ids, where the design system's values differ from the kit's flat token block (for example --radius-card 18px against 0px) and changing them would move Alli Rae's live site, which must render identical; and about 340 prototype copy lines, which are demo and placeholder words the voice guide replaces. Each is a decision for the owner, not a gap to hide.",
+  "wave": "W7"
+}

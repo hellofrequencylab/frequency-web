@@ -1,48 +1,56 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import Link from 'next/link'
-import { CalendarClock, Sparkles } from 'lucide-react'
 import { moveSpaceTodo } from '@/app/(main)/spaces/[slug]/settings/calendar/task-actions'
-import { saveCalendarEntry, saveCalendarEntryOccurrence } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
-import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
+import { deleteCalendarEntry, saveCalendarEntry, saveCalendarEntryOccurrence } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
+import { archiveSpacePlan, transitionPlanStage } from '@/app/(main)/spaces/[slug]/settings/calendar/plan-actions'
+import { addQuickItem, pencilItIn } from '@/app/(main)/spaces/[slug]/settings/calendar/pencil-actions'
 import type { AstroMarker } from '@/lib/calendar/astro-markers'
 import type { DayNote } from '@/lib/calendar/day-notes'
 import { calendarViewCookieName } from '@/lib/calendar/admin-views'
 import type { AdaptedCalendar } from '@/lib/calendar/planner/adapters'
+import { parseCommand } from '@/lib/calendar/planner/command-parse'
 import { findClashes } from '@/lib/calendar/planner/clash'
 import { addDays } from '@/lib/calendar/planner/days'
 import { needsYou } from '@/lib/calendar/planner/needs-you'
 import { shiftMonth, sunSignOn } from '@/lib/calendar/planner/month'
 import { nowMinutes } from '@/lib/calendar/planner/now'
 import {
-  READY_VIEWS,
-  SUITE_VIEW_LABEL,
   countByMonth,
+  isPlanView,
   resolveSuiteView,
+  SUITE_VIEWS,
   suiteKeyAction,
   viewCookieValue,
   type SuiteView,
 } from '@/lib/calendar/planner/suite-model'
 import type { PlannerData, PlannerLayer } from '@/lib/calendar/planner/types'
 import { SuiteAgenda } from './suite-agenda'
+import { SuiteBoard } from './suite-board'
 import { CohostProvider, cohostActionsFor, useSuiteCohost, type CohostActions } from './use-suite-cohost'
 import { SuiteDetails } from './suite-details'
+import { bindDetailsActions, type DetailsActions } from './suite-details-actions'
 import { SuiteHeader } from './suite-header'
+import { SuiteList } from './suite-list'
 import { SuiteMonth, type MonthScrollRequest } from './suite-month'
 import { SuiteNeedsYou } from './suite-needs-you'
 import { SuiteRail } from './suite-rail'
-import { SuiteSheet } from './suite-sheet'
-import type { SuiteContext, SuiteSelection, SuiteTeamMember } from './suite-types'
+import type { CommandRow } from '@/lib/calendar/planner/command-results'
+import { SuiteCommand } from './suite-command'
+import { SuitePencil } from './suite-pencil'
+import { SuiteQuick } from './suite-quick'
+import { SuiteTimeline } from './suite-timeline'
+import type { QuickAnchor, SuiteContext, SuiteSelection, SuiteTeamMember } from './suite-types'
 import { SuiteWeek } from './suite-week'
+import { useSuiteCreate, type SuiteCreateActions } from './use-suite-create'
 import { useSuiteMoves, type SuiteActions } from './use-suite-moves'
 
 // THE SPACE CALENDAR (README 1, layout 1a Sidebar). One full-height surface inside the console: the
 // rail, the header, the Needs-you row, the view, and the Details panel. This part owns what is on
 // screen (the view, the day the calendar is on, the layers switched off, the one thing selected) and
 // the keys that move it. The records come in already adapted (lib/calendar/planner/adapters.ts), so
-// nothing here knows what a row of the database looks like, and nothing here writes.
+// nothing here knows what a row of the database looks like. Writes are the parts' own: a drop through
+// use-suite-moves.tsx, an edit through the Details panel (suite-details.tsx).
 
 /** Under this width the Agenda opens first: a month's cells are too narrow to read there. */
 const NARROW_QUERY = '(max-width: 719px)'
@@ -85,6 +93,8 @@ export interface CalendarSuiteProps {
   nowMin?: number | null
   /** The zone's short name for the corner of the time grid, "PDT". */
   zoneShort?: string
+  /** The Space's time zone, the one a command or a quick add is read in. */
+  timeZone?: string
   /** True stops the now line moving, for a test or a still picture. */
   frozenClock?: boolean
   /** The writes a drop makes. Absent means the calendar's own server actions; a test passes stand-ins. */
@@ -95,9 +105,18 @@ export interface CalendarSuiteProps {
   networkNoun?: string | null
   /** The writes a co-hosting press makes. Absent means the calendar's own server actions. */
   cohostActions?: CohostActions
+  /** The writes Pencil it in, quick add and the command bar make. Absent means the calendar's own server actions. */
+  create?: SuiteCreateActions
+  /** The writes the Details panel makes. Absent means the calendar's own server actions. */
+  detailsActions?: DetailsActions
 }
 
-type Sheet = 'pencil' | 'ask' | null
+type Sheet = 'pencil' | 'command' | null
+/** What the Pencil it in sheet opens with: a day and a title carried over from a quick add. */
+interface PencilSeed {
+  day: string | null
+  title: string
+}
 
 export function CalendarSuite(props: CalendarSuiteProps) {
   const { slug, spaceId, brandName, todayKey, openYm, minYm, maxYm, team, dayNotes, sky } = props
@@ -108,11 +127,13 @@ export function CalendarSuite(props: CalendarSuiteProps) {
         saveEntry: (entryId, input) => saveCalendarEntry(slug, entryId, input),
         saveOccurrence: (entryId, day, input) => saveCalendarEntryOccurrence(slug, entryId, day, input),
         moveTodo: (id, due, startMin) => moveSpaceTodo(slug, id, due, startMin),
+        setStage: (planId, stage) => transitionPlanStage(slug, planId, stage),
       },
     [props.actions, slug],
   )
+  const detailsActions = useMemo<DetailsActions>(() => props.detailsActions ?? bindDetailsActions(slug), [props.detailsActions, slug])
   // A drop is shown at once and written through the calendar's own actions (use-suite-moves.tsx).
-  const moves = useSuiteMoves({ base: props.data, actions, canEdit })
+  const moves = useSuiteMoves({ base: props.data, actions, canEdit, ownSpaceId: spaceId })
   // A co-hosting press is shown at once the same way, over the moved dates (use-suite-cohost.tsx).
   const cohostWrites = useMemo(() => props.cohostActions ?? cohostActionsFor(slug), [props.cohostActions, slug])
   const cohost = useSuiteCohost({
@@ -126,6 +147,17 @@ export function CalendarSuite(props: CalendarSuiteProps) {
     networkNoun: props.networkNoun ?? null,
   })
   const data = cohost.data
+  const createActions = useMemo<SuiteCreateActions>(
+    () =>
+      props.create ?? {
+        pencilItIn: (input) => pencilItIn(slug, input),
+        addQuick: (input) => addQuickItem(slug, input),
+        removePlan: (planId) => archiveSpacePlan(slug, planId),
+        removeEntry: (entryId) => deleteCalendarEntry(slug, entryId),
+      },
+    [props.create, slug],
+  )
+  const make = useSuiteCreate(createActions, moves.say)
   const dnd = moves.dnd
   // The now line: the page's minute carried forward by the browser's own clock, unless frozen.
   const [elapsedMs, setElapsedMs] = useState(0)
@@ -146,6 +178,9 @@ export function CalendarSuite(props: CalendarSuiteProps) {
   const [railOpen, setRailOpen] = useState(false)
   const [jumpOpen, setJumpOpen] = useState(false)
   const [sheet, setSheet] = useState<Sheet>(null)
+  const [seed, setSeed] = useState<PencilSeed>({ day: null, title: '' })
+  const [quick, setQuick] = useState<(QuickAnchor & { box: { width: number; height: number } }) | null>(null)
+  const box = useRef<HTMLDivElement>(null)
   const [request, setRequest] = useState<MonthScrollRequest | null>(null)
   const [focusDay, setFocusDay] = useState<string | null>(null)
   const token = useRef(0)
@@ -160,6 +195,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       ownSpaceId: spaceId,
       ownName: brandName,
       today: todayKey,
+      canEdit,
       spaceNames: data.spaceNames,
       clashes: findClashes(data.items),
       teamById: new Map(team.map((m) => [m.id, m])),
@@ -167,7 +203,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       itemById: new Map(data.items.map((i) => [i.id, i])),
       taskById: new Map(data.tasks.map((t) => [t.id, t])),
     }),
-    [spaceId, brandName, todayKey, data, team],
+    [spaceId, brandName, todayKey, canEdit, data, team],
   )
   // What Details shows goes when the record does: a Plan this Space just declined is no longer its to open.
   const sel: SuiteSelection = useMemo(() => {
@@ -211,6 +247,8 @@ export function CalendarSuite(props: CalendarSuiteProps) {
 
   const page = useCallback(
     (delta: -1 | 1) => {
+      // List, Kanban and Timeline hold every Plan, not a stretch of time: there is nothing to page.
+      if (isPlanView(view)) return
       if (view === 'month') goToMonth(shiftMonth(activeYm, delta))
       else if (view === 'day') setCursor((c) => addDays(c, delta))
       else if (view === 'week') setCursor((c) => addDays(c, 7 * delta))
@@ -262,14 +300,38 @@ export function CalendarSuite(props: CalendarSuiteProps) {
 
   const toggleLayer = useCallback((layer: PlannerLayer) => setHidden((h) => ({ ...h, [layer]: !h[layer] })), [])
 
-  // The keys: D W M A I B L for the views, T for today, P to pencil, / to ask, the arrows to page, and
-  // Esc for the top layer. A key with a modifier, or one typed into a field or a sheet, is left alone.
-  const state = useRef({ sheet, jumpOpen, railOpen, sel })
+  const openPencil = useCallback(
+    (from?: PencilSeed) => {
+      if (!canEdit) {
+        moves.say('You can look at this calendar but not change it.', 'neutral')
+        return
+      }
+      setQuick(null)
+      setSeed(from ?? { day: null, title: '' })
+      setSheet('pencil')
+    },
+    [canEdit, moves],
+  )
+  const openCommand = useCallback(() => {
+    setQuick(null)
+    setSheet('command')
+  }, [])
+
+  // The keys: D W M A I B L for the views, T for today, P to pencil, / for the command bar (Cmd or Ctrl
+  // plus K toggles it, even from a field), the arrows to page, and Esc for the top layer. Any other key
+  // with a modifier, or one typed into a field or a sheet, is left alone.
+  const state = useRef({ sheet, jumpOpen, railOpen, sel, quick })
   useEffect(() => {
-    state.current = { sheet, jumpOpen, railOpen, sel }
+    state.current = { sheet, jumpOpen, railOpen, sel, quick }
   })
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        if (state.current.sheet === 'command') setSheet(null)
+        else openCommand()
+        return
+      }
       const el = e.target as HTMLElement | null
       const action = suiteKeyAction({
         key: e.key,
@@ -278,12 +340,13 @@ export function CalendarSuite(props: CalendarSuiteProps) {
         altKey: e.altKey,
         targetTag: el?.tagName ?? null,
         targetEditable: !!el?.isContentEditable,
-        inSheet: !!state.current.sheet || !!el?.closest?.('[role="dialog"]'),
+        inSheet: !!state.current.sheet || !!state.current.quick || !!el?.closest?.('[role="dialog"]'),
       })
       if (!action) return
       if (action.type === 'escape') {
         const s = state.current
-        if (s.sheet) setSheet(null)
+        if (s.quick) setQuick(null)
+        else if (s.sheet) setSheet(null)
         else if (s.jumpOpen) setJumpOpen(false)
         else if (s.railOpen) setRailOpen(false)
         else if (s.sel) setSel(null)
@@ -293,12 +356,48 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       if (action.type === 'view') chooseView(action.view)
       else if (action.type === 'today') goToday()
       else if (action.type === 'page') page(action.delta)
-      else if (action.type === 'pencil') setSheet('pencil')
-      else if (action.type === 'ask') setSheet('ask')
+      else if (action.type === 'pencil') openPencil()
+      else if (action.type === 'ask') openCommand()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [chooseView, goToday, page])
+  }, [chooseView, goToday, page, openPencil, openCommand])
+
+  // A click on empty calendar asks for a quick add there, placed from the click inside the calendar's box.
+  const askQuick = useCallback(
+    (a: QuickAnchor) => {
+      if (!canEdit || state.current.sheet) return
+      const r = box.current?.getBoundingClientRect()
+      if (!r) return
+      setQuick({ ...a, x: a.x - r.left, y: a.y - r.top, box: { width: r.width, height: r.height } })
+    },
+    [canEdit],
+  )
+
+  // The command bar's rows. Views, Today, a Plan or a date just move the calendar; the create row writes.
+  const runCommand = useCallback(
+    async (row: CommandRow, parsed: ReturnType<typeof parseCommand>): Promise<string | null> => {
+      if (row.type === 'view') chooseView(row.view)
+      else if (row.type === 'today') goToday()
+      else if (row.type === 'plan') select({ kind: 'plan', id: row.ref })
+      else if (row.type === 'item') {
+        if (view === 'month') goToMonth(row.day.slice(0, 7))
+        setCursor(row.day)
+        select({ kind: 'item', id: row.ref })
+      } else if (parsed) {
+        if (!canEdit) return 'You can look at this calendar but not change it.'
+        const failed = await make.quick({ kind: parsed.kind, title: parsed.title, day: parsed.date, startMin: parsed.startMin, durMin: parsed.durMin })
+        if (failed) return failed
+        if (parsed.date) {
+          if (view === 'month') goToMonth(parsed.date.slice(0, 7))
+          setCursor(parsed.date)
+        }
+      }
+      setSheet(null)
+      return null
+    },
+    [canEdit, chooseView, goToday, goToMonth, make, select, view],
+  )
 
   const showMore = useCallback(
     (day: string) => {
@@ -311,7 +410,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
 
   return (
     <CohostProvider api={cohost.api}>
-    <div className="cal-box">
+    <div className="cal-box" ref={box}>
     <div
       className="cal-suite"
       data-view={view}
@@ -334,7 +433,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
           onToggleLayer={toggleLayer}
           onPickDay={pickDay}
           onSelect={select}
-          onPencil={() => setSheet('pencil')}
+          onPencil={() => openPencil()}
         />
       </aside>
 
@@ -358,7 +457,8 @@ export function CalendarSuite(props: CalendarSuiteProps) {
             else setCursor(ym === todayYm ? todayKey : `${ym}-01`)
           }}
           onRail={() => setRailOpen(true)}
-          onAsk={() => setSheet('ask')}
+          onAsk={openCommand}
+          slug={slug}
         />
         <SuiteNeedsYou entries={needs} onOpen={openNeed} />
         <div className="cal-view">
@@ -377,6 +477,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
               onActiveMonth={onActiveMonth}
               onSelect={(ref) => select(ref)}
               onMore={showMore}
+              onQuick={askQuick}
             />
           ) : view === 'agenda' ? (
             <SuiteAgenda data={plannerData} ctx={ctx} sel={sel} cursor={cursor} focusDay={focusDay} dnd={dnd} onSelect={(ref) => select(ref)} />
@@ -391,6 +492,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
               sky={sky}
               dnd={dnd}
               zoneShort={props.zoneShort ?? ''}
+              onQuick={askQuick}
               onSelect={(ref) => select(ref)}
               onOpenDay={
                 view === 'week'
@@ -401,26 +503,28 @@ export function CalendarSuite(props: CalendarSuiteProps) {
                   : undefined
               }
             />
+          ) : view === 'list' ? (
+            <SuiteList data={plannerData} ctx={ctx} sel={sel} onSelect={(ref) => select(ref)} />
+          ) : view === 'board' ? (
+            <SuiteBoard data={plannerData} ctx={ctx} sel={sel} dnd={dnd} onSelect={(ref) => select(ref)} onRestore={moves.restore} />
           ) : (
-            <div className="cal-soon">
-              <EmptyState
-                variant="first-use"
-                icon={CalendarClock}
-                title={`${SUITE_VIEW_LABEL[view]} is coming soon`}
-                description={`${READY_VIEWS.slice(0, -1).map((v) => SUITE_VIEW_LABEL[v]).join(', ')} and ${SUITE_VIEW_LABEL[READY_VIEWS[READY_VIEWS.length - 1]]} are ready now.`}
-                action={
-                  <Button variant="primarySoft" size="sm" onClick={() => chooseView('week')}>
-                    Open Week
-                  </Button>
-                }
-              />
-            </div>
+            <SuiteTimeline data={plannerData} ctx={ctx} sel={sel} onSelect={(ref) => select(ref)} />
           )}
         </div>
       </div>
 
       <aside className="cal-details fq-panel" aria-label="Details" hidden={!sel}>
-        {sel ? <SuiteDetails sel={sel} data={plannerData} ctx={ctx} onSelect={select} onClose={() => setSel(null)} /> : null}
+        {sel ? (
+          <SuiteDetails
+            sel={sel}
+            data={plannerData}
+            ctx={ctx}
+            actions={detailsActions}
+            say={moves.say}
+            onSelect={select}
+            onClose={() => setSel(null)}
+          />
+        ) : null}
       </aside>
 
       <div className="cal-scrim" onClick={() => (railOpen ? setRailOpen(false) : setSel(null))} aria-hidden />
@@ -429,33 +533,49 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       {cohost.layer}
 
       {sheet === 'pencil' ? (
-        <SuiteSheet
-          title="Pencil it in"
-          line="Hold up to three dates while you work it out. Only your team sees it."
+        <SuitePencil
+          today={todayKey}
+          items={data.items}
+          startDay={seed.day}
+          startTitle={seed.title}
           onClose={() => setSheet(null)}
-        >
-          <EmptyState
-            variant="first-use"
-            icon={Sparkles}
-            title="Holding dates from here is on its way"
-            description="Until then, start an event, or open your Plans to pencil dates on one."
-            action={
-              <>
-                <Link className="btn pa" href={props.newEventHref}>
-                  New event
-                </Link>
-                <a className="btn" href="#calendar-plans" onClick={() => setSheet(null)}>
-                  Open your Plans
-                </a>
-              </>
-            }
-          />
-        </SuiteSheet>
+          onSubmit={async (input) => {
+            const failed = await make.pencil(input)
+            if (failed) return failed
+            setSheet(null)
+            const first = input.dates[0]
+            if (view === 'month') goToMonth(first.slice(0, 7))
+            setCursor(first)
+            return null
+          }}
+        />
       ) : null}
-      {sheet === 'ask' ? (
-        <SuiteSheet title="Ask Vera or search" line="Say what you want on the calendar, or find something already on it." onClose={() => setSheet(null)}>
-          <EmptyState variant="first-use" icon={Sparkles} title="Ask and search are coming soon" description="For now, switch views or page through the months." />
-        </SuiteSheet>
+      {sheet === 'command' ? (
+        <SuiteCommand
+          today={todayKey}
+          timeZone={props.timeZone ?? 'America/Los_Angeles'}
+          views={SUITE_VIEWS}
+          plans={data.plans}
+          items={data.items}
+          onRun={runCommand}
+          onClose={() => setSheet(null)}
+        />
+      ) : null}
+      {quick ? (
+        <SuiteQuick
+          day={quick.day}
+          startMin={quick.startMin}
+          x={quick.x}
+          y={quick.y}
+          box={quick.box}
+          onClose={() => setQuick(null)}
+          onMore={(title) => openPencil({ day: quick.day, title })}
+          onAdd={async (input) => {
+            const failed = await make.quick({ ...input, durMin: 60 })
+            if (!failed) setQuick(null)
+            return failed
+          }}
+        />
       ) : null}
     </div>
     </div>

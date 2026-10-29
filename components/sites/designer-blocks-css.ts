@@ -120,6 +120,18 @@ ${N} .dz-project:hover img{transform:scale(1.04)}
 ${N} .dz-project::after{content:"";position:absolute;inset:0;background:var(--dz-scrim-card)}
 ${N} .dz-project-body{position:absolute;left:28px;right:28px;bottom:28px;z-index:1;display:block}
 ${N} .dz-project-body>span{display:flex;flex-direction:column;gap:12px}
+/* Portfolio cards: the photo, then its number, place and year, the name and the way in. */
+${N} .dz-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:clamp(20px,2.4vw,32px)}
+${N} .dz-tile{display:flex;flex-direction:column;gap:12px;padding:12px 12px 24px;border-radius:var(--dz-r-3);background:var(--dz-parchment);box-shadow:var(--dz-shadow-1);color:var(--dz-charcoal);text-decoration:none;transition:box-shadow var(--dz-dur-slow) var(--dz-ease-out),transform var(--dz-dur-slow) var(--dz-ease-out)}
+${N} a.dz-tile:hover{box-shadow:var(--dz-shadow-3);transform:translateY(-4px);color:var(--dz-charcoal)}
+${N} .dz-tile-photo{position:relative;display:block;aspect-ratio:4 / 3;overflow:hidden;border-radius:var(--dz-r-2)}
+${N} .dz-tile-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1.2s var(--dz-ease-out)}
+${N} a.dz-tile:hover .dz-tile-photo img{transform:scale(1.04)}
+${N} .dz-tile-meta{display:flex;gap:12px;align-items:baseline;padding:8px 12px 0;${LABEL};font-size:var(--dz-size-micro);letter-spacing:.14em;line-height:1.4;color:var(--dz-stone)}
+${N} .dz-tile-meta i{font-family:var(--dz-display);font-size:18px;letter-spacing:0;color:var(--dz-ochre-deep)}
+${N} .dz-tile-title{display:block;padding:0 12px;font-family:var(--dz-display);font-size:var(--dz-size-h3);line-height:1.15}
+${N} .dz-tile-go{display:flex;align-items:center;justify-content:space-between;margin:8px 12px 0;padding-top:16px;border-top:${HAIR};${LABEL};font-size:var(--dz-size-micro);letter-spacing:var(--dz-tracking-label);color:var(--dz-charcoal)}
+${N} .dz-tile-go b{display:grid;place-items:center;width:32px;height:32px;border-radius:var(--dz-r-pill);border:1px solid var(--dz-line);font-weight:400;letter-spacing:0}
 ${N} .dz-project-title{display:block;font-family:var(--dz-display);font-size:32px;line-height:1.1}
 ${N} .dz-project-meta{display:block;${LABEL};font-size:var(--dz-size-micro);letter-spacing:.18em;line-height:1.4;color:var(--dz-sand)}
 ${N} .dz-project-go{display:inline-flex;align-items:center;align-self:flex-start;margin-top:6px;padding:11px 16px;border-radius:var(--dz-r-pill);background:var(--dz-glass);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--dz-charcoal);${LABEL};font-size:var(--dz-size-micro);letter-spacing:var(--dz-tracking-button);line-height:1}
@@ -140,7 +152,21 @@ ${N} .dz-arch img{display:block;width:100%;height:100%;object-fit:cover}
 ${N} .dz-panel{padding:4px clamp(24px,3vw,40px);background:var(--dz-sheen),var(--dz-glass-warm);border-radius:var(--dz-r-3);box-shadow:var(--dz-shadow-2)}
 ${N} .dz-step{display:grid;grid-template-columns:52px minmax(0,1fr);gap:20px;padding:22px 0;border-top:${HAIR}}
 ${N} .dz-step:first-child{border-top:0}
-${N} .dz-disc{display:grid;place-items:center;width:48px;height:48px;border-radius:var(--dz-r-pill);border:1px solid var(--dz-ochre);background:var(--dz-paper);font-family:var(--dz-display);font-style:italic;font-size:22px;line-height:1;color:var(--dz-ochre-deep)}
+${N} .dz-disc,${N} .dz-seal{display:grid;place-items:center;width:var(--dz-seal,48px);height:var(--dz-seal,48px);border-radius:var(--dz-r-pill);border:1px solid var(--dz-ochre);background:var(--dz-paper);font-family:var(--dz-display);font-style:italic;font-size:var(--dz-seal-fs,22px);line-height:1;color:var(--dz-ochre-deep)}
+${N} .dz-seal{box-shadow:var(--dz-shadow-1);flex:none}
+${N} .dz-seal[data-tone="accent"]{background:var(--color-primary-bg)}
+${N} .dz-seal[data-tone="dark"]{border-color:var(--dz-disc-dark-edge);background:var(--dz-disc-dark);color:var(--dz-sand);box-shadow:none}
+${N} .dz-seal-set{display:inline-flex;flex-direction:column;align-items:center;gap:12px}
+${N} .dz-seal-label{font-family:var(--dz-sans);font-size:11px;font-weight:500;letter-spacing:var(--dz-tracking-label);text-transform:uppercase;color:var(--dz-ochre-deep)}
+/* Ornament: a fading hairline with one centred mark. */
+${N} .dz-orn{display:flex;align-items:center;gap:16px;width:var(--dz-orn-w,100%);max-width:100%;margin:0 auto;color:var(--color-primary)}
+${N} .dz-orn-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--dz-line))}
+${N} .dz-orn-line[data-end]{background:linear-gradient(270deg,transparent,var(--dz-line))}
+${N} .dz-orn-mark{display:inline-flex;gap:10px;align-items:center;line-height:1}
+${N} .dz-orn-mark>span{font-family:var(--dz-sans);font-weight:300;font-size:13px;line-height:.6}
+${N} .dz-orn-mark>span[data-g="+"],${N} .dz-orn-mark>span[data-g="·"]{font-size:20px}
+${N} .dz-orn-mark>span[data-g="●"]{font-size:7px}
+${N} .dz-orn-label{padding:0 4px;font-size:var(--dz-size-micro);letter-spacing:var(--dz-tracking-label);text-transform:uppercase}
 ${N} .dz-step .dz-disc{width:52px;height:52px;box-shadow:var(--dz-shadow-1)}
 ${N} .dz-step>div{display:flex;flex-direction:column;gap:8px;min-width:0}
 ${N} .dz-step-title{margin:0;font-family:var(--dz-display);font-weight:400;font-size:var(--dz-size-h3);line-height:1.15}
@@ -155,7 +181,7 @@ ${N} .dz-bar-copy{display:flex;flex-direction:column;gap:20px;max-width:42rem}
 ${N} .dz-bar[data-split]{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:end}
 ${N} .dz-bar-lead{margin:0;color:var(--dz-on-dark-muted)}
 ${N} .dz-services--light~.dz-closing{display:none}
-${N} .dz-services{display:grid;grid-template-columns:repeat(var(--dz-cols,4),minmax(0,1fr));gap:16px;margin:0;padding:0;list-style:none}
+${N} .dz-services{--dz-cols:var(--dz-cols-wide,4);display:grid;grid-template-columns:repeat(var(--dz-cols),minmax(0,1fr));gap:16px;margin:0;padding:0;list-style:none}
 ${N} .dz-service{display:flex;flex-direction:column;justify-content:space-between;gap:32px;min-height:170px;padding:26px;border:0;border-radius:var(--dz-r-2);background:var(--dz-tile-dark);box-shadow:var(--dz-tile-dark-edge);font-family:var(--dz-display);font-size:24px;line-height:1.2;text-wrap:balance;transition:background var(--dz-dur-slow) var(--dz-ease-out),box-shadow var(--dz-dur-slow) var(--dz-ease-out),transform var(--dz-dur-slow) var(--dz-ease-out)}
 ${N} .dz-service:hover{background:var(--dz-tile-dark-hover);box-shadow:var(--dz-tile-dark-edge),var(--dz-tile-dark-lift);transform:translateY(-3px)}
 ${N} .dz-service b{display:grid;place-items:center;width:40px;height:40px;border-radius:var(--dz-r-pill);border:1px solid var(--dz-disc-dark-edge);background:var(--dz-disc-dark);font-family:var(--dz-display);font-style:italic;font-weight:400;font-size:18px;color:var(--dz-sand)}
@@ -247,6 +273,8 @@ ${N} .dz-shot img{width:100%;height:100%;object-fit:cover}
 /* Closing call + next. */
 ${N} .dz-sec[data-dz="closing"] .dz-split{gap:64px}
 ${N} .dz-next-copy{display:flex;flex-direction:column;align-items:flex-start;gap:28px}
+${N} .dz-next-copy>.dz-orn{margin:0}
+${N} .dz-orn-head{display:flex;justify-content:center;margin-bottom:clamp(24px,3vw,40px)}
 
 /* Inquiry form. */
 ${N} .dz-inquiry{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(40px,6vw,96px);align-items:start}

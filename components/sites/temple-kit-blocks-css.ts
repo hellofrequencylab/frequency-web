@@ -64,9 +64,9 @@ ${N} .tk-btn>*{position:relative}
 ${N} .tk-btn.tk-btn--sm{height:40px;padding:0 20px;font-size:14px}
 ${N} .tk-btn.tk-btn--md{height:50px;padding:0 30px;font-size:16px}
 ${N} .tk-btn.tk-btn--lg{height:60px;padding:0 38px;font-size:18px}
-${N} .tk-btn.tk-btn--primary{background:var(--mn-solid);color:var(--mn-on-solid);box-shadow:var(--shadow-button)}
+${N} .tk-btn.tk-btn--primary{background:var(--mn-solid);color:var(--kit-on-solid);box-shadow:var(--shadow-button)}
 ${N} .tk-btn.tk-btn--primary::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:var(--texture-grit);background-size:300px;opacity:.14;mix-blend-mode:soft-light}
-${N} .tk-btn.tk-btn--primary:hover{background:var(--mn-solid-hover);color:var(--mn-on-solid);box-shadow:var(--shadow-button-hover);transform:translateY(-1px)}
+${N} .tk-btn.tk-btn--primary:hover{background:var(--mn-solid-hover);color:var(--kit-on-solid);box-shadow:var(--shadow-button-hover);transform:translateY(-1px)}
 ${N} .tk-btn.tk-btn--primary:active{background:var(--tk-clay-700);box-shadow:var(--shadow-inset-deep);transform:scale(var(--press-scale))}
 ${N} .tk-btn.tk-btn--secondary{background:${mix('--surface-card', 50)};color:var(--tk-umber-900);border-color:var(--line-rule);box-shadow:0 1px 2px ${mix('--tk-clay-700', 10)}}
 ${N} .tk-btn.tk-btn--secondary:hover{background:${mix('--surface-card', 85)};color:var(--tk-umber-900);border-color:var(--line-strong);box-shadow:0 3px 8px -2px ${mix('--tk-clay-700', 16)};transform:translateY(-1px)}
@@ -284,7 +284,7 @@ ${N} .tk-tier-spark{color:var(--tk-saffron-500)}
 ${N} .tk-tier-button{width:100%;margin-top:auto}
 ${N} .tk-btn.tk-btn--light{background:var(--tk-plaster-50);color:var(--tk-umber-900);border-color:transparent}
 ${N} .tk-btn.tk-btn--light:hover{background:var(--tk-plaster-100);color:var(--tk-umber-900);transform:translateY(-1px)}
-${N} .tk-tier--featured{border:0;background:var(--wash-clay);color:var(--text-on-clay);box-shadow:var(--tk-depth-xl)}
+${N} .tk-tier--featured{border:0;background:var(--wash-clay);color:var(--kit-on-solid);box-shadow:var(--tk-depth-xl)}
 ${N} .tk-tier--featured .tk-tier-frame{border-color:${mix('--tk-plaster-50', 30)}}
 ${N} .tk-tier--featured .tk-tier-eyebrow{color:var(--tk-saffron-200)}
 ${N} .tk-tier--featured .tk-tier-badge{background:var(--tk-saffron-200);color:var(--tk-umber-900);font-size:10px;letter-spacing:.12em}
@@ -317,7 +317,7 @@ ${N} .tk-faq-aside .tk-head-eyebrow{justify-content:flex-start}
 }
 
 ${N} .tk-letter-sec{padding-top:0}
-${N} .tk-ltr-band{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-items:center;background:var(--wash-clay);color:var(--text-on-clay);border-radius:var(--radius-2xl);box-shadow:var(--tk-depth-lg)}
+${N} .tk-ltr-band{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-items:center;background:var(--wash-clay);color:var(--kit-on-solid);border-radius:var(--radius-2xl);box-shadow:var(--tk-depth-lg)}
 ${N} .tk-ltr-copy{padding:clamp(36px,5vw,72px)}
 ${N} .tk-ltr-eyebrow{color:var(--tk-saffron-200)}
 ${N} .tk-ltr-title{margin-top:16px;color:var(--tk-plaster-50)}

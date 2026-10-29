@@ -19,8 +19,11 @@ export const SUITE_VIEW_LABEL: Record<SuiteView, string> = {
   timeline: 'Timeline',
 }
 
-/** The views that draw today. The rest show a quiet "coming soon" until their pass lands. */
-export const READY_VIEWS: readonly SuiteView[] = ['day', 'week', 'month', 'agenda']
+/** The views that show every Plan rather than a stretch of time: List, Kanban and Timeline. They have
+ *  no month to page through, so they print their own title and carry no paging. */
+export function isPlanView(view: SuiteView): boolean {
+  return view === 'list' || view === 'board' || view === 'timeline'
+}
 
 const KEY_VIEW: Record<string, SuiteView> = {
   d: 'day',

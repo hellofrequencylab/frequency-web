@@ -445,6 +445,60 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4375,
+      "expiresAt": "2026-10-31T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346027300_launch_clock.sql",
+          "sha256": "75d045dc71acb7d66fdaaf51caa460434b22b24280240387b72477640845ca9d"
+        },
+        {
+          "file": "supabase/migrations/20270346027400_launch_buildout_draft.sql",
+          "sha256": "0c08f827e279f4d53d3f7726b4abc76b5380d4efe1eb284853231c897aa0e0a3"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "077090deb32eb897d6426748e3010d2cbe61235108b20445b82125e26ad217f4",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346027300_launch_clock.sql",
+          "status": "added",
+          "sha256": "75d045dc71acb7d66fdaaf51caa460434b22b24280240387b72477640845ca9d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346027400_launch_buildout_draft.sql",
+          "status": "added",
+          "sha256": "0c08f827e279f4d53d3f7726b4abc76b5380d4efe1eb284853231c897aa0e0a3",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/launch_clock_buildout.test.sql",
+          "status": "added",
+          "sha256": "f8912246dc32516d793c8fe8f682931e6cc678ff2fc6fd1a3d4d7b78e424148f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }

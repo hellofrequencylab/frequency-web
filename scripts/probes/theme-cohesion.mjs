@@ -8,7 +8,7 @@ const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')
 const count = (dir, re) => (existsSync(dir) ? readdirSync(dir).filter((f) => re.test(f)).length : 0)
 
 const CHECKS = {
-  audit: () => (/"audit:themes"/.test(read('package.json')) && existsSync('docs/design-systems/theme-cohesion/baseline.json') ? [] : ['no audit:themes command or hole baseline']),
+  audit: () => (/"audit:themes"/.test(read('package.json')) && existsSync('docs/theme-cohesion-baseline.json') ? [] : ['no audit:themes command or hole baseline']),
   defects: () => (existsSync('test/theme-cohesion-defects.render.test.tsx') ? [] : ['the three audit defects have no render test']),
   copy: () => (/live blocks stay as they are/.test(read('components/sites/editor/theme-changer.tsx')) ? ['the Theme tab still promises live blocks stay as they are'] : []),
   fallback: () => (existsSync('components/sites/contract-skin-css.ts') && /contract-skin-css/.test(read('components/sites/site-page.tsx')) ? [] : ['foreign family blocks have no contract skin on the site render']),

@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "scripts/probes/theme-cohesion.mjs",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Productionise the 2026-10-28 harness (project folder theme-cohesion/harness): render matrix, coverage JSON, contact sheets, baseline that can only shrink. Real-content fixture first, because default props hide some blocks.",
+  "detail": "Productionise the 2026-10-28 harness (project folder theme-cohesion/harness): render matrix, coverage JSON, contact sheets, baseline that can only shrink. Real-content fixture first, because default props hide some blocks. Shipped: pnpm audit:themes (scripts/theme-audit.mjs, render matrix in scripts/theme-audit/render.audit.tsx) renders every block in the page-editor config on all nine skins with a schema-driven real-content fixture (lib/theme-audit/fixture.ts), writes coverage.json, and with --sheets shoots contact sheets per palette category. docs/theme-cohesion-baseline.json lists every block-on-theme hole under 0.9 coverage; a new hole fails the audit and --update-baseline refuses to add one.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/theme-cohesion.mjs audit",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-29"
 }

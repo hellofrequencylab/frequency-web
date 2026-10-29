@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1784",
+  "title": "Give the Designer Theme Kit its Space page face: Cormorant display, nothing else",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "docs/design-systems/designer/rules.json",
+    "ref": "Daniel, 2026-10-28: fan out and begin the Frequency Theme Kit Designer, the way Nocturne is set up. Pass 8 of the plan at /mnt/project-files/designer-kit/PLAN.html. ADR-1728 and ADR-1906 (theme fence)."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/designer-kit-space.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (no designer faces id, no Space page rule) and passes here."
+  },
+  "detail": "Pass 8 of the Designer Theme Kit, built the way the Network kit's was (LIVE-1750): content and colours only, no change under /themes. A Space whose website is the Designer kit and stays synced now wears the kit's DISPLAY face on its page: lib/theme/site-faces.ts gains a 'designer' faces id (Cormorant and Jost sheet, --font-dz-* names), spacePageSiteFaces returns it for a synced Designer website, and app/themes/frequency/space-page.css maps it onto the page's display face only (Cormorant 500, track -0.005em, scale 1.12 for the lighter serif). The body face, the UI and every size stay Frequency's, as ADR-1728 says. The accent already rode spacePageDefaultAccent (DESIGNER_ACCENT). The console and every member area read memberSpaceFonts, which never sees the website theme; rendered at 390, 1280, 1440, 1920 and 2000 (scripts/render/space.render.tsx, now with a designer variant) the console HTML is identical and the images are pixel-identical to a Space with no website theme, and the Space page differs only in the display text and the accent.",
+  "wave": "W7"
+}

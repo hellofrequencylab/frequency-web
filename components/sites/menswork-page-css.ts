@@ -71,7 +71,8 @@ ${M} .mw-hero-inner{display:grid;gap:clamp(32px,5vw,48px);align-items:end}
 ${M} .mw-hero-split .mw-hero-inner{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
 ${M} .mw-hero-split .mw-photo{height:clamp(280px,32vw,380px)}
 ${M} .mw-hero-copy{max-width:900px}
-${M} .mw-hero-stack .mw-hero-copy .mw-display{font-size:clamp(3.75rem,8.5vw,7.5rem)}
+${M} .mw-hero-stack .mw-hero-copy .mw-display{font-size:clamp(3.75rem,8.5vw,7.5rem);overflow-wrap:break-word}
+@media (max-width:639px){${M} .mw-hero .mw-hero-copy .mw-display{font-size:clamp(2.25rem,10vw,3.75rem)}}
 ${M} .mw-hero-photo{width:100%;max-width:1248px;margin:clamp(40px,5vw,48px) auto 0;height:clamp(280px,38vw,480px)}
 ${M} .mw-hero-photo+*{margin-top:0}
 

@@ -56,6 +56,7 @@ import { SpaceProfileModules } from '@/components/widgets/space-profile/space-pr
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { readTagline } from '@/lib/spaces/tagline'
 import { parseEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { legacyViewOf } from '@/lib/entity-blocks/node-ops'
 import type { Space } from '@/lib/spaces/types'
 import { appOrigin } from '@/lib/sites/host'
 import { getLoyaltyProgram, loyaltyEnabled } from '@/lib/loyalty/store'
@@ -726,7 +727,9 @@ function profileGrid(prefs: unknown): EntityLayout {
     prefs && typeof prefs === 'object' && !Array.isArray(prefs)
       ? (prefs as Record<string, unknown>).profileLayout
       : null
-  return parseEntityLayout(rawLayout) ?? {}
+  // A node-native layout (placements and bags stored on nodes) is read back as string cells and bags: the
+  // house Home and Contact builders read the legacy shape, and drew only the hero without this.
+  return legacyViewOf(parseEntityLayout(rawLayout) ?? {})
 }
 
 function SiteComingSoon({ brandName, profileHref }: { brandName: string; profileHref: string }) {

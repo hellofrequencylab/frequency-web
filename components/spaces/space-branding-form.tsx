@@ -14,7 +14,7 @@ import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
-import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, type SiteLookKey, type SiteStyle } from '@/lib/theme/site-style'
+import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { suggestTaglineAction } from '@/app/(main)/spaces/copilot-actions'
 import type { CoverScrim, LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
@@ -682,7 +682,11 @@ export function SpaceBrandingForm({
           <div className="space-y-2">
             <p className={labelClasses}>Theme</p>
             <StyleChoiceCards
-              choices={SITE_THEMES.map((t) => ({ id: t.id, label: t.label, detail: t.description, preview: t.defaultFonts }))}
+              choices={[
+                ...SITE_THEMES.map((t) => ({ id: t.id, label: t.label, detail: t.description, preview: t.defaultFonts })),
+                // Held back for now: the Woman theme is not pickable yet.
+                { id: 'woman' as SiteThemeId, label: 'Woman', detail: 'Coming soon.', preview: SITE_THEMES[0].defaultFonts, soon: true },
+              ]}
               value={style.theme}
               disabled={readOnly || pending}
               onPick={(id) => {
@@ -792,7 +796,7 @@ function StyleChoiceCards<T extends string>({
   disabled,
   onPick,
 }: {
-  choices: { id: T; label: string; detail: string; preview: SpaceThemeId }[]
+  choices: { id: T; label: string; detail: string; preview: SpaceThemeId; soon?: boolean }[]
   value: T
   disabled: boolean
   onPick: (id: T) => void
@@ -805,13 +809,14 @@ function StyleChoiceCards<T extends string>({
           <button
             key={c.id}
             type="button"
-            disabled={disabled || active}
+            disabled={disabled || active || c.soon}
             onClick={() => onPick(c.id)}
             aria-pressed={active}
             data-space-theme={c.preview}
             className={cn(
               'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
               active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
+              c.soon && 'cursor-not-allowed opacity-50 hover:border-border',
             )}
           >
             <span className="flex items-center gap-1.5 font-display text-body-sm font-semibold text-text">
