@@ -26,7 +26,7 @@ assert.deepEqual(layouts.spotlightLayoutsFor('midnight'), [])
 const preset = theme.THEME_PRESETS.find((p) => p.id === 'network-kit')
 assert.equal(theme.validateSpotlightTheme(preset.theme).layout, 'network-kit:stack')
 assert.equal('layout' in theme.validateSpotlightTheme({ ...preset.theme, layout: 'midnight:stack' }), false, 'an unregistered layout is dropped')
-for (const p of theme.THEME_PRESETS) if (p.id !== 'network-kit' && p.id !== 'temple-kit') assert.ok(!('layout' in p.theme), `${p.id} has no layout`)
+for (const p of theme.THEME_PRESETS) if (p.id !== 'network-kit' && p.id !== 'temple-kit' && p.id !== 'free-human') assert.ok(!('layout' in p.theme), `${p.id} has no layout`)
 assert.deepEqual(theme.validateSpotlightTheme(theme.EMPTY_THEME), theme.EMPTY_THEME, 'the default theme is unchanged')
 
 // 2. Each layout has a component; the shell swaps only for a themed layout.

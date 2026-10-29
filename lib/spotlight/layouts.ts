@@ -1,6 +1,6 @@
 // SPOTLIGHT LAYOUTS: the registry that says which whole-page layouts a Spotlight theme can wear. PURE.
 // A theme with no entry here has no layouts and renders exactly as before (the block body, nothing swapped).
-// The Network (`network-kit`), Designer (`designer-kit`) and Temple (`temple-kit`) Theme Kits each register the six layouts of
+// The Network (`network-kit`), Designer (`designer-kit`), Temple (`temple-kit`) and Free Human (`free-human`) Theme Kits each register the six layouts of
 // their design's Spotlight Layouts page. The components live in components/spotlight/network-kit-layouts.tsx and
 // designer-kit-layouts.tsx and temple-kit-layouts.tsx; this file is ids and labels only, so the theme validator and the editor can read it
 // without pulling React in.
@@ -11,7 +11,8 @@ type LayoutName = 'stack' | 'card-wall' | 'story' | 'calendar-first' | 'shop-fro
 export type NetworkKitLayoutId = `network-kit:${LayoutName}`
 export type DesignerKitLayoutId = `designer-kit:${LayoutName}`
 export type TempleKitLayoutId = `temple-kit:${LayoutName}`
-export type SpotlightLayoutId = NetworkKitLayoutId | DesignerKitLayoutId | TempleKitLayoutId
+export type FreeHumanLayoutId = `free-human:${LayoutName}`
+export type SpotlightLayoutId = NetworkKitLayoutId | DesignerKitLayoutId | TempleKitLayoutId | FreeHumanLayoutId
 
 interface SpotlightLayoutInfo {
   id: SpotlightLayoutId
@@ -40,6 +41,7 @@ const SPOTLIGHT_LAYOUTS_BY_THEME: Record<string, readonly SpotlightLayoutInfo[]>
   ],
   'designer-kit': LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `designer-kit:${n}` as DesignerKitLayoutId, label, blurb })),
   'temple-kit': LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `temple-kit:${n}` as TempleKitLayoutId, label, blurb })),
+  'free-human': LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `free-human:${n}` as FreeHumanLayoutId, label, blurb })),
 }
 
 const ALL_IDS: ReadonlySet<string> = new Set(Object.values(SPOTLIGHT_LAYOUTS_BY_THEME).flatMap((l) => l.map((i) => i.id)))
@@ -62,4 +64,9 @@ export function isDesignerKitLayout(id: SpotlightLayoutId): id is DesignerKitLay
 /** True for a layout the Temple Theme Kit draws (components/spotlight/temple-kit-layouts.tsx). */
 export function isTempleKitLayout(id: SpotlightLayoutId): id is TempleKitLayoutId {
   return id.startsWith('temple-kit:')
+}
+
+/** True for a layout the Free Human Theme Kit draws (components/spotlight/free-human-layouts.tsx). */
+export function isFreeHumanLayout(id: SpotlightLayoutId): id is FreeHumanLayoutId {
+  return id.startsWith('free-human:')
 }

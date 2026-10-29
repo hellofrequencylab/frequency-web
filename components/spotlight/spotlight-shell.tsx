@@ -14,9 +14,11 @@ import { NetworkKitSpotlightLayout } from './network-kit-layouts'
 import { networkKitSpotlightContent } from '@/lib/spotlight/network-kit-content'
 import { DesignerKitSpotlightLayout } from './designer-kit-layouts'
 import { designerKitSpotlightContent } from '@/lib/spotlight/designer-kit-content'
-import { isDesignerKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { isDesignerKitLayout, isFreeHumanLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
 import { TempleKitSpotlightLayout } from './temple-kit-layouts'
 import { templeKitSpotlightContent } from '@/lib/spotlight/temple-kit-content'
+import { FreeHumanSpotlightLayout } from './free-human-layouts'
+import { freeHumanSpotlightContent } from '@/lib/spotlight/free-human-content'
 
 // THE SHARED PUBLIC SPOTLIGHT CHROME. The member's identity header + theme wrapper + optional
 // background + join CTA footer, with the BLOCK BODY handed in as `children`. Since ADR-523 the ONLY body
@@ -59,6 +61,17 @@ export function SpotlightShell({
       return (
         <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
           <DesignerKitSpotlightLayout layout={theme.layout} content={content} />
+        </div>
+      )
+    }
+    if (isFreeHumanLayout(theme.layout)) {
+      // The Free Human kit draws its own page inside the same wrapper and footer.
+      const content = freeHumanSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <main className="relative mx-auto max-w-xl">
+            <FreeHumanSpotlightLayout layout={theme.layout} content={content} />
+          </main>
         </div>
       )
     }
