@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { LaunchClockSlot } from '@/components/launch/launch-clock-slot'
 import { LaunchFlow } from '@/components/launch/launch-flow'
 import { DashboardTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
@@ -32,6 +33,9 @@ export default async function SpotlightStepPage({ searchParams }: { searchParams
   const choices = owned.length > 0 ? spaceChoices(owned) : undefined
   return (
     <DashboardTemplate {...flowHeading(view)} adminBar={false} width="default">
+      {launch && profileId ? (
+        <LaunchClockSlot launchId={launch.id} ownerId={profileId} stages={view.stages.map((s) => s.label)} stagesDone={view.stages.filter((s) => s.state === 'live').length} done={view.stages.filter((s) => s.state === 'live').length} total={view.stages.length} />
+      ) : null}
       <LaunchFlow view={view} answers={held} errorCode={typeof e === 'string' ? e : undefined} signedIn={!!profileId} choices={choices} />
     </DashboardTemplate>
   )

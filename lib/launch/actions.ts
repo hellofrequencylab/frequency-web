@@ -12,6 +12,8 @@
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
+import { recordClockBeat } from './clock-io'
+import type { BeatKind } from './clock'
 import { launchSystemEnabled } from './enabled'
 import { recordLaunchEvent } from './events'
 import { clearPendingLaunch, readPendingLaunch, writePendingLaunch } from './pending-io'
@@ -40,6 +42,16 @@ export async function setMinimizedAction(minimized: boolean): Promise<ActionResu
   const who = await mine()
   if ('error' in who) return fail(who.error)
   return (await store.setMinimized(who.launch, minimized === true)) ? ok() : fail(RETRY)
+}
+
+/** The clock's heartbeat (start, beat, stop). The open page sends one every 15 seconds while the person is working;
+ *  the server adds the time since the last one, never more than 30 seconds, and returns the active milliseconds kept. */
+export async function clockBeatAction(kind: BeatKind): Promise<ActionResult<{ activeMs: number }>> {
+  if (kind !== 'start' && kind !== 'beat' && kind !== 'stop') return fail(RETRY)
+  const who = await mine()
+  if ('error' in who) return fail(who.error)
+  const activeMs = await recordClockBeat(who.launch.id, who.profileId, kind)
+  return activeMs === null ? fail(RETRY) : ok({ activeMs })
 }
 
 /** Cancel, call one. The launch stays active until the second call carries the typed word. */

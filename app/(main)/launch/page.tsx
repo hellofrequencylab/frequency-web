@@ -5,11 +5,14 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { getMyProfileId } from '@/lib/auth'
 import { restartLaunchFormAction } from '@/lib/launch/actions'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
+import { flowView } from '@/lib/launch/flow'
 import { resumeView } from '@/lib/launch/resume'
 import { getLaunchForOwner } from '@/lib/launch/store'
 import Link from 'next/link'
 import { LaunchOverview } from '@/components/launch/launch-overview'
+import { LaunchClockSlot } from '@/components/launch/launch-clock-slot'
 import { loadInventory } from '@/lib/launch/inventory-io'
+import { overviewProgress } from '@/lib/launch/overview'
 import { loadKnownProfile } from '@/lib/launch/known-io'
 
 // /launch (VLS-10): the welcome-back page for a launch that is already started. One of three things: where
@@ -61,14 +64,20 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
   const sections = await loadInventory(launch.spaceId ?? null, profileId)
   if (sections) {
     const known = await loadKnownProfile(profileId)
+    const progress = overviewProgress(sections)
     const who = (known?.displayName ?? '').trim().split(/\s+/)[0] || 'friend'
     return (
       <FocusTemplate title="Your launch" description={`You stopped at ${view.label}. Saved ${view.savedAgo}.`} width="narrow">
-        <LaunchOverview sections={sections} who={who} nextHref={view.href} />
+        <div className="flex flex-col gap-5">
+          <LaunchClockSlot launchId={launch.id} ownerId={profileId} stages={progress.sections.map((s) => s.title)} stagesDone={progress.sections.filter((s) => s.state === 'done').length} done={progress.done} total={progress.total} />
+          <LaunchOverview sections={sections} who={who} nextHref={view.href} />
+        </div>
       </FocusTemplate>
     )
   }
 
+  const stages = flowView(launch).stages
+  const stagesDone = stages.filter((s) => s.state === 'live').length
   return (
     <FocusTemplate
       title="Welcome back"
@@ -76,6 +85,7 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
       width="narrow"
     >
       <div className="flex flex-col gap-4">
+        <LaunchClockSlot launchId={launch.id} ownerId={profileId} stages={stages.map((s) => s.label)} stagesDone={stagesDone} done={stagesDone} total={stages.length} />
         {view.made.length > 0 && (
           <p className="t2">What you have made so far: {view.made.join(', ')}.</p>
         )}

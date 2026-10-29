@@ -15925,6 +15925,8 @@ export type Database = {
         Row: {
           cancel_requested_at: string | null
           cancelled_at: string | null
+          clock_active_ms: number
+          clock_last_beat_at: string | null
           completed_at: string | null
           current_step: string
           id: string
@@ -15941,6 +15943,8 @@ export type Database = {
         Insert: {
           cancel_requested_at?: string | null
           cancelled_at?: string | null
+          clock_active_ms?: number
+          clock_last_beat_at?: string | null
           completed_at?: string | null
           current_step?: string
           id?: string
@@ -15957,6 +15961,8 @@ export type Database = {
         Update: {
           cancel_requested_at?: string | null
           cancelled_at?: string | null
+          clock_active_ms?: number
+          clock_last_beat_at?: string | null
           completed_at?: string | null
           current_step?: string
           id?: string
