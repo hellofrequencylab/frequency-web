@@ -13,17 +13,17 @@ import { NETWORK_KIT_CHAPTERS, NETWORK_KIT_CIRCLES } from '@/lib/sites/network-k
 
 type Block = KitPage['blocks'][number]
 
-const P = '/sites/network-kit/photos'
-const page = (slug: string, label: string, description: string, blocks: Block[]): KitPage => ({ slug, label, seo: { title: label, description }, blocks })
+export const P = '/sites/network-kit/photos'
+export const page = (slug: string, label: string, description: string, blocks: Block[]): KitPage => ({ slug, label, seo: { title: label, description }, blocks })
 
 /** The design's PageHero: eyebrow, headline and intro on the left, the leaf-cropped photo on the right. No buttons. */
-const header = (eyebrow: string, title: string, lead: string, photo: string): Block => ({
+export const header = (eyebrow: string, title: string, lead: string, photo: string): Block => ({
   type: 'NetworkKitHero',
   props: { ...NETWORK_KIT_HERO, variant: 'split', flip: false, eyebrow, title, lead, primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '', image: `${P}/${photo}.jpg`, showEvent: false },
 })
 
 /** The design's CtaBand: a card with the line and one button. */
-const closing = (): Block => ({
+export const closing = (): Block => ({
   type: 'NetworkKitCTA',
   props: { ...NETWORK_KIT_CTA, variant: 'card', eyebrow: 'Your first visit', title: 'Come once. *Bring a friend.*', buttonLabel: 'See the next meetup', buttonHref: '~/workshops', secondaryLabel: '', secondaryHref: '', image: '' },
 })
