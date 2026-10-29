@@ -86,3 +86,36 @@ export function categoryKeysForSurface(surface: EditorSurface): ReadonlySet<stri
   const keys = SURFACE_CATEGORIES[surface] as readonly string[] | undefined
   return keys ? new Set(keys) : null
 }
+
+/** The theme-named block families (config categories), and the website theme that styles each (LIVE-1794). A family's
+ *  CSS lives in its own theme's sheet, so on any other theme its blocks render bare (docs/THEME-COHESION.md, the
+ *  2026-10-28 audit: 4 to 25 percent of their themed classes have a rule off-theme). `network` is the exception, its
+ *  island sheet styles it on every theme, so it is portable and offered everywhere. Keys are WebsiteTheme values. */
+const FAMILY_OWNER: Record<string, string> = {
+  wildheart: 'Wildheart',
+  networkKit: 'NetworkKit',
+  temple: 'Temple',
+  templeKit: 'TempleKit',
+  midnight: 'Midnight',
+  midnightPractice: 'Midnight',
+  designer: 'Designer',
+}
+
+/** Every family category the palette scopes by theme. palette-scope.test.ts pins this against the config, so a new
+ *  family cannot join without an owner. */
+export const THEME_FAMILY_CATEGORIES: readonly string[] = Object.keys(FAMILY_OWNER)
+
+/** The family categories a website theme may offer. A theme this build does not know offers none, so the palette
+ *  never shows a block that cannot be styled. Pass nothing to scope by surface alone (existing callers). */
+export function categoriesForTheme(theme: string | null | undefined): ReadonlySet<string> {
+  return new Set(THEME_FAMILY_CATEGORIES.filter((key) => FAMILY_OWNER[key] === theme))
+}
+
+/** `categoryKeysForSurface`, narrowed to the theme: a family appears only on its own theme. Hides from the picker only;
+ *  a saved block of any family keeps rendering exactly as before. */
+export function categoryKeysForSurfaceAndTheme(surface: EditorSurface, theme: string | null | undefined): ReadonlySet<string> | null {
+  const base = categoryKeysForSurface(surface)
+  if (!base || theme === undefined) return base
+  const own = categoriesForTheme(theme)
+  return new Set([...base].filter((key) => !THEME_FAMILY_CATEGORIES.includes(key) || own.has(key)))
+}
