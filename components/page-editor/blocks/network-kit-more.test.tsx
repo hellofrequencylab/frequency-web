@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { networkKitInnerComponents } from './network-kit-inner'
 import { networkKitMoreComponents, NETWORK_KIT_MORE_CATEGORY_COMPONENTS } from './network-kit-more'
 import { NETWORK_KIT_CATEGORY_COMPONENTS } from './network-kit'
 import { withBands } from '@/lib/sites/network-kit-home'
@@ -33,7 +34,7 @@ describe('the Network kit extra home blocks', () => {
     expect(NETWORK_KIT_MORE_CATEGORY_COMPONENTS.some((t) => NETWORK_KIT_CATEGORY_COMPONENTS.includes(t))).toBe(false)
     const components = config.components as Record<string, { label?: string }>
     for (const type of NETWORK_KIT_MORE_CATEGORY_COMPONENTS) expect(components[type]?.label, type).toBeTruthy()
-    expect(config.categories?.networkKit?.components).toEqual([...NETWORK_KIT_CATEGORY_COMPONENTS, ...NETWORK_KIT_MORE_CATEGORY_COMPONENTS])
+    expect(config.categories?.networkKit?.components).toEqual([...NETWORK_KIT_CATEGORY_COMPONENTS, ...NETWORK_KIT_MORE_CATEGORY_COMPONENTS, ...Object.keys(networkKitInnerComponents)])
   })
 
   it('offers them on the website palette only, and marks the ones that read the Space as live', () => {
