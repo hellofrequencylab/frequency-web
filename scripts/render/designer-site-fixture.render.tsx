@@ -25,7 +25,7 @@ it('renders a Designer site snapshot', async () => {
   const vars = Object.entries(designerAccentVars(snap.brand?.accent)).map(([k, v]) => `${k}:${v}`).join(';')
   for (const page of snap.pages) {
     const body = renderToStaticMarkup(h(BlockRender, { config, data: page.doc } as never))
-    const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${DESIGNER_CSS}${DESIGNER_BLOCKS_CSS}body{margin:0}</style></head><body><div data-house-theme="designer" style="${vars}"><main class="mw-page">${body}</main></div></body></html>`
+    const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${DESIGNER_CSS}${DESIGNER_BLOCKS_CSS}*,*::before,*::after{box-sizing:border-box}body{margin:0}</style></head><body><div data-house-theme="designer" style="${vars}"><main class="mw-page">${body}</main></div></body></html>`
     writeFileSync(`${out}/${page.slug}.html`, html)
   }
 })
