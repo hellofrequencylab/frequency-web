@@ -12,6 +12,7 @@ import { monthName, monthWeeks, shiftMonth } from '@/lib/calendar/planner/month'
 import { SUITE_LAYERS, layerCounts } from '@/lib/calendar/planner/suite-model'
 import { teamLoad } from '@/lib/calendar/planner/team-load'
 import type { PlanStage, PlannerData, PlannerLayer } from '@/lib/calendar/planner/types'
+import { SharedRollup } from './suite-cohost'
 import type { SuiteContext, SuiteSelection, SuiteTeamMember } from './suite-types'
 import type { SuiteDnd } from './use-suite-dnd'
 
@@ -195,6 +196,7 @@ export function SuiteRail({
                   <span className="cal-layer-label">{layer.label}</span>
                   <span className="cal-count">{counts[layer.key]}</span>
                 </button>
+                {layer.key === 'shared' ? <SharedRollup data={data} ctx={ctx} ym={activeYm} hidden={off} /> : null}
               </li>
             )
           })}

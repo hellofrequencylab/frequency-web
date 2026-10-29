@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import type { AstroMarker } from '@/lib/calendar/astro-markers'
-import { dayItems, isInvitePending, isItemVisible, partnerSpaceId } from '@/lib/calendar/planner/day-items'
+import { dayItems, isInvitePending, isItemVisible, itemPartnerId } from '@/lib/calendar/planner/day-items'
 import { addDays, clockLabel, dayLabel, mondayOnOrBefore, weekdayName } from '@/lib/calendar/planner/days'
 import { DEFAULT_BLOCK_MINUTES } from '@/lib/calendar/planner/inbox-drop'
 import { KINDS } from '@/lib/calendar/planner/kinds'
@@ -120,7 +120,7 @@ export function SuiteWeek({
           startMin: it.startMin,
           durMin: it.durMin,
           done: false,
-          partner: ctx.spaceNames[partnerSpaceId(plan, own) ?? ''] ?? null,
+          partner: ctx.spaceNames[itemPartnerId(it, plan, own) ?? ''] ?? null,
           clash: ctx.clashes.has(it.id),
           invite: isInvitePending(plan, own),
         })
@@ -253,7 +253,7 @@ export function SuiteWeek({
                 const look = KINDS[it.kind]
                 const r = (on: boolean) => (on ? '10px' : '3px')
                 const plan = ctx.planById.get(it.plan ?? '')
-                const partner = ctx.spaceNames[partnerSpaceId(plan, own) ?? ''] ?? null
+                const partner = ctx.spaceNames[itemPartnerId(it, plan, own) ?? ''] ?? null
                 return (
                   <button
                     type="button"

@@ -267,6 +267,7 @@ function ItemBody({ item, data, ctx, actions, onSelect, onClose, say }: PanelPro
             )}
           </Row>
         ) : null}
+        {item.hostLabel ? <Row label="Hosted by">{item.hostLabel}</Row> : null}
         {item.location ? <Row label="Where">{item.location}</Row> : null}
         {item.series ? <Row label="Repeats">Part of a series</Row> : null}
         {item.going ? <Row label="Going">{`${item.going} going`}</Row> : null}

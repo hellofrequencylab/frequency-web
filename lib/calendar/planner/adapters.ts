@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '../item'
 import type { EntryInput } from '../entries'
-import type { IncomingPlanShare, SharedPlanView } from '../plan-shares'
+import { isActiveShare, type IncomingPlanShare, type PlanShareView, type SharedPlanView } from '../plan-shares'
 import { planTargetDef, type SpacePlan } from '../plans'
 import type { CrmTask } from '@/lib/crm/tasks-core'
 import { phaseOfOffset } from './playbook-schedule'
@@ -65,6 +65,19 @@ interface AdapterInput {
   incoming?: readonly IncomingPlanShare[]
   /** Plans other Spaces shared with this one and this Space accepted. */
   sharedPlans?: readonly SharedPlanView[]
+  /** The offers this Space made on its own Plans, in any state: the Spaces it invited to co-host. */
+  hostShares?: readonly PlanShareView[]
+  /** Other Spaces' public dates, for the Shared with Spaces tile: accepted collaborators first, then
+   *  the Network's chapters. Read-only here. */
+  sharedSources?: readonly SharedSource[]
+}
+
+/** One other Space's dates as the page read them, with how they reached this calendar. */
+export interface SharedSource {
+  spaceId: string
+  name: string
+  via: 'collaborator' | 'network'
+  events: readonly CalendarEvent[]
 }
 
 /** "7 PM", "7:30 PM", "9:00 AM" to minutes since midnight. Null for "All day" or anything unreadable. */
@@ -166,6 +179,20 @@ export function adaptCalendar(input: AdapterInput): AdaptedCalendar {
   }
 
   const own = (planId: string) => items.filter((i) => i.plan === planId)
+  const spaceNames: Record<string, string> = {}
+
+  // The Spaces this one invited, on the Plans it hosts. A pending offer shows as Invited, an accepted
+  // one as Co-host; a declined or taken-back share is history and leaves the Plan's Spaces alone.
+  const invitedOn = new Map<string, PlanSpaceRefOut[]>()
+  for (const share of input.hostShares ?? []) {
+    if (!isActiveShare(share.status)) continue
+    if (share.guestName) spaceNames[share.guestSpaceId] = share.guestName
+    invitedOn.set(share.planId, [
+      ...(invitedOn.get(share.planId) ?? []),
+      { id: share.guestSpaceId, role: 'Co-host', status: share.status === 'accepted' ? 'accepted' : 'pending', shareId: share.id },
+    ])
+  }
+
   const plans: SuitePlan[] = input.plans.map((p) => ({
     id: p.id,
     title: p.title,
@@ -175,11 +202,10 @@ export function adaptCalendar(input: AdapterInput): AdaptedCalendar {
     owner: p.ownerProfileId,
     team: p.ownerProfileId ? [p.ownerProfileId] : [],
     hold: holdByPlan.get(p.id) ?? null,
-    spaces: [{ id: ownSpaceId, role: 'Host', status: 'accepted' }],
+    spaces: [{ id: ownSpaceId, role: 'Host', status: 'accepted' }, ...(invitedOn.get(p.id) ?? [])],
     notes: p.notes,
   }))
 
-  const spaceNames: Record<string, string> = {}
   for (const offer of input.incoming ?? []) {
     if (offer.status !== 'pending' || !offer.hostSpaceId) continue
     if (offer.hostName) spaceNames[offer.hostSpaceId] = offer.hostName
@@ -194,7 +220,7 @@ export function adaptCalendar(input: AdapterInput): AdaptedCalendar {
       hold: null,
       spaces: [
         { id: offer.hostSpaceId, role: 'Host', status: 'accepted' },
-        { id: ownSpaceId, role: 'Co-host', status: 'pending' },
+        { id: ownSpaceId, role: 'Co-host', status: 'pending', shareId: offer.id },
       ],
       notes: null,
     })
@@ -219,6 +245,13 @@ export function adaptCalendar(input: AdapterInput): AdaptedCalendar {
     })
   }
 
+  // A date another Space hosts reads "Hosted by {that Space}" once the Plan it belongs to names the host.
+  for (const item of items) {
+    if (!item.hostLabel || !item.plan) continue
+    const host = plans.find((p) => p.id === item.plan)?.spaces.find((s) => s.role === 'Host')
+    if (host && host.id !== ownSpaceId && spaceNames[host.id]) item.hostLabel = spaceNames[host.id]
+  }
+
   const tasks: SuiteTask[] = input.todos.map((t) => ({
     id: t.id,
     title: t.title,
@@ -233,5 +266,54 @@ export function adaptCalendar(input: AdapterInput): AdaptedCalendar {
     sharedFrom: t.sharedFrom ?? null,
   }))
 
+  // Other Spaces' dates: one chip per date, this Space's own copy of it wins, and a date two sources
+  // both carry is drawn once under the first.
+  const seen = new Set(items.map((i) => i.id))
+  for (const source of input.sharedSources ?? []) {
+    spaceNames[source.spaceId] = source.name
+    for (const ev of source.events) {
+      const item = foreignItem(ev, source)
+      if (!item || seen.has(item.id) || seen.has(`${ev.slug}:${ev.dayKey}`)) continue
+      seen.add(item.id)
+      items.push(item)
+    }
+  }
+
   return { items, tasks, plans, spaceNames }
+}
+
+type PlanSpaceRefOut = SuitePlan['spaces'][number]
+
+/** A date on another Space's calendar, as a read-only item: no Plan of ours, no stored entry, nothing
+ *  to drag. A cancelled date stays off, because it is not a date anyone will arrive for. */
+function foreignItem(ev: CalendarEvent, source: SharedSource): SuiteItem | null {
+  if (ev.isCancelled || ev.layer === 'todos') return null
+  const start = clockMinutes(ev.timeLabel)
+  const end = start == null ? null : clockMinutes(ev.endTimeLabel)
+  const multi = !!ev.endDayKey && ev.endDayKey > ev.dayKey
+  return {
+    id: `shared:${source.spaceId}:${ev.slug}:${ev.dayKey}`,
+    title: ev.title,
+    kind: 'event',
+    date: ev.dayKey,
+    end: multi ? ev.endDayKey : null,
+    startMin: start,
+    durMin: start != null && end != null && end > start ? end - start : DEFAULT_LENGTH_MIN,
+    plan: null,
+    owner: null,
+    option: null,
+    series: false,
+    going: ev.goingCount || 0,
+    shared: true,
+    from: { space: source.spaceId, via: source.via },
+    whenLabel: ev.whenLabel,
+    location: ev.location,
+    notes: null,
+    eventHref: `/events/${ev.slug}`,
+    note: '',
+    hostLabel: source.name,
+    entryId: null,
+    entryInput: null,
+    occurrenceDate: null,
+  }
 }

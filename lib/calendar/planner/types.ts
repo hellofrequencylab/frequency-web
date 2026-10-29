@@ -46,6 +46,9 @@ export interface PlannerItem {
   going?: number
   /** True for a date another Space hosts and this Space co-hosts, which carries no Plan of this Space's own. */
   shared?: boolean
+  /** Set on a date that lives on ANOTHER Space's calendar and is drawn here read-only: a collaborator's
+   *  public event or a Network chapter's. Only the Shared with Spaces tile governs it. */
+  from?: { space: string; via: 'collaborator' | 'network' }
 }
 
 export interface PlannerTask {
@@ -69,6 +72,8 @@ interface PlanSpaceRef {
   id: string
   role: 'Host' | 'Co-host'
   status: 'accepted' | 'pending'
+  /** The space_plan_shares row behind a Co-host entry, so an answer or a take-back can name it. */
+  shareId?: string
 }
 
 export interface PlannerPlan {

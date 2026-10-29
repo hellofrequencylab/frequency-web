@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import type { needsYou } from '@/lib/calendar/planner/needs-you'
+import { InviteAnswerButtons } from './suite-cohost'
 
 // THE NEEDS-YOU ROW (README 1.2): the count as a pill with a breathing dot, then the things waiting on
 // a person as chips that scroll sideways. Hide folds the row away and the pill stays to bring it back.
@@ -23,7 +24,7 @@ export function SuiteNeedsYou({ entries, onOpen }: { entries: readonly Entry[]; 
       {open ? (
         <ul className="cal-plain cal-needs-row" aria-label="Waiting on you">
           {entries.map((entry) => (
-            <li key={entry.id} className="cal-need">
+            <li key={entry.id} className="cal-need" data-kind={entry.kind}>
               <span className="cal-need-disc" style={{ color: entry.tone }} aria-hidden>
                 <FqIcon name={entry.icon as FqIconName} size={14} />
               </span>
@@ -31,6 +32,7 @@ export function SuiteNeedsYou({ entries, onOpen }: { entries: readonly Entry[]; 
                 <span className="cal-need-t">{entry.text}</span>
                 <span className="cal-as">{entry.sub}</span>
               </span>
+              {entry.kind === 'invite' ? <InviteAnswerButtons planId={entry.ref} /> : null}
               <button type="button" className="cal-need-act" onClick={() => onOpen(entry)}>
                 {entry.op === 'inbox' ? 'Show' : 'Open'}
               </button>

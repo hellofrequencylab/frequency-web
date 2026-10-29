@@ -699,6 +699,23 @@ button.cal-tg-head:hover { background: var(--fq-track); }
 .cal-pcard { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 24px; background: var(--fq-pa-soft); }
 .cal-invite { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: var(--fq-surface-card); box-shadow: inset 0 0 0 1px var(--fq-border-hair); }
 .cal-invite p { margin: 0; color: var(--fq-text-strong); font-size: var(--fq-text-body-s); }
+/* Co-hosting (P7): the host, co-host and invited block, the Needs you presses, the Shared roll-up. */
+.cal-cohost { display: flex; flex-direction: column; gap: 12px; }
+.cal-cohost .cal-muted { margin: 0; }
+.cal-invite-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.cal-srow { align-items: center; gap: 10px; }
+.cal-srow-r { display: inline-flex; align-items: center; gap: 10px; }
+.cal-takeback { background: none; padding: 0; color: var(--fq-text-muted); }
+.cal-takeback:disabled { opacity: 0.5; }
+.cal-invite-new { display: flex; flex-direction: column; gap: 6px; }
+.cal-invite-row { display: flex; align-items: center; gap: 8px; }
+.cal-invite-row > :first-child { flex: 1; min-width: 0; }
+.cal-need[data-kind="invite"] { max-width: 600px; }
+.cal-suite .cal-rollup { display: flex; flex-direction: column; gap: 6px; margin: 2px 6px 8px 42px; }
+.cal-suite .cal-rollup[data-off] { opacity: 0.55; }
+.cal-rollup-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cal-rollup-t { display: flex; flex-direction: column; min-width: 0; font-size: var(--fq-text-body-s); color: var(--fq-text-strong); }
+.cal-rollup-t .cal-as { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cal-prow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .cal-plink { background: none; padding: 0; text-align: left; font: 600 var(--fq-text-body-s)/1.3 var(--fq-font-display); color: var(--fq-text-strong); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--fq-border-strong); }
 .cal-stack { display: inline-flex; flex-direction: row-reverse; }

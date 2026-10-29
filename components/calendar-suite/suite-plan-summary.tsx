@@ -13,6 +13,7 @@ import { KINDS } from '@/lib/calendar/planner/kinds'
 import { groupByPhase } from '@/lib/calendar/planner/playbook-schedule'
 import type { PlannerData } from '@/lib/calendar/planner/types'
 import type { DetailsActions } from './suite-details-actions'
+import { CohostBlock } from './suite-cohost'
 import { TodoCheck, useRun } from './suite-details-fields'
 import type { SuiteContext, SuiteSelection } from './suite-types'
 
@@ -54,7 +55,6 @@ export function SuitePlanSummary({
     .filter((i) => i.option)
     .map((i) => ctx.itemById.get(i.id))
     .filter((i): i is SuiteItem => !!i)
-  const name = (id: string) => (id === ctx.ownSpaceId ? ctx.ownName : (ctx.spaceNames[id] ?? 'Another Space'))
   const canAdd = canEdit && mine && !pending && plan.stage !== 'cancelled'
 
   const add = async () => {
@@ -65,17 +65,7 @@ export function SuitePlanSummary({
 
   return (
     <section className="cal-pcard" aria-label="Plan">
-      {pending ? (
-        <div className="cal-invite">
-          <p>
-            <strong>{hostId ? name(hostId) : 'Another Space'}</strong> wants to co-host
-          </p>
-          <p className="cal-as">Say yes and it lands on your calendar, and both teams can edit it.</p>
-          <a className="cal-link" href="#calendar-shared-plans">
-            Answer it under Shared with you
-          </a>
-        </div>
-      ) : null}
+      <CohostBlock plan={plan} ctx={ctx} />
       {bare ? null : (
         <div className="cal-prow">
           <button type="button" className="cal-plink" onClick={() => onSelect({ kind: 'plan', id: plan.id })}>
@@ -116,18 +106,6 @@ export function SuitePlanSummary({
           ))}
         </ul>
       ) : null}
-
-      <div>
-        <p className="cal-caps cal-ghead">Spaces</p>
-        <ul className="cal-plain" aria-label="Spaces on this Plan">
-          {plan.spaces.map((s) => (
-            <li key={s.id} className="cal-srow">
-              <span>{name(s.id)}</span>
-              <span className="cal-muted">{s.status === 'pending' ? 'Invited' : s.role}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
 
       <div className="cal-todos">
         <p className="cal-caps">To-dos</p>
