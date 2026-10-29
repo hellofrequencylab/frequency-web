@@ -88,10 +88,13 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
     surfaces: surfaces('soon', 'ready'),
   },
   {
-    id: 'temple',
+    // The Temple Theme Kit, shown as Temple (code id `temple-kit`). The earlier `temple` theme is Royal Temple's: it stays
+    // resolvable by id and is offered nowhere. Spotlight and email read 'soon' until their parts of the build ship, so no
+    // public page claims them early.
+    id: 'temple-kit',
     tagline: 'A lime-washed house. Warm and unhurried.',
-    madeFor: 'studios, temples, retreat houses and membership homes',
-    signature: 'Plaster and umber, one clay color, arched photos, with Branch and Marcellus.',
+    madeFor: 'temples, studios, retreats, clubs, markets and anyone who brings people together',
+    signature: 'Plaster and umber, one clay color, arches and soft corners, with Marcellus, Jost, Branch and Cormorant.',
     surfaces: surfaces('soon', 'soon'),
   },
   {
@@ -110,19 +113,21 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
   },
 ]
 
-/** The path segment a theme's page lives at. Two ids are named differently from their address; both keep their id,
+/** The path segment a theme's page lives at. Three ids are named differently from their address; each keeps its id,
  *  editor value and every saved site style, and only the address visitors see differs:
  *   · Nocturne is the Midnight theme under its new name (/themes/midnight redirects).
  *   · The Network Theme Kit (`network-kit`) takes /themes/network, the address Daniel named for it
- *     (/themes/network-kit redirects, next.config.ts). The earlier `network` theme has no page: it is not offered. */
-const THEME_SLUGS: Readonly<Record<string, string>> = { midnight: 'nocturne', 'network-kit': 'network' }
+ *     (/themes/network-kit redirects, next.config.ts). The earlier `network` theme has no page: it is not offered.
+ *   · The Temple Theme Kit (`temple-kit`) takes /themes/temple (/themes/temple-kit redirects). The earlier `temple`
+ *     theme (Royal Temple's) has no page of its own any more. */
+const THEME_SLUGS: Readonly<Record<string, string>> = { midnight: 'nocturne', 'network-kit': 'network', 'temple-kit': 'temple' }
 export const themeSlug = (id: string): string => THEME_SLUGS[id] ?? id
 
 /** The theme id a /themes/[theme] address stands for (the inverse of themeSlug), or null. */
 export function themeIdFromSlug(slug: string): string | null {
   const renamed = Object.entries(THEME_SLUGS).find(([, s]) => s === slug)
   if (renamed) return renamed[0]
-  // An id that has a different address (midnight, network-kit) is not reachable under its id.
+  // An id that has a different address (midnight, network-kit, temple-kit) is not reachable under its id.
   return slug in THEME_SLUGS ? null : slug
 }
 

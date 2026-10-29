@@ -5,14 +5,15 @@ import { THEME_TOOLS } from '@/lib/themes/library'
 
 describe('the theme kit page', () => {
   it('covers every theme except Midnight, which keeps its own page', () => {
-    expect(THEME_KIT_PAGE_IDS).toEqual(['frequency', 'bold', 'wildheart', 'network-kit', 'temple', 'designer'])
+    expect(THEME_KIT_PAGE_IDS).toEqual(['frequency', 'bold', 'wildheart', 'network-kit', 'temple-kit', 'designer'])
   })
 
   it.each(THEME_KIT_PAGE_IDS)('draws %s with every tool, thirteen kits, no em dash and no inline colour', (id) => {
     const html = renderToStaticMarkup(<FrequencyThemeKit theme={id} />)
     for (const t of THEME_TOOLS) expect(html).toContain(t.name.replace(/&/g, '&amp;'))
-    // The Network Theme Kit's thirteen starter kits arrive with the kit registry pass; until then it lists none.
-    const kits = id === 'network-kit' ? 0 : 13
+    // The Network and Temple Theme Kits list their thirteen starter kits in the editor's kit library (their own index);
+    // this generic page lists none, and each kit has a hand-built page of its own.
+    const kits = id === 'network-kit' || id === 'temple-kit' ? 0 : 13
     expect(html.match(/Start with this kit/g)?.length ?? 0).toBe(kits)
     // Every way in starts a Space wearing this theme (Space creation reads ?theme=).
     expect(html).toContain(`/spaces/new?theme=${id}`)
@@ -22,6 +23,6 @@ describe('the theme kit page', () => {
   })
 
   it('says the Space page keeps the Frequency frame', () => {
-    expect(renderToStaticMarkup(<FrequencyThemeKit theme="temple" />)).toContain('Frequency page people know')
+    expect(renderToStaticMarkup(<FrequencyThemeKit theme="temple-kit" />)).toContain('Frequency page people know')
   })
 })

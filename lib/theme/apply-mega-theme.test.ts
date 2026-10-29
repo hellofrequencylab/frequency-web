@@ -33,8 +33,8 @@ describe('megaThemeSurfaces', () => {
   })
 
   it('reaches the Spotlight for every Mega Theme, and to email', () => {
-    // The earlier network theme is no longer a Spotlight preset: it is offered nowhere.
-    for (const { id } of MEGA_THEMES) expect(megaThemeSurfaces(id).spotlightPreset, id).toBe(id === 'network' ? null : id)
+    // The earlier network and temple themes are no longer Spotlight presets: they are offered nowhere.
+    for (const { id } of MEGA_THEMES) expect(megaThemeSurfaces(id).spotlightPreset, id).toBe(id === 'network' || id === 'temple' ? null : id)
     const themed = MEGA_THEMES.filter(({ id }) => megaThemeSurfaces(id).email).map(({ id }) => id)
     expect(themed).toEqual(MEGA_THEMES.map(({ id }) => id))
   })
@@ -43,11 +43,11 @@ describe('megaThemeSurfaces', () => {
 describe('planMegaTheme', () => {
   it('lands every surface on one theme id and keeps what the owner set', () => {
     const before = { theme: 'menswork', siteStyle: { theme: 'bold', synced: false, corners: 'square' }, megaTheme: { niche: 'coaches' }, hero: { heading: 'Hi' } }
-    const next = planMegaTheme(before, 'temple')
-    expect(readMegaTheme(next)).toMatchObject({ theme: 'temple', niche: 'coaches' })
-    expect(siteTheme(next)).toBe('temple')
+    const next = planMegaTheme(before, 'temple-kit')
+    expect(readMegaTheme(next)).toMatchObject({ theme: 'temple-kit', niche: 'coaches' })
+    expect(siteTheme(next)).toBe('temple-kit')
     expect(readSiteStyle(next)).toMatchObject({ synced: true, look: { corners: 'square' } })
-    expect(memberSpaceFonts(next)).toBe(megaThemeSurfaces('temple').spacePage.fonts)
+    expect(memberSpaceFonts(next)).toBe(megaThemeSurfaces('temple-kit').spacePage.fonts)
     expect(next.hero).toEqual({ heading: 'Hi' })
   })
 
