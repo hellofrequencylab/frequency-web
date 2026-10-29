@@ -244,6 +244,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/vision`, changeFrequency: "monthly", priority: 0.5 },
           // /networks (SCAN-961): the Network plan's page, Frequency-only like /vision.
           { url: `${SITE_URL}/networks`, changeFrequency: "monthly", priority: 0.6 },
+          { url: `${SITE_URL}/create-a-space`, changeFrequency: "monthly", priority: 0.7 },
           // /system (LIVE-1562): the whole system in one story.
           { url: `${SITE_URL}/system`, changeFrequency: "monthly", priority: 0.6 },
           // /free-spotlight (VLS-05): listed only while the doorway is open; it answers 404 otherwise.
