@@ -21,6 +21,7 @@ import { WebsiteDocument } from '../website-document'
 import { SiteChrome, siteHref } from '../site-chrome'
 import { FREQUENCY_PAGE_CSS } from '../frequency-page-css'
 import { FQ_EDITOR, k } from './skin'
+import { TryItOnSheet } from '../theme-preview-swap'
 import { FqIcon } from '@/components/frequency/icon'
 import { editorBlockMeta } from '@/lib/sites/editor/block-meta'
 import { bindSlots, readSlots } from '@/lib/spaces/content-slots'
@@ -80,7 +81,7 @@ function inlineMarkdown(node: Node): string {
   return text
 }
 
-export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onVisibility, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, focusField = null, look = {}, fullFooter = true, zoom = 100, themeVars, spaceTheme }: {
+export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onVisibility, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, focusField = null, look = {}, fullFooter = true, zoom = 100, themeVars, spaceTheme, trySkin }: {
   /** The stage zoom, 50 to 100 percent (Site Editor handoff). */
   zoom?: number
   doc: Data; theme: WebsiteTheme; device: Device; config: Config; metadata?: Metadata; live: MwLive; links: SiteLinkMap; origin: string
@@ -90,6 +91,8 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   themeVars?: CSSProperties
   /** The font set the live page's AccentScope carries (`data-space-theme`), for its per-set type treatment. */
   spaceTheme?: SpaceThemeId
+  /** Try it on: the contract skin for the legacy blocks the candidate theme carries (components/sites/theme-preview-swap.tsx). */
+  trySkin?: { css: string; themeId: string } | null
   nav: { slug: string; label: string }[]
   selectedId: string | null; preview: boolean; comments: SiteComment[]
   onSelect: (id: string) => void; onEdit: (id: string, field: string, value: unknown) => void
@@ -512,6 +515,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   return <iframe ref={frame} className={k('we-frame')} title={`${title}, ${device} website canvas`} srcDoc="<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head><body></body></html>" sandbox="allow-same-origin" onLoad={attach}>
     {mount && createPortal(<div data-website-theme={theme} data-space-theme={spaceTheme} style={themeVars ?? websiteThemeVars(theme, brandAccent)} className="we-canvas-root" onClickCapture={(e) => { const anchor = (e.target as HTMLElement).closest('a'); if (!preview && onChromeSelect && (e.target as HTMLElement).closest('.hs-header,.hs-footer,.hs-footer-top')) { onChromeSelect((e.target as HTMLElement).closest('.hs-header') ? 'header' : 'footer'); onTextSelect?.(null) } if (!anchor) return; e.preventDefault(); if (preview) { const href = safeUrl(anchor.getAttribute('href')); if (href) window.open(new URL(href, origin).href, '_blank', 'noopener,noreferrer') } }}>
       <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' || theme === 'Network' || theme === 'Temple' ? '' : FREQUENCY_PAGE_CSS) + (theme !== 'Network' && docHasNetworkBlocks(doc) ? NETWORK_BLOCK_CSS : '') + (FQ_EDITOR ? FQ_CANVAS_CSS : '')}</style>
+      {trySkin && <TryItOnSheet css={trySkin.css} themeId={trySkin.themeId} />}
       {!preview && onChromeSelect && <button className="we-chrome-edit" type="button" onClick={() => { onTextSelect?.(null); onChromeSelect('header') }}>Edit header</button>}
       <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : theme === 'Network' ? { theme: 'network', season: mensworkSeason(new Date()), scheme: networkScheme(brandAccent) } : theme === 'Temple' ? { theme: 'temple', season: mensworkSeason(new Date()) } : theme === 'Midnight' ? { theme: 'midnight', season: mensworkSeason(new Date()) } : theme === 'Designer' ? { theme: 'designer', season: mensworkSeason(new Date()) } : null}>
         <WebsiteDocument doc={doc} theme={theme} config={config} metadata={metadata} live={live} links={links} origin={origin} title={title} wrapSection={wrap} />
