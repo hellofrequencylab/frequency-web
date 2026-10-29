@@ -8,8 +8,8 @@ describe('preview tokens', () => {
     for (const key of PREVIEW_TOKEN_KEYS) expect(tokens[key], `${id} ${key}`).toBeTruthy()
   })
 
-  it('offers every Mega Theme but classic Network once, Designer first', () => {
-    expect([...PREVIEW_KIT_ORDER].sort()).toEqual(MEGA_THEMES.map((t) => t.id).filter((i) => i !== 'network').sort())
+  it('offers every Mega Theme but the retired classic Network and Temple once, Designer first', () => {
+    expect([...PREVIEW_KIT_ORDER].sort()).toEqual(MEGA_THEMES.map((t) => t.id).filter((i) => i !== 'network' && i !== 'temple').sort())
     expect(PREVIEW_KIT_ORDER[0]).toBe('designer')
   })
 

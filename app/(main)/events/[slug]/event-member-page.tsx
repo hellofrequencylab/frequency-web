@@ -91,7 +91,7 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { nextOccurrence, recurrenceLineFor } from '@/lib/events/recurrence'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
-import { isAdmitted } from '@/lib/events/admission'
+import { canAccessEventOnlineLink, isAdmitted } from '@/lib/events/admission'
 import { FqEventBody } from '@/components/frequency/members/event/event-body'
 import {
   FQ_EVENT_JOIN_ID,
@@ -1306,6 +1306,14 @@ export default async function EventDetailPage({
   // readers that already applied it (capacity, connectors, going-counts).
   const viewerRegistered = isAdmitted({ status: myRsvpStatus, approval_status: myApprovalStatus }) || ownsTicket
   const addressHidden = extra?.hide_address === true && !canManage && !viewerRegistered
+  const canViewOnlineJoinLink = canAccessEventOnlineLink(
+    { status: myRsvpStatus, approval_status: myApprovalStatus },
+    ownsTicket,
+    canManage,
+  )
+  // Keep the private URL out of the request-local event context for viewers who have not been
+  // admitted or ticketed. Managers retain access so they can host the event.
+  const visibleOnlineUrl = canViewOnlineJoinLink ? onlineUrl : null
 
   // Exact-venue point (§5): the event's OWN geog, shown as a precise mini-map. Only
   // for a PUBLISHED, in-person event that actually has a geocoded point — drafts and
@@ -1507,9 +1515,9 @@ export default async function EventDetailPage({
         {isOnline && (
           <p className="flex items-start gap-2 text-body-sm text-text">
             <Video className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
-            {safeHttpUrl(onlineUrl) ? (
+            {safeHttpUrl(visibleOnlineUrl) ? (
               <a
-                href={onlineUrl ?? undefined}
+                href={visibleOnlineUrl ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="break-all text-primary-strong hover:underline"
@@ -1979,10 +1987,11 @@ export default async function EventDetailPage({
     facts: {
       whenLine,
       isOnline,
+      hasOnlineAttendance: attendanceMode !== 'in_person',
       // Hidden address (ADR-825): the free-text location line often carries the street.
       location: addressHidden ? cityLine || null : event.location,
       mapsHref,
-      onlineUrl,
+      onlineUrl: visibleOnlineUrl,
       mapPin,
       venuePoint,
       going: goingRsvps.length,

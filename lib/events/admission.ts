@@ -57,3 +57,16 @@ export function isAdmitted(rsvp: AdmissionFields): boolean {
   if (isPendingApproval(rsvp)) return false
   return rsvp.status === 'going' || rsvp.status === 'waitlist'
 }
+
+/** May this viewer receive the private online meeting URL for an event?
+ *
+ * An admitted RSVP (including a capacity waitlist seat) or an owned ticket grants access.
+ * Event managers also need the URL to host the event. A pending approval request is never enough,
+ * even when its status column says `going`. */
+export function canAccessEventOnlineLink(
+  rsvp: AdmissionFields,
+  ownsTicket: boolean,
+  canManage: boolean,
+): boolean {
+  return canManage || ownsTicket || isAdmitted(rsvp)
+}
