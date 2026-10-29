@@ -1,18 +1,18 @@
 {
-  "id": "LIVE-1794",
-  "title": "The editor offers a theme family only on its own theme, so nobody can add a block that renders bare",
+  "id": "LIVE-1855",
+  "title": "Before a theme change the editor lists the blocks that will use a fallback layout, as one undoable step",
   "lane": "live",
   "priority": "P1",
-  "size": "S",
+  "size": "M",
   "status": "open",
   "source": {
-    "file": "lib/page-editor/palette-scope.ts",
+    "file": "components/sites/editor/theme-changer.tsx",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Per-theme category allowlist beside the per-surface one. Hides from the picker only; existing blocks keep rendering.",
+  "detail": "Uses theme drafts, which already hold several themes over one set of pages.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/theme-cohesion.mjs palette",
+    "cmd": "node scripts/probes/theme-cohesion.mjs switchdialog",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
   "wave": "W7"

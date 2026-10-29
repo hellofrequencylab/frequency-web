@@ -1,18 +1,18 @@
 {
-  "id": "LIVE-1801",
-  "title": "Each theme has a presentation layer (frames, ornaments, default layouts) so themes stay drastically different",
+  "id": "LIVE-1857",
+  "title": "Each theme has one manifest the catalog, picker, Try it on, editor and design-system intake all read",
   "lane": "live",
   "priority": "P2",
   "size": "L",
   "status": "open",
   "source": {
-    "file": "components/sites/menswork-page.tsx",
+    "file": "lib/themes/library.ts",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Three PRs of three themes each. Per-theme default variant per role; owner-chosen variants win on a switch.",
+  "detail": "Nine manifests generated from library.ts, theme-contract.json and MEGA_THEMES; the readers stay as thin wrappers; legacy ids kept forever.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/theme-cohesion.mjs presentation",
+    "cmd": "node scripts/probes/theme-cohesion.mjs manifest",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
   "wave": "W7"

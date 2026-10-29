@@ -1,18 +1,18 @@
 {
-  "id": "LIVE-1792",
-  "title": "The Theme tab stops promising live blocks stay as they are, and Every theme carries all of them is made true or removed",
+  "id": "LIVE-1854",
+  "title": "The editor offers a theme family only on its own theme, so nobody can add a block that renders bare",
   "lane": "live",
   "priority": "P1",
   "size": "S",
   "status": "open",
   "source": {
-    "file": "components/sites/editor/theme-changer.tsx",
+    "file": "lib/page-editor/palette-scope.ts",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Honest copy before the safety net lands; the switch dialog row follows.",
+  "detail": "Per-theme category allowlist beside the per-surface one. Hides from the picker only; existing blocks keep rendering.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/theme-cohesion.mjs copy",
+    "cmd": "node scripts/probes/theme-cohesion.mjs palette",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
   "wave": "W7"

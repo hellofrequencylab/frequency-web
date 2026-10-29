@@ -1,12 +1,12 @@
 # Theme cohesion: role blocks, a theme manifest and a switch that cannot leave a hole
 
-> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** (rows `LIVE-1790` to `LIVE-1807`; `pnpm backlog`).
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** (rows `LIVE-1850` to `LIVE-1867`; `pnpm backlog`).
 > This document is the spec and the rationale. It records no status. Decision: [ADR-1923](DECISIONS.md).
 > Evidence (audit, research, contact sheets) is in the project folder `theme-cohesion/`.
 
 **Owner picks, 2026-10-29:** build role blocks and the manifest, phased; existing theme-named blocks on live sites are never changed automatically (owners press "Update to new layouts"); on a switch, layouts the owner never customised take the new theme's defaults; theme CSS becomes static files after a measurement; kit threads keep building and add a role note per block; the first thing to ship is the safety net.
 
-No code until Daniel picks (owner picks are at the end). Evidence is in [01-audit.md](01-audit.md), precedent in [02-research.md](02-research.md). Status of any row lives in `docs/BUILD-BACKLOG.json` once the rows below are filed as ledger fragments; this file is the plan.
+Evidence is in the audit (01-audit.md in the project folder), precedent in the research (02-research.md in the project folder). Status of any row lives in `docs/BUILD-BACKLOG.json`; this file is the plan.
 
 ## The answer first
 
@@ -193,55 +193,55 @@ A baseline file records today's gaps (every family-to-foreign cell, plus declare
 
 ## 6. Phases and ledger rows
 
-Phased so that nothing live changes until an owner presses a button. Sizes: S under a day, M one to three days, L three to seven. The rows are filed as `LIVE-1790` to `LIVE-1807`, one row per PR under the 40-file gate, one fragment per row. "Lift" says what improves and for whom, without invented numbers; the measures to take are named.
+Phased so that nothing live changes until an owner presses a button. Sizes: S under a day, M one to three days, L three to seven. The rows are filed as `LIVE-1850` to `LIVE-1867`, one row per PR under the 40-file gate, one fragment per row. "Lift" says what improves and for whom, without invented numbers; the measures to take are named.
 
 ### Phase 0: measure (no behaviour change)
 
 | Row | What | Size | Lift | Probe that fails today |
 |---|---|---|---|---|
-| LIVE-1790 | Productionise the audit as `pnpm audit:themes`: render matrix, coverage JSON, contact sheets, baseline of every hole | M | Makes holes visible and ratchets them. Prerequisite for everything. | `audit:themes` baseline file exists and lists the 95-block foreign gap |
-| LIVE-1791 | Reproduce and fix the three audit defects in a built site: Bold Hero at 390, Default sections drawing bare (may be harness only), Showcase ignoring the theme | S | Direct visible fixes | A render test per defect |
-| LIVE-1792 | Honest copy: theme-changer says which blocks will look different; fix "Every theme carries all of them" in `THEME_TOOLS` to match what each theme can show | S | Removes a false promise | Text pin in `theme-changer` test |
+| LIVE-1850 | Productionise the audit as `pnpm audit:themes`: render matrix, coverage JSON, contact sheets, baseline of every hole | M | Makes holes visible and ratchets them. Prerequisite for everything. | `audit:themes` baseline file exists and lists the 95-block foreign gap |
+| LIVE-1851 | Reproduce and fix the three audit defects in a built site: Bold Hero at 390, Default sections drawing bare (may be harness only), Showcase ignoring the theme | S | Direct visible fixes | A render test per defect |
+| LIVE-1852 | Honest copy: theme-changer says which blocks will look different; fix "Every theme carries all of them" in `THEME_TOOLS` to match what each theme can show | S | Removes a false promise | Text pin in `theme-changer` test |
 
 ### Phase 1: safe switching (editor-time; published sites untouched)
 
 | Row | What | Size | Lift | Probe |
 |---|---|---|---|---|
-| LIVE-1793 | Generalise the Network island into a **contract-skin fallback** for every family block (generated from each family's structural classes, token-driven in the active theme's palette) | M | Removes unstyled blocks on any switch: the 0.04 to 0.25 coverage rows go to the island's 0.99 | Foreign-theme coverage for all families at or above 0.9 in `audit:themes` |
-| LIVE-1794 | Palette by theme: the editor offers a family only on its home theme, plus shared and role blocks; existing foreign blocks stay and render via LIVE-1793 | S | Stops new holes | `palette-scope.test.ts` pins family-per-theme |
-| LIVE-1795 | Switch dialog and preview: before a theme change, list blocks that will use a fallback layout; one undoable step (theme drafts already hold several themes over one set of pages) | M | Owner sees the consequence first | Editor test: switch with a foreign block shows the list |
+| LIVE-1853 | Generalise the Network island into a **contract-skin fallback** for every family block (generated from each family's structural classes, token-driven in the active theme's palette) | M | Removes unstyled blocks on any switch: the 0.04 to 0.25 coverage rows go to the island's 0.99 | Foreign-theme coverage for all families at or above 0.9 in `audit:themes` |
+| LIVE-1854 | Palette by theme: the editor offers a family only on its home theme, plus shared and role blocks; existing foreign blocks stay and render via LIVE-1853 | S | Stops new holes | `palette-scope.test.ts` pins family-per-theme |
+| LIVE-1855 | Switch dialog and preview: before a theme change, list blocks that will use a fallback layout; one undoable step (theme drafts already hold several themes over one set of pages) | M | Owner sees the consequence first | Editor test: switch with a foreign block shows the list |
 
 ### Phase 2: the contract
 
 | Row | What | Size | Lift | Probe |
 |---|---|---|---|---|
-| LIVE-1796 | Core token contract and one generated mapping file per theme; pin test proves computed values equal today's | M | One vocabulary; zero visual change | Pin test: nine themes, every contract name, values equal current |
-| LIVE-1797 | Theme manifest schema and nine manifests, generated from `library.ts`, `theme-contract.json`, `MEGA_THEMES`; readers stay | L | One source for catalog, picker, editor, intake | Schema validates; `library.ts` has no hand-written theme rows |
+| LIVE-1856 | Core token contract and one generated mapping file per theme; pin test proves computed values equal today's | M | One vocabulary; zero visual change | Pin test: nine themes, every contract name, values equal current |
+| LIVE-1857 | Theme manifest schema and nine manifests, generated from `library.ts`, `theme-contract.json`, `MEGA_THEMES`; readers stay | L | One source for catalog, picker, editor, intake | Schema validates; `library.ts` has no hand-written theme rows |
 
 ### Phase 3: role blocks
 
 | Row | What | Size | Lift | Probe |
 |---|---|---|---|---|
-| LIVE-1798 | Role registry and the eight roles that recur most across families (Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ, CTA), 3 variants each, parts and data attributes, built on the existing shared blocks where one exists | L | The structural fix for the biggest overlap | Role fixtures render on nine themes at 1.00 coverage |
-| LIVE-1799 | The next nine (Statement, Letter, Contact, Stats, Shop, Library, People, Gallery, Chapters) | L | Completes the role set | Same probe |
-| LIVE-1800 | Legacy resolver and the per-page "Update to new layouts" action (opt-in, diffed, undoable) | M | Gives live Spaces a way across without us touching them | Test: legacy doc renders identically on its own theme before and after the resolver ships |
-| LIVE-1801 | Presentation layers, one PR per three themes: frames, ornaments, variant defaults, section chrome, from each design system | M each | "Drastically different" survives: per-theme default variants and decoration | Per theme: every declared role has a `native` or `contract` entry |
+| LIVE-1858 | Role registry and the eight roles that recur most across families (Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ, CTA), 3 variants each, parts and data attributes, built on the existing shared blocks where one exists | L | The structural fix for the biggest overlap | Role fixtures render on nine themes at 1.00 coverage |
+| LIVE-1859 | The next nine (Statement, Letter, Contact, Stats, Shop, Library, People, Gallery, Chapters) | L | Completes the role set | Same probe |
+| LIVE-1860 | Legacy resolver and the per-page "Update to new layouts" action (opt-in, diffed, undoable) | M | Gives live Spaces a way across without us touching them | Test: legacy doc renders identically on its own theme before and after the resolver ships |
+| LIVE-1861 | Presentation layers, one PR per three themes: frames, ornaments, variant defaults, section chrome, from each design system | M each | "Drastically different" survives: per-theme default variants and decoration | Per theme: every declared role has a `native` or `contract` entry |
 
 ### Phase 4: fast path
 
 | Row | What | Size | Lift | Probe |
 |---|---|---|---|---|
-| LIVE-1802 | Static versioned theme CSS; site render links it; measure first-visit and repeat-visit cost on a built site and keep inline if first visit regresses | M | Cacheable theme CSS, smaller HTML | Built-artifact check: theme CSS is a hashed file; `check:build-budget` and `check:shell-weight` stay green |
-| LIVE-1803 | Instant Try it on in the picker, the editor and /themes pages: stylesheet and attribute swap over the Space's own content, prefetch on hover | M | The "stupid easy" part an owner feels | Playwright: switching shows the new theme with no document request |
-| LIVE-1804 | Publish revalidates one Space's tag on a theme change; confirm there is no full rebuild | S | Fast publish | Test: theme change calls `revalidateTag` for the Space |
+| LIVE-1862 | Static versioned theme CSS; site render links it; measure first-visit and repeat-visit cost on a built site and keep inline if first visit regresses | M | Cacheable theme CSS, smaller HTML | Built-artifact check: theme CSS is a hashed file; `check:build-budget` and `check:shell-weight` stay green |
+| LIVE-1863 | Instant Try it on in the picker, the editor and /themes pages: stylesheet and attribute swap over the Space's own content, prefetch on hover | M | The "stupid easy" part an owner feels | Playwright: switching shows the new theme with no document request |
+| LIVE-1864 | Publish revalidates one Space's tag on a theme change; confirm there is no full rebuild | S | Fast publish | Test: theme change calls `revalidateTag` for the Space |
 
 ### Phase 5: guardrails and catalog
 
 | Row | What | Size | Lift | Probe |
 |---|---|---|---|---|
-| LIVE-1805 | `check:theme-conformance` with baseline, plus the nightly pixel run | M | Holes cannot return | Fails when a role is left unstyled on a theme |
-| LIVE-1806 | Catalog and picker v2 from the manifest: filters, role coverage, "your site on this theme" | M | The new way to browse | /themes lists a theme from its manifest alone |
-| LIVE-1807 | Intake reads the manifest: a new theme zip scaffolds a manifest and a role-coverage baseline | S | New themes arrive complete | `ds-intake` writes `theme.manifest.json` |
+| LIVE-1865 | `check:theme-conformance` with baseline, plus the nightly pixel run | M | Holes cannot return | Fails when a role is left unstyled on a theme |
+| LIVE-1866 | Catalog and picker v2 from the manifest: filters, role coverage, "your site on this theme" | M | The new way to browse | /themes lists a theme from its manifest alone |
+| LIVE-1867 | Intake reads the manifest: a new theme zip scaffolds a manifest and a role-coverage baseline | S | New themes arrive complete | `ds-intake` writes `theme.manifest.json` |
 
 Order of value: Phase 1 first (it stops the bleeding for every Space that can switch today and is small), then Phase 2 and 3 in parallel with the kits, then Phase 4 once markup is theme-independent, Phase 5 wired in the same PR as the first green run it proves (per the deploy-safety rule on gates). Phases 0 and 1 are about 8 rows and do not need the contract to be agreed.
 
@@ -250,7 +250,7 @@ Order of value: Phase 1 first (it stops the bleeding for every Space that can sw
 The kit threads are mid-build. Nothing needs to stop. The ask, once Daniel picks:
 
 1. Keep building to the design system. Do not pause or redesign.
-2. For each new family block, add a one-line sidecar naming its **role** and **variant** (a `role` key beside the block's registration). It costs nothing now and LIVE-1800 reads it.
+2. For each new family block, add a one-line sidecar naming its **role** and **variant** (a `role` key beside the block's registration). It costs nothing now and LIVE-1860 reads it.
 3. Do not add a new theme-named block for a role that already exists on the shared set (Proof, FAQ, CTA, Letter, Stats). Extend the shared block with a variant and put the look in the theme's sheet under `[data-house-theme]` as now.
 4. Read contract names where a token exists (`--color-*`, `--radius-*`); keep private tokens for decoration only. Do not add raw values.
 5. Keep theme CSS scoped to the theme attribute (the fence), and keep all kit pages on typed blocks (no one-off CSS).
@@ -258,10 +258,10 @@ The kit threads are mid-build. Nothing needs to stop. The ask, once Daniel picks
 
 ## 8. Risks and what I am not claiming
 
-- **Role blocks cost real design work per theme.** A role block with only contract tokens will look like "a competent default", not like the hand-built Nocturne hero. The presentation layer (LIVE-1801) is where the design lives; skipping it gets cohesion without personality. The proposal funds it in the plan; the risk is deferring it.
+- **Role blocks cost real design work per theme.** A role block with only contract tokens will look like "a competent default", not like the hand-built Nocturne hero. The presentation layer (LIVE-1861) is where the design lives; skipping it gets cohesion without personality. The proposal funds it in the plan; the risk is deferring it.
 - **Theme-independent markup limits how different two themes can be** within one variant. Variants and per-theme defaults exist to give structural difference back. If a design needs a structure no variant offers, the answer is a new variant for everyone, not a theme-only block.
 - **Instant preview is only instant for role blocks.** Until phase 3 lands, legacy family blocks preview through the fallback and must be labelled.
-- **Static CSS may cost a request on a first visit.** Measure before committing (LIVE-1802).
-- **The audit used default props and no web fonts.** Real-content renders are the first thing LIVE-1790 should add. The Default-column result especially needs a built-site check.
+- **Static CSS may cost a request on a first visit.** Measure before committing (LIVE-1862).
+- **The audit used default props and no web fonts.** Real-content renders are the first thing LIVE-1850 should add. The Default-column result especially needs a built-site check.
 - **I did not test Spotlight or email**, which read the same themes through other renderers.
 
