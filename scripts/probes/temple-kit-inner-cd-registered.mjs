@@ -1,4 +1,4 @@
-// LIVE-1882: the Temple Theme Kit's inner blocks of groups C and D are registered in the page editor, and the thirteen profile kits
+// LIVE-1899: the Temple Theme Kit's inner blocks of groups C and D are registered in the page editor, and the thirteen profile kits
 // carry the Programs, Shop and Library pages. Fails on main (not registered, no such pages).
 // Run: node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/temple-kit-inner-cd-registered.mjs
 import assert from 'node:assert/strict'
