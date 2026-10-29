@@ -60,6 +60,7 @@ import { renderReplyEmail, renderCoalescedEmail, bodyToHtml } from '@/lib/comms/
 import { conversationFrom } from '@/lib/comms/from-address'
 import { spaceFromLine } from '@/lib/spaces/email'
 import { envString } from '@/lib/env/string'
+import { designerKitDatesEmail, designerKitNoteEmail, designerKitReceiptEmail, designerKitWelcomeEmail, type DesignerKitEmailBrand } from '@/lib/theme/designer-kit-email'
 import { networkKitDatesEmail, networkKitNoteEmail, networkKitReceiptEmail, networkKitWelcomeEmail, type NetworkKitEmailBrand } from '@/lib/theme/network-kit-email'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
@@ -194,6 +195,23 @@ const NETWORK_DATES = [
   { lead: 'Nov 20', title: 'Show and tell', sub: '9:00 AM · The courtyard, Main Street' },
 ]
 
+/** The Designer Theme Kit's four emails (EMAIL-026 follows the theme): one fixture Space in the default Ochre accent. */
+const DESIGNER_BRAND: DesignerKitEmailBrand = {
+  profile: 'general',
+  spaceName: 'Atelier North',
+  mastheadNote: 'Design · Interiors · Build',
+  postalLine: PLATFORM_POSTAL_LINE,
+  siteUrl: 'https://ateliernorth.example',
+  siteLabel: 'ateliernorth.example',
+  unsubscribeUrl: `${SITE}/unsubscribe/s`,
+  manageUrl: `${SITE}/manage-emails`,
+}
+const DESIGNER_DATES = [
+  { lead: 'Nov 6', title: 'Open studio', sub: '10:00 AM · The workshop, Mill Street' },
+  { lead: 'Nov 14', title: 'Planning a home, an evening talk', sub: '6:30 PM · The gallery room' },
+  { lead: 'Nov 21', title: 'Material library morning', sub: '9:30 AM · The workshop, Mill Street' },
+]
+
 export const SAMPLE_SPECS: readonly SampleSpec[] = [
   // ── Welcome and sign-up ──────────────────────────────────────────────────────────────────────────────
   { id: 'welcome', group: 'Welcome and sign-up', run: () => sendWelcomeEmail({ to: TO, displayName: 'Maya', inviterName: 'Jordan' }) },
@@ -274,4 +292,10 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'network-kit-welcome', group: 'Spaces and campaigns', run: () => { const out = networkKitWelcomeEmail(NETWORK_BRAND, { coverUrl: `${SITE}/og/default.png`, coverAlt: 'People at a long table, talking.', ctaLabel: 'Come to a meetup', ctaUrl: 'https://tablenine.example/meetups', steps: [{ title: 'Come to a meetup', sub: 'Pick a date and show up. Say you are new at the door.' }, { title: 'Join a circle', sub: 'Small groups that meet on their own between meetups.' }, { title: 'Say hello', sub: 'Reply to this email. It goes to an organizer, not a robot.' }] }); return { to: TO, ...out } } },
   { id: 'network-kit-dates', group: 'Spaces and campaigns', run: () => { const out = networkKitDatesEmail(NETWORK_BRAND, { dates: NETWORK_DATES, ctaUrl: 'https://tablenine.example/meetups' }); return { to: TO, ...out } } },
   { id: 'network-kit-receipt', group: 'Spaces and campaigns', run: () => { const out = networkKitReceiptEmail(NETWORK_BRAND, { what: 'Friday coffee', when: 'Friday, November 6, 9:00 AM', where: 'The courtyard, Main Street', who: 'One seat', whoNote: 'Reserved under your name', paid: 'Free', paidNote: 'Receipt no. 1047', calendarUrl: 'https://tablenine.example/calendar.ics', manageUrl: 'https://tablenine.example/bookings' }); return { to: TO, ...out } } },
+
+  // ── The Designer Theme Kit's emails (code id designer) ─────────────────────────────────────────────────
+  { id: 'designer-kit-note', group: 'Spaces and campaigns', run: () => { const out = designerKitNoteEmail(DESIGNER_BRAND, { subject: 'From the studio this season', title: 'We make spaces that balance beauty, structure,', em: 'and soul.', lead: 'What we are sourcing, what we are building and the date of the next open studio.', ctaLabel: 'Start a project', ctaUrl: 'https://ateliernorth.example/book', coverUrl: `${SITE}/og/default.png`, coverAlt: 'A finished kitchen in morning light.', feature: { kicker: 'Coming up', title: 'The next few dates', rows: DESIGNER_DATES, ctaLabel: 'See all dates', ctaUrl: 'https://ateliernorth.example/events' }, quote: { text: 'They listened to how we actually live, then made a home that fits it.', who: 'A past client', role: 'Home project' } }); return { to: TO, ...out } } },
+  { id: 'designer-kit-welcome', group: 'Spaces and campaigns', run: () => { const out = designerKitWelcomeEmail(DESIGNER_BRAND, { coverUrl: `${SITE}/og/default.png`, coverAlt: 'A finished kitchen in morning light.', ctaLabel: 'Start a project', ctaUrl: 'https://ateliernorth.example/book', steps: [{ title: 'Come to one thing', sub: 'Pick a date from the calendar and show up. No account needed.' }, { title: 'Book a first conversation', sub: 'A short call to talk about the room and what you want from it.' }, { title: 'Say hello', sub: 'Reply to this email. It goes to a person, not a robot.' }] }); return { to: TO, ...out } } },
+  { id: 'designer-kit-dates', group: 'Spaces and campaigns', run: () => { const out = designerKitDatesEmail(DESIGNER_BRAND, { dates: DESIGNER_DATES, ctaUrl: 'https://ateliernorth.example/events' }); return { to: TO, ...out } } },
+  { id: 'designer-kit-receipt', group: 'Spaces and campaigns', run: () => { const out = designerKitReceiptEmail(DESIGNER_BRAND, { what: 'Open studio', when: 'Friday, November 6, 10:00 AM', where: 'The workshop, Mill Street', who: 'One place', whoNote: 'Reserved under your name', paid: 'Free', paidNote: 'Receipt no. 1047', calendarUrl: 'https://ateliernorth.example/calendar.ics', manageUrl: 'https://ateliernorth.example/bookings' }); return { to: TO, ...out } } },
 ]
