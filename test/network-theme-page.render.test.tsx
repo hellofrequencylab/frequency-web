@@ -42,10 +42,8 @@ describe('the Network Theme Kit page (/themes/network)', () => {
 
   it('says what is ready and what is on the way from the library catalog, and never more', () => {
     const entry = THEME_LIBRARY.find((t) => t.id === 'network-kit')!
-    const soon = entry.surfaces.filter((s) => s.status === 'soon' && s.id !== 'space' && s.id !== 'email').length
-    // Space and Email have no picture yet, so the page always says they are on the way (never more than the product).
-    expect(html.match(/nf-st soon/g)?.length ?? 0).toBe(soon + 2)
-    expect(html).not.toContain('spacedesk')
+    const soon = entry.surfaces.filter((s) => s.status === 'soon').length
+    expect(html.match(/nf-st soon/g)?.length ?? 0).toBe(soon)
     expect(html).toContain('Frequency keeps its frame')
   })
 

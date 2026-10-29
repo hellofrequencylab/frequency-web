@@ -118,7 +118,7 @@
   {
    "glob": "components/elements/ArchFrame.*",
    "kind": "built",
-   "target": "components/sites/designer-arch.tsx"
+   "target": "components/sites/designer-blocks-css.ts"
   },
   {
    "glob": "components/elements/Mist.*",
@@ -127,13 +127,13 @@
   },
   {
    "glob": "components/elements/MoonPhases.*",
-   "kind": "built",
-   "target": "lib/theme/designer-moon.ts"
+   "kind": "reference",
+   "reason": "A row of moon phases the prototype carries from the Nocturne set. No Designer page, kit or email draws it, so the kit does not build it."
   },
   {
    "glob": "components/core/Sigil.*",
-   "kind": "built",
-   "target": "components/sites/designer-glyph.tsx"
+   "kind": "reference",
+   "reason": "A sigil mark the prototype carries from the Nocturne set. No Designer page, kit or email uses it, so the kit does not build it."
   },
   {
    "glob": "components/core/Glyph.*",
@@ -143,7 +143,7 @@
   {
    "glob": "components/core/BrandMark.*",
    "kind": "built",
-   "target": "components/sites/designer-logo.tsx"
+   "target": "components/sites/designer-chrome.tsx"
   },
   {
    "glob": "components/**",
