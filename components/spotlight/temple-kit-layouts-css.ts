@@ -83,7 +83,7 @@ export const TEMPLE_KIT_LAYOUTS_CSS = `
 .tks-links a{text-decoration:underline;text-underline-offset:3px}
 .tks-quote{margin-top:20px;padding-top:18px;border-top:1px solid var(--color-border)}
 .tks-quote > div{padding:0 20px}
-.tks-quote p{font-size:17px;line-height:1.25}
+.tks-quote p{font-family:var(--font-quote,var(--font-tp-cormorant,'Cormorant Garamond'),Georgia,serif);font-style:italic;font-size:20px;line-height:1.25}
 .tks-row-head{display:flex;justify-content:space-between;align-items:center;padding:66px 20px 0}
 .tks-socials{display:flex;gap:8px}
 .tks-iconbtn{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--color-surface);border:1px solid var(--color-border)}
