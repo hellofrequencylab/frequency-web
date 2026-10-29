@@ -13,7 +13,9 @@ export async function loadSpotlightAnswers(launch: LaunchSnapshot | null): Promi
     const space = await getSpaceById(launch.spaceId)
     if (!space) return null
     const saved = answersFromLayout(readSpaceSpotlight(space.preferences).layout)
-    return { ...saved, name: saved.name || space.name }
+    // What the Space already says fills what the Spotlight does not: its tagline, then the start of its about text.
+    const line = saved.line || space.tagline || (space.about ?? '').split('\n')[0].slice(0, 300)
+    return { ...saved, name: saved.name || space.name, line }
   } catch {
     return null
   }
