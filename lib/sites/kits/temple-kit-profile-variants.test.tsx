@@ -106,8 +106,8 @@ describe('Temple Theme Kit profile kits', () => {
     }
   })
 
-  it('wears a theme the owner can edit but the public site does not yet serve, as Network\'s kit does', async () => {
-    expect(WEBSITE_THEMES_LIVE.has('TempleKit')).toBe(false)
+  it('wears a theme the public site serves once a Space publishes it', async () => {
+    expect(WEBSITE_THEMES_LIVE.has('TempleKit')).toBe(true)
     const { generalKitId } = await import('@/lib/spaces/starter-site')
     expect(generalKitId('temple-kit')).toBe('temple-kit-general')
     expect((await loadKit(generalKitId('temple-kit')))?.niche).toBe('general')

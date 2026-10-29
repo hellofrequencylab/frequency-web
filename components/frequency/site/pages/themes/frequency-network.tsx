@@ -22,7 +22,7 @@ import {
   networkShot,
   type NetworkSurface,
 } from '@/lib/themes/network-feature-data'
-import { NetworkBrowser, NetworkPhone, NetworkSoon, NetworkStage, type NetworkSurfaceStatus } from './network-preview'
+import { NetworkBrowser, NetworkMail, NetworkPhone, NetworkStage, type NetworkSurfaceStatus } from './network-preview'
 
 const START_HREF = '/spaces/new?theme=network-kit'
 
@@ -66,7 +66,7 @@ const AFTER: [string, string][] = [
   ['Spotlight', 'RSVPs and joins on the page'],
   ['Space', 'Found on the network, wearing your look'],
   ['Website', 'Your own domain, same blocks'],
-  ['Email', 'Your list, in the same look, on the way'],
+  ['Email', 'Your list, in the same look'],
   ['One profile', 'One login, one list, one look'],
 ]
 
@@ -106,10 +106,8 @@ export function FrequencyNetwork() {
   const status: Record<NetworkSurface, NetworkSurfaceStatus> = {
     site: statusOf('website'),
     spotlight: statusOf('spotlight'),
-    // Space and Email have no picture yet, so they read as on the way here whatever the catalog says: this page
-    // shows less than the product, never more.
-    space: 'soon',
-    email: 'soon',
+    space: statusOf('space'),
+    email: statusOf('email'),
   }
   const kit = NETWORK_DEFAULT_KIT
   const places: { n: string; name: string; qual?: string; surface: NetworkSurface; body: string; lives: string; wears: string; changes: string }[] = [
@@ -152,7 +150,7 @@ export function FrequencyNetwork() {
       changes: 'Your list hears from you, and it looks like you.',
     },
   ]
-  const shotFor = (s: NetworkSurface) => (s === 'spotlight' ? networkShot(kit, 'spot') : networkShot(kit, 'site'))
+  const shotFor = (s: NetworkSurface) => (s === 'spotlight' ? networkShot(kit, 'spot') : s === 'space' ? networkShot(kit, 'spacedesk') : s === 'email' ? networkShot(kit, 'email') : networkShot(kit, 'site'))
 
   return (
     <div className="nf" style={vars({ '--c': 'var(--fq-x-sun-neon)' })}>
@@ -221,8 +219,10 @@ export function FrequencyNetwork() {
                     <NetworkPhone src={shotFor(p.surface)} alt={`Network: ${p.name.toLowerCase()}`} sizes="(max-width: 900px) 60vw, 300px" />
                   ) : p.surface === 'site' ? (
                     <NetworkBrowser src={shotFor(p.surface)} alt={`Network: ${p.name.toLowerCase()}`} url="yournetwork.org" width={1280} height={800} sizes="(max-width: 900px) 92vw, 640px" />
+                  ) : p.surface === 'space' ? (
+                    <NetworkBrowser src={shotFor(p.surface)} alt="Network: space" url="frequency.com/spaces/yournetwork" width={1280} height={770} sizes="(max-width: 900px) 92vw, 640px" />
                   ) : (
-                    <NetworkSoon label={p.name} url={p.surface === 'space' ? 'frequency.com/spaces/yournetwork' : undefined} />
+                    <NetworkMail src={shotFor(p.surface)} alt="Network: email" sizes="(max-width: 900px) 70vw, 380px" />
                   )}
                 </div>
                 <div className="nf-cz-tx">
