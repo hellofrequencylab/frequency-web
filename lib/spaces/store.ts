@@ -262,6 +262,16 @@ export const getSpaceBySlug = cache(async (slug: string): Promise<Space | null> 
   return mapOneSpace(data)
 })
 
+/** Whether a slug is already some Space's, ACTIVE OR NOT (slugs are globally unique, the same rule createSpace's own
+ *  check applies). True or false only; null when the read failed, so a caller never reads a failure as "free". Gives a
+ *  caller a yes or no and never the row, so it is safe behind a public availability check. */
+export async function isSpaceSlugTaken(slug: string): Promise<boolean | null> {
+  const norm = slug.trim().toLowerCase()
+  if (!norm) return null
+  const { data, error } = (await createAdminClient().from('spaces').select('id').eq('slug', norm).maybeSingle()) as { data: { id?: string } | null; error: unknown }
+  return error ? null : !!data
+}
+
 /** The ACTIVE, network-visible Space with this slug as an ANONYMOUS visitor sees it, or null. The
  *  same answer as getVisibleSpaceBySlug(slug, null), in one read, but it THROWS on a failed query
  *  instead of reading as "missing" or "private", because its caller caches the result across

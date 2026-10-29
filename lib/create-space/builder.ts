@@ -40,6 +40,12 @@ export function handleOf(draft: Pick<BuilderDraft, 'name' | 'slug'>): string {
   return draft.slug || handleFromName(draft.name) || 'yourspace'
 }
 
+/** The handle the visitor would actually claim: the typed one, else the one the name makes, else nothing (a name of
+ *  symbols makes none). Unlike handleOf it never falls back to the sample, which is for display only. */
+export function claimedHandle(draft: Pick<BuilderDraft, 'name' | 'slug'>): string {
+  return draft.slug || handleFromName(draft.name)
+}
+
 /** Letters, digits and single hyphens inside; the same shape the Space route accepts. */
 export function isValidHandle(handle: string): boolean {
   return handle.length >= 2 && handle.length <= 40 && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(handle)
@@ -52,10 +58,14 @@ export function cleanHandleInput(raw: string): string {
 
 const WEIGHTS = { kit: 15, name: 25, look: 20, goals: 15, host: 10 } as const
 
-/** How much of the Space is built, 0 to 90 (the last 10 is the account step and the last 5 of it going live). */
-export function progressOf(draft: BuilderDraft): number {
+/** What saving with an account adds. The last 5 of the 100 is the Space going live, which happens on the launch page
+ *  and not here, so the ring on this page stops at 95. */
+const SAVE_WEIGHT = 10
+
+/** How much of the Space is built, 0 to 85 from the four moves and the kit, 95 once it is saved. */
+export function progressOf(draft: BuilderDraft, saved = false): number {
   const d = draft.done
-  return (draft.kitChosen ? WEIGHTS.kit : 0) + (d.name ? WEIGHTS.name : 0) + (d.look ? WEIGHTS.look : 0) + (d.goals ? WEIGHTS.goals : 0) + (d.host ? WEIGHTS.host : 0)
+  return (draft.kitChosen ? WEIGHTS.kit : 0) + (d.name ? WEIGHTS.name : 0) + (d.look ? WEIGHTS.look : 0) + (d.goals ? WEIGHTS.goals : 0) + (d.host ? WEIGHTS.host : 0) + (saved ? SAVE_WEIGHT : 0)
 }
 
 interface MeterStop {

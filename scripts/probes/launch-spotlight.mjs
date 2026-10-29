@@ -19,7 +19,7 @@ if (!/launchSystemEnabled\(\)\) notFound\(\)/.test(start) || !/launchSystemEnabl
 if (!/if \(!profileId\) \{[\s\S]*writePendingLaunch[\s\S]*redirect\(launchHomeHref\(\{ signedIn: false \}\)\)/.test(start)) bad.push('a signed-out visitor is not held and sent to the step by /launch/start')
 if (/redirect\('\/sign-in/.test(start)) bad.push('/launch/start asks for an account before Publish')
 if (!/if \(!profileId\) \{[\s\S]*writePendingLaunch[\s\S]*\/sign-in\?next=\/launch\/claim/.test(actions)) bad.push('a signed-out Publish does not hold the answers and send the visitor to sign in')
-if (!/publishSpotlightStep\(profileId, launch, answers\)/.test(actions)) bad.push('a signed-in Publish does not run the step')
+if (!/publishSpotlightStep\(profileId, launch, answers[,)]/.test(actions)) bad.push('a signed-in Publish does not run the step')
 if (!/await createSpace\(input\)/.test(io) || !/publishedSpotlightPreferences\(/.test(io) || !/markStepPublished\(launch, 'spotlight'/.test(io)) bad.push('the step does not make the Space, publish the Spotlight and record the step')
 if (!/launch\.spaceId \? await getSpaceById/.test(io)) bad.push('a second Publish would make a second Space')
 if (!/isRedirectError\(err\)/.test(io)) bad.push('the step does not treat createSpace\'s redirect as success')
