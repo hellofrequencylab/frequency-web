@@ -30,6 +30,7 @@ export function member(): SpotlightData {
     background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 },
     theme: {} as SpotlightData['theme'],
     totalZaps: 42,
+    contributionCounts: { eventsHosted: 0, journeysFinished: 0 },
     topFriends: [{ profileId: 'f1', handle: 'bob', displayName: 'Bob', avatarUrl: null }],
     guestbook: [],
     grid: null,

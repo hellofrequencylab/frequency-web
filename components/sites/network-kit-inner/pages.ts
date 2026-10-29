@@ -55,7 +55,7 @@ export function networkKitServicesPage(): KitPage {
     header('Ways to join', 'Start small. *Stay for years.*', 'Every way in starts with a first visit. Come to a meetup, get introduced, or bring the format to your own town.', 'photo-08'),
     { type: 'NetworkKitInnerServices', props: { band: '', rows: [
       row('Visit a meetup', 'ring', 'A first visit', 'photo-08', 'Coffee, a short welcome, then small tables. A host introduces you to people whose work overlaps with yours.', 'A seat at a small table with a host\nIntroductions made on purpose\nThe guest list by email the next morning', '', 'Enquire'),
-      row('Get introduced', 'target', 'Through an organizer', 'photo-05', 'Tell us who you want to meet. An organizer looks through the directory and sends a warm, two-way introduction.', 'A short note on who you want to meet\nA two-way introduction by email\nA check-in a month later', 'Included with membership', 'Enquire'),
+      row('Get introduced', 'target', 'Through an organizer', 'photo-05', 'Tell us who you want to meet. An organizer looks through the directory and sends a warm, two-way introduction.', 'A short note on who you want to meet\nA two-way introduction by email\nA check-in a month later', '', 'Enquire'),
       row('Start a chapter', 'nodes', 'By application', 'photo-02', 'Bring the format to your town. We train you as a host, help you find a venue and fill the first table.', 'Host training and the playbook\nA mentor host for your first season\nListing, RSVPs and check-in from day one', '', 'Enquire'),
     ] } },
     { type: 'NetworkKitFAQ', props: { ...NETWORK_KIT_FAQ, variant: 'split', eyebrow: '', title: 'Common *questions*', side: '', band: '', items: [

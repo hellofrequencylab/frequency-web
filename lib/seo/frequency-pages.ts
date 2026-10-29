@@ -213,6 +213,20 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'Network', path: '/themes/network' },
     ],
   },
+  temple: {
+    path: '/themes/temple',
+    title: 'Temple: design it once, wear it on every surface',
+    description:
+      'The Temple Theme Kit is for temples, studios, retreats, clubs and markets. Your Spotlight, Space, website and emails wear one look, changed once.',
+    shareTitle: 'Temple: design it once, same theme everywhere',
+    headline: 'Design it once. Same theme everywhere.',
+    lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Temple Theme Kit gives temples, studios, retreats, clubs, markets and anyone who brings people together one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Themes', path: '/themes' },
+      { name: 'Temple', path: '/themes/temple' },
+    ],
+  },
 } as const satisfies Record<string, FrequencyPageSeo>
 
 /** The page's Metadata under Frequency: title, description, canonical, OpenGraph and X card, all from

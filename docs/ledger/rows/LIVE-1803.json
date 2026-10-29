@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1803",
+  "title": "A Space owner can publish the Network Theme Kit: live in the website editor, its faces in the editor page",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/editor/state.ts",
+    "ref": "LIVE-1802"
+  },
+  "detail": "NetworkKit joins WEBSITE_THEMES_LIVE, so a Space on the Network look publishes its website instead of keeping the house look, and the editor page loads the kit's four faces (NETWORK_KIT_FONT_CLASS) so the preview draws in them as the public site does. The kit was held back until its home, inner pages and thirteen profile kits shipped (#4297, #4329, #4335, #4339). The LIVE-1710 probe line that pinned 'not live until its render is finished' is rewritten on the owner's phrase 'rewrite probe LIVE-1710' (2026-10-29). No live site moves: the earlier network theme keeps its id and render, and The Group is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "NetworkKit is in WEBSITE_THEMES_LIVE and the editor page passes the kit's font class.",
+    "cmd": "node scripts/probes/network-kit-live.mjs"
+  },
+  "closed": "2026-10-29"
+}

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1881",
+  "title": "A personal Spotlight can show a 0% Tip jar when the Member can receive tips (Spotlight split, SPL-06)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/widgets/member-profile/tip.tsx",
+    "ref": "Owner picks 2026-10-28: free value first, the Tip block on the free personal Spotlight"
+  },
+  "detail": "Adds the member-only tip block (label Tip jar). The public Spotlight is ISR and cookie-free, so the block is a server-rendered card with a Send a tip link to /people/<handle>#tip, where the existing composer and sign-in round trip live. The Spotlight reader gains a boolean canTip (payouts live and the Member's account ready, the same rule as the in-app canTipRecipient), fail-closed to false and never carrying a Stripe id; the block collapses when it is false. Tips stay 0% on every tier. The in-app profile keeps its own Tip button.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/entity-blocks/registry.ts','utf8');const b=fs.readFileSync('components/widgets/member-profile/member-profile-modules.tsx','utf8');const c=fs.readFileSync('lib/spotlight/data.ts','utf8');if(!a.includes(\\\"id: 'tip'\\\")||!b.includes('tip: TipBlock')||!c.includes('readCanTip'))process.exit(1)\"",
+    "note": "Fails on main (no tip block); passes here."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

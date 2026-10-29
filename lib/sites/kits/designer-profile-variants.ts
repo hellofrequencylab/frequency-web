@@ -115,6 +115,7 @@ function field(row: KitRow, block: string, name: string): string {
 function routeHref(row: KitRow, route: string, has: Set<string>): string {
   switch (route) {
     case 'book': return '~/consultation'
+    case 'services': return '~/services'
     case 'portfolio': return has.has('portfolio') ? '~/portfolio' : '~/about'
     case 'journeys': return '~/courses'
     case 'workshops': return '~/events'
@@ -123,7 +124,7 @@ function routeHref(row: KitRow, route: string, has: Set<string>): string {
 }
 
 function pageSet(row: KitRow): Set<string> {
-  const has = new Set(['home', 'about', 'project', 'consultation'])
+  const has = new Set(['home', 'about', 'services', 'project', 'consultation'])
   if (row.blocks.includes('portfolio')) has.add('portfolio')
   if (row.blocks.includes('gatherings') || row.cta2?.route === 'workshops') has.add('events')
   if (row.id === 'schools') has.add('courses')
@@ -277,6 +278,17 @@ function pages(row: KitRow): KitPage[] {
       blocks: [shortHero(row.labels.workshops ?? 'Events', 'Come and *see*', row.copy.gatherings?.kicker ?? 'Open evenings, small workshops and tours of finished projects.'), { type: 'SpaceEvents', props: {} }, closingBlock()],
     })
   }
+  // The design's Services page: the header, the Space's own offers, the kit's questions and the closing call. The offers
+  // are the owner's (their programs and bookings); the block reads them off the Space.
+  list.push({
+    slug: 'services', label: 'Services', seo: { title: 'Services', description: 'Ways to work together, and what each one includes.' },
+    blocks: [
+      shortHero(row.copy.offerings?.eyebrow ?? 'Services', star(row.copy.offerings?.title ?? 'Ways to', row.copy.offerings?.em ?? 'work together')),
+      offerItems(row),
+      ...(row.blocks.includes('faq') ? [sections(row, look, has).find((b) => b.type === 'DesignerFAQ')!] : []),
+      closingBlock(),
+    ],
+  })
   list.push(
     {
       slug: 'about', label: 'About', seo: { title: 'About', description: 'Who we are and how we do things.' },

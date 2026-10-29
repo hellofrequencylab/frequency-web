@@ -48,6 +48,7 @@ import { BlockEditPanel } from './block-edit-panel'
 import { BlockPill, BlocksTray, Menu, MenuItem, RowLayoutPicker, label, type BuilderRailData } from './profile-page-builder'
 import { Input } from '@/components/ui/field'
 import { capsLabel } from '@/components/ui/caps-label'
+import { SaveErrorOrCapPanel } from './spotlight-cap-panel'
 
 // THE NODE PAGE BUILDER (E0 task 12b, ADR-1850). The in-rail outline editor for a Space page, on the node
 // store (ADR-1835): the Space half of `EntityPageBuilder`, where every block is a NODE. Selection, move,
@@ -462,11 +463,7 @@ export function NodePageBuilder({
         )}
       </header>
 
-      {store.error && (
-        <p className="rounded-control bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
-          {store.error}
-        </p>
-      )}
+      <SaveErrorOrCapPanel error={store.error} capReached={store.capReached} />
 
       <button
         type="button"

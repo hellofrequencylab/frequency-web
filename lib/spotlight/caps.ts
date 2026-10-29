@@ -23,3 +23,25 @@ export function growsPastCap(next: number, saved: number, allowed: boolean): boo
 }
 
 export const SPOTLIGHT_BLOCKS_MESSAGE = 'Your Spotlight is full for now. Crew adds room for more blocks.'
+
+/** What a refused save hands the builder so it can show a calm panel instead of only the red line. Every
+ *  figure is read on the server (the `spotlight_blocks` meter and the Crew contribute config), never typed in
+ *  the panel. `crewAllowed` equals `allowed` when the member is already on the top personal rung. */
+export interface SpotlightCapReached {
+  /** Blocks on the saved page. */
+  used: number
+  /** The member's allowance today. */
+  allowed: number
+  /** What Crew allows. */
+  crewAllowed: number
+  /** Crew contribute presets and floor, in cents a month. Empty when the config could not be read. */
+  presetCents: number[]
+  /** The preset that starts selected. */
+  suggestedCents: number
+  minCents: number
+}
+
+/** Is the member already on the top personal rung, so there is nothing to ask of them? PURE. */
+export function onTopPersonalRung(cap: Pick<SpotlightCapReached, 'allowed' | 'crewAllowed'>): boolean {
+  return cap.allowed >= cap.crewAllowed
+}
