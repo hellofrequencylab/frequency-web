@@ -34,11 +34,11 @@ describe('publicSiteItems', () => {
 
   it('drops Pencil, Plan, Production, to-dos, shared-layer and private items', () => {
     const out = publicSiteItems([
-      ev('a', '2026-10-01', { layer: 'works' }),
+      ev('a', '2026-10-01', { layer: 'works' as never }),
       ev('b', '2026-10-02', { layer: 'private' }),
-      ev('c', '2026-10-03', { layer: 'todos' }),
-      ev('d', '2026-10-04', { layer: 'shared' }),
-      ev('e', '2026-10-05', { layer: 'pencil' }),
+      ev('c', '2026-10-03', { layer: 'todos' as never }),
+      ev('d', '2026-10-04', { layer: 'shared' as never }),
+      ev('e', '2026-10-05', { layer: 'pencil' as never }),
       ev('f', '2026-10-06', { stage: 'pencil' }),
       ev('g', '2026-10-07', { stage: 'planning' }),
       ev('h', '2026-10-08', { stage: 'production' }),

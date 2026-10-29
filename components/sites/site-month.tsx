@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useMemo, useState, useSyncExternalStore } from 'react'
+import { useId, useMemo, useState, useSyncExternalStore } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { IconButton } from '@/components/ui/icon-button'
@@ -33,6 +33,14 @@ function onPhoneChange(notify: () => void) {
   const q = window.matchMedia(PHONE)
   q.addEventListener('change', notify)
   return () => q.removeEventListener('change', notify)
+}
+function dayNow(timeZone: string | null): string | null {
+  try {
+    const now = new Date().toLocaleDateString('en-CA', { timeZone: timeZone ?? undefined })
+    return /^\d{4}-\d{2}-\d{2}$/.test(now) ? now : null
+  } catch {
+    return null
+  }
 }
 const isPhone = () => typeof window.matchMedia === 'function' && window.matchMedia(PHONE).matches
 type Open = { kind: 'event'; ev: CalendarEvent } | { kind: 'day'; day: string } | null
@@ -85,7 +93,6 @@ export function SiteMonth({
 }) {
   const [ym, setYm] = useState(openYm)
   const [view, setView] = useState<View>('auto')
-  const [today, setToday] = useState(serverToday)
   const [open, setOpen] = useState<Open>(null)
   const [inViewerTz, setInViewerTz] = useState(false)
   const titleId = useId()
@@ -95,15 +102,13 @@ export function SiteMonth({
   const phone = useSyncExternalStore(onPhoneChange, isPhone, () => false)
   const current: 'month' | 'agenda' = view === 'auto' ? (phone ? 'agenda' : 'month') : view
 
-  // The page is cached, so "today" is whatever day it was when it was drawn. Ask the clock, in the Space's zone.
-  useEffect(() => {
-    try {
-      const now = new Date().toLocaleDateString('en-CA', { timeZone: timeZone ?? undefined })
-      if (/^\d{4}-\d{2}-\d{2}$/.test(now)) setToday(now)
-    } catch {
-      // An unreadable zone keeps the server's day.
-    }
-  }, [timeZone])
+  // The page is cached, so "today" is whatever day it was when it was drawn. Ask the clock, in the Space's zone;
+  // the server's day stands for the first paint and wherever the zone cannot be read.
+  const today = useSyncExternalStore(
+    () => () => {},
+    () => dayNow(timeZone) ?? serverToday,
+    () => serverToday,
+  )
 
   const weeks = useMemo(() => monthWeeks(ym), [ym])
   const agenda = useMemo(() => siteMonthAgenda(items, ym), [items, ym])

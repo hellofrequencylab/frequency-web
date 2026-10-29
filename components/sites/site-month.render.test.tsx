@@ -57,7 +57,7 @@ const items = publicSiteItems([
   ev('x2', 'Two', '2026-10-20'),
   ev('x3', 'Three', '2026-10-20'),
   ev('x4', 'Four', '2026-10-20'),
-  ev('hold', 'Team pencil', '2026-10-21', { layer: 'works', stage: 'pencil' }),
+  ev('hold', 'Team pencil', '2026-10-21', { layer: 'works' as never, stage: 'pencil' }),
   ev('nov', 'November Gathering', '2026-11-05'),
 ])
 
