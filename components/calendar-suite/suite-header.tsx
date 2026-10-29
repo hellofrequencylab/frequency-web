@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
-import { IconButton, IconLink } from '@/components/ui/icon-button'
+import { IconButton } from '@/components/ui/icon-button'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { CalendarAudienceToggle } from './audience-toggle'
 import { addDays, mondayOnOrBefore, monthDayLabel, weekdayName } from '@/lib/calendar/planner/days'
@@ -110,6 +110,7 @@ export function SuiteHeader({
   onPickMonth,
   onRail,
   onAsk,
+  onSettings,
   slug,
 }: {
   view: SuiteView
@@ -129,6 +130,8 @@ export function SuiteHeader({
   onPickMonth: (ym: string) => void
   onRail: () => void
   onAsk: () => void
+  /** Opens the settings sheet. */
+  onSettings: () => void
   /** The Space, for the Team view / Public view toggle. */
   slug: string
 }) {
@@ -211,9 +214,9 @@ export function SuiteHeader({
         />
       </div>
       <div className="cal-acts">
-        <IconLink href="#calendar-settings" label="Calendar settings" variant="tinted">
+        <IconButton label="Calendar settings" variant="tinted" onClick={onSettings}>
           <FqIcon name="settings" size={16} />
-        </IconLink>
+        </IconButton>
         <button type="button" className="btn cal-ask" onClick={onAsk}>
           <FqIcon name="vera" size={16} />
           <span className="cal-ask-t">Ask Vera or search</span>
