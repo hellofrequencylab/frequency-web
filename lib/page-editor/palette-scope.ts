@@ -87,7 +87,7 @@ export function categoryKeysForSurface(surface: EditorSurface): ReadonlySet<stri
   return keys ? new Set(keys) : null
 }
 
-/** The theme-named block families (config categories), and the website theme that styles each (LIVE-1794). A family's
+/** The theme-named block families (config categories), and the website theme that styles each (LIVE-1854). A family's
  *  CSS lives in its own theme's sheet, so on any other theme its blocks render bare (docs/THEME-COHESION.md, the
  *  2026-10-28 audit: 4 to 25 percent of their themed classes have a rule off-theme). `network` is the exception, its
  *  island sheet styles it on every theme, so it is portable and offered everywhere. Keys are WebsiteTheme values. */

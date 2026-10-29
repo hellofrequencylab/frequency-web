@@ -198,7 +198,7 @@ describe('the fail-safe opens, it never empties', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// A THEME-NAMED FAMILY IS OFFERED ONLY ON ITS OWN THEME (LIVE-1794, docs/THEME-COHESION.md).
+// A THEME-NAMED FAMILY IS OFFERED ONLY ON ITS OWN THEME (LIVE-1854, docs/THEME-COHESION.md).
 // Catches: a family category with no owner (a new family joining every theme), the theme argument being dropped at
 // the website editor's call site, and the palette hiding a block an owner has already placed (it must not).
 // ─────────────────────────────────────────────────────────────────────────────
