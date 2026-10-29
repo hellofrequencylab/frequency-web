@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1914",
+  "title": "Launcher slice two: the launch pill stays after Publish as Finish setup over the Get Started list",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "/mnt/project-files/launcher-lightbox/PLAN.md",
+    "ref": "Owner direction 2026-10-29: an always-present reminder button to finish setup"
+  },
+  "detail": "The header launch pill used to vanish on Publish. It now stays as 'Finish setup' with the Get Started count and a sheet of what is left (lib/launch/setup-box.ts over the one list in lib/launch/get-started.ts), until every item is done. Hide with two confirmations and the restore in Settings are slice three; the Setup registry from SPACE_MODULES is slice four.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "The box loader builds the Finish setup box after Publish and the pill has its face.",
+    "cmd": "node scripts/probes/launch-setup-pill.mjs"
+  },
+  "closed": "2026-10-29"
+}

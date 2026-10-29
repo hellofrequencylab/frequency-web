@@ -15,6 +15,17 @@ interface LaunchBoxRow {
   state: LaunchBoxRowState
 }
 
+interface SetupBoxView {
+  done: number
+  total: number
+  left: number
+  /** 0 to 100, for the ring. */
+  pct: number
+  sections: { id: string; title: string; done: number; total: number }[]
+  /** What is still to do, the next one first. At most six, so the sheet stays a glance. */
+  todo: { id: string; label: string; href: string; photo: boolean; skipped: boolean }[]
+}
+
 export interface LaunchBoxView {
   total: number
   /** Steps that exist (published). A skipped step is settled but not counted as made. */
@@ -25,6 +36,8 @@ export interface LaunchBoxView {
   /** True while a stop was asked for and is waiting for the typed word. */
   stopAsked: boolean
   current: { id: LaunchStepId; label: string } | null
+  /** After Publish the same pill becomes "Finish setup" over the Get Started list (lib/launch/setup-box.ts); null before. */
+  setup?: SetupBoxView | null
   stages: { id: string; label: string; rows: LaunchBoxRow[] }[]
 }
 
@@ -47,6 +60,7 @@ export function boxView(l: LaunchSnapshot, now: Date): LaunchBoxView {
     minimized: l.minimized,
     stopAsked: launchPhase(l, now) === 'cancel_requested',
     current,
+    setup: null,
     stages: LAUNCH_STAGES.map((st) => ({ id: st.id, label: st.label, rows: rows.filter((r) => r.stage === st.id).map(({ stage: _s, ...r }) => r) })),
   }
 }

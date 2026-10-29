@@ -19,6 +19,25 @@ import { launchHomeHref } from '@/lib/launch/destination'
 const RESUME_HREF = launchHomeHref({ signedIn: true })
 
 export function LaunchPill({ view, open, onToggle }: { view: LaunchBoxView; open: boolean; onToggle: () => void }) {
+  // After Publish the same pill reads "Finish setup" and counts the Get Started list (lib/launch/setup-box.ts).
+  const setup = view.setup
+  if (setup) {
+    return (
+      <button
+        type="button"
+        className={view.minimized ? 'ap-launch min' : 'ap-launch'}
+        aria-expanded={open}
+        aria-controls="fqm-launch"
+        aria-haspopup="dialog"
+        aria-label={`Finish setup, ${setup.done} of ${setup.total} done`}
+        title="Finish setup"
+        onClick={onToggle}
+      >
+        <span className="ap-launch-ring" data-n={`${setup.done}/${setup.total}`} style={{ '--p': `${setup.pct}%` } as React.CSSProperties} aria-hidden />
+        <span className="ap-launch-l">Finish setup</span>
+      </button>
+    )
+  }
   return (
     <button
       type="button"
@@ -36,7 +55,53 @@ export function LaunchPill({ view, open, onToggle }: { view: LaunchBoxView; open
   )
 }
 
+function SetupSheet({ view, onClose }: { view: LaunchBoxView; onClose: () => void }) {
+  const setup = view.setup!
+  const next = setup.todo[0]
+  return (
+    <>
+      <div className="ap-sheet-t">Finish setup</div>
+      <p className="ap-launch-sub">{`${setup.done} of ${setup.total} done · ${setup.left} left`}</p>
+      <div className="ap-launch-stages">
+        <section aria-label="Sections">
+          <ul>
+            {setup.sections.map((sec) => (
+              <li key={sec.id} className={`ap-launch-row ${sec.done === sec.total ? 'done' : 'todo'}`}>
+                <span className="ap-launch-mark" aria-hidden>{sec.done === sec.total ? <FqIcon name="check" /> : null}</span>
+                <span>{sec.title}</span>
+                <small>{`${sec.done}/${sec.total}`}</small>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section aria-label="Still to do">
+          <h3>Still to do</h3>
+          <ul>
+            {setup.todo.map((t) => (
+              <li key={t.id} className="ap-launch-row todo">
+                <span className="ap-launch-mark" aria-hidden />
+                <Link href={t.href} onClick={onClose}>{t.label}</Link>
+                {t.skipped && <small>Skipped</small>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+      {next && (
+        <Link href={next.href} className="btn pa ap-launch-go" onClick={onClose}>
+          Pick up here
+        </Link>
+      )}
+    </>
+  )
+}
+
 export function LaunchSheet({ view, onClose }: { view: LaunchBoxView; onClose: () => void }) {
+  if (view.setup) return <SetupSheet view={view} onClose={onClose} />
+  return <LaunchStepsSheet view={view} onClose={onClose} />
+}
+
+function LaunchStepsSheet({ view, onClose }: { view: LaunchBoxView; onClose: () => void }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [asked, setAsked] = useState(view.stopAsked)
