@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1789",
+  "title": "Designer small marks: Glyph, Seal and Ornament, drawn where the design draws them",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "docs/design-systems/designer/rules.json",
+    "ref": "Daniel, 2026-10-29 05:24Z, pick 3 A: add the prototype's small marks (Glyph, Seal, Ornament)."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/designer-kit-marks.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (nine missing ids for the three marks) and passes here."
+  },
+  "detail": "components/sites/designer-glyph.tsx holds Glyph (the geometric sigil set), Seal (the ochre-ringed disc, a numeral or a mark, subtle, accent or dark) and Ornament (a fading hairline with one quiet ochre plus). The steps and the experience band draw their numerals through Seal with the same markup and size, so their pixels do not change. The testimonials open with the Ornament at 200px, as the design's Home page does, and a closing call without a next project opens with it too. The nine intake ids for Glyph, Seal and Ornament leave the baseline (346 to 337). Rendered on Alli Rae's pages at 390, 1280, 1440, 1920 and 2000: only the pages with testimonials and a closing call change, by the height of the ornament. The prototype's demo copy stays out, so about 337 copy ids remain by decision.",
+  "wave": "W7"
+}

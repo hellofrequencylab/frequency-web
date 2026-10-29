@@ -59,6 +59,12 @@ describe('the Designer block family', () => {
     expect(faq).not.toContain('How early should we bring you in?')
   })
 
+  it('opens the testimonials and the closing call with the ochre ornament, and draws steps as seals', () => {
+    expect(draw('DesignerTestimonials', {}, { links })).toContain('role="separator"')
+    expect(draw('DesignerClosing', {}, { links })).toContain('dz-orn')
+    expect(draw('DesignerSteps', {}, { links })).toMatch(/class="dz-seal dz-disc"/)
+  })
+
   it('does not set an em dash in the sample copy', () => {
     const copy = JSON.stringify([designerSitePages(), ...DESIGNER_CATEGORY_COMPONENTS.map((t) => designerComponents[t].defaultProps)])
     expect(copy).not.toMatch(/—/)
