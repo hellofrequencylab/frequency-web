@@ -211,7 +211,7 @@ const CTA = `
 export const ROLE_CSS_CHUNKS: Readonly<Record<string, string>> = { base: BASE, hero: HERO, steps: STEPS, offerings: OFFERINGS, gatherings: GATHERINGS, membership: MEMBERSHIP, proof: PROOF, faq: FAQ, cta: CTA }
 
 /** Editor theme id to the contract theme whose mapping it wears. */
-const CONTRACT_OF: Record<WebsiteTheme, ContractThemeId> = {
+const CONTRACT_OF: Partial<Record<WebsiteTheme, ContractThemeId>> = {
   DAWN: 'frequency', Menswork: 'bold', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Midnight: 'midnight', Designer: 'designer',
 }
 

@@ -35,7 +35,8 @@ function build(def: (typeof MEGA_THEMES)[number]): Json {
     library: lib ? { tagline: lib.tagline, madeFor: lib.madeFor, signature: lib.signature, surfaces: lib.surfaces, page: themePagePath(lib.id) } : null,
     // Pointers, never copies: palette values live in one place, and the drift test resolves these at test time.
     editor: { tokens: { source: 'lib/sites/editor/theme-contract.json', path: ['themes', def.editor] } },
-    core: { names: { source: 'lib/theme/block-contract-map.json', path: ['themes', def.id, 'names'] } },
+    // A theme the core token contract does not cover yet (Free Human) carries no mapping; the roles fall back to the house one.
+    core: coreMap[def.id] ? { names: { source: 'lib/theme/block-contract-map.json', path: ['themes', def.id, 'names'] } } : null,
   }
 }
 
@@ -56,10 +57,11 @@ describe('theme manifests', () => {
   })
   it('keeps every legacy id and carries the full core token mapping', () => {
     for (const d of MEGA_THEMES) {
-      const m = JSON.parse(readFileSync(file(d.id), 'utf8')) as { legacyIds: { editor: string; site: string | null }; editor: { tokens: { path: string[] } }; core: { names: { path: string[] } } }
+      const m = JSON.parse(readFileSync(file(d.id), 'utf8')) as { legacyIds: { editor: string; site: string | null }; editor: { tokens: { path: string[] } }; core: { names: { path: string[] } } | null }
       expect(m.legacyIds).toEqual({ editor: d.editor, site: d.site })
       expect(contractThemes[m.editor.tokens.path[1]], d.id).toBeDefined()
-      expect(Object.keys(coreMap[m.core.names.path[1]]?.names ?? {}).length, d.id).toBeGreaterThanOrEqual(45)
+      if (m.core) expect(Object.keys(coreMap[m.core.names.path[1]]?.names ?? {}).length, d.id).toBeGreaterThanOrEqual(45)
+      else expect(coreMap[d.id], `${d.id} has a core mapping but its manifest does not point at it`).toBeUndefined()
     }
   })
   it('lists a theme as offered only when the picker and the library both offer it', () => {
