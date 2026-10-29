@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "id": "midnight",
+  "legacyIds": {
+    "editor": "Midnight",
+    "site": "midnight"
+  },
+  "offered": true,
+  "site": {
+    "label": "Nocturne",
+    "description": "After dark: deep night grounds, bone type, one violet accent, square frames and monochrome photos.",
+    "defaultFonts": "classic"
+  },
+  "library": {
+    "tagline": "After dark. One violet light on true black.",
+    "madeFor": "guides, teachers and healers who work in the evening",
+    "signature": "Deep night grounds, bone type, square frames, with Bodoni Moda, Marcellus and Geist.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "ready",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "ready",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/nocturne"
+  },
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "Midnight"
+      ]
+    }
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "midnight",
+        "names"
+      ]
+    }
+  }
+}

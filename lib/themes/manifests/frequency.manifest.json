@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "id": "frequency",
+  "legacyIds": {
+    "editor": "DAWN",
+    "site": "frequency"
+  },
+  "offered": true,
+  "site": {
+    "label": "Default",
+    "description": "Warm, bright and airy: soft cards, a frosted menu bar and generous space.",
+    "defaultFonts": "frequency"
+  },
+  "library": {
+    "tagline": "Warm, bright and easy. The house look.",
+    "madeFor": "anyone who wants a friendly site with nothing to fight",
+    "signature": "Soft cards, a frosted menu bar, Unbounded headlines and Instrument Serif italics.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "soon",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "soon",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/frequency"
+  },
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "DAWN"
+      ]
+    }
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "frequency",
+        "names"
+      ]
+    }
+  }
+}

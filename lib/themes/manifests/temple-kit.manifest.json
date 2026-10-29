@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "id": "temple-kit",
+  "legacyIds": {
+    "editor": "TempleKit",
+    "site": "temple-kit"
+  },
+  "offered": true,
+  "site": {
+    "label": "Temple",
+    "description": "Warm plaster and umber with one clay color, arches and soft corners, for every kind of gathering.",
+    "defaultFonts": "classic"
+  },
+  "library": {
+    "tagline": "A lime-washed house. Warm and unhurried.",
+    "madeFor": "temples, studios, retreats, clubs, markets and anyone who brings people together",
+    "signature": "Plaster and umber, one clay color, arches and soft corners, with Marcellus, Jost, Branch and Cormorant.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "ready",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "ready",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/temple"
+  },
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "TempleKit"
+      ]
+    }
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "temple-kit",
+        "names"
+      ]
+    }
+  }
+}

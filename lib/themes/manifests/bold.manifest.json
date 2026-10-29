@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "id": "bold",
+  "legacyIds": {
+    "editor": "Menswork",
+    "site": "bold"
+  },
+  "offered": true,
+  "site": {
+    "label": "Bold",
+    "description": "Dark, graphic and direct: charcoal, a bright accent and angled cuts.",
+    "defaultFonts": "menswork"
+  },
+  "library": {
+    "tagline": "Dark, graphic and direct. Say it loud.",
+    "madeFor": "training, men’s work, fitness and anyone who runs a tough room",
+    "signature": "Charcoal ground, one bright accent, angled cuts and heavy uppercase headlines.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "soon",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "soon",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/bold"
+  },
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "Menswork"
+      ]
+    }
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "bold",
+        "names"
+      ]
+    }
+  }
+}
