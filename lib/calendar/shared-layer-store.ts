@@ -21,7 +21,7 @@ import type { SharedSource } from './planner/adapters'
 // FAIL-SAFE, and loud about it: a source that cannot be read contributes nothing and logs
 // `calendar.shared_layer.*_failed`, so an empty tile is something an operator can tell from a quiet one.
 
-export interface SharedLayer {
+interface SharedLayer {
   sources: SharedSource[]
   /** The accepted collaborators, for the invite picker in Details. */
   collaborators: { id: string; name: string }[]
