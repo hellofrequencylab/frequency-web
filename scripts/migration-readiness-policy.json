@@ -374,6 +374,84 @@
         "Real local service, anon and authenticated calendar suite API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4300,
+      "expiresAt": "2026-10-31T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346027100_launch_consent_retention.sql",
+          "sha256": "c1759cb03ecffab63d569ac0a197da5f22f5a611c9adb53636110f949a7eb0d8"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/LAUNCH-CONSENT-RETENTION.md",
+          "status": "added",
+          "sha256": "87bb31f1b8b1c6eee0d19fbae210323ed8053d53498628bb488ac9c7849d9894",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/adr/ADR-1926.md",
+          "status": "added",
+          "sha256": "90a4b5eaf28a162d95f6ce276474dff59887d17e1f40388ba81859010e6c9039",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-1775.json",
+          "status": "added",
+          "sha256": "bf85fd37d65aeb59d0f65acc7c657c02a4c4acd9570c5418aca49a23f258a172",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "2884f29faec24e04fa9eb5159472822bb9d85efdec7506d3e4fa73e95f23d5a8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/launch-consent-retention.mjs",
+          "status": "added",
+          "sha256": "c815d591c34de49c4b88a30c84047d7e130bef5eb361ec1c549cd136bf4d26d3",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/launch-api.mjs",
+          "status": "modified",
+          "sha256": "62ff749ed73bb2840ba0cbd1ac08318f32a74ff02f0294a5e4a637803f163621",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346027100_launch_consent_retention.sql",
+          "status": "added",
+          "sha256": "c1759cb03ecffab63d569ac0a197da5f22f5a611c9adb53636110f949a7eb0d8",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/launch_consent_retention.test.sql",
+          "status": "added",
+          "sha256": "4c30e7b52bb3ace9becda68dd227234da508d69aec3e7c2882025b928c33e964",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
