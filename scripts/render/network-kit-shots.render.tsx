@@ -24,9 +24,6 @@ async function html(el: unknown): Promise<string> {
   for await (const c of prelude) chunks.push(Buffer.from(c))
   return Buffer.concat(chunks).toString()
 }
-const doc = (body: string) =>
-  `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif}html{scrollbar-width:none}</style></head><body><div data-kit="members" data-energy="still"><div class="fq-members" style="max-width:1180px;margin:0 auto;padding:16px">${body}</div></div></body></html>`
-
 const shellDoc = (body: string) =>
   `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
 
