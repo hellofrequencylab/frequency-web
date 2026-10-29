@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1772",
+  "title": "The launch form fills from every part the person already has: Space domain, profile bio and website",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/launch/known.ts",
+    "ref": "Vera guided launch system. The owner ruled on 2026-10-28 that any part a person already has fills the rest, and that data flows both ways."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-prefill-known.mjs",
+    "note": "lib/launch/known.test.ts (run by the test job) pins the rules. The probe reads the wiring: the picked Space fills from its tagline, about and domain and then its owner's profile, and a person with nothing saved gets their own profile in the form. Fails on main, where only the Space tagline and about were used."
+  },
+  "detail": "The Spotlight's own words come first, then the Space (name, tagline, first about line, domain), then the profile (display name, bio, website). The link field takes the Space domain, then the profile website. Writes still go to the same Space; the profile is read only. Not here: photos, the personal profile Spotlight.",
+  "wave": "W7"
+}
