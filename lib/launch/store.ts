@@ -29,6 +29,14 @@ export async function getLaunchForOwner(ownerId: string, launchId?: string): Pro
   return toSnapshot(data as Record<string, unknown> | null)
 }
 
+/** Everything on the list is ticked: the launch is finished. Idempotent and owner-only; once set, the launch box, the clock
+ *  and the come-back emails all stand down, and /launch reads "done". */
+export async function completeLaunch(l: LaunchSnapshot, now = new Date()): Promise<boolean> {
+  const db = await createClient()
+  const { error } = await db.from('space_launch').update({ completed_at: now.toISOString(), updated_at: now.toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId).is('cancelled_at', null).is('completed_at', null)
+  return !error
+}
+
 /** Start a launch, or hand back the one already running: a second tap never makes a second launch. */
 export async function startLaunch(ownerId: string, input: { niche: string | null; intents: string[] }): Promise<LaunchSnapshot | null> {
   const existing = await getActiveLaunch(ownerId)
