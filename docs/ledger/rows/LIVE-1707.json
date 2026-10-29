@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1707",
+  "title": "The Space calendar's Pencil it in sheet, quick add and command bar",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/calendar-suite/suite-pencil.tsx",
+    "ref": "Daniel, 2026-10-28: redesign the Space calendar with the Calendar system handoff; every Space gets the full calendar and project suite (pass 6 of 9)"
+  },
+  "detail": "Pass 6 of the Space calendar and project suite: the three ways to make something. Pencil it in is a sheet that holds up to three dates for 3, 7 or 14 days (the hold lives on the Plan, space_plans.hold_until from pass 2), with a playbook picker that lays down a Plan's to-dos; quick add is a small popover opened by clicking an empty time on Week or Day or a day on Month, taking a title and making a to-do, a private block or a Pencil; the command bar (Ask Vera or search, or /) parses a line such as 'pencil supper friday 6pm', previews what it understood and adds nothing until Enter on the create row, and also opens views, jumps to a date and finds a Plan or a date by name. A failed create keeps the bar open and says why. Every write goes through the new pencil-actions.ts (pencilItIn, addQuickItem), which reuse the calendar's existing writes, and each create offers Undo through the same toast. Pure logic with tests: pencil-it-in.ts and command-results.ts. Releasing lapsed holds is pass 8, not here. Plan: /mnt/project-files/calendar-suite/PLAN.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const need=['components/calendar-suite/suite-pencil.tsx','components/calendar-suite/suite-quick.tsx','components/calendar-suite/suite-command.tsx','app/(main)/spaces/[slug]/settings/calendar/pencil-actions.ts','lib/calendar/planner/pencil-it-in.ts','lib/calendar/planner/command-results.ts'];const miss=need.filter(f=>!fs.existsSync(f));if(miss.length){console.error('missing',miss);process.exit(1)}\"",
+    "note": "Fails on main (no Pencil it in sheet, quick add or command bar); passes here. The parsing and results tests run in CI."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}
