@@ -134,6 +134,9 @@ const VITEST_ENFORCED: Record<string, string> = {
   // enforcing arm needs the repo's token block (TypeScript behind a path alias), so it runs under vitest, where
   // its sibling test walks the real tree and fails on any gap the baseline does not name.
   'check:design-system': 'scripts/design-system.test.ts',
+  // Added 2026-10-29 (LIVE-1865). Every theme x role x layout is held to the token contract and the role sheet, with a
+  // baseline of known gaps that only shrinks. It renders the role blocks, so it runs under vitest where they import.
+  'check:theme-conformance': 'scripts/theme-conformance.test.ts',
   'check:crm-parity': 'scripts/check-crm-parity.test.ts',
   'check:vocab': 'scripts/check-vocab.test.ts',
   'check:studio': 'scripts/check-studio.test.ts',
