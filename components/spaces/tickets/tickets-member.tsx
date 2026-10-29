@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { TicketReserveButton } from '@/components/spaces/tickets/ticket-reserve-button'
 import { TicketRsvpCancelButton } from '@/components/spaces/tickets/ticket-rsvp-cancel-button'
+import { createSpaceCtaClickToken } from '@/lib/spaces/cta-click-token'
 
 // MEMBER TICKETS SURFACE (MASTER-PLAN ADMIN-04, Event Space "Get tickets"). The self-fetching server
 // half of the Event Space "Tickets" tab: it loads this Space's active tiers and the viewer's own
@@ -99,7 +100,11 @@ export async function TicketsMember({
                 ) : (
                   // A member may hold a spot on a different tier and still reserve this one (v1 caps at
                   // one going RSVP per member per tier, not per Space), so the button stays enabled.
-                  <TicketReserveButton spaceId={spaceId} tierId={tier.id ?? ''} />
+                  <TicketReserveButton
+                    spaceId={spaceId}
+                    tierId={tier.id ?? ''}
+                    clickToken={createSpaceCtaClickToken(spaceId, 'ticket-reserve')}
+                  />
                 )}
               </div>
             </div>

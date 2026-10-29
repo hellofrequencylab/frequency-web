@@ -195,6 +195,27 @@ function NetworkKitStatsBlock({ p, metadata, pad, vis }: Common) {
   const live = (spaceOf(metadata)?.highlights ?? []).filter((h) => h.label && Number.isFinite(h.value)).map((h) => ({ glyph: /event|meet/i.test(h.label) ? 'calendar' : 'users', value: String(h.value), label: h.label }))
   const items = (own.length ? own : live).slice(0, 4)
   if (!items.length) return null
+  // The `photo` layout (the About page's figures): a photo beside the numbers, set bare on the page.
+  if (p.variant === 'photo') {
+    const src = img(p.image)
+    return (
+      <Band kind="stats" p={p} variant="photo" pad={pad} vis={vis}>
+        <Section>
+          <div className="nk-split nki-figures" data-solo={src ? undefined : ''}>
+            {src && <div className="nki-figures-media nk-photo" data-grade="">{photo(src, str(p.alt))}</div>}
+            <dl className="nki-figure-grid">
+              {items.map((s, i) => (
+                <div key={i}>
+                  <dt className="nk-display nk-stat-value">{s.value}</dt>
+                  <dd className="nk-stat-label">{s.label}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </Section>
+      </Band>
+    )
+  }
   return (
     <Band kind="stats" p={p} pad={pad} vis={vis}>
       <div className="nk-section nk-section--stats">
@@ -443,6 +464,8 @@ export const networkKitMoreComponents: Record<string, ComponentConfig> = {
     circles: { type: 'array', label: 'Circles', arrayFields: { glyph, name: text('Name'), blurb: area('Line under the name'), note: text('Small line'), href: text('Link', LINK_HINT) } },
   }, { ...NETWORK_KIT_CIRCLES }, NetworkKitCirclesBlock),
   NetworkKitStats: block('Network figures (live)', {
+    variant: { type: 'select', label: 'Layout', options: [{ label: 'Cards', value: 'tiles' }, { label: 'Photo beside the numbers', value: 'photo' }] },
+    image, alt,
     items: { type: 'array', label: 'Figures', hint: 'Real numbers only. With none written, the Space\'s own counts are used, and with none of those the block is left out.', arrayFields: { glyph, value: text('Number'), label: text('What it counts') } },
   }, { ...NETWORK_KIT_STATS }, NetworkKitStatsBlock),
   NetworkKitNote: block('Network organizer note', {

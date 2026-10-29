@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1783",
+  "title": "Give the Designer Theme Kit its four emails",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "docs/design-systems/designer/rules.json",
+    "ref": "Daniel, 2026-10-28: fan out and begin the Frequency Theme Kit Designer, the way Nocturne is set up. Pass 7 of the plan at /mnt/project-files/designer-kit/PLAN.html. ADR-1728 and ADR-1906 (theme fence)."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/designer-kit-email.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (no Designer kit email builders, the Library lists the kit email as soon) and passes here."
+  },
+  "detail": "Pass 7 of the Designer Theme Kit. lib/theme/designer-kit-email.ts builds the design's four emails (note, welcome, dates, receipt) from the Designer design system's EmailPage.html as nested tables with inline styles, literal colours (white page, warm stone card, charcoal type, the profile's own accent ramp from designerKitSpotlightContent), Cormorant and Jost with Georgia, Helvetica and Arial fallbacks, an Outlook ghost table and a phone breakpoint. Studios and networks wear the design's tighter corner, every other profile the soft one. They ship in the stock catalog (designer-kit-note, -welcome, -dates, -receipt) and the Library lists Email as ready for the kit. Voice changes against the design: the welcome lead drops 'one short letter most weeks' (a weekly promise), the note lead drops 'once a season' (a cadence promise), and the fixture drops the design's invented 'three rooms' counts. Cover alt text is the owner's, not the design's 'swap in a hosted https URL' placeholder.",
+  "wave": "W7"
+}

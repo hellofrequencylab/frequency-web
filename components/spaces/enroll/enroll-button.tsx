@@ -21,7 +21,7 @@ import { recordSpaceCtaClickAction } from '@/lib/spaces/analytics-actions'
 // charge. When the program is full it disables with a plain label. No narrated feelings, no em/en
 // dashes (CONTENT-VOICE §10).
 
-export function EnrollButton({ spaceId, full }: { spaceId: string; full: boolean }) {
+export function EnrollButton({ spaceId, full, clickToken }: { spaceId: string; full: boolean; clickToken: string | null }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -29,7 +29,7 @@ export function EnrollButton({ spaceId, full }: { spaceId: string; full: boolean
   function enroll() {
     setError(null)
     // Fire-and-forget CTA telemetry (Epic 1.11): never awaited, never blocks the enroll.
-    void recordSpaceCtaClickAction(spaceId)
+    if (clickToken) void recordSpaceCtaClickAction(spaceId, clickToken)
     start(async () => {
       const result = await enrollInProgram(spaceId)
       if (isError(result)) {
