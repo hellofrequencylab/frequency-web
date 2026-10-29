@@ -110,7 +110,7 @@ export function entryFeedFields(ev: FeedEntryRow, url: string): VeventFields {
 }
 
 /** A to-do as the feed reads it. The columns are the CrmTask's own, so the route hands a task straight in. */
-export interface FeedTodo {
+interface FeedTodo {
   id: string
   title: string
   dueAt: string | null
