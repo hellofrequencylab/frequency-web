@@ -8,6 +8,7 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from '@/lib/ai/complete'
 import { aiEnabled } from '@/lib/ai/client'
+import { aiRateLimited } from '@/lib/ai/rate-limit'
 import { featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import { envFlag } from '@/lib/env/string'
@@ -82,7 +83,7 @@ export async function buildLaunchDraft(profileId: string, launch: LaunchSnapshot
   const spent = (await getBuildout(launch))?.aiCalls ?? 0
   let aiCalls = spent
   let mode: StoredBuildout['mode'] = 'quotes'
-  if (envFlag('LAUNCH_BUILDOUT_AI_ENABLED') && polishCallsLeft(spent) && aiEnabled() && !(await featureOverBudget(FEATURE))) {
+  if (envFlag('LAUNCH_BUILDOUT_AI_ENABLED') && polishCallsLeft(spent) && aiEnabled() && !(await featureOverBudget(FEATURE)) && !(await aiRateLimited(FEATURE, profileId))) {
     aiCalls = spent + 1
     const polished = await polish(draft, input, profileId)
     if (polished) {
