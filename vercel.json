@@ -131,6 +131,10 @@
       "schedule": "5 * * * *"
     },
     {
+      "path": "/api/cron/launch-reminders",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/signup-lead-recovery",
       "schedule": "0 15 * * *"
     },

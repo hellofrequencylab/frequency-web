@@ -7,7 +7,7 @@ import '@/app/themes/active/site-pages-b'
 import { ChapPhoto } from '../shared/parts'
 import { NICHE_DESIGN, NICHE_PHOTO_DIR } from '@/lib/marketing/funnel-design'
 import type { FunnelConfig } from '@/lib/marketing/funnel-config'
-import { OPERATOR_START_HREF } from '@/lib/site'
+import { ROUTES } from '@/lib/frequency/site-nav'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
@@ -66,7 +66,7 @@ export function FrequencyForIndex({ doors }: { doors: FunnelConfig[] }) {
       <KeepGoing
         title="Not sure which one?"
         body="Open your Space free and pick later. Everything is in the same place."
-        primary={{ href: OPERATOR_START_HREF, label: 'Open your Space' }}
+        primary={{ href: ROUTES.createSpace, label: 'Open your Space' }}
         secondary={{ href: '/pricing', label: 'See pricing' }}
       />
     </>

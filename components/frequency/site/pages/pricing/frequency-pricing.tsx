@@ -27,7 +27,7 @@ import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { NETWORK_PLAN } from '@/lib/pricing/plans'
 import type { AddOnGroups } from '@/lib/pricing/pricing-addons'
 import { COLLECTIVE_PARTNER_CAP, type FeatureGrid, type Offering } from '@/lib/pricing/pricing-grid'
-import { OPERATOR_START_HREF } from '@/lib/site'
+import { ROUTES } from '@/lib/frequency/site-nav'
 import { splitPrice } from './split-price'
 import { PlanPeriodScope, PlanPeriodSwitch } from './plan-period'
 import type { CalcModel } from './calculator-model'
@@ -221,7 +221,7 @@ export function FrequencyPricing({
           </h1>
           <p>{`Your regulars: 0% ${PLAN_STORY.plusProcessing}. People we bring you: a small share. Non Profits: nothing.`}</p>
           <div className="ctas">
-            <Link className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
+            <Link className="btn fq-iri-btn" href={ROUTES.createSpace}>
               Open your Space
             </Link>
             <a className="btn btn-ghost fq-iri-rim" href="#path">
@@ -389,7 +389,7 @@ export function FrequencyPricing({
       <KeepGoing
         title="Open your Space."
         body={`Your Space comes with Crew. Your regulars stay at 0% ${PLAN_STORY.plusProcessing}.`}
-        primary={{ href: OPERATOR_START_HREF, label: 'Open your Space →' }}
+        primary={{ href: ROUTES.createSpace, label: 'Open your Space →' }}
         secondary={{ href: '#features', label: 'Compare features' }}
       />
     </>

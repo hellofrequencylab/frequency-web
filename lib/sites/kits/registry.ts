@@ -81,6 +81,9 @@ for (const niche of MEGA_NICHES) LOADERS[`network-kit-${niche}`] = () => import(
 // (`temple-<niche>`, Royal Temple's) keeps its loaders so a saved site still resolves, and is offered nowhere.
 for (const niche of MEGA_NICHES) LOADERS[`temple-kit-${niche}`] = () => import('./temple-kit-profile-variants').then((m) => m.templeKitProfileKit(niche))
 
+// The Free Human Theme Kit's thirteen profile kits, one per niche (`free-human-<niche>`), the same shape as the Temple Theme Kit's.
+for (const niche of MEGA_NICHES) LOADERS[`free-human-${niche}`] = () => import('./free-human-profile-variants').then((m) => m.freeHumanProfileKit(niche)).then((k) => withJoinPage(k, niche))
+
 interface KitSummary { id: string; niche: KitNiche; theme: SiteKit['theme']; label: string; description: string }
 
 /** Light index for the library screen; no page content. */

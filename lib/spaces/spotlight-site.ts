@@ -19,12 +19,25 @@ export interface SpotlightSiteLinks {
   contact: string | null
 }
 
-const holder = cache((): { links: SpotlightSiteLinks | null; spotlight: boolean } => ({ links: null, spotlight: false }))
+const holder = cache(
+  (): { links: SpotlightSiteLinks | null; spotlight: boolean; preview: boolean } => ({ links: null, spotlight: false, preview: false }),
+)
 
 /** Mark this request as a published Spotlight render (SpaceSpotlight), so its Link cards count presses
  *  (LIVE-856). The Space page, the website and the console preview never set it, so they count nothing. */
 export function markSpotlightRender(): void {
   holder().spotlight = true
+}
+
+/** Mark this request as the Spotlight editor's console preview, where a block may show its owner a setup hint
+ *  that no visitor ever sees (the Donate card). Only the console editor page sets it. */
+export function markSpotlightPreview(): void {
+  holder().preview = true
+}
+
+/** Is this request the Spotlight editor's console preview? */
+export function inSpotlightPreview(): boolean {
+  return holder().preview
 }
 
 /** Is this request a published Spotlight render? */

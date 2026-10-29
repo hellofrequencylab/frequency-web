@@ -472,3 +472,34 @@ export function resolveNodeRowsFor(layout: EntityLayout | null, kind: EntityKind
   if (layout?.style) legacy.style = layout.style
   return resolveNodeRows(upgradeLayout(legacy), kind)
 }
+
+/**
+ * A layout read back through the legacy shape (string cells plus the `content` / `style` maps), for a
+ * renderer that has not moved to nodes yet. A node-native document stores its placements as nodes and its
+ * bags on them, so its `rows` hold no string ids and its `content` map is empty: read the old way it draws
+ * nothing (the house website Home showed only its hero). A document whose `rows` already place string ids,
+ * or that carries no nodes, comes back untouched. The first node of a type claims the type's bag, the same
+ * partition `upgradeLayout` writes; a hidden node is left out.
+ */
+export function legacyViewOf(layout: EntityLayout): EntityLayout {
+  const nodes = layout.nodes
+  if (!nodes?.rows.length) return layout
+  if (layout.rows?.some((row) => row.cells.some((stack) => stack.length > 0))) return layout
+  const content: NonNullable<EntityLayout['content']> = { ...layout.content }
+  const style: NonNullable<EntityLayout['style']> = { ...layout.style }
+  const rows = nodes.rows.map((row) => ({
+    ...row,
+    cells: row.cells.map((stack) =>
+      stack
+        .filter((n) => !n.hidden)
+        .map((n) => {
+          if (n.content && !(n.type in content)) content[n.type] = n.content
+          if (n.style && !(n.type in style)) style[n.type] = n.style
+          return n.type
+        }),
+    ),
+  }))
+  const { nodes: _nodes, ...rest } = layout
+  void _nodes
+  return { ...rest, rows, ...(Object.keys(content).length ? { content } : {}), ...(Object.keys(style).length ? { style } : {}) }
+}

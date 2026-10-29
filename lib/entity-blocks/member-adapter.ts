@@ -44,6 +44,15 @@ interface MemberBlockData {
   topFriendsTitle?: string
   /** The newest visible Guestbook notes, resolved server-side (never member-supplied). */
   guestbook: GuestbookEntry[]
+  /** The member's upcoming public events, resolved server-side by the Spotlight reader. */
+  hostedEvents: SpotlightData['hostedEvents']
+  /** True when this member can receive tips (payouts-ready). Resolved server-side; never a Stripe id. */
+  canTip: boolean
+  /** The public Circles, Journeys and Spaces the member opted to show, resolved server-side. */
+  programs: SpotlightData['programs']
+  /** What the member gives back, resolved server-side (never member-supplied): the real Crew tier, plus
+   *  count-only aggregates and the lifetime Zaps. */
+  contributions: { crew: boolean; eventsHosted: number; journeysFinished: number; zaps: number }
   /** Every authored block grouped by its type, in layout order. Content blocks (heading/text/image/
    *  gallery/quote/embed/divider) render from their slice; the data-block slices are unused (their
    *  values come from the fields above), but present so the map is total. */
@@ -55,6 +64,8 @@ interface MemberBlockData {
 export interface MemberBlockProps {
   member: EntityIdentity
   data: MemberBlockData
+  /** The placed node's authored content bag, for data blocks with switches of their own (Programs). */
+  content?: Record<string, unknown>
 }
 
 /** Build the common EntityIdentity for a member from their resolved Spotlight. Values are already
@@ -130,6 +141,15 @@ export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
     topFriends,
     topFriendsTitle,
     guestbook,
+    hostedEvents: data.hostedEvents,
+    canTip: data.canTip,
+    programs: data.programs ?? { circles: [], journeys: [], spaces: [] },
+    contributions: {
+      crew: profile.membership_tier === 'crew',
+      eventsHosted: data.contributionCounts?.eventsHosted ?? 0,
+      journeysFinished: data.contributionCounts?.journeysFinished ?? 0,
+      zaps: totalZaps,
+    },
     blocksByType,
   }
 }

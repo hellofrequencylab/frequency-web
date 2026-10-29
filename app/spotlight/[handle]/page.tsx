@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getPublishedSpotlight, listPublishedSpotlightHandles } from '@/lib/spotlight/data'
 import { SpotlightShell } from '@/components/spotlight/spotlight-shell'
+import { TEMPLE_FONT_CLASS } from '@/components/sites/temple-fonts'
+import { isTempleKitLayout } from '@/lib/spotlight/layouts'
 import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
 import { JsonLd } from '@/components/json-ld'
 import { personSchema, breadcrumbSchema } from '@/lib/jsonld'
@@ -91,9 +93,12 @@ export default async function SpotlightRoute({
           breadcrumbSchema([{ name: 'Spotlight', path }]),
         ]}
       />
-      <SpotlightShell data={data} showJoinCta showBio={false}>
-        <MemberProfileModules member={data} grid={publicSpotlightGrid(data.grid, data.layout.blocks)} />
-      </SpotlightShell>
+      {/* The Temple kit's four faces ride a wrapper here, not the shell: next/font needs Next's compiler, and the shell is rendered by the suite. */}
+      <div className={data.theme.layout && isTempleKitLayout(data.theme.layout) ? TEMPLE_FONT_CLASS : undefined}>
+        <SpotlightShell data={data} showJoinCta showBio={false}>
+          <MemberProfileModules member={data} grid={publicSpotlightGrid(data.grid, data.layout.blocks)} />
+        </SpotlightShell>
+      </div>
     </>
   )
 }

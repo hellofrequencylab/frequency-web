@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1875",
+  "title": "After the launch flow, Vera drafts the Space copy, website words, Spotlight and first email from the person's own words, every field cited",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/launch/buildout.ts",
+    "ref": "Vera guided launch, owner ruling 2026-10-29: built from what they submitted, quoting their words, never invented; cost-capped AI."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-buildout.mjs",
+    "note": "Runs the deterministic builder with no AI call and checks every cite is a verbatim quote from the source it names, a forged cite empties its field, and the wiring (envFlag switch, two calls per launch, Haiku under the launch-buildout daily cap, no persona, wellness, Journey or Circle data). Fails on main, where there is no buildout."
+  },
+  "detail": "lib/launch/buildout.ts is the shared contract (BuildoutDraft, BuildoutCite) lane F's review screen imports. Draft stored in space_launch.buildout jsonb (migration 20270346027400, applied before merge, ADR-1111) because steps jsonb is capped and normalizeSteps drops unknown keys. Not here: the review screen, publishing the draft, sending the email.",
+  "wave": "W7",
+  "closed": "2026-10-29"
+}

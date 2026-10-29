@@ -21,6 +21,11 @@ export function partnerSpaceId(plan: PlannerPlan | null | undefined, ownSpaceId:
   return plan?.spaces.find((s) => s.id !== ownSpaceId)?.id ?? null
 }
 
+/** The Space whose ring marks an item: the other Space its date lives on, else the Plan's partner. */
+export function itemPartnerId(item: PlannerItem, plan: PlannerPlan | null | undefined, ownSpaceId: string): string | null {
+  return item.from?.space ?? partnerSpaceId(plan, ownSpaceId)
+}
+
 /** The Space that hosts the Plan: the one marked Host, else the first listed. */
 export function hostSpaceId(plan: PlannerPlan): string | null {
   return (plan.spaces.find((s) => s.role === 'Host') ?? plan.spaces[0])?.id ?? null
@@ -29,6 +34,7 @@ export function hostSpaceId(plan: PlannerPlan): string | null {
 /** True when the Show tiles allow this item to draw. */
 export function isItemVisible(data: PlannerData, item: PlannerItem, ownSpaceId: string): boolean {
   const hidden = data.hidden ?? {}
+  if (item.from) return !hidden.shared
   if (hidden[KINDS[item.kind].layer]) return false
   if (hidden.shared && (item.shared || isShared(data.plans.find((p) => p.id === item.plan), ownSpaceId))) return false
   return true

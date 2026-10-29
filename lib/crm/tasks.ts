@@ -274,6 +274,47 @@ export async function moveTaskDueInScope(
   }
 }
 
+/**
+ * Rename ONE task inside a Space (the Details panel's title field). Scoped by `space_id` beside the
+ * row id like every writer here, so an id from another Space matches nothing and comes back false.
+ * The caller trims and bounds the title. FAIL-SAFE: false on any error.
+ */
+export async function retitleTaskInScope(taskId: string, title: string, spaceId: string): Promise<boolean> {
+  const id = typeof taskId === 'string' ? taskId.trim() : ''
+  const space = typeof spaceId === 'string' ? spaceId.trim() : ''
+  if (!id || !space || !title) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (p: Record<string, unknown>) => ScopedUpdateQuery }
+    }
+    const { data, error } = await db
+      .from('crm_tasks')
+      .update({ title, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('space_id', space)
+      .select('id')
+    return !error && !!data?.length
+  } catch {
+    return false
+  }
+}
+
+/** Delete ONE task inside a Space (the Details panel's Delete). Same scope rule as `retitleTaskInScope`. */
+export async function deleteTaskInScope(taskId: string, spaceId: string): Promise<boolean> {
+  const id = typeof taskId === 'string' ? taskId.trim() : ''
+  const space = typeof spaceId === 'string' ? spaceId.trim() : ''
+  if (!id || !space) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { delete: () => ScopedUpdateQuery }
+    }
+    const { data, error } = await db.from('crm_tasks').delete().eq('id', id).eq('space_id', space).select('id')
+    return !error && !!data?.length
+  } catch {
+    return false
+  }
+}
+
 /** Filters for a task read. A Studio read scopes by `spaceId`; a per-contact read adds `contactId`. */
 /**
  * One task, by id, INSIDE a Space: the read behind a Plan-record write (LIVE-543), so an inbox tick

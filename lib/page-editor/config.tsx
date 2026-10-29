@@ -28,14 +28,20 @@ import { designComponents } from '@/components/page-editor/blocks/design'
 import { wildheartComponents } from '@/components/page-editor/blocks/wildheart'
 import { networkComponents, NETWORK_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network'
 import { networkKitComponents, NETWORK_KIT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network-kit'
+import { networkKitInnerComponents } from '@/components/page-editor/blocks/network-kit-inner'
 import { networkKitMoreComponents, NETWORK_KIT_MORE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network-kit-more'
 import { templeComponents, TEMPLE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/temple'
 import { templeKitComponents, TEMPLE_KIT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/temple-kit'
 import { templeKitInnerComponents } from '@/components/page-editor/blocks/temple-kit-inner'
 import { templeKitInnerBComponents } from '@/components/page-editor/blocks/temple-kit-inner-b'
+import { templeKitInnerCComponents } from '@/components/page-editor/blocks/temple-kit-inner-c'
+import { templeKitInnerDComponents } from '@/components/page-editor/blocks/temple-kit-inner-d'
 import { midnightComponents, MIDNIGHT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight'
 import { midnightPracticeComponents, MIDNIGHT_PRACTICE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight-practice'
 import { designerComponents, DESIGNER_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/designer'
+import { freeHumanBlocks } from '@/components/page-editor/blocks/free-human'
+import { freeHumanCalendarBlocks } from '@/components/page-editor/blocks/free-human-calendar'
+import { freeHumanWheelBlocks } from '@/components/page-editor/blocks/free-human-wheel'
 import { DESIGN_BLOCK_TYPES } from '@/lib/page-editor/block-limits'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteBlocks } from '@/components/page-editor/site-blocks'
@@ -79,13 +85,19 @@ export const config: Config = {
     ...networkComponents,
     ...networkKitComponents,
     ...networkKitMoreComponents,
+    ...networkKitInnerComponents,
     ...templeComponents,
     ...templeKitComponents,
     ...templeKitInnerComponents,
     ...templeKitInnerBComponents,
+    ...templeKitInnerCComponents,
+    ...templeKitInnerDComponents,
     ...midnightComponents,
     ...midnightPracticeComponents,
     ...designerComponents,
+    ...freeHumanBlocks,
+    ...freeHumanCalendarBlocks,
+    ...freeHumanWheelBlocks,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -184,7 +196,7 @@ export const config: Config = {
     // The Network Theme Kit's home sections (code id network-kit, the Network design system): website pages only.
     networkKit: {
       title: 'Network home sections',
-      components: [...NETWORK_KIT_CATEGORY_COMPONENTS, ...NETWORK_KIT_MORE_CATEGORY_COMPONENTS],
+      components: [...NETWORK_KIT_CATEGORY_COMPONENTS, ...NETWORK_KIT_MORE_CATEGORY_COMPONENTS, ...Object.keys(networkKitInnerComponents)],
     },
     // The Temple theme's section family (the Royal Temple design system's Home): website pages only.
     temple: {
@@ -194,7 +206,7 @@ export const config: Config = {
     // The Temple Theme Kit's section family (the Temple design system's Home): website pages only.
     templeKit: {
       title: 'Temple Kit sections',
-      components: [...TEMPLE_KIT_CATEGORY_COMPONENTS, ...Object.keys(templeKitInnerComponents), ...Object.keys(templeKitInnerBComponents)],
+      components: [...TEMPLE_KIT_CATEGORY_COMPONENTS, ...Object.keys(templeKitInnerComponents), ...Object.keys(templeKitInnerBComponents), ...Object.keys(templeKitInnerCComponents), ...Object.keys(templeKitInnerDComponents)],
     },
     // The Midnight theme's section family (the Midnight design system's Web Theme): website pages only.
     midnight: {
@@ -210,6 +222,11 @@ export const config: Config = {
     designer: {
       title: 'Designer sections',
       components: [...DESIGNER_CATEGORY_COMPONENTS],
+    },
+    // The Free Human Theme Kit's section family (the Free Human Movement design system): website pages only.
+    freeHuman: {
+      title: 'Free Human sections',
+      components: [...Object.keys(freeHumanBlocks), ...Object.keys(freeHumanCalendarBlocks), ...Object.keys(freeHumanWheelBlocks)],
     },
   },
 }

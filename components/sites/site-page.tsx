@@ -30,6 +30,8 @@ import { NETWORK_KIT_FONT_CLASS } from '@/components/sites/network-kit-fonts'
 import { networkKitScheme } from '@/lib/theme/network-kit'
 import { DESIGNER_FONT_CLASS } from '@/components/sites/designer-fonts'
 import { DESIGNER_CSS } from '@/components/sites/designer-css'
+import { FREE_HUMAN_FONT_CLASS } from '@/components/sites/free-human-fonts'
+import { FREE_HUMAN_CSS } from '@/components/sites/free-human-css'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
 import { contractSkinCss } from '@/components/sites/contract-skin-css'
 import { skinFamiliesIn } from '@/lib/sites/skin-family'
@@ -56,6 +58,7 @@ import { SpaceProfileModules } from '@/components/widgets/space-profile/space-pr
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { readTagline } from '@/lib/spaces/tagline'
 import { parseEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { legacyViewOf } from '@/lib/entity-blocks/node-ops'
 import type { Space } from '@/lib/spaces/types'
 import { appOrigin } from '@/lib/sites/host'
 import { getLoyaltyProgram, loyaltyEnabled } from '@/lib/loyalty/store'
@@ -211,6 +214,8 @@ export async function SitePage({
   const templeKitSite = siteStyle.theme === 'temple-kit'
   // The Designer theme (lib/theme/designer.ts): limewash and daylight, plaster grounds, charcoal type and one ochre accent.
   const designerSite = siteStyle.theme === 'designer'
+  // The Free Human Theme Kit (lib/theme/free-human.ts): limewash, gilt and candle-dark with one madder accent.
+  const freeHumanSite = siteStyle.theme === 'free-human'
   // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
   const theme = render.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
@@ -232,8 +237,10 @@ export async function SitePage({
             ? { theme: 'midnight' as const, season: mensworkSeason(new Date()) }
             : designerSite
               ? { theme: 'designer' as const, season: mensworkSeason(new Date()) }
-              : null
-  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : undefined
+              : freeHumanSite
+                ? { theme: 'free-human' as const, season: mensworkSeason(new Date()) }
+                : null
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
   const lookOverrides = siteLookOverrides(render.lookStyle)
   const fullFooter = siteLook(render.lookStyle).footer === 'full'
@@ -251,7 +258,7 @@ export async function SitePage({
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
           <div data-house-theme={skin.theme} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
-            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : MENSWORK_CSS}</style>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
@@ -344,7 +351,7 @@ export async function SitePage({
     websitePage
       ? getSpaceContentData(space.id, { name: brandName, type: space.type, logoUrl: websiteBrand.logo, coverUrl: space.coverImageUrl, tagline: space.tagline, slug: space.slug, profile: readProfileData(space.preferences) }).then(async (content) => {
           // The Temple's week and event cards expand the Space's recurring series themselves, so the page gets the series rows too.
-          const drawsSeries = (websitePage.doc.content ?? []).some((b) => typeof b?.type === 'string' && b.type.startsWith('Temple'))
+          const drawsSeries = (websitePage.doc.content ?? []).some((b) => typeof b?.type === 'string' && (b.type.startsWith('Temple') || b.type.startsWith('FreeHuman')))
           return drawsSeries && content ? { ...content, series: await getSpaceSeriesRows(space.id) } : content
         })
       : null,
@@ -726,7 +733,9 @@ function profileGrid(prefs: unknown): EntityLayout {
     prefs && typeof prefs === 'object' && !Array.isArray(prefs)
       ? (prefs as Record<string, unknown>).profileLayout
       : null
-  return parseEntityLayout(rawLayout) ?? {}
+  // A node-native layout (placements and bags stored on nodes) is read back as string cells and bags: the
+  // house Home and Contact builders read the legacy shape, and drew only the hero without this.
+  return legacyViewOf(parseEntityLayout(rawLayout) ?? {})
 }
 
 function SiteComingSoon({ brandName, profileHref }: { brandName: string; profileHref: string }) {

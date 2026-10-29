@@ -111,10 +111,10 @@ function subscribeViewport(callback: () => void) {
 }
 
 /** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. */
-const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', NetworkKit: 'Network', Temple: 'Temple', TempleKit: 'Temple', Designer: 'Designer' }
+const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', NetworkKit: 'Network', Temple: 'Temple', TempleKit: 'Temple', Designer: 'Designer', FreeHuman: 'Free Human' }
 const EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = EDITOR_THEME_OF
 /** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
-const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'NetworkKit' ? 'network-kit' : theme === 'Temple' ? 'temple' : theme === 'TempleKit' ? 'temple-kit' : theme === 'Midnight' ? 'midnight' : theme === 'Designer' ? 'designer' : 'frequency')
+const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'NetworkKit' ? 'network-kit' : theme === 'Temple' ? 'temple' : theme === 'TempleKit' ? 'temple-kit' : theme === 'Midnight' ? 'midnight' : theme === 'Designer' ? 'designer' : theme === 'FreeHuman' ? 'free-human' : 'frequency')
 /** A page's publish state in the design's words (Pages tab and page menu dots). */
 type PageState = 'live' | 'changed' | 'draft'
 const PAGE_STATE_LABEL: Record<PageState, string> = { live: 'Published', changed: 'Draft changes', draft: 'Not published yet' }
@@ -618,7 +618,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {styleError && <p role="alert" className="note err">{styleError}</p>}
     <div className="cap">Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
     <div className="acts"><button type="button" className="btn sm" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="btn sm" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } }, { label: 'Logo' })}>Remove logo</button>}</div>
-    <div className="note">A theme or style you pick changes this draft only. Visitors see it when you publish. Words, photos and live blocks stay as they are.</div>
+    <div className="note">A theme or style you pick changes this draft only. Visitors see it when you publish. Words and photos stay; blocks take on the new colors and type.</div>
   </>
   // ── The rail tabs and inspector panels, shared by both designs. Under DAWN the rail tabs are the Site Editor's
   // (LIVE-907); under Frequency, the kit's. Class names go through k() (skin.ts). The handlers are the same either way.
@@ -646,7 +646,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <div className="we-actions"><button type="button" className="we-action secondary" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } })}>Remove logo</button>}</div>
       <div className="we-caption">Brand accent</div><label className="we-field">Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => commit({ ...draft, brand: { ...draft.brand, accent: event.target.value } })} /></label><button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } })}>Use theme accent</button><div className="we-swatch-list"><span className="we-swatch" style={{ background: 'var(--th-accent)' }} /><span className="we-swatch" style={{ background: 'var(--th-season)' }} /><span className="we-swatch" style={{ background: 'var(--th-text)' }} /></div>
       <div className="we-caption">Type</div>{['display', 'body', 'mono'].map((role) => <div className="we-note" key={role} style={canvasVars}>{role}<strong className="we-type-sample" data-role={role}>{String(canvasVars[`--th-${role}` as keyof React.CSSProperties]).split(',')[0].replaceAll("'", '')}</strong></div>)}
-      <div className="we-note">The editor wears the theme it edits. The theme and global styles change your live site as soon as you pick them, here or in Identity and branding. Words, photos and live blocks stay as they are. Switching themes resets element positions to the new layout; Undo restores them.</div></>
+      <div className="we-note">The editor wears the theme it edits. The theme and global styles change your live site as soon as you pick them, here or in Identity and branding. Words and photos stay; blocks take on the new colors and type. Switching themes resets element positions to the new layout; Undo restores them.</div></>
   const railBody = <>
     {tab === 'Pages' && pagesTab}
     {tab === 'Layers' && layersTab}
@@ -770,7 +770,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         {modal === 'publish' && <span className="eyebrow">{draft.chrome?.name || brandName} · {page.label}</span>}
         <h2>{modal === 'publish' ? 'Ready to publish?' : modalTitle}</h2>
         {modal === 'menu' && <SiteMenuEditor slug={links.slug} />}
-        {modal === 'theme' && <ThemeChanger current={draft.theme} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
+        {modal === 'theme' && <ThemeChanger current={draft.theme} pages={draft.pages.map((item) => item.doc)} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
         {modal === 'insert' && <div className="modal-body">{palette}</div>}
         {modal === 'delete-page' && deletePageBody}
         {modal === 'templates' && <><label className="fld"><span className="l">Page name</span><Input className="in" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="note err">{error}</p>}<div className="blocks">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="blk" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="th" aria-hidden><i className="a s" /><i className="w" /><i /></span>{name}<small>{description}</small></button>)}</div></>}
@@ -848,7 +848,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {modal && <div className="we-overlay" onClick={() => setModal(null)}><Dialog label={modalLabel}>
       <div className="we-modal-head"><h2>{modalTitle}</h2><Icon label="Close dialog" onClick={() => setModal(null)}><X size={18} /></Icon></div>
       {modal === 'menu' && <SiteMenuEditor slug={links.slug} />}
-      {modal === 'theme' && <ThemeChanger current={draft.theme} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
+      {modal === 'theme' && <ThemeChanger current={draft.theme} pages={draft.pages.map((item) => item.doc)} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
       {modal === 'insert' && palette}
       {modal === 'delete-page' && deletePageBody}
       {modal === 'templates' && <><label className="we-field">Page name<Input variant="seamless" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="we-error">{error}</p>}<div className="we-template-grid">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="we-template" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="we-template-mark"><span /><span /><span /></span><strong>{name}</strong><small>{description}</small><small>{draft.theme} layout</small></button>)}</div></>}

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import type { AstroMarker } from '@/lib/calendar/astro-markers'
-import { dayItems, isInvitePending, isItemVisible, partnerSpaceId } from '@/lib/calendar/planner/day-items'
+import { dayItems, isInvitePending, isItemVisible, itemPartnerId } from '@/lib/calendar/planner/day-items'
 import { addDays, clockLabel, dayLabel, mondayOnOrBefore, weekdayName } from '@/lib/calendar/planner/days'
 import { DEFAULT_BLOCK_MINUTES } from '@/lib/calendar/planner/inbox-drop'
 import { KINDS } from '@/lib/calendar/planner/kinds'
@@ -15,11 +15,12 @@ import {
   hourMarks,
   layoutTimed,
   minutesAtOffset,
+  quickAddMinutes,
   nowOffset,
   visibleHourRange,
 } from '@/lib/calendar/planner/week-layout'
 import { PartnerRing } from './suite-chip'
-import type { SuiteContext, SuiteSelection } from './suite-types'
+import { isEmptyClick, type QuickAnchor, type SuiteContext, type SuiteSelection } from './suite-types'
 import type { SuiteDnd } from './use-suite-dnd'
 
 // THE WEEK AND THE DAY (README 1.3): one time grid, drawn for seven days or for one. Each column has a
@@ -70,6 +71,7 @@ export function SuiteWeek({
   zoneShort,
   onSelect,
   onOpenDay,
+  onQuick,
 }: {
   data: PlannerData
   ctx: SuiteContext
@@ -86,6 +88,8 @@ export function SuiteWeek({
   onSelect: (ref: { kind: 'item' | 'todo'; id: string }) => void
   /** A column head's date tile opens that day. Absent on the Day view. */
   onOpenDay?: (day: string) => void
+  /** A click on empty time, or on a day's all-day cell, asks for a quick add there. */
+  onQuick?: (anchor: QuickAnchor) => void
 }) {
   const start = days === 7 ? mondayOnOrBefore(cursor) : cursor
   const dayKeys = useMemo(() => Array.from({ length: days }, (_, i) => addDays(start, i)), [start, days])
@@ -116,7 +120,7 @@ export function SuiteWeek({
           startMin: it.startMin,
           durMin: it.durMin,
           done: false,
-          partner: ctx.spaceNames[partnerSpaceId(plan, own) ?? ''] ?? null,
+          partner: ctx.spaceNames[itemPartnerId(it, plan, own) ?? ''] ?? null,
           clash: ctx.clashes.has(it.id),
           invite: isInvitePending(plan, own),
         })
@@ -234,6 +238,13 @@ export function SuiteWeek({
                   data-today={day === ctx.today || undefined}
                   style={{ gridColumn: i + 2, gridRow: '1 / -1' }}
                   {...dnd.targetProps(() => ({ zone: 'day', day }))}
+                  onClick={
+                    onQuick
+                      ? (e) => {
+                          if (isEmptyClick(e)) onQuick({ day, startMin: null, x: e.clientX, y: e.clientY })
+                        }
+                      : undefined
+                  }
                 />
               ))}
               {bands.map((b) => {
@@ -242,7 +253,7 @@ export function SuiteWeek({
                 const look = KINDS[it.kind]
                 const r = (on: boolean) => (on ? '10px' : '3px')
                 const plan = ctx.planById.get(it.plan ?? '')
-                const partner = ctx.spaceNames[partnerSpaceId(plan, own) ?? ''] ?? null
+                const partner = ctx.spaceNames[itemPartnerId(it, plan, own) ?? ''] ?? null
                 return (
                   <button
                     type="button"
@@ -326,6 +337,15 @@ export function SuiteWeek({
                   data-day={day}
                   data-today={day === ctx.today || undefined}
                   style={{ gridColumn: i + 2 }}
+                  onClick={
+                    onQuick
+                      ? (e) => {
+                          if (!isEmptyClick(e)) return
+                          const top = e.currentTarget.getBoundingClientRect().top
+                          onQuick({ day, startMin: quickAddMinutes(e.clientY - top, range), x: e.clientX, y: e.clientY })
+                        }
+                      : undefined
+                  }
                   {...dnd.targetProps(
                     (e, src) => {
                       const top = e.currentTarget.getBoundingClientRect().top

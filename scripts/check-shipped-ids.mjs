@@ -78,6 +78,13 @@ export const EXCEPTIONS = {
     'Retracted, not shipped. #2154 (de76c12a2, 2026-08-18) is titled "Retract LIVE-044: the 45-file ' +
     'label claim was false"; the row was withdrawn the day it was minted and LIVE-046 carries what ' +
     'survived, quoting the retraction in its own detail. A retracted id has no row by design.',
+  'LIVE-1794':
+    'Renumbered before it shipped as a row. #4324 (76b7ea664, 2026-10-29) names LIVE-1794 from the first draft of ' +
+    'the theme cohesion plan (LIVE-1790 to LIVE-1807); check:id-collisions moved the plan to LIVE-1850 to LIVE-1867 ' +
+    'and the palette-by-theme work is the shipped part of LIVE-1854.',
+  'LIVE-1807':
+    'Renumbered with the rest of the plan. #4317 (b137c3ce4, 2026-10-29) filed the theme cohesion plan under ' +
+    'LIVE-1790 to LIVE-1807, and the rows landed as LIVE-1850 to LIVE-1867 once check:id-collisions saw the clash.',
   'LIVE-113':
     'A phantom. #2269 (8e13b75dc, 2026-08-25) names LIVE-113 beside PROG-P6 and ADR-1122, but no row ' +
     'ever existed under it: HYG-047 found the id sequenced in meta.slate.waves with no entry behind ' +

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1715",
+  "title": "The Space's Calendar tab stays its own page for admins, with the full manager one button away",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/(profile)/calendar/page.tsx",
+    "ref": "Daniel, 2026-10-29: 'The in app Frequency calendar is redirecting to the new calendar manager. It should have its own version, with minimal admin function in the header and ability to move pencil, plan, production.'"
+  },
+  "detail": "LIVE-1704 sent a Space admin from the Calendar tab to the manager at settings/calendar. The tab is the Space's own calendar page again for its team: Month, Agenda, Board, Day, Week and Timeline, Pencil it in, Ask Vera and Fullscreen, with a Calendar manager button in the header that opens the full manager. A date moves between Pencil, Plan and Production with the stage picker on each Board card. Visitors still get the public calendar, and ?as=public (the manager's Public view link) opens the tab on Guest preview. Renders: /mnt/project-files/calendar-suite/inapp/.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('app/(main)/spaces/[slug]/(profile)/calendar/page.tsx','utf8');const w=fs.readFileSync('components/spaces/calendar-workspace.tsx','utf8');const ok=p.includes('loadAdminCalendar(')&&!p.includes('redirect(')&&p.includes('asksForPublicCalendar(query)')&&w.includes('data-calendar-manager-link');if(!ok){console.error('the Calendar tab sends admins away again or has no manager link');process.exit(1)}\"",
+    "note": "Fails on main (the tab redirects an admin to the manager); passes here."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

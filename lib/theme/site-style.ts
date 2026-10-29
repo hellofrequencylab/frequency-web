@@ -5,6 +5,7 @@ import { NETWORK_KIT_ACCENT } from '@/lib/theme/network-kit-accent'
 import { TEMPLE_ACCENT } from '@/lib/theme/temple'
 import { MIDNIGHT_ACCENT } from '@/lib/theme/midnight'
 import { TEMPLE_KIT_ACCENT } from '@/lib/theme/temple-kit'
+import { FREE_HUMAN_ACCENT } from '@/lib/theme/free-human'
 import { DESIGNER_ACCENT } from '@/lib/theme/designer'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteFacesId } from '@/lib/theme/site-faces'
@@ -22,10 +23,13 @@ import { readMegaTheme } from '@/lib/theme/mega-theme'
 //     28px cards (components/sites/network-css.ts, lib/theme/network.ts). A stock theme, first worn by The Group.
 //   · Network Theme Kit (2026-10-28, code id `network-kit`, shown as Network; the earlier `network` theme above is no longer offered):
 //     the Network design system's paper, card tint and deep ink with one solid hero color in four schemes
-//     (lib/theme/network-kit.ts). Not published to a live site until its render is finished.
+//     (lib/theme/network-kit.ts). Published to a live site (WEBSITE_THEMES_LIVE).
 //   · Temple Theme Kit (2026-10-28, code id `temple-kit`, shown as Temple; the earlier `temple` theme below is no longer offered):
 //     the Temple design system's plaster, umber and one clay accent, thirteen profile accents (lib/theme/temple-kit.ts).
 //     Not published to a live site until its render is finished.
+//   · Free Human Theme Kit (2026-10-29, code id `free-human`): the Free Human Movement design system's limewash, gilt and
+//     candle-dark registers with one madder accent, thirteen profile accents (lib/theme/free-human.ts). Not offered in a
+//     picker until its pages and starter kits ship (HELD_FROM_PICKERS).
 //   · Temple (2026-10-22): a lime-washed Mediterranean house; plaster grounds, umber ink, one clay hero color,
 //     arch-shaped photos and cards, Branch and Marcellus type (components/sites/temple-css.ts,
 //     lib/theme/temple.ts). A stock theme, first worn by Royal Temple.
@@ -50,7 +54,7 @@ import { readMegaTheme } from '@/lib/theme/mega-theme'
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
-export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer'
+export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human'
 
 interface SiteThemeDef {
   id: SiteThemeId
@@ -96,8 +100,8 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
   },
   {
     // Typography-only on the Space page too (ADR-578): the Network Theme Kit's faces load on the website alone, so
-    // a synced Space page wears Modern, as the earlier Network does. Not published to a live site until its
-    // render is finished (WEBSITE_THEMES_LIVE).
+    // a synced Space page wears Modern, as the earlier Network does. Published to a live site since 2026-10-29
+    // (WEBSITE_THEMES_LIVE), once its pages and thirteen profile kits shipped.
     id: 'network-kit',
     label: 'Network',
     description: 'The new Network Theme Kit: paper, card tint and deep ink with one solid hero color in four schemes, pill buttons and real photos up front.',
@@ -115,8 +119,9 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
   },
   {
     // THE TEMPLE THEME KIT (id `temple-kit`, shown as Temple): the Temple owners pick and the /themes page shows. The
-    // older `temple` entry above (Royal Temple) leaves the pickers. Typography-only on the Space page too (ADR-578): the
-    // same four faces as `temple` load on the website alone, so a synced Space page wears Classic. Not published to a
+    // older `temple` entry above (Royal Temple) leaves the pickers. On the Space page a synced Temple website wears the
+    // kit's DISPLAY face only (Marcellus, spacePageSiteFaces; ADR-1728, ADR-1906): the body, the UI and every size stay
+    // Frequency's, and Branch, Jost and Cormorant load on the website alone. Not published to a
     // live site until its render is finished (WEBSITE_THEMES_LIVE).
     id: 'temple-kit',
     label: 'Temple',
@@ -140,10 +145,20 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
     description: 'Limewash and daylight: plaster grounds, charcoal type, one ochre accent, arched photos and a quiet serif.',
     defaultFonts: 'classic',
   },
+  {
+    // THE FREE HUMAN THEME KIT (id `free-human`): limewash, gilt and candle-dark, one madder accent. On the Space page a
+    // synced Free Human website wears Classic (a serif headline over a quiet body); Cormorant Garamond, Marcellus and
+    // Hanken Grotesk load on the website alone.
+    id: 'free-human',
+    label: 'Free Human',
+    description: 'Limewash and honey light: a gilt arch, a madder accent and a candle-dark night, for movement, ritual and the village around it.',
+    defaultFonts: 'classic',
+  },
 ]
 
-/** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple'])
+/** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
+ *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human'])
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
@@ -188,6 +203,7 @@ export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
   'temple-kit': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   midnight: { corners: 'square', spacing: 'airy', header: 'bar', footer: 'full' },
   designer: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  'free-human': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
 }
 
 export interface SiteLook {
@@ -218,7 +234,7 @@ const MAX_PAGE_THEMES = 30
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 export function isSiteThemeId(v: unknown): v is SiteThemeId {
-  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer'
+  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human'
 }
 
 export function readSiteStyle(preferences: unknown): SiteStyle {
@@ -302,7 +318,7 @@ export function spacePageSiteFaces(preferences: unknown): SiteFacesId | null {
   if (readMegaTheme(preferences).theme === 'midnight') return 'midnight'
   const style = readSiteStyle(preferences)
   if (!style.synced) return null
-  return style.theme === 'network' || style.theme === 'network-kit' || style.theme === 'wildheart' || style.theme === 'midnight' ? style.theme : null
+  return style.theme === 'network' || style.theme === 'network-kit' || style.theme === 'designer' || style.theme === 'temple-kit' || style.theme === 'wildheart' || style.theme === 'midnight' ? style.theme : null
 }
 
 /** The font set a Space wears INSIDE Frequency (member and admin routes): its own, never the website's.
@@ -345,5 +361,6 @@ export function spacePageDefaultAccent(preferences: unknown, typeDefault: string
   if (style.theme === 'temple-kit') return TEMPLE_KIT_ACCENT.accent
   if (style.theme === 'midnight') return MIDNIGHT_ACCENT.accent
   if (style.theme === 'designer') return DESIGNER_ACCENT.accent
+  if (style.theme === 'free-human') return FREE_HUMAN_ACCENT.accent
   return style.theme === 'bold' ? MENSWORK_PALETTE.teal : style.theme === 'wildheart' ? WILDHEART_PALETTE.violet : typeDefault
 }

@@ -85,6 +85,36 @@ export async function listSpacePlans(spaceId: string): Promise<SpacePlan[]> {
   }
 }
 
+/** How far back the Kanban's Cancelled column reaches, in days. */
+const CANCELLED_WINDOW_DAYS = 90
+
+/**
+ * The Plans put away (cancelled) in the last 90 days, newest first. `listSpacePlans` leaves archived
+ * Plans out, so without this the Cancelled column would empty itself on the next reload and the Undo
+ * on its cards would have nothing to restore. Read-only; the suite draws these in the Cancelled column.
+ */
+export async function listRecentlyCancelledPlans(spaceId: string, now: Date = new Date()): Promise<SpacePlan[]> {
+  try {
+    const since = new Date(now.getTime() - CANCELLED_WINDOW_DAYS * 86_400_000).toISOString()
+    const { data, error } = await (await db())
+      .from('space_plans')
+      .select(PLAN_COLS)
+      .eq('space_id', spaceId)
+      .not('archived_at', 'is', null)
+      .gte('archived_at', since)
+      .order('archived_at', { ascending: false })
+      .limit(50)
+    if (error || !data) {
+      planReadFailed('list_cancelled', error)
+      return []
+    }
+    return data.map(mapPlanRow)
+  } catch (err) {
+    planReadFailed('list_cancelled', err)
+    return []
+  }
+}
+
 export async function getSpacePlan(spaceId: string, planId: string): Promise<SpacePlan | null> {
   try {
     const { data, error } = await (await db())
@@ -480,6 +510,24 @@ export async function listPlanShareRows(planId: string): Promise<PlanShareRow[]>
     return data as PlanShareRow[]
   } catch (err) {
     planReadFailed('shares_list', err)
+    return []
+  }
+}
+
+/** Every share of the given Plans, in one read: what the calendar needs to show which Spaces a
+ *  Plan has invited. The same session read as listPlanShareRows, so RLS still decides what returns. */
+export async function listPlanShareRowsFor(planIds: readonly string[]): Promise<PlanShareRow[]> {
+  const ids = [...new Set(planIds)].slice(0, 200)
+  if (ids.length === 0) return []
+  try {
+    const { data, error } = await (await db()).from('space_plan_shares').select(SHARE_COLS).in('plan_id', ids).order('created_at', { ascending: true }).limit(500)
+    if (error || !data) {
+      planReadFailed('shares_list_for', error)
+      return []
+    }
+    return data as PlanShareRow[]
+  } catch (err) {
+    planReadFailed('shares_list_for', err)
     return []
   }
 }

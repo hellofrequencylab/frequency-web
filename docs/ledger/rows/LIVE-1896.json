@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1896",
+  "title": "Give the Temple Theme Kit its Space page face: Marcellus display, nothing else",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "docs/design-systems/temple/rules.json",
+    "ref": "LIVE-1640"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/temple-kit-space.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (no temple-kit faces id, no Space page rule) and passes here."
+  },
+  "detail": "Space page pass of the Temple Theme Kit (code id temple-kit, shown as Temple), built the way the Designer kit's was (LIVE-1784) and the Network kit's (LIVE-1750): content and colours only, no change under /themes. A Space whose website is the Temple kit and stays synced now wears the kit's DISPLAY face on its page: lib/theme/site-faces.ts gains a 'temple-kit' faces id (Marcellus and Jost sheet, --font-tp-* names, the same names the kit's token block reads), spacePageSiteFaces returns it for a synced Temple Theme Kit website (the earlier temple theme of Royal Temple keeps Classic), and app/themes/frequency/space-page.css maps it onto the page's display face only (Marcellus 400, its only weight, track -0.01em, scale 1.06). The body face, the UI and every size stay Frequency's, as ADR-1728 says. The accent already rode spacePageDefaultAccent (TEMPLE_KIT_ACCENT). The console and every member area read memberSpaceFonts, which never sees the website theme; rendered at 390, 1280, 1440, 1920 and 2000 (scripts/render/space.render.tsx, now with a temple-kit variant) the console is identical to a Space with no website theme, and the Space page differs only in the display text and the accent.",
+  "wave": "W7"
+}

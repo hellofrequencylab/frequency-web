@@ -3,7 +3,7 @@ import { flowView } from './flow'
 import { answersFromLayout, spotlightLayout } from './spotlight-step'
 import type { LaunchSnapshot } from './state'
 
-const launch = (steps: LaunchSnapshot['steps']): LaunchSnapshot => ({ id: 'l1', ownerId: 'p1', spaceId: 's1', niche: null, intents: [], stage: 'found', currentStep: 'space', minimized: false, startedAt: '2026-10-28T12:00:00Z', updatedAt: '2026-10-28T12:00:00Z', cancelRequestedAt: null, cancelledAt: null, completedAt: null, steps }) as LaunchSnapshot
+const launch = (steps: LaunchSnapshot['steps']): LaunchSnapshot => ({ id: 'l1', ownerId: 'p1', spaceId: 's1', niche: null, intents: [], stage: 'found', currentStep: 'space', minimized: false, startedAt: '2026-10-28T12:00:00Z', updatedAt: '2026-10-28T12:00:00Z', cancelRequestedAt: null, cancelledAt: null, completedAt: null, steps, skippedPhotos: [] }) as LaunchSnapshot
 
 it('starts at the Spotlight for a visitor and for a launch with nothing published', () => {
   for (const l of [null, launch({})]) {
