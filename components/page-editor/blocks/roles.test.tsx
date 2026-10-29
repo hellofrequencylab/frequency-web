@@ -9,7 +9,7 @@ import { CONTRACT_THEME_IDS, CORE_TOKEN_NAMES, coreTokenMap } from '@/lib/theme/
 import { SURFACE_CATEGORIES } from '@/lib/page-editor/palette-scope'
 import { WebsiteDocument } from '@/components/sites/website-document'
 
-// The eight role blocks (LIVE-1858). The contract each *.role.json declares is proved here against the real markup and
+// The seventeen role blocks (LIVE-1858, LIVE-1859). The contract each *.role.json declares is proved here against the real markup and
 // the real sheet: every variant renders, every part is declared and styled, the sheet reads only declared core tokens,
 // and the same markup wears all ten themes' mappings with nothing unresolved (coverage 1.00).
 // `UPDATE_ROLE_MANIFEST=1 pnpm vitest run components/page-editor/blocks/roles.test.tsx` rewrites `tokens` and `parts`
@@ -28,6 +28,14 @@ function fixture(id: RoleId, variant: string, extra: Record<string, unknown> = {
       offerings: { actionLabel: 'See all', actionHref: '~/book', items: items.map((i) => ({ ...i, image: '/images/hero.jpg' })) },
       gatherings: { image: '/images/hero.jpg', alt: 'A supper table', actionLabel: 'Full calendar', actionHref: '~/events' },
       proof: { items: items.map((i) => ({ ...i, photo: '/images/hero.jpg' })) },
+      shop: { actionLabel: 'See all', actionHref: '~/shop', items: items.map((i) => ({ ...i, image: '/images/hero.jpg', badge: 'New', href: '~/shop' })) },
+      library: { actionLabel: 'See all', actionHref: '~/library', items: items.map((i) => ({ ...i, image: '/images/hero.jpg', href: '~/library' })) },
+      people: { items: items.map((i) => ({ ...i, photo: '/images/hero.jpg', href: '~/about' })) },
+      gallery: { actionLabel: 'See all', actionHref: '~/gallery', items: items.map((i) => ({ ...i, image: '/images/hero.jpg', alt: 'A room' })) },
+      chapters: { actionLabel: 'See all', actionHref: '~/circles', items: items.map((i) => ({ ...i, image: '/images/hero.jpg', href: '~/circles' })) },
+      statement: { primaryLabel: 'Join', primaryHref: '~/join', secondaryLabel: 'Learn more', secondaryHref: '~/about' },
+      letter: { eyebrow: 'The letter', note: 'No spam.' },
+      contact: { secondaryLabel: 'Book a call', secondaryHref: '~/book', note: 'We reply in two days.' },
     }[id as string] ?? {}
   return { ...base, ...withPhoto, ...extra, variant }
 }
@@ -41,8 +49,8 @@ const cssFor = (id: RoleId) => ROLE_CSS_CHUNKS.base + ROLE_CSS_CHUNKS[id]
 const varsRead = (css: string) => [...new Set([...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]))].filter((v) => !v.startsWith('--rb-')).sort()
 
 describe('role registry', () => {
-  it('ships eight roles with three layouts each, registered as page-editor blocks', () => {
-    expect(ROLE_IDS).toHaveLength(8)
+  it('ships seventeen roles with three layouts each, registered as page-editor blocks', () => {
+    expect(ROLE_IDS).toHaveLength(17)
     for (const id of ROLE_IDS) {
       const def = ROLES[id]
       expect(Object.keys(def.variants), id).toHaveLength(3)
@@ -51,7 +59,7 @@ describe('role registry', () => {
       expect(def.sample.sample, `${id} sample is flagged`).toBe(true)
       expect(def.replaces.length, `${id} names the legacy blocks it stands in for`).toBeGreaterThan(0)
     }
-    expect(ROLE_CATEGORY_COMPONENTS).toHaveLength(8)
+    expect(ROLE_CATEGORY_COMPONENTS).toHaveLength(17)
     expect(config.categories?.roles?.components).toEqual(ROLE_CATEGORY_COMPONENTS)
   })
 
@@ -178,6 +186,44 @@ describe('live rows', () => {
     expect(render('faq', fixture('faq', 'split'), metadata)).toContain('Is parking free?')
     expect(render('faq', fixture('faq', 'split', { live: false }), metadata)).toContain('Can I come alone?')
     expect(render('faq', fixture('faq', 'split'))).toContain('Can I come alone?')
+  })
+})
+
+describe('the nine roles that complete the set (LIVE-1859)', () => {
+  const metadata = { links: { origin: 'https://frequency.example', slug: 'demo', siteBase: '', pages: ['home'], contactHref: '/spaces/demo/contact', bookHref: null, email: null } }
+
+  it('Statement draws its phrases in the line layout only', () => {
+    expect(render('statement', fixture('statement', 'ticker'))).toContain('Show up')
+    expect(render('statement', fixture('statement', 'band'))).not.toContain('Show up')
+    expect(render('statement', fixture('statement', 'pull'))).not.toContain('data-part="list"')
+  })
+
+  it('Contact sends an email address through the site contact page, and carries no form of its own', () => {
+    const html = render('contact', fixture('contact', 'split'), metadata)
+    expect(html).toContain('href="/spaces/demo/contact"')
+    expect(html).not.toContain('mailto:')
+    expect(html).not.toContain('<form')
+    expect(html).not.toContain('<input')
+  })
+
+  it('People shows one person in the founder layout and all of them otherwise', () => {
+    const three = (variant: string) => render('people', fixture('people', variant))
+    expect(three('founder')).toContain('First name')
+    expect(three('founder')).not.toContain('Second name')
+    expect(three('grid')).toContain('Third name')
+  })
+
+  it('Stats drops a figure with no label, and Library, Shop and Chapters drop an item with no name', () => {
+    expect(render('stats', fixture('stats', 'row', { items: [{ value: '12', label: '' }, { value: '34', label: 'Members' }] }))).not.toContain('>12<')
+    expect(render('shop', fixture('shop', 'grid', { items: [{ name: '', price: '$1' }] }))).not.toContain('data-part="item"')
+    expect(render('library', fixture('library', 'grid', { items: [{ title: '' }] }))).not.toContain('data-part="item"')
+    expect(render('chapters', fixture('chapters', 'grid', { items: [{ name: '' }] }))).not.toContain('data-part="item"')
+  })
+
+  it('Gallery keeps a captioned frame when the photo is missing, so a fresh block is not empty', () => {
+    const html = render('gallery', fixture('gallery', 'grid', { items: [{ image: '', caption: 'Soon' }] }))
+    expect(html).toContain('data-part="caption"')
+    expect(html).not.toContain('<img')
   })
 })
 

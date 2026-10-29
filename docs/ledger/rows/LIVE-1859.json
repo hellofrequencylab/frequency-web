@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "L",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/page-editor/config.tsx",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Completes the role set.",
+  "detail": "Completes the role set.\n\nShipped: nine more *.role.json (statement, letter, contact, stats, shop, library, people, gallery, chapters; seventeen in all under lib/blocks/roles), RoleStatement/Letter/Contact/Stats/Shop/Library/People/Gallery/Chapters registered beside the first eight under 'Sections for any theme' (website pages only), three layouts each, same data-role/data-variant/data-part markup, sheet chunks added to components/sites/role-blocks-css.ts reading only the core token contract and emitted only on a page that carries a role block. Contact carries details and a way in, never a form of its own. Pinned by components/page-editor/blocks/roles.test.tsx (seventeen roles on nine themes, every part and variant styled, tokens declared). Rendered on nine themes at 390 and 1280, and frequency and bold at 1440, 1920 and 2000: no horizontal overflow, no empty section.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/theme-cohesion.mjs roles17",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-29"
 }

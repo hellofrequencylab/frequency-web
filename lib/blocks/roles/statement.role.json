@@ -1,0 +1,114 @@
+{
+  "role": "Statement",
+  "type": "RoleStatement",
+  "label": "Statement (all themes)",
+  "replaces": [
+    "Statement",
+    "ValueBand",
+    "MidnightBand",
+    "NetworkBand",
+    "DesignerStatement",
+    "DesignerBand"
+  ],
+  "slots": {
+    "required": {
+      "title": "text<=200"
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "lead": "text<=280",
+      "items": {
+        "type": "list",
+        "min": 0,
+        "max": 8,
+        "item": {
+          "text": "text<=40"
+        }
+      },
+      "primary": "link",
+      "secondary": "link"
+    }
+  },
+  "variants": {
+    "band": {
+      "label": "Full band"
+    },
+    "pull": {
+      "label": "Pull statement"
+    },
+    "ticker": {
+      "label": "Short phrases in a line"
+    }
+  },
+  "default": "band",
+  "data": null,
+  "sample": {
+    "sample": true,
+    "eyebrow": "What we believe",
+    "title": "Nobody grows *alone*",
+    "lead": "",
+    "primaryLabel": "",
+    "primaryHref": "",
+    "secondaryLabel": "",
+    "secondaryHref": "",
+    "items": [
+      {
+        "text": "Show up"
+      },
+      {
+        "text": "Tell the truth"
+      },
+      {
+        "text": "Leave lighter"
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "actions",
+    "copy",
+    "cta",
+    "eyebrow",
+    "inner",
+    "item",
+    "list",
+    "title"
+  ]
+}

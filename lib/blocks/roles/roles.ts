@@ -6,14 +6,24 @@ import membership from './membership.role.json'
 import proof from './proof.role.json'
 import faq from './faq.role.json'
 import cta from './cta.role.json'
+import statement from './statement.role.json'
+import letter from './letter.role.json'
+import contact from './contact.role.json'
+import stats from './stats.role.json'
+import shop from './shop.role.json'
+import library from './library.role.json'
+import people from './people.role.json'
+import gallery from './gallery.role.json'
+import chapters from './chapters.role.json'
 
-// THE ROLE REGISTRY (docs/THEME-COHESION.md section 2, ADR-1923, LIVE-1858). One *.role.json per role is the whole
+// THE ROLE REGISTRY (docs/THEME-COHESION.md section 2, ADR-1923, LIVE-1858, LIVE-1859: seventeen roles). One *.role.json per role is the whole
 // contract: the slots a role takes, the structural variants, the parts a theme's presentation may target, the core
 // tokens it reads and the sample that fills a fresh block. The editor fields, the renderer's variant list and the
 // tests all read these files, so there is nowhere else a role can drift. A theme never names a role block: it supplies
 // a presentation (tokens plus decoration) and a default variant, and the same markup wears all of them.
 
 export type RoleId = 'hero' | 'steps' | 'offerings' | 'gatherings' | 'membership' | 'proof' | 'faq' | 'cta'
+  | 'statement' | 'letter' | 'contact' | 'stats' | 'shop' | 'library' | 'people' | 'gallery' | 'chapters'
 
 interface RoleVariant {
   label: string
@@ -52,6 +62,15 @@ export const ROLES: Readonly<Record<RoleId, RoleDefinition>> = {
   proof: proof as RoleDefinition,
   faq: faq as RoleDefinition,
   cta: cta as RoleDefinition,
+  statement: statement as RoleDefinition,
+  letter: letter as RoleDefinition,
+  contact: contact as RoleDefinition,
+  stats: stats as RoleDefinition,
+  shop: shop as RoleDefinition,
+  library: library as RoleDefinition,
+  people: people as RoleDefinition,
+  gallery: gallery as RoleDefinition,
+  chapters: chapters as RoleDefinition,
 }
 
 export const ROLE_IDS = Object.keys(ROLES) as RoleId[]

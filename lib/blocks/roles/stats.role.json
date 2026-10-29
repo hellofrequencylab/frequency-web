@@ -1,0 +1,111 @@
+{
+  "role": "Stats",
+  "type": "RoleStats",
+  "label": "Figures (all themes)",
+  "replaces": [
+    "StatRow",
+    "LiveStats",
+    "NetworkKitStats",
+    "NetworkStats"
+  ],
+  "slots": {
+    "required": {
+      "items": {
+        "type": "list",
+        "min": 2,
+        "max": 6,
+        "item": {
+          "value": "text<=16",
+          "label": "text<=60",
+          "note": "text<=100?"
+        }
+      }
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280"
+    }
+  },
+  "variants": {
+    "row": {
+      "label": "A row of figures"
+    },
+    "cards": {
+      "label": "Cards"
+    },
+    "band": {
+      "label": "Full band"
+    }
+  },
+  "default": "row",
+  "data": null,
+  "sample": {
+    "sample": true,
+    "eyebrow": "",
+    "title": "",
+    "lead": "",
+    "items": [
+      {
+        "value": "000",
+        "label": "Replace with a real number",
+        "note": ""
+      },
+      {
+        "value": "000",
+        "label": "Replace with a real number",
+        "note": ""
+      },
+      {
+        "value": "000",
+        "label": "Replace with a real number",
+        "note": ""
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "inner",
+    "item",
+    "label",
+    "list",
+    "value"
+  ]
+}
