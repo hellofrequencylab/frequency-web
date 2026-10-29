@@ -21,10 +21,10 @@ interface TempleLayout {
 /** The four surfaces a preview can show. Website and Spotlight have pictures; Space and Email are on the way and
  *  show a quiet frame (no picture exists for them yet, and none is invented). */
 export type TempleSurface = 'site' | 'spotlight' | 'space' | 'email'
-export const TEMPLE_SURFACES: readonly { id: TempleSurface; label: string; qual?: string; shot: 'site' | 'spot' | 'email' | null; width: number; height: number }[] = [
+export const TEMPLE_SURFACES: readonly { id: TempleSurface; label: string; qual?: string; shot: 'site' | 'spot' | 'spacedesk' | 'email'; width: number; height: number }[] = [
   { id: 'site', label: 'Website', shot: 'site', width: 1280, height: 800 },
   { id: 'spotlight', label: 'Spotlight', qual: 'Link Page', shot: 'spot', width: 740, height: 1648 },
-  { id: 'space', label: 'Space', qual: 'Profile', shot: null, width: 1280, height: 770 },
+  { id: 'space', label: 'Space', qual: 'Profile', shot: 'spacedesk', width: 1280, height: 770 },
   { id: 'email', label: 'Email template', shot: 'email', width: 900, height: 1140 },
 ]
 

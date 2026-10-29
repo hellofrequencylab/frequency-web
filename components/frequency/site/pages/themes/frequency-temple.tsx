@@ -22,7 +22,7 @@ import {
   templeShot,
   type TempleSurface,
 } from '@/lib/themes/temple-feature-data'
-import { TempleBrowser, TempleMail, TemplePhone, TempleSoon, TempleStage, type TempleSurfaceStatus } from './temple-preview'
+import { TempleBrowser, TempleMail, TemplePhone, TempleStage, type TempleSurfaceStatus } from './temple-preview'
 
 const START_HREF = '/spaces/new?theme=temple-kit'
 
@@ -106,9 +106,7 @@ export function FrequencyTemple() {
   const status: Record<TempleSurface, TempleSurfaceStatus> = {
     site: statusOf('website'),
     spotlight: statusOf('spotlight'),
-    // Space has no picture yet, so it reads as on the way here whatever the catalog says: this page shows less than
-    // the product, never more.
-    space: 'soon',
+    space: statusOf('space'),
     email: statusOf('email'),
   }
   const kit = TEMPLE_DEFAULT_KIT
@@ -152,7 +150,7 @@ export function FrequencyTemple() {
       changes: 'Your list hears from you, and it looks like you.',
     },
   ]
-  const shotFor = (s: TempleSurface) => (s === 'spotlight' ? templeShot(kit, 'spot') : s === 'email' ? templeShot(kit, 'email') : templeShot(kit, 'site'))
+  const shotFor = (s: TempleSurface) => (s === 'spotlight' ? templeShot(kit, 'spot') : s === 'space' ? templeShot(kit, 'spacedesk') : s === 'email' ? templeShot(kit, 'email') : templeShot(kit, 'site'))
 
   return (
     <div className="tf" style={vars({ '--c': 'var(--fq-x-sun-neon)' })}>
@@ -221,10 +219,10 @@ export function FrequencyTemple() {
                     <TemplePhone src={shotFor(p.surface)} alt={`Temple: ${p.name.toLowerCase()}`} sizes="(max-width: 900px) 60vw, 300px" />
                   ) : p.surface === 'site' ? (
                     <TempleBrowser src={shotFor(p.surface)} alt={`Temple: ${p.name.toLowerCase()}`} url="yourtemple.org" width={1280} height={800} sizes="(max-width: 900px) 92vw, 640px" />
-                  ) : p.surface === 'email' ? (
-                    <TempleMail src={shotFor(p.surface)} alt="Temple: email" sizes="(max-width: 900px) 70vw, 380px" />
+                  ) : p.surface === 'space' ? (
+                    <TempleBrowser src={shotFor(p.surface)} alt="Temple: space" url="frequency.com/spaces/yourtemple" width={1280} height={770} sizes="(max-width: 900px) 92vw, 640px" />
                   ) : (
-                    <TempleSoon label={p.name} url="frequency.com/spaces/yourtemple" />
+                    <TempleMail src={shotFor(p.surface)} alt="Temple: email" sizes="(max-width: 900px) 70vw, 380px" />
                   )}
                 </div>
                 <div className="tf-cz-tx">
