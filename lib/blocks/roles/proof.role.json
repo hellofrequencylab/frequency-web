@@ -1,0 +1,157 @@
+{
+  "role": "Proof",
+  "type": "RoleProof",
+  "label": "Proof (all themes)",
+  "replaces": [
+    "Quote",
+    "CardGrid(testimonial)",
+    "MidnightProof",
+    "NetworkKitProof",
+    "DesignerTestimonials",
+    "DesignerQuote"
+  ],
+  "slots": {
+    "required": {
+      "items": {
+        "type": "list",
+        "min": 1,
+        "max": 12,
+        "item": {
+          "quote": "text<=280",
+          "name": "text",
+          "role": "text?",
+          "photo": "image?",
+          "rating": "1-5?"
+        }
+      }
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280",
+      "stats": {
+        "type": "list",
+        "max": 4,
+        "item": {
+          "value": "text<=12",
+          "label": "text<=40"
+        }
+      }
+    }
+  },
+  "variants": {
+    "quote": {
+      "label": "Large quotes",
+      "max": 3
+    },
+    "wall": {
+      "label": "Wall of quotes",
+      "min": 3,
+      "max": 12
+    },
+    "stats": {
+      "label": "Quote beside figures",
+      "needs": [
+        "stats"
+      ]
+    }
+  },
+  "default": "wall",
+  "data": null,
+  "sample": {
+    "sample": true,
+    "eyebrow": "Kind words",
+    "title": "People *keep coming back*",
+    "lead": "",
+    "items": [
+      {
+        "quote": "I came alone and left with three friends. It felt like coming home.",
+        "name": "Maya R.",
+        "role": "Member since 2024",
+        "photo": "",
+        "rating": 5
+      },
+      {
+        "quote": "Unhurried, warm, and the tea is very good.",
+        "name": "Jo T.",
+        "role": "Weekly regular",
+        "photo": "",
+        "rating": 5
+      },
+      {
+        "quote": "The first place in years where I did not feel like I had to perform.",
+        "name": "Sam L.",
+        "role": "Circle host",
+        "photo": "",
+        "rating": 5
+      }
+    ],
+    "stats": [
+      {
+        "value": "240",
+        "label": "Gatherings hosted"
+      },
+      {
+        "value": "1,100",
+        "label": "People welcomed"
+      },
+      {
+        "value": "4.9",
+        "label": "Average rating"
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "eyebrow",
+    "heading",
+    "inner",
+    "item",
+    "list",
+    "person",
+    "photo",
+    "quote",
+    "rating",
+    "stat",
+    "stats",
+    "title",
+    "who"
+  ]
+}
