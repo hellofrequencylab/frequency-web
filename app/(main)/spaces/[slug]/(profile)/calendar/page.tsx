@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { notFound, redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { notFound } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
@@ -12,16 +13,23 @@ import { openingMonth } from '@/lib/calendar/open-month'
 import { dayInZone } from '@/lib/time/zone'
 import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers'
 import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
-import { monthGridWindow } from '@/lib/calendar/month-window'
+import { monthGridWindow, operatorHorizonWindow } from '@/lib/calendar/month-window'
 import { loadSpaceCalendarMonth } from './actions'
 import { CalendarSeo } from './calendar-seo'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { getSpaceCapabilities, resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
+import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
 import { CalendarWorkspace } from '@/components/spaces/calendar-workspace'
-import { asksForPublicCalendar, teamCalendarRedirect } from '@/lib/calendar/audience'
-import { CalendarAudienceToggle } from '@/components/calendar-suite/audience-toggle'
+import {
+  calendarViewCookieName,
+  firstSearchParam,
+  parseConsoleFlag,
+  resolveOperatorCalendarView,
+} from '@/lib/calendar/admin-views'
+import { parseTimeView, timeViewCookieName } from '@/lib/calendar/time-views'
+import { asksForPublicCalendar } from '@/lib/calendar/audience'
 
 // THE MERGED CALENDAR AND EVENTS PAGE (Events EC2, ADR-1385, ADR-1464, ADR-1467; merged by
 // LIVE-520 on the owner's ask, "Calendar & Events should be all one page").
@@ -32,11 +40,12 @@ import { CalendarAudienceToggle } from '@/components/calendar-suite/audience-tog
 //   · the control bar   — WHEN (month, zone, paging, jump), HOW (the surface switch, now drawn for a
 //                         MEMBER too), WHAT (the layer filter, when there is more than one layer),
 //                         ACTIONS (subscribe; plus Pencil / Fullscreen for the team).
-//   · the month grid, or the month's agenda.
+//   · the month grid, or the month's agenda, or — for the team — List and Workflow.
 //
-// ROLE BASED (owner ruling 2026-10-29): this is the PUBLIC calendar. A Space's admin who opens it is sent
-// to the full suite at the console route, and can come back here with Public view (`?as=public`).
-// lib/calendar/audience.ts holds the two addresses.
+// ROLE BASED, AND THIS TAB STAYS ITS OWN PAGE (owner ruling 2026-10-29). A Space's team sees this page with
+// its sort functions in the header and moves a date between Pencil, Plan and Production right on it
+// (Workflow). The full calendar manager lives at the console route and is one link away. A visitor sees
+// the public calendar, and an admin asking for Public view (`?as=public`) lands on Guest preview.
 //
 // Operators load Guest and Admin data once. Views slide in a client shell.
 // Unsigned visitors stay Guest-only and never hit loadAdminCalendar.
@@ -60,7 +69,10 @@ export default async function SpaceCalendarPage({
   searchParams: Promise<{
     view?: string | string[]
     as?: string | string[]
+    item?: string | string[]
     plan?: string | string[]
+    console?: string | string[]
+    look?: string | string[]
     y?: string | string[]
     m?: string | string[]
   }>
@@ -79,11 +91,6 @@ export default async function SpaceCalendarPage({
     staffViewing ||
     (canManage && spaceFunctionAccess(space, 'events', (await getSpaceCapabilities(space, viewerProfileId)).role))
 
-  // ROLE BASED (owner ruling 2026-10-29). A Space's admin opening this tab lands on the full suite; the
-  // public calendar below is what everyone else sees, and what an admin sees on asking for Public view.
-  const adminWantsPublic = adminAllowed && asksForPublicCalendar(query)
-  if (adminAllowed && !adminWantsPublic) redirect(teamCalendarRedirect(slug, query))
-
   const now = new Date()
   // The month in the link, else the CURRENT month in the Space's own day (lib/calendar/open-month.ts),
   // never the month of its first or its most events.
@@ -99,6 +106,12 @@ export default async function SpaceCalendarPage({
       description={`Subscribe once and ${brandName}'s events show up in Google or Apple Calendar, and stay current on their own.`}
     />
   )
+
+  // THE SPACE'S OWN ZONE (LIVE-471), read once here so the console header, the staff drawer and Ask
+  // Vera all name the same one. Null when the Space has never said; those surfaces then fall back to
+  // the viewer's browser zone, which is what they all did before this row. Only the operator's half
+  // of this page reads it, so a guest's calendar view never names it. It rides the Space row already loaded above.
+  const spaceTimeZone = adminAllowed ? space.timeZone : null
 
   const grid = monthGridWindow(initialYear, initialMonth1)
   // THE BAND'S FLOOR IS THE SPACE'S OWN DAY (LIVE-520), never UTC's. `starts_at` holds the wall
@@ -144,14 +157,9 @@ export default async function SpaceCalendarPage({
   const skyMarkers = skyOn ? astroMarkersInRange(skyWindow[0], skyWindow[1], space.timeZone) : []
 
 
-  // The visitor's calendar, for a visitor and for an admin who asked to see it the way a visitor does.
-  return (
-    <>
-      {adminWantsPublic ? (
-        <div className="mb-3 flex justify-end">
-          <CalendarAudienceToggle slug={slug} audience="public" />
-        </div>
-      ) : null}
+  if (!adminAllowed) {
+    return (
+      <>
       <CalendarSeo slug={slug} brandName={brandName} timeZone={space.timeZone} rows={upcomingRows} />
       <CalendarWorkspace
         slug={slug}
@@ -176,6 +184,55 @@ export default async function SpaceCalendarPage({
         skyMarkers={skyMarkers}
         loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
       />
+      </>
+    )
+  }
+
+  const jar = await cookies()
+  const remembered = jar.get(calendarViewCookieName(slug))?.value
+  const initialView = asksForPublicCalendar(query) ? 'guest' : resolveOperatorCalendarView(query.view, remembered)
+  // Day, Week or Timeline (LIVE-1178): the link names it, otherwise the last one this reader chose.
+  const initialTimeView = parseTimeView(query.look) ?? parseTimeView(jar.get(timeViewCookieName(slug))?.value)
+  const admin = await loadAdminCalendar(space.id, {
+    canManage,
+    year: initialYear,
+    month1: initialMonth1,
+    now,
+    // List and Workflow derive from this one read and never page, so the window is anchored on
+    // today and runs well past the end of a season (lib/calendar/month-window.ts says why).
+    entryWindow: operatorHorizonWindow(now),
+  })
+
+  return (
+    <>
+    <CalendarSeo slug={slug} brandName={brandName} timeZone={space.timeZone} rows={upcomingRows} />
+    <CalendarWorkspace
+      slug={slug}
+      spaceId={space.id}
+      brandName={brandName}
+      adminAllowed
+      canManage={canManage}
+      initialView={initialView}
+      initialListItem={firstSearchParam(query.item) ?? null}
+      initialPlanId={firstSearchParam(query.plan) ?? null}
+      initialConsole={parseConsoleFlag(query.console)}
+      initialTimeView={initialTimeView}
+      initialDay={spaceDay}
+      initialYear={initialYear}
+      initialMonth1={initialMonth1}
+        monthPinned={monthPinned}
+      guestEvents={guestEvents}
+      guestFirstUse={feed.isFirstUse}
+      adminEvents={admin.events}
+      dayNotes={admin.dayNotes}
+      plans={admin.plans}
+      spaceTimeZone={spaceTimeZone}
+      subscribe={subscribe}
+      upcoming={upcoming}
+      memberLayers={memberLayers}
+      skyMarkers={skyMarkers}
+      loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
+    />
     </>
   )
 }

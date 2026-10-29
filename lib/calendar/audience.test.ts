@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { asksForPublicCalendar, audienceHref, audienceLinks, teamCalendarRedirect } from './audience'
+import { asksForPublicCalendar, audienceHref, audienceLinks } from './audience'
 
 describe('calendar audience', () => {
   it('names the two calendars by address', () => {
@@ -14,12 +14,5 @@ describe('calendar audience', () => {
     expect(asksForPublicCalendar({ view: 'guest' })).toBe(true)
     expect(asksForPublicCalendar({})).toBe(false)
     expect(asksForPublicCalendar({ as: 'team', view: 'list' })).toBe(false)
-  })
-
-  it('sends an admin to the suite and keeps the plan and month the link named', () => {
-    expect(teamCalendarRedirect('ocean-house', {})).toBe('/spaces/ocean-house/settings/calendar')
-    expect(teamCalendarRedirect('ocean-house', { plan: 'p1', y: '2026', m: '11' })).toBe(
-      '/spaces/ocean-house/settings/calendar?plan=p1&y=2026&m=11',
-    )
   })
 })
