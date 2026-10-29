@@ -68,31 +68,18 @@ import type { CoverPlaceholderPath } from '@/lib/spaces/cover-placeholder'
 const jpegDataUrl = (data: Buffer) => `data:image/jpeg;base64,${data.toString('base64')}`
 
 // ── ONE LITERAL READ PER FILE, AND IT HAS TO STAY THAT WAY ───────────────────────────────────
-const readOutdoorGroup = () =>
-  readFile(join(process.cwd(), 'public/images/site', 'outdoor-group.jpg'))
-const readSunset = () => readFile(join(process.cwd(), 'public/images/site', 'sunset.jpg'))
-const readLabLounge = () => readFile(join(process.cwd(), 'public/images/site', 'lab-lounge.jpg'))
-const readNatureViewingSunset = () =>
-  readFile(join(process.cwd(), 'public/images/site', 'nature-viewing-sunset.jpg'))
-const readCommunityDinner = () =>
-  readFile(join(process.cwd(), 'public/images/site', 'community-dinner.jpg'))
-const readMeditationCircleOutdoor = () =>
-  readFile(join(process.cwd(), 'public/images/site', 'meditation-circle-outdoor.jpg'))
+const readSpaceCoverDefault = () =>
+  readFile(join(process.cwd(), 'public/images/site', 'space-cover-default.jpg'))
 
 /** Every path `coverPlaceholderFor` can return, and nothing else. A missing key is a type error;
  *  so is a key that is not a placeholder. */
 const COVER_READERS: Record<CoverPlaceholderPath, () => Promise<Buffer>> = {
-  '/images/site/outdoor-group.jpg': readOutdoorGroup,
-  '/images/site/sunset.jpg': readSunset,
-  '/images/site/lab-lounge.jpg': readLabLounge,
-  '/images/site/nature-viewing-sunset.jpg': readNatureViewingSunset,
-  '/images/site/community-dinner.jpg': readCommunityDinner,
-  '/images/site/meditation-circle-outdoor.jpg': readMeditationCircleOutdoor,
+  '/images/site/space-cover-default.jpg': readSpaceCoverDefault,
 }
 
 /**
  * The deterministic site cover a card falls back to when the entity uploaded none, inlined for
- * Satori. Pass the value `coverPlaceholderFor()` returned: it is the SAME photo the on-page hero
+ * Satori. Pass the value `coverPlaceholderFor()` returned: it is the SAME image the on-page hero
  * shows, so a shared link previews the page it points at.
  *
  * ⚠️ This CAN reject, exactly as the `readFile` it replaces did. An OG route that throws returns a

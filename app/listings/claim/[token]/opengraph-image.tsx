@@ -38,7 +38,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
       name: 'Your listing',
       pill: 'Listing',
       noun: 'listing',
-      placeholderRelPath: '/images/site/community-dinner.jpg',
+      placeholderRelPath: '/images/site/space-cover-default.jpg',
       accent: ACCENT,
     })
   }
@@ -60,7 +60,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
     pill,
     noun: 'listing',
     coverUrl: cover,
-    placeholderRelPath: '/images/site/community-dinner.jpg',
+    placeholderRelPath: '/images/site/space-cover-default.jpg',
     accent: ACCENT,
   })
 }
