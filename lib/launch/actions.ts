@@ -154,3 +154,14 @@ export async function chooseSpaceFormAction(formData: FormData): Promise<void> {
   }
   redirect(spotlightStepUrl())
 }
+
+/** The "Skip for now" button on a photo item. A plain form post: it remembers the skip on the launch and lands back on
+ *  the one launch page, where the photo stays on the list with an easy way to add one later. Never a gate. */
+export async function skipPhotoFormAction(formData: FormData): Promise<void> {
+  if (!launchSystemEnabled()) redirect('/')
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in')
+  const launch = await store.getActiveLaunch(profileId)
+  if (launch) await store.skipPhotoItem(launch, String(formData.get('item') ?? ''))
+  redirect('/launch')
+}

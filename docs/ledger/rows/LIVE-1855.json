@@ -4,7 +4,7 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "components/sites/editor/theme-changer.tsx",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
@@ -15,5 +15,6 @@
     "cmd": "node scripts/probes/theme-cohesion.mjs switchdialog",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-29"
 }

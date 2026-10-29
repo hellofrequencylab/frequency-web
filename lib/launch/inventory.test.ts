@@ -20,4 +20,10 @@ describe('inventorySections', () => {
     expect(by['c-first'].found).toBe('2 on the calendar')
     expect(by['w-site'].state).toBe('todo')
   })
+  it('flows a skipped photo into the item, keeps it on the list, and never marks an existing photo skipped', () => {
+    const by = (cover: string | null) => Object.fromEntries(inventorySections({ rows, spaceName: 'A', coverImageUrl: cover, logoUrl: null, skippedPhotos: ['sc-cover', 'sc-logo'] }).flatMap((x) => x.items).map((i) => [i.id, i]))
+    expect(by(null)['sc-cover']).toMatchObject({ state: 'todo', skipped: true })
+    expect(by('x')['sc-cover']).toMatchObject({ state: 'done', skipped: false })
+    expect(by(null)['sc-logo'].skipped).toBe(true)
+  })
 })
