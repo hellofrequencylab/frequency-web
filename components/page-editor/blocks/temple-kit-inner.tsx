@@ -15,17 +15,17 @@ import { TempleKitContactForm } from '@/components/sites/temple-kit-inner/contac
 // photo left empty draws the kit's plaster wash, so a Space that has not added photos yet still reads whole.
 // `*stars*` in a heading set the words in the accent italic.
 
-type Props = Record<string, unknown>
-const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
-const arr = (v: unknown): Props[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === 'object') as Props[]) : [])
-const img = (v: unknown) => safeImageSrc(safeImageUrl(v) || null)
-const cls = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ')
-const lines = (v: unknown) => str(v).split('\n').map((s) => s.trim()).filter(Boolean)
-const layoutOf = (layout: unknown) => ({ pad: padClass(layout as LayoutValue), vis: visClass(layout as LayoutValue) })
+export type Props = Record<string, unknown>
+export const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+export const arr = (v: unknown): Props[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === 'object') as Props[]) : [])
+export const img = (v: unknown) => safeImageSrc(safeImageUrl(v) || null)
+export const cls = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ')
+export const lines = (v: unknown) => str(v).split('\n').map((s) => s.trim()).filter(Boolean)
+export const layoutOf = (layout: unknown) => ({ pad: padClass(layout as LayoutValue), vis: visClass(layout as LayoutValue) })
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
 
 /** A link through the site's link map. `~/page` means "this Space's page". Kept as written without a map. */
-function hrefOf(raw: string, metadata: Props | undefined): string | null {
+export function hrefOf(raw: string, metadata: Props | undefined): string | null {
   if (!raw) return null
   if (raw.startsWith('#')) return raw
   const links = metadata?.links as SiteLinkMap | undefined
@@ -35,12 +35,12 @@ function hrefOf(raw: string, metadata: Props | undefined): string | null {
   return siteLocalHref(own, links)?.href ?? (/^\/(?:spaces|circles|events|market)(?:\/|[?#]|$)|^\/sign-in(?:[?#]|$)/.test(own) ? `${links.origin}${own}` : null)
 }
 
-const Mark = ({ d }: { d: string }) => (
+export const Mark = ({ d }: { d: string }) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d={d} />
   </svg>
 )
-const MARKS = { check: 'M20 6 9 17l-5-5', mail: 'M4 6h16v12H4zM4 7l8 6 8-6', pin: 'M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z' } as const
+export const MARKS = { check: 'M20 6 9 17l-5-5', mail: 'M4 6h16v12H4zM4 7l8 6 8-6', pin: 'M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z' } as const
 
 /** The three glyphs the design's service rows wear: a circle, a triangle and a square, drawn plain. */
 const SIGILS: Record<string, ReactNode> = {
@@ -229,13 +229,13 @@ function FaqBlock({ p, metadata, pad, vis }: { p: Props; metadata?: Props; pad?:
 
 // ── Registry ───────────────────────────────────────────────────────────────────────────────────────────────
 
-const text = (label: string, hint?: string) => ({ type: 'text', label, ...(hint ? { hint } : {}) }) as const
-const area = (label: string, hint?: string) => ({ type: 'textarea', label, ...(hint ? { hint } : {}) }) as const
-const image = { ...loomImageField, label: 'Photo' }
-const alt = text('Photo description', 'For screen readers.')
-const VOICE_HINT = 'Wrap words in *stars* to set them in the accent italic.'
+export const text = (label: string, hint?: string) => ({ type: 'text', label, ...(hint ? { hint } : {}) }) as const
+export const area = (label: string, hint?: string) => ({ type: 'textarea', label, ...(hint ? { hint } : {}) }) as const
+export const image = { ...loomImageField, label: 'Photo' }
+export const alt = text('Photo description', 'For screen readers.')
+export const VOICE_HINT = 'Wrap words in *stars* to set them in the accent italic.'
 
-function block<P extends Props>(label: string, fields: Record<string, unknown>, defaults: P, Comp: (args: { p: Props; metadata?: Props; pad?: string; vis?: string }) => ReactNode): ComponentConfig {
+export function block<P extends Props>(label: string, fields: Record<string, unknown>, defaults: P, Comp: (args: { p: Props; metadata?: Props; pad?: string; vis?: string }) => ReactNode): ComponentConfig {
   return {
     label,
     fields: { ...fields, layout: layoutField },
