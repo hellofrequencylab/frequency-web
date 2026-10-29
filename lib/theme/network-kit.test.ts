@@ -239,6 +239,7 @@ describe('registered as a site theme, with the earlier network theme still rende
     expect(themeIdFromSlug('network')).toBe('network-kit')
     expect(themeIdFromSlug('network-classic')).toBe('network-classic')
     expect(themeIdFromSlug('network-kit')).toBeNull()
-    expect(themeIdFromSlug('temple')).toBe('temple')
+    // The Temple Theme Kit took /themes/temple; the earlier temple theme has no page of its own.
+    expect(themeIdFromSlug('temple')).toBe('temple-kit')
   })
 })

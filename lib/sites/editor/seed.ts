@@ -100,6 +100,7 @@ export function initialWebsiteTheme(preferences: unknown): WebsiteTheme {
   if (siteTheme(preferences) === 'network') return 'Network'
   if (siteTheme(preferences) === 'network-kit') return 'NetworkKit'
   if (siteTheme(preferences) === 'temple') return 'Temple'
+  if (siteTheme(preferences) === 'temple-kit') return 'TempleKit'
   if (siteTheme(preferences) === 'midnight') return 'Midnight'
   if (siteTheme(preferences) === 'designer') return 'Designer'
   return siteTheme(preferences) === 'bold' || theme.toLowerCase() === 'menswork' ? 'Menswork' : 'DAWN'
