@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { FrequencyDesigner } from '@/components/frequency/site/pages/themes/frequency-designer'
+import { FrequencyMidnight } from '@/components/frequency/site/pages/themes/frequency-midnight'
 import { FrequencyNetwork } from '@/components/frequency/site/pages/themes/frequency-network'
 
-// Every Theme Kit page is the Network page's layout (the reference) with its own content, colours and pictures.
+// Every Theme Kit page is the Nocturne page's layout (the reference: /themes/nocturne) with its own name, content, colours and pictures.
+// Network and Designer must open the same way (the theme's name large, the buttons left, the preview right, the four surfaces
+// joined by a dotted line) and follow its sections in its order.
 // The skeleton is the sequence of section ids and screen labels plus every structural class, theme prefix removed.
 // What may differ is the picture inside a frame (a Space or Email that has a picture, or is on the way).
 const FRAME_ONLY = new Set(['dv', 'bar', 'scr', 'mail', 'soon', 'soon-tx'])
@@ -22,6 +25,24 @@ function skeleton(html: string, prefix: string) {
 describe('theme pages share one layout', () => {
   const net = skeleton(renderToStaticMarkup(<FrequencyNetwork />), 'nf')
   const des = skeleton(renderToStaticMarkup(<FrequencyDesigner />), 'df')
+
+  const noc = skeleton(renderToStaticMarkup(<FrequencyMidnight />), 'nf')
+
+  it("follows Nocturne's sections in Nocturne's order", () => {
+    const labels = (x: { sections: string[] }) => x.sections.map((m) => m.split('|')[1]).filter((l) => !l.startsWith('12 '))
+    expect(labels(net)).toEqual(labels(noc))
+    expect(labels(des)).toEqual(labels(noc))
+  })
+
+  it('opens like Nocturne: the name large, then the four surfaces joined by a line', () => {
+    for (const x of [net, des, noc]) {
+      expect(x.counts['name']).toBe(1)
+      expect(x.counts['aft']).toBe(1)
+      expect(x.counts['tagline']).toBe(1)
+      expect(x.counts['cascade']).toBe(1)
+      expect(x.counts['thread']).toBe(3)
+    }
+  })
 
   it('has the same sections in the same order', () => {
     expect(des.sections).toEqual(net.sections)
