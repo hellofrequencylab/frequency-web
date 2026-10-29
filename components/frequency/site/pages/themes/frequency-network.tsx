@@ -6,13 +6,16 @@
 // (lib/themes/library.ts), so the page never says more than the product does. The design page's research
 // figures and its Nocturne-only lines (accent ramps tuned to black and bone) are left out on purpose.
 // Copy follows docs/marketing/voice-and-language-guide.md. Styles: network-feature.css, tokens only.
+import Image from 'next/image'
 import Link from 'next/link'
+import { Fragment } from 'react'
 import { FreeSpotlightButton } from '@/components/marketing/free-spotlight-button'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { THEME_LOOK_CONTROLS, THEME_TOOLS, themeLibraryEntry } from '@/lib/themes/library'
 import {
   NETWORK_DEFAULT_KIT,
+  NETWORK_KITS,
   NETWORK_LAYOUTS,
   NETWORK_SPOTLIGHT_EYEBROW,
   networkLayoutShot,
@@ -22,6 +25,35 @@ import {
 import { NetworkBrowser, NetworkPhone, NetworkSoon, NetworkStage, type NetworkSurfaceStatus } from './network-preview'
 
 const START_HREF = '/spaces/new?theme=network-kit'
+
+const PAGES: [string, string][] = [
+  ['Home', 'Hero, ways in, proof and a closing call. Blocks switch on with the kit’s tools.'],
+  ['Offerings', 'Every offer with its length, price and a button. Pulls from your booking tool.'],
+  ['Gatherings', 'Dated events with seats, tickets and waitlists, as a list or a calendar.'],
+  ['Programs', 'Programs with a start date, an outline and one promised result.'],
+  ['Shop', 'Products, downloads and gift cards with checkout on your domain.'],
+  ['Membership', 'Up to three tiers, yearly pricing, pause and resume.'],
+  ['Library', 'Guides and posts, free or paid, with the letter sign-up beside them.'],
+  ['About', 'Who you are, in your words, with the same face and accent as everywhere else.'],
+]
+const EMAILS: [string, string][] = [
+  ['The note', 'What is on, one offer, a word from someone.'],
+  ['Welcome', 'What to expect and three ways in.'],
+  ['The dates', 'Everything on the calendar, pulled from your events.'],
+  ['The receipt', 'When, where and what was paid.'],
+]
+const BUILT: [string, string, string][] = [
+  ['Color', 'Contrast-checked color', 'Every accent is checked so buttons, links and labels meet contrast guidelines out of the box.'],
+  ['Input', 'Keyboard and screen readers', 'Every button, tab, menu and form across all four surfaces is reachable, focusable and labelled.'],
+  ['Email', 'Survives real inboxes', 'Templates are built in tables with inline styles and email-safe fallbacks for your display face.'],
+  ['Data', 'Your people stay yours', 'Sign-ups, bookings and check-ins land in your contacts. Export them any time.'],
+]
+const SETUP: [string, string, string][] = [
+  ['01', 'Choose a kit', 'Pick the closest of the thirteen. The preview updates as you choose.'],
+  ['02', 'Name and tools', 'Keep the kit’s tools or add more: events, programs, membership, one-to-ones, shop.'],
+  ['03', 'Your look', 'Keep the kit’s accent and fonts or use your own. Set corners, spacing and header.'],
+  ['04', 'Go live', 'Your Spotlight is live today. Space, website and emails switch on with a Business account, or wait as a draft.'],
+]
 
 const BEFORE: [string, string][] = [
   ['Link in bio', 'Points away to everything else'],
@@ -142,11 +174,13 @@ export function FrequencyNetwork() {
               <div className="label">
                 <b>Theme Kit</b>Network · by Frequency
               </div>
-              <h1 className="nf-h1">
+              <h1 className="nf-h1 nf-name">Network</h1>
+              <p className="nf-aft">A Frequency Theme</p>
+              <p className="nf-tagline">
                 Design it once.
                 <br />
                 <em className="fq-iri-text">Same theme everywhere.</em>
-              </h1>
+              </p>
               <p className="nf-lead">
                 Your link in bio, your Space, your website and your emails each look a little different. The Network Theme Kit gives networking groups,
                 clubs, mixers, coworking spaces and the people who run them one look to wear on all of them, read from one profile. Change it once and the surfaces
@@ -163,7 +197,7 @@ export function FrequencyNetwork() {
               </div>
             </div>
             <div className="nf-hero-shot">
-              <NetworkStage priority status={status} />
+              <NetworkBrowser src={shotFor('site')} alt="Network: website" url="yournetwork.org" width={1280} height={800} sizes="(max-width: 900px) 92vw, 640px" priority />
             </div>
           </div>
           <a className="nf-more" href="#why">
@@ -172,10 +206,56 @@ export function FrequencyNetwork() {
               <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </a>
+          <div className="nf-cascade" id="places">
+            {places.map((p, i) => (
+              <Fragment key={p.name}>
+                {i > 0 ? (
+                  <svg className={`nf-thread ${i % 2 ? 'lr' : 'rl'}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    <path d={i % 2 ? 'M 24 0 C 24 55, 76 45, 76 100' : 'M 76 0 C 76 55, 24 45, 24 100'} vectorEffect="non-scaling-stroke" />
+                  </svg>
+                ) : null}
+              <div className={`nf-cz ${i % 2 ? 'r' : 'l'}`}>
+                <div className="nf-cz-dev">
+                  <span className="nf-dvlab">{p.qual ? `${p.name} · ${p.qual}` : p.name}</span>
+                  {p.surface === 'spotlight' ? (
+                    <NetworkPhone src={shotFor(p.surface)} alt={`Network: ${p.name.toLowerCase()}`} sizes="(max-width: 900px) 60vw, 300px" />
+                  ) : p.surface === 'site' ? (
+                    <NetworkBrowser src={shotFor(p.surface)} alt={`Network: ${p.name.toLowerCase()}`} url="yournetwork.org" width={1280} height={800} sizes="(max-width: 900px) 92vw, 640px" />
+                  ) : (
+                    <NetworkSoon label={p.name} url={p.surface === 'space' ? 'frequency.com/spaces/yournetwork' : undefined} />
+                  )}
+                </div>
+                <div className="nf-cz-tx">
+                  <span className="jn">{p.n}</span>
+                  <h3>
+                    {p.name}
+                    {p.qual ? <small className="nf-q">{p.qual}</small> : null}
+                    <Status s={status[p.surface]} />
+                  </h3>
+                  <p>{p.body}</p>
+                  <ul>
+                    <li>
+                      <b>Lives at</b>
+                      {p.lives}
+                    </li>
+                    <li>
+                      <b>Wears</b>
+                      {p.wears}
+                    </li>
+                  </ul>
+                  <p className="nf-out">
+                    <b>What changes</b>
+                    {p.changes}
+                  </p>
+                </div>
+              </div>
+              </Fragment>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="sec pb-sec" id="why" data-screen-label="02 Today">
+      <section className="sec pb-sec" id="why" data-screen-label="03 Today">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -222,55 +302,6 @@ export function FrequencyNetwork() {
         </div>
       </section>
 
-      <section className="sec pb-sec" id="places" data-screen-label="03 Four places">
-        <div className="wrap">
-          <div className="sh">
-            <div className="label">
-              <b>Four places</b>Check what is ready
-            </div>
-            <h2 className="h-l">Where Network shows up.</h2>
-          </div>
-          <div className="nf-places">
-            {places.map((p, i) => (
-              <div className={`nf-cz ${i % 2 ? 'r' : 'l'}`} key={p.name}>
-                <div className="nf-cz-dev">
-                  {p.surface === 'spotlight' ? (
-                    <NetworkPhone src={shotFor(p.surface)} alt={`Network: ${p.name.toLowerCase()}`} sizes="(max-width: 900px) 60vw, 300px" />
-                  ) : p.surface === 'site' ? (
-                    <NetworkBrowser src={shotFor(p.surface)} alt={`Network: ${p.name.toLowerCase()}`} url="yournetwork.org" width={1280} height={800} sizes="(max-width: 900px) 92vw, 640px" />
-                  ) : (
-                    <NetworkSoon label={p.name} url={p.surface === 'space' ? 'frequency.com/spaces/yournetwork' : undefined} />
-                  )}
-                </div>
-                <div className="nf-cz-tx">
-                  <span className="jn">{p.n}</span>
-                  <h3>
-                    {p.name}
-                    {p.qual ? <small className="nf-q">{p.qual}</small> : null}
-                    <Status s={status[p.surface]} />
-                  </h3>
-                  <p>{p.body}</p>
-                  <ul>
-                    <li>
-                      <b>Lives at</b>
-                      {p.lives}
-                    </li>
-                    <li>
-                      <b>Wears</b>
-                      {p.wears}
-                    </li>
-                  </ul>
-                  <p className="nf-out">
-                    <b>What changes</b>
-                    {p.changes}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="sec pb-sec" id="preview" data-screen-label="04 Theme preview">
         <div className="wrap">
           <div className="sh">
@@ -286,13 +317,44 @@ export function FrequencyNetwork() {
         </div>
       </section>
 
-      <section className="sec pb-sec" id="layouts" data-screen-label="05 Spotlight layouts">
+      <section className="sec pb-sec" id="inside" data-screen-label="05 Inside the kit">
         <div className="wrap">
           <div className="sh">
-            <div className="label">{NETWORK_SPOTLIGHT_EYEBROW}</div>
-            <h2 className="h-l">Six ways to lay out your Spotlight.</h2>
-            <p className="nf-sh-p">Same look, a different first impression. Pick the one that fits how you sell.</p>
+            <div className="label">
+              <b>Inside the kit</b>Everything a kit ships with
+            </div>
+            <h2 className="h-l">More than a homepage.</h2>
+            <p className="nf-sh-p">Every kit is a complete site, not a template: pages, the tools behind them, four emails, and Spotlight layouts, all wearing one look.</p>
           </div>
+          <h3 className="nf-grp">Pages</h3>
+          <div className="nf-cards">
+            {PAGES.map(([name, body]) => (
+              <div className="nf-card" key={name}>
+                <h3>{name}</h3>
+                <p>{body}</p>
+              </div>
+            ))}
+          </div>
+          <h3 className="nf-grp">Tools</h3>
+          <div className="nf-cards">
+            {THEME_TOOLS.map((t) => (
+              <div className="nf-card" key={t.name}>
+                <h3>{t.name}</h3>
+                <p>{t.body}</p>
+              </div>
+            ))}
+          </div>
+          <h3 className="nf-grp">Emails</h3>
+          <div className="nf-cards">
+            {EMAILS.map(([name, body]) => (
+              <div className="nf-card" key={name}>
+                <h3>{name}</h3>
+                <p>{body}</p>
+              </div>
+            ))}
+          </div>
+          <div id="layouts">
+            <h3 className="nf-grp">{NETWORK_SPOTLIGHT_EYEBROW}</h3>
           <div className="nf-layouts">
             {NETWORK_LAYOUTS.map((l, i) => (
               <figure key={l.id}>
@@ -307,10 +369,60 @@ export function FrequencyNetwork() {
               </figure>
             ))}
           </div>
+          </div>
         </div>
       </section>
 
-      <section className="sec pb-sec" id="carry" data-screen-label="06 What carries over">
+      <section className="sec pb-sec" id="yours" data-screen-label="06 Make it yours">
+        <div className="wrap">
+          <div className="sh">
+            <div className="label">
+              <b>Make it yours</b>Keep the kit, change the look
+            </div>
+            <h2 className="h-l">Your accent. Your face. Your corners.</h2>
+            <p className="nf-sh-p">
+              {entry.signature} Change the look from your editor and every surface that wears the theme follows. Your Space page stays the
+              Frequency page people know, wearing your fonts and accent.
+            </p>
+          </div>
+          <div className="nf-cards">
+            {THEME_LOOK_CONTROLS.map((c) => (
+              <div className="nf-card" key={c.name}>
+                <h3>{c.name}</h3>
+                <p>{c.options}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sec pb-sec" id="kits" data-screen-label="07 Thirteen kits">
+        <div className="wrap">
+          <div className="sh">
+            <div className="label">
+              <b>Thirteen kits</b>Each tuned to one kind of network
+            </div>
+            <h2 className="h-l">
+              See it. Preview it. <em className="fq-iri-text">Make it yours.</em>
+            </h2>
+          </div>
+          <div className="nf-kgrid">
+            {NETWORK_KITS.map((k) => (
+              <a className="nf-kit" key={k.id} href={`/spaces/new?niche=${k.id}&theme=network-kit`} style={vars({ '--c': k.hex })}>
+                <Image src={networkShot(k.id, 'site')} alt={`Network, ${k.name}: website`} width={1280} height={800} sizes="(max-width: 900px) 46vw, 280px" />
+                <span>
+                  <i />
+                  <b>{k.name}</b>
+                  <small>{k.who}</small>
+                </span>
+              </a>
+            ))}
+          </div>
+          <p className="nf-sh-p">Every picture is the real kit. Switch kits any time; your words, offers and dates stay.</p>
+        </div>
+      </section>
+
+      <section className="sec pb-sec" id="carry" data-screen-label="08 What carries over">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -349,49 +461,27 @@ export function FrequencyNetwork() {
         </div>
       </section>
 
-      <section className="sec pb-sec" id="yours" data-screen-label="07 Make it yours">
+      <section className="sec pb-sec" id="built" data-screen-label="09 Built right">
         <div className="wrap">
           <div className="sh">
             <div className="label">
-              <b>Make it yours</b>Keep the kit, change the look
+              <b>Built right</b>Accessible, send-ready, yours
             </div>
-            <h2 className="h-l">Your accent. Your face. Your corners.</h2>
-            <p className="nf-sh-p">
-              {entry.signature} Change the look from your editor and every surface that wears the theme follows. Your Space page stays the
-              Frequency page people know, wearing your fonts and accent.
-            </p>
+            <h2 className="h-l">The parts you should never have to think about.</h2>
           </div>
-          <div className="nf-cards">
-            {THEME_LOOK_CONTROLS.map((c) => (
-              <div className="nf-card" key={c.name}>
-                <h3>{c.name}</h3>
-                <p>{c.options}</p>
+          <div className="nf-setup">
+            {BUILT.map(([n, t, b]) => (
+              <div key={t}>
+                <span className="n">{n}</span>
+                <b>{t}</b>
+                <span>{b}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="sec pb-sec" id="tools" data-screen-label="08 Tools">
-        <div className="wrap">
-          <div className="sh">
-            <div className="label">
-              <b>Every tool</b>Turn on only what you need
-            </div>
-            <h2 className="h-l">Start with what you need.</h2>
-          </div>
-          <div className="nf-cards">
-            {THEME_TOOLS.map((t) => (
-              <div className="nf-card" key={t.name}>
-                <h3>{t.name}</h3>
-                <p>{t.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="sec pb-sec" id="questions" data-screen-label="09 Questions">
+      <section className="sec pb-sec" id="questions" data-screen-label="10 Questions">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -409,6 +499,34 @@ export function FrequencyNetwork() {
           </div>
         </div>
       </section>
+
+      <section className="sec pb-sec" id="steps" data-screen-label="11 Setup">
+        <div className="wrap">
+          <div className="sh">
+            <div className="label">
+              <b>Setup</b>Four steps
+            </div>
+            <h2 className="h-l">Live in an afternoon.</h2>
+          </div>
+          <div className="nf-setup">
+            {SETUP.map(([n, t, b]) => (
+              <div key={n}>
+                <span className="n">{n}</span>
+                <b>{t}</b>
+                <span>{b}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+
+
+
+
+
+
 
       <KeepGoing
         id="start"

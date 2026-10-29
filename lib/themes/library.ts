@@ -108,7 +108,7 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
     tagline: 'Limewash and daylight, with one ochre accent.',
     madeFor: 'designers, builders, makers and anyone selling craft',
     signature: 'Plaster grounds, charcoal type, arched photos, with Cormorant and Jost.',
-    surfaces: surfaces('ready', 'soon'),
+    surfaces: surfaces('ready', 'ready'),
   },
 ]
 
