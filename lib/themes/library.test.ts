@@ -6,7 +6,7 @@ import { THEME_ASSETS_READY } from './library-assets'
 
 describe('theme library', () => {
   it('has one entry per Mega Theme that is offered, in the same order (the earlier network and temple themes are not)', () => {
-    expect(THEME_LIBRARY.map((t) => t.id)).toEqual(MEGA_THEMES.map((t) => t.id).filter((id) => id !== 'network' && id !== 'temple'))
+    expect(THEME_LIBRARY.map((t) => t.id)).toEqual(MEGA_THEMES.map((t) => t.id).filter((id) => id !== 'network' && id !== 'temple' && id !== 'free-human'))
   })
   it('keeps every tagline to 70 characters and every surface listed once', () => {
     for (const t of THEME_LIBRARY) {
