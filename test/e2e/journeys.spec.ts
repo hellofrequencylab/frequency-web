@@ -293,7 +293,9 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await page.goto(`/circles/${circleSlug}`)
     await settle(page)
     await page.getByRole('button', { name: /^join/i }).first().click()
-    await expect(page.getByRole('button', { name: /leave|joined|member/i }).first()).toBeVisible({ timeout: 15_000 })
+    // A member's header holds Create and, behind "Circle options", Leave; the Join door is gone.
+    await expect(page.getByRole('button', { name: 'Circle options' })).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByRole('button', { name: /^join/i })).toHaveCount(0)
     assertNoServerErrors(serverErrors, 'join circle')
   })
 

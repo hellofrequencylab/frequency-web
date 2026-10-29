@@ -12,6 +12,9 @@ import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
 import { SpotlightStickerLayer } from './sticker-layer'
 import { NetworkKitSpotlightLayout } from './network-kit-layouts'
 import { networkKitSpotlightContent } from '@/lib/spotlight/network-kit-content'
+import { DesignerKitSpotlightLayout } from './designer-kit-layouts'
+import { designerKitSpotlightContent } from '@/lib/spotlight/designer-kit-content'
+import { isDesignerKitLayout } from '@/lib/spotlight/layouts'
 
 // THE SHARED PUBLIC SPOTLIGHT CHROME. The member's identity header + theme wrapper + optional
 // background + join CTA footer, with the BLOCK BODY handed in as `children`. Since ADR-523 the ONLY body
@@ -48,6 +51,15 @@ export function SpotlightShell({
   // A theme with a registered whole-page layout (lib/spotlight/layouts.ts) swaps the identity header and the block body for
   // that layout, keeping the shell's wrapper and footer. A live page carries none of the design's sample dates or prices.
   if (theme.layout) {
+    if (isDesignerKitLayout(theme.layout)) {
+      // The Designer kit draws its own full-width plaster page and keeps the column inside it.
+      const content = designerKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <DesignerKitSpotlightLayout layout={theme.layout} content={content} />
+        </div>
+      )
+    }
     const content = networkKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
     return (
       <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
