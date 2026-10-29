@@ -89,13 +89,12 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
   },
   {
     // The Temple Theme Kit, shown as Temple (code id `temple-kit`). The earlier `temple` theme is Royal Temple's: it stays
-    // resolvable by id and is offered nowhere. Spotlight reads 'soon' until its part of the build ships, so no
-    // public page claims them early.
+    // resolvable by id and is offered nowhere. Spotlight and email are both shipped.
     id: 'temple-kit',
     tagline: 'A lime-washed house. Warm and unhurried.',
     madeFor: 'temples, studios, retreats, clubs, markets and anyone who brings people together',
     signature: 'Plaster and umber, one clay color, arches and soft corners, with Marcellus, Jost, Branch and Cormorant.',
-    surfaces: surfaces('soon', 'ready'),
+    surfaces: surfaces('ready', 'ready'),
   },
   {
     id: 'midnight',

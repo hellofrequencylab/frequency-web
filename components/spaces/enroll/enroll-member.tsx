@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { EnrollButton } from '@/components/spaces/enroll/enroll-button'
 import { EnrollmentCancelButton } from '@/components/spaces/enroll/enrollment-cancel-button'
+import { createSpaceCtaClickToken } from '@/lib/spaces/cta-click-token'
 
 // MEMBER ENROLL SURFACE (ENTITY-SPACES-SYSTEM §2.7 "Coaching academy", MASTER-PLAN ADMIN-04). The
 // self-fetching server half of the Coaching "Enroll" tab: it loads this Space's published program
@@ -131,7 +132,11 @@ export async function EnrollMember({
               </div>
             </div>
           ) : (
-            <EnrollButton spaceId={spaceId} full={full} />
+            <EnrollButton
+              spaceId={spaceId}
+              full={full}
+              clickToken={createSpaceCtaClickToken(spaceId, 'enroll')}
+            />
           )}
         </div>
       </div>
