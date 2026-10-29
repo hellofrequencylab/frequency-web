@@ -5,6 +5,7 @@
 import { getSpaceById } from '@/lib/spaces/store'
 import { inventorySections } from './inventory'
 import type { InventorySection } from './overview'
+import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
 import { loadLaunchRows } from './rows'
 
 export interface Inventory {
@@ -13,14 +14,15 @@ export interface Inventory {
   space: { id: string; slug: string }
 }
 
-export async function loadInventory(spaceId: string | null, ownerProfileId: string, skippedPhotos: readonly string[] = []): Promise<Inventory | null> {
+export async function loadInventory(spaceId: string | null, ownerProfileId: string, skippedPhotos: readonly string[] = [], extended = false): Promise<Inventory | null> {
   if (!spaceId) return null
   try {
     const space = await getSpaceById(spaceId)
     if (!space) return null
-    const rows = await loadLaunchRows(spaceId, ownerProfileId)
+    const rows = await loadLaunchRows(spaceId, ownerProfileId, extended)
     if (!rows) return null
-    const sections = inventorySections({ rows, spaceName: space.name, coverImageUrl: space.coverImageUrl ?? null, logoUrl: space.brandLogoUrl ?? null, skippedPhotos })
+    const hrefs = Object.fromEntries(SPACE_MODULES.filter((m) => m.deepLink).map((m) => [m.id, m.deepLink!(space.slug)]))
+    const sections = inventorySections({ rows, spaceName: space.name, coverImageUrl: space.coverImageUrl ?? null, logoUrl: space.brandLogoUrl ?? null, skippedPhotos, extended, hrefs })
     return { sections, space: { id: space.id, slug: space.slug } }
   } catch {
     return null

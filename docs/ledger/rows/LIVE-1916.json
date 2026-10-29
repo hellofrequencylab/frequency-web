@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1916",
+  "title": "Launcher slice four: one Setup item per Space tool (booking, product, memberships, donations, campaigns, capture links, automation), with a coverage test",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-29",
+  "wave": "W7",
+  "source": {
+    "file": "lib/launch/setup-items.ts",
+    "ref": "Owner direction 2026-10-29: every key product has its check-off steps"
+  },
+  "detail": "After Publish the Get Started list adds Money and Reach sections whose items are done only when a real record says so (availability, products, tiers, donation asks, campaigns, capture links, automations) and open the Space tool itself. lib/launch/setup-coverage.test.ts fails when a Space tool exists with neither an item nor a stated reason, so the list cannot fall behind the product. The pill stays after the launch overview completes, until the whole list is done. Splash and sales-funnel pages are the Website item today and need their own design pass.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "The Setup items exist, the post-publish list reads them, the coverage test is in place.",
+    "cmd": "node scripts/probes/launch-setup-items.mjs"
+  }
+}

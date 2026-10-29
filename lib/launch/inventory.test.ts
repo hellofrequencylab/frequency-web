@@ -27,3 +27,16 @@ describe('inventorySections', () => {
     expect(by(null)['sc-logo'].skipped).toBe(true)
   })
 })
+
+describe('the Setup list after Publish (LIVE-1916)', () => {
+  const base = { rows: { ...rows, extras: { bookingTimes: 0, membershipTiers: 1, donationAsks: 0, products: 0, campaigns: 0, campaignsSent: 0, captureLinks: 0, automations: 0 } }, spaceName: 'A', coverImageUrl: null, logoUrl: null }
+  it('adds the Money and Reach sections only when asked', () => {
+    expect(inventorySections(base).map((s) => s.id)).not.toContain('money')
+    const ext = inventorySections({ ...base, extended: true, hrefs: { 'space.memberships': '/spaces/a/settings/offerings#members' } })
+    expect(ext.map((s) => s.id).slice(-2)).toEqual(['money', 'reach'])
+    expect(ext.flatMap((s) => s.items).find((i) => i.id === 'm-tier')).toMatchObject({ state: 'done', href: '/spaces/a/settings/offerings#members' })
+  })
+  it('adds nothing when the counts were not read', () => {
+    expect(inventorySections({ ...base, rows: { ...rows }, extended: true }).map((s) => s.id)).not.toContain('money')
+  })
+})
