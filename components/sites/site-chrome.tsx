@@ -17,8 +17,16 @@ import { NetworkKitLogo } from './network-kit-logo'
 import { NetworkKitBar } from './network-kit-bar'
 import { NetworkKitHeaderState } from './network-kit-header-state'
 import { DESIGNER_CSS } from './designer-css'
+import { FREE_HUMAN_CSS } from './free-human-css'
 import { DesignerFooterTop, DesignerUtilityBar, phoneMenuFoot } from './designer-chrome'
 import { DesignerHeaderState } from './designer-header-state'
+import { FreeHumanBar } from './free-human-bar'
+import { FreeHumanFooterTop } from './free-human-footer'
+import { FreeHumanGlyph } from './free-human-glyph'
+import { FreeHumanLogo } from './free-human-logo'
+import { FreeHumanTools } from './free-human-tools'
+import { freeHumanNav, FREE_HUMAN_CHROME_COPY } from '@/lib/sites/free-human-chrome'
+import { FREE_HUMAN_PHOTOS } from '@/lib/sites/free-human-photos'
 import { MidnightLogo } from './midnight-logo'
 import { MidnightBar } from './midnight-bar'
 import { MidnightLetterForm } from './midnight-letter-form'
@@ -85,7 +93,7 @@ export type SiteLink = HouseHeaderLink
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer'
+  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human'
   season: MensworkSeason
   /** Network and Network Theme Kit: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
@@ -101,6 +109,7 @@ function skinCss(skin: SiteSkin | null, look = ''): string {
   if (skin.theme === 'temple-kit') return HOUSE_CSS + FREQUENCY_PAGE_CSS + TEMPLE_KIT_CSS
   if (skin.theme === 'midnight') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MIDNIGHT_CSS
   if (skin.theme === 'designer') return HOUSE_CSS + FREQUENCY_PAGE_CSS + DESIGNER_CSS
+  if (skin.theme === 'free-human') return HOUSE_CSS + FREQUENCY_PAGE_CSS + FREE_HUMAN_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
 
@@ -125,6 +134,7 @@ export function SiteChrome({
   checkIn = null,
   credit = 'badge',
   spaceSlug = null,
+  previewMega = null,
   children,
 }: {
   brandName: string
@@ -173,6 +183,8 @@ export function SiteChrome({
   credit?: FooterBadgeMode
   /** The Space's slug, for the footer's letter sign-up (Designer). Null in an editor preview, where the form is inert. */
   spaceSlug?: string | null
+  /** The mega menu that starts open (render tests and static previews only). */
+  previewMega?: string | null
   children: ReactNode
 }) {
   const adminLinks = skin ? admin : admin ? { ...admin, menu: admin.menu.filter((l) => l.label === 'Website builder') } : null
@@ -191,13 +203,18 @@ export function SiteChrome({
   const tkShop = tk ? templeKitShopHref(links) : null
   // Designer draws the Space's logo as a mark beside a quiet name (logo image alone when it has one).
   const designer = skin?.theme === 'designer'
+  // Free Human draws the gilt arch lockup, an announce bar, a vellum header with four mega menus and Calendar, the bag and account
+  // tools, and the sky footer with the letter (components/sites/free-human-*.tsx).
+  const fh = skin?.theme === 'free-human'
+  const fhShop = fh ? templeKitShopHref(links) : null
+  const fhLinks: HouseHeaderLink[] | null = fh ? freeHumanNavLinks(links, homeHref) : null
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
   // that reserves its height, so nothing shifts when the date line folds away on scroll.
   const header = (
     <HouseHeader
       brandName={brandName}
       homeHref={homeHref}
-      links={links}
+      links={fhLinks ?? links}
       adminLinks={adminLinks?.menu ?? null}
       adminCheck={adminLinks?.check ?? null}
       cta={tk && cta && /^book/i.test(cta.label) ? { ...cta, short: 'Book' } : cta}
@@ -206,9 +223,11 @@ export function SiteChrome({
       skinned={!!skin}
       fadeOnPause={fadeOnPause}
       member={member}
-      tools={tk ? <TempleKitTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={tkShop} /> : tools}
+      tools={tk ? <TempleKitTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={tkShop} /> : fh ? <FreeHumanTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={fhShop} /> : tools}
+      megaChevron={fh ? <FreeHumanGlyph name="chevron-down" size={14} /> : null}
+      defaultMega={fh ? previewMega : null}
       menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}
-      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : null}
+      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? FREE_HUMAN_CHROME_COPY.wordmark.tagline} logoUrl={logoUrl} /> : null}
     />
   )
   const year = new Date().getFullYear()
@@ -261,6 +280,11 @@ export function SiteChrome({
           <NetworkKitBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />
           {header}
         </div>
+      ) : fh ? (
+        <div className="fh-top">
+          <FreeHumanBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} calendarHref={fhLinks?.find((l) => /\bcalendar\b/i.test(l.label))?.href ?? null} />
+          {header}
+        </div>
       ) : tk ? (
         <div className="tk-top">
           <TempleKitBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />
@@ -273,9 +297,10 @@ export function SiteChrome({
 
       <main id="top">{children}</main>
 
-      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : nk ? 'nk-footer-ground' : tk ? 'tk-footer-ground' : undefined} data-footer={nk ? ((showBrandFooter ?? !!skin) ? 'full' : 'minimal') : undefined}>
+      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : nk ? 'nk-footer-ground' : tk ? 'tk-footer-ground' : fh ? 'fh-footer-ground fh-sky fh-flow-t' : undefined} data-footer={nk ? ((showBrandFooter ?? !!skin) ? 'full' : 'minimal') : undefined}>
       {designer && (showBrandFooter ?? !!skin) && <DesignerFooterTop footer={footer} brandName={brandName} homeHref={homeHref} logoUrl={logoUrl ?? null} slug={spaceSlug} />}
-      {!designer && (showBrandFooter ?? !!skin) && (
+      {fh && (showBrandFooter ?? !!skin) && <FreeHumanFooterTop brandName={brandName} homeHref={homeHref} tagline={tagline} logoUrl={logoUrl ?? null} links={links} footer={footer} slug={spaceSlug} />}
+      {!designer && !fh && (showBrandFooter ?? !!skin) && (
         <div className="hs-footer-top" data-columns={footer?.columns.length ? '' : undefined}>
           <div className="hs-footer-brand">
             <a href={homeHref} className="hs-brand">
@@ -338,7 +363,7 @@ export function SiteChrome({
               <a href={PARTNER_HREF()} className="nk-powered" data-powered-by="">Powered by Frequency</a>
             </>
           )}
-          {tk && (
+          {(tk || fh) && (
             <>
               {[['Privacy', '/privacy'], ['Terms', '/terms'], ['Accessibility', '/accessibility']].map(([label, path]) => (
                 <span key={path}>
@@ -352,12 +377,29 @@ export function SiteChrome({
         {footer?.line && <span className="hs-footer-line">{footer.line}</span>}
         {footer?.note && <span className="hs-footer-note">{footer.note}</span>}
         {checkIn && <CheckInBadge href={checkIn.href} line={checkIn.line} />}
-        {credit === 'badge' && !tk && <PartnerBadge />}
-        {((credit === 'line' && !nk) || (credit === 'badge' && tk)) && <PartnerLine label={tk ? TEMPLE_KIT_CHROME_COPY.credit : undefined} />}
+        {credit === 'badge' && !tk && !fh && <PartnerBadge />}
+        {((credit === 'line' && !nk) || (credit === 'badge' && (tk || fh))) && <PartnerLine label={tk ? TEMPLE_KIT_CHROME_COPY.credit : fh ? FREE_HUMAN_CHROME_COPY.credit : undefined} />}
       </footer>
       </div>
     </div>
   )
+}
+
+/** The Free Human header menu in the shape the house header draws: the four mega menus (glyph doors, the lyric, two pictured tiles) then Calendar
+ *  with its glyph. Pure data in, server-drawn nodes out (lib/sites/free-human-chrome.ts decides what is in it). */
+function freeHumanNavLinks(links: SiteLink[], homeHref: string): HouseHeaderLink[] {
+  return freeHumanNav(links, homeHref, (photo) => FREE_HUMAN_PHOTOS[photo]?.avg ?? null).map((n): HouseHeaderLink => ({
+    href: n.href,
+    label: n.label,
+    icon: n.glyph ? <FreeHumanGlyph name={n.glyph} size={16} /> : undefined,
+    mega: n.mega
+      ? {
+          lyric: n.mega.lyric,
+          links: n.mega.doors.map((d) => ({ label: d.label, desc: d.desc, href: d.href, icon: <span className="fh-door"><FreeHumanGlyph name={d.glyph} size={19} /></span> })),
+          tiles: n.mega.tiles,
+        }
+      : null,
+  }))
 }
 
 /** Where the badge goes: the Frequency Spaces marketing page, on the app origin. */
