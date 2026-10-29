@@ -85,3 +85,15 @@ it('minimize saves the flag and closes; a minimized launch offers to show itself
   expect(mocks.minimize).toHaveBeenLastCalledWith(false)
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('could not save')
 })
+
+it('after Publish the same pill reads Finish setup and the sheet lists what is left (LIVE-1914)', () => {
+  mount(
+    view({
+      setup: { done: 4, total: 17, left: 13, pct: 24, sections: [{ id: 'space', title: 'Space', done: 1, total: 3 }], todo: [{ id: 'sc-cover', label: 'Cover image', href: '/launch/step/space', photo: true, skipped: false }] },
+    }),
+  )
+  expect(host.querySelector('.ap-launch')?.getAttribute('aria-label')).toBe('Finish setup, 4 of 17 done')
+  expect(host.querySelector('.ap-launch-l')?.textContent).toBe('Finish setup')
+  expect(host.textContent).toContain('4 of 17 done · 13 left')
+  expect(host.querySelector('a[href="/launch/step/space"]')?.textContent).toBe('Cover image')
+})
