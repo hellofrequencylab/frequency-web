@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1792",
+  "title": "The Theme tab stops promising live blocks stay as they are, and Every theme carries all of them is made true or removed",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "components/sites/editor/theme-changer.tsx",
+    "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
+  },
+  "detail": "Honest copy before the safety net lands; the switch dialog row follows.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-cohesion.mjs copy",
+    "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
+  },
+  "wave": "W7"
+}

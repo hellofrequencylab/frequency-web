@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1791",
+  "title": "Fix the three theme render defects the audit found: Bold hero clipping at 390, Default sections drawing bare, Showcase ignoring the theme",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "components/sites/menswork-page-css.ts",
+    "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
+  },
+  "detail": "Reproduce each in a built site first; the Default result may be a harness artifact. Render test per defect.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-cohesion.mjs defects",
+    "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
+  },
+  "wave": "W7"
+}

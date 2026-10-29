@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1806",
+  "title": "The theme catalog and picker are built from the manifests, with filters and your site on this theme",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/themes/library.ts",
+    "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
+  },
+  "detail": "Coordinate with the thread that owns the /themes pages before touching them.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-cohesion.mjs catalog",
+    "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
+  },
+  "wave": "W7"
+}

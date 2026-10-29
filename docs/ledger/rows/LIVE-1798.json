@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1798",
+  "title": "Eight role blocks (Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ, CTA) with three layouts each, built on the shared blocks",
+  "lane": "live",
+  "priority": "P2",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "lib/page-editor/config.tsx",
+    "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
+  },
+  "detail": "Slots, variants, parts and data attributes per docs/THEME-COHESION.md section 2. Role fixtures render at full coverage on nine themes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-cohesion.mjs roles8",
+    "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
+  },
+  "wave": "W7"
+}
