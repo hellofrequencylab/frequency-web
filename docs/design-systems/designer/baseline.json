@@ -1,5 +1,5 @@
 {
- "ledger": "LIVE-1787",
+ "ledger": "LIVE-1789",
  "ids": [
   "copy:Theme Feature Page.html#022f23d7",
   "copy:Theme Feature Page.html#0d16db47",
@@ -337,15 +337,6 @@
   "copy:ui_kits/site/data.js#f167019f",
   "copy:ui_kits/site/data.js#f4d75929",
   "copy:ui_kits/site/data.js#f4dd3902",
-  "copy:ui_kits/site/data.js#fec5d761",
-  "missing:components/core/Glyph.d.ts",
-  "missing:components/core/Glyph.jsx",
-  "missing:components/core/Glyph.prompt.md",
-  "missing:components/elements/Ornament.d.ts",
-  "missing:components/elements/Ornament.jsx",
-  "missing:components/elements/Ornament.prompt.md",
-  "missing:components/elements/Seal.d.ts",
-  "missing:components/elements/Seal.jsx",
-  "missing:components/elements/Seal.prompt.md"
+  "copy:ui_kits/site/data.js#fec5d761"
  ]
 }

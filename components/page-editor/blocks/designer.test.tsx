@@ -59,6 +59,12 @@ describe('the Designer block family', () => {
     expect(faq).not.toContain('How early should we bring you in?')
   })
 
+  it('opens the testimonials and the closing call with the ochre ornament, and draws steps as seals', () => {
+    expect(draw('DesignerTestimonials', {}, { links })).toContain('role="separator"')
+    expect(draw('DesignerClosing', {}, { links })).toContain('dz-orn')
+    expect(draw('DesignerSteps', {}, { links })).toMatch(/class="dz-seal dz-disc"/)
+  })
+
   it('draws the portfolio as the large-and-stacked mosaic, or as the design\'s cards, every project numbered', () => {
     const projects = [1, 2, 3, 4].map((n) => ({ title: `Project ${n}`, location: 'Place', year: '2025', href: '~/portfolio' }))
     const mosaic = draw('DesignerPortfolio', { projects }, { links })

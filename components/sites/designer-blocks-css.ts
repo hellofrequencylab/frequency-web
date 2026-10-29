@@ -152,7 +152,21 @@ ${N} .dz-arch img{display:block;width:100%;height:100%;object-fit:cover}
 ${N} .dz-panel{padding:4px clamp(24px,3vw,40px);background:var(--dz-sheen),var(--dz-glass-warm);border-radius:var(--dz-r-3);box-shadow:var(--dz-shadow-2)}
 ${N} .dz-step{display:grid;grid-template-columns:52px minmax(0,1fr);gap:20px;padding:22px 0;border-top:${HAIR}}
 ${N} .dz-step:first-child{border-top:0}
-${N} .dz-disc{display:grid;place-items:center;width:48px;height:48px;border-radius:var(--dz-r-pill);border:1px solid var(--dz-ochre);background:var(--dz-paper);font-family:var(--dz-display);font-style:italic;font-size:22px;line-height:1;color:var(--dz-ochre-deep)}
+${N} .dz-disc,${N} .dz-seal{display:grid;place-items:center;width:var(--dz-seal,48px);height:var(--dz-seal,48px);border-radius:var(--dz-r-pill);border:1px solid var(--dz-ochre);background:var(--dz-paper);font-family:var(--dz-display);font-style:italic;font-size:var(--dz-seal-fs,22px);line-height:1;color:var(--dz-ochre-deep)}
+${N} .dz-seal{box-shadow:var(--dz-shadow-1);flex:none}
+${N} .dz-seal[data-tone="accent"]{background:var(--color-primary-bg)}
+${N} .dz-seal[data-tone="dark"]{border-color:var(--dz-disc-dark-edge);background:var(--dz-disc-dark);color:var(--dz-sand);box-shadow:none}
+${N} .dz-seal-set{display:inline-flex;flex-direction:column;align-items:center;gap:12px}
+${N} .dz-seal-label{font-family:var(--dz-sans);font-size:11px;font-weight:500;letter-spacing:var(--dz-tracking-label);text-transform:uppercase;color:var(--dz-ochre-deep)}
+/* Ornament: a fading hairline with one centred mark. */
+${N} .dz-orn{display:flex;align-items:center;gap:16px;width:var(--dz-orn-w,100%);max-width:100%;margin:0 auto;color:var(--color-primary)}
+${N} .dz-orn-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--dz-line))}
+${N} .dz-orn-line[data-end]{background:linear-gradient(270deg,transparent,var(--dz-line))}
+${N} .dz-orn-mark{display:inline-flex;gap:10px;align-items:center;line-height:1}
+${N} .dz-orn-mark>span{font-family:var(--dz-sans);font-weight:300;font-size:13px;line-height:.6}
+${N} .dz-orn-mark>span[data-g="+"],${N} .dz-orn-mark>span[data-g="·"]{font-size:20px}
+${N} .dz-orn-mark>span[data-g="●"]{font-size:7px}
+${N} .dz-orn-label{padding:0 4px;font-size:var(--dz-size-micro);letter-spacing:var(--dz-tracking-label);text-transform:uppercase}
 ${N} .dz-step .dz-disc{width:52px;height:52px;box-shadow:var(--dz-shadow-1)}
 ${N} .dz-step>div{display:flex;flex-direction:column;gap:8px;min-width:0}
 ${N} .dz-step-title{margin:0;font-family:var(--dz-display);font-weight:400;font-size:var(--dz-size-h3);line-height:1.15}
@@ -259,6 +273,8 @@ ${N} .dz-shot img{width:100%;height:100%;object-fit:cover}
 /* Closing call + next. */
 ${N} .dz-sec[data-dz="closing"] .dz-split{gap:64px}
 ${N} .dz-next-copy{display:flex;flex-direction:column;align-items:flex-start;gap:28px}
+${N} .dz-next-copy>.dz-orn{margin:0}
+${N} .dz-orn-head{display:flex;justify-content:center;margin-bottom:clamp(24px,3vw,40px)}
 
 /* Inquiry form. */
 ${N} .dz-inquiry{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(40px,6vw,96px);align-items:start}
