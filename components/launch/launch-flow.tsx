@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { PublishedScreen } from '@/components/launch/published-screen'
-import { keepSpaceFormAction, publishSpotlightFormAction } from '@/lib/launch/actions'
+import { chooseSpaceFormAction, keepSpaceFormAction, publishSpotlightFormAction } from '@/lib/launch/actions'
 import type { FlowView } from '@/lib/launch/flow'
+import type { SpaceChoice } from '@/lib/launch/space-choice'
 import type { SpotlightAnswers } from '@/lib/launch/spotlight-step'
 
 // THE LAUNCH PAGE (the body; each route wraps it in the Dashboard template): one page that carries the whole launch. The Spotlight form is first; once it is published the same
@@ -52,7 +53,7 @@ function Phone({ src, live }: { src: string | null; live: boolean }) {
   )
 }
 
-export function LaunchFlow({ view, answers, errorCode, signedIn }: { view: FlowView; answers: SpotlightAnswers | null; errorCode?: string; signedIn: boolean }) {
+export function LaunchFlow({ view, answers, errorCode, signedIn, choices }: { view: FlowView; answers: SpotlightAnswers | null; errorCode?: string; signedIn: boolean; choices?: SpaceChoice[] }) {
   const live = !!view.slug
   const error = errorCode ? ERRORS[errorCode] : undefined
   const done = view.stages.filter((s) => s.state === 'live').length
@@ -75,6 +76,31 @@ export function LaunchFlow({ view, answers, errorCode, signedIn }: { view: FlowV
         </ol>
       </div>
 
+      {choices ? (
+        <section className="panel" aria-labelledby="pick-h">
+          <form action={chooseSpaceFormAction} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h2 id="pick-h" className="h2">
+              Which Space is this for?
+            </h2>
+            <p className="t2">Pick one you already have and we fill in what it knows. Anything you change here is saved to it.</p>
+            <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+              <legend className="sr-only">Your Spaces</legend>
+              {choices.map((c, i) => (
+                <label key={c.value} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 16, border: '1px solid var(--fq-border-hair)', background: 'var(--fq-surface-card)', cursor: 'pointer' }}>
+                  <input type="radio" name="space" value={c.value} defaultChecked={i === 0} />
+                  <span style={{ minWidth: 0 }}>
+                    <strong style={{ display: 'block' }}>{c.title}</strong>
+                    <span className="t2">{c.note}</span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+            <div>
+              <Button type="submit">Continue</Button>
+            </div>
+          </form>
+        </section>
+      ) : (
       <section className="panel" aria-labelledby="spot-h" style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', alignItems: 'start' }}>
         <form action={publishSpotlightFormAction} style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
           <h2 id="spot-h" className="h2">
@@ -104,6 +130,7 @@ export function LaunchFlow({ view, answers, errorCode, signedIn }: { view: FlowV
           {live && view.spotlightHref ? <PublishedScreen view={{ kind: 'done', label: 'Spotlight', liveHref: view.spotlightHref, next: null }} /> : null}
         </div>
       </section>
+      )}
 
       {(['space', 'website', 'email'] as const).map((id) => {
         const state = view.stages.find((s) => s.id === id)?.state ?? 'later'
