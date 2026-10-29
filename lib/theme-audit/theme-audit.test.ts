@@ -17,7 +17,7 @@ describe('real-content fixture', () => {
   }
 
   it('fills empty fields and keeps what the block already ships', () => {
-    const p = realContentProps(comp, 'b-1') as Record<string, any>
+    const p = realContentProps(comp, 'b-1') as { heading: string; body: string; tone: string; align: string; image: string; items: { href: string }[]; id: string }
     expect(p.heading).toMatch(/\S/)
     expect(p.body.length).toBeGreaterThan(20)
     expect(p.tone).toBe('ink')
