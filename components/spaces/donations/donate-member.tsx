@@ -8,6 +8,7 @@ import { PriceInput } from '@/components/commerce/price-input'
 import { DonateForm } from '@/components/spaces/donations/donate-form'
 import { spaceCanTakeDonations } from '@/lib/billing/space-donation-checkout'
 import { formatPriceCents, type Price } from '@/lib/commerce/types'
+import { createSpaceCtaClickToken } from '@/lib/spaces/cta-click-token'
 
 // MEMBER DONATE SURFACE (ENTITY-SPACES-SYSTEM §2.6 "Donate", MASTER-PLAN ADMIN-04). The self-fetching
 // server half of the Organization "Donate" tab: it loads this Space's single active donation ask
@@ -105,7 +106,10 @@ export async function DonateMember({
                 Options P2 DISPLAY-only picker when it cannot, so a donor is never handed a button
                 that resolves to a refusal. */}
             {ask.id ? (
-              <DonateCtaTracker spaceId={spaceId}>
+              <DonateCtaTracker
+                spaceId={spaceId}
+                clickToken={createSpaceCtaClickToken(spaceId, 'donate')}
+              >
                 {canGive ? (
                   <DonateForm
                     spaceId={spaceId}

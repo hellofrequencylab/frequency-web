@@ -132,14 +132,19 @@ export async function recordSpaceProfileView(
 export async function recordSpaceCtaClick(
   spaceId: string,
   viewerProfileId: string | null = null,
+  clickNonce?: string,
 ): Promise<void> {
   if (!spaceId) return
   try {
     // CTA clicks are intent signals, not once-per-day milestones, so each click is its own row:
     // a per-request random key makes every recorded click distinct (no idempotency collapse).
-    const nonce = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
+    const nonce = clickNonce ?? globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
     await recordEngagementEvent({
-      idempotencyKey: `space_cta:${spaceId}:${viewerProfileId ?? 'anon'}:${nonce}`,
+      // A proof nonce is global to that rendered CTA, not actor-scoped: retries from a changed
+      // session still collapse to one event and one automation dispatch.
+      idempotencyKey: clickNonce
+        ? `space_cta:${spaceId}:proof:${nonce}`
+        : `space_cta:${spaceId}:${viewerProfileId ?? 'anon'}:${nonce}`,
       source: 'web',
       eventType: CTA_CLICK,
       actorProfileId: viewerProfileId,

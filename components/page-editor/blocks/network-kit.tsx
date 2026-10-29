@@ -963,7 +963,7 @@ function NetworkKitFAQBlock({ p, metadata, pad, vis }: Common) {
 
 // ── Closing call ───────────────────────────────────────────────────────────────────────────
 
-const CTA_VARIANTS = ['center', 'split', 'band'] as const
+const CTA_VARIANTS = ['center', 'split', 'band', 'card'] as const
 
 function NetworkKitCTABlock({ p, metadata, pad, vis }: Common) {
   const variant = pick(p.variant, CTA_VARIANTS, 'center')
@@ -974,6 +974,22 @@ function NetworkKitCTABlock({ p, metadata, pad, vis }: Common) {
     </h2>
   )
   const primary = <Btn label={str(p.buttonLabel)} href={str(p.buttonHref)} metadata={metadata} size="lg" arrow />
+  // The inner pages' closing call (design CtaBand): a compact tinted card, the label and line on the left, one button on the right.
+  if (variant === 'card') {
+    return (
+      <Band kind="cta" p={p} variant={variant} pad={pad} vis={vis}>
+        <div className="nk-cta-split-wrap">
+          <div className="nk-cta-card nk-grain">
+            <div>
+              {str(p.eyebrow) && <div className="nk-eyebrow">{str(p.eyebrow)}</div>}
+              {title}
+            </div>
+            {primary}
+          </div>
+        </div>
+      </Band>
+    )
+  }
   if (variant === 'split') {
     return (
       <Band kind="cta" p={p} variant={variant} pad={pad} vis={vis}>
@@ -1116,8 +1132,8 @@ export const networkKitComponents: Record<string, ComponentConfig> = {
     items: { type: 'array', label: 'Questions', hint: 'Used when the Space has no questions of its own.', arrayFields: { q: text('Question'), a: area('Answer') } },
   }, { ...NETWORK_KIT_FAQ }, NetworkKitFAQBlock),
   NetworkKitCTA: block('Network closing call', {
-    variant: variantField([['center', 'Centred'], ['split', 'Card, buttons on the right'], ['band', 'Photo band']]),
-    title: area('Heading', `${VOICE_HINT} A new line starts a new row.`), buttonLabel: text('Main button'), buttonHref: text('Main button link', LINK_HINT),
+    variant: variantField([['center', 'Centred'], ['split', 'Card, buttons on the right'], ['band', 'Photo band'], ['card', 'Compact card, one button']]),
+    eyebrow: text('Small label', 'Compact card only.'), title: area('Heading', `${VOICE_HINT} A new line starts a new row.`), buttonLabel: text('Main button'), buttonHref: text('Main button link', LINK_HINT),
     secondaryLabel: text('Second button', 'Card only.'), secondaryHref: text('Second button link', LINK_HINT), image, alt: text('Photo description', 'For screen readers.'),
   }, { ...NETWORK_KIT_CTA }, NetworkKitCTABlock),
 }

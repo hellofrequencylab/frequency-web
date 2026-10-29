@@ -20,6 +20,7 @@ import { DonateMember } from '@/components/spaces/donations/donate-member'
 import { EnrollMember } from '@/components/spaces/enroll/enroll-member'
 import { TicketsMember } from '@/components/spaces/tickets/tickets-member'
 import { EntityCtaLink } from '@/components/widgets/entity/entity-cta-link'
+import { createSpaceCtaClickToken } from '@/lib/spaces/cta-click-token'
 
 // ENTITY MODULE - Action / Book (ENTITY-SPACES-BUILD section B.2, row `entity-booking`). A
 // self-fetching RSC for a Space's action tab. After the ADR-552 type collapse the transactional widget
@@ -200,7 +201,12 @@ export async function EntityCta() {
                   footer={
                     // The primary CTA. A click fires a `space.cta_click` event (Epic 1.11) fire-and-forget
                     // before navigating to the session page; the wrapper never blocks or fails navigation.
-                    <EntityCtaLink spaceId={space.id} href={`/events/${e.slug}`} label={ctaLabel} />
+                    <EntityCtaLink
+                      spaceId={space.id}
+                      clickToken={createSpaceCtaClickToken(space.id, 'session')}
+                      href={`/events/${e.slug}`}
+                      label={ctaLabel}
+                    />
                   }
                 />
               )
