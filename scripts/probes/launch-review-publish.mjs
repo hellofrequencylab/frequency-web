@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1868: ONE Review + Publish screen. Says Publish (never Launch), shows each field with the person's own words
+// LIVE-1892: ONE Review + Publish screen. Says Publish (never Launch), shows each field with the person's own words
 // beside it, writes the same records the inventory reads, never gates on scheduling or photos, and lands on /launch.
 //
 // Reads the sources (the pure parsing is unit-tested in lib/launch/review.test.ts). Fails when the screen says Launch, when the Publish
