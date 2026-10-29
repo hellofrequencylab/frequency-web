@@ -44,7 +44,7 @@ export function LaunchOverview({ sections, who, nextHref, photoHref }: { section
           <div style={{ position: 'relative', width: 120, height: 120, flex: 'none' }}>
             <Ring ratio={p.ratio} size={120} stroke={10} />
             <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
-              <span className="num" style={{ fontSize: 28, lineHeight: 1 }}>{pct}%</span>
+              <span className="num text-stat-sm">{pct}%</span>
             </div>
           </div>
           <div style={{ flex: '1 1 260px', minWidth: 0, display: 'grid', gap: 8 }}>
