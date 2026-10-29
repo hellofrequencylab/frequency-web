@@ -8572,24 +8572,30 @@ export type Database = {
           answer: string
           attested_at: string
           id: string
-          launch_id: string
+          launch_id: string | null
+          launch_ref: string | null
           source_id: string | null
+          source_ref: string | null
           wording_version: string
         }
         Insert: {
           answer: string
           attested_at?: string
           id?: string
-          launch_id: string
+          launch_id?: string | null
+          launch_ref?: string | null
           source_id?: string | null
+          source_ref?: string | null
           wording_version: string
         }
         Update: {
           answer?: string
           attested_at?: string
           id?: string
-          launch_id?: string
+          launch_id?: string | null
+          launch_ref?: string | null
           source_id?: string | null
+          source_ref?: string | null
           wording_version?: string
         }
         Relationships: [
