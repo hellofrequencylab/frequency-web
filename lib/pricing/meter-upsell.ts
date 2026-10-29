@@ -401,6 +401,11 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
     kind: 'ladder',
     note: 'Guests are counted per personal event at RSVP; the upgrade page carries the ladder (LIVE-750).',
   },
+  spotlight_blocks: {
+    mount: 'lib/pricing/member-pricing.ts',
+    kind: 'ladder',
+    note: 'Blocks are counted when a Spotlight layout is saved; the upgrade page carries the ladder.',
+  },
 }
 
 /** The registered upsell surface for a meter key, or null when none is registered. PURE. */

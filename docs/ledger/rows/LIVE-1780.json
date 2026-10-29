@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1780",
+  "title": "A solid accent button reads an ink label on a light accent like Marigold, white everywhere else",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "lib/spaces/accent.ts",
+    "ref": "Daniel, 2026-10-28: 'rewrite test pins in lib/spaces/accent.test.ts and accent-frequency.test.ts: ink label on light accents' (option B: ink only on very light accents, white elsewhere)."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/accent-label-light.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Fails on main (floor was 1.5:1, so Marigold #E9B949 at 1.84:1 got white) and passes here."
+  },
+  "detail": "The Network Theme Kit's Marigold fill (#E9B949, 1.84:1 against white) read a white label on the Space page, which is hard to read. The floor in lib/spaces/accent.ts for readableTextOn and frequencyAccentVars moves from 1.5:1 to 2:1: below 2:1 white is washed out and the label is ink, at or above it white stays (Daniel's #1FB6C5 at 2.4:1, coral #EE7655, amber #E2912F all stay white, so the owner's 2026-10-07 white-on-brand rule holds for every mid and dark accent). Test pins rewritten with Daniel's phrase: lib/spaces/accent.test.ts and lib/spaces/accent-frequency.test.ts.",
+  "wave": "W7"
+}
