@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "id": "network-kit",
+  "legacyIds": {
+    "editor": "NetworkKit",
+    "site": "network-kit"
+  },
+  "offered": true,
+  "site": {
+    "label": "Network",
+    "description": "The new Network Theme Kit: paper, card tint and deep ink with one solid hero color in four schemes, pill buttons and real photos up front.",
+    "defaultFonts": "modern"
+  },
+  "library": {
+    "tagline": "Paper, ink and one solid color. Thirteen ways in.",
+    "madeFor": "networking groups, clubs, hosts, studios, schools and anyone who brings people together",
+    "signature": "Paper, card tint and deep ink, one hero color in four schemes, pill buttons, with Bricolage Grotesque and Outfit.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "ready",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "ready",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/network"
+  },
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "NetworkKit"
+      ]
+    }
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "network-kit",
+        "names"
+      ]
+    }
+  }
+}
