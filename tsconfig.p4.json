@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "include": [
+    "next-env.d.ts",
+    "components/calendar-suite/**/*.ts",
+    "components/calendar-suite/**/*.tsx",
+    "lib/calendar/**/*.ts",
+    "app/(main)/spaces/[slug]/settings/calendar/**/*.ts",
+    "app/(main)/spaces/[slug]/settings/calendar/**/*.tsx"
+  ],
+  "exclude": ["node_modules", "supabase/functions", "mobile"]
+}

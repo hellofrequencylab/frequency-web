@@ -42,7 +42,7 @@ export function useSuiteDnd(
   enabled: boolean,
   onDrop: (src: DragSource, target: AnyTarget) => void,
   /** Where Shift with an arrow would move the focused thing, or null for any other key. */
-  keyTarget?: (kind: DragSource['kind'], id: string, e: KeyboardEvent<HTMLElement>, grid: boolean) => DropTarget | null,
+  keyTarget?: (kind: DragSource['kind'], id: string, e: KeyboardEvent<HTMLElement>, grid: boolean) => AnyTarget | null,
 ): SuiteDnd {
   const source = useRef<DragSource | null>(null)
   const lit = useRef<HTMLElement | null>(null)
