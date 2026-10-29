@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "L",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/page-editor/config.tsx",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Slots, variants, parts and data attributes per docs/THEME-COHESION.md section 2. Role fixtures render at full coverage on nine themes.",
+  "detail": "Slots, variants, parts and data attributes per docs/THEME-COHESION.md section 2. Role fixtures render at full coverage on nine themes.\n\nShipped: eight *.role.json (lib/blocks/roles), RoleHero/Steps/Offerings/Gatherings/Membership/Proof/Faq/Cta registered in the page editor under 'Sections for any theme' (website pages only), sheet components/sites/role-blocks-css.ts reading only the core token contract, emitted only on a page that carries a role block. Pinned by components/page-editor/blocks/roles.test.tsx (nine themes, every part and variant styled, tokens declared).",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/theme-cohesion.mjs roles8",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-29"
 }

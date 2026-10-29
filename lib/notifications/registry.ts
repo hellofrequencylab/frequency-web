@@ -37,6 +37,9 @@ export type NotificationEvent =
   | 'plan.share'
   | 'plan.comment'
   | 'plan.assign'
+  | 'plan.hold_warning'
+  | 'plan.hold_released'
+  | 'plan.todo_overdue'
   | 'order.shipped'
   | 'loyalty.nudge'
 
@@ -87,6 +90,13 @@ export interface NotificationContexts {
   'plan.comment': { title: string; body: string; url: string; tag: string }
   /** A to-do on a shared Plan handed to the recipient (LIVE-545). `comments`, push. */
   'plan.assign': { title: string; body: string; url: string; tag: string }
+  /** A Pencil hold with one day left, a hold that lapsed and let its dates go, and the morning-after
+   *  note about to-dos that slipped (calendar suite pass 8, LIVE-1709). The sweep
+   *  (lib/calendar/hold-lapse.ts) decides WHO and WHEN in the Space's own time zone and authors the
+   *  copy in-voice; `lifecycle`, push: the recipient's own push_lifecycle switch decides. */
+  'plan.hold_warning': { title: string; body: string; url: string; tag: string }
+  'plan.hold_released': { title: string; body: string; url: string; tag: string }
+  'plan.todo_overdue': { title: string; body: string; url: string; tag: string }
   /** The seller marked a buyer's order shipped (LIVE-606, ADR-1575). The caller
    *  (lib/commerce/fulfilment.ts notifyOrderShipped) authors the push copy in-voice and renders
    *  the email from the money-receipt builders; a buyer with no deliverable address hands in no
@@ -306,6 +316,34 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
   'plan.assign': {
     event: 'plan.assign',
     category: 'comments',
+    channels: ['push'],
+    render: (ctx) => ({
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+    }),
+  },
+
+  // THE HOLD AND THE SLIPPED TO-DO (calendar suite pass 8, LIVE-1709). News about the recipient's own
+  // work, sent by the hourly sweep in the Space's local morning: `lifecycle`, push only, so the
+  // member's push_lifecycle switch and a per-Space mute decide. No new category and no new column.
+  'plan.hold_warning': {
+    event: 'plan.hold_warning',
+    category: 'lifecycle',
+    channels: ['push'],
+    render: (ctx) => ({
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+    }),
+  },
+  'plan.hold_released': {
+    event: 'plan.hold_released',
+    category: 'lifecycle',
+    channels: ['push'],
+    render: (ctx) => ({
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+    }),
+  },
+  'plan.todo_overdue': {
+    event: 'plan.todo_overdue',
+    category: 'lifecycle',
     channels: ['push'],
     render: (ctx) => ({
       push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },

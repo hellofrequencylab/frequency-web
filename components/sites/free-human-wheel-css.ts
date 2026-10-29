@@ -129,7 +129,7 @@ ${N} .fhw-dot[data-kind="eclipse"]{background:var(--fill-secondary);box-shadow:0
 ${N} .fhw-dot[data-kind="retro"],${N} .fhw-dot[data-kind="direct"]{width:calc(var(--fhw-dot) + 5px);height:3px;border-radius:2px;background:var(--fill-secondary)}
 
 @media (min-width:860px){
-  ${N} .fhw-hero{height:calc(100vh - 70px - var(--fhw-stick));min-height:420px;gap:12px;padding:22px 40px 8px;overflow:hidden}
+  ${N} .fhw-hero{height:calc(100vh - 70px - var(--fhw-stick));min-height:420px;gap:12px;padding:22px 40px 8px;overflow:hidden;width:100%;max-width:1320px;margin:0 auto}
   ${N} .fhw-main{flex:1;min-height:0;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:none;align-items:center;gap:clamp(20px,3.5vw,64px)}
   ${N} .fhw-panel,${N} .fhw-read,${N} .fhw-wrap{grid-area:auto}
   ${N} .fhw-face{width:clamp(280px,min(calc(100vh - 96px - var(--fhw-stick) - var(--fhw-head)),calc(100vw - 560px)),1100px)}

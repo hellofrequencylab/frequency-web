@@ -1,0 +1,147 @@
+{
+  "role": "Gatherings",
+  "type": "RoleGatherings",
+  "label": "Gatherings (all themes)",
+  "replaces": [
+    "LiveEvents",
+    "SpaceEvents",
+    "MidnightGatherings",
+    "NetworkKitGatherings",
+    "NetworkEvents",
+    "TempleEvents",
+    "TempleWeek",
+    "TempleKitGatherings"
+  ],
+  "slots": {
+    "required": {
+      "items": {
+        "type": "list",
+        "min": 0,
+        "max": 12,
+        "item": {
+          "month": "text<=4",
+          "day": "text<=2",
+          "title": "text<=80",
+          "time": "text?",
+          "place": "text?",
+          "href": "link?"
+        }
+      }
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280",
+      "image": "image",
+      "empty": "text<=120",
+      "action": "link"
+    }
+  },
+  "variants": {
+    "cards": {
+      "label": "Cards"
+    },
+    "rows": {
+      "label": "Ruled rows"
+    },
+    "split": {
+      "label": "List beside a photo"
+    }
+  },
+  "default": "rows",
+  "data": "events",
+  "sample": {
+    "sample": true,
+    "eyebrow": "On the calendar",
+    "title": "Come to the *next one*",
+    "lead": "",
+    "live": true,
+    "count": 6,
+    "image": "",
+    "alt": "",
+    "empty": "New dates are on the way. Check back soon.",
+    "actionLabel": "",
+    "actionHref": "",
+    "items": [
+      {
+        "month": "Nov",
+        "day": "6",
+        "title": "Thursday supper table",
+        "time": "6:30pm",
+        "place": "The courtyard",
+        "href": ""
+      },
+      {
+        "month": "Nov",
+        "day": "13",
+        "title": "Breathwork and tea",
+        "time": "7:00pm",
+        "place": "Studio B",
+        "href": ""
+      },
+      {
+        "month": "Nov",
+        "day": "22",
+        "title": "Saturday walk and talk",
+        "time": "9:00am",
+        "place": "North trailhead",
+        "href": ""
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "shadow-lift",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "actions",
+    "cta",
+    "date",
+    "eyebrow",
+    "heading",
+    "inner",
+    "item",
+    "list",
+    "media",
+    "meta",
+    "name",
+    "side",
+    "text",
+    "title"
+  ]
+}
