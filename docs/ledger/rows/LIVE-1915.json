@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1915",
+  "title": "Launcher slice three: hide Finish setup with two confirmations, bring it back in Settings",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/launch/setup-hidden.ts",
+    "ref": "Owner direction 2026-10-29: the user can fully hide the reminder with a double confirmation"
+  },
+  "detail": "The Finish setup sheet gets a two-step hide. Step one asks and the server stamps it; step two only counts inside ten minutes of step one. The choice is one merged key on the person's own profile meta and is undone from Settings (Account section). Hiding removes the reminder only; nothing they built goes away.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "The sheet has the two-step hide, the loader honours it, Settings restores it.",
+    "cmd": "node scripts/probes/launch-setup-hide.mjs"
+  },
+  "closed": "2026-10-29"
+}
