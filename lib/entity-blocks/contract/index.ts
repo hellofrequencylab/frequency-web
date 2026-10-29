@@ -31,6 +31,7 @@ import { eventsBlock } from './events'
 import { practicesBlock } from './practices'
 import { journeysBlock } from './journeys'
 import { linkCardsBlock } from './linkCards'
+import { donateBlock } from './donate'
 import { circlesBlock } from './circles'
 import { teamBlock } from './team'
 import { reviewsBlock } from './reviews'
@@ -82,6 +83,7 @@ export const ADOPTED_BLOCKS = [
   practicesBlock,
   journeysBlock,
   linkCardsBlock,
+  donateBlock,
   circlesBlock,
   teamBlock,
   reviewsBlock,
