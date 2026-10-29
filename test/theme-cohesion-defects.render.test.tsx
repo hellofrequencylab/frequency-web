@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MensworkPage } from '@/components/sites/menswork-page'
-import { planMensworkPage } from '@/lib/sites/menswork-page'
+import { planMensworkPage, type MwBlock } from '@/lib/sites/menswork-page'
 import { MENSWORK_PAGE_CSS } from '@/components/sites/menswork-page-css'
 import { FREQUENCY_PAGE_CSS } from '@/components/sites/frequency-page-css'
 import { DESIGNER_BLOCKS_CSS } from '@/components/sites/designer-blocks-css'
@@ -11,7 +11,7 @@ import { DESIGNER_BLOCKS_CSS } from '@/components/sites/designer-blocks-css'
 
 const links = { origin: 'https://frequency.example', slug: 'demo', siteBase: '', pages: ['home'], contactHref: null, bookHref: null, email: null }
 const live = { events: [], circles: [], journeys: [] }
-const page = (blocks: Parameters<typeof planMensworkPage>[0]) => renderToStaticMarkup(<MensworkPage blocks={blocks} plan={planMensworkPage(blocks)} live={live} links={links} origin={links.origin} pageTitle="Home" renderOther={() => null} />)
+const page = (blocks: MwBlock[]) => renderToStaticMarkup(<MensworkPage blocks={blocks} plan={planMensworkPage(blocks)} live={live} links={links} origin={links.origin} pageTitle="Home" renderOther={() => null} />)
 
 describe('Bold Hero at 390', () => {
   it('draws the stack headline smaller under 640px, so a long word is not clipped', () => {
