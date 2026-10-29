@@ -18,6 +18,7 @@ import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { FqAvatar, phStyle } from '../shared/avatar'
 import { feedWhyShown } from '@/lib/feed/why-pref'
 import { SystemNotice } from '../shared/system-notice'
+import { PostPhoto } from './post-photo'
 
 // THE STREAM (Frequency Member Feed, section 9). Posts sit between hairlines with no card, a dot
 // marks the source, and each can say why it is there. The rows are the platform's own feed RPC
@@ -311,18 +312,18 @@ export function PostItem({
           <PostPoll postId={post.id} myProfileId={myProfileId} />
         </Suspense>
       )}
-      {media.length === 1 && <span className="ph fa-photo" style={phStyle(media[0])} role="img" aria-label="Post photo" />}
+      {media.length === 1 && <PostPhoto src={media[0]} className="fa-photo" label="Post photo" />}
       {media.length >= 2 && (
         <div className="fa-recap" role="img" aria-label={`${media.length} photos`}>
-          <span className="ph" style={phStyle(media[0])} />
+          <PostPhoto src={media[0]} />
           <span>
-            <span className="ph" style={phStyle(media[1])} />
+            <PostPhoto src={media[1]} />
             {media.length >= 3 ? (
-              <span className="ph" style={phStyle(media[2])}>
+              <PostPhoto src={media[2]}>
                 {media.length > 3 && <span className="fa-more">+{media.length - 3}</span>}
-              </span>
+              </PostPhoto>
             ) : (
-              <span className="ph" style={phStyle(media[1])} />
+              <PostPhoto src={media[1]} />
             )}
           </span>
         </div>

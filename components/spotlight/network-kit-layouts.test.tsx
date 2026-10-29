@@ -25,10 +25,10 @@ function shellFor(layout: string, kit = 'general', scheme?: Record<string, unkno
 }
 
 describe('Network Theme Kit Spotlight layouts', () => {
-  it('registers the six layouts of the design for network-kit and none for other themes', () => {
+  it('registers the six layouts of the design for network-kit and none for the themes that have none', () => {
     expect(spotlightLayoutsFor('network-kit').map((l) => l.id.split(':')[1])).toEqual(IDS)
     expect(spotlightLayoutsFor('midnight')).toEqual([])
-    expect(THEME_PRESETS.filter((p) => p.id !== 'network-kit').every((p) => !('layout' in p.theme))).toBe(true)
+    expect(THEME_PRESETS.filter((p) => p.id !== 'network-kit' && p.id !== 'temple-kit').every((p) => !('layout' in p.theme))).toBe(true)
   })
 
   it('keeps other themes\' validated output unchanged and drops unknown layouts', () => {

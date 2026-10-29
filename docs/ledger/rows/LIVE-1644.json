@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1644",
+  "title": "Give the Temple Theme Kit its Spotlight: six layouts on the layout registry, thirteen profiles by accent only",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "docs/design-systems/temple/rules.json",
+    "ref": "LIVE-1640"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/temple-kit-spotlight.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (the registry has no temple-kit layouts, the preset carries no layout, the Library lists Spotlight as soon) and passes here."
+  },
+  "detail": "Spotlight pass of the Temple Theme Kit (code id temple-kit, shown as Temple). The temple-kit preset now wears a layout (temple-kit:stack, profile general). lib/spotlight/layouts.ts registers the six layouts of the design's Spotlight Layouts board (Stack, Card wall, Story, Calendar first, Shop front, Profile) beside Network's; components/spotlight/temple-kit-layouts.tsx draws them from lib/spotlight/temple-kit-content.ts and the kit's tokens only (components/spotlight/temple-kit-layouts-css.ts holds no raw colour and reads --tk-depth-*, never --shadow-*): arch-niche seals, 16px cards, Marcellus headlines with one accent phrase, small uppercase Jost labels, the plaster sand grain on photos, a saffron star in the foot. The thirteen profiles share one set of words and layouts and differ by accent only (data-kit on the root, the kit's own variants sheet). A live page carries no sample date, price, testimonial, gift card or letter form (sampleContent is preview only). The Library lists Spotlight as ready for the kit. Voice changes against the design: the doors drop 'Free · 45 minutes', 'One to eight weeks' and 'Membership from $18 a month' (a free promise, a duration and a price the owner has not set); the letter is 'A letter from the house. Now and then.' not 'Four a year.' (a cadence promise); the library door drops 'free'; the quote drops 'forty people'; the walk is priced 'Ask', not Free. Faces: the live Spotlight route does not load the Temple faces (they load on websites only), so Marcellus and Jost fall back to the system serif and sans there, as the Spotlight preset has always said. Network's tests and probe now allow a second kit with layouts.",
+  "wave": "W7"
+}
