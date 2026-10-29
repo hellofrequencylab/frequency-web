@@ -9,7 +9,7 @@
     "file": "docs/design-systems/create-a-space/rules.json",
     "ref": "Daniel, 2026-10-28: do as many passes as you need to make the page exactly like the prototype"
   },
-  "detail": "What remains after the hero (LIVE-1765): the five-step builder with the progress meter, handle check and draft persistence; save and claim (magic link and Google) with the saved and live states; the sections below (Sound familiar, Day one tools, Free to operate, Questions, Closing); funnel links repointed to ?kit=; the footer link. docs/design-systems/create-a-space/baseline.json lists every prototype sentence not yet in the repo; each pass removes the ids it closes, and the row closes when the baseline is empty. Side-by-side renders at 390, 1280, 1440, 1920 and 2000 every pass.",
+  "detail": "What remains after the hero (LIVE-1765). Pass B shipped the four-move builder with the progress meter and the draft kept in the visitor's browser; the handle availability check comes with save and claim. Still open: save and claim (magic link and Google) with the saved and live states; the sections below (Sound familiar, Day one tools, Free to operate, Questions, Closing); funnel links repointed to ?kit=; the footer link. docs/design-systems/create-a-space/baseline.json lists every prototype sentence not yet in the repo; each pass removes the ids it closes, and the row closes when the baseline is empty. Side-by-side renders at 390, 1280, 1440, 1920 and 2000 every pass.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/create-a-space-matches-design.mjs",
