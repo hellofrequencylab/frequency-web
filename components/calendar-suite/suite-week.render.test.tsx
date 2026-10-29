@@ -158,7 +158,7 @@ describe('dragging a card onto a time', () => {
     // 2:08 PM on Thursday snaps to 2:15 PM.
     await dragTo(card('Staff sync')!, '2026-10-22', px(14, 8))
     expect(actions.saveEntry).toHaveBeenCalledTimes(1)
-    const [id, input] = actions.saveEntry.mock.calls[0] as [string, EntryInput]
+    const [id, input] = vi.mocked(actions.saveEntry).mock.calls[0] as [string, EntryInput]
     expect(id).toBe('entry-1')
     expect(input).toMatchObject({ startDate: '2026-10-22', endDate: '2026-10-22', startTime: '14:15', endTime: '15:15' })
     expect(col('2026-10-22').querySelector('.cal-card')?.textContent).toContain('2:15 PM to 3:15 PM')
@@ -168,7 +168,7 @@ describe('dragging a card onto a time', () => {
     const undo = [...document.querySelectorAll('.cal-toast button')].find((b) => b.textContent === 'Undo') as HTMLElement
     await act(async () => undo.click())
     expect(actions.saveEntry).toHaveBeenCalledTimes(2)
-    expect(actions.saveEntry.mock.calls[1]).toEqual(['entry-1', INPUT])
+    expect(vi.mocked(actions.saveEntry).mock.calls[1]).toEqual(['entry-1', INPUT])
     expect(col('2026-10-21').textContent).toContain('Staff sync')
     expect(col('2026-10-22').textContent).not.toContain('Staff sync')
   })
@@ -196,8 +196,8 @@ describe('dragging a card onto a time', () => {
     await act(async () => thisDate.click())
     expect(actions.saveEntry).not.toHaveBeenCalled()
     expect(actions.saveOccurrence).toHaveBeenCalledTimes(1)
-    expect(actions.saveOccurrence.mock.calls[0].slice(0, 2)).toEqual(['entry-2', '2026-10-21'])
-    expect(actions.saveOccurrence.mock.calls[0][2]).toMatchObject({ startDate: '2026-10-23', startTime: '19:00' })
+    expect(vi.mocked(actions.saveOccurrence).mock.calls[0].slice(0, 2)).toEqual(['entry-2', '2026-10-21'])
+    expect(vi.mocked(actions.saveOccurrence).mock.calls[0][2]).toMatchObject({ startDate: '2026-10-23', startTime: '19:00' })
   })
 
   it('leaves a read-only calendar alone', async () => {
