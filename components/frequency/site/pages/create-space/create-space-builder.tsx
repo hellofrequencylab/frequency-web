@@ -289,8 +289,7 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, vars, accen
     return done ? <DoneRow key={move} move={move} value={value[move]} onEdit={() => go(i)} /> : <TodoRow key={move} n={i + 1} label={TITLES[move].todo} />
   }
 
-  const trackW = `calc((100% - 22px) * ${trackFraction(meter)})`
-
+  
   return (
     <section id="get-started" className="cs-bld" aria-labelledby="cs-bld-h" style={vars as CSSProperties}>
       <div className="cs-bld-in">
@@ -313,7 +312,7 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, vars, accen
               </div>
               <div className="cs-bld-track">
                 <span className="cs-bld-rail" aria-hidden="true" />
-                <span className="cs-bld-fill" aria-hidden="true" style={{ width: trackW }} />
+                <span className="cs-bld-fill" aria-hidden="true" style={{ '--cs-frac': trackFraction(meter) } as CSSProperties} />
                 {meter.map((m) => (
                   <div key={m.label} className="cs-bld-stop">
                     {m.on ? <span className="cs-bld-pip is-on"><Check aria-hidden="true" /></span> : m.now ? <span className="cs-bld-pip is-now" /> : <span className="cs-bld-pip" />}

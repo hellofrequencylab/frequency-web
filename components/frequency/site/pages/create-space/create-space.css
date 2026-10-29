@@ -114,7 +114,7 @@
 .cs-bld-track{position:relative;display:flex;justify-content:space-between;gap:4px}
 .cs-bld-rail,.cs-bld-fill{position:absolute;top:10px;left:11px;height:2px;border-radius:2px}
 .cs-bld-rail{right:11px;background:var(--fq-border-hair)}
-.cs-bld-fill{background:var(--fq-accent-2);transition:width .4s}
+.cs-bld-fill{width:calc((100% - 22px) * var(--cs-frac,0));background:var(--fq-accent-2);transition:width .4s}
 .cs-bld-stop{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
 .cs-bld-stop:first-of-type{align-items:flex-start}
 .cs-bld-stop:last-child{align-items:flex-end}
