@@ -16,7 +16,7 @@ const actions = read('lib/launch/actions.ts')
 const io = read('lib/launch/spotlight-io.ts')
 
 if (!/launchSystemEnabled\(\)\) notFound\(\)/.test(start) || !/launchSystemEnabled\(\)\) notFound\(\)/.test(page)) bad.push('the start route or the step page opens while the launch is off')
-if (!/if \(!profileId\) \{[\s\S]*writePendingLaunch[\s\S]*redirect\(step\)/.test(start)) bad.push('a signed-out visitor is not held and sent to the step by /launch/start')
+if (!/if \(!profileId\) \{[\s\S]*writePendingLaunch[\s\S]*redirect\(launchHomeHref\(\{ signedIn: false \}\)\)/.test(start)) bad.push('a signed-out visitor is not held and sent to the step by /launch/start')
 if (/redirect\('\/sign-in/.test(start)) bad.push('/launch/start asks for an account before Publish')
 if (!/if \(!profileId\) \{[\s\S]*writePendingLaunch[\s\S]*\/sign-in\?next=\/launch\/claim/.test(actions)) bad.push('a signed-out Publish does not hold the answers and send the visitor to sign in')
 if (!/publishSpotlightStep\(profileId, launch, answers\)/.test(actions)) bad.push('a signed-in Publish does not run the step')

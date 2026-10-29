@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { IconButton, IconLink } from '@/components/ui/icon-button'
 import { SegmentedControl } from '@/components/ui/segmented-control'
+import { CalendarAudienceToggle } from './audience-toggle'
 import { addDays, mondayOnOrBefore, monthDayLabel, weekdayName } from '@/lib/calendar/planner/days'
 import { monthName } from '@/lib/calendar/planner/month'
 import { SUITE_VIEWS, SUITE_VIEW_LABEL, type SuiteView } from '@/lib/calendar/planner/suite-model'
@@ -106,6 +107,7 @@ export function SuiteHeader({
   onPickMonth,
   onRail,
   onAsk,
+  slug,
 }: {
   view: SuiteView
   cursor: string
@@ -124,6 +126,8 @@ export function SuiteHeader({
   onPickMonth: (ym: string) => void
   onRail: () => void
   onAsk: () => void
+  /** The Space, for the Team view / Public view toggle. */
+  slug: string
 }) {
   const ym = cursor.slice(0, 7)
   return (
@@ -169,6 +173,9 @@ export function SuiteHeader({
             />
           ) : null}
         </div>
+      </div>
+      <div className="cal-audience">
+        <CalendarAudienceToggle slug={slug} audience="team" />
       </div>
       <div className="cal-paging" role="group" aria-label="Page through time">
         <IconButton label="Previous" variant="plain" onClick={() => onPage(-1)}>

@@ -138,6 +138,11 @@ describe('the website faces on the Space page', () => {
     expect(spacePageSiteFaces({ siteStyle: { theme: 'midnight', synced: false } })).toBeNull()
   })
 
+  it('follows a synced Designer website, and only while synced', () => {
+    expect(spacePageSiteFaces({ siteStyle: { theme: 'designer', synced: true } })).toBe('designer')
+    expect(spacePageSiteFaces({ siteStyle: { theme: 'designer', synced: false } })).toBeNull()
+  })
+
   it('leaves a Space with no theme of its own on the font set it picked', () => {
     expect(spacePageSiteFaces({})).toBeNull()
   })

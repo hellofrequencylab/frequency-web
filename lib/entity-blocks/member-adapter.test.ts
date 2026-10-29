@@ -34,6 +34,7 @@ function data(layout: SpotlightLayout, over: Partial<SpotlightData> = {}): Spotl
   return {
     profile: row(over.profile),
     hostedEvents: [],
+    canTip: false,
     layout,
     background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 },
     stickers: { items: [] },
