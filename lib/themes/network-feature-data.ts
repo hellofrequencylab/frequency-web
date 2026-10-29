@@ -39,10 +39,8 @@ export const NETWORK_SURFACES: readonly { id: NetworkSurface; label: string; qua
   { id: 'email', label: 'Email template', shot: 'email', width: 600, height: 1446 },
 ]
 
-export const NETWORK_SPOTLIGHT_EYEBROW: string = data.eyebrow
 export const NETWORK_KITS: NetworkKit[] = data.kits
 export const NETWORK_LAYOUTS: NetworkLayout[] = data.layouts
-export const NETWORK_DEFAULT_KIT = 'general'
 /** The four accent families (the scheme each profile's hero colour belongs to). */
 export const NETWORK_ACCENTS: { id: string; hex: string }[] = data.accents
 

@@ -20,10 +20,10 @@ if (need('app/(marketing)/themes/network/page.tsx')) {
 }
 if (need('components/frequency/site/pages/themes/frequency-network.tsx')) {
   const page = r('components/frequency/site/pages/themes/frequency-network.tsx')
-  for (const id of ['why', 'places', 'preview', 'layouts', 'carry', 'yours', 'questions', 'start']) {
+  for (const id of ['why', 'preview', 'inside', 'yours', 'kits', 'carry', 'craft', 'questions', 'steps', 'start']) {
     if (!page.includes(`id="${id}"`)) bad.push(`the page has no #${id} section`)
   }
-  for (const s of ['KeepGoing', '/spaces/new?theme=network-kit', 'NetworkStage', 'Theme Kit']) if (!page.includes(s)) bad.push(`the page no longer carries ${s}`)
+  for (const s of ['KeepGoing', '/spaces/new?theme=network', 'Theme Kit']) if (!page.includes(s)) bad.push(`the page no longer carries ${s}`)
   if (/#[0-9a-fA-F]{6}/.test(page) || /style=\{\{[^}]*(#|rgb)/.test(page)) bad.push('the page carries a raw color')
   if (/—/.test(page)) bad.push('the page carries an em dash')
 }

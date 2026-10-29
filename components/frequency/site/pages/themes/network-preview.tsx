@@ -546,7 +546,7 @@ export function NetworkCustomise() {
     <div className="nf-cus">
       <div className="nf-cus-c">
         <div className="f">
-          <label id="nf-cus-acc">Accent</label>
+          <span className="nf-cus-l" id="nf-cus-acc">Accent</span>
           <div className="nf-swr" role="group" aria-labelledby="nf-cus-acc">
             <button type="button" aria-pressed={accent === ''} aria-label="Kit default" title="Kit default" className="def" onClick={() => setAccent('')} />
             {NETWORK_ACCENTS.map((a) => (
@@ -555,7 +555,7 @@ export function NetworkCustomise() {
           </div>
         </div>
         <div className="f">
-          <label id="nf-cus-font">Display face</label>
+          <span className="nf-cus-l" id="nf-cus-font">Display face</span>
           <div className="nf-bseg" role="group" aria-labelledby="nf-cus-font">
             {NETWORK_DISPLAY_FACES.map((n) => (
               <button key={n} type="button" aria-pressed={face === n} onClick={() => setFace(n)}>
@@ -565,7 +565,7 @@ export function NetworkCustomise() {
           </div>
         </div>
         <div className="f">
-          <label id="nf-cus-cor">Corners</label>
+          <span className="nf-cus-l" id="nf-cus-cor">Corners</span>
           <div className="nf-bseg" role="group" aria-labelledby="nf-cus-cor">
             {NETWORK_CORNERS.map((n) => (
               <button key={n} type="button" aria-pressed={corners === n} onClick={() => setCorners(n)}>
