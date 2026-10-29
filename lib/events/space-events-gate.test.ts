@@ -49,12 +49,15 @@ describe('exactly one caller opts out, and it is the team calendar loader', () =
     // The console: gated on managing the Space before it loads.
     expect(code(consoleCalendar)).toContain('resolveSpaceManageAccess(')
     expect(code(consoleCalendar)).toContain('loadAdminCalendar(')
-    // The public Calendar tab never loads the team calendar at all (owner ruling 2026-10-29, role based):
-    // an admin is redirected to the console route above, and everyone else gets the Guest shell.
+    // The public Calendar tab: loadAdminCalendar runs only when adminAllowed is true.
+    // Unsigned visitors return the Guest shell first and never reach that loader.
+    // ADR-1467 loads both Guest and Admin data for operators so view switches do
+    // not remount through navigation. The gate is still adminAllowed, not "view !== guest".
     const tab = code(calendarTab)
-    expect(tab).toContain('adminAllowed && !adminWantsPublic')
+    expect(tab).toContain('if (!adminAllowed)')
     expect(tab).toContain('CalendarWorkspace')
-    expect(tab).not.toContain('loadAdminCalendar(')
+    const guestReturn = tab.indexOf('if (!adminAllowed)')
+    expect(tab.indexOf('loadAdminCalendar(')).toBeGreaterThan(guestReturn)
     expect(tab).not.toContain("view !== 'guest'")
     expect(tab).not.toContain('includeUnpublished')
   })
