@@ -40,6 +40,8 @@ export const ROUTES = {
   terms: '/terms',
   /** The Network plan's page (SCAN-961), Frequency-only like /vision. */
   networks: '/networks',
+  /** Build a Space before signing in (the marketing funnel's second step). Linked from the Theme Kit pages, /for and /pricing. */
+  createSpace: '/create-a-space',
   /** The whole system in one story (LIVE-1562), Frequency-only like /themes. */
   system: '/system',
   /** The accessibility statement, a page of its own (app/accessibility). */

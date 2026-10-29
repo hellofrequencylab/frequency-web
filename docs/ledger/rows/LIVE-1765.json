@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1765",
+  "title": "/create-a-space shows the live preview: your website and Spotlight in the kit you picked",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/design-systems/create-a-space/rules.json",
+    "ref": "Daniel, 2026-10-28: make the page exactly like the Claude Design prototype (Frequency space creation wizard.zip)"
+  },
+  "detail": "Pass 1 of the signed-out Create a Space marketing page. The route, its SEO entry and sitemap line, the --pv-* preview token contract generated from each Mega Theme's own palette (lib/theme/preview-tokens.ts, guarded across MEGA_THEMES), the pure SpacePreview (browser and phone, container-unit sized), and the hero with the kit and accent chips. The kit arrives as ?kit=<id>; no param or none starts on the default look and says Previewing. Not linked from the nav yet: the builder and the sections below arrive in the next passes (LIVE-1766).\n\nNeeds record: the kit list is WIZARD_THEMES (no Classic kits; Nocturne is code id midnight); Network (classic) has no preview of its own and Temple kit wears Temple's until it is a Mega Theme; accents other than Designer's six are the prototype's stand-ins; non-Designer kits wear the gathering photography until they have libraries; the header is the site's real header, not the prototype's.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/create-a-space-preview.mjs",
+    "note": "Fails on main (no /create-a-space page); passes here."
+  },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}
