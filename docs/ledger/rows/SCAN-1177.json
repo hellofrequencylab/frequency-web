@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1177",
+  "title": "Keep the signed-in feed greeting on the member's practice day",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "docs/ledger/rows/SCAN-1177.json",
+    "ref": "Ultra-sweep signed-in feed timezone investigation"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'require(\"child_process\").execFileSync(\"pnpm\",[\"exec\",\"vitest\",\"run\",\"lib/feed/greeting-time.test.ts\"],{stdio:\"inherit\"})'",
+    "note": "Checks UTC and Pacific at the same midnight boundary and UTC fallback for missing or invalid zones."
+  },
+  "detail": "The signed-in feed greeting used Pacific community time while the practice chart used the member's saved timezone. Near midnight they displayed different days. The greeting now uses the same saved-zone and UTC fallback policy and the same instant as the chart. Production verification remains a release step.",
+  "wave": "W7"
+}
