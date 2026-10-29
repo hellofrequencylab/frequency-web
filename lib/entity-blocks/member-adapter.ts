@@ -46,6 +46,9 @@ interface MemberBlockData {
   guestbook: GuestbookEntry[]
   /** The member's upcoming public events, resolved server-side by the Spotlight reader. */
   hostedEvents: SpotlightData['hostedEvents']
+  /** What the member gives back, resolved server-side (never member-supplied): the real Crew tier, plus
+   *  count-only aggregates and the lifetime Zaps. */
+  contributions: { crew: boolean; eventsHosted: number; journeysFinished: number; zaps: number }
   /** Every authored block grouped by its type, in layout order. Content blocks (heading/text/image/
    *  gallery/quote/embed/divider) render from their slice; the data-block slices are unused (their
    *  values come from the fields above), but present so the map is total. */
@@ -57,6 +60,8 @@ interface MemberBlockData {
 export interface MemberBlockProps {
   member: EntityIdentity
   data: MemberBlockData
+  /** The placed block's own authored bag (a data block's switches), when it has one. */
+  content?: Record<string, unknown>
 }
 
 /** Build the common EntityIdentity for a member from their resolved Spotlight. Values are already
@@ -133,6 +138,12 @@ export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
     topFriendsTitle,
     guestbook,
     hostedEvents: data.hostedEvents,
+    contributions: {
+      crew: profile.membership_tier === 'crew',
+      eventsHosted: data.contributionCounts?.eventsHosted ?? 0,
+      journeysFinished: data.contributionCounts?.journeysFinished ?? 0,
+      zaps: totalZaps,
+    },
     blocksByType,
   }
 }
