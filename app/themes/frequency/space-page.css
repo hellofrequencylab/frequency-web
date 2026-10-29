@@ -41,6 +41,9 @@
 /* The Network Theme Kit takes the DISPLAY face only (ADR-1728, ADR-1906): titles and the Space name wear Bricolage
    Grotesque, and the body, the UI and every size stay Frequency's, so the body face is the house face itself. */
 [data-design="frequency"] [data-space-fonts="network-kit"] { --space-font-display: var(--font-nk-bricolage), var(--font-lexend); --space-font-body: var(--fq-font-sans); }
+/* The Designer Theme Kit takes the DISPLAY face only, the same way (ADR-1728, ADR-1906): titles and the Space name wear
+   Cormorant, and the body, the UI and every size stay Frequency's. */
+[data-design="frequency"] [data-space-fonts="designer"] { --space-font-display: var(--font-dz-cormorant), var(--font-playfair); --space-font-body: var(--fq-font-sans); }
 [data-design="frequency"] [data-space-fonts="wildheart"] { --space-font-display: var(--font-wh-fell), var(--font-playfair); --space-font-body: var(--font-wh-garamond), var(--font-pt-serif); }
 [data-design="frequency"] [data-space-fonts="midnight"] { --space-font-display: var(--font-mn-bodoni), var(--font-playfair); --space-font-body: var(--font-mn-geist), var(--font-nunito); }
 
@@ -98,6 +101,10 @@
 [data-design="frequency"] [data-space-fonts="network-kit"] :is(.fqs-hero h1, .fqs-card-t, .fqs-date b, [data-space-page] .font-display, [data-space-page] .font-section) { font-weight: 700; }
 /* The Space's name on the default Header size is the page's h1: it wears the kit's display face too, at the house size. */
 [data-design="frequency"] [data-space-fonts="network-kit"] .fqs-id .h1 { font-family: var(--space-font-display), var(--fq-font-display); font-weight: 700; letter-spacing: var(--space-display-track); }
+/* Designer Theme Kit display: Cormorant 500, a light serif, so the track is near zero and the scale lifts it a size. */
+[data-design="frequency"] [data-space-fonts="designer"] { --space-display-track: -0.005em; --space-display-scale: 1.12; }
+[data-design="frequency"] [data-space-fonts="designer"] :is(.fqs-hero h1, .fqs-card-t, .fqs-date b, [data-space-page] .font-display, [data-space-page] .font-section) { font-weight: 500; }
+[data-design="frequency"] [data-space-fonts="designer"] .fqs-id .h1 { font-family: var(--space-font-display), var(--fq-font-display); font-weight: 500; letter-spacing: var(--space-display-track); }
 [data-design="frequency"] [data-space-fonts="menswork"] { --space-display-track: 0.005em; --space-display-scale: 1.18; }
 
 /* ══ 1. TYPE: Unbounded titles, Hanken body, Instrument Serif italic accents ══════════════════════ */
