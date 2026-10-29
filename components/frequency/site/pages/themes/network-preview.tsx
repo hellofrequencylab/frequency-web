@@ -64,24 +64,11 @@ export function NetworkBrowser({ src, alt, url, width, height, sizes, priority =
   )
 }
 
-/** A surface that is on the way (Space, Email): the frame is there, the picture is not, and nothing is invented to fill it. */
-export function NetworkSoon({ label, url }: { label: string; url?: string }) {
-  const body = (
-    <p className="nf-soon-tx">
-      <b>{label}</b>
-      <small>On the way</small>
-    </p>
-  )
-  if (!url) return <div className="nf-mail nf-soon">{body}</div>
+/** The email picture in its frame: the template as the list opens it. */
+export function NetworkMail({ src, alt, sizes }: { src: string; alt: string; sizes: string }) {
   return (
-    <div className="nf-dv">
-      <div className="nf-bar" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-        <u>{url}</u>
-      </div>
-      <div className="nf-scr nf-soon">{body}</div>
+    <div className="nf-mail">
+      <Image src={src} alt={alt} width={900} height={1140} sizes={sizes} />
     </div>
   )
 }
@@ -101,7 +88,7 @@ export function NetworkStage({
   const [kitId, setKitId] = useState(initialKit)
   const kit = NETWORK_KITS.find((k) => k.id === kitId) ?? NETWORK_KITS[0]
   const def = NETWORK_SURFACES.find((s) => s.id === surface)!
-  const src = def.shot ? networkShot(kit.id, def.shot) : null
+  const src = networkShot(kit.id, def.shot)
   const alt = `Network, ${kit.name}: ${def.label.toLowerCase()}`
   const sizes = '(max-width: 900px) 92vw, 640px'
   return (
@@ -116,12 +103,12 @@ export function NetworkStage({
       </div>
       <div className="nf-stage" data-surface={surface}>
         <div className="nf-fit">
-          {!src ? (
-            <NetworkSoon label={def.label} url={surface === 'space' ? URL_BAR.space : undefined} />
-          ) : surface === 'spotlight' ? (
+          {surface === 'spotlight' ? (
             <NetworkPhone src={src} alt={alt} sizes="(max-width: 900px) 60vw, 280px" priority={priority} />
+          ) : surface === 'email' ? (
+            <NetworkMail src={src} alt={alt} sizes="(max-width: 900px) 70vw, 420px" />
           ) : (
-            <NetworkBrowser src={src} alt={alt} url={URL_BAR.site} width={def.width} height={def.height} sizes={sizes} priority={priority && surface === 'site'} />
+            <NetworkBrowser src={src} alt={alt} url={URL_BAR[surface]} width={def.width} height={def.height} sizes={sizes} priority={priority && surface === 'site'} />
           )}
         </div>
       </div>

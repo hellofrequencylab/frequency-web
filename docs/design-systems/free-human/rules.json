@@ -1,0 +1,330 @@
+{
+ "theme": "free-human",
+ "repoThemeId": "free-human",
+ "note": "Same shape as docs/design-systems/temple/rules.json. First match wins.",
+ "tokenSources": [
+  "FREE_HUMAN_TOKENS_CSS"
+ ],
+ "baseline": "docs/design-systems/free-human/baseline.json",
+ "tokenMap": [
+  {
+   "from": "--cream-",
+   "to": "--fh-cream-"
+  },
+  {
+   "from": "--linen-",
+   "to": "--fh-linen-"
+  },
+  {
+   "from": "--sand-",
+   "to": "--fh-sand-"
+  },
+  {
+   "from": "--taupe-",
+   "to": "--fh-taupe-"
+  },
+  {
+   "from": "--walnut-",
+   "to": "--fh-walnut-"
+  },
+  {
+   "from": "--umber-",
+   "to": "--fh-umber-"
+  },
+  {
+   "from": "--ink-",
+   "to": "--fh-ink-"
+  },
+  {
+   "from": "--night-",
+   "to": "--fh-night-"
+  },
+  {
+   "from": "--clay-",
+   "to": "--fh-clay-"
+  },
+  {
+   "from": "--kilim-",
+   "to": "--fh-kilim-"
+  },
+  {
+   "from": "--saffron-",
+   "to": "--fh-saffron-"
+  },
+  {
+   "from": "--brass-",
+   "to": "--fh-brass-"
+  },
+  {
+   "from": "--gold-",
+   "to": "--fh-gold-"
+  },
+  {
+   "from": "--amber-",
+   "to": "--fh-amber-"
+  },
+  {
+   "from": "--rose-",
+   "to": "--fh-rose-"
+  },
+  {
+   "from": "--peach-",
+   "to": "--fh-peach-"
+  },
+  {
+   "from": "--mauve-",
+   "to": "--fh-mauve-"
+  },
+  {
+   "from": "--indigo-",
+   "to": "--fh-indigo-"
+  },
+  {
+   "from": "--slate-",
+   "to": "--fh-slate-"
+  },
+  {
+   "from": "--sage-",
+   "to": "--fh-sage-"
+  },
+  {
+   "from": "--jade-",
+   "to": "--fh-jade-"
+  },
+  {
+   "from": "--olive-",
+   "to": "--fh-olive-"
+  },
+  {
+   "from": "--teal-",
+   "to": "--fh-teal-"
+  },
+  {
+   "from": "--fig-",
+   "to": "--fh-fig-"
+  },
+  {
+   "from": "--shadow-",
+   "to": "--fh-depth-"
+  },
+  {
+   "from": "--radius-",
+   "to": "--fh-radius-"
+  },
+  {
+   "from": "--space-",
+   "to": "--fh-space-"
+  }
+ ],
+ "rules": [
+  {
+   "glob": "templates/website/.thumbnail",
+   "kind": "skip",
+   "reason": "Claude Design's template thumbnail."
+  },
+  {
+   "glob": "handoff/frequency/events.free-human.json",
+   "kind": "built",
+   "target": "lib/sites/free-human-events.ts",
+   "reason": "Sample year of events in the events-table shape; seeded only into a Space that asks for it, never created by the theme."
+  },
+  {
+   "glob": "handoff/CLAUDE-CODE.md",
+   "kind": "reference",
+   "reason": "Handoff text; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "templates/website/YearWheel.dc.html",
+   "kind": "built",
+   "target": "components/sites/year-wheel.tsx",
+   "reason": "Port of the Year Wheel handoff; reads only Frequency semantic tokens."
+  },
+  {
+   "glob": "tokens/semantic.css",
+   "kind": "tokens",
+   "reason": "Semantic bridge: compared value for value with the theme block that fills these names."
+  },
+  {
+   "glob": "templates/website/Calendar.dc.html",
+   "kind": "copy",
+   "targets": [
+    "lib/sites",
+    "components/sites",
+    "components/page-editor/blocks"
+   ]
+  },
+  {
+   "glob": "handoff/frequency/theme-contract.free-human.json",
+   "kind": "built",
+   "target": "lib/sites/editor/theme-contract.json",
+   "reason": "Merged as themes.FreeHuman; theme.test.ts checks every string value."
+  },
+  {
+   "glob": "handoff/frequency/free-human-home.ts",
+   "kind": "mirror",
+   "target": "lib/sites/free-human-home.ts"
+  },
+  {
+   "glob": "handoff/frequency/blocks.free-human.json",
+   "kind": "built",
+   "target": "components/page-editor/blocks/free-human.tsx"
+  },
+  {
+   "glob": "handoff/frequency/kits.free-human.json",
+   "kind": "built",
+   "target": "lib/sites/free-human-chrome.ts"
+  },
+  {
+   "glob": "thumbnail.html",
+   "kind": "skip",
+   "reason": "Claude Design's project thumbnail."
+  },
+  {
+   "glob": "_ds_bundle.js",
+   "kind": "reference",
+   "reason": "Generated bundle; never shipped."
+  },
+  {
+   "glob": "_ds_manifest.json",
+   "kind": "skip",
+   "reason": "Compiler output."
+  },
+  {
+   "glob": "_adherence.oxlintrc.json",
+   "kind": "skip",
+   "reason": "Compiler output."
+  },
+  {
+   "glob": "styles.css",
+   "kind": "reference",
+   "reason": "Entry file that @imports tokens/*.css."
+  },
+  {
+   "glob": "readme.md",
+   "kind": "reference",
+   "reason": "Voice, colour, type, shape and flow rules; values checked through tokens/*.css."
+  },
+  {
+   "glob": "SKILL.md",
+   "kind": "reference",
+   "reason": "Claude Design skill front page."
+  },
+  {
+   "glob": "github.md",
+   "kind": "skip",
+   "reason": "Repo link for Claude Design."
+  },
+  {
+   "glob": "handoff/frequency/README.md",
+   "kind": "reference",
+   "reason": "Install steps."
+  },
+  {
+   "glob": "tokens/*.css",
+   "kind": "tokens",
+   "reason": "Compared value for value with FREE_HUMAN_TOKENS_CSS under tokenMap."
+  },
+  {
+   "glob": "guidelines/*.card.html",
+   "kind": "reference",
+   "reason": "Specimen cards; values come from tokens/*.css."
+  },
+  {
+   "glob": "photos/selects/*.webp",
+   "kind": "asset",
+   "target": "public/sites/free-human/photos/{base}"
+  },
+  {
+   "glob": "photos/selects/manifest.json",
+   "kind": "built",
+   "target": "lib/sites/free-human-photos.ts"
+  },
+  {
+   "glob": "photos/raw/**",
+   "kind": "skip",
+   "reason": "Unculled originals; rights unresolved (photos/README.md)."
+  },
+  {
+   "glob": "photos/_sheets/**",
+   "kind": "skip",
+   "reason": "Contact sheets."
+  },
+  {
+   "glob": "photos/README.md",
+   "kind": "reference",
+   "reason": "Culling and rights notes."
+  },
+  {
+   "glob": "uploads/**",
+   "kind": "skip",
+   "reason": "Source uploads."
+  },
+  {
+   "glob": "handoff/frequency/rules.free-human.json",
+   "kind": "mirror",
+   "target": "docs/design-systems/free-human/rules.json"
+  },
+  {
+   "glob": "templates/website/Website.dc.html",
+   "kind": "copy",
+   "targets": [
+    "lib/sites",
+    "components/sites",
+    "components/page-editor/blocks",
+    "lib/themes"
+   ]
+  },
+  {
+   "glob": "templates/website/*.js",
+   "kind": "reference",
+   "reason": "Claude Design runtime and DS loader."
+  },
+  {
+   "glob": "components/**",
+   "kind": "reference",
+   "reason": "Prototype primitives; the live site draws the same look through registry blocks styled by components/sites/free-human-*-css.ts."
+  },
+  {
+   "glob": "assets/logo-mark*.svg",
+   "kind": "asset",
+   "target": "public/sites/free-human/{base}"
+  },
+  {
+   "glob": "assets/textures/*.svg",
+   "kind": "asset",
+   "target": "public/sites/free-human/textures/{base}"
+  },
+  {
+   "glob": "components/core/BrandMark.*",
+   "kind": "built",
+   "target": "components/sites/free-human-logo.tsx"
+  },
+  {
+   "glob": "components/core/Glyph.*",
+   "kind": "built",
+   "target": "components/sites/free-human-glyph.tsx"
+  }
+ ],
+ "tokenDeviations": [
+  {
+   "name": "--text-body",
+   "reason": "The design's body size is 17px; the site engine reads --text-body as a responsive size, so the kit declares clamp(16px, 1.05vw, 19px), which is 17px at the design's desktop width and reads better on a phone."
+  },
+  {
+   "name": "--type-body",
+   "reason": "A shorthand that names a font role. The kit's faces load through next/font variables (--font-fh-*), so the resolved stack differs from the design's bare family names; size, weight and line height match."
+  },
+  {
+   "name": "--type-display-m",
+   "reason": "A shorthand that names a font role. The kit's faces load through next/font variables (--font-fh-*), so the resolved stack differs from the design's bare family names; size, weight and line height match."
+  },
+  {
+   "name": "--type-display-s",
+   "reason": "A shorthand that names a font role. The kit's faces load through next/font variables (--font-fh-*), so the resolved stack differs from the design's bare family names; size, weight and line height match."
+  },
+  {
+   "name": "--type-label-s",
+   "reason": "A shorthand that names a font role. The kit's faces load through next/font variables (--font-fh-*), so the resolved stack differs from the design's bare family names; size, weight and line height match."
+  }
+ ]
+}

@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P0",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "scripts/ops/secure-frequency-backups.sql",
     "ref": "Metadata-only Supabase catalog review, Frequency Community, 2026-10-27"
   },
-  "detail": "Live metadata review found eight public out-of-band backup/staging tables with RLS disabled and effective anon/authenticated table privileges. Column names include private Space preferences, website-editor state, entitlements, historical site content and notes. No rows were selected and no API access was attempted. A permission-only operator transaction now targets these exact tables plus the two previously reviewed SEC-002 backups; it enables RLS, removes table and per-column browser rights, preserves service/operator access, and fails closed when targets are missing or postconditions fail. Do not delete or move backup data under this row. Production repair and post-repair catalog verification remain outstanding; no SQL was applied by the implementation lane.",
+  "detail": "Live metadata review found eight public out-of-band backup/staging tables with RLS disabled and effective anon/authenticated table privileges. Column names include private Space preferences, website-editor state, entitlements, historical site content and notes. No rows were selected and no API access was attempted. A permission-only operator transaction now targets these exact tables plus the two previously reviewed SEC-002 backups; it enables RLS, removes table and per-column browser rights, preserves service/operator access, and fails closed when targets are missing or postconditions fail. Do not delete or move backup data under this row. The committed repair was applied once and verified after merge; no backup data was read or moved.",
   "verify": {
     "kind": "manual",
-    "checked": "2026-10-27",
-    "evidence": "OPEN: Metadata-only catalog review confirmed the exposure on 2026-10-27; the repair SQL has not been run. After separately authorized execution of scripts/ops/secure-frequency-backups.sql against the documented Frequency Community project, inspect pg_class.relrowsecurity and effective has_table_privilege/has_any_column_privilege for anon/authenticated on all ten exact allowlisted tables; verify service_role/operator access is preserved and run the live-catalog check/security advisors. Do not select backup rows. Keep open until live postconditions are confirmed."
+    "checked": "2026-10-29",
+    "evidence": "PR #4192 committed the repair, which was applied once and independently verified in the release ledger. On 2026-10-29 a read-only production catalog query rechecked ten named backup and staging tables: RLS enabled, no effective anon/authenticated table or column privileges, and service-role SELECT retained. No backup rows were accessed. Earlier post-repair evidence recorded preservation of operator and service privileges. This is not a database-wide security assessment."
   },
-  "wave": "W7"
+  "closed": "2026-10-29"
 }

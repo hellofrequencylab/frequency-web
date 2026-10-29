@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1870",
+  "title": "The hand-built /themes/temple page: the Temple Theme Kit on every surface, in the layout and section order /themes/nocturne has",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-temple.tsx",
+    "ref": "Temple Theme Kit build, feature page"
+  },
+  "detail": "app/(marketing)/themes/temple is its own static route (it wins over /themes/[theme], which no longer lists temple-kit). FrequencyTemple is the same page as FrequencyNetwork and FrequencyMidnight (Nocturne), section for section and in the same order, with one client island (temple-preview.tsx: Website, Spotlight (Link Page), Space (Profile) and Email template chips, thirteen profiles, six Spotlight layouts, the design system's iPhone frame). Only the words, the Temple profile accents (lib/theme/temple-kit.ts) and the pictures change; temple-feature.css is network-feature.css under a tf- prefix. Pictures are Playwright renders of the product's own kit: the thirteen profile home pages through the real SiteChrome and TempleKit blocks, and the Spotlight stack layout per profile plus the six layouts through the real Spotlight shell (26 shots and six layouts under public/themes/temple-kit). The thirteen website pictures are the same image today because the kit's profiles differ by accent only and no accent shows on the home page; the preview frame wears each profile's accent. Space and Email have no pictures yet, so their chips show the same quiet 'On the way' frame as Network's. SEO and sitemap entries, the /themes index card and the Temple design-system baseline are updated. Gap: Space and Email pictures. The pictures are the first commit of the change because they count as authored files.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "Route, page, preview island, CSS, data and 13 by 2 pictures plus six layouts present.",
+    "cmd": "node scripts/probes/temple-theme-page.mjs"
+  },
+  "closed": "2026-10-29"
+}

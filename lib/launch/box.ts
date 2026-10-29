@@ -5,6 +5,7 @@
 import { getMyProfileId } from '@/lib/auth'
 import { launchSystemEnabled } from './enabled'
 import { boxView, type LaunchBoxView } from './box-state'
+import { loadPostPublishList } from './get-started-io'
 import { getActiveLaunch } from './store'
 
 export async function loadLaunchBox(): Promise<LaunchBoxView | null> {
@@ -13,7 +14,10 @@ export async function loadLaunchBox(): Promise<LaunchBoxView | null> {
     const profileId = await getMyProfileId()
     if (!profileId) return null
     const launch = await getActiveLaunch(profileId)
-    return launch ? boxView(launch, new Date()) : null
+    if (!launch) return null
+    // Once the Spotlight is published the overview's own list takes over (see below), so the pill is gone after Publish.
+    if (await loadPostPublishList(profileId)) return null
+    return boxView(launch, new Date())
   } catch {
     return null
   }
@@ -21,6 +25,10 @@ export async function loadLaunchBox(): Promise<LaunchBoxView | null> {
 
 // A running launch owns the member's "what next" list (VLS-11): the Get Started checklist stands down while the box is
 // up, so the person never sees two lists. Without a launch (or with the launch switched off) the checklist is untouched.
+// Once the Spotlight is published the list is the launch overview's own to-do (lib/launch/get-started-io.ts), so the
+// box stands aside there too and the rail draws that one list.
 export async function launchOwnsNextSteps(): Promise<boolean> {
-  return (await loadLaunchBox()) !== null
+  if ((await loadLaunchBox()) === null) return false
+  const profileId = await getMyProfileId()
+  return !(profileId && (await loadPostPublishList(profileId)))
 }

@@ -1,5 +1,5 @@
 {
- "ledger": "LIVE-1644",
+ "ledger": "LIVE-1870",
  "ids": [
   "copy:Spotlight Layouts.html#076044cf",
   "copy:Theme Feature Page.html#022f23d7",
@@ -143,7 +143,6 @@
   "copy:ui_kits/site/JourneysPage.jsx#f7cae4c4",
   "copy:ui_kits/site/JourneysPage.jsx#f8473634",
   "copy:ui_kits/site/ResourcesPage.jsx#194b41ce",
-  "copy:ui_kits/site/ResourcesPage.jsx#b622cb78",
   "copy:ui_kits/site/Sections.jsx#81257b54",
   "copy:ui_kits/site/ServicesPage.jsx#4d85e203",
   "copy:ui_kits/site/ServicesPage.jsx#7096d833",
@@ -154,7 +153,6 @@
   "copy:ui_kits/site/ShopPage.jsx#1a59b8c4",
   "copy:ui_kits/site/ShopPage.jsx#1bb0ab20",
   "copy:ui_kits/site/ShopPage.jsx#2a24d2a7",
-  "copy:ui_kits/site/ShopPage.jsx#2c1fabb2",
   "copy:ui_kits/site/ShopPage.jsx#2e95beaa",
   "copy:ui_kits/site/ShopPage.jsx#3d665dbc",
   "copy:ui_kits/site/ShopPage.jsx#3efca0dd",
@@ -238,7 +236,6 @@
   "copy:ui_kits/site/data.js#b59c950d",
   "copy:ui_kits/site/data.js#bda47d0f",
   "copy:ui_kits/site/data.js#c591e79a",
-  "copy:ui_kits/site/data.js#d61fb60b",
   "copy:ui_kits/site/data.js#d9a57e44",
   "copy:ui_kits/site/data.js#da8fc8f2",
   "copy:ui_kits/site/data.js#dbc768cf",

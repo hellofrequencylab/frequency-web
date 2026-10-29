@@ -337,6 +337,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
           }}
           onRail={() => setRailOpen(true)}
           onAsk={() => setSheet('ask')}
+          slug={slug}
         />
         <SuiteNeedsYou entries={needs} onOpen={openNeed} />
         <div className="cal-view">

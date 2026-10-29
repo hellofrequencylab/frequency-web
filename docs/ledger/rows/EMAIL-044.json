@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-044",
+  "title": "Come-back emails for a launch that stopped: 1 hour, 1 day, 3 days, 8am to 8pm local, max three",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/launch/comeback.ts",
+    "ref": "Vera guided launch plan VLS-26 and VLS-27, cadence A chosen by the owner 2026-10-28 (1 hour, 1 day, 3 days after they stop, at most three, only 8am to 8pm local, stop on resume, launch, cancel or unsubscribe)."
+  },
+  "detail": "lib/launch/comeback.ts is the pure schedule (comebackDue: the launch row, what was sent, the clock and the person's zone say which email is owed, or why none). Stop is the later of updated_at and the clock's last beat (space_launch.clock_last_beat_at, read defensively until the clock change lands). Window edges 8:00 in and 20:00 out in the person's zone (profiles.home_timezone, then spaces.time_zone, else the email is held, never guessed), DST-correct through Intl. A due email waits for the next 8am for at most a day, then that kind is dropped; two emails are never within 12 hours of each other. Activity after the last email ends the sequence for good. lib/launch/comeback-io.ts runs it from /api/cron/launch-reminders (every 15 minutes, dark behind LAUNCH_SYSTEM_ENABLED, heartbeat, budget): it asks the lifecycle send gate (preference, consent, suppression) first, claims the kind with a launch_email_log row (the existing service-only table, unique per launch and kind, so no new migration), then enqueues through the outbox with a one-click List-Unsubscribe. An opt-out is logged as a skipped kind so it is never re-asked. lib/launch/comeback-email.ts holds the three emails in brand voice (pain first, no hard claims, no em dashes, never names photos) with the time left on the 12 minute clock in the display face and one button to /launch. The cron is unmonitored in lib/observability/slos.ts for the same reason as its siblings (the 20-check Healthchecks plan is full).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-comeback.mjs",
+    "note": "Runs the schedule under node (1h, 1d, 3d, never a fourth, 8:00 open and 20:00 closed local, no zone holds, launched, cancelled and resumed all stop) and reads the cron, runner and registrations for the send gate, the launch_email_log claim, the outbox seam, the unsubscribe, the schedule and the switch."
+  },
+  "wave": "W7",
+  "closed": "2026-10-29"
+}

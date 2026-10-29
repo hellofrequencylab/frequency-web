@@ -180,7 +180,7 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'every 15 min',
     freshByMinutes: 30,
-    jobs: ['nurture', 'event-reminders', 'space-follower-event-reminders', 'space-inbox-verify'],
+    jobs: ['nurture', 'event-reminders', 'space-follower-event-reminders', 'space-inbox-verify', 'launch-reminders'],
     why: 'member re-engagement + event attendance + the Space inbox address finishing on its own (EMAIL-022)',
   },
   {
@@ -429,6 +429,7 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'reconcile-transfers', reason: 'retries split-order seller transfers (LIVE-622); the settle pays first, every stuck row logs at error, and a monitor is a Healthchecks check the owner adds (the account holds 20)' },
   { job: 'event-followups', reason: 'the guest follow-up after a gathering (LIVE-802); a missed hour is re-read by the next one inside its 24-hour window, and the dedupe key keeps it to one send' },
   { job: 'onboarding-throughput', reason: 'a read-only daily reading (LIVE-311); a miss delays a log line and the next run reads the same state' },
+  { job: 'launch-reminders', reason: 'the come-back notes to a person who stopped mid-launch (VLS-26); dark until LAUNCH_SYSTEM_ENABLED, a missed run is caught by the next quarter hour from the launch_email_log claim, and no Healthchecks check is free on the 20-check plan' },
   { job: 'indexnow', reason: 'a daily search-engine ping (LIVE-1137), off until INDEXNOW_ENABLED; a miss delays Bing seeing new pages by a day and the next run covers a 26-hour window, so nothing is lost' },
   // HYG-144: unmonitored only because the Healthchecks free tier's 20 checks are all taken. It is
   // the one opt-out whose silence is costly (a dead copy means new files have no second home), so

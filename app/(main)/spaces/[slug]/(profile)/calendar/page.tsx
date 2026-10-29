@@ -29,6 +29,7 @@ import {
   resolveOperatorCalendarView,
 } from '@/lib/calendar/admin-views'
 import { parseTimeView, timeViewCookieName } from '@/lib/calendar/time-views'
+import { asksForPublicCalendar } from '@/lib/calendar/audience'
 
 // THE MERGED CALENDAR AND EVENTS PAGE (Events EC2, ADR-1385, ADR-1464, ADR-1467; merged by
 // LIVE-520 on the owner's ask, "Calendar & Events should be all one page").
@@ -40,6 +41,11 @@ import { parseTimeView, timeViewCookieName } from '@/lib/calendar/time-views'
 //                         MEMBER too), WHAT (the layer filter, when there is more than one layer),
 //                         ACTIONS (subscribe; plus Pencil / Fullscreen for the team).
 //   · the month grid, or the month's agenda, or — for the team — List and Workflow.
+//
+// ROLE BASED, AND THIS TAB STAYS ITS OWN PAGE (owner ruling 2026-10-29). A Space's team sees this page with
+// its sort functions in the header and moves a date between Pencil, Plan and Production right on it
+// (Workflow). The full calendar manager lives at the console route and is one link away. A visitor sees
+// the public calendar, and an admin asking for Public view (`?as=public`) lands on Guest preview.
 //
 // Operators load Guest and Admin data once. Views slide in a client shell.
 // Unsigned visitors stay Guest-only and never hit loadAdminCalendar.
@@ -62,6 +68,7 @@ export default async function SpaceCalendarPage({
   params: Promise<{ slug: string }>
   searchParams: Promise<{
     view?: string | string[]
+    as?: string | string[]
     item?: string | string[]
     plan?: string | string[]
     console?: string | string[]
@@ -183,7 +190,7 @@ export default async function SpaceCalendarPage({
 
   const jar = await cookies()
   const remembered = jar.get(calendarViewCookieName(slug))?.value
-  const initialView = resolveOperatorCalendarView(query.view, remembered)
+  const initialView = asksForPublicCalendar(query) ? 'guest' : resolveOperatorCalendarView(query.view, remembered)
   // Day, Week or Timeline (LIVE-1178): the link names it, otherwise the last one this reader chose.
   const initialTimeView = parseTimeView(query.look) ?? parseTimeView(jar.get(timeViewCookieName(slug))?.value)
   const admin = await loadAdminCalendar(space.id, {

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1785",
+  "title": "Give the Designer Theme Kit its Services page",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "docs/design-systems/designer/rules.json",
+    "ref": "Daniel, 2026-10-29: fan out into developing the next rounds. Pass 5 of the plan at /mnt/project-files/designer-kit/PLAN.html (inner pages): Services was the design's page the kit still lacked."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/designer-kit-services.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (no services page in the thirteen profile kits) and passes here."
+  },
+  "detail": "Every Designer profile kit now has a Services page beside Portfolio, Courses, Events, About, Start a project and Consultation: the short page header in the profile's own words, the Space's own offers (SpaceOfferings, which reads the Space's own programs and bookings), the profile's questions when it has them, and the closing call. Built from blocks the kit already registers, no new markup and no CSS. routeHref and the page set know the route. The design's Book page is the kit's Consultation page and its Journal and Shop pages need site blocks Frequency does not have yet, so they are not offered rather than faked.",
+  "wave": "W7"
+}

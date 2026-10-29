@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { createSpaceHref } from '@/lib/create-space/href'
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { FrequencyNetwork } from '@/components/frequency/site/pages/themes/frequency-network'
@@ -41,10 +42,8 @@ describe('the Network Theme Kit page (/themes/network)', () => {
 
   it('says what is ready and what is on the way from the library catalog, and never more', () => {
     const entry = THEME_LIBRARY.find((t) => t.id === 'network-kit')!
-    const soon = entry.surfaces.filter((s) => s.status === 'soon' && s.id !== 'space' && s.id !== 'email').length
-    // Space and Email have no picture yet, so the page always says they are on the way (never more than the product).
-    expect(html.match(/nf-st soon/g)?.length ?? 0).toBe(soon + 2)
-    expect(html).not.toContain('spacedesk')
+    const soon = entry.surfaces.filter((s) => s.status === 'soon').length
+    expect(html.match(/nf-st soon/g)?.length ?? 0).toBe(soon)
     expect(html).toContain('Frequency keeps its frame')
   })
 
@@ -55,7 +54,7 @@ describe('the Network Theme Kit page (/themes/network)', () => {
 
   it('uses the design system iPhone frame and starts a Space wearing Network', () => {
     expect(html.match(/class="nf-ios"/g)?.length ?? 0).toBeGreaterThanOrEqual(7)
-    expect(html).toContain('/spaces/new?theme=network-kit')
+    expect(html).toContain(createSpaceHref('network-kit'))
     expect(html).toContain('9:41')
   })
 

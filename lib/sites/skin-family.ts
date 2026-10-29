@@ -26,6 +26,17 @@ export function skinFamilyOf(type: string): SkinFamily | null {
   return null
 }
 
+/** How many blocks of each foreign family a document carries when it wears `theme`: the ones that keep their own
+ *  shapes but take the theme's palette (components/sites/contract-skin-css.ts). The Change theme dialog shows it. */
+export function foreignBlocksFor(doc: unknown, theme: string): readonly { family: SkinFamily; count: number }[] {
+  const counts = new Map<SkinFamily, number>()
+  for (const m of JSON.stringify(doc ?? null).matchAll(/"type":"([A-Z][A-Za-z]+)"/g)) {
+    const family = skinFamilyOf(m[1])
+    if (family && family !== theme) counts.set(family, (counts.get(family) ?? 0) + 1)
+  }
+  return [...counts].map(([family, count]) => ({ family, count }))
+}
+
 /** Every family a page document carries a block of (nested slots included). */
 export function skinFamiliesIn(doc: unknown): ReadonlySet<SkinFamily> {
   const found = new Set<SkinFamily>()
