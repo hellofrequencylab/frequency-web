@@ -64,7 +64,16 @@ export function TempleBrowser({ src, alt, url, width, height, sizes, priority = 
   )
 }
 
-/** A surface that is on the way (Space, Email): the frame is there, the picture is not, and nothing is invented to fill it. */
+/** The email picture in its frame: the template as the list opens it. */
+export function TempleMail({ src, alt, sizes }: { src: string; alt: string; sizes: string }) {
+  return (
+    <div className="tf-mail">
+      <Image src={src} alt={alt} width={900} height={1140} sizes={sizes} />
+    </div>
+  )
+}
+
+/** A surface that is on the way (Space): the frame is there, the picture is not, and nothing is invented to fill it. */
 export function TempleSoon({ label, url }: { label: string; url?: string }) {
   const body = (
     <p className="tf-soon-tx">
@@ -120,6 +129,8 @@ export function TempleStage({
             <TempleSoon label={def.label} url={surface === 'space' ? URL_BAR.space : undefined} />
           ) : surface === 'spotlight' ? (
             <TemplePhone src={src} alt={alt} sizes="(max-width: 900px) 60vw, 280px" priority={priority} />
+          ) : surface === 'email' ? (
+            <TempleMail src={src} alt={alt} sizes="(max-width: 900px) 70vw, 420px" />
           ) : (
             <TempleBrowser src={src} alt={alt} url={URL_BAR.site} width={def.width} height={def.height} sizes={sizes} priority={priority && surface === 'site'} />
           )}
