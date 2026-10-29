@@ -1,0 +1,114 @@
+{
+  "role": "Steps",
+  "type": "RoleSteps",
+  "label": "Steps (all themes)",
+  "replaces": [
+    "DawnHowToSteps",
+    "BuildTimeline",
+    "MidnightJourneys",
+    "NetworkKitSteps",
+    "NetworkSteps",
+    "DesignerSteps",
+    "TempleKitSteps"
+  ],
+  "slots": {
+    "required": {
+      "items": {
+        "type": "list",
+        "min": 2,
+        "max": 6,
+        "item": {
+          "title": "text<=60",
+          "body": "text<=240"
+        }
+      }
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280"
+    }
+  },
+  "variants": {
+    "grid": {
+      "label": "Three cards"
+    },
+    "timeline": {
+      "label": "Timeline"
+    },
+    "strip": {
+      "label": "Ruled strip"
+    }
+  },
+  "default": "grid",
+  "data": null,
+  "sample": {
+    "sample": true,
+    "eyebrow": "How it works",
+    "title": "Three steps, *no pressure*",
+    "lead": "",
+    "items": [
+      {
+        "title": "Say hello",
+        "body": "Tell us a little about you. A sentence is plenty."
+      },
+      {
+        "title": "Pick a night",
+        "body": "Choose a gathering that fits your week. Come early if you like."
+      },
+      {
+        "title": "Settle in",
+        "body": "Find your people at the table. We will handle the rest."
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "body",
+    "eyebrow",
+    "heading",
+    "index",
+    "inner",
+    "item",
+    "list",
+    "name",
+    "title"
+  ]
+}

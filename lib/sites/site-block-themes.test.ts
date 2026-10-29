@@ -39,6 +39,8 @@ const PAGE_OWN_RENDER = new Set([
   // in their own palette.
   'WildheartOrnament', 'WildheartPhoto', 'WildheartMoonPath', 'WildheartMoonStrip', 'WildheartSealCards',
   'WildheartSeasonBand', 'WildheartRetreatBand', 'WildheartMarkSplit', 'WildheartModules', 'WildheartFirstNight',
+  // The role blocks (LIVE-1858) draw themselves from the core token contract, so every theme wears them.
+  'RoleHero', 'RoleSteps', 'RoleOfferings', 'RoleGatherings', 'RoleMembership', 'RoleProof', 'RoleFaq', 'RoleCta',
 ])
 
 /** Home blocks that keep the Space page's own render (inside the house `.hs-plain` band). */
