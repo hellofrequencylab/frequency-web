@@ -16,6 +16,6 @@
     "checked": "2026-10-29",
     "evidence": "Fails on main (Network and Designer heroes show one fixed browser picture, Nocturne has no switcher) and passes here."
   },
-  "detail": "Network and Designer heroes use their Stage (chips plus picture and note) again; Nocturne's hero gets the same four chips over its device frame. Name, subtitle, buttons left and preview right are unchanged. test/theme-pages-share-one-layout.render.test.tsx checks all three pages for the four hero chips. Network Space and Email still read 'on the way' until the Network pictures land. Temple copies frequency-network.tsx.",
+  "detail": "Network, Designer and Temple heroes use their Stage (chips plus picture and note) again; Nocturne's hero gets the same four chips over its device frame. Name, subtitle, buttons left and preview right are unchanged. test/theme-pages-share-one-layout.render.test.tsx checks all three pages for the four hero chips. Network Space and Email still read 'on the way' until the Network pictures land. Temple copies frequency-network.tsx.",
   "wave": "W7"
 }
