@@ -28,6 +28,7 @@ import {
 import type { PlannerData, PlannerLayer } from '@/lib/calendar/planner/types'
 import { SuiteAgenda } from './suite-agenda'
 import { SuiteDetails } from './suite-details'
+import { bindDetailsActions, type DetailsActions } from './suite-details-actions'
 import { SuiteHeader } from './suite-header'
 import { SuiteMonth, type MonthScrollRequest } from './suite-month'
 import { SuiteNeedsYou } from './suite-needs-you'
@@ -41,7 +42,8 @@ import { useSuiteMoves, type SuiteActions } from './use-suite-moves'
 // rail, the header, the Needs-you row, the view, and the Details panel. This part owns what is on
 // screen (the view, the day the calendar is on, the layers switched off, the one thing selected) and
 // the keys that move it. The records come in already adapted (lib/calendar/planner/adapters.ts), so
-// nothing here knows what a row of the database looks like, and nothing here writes.
+// nothing here knows what a row of the database looks like. Writes are the parts' own: a drop through
+// use-suite-moves.tsx, an edit through the Details panel (suite-details.tsx).
 
 /** Under this width the Agenda opens first: a month's cells are too narrow to read there. */
 const NARROW_QUERY = '(max-width: 719px)'
@@ -88,6 +90,8 @@ export interface CalendarSuiteProps {
   frozenClock?: boolean
   /** The writes a drop makes. Absent means the calendar's own server actions; a test passes stand-ins. */
   actions?: SuiteActions
+  /** The writes the Details panel makes. Absent means the calendar's own server actions. */
+  detailsActions?: DetailsActions
 }
 
 type Sheet = 'pencil' | 'ask' | null
@@ -104,6 +108,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       },
     [props.actions, slug],
   )
+  const detailsActions = useMemo<DetailsActions>(() => props.detailsActions ?? bindDetailsActions(slug), [props.detailsActions, slug])
   // A drop is shown at once and written through the calendar's own actions (use-suite-moves.tsx).
   const moves = useSuiteMoves({ base: props.data, actions, canEdit })
   const data = moves.data
@@ -141,6 +146,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       ownSpaceId: spaceId,
       ownName: brandName,
       today: todayKey,
+      canEdit,
       spaceNames: data.spaceNames,
       clashes: findClashes(data.items),
       teamById: new Map(team.map((m) => [m.id, m])),
@@ -148,7 +154,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       itemById: new Map(data.items.map((i) => [i.id, i])),
       taskById: new Map(data.tasks.map((t) => [t.id, t])),
     }),
-    [spaceId, brandName, todayKey, data, team],
+    [spaceId, brandName, todayKey, canEdit, data, team],
   )
   const needs = useMemo(
     () => needsYou({ items: data.items, tasks: data.tasks, plans: data.plans }, todayKey, spaceId, data.spaceNames),
@@ -393,7 +399,17 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       </div>
 
       <aside className="cal-details fq-panel" aria-label="Details" hidden={!sel}>
-        {sel ? <SuiteDetails sel={sel} data={plannerData} ctx={ctx} onSelect={select} onClose={() => setSel(null)} /> : null}
+        {sel ? (
+          <SuiteDetails
+            sel={sel}
+            data={plannerData}
+            ctx={ctx}
+            actions={detailsActions}
+            say={moves.say}
+            onSelect={select}
+            onClose={() => setSel(null)}
+          />
+        ) : null}
       </aside>
 
       <div className="cal-scrim" onClick={() => (railOpen ? setRailOpen(false) : setSel(null))} aria-hidden />

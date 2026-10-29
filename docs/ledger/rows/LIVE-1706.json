@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1706",
+  "title": "The Space calendar Details panel edits in place: title, stage, fields, the plan card, the edit history and the thread",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/calendar-suite/suite-details.tsx",
+    "ref": "Daniel, 2026-10-28: redesign the Space calendar with the Calendar system handoff; every Space gets the full calendar and project suite (pass 5 of 9)"
+  },
+  "detail": "Pass 5 of the Space calendar and project suite: the Details panel stops being read only. A date, a to-do and a Plan each take their edits in place: the title is the heading and saves when the person leaves it; the stage is a control; a date has Date, Starts, Length and Notes for the team; a to-do has Due, Owner, Do today, Mark done and Delete; a Plan has its stage and notes. Every edit is a write the calendar already had (saveCalendarEntry, saveCalendarEntryOccurrence, transitionPlanStage, setSpaceTaskDone, moveSpaceTodo, assignPlanTodo, addPlanTodo, pickPencilDate, deleteCalendarEntry, skipPencilDate, postPlanComment, postEntryComment), and a repeating date asks which dates the edit reaches before it writes. Three small doors are new because nothing covered them: renameSpaceTodo, deleteSpaceTodo and editPlanText (a Plan's title or notes without the whole-form save that clears its links), and saveCalendarEntry now writes the entry arm of space_plan_activity for a date on no Plan. The plan context card shows the Spaces (Host, Co-host, Invited, read only), the hold line, Pick this on each held date, and the to-dos grouped Before, Day of and After with how many days before, tickable and addable. Edit history shows three rows and Show all N edits, with the thread under it (Leave a note for both teams), for a Plan or, through the entry arm, for a standalone date. Go live and Go to event are links to the existing production door and event page; Copy to next week, Cancel and Delete are on every date this Space keeps. A person who can only read sees the same panel with no control. Not in this pass: inviting a Space and answering an invite (pass 7), the Published stage segment (an event is published through the production door), an owner on a date (no column), Undo on an inline edit (the handoff has none). Plan: /mnt/project-files/calendar-suite/PLAN.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const need=['components/calendar-suite/suite-details-actions.ts','components/calendar-suite/suite-details-fields.tsx','components/calendar-suite/suite-plan-card.tsx','components/calendar-suite/suite-record.tsx','lib/calendar/planner/details.ts','lib/calendar/planner/details.test.ts','components/calendar-suite/suite-details.render.test.tsx'];const miss=need.filter(f=>!fs.existsSync(f));if(miss.length){console.error('missing',miss);process.exit(1)}const d=fs.readFileSync('components/calendar-suite/suite-details.tsx','utf8');for(const w of ['Copy to next week','Notes for the team','Do today','Mark done']){if(!d.includes(w)){console.error('Details has no',w);process.exit(1)}}\"",
+    "note": "Fails on main (the Details panel is read only and has none of these files); passes here. The edit, series question, plan card and record tests run in CI."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}
