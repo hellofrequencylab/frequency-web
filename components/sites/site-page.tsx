@@ -31,6 +31,8 @@ import { networkKitScheme } from '@/lib/theme/network-kit'
 import { DESIGNER_FONT_CLASS } from '@/components/sites/designer-fonts'
 import { DESIGNER_CSS } from '@/components/sites/designer-css'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
+import { contractSkinCss } from '@/components/sites/contract-skin-css'
+import { skinFamiliesIn } from '@/lib/sites/skin-family'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -403,6 +405,9 @@ export async function SitePage({
     </>
   ) : null
 
+  // Theme-named block families on a site that does not wear that theme (the contract skin sheet below).
+  const foreignFamilies = [...skinFamiliesIn(websitePage?.doc ?? mwBlocks)].filter((family) => family !== siteStyle.theme)
+
   return (
     // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578), so the site wears the
     // owner's accent and faces rather than the default Frequency look.
@@ -415,6 +420,8 @@ export async function SitePage({
       {websitePage && !skin && <style>{FREQUENCY_PAGE_CSS}</style>}
       {/* Network sections on a site that does not wear Network bring their own sheet, in the site's palette. */}
       {!netSite && docHasNetworkBlocks(websitePage?.doc ?? mwBlocks) && <style>{NETWORK_BLOCK_CSS}</style>}
+      {/* A theme-named family on a site that does not wear that theme brings its own rules, in the site's palette (LIVE-1853). */}
+      {foreignFamilies.length > 0 && <style>{contractSkinCss(foreignFamilies)}</style>}
       <SiteChrome
         brandName={websiteChrome.name}
         homeHref={homeHref}

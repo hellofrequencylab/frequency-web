@@ -21,6 +21,7 @@ import {
 import { safeImageSrc } from '@/lib/safe-image-src'
 import { safeImageUrl } from '@/lib/entity-blocks/block-content'
 import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
+import { skinFamilyOf } from '@/lib/sites/skin-family'
 import { MENSWORK_SEASON_INFO } from '@/lib/theme/menswork'
 import {
   dateLabel,
@@ -153,10 +154,10 @@ export function MensworkPage({ blocks, plan, live, links, origin, pageTitle, ren
             return <Journeys key={key} p={props} ctx={ctx} />
           case 'own':
             // A data hook, not a class: the theme that owns the family styles it (components/sites/network-css.ts).
-            return <div key={key} data-mw-own="">{renderOther(blocks[p.at])}</div>
+            return <div key={key} data-mw-own="" data-skin-family={skinFamilyOf(blocks[p.at].type) ?? undefined}>{renderOther(blocks[p.at])}</div>
           default:
             return (
-              <div key={key} className="mw-wrap mw-other">
+              <div key={key} className="mw-wrap mw-other" data-skin-family={skinFamilyOf(blocks[p.at].type) ?? undefined}>
                 {renderOther(blocks[p.at])}
               </div>
             )
