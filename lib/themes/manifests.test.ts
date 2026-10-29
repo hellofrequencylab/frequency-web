@@ -21,13 +21,11 @@ const file = (id: string) => join(DIR, `${id}.manifest.json`)
 
 type Json = Record<string, unknown>
 const contractThemes = (CONTRACT as unknown as { themes: Record<string, Json> }).themes
-const derived = (CONTRACT as unknown as { derived: Record<string, string> }).derived
 const coreMap = (MAP as unknown as { themes: Record<string, { names: Record<string, string> }> }).themes
 
 function build(def: (typeof MEGA_THEMES)[number]): Json {
   const site = def.site ? SITE_THEME_DEFS.find((s) => s.id === def.site) ?? null : null
   const lib = THEME_LIBRARY.find((t) => t.id === def.id) ?? null
-  const { niches, ...editorTokens } = (contractThemes[def.editor] ?? {}) as Json & { niches?: Json }
   return {
     schema: 1,
     id: def.id,
@@ -35,8 +33,9 @@ function build(def: (typeof MEGA_THEMES)[number]): Json {
     offered: SITE_THEMES.some((s) => s.id === def.site) && lib !== null,
     site: site ? { label: site.label, description: site.description, defaultFonts: site.defaultFonts } : null,
     library: lib ? { tagline: lib.tagline, madeFor: lib.madeFor, signature: lib.signature, surfaces: lib.surfaces, page: themePagePath(lib.id) } : null,
-    editor: { tokens: editorTokens, niches: niches ?? null, derived },
-    core: { names: coreMap[def.id]?.names ?? null },
+    // Pointers, never copies: palette values live in one place, and the drift test resolves these at test time.
+    editor: { tokens: { source: 'lib/sites/editor/theme-contract.json', path: ['themes', def.editor] } },
+    core: { names: { source: 'lib/theme/block-contract-map.json', path: ['themes', def.id, 'names'] } },
   }
 }
 
@@ -57,9 +56,10 @@ describe('theme manifests', () => {
   })
   it('keeps every legacy id and carries the full core token mapping', () => {
     for (const d of MEGA_THEMES) {
-      const m = JSON.parse(readFileSync(file(d.id), 'utf8')) as { legacyIds: { editor: string; site: string | null }; core: { names: Record<string, string> | null } }
+      const m = JSON.parse(readFileSync(file(d.id), 'utf8')) as { legacyIds: { editor: string; site: string | null }; editor: { tokens: { path: string[] } }; core: { names: { path: string[] } } }
       expect(m.legacyIds).toEqual({ editor: d.editor, site: d.site })
-      expect(Object.keys(m.core.names ?? {}).length, d.id).toBeGreaterThanOrEqual(45)
+      expect(contractThemes[m.editor.tokens.path[1]], d.id).toBeDefined()
+      expect(Object.keys(coreMap[m.core.names.path[1]]?.names ?? {}).length, d.id).toBeGreaterThanOrEqual(45)
     }
   })
   it('lists a theme as offered only when the picker and the library both offer it', () => {

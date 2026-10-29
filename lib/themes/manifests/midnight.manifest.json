@@ -45,91 +45,21 @@
   },
   "editor": {
     "tokens": {
-      "--th-bg": "#050505",
-      "--th-surface": "#0B0B0B",
-      "--th-raised": "#171717",
-      "--th-hairline": "#1F1F1F",
-      "--th-muted": "#8C877E",
-      "--th-secondary": "#A7A196",
-      "--th-text": "#EDE8DF",
-      "--th-accent": "#B094FF",
-      "--th-accent-text": "#CDBDFB",
-      "--th-accent-bg": "#1C1430",
-      "--th-accent-deep": "#7D5FD3",
-      "--th-on-accent": "#050505",
-      "--th-season": "#E5A04B",
-      "--th-on-season": "#050505",
-      "--th-display": "'Bodoni Moda',Didot,'Bodoni 72',Georgia,serif",
-      "--th-dw": "400",
-      "--th-body": "Geist,system-ui,sans-serif",
-      "--th-mono": "Marcellus,'Trajan Pro',Georgia,serif",
-      "--th-r": "0px",
-      "--ed-lift": "10%",
-      "--ed-lift2": "16%",
-      "--th-clip-sm": "inset(0)",
-      "--th-clip-md": "inset(0)",
-      "--th-clip-lg": "inset(0 round 50% 50% 0 0 / 28% 28% 0 0)",
-      "seasons": {
-        "winter": "#8FA9C4",
-        "spring": "#7FA88A",
-        "summer": "#E5A04B",
-        "fall": "#C98431"
-      }
-    },
-    "niches": null,
-    "derived": {
-      "--ed-chrome": "color-mix(in oklch, var(--th-bg), white var(--ed-lift))",
-      "--ed-field": "color-mix(in oklch, var(--th-bg), white var(--ed-lift2))",
-      "--ed-line": "color-mix(in oklch, var(--th-hairline), white var(--ed-lift))"
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "Midnight"
+      ]
     }
   },
   "core": {
     "names": {
-      "--c-canvas": "var(--color-canvas)",
-      "--c-surface": "var(--color-surface)",
-      "--c-raised": "var(--color-surface-elevated)",
-      "--c-sunken": "color-mix(in srgb,var(--color-canvas) 92%,var(--color-text))",
-      "--c-text": "var(--color-text)",
-      "--c-text-muted": "var(--color-text-muted)",
-      "--c-text-subtle": "var(--color-text-subtle)",
-      "--c-on-accent": "var(--color-text-on-primary)",
-      "--c-accent": "var(--color-primary)",
-      "--c-accent-hover": "var(--color-primary-hover)",
-      "--c-accent-soft": "color-mix(in srgb,var(--color-primary) 18%,var(--color-canvas))",
-      "--c-accent-bg": "var(--color-primary-bg)",
-      "--c-accent-deep": "var(--color-primary-strong)",
-      "--c-accent-text": "var(--color-primary-strong)",
-      "--c-line": "var(--color-border)",
-      "--c-line-strong": "var(--color-border-strong)",
-      "--c-success": "var(--color-success)",
-      "--c-warning": "var(--color-warning)",
-      "--c-danger": "var(--color-danger)",
-      "--c-info": "var(--color-info)",
-      "--c-focus": "var(--color-focus-ring)",
-      "--c-band": "var(--color-ink)",
-      "--c-on-band": "var(--color-on-ink)",
-      "--r-control": "var(--radius-control)",
-      "--r-card": "var(--radius-card)",
-      "--r-panel": "var(--radius-cover)",
-      "--r-media": "var(--radius-media)",
-      "--frame": "inset(0)",
-      "--shadow-card": "none",
-      "--shadow-lift": "none",
-      "--f-display": "var(--font-display)",
-      "--f-body": "var(--font-body)",
-      "--f-label": "var(--font-label)",
-      "--f-voice": "var(--font-display)",
-      "--w-display": "400",
-      "--track-display": "normal",
-      "--case-heading": "none",
-      "--lead-display": "1.1",
-      "--sp-section": "var(--space-section)",
-      "--sp-gap": "16px",
-      "--sp-gutter": "var(--space-gutter)",
-      "--measure": "68ch",
-      "--dur-fast": "var(--motion-fast)",
-      "--dur": "var(--motion-base)",
-      "--ease": "var(--ease-out)"
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "midnight",
+        "names"
+      ]
     }
   }
 }
