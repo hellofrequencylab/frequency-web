@@ -115,8 +115,9 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
   },
   {
     // THE TEMPLE THEME KIT (id `temple-kit`, shown as Temple): the Temple owners pick and the /themes page shows. The
-    // older `temple` entry above (Royal Temple) leaves the pickers. Typography-only on the Space page too (ADR-578): the
-    // same four faces as `temple` load on the website alone, so a synced Space page wears Classic. Not published to a
+    // older `temple` entry above (Royal Temple) leaves the pickers. On the Space page a synced Temple website wears the
+    // kit's DISPLAY face only (Marcellus, spacePageSiteFaces; ADR-1728, ADR-1906): the body, the UI and every size stay
+    // Frequency's, and Branch, Jost and Cormorant load on the website alone. Not published to a
     // live site until its render is finished (WEBSITE_THEMES_LIVE).
     id: 'temple-kit',
     label: 'Temple',
@@ -302,7 +303,7 @@ export function spacePageSiteFaces(preferences: unknown): SiteFacesId | null {
   if (readMegaTheme(preferences).theme === 'midnight') return 'midnight'
   const style = readSiteStyle(preferences)
   if (!style.synced) return null
-  return style.theme === 'network' || style.theme === 'network-kit' || style.theme === 'designer' || style.theme === 'wildheart' || style.theme === 'midnight' ? style.theme : null
+  return style.theme === 'network' || style.theme === 'network-kit' || style.theme === 'designer' || style.theme === 'temple-kit' || style.theme === 'wildheart' || style.theme === 'midnight' ? style.theme : null
 }
 
 /** The font set a Space wears INSIDE Frequency (member and admin routes): its own, never the website's.

@@ -134,7 +134,8 @@ describe('the Temple Theme Kit is registered as a site theme', () => {
     const prefs = withSiteStyle({}, { theme: 'temple-kit' })
     expect(readSiteStyle(prefs).theme).toBe('temple-kit')
     expect(spacePageDefaultAccent(prefs, '#123456')).toBe(TEMPLE_KIT_ACCENT.accent)
-    expect(spacePageSiteFaces(prefs)).toBeNull()
+    // A synced Temple website gives the Space page the kit's display face (Marcellus), nothing else.
+    expect(spacePageSiteFaces(prefs)).toBe('temple-kit')
   })
 
   it('resolves through the render style and the editor', () => {
