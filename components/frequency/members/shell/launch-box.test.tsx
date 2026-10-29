@@ -5,8 +5,8 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import type { LaunchBoxView } from '@/lib/launch/box-state'
 
-const mocks = vi.hoisted(() => ({ minimize: vi.fn(), request: vi.fn(), confirm: vi.fn(), refresh: vi.fn() }))
-vi.mock('@/lib/launch/actions', () => ({ setMinimizedAction: mocks.minimize, requestCancelAction: mocks.request, confirmCancelAction: mocks.confirm }))
+const mocks = vi.hoisted(() => ({ minimize: vi.fn(), request: vi.fn(), confirm: vi.fn(), refresh: vi.fn(), askHide: vi.fn(), confirmHide: vi.fn() }))
+vi.mock('@/lib/launch/actions', () => ({ setMinimizedAction: mocks.minimize, requestCancelAction: mocks.request, confirmCancelAction: mocks.confirm, askHideSetupAction: mocks.askHide, confirmHideSetupAction: mocks.confirmHide }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: mocks.refresh }) }))
 import { LaunchPill, LaunchSheet } from './launch-box'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -84,4 +84,44 @@ it('minimize saves the flag and closes; a minimized launch offers to show itself
   await act(async () => { button('Show my launch').click() })
   expect(mocks.minimize).toHaveBeenLastCalledWith(false)
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('could not save')
+})
+
+it('after Publish the same pill reads Finish setup and the sheet lists what is left (LIVE-1914)', () => {
+  mount(
+    view({
+      setup: { done: 4, total: 17, left: 13, pct: 24, sections: [{ id: 'space', title: 'Space', done: 1, total: 3 }], todo: [{ id: 'sc-cover', label: 'Cover image', href: '/launch/step/space', photo: true, skipped: false }] },
+    }),
+  )
+  expect(host.querySelector('.ap-launch')?.getAttribute('aria-label')).toBe('Finish setup, 4 of 17 done')
+  expect(host.querySelector('.ap-launch-l')?.textContent).toBe('Finish setup')
+  expect(host.textContent).toContain('4 of 17 done · 13 left')
+  expect(host.querySelector('a[href="/launch/step/space"]')?.textContent).toBe('Cover image')
+})
+
+it('hiding Finish setup takes two steps, and the second only runs after the server took the first (LIVE-1915)', async () => {
+  mocks.askHide.mockResolvedValue({ data: undefined })
+  mocks.confirmHide.mockResolvedValue({ data: undefined })
+  const onClose = vi.fn()
+  mount(
+    view({ setup: { done: 4, total: 17, left: 13, pct: 24, sections: [], todo: [{ id: 'a', label: 'A thing', href: '/launch/step/space', photo: false, skipped: false }] } }),
+    onClose,
+  )
+  act(() => button('Hide setup').click())
+  expect(host.textContent).toContain('Step 1 of 2')
+  expect(mocks.confirmHide).not.toHaveBeenCalled()
+  await act(async () => button('Continue to hide').click())
+  expect(mocks.askHide).toHaveBeenCalledTimes(1)
+  expect(host.textContent).toContain('Step 2 of 2')
+  expect(mocks.confirmHide).not.toHaveBeenCalled()
+  await act(async () => button('Hide setup').click())
+  expect(mocks.confirmHide).toHaveBeenCalledTimes(1)
+  expect(onClose).toHaveBeenCalled()
+})
+
+it('Keep it at either step backs out without writing', () => {
+  mount(view({ setup: { done: 1, total: 3, left: 2, pct: 33, sections: [], todo: [] } }))
+  act(() => button('Hide setup').click())
+  act(() => button('Keep it').click())
+  expect(mocks.askHide).not.toHaveBeenCalled()
+  expect(button('Hide setup')).toBeTruthy()
 })

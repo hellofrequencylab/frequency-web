@@ -1,0 +1,4 @@
+{
+  "note": "Known theme conformance gaps (docs/THEME-COHESION.md section 5, LIVE-1865). It can only shrink: a gap that is fixed must be removed here (the test fails as healed), and a gap that is not listed fails as fresh. Do not add an entry to make a red run green.",
+  "gaps": []
+}

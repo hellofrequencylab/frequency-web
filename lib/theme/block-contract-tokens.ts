@@ -41,8 +41,8 @@ export const CORE_TOKEN_NAMES = [
 
 export type CoreTokenName = (typeof CORE_TOKEN_NAMES)[number]
 
-/** The nine site themes (lib/theme/site-style.ts SiteThemeId). */
-export const CONTRACT_THEME_IDS = ['frequency', 'bold', 'wildheart', 'network', 'network-kit', 'temple', 'temple-kit', 'midnight', 'designer'] as const
+/** The ten site themes (lib/theme/site-style.ts SiteThemeId). */
+export const CONTRACT_THEME_IDS = ['frequency', 'bold', 'wildheart', 'network', 'network-kit', 'temple', 'temple-kit', 'midnight', 'designer', 'free-human'] as const
 
 export type ContractThemeId = (typeof CONTRACT_THEME_IDS)[number]
 
@@ -57,6 +57,7 @@ const SCOPE: Readonly<Record<ContractThemeId, string>> = {
   'temple-kit': '[data-house-theme="temple-kit"]',
   midnight: '[data-house-theme="midnight"]',
   designer: '[data-house-theme="designer"]',
+  'free-human': '[data-house-theme="free-human"]',
 }
 
 type Generated = { themes: Record<string, { names: Record<string, string> }> }

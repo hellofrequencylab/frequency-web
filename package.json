@@ -55,6 +55,7 @@
     "check:templates": "node scripts/check-templates.mjs",
     "check:marketing-kit": "node scripts/check-marketing-kit.mjs",
     "check:design-system": "node scripts/ds-intake.mjs --theme nocturne --repo",
+    "check:theme-conformance": "node scripts/theme-conformance.mjs",
     "check:phantom": "node scripts/check-phantom-classes.mjs",
     "check:schema-contract": "node scripts/check-schema-contract.mjs",
     "check:bridge": "node scripts/check-bridge.mjs",
