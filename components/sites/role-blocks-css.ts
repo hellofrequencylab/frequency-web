@@ -212,7 +212,7 @@ export const ROLE_CSS_CHUNKS: Readonly<Record<string, string>> = { base: BASE, h
 
 /** Editor theme id to the contract theme whose mapping it wears. */
 const CONTRACT_OF: Partial<Record<WebsiteTheme, ContractThemeId>> = {
-  DAWN: 'frequency', Menswork: 'bold', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Midnight: 'midnight', Designer: 'designer',
+  DAWN: 'frequency', Menswork: 'bold', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Midnight: 'midnight', Designer: 'designer', FreeHuman: 'free-human',
 }
 
 /** The sheet for a page that carries role blocks: the active theme's contract mapping, then the structure. */

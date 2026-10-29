@@ -11,7 +11,7 @@ import { WebsiteDocument } from '@/components/sites/website-document'
 
 // The eight role blocks (LIVE-1858). The contract each *.role.json declares is proved here against the real markup and
 // the real sheet: every variant renders, every part is declared and styled, the sheet reads only declared core tokens,
-// and the same markup wears all nine themes' mappings with nothing unresolved (coverage 1.00).
+// and the same markup wears all ten themes' mappings with nothing unresolved (coverage 1.00).
 // `UPDATE_ROLE_MANIFEST=1 pnpm vitest run components/page-editor/blocks/roles.test.tsx` rewrites `tokens` and `parts`
 // in each role file from what the markup and the sheet really use; it never touches the hand-written fields.
 
@@ -102,10 +102,10 @@ describe.each(ROLE_IDS)('role %s', (id) => {
   })
 })
 
-describe('the nine themes', () => {
+describe('the ten themes', () => {
   it('map every token the role sheet reads, with a real value', () => {
     const read = new Set(ROLE_IDS.flatMap((id) => varsRead(cssFor(id))))
-    expect(CONTRACT_THEME_IDS).toHaveLength(9)
+    expect(CONTRACT_THEME_IDS).toHaveLength(10)
     for (const theme of CONTRACT_THEME_IDS) {
       const map = coreTokenMap(theme)
       for (const v of read) expect(map[v as keyof typeof map]?.trim(), `${theme} has no value for ${v}`).toBeTruthy()
