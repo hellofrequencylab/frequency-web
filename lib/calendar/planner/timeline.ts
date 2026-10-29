@@ -22,6 +22,9 @@ export interface TimelineMark {
   /** The date's kind color. */
   color: string
   title: string
+  /** Which edge of the span the date falls past, or null when it sits inside it. A clamped position
+   *  would pass an edge off as a real day, so the view draws only the ones inside. */
+  past: 'before' | 'after' | null
 }
 
 interface TimelineDue {
@@ -30,6 +33,7 @@ interface TimelineDue {
   state: DueState
   color: string
   title: string
+  past: 'before' | 'after' | null
 }
 
 export interface TimelineRow {
@@ -63,6 +67,7 @@ export function buildTimeline(data: PlannerData, today: string): Timeline {
   const start = addDays(mondayOnOrBefore(today), -7)
   const spanEnd = addDays(start, TIMELINE_DAYS)
   const pos = (key: string) => Math.max(0, Math.min(100, (diffDays(start, key) * 100) / TIMELINE_DAYS))
+  const past = (key: string): 'before' | 'after' | null => (key < start ? 'before' : key >= spanEnd ? 'after' : null)
   const fit = (left: number, width: number) => {
     const w = Math.max(MIN_MARK_PCT, width)
     return { leftPct: Math.min(left, 100 - w), widthPct: w }
@@ -101,12 +106,13 @@ export function buildTimeline(data: PlannerData, today: string): Timeline {
           ...fit(pos(i.date), pos(addDays(lastDay(i), 1)) - pos(i.date)),
           color: KINDS[i.kind].dot,
           title: `${i.title} · ${dayLabel(i.date)}`,
+          past: lastDay(i) < start ? 'before' : past(i.date) === 'after' ? 'after' : null,
         })),
         dues: s.todos
           .filter((t) => t.due)
           .map((t) => {
             const state = dueState(t.due!, t.done, today)
-            return { id: t.id, leftPct: pos(t.due!), state, color: TODO_DOT[state], title: `${t.title} · due ${dayLabel(t.due!)}` }
+            return { id: t.id, leftPct: pos(t.due!), state, color: TODO_DOT[state], title: `${t.title} · due ${dayLabel(t.due!)}`, past: past(t.due!) }
           }),
         holdPct: plan.hold ? pos(plan.hold) : null,
       }
