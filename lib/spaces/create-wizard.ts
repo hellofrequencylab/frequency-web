@@ -144,10 +144,10 @@ export function suggestModeForIntents(picks: readonly string[], available: reado
 }
 
 /** The themes the look step offers: every Mega Theme, in the library's order, with its one-line pitch. */
-export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.filter(({ id }) => id !== 'network').map(({ id }) => ({
+export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.filter(({ id }) => id !== 'network' && id !== 'temple').map(({ id }) => ({
   id,
   // The site theme's own label, so Midnight reads as Nocturne (its saved id stays `midnight`).
-  label: id === 'frequency' ? 'Default' : id === 'network-kit' ? 'Network' : (SITE_THEMES.find((t) => t.id === id)?.label ?? id.charAt(0).toUpperCase() + id.slice(1)),
+  label: id === 'frequency' ? 'Default' : id === 'network-kit' ? 'Network' : id === 'temple-kit' ? 'Temple' : (SITE_THEMES.find((t) => t.id === id)?.label ?? id.charAt(0).toUpperCase() + id.slice(1)),
   hint: THEME_LIBRARY.find((t) => t.id === id)?.tagline ?? '',
 }))
 
