@@ -30,7 +30,7 @@ export function freeHumanMoon(date: Date): FreeHumanMoon {
   return { age, phase, name: PHASES[phase], toFull, nextLine: toFull === 0 ? 'Full tonight' : `Full in ${toFull} ${toFull === 1 ? 'day' : 'days'}` }
 }
 
-export type FreeHumanSeasonKey = 'winter' | 'spring' | 'summer' | 'autumn'
+type FreeHumanSeasonKey = 'winter' | 'spring' | 'summer' | 'autumn'
 
 const SEASONS: Record<FreeHumanSeasonKey, { name: string; module: string }> = {
   winter: { name: 'Winter', module: 'Rest' },

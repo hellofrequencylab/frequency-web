@@ -3,7 +3,7 @@
 // Every start is a stored wall clock (lib/time/zone.ts, "YYYY-MM-DDTHH:MM"), so day and month come off the string and no zone
 // round trip happens here.
 
-export interface FreeHumanKindMeta { id: string; label: string; glyph: string; color: string }
+interface FreeHumanKindMeta { id: string; label: string; glyph: string; color: string }
 
 /** The kinds of gathering the design draws, each with the mark and the colour token that stand for it. */
 export const FREE_HUMAN_KINDS: readonly FreeHumanKindMeta[] = [
@@ -88,7 +88,7 @@ export function freeHumanMonthAt(today: string, offset: number): { year: number;
   return { year: Math.floor(idx / 12), month: idx % 12 }
 }
 
-export interface FreeHumanCell {
+interface FreeHumanCell {
   key: string
   n: number
   inMonth: boolean
@@ -125,7 +125,7 @@ export function freeHumanMonthCells(occs: readonly FreeHumanOcc[], year: number,
   return cells
 }
 
-export interface FreeHumanStripMonth { offset: number; label: string; year: string; count: number; countLine: string; season: string }
+interface FreeHumanStripMonth { offset: number; label: string; year: string; count: number; countLine: string; season: string }
 
 /** The month strip: `length` months from the month of `today`, each with how many gatherings it holds. */
 export function freeHumanMonthStrip(occs: readonly FreeHumanOcc[], today: string, length: number, seasonOf: (month: number) => string): FreeHumanStripMonth[] {
