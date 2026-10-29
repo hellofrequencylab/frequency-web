@@ -145,7 +145,7 @@ describe('the Temple Theme Kit is registered as a site theme', () => {
     expect(r.editorTheme).toBe('TempleKit')
     expect(r.accentVars?.['--color-primary']).toBe('#9C4A2C')
     expect(WEBSITE_THEMES).toContain('TempleKit')
-    expect(WEBSITE_THEMES_LIVE.has('TempleKit'), 'held back until its blocks and chrome ship').toBe(false)
+    expect(WEBSITE_THEMES_LIVE.has('TempleKit'), 'a Space that wears the kit publishes it (LIVE-1645)').toBe(true)
     expect(WEBSITE_THEME_FONT_VARS.TempleKit).toEqual(['tp-marcellus', 'tp-jost', 'tp-jost'])
   })
 
