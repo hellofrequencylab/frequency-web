@@ -1,0 +1,94 @@
+{
+  "role": "Letter",
+  "type": "RoleLetter",
+  "label": "Letter (all themes)",
+  "replaces": [
+    "SpaceJoinList",
+    "MidnightLetter",
+    "NetworkKitLetter",
+    "TempleFollow"
+  ],
+  "slots": {
+    "required": {
+      "title": "text<=120"
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "lead": "text<=280",
+      "primary": "link",
+      "note": "text<=160"
+    }
+  },
+  "variants": {
+    "band": {
+      "label": "Full band"
+    },
+    "card": {
+      "label": "Card"
+    },
+    "inline": {
+      "label": "Words beside the button"
+    }
+  },
+  "default": "card",
+  "data": null,
+  "sample": {
+    "sample": true,
+    "eyebrow": "The letter",
+    "title": "One kind note, *now and then*",
+    "lead": "News, dates and the odd good idea. Nothing you have to answer.",
+    "primaryLabel": "Join the list",
+    "primaryHref": "~/contact",
+    "note": "No spam. Leave any time."
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "actions",
+    "copy",
+    "cta",
+    "eyebrow",
+    "inner",
+    "lead",
+    "note",
+    "side",
+    "text",
+    "title"
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "role": "Contact",
+  "type": "RoleContact",
+  "label": "Contact (all themes)",
+  "replaces": [
+    "SpaceContact",
+    "MidnightContact",
+    "NetworkKitContact",
+    "NetworkContact",
+    "DesignerInquiry"
+  ],
+  "slots": {
+    "required": {
+      "title": "text<=120"
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "lead": "text<=280",
+      "items": {
+        "type": "list",
+        "min": 0,
+        "max": 6,
+        "item": {
+          "label": "text<=30",
+          "value": "text<=120",
+          "href": "link?"
+        }
+      },
+      "primary": "link",
+      "secondary": "link",
+      "note": "text<=160"
+    }
+  },
+  "variants": {
+    "split": {
+      "label": "Words beside the details"
+    },
+    "card": {
+      "label": "Details in a card"
+    },
+    "center": {
+      "label": "Centred"
+    }
+  },
+  "default": "split",
+  "data": null,
+  "sample": {
+    "sample": true,
+    "eyebrow": "Say hello",
+    "title": "We read *every* message",
+    "lead": "Questions, ideas or a booking. A real person answers within two days.",
+    "items": [
+      {
+        "label": "Email",
+        "value": "hello@example.com",
+        "href": "mailto:hello@example.com"
+      },
+      {
+        "label": "Where",
+        "value": "Your town, a short walk from the station",
+        "href": ""
+      },
+      {
+        "label": "Hours",
+        "value": "Tuesday to Saturday, 10 to 5",
+        "href": ""
+      }
+    ],
+    "primaryLabel": "Write to us",
+    "primaryHref": "~/contact",
+    "secondaryLabel": "",
+    "secondaryHref": "",
+    "note": ""
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "actions",
+    "cta",
+    "eyebrow",
+    "heading",
+    "inner",
+    "item",
+    "lead",
+    "list",
+    "meta",
+    "note",
+    "side",
+    "title",
+    "value"
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "role": "Gallery",
+  "type": "RoleGallery",
+  "label": "Gallery (all themes)",
+  "replaces": [
+    "Gallery",
+    "PhotoTrio",
+    "Image",
+    "NetworkKitSocial",
+    "NetworkMedia",
+    "DesignerPortfolio",
+    "DesignerGallery",
+    "TempleKitRooms"
+  ],
+  "slots": {
+    "required": {
+      "items": {
+        "type": "list",
+        "min": 1,
+        "max": 16,
+        "item": {
+          "image": "image",
+          "alt": "text<=120?",
+          "caption": "text<=100?"
+        }
+      }
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280",
+      "action": "link"
+    }
+  },
+  "variants": {
+    "grid": {
+      "label": "Even grid"
+    },
+    "mosaic": {
+      "label": "Mosaic"
+    },
+    "carousel": {
+      "label": "Sideways strip"
+    }
+  },
+  "default": "grid",
+  "data": null,
+  "sample": {
+    "sample": true,
+    "eyebrow": "",
+    "title": "A look *inside*",
+    "lead": "",
+    "actionLabel": "",
+    "actionHref": "",
+    "items": [
+      {
+        "image": "",
+        "alt": "",
+        "caption": "First photo"
+      },
+      {
+        "image": "",
+        "alt": "",
+        "caption": "Second photo"
+      },
+      {
+        "image": "",
+        "alt": "",
+        "caption": "Third photo"
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "actions",
+    "caption",
+    "cta",
+    "heading",
+    "inner",
+    "item",
+    "list",
+    "media",
+    "title"
+  ]
+}

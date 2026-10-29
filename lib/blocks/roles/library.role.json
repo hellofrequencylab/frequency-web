@@ -1,0 +1,135 @@
+{
+  "role": "Library",
+  "type": "RoleLibrary",
+  "label": "Library (all themes)",
+  "replaces": [
+    "MidnightLibrary",
+    "NetworkKitLibrary"
+  ],
+  "slots": {
+    "required": {
+      "items": {
+        "type": "list",
+        "min": 1,
+        "max": 12,
+        "item": {
+          "title": "text<=100",
+          "kind": "text<=24?",
+          "meta": "text<=60?",
+          "image": "image?",
+          "href": "link?"
+        }
+      }
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280",
+      "action": "link"
+    }
+  },
+  "variants": {
+    "grid": {
+      "label": "Grid"
+    },
+    "list": {
+      "label": "List"
+    },
+    "featured": {
+      "label": "One feature, the rest beside it"
+    }
+  },
+  "default": "grid",
+  "data": null,
+  "sample": {
+    "sample": true,
+    "eyebrow": "The library",
+    "title": "Go deeper, *any time*",
+    "lead": "",
+    "actionLabel": "Browse the library",
+    "actionHref": "~/library",
+    "items": [
+      {
+        "title": "A talk to start with",
+        "kind": "Recording",
+        "meta": "42 min",
+        "image": "",
+        "href": ""
+      },
+      {
+        "title": "A short course",
+        "kind": "Course",
+        "meta": "6 lessons",
+        "image": "",
+        "href": ""
+      },
+      {
+        "title": "A reading list",
+        "kind": "Guide",
+        "meta": "10 min read",
+        "image": "",
+        "href": ""
+      },
+      {
+        "title": "A practice to keep",
+        "kind": "Practice",
+        "meta": "5 min",
+        "image": "",
+        "href": ""
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "actions",
+    "cta",
+    "eyebrow",
+    "heading",
+    "inner",
+    "item",
+    "kind",
+    "list",
+    "media",
+    "meta",
+    "name",
+    "text",
+    "title"
+  ]
+}
