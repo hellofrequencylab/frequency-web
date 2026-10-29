@@ -36,7 +36,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
       name: 'Your business',
       pill: 'Business',
       noun: 'business',
-      placeholderRelPath: '/images/site/community-dinner.jpg',
+      placeholderRelPath: '/images/site/space-cover-default.jpg',
       accent: ACCENT_BY_TYPE.business,
     })
   }
