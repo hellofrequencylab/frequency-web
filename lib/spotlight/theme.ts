@@ -101,7 +101,7 @@ export const EMPTY_THEME: SpotlightTheme = {
 }
 
 /** A Spotlight preset read from a Mega Theme's flat token set. */
-function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple-kit', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
+function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple-kit' | 'free-human', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
   const s = MEGA_SURFACES[id]!
   return {
     accent: s.accent.accent.toLowerCase(), surface: s.raised.toLowerCase(), text: s.text.toLowerCase(), font, card,
@@ -153,6 +153,9 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   // Marcellus and Jost load on websites only, so the nearest allowlisted faces stand in. The earlier Temple (Royal Temple's)
   // is no longer a preset: it is offered nowhere.
   { id: 'temple-kit', label: 'Temple', theme: { ...surfacePreset('temple-kit', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'temple-kit:stack', kit: 'general' } },
+  // The Free Human Theme Kit (lib/theme/free-human.ts): limewash ground, umber type, one madder accent, soft cards. Cormorant and
+  // Hanken Grotesk load on websites only, so the nearest allowlisted faces stand in. Its own Spotlight layouts wait on design screens.
+  { id: 'free-human', label: 'Free Human', theme: surfacePreset('free-human', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) },
   {
     id: 'mono', label: 'Mono',
     theme: { accent: '#111111', surface: '#ffffff', text: '#111111', font: { heading: 'sans', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },

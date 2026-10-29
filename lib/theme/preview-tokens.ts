@@ -44,7 +44,7 @@ interface Shape {
 
 const hairline = (line: string) => `inset 0 0 0 1px ${line}`
 
-const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, 'temple-kit'>, Shape> = {
+const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, 'temple-kit' | 'free-human'>, Shape> = {
   designer: {
     display: "'Cormorant', 'Cormorant Garamond', Georgia, serif", body: "'Jost', system-ui, sans-serif",
     weight: '400', textCase: 'none', track: '-0.01em', label: '.18em',
