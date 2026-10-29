@@ -76,6 +76,9 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'memberEvents', label: 'Events I host', description: 'Your next public events, with a link to each.', category: 'data', kinds: ['member'], order: 160 },
   // The 0% Tip jar (SPL-06): a link to the in-app tip composer, shown only when the member can receive tips.
   { id: 'tip', label: 'Tip jar', description: 'Let people send you a tip. 0% platform fee.', category: 'data', kinds: ['member'], order: 170 },
+  // What this member is part of (SPL-04): their public Circles, Journeys and Spaces, each shown only if the
+  // member switched that kind on. Reads the Spotlight reader's allowlisted `programs`; nothing private.
+  { id: 'memberPrograms', label: "What I'm part of", description: 'The Circles, Journeys and Spaces you choose to show.', category: 'data', kinds: ['member'], order: 180 },
 ]
 
 // ── CONTENT blocks the operator authors (shared by both kinds) ─────────────────────────────────────
@@ -220,6 +223,7 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'guestbook',
   'memberEvents',
   'tip',
+  'memberPrograms',
   // SPACE free-form blocks (ADR-542): Callout, Image Gallery, Features section, Music-and-video embed.
   'callout',
   'gallery',

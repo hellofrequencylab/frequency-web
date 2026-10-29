@@ -5,7 +5,7 @@
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
-import { OPERATOR_START_HREF } from '@/lib/site'
+import { ROUTES } from '@/lib/frequency/site-nav'
 import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { pricingTiers, priceStringsFrom } from '@/lib/pricing/pricing-page'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
@@ -357,7 +357,7 @@ export function FrequencySystem({ input }: { input: PricingGridInput }) {
         title={SYSTEM_CLOSE.title}
         body={SYSTEM_CLOSE.body}
         primary={{ href: '/themes', label: 'Pick your kit →' }}
-        secondary={{ href: OPERATOR_START_HREF, label: 'Start free' }}
+        secondary={{ href: ROUTES.createSpace, label: 'Start free' }}
       />
     </>
   )

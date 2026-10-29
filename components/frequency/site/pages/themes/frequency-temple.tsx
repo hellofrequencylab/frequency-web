@@ -22,7 +22,7 @@ import {
   templeShot,
   type TempleSurface,
 } from '@/lib/themes/temple-feature-data'
-import { TempleBrowser, TemplePhone, TempleSoon, TempleStage, type TempleSurfaceStatus } from './temple-preview'
+import { TempleBrowser, TempleMail, TemplePhone, TempleSoon, TempleStage, type TempleSurfaceStatus } from './temple-preview'
 
 const START_HREF = '/spaces/new?theme=temple-kit'
 
@@ -66,7 +66,7 @@ const AFTER: [string, string][] = [
   ['Spotlight', 'Books and gathers on the page'],
   ['Space', 'Found on the network, wearing your look'],
   ['Website', 'Your own domain, same blocks'],
-  ['Email', 'Your list, in the same look, on the way'],
+  ['Email', 'Your list, in the same look'],
   ['One profile', 'One login, one list, one look'],
 ]
 
@@ -106,10 +106,10 @@ export function FrequencyTemple() {
   const status: Record<TempleSurface, TempleSurfaceStatus> = {
     site: statusOf('website'),
     spotlight: statusOf('spotlight'),
-    // Space and Email have no picture yet, so they read as on the way here whatever the catalog says: this page
-    // shows less than the product, never more.
+    // Space has no picture yet, so it reads as on the way here whatever the catalog says: this page shows less than
+    // the product, never more.
     space: 'soon',
-    email: 'soon',
+    email: statusOf('email'),
   }
   const kit = TEMPLE_DEFAULT_KIT
   const places: { n: string; name: string; qual?: string; surface: TempleSurface; body: string; lives: string; wears: string; changes: string }[] = [
@@ -152,7 +152,7 @@ export function FrequencyTemple() {
       changes: 'Your list hears from you, and it looks like you.',
     },
   ]
-  const shotFor = (s: TempleSurface) => (s === 'spotlight' ? templeShot(kit, 'spot') : templeShot(kit, 'site'))
+  const shotFor = (s: TempleSurface) => (s === 'spotlight' ? templeShot(kit, 'spot') : s === 'email' ? templeShot(kit, 'email') : templeShot(kit, 'site'))
 
   return (
     <div className="tf" style={vars({ '--c': 'var(--fq-x-sun-neon)' })}>
@@ -221,8 +221,10 @@ export function FrequencyTemple() {
                     <TemplePhone src={shotFor(p.surface)} alt={`Temple: ${p.name.toLowerCase()}`} sizes="(max-width: 900px) 60vw, 300px" />
                   ) : p.surface === 'site' ? (
                     <TempleBrowser src={shotFor(p.surface)} alt={`Temple: ${p.name.toLowerCase()}`} url="yourtemple.org" width={1280} height={800} sizes="(max-width: 900px) 92vw, 640px" />
+                  ) : p.surface === 'email' ? (
+                    <TempleMail src={shotFor(p.surface)} alt="Temple: email" sizes="(max-width: 900px) 70vw, 380px" />
                   ) : (
-                    <TempleSoon label={p.name} url={p.surface === 'space' ? 'frequency.com/spaces/yourtemple' : undefined} />
+                    <TempleSoon label={p.name} url="frequency.com/spaces/yourtemple" />
                   )}
                 </div>
                 <div className="tf-cz-tx">

@@ -697,6 +697,14 @@ const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   // default so saved pages never shift; Cards = the events index card treatment; Calendar = a month
   // grid) and a Columns count for the Cards layout. Both are declared enum primitives, so the editor
   // renders the shared segmented control and the sanitizer validates the stored value (ADR-569 C6).
+  // MEMBER PROGRAMS (SPL-04): three switches, all OFF until the member turns a kind on. Only public Circles,
+  // Journeys and Spaces ever show, whatever is switched on.
+  memberPrograms: [
+    ...DATA_HEADER_FIELDS,
+    { key: 'showCircles', label: 'Show my Circles', type: 'toggle', default: false },
+    { key: 'showJourneys', label: 'Show my Journeys', type: 'toggle', default: false },
+    { key: 'showSpaces', label: 'Show my Spaces', type: 'toggle', default: false },
+  ],
   events: [
     ...DATA_HEADER_FIELDS,
     { key: 'items', label: 'Events to feature', type: 'picker', pickerBlock: 'events' },

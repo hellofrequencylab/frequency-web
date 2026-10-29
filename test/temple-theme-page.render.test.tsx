@@ -43,15 +43,15 @@ describe('the Temple Theme Kit page (/themes/temple)', () => {
 
   it('says what is ready and what is on the way from the library catalog, and never more', () => {
     const entry = THEME_LIBRARY.find((t) => t.id === 'temple-kit')!
-    const soon = entry.surfaces.filter((s) => s.status === 'soon' && s.id !== 'space' && s.id !== 'email').length
-    // Space and Email have no picture yet, so the page always says they are on the way (never more than the product).
-    expect(html.match(/tf-st soon/g)?.length ?? 0).toBe(soon + 2)
+    const soon = entry.surfaces.filter((s) => s.status === 'soon' && s.id !== 'space').length
+    // Space has no picture yet, so the page always says it is on the way (never more than the product).
+    expect(html.match(/tf-st soon/g)?.length ?? 0).toBe(soon + 1)
     expect(html).not.toContain('spacedesk')
     expect(html).toContain('Frequency keeps its frame')
   })
 
-  it('has a real picture on disk for every profile website and Spotlight and every layout', () => {
-    for (const k of TEMPLE_KITS) for (const shot of ['site', 'spot']) expect(existsSync(`public${templeShot(k.id, shot)}`), `${k.id} ${shot}`).toBe(true)
+  it('has a real picture on disk for every profile website, Spotlight and email and every layout', () => {
+    for (const k of TEMPLE_KITS) for (const shot of ['site', 'spot', 'email']) expect(existsSync(`public${templeShot(k.id, shot)}`), `${k.id} ${shot}`).toBe(true)
     for (const l of TEMPLE_LAYOUTS) expect(existsSync(`public${templeLayoutShot(l.id)}`), l.id).toBe(true)
   })
 

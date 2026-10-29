@@ -3,12 +3,13 @@
 // index so the page never drifts from what the editor offers. Built from the template kit only (phero, sec,
 // sh, tg-card, KeepGoing); no page CSS of its own. Copy follows docs/marketing/voice-and-language-guide.md:
 // pain point first, plain words, no claims we cannot stand behind.
+import { createSpaceHref } from '@/lib/create-space/href'
 import { FreeSpotlightButton } from '@/components/marketing/free-spotlight-button'
 import Image from 'next/image'
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
-import { OPERATOR_START_HREF } from '@/lib/site'
+import { ROUTES } from '@/lib/frequency/site-nav'
 import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
 import { ThemePicture } from './theme-picture'
 import './theme-index-shots.css'
@@ -39,7 +40,7 @@ export const THEME_GALLERY: ThemeGalleryCard[] = SITE_THEMES.map((t) => {
     label: t.label,
     tagline: THEME_LIBRARY.find((l) => l.id === t.id)?.tagline ?? t.description,
     description: t.description,
-    kits: KIT_INDEX.filter((k) => k.theme === editor).map((k) => ({ niche: k.niche, label: k.label, href: `/spaces/new?niche=${k.niche}` })),
+    kits: KIT_INDEX.filter((k) => k.theme === editor).map((k) => ({ niche: k.niche, label: k.label, href: createSpaceHref(t.id) })),
     kitCount: [...KIT_INDEX, ...PROFILE_KIT_INDEX].filter((k) => k.theme === editor).length,
     href: themePagePath(t.id),
   }
@@ -68,7 +69,7 @@ export function FrequencyThemes() {
             and what is on the way.
           </p>
           <div className="ctas">
-            <a className="btn fq-iri-btn" href={OPERATOR_START_HREF}>
+            <a className="btn fq-iri-btn" href={ROUTES.createSpace}>
               Start free
             </a>
             <Link className="btn btn-ghost fq-iri-rim" href="#themes">
@@ -159,7 +160,7 @@ export function FrequencyThemes() {
       <KeepGoing
         title="Start with your Spotlight."
         body="Free to start. Pick a theme now or change it later."
-        primary={{ href: OPERATOR_START_HREF, label: 'Start free →' }}
+        primary={{ href: ROUTES.createSpace, label: 'Start free →' }}
         secondary={{ href: '/pricing', label: 'See every plan' }}
       />
     </>
