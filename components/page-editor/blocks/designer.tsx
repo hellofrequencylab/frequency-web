@@ -265,7 +265,7 @@ function DesignerServicesBlock({ p, metadata, pad, vis }: Common) {
           {str(p.lead) && <p className="dz-body dz-bar-lead">{str(p.lead)}</p>}
           <Btn label={str(p.buttonLabel)} href={str(p.buttonHref)} kind={light ? 'outline' : 'light'} metadata={metadata} arrow />
         </div>
-        <ul className={cls('dz-services', light && 'dz-services--light')} style={{ '--dz-cols': cols } as React.CSSProperties}>
+        <ul className={cls('dz-services', light && 'dz-services--light')} style={{ '--dz-cols-wide': cols } as React.CSSProperties}>
           {items.map((s, i) => (
             <li key={i} className="dz-service"><b aria-hidden="true">{i + 1}</b>{str(s.name)}</li>
           ))}
