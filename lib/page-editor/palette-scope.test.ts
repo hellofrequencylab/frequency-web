@@ -228,7 +228,7 @@ describe('the website palette scopes theme families to their theme', () => {
   })
 
   it('every family category in the library has an owning theme', () => {
-    const generic = new Set(['blocks', 'layout', 'content', 'sections', 'productStory', 'media', 'dynamic', 'profile', 'spaceContent', 'circles', 'linkTree', 'network'])
+    const generic = new Set(['blocks', 'layout', 'content', 'sections', 'productStory', 'media', 'dynamic', 'profile', 'spaceContent', 'circles', 'linkTree', 'network', 'roles'])
     const families = configCategoryKeys.filter((key) => !generic.has(key))
     expect([...families].sort(), 'a family has no owner in palette-scope.ts').toEqual([...THEME_FAMILY_CATEGORIES].sort())
   })

@@ -42,6 +42,7 @@ import { designerComponents, DESIGNER_CATEGORY_COMPONENTS } from '@/components/p
 import { freeHumanBlocks } from '@/components/page-editor/blocks/free-human'
 import { freeHumanCalendarBlocks } from '@/components/page-editor/blocks/free-human-calendar'
 import { freeHumanWheelBlocks } from '@/components/page-editor/blocks/free-human-wheel'
+import { rolesComponents, ROLE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/roles'
 import { DESIGN_BLOCK_TYPES } from '@/lib/page-editor/block-limits'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteBlocks } from '@/components/page-editor/site-blocks'
@@ -98,6 +99,7 @@ export const config: Config = {
     ...freeHumanBlocks,
     ...freeHumanCalendarBlocks,
     ...freeHumanWheelBlocks,
+    ...rolesComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -227,6 +229,12 @@ export const config: Config = {
     freeHuman: {
       title: 'Free Human sections',
       components: [...Object.keys(freeHumanBlocks), ...Object.keys(freeHumanCalendarBlocks), ...Object.keys(freeHumanWheelBlocks)],
+    },
+    // The role blocks (docs/THEME-COHESION.md, ADR-1923): Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ and CTA,
+    // three layouts each, built on the core token contract so they wear every theme. Website pages only; opt-in.
+    roles: {
+      title: 'Sections for any theme',
+      components: [...ROLE_CATEGORY_COMPONENTS],
     },
   },
 }
