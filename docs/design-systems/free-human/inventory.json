@@ -1,0 +1,797 @@
+[
+ {
+  "path": "_ds_bundle.js",
+  "bytes": 99322,
+  "sha256": "424e02323d4e4d9418df86a88af29a0b0a654df870e4fd1b8b757408744ec743"
+ },
+ {
+  "path": "assets/logo-mark-dark.svg",
+  "bytes": 9908,
+  "sha256": "39fcc8a61ca3293ac5fe400b763dbf87fec8cf37667d8ef7e448d94f00498bf4"
+ },
+ {
+  "path": "assets/logo-mark.svg",
+  "bytes": 9908,
+  "sha256": "a2d2cae190976d5055e99dde6ada3ca64ea733115ae26fccf8ee08becbab6422"
+ },
+ {
+  "path": "assets/textures/earth-light.svg",
+  "bytes": 8548,
+  "sha256": "14fab0f777b4264156da3e385f1bd2c0e2746666e3e018719415cbe4e32d7268"
+ },
+ {
+  "path": "assets/textures/earth.svg",
+  "bytes": 8547,
+  "sha256": "b76a256870345d1c918fbfdd1a6e3d1c6cc8b6cd683c4373199a6ba0c76dd2eb"
+ },
+ {
+  "path": "assets/textures/fire-light.svg",
+  "bytes": 8290,
+  "sha256": "1a0bfaffc199951f133dcc8ec0cdc94515ac982aab909e5ab733873bc7c6cd82"
+ },
+ {
+  "path": "assets/textures/fire.svg",
+  "bytes": 8275,
+  "sha256": "20490894137e10fdbfb5b0b6d3b5320b4809c797952a1fc9201d5de88575528a"
+ },
+ {
+  "path": "assets/textures/plant-light.svg",
+  "bytes": 8286,
+  "sha256": "b428c5b058c8e96af9c3504adfce2758e1b845389edb799bfc671d6816d953d6"
+ },
+ {
+  "path": "assets/textures/plant.svg",
+  "bytes": 8270,
+  "sha256": "225977ea2676b29d98770baf43efbd5915fac82a6185376e98f5889048a0d886"
+ },
+ {
+  "path": "assets/textures/water-light.svg",
+  "bytes": 8286,
+  "sha256": "818be480908445b7a44f3cf41e92d9a7c4d102620a1fba1e3437a32dd485c1e9"
+ },
+ {
+  "path": "assets/textures/water.svg",
+  "bytes": 8270,
+  "sha256": "0161bdbc415417970d6946878febde2bbb3651414e05ec0ad0647663dfe3e69e"
+ },
+ {
+  "path": "assets/textures/wind-light.svg",
+  "bytes": 8279,
+  "sha256": "d2f7eabc76a6932398b3a84537a2190659ec5ad1e83e24715e5483de88dfc78d"
+ },
+ {
+  "path": "assets/textures/wind.svg",
+  "bytes": 8278,
+  "sha256": "9dcbbf898f9b30c3b8591d22d3ba5a7505b9b71cce0ab962f03b72664250e7c8"
+ },
+ {
+  "path": "components/core/Badge.d.ts",
+  "bytes": 258,
+  "sha256": "e984a33bc529a00b2d15a35390b2c02a95f1526f9ab410ed3aa690e9731768e6"
+ },
+ {
+  "path": "components/core/Badge.jsx",
+  "bytes": 1278,
+  "sha256": "3f76a7df2d45c2ecc379d9f3f2932c742b4a093523a6ecbe6a5d5688f7a30b46"
+ },
+ {
+  "path": "components/core/Badge.prompt.md",
+  "bytes": 291,
+  "sha256": "1e176348547ea4bf8108109bcf0b339af4b248fc619d2da289c9a29bc0302bdf"
+ },
+ {
+  "path": "components/core/BrandMark.d.ts",
+  "bytes": 363,
+  "sha256": "59eeec56073a00df157f3d12463ba1fbb1b7fba0fa4f0be77871ed7ea6771765"
+ },
+ {
+  "path": "components/core/BrandMark.jsx",
+  "bytes": 3007,
+  "sha256": "6d486f11448f0e92179486fb60f106b0f8af1c876204302eeab832b15e226bac"
+ },
+ {
+  "path": "components/core/BrandMark.prompt.md",
+  "bytes": 549,
+  "sha256": "e9cef664c6a297937c9c9641550e5c86e35a638beeb21981b3d69f0ef53926e8"
+ },
+ {
+  "path": "components/core/Button.d.ts",
+  "bytes": 714,
+  "sha256": "ae1fdb21ff6512132b61362786651ef4061efc0999ef8eb4b4f1056165a8c2c5"
+ },
+ {
+  "path": "components/core/Button.jsx",
+  "bytes": 3183,
+  "sha256": "373f784974cecf22225651136a38238ee4977f53ef2746bd732d1981a242120e"
+ },
+ {
+  "path": "components/core/Button.prompt.md",
+  "bytes": 741,
+  "sha256": "1282a5f011224bae5bbae2d5b935153c2a63afc7d34d120db5b777220dffcd3f"
+ },
+ {
+  "path": "components/core/Glyph.d.ts",
+  "bytes": 795,
+  "sha256": "41bff3ee397a4b893656fd5b149ca0b549cd6a2a18ee0e4ed7e29bf04b21cd48"
+ },
+ {
+  "path": "components/core/Glyph.jsx",
+  "bytes": 17067,
+  "sha256": "c9c6df4d9be78c562f0c786cf9d211d9decf24f8ff3dc942247e3eb93323452d"
+ },
+ {
+  "path": "components/core/Glyph.prompt.md",
+  "bytes": 1066,
+  "sha256": "c04c68efd1f3cc500151ba851b461e597b0f7e8ebac63b42225ddf2ff8d66426"
+ },
+ {
+  "path": "components/core/Icon.d.ts",
+  "bytes": 325,
+  "sha256": "06e8d410e66a07b99b79248356929bfbe222533e3b925fc99c029371a9647fc2"
+ },
+ {
+  "path": "components/core/Icon.jsx",
+  "bytes": 1482,
+  "sha256": "1abc22dad349b29cbd366b0e6c96821fa73b6b3a8062a9f9048f199d58235abf"
+ },
+ {
+  "path": "components/core/Icon.prompt.md",
+  "bytes": 285,
+  "sha256": "afef3e18b284187ea266675434708844d9a0bed798ab9d3a619d573e331b64f9"
+ },
+ {
+  "path": "components/core/IconButton.d.ts",
+  "bytes": 366,
+  "sha256": "7c28d520246ec11af76215a3c84876cf8efe5fd38b0ecc7f9277d46ab1b8a925"
+ },
+ {
+  "path": "components/core/IconButton.jsx",
+  "bytes": 1231,
+  "sha256": "2b6314c8649431f095701eb4123c57e3e0464437784c7231abcfe3e058386318"
+ },
+ {
+  "path": "components/core/IconButton.prompt.md",
+  "bytes": 282,
+  "sha256": "f0431530a765c0505be6124b9b9ecadeb6eb6daffa459943845a37d6feb5483b"
+ },
+ {
+  "path": "components/core/MoonPhase.d.ts",
+  "bytes": 275,
+  "sha256": "58e3e857cfc73af1ca606c28b06ebca6e26642000876b9c6eb0a8f9d9ec9ae17"
+ },
+ {
+  "path": "components/core/MoonPhase.jsx",
+  "bytes": 1198,
+  "sha256": "0fa373c0ede56ce6b7c90b72c79d356fd32832ce4ae4b37bdd1b92ab5fdceb62"
+ },
+ {
+  "path": "components/core/Tag.d.ts",
+  "bytes": 264,
+  "sha256": "a444dbd0871bcdecb077e9478dce19096093237530e95da31e499678621a1b3c"
+ },
+ {
+  "path": "components/core/Tag.jsx",
+  "bytes": 1223,
+  "sha256": "d3a60872db641a7aee44203bc589e0af50607b6e8594f9e0c99e7979b5d8b98c"
+ },
+ {
+  "path": "components/core/Tag.prompt.md",
+  "bytes": 197,
+  "sha256": "fcc9bdc319a15ca50384f37f0b6dd58d02be929378367752751531b6d48fc9c8"
+ },
+ {
+  "path": "components/core/core.card.html",
+  "bytes": 2996,
+  "sha256": "ce5329c6b0aefd101230d49bf12c878da3b344e0b5435ac84eb178628715cad1"
+ },
+ {
+  "path": "components/core/glyphs.card.html",
+  "bytes": 2728,
+  "sha256": "a2ba91555497fe77e31364754aa655235ad8944f66be2cd18759bd04accafff9"
+ },
+ {
+  "path": "components/feedback/Toast.d.ts",
+  "bytes": 243,
+  "sha256": "b0bf645df2eca8fa9bc53fa0d58e9f8130498972687a790efcba2689588ef2d6"
+ },
+ {
+  "path": "components/feedback/Toast.jsx",
+  "bytes": 2193,
+  "sha256": "0798cafcf0d5ff29df27e244c99a45e95bc11299c6a1a508fed46479807aadfc"
+ },
+ {
+  "path": "components/feedback/Toast.prompt.md",
+  "bytes": 284,
+  "sha256": "7d61f536c7ab6749595bbecb83ee0cb9e770bfd2676f3b0f8edb60c002a2e390"
+ },
+ {
+  "path": "components/feedback/Tooltip.d.ts",
+  "bytes": 244,
+  "sha256": "e2aa6b7964c0f5d780ae873339000eb8945d4eab5e77114e83525a59aff19d1d"
+ },
+ {
+  "path": "components/feedback/Tooltip.jsx",
+  "bytes": 1094,
+  "sha256": "630aa148e8fe8dfb2c99fff163ad795da95b18de0e42959ab930b76314fa7874"
+ },
+ {
+  "path": "components/feedback/Tooltip.prompt.md",
+  "bytes": 166,
+  "sha256": "ab372c8392b632f9642d2ed5a6fbf9248534ef7446f6a153d57bcab580b03bb9"
+ },
+ {
+  "path": "components/feedback/feedback.card.html",
+  "bytes": 2136,
+  "sha256": "19dc6cc966f3658922b6627a0625d94aef2464e291d857937ee6c4daa7db35f1"
+ },
+ {
+  "path": "components/forms/Checkbox.d.ts",
+  "bytes": 333,
+  "sha256": "51fdb038bf3113084b911d989181a890cd865192871c1e4647d05f99727770d9"
+ },
+ {
+  "path": "components/forms/Checkbox.jsx",
+  "bytes": 1675,
+  "sha256": "9f620d89c4e82a84ce9e77d505854c8d5436a6eb05cde0b3b72b9905bc518729"
+ },
+ {
+  "path": "components/forms/Checkbox.prompt.md",
+  "bytes": 189,
+  "sha256": "fdf1ba4fc95ba4d63a0414d04e2e4e02af6e565c25d98141a24480b7e3b313a9"
+ },
+ {
+  "path": "components/forms/Input.d.ts",
+  "bytes": 410,
+  "sha256": "c0b1df2ab3a89924f3246a49b9f05d53c054ef0cff0bf491524a5d12010bf03e"
+ },
+ {
+  "path": "components/forms/Input.jsx",
+  "bytes": 1823,
+  "sha256": "2c62131a81f0502e739c8e4f4433c2b5dc9739b25426abe16b4541332765f90c"
+ },
+ {
+  "path": "components/forms/Input.prompt.md",
+  "bytes": 308,
+  "sha256": "fdee88b5c12800793320b08f829e072b604098ffe49a25aa1dd28ac17d137685"
+ },
+ {
+  "path": "components/forms/Radio.d.ts",
+  "bytes": 324,
+  "sha256": "9259cc0cd504447b174e7a210e7a05edfe2b446e126166e81518a2ce27ce700f"
+ },
+ {
+  "path": "components/forms/Radio.jsx",
+  "bytes": 1566,
+  "sha256": "a380846fcacf788dbcaea723cb145c13d492705f66ba057306e9641c1ebd6df9"
+ },
+ {
+  "path": "components/forms/Radio.prompt.md",
+  "bytes": 178,
+  "sha256": "30ebb4790592ad8a7d49b2d65b183a71b16624fc092573233a605da68cdfc148"
+ },
+ {
+  "path": "components/forms/Select.d.ts",
+  "bytes": 397,
+  "sha256": "161ab3ab8c83f893070a17c41bc1a052071f794108297025a98b813e3dceccf9"
+ },
+ {
+  "path": "components/forms/Select.jsx",
+  "bytes": 2252,
+  "sha256": "0e2f5fc8f5966639c9ed7d6d9acd339ac4d2b3a244e0d21b4d60c5ed13203805"
+ },
+ {
+  "path": "components/forms/Select.prompt.md",
+  "bytes": 203,
+  "sha256": "0fdf10aedca1df8df6b49a833c1ae5470dde7604d8603e521edae8d0da4eb948"
+ },
+ {
+  "path": "components/forms/Switch.d.ts",
+  "bytes": 268,
+  "sha256": "ab816231da69f0a5d485fadf73a279302409e2a55cb0dd156942a3d0d18b3585"
+ },
+ {
+  "path": "components/forms/Switch.jsx",
+  "bytes": 1351,
+  "sha256": "03886db36cd874d2bd6f293d63a7dca3da201254a2643c8046b318af83c0d2a1"
+ },
+ {
+  "path": "components/forms/Switch.prompt.md",
+  "bytes": 92,
+  "sha256": "435b19e7f57c45297ceb1b253bdfef99956a0432a83e2c2d7543edcc782dd6c6"
+ },
+ {
+  "path": "components/forms/forms.card.html",
+  "bytes": 2344,
+  "sha256": "2a5de6d1b005a8b902c83a3d1fb43497c355644c3774eb17349f577ca92e1301"
+ },
+ {
+  "path": "components/surfaces/Card.d.ts",
+  "bytes": 1200,
+  "sha256": "50fe9d8577f9d63f4a1380f4a59becbf63999ed07e7903f926a0699f015b475f"
+ },
+ {
+  "path": "components/surfaces/Card.jsx",
+  "bytes": 2843,
+  "sha256": "28376627aee60ef6c6c6656a5ed7840d02969de86b8104165f5e5b5f6942e383"
+ },
+ {
+  "path": "components/surfaces/Card.prompt.md",
+  "bytes": 864,
+  "sha256": "7cc22395ca16611052c6e41df6dc50ccbdf5b336b62343fccf040471cdca1e03"
+ },
+ {
+  "path": "components/surfaces/Dialog.d.ts",
+  "bytes": 302,
+  "sha256": "95c8dc0409b74ce8ff52fd3a769b5dc9dcea3172345c96bcaa6bfd27c3cc94d6"
+ },
+ {
+  "path": "components/surfaces/Dialog.jsx",
+  "bytes": 1590,
+  "sha256": "7a714b5c62f00733e749c296a50e6cfa5352f9a2069c31d733a8c3dc0c21697a"
+ },
+ {
+  "path": "components/surfaces/Dialog.prompt.md",
+  "bytes": 217,
+  "sha256": "2e054428e2ffd3ec42962d30b0a2ec30414c49f9ffc05c4011afb10463f1540e"
+ },
+ {
+  "path": "components/surfaces/Tabs.d.ts",
+  "bytes": 391,
+  "sha256": "d8917a36dfb5bd4944086d2ca01decb702209d050060a0ff19bcaab3dc18103b"
+ },
+ {
+  "path": "components/surfaces/Tabs.jsx",
+  "bytes": 1687,
+  "sha256": "c166ca049e466765d72d470d3798576a57aa1ba419ff40302a00a7f8a025bdd2"
+ },
+ {
+  "path": "components/surfaces/Tabs.prompt.md",
+  "bytes": 189,
+  "sha256": "3e2f9e2c5fdfa8b80ab1b89db79f0547b320db91b2970f01f6bd27712bd78e51"
+ },
+ {
+  "path": "components/surfaces/surfaces.card.html",
+  "bytes": 2576,
+  "sha256": "2fa9d7a644f4141751d7f90a5f7b0bcda0398363626c825aa93c4b9566af435f"
+ },
+ {
+  "path": "github.md",
+  "bytes": 1035,
+  "sha256": "22e825a5dfbe631391729e463c56c74c9f4ba980b2201b3fa6ee43b7de2b16fe"
+ },
+ {
+  "path": "guidelines/colors-blossom.card.html",
+  "bytes": 1957,
+  "sha256": "b9d4fe91414e432b8ffe0ad1d4aab227d30cc4216864cda73430b7f9c03152d0"
+ },
+ {
+  "path": "guidelines/colors-cool.card.html",
+  "bytes": 1978,
+  "sha256": "78573aed08b6adf8feb7efe2e185703707cfaaa011b4df7f63e05acccd27a76b"
+ },
+ {
+  "path": "guidelines/colors-fig.card.html",
+  "bytes": 1806,
+  "sha256": "310413ebad587c568fc3863d450a834750ff717069ce2aa156f11ef85a7ac5f5"
+ },
+ {
+  "path": "guidelines/colors-golds.card.html",
+  "bytes": 2125,
+  "sha256": "af3161449839528be6adf09ed880dbbc38eb6f390d20a60b9c2d445dad36cd25"
+ },
+ {
+  "path": "guidelines/colors-jade.card.html",
+  "bytes": 1801,
+  "sha256": "42c7c9ded9dafc019cd26b9468cf0c3230030de3ea1fca5a28edb4b21456f4c4"
+ },
+ {
+  "path": "guidelines/colors-neutrals.card.html",
+  "bytes": 1826,
+  "sha256": "ef97dba6014eaba754021aff40d3ae9fb7a926c5a0404a152b4dad6ff990a536"
+ },
+ {
+  "path": "guidelines/colors-primary.card.html",
+  "bytes": 1951,
+  "sha256": "8a618c5624dfbe2884bb8283b43e4c54ba06150cb61330de3ca62741c4ee05be"
+ },
+ {
+  "path": "guidelines/colors-semantic.card.html",
+  "bytes": 2634,
+  "sha256": "efde90bd9da36064bb611625213aff5825b27719d8fca764608155ce2f899daa"
+ },
+ {
+  "path": "guidelines/colors-status.card.html",
+  "bytes": 3937,
+  "sha256": "cfb08286dd6d47e8372da8712174285e184a9de5517a68c51c6302d97887462c"
+ },
+ {
+  "path": "guidelines/flow.card.html",
+  "bytes": 2250,
+  "sha256": "d5004472cb47b6ab1cbd111e1f76614feeefff52b217164238f87e9d67b96020"
+ },
+ {
+  "path": "guidelines/imagery-body.card.html",
+  "bytes": 4516,
+  "sha256": "c54673962ababb6234619cb7ea9bbf67c201f39817d485454185b48122ca81d5"
+ },
+ {
+  "path": "guidelines/imagery-craft.card.html",
+  "bytes": 5213,
+  "sha256": "104dbca8988e3345e26a2fa294c646f361a37c7bd7da46c9ec32ff9f5eabdef0"
+ },
+ {
+  "path": "guidelines/imagery-heritage.card.html",
+  "bytes": 6427,
+  "sha256": "8a270e27c7861c9c1a4b8ce0f8b2c530823da49aa161a246a0145600d52445ef"
+ },
+ {
+  "path": "guidelines/imagery-light.card.html",
+  "bytes": 5191,
+  "sha256": "3d18cb3955c687c598f3db634a4225b4dd2b890140630ed8b89cb210c46c8f0c"
+ },
+ {
+  "path": "guidelines/imagery-myth.card.html",
+  "bytes": 5348,
+  "sha256": "abc3ec5a4023fc8d176659e3fce0fb8ade7347e2c7dc22fb63c46353b2235c77"
+ },
+ {
+  "path": "guidelines/imagery-place.card.html",
+  "bytes": 6154,
+  "sha256": "ed3be4276e29815fe9f2793986590bddd498619f88f8f7ba241da7b72e983746"
+ },
+ {
+  "path": "guidelines/motifs.card.html",
+  "bytes": 1993,
+  "sha256": "c08e513281f5dcf468da6502c8e70bde3b6e2ed55c9de80fd423f8b95a5e331e"
+ },
+ {
+  "path": "guidelines/motion.card.html",
+  "bytes": 2507,
+  "sha256": "0acdcd789b9c2b28d35e04f375b8618b8a8b199c4e232eda2873b8e182b9b2f0"
+ },
+ {
+  "path": "guidelines/palette-source.card.html",
+  "bytes": 4663,
+  "sha256": "c48dbb59367ade4c233ce5e62942867b30b18391d0d2a13ae30bb673d7da5f76"
+ },
+ {
+  "path": "guidelines/radii.card.html",
+  "bytes": 2656,
+  "sha256": "53945397e32505c8ea071a616ea8113b9fd21ec663578241ba9df69fc343a6c5"
+ },
+ {
+  "path": "guidelines/shadows.card.html",
+  "bytes": 1905,
+  "sha256": "6303e84f2c7d2397fa04f6c64b651a06a49b84c7b06a7a383140923c617d8477"
+ },
+ {
+  "path": "guidelines/spacing.card.html",
+  "bytes": 3214,
+  "sha256": "5905cdaa449acc3264dadc1b512f80954435edc7890935e061e1ccc7cfa43986"
+ },
+ {
+  "path": "guidelines/textures-elements.card.html",
+  "bytes": 3849,
+  "sha256": "e3a59e4e7e4d0397a4dc302fce2395b62f9385e1dc4dfff8d93894ab346ca11d"
+ },
+ {
+  "path": "guidelines/textures.card.html",
+  "bytes": 1743,
+  "sha256": "5efc86c42c9ea9d99b422f2bd8cb421a53a6a99ac2932f5549b2514af0cc1f3a"
+ },
+ {
+  "path": "guidelines/type-body.card.html",
+  "bytes": 1191,
+  "sha256": "60e7fb2c1444682f695b08355609ec2daf56f3a374c45098690ee7deaeb57d5d"
+ },
+ {
+  "path": "guidelines/type-display.card.html",
+  "bytes": 1148,
+  "sha256": "60c4053c7f0d142967fe42457d323c3328eb370738f9c4ea3641ca7b6d257e9d"
+ },
+ {
+  "path": "guidelines/type-inscription.card.html",
+  "bytes": 1086,
+  "sha256": "3304d86924063d15aca814a2e67da7bf058977d2881dfb03a35ee91a58b49b35"
+ },
+ {
+  "path": "guidelines/type-lyric.card.html",
+  "bytes": 1206,
+  "sha256": "933351a2cfe7c3c1dd5f0109576d14cc6424fe1e1b0986ea16e00d7a870b3ed9"
+ },
+ {
+  "path": "guidelines/type-scale.card.html",
+  "bytes": 4095,
+  "sha256": "84a69c0116b10855b88b75026f8edc9247d73b425ac3606926845785764554e6"
+ },
+ {
+  "path": "guidelines/wordmark.card.html",
+  "bytes": 2003,
+  "sha256": "5c466b4e8eceb760da71e64e72b50ffc28f242fc19058a6b97d40aca350dded8"
+ },
+ {
+  "path": "handoff/CLAUDE-CODE.md",
+  "bytes": 2512,
+  "sha256": "7479d21326808d74afd01b6fbcd9444c8c831c2a473c5c4dfe63329a922afef2"
+ },
+ {
+  "path": "handoff/frequency/README.md",
+  "bytes": 7797,
+  "sha256": "8872d9fc0221ee141662b0405b4d2f350c397f8b1a25535eefc14b9a7f1a79e5"
+ },
+ {
+  "path": "handoff/frequency/blocks.free-human.json",
+  "bytes": 17427,
+  "sha256": "94a678c0b74d346b8821a75218136bbce0c9560242a30812d92ccf71a3cb6231"
+ },
+ {
+  "path": "handoff/frequency/events.free-human.json",
+  "bytes": 13467,
+  "sha256": "2c5a75c6aa90a89bd683887f2e52fb1c606fc0e8a2139e50f9dbd6611c53e549"
+ },
+ {
+  "path": "handoff/frequency/free-human-home.ts",
+  "bytes": 13536,
+  "sha256": "42751a47d6464848fc2fdac23088a87814ba31999dd247436aa083bf9b1ada1b"
+ },
+ {
+  "path": "handoff/frequency/kits.free-human.json",
+  "bytes": 5154,
+  "sha256": "15e9315e4877a720b5490fc1069070bdda09cc3710b31473ba979e61c9d0659b"
+ },
+ {
+  "path": "handoff/frequency/rules.free-human.json",
+  "bytes": 5905,
+  "sha256": "33c286633f926a2426c2310f97bba2804df0c112d772913b2c87dca028f1a17f"
+ },
+ {
+  "path": "handoff/frequency/theme-contract.free-human.json",
+  "bytes": 8202,
+  "sha256": "ac201331024d33e6ac1b971f4708fb44fae827a340caa0cfd6179618dbbea1c7"
+ },
+ {
+  "path": "photos/README.md",
+  "bytes": 3575,
+  "sha256": "9d4adfe131371a4263e37e061bd4a0da883cd02bc22afeadd15fc2e78f2cab4f"
+ },
+ {
+  "path": "photos/selects/body-floating.webp",
+  "bytes": 39972,
+  "sha256": "d583e41e71190debf8b5e10203a0740aa1af96608ca35745e5294918baedf39b"
+ },
+ {
+  "path": "photos/selects/body-flower-back.webp",
+  "bytes": 149634,
+  "sha256": "3ec22c292f4255d1a089948577e958f2bad0bc5bb1e2eddc34e7d45d92ddb580"
+ },
+ {
+  "path": "photos/selects/body-morning-bed.webp",
+  "bytes": 107070,
+  "sha256": "5d1bc99986d1d08963fb8e9e7951315b434a0105ee328357faa1e4daa8c51744"
+ },
+ {
+  "path": "photos/selects/body-swimmer.webp",
+  "bytes": 80302,
+  "sha256": "90292c30ca3a87a4bf7ba3832e14f00a99ef71d037d47e27d0c9bf63adc3fe14"
+ },
+ {
+  "path": "photos/selects/craft-beaded-deer.webp",
+  "bytes": 222570,
+  "sha256": "7cf8e78baef094041c8dddb03380211cdbc8a98be13caf234365bf871156bb12"
+ },
+ {
+  "path": "photos/selects/craft-cave-nest.webp",
+  "bytes": 349100,
+  "sha256": "0f98792ec3a096e7e14efa8c8549205dffced788bf4c93acfbeb4172a770969b"
+ },
+ {
+  "path": "photos/selects/craft-folk-circle.webp",
+  "bytes": 151436,
+  "sha256": "412945ebe4c37ab46182af91eaa87dbb8a05eb3e764e5730e310d46bad397bee"
+ },
+ {
+  "path": "photos/selects/craft-mosaic-sun.webp",
+  "bytes": 514596,
+  "sha256": "32b5169ea175da84824606ed72bda9c8b07bf6ce24830ab356c37797fe282e88"
+ },
+ {
+  "path": "photos/selects/craft-yarn-bodies.webp",
+  "bytes": 82808,
+  "sha256": "188561423dafaf8fcb77e16d5ccd9d2252039a08c19eee11c6b42a42f2f31c45"
+ },
+ {
+  "path": "photos/selects/founder-audrey.webp",
+  "bytes": 142534,
+  "sha256": "3cd6e5352975cc510b0c941184554edf4e0dd12fd95e1cc7d2bb0003619993a0"
+ },
+ {
+  "path": "photos/selects/heritage-a-virgin.webp",
+  "bytes": 119366,
+  "sha256": "5cdb0850ef483e3d779ddf8d13619d31c5832f381ee0c4cb79d8016ffa01ad34"
+ },
+ {
+  "path": "photos/selects/heritage-carved-madonna.webp",
+  "bytes": 61428,
+  "sha256": "e0469cc80645a9087e57e19581cec02284633b2ecedbfa05b4150570a24950e5"
+ },
+ {
+  "path": "photos/selects/heritage-madonna-nursing.webp",
+  "bytes": 118784,
+  "sha256": "77ff3722660ce2bfd6a4bf30e71e4afc52ec37963e0f7c948397df0ad6660bdb"
+ },
+ {
+  "path": "photos/selects/heritage-magdalene.webp",
+  "bytes": 313330,
+  "sha256": "0c0e394443506efe2e6c965286c2badc585130178713733b3a5cd3dcc9742a14"
+ },
+ {
+  "path": "photos/selects/heritage-maiden-sword.webp",
+  "bytes": 244232,
+  "sha256": "efb8bd41014cdef78e62fcd28ba9d7403368ce9a2ab8b63aac2093752ac88101"
+ },
+ {
+  "path": "photos/selects/heritage-mosaic-magdalena.webp",
+  "bytes": 299222,
+  "sha256": "6fe2aab529d7775ca691a81b228003163dd479ac0cbb897ae564b8c06af18e30"
+ },
+ {
+  "path": "photos/selects/light-floating-candles.webp",
+  "bytes": 22606,
+  "sha256": "95410897972a62c8b7a3221d5271437aacba64558e5da5580b3f32051333174c"
+ },
+ {
+  "path": "photos/selects/light-honey-dipper.webp",
+  "bytes": 80586,
+  "sha256": "f0e35cb1a58070e2332098adf8c24c60f07c77a51efa3bb8672a2ce8c1697b6f"
+ },
+ {
+  "path": "photos/selects/light-honey-spoon.webp",
+  "bytes": 44414,
+  "sha256": "7b1b49f53eb52874db171285b2bf8c4ba6f747fe6a155a85a69245bee48eaac5"
+ },
+ {
+  "path": "photos/selects/light-lanterns.webp",
+  "bytes": 139216,
+  "sha256": "b3a015ae154a6f67ba1a18313f144c1915e809829bc3abbe96272566a1158743"
+ },
+ {
+  "path": "photos/selects/light-sun.webp",
+  "bytes": 86186,
+  "sha256": "a155617daa14d551f7cda899b51d7bc281cd84656cafb7fbbf641247d9cc0d74"
+ },
+ {
+  "path": "photos/selects/manifest.json",
+  "bytes": 2722,
+  "sha256": "df321922fb3def43e45571ae099bbb177c0a959516accf8871f6dcc773c134f4"
+ },
+ {
+  "path": "photos/selects/myth-antler-moon.webp",
+  "bytes": 220750,
+  "sha256": "379c784c63add22d524f4746e3bf6c4eace7f0cf349406ed1271e0cbb716c41b"
+ },
+ {
+  "path": "photos/selects/myth-bronze-tara.webp",
+  "bytes": 63640,
+  "sha256": "8dd9e7b4278066e4f425f65c3daba876bd3275c6e6491bb3fec56dbeb8ff3e63"
+ },
+ {
+  "path": "photos/selects/myth-golden-egg.webp",
+  "bytes": 113952,
+  "sha256": "e191f60b79d5d85643c0db4b7bbe7bee9c4ae658175d1b073da04e4b8f576c30"
+ },
+ {
+  "path": "photos/selects/myth-guanyin.webp",
+  "bytes": 112518,
+  "sha256": "5e86f9b5da702b451b5670bf923d37b529cbddeadd3ea212406c2d4feb0badda"
+ },
+ {
+  "path": "photos/selects/myth-serpents.webp",
+  "bytes": 92590,
+  "sha256": "f89840d0a6ff5669c0f480d17cf1d7ca41b8ca45955dbffe5f12e33839143194"
+ },
+ {
+  "path": "photos/selects/place-arched-windows.webp",
+  "bytes": 351050,
+  "sha256": "f0f99abff12dbbdbf2c375cbccaf4dd4f697578322fe5a4b74fc40bad6048d52"
+ },
+ {
+  "path": "photos/selects/place-daisies.webp",
+  "bytes": 256888,
+  "sha256": "62b80810a78ce56d1c45da0ef6f85095153e69e361685cb554b9741238645188"
+ },
+ {
+  "path": "photos/selects/place-fountain-dusk.webp",
+  "bytes": 175146,
+  "sha256": "d8838a9acb1fa58f17c7bcd372a05984ab62a8c623a90b5fcded97ff24878bf6"
+ },
+ {
+  "path": "photos/selects/place-fruit-branch.webp",
+  "bytes": 115920,
+  "sha256": "cf1834d5d0d233585a209bc429bee919d414d9a8f8bbc7e91c781f20d5d32757"
+ },
+ {
+  "path": "photos/selects/place-pastel-sky.webp",
+  "bytes": 104776,
+  "sha256": "a475ba45c56e9ee363d8354e08dfab14608cf4a420bc36419775bdb1d36e5a36"
+ },
+ {
+  "path": "photos/selects/place-sea-sunset.webp",
+  "bytes": 100392,
+  "sha256": "7443ec4f546b38588f513372bcc4fae20e953f3700f88aaa8f27ac95ff431218"
+ },
+ {
+  "path": "readme.md",
+  "bytes": 13718,
+  "sha256": "42585226095c14d6792ee4b8e19be2d46bbc44c5fc0cc17d64d326a43f57c9de"
+ },
+ {
+  "path": "styles.css",
+  "bytes": 212,
+  "sha256": "32ad32e073560adb74cd7c8df58b4e3cf3c519169cc2af730cd1606a74ebd4ec"
+ },
+ {
+  "path": "templates/website/.thumbnail",
+  "bytes": 36144,
+  "sha256": "ebe665aa7d08ad329c075112b5e82e28bc212be7f70ff499c1b9637409cd33cd"
+ },
+ {
+  "path": "templates/website/Calendar.dc.html",
+  "bytes": 99572,
+  "sha256": "a054d7f7269b8c2c5014585dd41d296c4535744bec7f4f5be5f384e70d3787e9"
+ },
+ {
+  "path": "templates/website/Website.dc.html",
+  "bytes": 88962,
+  "sha256": "e84ae13002f47dfc0888e5d05cccc006db0dcaeb244aff40a3bebacd3bf0d9bc"
+ },
+ {
+  "path": "templates/website/YearWheel.dc.html",
+  "bytes": 64052,
+  "sha256": "9120ae4c1c1ebb66aa7d41c900d2fdd8350187bcebd6d2d3b6bc90240df1ddcd"
+ },
+ {
+  "path": "templates/website/ds-base.js",
+  "bytes": 1031,
+  "sha256": "f9afc9bc8cd6911ce295c9a74589f5783c84fd92e28024d961b7d6975c50b8dd"
+ },
+ {
+  "path": "templates/website/support.js",
+  "bytes": 69150,
+  "sha256": "8fe7df74405f3c55f49b7249c74ea1397e65d07dea2b1bd3b4a489bec2e28cbe"
+ },
+ {
+  "path": "tokens/colors.css",
+  "bytes": 3033,
+  "sha256": "8fc2edaf8ce5715d3db5f7501a4aaa030a673c418b618443ce8cb5d6cc58169b"
+ },
+ {
+  "path": "tokens/effects.css",
+  "bytes": 4263,
+  "sha256": "89a8f7d4d3519b3a672315b661003cda0780130d4ad3a451a042fd48b96daaba"
+ },
+ {
+  "path": "tokens/fonts.css",
+  "bytes": 636,
+  "sha256": "7c19065e8474a72fd45858520c4578a4adedec4c41d4a2ae56c69dbf6b096684"
+ },
+ {
+  "path": "tokens/semantic.css",
+  "bytes": 2405,
+  "sha256": "56887d0ef3b3a2e0be0293539f405a84bfbb911db5a07ad08416d8bd36a717bd"
+ },
+ {
+  "path": "tokens/spacing.css",
+  "bytes": 250,
+  "sha256": "2e2f2f514817dadee3b18ed449432ff4bccec0fb86473442476adef49b572bc8"
+ },
+ {
+  "path": "tokens/textures.css",
+  "bytes": 20525,
+  "sha256": "7bd0349f7b0c6dddf72315820ba5154c3492d39e72c0149e52e99ef2705f5841"
+ },
+ {
+  "path": "tokens/typography.css",
+  "bytes": 2107,
+  "sha256": "e0a8ebdff53a1168c6eba4f959386591eb4d514acbc77330336f3a9445196416"
+ }
+]
