@@ -51,7 +51,7 @@ describe('coverage', () => {
 })
 
 describe('hole baseline', () => {
-  const file = JSON.parse(readFileSync('docs/design-systems/theme-cohesion/baseline.json', 'utf8')) as { holeBelow: number; holes: string[] }
+  const file = JSON.parse(readFileSync('docs/theme-cohesion-baseline.json', 'utf8')) as { holeBelow: number; holes: string[] }
 
   it('records the bar it was measured at and a sorted list of unique holes', () => {
     expect(file.holeBelow).toBe(HOLE_BELOW)

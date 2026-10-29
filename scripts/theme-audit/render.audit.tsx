@@ -49,7 +49,7 @@ const meta = {
 }
 
 const OUT = process.env.THEME_AUDIT_OUT ?? '.theme-audit'
-const BASELINE = 'docs/design-systems/theme-cohesion/baseline.json'
+const BASELINE = 'docs/theme-cohesion-baseline.json'
 
 function read(p: string): string {
   try {
@@ -108,7 +108,7 @@ it('renders every block on every theme and holds the hole baseline', () => {
   if (process.env.THEME_AUDIT_UPDATE === '1') {
     // The baseline only shrinks. The one exception is the first write, when there is no file to shrink.
     expect(stored.holes.length === 0 ? [] : diff.added, 'update-baseline refuses to add holes').toEqual([])
-    fs.mkdirSync('docs/design-systems/theme-cohesion', { recursive: true })
+    fs.mkdirSync('docs', { recursive: true })
     fs.writeFileSync(BASELINE, JSON.stringify({ ledger: 'LIVE-1850', holeBelow: HOLE_BELOW, holes }, null, 1) + '\n')
     return
   }
