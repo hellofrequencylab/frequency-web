@@ -6,7 +6,7 @@
   "size": "M",
   "status": "done",
   "source": {
-    "file": "/mnt/project-files/launcher-lightbox/PLAN.md",
+    "file": "lib/launch/lightbox.ts",
     "ref": "Owner direction 2026-10-29: persistent full-screen launcher, Pause not a hard exit, one Spotlight per Space"
   },
   "detail": "Slice one of the launcher and Setup plan. Every launch page opens as the shared Dialog at align=overlay (focus trap, Esc, scroll lock). Pause returns to the page the person came from. With LAUNCH_SYSTEM_ENABLED on, /spaces/new starts the launch for everyone instead of showing the five-step form in the rail to anyone with no launch under way. Later slices: entry-aware start step (at=), intent screen (personal Spotlight, business, both), the persistent Finish setup button and panel, hide with two confirmations, products shelf, and the Setup registry built from SPACE_MODULES.\n\nSlice one shipped: the launch layout wraps every launch page in the lightbox and /spaces/new starts the launch. Later slices get their own rows.",
