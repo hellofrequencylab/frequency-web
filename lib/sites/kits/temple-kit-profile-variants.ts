@@ -1,6 +1,7 @@
 import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
+import { templeKitInnerPagesA } from '@/components/sites/temple-kit-inner/pages'
 import {
-  TEMPLE_KIT_CTA, TEMPLE_KIT_GATHERINGS, TEMPLE_KIT_HERO, TEMPLE_KIT_JOURNEYS, TEMPLE_KIT_MEMBERSHIP, TEMPLE_KIT_OFFERINGS, TEMPLE_KIT_ROOMS, templeKitHomeBlocks,
+  TEMPLE_KIT_CTA, TEMPLE_KIT_GATHERINGS, TEMPLE_KIT_HERO, TEMPLE_KIT_JOURNEYS, TEMPLE_KIT_MEMBERSHIP, templeKitHomeBlocks,
 } from '@/lib/sites/temple-kit-home'
 import { TEMPLE_KIT_PROFILE_KIT_INDEX } from './temple-kit-profile-index'
 import type { KitNiche, KitPage, SiteKit } from './types'
@@ -42,6 +43,8 @@ const SOFTEN: readonly (readonly [string, string])[] = [
   ['A letter each season. *Four a year.*', 'A letter from the house. *Now and then.*'],
   ['Members can pause for up to three months a year and keep their rate when they come back.', 'Members can pause and keep their rate when they come back.'],
   ['A 48-hour hold while you decide', 'A hold on the date while you decide'],
+  ['We hold weekly practice, the turns of the year,', 'We hold regular practice, the turns of the year,'],
+  ['Any date is held for 48 hours at no cost. We write before the hold lapses.', 'Ask us to hold a date while you decide. We write before the hold lapses.'],
 ]
 
 /** Numbers the design's sample house states about itself and a starter must not: prices, seats left, ratings, discounts. */
@@ -87,6 +90,16 @@ const closing = (): Block => starter({ type: 'TempleKitCta', props: { ...TEMPLE_
 
 const page = (slug: string, label: string, description: string, blocks: Block[]): KitPage => ({ slug, label, seo: { title: label, description }, blocks })
 
+/** An inner page's sample prices are the design house's own: a starter keeps the page and leaves the price for the owner. */
+const unpriced = (p: KitPage): KitPage => ({ ...p, blocks: p.blocks.map((b) => ({ type: b.type, props: stripPrices(soften(structuredClone(b.props ?? {}))) as Record<string, unknown> })) })
+
+function stripPrices(value: unknown): unknown {
+  if (typeof value === 'string') return /\$\d/.test(value) ? '' : value
+  if (Array.isArray(value)) return value.map(stripPrices)
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, stripPrices(v)]))
+  return value
+}
+
 function pages(label: string, who: string): KitPage[] {
   const photo = (n: string) => `/sites/temple-kit/photos/photo-${n}.jpg`
   return [
@@ -94,10 +107,6 @@ function pages(label: string, who: string): KitPage[] {
     page('gatherings', 'Gatherings', 'What is open, and how to take a seat.', [
       header('What is open', 'Gatherings *this season.*', 'Sound, breath, suppers and the turns of the year.', photo('05')),
       bare('TempleKitGatherings', { ...TEMPLE_KIT_GATHERINGS, count: 12 }), closing(),
-    ]),
-    page('services', 'Ceremonies and hire', 'Ceremonies, retreats and room hire, held for you.', [
-      header('Ceremonies and hire', 'The house, *held for you.*', 'Ceremonies, retreats and room hire. Start with a walk of the grounds.', photo('10')),
-      bare('TempleKitOfferings', TEMPLE_KIT_OFFERINGS), bare('TempleKitRooms', TEMPLE_KIT_ROOMS), closing(),
     ]),
     page('journeys', 'Programs', 'Small groups over a few weeks, with a practice to keep.', [
       header('Programs', 'Practices *to take home.*', 'Small groups over a few weeks, in the studio and online.', photo('12')),
@@ -107,6 +116,8 @@ function pages(label: string, who: string): KitPage[] {
       header('Membership', 'Keep a place *at the house.*', 'Three ways to belong. Each step adds more time in the rooms.', photo('14')),
       bare('TempleKitMembership', TEMPLE_KIT_MEMBERSHIP), closing(),
     ]),
+    // Contact stays out: every site already has its own Contact page, which the Home links to.
+    ...templeKitInnerPagesA().filter((p) => p.slug !== 'contact').map(unpriced),
   ]
 }
 
@@ -119,9 +130,3 @@ export function templeKitProfileKit(niche: KitNiche): SiteKit {
   if (!summary) throw new Error(`No Temple Theme Kit profile kit for ${niche}`)
   return { id: summary.id, label: summary.label, description: summary.description, theme: 'TempleKit', version: 1, niche, pages: pages(summary.label, summary.description) }
 }
-
-// INNER PAGES (group A: Ceremonies and hire, About, Contact; draft PR #4286). Once its files are on main, add to `pages()`
-// above, after the four short pages: `...templeKitInnerPagesA()` (from '@/components/sites/temple-kit-inner/pages'), and drop
-// the short 'services' page it replaces (its slug is `ceremonies-hire`; the Home's '~/services' links then point there).
-// The block map and the sheet are registered in lib/page-editor/config.tsx (`...templeKitInnerComponents`) and
-// components/sites/temple-kit-css.ts (`TEMPLE_KIT_INNER_CSS`).
