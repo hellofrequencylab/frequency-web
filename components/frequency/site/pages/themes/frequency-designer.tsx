@@ -107,7 +107,7 @@ export function FrequencyDesigner() {
     },
     {
       n: '04 · In the inbox',
-      name: 'Email',
+      name: 'Email template',
       surface: 'email',
       body: 'Templates that wear your mark, face and accent: the weekly note, a welcome, the next few dates and a booking receipt. Dates, offers and names fill in from the same profile.',
       lives: 'Your subscribers’ inbox',

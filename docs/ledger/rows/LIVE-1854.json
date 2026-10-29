@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1854",
+  "title": "The editor offers a theme family only on its own theme, so nobody can add a block that renders bare",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/page-editor/palette-scope.ts",
+    "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
+  },
+  "detail": "Per-theme category allowlist beside the per-surface one. Hides from the picker only; existing blocks keep rendering.\n\nShipped: categoriesForTheme and categoryKeysForSurfaceAndTheme in palette-scope.ts, passed from the website editor's picker (shell.tsx). Hides from the picker only. Pinned in palette-scope.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-cohesion.mjs palette"
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}
