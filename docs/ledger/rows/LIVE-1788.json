@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1788",
+  "title": "Designer portfolio block: a cards look, the design's Portfolio page, so a Space can show every project as a stacked card",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "components/page-editor/blocks/designer.tsx",
+    "ref": "Daniel, 2026-10-29 05:58Z, pick A: switch Alli Rae's Our Projects page to the design's stacked cards."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/designer-kit-portfolio-cards.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (no display field, no cards markup) and passes here."
+  },
+  "detail": "The Designer portfolio block drew only the large-and-stacked mosaic, with the title laid over each photo; at phone width the small eyebrow and place line over the photos were hard to read. The design's Portfolio page draws cards: the photo, then its number, place and year, the name and the way in. The block gains a Look field (mosaic, the default, or cards); the cards look shows every project. The default is unchanged, so no Space moves on its own. Alli Rae's Our Projects page is switched by a guarded SQL for the owner (docs: /mnt/project-files/designer-kit/sql/alli-rae-portfolio-cards.sql) that sets display on the published page's DesignerPortfolio block (ar-portfolio-2). Rendered at 390, 1280, 1440, 1920 and 2000 before and after.",
+  "wave": "W7"
+}
