@@ -58,8 +58,8 @@ describe('theme pages share one layout', () => {
     for (const el of [<FrequencyNetwork key="n" />, <FrequencyDesigner key="d" />, <FrequencyMidnight key="m" />]) {
       const html = renderToStaticMarkup(el)
       const hero = html.slice(html.indexOf('data-screen-label="01 Hero"'), html.indexOf('data-screen-label="02'))
-      const group = hero.match(/aria-label="Surface"[^>]*>(.*?)<\/div>/s)?.[1] ?? ''
-      const names = [...group.matchAll(/<button[^>]*>(.*?)<\/button>/gs)].map((m) => m[1].replace(/<[^>]*>/g, '').trim())
+      const group = hero.match(/aria-label="Surface"[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? ''
+      const names = [...group.matchAll(/<button[^>]*>([\s\S]*?)<\/button>/g)].map((m) => m[1].replace(/<[^>]*>/g, '').trim())
       expect(names.length).toBe(4)
       for (const w of ['Website', 'Spotlight', 'Space', 'Email']) expect(names.some((n) => n.startsWith(w))).toBe(true)
     }
