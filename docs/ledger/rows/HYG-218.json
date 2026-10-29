@@ -1,0 +1,19 @@
+{
+  "id": "HYG-218",
+  "title": "Migration readiness: only a PR that adds SQL needs a current base",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "scripts/probes/readiness-no-sql-base.mjs",
+    "ref": "2026-10-29: every merge to main re-staled the readiness proof of every open PR, including PRs with no migration, so lanes re-merged main and re-ran CI in a loop (#4298 was knocked back three times). Owner chose option A in the project chat."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/readiness-no-sql-base.mjs",
+    "note": "Reads the runner, publisher and consumer: a no-SQL PR is judged against its own base and exact head; a SQL PR still needs the base to be current main."
+  },
+  "detail": "scripts/migration-pr-readiness.mjs decides SQL or no-SQL from the PR's own base and head; only the SQL path requires that base to equal current main. scripts/publish-migration-readiness.mjs binds the receipt to the PR's own base and rechecks current main only for SQL results. scripts/verify-migration-readiness.mjs accepts a not_applicable receipt for the exact head whatever main has moved to, and keeps the stale-merge-tree refusal for SQL receipts and for the no-receipt shape. Strict parity, registration pins, staging proof and the source-hash binding to current main for SQL receipts are unchanged. Tests: publish-migration-readiness.cases.mjs, migration-pr-readiness.integration-cases.mjs, verify-migration-readiness.synthetic-job.test.ts. Consequence: freezes apply only to the migration PR being proven.",
+  "wave": "W7"
+}

@@ -12,10 +12,13 @@ export async function verifyReadiness({ env, event, api, git }) {
   const readPr = () => api(`/repos/${repository}/pulls/${event.number}`)
   const readMain = () => api(`/repos/${repository}/branches/main`)
   const [pr, main, workflow] = await Promise.all([readPr(), readMain(), api(`/repos/${repository}/actions/workflows/migration-readiness.yml`)])
-  const head = pr?.head?.sha, base = main?.commit?.sha
-  requireFact(pr?.state === 'open' && !pr.draft && pr.base.ref === 'main' && pr.head.repo?.full_name === repository && pr.base.repo?.full_name === repository && validSha.test(head) && validSha.test(base) && event.pull_request?.head?.sha === head && pr.base.sha === base, 'current same-repository PR required')
+  // base is the PR's own base; mainTip is only required to equal it when the PR adds SQL.
+  const head = pr?.head?.sha, base = pr?.base?.sha, mainTip = main?.commit?.sha
+  requireFact(pr?.state === 'open' && !pr.draft && pr.base.ref === 'main' && pr.head.repo?.full_name === repository && pr.base.repo?.full_name === repository && validSha.test(head) && validSha.test(base) && validSha.test(mainTip) && event.pull_request?.head?.sha === head, 'current same-repository PR required')
   const parents = String(git(['cat-file', '-p', 'HEAD'])).split('\n').filter(line => line.startsWith('parent ')).map(line => line.slice(7))
-  requireFact(parents.length === 2 && parents[0] === base && parents[1] === head, 'CI merge tree is stale')
+  requireFact(parents.length === 2 && parents[1] === head, 'CI merge tree is stale')
+  const requireCurrentBase = () => requireFact(base === mainTip && parents[0] === mainTip, 'CI merge tree is stale')
+  let noSql = false
   requireFact(Number.isSafeInteger(workflow?.id) && workflow.path === '.github/workflows/migration-readiness.yml', 'trusted workflow identity unavailable')
   const inventory = await api(`/repos/${repository}/actions/workflows/${workflow.id}/runs?event=pull_request_target&head_sha=${head}&per_page=100`)
   requireFact(Number.isSafeInteger(inventory?.total_count) && Array.isArray(inventory.workflow_runs) && inventory.total_count === inventory.workflow_runs.length && inventory.total_count <= 100, 'run inventory incomplete')
@@ -45,14 +48,18 @@ export async function verifyReadiness({ env, event, api, git }) {
     requireFact(typeof summary === 'string' && summary.length <= 8192 && summary.split('\n\n').length === 2, 'synthetic receipt missing')
     const receipt = JSON.parse(summary.split('\n\n')[1])
     requireFact(receipt?.version === 1 && receipt.pr === event.number && receipt.head === head && receipt.base === base && receipt.trustedRunId === String(run.id) && receipt.trustedRunAttempt === String(run.run_attempt) && ['not_applicable', 'strict_parity', 'registered_pending_apply'].includes(receipt.verdict), 'synthetic receipt binding differs')
+    noSql = receipt.verdict === 'not_applicable'
+    if (!noSql) requireCurrentBase()
     const sources = ['scripts/migration-pr-readiness.mjs', 'scripts/publish-migration-readiness.mjs', '.github/workflows/migration-readiness.yml', 'scripts/migration-readiness-policy.json']
-    requireFact(receipt.sources && Object.keys(receipt.sources).length === sources.length && sources.every(file => receipt.sources[file] === createHash('sha256').update(git(['show', `${base}:${file}`])).digest('hex')), 'synthetic receipt source differs from current main')
+    // A no-SQL receipt may come from the gate as of the PR's older base; the trusted run identity above authenticates it.
+    requireFact(receipt.sources && Object.keys(receipt.sources).length === sources.length && sources.every(file => noSql ? /^[a-f0-9]{64}$/.test(receipt.sources[file] ?? '') : receipt.sources[file] === createHash('sha256').update(git(['show', `${mainTip}:${file}`])).digest('hex')), 'synthetic receipt source differs from current main')
     if (receipt.verdict === 'registered_pending_apply') {
       requireFact(/^[a-f0-9]{64}$/.test(receipt.registrationSha256 ?? '') && /^[a-f0-9]{64}$/.test(receipt.workflowSha256 ?? '') && Number.isSafeInteger(receipt.stagingRunId) && receipt.stagingRunId > 0 && Number.isSafeInteger(receipt.stagingAttempt) && receipt.stagingAttempt > 0, 'synthetic staging receipt incomplete')
     }
   }
+  if (jobs.jobs.length !== 2) requireCurrentBase()
   const [finalPr, finalMain] = await Promise.all([readPr(), readMain()])
-  requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === head && finalPr.base.sha === base && finalMain.commit.sha === base, 'branch moved during readiness read')
+  requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === head && finalPr.base.sha === base && (noSql || finalMain.commit.sha === mainTip), 'branch moved during readiness read')
   return { ok: true, runId: run.id, head, base }
 }
 async function main() {
