@@ -46,6 +46,8 @@ interface MemberBlockData {
   guestbook: GuestbookEntry[]
   /** The member's upcoming public events, resolved server-side by the Spotlight reader. */
   hostedEvents: SpotlightData['hostedEvents']
+  /** True when this member can receive tips (payouts-ready). Resolved server-side; never a Stripe id. */
+  canTip: boolean
   /** Every authored block grouped by its type, in layout order. Content blocks (heading/text/image/
    *  gallery/quote/embed/divider) render from their slice; the data-block slices are unused (their
    *  values come from the fields above), but present so the map is total. */
@@ -133,6 +135,7 @@ export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
     topFriendsTitle,
     guestbook,
     hostedEvents: data.hostedEvents,
+    canTip: data.canTip,
     blocksByType,
   }
 }
