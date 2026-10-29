@@ -86,7 +86,7 @@ export interface SpotlightTheme {
   header: SpotlightHeader
   /** A whole-page layout from the registry (lib/spotlight/layouts.ts). Absent on every theme without layouts. */
   layout?: SpotlightLayoutId
-  /** The Network Theme Kit profile the layout's sample copy and ways in follow (lib/spotlight/network-kit-content.ts). */
+  /** The kit profile the layout's sample copy and ways in follow (lib/spotlight/network-kit-content.ts), or the Temple profile whose accent it wears. */
   kit?: string
 }
 
@@ -152,7 +152,7 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   // The Temple Theme Kit (lib/theme/temple-kit.ts), shown as Temple: plaster ground, umber type, one clay accent, soft cards.
   // Marcellus and Jost load on websites only, so the nearest allowlisted faces stand in. The earlier Temple (Royal Temple's)
   // is no longer a preset: it is offered nowhere.
-  { id: 'temple-kit', label: 'Temple', theme: surfacePreset('temple-kit', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) },
+  { id: 'temple-kit', label: 'Temple', theme: { ...surfacePreset('temple-kit', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'temple-kit:stack', kit: 'general' } },
   {
     id: 'mono', label: 'Mono',
     theme: { accent: '#111111', surface: '#ffffff', text: '#111111', font: { heading: 'sans', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },
