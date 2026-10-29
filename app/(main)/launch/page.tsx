@@ -13,6 +13,8 @@ import { getLaunchForOwner, startLaunch } from '@/lib/launch/store'
 import { launchStepHref } from '@/lib/launch/steps'
 import Link from 'next/link'
 import { LaunchOverview } from '@/components/launch/launch-overview'
+import { PublishedNote } from '@/components/launch/published-note'
+import { wentLive } from '@/lib/launch/review'
 import { loadInventory } from '@/lib/launch/inventory-io'
 import { loadKnownProfile } from '@/lib/launch/known-io'
 
@@ -21,11 +23,11 @@ import { loadKnownProfile } from '@/lib/launch/known-io'
 // you stopped and what you have made so far, a card to start again after a stop, or a note that it is done.
 // Dark while LAUNCH_SYSTEM_ENABLED is off. Reads the launch under the person's own session, so it only ever
 // shows their own.
-export default async function LaunchPage({ searchParams }: { searchParams: Promise<{ lid?: string }> }) {
+export default async function LaunchPage({ searchParams }: { searchParams: Promise<{ lid?: string; published?: string }> }) {
   if (!launchSystemEnabled()) notFound()
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
-  const { lid } = await searchParams
+  const { lid, published } = await searchParams
   let launch = await getLaunchForOwner(profileId, typeof lid === 'string' ? lid : undefined)
   if (!launch && lid) notFound()
   if (!launch) {
@@ -40,6 +42,8 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
   }
 
   const view = resumeView(launch, new Date())
+  const justPublished = published === '1'
+  const spotlightRef = launch.steps.spotlight?.status === 'published' ? launch.steps.spotlight.ref : undefined
 
   if (view.kind === 'restart') {
     return (
@@ -71,8 +75,11 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
     const known = await loadKnownProfile(profileId)
     const who = (known?.displayName ?? '').trim().split(/\s+/)[0] || 'friend'
     return (
-      <FocusTemplate title="Your launch" description={`You stopped at ${view.label}. Saved ${view.savedAgo}.`} width="narrow">
-        <LaunchOverview sections={inventory.sections} who={who} nextHref={inFlowHref(view.href)} space={inventory.space} />
+      <FocusTemplate title={justPublished ? 'Published' : 'Your launch'} description={justPublished ? 'Here is everything, ticked as it went live.' : `You stopped at ${view.label}. Saved ${view.savedAgo}.`} width="narrow">
+        <div style={{ display: 'grid', gap: 20 }}>
+          {justPublished ? <PublishedNote who={who} spotlightHref={spotlightRef ? `/spaces/${encodeURIComponent(spotlightRef)}/spotlight` : null} wentLive={wentLive(inventory.sections)} /> : null}
+          <LaunchOverview sections={inventory.sections} who={who} nextHref={inFlowHref(view.href)} space={inventory.space} />
+        </div>
       </FocusTemplate>
     )
   }

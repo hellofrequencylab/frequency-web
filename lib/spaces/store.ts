@@ -472,6 +472,30 @@ export async function patchSpacePreferences(
   }
 }
 
+/** Write a Space's tagline and/or about (spaces.tagline, spaces.about) by id. Only the keys given are written, so a
+ *  caller that has nothing to say for one leaves what is stored alone. Gating is the CALLER's, as for the writers
+ *  above. Used by the launch's Review + Publish. */
+export async function patchSpaceWords(spaceId: string, words: { tagline?: string; about?: string }): Promise<boolean> {
+  const patch: Record<string, unknown> = {}
+  if (words.tagline !== undefined) patch.tagline = words.tagline
+  if (words.about !== undefined) patch.about = words.about
+  if (!spaceId || Object.keys(patch).length === 0) return Boolean(spaceId)
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: { message: string } | null }> } }
+    }
+    const { error } = await db.from('spaces').update(patch).eq('id', spaceId)
+    if (error) {
+      log.warn('space_words_write_failed', { spaceId, message: error.message })
+      return false
+    }
+    return true
+  } catch (err) {
+    log.warn('space_words_write_threw', { spaceId, message: err instanceof Error ? err.message : 'unknown' })
+    return false
+  }
+}
+
 /** Give a Space a brand color only while it has none (a theme's accent fills a blank, never replaces an
  *  owner's pick). One conditional update, so a color saved a moment earlier is never overwritten. */
 export async function fillSpaceBrandAccent(spaceId: string, accent: string): Promise<boolean> {
