@@ -9,7 +9,7 @@ ${N} .tki-tiers-section,${N} .tki-gatherings,${N} .tki-faq{max-width:none}
 ${N} .tki-tiers-caption{margin-bottom:var(--space-6)}
 ${N} .tki-tabs{display:inline-flex;padding:var(--space-1);border:1px solid var(--color-border);border-radius:var(--radius-pill);background:var(--surface-card);margin-bottom:var(--space-8)}
 ${N} .tki-tab{border:0;background:transparent;padding:var(--space-2) var(--space-5);border-radius:var(--radius-pill);font:inherit;color:var(--color-text-muted);cursor:pointer}
-${N} .tki-tab[aria-pressed="true"]{background:var(--mn-solid);color:var(--mn-on-solid)}
+${N} .tki-tab[aria-pressed="true"]{background:var(--mn-solid);color:var(--kit-on-solid)}
 ${N} .tki-tab:focus-visible{box-shadow:var(--ring-focus);outline:none}
 ${N} .tki-tier-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:var(--space-6);align-items:stretch}
 ${N} .tki-tier{position:relative;display:flex;flex-direction:column;gap:var(--space-4);padding:var(--space-8);background:var(--surface-card);border:1px solid var(--color-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}

@@ -19,8 +19,8 @@ export const TEMPLE_KIT_LAYOUTS_CSS = `
 .tks-eb--ink{color:var(--color-on-ink-muted)}
 .tks-eb--accent{color:var(--color-accent-strong)}
 .tks-subtle{color:var(--color-text-subtle)}
-.tks-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 22px;border:1px solid var(--mn-solid);border-radius:var(--radius-control);background:var(--mn-solid);color:var(--mn-on-solid);font:500 16px/1.2 ${SANS};box-shadow:var(--tk-depth-xs);transition:background-color var(--motion-fast,0ms)}
-.tks-btn:hover{background:var(--mn-solid-hover);border-color:var(--mn-solid-hover);color:var(--mn-on-solid)}
+.tks-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 22px;border:1px solid var(--mn-solid);border-radius:var(--radius-control);background:var(--mn-solid);color:var(--kit-on-solid);font:500 16px/1.2 ${SANS};box-shadow:var(--tk-depth-xs);transition:background-color var(--motion-fast,0ms)}
+.tks-btn:hover{background:var(--mn-solid-hover);border-color:var(--mn-solid-hover);color:var(--kit-on-solid)}
 .tks-btn--lg{min-height:56px;padding:0 28px;font-size:18px;width:100%}
 .tks-btn--sm{min-height:36px;padding:0 16px;font-size:14px}
 .tks-btn--secondary{background:var(--color-surface);border-color:var(--color-border-strong);color:var(--color-text);box-shadow:none}
