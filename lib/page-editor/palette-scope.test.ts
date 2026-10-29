@@ -6,6 +6,8 @@ import { config } from '@/lib/page-editor/config'
 import {
   SURFACE_CATEGORIES,
   categoryKeysForSurface,
+  categoryKeysForSurfaceAndTheme,
+  THEME_FAMILY_CATEGORIES,
   type EditorSurface,
 } from '@/lib/page-editor/palette-scope'
 import { derivePickerGroups } from '@/components/page-editor/mobile/data-ops'
@@ -193,4 +195,51 @@ describe('the fail-safe opens, it never empties', () => {
       expect(offeredTypes(surface).size, `${surface} palette is empty`).toBeGreaterThan(0)
     }
   })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// A THEME-NAMED FAMILY IS OFFERED ONLY ON ITS OWN THEME (LIVE-1854, docs/THEME-COHESION.md).
+// Catches: a family category with no owner (a new family joining every theme), the theme argument being dropped at
+// the website editor's call site, and the palette hiding a block an owner has already placed (it must not).
+// ─────────────────────────────────────────────────────────────────────────────
+describe('the website palette scopes theme families to their theme', () => {
+  const FAMILY = ['wildheart', 'networkKit', 'temple', 'templeKit', 'midnight', 'midnightPractice', 'designer']
+  const themeGroups = (theme: string) => derivePickerGroups(config, undefined, 'website', theme).map((g) => g.key)
+
+  it('offers a family only on the theme that styles it', () => {
+    expect(themeGroups('Midnight')).toEqual(expect.arrayContaining(['midnight', 'midnightPractice']))
+    expect(themeGroups('Midnight')).not.toContain('designer')
+    expect(themeGroups('Designer')).toContain('designer')
+    expect(themeGroups('Designer')).not.toContain('midnight')
+    expect(themeGroups('TempleKit')).toContain('templeKit')
+    expect(themeGroups('TempleKit')).not.toContain('temple')
+    for (const theme of ['DAWN', 'Menswork']) for (const key of FAMILY) expect(themeGroups(theme), `${theme} offers ${key}`).not.toContain(key)
+  })
+
+  it('keeps the shared library and the portable Network sections on every theme', () => {
+    for (const theme of ['DAWN', 'Menswork', 'Wildheart', 'Midnight', 'Designer']) {
+      const keys = themeGroups(theme)
+      for (const key of ['sections', 'content', 'media', 'profile', 'network']) expect(keys, `${theme} lost ${key}`).toContain(key)
+    }
+  })
+
+  it('no argument means surface scope alone, so existing callers are unchanged', () => {
+    expect(categoryKeysForSurfaceAndTheme('website', undefined)).toEqual(categoryKeysForSurface('website'))
+  })
+
+  it('every family category in the library has an owning theme', () => {
+    const generic = new Set(['blocks', 'layout', 'content', 'sections', 'productStory', 'media', 'dynamic', 'profile', 'spaceContent', 'circles', 'linkTree', 'network'])
+    const families = configCategoryKeys.filter((key) => !generic.has(key))
+    expect([...families].sort(), 'a family has no owner in palette-scope.ts').toEqual([...THEME_FAMILY_CATEGORIES].sort())
+  })
+
+  it('an unknown theme offers no family rather than a block that renders bare', () => {
+    for (const key of FAMILY) expect(themeGroups('NotATheme')).not.toContain(key)
+  })
+
+  it('the website editor passes its theme to the picker', () => {
+    const shell = readFileSync(resolve(__dirname, '../../components/sites/editor/shell.tsx'), 'utf8')
+    expect(shell).toMatch(/derivePickerGroups\(config, page\.doc, 'website', canvasTheme\)/)
+  })
+
 })

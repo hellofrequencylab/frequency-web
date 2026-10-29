@@ -291,7 +291,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const colorInputValue = /^#[0-9a-f]{3}$/i.test(accentValue) ? `#${accentValue.slice(1).split('').map((part) => part + part).join('')}` : accentValue
   const selected = selectedId ? findBlockDeep(page.doc, config, selectedId) : null
   const outline = useMemo(() => buildOutline(page.doc, config), [page.doc, config])
-  const groups = useMemo(() => derivePickerGroups(config, page.doc, 'website'), [page.doc, config])
+  const groups = useMemo(() => derivePickerGroups(config, page.doc, 'website', canvasTheme), [page.doc, config, canvasTheme])
   const activeComments = page.comments.filter((c) => !c.resolved)
   const changedPages = draft.pages.filter((p) => {
     const published = persisted.published?.pages.find((b) => b.slug === p.slug)

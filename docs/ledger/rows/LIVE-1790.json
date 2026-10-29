@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1790",
+  "title": "/launch is one page: it shows what the account already has, ticked, with a progress ring and a bar per section",
+  "lane": "live",
+  "priority": "P0",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/launch/inventory.ts",
+    "ref": "Vera guided launch system. The owner ruled on 2026-10-28 that every way in lands on one page that checks the account, shows what is done, and keeps an active to-do with progress graphs; design approved 2026-10-29."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-overview-page.mjs",
+    "note": "lib/launch/inventory.test.ts and overview.test.ts (run by the test job) pin the rules. The probe reads the wiring: /launch loads the inventory from the Space and its rows and draws the overview from the model with tokens only. Fails on main, where /launch is a single resume card."
+  },
+  "detail": "Spotlight, Space, Website, Email and Schedule sections, each item done only when a real record says so, with the record's own value shown. A missing cover or logo is an inspiring, skippable photo item. Not here: persisting a skip, the photo upload tray, the clock on this page, every entry routing to /launch.",
+  "wave": "W7",
+  "closed": "2026-10-29"
+}
