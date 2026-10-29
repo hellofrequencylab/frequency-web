@@ -73,28 +73,6 @@ export function TempleMail({ src, alt, sizes }: { src: string; alt: string; size
   )
 }
 
-/** A surface that is on the way (Space): the frame is there, the picture is not, and nothing is invented to fill it. */
-export function TempleSoon({ label, url }: { label: string; url?: string }) {
-  const body = (
-    <p className="tf-soon-tx">
-      <b>{label}</b>
-      <small>On the way</small>
-    </p>
-  )
-  if (!url) return <div className="tf-mail tf-soon">{body}</div>
-  return (
-    <div className="tf-dv">
-      <div className="tf-bar" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-        <u>{url}</u>
-      </div>
-      <div className="tf-scr tf-soon">{body}</div>
-    </div>
-  )
-}
-
 export function TempleStage({
   kits = false,
   priority = false,
@@ -110,7 +88,7 @@ export function TempleStage({
   const [kitId, setKitId] = useState(initialKit)
   const kit = TEMPLE_KITS.find((k) => k.id === kitId) ?? TEMPLE_KITS[0]
   const def = TEMPLE_SURFACES.find((s) => s.id === surface)!
-  const src = def.shot ? templeShot(kit.id, def.shot) : null
+  const src = templeShot(kit.id, def.shot)
   const alt = `Temple, ${kit.name}: ${def.label.toLowerCase()}`
   const sizes = '(max-width: 900px) 92vw, 640px'
   return (
@@ -125,14 +103,12 @@ export function TempleStage({
       </div>
       <div className="tf-stage" data-surface={surface}>
         <div className="tf-fit">
-          {!src ? (
-            <TempleSoon label={def.label} url={surface === 'space' ? URL_BAR.space : undefined} />
-          ) : surface === 'spotlight' ? (
+          {surface === 'spotlight' ? (
             <TemplePhone src={src} alt={alt} sizes="(max-width: 900px) 60vw, 280px" priority={priority} />
           ) : surface === 'email' ? (
             <TempleMail src={src} alt={alt} sizes="(max-width: 900px) 70vw, 420px" />
           ) : (
-            <TempleBrowser src={src} alt={alt} url={URL_BAR.site} width={def.width} height={def.height} sizes={sizes} priority={priority && surface === 'site'} />
+            <TempleBrowser src={src} alt={alt} url={URL_BAR[surface === 'space' ? 'space' : 'site']} width={def.width} height={def.height} sizes={sizes} priority={priority && surface === 'site'} />
           )}
         </div>
       </div>
