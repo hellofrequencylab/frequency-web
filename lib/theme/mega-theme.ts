@@ -56,6 +56,7 @@ export const MEGA_THEMES: readonly MegaThemeDef[] = [
   { id: 'temple-kit', editor: 'TempleKit', site: 'temple-kit' },
   { id: 'midnight', editor: 'Midnight', site: 'midnight' },
   { id: 'designer', editor: 'Designer', site: 'designer' },
+  { id: 'free-human', editor: 'FreeHuman', site: 'free-human' },
 ]
 
 export interface MegaThemeChoice {

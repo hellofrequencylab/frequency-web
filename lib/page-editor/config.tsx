@@ -39,6 +39,9 @@ import { templeKitInnerDComponents } from '@/components/page-editor/blocks/templ
 import { midnightComponents, MIDNIGHT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight'
 import { midnightPracticeComponents, MIDNIGHT_PRACTICE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight-practice'
 import { designerComponents, DESIGNER_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/designer'
+import { freeHumanBlocks } from '@/components/page-editor/blocks/free-human'
+import { freeHumanCalendarBlocks } from '@/components/page-editor/blocks/free-human-calendar'
+import { freeHumanWheelBlocks } from '@/components/page-editor/blocks/free-human-wheel'
 import { DESIGN_BLOCK_TYPES } from '@/lib/page-editor/block-limits'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteBlocks } from '@/components/page-editor/site-blocks'
@@ -92,6 +95,9 @@ export const config: Config = {
     ...midnightComponents,
     ...midnightPracticeComponents,
     ...designerComponents,
+    ...freeHumanBlocks,
+    ...freeHumanCalendarBlocks,
+    ...freeHumanWheelBlocks,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -216,6 +222,11 @@ export const config: Config = {
     designer: {
       title: 'Designer sections',
       components: [...DESIGNER_CATEGORY_COMPONENTS],
+    },
+    // The Free Human Theme Kit's section family (the Free Human Movement design system): website pages only.
+    freeHuman: {
+      title: 'Free Human sections',
+      components: [...Object.keys(freeHumanBlocks), ...Object.keys(freeHumanCalendarBlocks), ...Object.keys(freeHumanWheelBlocks)],
     },
   },
 }

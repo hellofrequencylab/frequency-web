@@ -103,5 +103,6 @@ export function initialWebsiteTheme(preferences: unknown): WebsiteTheme {
   if (siteTheme(preferences) === 'temple-kit') return 'TempleKit'
   if (siteTheme(preferences) === 'midnight') return 'Midnight'
   if (siteTheme(preferences) === 'designer') return 'Designer'
+  if (siteTheme(preferences) === 'free-human') return 'FreeHuman'
   return siteTheme(preferences) === 'bold' || theme.toLowerCase() === 'menswork' ? 'Menswork' : 'DAWN'
 }
