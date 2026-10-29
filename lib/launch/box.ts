@@ -7,6 +7,7 @@ import { launchSystemEnabled } from './enabled'
 import { boxView, type LaunchBoxView } from './box-state'
 import { loadPostPublishList } from './get-started-io'
 import { setupBoxView } from './setup-box'
+import { loadSetupHidden } from './setup-hidden-io'
 import { getActiveLaunch } from './store'
 
 export async function loadLaunchBox(): Promise<LaunchBoxView | null> {
@@ -19,7 +20,7 @@ export async function loadLaunchBox(): Promise<LaunchBoxView | null> {
     // Once the Spotlight is published the same pill stays as "Finish setup" over the Get Started list (lib/launch/setup-box.ts)
     // until every item is done; the pill never disappears on Publish, it changes what it counts.
     const list = await loadPostPublishList(profileId)
-    if (list) return setupBoxView(launch, list, new Date())
+    if (list) return (await loadSetupHidden(profileId)) ? null : setupBoxView(launch, list, new Date())
     return boxView(launch, new Date())
   } catch {
     return null

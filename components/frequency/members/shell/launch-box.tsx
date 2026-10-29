@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
-import { confirmCancelAction, requestCancelAction, setMinimizedAction } from '@/lib/launch/actions'
+import { askHideSetupAction, confirmCancelAction, confirmHideSetupAction, requestCancelAction, setMinimizedAction } from '@/lib/launch/actions'
 import type { LaunchBoxView } from '@/lib/launch/box-state'
 import { launchHomeHref } from '@/lib/launch/destination'
 
@@ -55,6 +55,65 @@ export function LaunchPill({ view, open, onToggle }: { view: LaunchBoxView; open
   )
 }
 
+// Hiding takes two steps (LIVE-1915): the first asks, the second confirms. Nothing they built goes away; Settings brings it back.
+function HideSetup({ onClose }: { onClose: () => void }) {
+  const router = useRouter()
+  const [pending, start] = useTransition()
+  const [step, setStep] = useState<0 | 1 | 2>(0)
+  const [error, setError] = useState<string | null>(null)
+  const askFirst = () =>
+    start(async () => {
+      const res = await askHideSetupAction()
+      if ('error' in res) return setError(res.error)
+      setError(null)
+      setStep(2)
+    })
+  const confirm = () =>
+    start(async () => {
+      const res = await confirmHideSetupAction()
+      if ('error' in res) return setError(res.error)
+      onClose()
+      router.refresh()
+    })
+  if (step === 0) {
+    return (
+      <div className="ap-launch-foot">
+        <button type="button" className="ap-launch-quiet" onClick={() => setStep(1)}>
+          Hide setup
+        </button>
+      </div>
+    )
+  }
+  return (
+    <div className="ap-launch-stop" role="group" aria-label="Hide Finish setup">
+      {step === 1 ? (
+        <>
+          <p>Hide Finish setup? The button and this list go away. Nothing you built does.</p>
+          <p className="t2">Step 1 of 2</p>
+          <button type="button" className="btn pa sm" onClick={() => setStep(0)} disabled={pending}>
+            Keep it
+          </button>
+          <button type="button" className="ap-launch-quiet" onClick={askFirst} disabled={pending}>
+            Continue to hide
+          </button>
+        </>
+      ) : (
+        <>
+          <p>Last check. You can bring Finish setup back any time in Settings.</p>
+          <p className="t2">Step 2 of 2</p>
+          <button type="button" className="btn pa sm" onClick={() => setStep(0)} disabled={pending}>
+            Keep it
+          </button>
+          <button type="button" className="ap-launch-quiet" onClick={confirm} disabled={pending}>
+            Hide setup
+          </button>
+        </>
+      )}
+      {error && <p className="ap-launch-err" role="alert">{error}</p>}
+    </div>
+  )
+}
+
 function SetupSheet({ view, onClose }: { view: LaunchBoxView; onClose: () => void }) {
   const setup = view.setup!
   const next = setup.todo[0]
@@ -92,6 +151,7 @@ function SetupSheet({ view, onClose }: { view: LaunchBoxView; onClose: () => voi
           Pick up here
         </Link>
       )}
+      <HideSetup onClose={onClose} />
     </>
   )
 }
