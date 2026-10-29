@@ -7,6 +7,66 @@
  ],
  "baseline": "docs/design-systems/designer/baseline.json",
  "tokenMap": [],
+ "tokenDeviations": [
+  {
+   "name": "--color-primary",
+   "undeclared": true,
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre."
+  },
+  {
+   "name": "--color-primary-bg",
+   "undeclared": true,
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre."
+  },
+  {
+   "name": "--color-primary-hover",
+   "undeclared": true,
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre."
+  },
+  {
+   "name": "--color-primary-strong",
+   "undeclared": true,
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre."
+  },
+  {
+   "name": "--color-text-on-primary",
+   "undeclared": true,
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre."
+  },
+  {
+   "name": "--color-accent-hover",
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre. The accent tokens alias the Space accent; their hover step is the measured ochre-deep (4.5:1 on plaster), not the design system's lighter #B8892F, which reads 3.0:1 as link text."
+  },
+  {
+   "name": "--th-accent",
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre. The accent tokens alias the Space accent; their hover step is the measured ochre-deep (4.5:1 on plaster), not the design system's lighter #B8892F, which reads 3.0:1 as link text."
+  },
+  {
+   "name": "--th-accent-text",
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre. The accent tokens alias the Space accent; their hover step is the measured ochre-deep (4.5:1 on plaster), not the design system's lighter #B8892F, which reads 3.0:1 as link text."
+  },
+  {
+   "name": "--th-on-accent",
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre. The accent tokens alias the Space accent; their hover step is the measured ochre-deep (4.5:1 on plaster), not the design system's lighter #B8892F, which reads 3.0:1 as link text."
+  },
+  {
+   "name": "--color-text-on-accent",
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre. The accent tokens alias the Space accent; their hover step is the measured ochre-deep (4.5:1 on plaster), not the design system's lighter #B8892F, which reads 3.0:1 as link text."
+  },
+  {
+   "name": "--color-accent",
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre. The accent tokens alias the Space accent; their hover step is the measured ochre-deep (4.5:1 on plaster), not the design system's lighter #B8892F, which reads 3.0:1 as link text."
+  },
+  {
+   "name": "--color-accent-bg",
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre. The accent tokens alias the Space accent; their hover step is the measured ochre-deep (4.5:1 on plaster), not the design system's lighter #B8892F, which reads 3.0:1 as link text."
+  },
+  {
+   "name": "--color-accent-strong",
+   "reason": "The primary and accent family is the Space's own accent (designerAccentVars), not a theme constant. The design system's primary is charcoal, which the kit carries as --mn-solid; the live accent defaults to the same ochre. The accent tokens alias the Space accent; their hover step is the measured ochre-deep (4.5:1 on plaster), not the design system's lighter #B8892F, which reads 3.0:1 as link text."
+  }
+ ],
+ "skipFontAliases": true,
  "rules": [
   {
    "glob": "thumbnail.html",
