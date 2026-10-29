@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1708",
+  "title": "The Space calendar's co-hosting: invite a Space, answer an invite, and the Shared with Spaces layer",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/calendar-suite/suite-cohost.tsx",
+    "ref": "Daniel, 2026-10-28: redesign the Space calendar with the Calendar system handoff; every Space gets the full calendar and project suite (pass 7 of 9). Shared with Spaces is a sixth layer (2026-10-28)."
+  },
+  "detail": "Pass 7 of the Space calendar and project suite: the Spaces on a Plan. In a Plan's Details a co-host block lists the host, co-host and invited Spaces; the Space that hosts can invite one of its collaborators (or take an invite back), and a Space with an invite waiting answers it there with Co-host it or Not this time. The same two presses sit on the invite's row in Needs you. Both go through the share writes the calendar already had, are shown at once, and fall back with a plain line when the write is refused. A date another Space hosts reads Hosted by in its Details and is read only here. Shared with Spaces is a sixth layer under the Show tiles: a roll-up of the Plans and dates other Spaces share with this one, from lib/calendar/shared-layer-store.ts, named for what the Space belongs to (a Network or a Collective) when it is the parent. Pure logic with tests: cohost.ts. Not here: the email to a co-host (pass 8). Plan: /mnt/project-files/calendar-suite/PLAN.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const need=['components/calendar-suite/suite-cohost.tsx','components/calendar-suite/use-suite-cohost.tsx','lib/calendar/planner/cohost.ts','lib/calendar/planner/cohost.test.ts','lib/calendar/shared-layer-store.ts'];const miss=need.filter(f=>!fs.existsSync(f));if(miss.length){console.error('missing',miss);process.exit(1)}const d=fs.readFileSync('components/calendar-suite/suite-plan-summary.tsx','utf8');if(!d.includes('CohostBlock')){console.error('the Plan summary does not draw the co-host block');process.exit(1)}\"",
+    "note": "Fails on main (no co-host block or Shared with Spaces layer); passes here. The co-host logic tests run in CI."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}
