@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false, "plugins": [] },
+  "include": [
+    "next-env.d.ts",
+    "components/calendar-suite/**/*.tsx",
+    "components/calendar-suite/**/*.ts",
+    "lib/calendar/**/*.ts",
+    "app/(main)/spaces/[slug]/settings/calendar/page.tsx",
+    "app/calharness/*.tsx"
+  ]
+}

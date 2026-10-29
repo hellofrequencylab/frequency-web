@@ -115,6 +115,10 @@ export function layerCounts(data: PlannerData, ym: string, ownSpaceId: string): 
   const out: Record<PlannerLayer, number> = { events: 0, works: 0, shared: 0, private: 0, unavailable: 0, todos: 0 }
   for (const it of data.items) {
     if (it.date.slice(0, 7) !== ym) continue
+    if (it.from) {
+      out.shared += 1
+      continue
+    }
     out[KINDS[it.kind].layer] += 1
     if (it.shared || isShared(data.plans.find((p) => p.id === it.plan), ownSpaceId)) out.shared += 1
   }

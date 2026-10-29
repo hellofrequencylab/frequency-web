@@ -27,6 +27,7 @@ import {
 } from '@/lib/calendar/planner/suite-model'
 import type { PlannerData, PlannerLayer } from '@/lib/calendar/planner/types'
 import { SuiteAgenda } from './suite-agenda'
+import { CohostProvider, cohostActionsFor, useSuiteCohost, type CohostActions } from './use-suite-cohost'
 import { SuiteDetails } from './suite-details'
 import { SuiteHeader } from './suite-header'
 import { SuiteMonth, type MonthScrollRequest } from './suite-month'
@@ -88,6 +89,12 @@ export interface CalendarSuiteProps {
   frozenClock?: boolean
   /** The writes a drop makes. Absent means the calendar's own server actions; a test passes stand-ins. */
   actions?: SuiteActions
+  /** The Spaces this one collaborates with, for the invite picker in a Plan's Details. */
+  collaborators?: readonly { id: string; name: string }[]
+  /** What this Space calls its roll-up when it is the parent of a Network or a Collective. */
+  networkNoun?: string | null
+  /** The writes a co-hosting press makes. Absent means the calendar's own server actions. */
+  cohostActions?: CohostActions
 }
 
 type Sheet = 'pencil' | 'ask' | null
@@ -106,7 +113,19 @@ export function CalendarSuite(props: CalendarSuiteProps) {
   )
   // A drop is shown at once and written through the calendar's own actions (use-suite-moves.tsx).
   const moves = useSuiteMoves({ base: props.data, actions, canEdit })
-  const data = moves.data
+  // A co-hosting press is shown at once the same way, over the moved dates (use-suite-cohost.tsx).
+  const cohostWrites = useMemo(() => props.cohostActions ?? cohostActionsFor(slug), [props.cohostActions, slug])
+  const cohost = useSuiteCohost({
+    truth: props.data,
+    base: moves.data,
+    ownSpaceId: spaceId,
+    actions: cohostWrites,
+    canEdit,
+    collaborators: props.collaborators ?? [],
+    collaboratorsHref: `/spaces/${slug}/settings/collaborators`,
+    networkNoun: props.networkNoun ?? null,
+  })
+  const data = cohost.data
   const dnd = moves.dnd
   // The now line: the page's minute carried forward by the browser's own clock, unless frozen.
   const [elapsedMs, setElapsedMs] = useState(0)
@@ -123,7 +142,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
   const view: SuiteView = chosen ?? resolveSuiteView(null, null, narrow)
   const [cursor, setCursor] = useState(openYm === todayYm ? todayKey : `${openYm}-01`)
   const [hidden, setHidden] = useState<Partial<Record<PlannerLayer, boolean>>>({})
-  const [sel, setSel] = useState<SuiteSelection>(() => (props.initialPlanId ? { kind: 'plan', id: props.initialPlanId } : null))
+  const [pickedSel, setSel] = useState<SuiteSelection>(() => (props.initialPlanId ? { kind: 'plan', id: props.initialPlanId } : null))
   const [railOpen, setRailOpen] = useState(false)
   const [jumpOpen, setJumpOpen] = useState(false)
   const [sheet, setSheet] = useState<Sheet>(null)
@@ -150,6 +169,13 @@ export function CalendarSuite(props: CalendarSuiteProps) {
     }),
     [spaceId, brandName, todayKey, data, team],
   )
+  // What Details shows goes when the record does: a Plan this Space just declined is no longer its to open.
+  const sel: SuiteSelection = useMemo(() => {
+    if (!pickedSel) return null
+    const there =
+      pickedSel.kind === 'item' ? ctx.itemById.has(pickedSel.id) : pickedSel.kind === 'todo' ? ctx.taskById.has(pickedSel.id) : ctx.planById.has(pickedSel.id)
+    return there ? pickedSel : null
+  }, [pickedSel, ctx])
   const needs = useMemo(
     () => needsYou({ items: data.items, tasks: data.tasks, plans: data.plans }, todayKey, spaceId, data.spaceNames),
     [data, todayKey, spaceId],
@@ -284,6 +310,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
   )
 
   return (
+    <CohostProvider api={cohost.api}>
     <div className="cal-box">
     <div
       className="cal-suite"
@@ -399,6 +426,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       <div className="cal-scrim" onClick={() => (railOpen ? setRailOpen(false) : setSel(null))} aria-hidden />
 
       {moves.layer}
+      {cohost.layer}
 
       {sheet === 'pencil' ? (
         <SuiteSheet
@@ -431,5 +459,6 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       ) : null}
     </div>
     </div>
+    </CohostProvider>
   )
 }

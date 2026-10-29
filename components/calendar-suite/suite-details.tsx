@@ -9,11 +9,11 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 import type { SuiteItem, SuitePlan } from '@/lib/calendar/planner/adapters'
 import { planStats, stageLabel } from '@/lib/calendar/planner/board'
 import { overlapsUnavailable } from '@/lib/calendar/planner/clash'
-import { hostSpaceId, isInvitePending } from '@/lib/calendar/planner/day-items'
 import { clockLabel, dayCount, dayLabel, lengthLabel, monthDayLabel } from '@/lib/calendar/planner/days'
 import { KINDS } from '@/lib/calendar/planner/kinds'
 import { groupByPhase } from '@/lib/calendar/planner/playbook-schedule'
 import type { PlanStage, PlannerData } from '@/lib/calendar/planner/types'
+import { CohostBlock } from './suite-cohost'
 import type { SuiteContext, SuiteSelection } from './suite-types'
 
 // THE DETAILS PANEL (README 1.4), read-only. One inspector for the three things the calendar holds:
@@ -83,26 +83,14 @@ function PlanCard({
   onSelect: (sel: SuiteSelection) => void
 }) {
   const stats = planStats(plan, data, ctx.today)
-  const pending = isInvitePending(plan, ctx.ownSpaceId)
-  const hostId = hostSpaceId(plan)
   const groups = useMemo(() => {
     const phased = groupByPhase(stats.todos).map((g) => ({ phase: g.phase as string, todos: g.todos }))
     const loose = stats.todos.filter((t) => !t.phase)
     return loose.length ? [...phased, { phase: 'Anytime', todos: loose }] : phased
   }, [stats.todos])
-  const name = (id: string) => (id === ctx.ownSpaceId ? ctx.ownName : (ctx.spaceNames[id] ?? 'Another Space'))
   return (
     <section className="cal-pcard" aria-label="Plan">
-      {pending ? (
-        <div className="cal-invite">
-          <p>
-            <strong>{hostId ? name(hostId) : 'Another Space'}</strong> invited you to co-host
-          </p>
-          <a className="cal-link" href="#calendar-shared-plans">
-            Answer it under Shared with you
-          </a>
-        </div>
-      ) : null}
+      <CohostBlock plan={plan} ctx={ctx} />
       {bare ? null : (
         <div className="cal-prow">
           <button type="button" className="cal-plink" onClick={() => onSelect({ kind: 'plan', id: plan.id })}>
@@ -117,16 +105,6 @@ function PlanCard({
         </div>
       )}
       {stats.hold ? <p className="cal-serif">{stats.hold}</p> : null}
-      {plan.spaces.length > 1 ? (
-        <ul className="cal-plain" aria-label="Spaces on this Plan">
-          {plan.spaces.map((s) => (
-            <li key={s.id} className="cal-srow">
-              <span>{name(s.id)}</span>
-              <span className="cal-muted">{s.status === 'pending' ? 'Invited' : s.role}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
       {stats.todos.length > 0 ? (
         <div className="cal-todos">
           {groups.map((g) => (
@@ -220,6 +198,7 @@ export function SuiteDetails({
               <Row label="Date">{item.end ? `${dayLabel(item.date)} to ${dayLabel(item.end)}` : dayLabel(item.date)}</Row>
               {item.startMin != null && !item.end ? <Row label="Starts">{clockLabel(item.startMin)}</Row> : null}
               {item.startMin != null && !item.end ? <Row label="Length">{lengthLabel(item.durMin)}</Row> : null}
+              {item.hostLabel ? <Row label="Hosted by">{item.hostLabel}</Row> : null}
               {item.location ? <Row label="Where">{item.location}</Row> : null}
               {item.series ? <Row label="Repeats">Part of a series</Row> : null}
               {item.going ? <Row label="Going">{item.going}</Row> : null}

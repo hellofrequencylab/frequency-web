@@ -34,6 +34,7 @@ import { dayKeyIn } from '@/lib/calendar/day-grid-nav'
 import { operatorHorizonWindow } from '@/lib/calendar/month-window'
 import { calendarViewCookieName } from '@/lib/calendar/admin-views'
 import { adaptCalendar } from '@/lib/calendar/planner/adapters'
+import { loadSharedLayer } from '@/lib/calendar/shared-layer-store'
 import { wallMinutes } from '@/lib/calendar/planner/now'
 import { getSpaceTeam } from '@/lib/spaces/content-data'
 import { CalendarSuite } from '@/components/calendar-suite/calendar-suite'
@@ -168,9 +169,29 @@ export default async function SpaceCalendarConsolePage({
       return ''
     }
   })()
+  // SHARED WITH SPACES (P7): the collaborators' and the Network's public dates for the sixth Show tile,
+  // the offers this Space made on its own Plans, and the collaborators the invite picker lists.
+  const sharedLayer = featureLocked || !canManage
+    ? null
+    : await loadSharedLayer(space, {
+        planIds: plans.map((p) => p.id),
+        year: initialYear,
+        month1: initialMonth1,
+        fromDay: horizon.fromDay,
+        toDay: horizon.toDay,
+      })
   const adapted = featureLocked
     ? null
-    : adaptCalendar({ ownSpaceId: space.id, events, plans, todos: canManage ? todos : [], incoming: incomingShares, sharedPlans })
+    : adaptCalendar({
+        ownSpaceId: space.id,
+        events,
+        plans,
+        todos: canManage ? todos : [],
+        incoming: incomingShares,
+        sharedPlans,
+        hostShares: sharedLayer?.hostShares,
+        sharedSources: sharedLayer?.sources,
+      })
   const team = featureLocked ? [] : await getSpaceTeam(space.id)
   const teamForSuite = team.map((m) => ({ id: m.profileId, name: m.name, avatarUrl: m.avatarUrl }))
 
@@ -216,6 +237,8 @@ export default async function SpaceCalendarConsolePage({
               httpsUrl={httpsUrl}
               webcalUrl={webcalUrl}
               canEdit={canManage}
+              collaborators={sharedLayer?.collaborators}
+              networkNoun={sharedLayer?.networkNoun}
               nowMin={nowMin}
               zoneShort={zoneShort}
             />

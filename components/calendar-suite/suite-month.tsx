@@ -5,7 +5,7 @@ import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import type { AstroMarker } from '@/lib/calendar/astro-markers'
 import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 import { itemChip, todoChip, type ChipModel } from '@/lib/calendar/planner/chip'
-import { dayItems, isInvitePending, partnerSpaceId } from '@/lib/calendar/planner/day-items'
+import { dayItems, isInvitePending, itemPartnerId } from '@/lib/calendar/planner/day-items'
 import { SEASON_WASH } from '@/lib/calendar/planner/kinds'
 import { monthName, monthSky, monthWeeks, monthsBetween, shiftMonth, skyOnDay } from '@/lib/calendar/planner/month'
 import type { PlannerData } from '@/lib/calendar/planner/types'
@@ -97,7 +97,7 @@ const MonthBlock = memo(function MonthBlock({ ym, data, ctx, selectedKey, notes,
             const chips = [
               ...live.map((i) => ({
                 model: itemChip(i, day, { clash: ctx.clashes.has(i.id), invite: isInvitePending(ctx.planById.get(i.plan ?? ''), ctx.ownSpaceId) }),
-                partner: ctx.spaceNames[partnerSpaceId(ctx.planById.get(i.plan ?? ''), ctx.ownSpaceId) ?? ''] ?? null,
+                partner: ctx.spaceNames[itemPartnerId(i, ctx.planById.get(i.plan ?? ''), ctx.ownSpaceId) ?? ''] ?? null,
               })),
               ...todos.map((t) => ({ model: todoChip(t), partner: null })),
             ]
