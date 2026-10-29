@@ -58,9 +58,35 @@ export function spotlightLayout(a: SpotlightAnswers): Record<string, unknown> {
   return { rows: ids.map((id, i) => ({ id: `r${i}`, columns: 1, cells: [[id]] })), content }
 }
 
-/** The Space's next preferences blob with the Spotlight written and PUBLISHED. Every other key is kept. */
+type Row = { id?: unknown; columns?: unknown; cells?: unknown }
+
+const rowsHave = (rows: Row[], id: string): boolean => rows.some((r) => Array.isArray(r.cells) && (r.cells as unknown[]).some((c) => Array.isArray(c) && c.includes(id)))
+
+/** A Spotlight that already has blocks, with the typed answers added and nothing taken away: heading and text rows
+ *  are put in front when missing, the typed words set in them, the link added only when the links block has none.
+ *  A person who comes to the launch with a Spotlight keeps every block they arranged. PURE. */
+export function mergeSpotlightLayout(existing: { rows?: unknown; content?: unknown }, a: SpotlightAnswers): Record<string, unknown> {
+  const rows: Row[] = Array.isArray(existing.rows) ? [...(existing.rows as Row[])] : []
+  const content: Record<string, unknown> = existing.content && typeof existing.content === 'object' ? { ...(existing.content as Record<string, unknown>) } : {}
+  const front: Row[] = []
+  if (!rowsHave(rows, 'heading')) front.push({ id: 'launch-heading', columns: 1, cells: [['heading']] })
+  if (!rowsHave(rows, 'text')) front.push({ id: 'launch-text', columns: 1, cells: [['text']] })
+  content.heading = { ...(content.heading as object | undefined), text: a.name }
+  content.text = { ...(content.text as object | undefined), text: a.line }
+  if (a.link) {
+    const links = (content.links ?? {}) as { items?: unknown }
+    if (!Array.isArray(links.items) || links.items.length === 0) content.links = { ...links, items: [{ label: new URL(a.link).hostname.replace(/^www\./, ''), url: a.link }] }
+    if (!rowsHave(rows, 'links')) rows.push({ id: 'launch-links', columns: 1, cells: [['links']] })
+  }
+  return { rows: [...front, ...rows], content }
+}
+
+/** The Space's next preferences blob with the Spotlight written and PUBLISHED. Every other key is kept, and a
+ *  Spotlight the person already arranged keeps its blocks (mergeSpotlightLayout). */
 export function publishedSpotlightPreferences(current: Record<string, unknown>, a: SpotlightAnswers): Record<string, unknown> {
-  return nextSpotlightPreferences(current, { published: true, layout: spotlightLayout(a) })
+  const stored = (current.spotlight as { layout?: { rows?: unknown; content?: unknown } } | undefined)?.layout
+  const layout = stored && Array.isArray(stored.rows) && stored.rows.length > 0 ? mergeSpotlightLayout(stored, a) : spotlightLayout(a)
+  return nextSpotlightPreferences(current, { published: true, layout })
 }
 
 /** The answers a saved Spotlight layout was written from, read back so the edit form opens filled in. Tolerant of

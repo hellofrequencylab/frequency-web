@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { sourceWithoutComments } from '@/test/source-shape'
 import path from 'node:path'
-import { isAdmitted, isPendingApproval } from './admission'
+import { canAccessEventOnlineLink, isAdmitted, isPendingApproval } from './admission'
 
 // The approval gate writes a pending request as status='going' + approval_status='pending', so
 // `status === 'going'` alone is never a seat. Two readers that guard secrets — the hidden venue on
@@ -46,6 +46,40 @@ describe('isAdmitted', () => {
     expect(isAdmitted({ status: 'not_going', approval_status: 'none' })).toBe(false)
     expect(isAdmitted({ status: null, approval_status: null })).toBe(false)
     expect(isAdmitted({})).toBe(false)
+  })
+})
+
+describe('canAccessEventOnlineLink', () => {
+  it('allows going and approved attendees', () => {
+    expect(canAccessEventOnlineLink({ status: 'going', approval_status: 'none' }, false, false)).toBe(true)
+    expect(canAccessEventOnlineLink({ status: 'going', approval_status: 'approved' }, false, false)).toBe(true)
+  })
+
+  it('does not let a pending request reveal the link', () => {
+    expect(canAccessEventOnlineLink({ status: 'going', approval_status: 'pending' }, false, false)).toBe(false)
+    expect(canAccessEventOnlineLink({ status: 'waitlist', approval_status: 'pending' }, false, false)).toBe(false)
+  })
+
+  it('allows capacity-waitlisted attendees and ticket holders', () => {
+    expect(canAccessEventOnlineLink({ status: 'waitlist', approval_status: 'none' }, false, false)).toBe(true)
+    expect(canAccessEventOnlineLink({ status: null, approval_status: null }, true, false)).toBe(true)
+  })
+
+  it('hides the link from non-attendees and lets event managers host', () => {
+    expect(canAccessEventOnlineLink({ status: null, approval_status: null }, false, false)).toBe(false)
+    expect(canAccessEventOnlineLink({ status: 'not_going', approval_status: 'none' }, false, false)).toBe(false)
+    expect(canAccessEventOnlineLink({ status: null, approval_status: null }, false, true)).toBe(true)
+  })
+})
+
+describe('the event page protects both online-link render paths', () => {
+  it('uses the admission/ticket/manager gate for the fixed link and event context', () => {
+    const PAGE = sourceWithoutComments('app/(main)/events/[slug]/event-member-page.tsx', { imports: true })
+    expect(PAGE).toContain('canAccessEventOnlineLink(')
+    expect(PAGE).toContain('const visibleOnlineUrl = canViewOnlineJoinLink ? onlineUrl : null')
+    expect(PAGE).toContain('safeHttpUrl(visibleOnlineUrl)')
+    expect(PAGE).toContain('onlineUrl: visibleOnlineUrl')
+    expect(PAGE).toContain('hasOnlineAttendance: attendanceMode !== \'in_person\'')
   })
 })
 

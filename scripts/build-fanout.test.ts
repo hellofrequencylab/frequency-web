@@ -235,9 +235,9 @@ describe('every path read out of public/ is a literal, so the tracer never globs
     expect(mod).toBeDefined()
     expect(mod!.src).toContain('export async function coverPlaceholderDataUrl')
     // The readers must actually be reads, and literal ones. A module that stopped calling readFile
-    // would pass every assertion below while shipping cards with no background. The six
+    // would pass every assertion below while shipping cards with no background. The one
     // cover placeholders (the Frequency mark is read in lib/og/stage-card.tsx).
-    expect(mod!.src.match(/readFile\(join\(process\.cwd\(\), 'public\/images/g)?.length).toBe(6)
+    expect(mod!.src.match(/readFile\(join\(process\.cwd\(\), 'public\/images/g)?.length).toBe(1)
   })
 
   it('nothing anywhere builds a process.cwd() path out of a variable', () => {
@@ -351,7 +351,7 @@ function plantBuild(opts: {
       // "placeholders still ship" control pass.
       files.push(`${up}public/fonts/Nunito-Regular.ttf`)
       files.push(`${up}public/images/Frequency-Logo-Round-Icon-white.png`)
-      for (const cover of ['community-dinner', 'a', 'b', 'c', 'd', 'e']) files.push(`${up}public/images/site/${cover}.jpg`)
+      for (const cover of ['space-cover-default', 'a', 'b', 'c', 'd', 'e']) files.push(`${up}public/images/site/${cover}.jpg`)
     }
     for (const f of opts.extra?.[i] ?? []) files.push(f)
     writeFileSync(join(dir, 'page.js.nft.json'), JSON.stringify({ version: 1, files }))
@@ -412,7 +412,7 @@ describe('check-build-fanout.mjs: a clean artifact passes', () => {
       '/repo/public/fonts/Nunito-Regular.ttf',
       '/repo/public/images/hero.jpg',
       '/repo/public/images/Frequency-Logo-Round-Icon-white.png',
-      '/repo/public/images/site/community-dinner.jpg',
+      '/repo/public/images/site/space-cover-default.jpg',
     ]) expect(sanctionedPublic(ok), ok).toBe(true)
     for (const bad of [
       '/repo/public/maplibre/maplibre-gl-csp-worker.js',

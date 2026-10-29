@@ -18,22 +18,24 @@ function draw(type: string, props: Record<string, unknown>, metadata: Record<str
 }
 
 const FIRST_HALF = ['TempleKitHero', 'TempleKitLive', 'TempleKitGatherings', 'TempleKitRooms', 'TempleKitOfferings', 'TempleKitSteps']
+const SECOND_HALF = ['TempleKitGallery', 'TempleKitJourneys', 'TempleKitProof', 'TempleKitMembership', 'TempleKitFaq', 'TempleKitLetter', 'TempleKitCta']
+const ALL = [...FIRST_HALF, ...SECOND_HALF]
 
-describe('the Temple Kit block family, first half of the Home', () => {
-  it('registers the six blocks, rooms and steps among them, beside the untouched Temple family', () => {
-    expect(TEMPLE_KIT_CATEGORY_COMPONENTS).toEqual(FIRST_HALF)
-    for (const type of FIRST_HALF) expect((config.components as Record<string, { label?: string }>)[type]?.label, type).toBeTruthy()
+describe('the Temple Kit block family, the Home', () => {
+  it('registers the thirteen blocks, beside the untouched Temple family', () => {
+    expect(TEMPLE_KIT_CATEGORY_COMPONENTS).toEqual(ALL)
+    for (const type of ALL) expect((config.components as Record<string, { label?: string }>)[type]?.label, type).toBeTruthy()
     expect((config.components as Record<string, unknown>).TempleHero).toBeTruthy()
   })
 
   it('is on the website palette only, in the Sections group', () => {
     expect(categoryKeysForSurface('website')).toContain('templeKit')
     expect(categoryKeysForSurface('space')).not.toContain('templeKit')
-    for (const type of FIRST_HALF) expect(editorBlockMeta(config, type).group, type).toMatch(/^(Sections|Live)$/)
+    for (const type of ALL) expect(editorBlockMeta(config, type).group, type).toMatch(/^(Sections|Live)$/)
   })
 
   it('draws every block on its own words, with no raw colour, and keeps the sheet free of one too', () => {
-    for (const type of FIRST_HALF) {
+    for (const type of ALL) {
       const html = draw(type, {}, { space: { events: [], series: [] }, links })
       expect(html, type).toContain('data-tk=')
       expect(html, type).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i)
@@ -80,5 +82,20 @@ describe('the Temple Kit block family, first half of the Home', () => {
     const words = JSON.stringify(templeKitHomeBlocks())
     expect(words).not.toMatch(/—/)
     expect(words).not.toMatch(/Thu 10am|you will sit|You leave slower/)
+  })
+
+  it('draws the second half: the night proof, the featured tier, an open first question and the letter form', () => {
+    const md = { links }
+    expect(draw('TempleKitJourneys', {}, md)).toContain('Four weeks of breath')
+    expect(draw('TempleKitProof', {}, md)).toContain('tk-proof')
+    const m = draw('TempleKitMembership', {}, md)
+    expect(m).toContain('tk-tier--featured')
+    expect((m.match(/tk-tier--featured/g) ?? []).length).toBe(1)
+    const f = draw('TempleKitFaq', {}, md)
+    expect((f.match(/<details/g) ?? []).length).toBe(6)
+    expect(f).toContain('open=""')
+    expect(draw('TempleKitLetter', {}, md)).toContain('Keep me posted')
+    expect(draw('TempleKitCta', {}, md)).toContain('Come and see it.')
+    expect(JSON.stringify(templeKitHomeBlocks())).not.toMatch(/every week|weekly|Most chosen/)
   })
 })

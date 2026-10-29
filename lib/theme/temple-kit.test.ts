@@ -8,7 +8,7 @@ import { TEMPLE_KIT_ACCENT, TEMPLE_KIT_NIGHT, TEMPLE_KIT_PALETTE as P, TEMPLE_KI
 import { TEMPLE_TOKENS_CSS } from './temple'
 import { TEMPLE_KIT_CSS } from '@/components/sites/temple-kit-css'
 import { TEMPLE_CSS } from '@/components/sites/temple-css'
-import { isSiteThemeId, readSiteStyle, SITE_THEMES, spacePageDefaultAccent, TEMPLE_KIT_SITE_THEME, spacePageSiteFaces, THEME_LOOK, withSiteStyle } from './site-style'
+import { isSiteThemeId, readSiteStyle, SITE_THEME_DEFS, SITE_THEMES, spacePageDefaultAccent, spacePageSiteFaces, THEME_LOOK, withSiteStyle } from './site-style'
 import { EDITOR_THEME_OF, editorThemeOf, siteRenderStyle } from '@/lib/sites/site-render-style'
 import { initialWebsiteTheme } from '@/lib/sites/editor/seed'
 import { WEBSITE_THEME_FONT_VARS, websiteThemeVars } from '@/lib/sites/editor/theme'
@@ -120,11 +120,11 @@ describe('the Temple Theme Kit token block', () => {
 })
 
 describe('the Temple Theme Kit is registered as a site theme', () => {
-  it('is a stored, readable site theme id shown as Temple, held out of the owner picker until its kits ship', () => {
-    expect(TEMPLE_KIT_SITE_THEME).toMatchObject({ id: 'temple-kit', label: 'Temple', defaultFonts: 'classic' })
-    // SITE_THEMES is the picker list the Mega Theme, library and gallery tests hold level with MEGA_THEMES.
-    expect(SITE_THEMES.map((t) => t.id)).not.toContain('temple-kit')
-    expect(SITE_THEMES.find((t) => t.id === 'temple')?.label).toBe('Temple')
+  it('is a stored, readable site theme id shown as Temple, offered in the picker in place of the earlier Temple', () => {
+    expect(SITE_THEMES.find((t) => t.id === 'temple-kit')).toMatchObject({ id: 'temple-kit', label: 'Temple', defaultFonts: 'classic' })
+    // The earlier temple theme (Royal Temple's) is offered nowhere but still resolves by id.
+    expect(SITE_THEMES.map((t) => t.id)).not.toContain('temple')
+    expect(SITE_THEME_DEFS.find((t) => t.id === 'temple')?.label).toBe('Temple')
     expect(isSiteThemeId('temple-kit')).toBe(true)
     expect(isSiteThemeId('temple')).toBe(true)
     expect(THEME_LOOK['temple-kit']).toEqual({ corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' })
@@ -139,12 +139,12 @@ describe('the Temple Theme Kit is registered as a site theme', () => {
 
   it('resolves through the render style and the editor', () => {
     expect(editorThemeOf('temple-kit')).toBe('TempleKit')
-    expect(Object.keys(EDITOR_THEME_OF)).not.toContain('temple-kit')
+    expect(EDITOR_THEME_OF['temple-kit']).toBe('TempleKit')
     const r = siteRenderStyle(readSiteStyle(withSiteStyle({}, { theme: 'temple-kit' })), null, null)
     expect(r.skinned).toBe(true)
     expect(r.editorTheme).toBe('TempleKit')
     expect(r.accentVars?.['--color-primary']).toBe('#9C4A2C')
-    expect(WEBSITE_THEMES).not.toContain('TempleKit')
+    expect(WEBSITE_THEMES).toContain('TempleKit')
     expect(WEBSITE_THEMES_LIVE.has('TempleKit'), 'held back until its blocks and chrome ship').toBe(false)
     expect(WEBSITE_THEME_FONT_VARS.TempleKit).toEqual(['tp-marcellus', 'tp-jost', 'tp-jost'])
   })

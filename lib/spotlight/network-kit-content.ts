@@ -9,12 +9,12 @@
 //      one-to-ones or a shop; the other four always work.
 
 import { NETWORK_KIT_PROFILES, networkKitProfileScheme } from '@/lib/theme/network-kit'
-import type { SpotlightLayoutId } from '@/lib/spotlight/layouts'
+import type { NetworkKitLayoutId } from '@/lib/spotlight/layouts'
 
 type ProfileId = (typeof NETWORK_KIT_PROFILES)[number]
 type Tool = 'publish' | 'gather' | 'belong' | 'book' | 'learn' | 'sell'
 type DoorKey = 'gather' | 'belong' | 'book' | 'learn' | 'sell' | 'publish'
-type LayoutKey = SpotlightLayoutId extends `network-kit:${infer L}` ? L : never
+type LayoutKey = NetworkKitLayoutId extends `network-kit:${infer L}` ? L : never
 
 interface Door { key: DoorKey; title: string; meta: string; href: string }
 interface DateRow { mon: string; day: number; title: string; time: string; where: string; seatsLeft?: number }

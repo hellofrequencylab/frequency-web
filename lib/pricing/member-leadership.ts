@@ -53,7 +53,7 @@ import { featureGatesLive } from './settings'
  *  `practice_publish` joined in LIVE-752: `practice.create` opened to every signed-in member in
  *  LIVE-222, so the meter (free 3, Crew unlimited) is now the only thing that limits publishing and
  *  lib/spaces/counted-meters.ts asks it on submit. `journey_enrollees` is asked on enrol there too. */
-type MemberLeadershipMeter = 'circle_host' | 'event_create' | 'event_guests' | 'practice_publish' | 'journey_enrollees'
+type MemberLeadershipMeter = 'circle_host' | 'event_create' | 'event_guests' | 'practice_publish' | 'journey_enrollees' | 'spotlight_blocks'
 
 /**
  * Is a member still within their allowance for a metered leadership quantity? FAIL-SAFE to allowed.

@@ -293,7 +293,23 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await page.goto(`/circles/${circleSlug}`)
     await settle(page)
     await page.getByRole('button', { name: /^join/i }).first().click()
-    await expect(page.getByRole('button', { name: /leave|joined|member/i }).first()).toBeVisible({ timeout: 15_000 })
+    // A member's header holds Create and, behind "Circle options", Leave; the Join door is gone.
+    // The join redirects back to this page, so give it a moment, then reload to read what the
+    // server stored rather than a router-cached view, and say what the page shows if it never comes.
+    const options = page.getByRole('button', { name: 'Circle options' })
+    await options.waitFor({ timeout: 15_000 }).catch(() => undefined)
+    if (!(await options.isVisible())) {
+      await page.reload()
+      await settle(page)
+    }
+    if (!(await options.isVisible())) {
+      const buttons = await page.getByRole('button').allInnerTexts()
+      const said = (await page.locator('main').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 400)
+      throw new Error(
+        `Joined ${circleSlug} but "Circle options" never showed. At ${page.url()}. Buttons: ${buttons.map((b) => b.trim()).filter(Boolean).join(' | ')}. Page said: ${said}`,
+      )
+    }
+    await expect(page.getByRole('button', { name: /^join/i })).toHaveCount(0)
     assertNoServerErrors(serverErrors, 'join circle')
   })
 

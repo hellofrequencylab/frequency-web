@@ -76,6 +76,8 @@ interface WarmProofData {
 interface EventFactsData {
   whenLine: string
   isOnline: boolean
+  /** True for online and hybrid events, where a meeting action belongs beside the venue. */
+  hasOnlineAttendance: boolean
   location: string | null
   /** Google Maps deep link for the venue (structured address when present, else the
    *  free-text location). Null for online events or when there is no address. */

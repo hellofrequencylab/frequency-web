@@ -37,7 +37,7 @@ export interface WebsiteEditorState {
   published: WebsiteSnapshot | null; scheduled?: { at: string; author: string; snapshot: WebsiteSnapshot } | null; versions: WebsiteVersion[]
 }
 export const RESERVED_WEBSITE_SLUGS = new Set(['account', 'admin', 'book', 'contact', 'spotlight', 'api', 'opengraph-image', 'robots', 'sitemap'])
-export const WEBSITE_THEMES: WebsiteTheme[] = ['Menswork', 'DAWN', 'Midnight', 'Wildheart', 'Network', 'NetworkKit', 'Temple', 'Designer']
+export const WEBSITE_THEMES: WebsiteTheme[] = ['Menswork', 'DAWN', 'Midnight', 'Wildheart', 'Network', 'NetworkKit', 'Temple', 'TempleKit', 'Designer']
 const MAX_WEBSITE_BYTES = 700_000
 const MAX_VERSIONS = 8
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)

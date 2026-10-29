@@ -23,6 +23,9 @@ import { readMegaTheme } from '@/lib/theme/mega-theme'
 //   · Network Theme Kit (2026-10-28, code id `network-kit`, shown as Network; the earlier `network` theme above is no longer offered):
 //     the Network design system's paper, card tint and deep ink with one solid hero color in four schemes
 //     (lib/theme/network-kit.ts). Not published to a live site until its render is finished.
+//   · Temple Theme Kit (2026-10-28, code id `temple-kit`, shown as Temple; the earlier `temple` theme below is no longer offered):
+//     the Temple design system's plaster, umber and one clay accent, thirteen profile accents (lib/theme/temple-kit.ts).
+//     Not published to a live site until its render is finished.
 //   · Temple (2026-10-22): a lime-washed Mediterranean house; plaster grounds, umber ink, one clay hero color,
 //     arch-shaped photos and cards, Branch and Marcellus type (components/sites/temple-css.ts,
 //     lib/theme/temple.ts). A stock theme, first worn by Royal Temple.
@@ -103,9 +106,21 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
   {
     // Typography-only on the Space page too (ADR-578): Branch and Marcellus load on the website alone, so a
     // synced Space page wears Classic (a serif headline over a quiet body).
+    // Not offered in any picker since 2026-10-28 (SITE_THEMES below leaves it out): the Temple Theme Kit took the name.
+    // The id, label and every render map stay, because Royal Temple's live site and any saved site style wear it.
     id: 'temple',
     label: 'Temple',
     description: 'A lime-washed house: plaster and umber, one clay color, arched photos and cards, warm and unhurried.',
+    defaultFonts: 'classic',
+  },
+  {
+    // THE TEMPLE THEME KIT (id `temple-kit`, shown as Temple): the Temple owners pick and the /themes page shows. The
+    // older `temple` entry above (Royal Temple) leaves the pickers. Typography-only on the Space page too (ADR-578): the
+    // same four faces as `temple` load on the website alone, so a synced Space page wears Classic. Not published to a
+    // live site until its render is finished (WEBSITE_THEMES_LIVE).
+    id: 'temple-kit',
+    label: 'Temple',
+    description: 'Warm plaster and umber with one clay color, arches and soft corners, for every kind of gathering.',
     defaultFonts: 'classic',
   },
   {
@@ -127,22 +142,8 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
   },
 ]
 
-/** THE TEMPLE THEME KIT (id `temple-kit`, shown as Temple). Registered as a site theme id (stored, read, rendered,
- *  accented) but NOT yet in SITE_THEMES, which is the list owners pick from and which the Mega Theme, library,
- *  gallery and kit tests hold level with MEGA_THEMES: the kit's starter kits, Spotlight and email surfaces ship in
- *  later passes, and a theme must not be offered before it has them. The pass that ships them appends this entry to
- *  SITE_THEMES (and renames the older `temple` entry's label to Royal Temple, an owner call). Typography-only on the
- *  Space page too (ADR-578): the same four faces as `temple` load on the website alone, so a synced Space page wears
- *  Classic. */
-export const TEMPLE_KIT_SITE_THEME: SiteThemeDef = {
-  id: 'temple-kit',
-  label: 'Temple',
-  description: 'Warm plaster and umber with one clay color, arches and soft corners, for every kind of gathering.',
-  defaultFonts: 'classic',
-}
-
-/** Themes a person can pick (gallery, editor, wizard). The earlier `network` theme is worn by live sites and no longer offered. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network'])
+/** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered. */
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple'])
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'

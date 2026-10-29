@@ -438,6 +438,16 @@ const RAW_METERS: Record<string, RawMeter> = {
     // Member 30 per personal event, Crew 100 (ADR-1709).
     allowances: PLACEHOLDER_METER_LIMITS.event_guests!,
   },
+  spotlight_blocks: {
+    axis: 'tier',
+    title: 'Spotlight blocks',
+    dimension: 'Blocks on your Spotlight',
+    unit: 'blocks',
+    period: null,
+    // Member 12, Crew 40 (the Spotlight split). Asked by saveMemberGridLayout; never retroactive.
+    allowances: PLACEHOLDER_METER_LIMITS.spotlight_blocks!,
+    allowanceTextByTier: { free: 'Up to 12 blocks on your Spotlight' },
+  },
 }
 
 // ── Features that stay AVAILABLE with NO meter (no natural quantity to meter) ────────────────────────

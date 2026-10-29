@@ -22,7 +22,7 @@ describe('the picker config (ADR-1883)', () => {
 
   it('points every feel at a real theme, and every feel is live', () => {
     for (const f of PICKER_FEELS) expect(MEGA_THEMES.some((t) => t.id === f.theme)).toBe(true)
-    expect(PICKER_FEELS.filter((f) => f.live).map((f) => f.theme)).toEqual(['midnight', 'frequency', 'bold', 'temple', 'wildheart', 'network'])
+    expect(PICKER_FEELS.filter((f) => f.live).map((f) => f.theme)).toEqual(['midnight', 'frequency', 'bold', 'temple-kit', 'wildheart', 'network'])
   })
 
   it('skips question one when a door already named the niche', () => {
@@ -58,7 +58,7 @@ describe('resolvePicker', () => {
   it('drops an action the niche does not offer, and a feel that does not exist', () => {
     expect(resolvePicker({ niche: 'coaches', action: 'tickets' }).action).toBeNull()
     expect(resolvePicker({ niche: 'coaches', action: 'book', feel: 'nope' }).theme).toBeNull()
-    expect(resolvePicker({ niche: 'coaches', action: 'book', feel: 'calm' }).theme).toBe('temple')
+    expect(resolvePicker({ niche: 'coaches', action: 'book', feel: 'calm' }).theme).toBe('temple-kit')
     expect(actionsForNiche(null)).toContain('ask')
   })
 

@@ -66,7 +66,7 @@ export const PICKER_FEELS: readonly { id: string; label: string; hint: string; t
   { id: 'night', label: 'After dark', hint: 'True black, bone type, square frames', theme: 'midnight', live: true },
   { id: 'warm', label: 'Warm and open', hint: 'Bright, soft and welcoming', theme: 'frequency', live: true },
   { id: 'bold', label: 'Strong and direct', hint: 'Big type and a firm voice', theme: 'bold', live: true },
-  { id: 'calm', label: 'Calm and ceremonial', hint: 'Gold, stone and room to breathe', theme: 'temple', live: true },
+  { id: 'calm', label: 'Calm and ceremonial', hint: 'Gold, stone and room to breathe', theme: 'temple-kit', live: true },
   { id: 'wild', label: 'Earthy and alive', hint: 'Moon phases, ornament and hand-made warmth', theme: 'wildheart', live: true },
   { id: 'network', label: 'Clear and organised', hint: 'Many chapters, one steady voice', theme: 'network', live: true },
 ]

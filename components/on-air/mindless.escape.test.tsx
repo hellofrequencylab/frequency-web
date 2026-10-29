@@ -3,10 +3,10 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { load, refresh } = vi.hoisted(() => ({ load: vi.fn(), refresh: vi.fn() }))
+const { load, refresh, active } = vi.hoisted(() => ({ load: vi.fn(), refresh: vi.fn(), active: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }))
 vi.mock('@/app/(main)/on-air/actions', () => ({ loadOnAirSession: load }))
-vi.mock('@/app/(main)/on-air/timer-session-actions', () => ({ getActiveTimerSession: async () => ({ data: null }) }))
+vi.mock('@/app/(main)/on-air/timer-session-actions', () => ({ getActiveTimerSession: active }))
 vi.mock('@/lib/fullscreen', () => ({ requestAppFullscreen: async () => {}, exitAppFullscreen: async () => {} }))
 vi.mock('./session', () => ({ OnAirSession: () => <div data-testid="still-session">Running sit</div> }))
 vi.mock('./movement-session', () => ({ MovementSession: () => <div data-testid="move-session">Running movement</div> }))
@@ -35,6 +35,7 @@ beforeEach(() => {
   window.localStorage.clear()
   load.mockReset()
   refresh.mockReset()
+  active.mockResolvedValue({ data: { session: null, expired: false } })
   container = document.createElement('div')
   document.body.append(container)
   root = createRoot(container)
@@ -86,5 +87,16 @@ describe('Mindless escape ownership', () => {
     await escape()
     expect(container.textContent).not.toContain('Settling in')
     expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('announces an expired server timer without opening a fabricated practice session', async () => {
+    active.mockResolvedValue({ data: { session: null, expired: true } })
+    await act(async () => root.render(<MindlessProvider><OpenSetup /></MindlessProvider>))
+
+    expect(container.querySelector('[role="status"]')?.textContent).toContain('Timer session expired')
+    expect(container.textContent).toContain('no extra practice or rewards were added')
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Dismiss"]')?.click())
+    expect(container.querySelector('[role="status"]')).toBeNull()
   })
 })

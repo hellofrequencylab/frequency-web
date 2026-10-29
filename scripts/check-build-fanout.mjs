@@ -160,7 +160,7 @@ export function measureFanout(root) {
     heicFunctions: countCarrying((f) => /heic2any/i.test(f)),
     publicOffenders: [...publicOffenders].sort(),
     sitePhotos: [...sitePhotos].sort(),
-    coverCarriers: countCarrying((f) => f.endsWith('/public/images/site/community-dinner.jpg')),
+    coverCarriers: countCarrying((f) => f.endsWith('/public/images/site/space-cover-default.jpg')),
     markCarriers: countCarrying((f) => f.endsWith('/public/images/Frequency-Logo-Round-Icon-white.png')),
     worstPublic,
   }
@@ -212,7 +212,7 @@ export function evaluate(m, limits = {}) {
   }
   if (m.coverCarriers === 0 || m.markCarriers === 0) {
     failures.push(
-      `the cover placeholders no longer SHIP (community-dinner.jpg in ${m.coverCarriers} function(s),\n` +
+      `the cover placeholders no longer SHIP (space-cover-default.jpg in ${m.coverCarriers} function(s),\n` +
         `   the round mark in ${m.markCarriers}). A fix that merely stopped tracing them would pass every\n` +
         `   other check here and serve share cards with a blank background.`,
     )
@@ -268,7 +268,7 @@ export function evaluate(m, limits = {}) {
     `heic2any: in ${m.heicFunctions} function(s) (must be 0).`,
     `public/: ${m.publicOffenders.length} unsanctioned file(s); ${m.sitePhotos.length} site photo(s) (at most ${L.maxSitePhotos}); ` +
       `worst function carries ${m.worstPublic.count} (at most ${L.maxPublicPerFunction}).`,
-    `placeholders ship: community-dinner.jpg in ${m.coverCarriers}, the round mark in ${m.markCarriers}.`,
+    `placeholders ship: space-cover-default.jpg in ${m.coverCarriers}, the round mark in ${m.markCarriers}.`,
   ]
   return { failures, lines }
 }
