@@ -10,6 +10,7 @@ import { DesignerInquiryForm } from '@/components/sites/designer-inquiry-form'
 import { DesignerCarousel } from '@/components/sites/designer-carousel'
 import { DesignerParallax } from '@/components/sites/designer-parallax'
 import { DesignerFaqList } from '@/components/sites/designer-faq-list'
+import { Ornament, Seal } from '@/components/sites/designer-glyph'
 import {
   DESIGNER_BAND, DESIGNER_CLOSING, DESIGNER_FAQ, DESIGNER_FOUNDER, DESIGNER_GALLERY, DESIGNER_HERO, DESIGNER_INQUIRY, DESIGNER_PORTFOLIO,
   DESIGNER_QUOTE, DESIGNER_SERVICES, DESIGNER_STATEMENT, DESIGNER_STEPS, DESIGNER_TESTIMONIALS,
@@ -232,7 +233,7 @@ function DesignerStepsBlock({ p, pad, vis }: Common) {
           <div className="dz-panel">
             {steps.map((s, i) => (
               <div key={i} className="dz-step">
-                <span className="dz-disc" aria-hidden="true">{i + 1}</span>
+                <Seal number={i + 1} className="dz-disc" />
                 <div>
                   <h3 className="dz-step-title">{str(s.title)}</h3>
                   {str(s.lead) && <p className="dz-step-lead">{str(s.lead)}</p>}
@@ -301,6 +302,7 @@ function DesignerTestimonialsBlock({ p, pad, vis }: Common) {
   return (
     <Section kind="testimonials" pad={pad} vis={vis}>
       <div className="dz-wrap">
+        <div className="dz-orn-head"><Ornament width="200px" /></div>
         <DesignerCarousel head={<Eyebrow text={str(p.eyebrow)} />} slides={slides} />
       </div>
     </Section>
@@ -357,7 +359,7 @@ function DesignerBandBlock({ p, metadata, pad, vis }: Common) {
         <div className="dz-cards">
           {cards.map((c, i) => (
             <div key={i} className="dz-glass">
-              <span className="dz-disc" aria-hidden="true">{i + 1}</span>
+              <Seal number={i + 1} className="dz-disc" />
               <h3>{str(c.title)}</h3>
               {lines(c.lines).map((l, k) => <p key={k}>{l}</p>)}
             </div>
@@ -443,6 +445,7 @@ function DesignerClosingBlock({ p, metadata, pad, vis }: Common) {
     <Section kind="closing" tone="warm" slab pad={pad} vis={vis}>
       <div className={cls('dz-wrap dz-split', hasNext ? 'dz-split--1-1' : undefined)}>
         <div className="dz-next-copy">
+          {!hasNext && <Ornament width="200px" />}
           <h2 className="dz-title dz-title--italic"><InlineText text={str(p.title)} /></h2>
           <Btn label={str(p.buttonLabel)} href={str(p.buttonHref)} kind="primary" metadata={metadata} arrow large />
         </div>

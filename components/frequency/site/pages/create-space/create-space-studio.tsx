@@ -4,7 +4,7 @@
 // with its progress meter below it. One state object feeds all of it, so a pick in the hero and
 // a pick in the builder are the same pick. The kit arrives as ?kit=<MegaThemeId> from the Theme Kit pages; ?kit=none
 // or no param starts on the default look and says "Previewing" (docs: PREVIEW-MODE section 6). Server markup is the cold-traffic render, so the page
-// reads without script. Styles: create-space.css.
+// reads without script. The draft leaves the browser once, at the last move (create-space-claim.tsx). Styles: create-space.css.
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -103,6 +103,8 @@ function Hero({ draft, update, chosen }: { draft: BuilderDraft; update: (patch: 
 function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } }) {
   const [draft, setDraft] = useState<BuilderDraft>(() => emptyDraft(arrival.kit, arrival.chosen))
   const restored = useRef(false)
+  // Once the draft has been handed to the launch it is not kept here any more (until the visitor goes back to edit).
+  const sealed = useRef(false)
 
   // The visitor's own browser holds the draft; read it back once after mount (server markup is the cold render).
   useEffect(() => {
@@ -115,15 +117,26 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   }, [arrival])
 
   useEffect(() => {
-    if (!restored.current) return
+    if (!restored.current || sealed.current) return
     try { window.localStorage.setItem(DRAFT_KEY, serializeDraft(draft)) } catch { /* private window */ }
   }, [draft])
 
   const update = (patch: Partial<BuilderDraft>) => setDraft((d) => ({ ...d, ...patch }))
   const markDone = (move: BuilderMove, patch?: Partial<BuilderDraft>) => setDraft((d) => ({ ...d, ...patch, done: { ...d.done, [move]: true } }))
   const reset = () => {
+    sealed.current = false
     setDraft(emptyDraft(arrival.kit, arrival.chosen))
     try { window.localStorage.removeItem(DRAFT_KEY) } catch { /* nothing to clear */ }
+  }
+
+  const handOver = () => {
+    sealed.current = true
+    try { window.localStorage.removeItem(DRAFT_KEY) } catch { /* nothing to clear */ }
+  }
+  // Going back to change something: keep the draft again, starting from what is on screen.
+  const reopen = () => {
+    sealed.current = false
+    setDraft((d) => ({ ...d }))
   }
 
   const accents = kitAccents(draft.kit)
@@ -133,7 +146,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   return (
     <>
       <Hero draft={draft} update={update} chosen={draft.kitChosen} />
-      <CreateSpaceBuilder draft={draft} update={update} markDone={markDone} reset={reset} vars={vars} accentFill={accent.fill} cold={!arrival.chosen} />
+      <CreateSpaceBuilder draft={draft} update={update} markDone={markDone} reset={reset} onHandOver={handOver} onReopen={reopen} vars={vars} accentFill={accent.fill} cold={!arrival.chosen} />
     </>
   )
 }

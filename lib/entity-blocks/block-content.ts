@@ -664,6 +664,14 @@ const DATA_HEADER_FIELDS: readonly FieldDef[] = [
  *  authored bag and rendered by the block, taking precedence over the space's stored about/story data), so
  *  the section is never empty for want of a place to type. The eyebrow/title still lead. */
 const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
+  // WHAT I GIVE BACK (SPL-05): the member only chooses WHICH pills show. The numbers are resolved server-side
+  // and a zero never renders, so a switch can hide a stat but never invent one.
+  memberContributions: [
+    { key: 'showCrew', label: 'Show my Crew badge', type: 'toggle', default: true },
+    { key: 'showEvents', label: 'Show events I have hosted', type: 'toggle', default: false },
+    { key: 'showJourneys', label: 'Show Journeys I have finished', type: 'toggle', default: false },
+    { key: 'showZaps', label: 'Show my Zaps', type: 'toggle', default: true },
+  ],
   about: [
     ...DATA_HEADER_FIELDS,
     { key: 'body', label: 'About text', type: 'textarea', placeholder: 'A short intro to your space' },

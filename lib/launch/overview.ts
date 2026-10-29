@@ -19,7 +19,7 @@ interface InventoryItem {
 }
 
 export interface InventorySection {
-  id: 'spotlight' | 'space' | 'website' | 'email' | 'schedule'
+  id: 'spotlight' | 'space' | 'website' | 'email' | 'schedule' | 'circle' | 'journey' | 'paid'
   title: string
   items: InventoryItem[]
 }

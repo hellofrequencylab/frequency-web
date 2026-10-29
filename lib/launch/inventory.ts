@@ -58,5 +58,20 @@ export function inventorySections(f: InventoryFacts): InventorySection[] {
       title: 'Schedule',
       items: [{ id: 'c-first', label: 'Put your first event on the calendar', state: rows.eventCount > 0 ? 'done' : 'todo', found: rows.eventCount > 0 ? `${rows.eventCount} on the calendar` : undefined }],
     },
+    {
+      id: 'circle',
+      title: 'Circle',
+      items: [{ id: 'ci-first', label: 'Open a Circle for your people', state: rows.circleCount > 0 ? 'done' : 'todo', found: rows.circleCount > 0 ? `${rows.circleCount} open` : undefined }],
+    },
+    {
+      id: 'journey',
+      title: 'Journey',
+      items: [{ id: 'j-first', label: 'Write your first Journey', state: rows.journeyCount > 0 ? 'done' : 'todo', found: rows.journeyCount > 0 ? `${rows.journeyCount} written` : undefined }],
+    },
+    {
+      id: 'paid',
+      title: 'Get paid',
+      items: [{ id: 'p-ready', label: 'Be ready to take payments', state: rows.payoutsReady ? 'done' : 'todo', found: rows.payoutsReady ? 'Payouts are on' : undefined }],
+    },
   ]
 }

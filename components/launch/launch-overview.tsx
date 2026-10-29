@@ -17,7 +17,7 @@ function Ring({ ratio, size, stroke }: { ratio: number; size: number; stroke: nu
   )
 }
 
-function Bar({ ratio }: { ratio: number }) {
+export function Bar({ ratio }: { ratio: number }) {
   return (
     <svg width="100%" height="8" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden style={{ display: 'block' }}>
       <rect x="0" y="0" width="100" height="8" rx="4" fill="var(--fq-track)" />

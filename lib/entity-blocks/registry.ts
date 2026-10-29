@@ -79,6 +79,9 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   // What this member is part of (SPL-04): their public Circles, Journeys and Spaces, each shown only if the
   // member switched that kind on. Reads the Spotlight reader's allowlisted `programs`; nothing private.
   { id: 'memberPrograms', label: "What I'm part of", description: 'The Circles, Journeys and Spaces you choose to show.', category: 'data', kinds: ['member'], order: 180 },
+  // What this member gives back (SPL-05): quiet stat pills the member chooses (Crew, events hosted, Journeys
+  // finished, Zaps). Every value is resolved server-side; the member only picks which pills show.
+  { id: 'memberContributions', label: 'What I give back', description: 'Quiet stats about how you show up for the community.', category: 'data', kinds: ['member'], order: 190 },
 ]
 
 // ── CONTENT blocks the operator authors (shared by both kinds) ─────────────────────────────────────
@@ -224,6 +227,7 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'memberEvents',
   'tip',
   'memberPrograms',
+  'memberContributions',
   // SPACE free-form blocks (ADR-542): Callout, Image Gallery, Features section, Music-and-video embed.
   'callout',
   'gallery',

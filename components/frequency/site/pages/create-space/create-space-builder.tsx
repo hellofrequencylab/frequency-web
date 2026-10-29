@@ -2,18 +2,23 @@
 
 // /create-a-space, the builder: four moves (name, look, tools, host) beside the live preview, under a progress meter.
 // A move is a card when open, a one-line row once done (tap to edit), and a dim number until its turn. The state
-// lives in the island above (create-space-studio.tsx) so the hero and this section show one Space. Saving it with
-// an account is the fifth move and comes in the next pass. Styles: create-space.css (cs-bld-*).
+// lives in the island above (create-space-studio.tsx) so the hero and this section show one Space. The handle is
+// checked as it is typed (use-handle-status.ts). Saving it with an account is the fifth move (create-space-claim.tsx).
+// Styles: create-space.css (cs-bld-*).
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
-import { BookOpen, Check, Clock, Heart, Mail, ShoppingBag, Ticket, Users, UsersRound } from 'lucide-react'
+import { BookOpen, Check, Clock, Globe, Heart, Mail, ShoppingBag, Ticket, Users, UsersRound } from 'lucide-react'
+import { ClaimCard, SavedCard } from '@/components/frequency/site/pages/create-space/create-space-claim'
+import type { Saved } from '@/components/frequency/site/pages/create-space/create-space-claim'
 import { SpacePreview } from '@/components/frequency/site/pages/create-space/space-preview'
+import { useHandleStatus } from '@/components/frequency/site/pages/create-space/use-handle-status'
 import {
-  BUILDER_MOVES, cleanHandleInput, handleFromName, handleOf, hasProgress, isValidHandle, meterLabel, meterOf, nextOpenMove,
+  BUILDER_MOVES, claimedHandle, cleanHandleInput, handleFromName, handleOf, hasProgress, isValidHandle, meterLabel, meterOf, nextOpenMove,
   progressOf, startingModeFor, trackFraction,
 } from '@/lib/create-space/builder'
 import type { BuilderDraft, BuilderMove } from '@/lib/create-space/builder'
+import { suggestHandle } from '@/lib/create-space/handle'
 import { PREVIEW_KITS, deriveSite, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
 import { WIZARD_INTENTS } from '@/lib/spaces/create-wizard'
 
@@ -37,6 +42,10 @@ interface BuilderProps {
   update: (patch: Partial<BuilderDraft>) => void
   markDone: (move: BuilderMove, patch?: Partial<BuilderDraft>) => void
   reset: () => void
+  /** The draft has left the browser (the link was sent, or the visitor is on their way to Google): stop keeping it. */
+  onHandOver: () => void
+  /** The visitor went back to change something after saving: keep the draft again. */
+  onReopen: () => void
   vars: Record<string, string>
   accentFill: string
   /** The visitor came without a kit: offer the full-size Theme Kit pages. */
@@ -80,13 +89,14 @@ function Card({ n, title, em, lead, children }: { n: string; title: string; em: 
   )
 }
 
-export function CreateSpaceBuilder({ draft, update, markDone, reset, vars, accentFill, cold }: BuilderProps) {
+export function CreateSpaceBuilder({ draft, update, markDone, reset, onHandOver, onReopen, vars, accentFill, cold }: BuilderProps) {
   const [open, setOpen] = useState<number>(() => nextOpenMove(draft.done, -1) ?? BUILDER_MOVES.length)
   const [handleOpen, setHandleOpen] = useState(false)
   const [nameErr, setNameErr] = useState('')
   const [hostErr, setHostErr] = useState(false)
   const [toast, setToast] = useState('')
   const [moved, setMoved] = useState(false)
+  const [saved, setSaved] = useState<Saved | null>(null)
 
   useEffect(() => {
     if (!toast) return
@@ -94,7 +104,11 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, vars, accen
     return () => clearTimeout(t)
   }, [toast])
 
-  const go = (i: number) => { setMoved(true); setNameErr(''); setHostErr(false); setOpen(i) }
+  const go = (i: number) => {
+    setMoved(true); setNameErr(''); setHostErr(false); setOpen(i)
+    // Going back to change something after saving: the draft is the visitor's again, and saving again re-sends it.
+    if (saved) { setSaved(null); onReopen() }
+  }
   const advance = (done: Record<BuilderMove, boolean>, from: number) => go(nextOpenMove(done, from) ?? BUILDER_MOVES.length)
 
   const accents = kitAccents(draft.kit)
@@ -102,12 +116,14 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, vars, accen
   const kitLabel = PREVIEW_KITS.find((k) => k.id === draft.kit)?.label ?? draft.kit
   const kitHint = PREVIEW_KITS.find((k) => k.id === draft.kit)?.hint ?? ''
   const handle = handleOf(draft)
-  const handleOk = isValidHandle(handle)
+  const claimed = claimedHandle(draft)
+  const handleOk = isValidHandle(claimed)
+  const handleStatus = useHandleStatus(claimed, claimed !== '')
   const siteName = draft.name.trim() || 'Your Space'
   const mode = startingModeFor(draft.goals)
   const site = deriveSite({ name: draft.name, handle, hostName: draft.hostName, intents: draft.goals, kit: draft.kit })
   const imagery = kitImagery(draft.kit)
-  const pct = progressOf(draft)
+  const pct = progressOf(draft, saved !== null)
   const meter = meterOf(draft, true)
   const building = BUILDER_MOVES.some((m) => !draft.done[m])
   const finish = (move: BuilderMove, patch?: Partial<BuilderDraft>) => {
@@ -118,6 +134,7 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, vars, accen
   const saveName = () => {
     if (!draft.name.trim()) { setNameErr('Give your Space a name first.'); return }
     if (!handleOk) { setNameErr('Handles use letters, numbers and single hyphens, at least two characters.'); setHandleOpen(true); return }
+    if (handleStatus === 'taken') { setNameErr('Pick a handle that is free to use.'); setHandleOpen(true); return }
     advance(finish('name'), 0)
     setToast('Name saved')
   }
@@ -140,7 +157,7 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, vars, accen
     goals: draft.goals.length ? joinList(WIZARD_INTENTS.filter((i) => draft.goals.includes(i.id)).map((i) => i.label)) : 'Starting simple',
     host: draft.hostName.trim(),
   }
-  const caption = pct >= 90 ? 'Built, and all yours.' : draft.name.trim() ? `${siteName}, coming together.` : 'Your Space, as you build it.'
+  const caption = pct >= 95 ? 'Built, and all yours.' : draft.name.trim() ? `${siteName}, coming together.` : 'Your Space, as you build it.'
 
   const stepFor = (move: BuilderMove, i: number): ReactNode => {
     const done = draft.done[move]
@@ -161,6 +178,10 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, vars, accen
             />
             <div className="cs-bld-handle">
               <span className="cs-bld-url">frequency.community/<b>{handle}</b></span>
+              <span className="cs-bld-avail" aria-live="polite">
+                {handleStatus === 'free' ? <span className="cs-bld-free"><Check aria-hidden="true" />It&apos;s free</span> : null}
+                {handleStatus === 'taken' ? <span className="cs-bld-taken">Taken. Try {suggestHandle(claimed)}</span> : null}
+              </span>
               <button type="button" className="cs-bld-text" onClick={() => setHandleOpen((v) => !v)} aria-expanded={handleOpen}>Change handle</button>
             </div>
             {handleOpen ? (
@@ -306,7 +327,7 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, vars, accen
             </div>
             <div className="cs-bld-meter-main">
               <div className="cs-bld-meter-top">
-                <span className="ig-k">{meterLabel(draft)}</span>
+                <span className="ig-k">{saved ? 'Saved' : meterLabel(draft)}</span>
                 <span className="cs-bld-toast" aria-live="polite">{toast ? <span className="ig-d up">{toast}</span> : null}</span>
                 {hasProgress(draft) ? <button type="button" className="cs-bld-reset" onClick={() => { reset(); go(0) }}>Start over</button> : null}
               </div>
@@ -321,13 +342,25 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, vars, accen
                 ))}
               </div>
             </div>
+            {saved ? (
+              <span className="cs-bld-launch is-wait fq-iri-rim"><span className="cs-dot" />Check your email</span>
+            ) : building ? (
+              <button type="button" className="cs-bld-launch is-locked" aria-disabled="true" onClick={() => go(Math.max(0, BUILDER_MOVES.findIndex((m) => !draft.done[m])))}><Globe aria-hidden="true" />Launch</button>
+            ) : (
+              <button type="button" className="btn fq-iri-btn cs-bld-launch" onClick={() => { go(BUILDER_MOVES.length); setTimeout(() => document.getElementById('cs-claim')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 60) }}>Launch my Space<span aria-hidden="true">→</span></button>
+            )}
           </div>
 
           <Rows>
             {BUILDER_MOVES.map((m, i) => stepFor(m, i))}
-            <TodoRow n={5} label="Save it and claim your handle" />
+            {saved ? (
+              <SavedCard draft={draft} siteName={siteName} kitLabel={kitLabel} toolsLabel={`${mode.label} setup: ${mode.tools.join(', ')}.`} saved={saved} />
+            ) : !building && open === BUILDER_MOVES.length ? (
+              <div id="cs-claim"><ClaimCard draft={draft} handle={claimed} siteName={siteName} kitLabel={kitLabel} imagery={imagery} onHandOver={onHandOver} onSaved={setSaved} /></div>
+            ) : (
+              <TodoRow n={5} label="Save it and claim your handle" />
+            )}
           </Rows>
-          {!building ? <p className="cs-bld-hint">Everything is set. Saving it with a free account comes next.</p> : null}
         </div>
 
         <div className="cs-bld-stage">
