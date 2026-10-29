@@ -271,7 +271,7 @@ export function NetworkHeroFlow({ status }: { status: Status }) {
       glow.current?.setAttribute('d', p)
     }
     draw()
-    const ro = new ResizeObserver(draw)
+    const ro = new ResizeObserver(() => draw())
     ro.observe(c)
     window.addEventListener('resize', draw)
     window.addEventListener('load', draw)
