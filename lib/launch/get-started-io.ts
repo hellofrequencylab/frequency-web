@@ -15,7 +15,7 @@ export const loadPostPublishList = cache(async (profileId: string): Promise<Inve
   try {
     const launch = await getLaunchForOwner(profileId)
     if (!launch?.spaceId) return null
-    const inv = await loadInventory(launch.spaceId, profileId, launch.skippedPhotos)
+    const inv = await loadInventory(launch.spaceId, profileId, launch.skippedPhotos, true)
     return inv && isPublished(inv.sections) ? inv.sections : null
   } catch (e) {
     console.error('[launch] get started list read failed; the member sees the plain list:', e instanceof Error ? e.message : String(e))

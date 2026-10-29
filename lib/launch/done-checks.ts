@@ -23,6 +23,20 @@ export interface LaunchRows {
   contactCount: number
   /** The owner's payouts account can take money now (charges and payouts on). */
   payoutsReady: boolean
+  /** Counts for the Setup list after Publish (lib/launch/setup-items.ts). Absent while the launch itself is the only reader. */
+  extras?: SetupExtras
+}
+
+/** What the Setup list reads beyond the launch's own steps: one small count per Space tool. */
+export interface SetupExtras {
+  bookingTimes: number
+  membershipTiers: number
+  donationAsks: number
+  products: number
+  campaigns: number
+  campaignsSent: number
+  captureLinks: number
+  automations: number
 }
 
 function record(v: unknown): Record<string, unknown> {

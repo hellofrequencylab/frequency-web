@@ -16,6 +16,9 @@ const SECTION_STEP = {
   circle: 'circle',
   journey: 'journey',
   paid: 'paid',
+  // The Setup items open their own Space tool (item.href); these are only the fallback.
+  money: 'paid',
+  reach: 'people',
 } as const
 
 interface GetStartedItem {
@@ -47,7 +50,7 @@ export function isPublished(sections: readonly InventorySection[]): boolean {
 export function getStartedView(sections: readonly InventorySection[]): GetStartedView {
   const p = overviewProgress(sections)
   const items = sections.flatMap((s) =>
-    s.items.map((i) => ({ state: i.state, row: { id: i.id, section: s.id, label: i.label, href: launchStepHref(SECTION_STEP[s.id]), photo: i.photo === true, skipped: i.skipped === true, found: i.found } })),
+    s.items.map((i) => ({ state: i.state, row: { id: i.id, section: s.id, label: i.label, href: i.href ?? launchStepHref(SECTION_STEP[s.id]), photo: i.photo === true, skipped: i.skipped === true, found: i.found } })),
   )
   // Skipped items stay on the list; they just come after the ones still asking.
   const todo = items.filter((x) => x.state === 'todo').map((x) => x.row)
