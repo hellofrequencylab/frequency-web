@@ -22,7 +22,7 @@ import type { SuiteContext, SuiteSelection } from './suite-types'
 // from the date it falls. The to-dos can be ticked and added here; everything else about a Plan is
 // changed above, in the panel.
 
-export function SuitePlanCard({
+export function SuitePlanSummary({
   plan,
   data,
   ctx,

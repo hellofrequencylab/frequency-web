@@ -32,7 +32,7 @@ import { planEntryDelete } from '@/lib/calendar/series-choice'
 import { productionDoorHref } from '@/lib/calendar/stage-timeline'
 import type { DetailsActions, RecordSubject } from './suite-details-actions'
 import { ChoiceField, DateField, Row, TextField, TodoCheck, useRun } from './suite-details-fields'
-import { SuitePlanCard } from './suite-plan-card'
+import { SuitePlanSummary } from './suite-plan-summary'
 import { SuiteRecord, useRecord } from './suite-record'
 import type { SuiteContext, SuiteSelection } from './suite-types'
 
@@ -128,7 +128,7 @@ export function SuiteDetails({ sel, ...panel }: PanelProps & { sel: SuiteSelecti
         {task ? <TodoBody task={task} {...panel} /> : null}
         {plan ? <PlanBody plan={plan} {...panel} /> : null}
 
-        {planFor ? <SuitePlanCard plan={planFor} bare={!!plan} data={data} ctx={ctx} actions={actions} onSelect={onSelect} /> : null}
+        {planFor ? <SuitePlanSummary plan={planFor} bare={!!plan} data={data} ctx={ctx} actions={actions} onSelect={onSelect} /> : null}
 
         {subject ? (
           <SuiteRecord
