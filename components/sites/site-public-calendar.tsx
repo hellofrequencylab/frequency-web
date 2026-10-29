@@ -10,7 +10,7 @@ import { memberLayerChoices } from '@/lib/calendar/member-calendar'
 import { monthGridWindow } from '@/lib/calendar/month-window'
 import { dayInZone } from '@/lib/time/zone'
 import { SiteCalendarAgenda } from '@/components/sites/site-calendar-agenda'
-import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
+import { SiteSubscribePanel } from '@/components/sites/site-subscribe-panel'
 import { CalendarWorkspace } from '@/components/spaces/calendar-workspace'
 import { loadSpaceCalendarMonth } from '@/app/(main)/spaces/[slug]/(profile)/calendar/actions'
 import { retreatShort } from '@/components/sites/admin/site-calendar'
@@ -59,9 +59,13 @@ export async function SitePublicCalendar({
     .filter((e) => (e.layer ?? 'events') === 'events')
     .slice(0, AGENDA_MAX)
   const httpsUrl = `${SITE_URL}/spaces/${space.slug}/calendar.ics`
+  const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://')
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-8">
-      <SiteCalendarAgenda events={upcoming} eventOrigin={appOrigin()} />
+      <div className="min-w-0 space-y-6">
+        <SiteCalendarAgenda events={upcoming} eventOrigin={appOrigin()} />
+        <SiteSubscribePanel brandName={brandName} httpsUrl={httpsUrl} webcalUrl={webcalUrl} />
+      </div>
       <CalendarWorkspace
         eventOrigin={appOrigin()}
         slug={space.slug}
@@ -79,14 +83,7 @@ export async function SitePublicCalendar({
         adminEvents={[]}
         dayNotes={[]}
         plans={[]}
-        subscribe={
-          <CalendarSubscribeMenu
-            httpsUrl={httpsUrl}
-            webcalUrl={httpsUrl.replace(/^https?:\/\//, 'webcal://')}
-            title={`${brandName} in your calendar`}
-            description={`Subscribe once and ${brandName}'s events show up in Google or Apple Calendar, and stay current on their own.`}
-          />
-        }
+        subscribe={null}
         upcoming={null}
         memberLayers={memberLayerChoices(guestEvents)}
         skyMarkers={[]}

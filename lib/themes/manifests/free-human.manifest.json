@@ -21,5 +21,14 @@
       ]
     }
   },
-  "core": null
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "free-human",
+        "names"
+      ]
+    }
+  }
 }

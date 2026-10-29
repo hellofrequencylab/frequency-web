@@ -3,7 +3,9 @@ import { getMyProfileId } from '@/lib/auth'
 import { getBlockedProfiles } from '@/lib/blocking'
 import { getInitials } from '@/lib/utils'
 import { paidSpacesEndedByDelete } from '@/lib/account'
-import { unblockFromSettings } from './actions'
+import { launchSystemEnabled } from '@/lib/launch/enabled'
+import { loadSetupHidden } from '@/lib/launch/setup-hidden-io'
+import { showSetupFromSettings, unblockFromSettings } from './actions'
 import { DeleteAccount } from './delete-account'
 import { DownloadData } from './download-data'
 import { EraseDrafts } from './erase-drafts'
@@ -24,8 +26,19 @@ export async function AccountSection() {
     myProfileId ? paidSpacesEndedByDelete() : Promise.resolve([]),
   ])
 
+  const setupHidden = myProfileId && launchSystemEnabled() ? await loadSetupHidden(myProfileId) : false
+
   return (
     <div className="space-y-8">
+      {setupHidden && (
+        <div>
+          <p className="eyebrow text-muted mb-2">Finish setup</p>
+          <form action={showSetupFromSettings} className="flex items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3">
+            <span className="text-body-sm text-text">You hid the Finish setup reminder. Your list is still here when you want it.</span>
+            <button type="submit" className="btn pa sm">Bring it back</button>
+          </form>
+        </div>
+      )}
       <div>
         <p className="text-meta font-medium text-muted uppercase tracking-wide mb-2">Blocked members</p>
         {blocked.length === 0 ? (

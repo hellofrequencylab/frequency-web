@@ -718,4 +718,24 @@ honest answer there.
 happening at a time, and because a chip would take one of the three rows a busy square has. A day that
 is both a new moon and an equinox draws both.
 
+## Settings, the team feed and the website (calendar suite pass 9, ADR-1931)
+
+The gear in the suite header opens **Calendar settings** (`components/calendar-suite/suite-settings.tsx`): the time
+zone, sky markers and day notes fields, the two copy buttons and the sync rows. The fields are the same
+components the page used to stack under the calendar, so each still saves through its own gated action.
+
+**Copy team feed never rotates.** `ensurePrivateCalendarFeed` (plan-actions.ts) returns the live token and makes one
+only when none exists. `rotatePrivateCalendarFeed` revokes every subscriber and stays its own press.
+
+**The team feed's two additions** (`lib/calendar/entry-feed.ts`, read by `app/calendar/private/[token]/route.ts`):
+a penciled date is `STATUS:TENTATIVE`, summary `Hold: <title>`, with "Held until <day>" from the Plan's
+`hold_until`; a to-do with `crm_tasks.start_minute` is a block at that minute in the Space's zone (the host's zone for
+a shared Plan) for `est_minutes`, else half an hour. A to-do with only a day keeps its old instant.
+
+**The website calendar** (`components/sites/site-public-calendar.tsx`) has a Subscribe panel under its Upcoming list
+(`site-subscribe-panel.tsx`). The suite's month is not used there: its styles are the console theme's.
+
+**Phone.** Under 820px of calendar width the rail and Details are bottom sheets (`.cal-suite` container query in
+`app/themes/frequency/admin-pages.css`); under 720px the calendar opens on Agenda (`NARROW_QUERY` in calendar-suite.tsx).
+
 Voice: all calendar copy follows `docs/CONTENT-VOICE.md` (no em/en dashes) + `docs/NAMING.md`.

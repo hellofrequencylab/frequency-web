@@ -28,6 +28,7 @@ import { publishReview } from './review-io'
 import { parseSpotlightAnswers } from './spotlight-step'
 import { publishSpotlightStep } from './spotlight-io'
 import type { LaunchSnapshot } from './state'
+import { askHideSetup, confirmHideSetup, showSetupAgain } from './setup-hidden-io'
 import * as store from './store'
 import { launchStepHref } from './steps'
 
@@ -206,4 +207,28 @@ export async function skipPhotoFormAction(formData: FormData): Promise<void> {
   const launch = await store.getActiveLaunch(profileId)
   if (launch) await store.skipPhotoItem(launch, String(formData.get('item') ?? ''))
   redirect('/launch')
+}
+
+/** Hiding Finish setup, call one. Nothing is hidden yet: the server stamps the ask. */
+export async function askHideSetupAction(): Promise<ActionResult> {
+  if (!launchSystemEnabled()) return fail(OFF)
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail(SIGN_IN)
+  return (await askHideSetup(profileId)) ? ok() : fail(RETRY)
+}
+
+/** Hiding Finish setup, call two: only counts when call one came in the last ten minutes. */
+export async function confirmHideSetupAction(): Promise<ActionResult> {
+  if (!launchSystemEnabled()) return fail(OFF)
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail(SIGN_IN)
+  return (await confirmHideSetup(profileId)) ? ok() : fail('Ask to hide it again first, then confirm.')
+}
+
+/** Bring the Finish setup reminder back. Called from Settings. */
+export async function showSetupAction(): Promise<ActionResult> {
+  if (!launchSystemEnabled()) return fail(OFF)
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail(SIGN_IN)
+  return (await showSetupAgain(profileId)) ? ok() : fail(RETRY)
 }

@@ -4,8 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildVevent, renderCalendar } from '@/lib/events/ics'
-import { entryFeedFields, withSharedPlanRows, type FeedEntryRow } from '@/lib/calendar/entry-feed'
-import { dueTaskToCalendarItem } from '@/lib/calendar/due-dates'
+import { entryFeedFields, todoFeedFields, withSharedPlanRows, type FeedEntryRow } from '@/lib/calendar/entry-feed'
 import { listTasks, listTasksInPlans, type CrmTask } from '@/lib/crm/tasks'
 
 export const dynamic = 'force-dynamic'
@@ -36,7 +35,7 @@ export async function GET(
   // whole repeating series, which is ONE row with its own RRULE — would keep drawing itself in the
   // team's phone calendars indefinitely, which is the deleted-but-still-visible failure the tombstone
   // exists to avoid.
-  const ENTRY_COLS = 'id, title, notes, location, starts_at, ends_at, time_zone, status, plan_id, recurrence_rule, exception_dates'
+  const ENTRY_COLS = 'id, title, notes, kind, location, starts_at, ends_at, time_zone, status, plan_id, recurrence_rule, exception_dates'
   const { data: entries } = await admin
     .from('space_calendar_entries')
     .select(ENTRY_COLS)
@@ -46,6 +45,9 @@ export async function GET(
     .limit(400)
 
   const ownTodos = await listTasks({ spaceId: row.space_id, limit: 200 })
+  // The Space's own zone: a to-do's start time is a minute of the day on THIS Space's clock.
+  const { data: ownSpace } = await admin.from('spaces').select('time_zone').eq('id', row.space_id).maybeSingle()
+  const ownZone = (ownSpace as { time_zone: string | null } | null)?.time_zone ?? null
 
   // SHARED PLANS, SHARED PLANS ONLY (PROG-CAL7 Together, LIVE-546). A co-host team subscribing to
   // its own feed sees the dates and to-dos of the Plans shared with it, keyed by the ACCEPTED
@@ -62,15 +64,21 @@ export async function GET(
   let sharedEntries: FeedEntryRow[] = []
   let sharedTodos: CrmTask[] = []
   const hostNameByPlan = new Map<string, string>()
+  const hostZoneByPlan = new Map<string, string | null>()
   if (sharedPlanIds.length > 0) {
     const { data: plans } = await admin.from('space_plans').select('id, space_id').in('id', sharedPlanIds).is('archived_at', null)
     const planRows = (plans as { id: string; space_id: string }[] | null) ?? []
     const hostIds = [...new Set(planRows.map((p) => p.space_id))]
-    const { data: hosts } = hostIds.length ? await admin.from('spaces').select('id, name').in('id', hostIds) : { data: [] }
-    const hostName = new Map(((hosts as { id: string; name: string }[] | null) ?? []).map((h) => [h.id, h.name]))
+    const { data: hosts } = hostIds.length ? await admin.from('spaces').select('id, name, time_zone').in('id', hostIds) : { data: [] }
+    const hostRows = (hosts as { id: string; name: string; time_zone: string | null }[] | null) ?? []
+    const hostName = new Map(hostRows.map((h) => [h.id, h.name]))
+    const hostZone = new Map(hostRows.map((h) => [h.id, h.time_zone]))
     for (const p of planRows) {
       const name = hostName.get(p.space_id)
-      if (name) hostNameByPlan.set(p.id, name)
+      if (name) {
+        hostNameByPlan.set(p.id, name)
+        hostZoneByPlan.set(p.id, hostZone.get(p.space_id) ?? null)
+      }
     }
     const livePlanIds = [...hostNameByPlan.keys()]
     if (livePlanIds.length > 0) {
@@ -86,7 +94,18 @@ export async function GET(
     }
   }
   const hostOf = (planId: string | null | undefined) => (planId ? hostNameByPlan.get(planId) : null)
-  const feedEntries = withSharedPlanRows(((entries as FeedEntryRow[] | null) ?? []), sharedEntries, (r) => hostOf(r.plan_id))
+  const merged = withSharedPlanRows(((entries as FeedEntryRow[] | null) ?? []), sharedEntries, (r) => hostOf(r.plan_id))
+  // PLAN HOLDS (pass 9): a held date says until when. One read of the Plans behind the pencils, and a
+  // row whose Plan holds nothing is left as it was.
+  const heldPlanIds = [...new Set(merged.filter((r) => r.kind === 'pencil' && r.plan_id).map((r) => r.plan_id as string))]
+  const { data: holds } = heldPlanIds.length
+    ? await (admin as unknown as { from: (t: string) => { select: (c: string) => { in: (c: string, v: string[]) => Promise<{ data: unknown }> } } })
+        .from('space_plans')
+        .select('id, hold_until')
+        .in('id', heldPlanIds)
+    : { data: [] }
+  const holdByPlan = new Map(((holds as { id: string; hold_until: string | null }[] | null) ?? []).map((h) => [h.id, h.hold_until]))
+  const feedEntries = merged.map((r) => (r.plan_id && holdByPlan.get(r.plan_id) ? { ...r, holdUntil: holdByPlan.get(r.plan_id) } : r))
   const todos = withSharedPlanRows(ownTodos, sharedTodos, (t) => hostOf(t.planId))
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
@@ -101,21 +120,9 @@ export async function GET(
       return buildVevent(fields)
     }),
     ...todos
-      .map((t) => (t.dueAt ? dueTaskToCalendarItem({ id: t.id, title: t.title, dueAt: t.dueAt, planId: t.planId }) : null))
-      .filter((item): item is NonNullable<typeof item> => !!item)
-      .map((item) => {
-        const start = item.startInstantIso ? new Date(item.startInstantIso) : new Date(`${item.dayKey}T12:00:00.000Z`)
-        return buildVevent({
-          uid: item.slug,
-          start,
-          end: start,
-          summary: item.title,
-          url: `${appUrl}/spaces`,
-          location: null,
-          description: item.notes,
-          cancelled: false,
-        })
-      }),
+      .map((t) => todoFeedFields(t, (t.planId && hostZoneByPlan.get(t.planId)) || ownZone, `${appUrl}/spaces`))
+      .filter((fields): fields is NonNullable<typeof fields> => !!fields)
+      .map((fields) => buildVevent(fields)),
   ]
 
   const body = renderCalendar({

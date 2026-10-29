@@ -765,6 +765,12 @@ button.cal-tg-head:hover { background: var(--fq-track); }
 .cal-sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .cal-sheet-title { margin: 0 0 4px; font: 600 26px/1.15 var(--fq-font-display); letter-spacing: -0.035em; color: var(--fq-text-strong); }
 
+/* Calendar settings: the sheet's four sections, the two copy buttons, and the shared-Plans line */
+.cal-suite .cal-settings { display: flex; flex-direction: column; gap: 20px; }
+.cal-suite .cal-settings > section { display: flex; flex-direction: column; gap: 8px; }
+.cal-suite .cal-set-feeds { display: flex; flex-wrap: wrap; gap: 8px; }
+.cal-suite .cal-set-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; padding: 4px 2px 0; font-size: var(--fq-text-body-s); color: var(--fq-text-strong); }
+
 /* Pencil it in, quick add and the command bar */
 .cal-suite .cal-form { display: flex; flex-direction: column; gap: 16px; }
 .cal-suite .cal-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
