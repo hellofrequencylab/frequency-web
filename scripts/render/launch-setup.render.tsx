@@ -11,7 +11,7 @@ import { it, vi } from 'vitest'
 const hide = vi.hoisted(() => ({ step: 0 }))
 vi.mock('react', async (orig) => {
   const a = (await orig()) as typeof import('react')
-  return { ...a, useState: ((init: unknown) => (init === 0 && hide.step > 0 ? [hide.step, () => {}] : a.useState(init as never))) as typeof a.useState }
+  return { ...a, useState: ((init: unknown) => (init === 0 && hide.step > 0 ? [hide.step, () => {}] : a.useState(init as never))) as unknown as typeof a.useState }
 })
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push() {}, replace() {}, refresh() {} }), usePathname: () => '/', useSearchParams: () => new URLSearchParams() }))
 vi.mock('next/link', () => ({ default: (p: Record<string, unknown>) => h('a', { href: p.href as string, className: p.className as string, style: p.style as never }, p.children as never) }))
