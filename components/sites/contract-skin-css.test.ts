@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { CONTRACT_SKIN_FAMILIES, contractSkinCss } from './contract-skin-css'
-import { SKIN_FAMILIES, skinFamiliesIn, skinFamilyOf } from '@/lib/sites/skin-family'
+import { SKIN_FAMILIES, foreignBlocksFor, skinFamiliesIn, skinFamilyOf } from '@/lib/sites/skin-family'
 
 // ── LIVE-1853: A THEME-NAMED BLOCK ON ANOTHER THEME RENDERS STYLED, IN THAT THEME'S PALETTE ──────────
 // docs/THEME-COHESION.md. A family's own rules, re-scoped to the wrapper the renderer marks, with its private
@@ -79,5 +79,17 @@ describe('the sheet for a page', () => {
     expect(css).toContain('[data-skin-family="designer"]')
     expect(css).toContain('[data-skin-family="temple"]')
     expect(css).not.toContain('[data-skin-family="midnight"]')
+  })
+})
+
+describe('what a theme switch changes', () => {
+  const doc = { content: [{ type: 'Heading' }, { type: 'DesignerHero' }, { type: 'DesignerBand' }, { type: 'TempleHero' }, { type: 'NetworkHero' }] }
+  it('counts the blocks drawn for another theme, by family', () => {
+    expect(foreignBlocksFor(doc, 'bold')).toEqual([{ family: 'designer', count: 2 }, { family: 'temple', count: 1 }])
+  })
+  it('does not count a family on its own theme, or shared blocks', () => {
+    expect(foreignBlocksFor(doc, 'designer')).toEqual([{ family: 'temple', count: 1 }])
+    expect(foreignBlocksFor({ content: [{ type: 'Heading' }] }, 'bold')).toEqual([])
+    expect(foreignBlocksFor(null, 'bold')).toEqual([])
   })
 })
