@@ -5,6 +5,7 @@
   "priority": "P2",
   "size": "S",
   "status": "open",
+  "wave": "W7",
   "source": {
     "file": "supabase/migrations/20270346027500_public_header_merge_second_community_tab.sql",
     "ref": "Owner report, 2026-10-29: two community tabs in the menu"
