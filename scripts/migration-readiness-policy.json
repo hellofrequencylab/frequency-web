@@ -401,9 +401,9 @@
         },
         {
           "file": "docs/ledger/rows/LIVE-1775.json",
-          "status": "added",
-          "sha256": "bf85fd37d65aeb59d0f65acc7c657c02a4c4acd9570c5418aca49a23f258a172",
-          "baseMode": "000000",
+          "status": "modified",
+          "sha256": "aabbc66ac93f865ff32d66623ce2d2c6313d589f37b625d17e989563cbc45c21",
+          "baseMode": "100644",
           "headMode": "100644"
         },
         {
@@ -411,13 +411,6 @@
           "status": "modified",
           "sha256": "2884f29faec24e04fa9eb5159472822bb9d85efdec7506d3e4fa73e95f23d5a8",
           "baseMode": "100644",
-          "headMode": "100644"
-        },
-        {
-          "file": "scripts/probes/launch-consent-retention.mjs",
-          "status": "added",
-          "sha256": "c815d591c34de49c4b88a30c84047d7e130bef5eb361ec1c549cd136bf4d26d3",
-          "baseMode": "000000",
           "headMode": "100644"
         },
         {
