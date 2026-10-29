@@ -134,7 +134,8 @@ describe('the Temple Theme Kit is registered as a site theme', () => {
     const prefs = withSiteStyle({}, { theme: 'temple-kit' })
     expect(readSiteStyle(prefs).theme).toBe('temple-kit')
     expect(spacePageDefaultAccent(prefs, '#123456')).toBe(TEMPLE_KIT_ACCENT.accent)
-    expect(spacePageSiteFaces(prefs)).toBeNull()
+    // A synced Temple website gives the Space page the kit's display face (Marcellus), nothing else.
+    expect(spacePageSiteFaces(prefs)).toBe('temple-kit')
   })
 
   it('resolves through the render style and the editor', () => {
@@ -145,7 +146,7 @@ describe('the Temple Theme Kit is registered as a site theme', () => {
     expect(r.editorTheme).toBe('TempleKit')
     expect(r.accentVars?.['--color-primary']).toBe('#9C4A2C')
     expect(WEBSITE_THEMES).toContain('TempleKit')
-    expect(WEBSITE_THEMES_LIVE.has('TempleKit'), 'held back until its blocks and chrome ship').toBe(false)
+    expect(WEBSITE_THEMES_LIVE.has('TempleKit'), 'a Space that wears the kit publishes it (LIVE-1645)').toBe(true)
     expect(WEBSITE_THEME_FONT_VARS.TempleKit).toEqual(['tp-marcellus', 'tp-jost', 'tp-jost'])
   })
 

@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1871",
+  "title": "Every way into the launch lands on /launch",
+  "status": "done",
+  "closed": "2026-10-29",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "scripts/probes/launch-entry-routing.mjs",
+    "ref": "Daniel's ruling: nobody leaves the 12-minute flow until launched; one destination, /launch"
+  },
+  "detail": "lib/launch/destination.ts is the one helper (launchHomeHref, inFlowHref, spotlightArrivalGoesHome). /launch/start, /launch/claim, /launch/resume, the launch box pill, /spaces/new (when a launch is under way) and a cold /launch/step/spotlight arrival all land on /launch; /launch starts the launch when a signed-in owner has none, carrying the held niche and intents, so it is never a dead end. Links inside the flow carry go=1 so the step opens rather than bouncing. The pending-launch hold (lib/launch/pending.ts) is read, not changed. The Space console nudge and the come-back email do not exist in the tree yet: they call launchHomeHref({ signedIn: true, lid }). /create-a-space is another thread's: its sign-in return should use the same helper.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-entry-routing.mjs",
+    "note": "Helper behaviour under node plus the entries' source: each asks the helper, /launch starts a launch, the flow links are marked, the hold's contract is intact."
+  }
+}

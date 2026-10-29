@@ -228,6 +228,8 @@ export function repoViolations({ rules, inventory, tokens, copy, tokenMap = [], 
     const repoPlain = resolveVars(flatDeclarations(repoTokenCss), false)
     // A deliberate difference (an accessibility fix), named in the rule file with its reason. The token must still be declared.
     const deviations = new Set(tokenDeviations.filter((d) => d.reason).map((d) => d.name))
+    // `undeclared: true` names a token the theme leaves to something else on purpose (the Space's own accent), with the reason.
+    const left = new Set(tokenDeviations.filter((d) => d.reason && d.undeclared).map((d) => d.name))
     for (const [name, value] of Object.entries(ds)) {
       if (value === undefined) continue
       let mapped = name
@@ -237,7 +239,7 @@ export function repoViolations({ rules, inventory, tokens, copy, tokenMap = [], 
       // snapshot cannot resolve them, and the repo loads its own faces.
       if (skipFontAliases && /var\(--font-/.test(value)) continue
       const got = repo[mapped] ?? repo[name]
-      if (got === undefined) add('token', name, `${mapped} is not declared in the repo token block (design system: ${value})`)
+      if (got === undefined) { if (!left.has(name)) add('token', name, `${mapped} is not declared in the repo token block (design system: ${value})`) }
       else if (normValue(got) !== normValue(value) && !(repoPlain[mapped] !== undefined && dsPlain[name] !== undefined && normValue(repoPlain[mapped] ?? repoPlain[name]) === normValue(dsPlain[name])) && !deviations.has(name)) add('token', name, `${mapped} is ${got}, design system says ${value}`)
     }
   }

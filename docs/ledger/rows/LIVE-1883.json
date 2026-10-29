@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1883",
+  "title": "A personal Spotlight can show what the Member gives back, as pills they choose (Spotlight split, SPL-05)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/widgets/member-profile/contributions.tsx",
+    "ref": "Owner picks 2026-10-28: free value first, contributions on the free personal Spotlight"
+  },
+  "detail": "Adds the member-only memberContributions block (What I give back): quiet stat pills for the Crew badge (real membership_tier), events hosted, Journeys finished and Zaps. The member chooses each pill with a switch (Crew and Zaps on, the others off); a zero never renders; every value is resolved server side, with one count-only helper (two head counts, no rows) added to the Spotlight reader. Never payments, amounts or who tipped.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/entity-blocks/registry.ts','utf8');const b=fs.readFileSync('components/widgets/member-profile/member-profile-modules.tsx','utf8');if(!a.includes(\\\"id: 'memberContributions'\\\")||!b.includes('memberContributions: MemberContributionsBlock'))process.exit(1)\"",
+    "note": "Fails on main (no memberContributions block); passes here."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

@@ -41,6 +41,7 @@ export const DESIGNER_STATEMENT = {
 }
 
 export const DESIGNER_PORTFOLIO = {
+  display: 'mosaic',
   eyebrow: 'Portfolio',
   title: 'Our work, *start to finish*',
   lead: 'Three projects we are proud of, and what it took to get there.',

@@ -7,14 +7,21 @@ import { inventorySections } from './inventory'
 import type { InventorySection } from './overview'
 import { loadLaunchRows } from './rows'
 
-export async function loadInventory(spaceId: string | null, ownerProfileId: string): Promise<InventorySection[] | null> {
+export interface Inventory {
+  sections: InventorySection[]
+  /** Where a photo upload lands: the same Space record the items read. */
+  space: { id: string; slug: string }
+}
+
+export async function loadInventory(spaceId: string | null, ownerProfileId: string, skippedPhotos: readonly string[] = []): Promise<Inventory | null> {
   if (!spaceId) return null
   try {
     const space = await getSpaceById(spaceId)
     if (!space) return null
     const rows = await loadLaunchRows(spaceId, ownerProfileId)
     if (!rows) return null
-    return inventorySections({ rows, spaceName: space.name, coverImageUrl: space.coverImageUrl ?? null, logoUrl: space.brandLogoUrl ?? null })
+    const sections = inventorySections({ rows, spaceName: space.name, coverImageUrl: space.coverImageUrl ?? null, logoUrl: space.brandLogoUrl ?? null, skippedPhotos })
+    return { sections, space: { id: space.id, slug: space.slug } }
   } catch {
     return null
   }

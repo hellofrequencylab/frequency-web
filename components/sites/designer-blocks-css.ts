@@ -120,6 +120,18 @@ ${N} .dz-project:hover img{transform:scale(1.04)}
 ${N} .dz-project::after{content:"";position:absolute;inset:0;background:var(--dz-scrim-card)}
 ${N} .dz-project-body{position:absolute;left:28px;right:28px;bottom:28px;z-index:1;display:block}
 ${N} .dz-project-body>span{display:flex;flex-direction:column;gap:12px}
+/* Portfolio cards: the photo, then its number, place and year, the name and the way in. */
+${N} .dz-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:clamp(20px,2.4vw,32px)}
+${N} .dz-tile{display:flex;flex-direction:column;gap:12px;padding:12px 12px 24px;border-radius:var(--dz-r-3);background:var(--dz-parchment);box-shadow:var(--dz-shadow-1);color:var(--dz-charcoal);text-decoration:none;transition:box-shadow var(--dz-dur-slow) var(--dz-ease-out),transform var(--dz-dur-slow) var(--dz-ease-out)}
+${N} a.dz-tile:hover{box-shadow:var(--dz-shadow-3);transform:translateY(-4px);color:var(--dz-charcoal)}
+${N} .dz-tile-photo{position:relative;display:block;aspect-ratio:4 / 3;overflow:hidden;border-radius:var(--dz-r-2)}
+${N} .dz-tile-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1.2s var(--dz-ease-out)}
+${N} a.dz-tile:hover .dz-tile-photo img{transform:scale(1.04)}
+${N} .dz-tile-meta{display:flex;gap:12px;align-items:baseline;padding:8px 12px 0;${LABEL};font-size:var(--dz-size-micro);letter-spacing:.14em;line-height:1.4;color:var(--dz-stone)}
+${N} .dz-tile-meta i{font-family:var(--dz-display);font-size:18px;letter-spacing:0;color:var(--dz-ochre-deep)}
+${N} .dz-tile-title{display:block;padding:0 12px;font-family:var(--dz-display);font-size:var(--dz-size-h3);line-height:1.15}
+${N} .dz-tile-go{display:flex;align-items:center;justify-content:space-between;margin:8px 12px 0;padding-top:16px;border-top:${HAIR};${LABEL};font-size:var(--dz-size-micro);letter-spacing:var(--dz-tracking-label);color:var(--dz-charcoal)}
+${N} .dz-tile-go b{display:grid;place-items:center;width:32px;height:32px;border-radius:var(--dz-r-pill);border:1px solid var(--dz-line);font-weight:400;letter-spacing:0}
 ${N} .dz-project-title{display:block;font-family:var(--dz-display);font-size:32px;line-height:1.1}
 ${N} .dz-project-meta{display:block;${LABEL};font-size:var(--dz-size-micro);letter-spacing:.18em;line-height:1.4;color:var(--dz-sand)}
 ${N} .dz-project-go{display:inline-flex;align-items:center;align-self:flex-start;margin-top:6px;padding:11px 16px;border-radius:var(--dz-r-pill);background:var(--dz-glass);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--dz-charcoal);${LABEL};font-size:var(--dz-size-micro);letter-spacing:var(--dz-tracking-button);line-height:1}

@@ -1,3 +1,4 @@
+import { PhotoActions } from './photo-actions'
 import { overviewProgress, type InventorySection } from '@/lib/launch/overview'
 
 // THE LAUNCH OVERVIEW (the face). One page every way in lands on: what the account already has, shown as done, what is
@@ -34,7 +35,7 @@ function Tick({ done }: { done: boolean }) {
   )
 }
 
-export function LaunchOverview({ sections, who, nextHref, photoHref }: { sections: readonly InventorySection[]; who: string; nextHref: string; photoHref?: string }) {
+export function LaunchOverview({ sections, who, nextHref, space }: { sections: readonly InventorySection[]; who: string; nextHref: string; space?: { id: string; slug: string } }) {
   const p = overviewProgress(sections)
   const pct = Math.round(p.ratio * 100)
   return (
@@ -92,12 +93,10 @@ export function LaunchOverview({ sections, who, nextHref, photoHref }: { section
                     <span style={{ fontWeight: 600 }}>{i.label}</span>
                     {i.found ? <span className="t2">{i.found}</span> : null}
                     {i.photo && i.state === 'todo' ? (
-                      <span className="t2">{i.skipped ? 'Skipped for now. It stays here whenever you feel like it.' : 'A face or a place makes this feel like yours. You can change it any time.'}</span>
+                      <span className="t2">{i.skipped ? 'Skipped for now. It waits here, whenever you feel like it.' : 'A face or a place makes this feel like yours. You can change it any time.'}</span>
                     ) : null}
-                    {i.photo && i.state === 'todo' && !i.skipped && photoHref ? (
-                      <span style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <a className="btn pa" href={photoHref}>Add a photo</a>
-                      </span>
+                    {i.photo && i.state === 'todo' && space && (i.id === 'sc-cover' || i.id === 'sc-logo') ? (
+                      <PhotoActions itemId={i.id} kind={i.id === 'sc-cover' ? 'cover' : 'logo'} slug={space.slug} spaceId={space.id} skipped={i.skipped === true} />
                     ) : null}
                   </div>
                 </li>
