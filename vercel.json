@@ -157,6 +157,10 @@
     {
       "path": "/api/cron/discovery-guidance-watch",
       "schedule": "0 7 * * 1"
+    },
+    {
+      "path": "/api/cron/calendar-holds",
+      "schedule": "10 * * * *"
     }
   ]
 }

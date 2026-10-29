@@ -342,7 +342,7 @@ describe('the floor', () => {
     // 36 since 2026-10-13: space-inbox-verify (EMAIL-022).
     // 37 since 2026-10-22: indexnow (LIVE-1137).
     // 39 since 2026-10-29: launch-reminders (VLS-26).
-    expect(jobs.length).toBe(39)
+    expect(jobs.length).toBe(40)
     expect(jobs.length).toBeGreaterThan(MIN_JOBS)
   })
 })
