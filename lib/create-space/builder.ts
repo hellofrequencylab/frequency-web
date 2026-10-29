@@ -3,6 +3,7 @@
 // behind in their own browser. Nothing here touches a database; the account comes at the last step.
 
 import { WIZARD_INTENTS, suggestModeForIntents } from '@/lib/spaces/create-wizard'
+import { slugify } from '@/lib/utils'
 import { isPreviewKit } from '@/lib/create-space/preview-site'
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 
@@ -31,7 +32,7 @@ export function emptyDraft(kit: MegaThemeId, kitChosen: boolean): BuilderDraft {
 
 /** A handle from a name: lowercase letters and digits only, 40 at most. "Saltwater Collective" is saltwatercollective. */
 export function handleFromName(name: string): string {
-  return name.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '').slice(0, 40)
+  return slugify(name).replace(/-/g, '').slice(0, 40)
 }
 
 /** The handle shown and sent: the typed one, else the one the name makes, else the sample. */
