@@ -218,6 +218,7 @@ export default async function SpaceCalendarConsolePage({
               canEdit={canManage}
               nowMin={nowMin}
               zoneShort={zoneShort}
+              timeZone={space.timeZone || undefined}
             />
           ) : null}
 

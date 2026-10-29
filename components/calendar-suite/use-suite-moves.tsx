@@ -55,6 +55,8 @@ export interface SuiteMoves {
   dnd: SuiteDnd
   /** The series question and the toast, to render once inside the calendar. */
   layer: ReactNode
+  /** Say one line in the toast, with an Undo when there is something to take back. */
+  say: (line: string, tone: 'success' | 'danger' | 'neutral', undo?: (() => void) | null) => void
 }
 
 export function useSuiteMoves({
@@ -227,5 +229,5 @@ export function useSuiteMoves({
     </>
   )
 
-  return { data, dnd, layer }
+  return { data, dnd, layer, say }
 }

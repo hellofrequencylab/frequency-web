@@ -10,7 +10,7 @@ import { SEASON_WASH } from '@/lib/calendar/planner/kinds'
 import { monthName, monthSky, monthWeeks, monthsBetween, shiftMonth, skyOnDay } from '@/lib/calendar/planner/month'
 import type { PlannerData } from '@/lib/calendar/planner/types'
 import { SuiteChip } from './suite-chip'
-import type { SuiteContext, SuiteSelection } from './suite-types'
+import { isEmptyClick, type QuickAnchor, type SuiteContext, type SuiteSelection } from './suite-types'
 import type { SuiteDnd } from './use-suite-dnd'
 
 // THE MONTH (README 1.3): an infinite scroll of month blocks. Nine months to start, six more whenever
@@ -47,6 +47,7 @@ interface BlockProps {
   dnd: SuiteDnd
   onSelect: (ref: ChipModel['ref']) => void
   onMore: (day: string) => void
+  onQuick?: (anchor: QuickAnchor) => void
 }
 
 const selKey = (sel: SuiteSelection) => (sel && sel.kind !== 'plan' ? `${sel.kind}:${sel.id}` : '')
@@ -60,7 +61,7 @@ function SkyMark({ icon, house, label }: { icon: 'moon' | 'sun' | 'sign'; house:
   )
 }
 
-const MonthBlock = memo(function MonthBlock({ ym, data, ctx, selectedKey, notes, sky, dnd, onSelect, onMore }: BlockProps) {
+const MonthBlock = memo(function MonthBlock({ ym, data, ctx, selectedKey, notes, sky, dnd, onSelect, onMore, onQuick }: BlockProps) {
   const weeks = useMemo(() => monthWeeks(ym), [ym])
   const info = useMemo(() => monthSky(ym, sky), [ym, sky])
   const year = ym.slice(0, 4)
@@ -112,6 +113,13 @@ const MonthBlock = memo(function MonthBlock({ ym, data, ctx, selectedKey, notes,
                 data-today={day === ctx.today || undefined}
                 data-past={day < ctx.today || undefined}
                 {...dnd.targetProps(() => ({ zone: 'day', day }))}
+                onClick={
+                  onQuick
+                    ? (e) => {
+                        if (isEmptyClick(e)) onQuick({ day, startMin: null, x: e.clientX, y: e.clientY })
+                      }
+                    : undefined
+                }
               >
                 <div className="cal-day-top">
                   <span className="cal-num" aria-label={day}>
@@ -163,6 +171,7 @@ export function SuiteMonth({
   onActiveMonth,
   onSelect,
   onMore,
+  onQuick,
 }: {
   data: PlannerData
   ctx: SuiteContext
@@ -179,6 +188,8 @@ export function SuiteMonth({
   onActiveMonth: (ym: string) => void
   onSelect: (ref: ChipModel['ref']) => void
   onMore: (day: string) => void
+  /** A click on empty space in a day asks for a quick add there. */
+  onQuick?: (anchor: QuickAnchor) => void
 }) {
   const scroller = useRef<HTMLDivElement>(null)
   const clamp = useCallback((ym: string) => (ym < minYm ? minYm : ym > maxYm ? maxYm : ym), [minYm, maxYm])
@@ -301,6 +312,7 @@ export function SuiteMonth({
             dnd={dnd}
             onSelect={onSelect}
             onMore={onMore}
+            onQuick={onQuick}
           />
         ))}
         {endYm < maxYm ? null : <p className="cal-edge cal-serif">This is as far ahead as the calendar loads.</p>}
