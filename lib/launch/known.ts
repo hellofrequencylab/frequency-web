@@ -6,9 +6,9 @@ import type { SpotlightAnswers } from './spotlight-step'
 
 interface KnownSpace {
   name: string
-  tagline: string | null
-  about: string | null
-  domain: string | null
+  tagline?: string | null
+  about?: string | null
+  domain?: string | null
 }
 
 export interface KnownProfile {
