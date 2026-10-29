@@ -8,6 +8,7 @@ import { storedWallClock } from '@/lib/sites/site-events'
 import { loomImageField } from '@/lib/page-editor/loom-image-field'
 import { InlineText } from '@/components/sites/inline-text'
 import { NetworkKitLetterForm } from '@/components/sites/network-kit-letter-form'
+import { NetworkKitInnerFilter } from '@/components/sites/network-kit-inner/inner-filter'
 import { NkArrow, NkChevron, NkGlyph, NkSeal, NETWORK_KIT_GLYPH_NAMES } from '@/components/sites/network-kit-glyph'
 import {
   NETWORK_KIT_CTA, NETWORK_KIT_DOORS, NETWORK_KIT_FAQ, NETWORK_KIT_GATHERINGS, NETWORK_KIT_HERO, NETWORK_KIT_JOURNEYS, NETWORK_KIT_LETTER, NETWORK_KIT_LIBRARY,
@@ -114,6 +115,8 @@ interface SpaceBag {
   reviews?: { average: number | null; count: number; latest?: { id: string; rating: number; body: string; author: { displayName: string } | null }[] }
   faqs?: { id: string; question: string; answer: string }[]
   highlights?: { label: string; value: number }[]
+  /** Whether the Space has open booking times, and its booking page (the site's /book page is served when it does). */
+  booking?: { enabled: boolean; href: string | null }
 }
 export const spaceOf = (metadata: Props | undefined) => (metadata?.space ?? undefined) as SpaceBag | undefined
 
@@ -795,7 +798,7 @@ function NetworkKitProofBlock({ p, metadata, pad, vis }: Common) {
 
 // ── Shop ───────────────────────────────────────────────────────────────────────────────────
 
-const SHOP_VARIANTS = ['grid', 'rail'] as const
+const SHOP_VARIANTS = ['grid', 'rail', 'catalog'] as const
 
 function NetworkKitShopBlock({ p, metadata, pad, vis }: Common) {
   const variant = pick(p.variant, SHOP_VARIANTS, 'grid')
@@ -822,7 +825,13 @@ function NetworkKitShopBlock({ p, metadata, pad, vis }: Common) {
     )
   })
   const action = str(p.actionLabel) ? <Btn label={str(p.actionLabel)} href={str(p.actionHref)} kind="secondary" metadata={metadata} /> : null
-  const body = variant === 'rail' ? (
+  // The `catalog` layout (the Shop page): the same tiles under filter tabs made from the products' kinds, set on the page below its header.
+  const body = variant === 'catalog' ? (
+    <Section className="nki-catalog">
+      <Head p={p} metadata={metadata} button={action} kicker={false} />
+      <NetworkKitInnerFilter allLabel={str(p.allLabel) || 'All'} search="" note={str(p.note)} empty={str(p.empty)} layout="tiles" items={tiles.map((node, i) => ({ node, group: str(products[i].kind), haystack: '' }))} />
+    </Section>
+  ) : variant === 'rail' ? (
     <Section className="nk-section--rail">
       <div className="nk-rail-head"><Head p={p} metadata={metadata} button={action} kicker={false} /></div>
       <div className="nk-rail nk-grid-cards--after">{tiles.map((t, i) => <div key={i} className="nk-rail-item">{t}</div>)}</div>
@@ -838,14 +847,30 @@ function NetworkKitShopBlock({ p, metadata, pad, vis }: Common) {
 
 // ── Library ────────────────────────────────────────────────────────────────────────────────
 
-const LIBRARY_VARIANTS = ['grid', 'list'] as const
+const LIBRARY_VARIANTS = ['grid', 'list', 'table'] as const
 
 function NetworkKitLibraryBlock({ p, metadata, pad, vis }: Common) {
   const variant = pick(p.variant, LIBRARY_VARIANTS, 'grid')
-  const items = arr(p.resources).filter((r) => str(r.title)).map((r) => ({ glyph: str(r.glyph) || 'half', type: str(r.type), title: str(r.title), meta: str(r.meta), price: str(r.price), to: hrefOf(str(r.href), metadata) }))
+  const items = arr(p.resources).filter((r) => str(r.title)).map((r) => ({ href: str(r.href), glyph: str(r.glyph) || 'half', type: str(r.type), title: str(r.title), meta: str(r.meta), price: str(r.price), to: hrefOf(str(r.href), metadata) }))
   const badge = (price: string) => price && <span className={cls('nk-badge', /^free$/i.test(price) && 'nk-badge--accent')}>{price}</span>
   const action = str(p.actionLabel) ? <Btn label={str(p.actionLabel)} href={str(p.actionHref)} kind="secondary" metadata={metadata} /> : null
-  const body = variant === 'list' ? (
+  // The `table` layout (the Library page): every item as a ruled row under filter tabs and a search, the link as a small button.
+  const rowFor = (r: (typeof items)[number], i: number) => (
+    <div className="nk-list-row nki-lib">
+      <span className="nk-mono nki-lib-n">{String(i + 1).padStart(2, '0')}</span>
+      <span className="nk-accent-ink"><NkGlyph name={r.glyph} size={20} /></span>
+      <span className="nk-display nki-lib-title">{r.title}</span>
+      <span className="nk-row-body nki-lib-meta">{r.meta}</span>
+      <span className="nki-lib-price">{badge(r.price)}</span>
+      <span className="nki-lib-go">{r.to && <Btn label={str(p.openLabel) || 'Open'} href={str(p.openHref) || str(r.href)} kind="secondary" size="sm" metadata={metadata} />}</span>
+    </div>
+  )
+  const body = variant === 'table' ? (
+    <Section className="nki-catalog">
+      <Head p={p} metadata={metadata} button={action} kicker={false} />
+      <NetworkKitInnerFilter allLabel={str(p.allLabel) || 'All'} search={str(p.search)} note="" empty={str(p.empty)} layout="rows" items={items.map((r, i) => ({ node: rowFor(r, i), group: r.type, haystack: `${r.title} ${r.meta} ${r.type}`.toLowerCase() }))} />
+    </Section>
+  ) : variant === 'list' ? (
     <SplitHead p={p} metadata={metadata}>
       <div className="nk-list nk-list--ruled">
         {items.slice(0, 4).map((r, i) => (
@@ -1113,13 +1138,15 @@ export const networkKitComponents: Record<string, ComponentConfig> = {
     stats: { type: 'array', label: 'Figures (quote beside figures only)', hint: 'Real numbers only. With none written, the Space\'s own counts are used.', arrayFields: { value: text('Number'), label: text('What it counts') } },
   }, { ...NETWORK_KIT_PROOF }, NetworkKitProofBlock),
   NetworkKitShop: block('Network shop', {
-    variant: variantField([['grid', 'Grid'], ['rail', 'Sideways rail']]),
+    variant: variantField([['grid', 'Grid'], ['rail', 'Sideways rail'], ['catalog', 'Catalog, with tabs by kind']]),
     eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), ...action,
+    allLabel: text('First tab', 'Catalog only.'), note: text('Line beside the tabs', 'Catalog only. Leave out any price or promise you do not keep.'), empty: area('Line when there is nothing yet', 'Catalog only.'),
     products: { type: 'array', label: 'Products', arrayFields: { image, glyph, name: text('Name'), kind: text('Kind'), price: text('Price'), rating: text('Small line under it'), href: text('Link', LINK_HINT) } },
   }, { ...NETWORK_KIT_SHOP }, NetworkKitShopBlock),
   NetworkKitLibrary: block('Network library', {
-    variant: variantField([['grid', 'Cards'], ['list', 'List beside the heading']]),
+    variant: variantField([['grid', 'Cards'], ['list', 'List beside the heading'], ['table', 'Table, with tabs and a search']]),
     ...head, ...action,
+    allLabel: text('First tab', 'Table only.'), search: text('Search field hint', 'Table only. Empty draws no search.'), openLabel: text('Row button', 'Table only.'), openHref: text('Row button: where it goes', 'Table only. Empty uses each row\'s own link.'), empty: area('Line when nothing matches', 'Table only.'),
     resources: { type: 'array', label: 'Resources', arrayFields: { glyph, type: text('Kind'), title: text('Name'), meta: text('Small line'), price: text('Price'), href: text('Link', LINK_HINT) } },
   }, { ...NETWORK_KIT_LIBRARY }, NetworkKitLibraryBlock),
   NetworkKitLetter: block('Network letter sign-up', {

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1801",
+  "title": "Network Theme Kit inner pages, pass B: Book, Shop and Library",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "components/page-editor/blocks/network-kit-inner.tsx",
+    "ref": "LIVE-1800"
+  },
+  "detail": "One NetworkKitInner block (the booking steps beside a card whose button reads the Space's booking state: it opens the real booking page when times are open and asks through contact when not), a catalog layout on the shared NetworkKitShop (tiles under tabs made from product kinds) and a table layout on the shared NetworkKitLibrary (ruled rows under tabs and a search, the link a small button), so no role gets a second block; the service types are the shared NetworkKitOfferings cards. One sheet (components/sites/network-kit-inner/inner-b-css.ts, contract tokens) in the kit skin and three page builders (pages-b.ts) in the voice guide's words: no price, rating, review, shipping or free promise, no seeded counts. The Space has no shop or library rows in the page data bag, so Shop and Library read the cards the owner types; the design's cart, checkout and reviews are the platform's payment path (docs/CHECKOUT.md) and are left out. The site serves its real /book page when the Space takes bookings; the Book page shown here is the one a Space without times shows. Registering the pages in the profile kits is the Network kit registration pass.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "NetworkKitInnerBook, the catalog and table layouts, the pass B sheet in the skin and the three pages exist.",
+    "cmd": "node scripts/probes/network-kit-inner-b.mjs"
+  },
+  "closed": "2026-10-29"
+}

@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { networkKitInnerComponents } from './network-kit-inner'
 import { networkKitMoreComponents } from './network-kit-more'
+import { networkKitComponents } from './network-kit'
+import { networkKitInnerPagesB } from '@/components/sites/network-kit-inner/pages-b'
 import { networkKitInnerPagesA } from '@/components/sites/network-kit-inner/pages'
 import { bindSlots } from '@/lib/spaces/content-slots'
 import { planMensworkPage, type MwBlock } from '@/lib/sites/menswork-page'
 
-const ALL = { ...networkKitInnerComponents, ...networkKitMoreComponents }
+const ALL = { ...networkKitComponents, ...networkKitInnerComponents, ...networkKitMoreComponents }
 const links = { origin: 'https://frequency.example', slug: 'harbor', siteBase: '', pages: ['home'], contactHref: '/contact', bookHref: null, email: 'hello@harbor.example' }
 
 function draw(type: string, props: Record<string, unknown>, space: Record<string, unknown> = {}) {
@@ -69,5 +71,30 @@ describe('the Network Kit inner blocks (pass A)', () => {
     expect(html).toContain('nki-figures')
     expect(html).toContain('Chapters')
     expect(draw('NetworkKitStats', { variant: 'photo', items: [] })).toBe('')
+  })
+
+  it('draws the booking steps beside a card whose button reads the Space booking state', () => {
+    const book = networkKitInnerPagesB()[0].blocks.find((b) => b.type === 'NetworkKitInnerBook')!
+    const props = bindSlots({ id: 'b', ...book.props }, {})
+    const open = draw('NetworkKitInnerBook', props, { booking: { enabled: true, href: '/spaces/harbor/book' } })
+    expect(open).toContain('nki-stepper')
+    expect(open).toContain('Pick a time')
+    expect(open).not.toContain('Ask for a time')
+    const closed = draw('NetworkKitInnerBook', props, { booking: { enabled: false, href: null } })
+    expect(closed).toContain('Ask for a time')
+    expect(closed).toContain('/contact')
+    expect(closed).not.toContain('Pick a time')
+  })
+
+  it('draws the shop catalog with a tab for each kind, and the library table with a search', () => {
+    const [, shop, lib] = networkKitInnerPagesB()
+    const shopHtml = draw('NetworkKitShop', bindSlots({ id: 's', ...shop.blocks[1].props }, {}))
+    for (const k of ['Objects', 'Tickets', 'Digital', 'Gifts']) expect(shopHtml).toContain(`>${k}<`)
+    expect(shopHtml).toContain('nki-tiles')
+    const libHtml = draw('NetworkKitLibrary', bindSlots({ id: 'l', ...lib.blocks[1].props }, {}))
+    expect(libHtml).toContain('type="search"')
+    expect(libHtml).toContain('nki-rows')
+    expect(libHtml).toContain('>Guide<')
+    expect(libHtml).toContain('Ask for it')
   })
 })

@@ -22,7 +22,10 @@ export const NETWORK_KIT_INNER_ROLES: Record<string, { role: string; variant: st
   NetworkKitInnerTeam: { role: 'team', variant: 'people' }, // the organizers: a row of person cards under an ornament
   NetworkKitInnerServices: { role: 'offerings', variant: 'rows' }, // full-bleed rows, photo and words side by side, alternating
   NetworkKitInnerIndex: { role: 'gatherings', variant: 'filtered-cards' }, // meetups or programs as cards under filter tabs
+  NetworkKitInnerBook: { role: 'booking-flow', variant: 'stepper-aside' }, // the four booking steps beside a card that opens the Space's real booking page
 }
+// Pass B also extends three shared blocks instead of adding second ones: NetworkKitShop `catalog` (tiles under tabs by kind),
+// NetworkKitLibrary `table` (ruled rows under tabs and a search), NetworkKitOfferings `cards` (the service types, unchanged).
 
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
 const lines = (v: unknown) => str(v).split('\n').map((s) => s.trim()).filter(Boolean)
@@ -162,6 +165,49 @@ function IndexBlock({ p, metadata, now = new Date(), pad, vis }: Common) {
   )
 }
 
+// ── Booking flow ───────────────────────────────────────────────────────────────────────────────────────────
+
+const FACT_GLYPHS = ['calendar', 'clock', 'video', 'mail'] as const
+
+/** The design's BookPage: the steps of a booking beside a card for the one you are making. The button reads the Space's
+ *  own booking state (`space.booking`, the same read the site's /book page is served by): with times open it opens the
+ *  Space's real booking page, and without them it asks for a time through the contact page. Nothing is charged here. */
+function BookBlock({ p, metadata, pad, vis }: Common) {
+  const steps = lines(p.steps)
+  const facts = lines(p.facts)
+  const open = spaceOf(metadata)?.booking?.enabled === true
+  const label = open ? str(p.buttonLabel) : str(p.offlineLabel)
+  const href = open ? str(p.buttonHref) : str(p.offlineHref)
+  return (
+    <Band kind="inner-book" p={p} pad={pad} vis={vis}>
+      <Section>
+        <div className="nk-split nki-book">
+          <div>
+            <Head p={p} metadata={metadata} button={null} kicker={false} />
+            {str(p.lead) && <p className="nk-lead nki-book-lead">{str(p.lead)}</p>}
+            <ol className="nki-stepper">
+              {steps.map((t, i) => <li key={i} className="nk-eyebrow nk-eyebrow--bare" data-first={i === 0 ? '' : undefined}><span>{i + 1}</span>{t}</li>)}
+            </ol>
+          </div>
+          <aside className="nk-card nki-aside">
+            <div className="nki-aside-head">
+              <NkSeal name={str(p.glyph) || 'circle'} size={48} />
+              <div>
+                <div className="nk-display nki-aside-title">{str(p.asideTitle)}</div>
+                {str(p.asideLabel) && <div className="nk-eyebrow nk-eyebrow--bare">{str(p.asideLabel)}</div>}
+              </div>
+            </div>
+            {str(p.asideBody) && <p className="nki-aside-body">{str(p.asideBody)}</p>}
+            {facts.length > 0 && <ul className="nki-facts">{facts.map((t, i) => <li key={i}><NkGlyph name={FACT_GLYPHS[i % FACT_GLYPHS.length]} size={15} />{t}</li>)}</ul>}
+            {str(p.policy) && <p className="nki-policy">{str(p.policy)}</p>}
+            <div className="nki-aside-foot"><Btn label={label} href={href} metadata={metadata} size="lg" arrow /></div>
+          </aside>
+        </div>
+      </Section>
+    </Band>
+  )
+}
+
 // ── Registry ───────────────────────────────────────────────────────────────────────────────────────────────
 
 const alt = text('Photo description', 'For screen readers.')
@@ -192,6 +238,14 @@ export const networkKitInnerComponents: Record<string, ComponentConfig> = {
       image, glyph, eyebrow: text('Small label'), title: text('Name'), meta: text('Where'), body: area('Words'), price: text('Price'), note: text('Small badge'), group: text('Tab it belongs to'), href: text('Link', LINK_HINT),
     } },
   }, { variant: 'meetups', countNoun: 'upcoming', allLabel: 'All', tabs: 'Online\nIn person', image: '', alt: '', count: 12, empty: 'No dates are up yet. Check back soon, or say hello.', items: [] as Record<string, unknown>[] }, IndexBlock),
+  NetworkKitInnerBook: block('Network booking steps', {
+    eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading'), steps: area('Steps', 'One per line, in order.'),
+    glyph, asideTitle: text('Card name'), asideLabel: text('Small line under the name'), asideBody: area('Words on the card'), facts: area('What the card lists', 'One per line. Each gets a mark.'), policy: area('Change policy'),
+    buttonLabel: text('Button when times are open'), buttonHref: text('Button when times are open: where it goes', LINK_HINT),
+    offlineLabel: text('Button when none are open'), offlineHref: text('Button when none are open: where it goes', LINK_HINT),
+  }, {
+    eyebrow: 'Book a call', title: 'What would\n*help most?*', lead: '', steps: 'Choose\nTime\nDetails\nConfirm', glyph: 'circle', asideTitle: 'Your booking', asideLabel: '',
+    asideBody: 'Pick a type of call, then a time that suits you. A confirmation and the link come to your inbox.', facts: 'Choose a time\nShown in your time zone\nThe link is sent when you book\nA confirmation by email', policy: 'You can move a booking from your confirmation email.',
+    buttonLabel: 'Pick a time', buttonHref: '~/book', offlineLabel: 'Ask for a time', offlineHref: '~/contact',
+  }, BookBlock),
 }
-
-
