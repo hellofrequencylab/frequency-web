@@ -24,6 +24,7 @@ import { GuestbookBlock } from './guestbook'
 import { MemberEventsBlock } from './events'
 import { TipBlock } from './tip'
 import { MemberProgramsBlock } from './programs'
+import { MemberContributionsBlock } from './contributions'
 import { HeadingBlock } from './heading'
 import { TextBlock } from './text'
 import { ImageBlock } from './image'
@@ -63,6 +64,7 @@ export const MEMBER_PROFILE_BLOCKS: Record<string, MemberBlockComponent> = {
   memberEvents: MemberEventsBlock,
   tip: TipBlock,
   memberPrograms: MemberProgramsBlock,
+  memberContributions: MemberContributionsBlock,
   heading: HeadingBlock,
   text: TextBlock,
   image: ImageBlock,
