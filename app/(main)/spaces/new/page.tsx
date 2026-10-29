@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { envFlag } from '@/lib/env/string'
+import { launchHomeHref } from '@/lib/launch/destination'
+import { launchSystemEnabled } from '@/lib/launch/enabled'
+import { getActiveLaunch } from '@/lib/launch/store'
 import { nicheFromHint } from '@/lib/spaces/space-picker'
 import { isMegaThemeId } from '@/lib/theme/mega-theme'
 import { FocusTemplate } from '@/components/templates'
@@ -46,6 +49,9 @@ export default async function NewSpacePage({
     }
     redirect(`/sign-in?next=${encodeURIComponent(`/spaces/new${back.size ? `?${back}` : ''}`)}`)
   }
+
+  // Someone with a launch under way does not leave it by way of a second door: it has one home (lib/launch/destination.ts).
+  if (launchSystemEnabled() && (await getActiveLaunch(profileId))) redirect(launchHomeHref({ signedIn: true }))
 
   const choices = listModeChoices()
   // The niche a /for door named: an explicit `?niche=`, else the funnel sequence the visitor came through

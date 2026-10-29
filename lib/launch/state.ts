@@ -36,6 +36,8 @@ export interface LaunchSnapshot {
   currentStep: LaunchStepId
   steps: LaunchSteps
   minimized: boolean
+  /** Photo to-do items the person chose to skip for now (PHOTO_ITEM_IDS). They stay on the list, quietly. */
+  skippedPhotos: string[]
   startedAt: string
   updatedAt: string
   cancelRequestedAt: string | null
@@ -74,6 +76,33 @@ export function normalizeSteps(raw: unknown): LaunchSteps {
     out[id] = entry
   }
   return out
+}
+
+/** The to-do items that are photos. A skip is remembered inside the steps jsonb under PHOTO_SKIPS_KEY, so no column is
+ *  needed and the closed step list above never sees it. */
+const PHOTO_ITEM_IDS = ['sc-cover', 'sc-logo'] as const
+const PHOTO_SKIPS_KEY = 'photoSkips'
+
+function isPhotoItemId(v: unknown): v is (typeof PHOTO_ITEM_IDS)[number] {
+  return typeof v === 'string' && (PHOTO_ITEM_IDS as readonly string[]).includes(v)
+}
+
+/** The skipped photo items as the database hands them back: anything off the closed list is dropped. Total. */
+function readSkippedPhotos(rawSteps: unknown): string[] {
+  if (!rawSteps || typeof rawSteps !== 'object' || Array.isArray(rawSteps)) return []
+  const v = (rawSteps as Record<string, unknown>)[PHOTO_SKIPS_KEY]
+  return Array.isArray(v) ? PHOTO_ITEM_IDS.filter((id) => v.includes(id)) : []
+}
+
+/** Skip a photo for now. Idempotent. Null for an id that is not a photo item. */
+export function skipPhoto(skipped: readonly string[], id: unknown): string[] | null {
+  if (!isPhotoItemId(id)) return null
+  return skipped.includes(id) ? [...skipped] : [...skipped, id]
+}
+
+/** The steps record plus the skipped photos, as written to the steps column. */
+export function stepsWithSkips(steps: LaunchSteps, skipped: readonly string[]): Record<string, unknown> {
+  return skipped.length ? { ...steps, [PHOTO_SKIPS_KEY]: [...skipped] } : { ...steps }
 }
 
 /** A step is settled once it is published or skipped. */
@@ -161,7 +190,7 @@ export function toSnapshot(row: Record<string, unknown> | null | undefined): Lau
   const stage = row.stage === 'gather' || row.stage === 'keep' ? row.stage : 'found'
   return {
     id, ownerId, spaceId: str('space_id'), niche, intents, stage, currentStep, steps,
-    minimized: row.minimized === true, startedAt, updatedAt,
+    minimized: row.minimized === true, skippedPhotos: readSkippedPhotos(row.steps), startedAt, updatedAt,
     cancelRequestedAt: str('cancel_requested_at'), cancelledAt: str('cancelled_at'), completedAt: str('completed_at'),
   }
 }

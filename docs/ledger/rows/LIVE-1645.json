@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1645",
+  "title": "Let a Space publish the Temple Theme Kit: TempleKit joins the live website themes, wired like Nocturne",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "docs/design-systems/temple/rules.json",
+    "ref": "LIVE-1640"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/temple-kit-live.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (TempleKit is not in WEBSITE_THEMES_LIVE, so a Space that wears the kit publishes with the house look) and passes here."
+  },
+  "detail": "Space wiring of the Temple Theme Kit (code id temple-kit, shown as Temple). Everything else was already in place: the picker registration, the seed that maps temple-kit to the TempleKit editor theme, the kit home, the accent vars and the theme drafts. The one missing piece was the live set: a published website in a theme outside WEBSITE_THEMES_LIVE keeps the house look. TempleKit joins it. No live site wears temple-kit (old Temple, used by Royal Temple, is untouched and stays hidden from the pickers), so no live site moves.",
+  "wave": "W7"
+}

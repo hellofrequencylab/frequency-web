@@ -1,6 +1,6 @@
 // FIXTURE RENDER: the Space page chrome and a member-area console pane, for a Space whose website wears a theme
 // (the Network Theme Kit pass 8, ADR-1728 / ADR-1906 theme fence). Writes $RENDER_OUT/space-<variant>.html and
-// $RENDER_OUT/console-<variant>.html, where <variant> is `frequency` (no website theme) or `network-kit` (website
+// $RENDER_OUT/console-<variant>.html, where <variant> is `frequency` (no website theme) or `network-kit`, `designer` or `temple-kit` (website
 // synced to the kit). The faces and the accent each page takes come from the SAME resolvers the routes call
 // (spacePageSiteFaces, spacePageDefaultAccent, memberSpaceFonts), so the console renders with what a console gets.
 // Run: node scripts/render/build-css.mjs $RENDER_OUT/app.css, then
@@ -28,7 +28,7 @@ const doc = (body: string) =>
   `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif}</style></head><body><div data-kit="members" data-energy="still"><div class="fq-members" style="max-width:1040px;margin:0 auto;padding:16px">${body}</div></div></body></html>`
 
 // A Space whose owner picked the Network kit and kept the page synced; the other has no website theme.
-const PREFS = { frequency: {}, 'network-kit': { siteStyle: { theme: 'network-kit', synced: true } } } as const
+const PREFS = { frequency: {}, 'network-kit': { siteStyle: { theme: 'network-kit', synced: true } }, designer: { siteStyle: { theme: 'designer', synced: true } }, 'temple-kit': { siteStyle: { theme: 'temple-kit', synced: true } } } as const
 
 it('renders the Space page and a console pane', async () => {
   if (!out) throw new Error('set RENDER_OUT')
@@ -39,7 +39,7 @@ it('renders the Space page and a console pane', async () => {
   const { frequencyAccentVars } = await import('@/lib/spaces/accent')
   const { parseSpaceTheme } = await import('@/lib/theme/space-themes')
 
-  for (const variant of ['frequency', 'network-kit'] as const) {
+  for (const variant of ['frequency', 'network-kit', 'designer', 'temple-kit'] as const) {
     const prefs = PREFS[variant]
     const faces = spacePageSiteFaces(prefs)
     // A Space with no website theme and no brand color keeps the design's own fill (null accent).

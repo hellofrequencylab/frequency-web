@@ -195,7 +195,7 @@ export function publishedWebsitePage(preferences: unknown, slug: string): Websit
  *  can be edited and published, but the public site keeps its house look (owner ask 2026-10-11, after a
  *  DAWN publish swapped danieltyack.com for an unfinished render: "can we not break the site when
  *  somebody edits?"). Add a theme only once its render matches the look it replaces. */
-export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteTheme>(['Menswork', 'Wildheart', 'Network', 'Temple', 'Midnight', 'Designer'])
+export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteTheme>(['Menswork', 'Wildheart', 'Network', 'NetworkKit', 'Temple', 'TempleKit', 'Midnight', 'Designer'])
 
 /** The published website the PUBLIC site draws, or null to keep the house look: nothing published, a
  *  published theme not yet in WEBSITE_THEMES_LIVE, or a snapshot written in a theme other than the one the

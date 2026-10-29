@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  CANCEL_WINDOW_MS, canConfirmCancel, isActive, launchPhase, normalizeSteps, publishStep, resumeStep, skipStep, stageOf, startStep, toSnapshot,
+  CANCEL_WINDOW_MS, canConfirmCancel, isActive, launchPhase, normalizeSteps, publishStep, resumeStep, skipPhoto, skipStep, stageOf, startStep, stepsWithSkips, toSnapshot,
 } from './state'
 
 const t0 = new Date('2026-10-28T12:00:00Z')
@@ -98,5 +98,26 @@ describe('launch cancel is two calls (VLS-01)', () => {
     expect(isActive(cancelled)).toBe(false)
     expect(canConfirmCancel(cancelled, 'STOP', later(10))).toEqual({ ok: false, reason: 'not_active' })
     expect(launchPhase({ ...base, completedAt: t0.toISOString() }, later(10))).toBe('completed')
+  })
+})
+
+describe('skipped photos', () => {
+  it('remember a skip in the steps column, and it survives a reload', () => {
+    const skipped = skipPhoto([], 'sc-cover')
+    expect(skipped).toEqual(['sc-cover'])
+    const row = { id: 'l1', owner_id: 'p1', started_at: t0.toISOString(), updated_at: t0.toISOString(), steps: JSON.parse(JSON.stringify(stepsWithSkips({}, skipped!))) }
+    expect(toSnapshot(row)?.skippedPhotos).toEqual(['sc-cover'])
+  })
+  it('is idempotent, refuses a non-photo item, and drops junk', () => {
+    expect(skipPhoto(['sc-cover'], 'sc-cover')).toEqual(['sc-cover'])
+    expect(skipPhoto([], 'w-site')).toBeNull()
+    const snap = (steps: unknown) => toSnapshot({ id: "l1", owner_id: "p1", started_at: t0.toISOString(), updated_at: t0.toISOString(), steps })
+    expect(snap({ photoSkips: ["sc-logo", "junk", 4] })?.skippedPhotos).toEqual(["sc-logo"])
+    expect(snap(null)?.skippedPhotos).toEqual([])
+  })
+  it('does not disturb the step record', () => {
+    const steps = publishStep({}, 'spotlight', t0, 'a-space')
+    expect(normalizeSteps(stepsWithSkips(steps, ['sc-logo']))).toEqual(steps)
+    expect(stepsWithSkips(steps, [])).toEqual(steps)
   })
 })

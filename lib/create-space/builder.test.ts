@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 import {
-  emptyDraft, handleFromName, handleOf, isValidHandle, meterOf, nextOpenMove, parseDraft, progressOf, serializeDraft,
+  claimedHandle, emptyDraft, handleFromName, handleOf, isValidHandle, meterOf, nextOpenMove, parseDraft, progressOf, serializeDraft,
   startingModeFor, trackFraction,
 } from '@/lib/create-space/builder'
 
@@ -11,6 +11,12 @@ describe('handles', () => {
     expect(handleFromName('Café Ünder 9!')).toBe('cafeunder9')
     expect(handleOf({ name: '', slug: '' })).toBe('yourspace')
     expect(handleOf({ name: 'Studio', slug: 'mine' })).toBe('mine')
+  })
+  it('are claimed from the typed one or the name, never from the sample', () => {
+    expect(claimedHandle({ name: 'Saltwater Collective', slug: '' })).toBe('saltwatercollective')
+    expect(claimedHandle({ name: 'Studio', slug: 'mine' })).toBe('mine')
+    expect(claimedHandle({ name: '!!!', slug: '' })).toBe('')
+    expect(claimedHandle({ name: '', slug: '' })).toBe('')
   })
   it('accept single hyphens inside and nothing else', () => {
     expect(isValidHandle('river-studio')).toBe(true)
@@ -26,6 +32,10 @@ describe('progress and the meter', () => {
     expect(progressOf(d)).toBe(15)
     d.done.name = true
     expect(progressOf(d)).toBe(40)
+    expect(progressOf(d, true)).toBe(50)
+    const all = { ...d, done: { name: true, look: true, goals: true, host: true } }
+    expect(progressOf(all)).toBe(85)
+    expect(progressOf(all, true)).toBe(95)
     const meter = meterOf(d, true)
     expect(meter.map((m) => m.on)).toEqual([true, true, false, false, false])
     expect(meter.findIndex((m) => m.now)).toBe(2)
