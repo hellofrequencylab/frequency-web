@@ -79,7 +79,7 @@ describe('the Designer Theme Kit page (/themes/designer)', () => {
   })
 
   it('carries no raw colour and no em dash', () => {
-    expect(html).not.toMatch(/#[0-9a-fA-F]{6}/.test(html.replace(/--c:#[0-9a-fA-F]{6}/g, '')) ? /^$/ : /.^/)
+    expect(html.replace(/(--c:|aria-label="|title=")#[0-9a-fA-F]{6}/g, '')).not.toMatch(/#[0-9a-fA-F]{6}/)
     expect(html).not.toContain('—')
   })
 })
