@@ -27,7 +27,10 @@ import { profileComponents } from '@/components/page-editor/blocks/profile'
 import { designComponents } from '@/components/page-editor/blocks/design'
 import { wildheartComponents } from '@/components/page-editor/blocks/wildheart'
 import { networkComponents, NETWORK_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network'
+import { networkKitComponents, NETWORK_KIT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network-kit'
+import { networkKitMoreComponents, NETWORK_KIT_MORE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/network-kit-more'
 import { templeComponents, TEMPLE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/temple'
+import { templeKitComponents, TEMPLE_KIT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/temple-kit'
 import { midnightComponents, MIDNIGHT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight'
 import { midnightPracticeComponents, MIDNIGHT_PRACTICE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight-practice'
 import { designerComponents, DESIGNER_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/designer'
@@ -72,7 +75,10 @@ export const config: Config = {
     ...designComponents,
     ...wildheartComponents,
     ...networkComponents,
+    ...networkKitComponents,
+    ...networkKitMoreComponents,
     ...templeComponents,
+    ...templeKitComponents,
     ...midnightComponents,
     ...midnightPracticeComponents,
     ...designerComponents,
@@ -171,10 +177,20 @@ export const config: Config = {
       title: 'Network sections',
       components: [...NETWORK_CATEGORY_COMPONENTS],
     },
+    // The Network Theme Kit's home sections (code id network-kit, the Network design system): website pages only.
+    networkKit: {
+      title: 'Network home sections',
+      components: [...NETWORK_KIT_CATEGORY_COMPONENTS, ...NETWORK_KIT_MORE_CATEGORY_COMPONENTS],
+    },
     // The Temple theme's section family (the Royal Temple design system's Home): website pages only.
     temple: {
       title: 'Temple sections',
       components: [...TEMPLE_CATEGORY_COMPONENTS],
+    },
+    // The Temple Theme Kit's section family (the Temple design system's Home): website pages only.
+    templeKit: {
+      title: 'Temple Kit sections',
+      components: [...TEMPLE_KIT_CATEGORY_COMPONENTS],
     },
     // The Midnight theme's section family (the Midnight design system's Web Theme): website pages only.
     midnight: {

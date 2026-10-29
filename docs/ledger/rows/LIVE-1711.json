@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1711",
+  "title": "Give the Network Theme Kit its site skin: header, footer, page grain, buttons, cards, leaf photo frame, fonts on the website root",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "docs/DESIGN-SYSTEM-INTAKE.md",
+    "ref": "Daniel, 2026-10-28: program the new Network design system into the theme system the way Nocturne is. Plan: /mnt/project-files/network-theme/PLAN.html"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/network-kit-chrome.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Fails on main (no components/sites/network-kit-css.ts) and passes here."
+  },
+  "detail": "Pass 2 of 12. The Network Theme Kit's stand-alone site skin: components/sites/network-kit-css.ts (every rule under [data-house-theme=\"network-kit\"], token-only), the kit faces on the website root only, and the chrome (logo lockup, 40px announce bar, bar and pill headers, scroll state, drawer under 1240px, wave into one ink footer, full and minimal footers, 'Powered by Frequency' in the footer line only). Read at /mnt/project-files/network-theme/renders/chrome/: build and the design's own CSS side by side at 1280 and 390 (marigold), 1280 for coral, ocean, lagoon, plus pill header and minimal footer. MEASURED (build = design, within 1px): header bar 76px (pill 68px, scrolled bar 64px); announce bar 40px; gutter 48px at 1280 and 20px at 390; section rhythm hero 140.8px top and bottom at 1280 and 88px at 390, tight sections 88px at 1280 and 56px at 390. | viewport | header | bar | gutter | section | tight | | 1280 | 76 (pill 68) | 40 | 48 | 140.8 | 88 | | 390 | 76 | 40 | 20 | 88 | 56 |. DECISIONS: (1) The page grain follows the readme, on the site root at the scheme's own strength (22%, 18% Ocean) multiply, not effects.css's .page-grain, which tiles the grain at full strength and greys the page (see the design render). (2) Footer minimal is wired: data-footer on the footer ground hides the brand and link columns and keeps the legal row (the design's class never matched). (3) The design's 3-card row never collapses below 560px (its :has() rule outranks the media query); the kit's grid does. (4) Nav switches to the drawer under 1240px as in the design (the house header's 940px rule is overridden), hamburger first. (5) 'Powered by Frequency' is added only when the Space has not removed the credit; the Partner badge follows the credit mode as before. (6) The scrolled-header shadow uses a 30% ink mix, the design's rgba(48,40,30,.3) being a raw colour. (7) Footer links are 40px tall, not 44. (8) Under 640px the header button keeps the owner's label (the design swaps in 'Join'); the name ellipsizes. FOUNDATION FIX: the token block's faces read var(--font-nk-x),'Name' with no var() fallback, which invalidates the whole font stack wherever next/font is absent (the editor canvas, renders); now var(--font-nk-x,'Name'). NOT DONE: WEBSITE_THEMES_LIVE stays without NetworkKit: a site on it today renders chrome and house sections but has no kit blocks, kit pages or seed, so it would publish half a theme. The bag and account icons, the current-page dot (house header sets no aria-current) and the open drawer are not rendered in the harness. Space console: no file under app/(main), app/(public), components/spaces or components/frequency changed and the fence test (no-site-theme-in-member-area) passes.",
+  "wave": "W7"
+}

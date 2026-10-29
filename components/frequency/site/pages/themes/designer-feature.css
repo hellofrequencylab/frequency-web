@@ -1,0 +1,146 @@
+/* /themes/designer, the Theme Feature Page of the Designer design system, on the Frequency tokens (LIVE-1743).
+   Tokens only: no colour literals, no font names. Every class starts df- so nothing here reaches another page.
+   The kit accent arrives as --c on .df-pv (the preview). Designer's own look shows only inside the framed pictures.
+   THE GRID: one 1200px wrap, 18px to 40px side gutters; one gap between columns (--df-gap); one gap between
+   stacked cards (--df-gap-y). Every section is a kit .sec, so the vertical rhythm is the kit's. */
+.df{max-width:100%;overflow-x:clip;--df-gap:clamp(28px,4vw,64px);--df-gap-y:12px;--df-hair:var(--fq-border-hair);--df-card:var(--fq-surface-card);--df-wash:color-mix(in oklab,var(--fq-text-strong) 5%,transparent);--df-wash2:color-mix(in oklab,var(--fq-text-strong) 9%,transparent)}
+.df>*,.df section{min-width:0}
+.df .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.df-sh-p{margin:18px 0 0;font-size:17px;line-height:1.6;color:var(--fq-text-body);max-width:60ch;text-wrap:pretty}
+.df-q{display:inline-block;margin-left:10px;vertical-align:.5em;font:600 11px/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-muted)}
+.df-st{display:inline-block;margin-left:10px;vertical-align:.5em;padding:4px 8px;border-radius:999px;font:600 11px/1 var(--fq-font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--fq-text-muted);box-shadow:inset 0 0 0 1px var(--df-hair)}
+.df-st.ready{color:var(--fq-text-strong)}
+
+/* Hero: title and subtitle top left, copy and buttons under, the preview on the right, a lead-in below. */
+.df-hero.phero{min-height:100svh;display:flex;align-items:center}
+.df-wrap{position:relative;z-index:2;width:100%;max-width:1200px;margin:0 auto;box-sizing:border-box;padding:clamp(96px,12vh,128px) clamp(18px,4vw,40px) clamp(20px,4vh,40px)}
+.df-hero .crumbs{margin-bottom:clamp(14px,3vh,28px)}
+.df-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:var(--df-gap);align-items:center}
+.df-top{container-type:inline-size;min-width:0;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:16px}
+.df-h1{margin:0;font:700 clamp(38px,10.5cqw,78px)/.98 var(--fq-font-display);letter-spacing:-.05em;color:var(--fq-text-strong);text-wrap:balance}
+.df-h1 em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}
+.df-lead{margin:0;font:400 clamp(16px,1.25vw,19px)/1.5 var(--fq-font-sans);color:var(--fq-text-body);max-width:48ch;text-wrap:pretty}
+.df-top .ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-start;margin-top:6px}
+.df-hero-shot{min-width:0}
+.df-more{display:flex;flex-direction:column;align-items:center;gap:6px;margin:clamp(18px,3.5vh,36px) auto 0;width:max-content;max-width:100%;text-align:center;font:600 13px/1.3 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted);text-decoration:none}
+.df-more:hover{color:var(--fq-text-strong)}
+.df-more svg{animation:df-bob 1.8s ease-in-out infinite}
+@keyframes df-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+@media (prefers-reduced-motion:reduce){.df-more svg{animation:none}}
+@media (max-width:900px){.df-hero.phero{min-height:0;display:block}.df-split{grid-template-columns:1fr}}
+
+/* Preview stage: surface chips, the framed picture, a one-line note, the profile picker. */
+.df-pv{display:flex;flex-direction:column;gap:14px;min-width:0;width:100%}
+.df-chips{display:flex;flex-wrap:wrap;gap:6px}
+.df-chips button,.df-kits button{border:0;cursor:pointer;font:inherit}
+.df-chips button{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:999px;background:var(--df-wash);color:var(--fq-text-body);font:600 14px/1 var(--fq-font-sans);box-shadow:inset 0 0 0 1px var(--df-hair)}
+.df-chips button small{font:600 10px/1 var(--fq-font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--fq-text-muted)}
+.df-chips button[aria-pressed="true"]{background:var(--fq-text-strong);color:var(--fq-bg-canvas)}
+.df-chips button[aria-pressed="true"] small{color:inherit;opacity:.7}
+.df-stage{position:relative;aspect-ratio:16/10;box-sizing:border-box;padding:clamp(12px,1.6vw,20px);border-radius:28px;background:radial-gradient(70% 80% at 50% 110%,color-mix(in oklab,var(--c) 24%,transparent),transparent 70%),var(--df-card);box-shadow:inset 0 0 0 1px var(--df-hair),0 60px 120px -50px var(--fq-bg-canvas),0 0 120px -60px var(--c)}
+.df-fit{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.df-stage .df-ios{width:auto;height:100%}
+.df-stage .df-mail{width:auto;height:100%}
+.df-stage .df-mail img{width:auto;height:100%}
+.df-note{margin:0;font-size:14px;line-height:1.5;color:var(--fq-text-muted);min-height:1.5em}
+.df-note b{color:var(--fq-text-strong);font-weight:600}
+.df-try{display:block}
+.df-try .df-note{min-height:2.9em}
+.df-try .df-pv{max-width:880px;margin:0 auto}
+.df-kits{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+.df-kits button{display:flex;align-items:center;gap:10px;min-height:46px;padding:6px 12px;border-radius:12px;background:var(--df-wash);color:var(--fq-text-body);font:600 14px/1.2 var(--fq-font-sans);text-align:left;box-shadow:inset 0 0 0 1px var(--df-hair)}
+.df-kits i{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.df-kits button[aria-pressed="true"]{background:color-mix(in oklab,var(--c) 22%,transparent);color:var(--fq-text-strong);box-shadow:inset 0 0 0 1.5px var(--c)}
+
+/* Frames: a browser bar, the design system's iPhone (390 by 844, 370 by 824 screen), an email card. */
+.df-dv{display:flex;flex-direction:column;width:100%;max-height:100%;overflow:hidden;border-radius:var(--fq-radius-m);background:var(--fq-bg-canvas);box-shadow:inset 0 0 0 1px var(--df-hair),0 50px 100px -40px var(--fq-bg-canvas)}
+.df-bar{flex:none;height:30px;display:flex;align-items:center;gap:7px;padding:0 14px;border-bottom:1px solid var(--df-hair);background:var(--fq-surface-raised)}
+.df-bar i{width:10px;height:10px;border-radius:50%;background:var(--df-wash2)}
+.df-bar u{text-decoration:none;margin:0 auto;font:500 12px/1 var(--fq-font-sans);color:var(--fq-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.df-scr{position:relative;flex:1 1 auto;min-height:0;aspect-ratio:1280/800;line-height:0;overflow:hidden}
+.df-scr img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+.df-mail{display:block;width:100%;max-width:420px;aspect-ratio:900/1140;overflow:hidden;border-radius:var(--fq-radius-s);background:var(--fq-bg-canvas);box-shadow:inset 0 0 0 1px var(--df-hair),0 50px 100px -40px var(--fq-bg-canvas);line-height:0}
+.df-mail img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.df-ios{display:block;container-type:size;width:100%;aspect-ratio:390/844;line-height:0}
+.df-ios-body{display:block;box-sizing:border-box;width:100%;height:100%;padding:2.564cqw;border-radius:13.846cqw;background:linear-gradient(160deg,var(--fq-surface-raised),var(--fq-bg-canvas) 45%,var(--fq-surface-raised));box-shadow:inset 0 0 0 1px var(--df-hair),0 50px 90px -40px var(--fq-bg-canvas),0 0 80px -40px var(--c)}
+.df-ios-scr{position:relative;display:block;container-type:inline-size;width:100%;height:100%;overflow:hidden;border-radius:11.282cqw;background:var(--fq-bg-canvas)}
+.df-ios-scr img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.df-sb{position:absolute;left:0;right:0;top:0;height:13.5cqw;display:flex;align-items:center;justify-content:space-between;padding:0 8.1cqw 0 9.73cqw;font:600 4.05cqw/1 var(--fq-font-sans);color:var(--fq-text-strong);text-shadow:0 1px 2px color-mix(in oklab,var(--fq-bg-canvas) 40%,transparent);pointer-events:none}
+.df-isl{position:absolute;left:50%;top:2.97cqw;transform:translateX(-50%);width:31.9cqw;height:9.19cqw;border-radius:999px;background:var(--fq-bg-canvas)}
+.df-sbi{display:flex;align-items:flex-end;gap:1.08cqw}
+.df-sbi i{width:1.08cqw;background:currentColor;border-radius:.27cqw}
+.df-sbi i:nth-child(1){height:1.62cqw}.df-sbi i:nth-child(2){height:2.43cqw}
+.df-sbi i:nth-child(3){width:5.95cqw;height:2.97cqw;border-radius:.81cqw;margin-left:1.08cqw}
+.df-hi{position:absolute;left:50%;bottom:2.16cqw;transform:translateX(-50%);width:36.2cqw;height:1.35cqw;border-radius:999px;background:color-mix(in oklab,var(--fq-text-strong) 85%,transparent);pointer-events:none}
+
+/* Before and after */
+.df-stack{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:20px;align-items:center;margin-top:36px}
+.df-st-card{border-radius:24px;padding:26px 28px;background:var(--df-card);box-shadow:inset 0 0 0 1px var(--df-hair);display:flex;flex-direction:column}
+.df-st-card .label{margin-bottom:14px}
+.df-row{display:flex;justify-content:space-between;gap:16px;align-items:baseline;padding:13px 0;border-top:1px solid var(--df-hair);font-size:15.5px;color:var(--fq-text-strong)}
+.df-row span{display:flex;align-items:center;gap:10px;font-weight:600;white-space:nowrap}
+.df-row em{font-style:normal;color:var(--fq-text-muted);font-size:14px;text-align:right}
+.df-row i{width:10px;height:10px;border-radius:3px;background:var(--df-wash2);box-shadow:inset 0 0 0 1px var(--df-hair);flex:none}
+.df-st-card.before{opacity:.82}.df-st-card.before .df-row span{text-decoration:line-through;text-decoration-color:var(--fq-text-faint)}
+.df-st-card.after{box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--c) 60%,transparent),0 0 90px -40px var(--c)}
+.df-st-card.after .df-row i{border-radius:50%;background:var(--c)}
+.df-st-p{margin:18px 0 0;padding-top:16px;border-top:1px solid var(--df-hair);font-size:15px;line-height:1.55;color:var(--fq-text-body)}
+.df-arrow{font:600 28px/1 var(--fq-font-display);color:var(--fq-x-sun-neon)}
+@media (max-width:900px){.df-stack{grid-template-columns:1fr}.df-arrow{transform:rotate(90deg);justify-self:center}.df-row span{white-space:normal}}
+
+/* Four places: one row each, the picture and the words, alternating sides on the same two columns. */
+.df-places{display:flex;flex-direction:column;gap:clamp(56px,7vw,96px);margin-top:clamp(36px,4vw,56px)}
+.df-cz{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:var(--df-gap);align-items:center}
+.df-cz.r{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}.df-cz.r .df-cz-dev{order:2}
+.df-cz-dev{display:flex;justify-content:center;min-width:0}
+.df-cz-dev .df-dv{max-width:640px}
+.df-cz-dev .df-ios{max-width:280px}
+.df-cz-dev .df-mail{max-width:380px}
+.df-cz-tx .jn{font:600 13px/1 var(--fq-font-display);letter-spacing:.1em;color:var(--fq-x-sun-neon)}
+.df-cz-tx h3{margin:10px 0 0;font:600 clamp(30px,3.4vw,46px)/1 var(--fq-font-display);letter-spacing:-.045em;color:var(--fq-text-strong)}
+.df-cz-tx p{margin:14px 0 0;font-size:17px;line-height:1.55;color:var(--fq-text-body);max-width:44ch}
+.df-cz-tx ul{list-style:none;margin:22px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.df-cz-tx li{display:flex;gap:12px;align-items:baseline;font-size:15.5px;color:var(--fq-text-body);overflow-wrap:anywhere}
+.df-cz-tx li b{flex:none;width:76px;font:600 11px/1.4 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-muted)}
+.df-cz-tx .df-out{margin:22px 0 0;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;font:400 italic 21px/1.35 var(--fq-font-serif);color:var(--fq-text-strong)}
+.df-out b{font:600 11px/1 var(--fq-font-display);font-style:normal;letter-spacing:.12em;text-transform:uppercase;color:var(--fq-x-sun-neon)}
+@media (max-width:900px){.df-cz,.df-cz.r{grid-template-columns:minmax(0,1fr)}.df-cz.r .df-cz-dev{order:0}}
+
+/* Six Spotlight layouts */
+.df-layouts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--df-gap-y) clamp(14px,2vw,28px);margin-top:clamp(36px,4vw,56px)}
+.df-layouts figure{margin:0;min-width:0;display:flex;flex-direction:column;gap:14px}
+.df-layouts figcaption{display:flex;flex-direction:column;gap:4px;min-width:0}
+.df-layouts figcaption b{display:flex;align-items:center;gap:8px;font:600 12px/1.2 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-strong)}
+.df-layouts figcaption b span{color:var(--fq-x-sun-neon)}
+.df-layouts figcaption small{font:500 13px/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+@media (max-width:1100px){.df-layouts{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:clamp(28px,4vw,48px)}}
+@media (max-width:560px){.df-layouts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* What carries over */
+.df-cmp{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(4,minmax(0,1fr));margin-top:36px;border-radius:24px;overflow:hidden;background:var(--df-card);box-shadow:inset 0 0 0 1px var(--df-hair)}
+.df-cmp-row{display:contents}
+.df-cmp>.hd,.df-cmp-row>div{padding:16px 20px;border-bottom:1px solid var(--df-hair);font-size:14.5px;color:var(--fq-text-body);display:flex;align-items:center;gap:10px;min-height:56px}
+.df-cmp .hd{font:600 11px/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-muted);background:var(--df-wash)}
+.df-cmp .rw{color:var(--fq-text-strong);font-weight:600}
+.df-cmp .y::before,.df-legend i.y{content:"";width:8px;height:8px;border-radius:50%;background:var(--fq-x-sun-neon);flex:none}
+.df-cmp .p::before,.df-legend i.p{content:"";width:8px;height:8px;border-radius:50%;background:var(--fq-x-aqua-neon);flex:none}
+.df-legend{margin:16px 0 0;display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:14px;color:var(--fq-text-muted)}
+.df-legend i{display:inline-block;margin-left:16px}.df-legend i:first-child{margin-left:0}
+@media (max-width:800px){.df-cmp>.hd,.df-cmp-row>div{padding:12px 10px;font-size:13px}.df-cmp .p span{display:none}}
+
+/* Cards (look controls and tools) */
+.df-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--df-gap-y);margin-top:36px}
+.df-card{border-radius:24px;padding:24px;background:var(--df-card);box-shadow:inset 0 0 0 1px var(--df-hair);display:flex;flex-direction:column;gap:8px}
+.df-card h3{margin:0;font:600 20px/1.15 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+.df-card p{margin:0;font-size:15px;line-height:1.5;color:var(--fq-text-body)}
+@media (max-width:900px){.df-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:560px){.df-cards{grid-template-columns:1fr}}
+
+/* Questions */
+.df-faq{display:flex;flex-direction:column;gap:8px;margin-top:36px}
+.df-faq details{border-radius:20px;background:var(--df-card);box-shadow:inset 0 0 0 1px var(--df-hair)}
+.df-faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:20px 22px;font:600 18px/1.25 var(--fq-font-display);letter-spacing:-.02em;color:var(--fq-text-strong)}
+.df-faq summary::-webkit-details-marker{display:none}
+.df-faq summary::after{content:"+";font:400 22px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+.df-faq details[open] summary::after{content:"\2013"}
+.df-faq details[open]{box-shadow:inset 0 0 0 1.5px var(--fq-x-sun-neon)}
+.df-faq p{margin:0;padding:0 22px 22px;font-size:16px;line-height:1.55;color:var(--fq-text-body);max-width:68ch}

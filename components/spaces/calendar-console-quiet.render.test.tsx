@@ -160,6 +160,7 @@ describe('the calendar console surface', () => {
   it('changes nothing anywhere in the document across thirty seconds', async () => {
     stubMatchMedia()
     vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-15T19:00:00Z')) // the fixtures are September; a calendar opens on the current month
     await mountSurface(true)
 
     // The console really is up, so a passing run cannot be a run that rendered nothing.
@@ -179,6 +180,7 @@ describe('the calendar console surface', () => {
     // Human retired the global ticker requirement; the actual calendar surface has no headline clock.
     stubMatchMedia()
     vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-15T19:00:00Z')) // the fixtures are September; a calendar opens on the current month
     await mountSurface(false)
 
     const before = document.body.innerHTML

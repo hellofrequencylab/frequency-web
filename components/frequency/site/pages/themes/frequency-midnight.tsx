@@ -3,7 +3,7 @@
 // /themes/nocturne (LIVE-1380, rebuilt LIVE-1598), built section by section from the Theme Feature Page of the Default Template design system
 // (docs/design-systems/nocturne). Every picture is a real screenshot of the kit (public/themes/midnight/shots,
 // ids as in lib/themes/nocturne-feature-data.ts); the live sample site is /themes/nocturne/demo. Every button
-// goes to a real route: the Wizard (/spaces/new?niche=<kit>), pricing, the sample site, or an anchor on this page.
+// goes to a real route: the Wizard (/spaces/new?niche=<kit>&theme=midnight), pricing, the sample site, or an anchor on this page.
 // The design page's research figures are left out on purpose (docs/marketing/voice-and-language-guide.md).
 // Styles: nocturne-feature.css, tokens only.
 import Image from 'next/image'
@@ -14,6 +14,7 @@ import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import './nocturne-feature.css'
 import { NOCTURNE_BLOCKS, NOCTURNE_KITS, NOCTURNE_PACKAGES, NOCTURNE_SWATCHES, type NocturneKit } from '@/lib/themes/nocturne-feature-data'
+import { FREE_SPOTLIGHT_LABEL } from '@/lib/launch/entry'
 
 type Surface = 'site' | 'spacedesk' | 'spotlight' | 'email'
 type Shot = 'site' | 'spacedesk' | 'space' | 'spot' | 'email'
@@ -48,7 +49,7 @@ function shotSrc(kit: string, shot: Shot) {
   return `/themes/midnight/shots/${kit}-${shot}.${shot === 'email' ? 'png' : 'jpg'}`
 }
 function adoptHref(kit: string) {
-  return `/spaces/new?niche=${kit}`
+  return `/spaces/new?niche=${kit}&theme=midnight`
 }
 function pad(n: number) {
   return String(n).padStart(2, '0')
@@ -290,7 +291,9 @@ function Pressed({
   )
 }
 
-export function FrequencyMidnight() {
+/** `spotlightHref` is the "Get a Free Spotlight" address while the doorway is on (LAUNCH_ENTRY_ENABLED), else null.
+ *  The page reads the switch on the server and hands the address down, since this island cannot. */
+export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: string | null }) {
   const [kitId, setKitId] = useState('general')
   const [hv, setHv] = useState<Surface>('site')
   const [ins, setIns] = useState<InsView>('pages')
@@ -335,33 +338,46 @@ export function FrequencyMidnight() {
             <span aria-hidden="true">/</span>
             <span aria-current="page">Nocturne</span>
           </nav>
-          <div className="nf-top">
-            <div className="label">
-              <b>Theme</b>Nocturne · by Frequency
+          <div className="nf-split">
+            <div className="nf-top">
+              <div className="label">
+                <b>Theme</b>Nocturne · by Frequency
+              </div>
+              <h1 className="nf-h1 nf-name">Nocturne</h1>
+              <p className="nf-aft">A Frequency Theme</p>
+              <p className="nf-tagline">
+                Design it once.
+                <br />
+                <em className="fq-iri-text">Same theme everywhere.</em>
+              </p>
+              <p className="nf-lead">
+                One complete theme for any business that gathers people. Your link in bio, your Space on Frequency, your own website and your emails,
+                all reading one profile. Change it once and every surface follows.
+              </p>
+              <div className="ctas">
+                <a className="btn fq-iri-btn" href="#start">
+                  Start your Spotlight
+                </a>
+                <a className="btn btn-ghost fq-iri-rim" href="#preview">
+                  See it live
+                </a>
+                {spotlightHref && (
+                  <Link className="btn btn-ghost fq-iri-rim" href={spotlightHref}>
+                    {FREE_SPOTLIGHT_LABEL}
+                  </Link>
+                )}
+              </div>
             </div>
-            <h1 className="nf-h1 nf-name">Nocturne</h1>
-            <p className="nf-aft">Nocturne - A Frequency Theme</p>
-            <p className="nf-tagline">
-              Design it once.
-              <br />
-              <em className="fq-iri-text">Same theme everywhere.</em>
-            </p>
-            <p className="nf-lead">
-              One complete theme for any business that gathers people. Your link in bio, your Space on Frequency, your own website and your emails,
-              all reading one profile. Change it once and every surface follows.
-            </p>
-            <div className="ctas">
-              <a className="btn fq-iri-btn" href="#start">
-                Start your Spotlight
-              </a>
-              <a className="btn btn-ghost fq-iri-rim" href="#preview">
-                See it live
-              </a>
+            <div className="nf-hero-shot">
+              <Device kit={kit} surface="site" priority sizes="(max-width: 900px) 92vw, 640px" />
             </div>
           </div>
-          <div className="nf-hero-shot">
-            <Device kit={kit} surface="site" priority sizes="(max-width: 900px) 92vw, 980px" />
-          </div>
+          <a className="nf-more" href="#spotlight">
+            <span>See it on every surface</span>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
           <div className="nf-cascade">
             {CASCADE.map((c, i) => (
               <Fragment key={c.name}>
@@ -370,14 +386,17 @@ export function FrequencyMidnight() {
                     <path d={i % 2 ? 'M 24 0 C 24 55, 76 45, 76 100' : 'M 76 0 C 76 55, 24 45, 24 100'} vectorEffect="non-scaling-stroke" />
                   </svg>
                 ) : null}
-                <div className={`nf-cz ${i % 2 ? 'r' : 'l'}`}>
+                <div className={`nf-cz ${i % 2 ? 'r' : 'l'}`} id={i === 0 ? 'spotlight' : undefined}>
                   <div className="nf-cz-dev">
                     <span className="nf-dvlab">{c.tag}</span>
                     <Device kit={kit} surface={c.surface} priority={i === 0} sizes="(max-width: 900px) 90vw, 560px" />
                   </div>
                   <div className="nf-cz-tx">
                     <span className="jn">{c.n}</span>
-                    <h3>{c.tag}</h3>
+                    <h3>
+                      {c.tag.replace(/ \(.*\)$/, '')}{' '}
+                      {c.tag.includes('(') ? <small className="nf-q">{c.tag.replace(/^.*\(|\)$/g, '')}</small> : null}
+                    </h3>
                     <p>{c.body}</p>
                     <ul>
                       <li>

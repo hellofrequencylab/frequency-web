@@ -21,6 +21,13 @@ export const TASK_STATUSES: readonly TaskStatus[] = ['open', 'done', 'snoozed']
 export type TaskFilter = 'mine' | 'all' | 'overdue' | 'by-contact' | 'by-plan'
 export const TASK_FILTERS: readonly TaskFilter[] = ['mine', 'all', 'overdue', 'by-contact', 'by-plan']
 
+/** Where a Plan to-do sits around the Production date (crm_tasks.phase, calendar suite pass 2). */
+type TaskPhase = 'before' | 'day_of' | 'after'
+const TASK_PHASES: readonly TaskPhase[] = ['before', 'day_of', 'after']
+
+/** The most minutes one estimate may hold: a week of work, which is far past any one to-do. */
+const MAX_EST_MINUTES = 10_080
+
 const MAX_TITLE_LEN = 200
 const MAX_NOTES_LEN = 4_000
 
@@ -41,6 +48,12 @@ export interface CreateTaskInput {
   planId?: string | null
   /** Days before (negative) or after (positive) the Production date. */
   dueOffsetDays?: number | null
+  /** Stored phase (Before / Day of / After). Omit to derive it from `dueOffsetDays`. */
+  phase?: string | null
+  /** Estimated effort in minutes (Team this week). */
+  estMinutes?: number | null
+  /** Minute of the day the to-do starts, in the Space time zone (0 to 1439). */
+  startMinute?: number | null
 }
 
 /** One task row as the app consumes it (camelCase). */
@@ -58,6 +71,13 @@ export interface CrmTask {
   updatedAt: string
   planId: string | null
   dueOffsetDays: number | null
+  /** Stored phase, or null when it is derived from `dueOffsetDays` (see `taskPhase`). Optional so
+   *  a row built before the calendar suite migration still satisfies the type. */
+  phase?: TaskPhase | null
+  /** Estimated effort in minutes, or null when not estimated. */
+  estMinutes?: number | null
+  /** Minute of the day (0 to 1439) the to-do starts, or null for no block of its own. */
+  startMinute?: number | null
   /** Set on a to-do of a Plan another Space shared with the viewer's Space (LIVE-544): that host
    *  Space's name, so the inbox can say whose Plan it is. Absent on this Space's own rows. */
   sharedFrom?: string | null
@@ -75,6 +95,9 @@ export interface TaskInsert {
   created_by: string
   plan_id?: string | null
   due_offset_days?: number | null
+  phase?: TaskPhase | null
+  est_minutes?: number | null
+  start_minute?: number | null
 }
 
 function oneLine(raw: unknown, cap: number): string | null {
@@ -87,6 +110,67 @@ function multiLine(raw: unknown, cap: number): string | null {
   if (typeof raw !== 'string') return null
   const clean = raw.trim().slice(0, cap)
   return clean.length ? clean : null
+}
+
+// ── Calendar suite columns (phase, estimate, start time): pure normalizers ────────────────────────
+
+/** A phase the column accepts, or null. Anything else (a typo, a future value) is dropped, never
+ *  passed to the database to fail its check. */
+export function normalizePhase(raw: unknown): TaskPhase | null {
+  return typeof raw === 'string' && (TASK_PHASES as readonly string[]).includes(raw) ? (raw as TaskPhase) : null
+}
+
+/** A whole number of minutes, 0 to a week, or null. A negative, fractional or non-numeric estimate
+ *  is not estimated, rather than rounded into a number nobody typed. */
+export function normalizeEstMinutes(raw: unknown): number | null {
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 0 && raw <= MAX_EST_MINUTES ? raw : null
+}
+
+/** A minute of the day, 0 to 1439, or null. 1440 is the next day, not a start time. */
+export function normalizeStartMinute(raw: unknown): number | null {
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 0 && raw <= 1439 ? raw : null
+}
+
+/** The phase a to-do shows: the stored one, else derived from its relative due date (before the
+ *  Production date, on it, after it), else null for a to-do with neither. Pure. */
+export function taskPhase(task: Pick<CrmTask, 'phase' | 'dueOffsetDays'>): TaskPhase | null {
+  const stored = normalizePhase(task.phase)
+  if (stored) return stored
+  const offset = task.dueOffsetDays
+  if (typeof offset !== 'number' || !Number.isInteger(offset)) return null
+  return offset < 0 ? 'before' : offset === 0 ? 'day_of' : 'after'
+}
+
+/** The planning fields a person edits on an existing to-do, as the caller names them. A key left
+ *  out is left alone; `null` clears the column. */
+export interface TaskPlanningPatch {
+  phase?: string | null
+  estMinutes?: number | null
+  startMinute?: number | null
+}
+
+/**
+ * The column patch for a planning edit, or `null` when it names nothing writable or names a value
+ * the columns would refuse (so the caller says "that is not a valid estimate" instead of passing a
+ * constraint violation up). An explicit `null` clears. Pure and deterministic.
+ */
+export function buildTaskPlanningPatch(input: TaskPlanningPatch, now: number = Date.now()): Record<string, unknown> | null {
+  const patch: Record<string, unknown> = {}
+  if ('phase' in input) {
+    if (input.phase !== null && normalizePhase(input.phase) === null) return null
+    patch.phase = input.phase ?? null
+  }
+  if ('estMinutes' in input) {
+    if (input.estMinutes !== null && normalizeEstMinutes(input.estMinutes) === null) return null
+    patch.est_minutes = input.estMinutes ?? null
+  }
+  if ('startMinute' in input) {
+    if (input.startMinute !== null && normalizeStartMinute(input.startMinute) === null) return null
+    patch.start_minute = input.startMinute ?? null
+  }
+  if (Object.keys(patch).length === 0) return null
+  patch.updated_at = new Date(now).toISOString()
+  return patch
 }
 
 // ── PURE: validate + normalize one row (no IO, fully testable) ────────────────────────────────────
@@ -115,6 +199,10 @@ export function buildTaskInsert(input: CreateTaskInput, spaceId?: string | null)
   const dueOffset =
     typeof input.dueOffsetDays === 'number' && Number.isInteger(input.dueOffsetDays) ? input.dueOffsetDays : null
 
+  const phase = normalizePhase(input.phase)
+  const estMinutes = normalizeEstMinutes(input.estMinutes)
+  const startMinute = normalizeStartMinute(input.startMinute)
+
   const dueAt =
     typeof input.dueAt === 'string' && !Number.isNaN(Date.parse(input.dueAt))
       ? new Date(input.dueAt).toISOString()
@@ -131,6 +219,11 @@ export function buildTaskInsert(input: CreateTaskInput, spaceId?: string | null)
     created_by: createdBy,
     plan_id: planId,
     due_offset_days: dueOffset,
+    // Only the keys a caller actually set: a to-do with no planning fields writes the same row it
+    // always did, so the insert does not name a column it has no reason to touch.
+    ...(phase === null ? {} : { phase }),
+    ...(estMinutes === null ? {} : { est_minutes: estMinutes }),
+    ...(startMinute === null ? {} : { start_minute: startMinute }),
   }
 }
 

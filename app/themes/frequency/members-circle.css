@@ -3,7 +3,7 @@
    the kit and written in --fq- tokens only; a size the export has no token for is the reference's own value
    (token-ok). The member area wears the Frequency kit and nothing from a Space's website theme. */
 @layer components {
-[data-design="frequency"] [data-kit="members"] .fqc{display:block}
+[data-design="frequency"] [data-kit="members"] .fqc{display:block;container-type:inline-size}
 [data-design="frequency"] [data-kit="members"] .fqc-cover{position:relative;margin-top:20px;border-radius:28px;overflow:hidden;min-height:clamp(200px,26vw,280px);display:flex;align-items:flex-end;background-color:var(--fq-bg-sunken);background-size:cover;background-position:center 32%;margin-bottom:16px}
 [data-design="frequency"] [data-kit="members"] .fqc-cover::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 25%,color-mix(in oklab,var(--fq-ink) 45%,transparent) 55%,color-mix(in oklab,var(--fq-ink) 82%,transparent) 100%)}
 [data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in{position:relative;width:100%;padding:24px clamp(18px,3vw,32px);align-items:flex-end;justify-content:space-between;gap:16px}
@@ -67,10 +67,12 @@
 [data-design="frequency"] [data-kit="members"] .fqc-tab-n{min-width:24px;height:22px;padding:0 7px;border-radius:999px;display:inline-grid;place-items:center;font:600 var(--fq-text-meta)/1 var(--fq-font-sans);background:color-mix(in oklab,var(--fq-ink) 6%,transparent)}
 [data-design="frequency"] [data-kit="members"] .fqc-tab.on .fqc-tab-n{background:color-mix(in oklab,var(--fq-surface-card) 18%,transparent)}
 [data-design="frequency"] [data-kit="members"] .fqc-tools{justify-content:flex-end;gap:8px;margin-top:12px}
-[data-design="frequency"] [data-kit="members"] .fqc-cols{display:flex;flex-wrap:wrap;gap:28px;margin-top:20px;align-items:flex-start}
-[data-design="frequency"] [data-kit="members"] .fqc-main{flex:1 1 520px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqc-cols{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;margin-top:20px;align-items:start}
+/* The design's two columns (templates/members/Circle.html .ap-cols): the side column sits beside the feed whenever the body is wide enough to hold both, inside the shell's own right rail, and stacks under it below that. */
+@container (min-width:740px){[data-design="frequency"] [data-kit="members"] .fqc-cols{grid-template-columns:minmax(0,1fr) 288px}}
+[data-design="frequency"] [data-kit="members"] .fqc-main{min-width:0}
 [data-design="frequency"] [data-kit="members"] .fqc-main>.fqm-pane{margin-top:0}
-[data-design="frequency"] [data-kit="members"] .fqc-side{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:16px}
+[data-design="frequency"] [data-kit="members"] .fqc-side{min-width:0;display:flex;flex-direction:column;gap:16px}
 [data-design="frequency"] [data-kit="members"] .fqc-side .panel{padding:20px;border-radius:24px;gap:14px}
 [data-design="frequency"] [data-kit="members"] .fqc-agree{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font:400 15px/1.4 var(--fq-font-sans);color:var(--fq-text-body)}
 [data-design="frequency"] [data-kit="members"] .fqc-agree li{display:flex;gap:10px;align-items:flex-start}

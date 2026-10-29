@@ -49,11 +49,11 @@ export async function setSpotlightPublished(published: boolean): Promise<void> {
   if (handle) revalidatePath(`/spotlight/${handle}`)
 }
 
-// Self-serve: a Crew+ member turns their OWN Spotlight on (or off) — the switch that
+// Self-serve: any member turns their OWN Spotlight on (or off) — the switch that
 // replaces the janitor-only setup gate (ADR-431). Self-scoped via the SESSION client
 // (the `profiles: read own` + `profiles: self update` RLS policies enforce auth_user_id
 // ownership at the DB) AND capability-checked: `spotlight.enable` is re-resolved
-// server-side as the first act, so a non-Crew member can't flip it even by calling the
+// server-side as the first act, so a member without the capability cannot flip it even by calling the
 // action directly. Enabling only sets up the page (the owner still publishes explicitly
 // via setSpotlightPublished); DISABLING also unpublishes so a turned-off page can't stay
 // live at its public URL. A janitor's force-toggle (admin/members) is unchanged.
@@ -71,7 +71,7 @@ export async function setMySpotlightEnabled(enabled: boolean): Promise<void> {
 
   const caps = await getProfileCapabilities((me as { id: string }).id)
   if (!caps.has('spotlight.enable')) {
-    throw new Error('Spotlight is a Crew feature. Upgrade to turn yours on.')
+    throw new Error('We could not turn your Spotlight on. Try again.')
   }
 
   // 2026-09-07 (LIVE-171): only the flag(s) this switch owns are sent, merged INSIDE the `spotlight`

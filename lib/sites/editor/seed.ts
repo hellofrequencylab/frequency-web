@@ -98,6 +98,7 @@ export function initialWebsiteTheme(preferences: unknown): WebsiteTheme {
   // Only a SAVED site style reads as Wildheart: nothing applies the theme on its own (owner ruling 2026-10-12).
   if (siteTheme(preferences) === 'wildheart') return 'Wildheart'
   if (siteTheme(preferences) === 'network') return 'Network'
+  if (siteTheme(preferences) === 'network-kit') return 'NetworkKit'
   if (siteTheme(preferences) === 'temple') return 'Temple'
   if (siteTheme(preferences) === 'midnight') return 'Midnight'
   if (siteTheme(preferences) === 'designer') return 'Designer'

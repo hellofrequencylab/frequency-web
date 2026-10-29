@@ -53,12 +53,14 @@ import { tipEmailHtml, tipEmailText } from '@/lib/billing/tips-notify'
 import { shippedNoticeContent } from '@/lib/commerce/shipped-notice'
 import { actorEmailMessage } from '@/lib/automations'
 import { compileEmailDoc, plainTextEmail } from '@/lib/email-studio/shell'
+import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 import { DEFAULT_EMAIL_COLORS } from '@/lib/email-studio/render'
 import { renderCampaignHtml } from '@/lib/spaces/campaign-html'
 import { renderReplyEmail, renderCoalescedEmail, bodyToHtml } from '@/lib/comms/email-template'
 import { conversationFrom } from '@/lib/comms/from-address'
 import { spaceFromLine } from '@/lib/spaces/email'
 import { envString } from '@/lib/env/string'
+import { networkKitDatesEmail, networkKitNoteEmail, networkKitReceiptEmail, networkKitWelcomeEmail, type NetworkKitEmailBrand } from '@/lib/theme/network-kit-email'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 /** Who the email comes from in production, so a sample lands with the real From header:
@@ -175,6 +177,23 @@ const BRIEF_CARDS: TodayCard[] = [
   { contactId: 'c2', subjectProfileId: null, name: 'Jon', context: 'New', whyNow: 'Signed up on Friday and has not picked a circle.', actionDraft: 'Point him at the beginner mornings.', playbookId: 'welcome', playbookName: 'Welcome · Suggest', autonomyTier: 'suggest', score: 0.6, confidence: 'medium', topSignals: ['Joined 3 days ago'] } as unknown as TodayCard,
 ]
 
+/** The Network Theme Kit's four emails (EMAIL-026 follows the theme): one fixture Space in the default Marigold scheme. */
+const NETWORK_BRAND: NetworkKitEmailBrand = {
+  profile: 'general',
+  spaceName: 'Table Nine',
+  mastheadNote: 'Meetups · Members',
+  postalLine: PLATFORM_POSTAL_LINE,
+  siteUrl: 'https://tablenine.example',
+  siteLabel: 'tablenine.example',
+  unsubscribeUrl: `${SITE}/unsubscribe/s`,
+  manageUrl: `${SITE}/manage-emails`,
+}
+const NETWORK_DATES = [
+  { lead: 'Nov 6', title: 'Friday coffee', sub: '9:00 AM · The courtyard, Main Street' },
+  { lead: 'Nov 12', title: 'Newcomer table', sub: '6:00 PM · Downtown library' },
+  { lead: 'Nov 20', title: 'Show and tell', sub: '9:00 AM · The courtyard, Main Street' },
+]
+
 export const SAMPLE_SPECS: readonly SampleSpec[] = [
   // ── Welcome and sign-up ──────────────────────────────────────────────────────────────────────────────
   { id: 'welcome', group: 'Welcome and sign-up', run: () => sendWelcomeEmail({ to: TO, displayName: 'Maya', inviterName: 'Jordan' }) },
@@ -249,4 +268,10 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'trial-ending', group: 'Owner notices', run: () => buildTrialEndingEmail({ to: TO, planLabel: 'Business', spaceName: SAMPLE_SPACE_NAME, trialEndLabel: 'November 19, 2026', greetingName: 'Jordan', billingUrl: `${SITE}/spaces/north-light/settings/billing` }) },
   { id: 'renewal-overdue', group: 'Owner notices', run: () => buildRenewalNoticeEmail({ to: TO, touch: 'overdue', planLabel: 'Collective', spaceName: SAMPLE_SPACE_NAME, dateLabel: 'October 19, 2026', rateLabel: '$99 a month', greetingName: null, billingUrl: `${SITE}/spaces/north-light/settings/billing` }) },
   { id: 'owner-brief', group: 'Owner notices', run: () => { const intro = 'Two people are worth a note today, and the rest can wait.'; return { to: TO, subject: 'Your Frequency brief: 2 moves today', html: ownerBriefEmailHtml(briefHtml(intro, BRIEF_CARDS, 3), UNSUB), text: briefText(intro, BRIEF_CARDS, 3) + `\nUnsubscribe or manage emails: ${UNSUB}\n` } } },
+
+  // ── The Network Theme Kit's emails (code id network-kit) ────────────────────────────────────────────
+  { id: 'network-kit-note', group: 'Spaces and campaigns', run: () => { const out = networkKitNoteEmail(NETWORK_BRAND, { subject: 'This Friday, and one member worth knowing', title: 'Your people are', em: 'already here.', lead: 'Coffee is at 9:00. This week a member shares how she found her first clients at this table. Bring a friend; first visits are free.', ctaLabel: 'Come to a meetup', ctaUrl: 'https://tablenine.example/meetups', coverUrl: `${SITE}/og/default.png`, coverAlt: 'People at a long table, talking.', feature: { kicker: 'Coming up', title: 'The next few dates', rows: NETWORK_DATES, ctaLabel: 'See all dates', ctaUrl: 'https://tablenine.example/meetups' }, quote: { text: 'I came for the coffee and left with three introductions.', who: 'Maya', role: 'Member' } }); return { to: TO, ...out } } },
+  { id: 'network-kit-welcome', group: 'Spaces and campaigns', run: () => { const out = networkKitWelcomeEmail(NETWORK_BRAND, { coverUrl: `${SITE}/og/default.png`, coverAlt: 'People at a long table, talking.', ctaLabel: 'Come to a meetup', ctaUrl: 'https://tablenine.example/meetups', steps: [{ title: 'Come to a meetup', sub: 'Pick a date and show up. Say you are new at the door.' }, { title: 'Join a circle', sub: 'Small groups that meet on their own between meetups.' }, { title: 'Say hello', sub: 'Reply to this email. It goes to an organizer, not a robot.' }] }); return { to: TO, ...out } } },
+  { id: 'network-kit-dates', group: 'Spaces and campaigns', run: () => { const out = networkKitDatesEmail(NETWORK_BRAND, { dates: NETWORK_DATES, ctaUrl: 'https://tablenine.example/meetups' }); return { to: TO, ...out } } },
+  { id: 'network-kit-receipt', group: 'Spaces and campaigns', run: () => { const out = networkKitReceiptEmail(NETWORK_BRAND, { what: 'Friday coffee', when: 'Friday, November 6, 9:00 AM', where: 'The courtyard, Main Street', who: 'One seat', whoNote: 'Reserved under your name', paid: 'Free', paidNote: 'Receipt no. 1047', calendarUrl: 'https://tablenine.example/calendar.ics', manageUrl: 'https://tablenine.example/bookings' }); return { to: TO, ...out } } },
 ]
