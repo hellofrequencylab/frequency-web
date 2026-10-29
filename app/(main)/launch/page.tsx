@@ -8,6 +8,9 @@ import { launchSystemEnabled } from '@/lib/launch/enabled'
 import { resumeView } from '@/lib/launch/resume'
 import { getLaunchForOwner } from '@/lib/launch/store'
 import Link from 'next/link'
+import { LaunchOverview } from '@/components/launch/launch-overview'
+import { loadInventory } from '@/lib/launch/inventory-io'
+import { loadKnownProfile } from '@/lib/launch/known-io'
 
 // /launch (VLS-10): the welcome-back page for a launch that is already started. One of three things: where
 // you stopped and what you have made so far, a card to start again after a stop, or a note that it is done.
@@ -50,6 +53,18 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
     return (
       <FocusTemplate title="You're live" description="Your Spotlight, Space, site and list are up." width="narrow">
         <EmptyState variant="cleared" title="Your launch is done" description="Anything optional you skipped stays in your profile menu." />
+      </FocusTemplate>
+    )
+  }
+
+  // The one page every way in lands on: what the account already has, ticked, and what is next.
+  const sections = await loadInventory(launch.spaceId ?? null, profileId)
+  if (sections) {
+    const known = await loadKnownProfile(profileId)
+    const who = (known?.displayName ?? '').trim().split(/\s+/)[0] || 'friend'
+    return (
+      <FocusTemplate title="Your launch" description={`You stopped at ${view.label}. Saved ${view.savedAgo}.`} width="narrow">
+        <LaunchOverview sections={sections} who={who} nextHref={view.href} />
       </FocusTemplate>
     )
   }
