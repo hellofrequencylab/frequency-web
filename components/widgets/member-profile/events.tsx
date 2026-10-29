@@ -24,11 +24,11 @@ export function MemberEventsBlock({ data }: MemberBlockProps) {
           <li key={e.id}>
             <Link
               href={`/events/${e.slug}`}
-              className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-text hover:border-brand"
+              className="flex items-center gap-3 rounded-card border border-border bg-surface px-4 py-3 text-text hover:border-brand"
             >
               <CalendarDays aria-hidden className="size-5 shrink-0 text-muted" />
               <span className="min-w-0 flex-1 truncate font-medium">{e.title}</span>
-              <span className="shrink-0 text-sm text-muted">{dayLabel(e.starts_at)}</span>
+              <span className="shrink-0 text-meta text-muted">{dayLabel(e.starts_at)}</span>
             </Link>
           </li>
         ))}
