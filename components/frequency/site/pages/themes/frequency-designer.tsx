@@ -6,6 +6,7 @@
 // (lib/themes/library.ts), so the page never says more than the product does. The design page's research
 // figures and its Nocturne-only lines (accent ramps tuned to black and bone) are left out on purpose.
 // Copy follows docs/marketing/voice-and-language-guide.md. Styles: designer-feature.css, tokens only.
+import { createSpaceHref } from '@/lib/create-space/href'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Fragment } from 'react'
@@ -24,7 +25,7 @@ import {
 } from '@/lib/themes/designer-feature-data'
 import { DesignerBrowser, DesignerMail, DesignerPhone, DesignerStage, type DesignerSurfaceStatus } from './designer-preview'
 
-const START_HREF = '/spaces/new?theme=designer'
+const START_HREF = createSpaceHref('designer')
 
 const PAGES: [string, string][] = [
   ['Home', 'Hero, ways in, proof and a closing call. Blocks switch on with the kit’s tools.'],
@@ -410,7 +411,7 @@ export function FrequencyDesigner() {
           </div>
           <div className="df-kgrid">
             {DESIGNER_KITS.map((k) => (
-              <a className="df-kit" key={k.id} href={`/spaces/new?niche=${k.id}&theme=designer`} style={vars({ '--c': k.hex })}>
+              <a className="df-kit" key={k.id} href={START_HREF} style={vars({ '--c': k.hex })}>
                 <Image src={designerShot(k.id, 'site')} alt={`Designer, ${k.name}: website`} width={1280} height={800} sizes="(max-width: 900px) 46vw, 280px" />
                 <span>
                   <i />
