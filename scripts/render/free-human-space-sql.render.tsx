@@ -25,6 +25,8 @@ it('prints the Free Human Movement Space SQL', async () => {
   const state = freeHumanEditorState('2026-10-29T00:00:00.000Z')
   const prefs = { ...planMegaTheme({}, 'free-human'), siteMenu: FREE_HUMAN_MENU, ...nextSpotlightPreferences({}, { published: true, layout: freeHumanSpotlight().layout }) }
 
+  // The slim form below is only valid while these three are one snapshot; fail loudly if the state ever diverges.
+  if (JSON.stringify(state.draft) !== JSON.stringify(state.published) || JSON.stringify(state.draft) !== JSON.stringify(state.versions[0].snapshot) || state.versions.length !== 1 || state.v !== 1 || state.revision !== 1) throw new Error('editor state is no longer one snapshot')
   const sql = `-- Free Human Movement: a new Space, its Free Human website and its Space Spotlight. Run AFTER the Free Human registration is live.
 -- Adds exactly one Space (slug '${FREE_HUMAN_SLUG}'). Re-running is safe: it stops if the Space already exists.
 begin;
@@ -45,8 +47,12 @@ declare
   events jsonb := '${lit(FREE_HUMAN_SEED_EVENTS)}'::jsonb;
   programs jsonb := '${lit(FREE_HUMAN_PROGRAMS)}'::jsonb;
   ev jsonb;
-  state jsonb := '${lit(state)}'::jsonb;
+  snap jsonb := '${lit(state.draft)}'::jsonb;
+  state jsonb;
 begin
+  -- The draft, the published copy and the first saved version are the same snapshot, so it is written once.
+  state := jsonb_build_object('v', 1, 'revision', 1, 'draft', snap, 'published', snap,
+    'versions', jsonb_build_array(jsonb_build_object('id', '1', 'createdAt', '${state.versions[0].createdAt}', 'author', '${state.versions[0].author}', 'snapshot', snap)));
   if exists (select 1 from spaces where slug = '${FREE_HUMAN_SLUG}') then raise exception 'a Space with slug ${FREE_HUMAN_SLUG} already exists - rolled back'; end if;
   if (select count(*) from profiles where handle = 'danieltyack') <> 1 then raise exception 'expected exactly one profile with handle danieltyack - rolled back'; end if;
   select id into owner_id from profiles where handle = 'danieltyack';
