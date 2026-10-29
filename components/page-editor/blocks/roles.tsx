@@ -9,8 +9,9 @@ import { storedWallClock } from '@/lib/sites/site-events'
 import { InlineText } from '@/components/sites/inline-text'
 import { ROLES, roleVariant, type RoleId } from '@/lib/blocks/roles/roles'
 
-// ── The eight role blocks (docs/THEME-COHESION.md section 2, ADR-1923, LIVE-1858) ─────────────────────────────────
-// Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ and CTA, three structural layouts each. They are the
+// ── The seventeen role blocks (docs/THEME-COHESION.md section 2, ADR-1923, LIVE-1858 and LIVE-1859) ─────────────────────────────────
+// Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ and CTA (LIVE-1858), then Statement, Letter, Contact, Stats,
+// Shop, Library, People, Gallery and Chapters (LIVE-1859): three structural layouts each. They are the
 // block the owner picks; the theme is only the stylesheet around it. Every block emits the same markup on every
 // theme: `data-role`, `data-variant` and `data-part` hooks, no theme class, and no colour, font or size of its own.
 // The look is components/sites/role-blocks-css.ts, which reads the core token contract and nothing else, so a block
@@ -329,6 +330,218 @@ function CtaBlock({ p, metadata }: Ctx) {
   )
 }
 
+// ── The nine roles that complete the set (LIVE-1859) ──────────────────────────────────────────
+
+const ctaOf = (p: Props, metadata: Props | undefined) => str(p.actionLabel) ? <div data-part="actions"><Cta label={str(p.actionLabel)} href={str(p.actionHref)} kind="secondary" metadata={metadata} /></div> : null
+
+// ── Statement ──────────────────────────────────────────────────────────────────────────────
+
+function StatementBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('statement', p.variant)
+  const phrases = variant === 'ticker' ? arr(p.items).filter((s) => str(s.text)) : []
+  return (
+    <Frame role="statement" p={p} variant={variant}>
+      <div data-part="copy">
+        {str(p.eyebrow) && <p data-part="eyebrow">{str(p.eyebrow)}</p>}
+        {str(p.title) && <h2 data-part="title"><InlineText text={str(p.title)} /></h2>}
+        {str(p.lead) && <p data-part="lead">{str(p.lead)}</p>}
+        <Actions p={p} metadata={metadata} />
+      </div>
+      {phrases.length > 0 && <ul data-part="list">{phrases.map((s, i) => <li key={i} data-part="item">{str(s.text)}</li>)}</ul>}
+    </Frame>
+  )
+}
+
+// ── Letter ─────────────────────────────────────────────────────────────────────────────────
+
+function LetterBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('letter', p.variant)
+  return (
+    <Frame role="letter" p={p} variant={variant}>
+      <div data-part="copy" data-card={variant === 'card' ? '' : undefined}>
+        <div data-part="text">
+          {str(p.eyebrow) && <p data-part="eyebrow">{str(p.eyebrow)}</p>}
+          {str(p.title) && <h2 data-part="title"><InlineText text={str(p.title)} /></h2>}
+          {str(p.lead) && <p data-part="lead">{str(p.lead)}</p>}
+        </div>
+        <div data-part="side">
+          <Actions p={p} metadata={metadata} b="none" />
+          {str(p.note) && <p data-part="note">{str(p.note)}</p>}
+        </div>
+      </div>
+    </Frame>
+  )
+}
+
+// ── Contact ────────────────────────────────────────────────────────────────────────────────
+// Details and a way in, never a form of its own: the message section writes the lead and emails the owner.
+
+function ContactBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('contact', p.variant)
+  const rows = arr(p.items).filter((r) => str(r.label) && str(r.value))
+  return (
+    <Frame role="contact" p={p} variant={variant}>
+      <Heading p={p}><Actions p={p} metadata={metadata} /></Heading>
+      {(rows.length > 0 || str(p.note)) && (
+        <div data-part="side" data-card={variant === 'card' ? '' : undefined}>
+          {rows.length > 0 && (
+            <ul data-part="list">
+              {rows.map((r, i) => {
+                const to = str(r.href) ? hrefOf(str(r.href), metadata) : null
+                return (
+                  <li key={i} data-part="item">
+                    <span data-part="meta">{str(r.label)}</span>
+                    <span data-part="value">{to ? <a href={to} {...rel(to)}>{str(r.value)}</a> : str(r.value)}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+          {str(p.note) && <p data-part="note">{str(p.note)}</p>}
+        </div>
+      )}
+    </Frame>
+  )
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────────────────────
+
+function StatsBlock({ p }: Ctx) {
+  const variant = roleVariant('stats', p.variant)
+  const items = arr(p.items).filter((s) => str(s.value) && str(s.label)).slice(0, 6)
+  return (
+    <Frame role="stats" p={p} variant={variant}>
+      <Heading p={p} />
+      <ul data-part="list">
+        {items.map((s, i) => (
+          <li key={i} data-part="item" data-card={variant === 'cards' ? '' : undefined}>
+            <b data-part="value">{str(s.value)}</b>
+            <span data-part="label">{str(s.label)}</span>
+            {str(s.note) && <span data-part="meta">{str(s.note)}</span>}
+          </li>
+        ))}
+      </ul>
+    </Frame>
+  )
+}
+
+// ── Shop ───────────────────────────────────────────────────────────────────────────────────
+
+function ShopBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('shop', p.variant)
+  const items = arr(p.items).filter((s) => str(s.name))
+  return (
+    <Frame role="shop" p={p} variant={variant}>
+      <Heading p={p}>{ctaOf(p, metadata)}</Heading>
+      <ul data-part="list">
+        {items.map((s, i) => (
+          <li key={i} data-part="item" data-card={variant === 'list' ? undefined : ''}>
+            <Media src={img(s.image)} />
+            <div data-part="text">
+              {str(s.badge) && <span data-part="badge">{str(s.badge)}</span>}
+              <Name text={str(s.name)} href={str(s.href)} metadata={metadata} />
+            </div>
+            {str(s.price) && <span data-part="price">{str(s.price)}</span>}
+          </li>
+        ))}
+      </ul>
+    </Frame>
+  )
+}
+
+// ── Library ────────────────────────────────────────────────────────────────────────────────
+
+function LibraryBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('library', p.variant)
+  const items = arr(p.items).filter((s) => str(s.title))
+  return (
+    <Frame role="library" p={p} variant={variant}>
+      <Heading p={p}>{ctaOf(p, metadata)}</Heading>
+      <ul data-part="list">
+        {items.map((s, i) => (
+          <li key={i} data-part="item" data-card={variant === 'list' ? undefined : ''}>
+            <Media src={img(s.image)} />
+            <div data-part="text">
+              {str(s.kind) && <span data-part="kind">{str(s.kind)}</span>}
+              <Name text={str(s.title)} href={str(s.href)} metadata={metadata} />
+              {str(s.meta) && <p data-part="meta">{str(s.meta)}</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Frame>
+  )
+}
+
+// ── People ─────────────────────────────────────────────────────────────────────────────────
+
+function PeopleBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('people', p.variant)
+  const all = arr(p.items).filter((s) => str(s.name))
+  const items = variant === 'founder' ? all.slice(0, 1) : all
+  return (
+    <Frame role="people" p={p} variant={variant}>
+      <Heading p={p} />
+      <ul data-part="list">
+        {items.map((s, i) => (
+          <li key={i} data-part="item" data-card={variant === 'grid' ? '' : undefined}>
+            <Media src={img(s.photo)} alt={str(s.name)} />
+            <div data-part="text">
+              <Name text={str(s.name)} href={str(s.href)} metadata={metadata} />
+              {str(s.role) && <p data-part="role">{str(s.role)}</p>}
+              {str(s.bio) && <p data-part="body">{str(s.bio)}</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Frame>
+  )
+}
+
+// ── Gallery ────────────────────────────────────────────────────────────────────────────────
+
+function GalleryBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('gallery', p.variant)
+  const items = arr(p.items).filter((s) => img(s.image) || str(s.caption))
+  return (
+    <Frame role="gallery" p={p} variant={variant}>
+      <Heading p={p}>{ctaOf(p, metadata)}</Heading>
+      <ul data-part="list">
+        {items.map((s, i) => (
+          <li key={i} data-part="item">
+            {img(s.image) ? <Media src={img(s.image)} alt={str(s.alt) || str(s.caption)} /> : <figure data-part="media" />}
+            {str(s.caption) && <p data-part="caption">{str(s.caption)}</p>}
+          </li>
+        ))}
+      </ul>
+    </Frame>
+  )
+}
+
+// ── Chapters ───────────────────────────────────────────────────────────────────────────────
+
+function ChaptersBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('chapters', p.variant)
+  const items = arr(p.items).filter((s) => str(s.name))
+  return (
+    <Frame role="chapters" p={p} variant={variant}>
+      <Heading p={p}>{ctaOf(p, metadata)}</Heading>
+      <ul data-part="list">
+        {items.map((s, i) => (
+          <li key={i} data-part="item" data-card={variant === 'grid' ? '' : undefined}>
+            <Media src={img(s.image)} />
+            <div data-part="text">
+              <Name text={str(s.name)} href={str(s.href)} metadata={metadata} />
+              {str(s.place) && <p data-part="meta">{str(s.place)}</p>}
+              {str(s.body) && <p data-part="body">{str(s.body)}</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Frame>
+  )
+}
+
 // ── Registration ───────────────────────────────────────────────────────────────────────────
 
 const text = (label: string, hint?: string) => ({ type: 'text', label, ...(hint ? { hint } : {}) }) as const
@@ -400,6 +613,48 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     primaryLabel: text('Main button'), primaryHref: text('Main button: where it goes', LINK_HINT),
     secondaryLabel: text('Second button'), secondaryHref: text('Second button: where it goes', LINK_HINT),
   }, CtaBlock),
+  [ROLES.statement.type]: role('statement', {
+    eyebrow: text('Small label'), title: area('Statement', VOICE_HINT), lead: area('Line under the statement'),
+    items: { type: 'array', label: 'Short phrases (line layout only)', arrayFields: { text: text('Phrase') } },
+    primaryLabel: text('Main button'), primaryHref: text('Main button: where it goes', LINK_HINT),
+    secondaryLabel: text('Second button'), secondaryHref: text('Second button: where it goes', LINK_HINT),
+  }, StatementBlock),
+  [ROLES.letter.type]: role('letter', {
+    eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading'),
+    primaryLabel: text('Button'), primaryHref: text('Button: where it goes', LINK_HINT),
+    note: text('Small print under the button'),
+  }, LetterBlock),
+  [ROLES.contact.type]: role('contact', {
+    ...head,
+    items: { type: 'array', label: 'Details', hint: 'An email address in a link goes through the site\'s own contact page when it has one.', arrayFields: { label: text('Label'), value: text('Detail'), href: text('Link', LINK_HINT) } },
+    primaryLabel: text('Main button'), primaryHref: text('Main button: where it goes', LINK_HINT),
+    secondaryLabel: text('Second button'), secondaryHref: text('Second button: where it goes', LINK_HINT),
+    note: text('Small print'),
+  }, ContactBlock),
+  [ROLES.stats.type]: role('stats', {
+    ...head,
+    items: { type: 'array', label: 'Figures', hint: 'Real numbers only.', arrayFields: { value: text('Number'), label: text('What it counts'), note: text('Small line') } },
+  }, StatsBlock),
+  [ROLES.shop.type]: role('shop', {
+    ...head, ...action,
+    items: { type: 'array', label: 'Products', arrayFields: { image, name: text('Name'), price: text('Price'), badge: text('Badge'), href: text('Link', LINK_HINT) } },
+  }, ShopBlock),
+  [ROLES.library.type]: role('library', {
+    ...head, ...action,
+    items: { type: 'array', label: 'Things to watch, read or do', arrayFields: { image, title: text('Name'), kind: text('Kind'), meta: text('Length or detail'), href: text('Link', LINK_HINT) } },
+  }, LibraryBlock),
+  [ROLES.people.type]: role('people', {
+    ...head,
+    items: { type: 'array', label: 'People', hint: 'The one-person layout shows the first.', arrayFields: { photo: { ...loomImageField, label: 'Photo' }, name: text('Name'), role: text('Role'), bio: area('A few words'), href: text('Link', LINK_HINT) } },
+  }, PeopleBlock),
+  [ROLES.gallery.type]: role('gallery', {
+    ...head, ...action,
+    items: { type: 'array', label: 'Photos', arrayFields: { image, alt: text('Photo description', 'For screen readers.'), caption: text('Caption') } },
+  }, GalleryBlock),
+  [ROLES.chapters.type]: role('chapters', {
+    ...head, ...action,
+    items: { type: 'array', label: 'Groups', arrayFields: { image, name: text('Name'), place: text('Place'), body: area('Line under the name'), href: text('Link', LINK_HINT) } },
+  }, ChaptersBlock),
 }
 
 export const ROLE_CATEGORY_COMPONENTS = Object.keys(rolesComponents)
