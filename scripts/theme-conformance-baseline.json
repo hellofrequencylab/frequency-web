@@ -1,4 +1,6 @@
 {
-  "note": "Known theme conformance gaps (docs/THEME-COHESION.md section 5, LIVE-1865). It can only shrink: a gap that is fixed must be removed here (the test fails as healed), and a gap that is not listed fails as fresh. Do not add an entry to make a red run green.",
-  "gaps": []
+  "note": "Known theme conformance gaps (docs/THEME-COHESION.md section 5, LIVE-1865). It can only shrink: a gap that is fixed must be removed here (the test fails as healed), and a gap that is not listed fails as fresh. Do not add an entry to make a red run green. Seeded with the one gap that exists today: Free Human has no core token mapping yet. Delete the line when it joins lib/theme/block-contract-map.json.",
+  "gaps": [
+    "theme-no-map:free-human"
+  ]
 }

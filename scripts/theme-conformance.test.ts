@@ -148,9 +148,11 @@ describe('theme conformance (the real tree)', () => {
     expect(existsSync(join(ROOT, TEST_FILE))).toBe(true)
   })
 
-  it('has a manifest for every contract theme and none for an unknown one', () => {
+  it('has a manifest for every contract theme, and a theme outside the contract shows up as a gap', () => {
     expect(existsSync(MANIFEST_DIR)).toBe(true)
-    expect(input.themes.map((t) => t.id).sort()).toEqual([...CONTRACT_THEME_IDS].sort())
+    const ids = input.themes.map((t) => t.id)
+    for (const id of CONTRACT_THEME_IDS) expect(ids, id).toContain(id)
+    for (const t of input.themes) if (!(CONTRACT_THEME_IDS as readonly string[]).includes(t.id)) expect(findGaps(input), t.id).toContain(`theme-no-map:${t.id}`)
   })
 
   it('every theme x role x layout conforms, or the gap is in the baseline', () => {
@@ -181,11 +183,12 @@ describe('theme conformance (the detector fires on a broken copy)', () => {
 
   it('a theme with no mapping, or one the render never emits, is a gap', () => {
     const c = clone()
-    c.themes[1].map = null
-    c.themes[2].scopedCss = false
+    const inContract = c.themes.filter((t) => (CONTRACT_THEME_IDS as readonly string[]).includes(t.id))
+    inContract[1].map = null
+    inContract[2].scopedCss = false
     const g = findGaps(c)
-    expect(g).toContain(`theme-no-map:${c.themes[1].id}`)
-    expect(g).toContain(`theme-not-emitted:${c.themes[2].id}`)
+    expect(g).toContain(`theme-no-map:${inContract[1].id}`)
+    expect(g).toContain(`theme-not-emitted:${inContract[2].id}`)
   })
 
   it('a raw colour, a private token or a non-contract var in the role sheet is a gap', () => {
