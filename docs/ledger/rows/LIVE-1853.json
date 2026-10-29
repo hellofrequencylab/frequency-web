@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
-    "file": "components/sites/network-css.ts",
+    "file": "components/sites/contract-skin-css.ts",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Generalise NETWORK_BLOCK_CSS. Foreign-theme coverage for every family at or above 0.9 in the audit (was 0.04 to 0.25). Published sites change only where a block was already unstyled; no styled block moves.",
+  "detail": "Generalise NETWORK_BLOCK_CSS. Foreign-theme coverage for every family at or above 0.9 in the audit (was 0.04 to 0.25). Published sites change only where a block was already unstyled; no styled block moves.\n\nShipped components/sites/contract-skin-css.ts: each theme-named family's block rules re-scoped to a data-skin-family wrapper the renderer sets, with its colors and faces read from the host theme. Sent by site-page.tsx for the families a page carries. Pinned in contract-skin-css.test.ts. Renders checked at 390 and 1280 on light and dark hosts.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/theme-cohesion.mjs fallback",
-    "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
+    "cmd": "node scripts/probes/theme-cohesion.mjs fallback"
   },
+  "closed": "2026-10-29",
   "wave": "W7"
 }

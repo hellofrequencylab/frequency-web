@@ -119,11 +119,21 @@ test.describe('signed-in journeys @journey @shell', () => {
     // kit page (Temple) carries the "Start with this kit" links into the Wizard.
     await go(page, '/themes')
     await settle(page)
-    expect(await page.locator('a[href^="/themes/"]').count(), '/themes lists no theme pages').toBeGreaterThan(0)
-    await go(page, '/themes/temple')
-    await settle(page)
+    const pages = [...new Set(await page.locator('a[href^="/themes/"]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? '')))]
+    expect(pages.length, '/themes lists no theme pages').toBeGreaterThan(0)
+    // Kits move between themes as they are rebuilt (Temple has none while its new kit is registered), so walk the
+    // listed pages and use the first one that offers a starter kit.
     const start = page.getByRole('link', { name: /Start with this kit/ }).first()
-    await expect(start, 'no "Start with this kit" link on the theme page').toBeVisible()
+    let found = false
+    for (const path of pages) {
+      await go(page, path)
+      await settle(page)
+      if (await start.isVisible()) {
+        found = true
+        break
+      }
+    }
+    expect(found, `none of ${pages.join(', ')} offers a "Start with this kit" link`).toBe(true)
     const href = await start.getAttribute('href')
     expect(href).toMatch(/^\/spaces\/new\?theme=[a-z0-9-]+&niche=/)
     await start.click()
@@ -292,15 +302,19 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     test.skip(!circleSlug, 'PW_CIRCLE_SLUG not set: no seeded Circle to join')
     await page.goto(`/circles/${circleSlug}`)
     await settle(page)
-    await page.getByRole('button', { name: /^join/i }).first().click()
     // A member's header holds Create and, behind "Circle options", Leave; the Join door is gone.
-    // The join redirects back to this page, so give it a moment, then reload to read what the
-    // server stored rather than a router-cached view, and say what the page shows if it never comes.
+    // The dev server hydrates late, and a Join clicked before the form is hydrated is a plain form
+    // submit that joins no one (run 17: the page still read "0 members" after a reload). So click,
+    // wait for the member menu, and if it never comes reload and click again, up to three times.
     const options = page.getByRole('button', { name: 'Circle options' })
-    await options.waitFor({ timeout: 15_000 }).catch(() => undefined)
-    if (!(await options.isVisible())) {
-      await page.reload()
-      await settle(page)
+    for (let attempt = 0; attempt < 3 && !(await options.isVisible()); attempt++) {
+      if (attempt > 0) {
+        await page.reload()
+        await settle(page)
+        if (await options.isVisible()) break
+      }
+      await page.getByRole('button', { name: 'Join', exact: true }).click()
+      await options.waitFor({ timeout: 25_000 }).catch(() => undefined)
     }
     if (!(await options.isVisible())) {
       const buttons = await page.getByRole('button').allInnerTexts()
@@ -309,7 +323,7 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
         `Joined ${circleSlug} but "Circle options" never showed. At ${page.url()}. Buttons: ${buttons.map((b) => b.trim()).filter(Boolean).join(' | ')}. Page said: ${said}`,
       )
     }
-    await expect(page.getByRole('button', { name: /^join/i })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Join', exact: true })).toHaveCount(0)
     assertNoServerErrors(serverErrors, 'join circle')
   })
 

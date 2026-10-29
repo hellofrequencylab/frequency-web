@@ -15,10 +15,12 @@ import { recordSpaceCtaClickAction } from '@/lib/spaces/analytics-actions'
 
 export function EntityCtaLink({
   spaceId,
+  clickToken,
   href,
   label,
 }: {
   spaceId: string
+  clickToken: string | null
   href: string
   label: string
 }) {
@@ -28,7 +30,7 @@ export function EntityCtaLink({
       className={buttonClasses('primary', 'sm', 'w-full justify-center')}
       onClick={() => {
         // Fire-and-forget: kick the recorder off and keep navigating. The action is itself fail-safe.
-        void recordSpaceCtaClickAction(spaceId)
+        if (clickToken) void recordSpaceCtaClickAction(spaceId, clickToken)
       }}
     >
       {label}

@@ -89,13 +89,12 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
   },
   {
     // The Temple Theme Kit, shown as Temple (code id `temple-kit`). The earlier `temple` theme is Royal Temple's: it stays
-    // resolvable by id and is offered nowhere. Spotlight and email read 'soon' until their parts of the build ship, so no
-    // public page claims them early.
+    // resolvable by id and is offered nowhere. Spotlight and email are both shipped.
     id: 'temple-kit',
     tagline: 'A lime-washed house. Warm and unhurried.',
     madeFor: 'temples, studios, retreats, clubs, markets and anyone who brings people together',
     signature: 'Plaster and umber, one clay color, arches and soft corners, with Marcellus, Jost, Branch and Cormorant.',
-    surfaces: surfaces('soon', 'soon'),
+    surfaces: surfaces('ready', 'ready'),
   },
   {
     id: 'midnight',
@@ -109,7 +108,7 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
     tagline: 'Limewash and daylight, with one ochre accent.',
     madeFor: 'designers, builders, makers and anyone selling craft',
     signature: 'Plaster grounds, charcoal type, arched photos, with Cormorant and Jost.',
-    surfaces: surfaces('ready', 'soon'),
+    surfaces: surfaces('ready', 'ready'),
   },
 ]
 

@@ -1,5 +1,5 @@
 {
- "ledger": "LIVE-1683",
+ "ledger": "LIVE-1644",
  "ids": [
   "copy:Spotlight Layouts.html#076044cf",
   "copy:Theme Feature Page.html#022f23d7",
@@ -69,9 +69,7 @@
   "copy:ui_kits/products/ios-frame.jsx#d193d16a",
   "copy:ui_kits/products/ios-frame.jsx#e51e79ca",
   "copy:ui_kits/products/shared.jsx#5185b94e",
-  "copy:ui_kits/products/shared.jsx#764a5249",
   "copy:ui_kits/products/shared.jsx#8b7e6a78",
-  "copy:ui_kits/products/shared.jsx#9aa9f814",
   "copy:ui_kits/products/shared.jsx#c48b5d56",
   "copy:ui_kits/products/shared.jsx#cf813cf0",
   "copy:ui_kits/site/AboutPage.jsx#579c576b",
@@ -145,10 +143,7 @@
   "copy:ui_kits/site/JourneysPage.jsx#f7cae4c4",
   "copy:ui_kits/site/JourneysPage.jsx#f8473634",
   "copy:ui_kits/site/ResourcesPage.jsx#194b41ce",
-  "copy:ui_kits/site/ResourcesPage.jsx#3c2afca3",
-  "copy:ui_kits/site/ResourcesPage.jsx#600a3bac",
   "copy:ui_kits/site/ResourcesPage.jsx#b622cb78",
-  "copy:ui_kits/site/ResourcesPage.jsx#f6503931",
   "copy:ui_kits/site/Sections.jsx#81257b54",
   "copy:ui_kits/site/ServicesPage.jsx#4d85e203",
   "copy:ui_kits/site/ServicesPage.jsx#7096d833",

@@ -20,7 +20,7 @@ import { recordSpaceCtaClickAction } from '@/lib/spaces/analytics-actions'
 // HONESTY (CONTENT-VOICE skeptic test): the button says "Reserve a spot" (not "Buy" / "Pay"); v1 takes
 // no charge. No narrated feelings, no em/en dashes (CONTENT-VOICE §10).
 
-export function TicketReserveButton({ spaceId, tierId }: { spaceId: string; tierId: string }) {
+export function TicketReserveButton({ spaceId, tierId, clickToken }: { spaceId: string; tierId: string; clickToken: string | null }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -29,7 +29,7 @@ export function TicketReserveButton({ spaceId, tierId }: { spaceId: string; tier
     if (!tierId) return
     setError(null)
     // Fire-and-forget CTA telemetry (Epic 1.11): never awaited, never blocks the RSVP.
-    void recordSpaceCtaClickAction(spaceId)
+    if (clickToken) void recordSpaceCtaClickAction(spaceId, clickToken)
     start(async () => {
       const result = await rsvpToTier(spaceId, tierId)
       if (isError(result)) {

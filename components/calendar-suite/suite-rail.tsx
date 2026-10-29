@@ -13,6 +13,7 @@ import { SUITE_LAYERS, layerCounts } from '@/lib/calendar/planner/suite-model'
 import { teamLoad } from '@/lib/calendar/planner/team-load'
 import type { PlanStage, PlannerData, PlannerLayer } from '@/lib/calendar/planner/types'
 import type { SuiteContext, SuiteSelection, SuiteTeamMember } from './suite-types'
+import type { SuiteDnd } from './use-suite-dnd'
 
 // THE RAIL (README 1.1, layout 1a Sidebar): the Space, the one big call to action, a mini month, the
 // six Show tiles with what each holds this month, the Plans, the team's load this week, and the inbox
@@ -105,6 +106,7 @@ export function SuiteRail({
   sel,
   feed,
   upcomingCount,
+  dnd,
   onToggleLayer,
   onPickDay,
   onSelect,
@@ -121,6 +123,7 @@ export function SuiteRail({
   feed: { httpsUrl: string; webcalUrl: string }
   /** Upcoming gatherings (a series counts once), counted by the page. */
   upcomingCount: number
+  dnd: SuiteDnd
   onToggleLayer: (layer: PlannerLayer) => void
   onPickDay: (day: string) => void
   onSelect: (sel: SuiteSelection) => void
@@ -268,6 +271,7 @@ export function SuiteRail({
                   className="cal-inchip"
                   data-selected={(sel?.kind === 'todo' && sel.id === t.id) || undefined}
                   onClick={() => onSelect({ kind: 'todo', id: t.id })}
+                  {...dnd.dragProps('todo', t.id)}
                 >
                   <FqIcon name="sun" size={14} />
                   <span className="cal-inchip-t">{t.title}</span>

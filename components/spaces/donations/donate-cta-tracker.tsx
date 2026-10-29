@@ -16,13 +16,13 @@ import { recordSpaceCtaClickAction } from '@/lib/spaces/analytics-actions'
 // inside it (a chip, the custom amount field), the same "on the member's primary interaction" rule
 // the enroll / reserve buttons follow. Still fire-and-forget, still once per surface.
 
-export function DonateCtaTracker({ spaceId, children }: { spaceId: string; children: ReactNode }) {
+export function DonateCtaTracker({ spaceId, clickToken, children }: { spaceId: string; clickToken: string | null; children: ReactNode }) {
   const fired = useRef(false)
   function handleClickCapture() {
     if (fired.current) return
     fired.current = true
     // Fire-and-forget: kick the recorder off without awaiting. The recorder is itself fail-safe.
-    void recordSpaceCtaClickAction(spaceId)
+    if (clickToken) void recordSpaceCtaClickAction(spaceId, clickToken)
   }
   // A capture-phase listener on a plain wrapper: the picker's own controls keep their handlers and
   // focus behaviour; this only observes the first click that lands anywhere inside.

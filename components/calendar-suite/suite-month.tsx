@@ -11,6 +11,7 @@ import { monthName, monthSky, monthWeeks, monthsBetween, shiftMonth, skyOnDay } 
 import type { PlannerData } from '@/lib/calendar/planner/types'
 import { SuiteChip } from './suite-chip'
 import type { SuiteContext, SuiteSelection } from './suite-types'
+import type { SuiteDnd } from './use-suite-dnd'
 
 // THE MONTH (README 1.3): an infinite scroll of month blocks. Nine months to start, six more whenever
 // the reader comes within 900px of either end, and the scroll position holds when months are added
@@ -43,6 +44,7 @@ interface BlockProps {
   selectedKey: string
   notes: readonly DayNote[]
   sky: readonly AstroMarker[]
+  dnd: SuiteDnd
   onSelect: (ref: ChipModel['ref']) => void
   onMore: (day: string) => void
 }
@@ -58,7 +60,7 @@ function SkyMark({ icon, house, label }: { icon: 'moon' | 'sun' | 'sign'; house:
   )
 }
 
-const MonthBlock = memo(function MonthBlock({ ym, data, ctx, selectedKey, notes, sky, onSelect, onMore }: BlockProps) {
+const MonthBlock = memo(function MonthBlock({ ym, data, ctx, selectedKey, notes, sky, dnd, onSelect, onMore }: BlockProps) {
   const weeks = useMemo(() => monthWeeks(ym), [ym])
   const info = useMemo(() => monthSky(ym, sky), [ym, sky])
   const year = ym.slice(0, 4)
@@ -104,7 +106,13 @@ const MonthBlock = memo(function MonthBlock({ ym, data, ctx, selectedKey, notes,
             const mark = skyOnDay(day, sky)
             const note = notesForDay(notes, day)[0]
             return (
-              <div className="cal-day" key={day} data-today={day === ctx.today || undefined} data-past={day < ctx.today || undefined}>
+              <div
+                className="cal-day"
+                key={day}
+                data-today={day === ctx.today || undefined}
+                data-past={day < ctx.today || undefined}
+                {...dnd.targetProps(() => ({ zone: 'day', day }))}
+              >
                 <div className="cal-day-top">
                   <span className="cal-num" aria-label={day}>
                     {Number(day.slice(8, 10))}
@@ -119,6 +127,7 @@ const MonthBlock = memo(function MonthBlock({ ym, data, ctx, selectedKey, notes,
                     partner={partner}
                     selected={selectedKey === `${model.ref.kind}:${model.ref.id}`}
                     onSelect={onSelect}
+                    dragProps={dnd.dragProps(model.ref.kind, model.ref.id)}
                   />
                 ))}
                 {more > 0 ? (
@@ -150,6 +159,7 @@ export function SuiteMonth({
   minYm,
   maxYm,
   request,
+  dnd,
   onActiveMonth,
   onSelect,
   onMore,
@@ -165,6 +175,7 @@ export function SuiteMonth({
   minYm: string
   maxYm: string
   request: MonthScrollRequest | null
+  dnd: SuiteDnd
   onActiveMonth: (ym: string) => void
   onSelect: (ref: ChipModel['ref']) => void
   onMore: (day: string) => void
@@ -287,6 +298,7 @@ export function SuiteMonth({
             selectedKey={selectedKey}
             notes={notes}
             sky={sky}
+            dnd={dnd}
             onSelect={onSelect}
             onMore={onMore}
           />

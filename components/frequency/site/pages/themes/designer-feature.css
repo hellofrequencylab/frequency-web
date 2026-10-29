@@ -12,7 +12,7 @@
 .df-st.ready{color:var(--fq-text-strong)}
 
 /* Hero: title and subtitle top left, copy and buttons under, the preview on the right, a lead-in below. */
-.df-hero.phero{min-height:100svh;display:flex;align-items:center}
+.df-hero.phero{min-height:calc(100svh - 84px)}
 .df-wrap{position:relative;z-index:2;width:100%;max-width:1200px;margin:0 auto;box-sizing:border-box;padding:clamp(96px,12vh,128px) clamp(18px,4vw,40px) clamp(20px,4vh,40px)}
 .df-hero .crumbs{margin-bottom:clamp(14px,3vh,28px)}
 .df-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:var(--df-gap);align-items:center}
@@ -27,7 +27,7 @@
 .df-more svg{animation:df-bob 1.8s ease-in-out infinite}
 @keyframes df-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
 @media (prefers-reduced-motion:reduce){.df-more svg{animation:none}}
-@media (max-width:900px){.df-hero.phero{min-height:0;display:block}.df-split{grid-template-columns:1fr}}
+@media (max-width:900px){.df-hero.phero{min-height:0}.df-split{grid-template-columns:1fr}}
 
 /* Preview stage: surface chips, the framed picture, a one-line note, the profile picker. */
 .df-pv{display:flex;flex-direction:column;gap:14px;min-width:0;width:100%}
@@ -144,3 +144,39 @@
 .df-faq details[open] summary::after{content:"\2013"}
 .df-faq details[open]{box-shadow:inset 0 0 0 1.5px var(--fq-x-sun-neon)}
 .df-faq p{margin:0;padding:0 22px 22px;font-size:16px;line-height:1.55;color:var(--fq-text-body);max-width:68ch}
+
+/* The qualifier on a surface chip is a small tucked label, never the name. */
+.df-chips .df-q{margin:0;vertical-align:baseline;font-size:10px;letter-spacing:.1em}
+.df-chips button[aria-pressed="true"] .df-q{color:inherit;opacity:.7}
+
+/* What carries over, on a phone: the four surface names have to fit their columns. */
+@media (max-width:560px){.df-cmp{grid-template-columns:minmax(0,1.15fr) repeat(4,minmax(0,1fr))}.df-cmp>.hd{padding:12px 2px;justify-content:center;font-size:9px;letter-spacing:.02em}.df-cmp>.hd:first-child{padding:0}.df-cmp-row>div{padding:12px 6px}.df-cmp-row>.y,.df-cmp-row>.p{justify-content:center}}
+
+/* The Nocturne hero: the theme's name large, a small descriptor, then the tagline; the four surfaces follow, joined by a dotted line. */
+.df-name{font-size:clamp(44px,17cqw,112px);line-height:.92;letter-spacing:-.06em}
+.df-aft{margin:-4px 0 0;font:600 clamp(15px,1.6vw,20px)/1.2 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+.df-tagline{margin:6px 0 0;font:700 clamp(22px,2.4vw,36px)/1.08 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
+.df-tagline em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}
+.df-cascade{display:flex;flex-direction:column;margin-top:clamp(56px,7vw,110px)}
+.df-thread{display:block;width:100%;height:clamp(90px,10vw,150px);overflow:visible}
+.df-thread path{fill:none;stroke:var(--c);stroke-width:2;stroke-dasharray:2 7;stroke-linecap:round;opacity:.8;filter:drop-shadow(0 0 6px var(--c))}
+.df-cz{scroll-margin-top:96px}
+.df-cz-dev{flex-direction:column;align-items:center;gap:14px}
+.df-dvlab{display:inline-flex;align-items:center;height:30px;padding:0 14px;border-radius:999px;background:var(--fq-surface-glass);box-shadow:inset 0 0 0 1px var(--df-hair);font:600 13px/1 var(--fq-font-display);letter-spacing:.08em;text-transform:uppercase;color:var(--fq-text-strong)}
+@media (max-width:900px){.df-thread{display:none}.df-cascade{gap:64px}}
+
+/* Inside the kit, the thirteen kits, built right and setup. */
+.df-grp{margin:clamp(28px,3.4vw,44px) 0 14px;font:600 13px/1.3 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+.df-kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:var(--df-gap-y);margin-top:clamp(24px,3vw,36px)}
+.df-kit{display:flex;flex-direction:column;min-width:0;border-radius:18px;overflow:hidden;background:var(--df-card);box-shadow:inset 0 0 0 1px var(--df-hair);color:inherit;text-decoration:none}
+.df-kit:hover{box-shadow:inset 0 0 0 1px var(--c)}
+.df-kit img{display:block;width:100%;height:auto}
+.df-kit span{display:flex;flex-direction:column;gap:4px;padding:14px 16px 16px}
+.df-kit i{width:10px;height:10px;border-radius:999px;background:var(--c)}
+.df-kit b{font:600 17px/1.2 var(--fq-font-display);letter-spacing:-.02em;color:var(--fq-text-strong)}
+.df-kit small{font-size:14px;line-height:1.45;color:var(--fq-text-muted)}
+.df-setup{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:var(--df-gap-y);margin-top:clamp(24px,3vw,36px)}
+.df-setup>div{display:flex;flex-direction:column;gap:8px;padding:20px;border-radius:18px;background:var(--df-card);box-shadow:inset 0 0 0 1px var(--df-hair)}
+.df-setup .n{font:600 13px/1 var(--fq-font-display);letter-spacing:.1em;color:var(--fq-x-sun-neon)}
+.df-setup b{font:600 19px/1.2 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+.df-setup span:last-child{font-size:15.5px;line-height:1.5;color:var(--fq-text-body)}
