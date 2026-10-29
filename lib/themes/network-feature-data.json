@@ -1,115 +1,32 @@
 {
  "eyebrow": "Spotlight layouts · Networking group · Network",
  "kits": [
-  {
-   "id": "general",
-   "name": "Networking group",
-   "hex": "#E9B949",
-   "who": "A local group that meets, with a way to show up the first time."
-  },
-  {
-   "id": "networks",
-   "name": "Multi-chapter networks",
-   "hex": "#E9B949",
-   "who": "Many chapters under one name: find a chapter, start one, and see what is happening everywhere."
-  },
-  {
-   "id": "clubs",
-   "name": "Professional associations",
-   "hex": "#E9B949",
-   "who": "Trade and professional associations: meetings, the member directory, dues and how to join."
-  },
-  {
-   "id": "markets",
-   "name": "Local business alliances",
-   "hex": "#E9B949",
-   "who": "Shop-local alliances and business districts: member businesses, perks, the next market day and how to join as a business."
-  },
-  {
-   "id": "hosts",
-   "name": "Mixers and socials",
-   "hex": "#EE7655",
-   "who": "Evening mixers and social nights for professionals: what is on, who comes, and a list to hear about the next one."
-  },
-  {
-   "id": "creators",
-   "name": "Creative collectives",
-   "hex": "#EE7655",
-   "who": "Collectives of artists, makers and freelancers: the members' work, the shows and studio nights, and a way to join."
-  },
-  {
-   "id": "wellness",
-   "name": "Summits and retreats",
-   "hex": "#EE7655",
-   "who": "Summits, retreats and member trips: dates, tickets, the agenda and a simple way to reserve."
-  },
-  {
-   "id": "studios",
-   "name": "Coworking communities",
-   "hex": "#1F6FA8",
-   "who": "Shared workspaces where the community matters as much as the desk: passes, member events and who is in this week."
-  },
-  {
-   "id": "nonprofits",
-   "name": "Community coalitions",
-   "hex": "#1F6FA8",
-   "who": "Coalitions and civic groups that bring organizations together: the work, the meetings and how to take part."
-  },
-  {
-   "id": "schools",
-   "name": "Programs and accelerators",
-   "hex": "#1F6FA8",
-   "who": "Programs, accelerators and host training: what you teach, when the next group starts and how to apply."
-  },
-  {
-   "id": "coaches",
-   "name": "Mentorship circles",
-   "hex": "#22796E",
-   "who": "Mentor-led circles and one-to-one sessions that pair experienced members with people a few steps behind."
-  },
-  {
-   "id": "venues",
-   "name": "Clubhouses and hubs",
-   "hex": "#22796E",
-   "who": "A members' clubhouse or community hub: the space, the calendar, and how to host your own event there."
-  },
-  {
-   "id": "faith",
-   "name": "Peer advisory boards",
-   "hex": "#22796E",
-   "who": "Small, confidential peer boards of owners and leaders who meet to work on real decisions."
-  }
+  {"id": "general", "name": "Networking group", "hex": "#E9B949", "who": "A local group that meets, with a way to show up the first time.", "mail": "marigold", "tools": ["publish", "gather", "belong", "sell"], "blocks": ["hero", "stats", "venue", "featured", "calendar", "steps", "chapters", "circles", "note", "pillars", "membership", "rooms", "podcast", "social", "merch", "contact"], "blockLayouts": {"steps": "grid", "gatherings": "split", "doors": "grid", "proof": "stats", "faq": "split", "letter": "band", "cta": "center"}, "fonts": {"display": "Bricolage Grotesque", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "airy", "header": "bar", "footer": "full"}, "hero": {"title": "Your people are", "em": "already here."}},
+  {"id": "coaches", "name": "Mentorship circles", "hex": "#22796E", "who": "Mentor-led circles and one-to-one sessions that pair experienced members with people a few steps behind.", "mail": "lagoon", "tools": ["publish", "book", "gather"], "blocks": ["hero", "steps", "offerings", "proof", "gatherings", "faq", "letter", "cta"], "blockLayouts": {"steps": "timeline", "offerings": "split", "gatherings": "split", "proof": "quote", "faq": "stack", "letter": "card", "cta": "split"}, "fonts": {"display": "Literata", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "airy", "header": "bar", "footer": "full"}, "hero": {"title": "Someone has done this", "em": "before you."}},
+  {"id": "studios", "name": "Coworking communities", "hex": "#1F6FA8", "who": "Shared workspaces where the community matters as much as the desk: passes, member events and who is in this week.", "mail": "ocean", "tools": ["publish", "gather", "belong", "book"], "blocks": ["hero", "live", "gatherings", "steps", "membership", "proof", "faq", "cta"], "blockLayouts": {"gatherings": "calendar", "steps": "strip", "membership": "table", "proof": "wall", "faq": "split", "cta": "center"}, "fonts": {"display": "Space Grotesk", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "balanced", "header": "pill", "footer": "full"}, "hero": {"title": "A desk is easy to find.", "em": "Good company is not."}},
+  {"id": "hosts", "name": "Mixers and socials", "hex": "#EE7655", "who": "Evening mixers and social nights for professionals: what is on, who comes, and a list to hear about the next one.", "mail": "coral", "tools": ["publish", "gather"], "blocks": ["hero", "gatherings", "steps", "proof", "letter", "faq", "cta"], "blockLayouts": {"gatherings": "cards", "steps": "strip", "proof": "wall", "letter": "band", "faq": "stack", "cta": "band"}, "fonts": {"display": "Syne", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "airy", "header": "bar", "footer": "full"}, "hero": {"title": "Networking,", "em": "minus the awkward."}},
+  {"id": "venues", "name": "Clubhouses and hubs", "hex": "#22796E", "who": "A members' clubhouse or community hub: the space, the calendar, and how to host your own event there.", "mail": "lagoon", "tools": ["publish", "gather", "book"], "blocks": ["hero", "live", "offerings", "steps", "gatherings", "faq", "cta"], "blockLayouts": {"offerings": "cards", "steps": "timeline", "gatherings": "calendar", "faq": "split", "cta": "split"}, "fonts": {"display": "Young Serif", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "balanced", "header": "bar", "footer": "minimal"}, "hero": {"title": "A home base", "em": "for your people."}},
+  {"id": "nonprofits", "name": "Community coalitions", "hex": "#1F6FA8", "who": "Coalitions and civic groups that bring organizations together: the work, the meetings and how to take part.", "mail": "ocean", "tools": ["publish", "gather", "belong"], "blocks": ["hero", "doors", "steps", "gatherings", "proof", "membership", "letter", "cta"], "blockLayouts": {"doors": "list", "steps": "strip", "gatherings": "calendar", "proof": "stats", "membership": "spotlight", "letter": "card", "cta": "center"}, "fonts": {"display": "Archivo", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "balanced", "header": "bar", "footer": "full"}, "hero": {"title": "Many organizations.", "em": "One table."}},
+  {"id": "networks", "name": "Multi-chapter networks", "hex": "#E9B949", "who": "Many chapters under one name: find a chapter, start one, and see what is happening everywhere.", "mail": "marigold", "tools": ["publish", "gather", "belong"], "blocks": ["hero", "doors", "gatherings", "proof", "membership", "steps", "faq", "cta"], "blockLayouts": {"doors": "tiles", "gatherings": "calendar", "membership": "table", "steps": "strip", "faq": "stack", "cta": "band"}, "fonts": {"display": "Manrope", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "balanced", "header": "bar", "footer": "full"}, "hero": {"title": "Find your chapter.", "em": "Meet your people."}},
+  {"id": "creators", "name": "Creative collectives", "hex": "#EE7655", "who": "Collectives of artists, makers and freelancers: the members' work, the shows and studio nights, and a way to join.", "mail": "coral", "tools": ["publish", "sell", "gather", "belong"], "blocks": ["hero", "gatherings", "shop", "steps", "membership", "proof", "letter", "cta"], "blockLayouts": {"shop": "rail", "gatherings": "cards", "steps": "timeline", "membership": "spotlight", "proof": "quote", "letter": "card", "cta": "split"}, "fonts": {"display": "Unbounded", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "compact", "header": "bar", "footer": "minimal"}, "hero": {"title": "Making things is lonely.", "em": "It does not have to be."}},
+  {"id": "schools", "name": "Programs and accelerators", "hex": "#1F6FA8", "who": "Programs, accelerators and host training: what you teach, when the next group starts and how to apply.", "mail": "ocean", "tools": ["publish", "learn", "gather"], "blocks": ["hero", "live", "journeys", "steps", "gatherings", "proof", "faq", "cta"], "blockLayouts": {"journeys": "feature", "steps": "timeline", "gatherings": "calendar", "proof": "stats", "faq": "split", "cta": "center"}, "fonts": {"display": "Plus Jakarta Sans", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "airy", "header": "bar", "footer": "full"}, "hero": {"title": "Business is better", "em": "with a group."}},
+  {"id": "clubs", "name": "Professional associations", "hex": "#E9B949", "who": "Trade and professional associations: meetings, the member directory, dues and how to join.", "mail": "marigold", "tools": ["publish", "gather", "belong"], "blocks": ["hero", "live", "gatherings", "steps", "membership", "faq", "cta"], "blockLayouts": {"gatherings": "calendar", "steps": "strip", "membership": "table", "faq": "stack", "cta": "split"}, "fonts": {"display": "Spectral", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "compact", "header": "pill", "footer": "full"}, "hero": {"title": "Your industry,", "em": "in one room."}},
+  {"id": "faith", "name": "Peer advisory boards", "hex": "#22796E", "who": "Small, confidential peer boards of owners and leaders who meet to work on real decisions.", "mail": "lagoon", "tools": ["publish", "gather", "belong"], "blocks": ["hero", "steps", "gatherings", "library", "membership", "faq", "cta"], "blockLayouts": {"steps": "timeline", "gatherings": "calendar", "library": "list", "membership": "tiers", "faq": "split", "cta": "center"}, "fonts": {"display": "Cormorant Garamond", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "airy", "header": "bar", "footer": "full"}, "hero": {"title": "Hard decisions", "em": "need good company."}},
+  {"id": "wellness", "name": "Summits and retreats", "hex": "#EE7655", "who": "Summits, retreats and member trips: dates, tickets, the agenda and a simple way to reserve.", "mail": "coral", "tools": ["publish", "book", "gather", "sell"], "blocks": ["hero", "gatherings", "offerings", "steps", "proof", "shop", "faq", "cta"], "blockLayouts": {"offerings": "cards", "steps": "strip", "gatherings": "cards", "proof": "stats", "shop": "grid", "faq": "split", "cta": "band"}, "fonts": {"display": "Outfit", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "airy", "header": "pill", "footer": "full"}, "hero": {"title": "One weekend.", "em": "Everyone you know."}},
+  {"id": "markets", "name": "Local business alliances", "hex": "#E9B949", "who": "Shop-local alliances and business districts: member businesses, perks, the next market day and how to join as a business.", "mail": "marigold", "tools": ["publish", "gather", "sell", "belong"], "blocks": ["hero", "live", "gatherings", "steps", "shop", "membership", "faq", "letter", "cta"], "blockLayouts": {"gatherings": "calendar", "steps": "strip", "shop": "rail", "faq": "stack", "letter": "band", "cta": "split"}, "fonts": {"display": "Familjen Grotesk", "label": "Outfit"}, "look": {"corners": "soft", "spacing": "balanced", "header": "bar", "footer": "full"}, "hero": {"title": "Local businesses do better", "em": "together."}}
  ],
  "layouts": [
-  {
-   "id": "stack",
-   "name": "Stack",
-   "sub": "Every way in, stacked"
-  },
-  {
-   "id": "card-wall",
-   "name": "Card wall",
-   "sub": "Two columns of square cards"
-  },
-  {
-   "id": "story",
-   "name": "Story",
-   "sub": "One photo, a few lines, one button"
-  },
-  {
-   "id": "calendar-first",
-   "name": "Calendar first",
-   "sub": "Dates lead, booking follows"
-  },
-  {
-   "id": "shop-front",
-   "name": "Shop front",
-   "sub": "Sessions as products"
-  },
-  {
-   "id": "profile",
-   "name": "Profile",
-   "sub": "Who you are, then one thing to do"
-  }
+  {"id": "stack", "name": "Stack", "sub": "Every way in, stacked"},
+  {"id": "card-wall", "name": "Card wall", "sub": "Two columns of square cards"},
+  {"id": "story", "name": "Story", "sub": "One photo, a few lines, one button"},
+  {"id": "calendar-first", "name": "Calendar first", "sub": "Dates lead, booking follows"},
+  {"id": "shop-front", "name": "Shop front", "sub": "Sessions as products"},
+  {"id": "profile", "name": "Profile", "sub": "Who you are, then one thing to do"}
+ ],
+ "accents": [
+  {"id": "marigold", "hex": "#E9B949"},
+  {"id": "coral", "hex": "#EE7655"},
+  {"id": "ocean", "hex": "#1F6FA8"},
+  {"id": "lagoon", "hex": "#22796E"}
  ]
 }

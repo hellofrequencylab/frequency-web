@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1790",
+  "title": "Rebuild /themes/network to match the Network design page section for section",
+  "lane": "live",
+  "priority": "P2",
+  "size": "L",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-network.tsx",
+    "ref": "Daniel, 2026-10-29: the merged page had nine sections of its own; it must match the Theme Feature Page of the Network design system in order and shape"
+  },
+  "detail": "The page now runs 01 Hero (the four surfaces flow down the hero), 03 Today, 04 Theme preview, 05 Inside the kit, 06 Make it yours, 07 Thirteen kits, 08 What carries over, 09 Built right, 10 Questions, 11 Setup, 12 Start. Space and Email show real pictures (public/themes/network-kit/shots). The design page's live iframes, full-screen preview and draft builder are replaced by pictures, a picture preview and the Create a Space wizard. Side-by-side renders and the section diff are kept with the design handoff notes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/network-page-matches-design.mjs",
+    "note": "Fails on main (Four places, Spotlight layouts and Tools sections); passes here."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

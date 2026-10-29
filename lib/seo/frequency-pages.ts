@@ -193,7 +193,7 @@ export const FREQUENCY_PAGE_SEO = {
       'The Network Theme Kit is for networking groups, clubs and mixers. Your Spotlight, Space, website and emails wear one look, changed once.',
     shareTitle: 'Network: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
-    lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Network Theme Kit gives networking groups, clubs, mixers, coworking spaces and the people who run them one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
+    lede: 'One complete theme for networking groups and the organizations that keep them together. Your link in bio, your Space on Frequency, your own website and your emails, all reading one profile. Change it once and every surface marked ready follows.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },

@@ -19,7 +19,7 @@ export interface KeepGoingAction {
 }
 
 export interface KeepGoingProps {
-  title: string
+  title: React.ReactNode
   body?: string
   primary: KeepGoingAction
   secondary?: KeepGoingAction
@@ -28,6 +28,10 @@ export interface KeepGoingProps {
   variant?: 'band' | 'row'
   /** Section id, for in-page links. */
   id?: string
+  /** Optional content between the words and the actions (a theme page's kit picker). Band variant only. */
+  slot?: React.ReactNode
+  /** Replaces the two link actions with these (buttons that follow the slot's choice). Band variant only. */
+  actions?: React.ReactNode
 }
 
 export function KeepGoing({
@@ -39,6 +43,8 @@ export function KeepGoing({
   energy = 'charge',
   variant = 'band',
   id,
+  slot,
+  actions,
 }: KeepGoingProps) {
   if (variant === 'row') {
     return (
@@ -66,14 +72,19 @@ export function KeepGoing({
             <h3>{title}</h3>
             {body && <p>{body}</p>}
           </div>
+          {slot}
           <div className="ctas">
-            <Link className="btn fq-iri-btn" href={primary.href}>
-              {primary.label}
-            </Link>
-            {secondary && (
-              <Link className="btn btn-ghost fq-iri-rim" href={secondary.href}>
-                {secondary.label}
-              </Link>
+            {actions ?? (
+              <>
+                <Link className="btn fq-iri-btn" href={primary.href}>
+                  {primary.label}
+                </Link>
+                {secondary && (
+                  <Link className="btn btn-ghost fq-iri-rim" href={secondary.href}>
+                    {secondary.label}
+                  </Link>
+                )}
+              </>
             )}
           </div>
         </div>
