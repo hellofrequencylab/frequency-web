@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1632",
+  "title": "A published launch step lands on a screen with the next step and a link to what the person made",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/launch/published-screen.tsx",
+    "ref": "Vera guided launch system, VLS-09. The Spotlight step (VLS-07) is the first to end here; every later step reuses it."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-published.mjs",
+    "note": "The link to what was made, the next step and the not-published case are pinned by the vitest file; the probe reads the wiring: dark while LAUNCH_SYSTEM_ENABLED is off, signed out goes to sign in, an unpublished step goes back to the step, and the Spotlight step ends on this screen. Fails on main, where none of it exists."
+  },
+  "detail": "/launch/step/<step>/published reads the signed-in owner's active launch and shows Your <step> is live, a Next button for the first step they have not settled (in their own order), and See what I made, the real public page the step recorded (the Space Spotlight for step 1). When every step is settled there is no Next. A step that is not published redirects back to its step. lib/launch/published.ts holds the pure view; each later step adds its public page to publicPageOf as it arrives. Not here: the slim return bar (Back to your launch) on the public pages, which needs a client island on the public renders and is its own change.",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}

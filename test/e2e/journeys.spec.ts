@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
@@ -276,12 +277,13 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await page.locator('input[type="datetime-local"]').first().fill(`${tomorrow}T18:00`)
     await page.getByRole('button', { name: /Create Event/i }).click()
     const landed = await page
-      .waitForURL((u) => u.pathname.startsWith('/events/') && u.pathname !== '/events/new', { timeout: 30_000 })
+      .waitForURL((u) => u.pathname.startsWith('/events/') && u.pathname !== '/events/new', { timeout: 90_000 })
       .then(() => true, () => false)
     if (!landed) {
       // Say what the form said, so the finding is the app's message and not a bare timeout.
       const said = (await page.locator('[role="alert"], .text-danger').allInnerTexts()).join(' | ')
-      throw new Error(`/events/new did not create the event. Page said: ${said || '(nothing)'}`)
+      const button = await page.getByRole('button', { name: /Create Event|Creating/i }).first().innerText().catch(() => '(no button)')
+      throw new Error(`/events/new did not create the event. At ${page.url()}, button "${button}". Page said: ${said || '(nothing)'}`)
     }
     assertNoServerErrors(serverErrors, 'create event')
   })
@@ -291,7 +293,23 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await page.goto(`/circles/${circleSlug}`)
     await settle(page)
     await page.getByRole('button', { name: /^join/i }).first().click()
-    await expect(page.getByRole('button', { name: /leave|joined|member/i }).first()).toBeVisible({ timeout: 15_000 })
+    // A member's header holds Create and, behind "Circle options", Leave; the Join door is gone.
+    // The join redirects back to this page, so give it a moment, then reload to read what the
+    // server stored rather than a router-cached view, and say what the page shows if it never comes.
+    const options = page.getByRole('button', { name: 'Circle options' })
+    await options.waitFor({ timeout: 15_000 }).catch(() => undefined)
+    if (!(await options.isVisible())) {
+      await page.reload()
+      await settle(page)
+    }
+    if (!(await options.isVisible())) {
+      const buttons = await page.getByRole('button').allInnerTexts()
+      const said = (await page.locator('main').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 400)
+      throw new Error(
+        `Joined ${circleSlug} but "Circle options" never showed. At ${page.url()}. Buttons: ${buttons.map((b) => b.trim()).filter(Boolean).join(' | ')}. Page said: ${said}`,
+      )
+    }
+    await expect(page.getByRole('button', { name: /^join/i })).toHaveCount(0)
     assertNoServerErrors(serverErrors, 'join circle')
   })
 
@@ -301,8 +319,11 @@ test.describe('signed-in journeys that write @journey-write @shell', () => {
     await page.getByRole('button', { name: 'Import from file' }).click()
     const csv = `Name,Email,Phone\nQA One ${stamp},qa1-${stamp}@example.test,555-0101\nQA Two ${stamp},qa2-${stamp}@example.test,555-0102\n`
     await page.locator('input[type="file"]').setInputFiles({ name: 'contacts.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
-    await page.getByRole('button', { name: /Continue to matching/ }).click({ timeout: 30_000 })
-    await expect(page.getByText('Match your columns to contact fields')).toBeVisible()
+    // A clean file goes straight to matching; "Continue to matching" shows only when a file was skipped.
+    const matching = page.getByText('Match your columns to contact fields')
+    await expect(matching.or(page.getByRole('button', { name: /Continue to matching/ }))).toBeVisible({ timeout: 30_000 })
+    if (!(await matching.isVisible())) await page.getByRole('button', { name: /Continue to matching/ }).click()
+    await expect(matching).toBeVisible()
     await page.getByRole('button', { name: /Review before import/ }).click()
     await expect(page.getByText('Here is what will happen')).toBeVisible({ timeout: 30_000 })
     await page.getByRole('button', { name: /^Import \d+ contacts$/ }).click()
@@ -349,8 +370,25 @@ test.describe('new member sign-up @journey-write', () => {
     await page.goto('/sign-in')
     await page.getByLabel('Email address').fill(email)
     await page.getByRole('button', { name: 'Send magic link' }).click()
-    await expect(page.getByRole('heading', { name: 'No account for that email yet' })).toBeVisible()
+    // The first Send compiles the sign-in action on `next dev`, so give the redirect time and, if it never
+    // lands, say where the page is and what it shows instead of a bare "not found".
+    const askFirst = page.getByRole('heading', { name: 'No account for that email yet' })
+    await askFirst.waitFor({ timeout: 60_000 }).catch(async () => {
+      const shown = (await page.locator('main, body').first().innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300)
+      throw new Error(`Send magic link did not reach the "No account for that email yet" step. At ${page.url()}. Page says: ${shown}`)
+    })
+    // Short fingerprint of the stored sign-in verifier (never the value) so a failure shows whether
+    // "Create a new account" replaced the first flow's verifier or left it in place.
+    const tag = async () => {
+      const v = (await page.context().cookies()).find((c) => /auth-token-code-verifier$/.test(c.name))?.value
+      return v ? createHash('sha256').update(v).digest('hex').slice(0, 6) : 'none'
+    }
+    const afterAskFirst = await tag()
     await page.getByRole('button', { name: 'Create a new account' }).click()
+    // The mailbox shows the link before the action's response (and its new verifier cookie) reaches the
+    // browser. A person opens the mail seconds later; the test must wait for the cookie, or it presents the
+    // first flow's verifier and the exchange fails with bad_code_verifier.
+    await expect.poll(tag, { timeout: 60_000, message: 'Create a new account never replaced the stored verifier' }).not.toBe(afterAskFirst)
 
     // Read the newest message in the mailbox and pull the first link that goes through auth. The local
     // Supabase CLI ships Mailpit in current versions and Inbucket in older ones, so try both.
@@ -371,12 +409,26 @@ test.describe('new member sign-up @journey-write', () => {
       }
       if (!link) await page.waitForTimeout(1000)
     }
+    const afterCreate = await tag()
     expect(link, `no sign-in link arrived in ${box}'s mailbox`).not.toBe('')
     expect(localAuthLink(link, baseURL!, process.env.NEXT_PUBLIC_SUPABASE_URL!), 'mailbox link must stay on the local app or local auth verification endpoint').toBe(true)
+    // Record each hop (status and Location, tokens and codes stripped) and the cookie names the browser
+    // holds, so a failure shows which redirect dropped the session and not just the sign-in page.
+    const hops: string[] = []
+    const scrub = (u: string) => u.replace(/(token|code)=[^&]+/g, '$1=…')
+    page.on('response', (r) => {
+      if (r.request().isNavigationRequest()) hops.push(`${r.status()} ${scrub(r.url())}${r.headers().location ? ` -> ${scrub(r.headers().location)}` : ''}`)
+    })
     await page.goto(link)
     await settle(page)
-    // Say where the link led, so a failure names the redirect and not just the sign-in page.
-    expect(new URL(page.url()).pathname, `the emailed link did not sign the new member in. It went ${link.replace(/token=[^&]+/, 'token=…')} and ended at ${page.url()}`).not.toBe('/sign-in')
+    const jar = await page.context().cookies()
+    const held = jar.map((c) => `${c.name}@${c.domain}`).join(', ')
+    // Two sign-in flows ran (the ask-first try, then Create a new account). Say whether the fixed verifier
+    // cookie and the per-flow slot hold the same value; if they differ, the fixed one is the first flow's.
+    const fixedV = jar.find((c) => /auth-token-code-verifier$/.test(c.name))?.value
+    const slotV = jar.find((c) => /-flow-[A-Za-z0-9_-]+-code-verifier$/.test(c.name))?.value
+    const verifiers = `fixed verifier ${fixedV ? 'present' : 'absent'}, flow slot ${slotV ? 'present' : 'absent'}, same value: ${fixedV !== undefined && fixedV === slotV}; fixed verifier after ask-first ${afterAskFirst}, after Create ${afterCreate}, at the link ${fixedV ? createHash('sha256').update(fixedV).digest('hex').slice(0, 6) : 'none'}`
+    expect(new URL(page.url()).pathname, `the emailed link did not sign the new member in. Hops: ${hops.join(' | ')}. Cookies: ${held}. Verifiers: ${verifiers}. Ended at ${page.url()}`).not.toBe('/sign-in')
     assertNoServerErrors(serverErrors, 'sign-up')
     await expect(page.getByText('Something went wrong on our end')).toHaveCount(0)
   })

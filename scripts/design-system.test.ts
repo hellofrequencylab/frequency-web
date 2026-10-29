@@ -4,7 +4,10 @@
 import { readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { DESIGNER_TOKENS_CSS } from '@/lib/theme/designer'
 import { MIDNIGHT_TOKENS_CSS } from '@/lib/theme/midnight'
+import { TEMPLE_KIT_TOKENS_CSS } from '@/lib/theme/temple-kit'
+import { NETWORK_KIT_TOKENS_CSS } from '@/lib/theme/network-kit'
 import { repoReport } from './ds-intake.mjs'
 import { extractCopy, extractTokens, flatDeclarations, globToRegExp, normValue, repoViolations, resolveVars, ruleFor, squash } from './lib/design-system.mjs'
 
@@ -46,11 +49,14 @@ describe('design-system routine', () => {
   })
 })
 
+// Each theme's repo-side token block. A theme whose tokens are not built yet reads as empty (every token is a gap).
+const TOKEN_CSS: Record<string, string> = { nocturne: MIDNIGHT_TOKENS_CSS, designer: DESIGNER_TOKENS_CSS, network: NETWORK_KIT_TOKENS_CSS, temple: TEMPLE_KIT_TOKENS_CSS }
+
 const THEMES = readdirSync(join(process.cwd(), 'docs/design-systems'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
 
 describe.each(THEMES)('design system: %s', (theme) => {
   it('every design-system file is accounted for, and the repo matches it (baseline may only shrink)', () => {
-    const report = repoReport(theme, MIDNIGHT_TOKENS_CSS)
+    const report = repoReport(theme, TOKEN_CSS[theme] ?? '')
     if (process.env.DS_REPORT) for (const v of report.all) console.log(`${v.id}\n    ${v.detail}`)
     // DS_WRITE_BASELINE=1 re-freezes the list of known gaps. It may only be run to shrink it.
     if (process.env.DS_WRITE_BASELINE) {

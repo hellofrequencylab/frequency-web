@@ -149,7 +149,7 @@ export async function loadWebsiteFeatureSource(host: string, source: string): Pr
  *  branding edits, live at once like it. The editor autosaves its draft into the same preferences row, so
  *  the write only lands while the draft revision it read is still current, and retries on a fresh read. */
 export async function saveWebsiteStyle(host: string, patch: { theme?: string; look?: Partial<Record<string, string | null>>; pages?: Record<string, string | null> }): Promise<{ ok: true; style: import('@/lib/theme/site-style').SiteStyle } | { ok: false; error: string }> {
-  const { isSiteThemeId, isSiteLookValue, readSiteStyle, withSiteStyle, withSitePageTheme, SITE_LOOK_OPTIONS, SITE_THEMES } = await import('@/lib/theme/site-style')
+  const { isSiteThemeId, isSiteLookValue, readSiteStyle, withSiteStyle, withSitePageTheme, SITE_LOOK_OPTIONS, SITE_THEME_DEFS } = await import('@/lib/theme/site-style')
   if (!patch || typeof patch !== 'object' || (patch.theme !== undefined && !isSiteThemeId(patch.theme))) return { ok: false, error: 'Choose Frequency or Bold.' }
   const lookKeys = Object.keys(SITE_LOOK_OPTIONS) as (keyof typeof SITE_LOOK_OPTIONS)[]
   for (const [key, value] of Object.entries(patch.look ?? {})) {
@@ -175,7 +175,7 @@ export async function saveWebsiteStyle(host: string, patch: { theme?: string; lo
     base = planMegaTheme(prefs, theme)
     if (patch.look === undefined && pageThemes.length === 0) return { ok: true, style: readSiteStyle(base) }
   }
-  let next = withSiteStyle(base, { theme, look, ...(theme !== current.theme ? { fonts: SITE_THEMES.find((t) => t.id === theme)!.defaultFonts } : {}) })
+  let next = withSiteStyle(base, { theme, look, ...(theme !== current.theme ? { fonts: SITE_THEME_DEFS.find((t) => t.id === theme)!.defaultFonts } : {}) })
   for (const [slug, value] of pageThemes) next = withSitePageTheme(next, slug, value !== null && isSiteThemeId(value) ? value : null)
   // KEY-SCOPED (SCAN-833, ADR-1822): the style owns exactly two preference keys, `theme` (the fonts,
   // absent on the default) and `siteStyle`. set_space_preferences writes those two in one update and

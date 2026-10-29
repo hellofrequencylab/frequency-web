@@ -1,4 +1,4 @@
-import { MEGA_PROFILE_NICHES, MEGA_THEMES, type MegaThemeId } from '@/lib/theme/mega-theme'
+import { MEGA_NICHES, MEGA_PROFILE_NICHES, MEGA_THEMES, type MegaThemeId } from '@/lib/theme/mega-theme'
 import { NICHE_SPECS } from './niche-spec'
 import type { KitNiche, SiteKit } from './types'
 
@@ -66,6 +66,21 @@ const withJoinPage = async (kit: SiteKit, niche: KitNiche): Promise<SiteKit> =>
   niche === 'general' ? { ...kit, pages: [...kit.pages, (await import('./profile-variants')).joinListPage(kit.theme)] } : kit
 for (const t of PROFILE_THEMES) for (const niche of MEGA_PROFILE_NICHES) LOADERS[`${t.prefix}-${niche}`] = () => t.build(niche).then((k) => withJoinPage(k, niche))
 
+// The Designer Theme Kit's thirteen profile kits (the design system's own profiles: interior designers, architects, ...),
+// beside the six niche doors. Id is `designer-profile-<id>`; the id is also the kit's niche.
+const DESIGNER_PROFILE_IDS = ['general', 'coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks', 'creators', 'schools', 'clubs', 'faith', 'wellness', 'markets'] as const
+for (const niche of DESIGNER_PROFILE_IDS) LOADERS[`designer-profile-${niche}`] = () => import('./designer-profile-variants').then((m) => m.designerProfileKit(niche))
+
+// The Network Theme Kit's thirteen profile kits, one per niche (`network-kit-<niche>`): the design system's own profiles are
+// exactly the thirteen niches, so the id is `<theme>-<niche>` like every other theme's. `network-kit-general` is the
+// General kit a new Space on this look publishes (lib/spaces/starter-site.ts).
+for (const niche of MEGA_NICHES) LOADERS[`network-kit-${niche}`] = () => import('./network-kit-profile-variants').then((m) => m.networkKitProfileKit(niche))
+
+// The Temple Theme Kit's thirteen profile kits, one per niche (`temple-kit-<niche>`), the same shape as the Network Theme Kit's.
+// `temple-kit-general` is the General kit a new Space on this look publishes (lib/spaces/starter-site.ts). The earlier Temple
+// (`temple-<niche>`, Royal Temple's) keeps its loaders so a saved site still resolves, and is offered nowhere.
+for (const niche of MEGA_NICHES) LOADERS[`temple-kit-${niche}`] = () => import('./temple-kit-profile-variants').then((m) => m.templeKitProfileKit(niche))
+
 interface KitSummary { id: string; niche: KitNiche; theme: SiteKit['theme']; label: string; description: string }
 
 /** Light index for the library screen; no page content. */
@@ -118,6 +133,10 @@ export const KIT_INDEX: readonly KitSummary[] = [
 export const PROFILE_KIT_INDEX: readonly KitSummary[] = PROFILE_THEMES.flatMap((t) =>
   MEGA_PROFILE_NICHES.map((niche) => ({ id: `${t.prefix}-${niche}`, niche, theme: t.theme, label: NICHE_SPECS[niche].label, description: NICHE_SPECS[niche].description })),
 )
+
+export { DESIGNER_PROFILE_KIT_INDEX } from './designer-profile-index'
+export { NETWORK_KIT_PROFILE_KIT_INDEX } from './network-kit-profile-index'
+export { TEMPLE_KIT_PROFILE_KIT_INDEX } from './temple-kit-profile-index'
 
 export async function loadKit(id: string): Promise<SiteKit | null> {
   const load = Object.hasOwn(LOADERS, id) ? LOADERS[id] : undefined

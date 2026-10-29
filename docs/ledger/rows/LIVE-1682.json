@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1682",
+  "title": "The Temple Kit Home, first half: hero, live band, gatherings, rooms, offerings and steps are registered blocks in the design's markup",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "L",
+  "wave": "W7",
+  "source": {
+    "file": "docs/design-systems/temple/rules.json",
+    "ref": "LIVE-1640"
+  },
+  "detail": "Pass 3a of the Temple Theme Kit. Adds the TempleKit block family in new files (components/page-editor/blocks/temple-kit.tsx, components/sites/temple-kit-blocks-css.ts, lib/sites/temple-kit-home.ts): TempleKitHero, Live, Gatherings, Rooms, Offerings and Steps, rooms and steps being new blocks. Server Components; gatherings, the hero card and the live band read the Space's own events and fall back to the design's sample house. The older Temple family is not edited. Copy deviations from the design, per the voice guide: the live band's standing 'Thu 10am' (a weekly promise) reads 'Free, ask for a time'; 'you will sit beside someone new' reads 'you may sit'; 'You leave slower than you came' is dropped. Design defect not copied: the steps body is flush left under its title (the design centres it as a block by accident). The design-system baseline closes the gaps the sample copy answers. The second half (gallery, journeys, proof, membership, questions, letter, closing call) is LIVE-1683.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "Six TempleKit blocks registered, sheet tokened, planned as own sections.",
+    "cmd": "node scripts/probes/temple-kit-home-a.mjs"
+  },
+  "closed": "2026-10-28"
+}

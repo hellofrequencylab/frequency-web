@@ -565,7 +565,7 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   by their profile). Member-facing copy: "Spotlight page", "your Spotlight" (sentence
   case, one capital). Public URL `/spotlight/[handle]`. Internal: capabilities
   `spotlight.manage` / `spotlight.view`, flags `meta.spotlight.{enabled,published}`,
-  audit action `spotlight.toggle`. OFF for everyone by default; turned on per member.
+  audit action `spotlight.toggle`. Off until the member turns it on; any Member can (ADR-1922).
   **Not "Studio"** (locked for the creation tool + the future Calm/Studio *mode* axis)
   and **not "Signal"** (a retired rank, below; since 2026-09-22 the word names the earned exposure
   measure instead, see the tier ladder section). Locked June 2026 (ADR-423).

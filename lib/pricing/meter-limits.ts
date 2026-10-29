@@ -95,6 +95,10 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   event_create: { free: 2, crew: 10 },
   // Guests per personal Event (LIVE-750): Member 30, Crew 100.
   event_guests: { free: 30, crew: 100 },
+  // Blocks on a personal Spotlight (owner picks 2026-10-28, the Spotlight split): a free Member's page is a
+  // real page, Crew gets room to build. Counts placed blocks; a layout no bigger than the saved one is
+  // always allowed, so nobody is locked out of a page they already built.
+  spotlight_blocks: { free: 12, crew: 40 },
 }
 
 /** A SIBLING plan's own number on a row whose rungs are settled by an owner decision, so the rung

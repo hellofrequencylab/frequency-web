@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1690",
+  "title": "Every calendar opens on the current month, not a stale or UTC one",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/calendar/open-month.ts",
+    "ref": "Daniel, 2026-10-28: make sure the calendar always starts on the current month"
+  },
+  "detail": "Every calendar mount now picks its opening month through one rule, openingMonth: a month named in the link (?y=&m=) wins, otherwise the current month in the Space's own zone, never the month of its first or most events. The grid also corrects an unpinned render in the browser; before, it only did so inside the few hours around a UTC month boundary, so a render carrying an earlier month (a tab or cached page from before) stayed there.\n\nClosed by the PR that adds openingMonth.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/calendar-opens-current-month.mjs",
+    "note": "Fails on main (no openingMonth, UTC-only grid correction); passes here."
+  },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}

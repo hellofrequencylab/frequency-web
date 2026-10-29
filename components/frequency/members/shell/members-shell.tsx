@@ -34,6 +34,8 @@ import { getInitials } from '@/lib/utils'
 import { CircleMark } from './circle-mark'
 import { MembersKitRoot } from './kit-root'
 import { FqHeader } from './header'
+import { loadLaunchBox } from '@/lib/launch/box'
+import { launchSystemEnabled } from '@/lib/launch/enabled'
 import type { AccountToolsProps } from './account-tools'
 import { FqAmbient } from './ambient'
 import { FqRailLayout } from './rail-layout'
@@ -499,6 +501,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
             unreadCount={props.unreadCount}
             messagesUnread={props.messagesUnread}
             streak={stats.then((d) => d?.streak ?? 0)}
+            launch={launchSystemEnabled() ? loadLaunchBox() : undefined}
             viewer={{ role: gateRole, staffRole: props.staffRole, operatesSpaces: props.operatesSpaces }}
             circles={circles.slice(0, 5).map((c) => ({ key: c.key, label: c.label, href: c.href, notices: c.notices, image: c.image }))}
             accountGroups={accountGroups}

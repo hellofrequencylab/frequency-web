@@ -63,7 +63,6 @@ for (const [name, mutate] of [
   ['raw evaluation failure', f => { f.options.evaluate = async () => { throw Error('DO_NOT_SERIALIZE_SECRET') } }],
   ['negative evaluation', f => { f.options.evaluate = async () => ({ ok: false, status: 'failed' }) }],
   ['head change during evaluation', f => { const evaluate = f.options.evaluate; f.options.evaluate = async () => { const result = await evaluate(); f.pr.head.sha = 'e'.repeat(40); return result } }],
-  ['main change during evaluation', f => { const evaluate = f.options.evaluate; f.options.evaluate = async () => { const result = await evaluate(); f.main.commit.sha = 'e'.repeat(40); return result } }],
   ['failed success API write', f => { f.failSuccessWrite = true }],
   ['head movement during success write', f => { f.moveAfterSuccess = true }],
 ]) test(`marks candidate-head check failure for ${name} without leaking provider/error content`, async () => { const f = fixture(); mutate(f); await assert.rejects(() => publishReadiness(f.options)); assert.equal(f.writes.at(-1).payload.conclusion, 'failure'); assert.ok(!JSON.stringify(f.writes).includes('DO_NOT_SERIALIZE_SECRET')) })
@@ -97,4 +96,26 @@ test('actual collector and consumer CLIs reached via symlink or encoded filename
       }
     }
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+const later = 'e'.repeat(40)
+test('no-SQL result needs only the exact head: main moving before or during evaluation is not a failure', async () => {
+  const f = fixture(); f.main.commit.sha = later
+  const evaluate = f.options.evaluate; f.options.evaluate = async () => { const result = await evaluate(); f.main.commit.sha = 'f'.repeat(40); return result }
+  await publishReadiness(f.options)
+  const completed = f.writes.at(-1).payload
+  assert.equal(completed.conclusion, 'success')
+  assert.equal(JSON.parse(completed.output.summary.split('\n\n')[1]).base, base)
+})
+for (const [name, mutate] of [
+  ['main ahead of the PR base at the start', f => { f.main.commit.sha = later }],
+  ['main moving during evaluation', f => { const evaluate = f.options.evaluate; f.options.evaluate = async () => { const result = await evaluate(); f.main.commit.sha = later; return result } }],
+]) test(`SQL result still fails closed for ${name}`, async () => {
+  const f = fixture('registered_pending_apply'); mutate(f)
+  await assert.rejects(() => publishReadiness(f.options)); assert.equal(f.writes.at(-1)?.payload.conclusion ?? 'failure', 'failure')
+})
+test('no-SQL result is still refused when the PR base itself moves during evaluation', async () => {
+  const f = fixture(); const evaluate = f.options.evaluate
+  f.options.evaluate = async () => { const result = await evaluate(); f.pr.base.sha = later; return result }
+  await assert.rejects(() => publishReadiness(f.options)); assert.equal(f.writes.at(-1).payload.conclusion, 'failure')
 })

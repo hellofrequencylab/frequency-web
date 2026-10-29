@@ -260,7 +260,7 @@ export async function FqOverviewBody({
               <FqIcon name="checkin" />
               Check in
             </Link>
-            <Link className="btn pa" href={`/events/new?space=${encodeURIComponent(spaceId)}`}>
+            <Link className="btn pa ad-overview-new-event" href={`/events/new?space=${encodeURIComponent(spaceId)}`}>
               <FqIcon name="event" />
               New event
             </Link>

@@ -4466,10 +4466,13 @@ export type Database = {
           created_by: string | null
           due_at: string | null
           due_offset_days: number | null
+          est_minutes: number | null
           id: string
           notes: string | null
+          phase: string | null
           plan_id: string | null
           space_id: string | null
+          start_minute: number | null
           status: string
           title: string
           updated_at: string
@@ -4481,10 +4484,13 @@ export type Database = {
           created_by?: string | null
           due_at?: string | null
           due_offset_days?: number | null
+          est_minutes?: number | null
           id?: string
           notes?: string | null
+          phase?: string | null
           plan_id?: string | null
           space_id?: string | null
+          start_minute?: number | null
           status?: string
           title: string
           updated_at?: string
@@ -4496,10 +4502,13 @@ export type Database = {
           created_by?: string | null
           due_at?: string | null
           due_offset_days?: number | null
+          est_minutes?: number | null
           id?: string
           notes?: string | null
+          phase?: string | null
           plan_id?: string | null
           space_id?: string | null
+          start_minute?: number | null
           status?: string
           title?: string
           updated_at?: string
@@ -8563,24 +8572,30 @@ export type Database = {
           answer: string
           attested_at: string
           id: string
-          launch_id: string
+          launch_id: string | null
+          launch_ref: string | null
           source_id: string | null
+          source_ref: string | null
           wording_version: string
         }
         Insert: {
           answer: string
           attested_at?: string
           id?: string
-          launch_id: string
+          launch_id?: string | null
+          launch_ref?: string | null
           source_id?: string | null
+          source_ref?: string | null
           wording_version: string
         }
         Update: {
           answer?: string
           attested_at?: string
           id?: string
-          launch_id?: string
+          launch_id?: string | null
+          launch_ref?: string | null
           source_id?: string | null
+          source_ref?: string | null
           wording_version?: string
         }
         Relationships: [
@@ -16330,27 +16345,30 @@ export type Database = {
           actor_profile_id: string | null
           actor_space_id: string
           created_at: string
+          entry_id: string | null
           id: string
           kind: string
-          plan_id: string
+          plan_id: string | null
           summary: string
         }
         Insert: {
           actor_profile_id?: string | null
           actor_space_id: string
           created_at?: string
+          entry_id?: string | null
           id?: string
           kind: string
-          plan_id: string
+          plan_id?: string | null
           summary: string
         }
         Update: {
           actor_profile_id?: string | null
           actor_space_id?: string
           created_at?: string
+          entry_id?: string | null
           id?: string
           kind?: string
-          plan_id?: string
+          plan_id?: string | null
           summary?: string
         }
         Relationships: [
@@ -16369,6 +16387,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "space_plan_activity_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "space_calendar_entries"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "space_plan_activity_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
@@ -16382,8 +16407,9 @@ export type Database = {
           author_profile_id: string | null
           body: string
           created_at: string
+          entry_id: string | null
           id: string
-          plan_id: string
+          plan_id: string | null
           removed_at: string | null
           removed_by: string | null
           space_id: string
@@ -16393,8 +16419,9 @@ export type Database = {
           author_profile_id?: string | null
           body: string
           created_at?: string
+          entry_id?: string | null
           id?: string
-          plan_id: string
+          plan_id?: string | null
           removed_at?: string | null
           removed_by?: string | null
           space_id: string
@@ -16404,8 +16431,9 @@ export type Database = {
           author_profile_id?: string | null
           body?: string
           created_at?: string
+          entry_id?: string | null
           id?: string
-          plan_id?: string
+          plan_id?: string | null
           removed_at?: string | null
           removed_by?: string | null
           space_id?: string
@@ -16417,6 +16445,13 @@ export type Database = {
             columns: ["author_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_plan_comments_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "space_calendar_entries"
             referencedColumns: ["id"]
           },
           {
@@ -16517,6 +16552,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           files: Json
+          hold_until: string | null
           id: string
           links: Json
           notes: string | null
@@ -16533,6 +16569,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           files?: Json
+          hold_until?: string | null
           id?: string
           links?: Json
           notes?: string | null
@@ -16549,6 +16586,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           files?: Json
+          hold_until?: string | null
           id?: string
           links?: Json
           notes?: string | null

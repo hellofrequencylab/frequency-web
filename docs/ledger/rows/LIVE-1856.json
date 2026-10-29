@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1856",
+  "title": "One core token contract (about 45 names) and a generated mapping per theme, with a pin that proves no value moves",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/sites/editor/theme-contract.json",
+    "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
+  },
+  "detail": "Seeds from lib/sites/editor/theme-contract.json. Role blocks read only these names; private prefixes stay for decoration.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-cohesion.mjs tokens",
+    "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
+  },
+  "wave": "W7"
+}
