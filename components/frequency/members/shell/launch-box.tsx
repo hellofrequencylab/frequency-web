@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { confirmCancelAction, requestCancelAction, setMinimizedAction } from '@/lib/launch/actions'
 import type { LaunchBoxView } from '@/lib/launch/box-state'
+import { launchHomeHref } from '@/lib/launch/destination'
 
 // THE LAUNCH BOX (VLS-08). The Vera guided launch's one standing presence: a pill left of the avatar in the
 // members header that opens a sheet with the nine steps and where the person stopped. It is the Bell's shape
@@ -15,7 +16,7 @@ import type { LaunchBoxView } from '@/lib/launch/box-state'
 // launch, which takes two steps: the button, then the typed word STOP. Both are saved to the launch row, so
 // they survive navigation and reload. Server Component data, small client island: the view arrives as props.
 
-const RESUME_HREF = '/launch/resume'
+const RESUME_HREF = launchHomeHref({ signedIn: true })
 
 export function LaunchPill({ view, open, onToggle }: { view: LaunchBoxView; open: boolean; onToggle: () => void }) {
   return (

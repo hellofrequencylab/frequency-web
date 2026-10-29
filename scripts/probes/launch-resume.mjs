@@ -17,7 +17,7 @@ if (!/launchSystemEnabled\(\)\) notFound\(\)/.test(route) || !/launchSystemEnabl
 if (!/getLaunchForOwner\(profileId, lid\)/.test(route) || !/if \(!launch\) notFound\(\)/.test(route)) bad.push('a launch that is not the caller\'s does not 404 on the resume route')
 if (!/if \(!launch && lid\) notFound\(\)/.test(page)) bad.push('a launch that is not the caller\'s does not 404 on the page')
 if (!/if \(!profileId\) redirect\('\/sign-in'\)/.test(route)) bad.push('the resume route answers someone signed out')
-if (!/\/launch\/resume/.test(box)) bad.push('the launch box does not link to the resume route')
+if (!/launchHomeHref\(\{ signedIn: true \}\)/.test(box)) bad.push('the launch box does not link to the launch home')
 
 const t0 = new Date('2026-10-28T12:00:00Z')
 const base = { id: 'l1', owner_id: 'p1', niche: 'coaches', started_at: t0.toISOString(), updated_at: t0.toISOString() }

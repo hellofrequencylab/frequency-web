@@ -12,6 +12,7 @@
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
+import { inFlowHref } from './destination'
 import { launchSystemEnabled } from './enabled'
 import { recordLaunchEvent } from './events'
 import { clearPendingLaunch, readPendingLaunch, writePendingLaunch } from './pending-io'
@@ -22,6 +23,7 @@ import { parseSpotlightAnswers } from './spotlight-step'
 import { publishSpotlightStep } from './spotlight-io'
 import type { LaunchSnapshot } from './state'
 import * as store from './store'
+import { launchStepHref } from './steps'
 
 const OFF = 'The launch is not open yet.'
 const SIGN_IN = 'Sign in to keep going.'
@@ -81,7 +83,7 @@ type SpotlightErrorCode = keyof typeof SPOTLIGHT_ERRORS
 /** The Spotlight step's address with an error code the page turns into a line. Codes, never text, so the address
  *  cannot be used to put words on the page. */
 function spotlightStepUrl(code?: SpotlightErrorCode): string {
-  return code ? `/launch/step/spotlight?e=${code}` : '/launch/step/spotlight'
+  return code ? `${launchStepHref('spotlight')}?e=${code}` : inFlowHref(launchStepHref('spotlight'))
 }
 
 /** The Spotlight step's Publish button (VLS-07). Signed out, the answers are held in the launch cookie and the
@@ -139,7 +141,7 @@ export async function chooseSpaceFormAction(formData: FormData): Promise<void> {
   const spaces = await listOwnedSpaces(profileId)
   const choice = parseSpaceChoice(formData.get('space'), spaces)
   if (choice === null) redirect(spotlightStepUrl())
-  if (choice === NEW_SPACE) redirect(`${spotlightStepUrl()}?new=1`)
+  if (choice === NEW_SPACE) redirect(`${launchStepHref('spotlight')}?new=1`)
   const held = await readPendingLaunch()
   const running = await store.getActiveLaunch(profileId)
   const launch = running ?? (await store.startLaunch(profileId, { niche: held?.niche ?? null, intents: held?.intents ?? [] }))
