@@ -74,6 +74,9 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   // The events this member hosts (SPL-03): the upcoming public ones, read from the Spotlight's own reader. A
   // separate id from the Space `events` block, which is function-backed by the Space's own rows.
   { id: 'memberEvents', label: 'Events I host', description: 'Your next public events, with a link to each.', category: 'data', kinds: ['member'], order: 160 },
+  // What this member is part of (SPL-04): their public Circles, Journeys and Spaces, each shown only if the
+  // member switched that kind on. Reads the Spotlight reader's allowlisted `programs`; nothing private.
+  { id: 'memberPrograms', label: "What I'm part of", description: 'The Circles, Journeys and Spaces you choose to show.', category: 'data', kinds: ['member'], order: 170 },
 ]
 
 // ── CONTENT blocks the operator authors (shared by both kinds) ─────────────────────────────────────
@@ -217,6 +220,7 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'topfriends',
   'guestbook',
   'memberEvents',
+  'memberPrograms',
   // SPACE free-form blocks (ADR-542): Callout, Image Gallery, Features section, Music-and-video embed.
   'callout',
   'gallery',

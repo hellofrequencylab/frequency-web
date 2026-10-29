@@ -21,6 +21,8 @@ import { getTopFriendsForOwner, type TopFriend } from './top-friends'
 import { getGuestbookForOwner, type GuestbookEntry } from './guestbook'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
+import { getMemberPrograms } from './programs'
+import { programsOptInFromGrid, type SpotlightPrograms } from './programs.shared'
 
 // Server data for the PUBLIC Spotlight page. Anonymous visitors get no RLS, so this
 // reads through the admin client and is fail-closed: it returns null unless the page
@@ -38,6 +40,8 @@ interface SpotlightHostedEvent {
 export interface SpotlightData {
   profile: SpotlightRow
   hostedEvents: SpotlightHostedEvent[]
+  /** The public Circles, Journeys and Spaces the member opted to show (SPL-04). Empty unless a switch is on. */
+  programs: SpotlightPrograms
   /** The member's validated block layout (empty when they haven't customized). */
   layout: SpotlightLayout
   /** The validated optional background image. */
@@ -166,18 +170,22 @@ async function loadMemberSpotlight(
 
   // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel
   // (both are per-owner reads joined to public profile fields).
-  const [topFriends, guestbook] = await Promise.all([
-    getTopFriendsForOwner(g.id),
-    getGuestbookForOwner(g.id),
-  ])
-
   // The member's saved unified grid layout (U3 module render), read fail-safe off the SAME meta blob the
   // publish/layout gate already loaded — no extra query. Never returned raw; only the parsed layout.
   const grid = readMemberGridLayout(g.meta)
 
+  // The Programs block (SPL-04) reads only what the member switched on in that block, so it costs nothing
+  // for everyone else. Resolved in the same parallel wave; fails closed to empty lists.
+  const [topFriends, guestbook, programs] = await Promise.all([
+    getTopFriendsForOwner(g.id),
+    getGuestbookForOwner(g.id),
+    getMemberPrograms(g.id, programsOptInFromGrid(grid)),
+  ])
+
   return {
     profile: row as unknown as SpotlightRow,
     hostedEvents: (events ?? []) as SpotlightHostedEvent[],
+    programs,
     layout,
     background,
     stickers,
