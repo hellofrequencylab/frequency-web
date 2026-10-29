@@ -16,6 +16,8 @@ import { launchSystemEnabled } from './enabled'
 import { recordLaunchEvent } from './events'
 import { clearPendingLaunch, readPendingLaunch, writePendingLaunch } from './pending-io'
 import { launchStepPublishedHref } from './published'
+import { NEW_SPACE, parseSpaceChoice } from './space-choice'
+import { listOwnedSpaces } from './spaces-io'
 import { parseSpotlightAnswers } from './spotlight-step'
 import { publishSpotlightStep } from './spotlight-io'
 import type { LaunchSnapshot } from './state'
@@ -123,6 +125,30 @@ export async function keepSpaceFormAction(): Promise<void> {
   if (launch.steps.space?.status !== 'published') {
     await store.markStepPublished(launch, 'space', slug)
     await recordLaunchEvent(profileId, { type: 'step_published', launchId: launch.id, step: 'space' })
+  }
+  redirect(spotlightStepUrl())
+}
+
+/** The "Which Space is this for?" button. The person picks one of their own Spaces or a new one. A Space is attached to
+ *  the launch (no second one is made), and when its Spotlight is already live that step counts as done, so what exists
+ *  fills the page and anything they change is written back to the same records. Ends back on the one launch page. */
+export async function chooseSpaceFormAction(formData: FormData): Promise<void> {
+  if (!launchSystemEnabled()) redirect('/')
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in?next=/launch/claim')
+  const spaces = await listOwnedSpaces(profileId)
+  const choice = parseSpaceChoice(formData.get('space'), spaces)
+  if (choice === null) redirect(spotlightStepUrl())
+  if (choice === NEW_SPACE) redirect(`${spotlightStepUrl()}?new=1`)
+  const held = await readPendingLaunch()
+  const running = await store.getActiveLaunch(profileId)
+  const launch = running ?? (await store.startLaunch(profileId, { niche: held?.niche ?? null, intents: held?.intents ?? [] }))
+  if (!launch) redirect(spotlightStepUrl('retry'))
+  if (!running) await recordLaunchEvent(profileId, { type: 'launch_started', launchId: launch.id })
+  await store.attachSpace(launch, choice.id)
+  if (choice.spotlightLive && launch.steps.spotlight?.status !== 'published') {
+    await store.markStepPublished(launch, 'spotlight', choice.slug)
+    await recordLaunchEvent(profileId, { type: 'step_published', launchId: launch.id, step: 'spotlight' })
   }
   redirect(spotlightStepUrl())
 }
