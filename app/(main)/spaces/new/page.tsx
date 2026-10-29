@@ -50,8 +50,14 @@ export default async function NewSpacePage({
     redirect(`/sign-in?next=${encodeURIComponent(`/spaces/new${back.size ? `?${back}` : ''}`)}`)
   }
 
-  // Someone with a launch under way does not leave it by way of a second door: it has one home (lib/launch/destination.ts).
-  if (launchSystemEnabled() && (await getActiveLaunch(profileId))) redirect(launchHomeHref({ signedIn: true }))
+  // One front door (LIVE-1913). With the launch on, this page is only ever the way in: someone with a launch under way
+  // goes home to it, and everyone else starts one, so a first-timer never lands on this form inside the rail.
+  // /launch opens as the full-screen lightbox (lib/launch/destination.ts). With the launch off, the form below stays.
+  if (launchSystemEnabled()) {
+    if (await getActiveLaunch(profileId)) redirect(launchHomeHref({ signedIn: true }))
+    const niche = nicheFromHint(params.niche) ?? nicheFromHint((await cookies()).get('fq_beta_seq')?.value)
+    redirect(niche ? `/launch/start?niche=${encodeURIComponent(niche)}` : '/launch/start')
+  }
 
   const choices = listModeChoices()
   // The niche a /for door named: an explicit `?niche=`, else the funnel sequence the visitor came through
