@@ -21,11 +21,13 @@ export function PhotoActions({ itemId, kind, slug, spaceId, skipped }: { itemId:
   const [pending, start] = useTransition()
   const noun = kind === 'cover' ? 'cover photo' : 'logo'
 
-  const save = (img: { url: string; assetId?: string | null }) => {
-    setUrl(img.url)
+  const save = (img: { url: string | null; assetId?: string | null }) => {
+    const picked = img.url
+    if (!picked) return
+    setUrl(picked)
     setNote(null)
     start(async () => {
-      const res = await setSpaceImages(slug, kind === 'cover' ? { coverImageUrl: img.url, coverImageAssetId: img.assetId ?? null } : { brandLogoUrl: img.url, brandLogoAssetId: img.assetId ?? null })
+      const res = await setSpaceImages(slug, kind === 'cover' ? { coverImageUrl: picked, coverImageAssetId: img.assetId ?? null } : { brandLogoUrl: picked, brandLogoAssetId: img.assetId ?? null })
       if (isError(res)) setNote(res.error)
       else router.refresh()
     })

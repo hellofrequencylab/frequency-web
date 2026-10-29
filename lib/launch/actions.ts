@@ -162,6 +162,6 @@ export async function skipPhotoFormAction(formData: FormData): Promise<void> {
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
   const launch = await store.getActiveLaunch(profileId)
-  if (launch) await store.skipPhotoItem(launch, formData.get('item'))
+  if (launch) await store.skipPhotoItem(launch, String(formData.get('item') ?? ''))
   redirect('/launch')
 }
