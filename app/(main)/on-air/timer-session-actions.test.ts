@@ -45,6 +45,7 @@ function builder(table: string) {
       return {
         eq: (col: string, val: string) => {
           rec.deletes.push({ eq: [col, val] })
+          if (col === 'profile_id' && val === selectRow?.profile_id) selectRow = null
           return Promise.resolve({ error: null })
         },
       }
@@ -176,7 +177,7 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
     selectRow = null
     const result = await getActiveTimerSession()
     expect('error' in result).toBe(false)
-    if (!('error' in result)) expect(result.data).toBeNull()
+    if (!('error' in result)) expect(result.data).toEqual({ session: null, expired: false })
     // The read is scoped to the caller.
     expect(rec.selectEqs[0]).toEqual(['profile_id', 'me-0000-4000-a000-00000000self'])
   })
@@ -197,7 +198,7 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
     const result = await getActiveTimerSession()
     expect('error' in result).toBe(false)
     if ('error' in result) return
-    const record = result.data!
+    const record = result.data.session!
     expect(record.kind).toBe('mindless')
     // The wall clock is preserved exactly, so elapsed = now - startedAt recomputes on resume.
     expect(record.startedAt).toBe(startedMs)
@@ -222,8 +223,8 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
     }
     const result = await getActiveTimerSession()
     if ('error' in result) throw new Error('unexpected fail')
-    expect(result.data!.pausedAt).toBe(pausedMs)
-    expect(result.data!.secondsTarget).toBeNull()
+    expect(result.data.session!.pausedAt).toBe(pausedMs)
+    expect(result.data.session!.secondsTarget).toBeNull()
   })
 
   // ── THE STALENESS GATE ──────────────────────────────────────────────────────────────
@@ -244,7 +245,7 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
     }
     const result = await getActiveTimerSession()
     expect('error' in result).toBe(false)
-    if (!('error' in result)) expect(result.data).toBeNull()
+    if (!('error' in result)) expect(result.data).toEqual({ session: null, expired: true })
   })
 
   it('keeps a FRESH armed row, so a real warm-up still resumes', async () => {
@@ -260,7 +261,7 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
     }
     const result = await getActiveTimerSession()
     if ('error' in result) throw new Error('unexpected fail')
-    expect(result.data).not.toBeNull()
+    expect(result.data.session).not.toBeNull()
   })
 
   it('discards a genuinely paused run once it passes the 6h cache window', async () => {
@@ -277,34 +278,36 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
     }
     const result = await getActiveTimerSession()
     expect('error' in result).toBe(false)
-    if (!('error' in result)) expect(result.data).toBeNull()
+    if (!('error' in result)) expect(result.data).toEqual({ session: null, expired: true })
   })
 
-  it('banks an unfinished sit that aged out as a partial log so the streak holds', async () => {
+  it('expires a stale run without crediting unverifiable elapsed time or touching saved progress', async () => {
     logPracticeMock.mockClear()
     const started = Date.now() - 12 * 60 * 60_000
     selectRow = {
       profile_id: 'me-0000-4000-a000-00000000self',
       practice_id: 'p4',
       mode: 'mindless',
-      setup: { resumeFromSec: 0, payload: {} },
+      // This is already-logged partial progress. Stale recovery must leave it alone.
+      setup: { resumeFromSec: 85, payload: {} },
       started_at: new Date(started).toISOString(),
       paused_at: null,
       seconds_target: null,
-      duration_min: 5,
     }
     const result = await getActiveTimerSession()
     if ('error' in result) throw new Error('unexpected fail')
-    expect(result.data).toBeNull()
-    expect(logPracticeMock).toHaveBeenCalledTimes(1)
-    const arg = logPracticeMock.mock.calls[0][0]
-    expect(arg.profileId).toBe('me-0000-4000-a000-00000000self')
-    expect(arg.practiceId).toBe('p4')
-    expect(arg.secondsDone).toBe(0)
-    expect(arg.startedAt).toBe(new Date(started).toISOString())
+    expect(result.data).toEqual({ session: null, expired: true })
+    expect(logPracticeMock).not.toHaveBeenCalled()
+    expect(rec.deletes).toEqual([{ eq: ['profile_id', 'me-0000-4000-a000-00000000self'] }])
+
+    // A retry sees the cleared row; recovery cannot issue a second credit or repeat the notice.
+    const retry = await getActiveTimerSession()
+    expect('error' in retry ? retry : retry.data).toEqual({ session: null, expired: false })
+    expect(logPracticeMock).not.toHaveBeenCalled()
+    expect(rec.deletes).toHaveLength(1)
   })
 
-  it('banks nothing for an armed pre-roll that never began', async () => {
+  it('expires an armed pre-roll that never began without awarding practice credit', async () => {
     logPracticeMock.mockClear()
     const t = Date.now() - 60 * 60_000
     selectRow = {
@@ -316,7 +319,9 @@ describe('getActiveTimerSession — self-scoped read + record reconstruction', (
       paused_at: new Date(t).toISOString(),
       seconds_target: null,
     }
-    await getActiveTimerSession()
+    const result = await getActiveTimerSession()
+    if ('error' in result) throw new Error('unexpected fail')
+    expect(result.data).toEqual({ session: null, expired: true })
     expect(logPracticeMock).not.toHaveBeenCalled()
   })
 

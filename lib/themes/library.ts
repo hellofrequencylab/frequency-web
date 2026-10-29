@@ -81,11 +81,11 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
     surfaces: surfaces('soon', 'soon'),
   },
   {
-    id: 'network',
-    tagline: 'Coastal, warm and made of real photos.',
-    madeFor: 'chapters, clubs, collectives and anyone who runs many places',
-    signature: 'Butter-cream grounds, one bold color, pill buttons, with Bricolage Grotesque and Outfit.',
-    surfaces: surfaces('soon', 'soon'),
+    id: 'network-kit',
+    tagline: 'Paper, ink and one solid color. Thirteen ways in.',
+    madeFor: 'networking groups, clubs, hosts, studios, schools and anyone who brings people together',
+    signature: 'Paper, card tint and deep ink, one hero color in four schemes, pill buttons, with Bricolage Grotesque and Outfit.',
+    surfaces: surfaces('soon', 'ready'),
   },
   {
     id: 'temple',
@@ -110,9 +110,24 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
   },
 ]
 
-/** The address of a theme's page. Nocturne is the Midnight theme under its new name: its id, editor value and every
- *  saved site style stay `midnight`, only the address visitors see moved (/themes/midnight redirects). */
-export const themePagePath = (id: string): string => `/themes/${id === 'midnight' ? 'nocturne' : id}`
+/** The path segment a theme's page lives at. Two ids are named differently from their address; both keep their id,
+ *  editor value and every saved site style, and only the address visitors see differs:
+ *   · Nocturne is the Midnight theme under its new name (/themes/midnight redirects).
+ *   · The Network Theme Kit (`network-kit`) takes /themes/network, the address Daniel named for it
+ *     (/themes/network-kit redirects, next.config.ts). The earlier `network` theme has no page: it is not offered. */
+const THEME_SLUGS: Readonly<Record<string, string>> = { midnight: 'nocturne', 'network-kit': 'network' }
+export const themeSlug = (id: string): string => THEME_SLUGS[id] ?? id
+
+/** The theme id a /themes/[theme] address stands for (the inverse of themeSlug), or null. */
+export function themeIdFromSlug(slug: string): string | null {
+  const renamed = Object.entries(THEME_SLUGS).find(([, s]) => s === slug)
+  if (renamed) return renamed[0]
+  // An id that has a different address (midnight, network-kit) is not reachable under its id.
+  return slug in THEME_SLUGS ? null : slug
+}
+
+/** The address of a theme's page. */
+export const themePagePath = (id: string): string => `/themes/${themeSlug(id)}`
 
 export function themeLibraryEntry(id: string): ThemeLibraryEntry | null {
   return THEME_LIBRARY.find((t) => t.id === id) ?? null

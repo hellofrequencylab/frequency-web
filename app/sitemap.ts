@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { launchEntryEnabled } from "@/lib/launch/enabled";
 import { resolveProfileSiteCanonical } from '@/lib/sites/profile-canonical'
 import { SITE_URL } from "@/lib/site";
 import { SITE_DESIGN } from "@/lib/theme/design";
@@ -245,12 +246,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/networks`, changeFrequency: "monthly", priority: 0.6 },
           // /system (LIVE-1562): the whole system in one story.
           { url: `${SITE_URL}/system`, changeFrequency: "monthly", priority: 0.6 },
+          // /free-spotlight (VLS-05): listed only while the doorway is open; it answers 404 otherwise.
+          ...(launchEntryEnabled() ? [{ url: `${SITE_URL}/free-spotlight`, changeFrequency: "monthly" as const, priority: 0.5 }] : []),
           // /themes (LIVE-1460): the theme gallery.
           { url: `${SITE_URL}/themes`, changeFrequency: "monthly", priority: 0.6 },
           // /themes/nocturne (LIVE-1380): the Nocturne Theme Kit's feature page (it was /themes/midnight).
           { url: `${SITE_URL}/themes/nocturne`, changeFrequency: "monthly", priority: 0.5 },
+          // /themes/designer (LIVE-1743): the Designer Theme Kit's feature page.
+          { url: `${SITE_URL}/themes/designer`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/[theme] (LIVE-1514): the other six themes' kit pages.
-          ...['frequency', 'bold', 'wildheart', 'network', 'temple', 'designer'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
+          // /themes/network (LIVE-1751): the Network Theme Kit's feature page.
+          { url: `${SITE_URL}/themes/network`, changeFrequency: "monthly", priority: 0.5 },
+          ...['frequency', 'bold', 'wildheart', 'temple'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
         ] satisfies MetadataRoute.Sitemap)
       : []),
     { url: `${SITE_URL}/the-community`, lastModified: GUIDE_LAST_MODIFIED["the-community"], changeFrequency: "monthly", priority: 0.8 },

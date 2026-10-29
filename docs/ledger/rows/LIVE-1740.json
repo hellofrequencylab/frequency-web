@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1740",
+  "title": "The Designer Theme Kit's 231 design-system files are on file, each claimed by a rule, with every gap listed",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "docs/design-systems/designer/rules.json",
+    "ref": "Designer Theme Kit build"
+  },
+  "detail": "Intake of the matured Designer design system (limewash + daylight). The kit extends the existing designer theme in place (same palette, Cormorant and Jost); Alli Rae's saved site keeps resolving to it and must render identically. docs/design-systems/designer holds the rules, inventory with hashes, tokens, copy and a baseline of known gaps (194 token values, 22 missing targets, 391 copy sentences) which the build passes can only shrink. The 14 sample photographs ship byte for byte under public/sites/designer/photos. scripts/design-system.test.ts reads the Designer token block. Ledger block LIVE-1740..1769 is reserved for this lane.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "All 231 files are claimed; the baseline lists the rest.",
+    "cmd": "node scripts/probes/designer-design-system-intake.mjs"
+  },
+  "closed": "2026-10-28"
+}

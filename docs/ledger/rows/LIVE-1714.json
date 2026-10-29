@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1714",
+  "title": "Add the Network Theme Kit's thirteen extra home blocks (featured, venue, calendar, chapters, circles, stats, note, pillars, rooms, podcast, social, merch, contact) and its thirteen profile kits",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "docs/DESIGN-SYSTEM-INTAKE.md",
+    "ref": "Daniel, 2026-10-28: program the new Network design system into the theme system the way Nocturne is. Plan: /mnt/project-files/network-theme/PLAN.html (pass 4 of 12)"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/network-kit-extra-blocks.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Fails on main (components/page-editor/blocks/network-kit-more.tsx does not exist) and passes here."
+  },
+  "detail": "Pass 4 of 12, on top of pass 3 (LIVE-1713). Thirteen extra blocks in components/page-editor/blocks/network-kit-more.tsx, in the design's order: NetworkKitFeatured, Venue, Calendar, Chapters, Circles, Stats, Note, Pillars, Rooms, Podcast, Social, Merch, Contact. Featured, Calendar and Stats read the Space (next event, upcoming events, highlights); the rest are owner-written with empty-state defaults in lib/sites/network-kit-extras.ts. The design defines no layout variants for these, so the only option added is a photo-side flip on Featured, Venue and Note. Skin: components/sites/network-kit-more-css.ts, merged into the kit skin, scoped and token-only. Contact posts through the contact lead door (components/sites/network-kit-contact-form.tsx). Kits: registry.ts registers a loader per profile, id network-kit-<niche> for all 13 niches (lib/sites/kits/network-kit-profile-variants.ts, index in network-kit-profile-index.ts, listed in the kit library when the theme is NetworkKit). Each kit is a home assembled from the blocks plus placeholder starter pages; names and rules come from lib/spotlight/network-kit-content.ts. VOICE CHANGES against the design's kit copy: dropped the Featured countdown, prices, counts and figures, weekday rhythms and free claims, and 'cohort' became 'group'. DECISIONS: kit ids are network-kit-<niche>; the starter-site test no longer excludes network-kit (the live-list assertion skips NetworkKit); SiteKit.look is not set because applyKit ignores it; baseline for the old network design-system theme re-frozen (ids only removed). NOT DONE: NetworkKit stays out of WEBSITE_THEMES_LIVE; the starter pages (workshops, services, journeys, membership, shop, resources, about) are placeholders for pass 5; the theme gallery pages do not list the kits yet. Space console: no file under app/(main), app/(public), components/spaces or components/frequency changed.",
+  "wave": "W7"
+}

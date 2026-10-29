@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1680",
+  "title": "A Temple Kit website wears the design's chrome: announce bar, glass header, bag drawer, account menu, plaster footer, buttons and fields",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "L",
+  "wave": "W7",
+  "source": {
+    "file": "docs/design-systems/temple/rules.json",
+    "ref": "LIVE-1642"
+  },
+  "detail": "Pass 2 of the Temple Theme Kit: components/sites/temple-kit-*.tsx and temple-kit-chrome-css.ts, wired through site-chrome.tsx like Nocturne. Fixes two design quirks: the header overflowed 1280 (nav inline from 1280, tagline from 1560, hamburger under 1280) and the announce bar clipped at 390. The bag drawer has no cart store behind it yet and shows its empty state; the Header.jsx sentence 'One letter a month.' is left open (voice guide: no cadence promise).",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "Chrome files present and wired.",
+    "cmd": "node scripts/probes/temple-kit-chrome.mjs"
+  },
+  "closed": "2026-10-28"
+}

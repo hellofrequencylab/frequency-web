@@ -87,7 +87,7 @@ export function CurateWithVera({ practiceId, title, gaps }: { practiceId: string
           onClick={draft}
           disabled={drafting}
           title="Vera drafts only what is empty. You decide what goes in."
-          aria-label={`Fill ${title} with Vera`}
+          aria-label={`${drafting ? 'Drafting…' : 'Fill with Vera'}: ${title}`}
         >
           <Sparkles className="h-3.5 w-3.5" aria-hidden />
           {drafting ? 'Drafting…' : 'Fill with Vera'}

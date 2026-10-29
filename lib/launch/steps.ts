@@ -48,6 +48,12 @@ export function isLaunchStepId(v: unknown): v is LaunchStepId {
   return typeof v === 'string' && (LAUNCH_STEP_IDS as readonly string[]).includes(v)
 }
 
+/** Where a step's own screen lives. Every launch link (the box, the resume page, the reminder emails) builds
+ *  its address here, so a rename is one edit. */
+export function launchStepHref(id: LaunchStepId): string {
+  return `/launch/step/${id === 'paid' ? 'get-paid' : id}`
+}
+
 export function isSkippable(id: LaunchStepId): boolean {
   return !STEP_DEFS[id].required
 }

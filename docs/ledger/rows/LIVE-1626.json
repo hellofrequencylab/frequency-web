@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1626",
+  "title": "The Circle page puts its own column beside the feed, as the design does",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "app/themes/frequency/members-circle.css",
+    "ref": "Daniel, 2026-10-28: what happened to the right rail in the circle area? Keep the main right rail, consult the design system for the layout"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/circle-two-column.mjs",
+    "checked": "2026-10-28",
+    "evidence": "Probe fails on main (no container query, one stacked column) and passes here."
+  },
+  "detail": "The design's Circle is two columns, the feed with a side column (About, How we do it, How we meet, Who's here) beside it, stacking only when narrow. The page stacked those cards full width under the feed at every desktop width. The Circle body is now a size container: side column 288px beside the feed when the body is 740px or wider, stacked below that. The main Stats and streaks rail is untouched.",
+  "wave": "W7"
+}

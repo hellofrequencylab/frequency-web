@@ -198,6 +198,260 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4283,
+      "expiresAt": "2026-10-31T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346027000_calendar_suite_data_model.sql",
+          "sha256": "5163300a8122a49c59e039cba6836eec6cef8cb800b8bddba6fec6a9d8ca97bc"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": ".github/workflows/db-tests.yml",
+          "status": "modified",
+          "sha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/entry-record-actions.ts",
+          "status": "added",
+          "sha256": "d693b24a201fa5287b9364b5ed6f2c584538eb260ecb2c77742667ff58a045b0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts",
+          "status": "modified",
+          "sha256": "ea6eb1580f87474f89058a168c25f98205a26d495749fd0fb0c256becfcbb719",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/task-actions.ts",
+          "status": "modified",
+          "sha256": "4df5f15750336cd757e7179b54ec34892b33eebcfb1b679f252fc6af1514c830",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-1703.json",
+          "status": "added",
+          "sha256": "6df0adf6e3e38491c7a5b0eaace276b4c718ceb6f1057ad8e2eb46ec026ff398",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/calendar-suite-data-model.test.ts",
+          "status": "added",
+          "sha256": "56b29c3fff3e4a75de10d8c9840f617a75cf0ac9c4e0ee034e8882e3469ad363",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-activity-store.ts",
+          "status": "modified",
+          "sha256": "f109eee25e15202de56409e03c339679eeb87885d6c606668b39a86fb687f72a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-activity.ts",
+          "status": "modified",
+          "sha256": "f2e73417e353ac3932007b49856614cc398cbe791a13f42c4da964eb488f1d97",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-comments-store.ts",
+          "status": "modified",
+          "sha256": "4cd707027167dd5f53a0fa05f7e1ea1443338a7e8a269ad56ff320c38ffaf6a6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-comments.ts",
+          "status": "modified",
+          "sha256": "7408fc5f7dce3a31e6d84e488cd4a386d8267bbd1003e95f9b1d88622e9ccca2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-subject.test.ts",
+          "status": "added",
+          "sha256": "884ab180bc9be4b60476dc260c84c856e3e5c799f8b8ad2bb8beceff9582052e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-subject.ts",
+          "status": "added",
+          "sha256": "b95521051bdfdb54b12dc122ac348741a80c2d222075e1e41f1d8eb8e8eeefc1",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plans-store.ts",
+          "status": "modified",
+          "sha256": "66579e69fb800464bc444b4247a787a5dcae20873f4bd9a27e4a586d7c1d6bed",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plans.test.ts",
+          "status": "modified",
+          "sha256": "d1835ecbbe558d5bc94bb65455ad0a61ae8bcf0a00bc26b8d613a107b5b445bc",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plans.ts",
+          "status": "modified",
+          "sha256": "567d282f9550c842ecc2ad874097f003306e4d7c4b5be7340df310dd4551a444",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/crm/tasks-core.ts",
+          "status": "modified",
+          "sha256": "8270dff9b0f09b5bd1a030928f83e08e669f04b43e1f50bd5675f0cdf5a60e06",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/crm/tasks.test.ts",
+          "status": "modified",
+          "sha256": "b798ff3cac10e9505e37c9706fce3ea80c2dfcb326fe63a37099c5ba8c32c104",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/crm/tasks.ts",
+          "status": "modified",
+          "sha256": "c8807ff8ff28ec51d79121706dc47ed31391bdb244b13a03de7335cf7e98e2af",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "a7396dbeb86e6bc2bee67491300f41b0c0a19ba6f0073dfe328d641e0aef80ff",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/calendar-suite-api.mjs",
+          "status": "added",
+          "sha256": "df56ad91c34987bfbc71bf2e7b8d51cc9e97bdbfa457df23a8a67ee7f4af1ac2",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346027000_calendar_suite_data_model.sql",
+          "status": "added",
+          "sha256": "5163300a8122a49c59e039cba6836eec6cef8cb800b8bddba6fec6a9d8ca97bc",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/calendar_suite_data_model.test.sql",
+          "status": "added",
+          "sha256": "f24ba520398d6b9ee3036a7d51cb11c79a8a8242f4bb45debb2df1a5f6d93e59",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated calendar suite API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated calendar suite API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
+    },
+    {
+      "pullRequest": 4300,
+      "expiresAt": "2026-10-31T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346027100_launch_consent_retention.sql",
+          "sha256": "c1759cb03ecffab63d569ac0a197da5f22f5a611c9adb53636110f949a7eb0d8"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/LAUNCH-CONSENT-RETENTION.md",
+          "status": "added",
+          "sha256": "87bb31f1b8b1c6eee0d19fbae210323ed8053d53498628bb488ac9c7849d9894",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/adr/ADR-1926.md",
+          "status": "added",
+          "sha256": "90a4b5eaf28a162d95f6ce276474dff59887d17e1f40388ba81859010e6c9039",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-1775.json",
+          "status": "added",
+          "sha256": "bf85fd37d65aeb59d0f65acc7c657c02a4c4acd9570c5418aca49a23f258a172",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "2884f29faec24e04fa9eb5159472822bb9d85efdec7506d3e4fa73e95f23d5a8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/launch-consent-retention.mjs",
+          "status": "added",
+          "sha256": "c815d591c34de49c4b88a30c84047d7e130bef5eb361ec1c549cd136bf4d26d3",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/launch-api.mjs",
+          "status": "modified",
+          "sha256": "62ff749ed73bb2840ba0cbd1ac08318f32a74ff02f0294a5e4a637803f163621",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346027100_launch_consent_retention.sql",
+          "status": "added",
+          "sha256": "c1759cb03ecffab63d569ac0a197da5f22f5a611c9adb53636110f949a7eb0d8",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/launch_consent_retention.test.sql",
+          "status": "added",
+          "sha256": "4c30e7b52bb3ace9becda68dd227234da508d69aec3e7c2882025b928c33e964",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }

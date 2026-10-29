@@ -1,4 +1,5 @@
 import { listSharedCollaboratorEvents } from '@/lib/spaces/collaborator-calendar'
+import { openingMonth } from '@/lib/calendar/open-month'
 import { listCalendarEngagement } from '@/lib/events/store'
 import { formatEventWhen, eventInstant } from '@/lib/time/zone'
 import { eventDayKey } from '@/lib/events/calendar-grid'
@@ -19,8 +20,7 @@ export async function SharedCollaboratorCalendar({
   ownName: string
 }) {
   const now = new Date()
-  const initialYear = now.getUTCFullYear()
-  const initialMonth1 = now.getUTCMonth() + 1
+  const { year: initialYear, month1: initialMonth1 } = openingMonth(now)
   const fromDay = `${initialYear}-${String(initialMonth1).padStart(2, '0')}-01`
 
   const rows = await listSharedCollaboratorEvents(spaceId, ownName, { fromDay })

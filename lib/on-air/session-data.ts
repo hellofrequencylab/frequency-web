@@ -20,6 +20,7 @@ import { getMemberPractices, type TimerKind, type MindlessMode, type PartialToda
 import type { MovementConfig } from '@/lib/movement'
 import { getCurrentLeg, type CurrentLegContext } from '@/lib/journeys/current-leg'
 import { DEFAULT_PREFS, coerceBellVolume, coerceAmbientVolume, type OnAirPrefs } from '@/lib/on-air'
+import { countPracticedToday } from '@/lib/on-air/practice-presence'
 import type { OnAirPractice } from '@/components/on-air/session'
 
 /** The synthetic "Free sit" chip id. Selecting it runs the open timer; on completion it logs the
@@ -86,7 +87,7 @@ export async function loadOnAirSessionData(
     mine,
     { data: prof },
     { data: todayLogs },
-    { data: presenceRows },
+    practicedToday,
     { data: sitRow },
     { data: moveRow },
   ] = await Promise.all([
@@ -102,9 +103,9 @@ export async function loadOnAirSessionData(
         .select('practice_id, seconds_done, seconds_target, completed')
         .eq('profile_id', profileId)
         .eq('logged_for', today),
-      // Presence: distinct members with a log today. Row-count + Set in JS —
-      // PostgREST aggregates are disabled on hosted projects.
-      admin.from('practice_logs').select('profile_id').eq('logged_for', today).limit(10000),
+      // PostgREST aggregates are disabled in hosted projects and max_rows is 1,000.
+      // Read stable, complete pages before counting distinct members.
+      countPracticedToday(admin as unknown as Parameters<typeof countPracticedToday>[0], today),
       // The Free sit's target practice (the canonical short sit).
       admin.from('practices').select('id, title').eq('slug', DEFAULT_SIT_SLUG).maybeSingle(),
       // The Get Moving Free Practice's target practice (the canonical daily walk).
@@ -235,12 +236,6 @@ export async function loadOnAirSessionData(
       breathPattern: null,
     })
   }
-
-  const practicedToday = new Set(
-    ((presenceRows ?? []) as { profile_id: string | null }[])
-      .map((l) => l.profile_id)
-      .filter(Boolean) as string[],
-  ).size
 
   const meta = (prof?.meta ?? {}) as Record<string, unknown>
   const stored = (meta.onAir ?? {}) as Partial<OnAirPrefs>

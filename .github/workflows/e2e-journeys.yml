@@ -80,12 +80,34 @@ jobs:
           eval "$(pnpm exec supabase status -o env)"
           NEXT_PUBLIC_SUPABASE_URL="${API_URL}" SUPABASE_SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY}" \
           NEXT_PUBLIC_SUPABASE_ANON_KEY="${ANON_KEY}" pnpm e2e:session
+      - name: Seed a throwaway Circle to join
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          slug="qa-journey-circle"
+          curl -fsS -X POST "${API_URL}/rest/v1/circles" \
+            -H "apikey: ${SERVICE_ROLE_KEY}" -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+            -H 'Content-Type: application/json' -H 'Prefer: return=minimal' \
+            -d "{\"name\":\"QA journey circle\",\"slug\":\"${slug}\",\"status\":\"active\",\"about\":\"Throwaway Circle on the local stack, destroyed with it.\"}"
+          echo "PW_CIRCLE_SLUG=${slug}" >> "$GITHUB_ENV"
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Walk the journeys
         env:
           PW_STORAGE_STATE: ${{ github.workspace }}/test/e2e/.auth/member.json
         run: pnpm test:e2e:journeys
+      - name: What the app logged
+        if: always()
+        run: |
+          echo "--- app log (errors and 500s)"
+          grep -nE "auth/callback|Error|⨯| 500 " dev.log | tail -80 || true
+          echo "--- local containers"
+          docker ps --format '{{.Names}}' || true
+          echo "--- local Auth log (last 80 lines that are not /user polls or the host notice)"
+          for c in $(docker ps --format '{{.Names}}' | grep -i auth); do
+            echo "## $c"
+            docker logs "$c" 2>&1 | grep -v -e '"path":"/user"' -e 'GOTRUE_MAILER_EXTERNAL_HOSTS' | tail -80 | cut -c1-500 || true
+          done
       - name: Keep the evidence
         if: always()
         uses: actions/upload-artifact@v4
