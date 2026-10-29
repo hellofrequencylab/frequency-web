@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1716",
+  "title": "The Space calendar's edges: a settings sheet, holds and timed to-dos in the team feed, and a Subscribe panel on the website calendar",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/calendar-suite/suite-settings.tsx",
+    "ref": "Daniel, 2026-10-28: redesign the Space calendar with the Calendar system handoff; every Space gets the full calendar and project suite (pass 9 of 9)."
+  },
+  "detail": "Pass 9 of the Space calendar and project suite. The gear in the calendar header opens Calendar settings, a sheet with the Space's time zone, the sky markers switch, day notes, Copy public feed, Copy team feed, the sync rows and the count of shared Plans; the three fields the page carried under the calendar moved into it. Copy team feed reads the live private link and makes one only when there is none, so copying never rotates it (ensurePrivateCalendarFeed). The private team .ics feed now carries a Plan's held dates as tentative Holds that say when they lapse, and a to-do with a start time lands at that hour in the Space's zone for as long as its estimate (lib/calendar/entry-feed.ts, todoFeedFields). The website calendar gets a Subscribe panel under its Upcoming list (components/sites/site-subscribe-panel.tsx). The phone layout was already in the suite (rail and Details rise as sheets under 820px of calendar width, Agenda opens first under 720px) and was checked at 390 wide. Not here: the suite's month component on the website, because its styles are the console's and the handoff marks the website calendar out of scope. Help: plan-your-calendar. Plan: /mnt/project-files/calendar-suite/PLAN.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const need=['components/calendar-suite/suite-settings.tsx','components/sites/site-subscribe-panel.tsx'];const miss=need.filter(f=>!fs.existsSync(f));if(miss.length){console.error('missing',miss);process.exit(1)}const h=fs.readFileSync('components/calendar-suite/suite-header.tsx','utf8');if(h.includes('#calendar-settings')||!h.includes('onSettings')){console.error('the settings gear still goes nowhere');process.exit(1)}const f=fs.readFileSync('lib/calendar/entry-feed.ts','utf8');if(!f.includes('todoFeedFields')||!f.includes('tentative')){console.error('the team feed carries no timed to-dos or holds');process.exit(1)}\"",
+    "note": "Fails on main (the gear is a dead anchor, the feed has neither); passes here. The feed and sheet tests run in CI."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}
