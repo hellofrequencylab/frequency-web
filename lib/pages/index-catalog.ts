@@ -90,6 +90,7 @@ const SITE: IndexedPage[] = present([
   // Frequency-only routes (404 under DAWN): their rows show only on a Frequency build.
   FREQUENCY ? { label: 'Features', path: '/features', editor: 'coded' } : null,
   { label: 'The whole system', path: '/system', editor: 'coded', note: 'Every Theme Kit as one system.' },
+  { label: 'Create a Space', path: '/create-a-space', editor: 'coded', note: 'The live preview and the builder; ?kit= preselects a Theme Kit.' },
   blocks('pricing', 'Pricing', 'Prices come from the Pricing console.'),
   blocks('about', 'About'),
   FREQUENCY ? { label: 'Vision', path: '/vision', editor: 'coded' } : null,

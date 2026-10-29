@@ -1,0 +1,162 @@
+[
+ {
+  "path": "COMPONENTS.md",
+  "bytes": 6625,
+  "sha256": "eb800792c1731086449c7e2c90c2ccc2c0490aaacaf8ab164d39d80834aa959f"
+ },
+ {
+  "path": "LINKS.md",
+  "bytes": 4497,
+  "sha256": "8cf7c0b1872d9495802446b0ed76a77316561683c819ab610ce29891364ab3df"
+ },
+ {
+  "path": "PREVIEW-MODE.md",
+  "bytes": 6400,
+  "sha256": "c8fe7709af938b1f39b8e463d0897c5a34ee1f83b55fa527ffcb8b8f880d91e7"
+ },
+ {
+  "path": "README.md",
+  "bytes": 5172,
+  "sha256": "2a11e08b455000440fe92e1465f67cd2dd316ded9f2017f1981af0b58de2f3b0"
+ },
+ {
+  "path": "reference/Create a Space.dc.html",
+  "bytes": 117011,
+  "sha256": "f9b26801ab18dd2da0b10f11b659c168cd3bbe02d8233d5ad90484553f4f6e55"
+ },
+ {
+  "path": "reference/README.md",
+  "bytes": 15362,
+  "sha256": "378f081f6c4a5560304887be03466a65dbf53105fb9d16df75d3ef470dba6f7c"
+ },
+ {
+  "path": "reference/_ds/frequency-design-system-5ecee10f-9078-41bd-8de4-38ad33320f4e/_ds_bundle.js",
+  "bytes": 249747,
+  "sha256": "48395e2fc13bf7a72c5be5c8428b17f52537e3f20724ff0370dcfc669fd01bc8"
+ },
+ {
+  "path": "reference/_ds/frequency-design-system-5ecee10f-9078-41bd-8de4-38ad33320f4e/styles.css",
+  "bytes": 360,
+  "sha256": "8e3845c3efe659531087758f88ef44ed6b63e39c5f2df89abb714923bf7e6019"
+ },
+ {
+  "path": "reference/_ds/frequency-design-system-5ecee10f-9078-41bd-8de4-38ad33320f4e/tokens/base.css",
+  "bytes": 8367,
+  "sha256": "0addf8039184cfee4ec4dbbebc75896e1adfaba938d553a46845f6b6c2ef2ea1"
+ },
+ {
+  "path": "reference/_ds/frequency-design-system-5ecee10f-9078-41bd-8de4-38ad33320f4e/tokens/colors.css",
+  "bytes": 6286,
+  "sha256": "3a342f5cfa802e7eb3f806348ba3a93d4816225aff7e63a14cc114f1170ba67a"
+ },
+ {
+  "path": "reference/_ds/frequency-design-system-5ecee10f-9078-41bd-8de4-38ad33320f4e/tokens/features.css",
+  "bytes": 7359,
+  "sha256": "c643eb9f4f6dd52ad57f66a8d13c050468061869c1c9154e669b72afc4dd899b"
+ },
+ {
+  "path": "reference/_ds/frequency-design-system-5ecee10f-9078-41bd-8de4-38ad33320f4e/tokens/infographics.css",
+  "bytes": 30200,
+  "sha256": "991b878fae483b9043654aeba294f2e84ca74842e8fbca290ae81a559609c505"
+ },
+ {
+  "path": "reference/_ds/frequency-design-system-5ecee10f-9078-41bd-8de4-38ad33320f4e/tokens/space-motion.css",
+  "bytes": 1583,
+  "sha256": "a9884f4175801d0e4f318466c92c7c29f0dfe09449e15dafac050d56d16780d9"
+ },
+ {
+  "path": "reference/_ds/frequency-design-system-5ecee10f-9078-41bd-8de4-38ad33320f4e/tokens/themes.css",
+  "bytes": 5803,
+  "sha256": "aa2f5473b1859da30f5f7d43a9c8e75ac06ca4929c95e88ee05b7985e3a19709"
+ },
+ {
+  "path": "reference/_ds/frequency-design-system-5ecee10f-9078-41bd-8de4-38ad33320f4e/tokens/typography.css",
+  "bytes": 1667,
+  "sha256": "bfb2dd92bab96b6321e5a45b4a3b474edd0a81f5f06381b3d37a9ccc9767f9a0"
+ },
+ {
+  "path": "reference/assets/designer/courtyard-arch.webp",
+  "bytes": 115542,
+  "sha256": "924a25edf9122758c048773637885cc31f32cffdfe09e24b14e42ad09eb7b8eb"
+ },
+ {
+  "path": "reference/assets/designer/house-front.webp",
+  "bytes": 175652,
+  "sha256": "0e42355fca75a2e5e97a6b2d673c92025e12256372b953383272229eff7be017"
+ },
+ {
+  "path": "reference/assets/designer/kitchen-hero.webp",
+  "bytes": 73604,
+  "sha256": "71dcafdf4d93bb44eef63ab3c3b0a077d231cb60a299b35dd6bc587a116ddd2e"
+ },
+ {
+  "path": "reference/assets/designer/kitchen-island.webp",
+  "bytes": 81852,
+  "sha256": "5caa2be7193f326353968dc0c58e7c6d0de325e6052fcc06cd0f0599bc636c53"
+ },
+ {
+  "path": "reference/assets/designer/portrait-01.webp",
+  "bytes": 67160,
+  "sha256": "e50c78ac9b8385d3a65333a740f6753011ec9b3a9a0f6fa4fe57916f6dec8c47"
+ },
+ {
+  "path": "reference/assets/designer/portrait-02.webp",
+  "bytes": 74752,
+  "sha256": "96e5a72b5fdb29d925afb4a763ae116bcceddba26c7b86fb58569f0f0cf5af64"
+ },
+ {
+  "path": "reference/assets/designer/sofa.webp",
+  "bytes": 89654,
+  "sha256": "7b394db26a03187dfe9d49241a34d46181764f8a9a81065671bdaffe5686c7e8"
+ },
+ {
+  "path": "reference/assets/icons/frequency-icons.svg",
+  "bytes": 29299,
+  "sha256": "75d119bd9b0e5e523d3775b19a4f95280fba7586f6ebb9ac55497424d1b6146f"
+ },
+ {
+  "path": "reference/assets/logo/frequency-icon-round.png",
+  "bytes": 23140,
+  "sha256": "0115c43fdbbd97c018b418d56d9a51e328a88244b647bf98246b37f455cf5d0f"
+ },
+ {
+  "path": "reference/assets/logo/frequency-wordmark.png",
+  "bytes": 35300,
+  "sha256": "fd6aca4bcf54b0f988a28ec405b26996d1f12b9117d10037389c891b11dbec0c"
+ },
+ {
+  "path": "reference/assets/photos/pain-1.jpg",
+  "bytes": 257093,
+  "sha256": "bfe8057a7ea44c63f62de08e2067b1dde42a8fb979f84861aaf9b8ba6702555f"
+ },
+ {
+  "path": "reference/assets/photos/pain-2.jpg",
+  "bytes": 168402,
+  "sha256": "f1b89e5ef2f528c08bb7cfceb8f31fa7c5bd40467195604fe1433e714b18b35c"
+ },
+ {
+  "path": "reference/assets/photos/pain-3.jpg",
+  "bytes": 226967,
+  "sha256": "a8d65fd76425832f6ee3941eae3b65ffa922565d66fd273caab6a7da8b1bf6c8"
+ },
+ {
+  "path": "reference/support.js",
+  "bytes": 69150,
+  "sha256": "8fe7df74405f3c55f49b7249c74ea1397e65d07dea2b1bd3b4a489bec2e28cbe"
+ },
+ {
+  "path": "tokens/preview-themes.css",
+  "bytes": 6366,
+  "sha256": "02577ed3b2fd52fec3908673e312bf37b6d6d2bd4cf6883550eba6240a220d16"
+ },
+ {
+  "path": "tokens/preview-themes.json",
+  "bytes": 18737,
+  "sha256": "c2bd2d7ab1abfda8dab124ded5a28cad0a10eb42b341e0274bd140d4645a523a"
+ },
+ {
+  "path": "tokens/stage.css",
+  "bytes": 2140,
+  "sha256": "8c502a2912a553196d342abf9ca163588fac889d578dfd4e81f62ac92719d97d"
+ }
+]
