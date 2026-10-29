@@ -12,7 +12,7 @@ vi.mock('next/cache', () => ({
 }))
 vi.mock('@/lib/spaces/store', () => ({ getPublicSpaceBySlugOrThrow: vi.fn(), getSpaceHostRow: vi.fn() }))
 
-const { revalidateThemeChange } = await import('./theme-revalidate')
+const { refreshSite } = await import('./site-cache')
 const { siteCacheTag } = await import('@/lib/cross-request-cache')
 
 beforeEach(() => {
@@ -20,9 +20,9 @@ beforeEach(() => {
   updateTag.mockReset()
 })
 
-describe('revalidateThemeChange', () => {
+describe('refreshSite (what saveWebsiteStyle calls on a theme change)', () => {
   it("expires only the Space's own site tag and its /sites tree", () => {
-    revalidateThemeChange('Garden-Circle')
+    refreshSite('Garden-Circle')
     expect(updateTag).toHaveBeenCalledTimes(1)
     expect(updateTag).toHaveBeenCalledWith(siteCacheTag('Garden-Circle'))
     expect(revalidatePath).toHaveBeenCalledTimes(1)
@@ -30,7 +30,7 @@ describe('revalidateThemeChange', () => {
   })
 
   it('never touches the root or another Space', () => {
-    revalidateThemeChange('one')
+    refreshSite('one')
     const paths = revalidatePath.mock.calls.map((c) => String(c[0]))
     expect(paths).not.toContain('/')
     expect(paths.every((p) => p.startsWith('/sites/one'))).toBe(true)

@@ -5,7 +5,6 @@ import { readSiteAdminAuthor } from '@/lib/sites/site-admin'
 import { authorizeWebsiteEditor } from './authorization'
 import { shareWebsiteAbout } from './share-about'
 import { refreshSite } from '@/lib/sites/site-cache'
-import { revalidateThemeChange } from './theme-revalidate'
 import { readWebsiteEditor, nextWebsiteState, validWebsiteSnapshot, type WebsiteSnapshot, type WebsiteEditorState } from './state'
 
 
@@ -185,6 +184,6 @@ export async function saveWebsiteStyle(host: string, patch: { theme?: string; lo
   const db = auth.db as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }
   const result = await db.rpc('set_space_preferences', { p_space_id: auth.space.id, p_patch: { theme: next.theme ?? null, siteStyle: next.siteStyle ?? null } })
   if (result.error || result.data !== true) return { ok: false, error: 'Could not save your style. Try again.' }
-  revalidateThemeChange(auth.space.slug)
+  refreshSite(auth.space.slug)
   return { ok: true, style: readSiteStyle(next) }
 }
