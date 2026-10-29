@@ -75,7 +75,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
       name: 'Your event',
       pill: 'Event',
       noun: 'event',
-      placeholderRelPath: '/images/site/community-dinner.jpg',
+      placeholderRelPath: '/images/site/space-cover-default.jpg',
     })
   }
 
