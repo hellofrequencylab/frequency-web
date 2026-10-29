@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "id": "frequency",
+  "legacyIds": {
+    "editor": "DAWN",
+    "site": "frequency"
+  },
+  "offered": true,
+  "site": {
+    "label": "Default",
+    "description": "Warm, bright and airy: soft cards, a frosted menu bar and generous space.",
+    "defaultFonts": "frequency"
+  },
+  "library": {
+    "tagline": "Warm, bright and easy. The house look.",
+    "madeFor": "anyone who wants a friendly site with nothing to fight",
+    "signature": "Soft cards, a frosted menu bar, Unbounded headlines and Instrument Serif italics.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "soon",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "soon",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/frequency"
+  },
+  "editor": {
+    "tokens": {
+      "--th-bg": "#F5EEE2",
+      "--th-surface": "#FFFFFF",
+      "--th-raised": "#FAF8F4",
+      "--th-hairline": "#EAE6DE",
+      "--th-muted": "#6E6558",
+      "--th-secondary": "#6B6253",
+      "--th-text": "#3D352A",
+      "--th-accent": "#E2912F",
+      "--th-accent-text": "#965C12",
+      "--th-on-accent": "#FFFFFF",
+      "--th-season": "#0F8E78",
+      "--th-on-season": "#FFFFFF",
+      "--th-display": "Anton,Impact,sans-serif",
+      "--th-dw": "400",
+      "--th-body": "Nunito,system-ui,sans-serif",
+      "--th-mono": "'Geist Mono',ui-monospace,monospace",
+      "--th-r": "10px",
+      "--ed-lift": "62%",
+      "--ed-lift2": "85%",
+      "--th-clip-sm": "inset(0 round 8px)",
+      "--th-clip-md": "inset(0 round 14px)",
+      "--th-clip-lg": "inset(0 round 22px)"
+    },
+    "niches": null,
+    "derived": {
+      "--ed-chrome": "color-mix(in oklch, var(--th-bg), white var(--ed-lift))",
+      "--ed-field": "color-mix(in oklch, var(--th-bg), white var(--ed-lift2))",
+      "--ed-line": "color-mix(in oklch, var(--th-hairline), white var(--ed-lift))"
+    }
+  },
+  "core": {
+    "names": {
+      "--c-canvas": "var(--color-canvas)",
+      "--c-surface": "var(--color-surface)",
+      "--c-raised": "var(--color-surface-elevated)",
+      "--c-sunken": "color-mix(in srgb,var(--color-canvas) 92%,var(--color-text))",
+      "--c-text": "var(--color-text)",
+      "--c-text-muted": "var(--color-text-muted)",
+      "--c-text-subtle": "var(--color-text-subtle)",
+      "--c-on-accent": "var(--color-text-on-primary)",
+      "--c-accent": "var(--color-primary)",
+      "--c-accent-hover": "var(--color-primary-hover)",
+      "--c-accent-soft": "color-mix(in srgb,var(--color-primary) 18%,var(--color-canvas))",
+      "--c-accent-bg": "var(--color-primary-bg)",
+      "--c-accent-deep": "var(--color-primary-strong)",
+      "--c-accent-text": "var(--color-primary-strong)",
+      "--c-line": "var(--color-border)",
+      "--c-line-strong": "var(--color-border-strong)",
+      "--c-success": "var(--color-success)",
+      "--c-warning": "var(--color-warning)",
+      "--c-danger": "var(--color-danger)",
+      "--c-info": "var(--color-info)",
+      "--c-focus": "var(--color-focus-ring)",
+      "--c-band": "var(--color-ink)",
+      "--c-on-band": "var(--color-on-ink)",
+      "--r-control": "var(--radius-control)",
+      "--r-card": "var(--radius-card)",
+      "--r-panel": "var(--radius-cover)",
+      "--r-media": "var(--radius-cover)",
+      "--frame": "inset(0 round 14px)",
+      "--shadow-card": "var(--design-shadow-sm)",
+      "--shadow-lift": "var(--design-shadow-md)",
+      "--f-display": "var(--font-display)",
+      "--f-body": "var(--font-body)",
+      "--f-label": "var(--font-label)",
+      "--f-voice": "var(--fq-font-serif)",
+      "--w-display": "400",
+      "--track-display": "var(--design-display-tracking)",
+      "--case-heading": "none",
+      "--lead-display": "var(--design-display-leading)",
+      "--sp-section": "var(--space-section)",
+      "--sp-gap": "16px",
+      "--sp-gutter": "clamp(16px,4vw,32px)",
+      "--measure": "68ch",
+      "--dur-fast": "var(--motion-fast)",
+      "--dur": "var(--motion-base)",
+      "--ease": "var(--ease-out)"
+    }
+  }
+}

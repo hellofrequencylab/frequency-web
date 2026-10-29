@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "id": "designer",
+  "legacyIds": {
+    "editor": "Designer",
+    "site": "designer"
+  },
+  "offered": true,
+  "site": {
+    "label": "Designer",
+    "description": "Limewash and daylight: plaster grounds, charcoal type, one ochre accent, arched photos and a quiet serif.",
+    "defaultFonts": "classic"
+  },
+  "library": {
+    "tagline": "Limewash and daylight, with one ochre accent.",
+    "madeFor": "designers, builders, makers and anyone selling craft",
+    "signature": "Plaster grounds, charcoal type, arched photos, with Cormorant and Jost.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "ready",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "ready",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/designer"
+  },
+  "editor": {
+    "tokens": {
+      "--th-bg": "#F7F3EC",
+      "--th-surface": "#FBF8F2",
+      "--th-raised": "#EFE8DC",
+      "--th-hairline": "#DAD0BF",
+      "--th-muted": "#5F625F",
+      "--th-secondary": "#4A4E4C",
+      "--th-text": "#343736",
+      "--th-accent": "#D3A03F",
+      "--th-accent-text": "#9A6C1C",
+      "--th-on-accent": "#343736",
+      "--th-season": "#A65A3A",
+      "--th-on-season": "#FBF8F2",
+      "--th-display": "Cormorant,'Cormorant Garamond',Georgia,serif",
+      "--th-dw": "400",
+      "--th-body": "Jost,Futura,'Century Gothic',system-ui,sans-serif",
+      "--th-mono": "Jost,Futura,system-ui,sans-serif",
+      "--th-r": "18px",
+      "--ed-lift": "60%",
+      "--ed-lift2": "82%",
+      "--th-clip-sm": "inset(0 round 8px)",
+      "--th-clip-md": "inset(0 round 18px)",
+      "--th-clip-lg": "inset(0 round 28px)"
+    },
+    "niches": null,
+    "derived": {
+      "--ed-chrome": "color-mix(in oklch, var(--th-bg), white var(--ed-lift))",
+      "--ed-field": "color-mix(in oklch, var(--th-bg), white var(--ed-lift2))",
+      "--ed-line": "color-mix(in oklch, var(--th-hairline), white var(--ed-lift))"
+    }
+  },
+  "core": {
+    "names": {
+      "--c-canvas": "var(--color-canvas)",
+      "--c-surface": "var(--color-surface)",
+      "--c-raised": "var(--color-surface-elevated)",
+      "--c-sunken": "color-mix(in srgb,var(--color-canvas) 92%,var(--color-text))",
+      "--c-text": "var(--color-text)",
+      "--c-text-muted": "var(--color-text-muted)",
+      "--c-text-subtle": "var(--color-text-subtle)",
+      "--c-on-accent": "var(--color-text-on-primary)",
+      "--c-accent": "var(--color-primary)",
+      "--c-accent-hover": "var(--color-primary-hover)",
+      "--c-accent-soft": "color-mix(in srgb,var(--color-primary) 18%,var(--color-canvas))",
+      "--c-accent-bg": "var(--color-primary-bg)",
+      "--c-accent-deep": "var(--color-primary-strong)",
+      "--c-accent-text": "var(--color-primary-strong)",
+      "--c-line": "var(--color-border)",
+      "--c-line-strong": "var(--color-border-strong)",
+      "--c-success": "var(--color-success)",
+      "--c-warning": "var(--color-warning)",
+      "--c-danger": "var(--color-danger)",
+      "--c-info": "var(--color-info)",
+      "--c-focus": "var(--color-focus-ring)",
+      "--c-band": "var(--color-ink)",
+      "--c-on-band": "var(--color-on-ink)",
+      "--r-control": "var(--radius-control)",
+      "--r-card": "var(--radius-card)",
+      "--r-panel": "var(--radius-cover)",
+      "--r-media": "var(--radius-media)",
+      "--frame": "inset(0 round 18px)",
+      "--shadow-card": "var(--dz-shadow-1)",
+      "--shadow-lift": "var(--dz-shadow-2)",
+      "--f-display": "var(--font-display)",
+      "--f-body": "var(--font-body)",
+      "--f-label": "var(--font-label)",
+      "--f-voice": "var(--font-display)",
+      "--w-display": "400",
+      "--track-display": "normal",
+      "--case-heading": "none",
+      "--lead-display": "1.1",
+      "--sp-section": "var(--space-section)",
+      "--sp-gap": "16px",
+      "--sp-gutter": "var(--space-gutter)",
+      "--measure": "68ch",
+      "--dur-fast": "var(--motion-fast)",
+      "--dur": "var(--motion-base)",
+      "--ease": "var(--ease-out)"
+    }
+  }
+}
