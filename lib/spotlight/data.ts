@@ -38,6 +38,9 @@ interface SpotlightHostedEvent {
 export interface SpotlightData {
   profile: SpotlightRow
   hostedEvents: SpotlightHostedEvent[]
+  /** True when the member can receive tips right now (payouts live and their account ready). A boolean
+   *  only, never a Stripe id. Computed for the PUBLIC page; the in-app profile has its own Tip button. */
+  canTip: boolean
   /** The member's validated block layout (empty when they haven't customized). */
   layout: SpotlightLayout
   /** The validated optional background image. */
@@ -58,6 +61,20 @@ export interface SpotlightData {
    *  absent / malformed so the module render falls back to the fresh member default. DELIBERATELY
    *  separate from the live Puck nodes (meta.spotlight.*): reading it never affects the Puck render. */
   grid: EntityLayout | null
+}
+
+/** Can this member receive a tip right now? The same rule as the in-app profile's `canTipRecipient`
+ *  (payouts live + recipient payouts-ready). Reads only the two readiness booleans through
+ *  getConnectStatus and returns a boolean. FAIL-CLOSED: any error reads as "no". */
+export async function readCanTip(profileId: string): Promise<boolean> {
+  try {
+    const { payoutsLive, getConnectStatus } = await import('@/lib/billing/connect')
+    if (!(await payoutsLive())) return false
+    return (await getConnectStatus(profileId)).ready === true
+  } catch (e) {
+    console.error('[spotlight] canTip read failed; hiding the Tip jar', e instanceof Error ? e.message : e)
+    return false
+  }
 }
 
 /**
@@ -166,9 +183,11 @@ async function loadMemberSpotlight(
 
   // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel
   // (both are per-owner reads joined to public profile fields).
-  const [topFriends, guestbook] = await Promise.all([
+  const [topFriends, guestbook, canTip] = await Promise.all([
     getTopFriendsForOwner(g.id),
     getGuestbookForOwner(g.id),
+    // Public page only: the in-app profile already carries the real Tip button.
+    requirePublished ? readCanTip(g.id) : Promise.resolve(false),
   ])
 
   // The member's saved unified grid layout (U3 module render), read fail-safe off the SAME meta blob the
@@ -178,6 +197,7 @@ async function loadMemberSpotlight(
   return {
     profile: row as unknown as SpotlightRow,
     hostedEvents: (events ?? []) as SpotlightHostedEvent[],
+    canTip,
     layout,
     background,
     stickers,

@@ -12,16 +12,16 @@ describe('publicSpotlightGrid', () => {
       { type: 'heading' },
       { type: 'quote' },
     ])
-    expect(placed(grid)).toEqual(['about', 'heading', 'gallery', 'quote', 'links', 'memberEvents', 'topfriends'])
+    expect(placed(grid)).toEqual(['about', 'heading', 'gallery', 'quote', 'links', 'memberEvents', 'tip', 'topfriends'])
   })
 
   it('keeps an authored Links block where the member put it', () => {
     const grid = publicSpotlightGrid(null, [{ type: 'links' }, { type: 'embed' }, { type: 'image' }])
-    expect(placed(grid)).toEqual(['about', 'links', 'embed', 'image', 'memberEvents', 'topfriends'])
+    expect(placed(grid)).toEqual(['about', 'links', 'embed', 'image', 'memberEvents', 'tip', 'topfriends'])
   })
 
-  it('with nothing authored still shows About, Links, Events and Top Friends', () => {
-    expect(placed(publicSpotlightGrid(null, []))).toEqual(['about', 'links', 'memberEvents', 'topfriends'])
+  it('with nothing authored still shows About, Links, Events, Tip and Top Friends', () => {
+    expect(placed(publicSpotlightGrid(null, []))).toEqual(['about', 'links', 'memberEvents', 'tip', 'topfriends'])
   })
 
   it('never overrides a saved grid', () => {
