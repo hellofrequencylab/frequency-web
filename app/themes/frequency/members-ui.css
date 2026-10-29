@@ -478,3 +478,9 @@
 [data-design="frequency"] .meter.mu-track-surface{--fq-track:var(--fq-surface-card)}
 [data-design="frequency"] .meter.mu-track-broadcast{--fq-track:var(--fq-live-soft)}
 [data-design="frequency"] .meter.mu-track-border{--fq-track:color-mix(in oklab,var(--fq-border-hair) 60%,transparent)}
+
+/* The launch done note (Review + Publish): the ring draws once, then the tick. Motion tokens go to 0 under reduced motion. */
+@keyframes fq-lr-draw { from { stroke-dashoffset: var(--lr-len) } to { stroke-dashoffset: 0 } }
+@keyframes fq-lr-tick { from { opacity: 0 } to { opacity: 1 } }
+[data-design="frequency"] [data-kit="members"] .lr-draw .lr-arc{stroke-dashoffset:0;animation:fq-lr-draw calc(var(--fq-dur-slow) * 3) var(--fq-ease-out) both}
+[data-design="frequency"] [data-kit="members"] .lr-draw .lr-tick{animation:fq-lr-tick var(--fq-dur-slow) var(--fq-ease-out) calc(var(--fq-dur-slow) * 2) both}

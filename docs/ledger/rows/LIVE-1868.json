@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1868",
+  "title": "One Review and Publish screen: the built-out draft beside the person's own words, editable, one Publish",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "components/launch/review-publish.tsx",
+    "ref": "Vera launch fan-out lane F. Daniel 2026-10-29: 'Review + Publish process'. Say Publish, never Launch, on this screen. Scheduling is a check-off item, never a gate; photos never required."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-review-publish.mjs",
+    "note": "Reads the screen, route, action and IO: the word Publish and no Launch, the person's cited words beside each field, writes through publishSpotlightStep and patchSpaceWords, never flips websitePublished, no photo or schedule gate, lands on /launch?published=1 with the done note."
+  },
+  "detail": "/launch/step/review shows the Space tagline and about, the Spotlight, and (when drafted) the website headline and intro and the first email, each with 'From what you wrote' quotes and origin beside it, editable in place. One Publish (publishReviewFormAction) writes the Spotlight through publishSpotlightStep (making the Space if the launch has none), spaces.tagline and spaces.about through patchSpaceWords, marks the Space step only when both words exist, and lands on /launch?published=1: a calm ring-and-tick note (PublishedNote, motion tokens, no confetti) above the inventory overview. An empty field never blanks a stored record. The website and first email are kept as a draft under preferences.launchDraft and the screen says so; preferences.websitePublished is NOT flipped, because the site publish seam (setWebsitePublished) needs a site with content and there is nowhere to write the headline and intro yet. Scheduling and photos are listed under 'Whenever you like', never required. lib/launch/buildout-contract.ts is a TEMPORARY copy of lane E's BuildoutDraft type, and loadReviewDraft is a temporary loader that cites the person's saved Spotlight line; both are replaced on rebase onto lane E (lib/launch/buildout.ts). No migration, no flag.",
+  "wave": "W7"
+}

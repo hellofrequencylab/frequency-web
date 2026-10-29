@@ -18,6 +18,8 @@ import { clearPendingLaunch, readPendingLaunch, writePendingLaunch } from './pen
 import { launchStepPublishedHref } from './published'
 import { NEW_SPACE, parseSpaceChoice } from './space-choice'
 import { listOwnedSpaces } from './spaces-io'
+import { PUBLISHED_HREF, REVIEW_HREF, parseReviewDraft, type ReviewErrorCode } from './review'
+import { publishReview } from './review-io'
 import { parseSpotlightAnswers } from './spotlight-step'
 import { publishSpotlightStep } from './spotlight-io'
 import type { LaunchSnapshot } from './state'
@@ -151,4 +153,22 @@ export async function chooseSpaceFormAction(formData: FormData): Promise<void> {
     await recordLaunchEvent(profileId, { type: 'step_published', launchId: launch.id, step: 'spotlight' })
   }
   redirect(spotlightStepUrl())
+}
+
+const reviewUrl = (code: ReviewErrorCode) => `${REVIEW_HREF}?e=${code}`
+
+/** The Review + Publish screen's one Publish button. Reads the edited draft back from the form, writes it to the
+ *  Space's own records (publishReview), and lands on the overview with everything it ticked. Signed out goes to sign
+ *  in; nothing is written without the signed-in owner and their own launch. */
+export async function publishReviewFormAction(formData: FormData): Promise<void> {
+  if (!launchSystemEnabled()) redirect('/')
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in?next=/launch/claim')
+  const edits = parseReviewDraft(Object.fromEntries(formData.entries()))
+  if ('error' in edits) redirect(reviewUrl(edits.error))
+  const launch = await store.getActiveLaunch(profileId)
+  if (!launch) redirect('/launch')
+  const done = await publishReview(profileId, launch, edits)
+  if ('error' in done) redirect(reviewUrl('retry'))
+  redirect(PUBLISHED_HREF)
 }
