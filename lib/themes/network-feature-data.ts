@@ -18,7 +18,7 @@ export interface NetworkKit {
   /** The home blocks the kit turns on (ids of NETWORK_BLOCKS). */
   blocks: string[]
   /** The layout variant the kit names for a block. */
-  blockLayouts: Record<string, string>
+  blockLayouts: Partial<Record<string, string>>
   fonts: { display: string; label: string }
   look: { corners: string; spacing: string; header: string; footer: string }
   hero: { title: string; em: string }
