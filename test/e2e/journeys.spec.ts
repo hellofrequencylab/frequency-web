@@ -119,11 +119,21 @@ test.describe('signed-in journeys @journey @shell', () => {
     // kit page (Temple) carries the "Start with this kit" links into the Wizard.
     await go(page, '/themes')
     await settle(page)
-    expect(await page.locator('a[href^="/themes/"]').count(), '/themes lists no theme pages').toBeGreaterThan(0)
-    await go(page, '/themes/temple')
-    await settle(page)
+    const pages = [...new Set(await page.locator('a[href^="/themes/"]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? '')))]
+    expect(pages.length, '/themes lists no theme pages').toBeGreaterThan(0)
+    // Kits move between themes as they are rebuilt (Temple has none while its new kit is registered), so walk the
+    // listed pages and use the first one that offers a starter kit.
     const start = page.getByRole('link', { name: /Start with this kit/ }).first()
-    await expect(start, 'no "Start with this kit" link on the theme page').toBeVisible()
+    let found = false
+    for (const path of pages) {
+      await go(page, path)
+      await settle(page)
+      if (await start.isVisible()) {
+        found = true
+        break
+      }
+    }
+    expect(found, `none of ${pages.join(', ')} offers a "Start with this kit" link`).toBe(true)
     const href = await start.getAttribute('href')
     expect(href).toMatch(/^\/spaces\/new\?theme=[a-z0-9-]+&niche=/)
     await start.click()
