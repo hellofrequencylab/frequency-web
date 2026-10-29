@@ -26,7 +26,7 @@ interface EditorBlockMeta {
 const GROUP_OF_CATEGORY: Record<string, EditorBlockGroup> = {
   sections: 'Sections', blocks: 'Sections', productStory: 'Sections',
   content: 'Content', layout: 'Content', profile: 'Content', linkTree: 'Content',
-  dynamic: 'Live', spaceContent: 'Live', wildheart: 'Live', circles: 'Live', midnight: 'Sections', designer: 'Sections', networkKit: 'Sections',
+  dynamic: 'Live', spaceContent: 'Live', wildheart: 'Live', circles: 'Live', midnight: 'Sections', templeKit: 'Sections', designer: 'Sections', networkKit: 'Sections',
   media: 'Media',
 }
 
