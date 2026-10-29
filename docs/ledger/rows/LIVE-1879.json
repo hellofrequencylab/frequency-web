@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1879",
+  "title": "After Publish, Get Started is the launch overview's own to-do: one list, one set of numbers",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "components/launch/launch-get-started.tsx",
+    "ref": "Vera guided launch, lane G. Daniel's ruling: one to-do model (lib/launch/overview.ts, inventory.ts) before and after the launch."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-get-started-after-publish.mjs",
+    "note": "Runs lib/launch/overview.ts and get-started.ts under node: the post-publish list counts exactly what the launch overview counts, every section (Spotlight, Space, Website, Email, Schedule, Circle, Journey, Get paid) is present, done items keep their found evidence, open items link to their launch step, scheduling is a check-off item. Reads the rail and Feed sources for the one read, and the box source for tokens and the cleared EmptyState."
+  },
+  "detail": "Once a member's Spotlight is published, the Get Started box in the right rail, its micro-rail button and the Feed's phone copy stop reading lib/onboarding/status.ts and draw the launch overview's list instead: the ring and one bar per section, Next up with one way in, what is still to do, and an 'Already yours' fold showing the record's own words for what is done. The inventory gained Circle, Journey and Get paid sections (real rows from lib/launch/rows.ts), so /launch and Get Started show the same numbers. Photos stay encouraged and skippable (plain Add a photo, change any time). Everything done shows a cleared EmptyState. Server components; the read is request-cached (lib/launch/get-started-io.ts) and Suspense wraps each call site. Members with no launch, or before Publish, keep the previous behaviour (the launch box owns the list while it runs, else the plain checklist). Renders at 390, 1280, 1440, 1920 and 2000 for the Daniel Tyack fixture and an all-done fixture are in vera-launch/get-started-renders. No migration.",
+  "wave": "W7"
+}
