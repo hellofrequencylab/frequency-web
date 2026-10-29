@@ -231,3 +231,17 @@ test('candidate Git mode changes must match the reviewed complete diff', async (
   const f = fixture(); f.registration.reviewedChanges[0].headMode = '100755'
   assert.equal((await collectReadiness(f.options)).ok, false)
 })
+
+const mainAhead = f => { const api = f.options.api; f.options.api = async path => path.endsWith('/branches/main') ? { commit: { sha: 'c'.repeat(40) } } : api(path) }
+test('no-SQL PR on an older base than current main still gets the trusted fallback', async () => {
+  const f = fixture(), git = f.options.git
+  f.options.git = (args, binary, input) => args[0] === 'diff' ? `M\0README.md\0` : args[0] === 'show' && args[1] === `${head}:README.md` ? Buffer.from('reviewed documentation') : git(args, binary, input)
+  f.options.ledger = async () => { throw Error('production must not be read') }
+  mainAhead(f)
+  const result = await collectReadiness(f.options)
+  assert.equal(result.status, 'not_applicable'); assert.equal(result.proof.baseSha, base)
+})
+test('SQL PR on an older base than current main is refused', async () => {
+  const f = fixture(); mainAhead(f)
+  await assert.rejects(() => collectReadiness(f.options), /stale or moving/)
+})
