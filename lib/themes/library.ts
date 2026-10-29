@@ -137,7 +137,7 @@ export function themeLibraryEntry(id: string): ThemeLibraryEntry | null {
   return THEME_LIBRARY.find((t) => t.id === id) ?? null
 }
 
-/** Tools a Space can switch on, in plain words. Every theme carries all of them; a kit starts with two or
+/** Tools a Space can switch on, in plain words. Tools belong to your Space, not your theme, so switching themes never turns one off; a kit starts with two or
  *  three and the owner turns on the rest. Mirrors the Menu and features switches (lib/spaces/functions.ts). */
 export const THEME_TOOLS: readonly { name: string; body: string }[] = [
   { name: 'Booking', body: 'Availability, deposits and reminders from one button.' },

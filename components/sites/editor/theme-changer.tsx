@@ -23,7 +23,7 @@ export function ThemeChanger({ current, labels, editorTheme, onPick, onApplyKit,
   suggestedNiche?: KitNiche | null
 }) {
   return <>
-    <p className={k('we-note')}>Pick a look for your whole website. Your words, photos and live blocks stay as they are, and undo takes the change back.</p>
+    <p className={k('we-note')}>Pick a look for your whole website. Your words and photos stay. Blocks keep their shape and take on the new theme's colors and type, and undo takes the change back.</p>
     {SITE_THEMES.map((t) => {
       const theme = editorTheme(t.id)
       const on = current === theme
