@@ -2,11 +2,10 @@
 // doors render from lib/marketing/launch-doors.ts; a campaign points at /go/<slug> with the door's
 // utm_campaign, which the proxy's first-touch cookie records on arrival. Static, public.
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { LAUNCH_DOORS, launchDoorBySlug } from '@/lib/marketing/launch-doors'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
-import { FnHero } from '@/components/frequency/site/pages/funnel/parts'
+import { FnActionLink, FnHero } from '@/components/frequency/site/pages/funnel/parts'
 
 export const dynamicParams = false
 
@@ -39,11 +38,7 @@ export default async function LaunchDoorPage({ params }: Params) {
 
   return (
     <FnHero center full kicker={door.name} title={door.promise} lede={door.detail}>
-      <div className="ctas">
-        <Link className="btn fq-iri-btn" href={door.buttonHref}>
-          {door.buttonLabel} →
-        </Link>
-      </div>
+      <FnActionLink href={door.buttonHref} label={door.buttonLabel} />
     </FnHero>
   )
 }

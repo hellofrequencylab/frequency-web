@@ -108,6 +108,17 @@ export interface FnAction {
   label: string
 }
 
+/** The standard single primary action used by the compact launch-door hero. */
+export function FnActionLink({ href, label }: FnAction) {
+  return (
+    <div className="ctas">
+      <Link className="btn fq-iri-btn" href={href}>
+        {label} →
+      </Link>
+    </div>
+  )
+}
+
 /** One outcome, one action: a done, a dead link, a cancelled event. `as` sets the heading level, so an
  *  outcome that replaces a whole page is the h1 and one that replaces a form under a hero is an h2. */
 export function FnOutcome({
