@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1850",
+  "title": "Run the theme audit on demand: render every block on every theme, score it and keep a baseline of the holes",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "scripts/probes/theme-cohesion.mjs",
+    "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
+  },
+  "detail": "Productionise the 2026-10-28 harness (project folder theme-cohesion/harness): render matrix, coverage JSON, contact sheets, baseline that can only shrink. Real-content fixture first, because default props hide some blocks.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-cohesion.mjs audit",
+    "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
+  },
+  "wave": "W7"
+}
