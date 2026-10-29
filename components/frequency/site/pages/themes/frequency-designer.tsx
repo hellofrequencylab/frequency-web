@@ -192,7 +192,7 @@ export function FrequencyDesigner() {
               </div>
             </div>
             <div className="df-hero-shot">
-              <DesignerBrowser src={shotFor('site')} alt="Designer: website" url="yourstudio.com" width={1280} height={800} sizes="(max-width: 900px) 92vw, 640px" priority />
+              <DesignerStage priority status={status} />
             </div>
           </div>
           <a className="df-more" href="#why">

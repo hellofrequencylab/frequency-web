@@ -296,6 +296,7 @@ function Pressed({
 export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: string | null }) {
   const [kitId, setKitId] = useState('general')
   const [hv, setHv] = useState<Surface>('site')
+  const [hs, setHs] = useState<Surface>('site')
   const [ins, setIns] = useState<InsView>('pages')
   const [acc, setAcc] = useState('')
   const demo = useRef<HTMLIFrameElement>(null)
@@ -369,7 +370,16 @@ export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: st
               </div>
             </div>
             <div className="nf-hero-shot">
-              <Device kit={kit} surface="site" priority sizes="(max-width: 900px) 92vw, 640px" />
+              <div className="nf-hero-pv">
+                <div className="nf-seg" role="group" aria-label="Surface">
+                  {SURFACES.map((x) => (
+                    <Pressed key={x} on={hs === x} onClick={() => setHs(x)}>
+                      {SURFACE_LABEL[x]}
+                    </Pressed>
+                  ))}
+                </div>
+                <Device kit={kit} surface={hs} priority={hs === 'site'} sizes="(max-width: 900px) 92vw, 640px" />
+              </div>
             </div>
           </div>
           <a className="nf-more" href="#spotlight">

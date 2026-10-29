@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1881",
+  "title": "The hero preview on every Theme Kit page switches between Website, Spotlight, Space and Email",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-network.tsx",
+    "ref": "Daniel, 2026-10-29: bring the clickable Website / Spotlight / Space / Email switcher back in the hero preview on every theme page, as the #4297 Network hero had it, with Nocturne's hero layout otherwise unchanged."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-pages-hero-switcher.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (Network and Designer heroes show one fixed browser picture, Nocturne has no switcher) and passes here."
+  },
+  "detail": "Network and Designer heroes use their Stage (chips plus picture and note) again; Nocturne's hero gets the same four chips over its device frame. Name, subtitle, buttons left and preview right are unchanged. test/theme-pages-share-one-layout.render.test.tsx checks all three pages for the four hero chips. Network Space and Email still read 'on the way' until the Network pictures land. Temple copies frequency-network.tsx.",
+  "wave": "W7"
+}

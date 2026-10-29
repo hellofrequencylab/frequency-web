@@ -197,7 +197,7 @@ export function FrequencyNetwork() {
               </div>
             </div>
             <div className="nf-hero-shot">
-              <NetworkBrowser src={shotFor('site')} alt="Network: website" url="yournetwork.org" width={1280} height={800} sizes="(max-width: 900px) 92vw, 640px" priority />
+              <NetworkStage priority status={status} />
             </div>
           </div>
           <a className="nf-more" href="#why">
