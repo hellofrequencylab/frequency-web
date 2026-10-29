@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-1868",
+  "title": "Launch photos: Add a photo and Skip for now on the to-do, remembered across reloads",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/launch/launch-overview.tsx",
+    "ref": "Vera launch fan-out lane B. Daniel's ruling 2026-10-28: photos encouraged, plain Skip, change any time, a skipped photo stays on the to-do."
+  },
+  "detail": "The Space cover and logo to-do items now carry Add a photo (an upload tray that reuses uploadSpaceImage and setSpaceImages, so it writes the same spaces.cover_image_url / brand_logo_url the item reads) and Skip for now. A skip is kept in the space_launch steps jsonb under photoSkips (lib/launch/state.ts pure functions, lib/launch/store.ts write), so no migration. It flows into InventoryItem.skipped; a skipped photo stays on the list with quiet copy and an easy Add one. No Spotlight photo item: the launch Spotlight layout has no image slot to read honestly.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-photos-skip.mjs"
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}
