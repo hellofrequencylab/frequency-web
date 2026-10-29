@@ -12,7 +12,7 @@
 .nf-st.ready{color:var(--fq-text-strong)}
 
 /* Hero: title and subtitle top left, copy and buttons under, the preview on the right, a lead-in below. */
-.nf-hero.phero{min-height:100svh;display:flex;align-items:center}
+.nf-hero.phero{min-height:calc(100svh - 84px)}
 .nf-wrap{position:relative;z-index:2;width:100%;max-width:1200px;margin:0 auto;box-sizing:border-box;padding:clamp(96px,12vh,128px) clamp(18px,4vw,40px) clamp(20px,4vh,40px)}
 .nf-hero .crumbs{margin-bottom:clamp(14px,3vh,28px)}
 .nf-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:var(--nf-gap);align-items:center}
@@ -27,7 +27,7 @@
 .nf-more svg{animation:nf-bob 1.8s ease-in-out infinite}
 @keyframes nf-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
 @media (prefers-reduced-motion:reduce){.nf-more svg{animation:none}}
-@media (max-width:900px){.nf-hero.phero{min-height:0;display:block}.nf-split{grid-template-columns:1fr}}
+@media (max-width:900px){.nf-hero.phero{min-height:0}.nf-split{grid-template-columns:1fr}}
 
 /* Preview stage: surface chips, the framed picture, a one-line note, the profile picker. */
 .nf-pv{display:flex;flex-direction:column;gap:14px;min-width:0;width:100%}
@@ -159,3 +159,32 @@
 
 /* What carries over, on a phone: the four surface names have to fit their columns. */
 @media (max-width:560px){.nf-cmp{grid-template-columns:minmax(0,1.15fr) repeat(4,minmax(0,1fr))}.nf-cmp>.hd{padding:12px 2px;justify-content:center;font-size:9px;letter-spacing:.02em}.nf-cmp>.hd:first-child{padding:0}.nf-cmp-row>div{padding:12px 6px}.nf-cmp-row>.y,.nf-cmp-row>.p{justify-content:center}}
+
+/* The Nocturne hero: the theme's name large, a small descriptor, then the tagline; the four surfaces follow, joined by a dotted line. */
+.nf-name{font-size:clamp(44px,17cqw,112px);line-height:.92;letter-spacing:-.06em}
+.nf-aft{margin:-4px 0 0;font:600 clamp(15px,1.6vw,20px)/1.2 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+.nf-tagline{margin:6px 0 0;font:700 clamp(22px,2.4vw,36px)/1.08 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
+.nf-tagline em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}
+.nf-cascade{display:flex;flex-direction:column;margin-top:clamp(56px,7vw,110px)}
+.nf-thread{display:block;width:100%;height:clamp(90px,10vw,150px);overflow:visible}
+.nf-thread path{fill:none;stroke:var(--c);stroke-width:2;stroke-dasharray:2 7;stroke-linecap:round;opacity:.8;filter:drop-shadow(0 0 6px var(--c))}
+.nf-cz{scroll-margin-top:96px}
+.nf-cz-dev{flex-direction:column;align-items:center;gap:14px}
+.nf-dvlab{display:inline-flex;align-items:center;height:30px;padding:0 14px;border-radius:999px;background:var(--fq-surface-glass);box-shadow:inset 0 0 0 1px var(--nf-hair);font:600 13px/1 var(--fq-font-display);letter-spacing:.08em;text-transform:uppercase;color:var(--fq-text-strong)}
+@media (max-width:900px){.nf-thread{display:none}.nf-cascade{gap:64px}}
+
+/* Inside the kit, the thirteen kits, built right and setup. */
+.nf-grp{margin:clamp(28px,3.4vw,44px) 0 14px;font:600 13px/1.3 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+.nf-kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:var(--nf-gap-y);margin-top:clamp(24px,3vw,36px)}
+.nf-kit{display:flex;flex-direction:column;min-width:0;border-radius:18px;overflow:hidden;background:var(--nf-card);box-shadow:inset 0 0 0 1px var(--nf-hair);color:inherit;text-decoration:none}
+.nf-kit:hover{box-shadow:inset 0 0 0 1px var(--c)}
+.nf-kit img{display:block;width:100%;height:auto}
+.nf-kit span{display:flex;flex-direction:column;gap:4px;padding:14px 16px 16px}
+.nf-kit i{width:10px;height:10px;border-radius:999px;background:var(--c)}
+.nf-kit b{font:600 17px/1.2 var(--fq-font-display);letter-spacing:-.02em;color:var(--fq-text-strong)}
+.nf-kit small{font-size:14px;line-height:1.45;color:var(--fq-text-muted)}
+.nf-setup{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:var(--nf-gap-y);margin-top:clamp(24px,3vw,36px)}
+.nf-setup>div{display:flex;flex-direction:column;gap:8px;padding:20px;border-radius:18px;background:var(--nf-card);box-shadow:inset 0 0 0 1px var(--nf-hair)}
+.nf-setup .n{font:600 13px/1 var(--fq-font-display);letter-spacing:.1em;color:var(--fq-x-sun-neon)}
+.nf-setup b{font:600 19px/1.2 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+.nf-setup span:last-child{font-size:15.5px;line-height:1.5;color:var(--fq-text-body)}
