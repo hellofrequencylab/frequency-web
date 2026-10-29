@@ -6,7 +6,7 @@
 
 export type CalendarAudience = 'team' | 'public'
 
-export interface AudienceLink {
+interface AudienceLink {
   href: string
   label: string
 }

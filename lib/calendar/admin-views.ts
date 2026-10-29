@@ -40,7 +40,7 @@ export function parseAdminCalendarView(raw: string | string[] | null | undefined
   return isCalendarAdminView(value) ? value : 'admin'
 }
 
-export function firstSearchParam(raw: string | string[] | null | undefined): string | undefined {
+function firstSearchParam(raw: string | string[] | null | undefined): string | undefined {
   if (Array.isArray(raw)) return raw[0]
   return raw ?? undefined
 }
