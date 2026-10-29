@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1882",
+  "title": "Temple Theme Kit registration: inner blocks C and D in the page editor and Programs, Shop and Library in the thirteen profile kits",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/temple-kit-profile-variants.ts",
+    "ref": "LIVE-1689"
+  },
+  "detail": "The Temple inner blocks of groups C (Programs) and D (Shop, Library) join the page editor's components and the Temple Kit palette category, and the thirteen profile kits build Programs, Shop and Library from the inner page builders (prices stripped, as for groups A and B). The Home's program links point at ~/programs. Book (group E) is not in the starter kits: 'book' is a reserved website slug because the site serves its own booking page, so a kit page on it cannot be a valid website snapshot. Its builder stays for a later use. The groups' CSS already ships in the A and B stylesheets.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "The editor registers the C and D inner blocks and the profile kits carry Programs, Shop and Library.",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/temple-kit-inner-cd-registered.mjs"
+  },
+  "closed": "2026-10-29"
+}

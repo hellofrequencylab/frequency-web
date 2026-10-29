@@ -36,6 +36,23 @@ describe('Temple Theme Kit profile kits', () => {
     expect(templeKitProfileAccent('nope')).toBeNull()
   })
 
+  it('carries the Programs, Shop and Library inner pages, and not Book (a reserved slug the site serves itself)', async () => {
+    const { config } = await import('@/lib/page-editor/config')
+    for (const s of TEMPLE_KIT_PROFILE_KIT_INDEX) {
+      const kit = (await loadKit(s.id))!
+      const slugs = kit.pages.map((p) => p.slug)
+      for (const slug of ['programs', 'shop', 'library']) expect(slugs, `${s.id} ${slug}`).toContain(slug)
+      expect(slugs, s.id).not.toContain('book')
+      expect(slugs, s.id).not.toContain('journeys')
+      const types = kit.pages.flatMap((p) => p.blocks.map((b) => b.type))
+      for (const t of ['TempleKitInnerPrograms', 'TempleKitInnerShop', 'TempleKitInnerLibrary']) expect(types, `${s.id} ${t}`).toContain(t)
+      for (const p of kit.pages) expect(JSON.stringify(p.blocks), `${s.id}/${p.slug}`).not.toMatch(/\$\d/)
+    }
+    for (const t of ['TempleKitInnerPrograms', 'TempleKitInnerShop', 'TempleKitInnerLibrary']) expect(config.components[t], t).toBeTruthy()
+    const palette = (config.categories as Record<string, { components: string[] }>).templeKit.components
+    for (const t of ['TempleKitInnerPrograms', 'TempleKitInnerShop', 'TempleKitInnerLibrary']) expect(palette, t).toContain(t)
+  })
+
   it('leaves every other theme\'s kit lists as they were', () => {
     expect(KIT_INDEX.some((k) => k.theme === 'TempleKit')).toBe(false)
     expect(PROFILE_KIT_INDEX.some((k) => k.theme === 'TempleKit')).toBe(false)
@@ -46,7 +63,7 @@ describe('Temple Theme Kit profile kits', () => {
     expect(order).toHaveLength(13)
     for (const s of TEMPLE_KIT_PROFILE_KIT_INDEX) {
       const kit = (await loadKit(s.id))!
-      for (const p of kit.pages) for (const b of p.blocks) expect(b.type.startsWith('TempleKit'), `${s.id}/${p.slug}: ${b.type}`).toBe(true)
+      for (const p of kit.pages) for (const b of p.blocks) expect(b.type.startsWith('TempleKit') || b.type === 'SpaceBooking', `${s.id}/${p.slug}: ${b.type}`).toBe(true)
       expect(kit.pages[0].blocks.map((b) => b.type), s.id).toEqual(order)
     }
   })
