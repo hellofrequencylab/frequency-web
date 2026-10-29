@@ -48,6 +48,8 @@ interface MemberBlockData {
   hostedEvents: SpotlightData['hostedEvents']
   /** True when this member can receive tips (payouts-ready). Resolved server-side; never a Stripe id. */
   canTip: boolean
+  /** The public Circles, Journeys and Spaces the member opted to show, resolved server-side. */
+  programs: SpotlightData['programs']
   /** Every authored block grouped by its type, in layout order. Content blocks (heading/text/image/
    *  gallery/quote/embed/divider) render from their slice; the data-block slices are unused (their
    *  values come from the fields above), but present so the map is total. */
@@ -59,6 +61,8 @@ interface MemberBlockData {
 export interface MemberBlockProps {
   member: EntityIdentity
   data: MemberBlockData
+  /** The placed node's authored content bag, for data blocks with switches of their own (Programs). */
+  content?: Record<string, unknown>
 }
 
 /** Build the common EntityIdentity for a member from their resolved Spotlight. Values are already
@@ -136,6 +140,7 @@ export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
     guestbook,
     hostedEvents: data.hostedEvents,
     canTip: data.canTip,
+    programs: data.programs ?? { circles: [], journeys: [], spaces: [] },
     blocksByType,
   }
 }

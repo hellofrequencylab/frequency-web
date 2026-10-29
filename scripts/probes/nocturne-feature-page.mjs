@@ -18,7 +18,7 @@ for (const k of data.kits) {
 for (const id of ['why', 'preview', 'inside', 'yours', 'kits', 'carry', 'built', 'questions', 'steps', 'start']) {
   if (!page.includes(`id="${id}"`)) bad.push(`the feature page has no #${id} section`)
 }
-for (const s of ['KeepGoing', '/spaces/new?niche=', '/themes/nocturne/demo', "'/pricing'", 'nocturne-accent']) {
+for (const s of ['KeepGoing', "createSpaceHref('midnight')", '/themes/nocturne/demo', "'/pricing'", 'nocturne-accent']) {
   if (!page.includes(s)) bad.push(`the feature page no longer carries ${s}`)
 }
 if (/style=\{\{[^}]*(#|rgb)/.test(page) || /#[0-9a-fA-F]{6}/.test(page)) bad.push('the feature page carries a raw color')

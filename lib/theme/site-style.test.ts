@@ -143,6 +143,13 @@ describe('the website faces on the Space page', () => {
     expect(spacePageSiteFaces({ siteStyle: { theme: 'designer', synced: false } })).toBeNull()
   })
 
+  it('follows a synced Temple Theme Kit website, and only while synced', () => {
+    expect(spacePageSiteFaces({ siteStyle: { theme: 'temple-kit', synced: true } })).toBe('temple-kit')
+    expect(spacePageSiteFaces({ siteStyle: { theme: 'temple-kit', synced: false } })).toBeNull()
+    // The earlier Royal Temple theme keeps its Classic page.
+    expect(spacePageSiteFaces({ siteStyle: { theme: 'temple', synced: true } })).toBeNull()
+  })
+
   it('leaves a Space with no theme of its own on the font set it picked', () => {
     expect(spacePageSiteFaces({})).toBeNull()
   })

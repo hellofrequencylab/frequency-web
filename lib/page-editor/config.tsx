@@ -34,6 +34,8 @@ import { templeComponents, TEMPLE_CATEGORY_COMPONENTS } from '@/components/page-
 import { templeKitComponents, TEMPLE_KIT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/temple-kit'
 import { templeKitInnerComponents } from '@/components/page-editor/blocks/temple-kit-inner'
 import { templeKitInnerBComponents } from '@/components/page-editor/blocks/temple-kit-inner-b'
+import { templeKitInnerCComponents } from '@/components/page-editor/blocks/temple-kit-inner-c'
+import { templeKitInnerDComponents } from '@/components/page-editor/blocks/temple-kit-inner-d'
 import { midnightComponents, MIDNIGHT_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight'
 import { midnightPracticeComponents, MIDNIGHT_PRACTICE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight-practice'
 import { designerComponents, DESIGNER_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/designer'
@@ -85,6 +87,8 @@ export const config: Config = {
     ...templeKitComponents,
     ...templeKitInnerComponents,
     ...templeKitInnerBComponents,
+    ...templeKitInnerCComponents,
+    ...templeKitInnerDComponents,
     ...midnightComponents,
     ...midnightPracticeComponents,
     ...designerComponents,
@@ -196,7 +200,7 @@ export const config: Config = {
     // The Temple Theme Kit's section family (the Temple design system's Home): website pages only.
     templeKit: {
       title: 'Temple Kit sections',
-      components: [...TEMPLE_KIT_CATEGORY_COMPONENTS, ...Object.keys(templeKitInnerComponents), ...Object.keys(templeKitInnerBComponents)],
+      components: [...TEMPLE_KIT_CATEGORY_COMPONENTS, ...Object.keys(templeKitInnerComponents), ...Object.keys(templeKitInnerBComponents), ...Object.keys(templeKitInnerCComponents), ...Object.keys(templeKitInnerDComponents)],
     },
     // The Midnight theme's section family (the Midnight design system's Web Theme): website pages only.
     midnight: {

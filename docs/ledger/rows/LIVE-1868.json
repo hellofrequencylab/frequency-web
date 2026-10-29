@@ -1,0 +1,26 @@
+{
+  "id": "LIVE-1868",
+  "title": "The marketing funnel's start-a-Space links open /create-a-space, carrying ?kit= where a kit is known",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "docs/design-systems/create-a-space/rules.json",
+    "ref": "LIVE-1766 queue PR-1: make the page reachable"
+  },
+  "detail": "Theme Kit pages (theme kit, Designer, Network, Midnight, the Themes index), /for, /pricing and /system sent a visitor to signed-in /spaces/new. They now go to /create-a-space through createSpaceHref (lib/create-space/href.ts), with ?kit=<MegaThemeId> when the kit is one of the seven in PREVIEW_KIT_ORDER. The prototype's own nav and footer carry no Create a Space item (its nav is For people, For spaces, Features, Business Spaces, Pricing, Help; its footer 'Open your Space' goes to /spaces), so the site nav and footer are unchanged. Plan-specific pricing links (?plan=) and the Directory's 'List your business' still go to /spaces/new.",
+  "verify": {
+    "kind": "grep-absent",
+    "pattern": "/spaces/new",
+    "paths": [
+      "components/frequency/site/pages/themes/frequency-theme-kit.tsx",
+      "components/frequency/site/pages/themes/frequency-designer.tsx",
+      "components/frequency/site/pages/themes/frequency-network.tsx",
+      "components/frequency/site/pages/themes/frequency-themes.tsx",
+      "components/frequency/site/pages/funnel/frequency-for-index.tsx",
+      "components/frequency/site/pages/system/frequency-system.tsx"
+    ]
+  },
+  "wave": "W7"
+}

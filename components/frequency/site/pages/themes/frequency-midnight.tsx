@@ -3,9 +3,10 @@
 // /themes/nocturne (LIVE-1380, rebuilt LIVE-1598), built section by section from the Theme Feature Page of the Default Template design system
 // (docs/design-systems/nocturne). Every picture is a real screenshot of the kit (public/themes/midnight/shots,
 // ids as in lib/themes/nocturne-feature-data.ts); the live sample site is /themes/nocturne/demo. Every button
-// goes to a real route: the Wizard (/spaces/new?niche=<kit>&theme=midnight), pricing, the sample site, or an anchor on this page.
+// goes to a real route: the Wizard (/create-a-space?kit=midnight), pricing, the sample site, or an anchor on this page.
 // The design page's research figures are left out on purpose (docs/marketing/voice-and-language-guide.md).
 // Styles: nocturne-feature.css, tokens only.
+import { createSpaceHref } from '@/lib/create-space/href'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Fragment, useEffect, useRef, useState } from 'react'
@@ -48,9 +49,7 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
 function shotSrc(kit: string, shot: Shot) {
   return `/themes/midnight/shots/${kit}-${shot}.${shot === 'email' ? 'png' : 'jpg'}`
 }
-function adoptHref(kit: string) {
-  return `/spaces/new?niche=${kit}&theme=midnight`
-}
+const ADOPT_HREF = createSpaceHref('midnight')
 function pad(n: number) {
   return String(n).padStart(2, '0')
 }
@@ -296,6 +295,7 @@ function Pressed({
 export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: string | null }) {
   const [kitId, setKitId] = useState('general')
   const [hv, setHv] = useState<Surface>('site')
+  const [hs, setHs] = useState<Surface>('site')
   const [ins, setIns] = useState<InsView>('pages')
   const [acc, setAcc] = useState('')
   const demo = useRef<HTMLIFrameElement>(null)
@@ -369,7 +369,16 @@ export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: st
               </div>
             </div>
             <div className="nf-hero-shot">
-              <Device kit={kit} surface="site" priority sizes="(max-width: 900px) 92vw, 640px" />
+              <div className="nf-hero-pv">
+                <div className="nf-seg" role="group" aria-label="Surface">
+                  {SURFACES.map((x) => (
+                    <Pressed key={x} on={hs === x} onClick={() => setHs(x)}>
+                      {SURFACE_LABEL[x]}
+                    </Pressed>
+                  ))}
+                </div>
+                <Device kit={kit} surface={hs} priority={hs === 'site'} sizes="(max-width: 900px) 92vw, 640px" />
+              </div>
             </div>
           </div>
           <a className="nf-more" href="#spotlight">
@@ -677,7 +686,7 @@ export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: st
                 </div>
               </div>
               <p className="nf-cus-note">What you set here is what the adopt flow starts from.</p>
-              <Link className="btn fq-iri-btn" href={adoptHref(kit.id)}>
+              <Link className="btn fq-iri-btn" href={ADOPT_HREF}>
                 Start with {kit.name}
               </Link>
             </div>
@@ -773,7 +782,7 @@ export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: st
                 <button type="button" className="btn btn-ghost fq-iri-rim" onClick={() => setPv({ view: 'site' })}>
                   Live preview
                 </button>
-                <Link className="btn fq-iri-btn" href={adoptHref(kit.id)}>
+                <Link className="btn fq-iri-btn" href={ADOPT_HREF}>
                   Adopt this kit
                 </Link>
               </div>
@@ -908,7 +917,7 @@ export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: st
               ))}
             </div>
             <div className="ctas">
-              <Link className="btn fq-iri-btn" href={adoptHref(kit.id)}>
+              <Link className="btn fq-iri-btn" href={ADOPT_HREF}>
                 Start with {kit.name}
               </Link>
               <button type="button" className="btn btn-ghost fq-iri-rim" onClick={() => setPv({ view: 'site' })}>
@@ -922,7 +931,7 @@ export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: st
       <KeepGoing
         title="Start with your Spotlight."
         body="Free to start. Business when you charge."
-        primary={{ href: adoptHref(kit.id), label: `Start with ${kit.name} →` }}
+        primary={{ href: ADOPT_HREF, label: `Start with ${kit.name} →` }}
         secondary={{ href: '/pricing', label: 'See every plan' }}
       />
 

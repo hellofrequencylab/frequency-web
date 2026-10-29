@@ -1,9 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { buildPracticeWeek } from './practice-week'
 /** Called only for the authenticated viewer's own Feed. Bounded ten-day read covers the local week. */
-export async function loadPracticeWeek(profileId: string) {
+export async function loadPracticeWeek(profileId: string, now = new Date()) {
   const supabase = await createClient()
-  const now = new Date()
   const since = new Date(now.getTime() - 10 * 86400000).toISOString()
   const [profile, sessions, logs] = await Promise.all([
     supabase.from('profiles').select('home_timezone').eq('id', profileId).maybeSingle(),

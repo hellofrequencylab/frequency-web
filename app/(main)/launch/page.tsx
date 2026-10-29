@@ -66,13 +66,13 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
   }
 
   // The one page every way in lands on: what the account already has, ticked, and what is next.
-  const sections = await loadInventory(launch.spaceId ?? null, profileId)
-  if (sections) {
+  const inventory = await loadInventory(launch.spaceId ?? null, profileId, launch.skippedPhotos)
+  if (inventory) {
     const known = await loadKnownProfile(profileId)
     const who = (known?.displayName ?? '').trim().split(/\s+/)[0] || 'friend'
     return (
       <FocusTemplate title="Your launch" description={`You stopped at ${view.label}. Saved ${view.savedAgo}.`} width="narrow">
-        <LaunchOverview sections={sections} who={who} nextHref={inFlowHref(view.href)} />
+        <LaunchOverview sections={inventory.sections} who={who} nextHref={inFlowHref(view.href)} space={inventory.space} />
       </FocusTemplate>
     )
   }

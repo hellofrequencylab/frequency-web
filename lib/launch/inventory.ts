@@ -13,6 +13,8 @@ interface InventoryFacts {
   spaceName: string
   coverImageUrl: string | null
   logoUrl: string | null
+  /** Photo items the person skipped for now (launch row). They stay on the list. */
+  skippedPhotos?: readonly string[]
 }
 
 const text = (v: string | null | undefined) => (typeof v === 'string' ? v.trim() : '')
@@ -23,6 +25,7 @@ export function inventorySections(f: InventoryFacts): InventorySection[] {
   const words = text(answersFromLayout(spot.layout).line)
   const tagline = text(rows.tagline)
   const about = text(rows.about)
+  const skippedIf = (id: string, url: string | null) => !url && (f.skippedPhotos ?? []).includes(id)
   const prefs = rows.preferences && typeof rows.preferences === 'object' ? (rows.preferences as Record<string, unknown>) : {}
   return [
     {
@@ -40,8 +43,8 @@ export function inventorySections(f: InventoryFacts): InventorySection[] {
         { id: 'sc-name', label: 'Space named', state: text(f.spaceName) ? 'done' : 'todo', found: text(f.spaceName) || undefined },
         { id: 'sc-tag', label: 'Tagline', state: tagline ? 'done' : 'todo', found: tagline ? `"${tagline}"` : undefined },
         { id: 'sc-about', label: 'About', state: about ? 'done' : 'todo', found: about ? 'Found on your Space' : undefined },
-        { id: 'sc-cover', label: 'Cover image', state: f.coverImageUrl ? 'done' : 'todo', found: f.coverImageUrl ? 'Found on your Space' : undefined, photo: true },
-        { id: 'sc-logo', label: 'Logo', state: f.logoUrl ? 'done' : 'todo', found: f.logoUrl ? 'Found on your Space' : undefined, photo: true },
+        { id: 'sc-cover', label: 'Cover image', state: f.coverImageUrl ? 'done' : 'todo', found: f.coverImageUrl ? 'Found on your Space' : undefined, photo: true, skipped: skippedIf('sc-cover', f.coverImageUrl) },
+        { id: 'sc-logo', label: 'Logo', state: f.logoUrl ? 'done' : 'todo', found: f.logoUrl ? 'Found on your Space' : undefined, photo: true, skipped: skippedIf('sc-logo', f.logoUrl) },
       ],
     },
     { id: 'website', title: 'Website', items: [{ id: 'w-site', label: 'A website for your Space', state: prefs.websitePublished === true ? 'done' : 'todo' }] },

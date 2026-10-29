@@ -23,6 +23,7 @@ import { TopFriendsBlock } from './topfriends'
 import { GuestbookBlock } from './guestbook'
 import { MemberEventsBlock } from './events'
 import { TipBlock } from './tip'
+import { MemberProgramsBlock } from './programs'
 import { HeadingBlock } from './heading'
 import { TextBlock } from './text'
 import { ImageBlock } from './image'
@@ -61,6 +62,7 @@ export const MEMBER_PROFILE_BLOCKS: Record<string, MemberBlockComponent> = {
   guestbook: GuestbookBlock,
   memberEvents: MemberEventsBlock,
   tip: TipBlock,
+  memberPrograms: MemberProgramsBlock,
   heading: HeadingBlock,
   text: TextBlock,
   image: ImageBlock,
@@ -103,7 +105,7 @@ function renderMemberNode(
   } else {
     const Block = MEMBER_PROFILE_BLOCKS[id]
     if (!Block) return null
-    inner = <Block member={identity} data={data} />
+    inner = <Block member={identity} data={data} content={contentProps} />
   }
   const body = styled ? <BlockStyleFrame style={style}>{inner}</BlockStyleFrame> : inner
   return (

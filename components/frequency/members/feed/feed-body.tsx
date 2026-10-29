@@ -5,7 +5,7 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { loadHomeEvents, loadNeedsYou, loadZapBreakdown, type HomeEvents } from '@/lib/feed/frequency-home'
 import { SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
-import { HOME_TZ } from '@/lib/time/zone'
+import { feedGreetingTime } from '@/lib/feed/greeting-time'
 import { distanceLabel } from '@/lib/feed/home-rank'
 import type { CommunityRole } from '@/lib/community-roles'
 import { Standing, type StandingPractice } from './standing'
@@ -70,7 +70,8 @@ const SORTS: [FeedSort, string][] = [
 export async function FrequencyFeed(p: FrequencyFeedProps) {
   // The viewer's own active Circles: their own membership rows, so the session client reads them under RLS.
   const supabase = await createClient()
-  const [{ data: memberships }, zapRows, operates, practiceWeek] = await Promise.all([
+  const now = new Date()
+  const [{ data: memberships }, zapRows, operates, practiceWeek, timezone] = await Promise.all([
     supabase
       .from('memberships')
       .select('circle_id, circles!circle_id ( id, name )')
@@ -78,7 +79,8 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
       .eq('status', 'active'),
     loadZapBreakdown(p.profileId),
     hasOperatedSpaces(p.profileId),
-    loadPracticeWeek(p.profileId).catch(() => null),
+    loadPracticeWeek(p.profileId, now).catch(() => null),
+    supabase.from('profiles').select('home_timezone').eq('id', p.profileId).maybeSingle(),
   ])
   const circles = ((memberships ?? []) as unknown as { circles: { id: string; name: string } | null }[])
     .map((m) => m.circles)
@@ -90,11 +92,7 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
     ? { id: p.journey.nextLessonId, title: p.journey.nextLesson.title, href: p.journey.nextLesson.href, journey: p.journey.title }
     : null
 
-  const now = new Date()
-  const partOfDay = Number(now.toLocaleString('en-US', { timeZone: HOME_TZ, hour: '2-digit', hour12: false })) % 24
-  const hello = partOfDay < 12 ? 'Good morning' : partOfDay < 18 ? 'Good afternoon' : 'Good evening'
-  const dateLine = now.toLocaleDateString('en-US', { timeZone: HOME_TZ, weekday: 'long', month: 'long', day: 'numeric' })
-  const clock = now.toLocaleTimeString('en-US', { timeZone: HOME_TZ, hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase()
+  const { hello, dateLine, clock } = feedGreetingTime(now, timezone.data?.home_timezone)
   const rankOrder = SEASON_RANKS.find((r) => r.rank === p.standing.rank)?.order ?? 1
   const sort = p.sort === 'nearby' && !p.home ? 'relevant' : p.sort
   const nearby = p.home ? { ...p.home, radiusM: p.radiusM } : null

@@ -1270,6 +1270,7 @@ lib/spaces/type-defaults.ts
 lib/spaces/venue-holds.ts
 lib/spotlight/data.ts
 lib/spotlight/guestbook.ts
+lib/spotlight/programs.ts
 lib/spotlight/top-friends.ts
 lib/staff.ts
 lib/stewardships.ts

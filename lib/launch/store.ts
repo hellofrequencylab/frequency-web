@@ -4,7 +4,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { Json } from '@/lib/database.types'
-import { canConfirmCancel, publishStep, resumeStep, stageOf, toSnapshot, type CancelDecision, type LaunchSnapshot } from './state'
+import { canConfirmCancel, publishStep, resumeStep, skipPhoto, stageOf, stepsWithSkips, toSnapshot, type CancelDecision, type LaunchSnapshot } from './state'
 import { expireSources } from './shelf-io'
 import type { LaunchStepId } from './steps'
 
@@ -67,7 +67,7 @@ async function writeSteps(l: LaunchSnapshot, steps: LaunchSnapshot['steps'], now
   const db = await createClient()
   const { data, error } = await db
     .from('space_launch')
-    .update({ steps: steps as unknown as Json, current_step: next, stage: stageOf(next), updated_at: now.toISOString() })
+    .update({ steps: stepsWithSkips(steps, l.skippedPhotos) as unknown as Json, current_step: next, stage: stageOf(next), updated_at: now.toISOString() })
     .eq('id', l.id)
     .eq('owner_id', l.ownerId)
     .is('cancelled_at', null)
@@ -86,5 +86,21 @@ export function markStepPublished(l: LaunchSnapshot, id: LaunchStepId, ref?: str
 export async function attachSpace(l: LaunchSnapshot, spaceId: string): Promise<boolean> {
   const db = await createClient()
   const { error } = await db.from('space_launch').update({ space_id: spaceId, updated_at: new Date().toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId)
+  return !error
+}
+
+/** "Skip for now" on a photo item. Kept in the launch row's steps column, so it survives a reload. Nothing is
+ *  published or lost: the item stays on the list. */
+export async function skipPhotoItem(l: LaunchSnapshot, itemId: string, now = new Date()): Promise<boolean> {
+  const skipped = skipPhoto(l.skippedPhotos, itemId)
+  if (!skipped) return false
+  const db = await createClient()
+  const { error } = await db
+    .from('space_launch')
+    .update({ steps: stepsWithSkips(l.steps, skipped) as unknown as Json, updated_at: now.toISOString() })
+    .eq('id', l.id)
+    .eq('owner_id', l.ownerId)
+    .is('cancelled_at', null)
+    .is('completed_at', null)
   return !error
 }
