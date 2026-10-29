@@ -197,7 +197,7 @@ export function FrequencyTemple() {
               </div>
             </div>
             <div className="tf-hero-shot">
-              <TempleBrowser src={shotFor('site')} alt="Temple: website" url="yourtemple.org" width={1280} height={800} sizes="(max-width: 900px) 92vw, 640px" priority />
+              <TempleStage priority status={status} />
             </div>
           </div>
           <a className="tf-more" href="#why">

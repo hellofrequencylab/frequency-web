@@ -60,7 +60,7 @@ describe('theme pages share one layout', () => {
   })
 
   it('lets you switch the hero preview between Website, Spotlight, Space and Email', () => {
-    for (const el of [<FrequencyNetwork key="n" />, <FrequencyDesigner key="d" />, <FrequencyMidnight key="m" />]) {
+    for (const el of [<FrequencyNetwork key="n" />, <FrequencyDesigner key="d" />, <FrequencyMidnight key="m" />, <FrequencyTemple key="t" />]) {
       const html = renderToStaticMarkup(el)
       const hero = html.slice(html.indexOf('data-screen-label="01 Hero"'), html.indexOf('data-screen-label="02'))
       const group = hero.match(/aria-label="Surface"[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? ''
