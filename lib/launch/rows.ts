@@ -3,9 +3,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getConnectStatus } from '@/lib/billing/connect'
-import type { LaunchRows } from './done-checks'
+import type { LaunchRows, SetupExtras } from './done-checks'
 
-export async function loadLaunchRows(spaceId: string, ownerProfileId: string): Promise<LaunchRows | null> {
+export async function loadLaunchRows(spaceId: string, ownerProfileId: string, withExtras = false): Promise<LaunchRows | null> {
   const db = await createClient()
   const count = async (q: PromiseLike<{ count: number | null; error: unknown }>): Promise<number> => {
     const res = await q
@@ -19,6 +19,21 @@ export async function loadLaunchRows(spaceId: string, ownerProfileId: string): P
     count(db.from('contacts').select('id', { count: 'exact', head: true }).eq('space_id', spaceId)),
     getConnectStatus(ownerProfileId).catch(() => null),
   ])
+  const extras: SetupExtras | undefined = withExtras
+    ? await (async () => {
+        const [bookingTimes, membershipTiers, donationAsks, products, campaigns, campaignsSent, captureLinks, automations] = await Promise.all([
+          count(db.from('space_availability').select('id', { count: 'exact', head: true }).eq('space_id', spaceId)),
+          count(db.from('space_membership_tiers').select('id', { count: 'exact', head: true }).eq('space_id', spaceId).eq('is_active', true)),
+          count(db.from('space_donation_asks').select('id', { count: 'exact', head: true }).eq('space_id', spaceId).eq('is_active', true)),
+          count(db.from('commerce_products').select('id', { count: 'exact', head: true }).eq('owner_space_id', spaceId).neq('status', 'archived')),
+          count(db.from('campaigns').select('id', { count: 'exact', head: true }).eq('space_id', spaceId)),
+          count(db.from('campaigns').select('id', { count: 'exact', head: true }).eq('space_id', spaceId).not('sent_at', 'is', null)),
+          count(db.from('lead_entry_points').select('id', { count: 'exact', head: true }).eq('space_id', spaceId)),
+          count(db.from('space_automation_rules').select('id', { count: 'exact', head: true }).eq('space_id', spaceId)),
+        ])
+        return { bookingTimes, membershipTiers, donationAsks, products, campaigns, campaignsSent, captureLinks, automations }
+      })()
+    : undefined
   const space = spaceRes.data as { preferences: unknown; tagline: string | null; about: string | null } | null
   if (!space) return null
   return {
@@ -30,5 +45,6 @@ export async function loadLaunchRows(spaceId: string, ownerProfileId: string): P
     journeyCount,
     contactCount,
     payoutsReady: connect?.ready === true,
+    extras,
   }
 }

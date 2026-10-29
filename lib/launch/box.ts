@@ -8,20 +8,25 @@ import { boxView, type LaunchBoxView } from './box-state'
 import { loadPostPublishList } from './get-started-io'
 import { setupBoxView } from './setup-box'
 import { loadSetupHidden } from './setup-hidden-io'
-import { getActiveLaunch } from './store'
+import { getActiveLaunch, getLaunchForOwner } from './store'
 
 export async function loadLaunchBox(): Promise<LaunchBoxView | null> {
   if (!launchSystemEnabled()) return null
   try {
     const profileId = await getMyProfileId()
     if (!profileId) return null
-    const launch = await getActiveLaunch(profileId)
-    if (!launch) return null
+    const active = await getActiveLaunch(profileId)
     // Once the Spotlight is published the same pill stays as "Finish setup" over the Get Started list (lib/launch/setup-box.ts)
-    // until every item is done; the pill never disappears on Publish, it changes what it counts.
+    // until every item is done, even after the launch overview itself has completed; the pill never disappears on Publish,
+    // it changes what it counts. Hiding it (lib/launch/setup-hidden.ts) is the person's choice.
     const list = await loadPostPublishList(profileId)
-    if (list) return (await loadSetupHidden(profileId)) ? null : setupBoxView(launch, list, new Date())
-    return boxView(launch, new Date())
+    if (list) {
+      if (await loadSetupHidden(profileId)) return null
+      const launch = active ?? (await getLaunchForOwner(profileId))
+      return launch ? setupBoxView(launch, list, new Date()) : null
+    }
+    if (!active) return null
+    return boxView(active, new Date())
   } catch {
     return null
   }
