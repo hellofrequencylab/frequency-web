@@ -221,6 +221,8 @@ export function adaptCalendar(input: AdapterInput): AdaptedCalendar {
     id: t.id,
     title: t.title,
     due: t.dueAt ? t.dueAt.slice(0, 10) : null,
+    startMin: t.startMinute ?? null,
+    estHours: t.estMinutes == null ? null : t.estMinutes / 60,
     plan: t.planId,
     owner: t.assigneeProfileId,
     phase: t.dueOffsetDays == null ? null : phaseOfOffset(t.dueOffsetDays),
