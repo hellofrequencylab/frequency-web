@@ -185,24 +185,18 @@ async function loadMemberSpotlight(
   // reactions, joins, etc., so the stat never appeared.)
   const totalZaps = Number(g.lifetime_zaps ?? 0)
 
-  // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel
-  // (both are per-owner reads joined to public profile fields).
-  const [topFriends, guestbook, canTip] = await Promise.all([
-    getTopFriendsForOwner(g.id),
-    getGuestbookForOwner(g.id),
-    // Public page only: the in-app profile already carries the real Tip button.
-    requirePublished ? readCanTip(g.id) : Promise.resolve(false),
-  ])
-
   // The member's saved unified grid layout (U3 module render), read fail-safe off the SAME meta blob the
   // publish/layout gate already loaded — no extra query. Never returned raw; only the parsed layout.
   const grid = readMemberGridLayout(g.meta)
 
-  // The Programs block (SPL-04) reads only what the member switched on in that block, so it costs nothing
-  // for everyone else. Resolved in the same parallel wave; fails closed to empty lists.
-  const [topFriends, guestbook, programs] = await Promise.all([
+  // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel (both are per-owner
+  // reads joined to public profile fields). The Programs block (SPL-04) reads only what the member switched
+  // on in that block, so it costs nothing for everyone else; it fails closed to empty lists.
+  const [topFriends, guestbook, canTip, programs] = await Promise.all([
     getTopFriendsForOwner(g.id),
     getGuestbookForOwner(g.id),
+    // Public page only: the in-app profile already carries the real Tip button.
+    requirePublished ? readCanTip(g.id) : Promise.resolve(false),
     getMemberPrograms(g.id, programsOptInFromGrid(grid)),
   ])
 

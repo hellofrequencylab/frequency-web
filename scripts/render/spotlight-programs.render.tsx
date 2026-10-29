@@ -57,7 +57,7 @@ it('renders the public Spotlight, before and after', async () => {
     const base = member()
     const data = { ...base, theme: EMPTY_THEME, stickers: { items: [] }, programs }
     const modules = createElement(MemberProfileModules, { member: data, grid: publicSpotlightGrid(withBlock(data.grid, view === 'proposed'), data.layout.blocks) })
-    const el = createElement(SpotlightShell, { data, showJoinCta: true, showBio: false } as never, modules)
+    const el = createElement(SpotlightShell as never, { data, showJoinCta: true, showBio: false }, modules)
     writeFileSync(`${out}/spotlight-programs-${view}.html`, page(await html(el)))
   }
 })
