@@ -12,6 +12,9 @@
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
+import { recordClockBeat } from './clock-io'
+import type { BeatKind } from './clock'
+import { buildLaunchDraft } from './buildout-io'
 import { inFlowHref } from './destination'
 import { launchSystemEnabled } from './enabled'
 import { recordLaunchEvent } from './events'
@@ -45,6 +48,16 @@ export async function setMinimizedAction(minimized: boolean): Promise<ActionResu
   const who = await mine()
   if ('error' in who) return fail(who.error)
   return (await store.setMinimized(who.launch, minimized === true)) ? ok() : fail(RETRY)
+}
+
+/** The clock's heartbeat (start, beat, stop). The open page sends one every 15 seconds while the person is working;
+ *  the server adds the time since the last one, never more than 30 seconds, and returns the active milliseconds kept. */
+export async function clockBeatAction(kind: BeatKind): Promise<ActionResult<{ activeMs: number }>> {
+  if (kind !== 'start' && kind !== 'beat' && kind !== 'stop') return fail(RETRY)
+  const who = await mine()
+  if ('error' in who) return fail(who.error)
+  const activeMs = await recordClockBeat(who.launch.id, who.profileId, kind)
+  return activeMs === null ? fail(RETRY) : ok({ activeMs })
 }
 
 /** Cancel, call one. The launch stays active until the second call carries the typed word. */
@@ -156,6 +169,14 @@ export async function chooseSpaceFormAction(formData: FormData): Promise<void> {
     await recordLaunchEvent(profileId, { type: 'step_published', launchId: launch.id, step: 'spotlight' })
   }
   redirect(spotlightStepUrl())
+}
+
+/** Vera builds the draft from the person's own words (Spotlight, Space, profile, accepted sources) and saves it on the launch.
+ *  Quotes only unless the polish switch is on; a field she cannot quote is left empty for them to fill in. Publishes nothing. */
+export async function buildDraftAction(): Promise<ActionResult> {
+  const who = await mine()
+  if ('error' in who) return fail(who.error)
+  return (await buildLaunchDraft(who.profileId, who.launch)) ? ok() : fail(RETRY)
 }
 
 const reviewUrl = (code: ReviewErrorCode) => `${REVIEW_HREF}?e=${code}`

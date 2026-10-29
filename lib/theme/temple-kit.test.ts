@@ -44,12 +44,12 @@ describe('the Temple Theme Kit palette', () => {
     expect(contrastRatio(TEMPLE_KIT_NIGHT.text, TEMPLE_KIT_NIGHT.bg), 'text on the night ground').toBeGreaterThanOrEqual(12)
   })
 
-  it('MEASURED: the warm white label on the solid clay 500 button is 4.27:1, short of AA 4.5 for body-size text', () => {
-    // The design's own value (#FFF6EE on clay 500) is kept. Daniel's call: fill clay 600 (5.74:1) or keep and accept
-    // AA-large only. This test pins the measurement so a change to either side is seen.
+  it('MEASURED: the white label on the solid clay 500 button is 4.56:1, clearing AA 4.5 (the design\'s warm white was 4.27:1)', () => {
+    // Daniel chose the white label (2026-10-29), so the button clears AA where the design's own warm white did not.
     expect(TEMPLE_KIT_SOLID.fill).toBe(P.clay500)
-    expect(TEMPLE_KIT_SOLID.on).toBe('#FFF6EE')
-    expect(contrastRatio(TEMPLE_KIT_SOLID.on, TEMPLE_KIT_SOLID.fill)).toBeCloseTo(4.27, 1)
+    expect(TEMPLE_KIT_SOLID.on).toBe('#FFFFFF')
+    expect(contrastRatio(TEMPLE_KIT_SOLID.on, TEMPLE_KIT_SOLID.fill)).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio('#FFF6EE', TEMPLE_KIT_SOLID.fill), 'the design\'s warm white, for the record').toBeCloseTo(4.27, 1)
     expect(contrastRatio(TEMPLE_KIT_SOLID.on, TEMPLE_KIT_SOLID.hover), 'the hover state clears AA').toBeGreaterThanOrEqual(4.5)
     expect(contrastRatio(TEMPLE_KIT_ACCENT.on, TEMPLE_KIT_ACCENT.accent), 'label on the clay 600 accent').toBeGreaterThanOrEqual(4.5)
   })
@@ -69,7 +69,7 @@ describe('the Temple Theme Kit palette', () => {
   it('defaults to the clay, keeps an owner hex and measures its label', () => {
     const d = templeKitAccentVars(null)
     expect(d['--color-primary']).toBe('#9C4A2C')
-    expect(d['--color-text-on-primary']).toBe('#FFF6EE')
+    expect(d['--color-text-on-primary']).toBe('#FFFFFF')
     expect(templeKitAccentVars('#9c4a2c')['--color-primary']).toBe('#9C4A2C')
     const custom = templeKitAccentVars('#2F6E80')
     expect(custom['--color-primary']).toBe('#2F6E80')

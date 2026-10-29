@@ -28,6 +28,9 @@ export interface SiteKit {
   description: string
   /** Global styles the kit suggests; anything left out stays the theme's own. */
   look?: Partial<SiteLook>
+  /** The accent a profile kit starts a site in (a Temple profile's own clay, olive, aegean...). "Replace my pages" writes it
+   *  only when the site has not chosen an accent of its own; "Add its pages" and "Change the look only" never touch it. */
+  accent?: string
   chrome?: WebsiteChrome
   pages: KitPage[]
 }

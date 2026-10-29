@@ -5,6 +5,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Json } from '@/lib/database.types'
 import { canConfirmCancel, publishStep, resumeStep, skipPhoto, stageOf, stepsWithSkips, toSnapshot, type CancelDecision, type LaunchSnapshot } from './state'
+import { readStoredBuildout, type StoredBuildout } from './buildout'
 import { expireSources } from './shelf-io'
 import type { LaunchStepId } from './steps'
 
@@ -26,6 +27,14 @@ export async function getLaunchForOwner(ownerId: string, launchId?: string): Pro
   q = launchId ? q.eq('id', launchId) : q.order('started_at', { ascending: false }).limit(1)
   const { data } = await q.maybeSingle()
   return toSnapshot(data as Record<string, unknown> | null)
+}
+
+/** Everything on the list is ticked: the launch is finished. Idempotent and owner-only; once set, the launch box, the clock
+ *  and the come-back emails all stand down, and /launch reads "done". */
+export async function completeLaunch(l: LaunchSnapshot, now = new Date()): Promise<boolean> {
+  const db = await createClient()
+  const { error } = await db.from('space_launch').update({ completed_at: now.toISOString(), updated_at: now.toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId).is('cancelled_at', null).is('completed_at', null)
+  return !error
 }
 
 /** Start a launch, or hand back the one already running: a second tap never makes a second launch. */
@@ -86,6 +95,19 @@ export function markStepPublished(l: LaunchSnapshot, id: LaunchStepId, ref?: str
 export async function attachSpace(l: LaunchSnapshot, spaceId: string): Promise<boolean> {
   const db = await createClient()
   const { error } = await db.from('space_launch').update({ space_id: spaceId, updated_at: new Date().toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId)
+  return !error
+}
+
+/** The draft Vera built from this launch's words, or null if none yet (the column is null until the first build). */
+export async function getBuildout(l: LaunchSnapshot): Promise<StoredBuildout | null> {
+  const db = await createClient()
+  const { data } = await db.from('space_launch').select('buildout').eq('id', l.id).eq('owner_id', l.ownerId).maybeSingle()
+  return readStoredBuildout(data?.buildout)
+}
+
+export async function setBuildout(l: LaunchSnapshot, stored: StoredBuildout): Promise<boolean> {
+  const db = await createClient()
+  const { error } = await db.from('space_launch').update({ buildout: stored as unknown as Json, updated_at: new Date().toISOString() }).eq('id', l.id).eq('owner_id', l.ownerId).is('cancelled_at', null).is('completed_at', null)
   return !error
 }
 

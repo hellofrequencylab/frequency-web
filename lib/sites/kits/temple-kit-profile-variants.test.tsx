@@ -36,6 +36,20 @@ describe('Temple Theme Kit profile kits', () => {
     expect(templeKitProfileAccent('nope')).toBeNull()
   })
 
+  it('starts a site in the profile\'s accent on Replace, and never overrides an owner\'s own accent or the other two modes', async () => {
+    const kit = (await loadKit('temple-kit-coaches'))!
+    expect(kit.accent).toBe(TEMPLE_KIT_PROFILES.coaches.accent)
+    const fresh = applyKit({ theme: 'Midnight', pages: [] }, kit, 'replace')
+    expect(fresh.ok && fresh.snapshot.brand?.accent).toBe(TEMPLE_KIT_PROFILES.coaches.accent)
+    const owned = applyKit({ theme: 'Midnight', brand: { accent: '#123456' }, pages: [] }, kit, 'replace')
+    expect(owned.ok && owned.snapshot.brand?.accent).toBe('#123456')
+    const site = { theme: 'Midnight' as const, pages: fresh.ok ? fresh.snapshot.pages : [] }
+    for (const mode of ['theme', 'add'] as const) {
+      const r = applyKit(site, kit, mode)
+      expect(r.ok && r.snapshot.brand, mode).toBeUndefined()
+    }
+  })
+
   it('carries the Programs, Shop and Library inner pages, and not Book (a reserved slug the site serves itself)', async () => {
     const { config } = await import('@/lib/page-editor/config')
     for (const s of TEMPLE_KIT_PROFILE_KIT_INDEX) {

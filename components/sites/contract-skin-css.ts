@@ -127,7 +127,7 @@ const TEMPLE: Overrides = {
 const TEMPLE_KIT: Overrides = {
   '--accent-general': ACCENT, '--accent-general-bg': mix('accent', 14), '--accent-general-deep': ACCENT_DEEP, '--accent-general-hover': ACCENT_DEEP,
   '--accent-general-soft': mix('accent', 22), '--accent-general-text': ACCENT_DEEP,
-  '--tk-clay-300': mix('accent', 45), '--tk-clay-500': ACCENT, '--tk-saffron-600': ACCENT_DEEP, '--tk-plaster-400': LINE_STRONG,
+  '--kit-on-solid': ON_ACCENT, '--tk-clay-300': mix('accent', 45), '--tk-clay-500': ACCENT, '--tk-saffron-600': ACCENT_DEEP, '--tk-plaster-400': LINE_STRONG,
   '--tk-umber-400': SUBTLE, '--tk-umber-500': SUBTLE, '--tk-umber-600': MUTED,
   '--tk-olive-100': mix('accent', 12), '--tk-olive-300': mix('accent', 45), '--tk-olive-600': ACCENT_DEEP, '--tk-olive-700': ACCENT_DEEP,
   '--tk-aegean-100': mix('accent', 12), '--tk-aegean-300': mix('accent', 45), '--tk-aegean-600': ACCENT_DEEP, '--tk-aegean-800': BAND,

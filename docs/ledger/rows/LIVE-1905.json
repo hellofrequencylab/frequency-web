@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1905",
+  "title": "Temple Theme Kit polish: white label on the clay button, each profile kit starts in its own accent, Temple Spotlight in Temple's faces",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/theme/temple-kit.ts",
+    "ref": "LIVE-1645"
+  },
+  "detail": "Daniel's three picks on the open Temple questions (2026-10-29). The label on the solid clay button and every profile accent is white (#FFFFFF), not the design's #FFF6EE, which is 4.27:1 on clay 500. A profile kit now carries its accent, and \"Replace my pages\" (the starter site and the editor's replace) writes it as the site's accent only when the owner has not chosen one; \"Add its pages\" and \"Change the look only\" never touch the accent. The Temple Spotlight route wraps the page in the four Temple faces (TEMPLE_FONT_CLASS, set one level above the shell, which the suite renders) and sets the quote in Cormorant Garamond italic, as the design draws it.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "The Temple label is white, the profile kits carry their accent, and the Temple Spotlight loads Temple's faces with an italic quote.",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/temple-kit-polish.mjs"
+  },
+  "closed": "2026-10-29"
+}

@@ -12,7 +12,7 @@ import type { KitNiche, KitPage, SiteKit } from './types'
 // that picked the Temple look and a niche starts on its own kit, and `temple-kit-general` is the General kit the starter
 // site publishes. The thirteen share one type system and one Home and differ by ACCENT only (the design's kits.css), so
 // every kit is the same pages; what differs is the id, the name, who it is for and the accent a profile wears
-// (templeKitProfileAccent). Kits hold no colors: the Space's own brand accent paints the site.
+// (templeKitProfileAccent), which "Replace my pages" writes as the site's accent unless the owner already chose one.
 //
 // The Home is the design's, block for block (templeKitHomeBlocks), after one copy pass for a STARTER: a kit's words are
 // samples the owner rewrites, so the design's sample house keeps its voice but loses what a real Space would have to
@@ -108,12 +108,12 @@ function pages(label: string, who: string): KitPage[] {
   ]
 }
 
-/** The profile's accent, from the design system's tokens/kits.css. Kits hold no colors: the Space's own brand accent paints the site. */
+/** The profile's accent, from the design system's tokens/kits.css. The kit passes it as `accent`; an owner's own accent always wins. */
 export const templeKitProfileAccent = (niche: string): string | null => (Object.hasOwn(TEMPLE_KIT_PROFILES, niche) ? TEMPLE_KIT_PROFILES[niche as keyof typeof TEMPLE_KIT_PROFILES].accent : null)
 
 /** The Temple Theme Kit profile kit for one niche. Id is `temple-kit-<niche>`. */
 export function templeKitProfileKit(niche: KitNiche): SiteKit {
   const summary = TEMPLE_KIT_PROFILE_KIT_INDEX.find((k) => k.niche === niche)
   if (!summary) throw new Error(`No Temple Theme Kit profile kit for ${niche}`)
-  return { id: summary.id, label: summary.label, description: summary.description, theme: 'TempleKit', version: 1, niche, pages: pages(summary.label, summary.description) }
+  return { id: summary.id, label: summary.label, description: summary.description, theme: 'TempleKit', version: 1, niche, accent: templeKitProfileAccent(niche) ?? undefined, pages: pages(summary.label, summary.description) }
 }

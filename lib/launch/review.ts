@@ -3,7 +3,7 @@
 // finds the cites for a field. It never writes words for anyone: an empty field stays empty. PURE, so a probe can
 // run it under node.
 
-import type { BuildoutDraft } from './buildout-contract.ts'
+import type { BuildoutDraft } from './buildout.ts'
 import type { InventorySection } from './overview.ts'
 import { parseSpotlightAnswers } from './spotlight-step.ts'
 
