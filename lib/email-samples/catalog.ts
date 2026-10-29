@@ -62,6 +62,7 @@ import { spaceFromLine } from '@/lib/spaces/email'
 import { envString } from '@/lib/env/string'
 import { designerKitDatesEmail, designerKitNoteEmail, designerKitReceiptEmail, designerKitWelcomeEmail, type DesignerKitEmailBrand } from '@/lib/theme/designer-kit-email'
 import { networkKitDatesEmail, networkKitNoteEmail, networkKitReceiptEmail, networkKitWelcomeEmail, type NetworkKitEmailBrand } from '@/lib/theme/network-kit-email'
+import { templeKitDatesEmail, templeKitNoteEmail, templeKitReceiptEmail, templeKitWelcomeEmail, type TempleKitEmailBrand } from '@/lib/theme/temple-kit-email'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 /** Who the email comes from in production, so a sample lands with the real From header:
@@ -212,6 +213,24 @@ const DESIGNER_DATES = [
   { lead: 'Nov 21', title: 'Material library morning', sub: '9:30 AM · The workshop, Mill Street' },
 ]
 
+/** The Temple Theme Kit's four emails (EMAIL-026 follows the theme): one fixture house in the default clay profile. */
+const TEMPLE_BRAND: TempleKitEmailBrand = {
+  profile: 'general',
+  spaceName: 'Olive House',
+  mastheadNote: 'Gatherings · Ojai, California',
+  postalLine: PLATFORM_POSTAL_LINE,
+  siteUrl: 'https://olivehouse.example',
+  siteLabel: 'olivehouse.example',
+  unsubscribeUrl: `${SITE}/unsubscribe/s`,
+  manageUrl: `${SITE}/manage-emails`,
+}
+const TEMPLE_COVER = `${SITE}/sites/temple-kit/photos/photo-02.jpg`
+const TEMPLE_DATES = [
+  { lead: '20', title: 'New moon sound bath', sub: '7:00 PM · The great room' },
+  { lead: '29', title: 'Long table supper', sub: '6:00 PM · The long table, under the olives' },
+  { lead: '7', title: 'Breath at the fire circle', sub: '5:00 PM · The fire circle' },
+]
+
 export const SAMPLE_SPECS: readonly SampleSpec[] = [
   // ── Welcome and sign-up ──────────────────────────────────────────────────────────────────────────────
   { id: 'welcome', group: 'Welcome and sign-up', run: () => sendWelcomeEmail({ to: TO, displayName: 'Maya', inviterName: 'Jordan' }) },
@@ -298,4 +317,10 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'designer-kit-welcome', group: 'Spaces and campaigns', run: () => { const out = designerKitWelcomeEmail(DESIGNER_BRAND, { coverUrl: `${SITE}/og/default.png`, coverAlt: 'A finished kitchen in morning light.', ctaLabel: 'Start a project', ctaUrl: 'https://ateliernorth.example/book', steps: [{ title: 'Come to one thing', sub: 'Pick a date from the calendar and show up. No account needed.' }, { title: 'Book a first conversation', sub: 'A short call to talk about the room and what you want from it.' }, { title: 'Say hello', sub: 'Reply to this email. It goes to a person, not a robot.' }] }); return { to: TO, ...out } } },
   { id: 'designer-kit-dates', group: 'Spaces and campaigns', run: () => { const out = designerKitDatesEmail(DESIGNER_BRAND, { dates: DESIGNER_DATES, ctaUrl: 'https://ateliernorth.example/events' }); return { to: TO, ...out } } },
   { id: 'designer-kit-receipt', group: 'Spaces and campaigns', run: () => { const out = designerKitReceiptEmail(DESIGNER_BRAND, { what: 'Open studio', when: 'Friday, November 6, 10:00 AM', where: 'The workshop, Mill Street', who: 'One place', whoNote: 'Reserved under your name', paid: 'Free', paidNote: 'Receipt no. 1047', calendarUrl: 'https://ateliernorth.example/calendar.ics', manageUrl: 'https://ateliernorth.example/bookings' }); return { to: TO, ...out } } },
+
+  // ── The Temple Theme Kit's emails (code id temple-kit) ──────────────────────────────────────────────
+  { id: 'temple-kit-note', group: 'Spaces and campaigns', run: () => { const out = templeKitNoteEmail(TEMPLE_BRAND, { subject: 'This week, in one note', title: 'A house for', em: 'gathering.', lead: 'The solstice is close. Seats for the ceremony open this week and the long table returns in December. Come to one thing and see how it feels.', ctaLabel: 'See what is open', ctaUrl: 'https://olivehouse.example/gatherings', coverUrl: TEMPLE_COVER, coverAlt: 'A white stone house with an arched door, olive trees and a pool.', feature: { kicker: 'Gatherings', title: 'The next few dates', rows: TEMPLE_DATES, ctaLabel: 'See what is open', ctaUrl: 'https://olivehouse.example/gatherings' }, quote: { text: 'We were married under the olive trees. Everyone heard every word.', who: 'Maya and Theo', role: 'Married at the house' } }); return { to: TO, ...out } } },
+  { id: 'temple-kit-welcome', group: 'Spaces and campaigns', run: () => { const out = templeKitWelcomeEmail(TEMPLE_BRAND, { coverUrl: TEMPLE_COVER, coverAlt: 'A white stone house with an arched door, olive trees and a pool.', ctaLabel: 'See what is open', ctaUrl: 'https://olivehouse.example/gatherings', steps: [{ title: 'Come to one thing', sub: 'Pick a date from the calendar and show up. No account needed.' }, { title: 'The next few dates', sub: 'Gatherings' }, { title: 'Say hello', sub: 'Reply to this letter. It goes to a person, not a robot.' }], quote: { text: 'We were married under the olive trees. Everyone heard every word.', who: 'Maya and Theo', role: 'Married at the house' } }); return { to: TO, ...out } } },
+  { id: 'temple-kit-dates', group: 'Spaces and campaigns', run: () => { const out = templeKitDatesEmail(TEMPLE_BRAND, { dates: TEMPLE_DATES, ctaUrl: 'https://olivehouse.example/gatherings' }); return { to: TO, ...out } } },
+  { id: 'temple-kit-receipt', group: 'Spaces and campaigns', run: () => { const out = templeKitReceiptEmail(TEMPLE_BRAND, { what: 'New moon sound bath', when: 'Thursday, November 20 · 7:00 PM', where: 'The great room', who: 'One place', whoNote: 'Reserved under your name', paid: '$45', paidNote: 'Card ending 4242 · Receipt no. 1047', calendarUrl: 'https://olivehouse.example/calendar.ics', manageUrl: 'https://olivehouse.example/bookings' }); return { to: TO, ...out } } },
 ]

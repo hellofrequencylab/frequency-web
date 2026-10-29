@@ -19,11 +19,11 @@ interface DesignerLayout {
 
 /** The four surfaces a preview can show, and the picture each one reads. */
 export type DesignerSurface = 'site' | 'spotlight' | 'space' | 'email'
-export const DESIGNER_SURFACES: readonly { id: DesignerSurface; label: string; shot: 'site' | 'spot' | 'spacedesk' | 'email'; width: number; height: number }[] = [
+export const DESIGNER_SURFACES: readonly { id: DesignerSurface; label: string; qual?: string; shot: 'site' | 'spot' | 'spacedesk' | 'email'; width: number; height: number }[] = [
   { id: 'site', label: 'Website', shot: 'site', width: 1280, height: 800 },
-  { id: 'spotlight', label: 'Spotlight', shot: 'spot', width: 740, height: 1648 },
-  { id: 'space', label: 'Space', shot: 'spacedesk', width: 1280, height: 770 },
-  { id: 'email', label: 'Email', shot: 'email', width: 900, height: 1140 },
+  { id: 'spotlight', label: 'Spotlight', qual: 'Link Page', shot: 'spot', width: 740, height: 1648 },
+  { id: 'space', label: 'Space', qual: 'Profile', shot: 'spacedesk', width: 1280, height: 770 },
+  { id: 'email', label: 'Email template', shot: 'email', width: 900, height: 1140 },
 ]
 
 export const DESIGNER_SPOTLIGHT_EYEBROW: string = data.eyebrow

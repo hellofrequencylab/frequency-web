@@ -8,7 +8,7 @@
 
 import type { Config, Data } from '@/lib/page-editor/types'
 import { blockLimitReason, canAddBlock } from '@/lib/page-editor/block-limits'
-import { categoryKeysForSurface, type EditorSurface } from '@/lib/page-editor/palette-scope'
+import { categoryKeysForSurfaceAndTheme, type EditorSurface } from '@/lib/page-editor/palette-scope'
 
 type Item = Data['content'][number]
 
@@ -58,7 +58,7 @@ export type PickerGroup = {
  *  palette-scope.ts): a marketing page stops offering the Space profile blocks, which render nothing there.
  *  Both editors pass it — it is a required prop on <DesktopEditor> and <MobileEditor>, and palette-scope.test.ts
  *  pins both call sites — so omitting it here means "unscoped", which is what the pure-function tests want. */
-export function derivePickerGroups(config: Config, data?: Data, surface?: EditorSurface): PickerGroup[] {
+export function derivePickerGroups(config: Config, data?: Data, surface?: EditorSurface, theme?: string | null): PickerGroup[] {
   const components = (config.components ?? {}) as Record<string, ComponentEntry>
   const labelFor = (type: string) => components[type]?.label ?? type
   const itemFor = (type: string): PickerItem => {
@@ -76,7 +76,7 @@ export function derivePickerGroups(config: Config, data?: Data, surface?: Editor
   >
   // `null` means "offer every category" (no surface passed, or one this build does not recognise —
   // palette-scope fails OPEN so an editor is never left with nothing to add).
-  const allowed = surface ? categoryKeysForSurface(surface) : null
+  const allowed = surface ? categoryKeysForSurfaceAndTheme(surface, theme) : null
   for (const [key, cat] of Object.entries(categories)) {
     const types = (cat.components ?? []).filter((t) => t in components)
     if (types.length === 0) continue
