@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { openingMonth } from '@/lib/calendar/open-month'
 import { ArrowLeft } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { listPublicCalendarEvents, listCalendarEngagement, listSeriesAnchors } from '@/lib/events/store'
@@ -30,8 +31,7 @@ export default async function EventsCalendarPage() {
   // client grid pages over). The server clock (UTC) seeds the initial month — the grid buckets each
   // event on its own stored day regardless of the viewer's zone.
   const now = new Date()
-  const initialYear = now.getUTCFullYear()
-  const initialMonth1 = now.getUTCMonth() + 1
+  const { year: initialYear, month1: initialMonth1 } = openingMonth(now)
 
   const rows = await listPublicCalendarEvents()
   // Enrich with "going" count + cover for the popup (kept out of the feed RPC; display-only), and

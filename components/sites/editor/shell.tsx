@@ -26,9 +26,9 @@ import { readSlots } from '@/lib/spaces/content-slots'
 import { SlotsPanel } from './slots-panel'
 import { duplicateWebsiteSection } from '@/lib/sites/editor/duplicate'
 import { FqIcon, type FqEditorIconName, type FqIconName } from '@/components/frequency/icon'
-import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsiteSnapshot, resolveWebsiteBrand, updateSectionDisplay, setSectionVisibility, sectionVisibility, patchSectionBase, type WebsiteSnapshot, type WebsiteEditorState, type Device, type WebsitePresence, type SectionDisplay } from '@/lib/sites/editor/state'
+import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsiteSnapshot, resolveWebsiteBrand, updateSectionDisplay, setSectionVisibility, sectionVisibility, patchSectionBase, type WebsiteSnapshot, type WebsiteTheme, type WebsiteEditorState, type Device, type WebsitePresence, type SectionDisplay } from '@/lib/sites/editor/state'
 import type { MwLive } from '@/lib/sites/menswork-data'
-import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { SITE_LOOK_OPTIONS, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { EDITOR_THEME_OF, siteCanvasVars, siteRenderStyle } from '@/lib/sites/site-render-style'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { LoomPicker } from '@/components/loom/loom-picker'
@@ -111,10 +111,10 @@ function subscribeViewport(callback: () => void) {
 }
 
 /** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. */
-const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', Temple: 'Temple', Designer: 'Designer' }
-const EDITOR_THEME = EDITOR_THEME_OF
+const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', NetworkKit: 'Network', Temple: 'Temple', TempleKit: 'Temple', Designer: 'Designer' }
+const EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = EDITOR_THEME_OF
 /** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
-const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'Temple' ? 'temple' : theme === 'Midnight' ? 'midnight' : theme === 'Designer' ? 'designer' : 'frequency')
+const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'NetworkKit' ? 'network-kit' : theme === 'Temple' ? 'temple' : theme === 'TempleKit' ? 'temple-kit' : theme === 'Midnight' ? 'midnight' : theme === 'Designer' ? 'designer' : 'frequency')
 /** A page's publish state in the design's words (Pages tab and page menu dots). */
 type PageState = 'live' | 'changed' | 'draft'
 const PAGE_STATE_LABEL: Record<PageState, string> = { live: 'Published', changed: 'Draft changes', draft: 'Not published yet' }
@@ -176,7 +176,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     const theme = siteThemeOf(draft.theme)
     const same = theme === style.theme
     const own = draftLook(draft.look) as SiteStyle['look'] | undefined
-    return { ...style, theme, fonts: same ? style.fonts : SITE_THEMES.find((t) => t.id === theme)!.defaultFonts, look: own ?? (same ? style.look : { corners: null, spacing: null, header: null, footer: null }) }
+    return { ...style, theme, fonts: same ? style.fonts : SITE_THEME_DEFS.find((t) => t.id === theme)!.defaultFonts, look: own ?? (same ? style.look : { corners: null, spacing: null, header: null, footer: null }) }
   }, [style, draft.theme, draft.look])
   async function saveStyle(patch: Parameters<NonNullable<WebsiteEditorShellProps['onStyle']>>[0], optimistic: SiteStyle) {
     const before = style

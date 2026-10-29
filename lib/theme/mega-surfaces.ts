@@ -15,7 +15,9 @@ import { DESIGNER_SURFACE } from '@/lib/theme/designer'
 import { MENSWORK_PALETTE as B } from '@/lib/theme/menswork'
 import { MIDNIGHT_SURFACE } from '@/lib/theme/midnight'
 import { NETWORK_SCHEMES } from '@/lib/theme/network'
+import { NETWORK_KIT_SURFACE } from '@/lib/theme/network-kit'
 import { TEMPLE_ACCENT, TEMPLE_PALETTE as T } from '@/lib/theme/temple'
+import { TEMPLE_KIT_SURFACE } from '@/lib/theme/temple-kit'
 import { WILDHEART_PALETTE as W } from '@/lib/theme/wildheart'
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import { palette } from '@/lib/theme/palette'
@@ -55,12 +57,20 @@ const TEMPLE: ThemeSurface = {
   semantic: { success: T.olive600, info: T.aegean600, danger: T.danger },
 }
 
+/** Temple Kit: the kit's flat token set, with the solid button's label in plain white. The design's #FFF6EE on clay 500 is
+ *  4.27:1, under the AA bar every surface here is held to (mega-surfaces.test.ts), and a mail client cannot adjust it.
+ *  White is 4.56:1, the label the earlier Temple surface wears. The website keeps the design's value (pinned in
+ *  temple-kit.test.ts) until the owner rules; this is the one place the kit's surfaces differ from the design. */
+const TEMPLE_KIT: ThemeSurface = { ...TEMPLE_KIT_SURFACE, onSolid: '#FFFFFF' }
+
 /** Every Mega Theme that owns a flat token set. Frequency does not: the house look is the default. */
 export const MEGA_SURFACES: Partial<Record<MegaThemeId, ThemeSurface>> = {
   bold: BOLD,
   wildheart: WILDHEART,
   network: NETWORK,
+  'network-kit': NETWORK_KIT_SURFACE,
   temple: TEMPLE,
+  'temple-kit': TEMPLE_KIT,
   midnight: MIDNIGHT_SURFACE,
   designer: DESIGNER_SURFACE,
 }

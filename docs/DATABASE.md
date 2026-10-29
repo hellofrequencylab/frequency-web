@@ -695,7 +695,8 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
   trusted run/attempt, collector/publisher/workflow/policy hashes, and applicable registration and
   isolated staging run/attempt. No raw errors, SQL, tokens or provider bodies enter the receipt.
   The `migration-readiness` no-SQL fallback is explicit and
-  reads no production ledger. Bootstrap rollout must prove real exact-head PR association and
+  reads no production ledger. A PR with no SQL is judged against its own base and exact head, so a moving
+  main does not stale it; only a PR that adds SQL needs its base to equal current main (ADR-1930). Bootstrap rollout must prove real exact-head PR association and
   require the candidate-head context (or its trusted required-workflow equivalent) before
   claiming enforcement against candidate edits to CI/verifier code. Until then, the candidate CI
   consumer is enforced under the repository's existing guard-code review assumptions only.

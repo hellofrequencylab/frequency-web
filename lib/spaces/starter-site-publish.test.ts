@@ -22,7 +22,8 @@ describe('the Wizard publish, headless', () => {
   beforeEach(() => { saved.length = 0; attached.length = 0 })
 
   it('publishes a website with a home and a join page, on the theme the Space was dressed in, for every Theme Kit', async () => {
-    for (const { id, editor } of MEGA_THEMES) {
+    // The Network and Temple Theme Kits are not in WEBSITE_THEMES_LIVE until the owner turns them on, so the public gate keeps the house look.
+    for (const { id, editor } of MEGA_THEMES.filter((t) => t.id !== 'network-kit' && t.id !== 'temple-kit')) {
       saved.length = 0
       expect(await publishStarterSite('space-1', id), id).toBe(true)
       // The public gate (publishedWebsiteSnapshot) reads the site style the apply wrote, so serve it as the Space would.

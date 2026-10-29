@@ -134,6 +134,19 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'Theme Kits', path: '/themes' },
     ],
   },
+  createSpace: {
+    path: '/create-a-space',
+    title: 'Create a Space: build your website, Spotlight and Space page',
+    description:
+      'Name it, pick a Theme Kit, switch on the tools you need and watch your website and Spotlight come together. Free to start, and no account until the last step.',
+    shareTitle: 'Create a Space on Frequency',
+    headline: 'Your whole business, live in 12 minutes.',
+    lede: 'You have a practice, a studio, a gathering or a group, and the tools are scattered. Build one home for all of it: your website, Spotlight, bookings and people.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Create a Space', path: '/create-a-space' },
+    ],
+  },
   system: {
     path: '/system',
     title: 'One system for your website, Spotlight, people, events and payments',
@@ -147,6 +160,17 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'The system', path: '/system' },
     ],
   },
+  // components/frequency/site/pages/launch/free-spotlight.tsx (VLS-05). Dark until LAUNCH_ENTRY_ENABLED is on.
+  freeSpotlight: {
+    path: '/free-spotlight',
+    title: 'A free Spotlight: one page to send people to',
+    description:
+      'A Spotlight puts who you are, what you offer and how to reach you on one page. A free Space comes with it, so people who find you have somewhere to land.',
+    shareTitle: 'Get a Free Spotlight: one page to send people to',
+    headline: 'One page to send people to. Free.',
+    lede: 'You do good work, and your links are scattered across six places. A Spotlight puts who you are, what you offer and how to reach you on one page. A free Space comes with it, so the people who find you have somewhere to land.',
+    crumbs: [{ name: 'Free Spotlight', path: '/free-spotlight' }],
+  },
   midnight: {
     path: '/themes/nocturne',
     title: 'Nocturne: design it once, wear it on every surface',
@@ -159,6 +183,34 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
       { name: 'Nocturne', path: '/themes/nocturne' },
+    ],
+  },
+  designer: {
+    path: '/themes/designer',
+    title: 'Designer: design it once, wear it on every surface',
+    description:
+      'The Designer Theme Kit is for studios, interiors, architecture, gardens and brands. Spotlight, Space, website and emails wear one look, changed once.',
+    shareTitle: 'Designer: design it once, same theme everywhere',
+    headline: 'Design it once. Same theme everywhere.',
+    lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Designer Theme Kit gives studios, interiors, architecture, gardens and brands one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Themes', path: '/themes' },
+      { name: 'Designer', path: '/themes/designer' },
+    ],
+  },
+  network: {
+    path: '/themes/network',
+    title: 'Network: design it once, wear it on every surface',
+    description:
+      'The Network Theme Kit is for networking groups, clubs and mixers. Your Spotlight, Space, website and emails wear one look, changed once.',
+    shareTitle: 'Network: design it once, same theme everywhere',
+    headline: 'Design it once. Same theme everywhere.',
+    lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Network Theme Kit gives networking groups, clubs, mixers, coworking spaces and the people who run them one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Themes', path: '/themes' },
+      { name: 'Network', path: '/themes/network' },
     ],
   },
 } as const satisfies Record<string, FrequencyPageSeo>

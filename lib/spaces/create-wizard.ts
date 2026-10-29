@@ -20,6 +20,7 @@ import type { EntityManifest } from '@/lib/studio/kernel/manifest'
 import { asSpacePlan, SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
 import { THEME_LIBRARY } from '@/lib/themes/library'
 import { MEGA_THEMES, isMegaThemeId, type MegaThemeId } from '@/lib/theme/mega-theme'
+import { SITE_THEMES } from '@/lib/theme/site-style'
 
 /** The plans /pricing sells a Space on, in the order the wizard offers them. */
 export const WIZARD_PLANS = ['free', 'business', 'collective', 'nonprofit', 'network'] as const
@@ -143,9 +144,10 @@ export function suggestModeForIntents(picks: readonly string[], available: reado
 }
 
 /** The themes the look step offers: every Mega Theme, in the library's order, with its one-line pitch. */
-export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.map(({ id }) => ({
+export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.filter(({ id }) => id !== 'network' && id !== 'temple').map(({ id }) => ({
   id,
-  label: id === 'frequency' ? 'Default' : id.charAt(0).toUpperCase() + id.slice(1),
+  // The site theme's own label, so Midnight reads as Nocturne (its saved id stays `midnight`).
+  label: id === 'frequency' ? 'Default' : id === 'network-kit' ? 'Network' : id === 'temple-kit' ? 'Temple' : (SITE_THEMES.find((t) => t.id === id)?.label ?? id.charAt(0).toUpperCase() + id.slice(1)),
   hint: THEME_LIBRARY.find((t) => t.id === id)?.tagline ?? '',
 }))
 

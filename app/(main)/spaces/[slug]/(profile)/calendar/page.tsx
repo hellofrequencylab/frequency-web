@@ -9,6 +9,7 @@ import { loadPublicSpaceWindow, loadSpaceUpcomingFeed } from '@/lib/calendar/pub
 import { guestFeedState } from '@/lib/calendar/guest-live'
 import { memberLayerChoices } from '@/lib/calendar/member-calendar'
 import { SpaceUpcomingFeed } from '@/components/spaces/space-upcoming-feed'
+import { openingMonth } from '@/lib/calendar/open-month'
 import { dayInZone } from '@/lib/time/zone'
 import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers'
 import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
@@ -84,8 +85,9 @@ export default async function SpaceCalendarPage({
     (canManage && spaceFunctionAccess(space, 'events', (await getSpaceCapabilities(space, viewerProfileId)).role))
 
   const now = new Date()
-  const initialYear = now.getUTCFullYear()
-  const initialMonth1 = now.getUTCMonth() + 1
+  // The month in the link, else the CURRENT month in the Space's own day (lib/calendar/open-month.ts),
+  // never the month of its first or its most events.
+  const { year: initialYear, month1: initialMonth1, pinned: monthPinned } = openingMonth(now, space.timeZone, query)
   const brandName = space.brandName ?? space.name
   const httpsUrl = `${SITE_URL}/spaces/${slug}/calendar.ics`
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://')
@@ -163,6 +165,7 @@ export default async function SpaceCalendarPage({
         initialPlanId={null}
         initialYear={initialYear}
         initialMonth1={initialMonth1}
+        monthPinned={monthPinned}
         guestEvents={guestEvents}
         guestFirstUse={feed.isFirstUse}
         adminEvents={[]}
@@ -210,6 +213,7 @@ export default async function SpaceCalendarPage({
       initialDay={spaceDay}
       initialYear={initialYear}
       initialMonth1={initialMonth1}
+        monthPinned={monthPinned}
       guestEvents={guestEvents}
       guestFirstUse={feed.isFirstUse}
       adminEvents={admin.events}

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1641",
+  "title": "The Temple Theme Kit's 14 photographs and 10 house glyphs are in the repo, byte for byte as designed",
+  "lane": "live",
+  "priority": "P1",
+  "status": "done",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "docs/design-systems/temple/rules.json",
+    "ref": "LIVE-1640"
+  },
+  "detail": "Pass 1a of the Temple Theme Kit (code id temple-kit; Royal Temple's temple theme is untouched): assets/images/photo-01..14.jpg to public/sites/temple-kit/photos and assets/glyphs/*.svg to public/sites/temple-kit/glyphs. Closes 24 asset gaps from the design-system baseline. The 24 textures follow with the theme data in the next pass.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "14 photographs and 10 glyphs present.",
+    "cmd": "node scripts/probes/temple-kit-assets.mjs photos glyphs"
+  },
+  "closed": "2026-10-28"
+}

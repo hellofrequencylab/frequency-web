@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1627",
+  "title": "A started launch can be picked back up: the resume link, the welcome-back page and the restart card",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/launch/resume/route.ts",
+    "ref": "Vera guided launch system, VLS-10. The Keep going button in the launch box (VLS-08) links here; the reminder emails will too."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-resume.mjs",
+    "note": "Runs lib/launch/resume.ts under node and reads the route and page source: the owner of a started launch lands on the stored cursor step, a launch that is not the caller's is a 404, a stopped launch shows the restart card, and both are dark while LAUNCH_SYSTEM_ENABLED is off. Fails on main, where the route does not exist."
+  },
+  "detail": "GET /launch/resume?lid=<launch id> sends the owner to the first step they have not published or skipped (their own order); /launch is the welcome-back page (where you stopped, when it was saved, what you have made, a Pick up button), the restart card after a stop, or a done note. The owner policy on space_launch means a launch that is not the caller's returns no row, so a stranger's link is a 404 and cannot be told from one that does not exist. Step screens (/launch/step/<id>) arrive with VLS-09 and later, so the system stays switched off until they do. The store gains getLaunchForOwner and startLaunch; restartLaunchFormAction is the restart card's form action and begins again with the stopped launch's niche and intents.",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}

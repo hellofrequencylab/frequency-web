@@ -1,0 +1,22 @@
+{
+  "id": "LIVE-1770",
+  "title": "Any Member can turn on and publish their own Spotlight (Spotlight split, step 1)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-28",
+  "source": {
+    "file": "lib/core/capabilities.ts",
+    "ref": "Spotlight split proposal (project file spotlight-split/3-proposal-two-spotlights-one-upsell.md), owner picks 2026-10-28: 1 A, 2 A, 7 A, 8 A"
+  },
+  "detail": "Today `spotlight.enable` and `spotlight.view` are granted only to Crew+ (lib/core/capabilities.ts), so a free Member cannot turn on a Spotlight. Owner ruling 2026-10-28: the personal Spotlight is free for every Member; Crew's part is the look studio, per-link numbers and bigger caps. This row opens the capability; the free blocks (Events, Programs, Contributions, Tip), the meters and the Crew upsell are the following rows of the plan.",
+  "verify": {
+    "kind": "grep-absent",
+    "pattern": "spotlightCrewPlus",
+    "paths": [
+      "lib/core/capabilities.ts"
+    ]
+  },
+  "wave": "W7"
+}

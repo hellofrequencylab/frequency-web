@@ -1,4 +1,5 @@
 import type { SpaceContentData, SpaceEventItem } from '@/lib/spaces/content-data'
+import { openingMonth } from '@/lib/calendar/open-month'
 import type { SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { gridColumns, resolvePickedIds, spaceEventsView } from '@/lib/entity-blocks/block-content'
 import { formatEventWhen, eventInstant } from '@/lib/time/zone'
@@ -160,8 +161,8 @@ export function EventsBlock({
       <SpaceEventsCalendarView
         events={calendarEvents}
         idBySlug={idBySlug}
-        initialYear={now.getUTCFullYear()}
-        initialMonth1={now.getUTCMonth() + 1}
+        initialYear={openingMonth(now).year}
+        initialMonth1={openingMonth(now).month1}
       />
     )
   } else {

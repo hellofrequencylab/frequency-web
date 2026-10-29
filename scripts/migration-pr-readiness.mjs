@@ -103,9 +103,10 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
   const readPr = () => api(`/repos/${REPOSITORY}/pulls/${number}`)
   const readMain = () => api(`/repos/${REPOSITORY}/branches/main`)
   const [pr, main] = await Promise.all([readPr(), readMain()])
-  const baseSha = main?.commit?.sha, headSha = pr?.head?.sha
+  // The PR's own base decides whether it adds SQL; only SQL PRs also need that base to be current main.
+  const mainSha = main?.commit?.sha, baseSha = pr?.base?.sha, headSha = pr?.head?.sha
   requireFact(pr?.state === 'open' && !pr.draft && pr?.base?.ref === 'main' && pr?.base?.repo?.full_name === REPOSITORY && pr?.head?.repo?.full_name === REPOSITORY, 'open ready same-repository main PR required')
-  requireFact(sha.test(baseSha) && sha.test(headSha) && headSha === event.pull_request.head.sha && pr.base.sha === baseSha, 'stale or moving event/base/head')
+  requireFact(sha.test(mainSha) && sha.test(baseSha) && sha.test(headSha) && headSha === event.pull_request.head.sha, 'stale or moving event/base/head')
   for (const revision of [baseSha, headSha]) git(['fetch', '--no-tags', '--filter=blob:none', 'origin', revision])
   // This job checks out main on an isolated runner and never executes candidate code.
   requireFact(env.GITHUB_WORKFLOW_REF === `${REPOSITORY}/.github/workflows/migration-readiness.yml@refs/heads/main` && env.GITHUB_SHA === baseSha && String(git(['rev-parse', 'HEAD'])).trim() === baseSha, 'trusted current-main workflow checkout required')
@@ -135,10 +136,11 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
     reviewedChanges.push({ file, status: { A: 'added', M: 'modified', D: 'removed' }[status], sha256: hashBytes(blob(status === 'D' ? baseSha : headSha, file)) })
   }
   if (!reviewedChanges.some(change => change.file.startsWith('supabase/migrations/'))) {
-    const [finalPr, finalMain] = await Promise.all([readPr(), readMain()])
-    requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === headSha && finalPr.base.sha === baseSha && finalMain.commit.sha === baseSha, 'branch moved during no-SQL fallback')
+    const finalPr = await readPr()
+    requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === headSha && finalPr.base.sha === baseSha, 'branch moved during no-SQL fallback')
     return { ok: true, status: 'not_applicable', proof: { baseSha, headSha, collectorSha256 } }
   }
+  requireFact(baseSha === mainSha, 'stale or moving event/base/head')
   const paths = reviewedChanges.map(change => change.file)
   const baseModes = gitModes(git, baseSha, paths), headModes = gitModes(git, headSha, paths)
   for (const change of reviewedChanges) { change.baseMode = baseModes.get(change.file) ?? '000000'; change.headMode = headModes.get(change.file) ?? '000000' }

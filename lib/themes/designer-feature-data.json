@@ -1,0 +1,26 @@
+{
+ "eyebrow": "Spotlight layouts · Interior designers · Designer",
+ "kits": [
+  { "id": "general", "name": "Design studio", "hex": "#D3A03F", "who": "A design studio that plans and finishes whole homes: the work, the approach and an easy first conversation." },
+  { "id": "coaches", "name": "Interior designers", "hex": "#A65A3A", "who": "Interior designers who plan rooms, source furniture and style the finished home." },
+  { "id": "studios", "name": "Architects", "hex": "#4E6E71", "who": "Residential architects: new homes, additions and the permits in between." },
+  { "id": "hosts", "name": "Design + build", "hex": "#5A4533", "who": "Design + build firms that take a project from permits to pillows with one team." },
+  { "id": "venues", "name": "Landscape and garden", "hex": "#6F7A3E", "who": "Garden designers and landscape studios: outdoor rooms, planting and the build." },
+  { "id": "nonprofits", "name": "Kitchen and bath", "hex": "#2F7F7A", "who": "Kitchen and bath specialists: layout, cabinetry, tile and a clean install." },
+  { "id": "networks", "name": "Brand and graphic design", "hex": "#B0645A", "who": "Brand and graphic designers: identities, print and packaging for small businesses." },
+  { "id": "creators", "name": "Web and digital design", "hex": "#4F6A8A", "who": "Web and product designers: sites, shops and the systems behind them." },
+  { "id": "schools", "name": "Design courses", "hex": "#B3622B", "who": "Designers who teach: courses, workshops and studio days for people planning their own projects." },
+  { "id": "clubs", "name": "Furniture and makers", "hex": "#9A6B3F", "who": "Furniture makers and craft studios: commissions, made-to-order pieces and the workshop." },
+  { "id": "faith", "name": "Event design and florals", "hex": "#7E5A73", "who": "Event designers and florists: weddings, dinners and celebrations, planned and installed." },
+  { "id": "wellness", "name": "Home staging and styling", "hex": "#B08A3E", "who": "Home stagers and stylists: listings, refreshes and a seasonal care plan." },
+  { "id": "markets", "name": "Textiles and soft goods", "hex": "#3F4F7A", "who": "Textile designers and soft-goods studios: fabric, linens and made-to-order upholstery." }
+ ],
+ "layouts": [
+  { "id": "stack", "name": "Stack", "sub": "Every way in, stacked" },
+  { "id": "card-wall", "name": "Card wall", "sub": "Two columns of square cards" },
+  { "id": "story", "name": "Story", "sub": "One photo, a few lines, one button" },
+  { "id": "calendar-first", "name": "Calendar first", "sub": "Dates lead, booking follows" },
+  { "id": "shop-front", "name": "Shop front", "sub": "Sessions as products" },
+  { "id": "profile", "name": "Profile", "sub": "Who you are, then one thing to do" }
+ ]
+}

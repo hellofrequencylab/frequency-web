@@ -10,6 +10,11 @@ import type { SpotlightData } from '@/lib/spotlight/data'
 import { spotlightThemeStyles } from '@/lib/spotlight/theme'
 import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
 import { SpotlightStickerLayer } from './sticker-layer'
+import { NetworkKitSpotlightLayout } from './network-kit-layouts'
+import { networkKitSpotlightContent } from '@/lib/spotlight/network-kit-content'
+import { DesignerKitSpotlightLayout } from './designer-kit-layouts'
+import { designerKitSpotlightContent } from '@/lib/spotlight/designer-kit-content'
+import { isDesignerKitLayout } from '@/lib/spotlight/layouts'
 
 // THE SHARED PUBLIC SPOTLIGHT CHROME. The member's identity header + theme wrapper + optional
 // background + join CTA footer, with the BLOCK BODY handed in as `children`. Since ADR-523 the ONLY body
@@ -24,6 +29,7 @@ export function SpotlightShell({
   data,
   showJoinCta = false,
   showBio = true,
+  sampleContent = false,
   children,
 }: {
   data: SpotlightData
@@ -31,6 +37,8 @@ export function SpotlightShell({
   /** Show the member's bio in the identity header. Puck body: true. Module body: false (the `about`
    *  block renders the bio, so the header must not repeat it). */
   showBio?: boolean
+  /** Preview only: fill a theme layout with the design's sample dates, sessions and quote. A live page leaves it off. */
+  sampleContent?: boolean
   /** The block body (Puck <BlockRender> or <MemberProfileModules>), placed where the body renders. */
   children: React.ReactNode
 }) {
@@ -39,6 +47,28 @@ export function SpotlightShell({
   const themeStyles = spotlightThemeStyles(theme)
   const name = profile.display_name || `@${profile.handle}`
   const region = profile.nexus_regions?.name ?? null
+
+  // A theme with a registered whole-page layout (lib/spotlight/layouts.ts) swaps the identity header and the block body for
+  // that layout, keeping the shell's wrapper and footer. A live page carries none of the design's sample dates or prices.
+  if (theme.layout) {
+    if (isDesignerKitLayout(theme.layout)) {
+      // The Designer kit draws its own full-width plaster page and keeps the column inside it.
+      const content = designerKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <DesignerKitSpotlightLayout layout={theme.layout} content={content} />
+        </div>
+      )
+    }
+    const content = networkKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+    return (
+      <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+        <main className="relative mx-auto max-w-xl">
+          <NetworkKitSpotlightLayout layout={theme.layout} content={content} />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>

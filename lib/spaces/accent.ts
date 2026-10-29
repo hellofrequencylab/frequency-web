@@ -91,9 +91,10 @@ function mixToward(hex: string, toward: Rgb, pct: number): string {
  *  primary button label is white on the brand fill, accepted below AA with the measurement in hand
  *  (ADR-1031, frozen in scripts/check-contrast.mjs), and extended to a Space's own picked accent by owner
  *  ruling 2026-10-07 ("The button is supposed to be white text on blue... white looks just fine on the
- *  buttons"). The one exception is a near-white fill, where white would vanish outright (under 1.5:1):
+ *  buttons"). The exception is a LIGHT fill, where white is washed out (under 2:1, owner ruling
+ *  2026-10-28: "ink label on light accents"; marigold and gold read ink, a mid-teal or coral stays white):
  *  there the label is near-black ink. Returns a hex (accent DATA, applied via inline style). */
-const WHITE_LABEL_MIN = 1.5
+const WHITE_LABEL_MIN = 2
 function readableTextOn(hex: string): string {
   return contrastRatio('#ffffff', hex) >= WHITE_LABEL_MIN ? '#ffffff' : '#141414'
 }
@@ -290,10 +291,12 @@ export interface FrequencyAccentVars {
   '--space-accent-strong': string
 }
 
-// The Frequency button label is ink on the iridescent fill. On an owner's accent the label is whichever
-// of that ink and white reads better, so a yellow keeps dark text (as its website draws it) and a purple
-// gets white.
+// The Frequency button label is ink on the iridescent fill. On an owner's accent the label is white,
+// except on a near-white accent where it falls back to that ink.
 const FQ_INK = '#1E1B18'
+// Owner ruling 2026-10-28 (Daniel): the label on a solid accent button is white, with ink on LIGHT accents
+// (white under 2:1, same floor as readableTextOn).
+const FQ_WHITE_MIN = WHITE_LABEL_MIN
 
 /** The Frequency accent override for a Space's OWN brand accent (never a role default: an un-customized
  *  Space keeps the design's iridescent fill). Null when unset or not a supported value. */
@@ -301,7 +304,7 @@ export function frequencyAccentVars(brandAccent: string | null | undefined): Fre
   const vars = accentVars(brandAccent)
   if (!vars || !brandAccent) return null
   const on = HEX_ACCENT.test(brandAccent)
-    ? contrastRatio(FQ_INK, brandAccent) >= contrastRatio('#ffffff', brandAccent) ? FQ_INK : '#ffffff'
+    ? contrastRatio('#ffffff', brandAccent) >= FQ_WHITE_MIN ? '#ffffff' : FQ_INK
     : vars['--color-text-on-primary']
   return { '--space-accent': vars['--color-primary'], '--space-accent-on': on, '--space-accent-strong': vars['--color-primary-strong'] }
 }
