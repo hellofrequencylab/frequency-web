@@ -68,6 +68,19 @@ describe('publicSiteItems', () => {
   })
 })
 
+describe('publicSiteItems order', () => {
+  it('orders a day by clock time, not by the label as text', () => {
+    const out = publicSiteItems([
+      ev('evening', '2026-10-17', { timeLabel: '6:00 PM' }),
+      ev('market', '2026-10-17', { timeLabel: '10:00 AM' }),
+      ev('sit', '2026-10-17', { timeLabel: '7:00 AM' }),
+      ev('noon', '2026-10-17', { timeLabel: '12:30 PM' }),
+      ev('late', '2026-10-17', { timeLabel: '8:30 PM' }),
+    ])
+    expect(out.map((i) => i.item.slug)).toEqual(['sit', 'market', 'noon', 'evening', 'late'])
+  })
+})
+
 describe('siteDayItems and siteMonthAgenda', () => {
   const run = publicSiteItems([ev('retreat', '2026-10-29', { endDayKey: '2026-11-01' }), ev('circle', '2026-10-15')])
 

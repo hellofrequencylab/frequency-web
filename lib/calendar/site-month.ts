@@ -60,7 +60,15 @@ export function publicSiteItems(items: readonly CalendarEvent[]): SiteMonthItem[
       out.push({ kind: 'unavailable', item: { ...item, title: 'Unavailable', location: null, coverUrl: null, goingCount: 0 } })
     } else out.push({ kind: e.isCancelled ? 'cancelled' : 'event', item })
   }
-  return out.sort((a, b) => a.item.dayKey.localeCompare(b.item.dayKey) || a.item.timeLabel.localeCompare(b.item.timeLabel))
+  return out.sort((a, b) => a.item.dayKey.localeCompare(b.item.dayKey) || clockMinutes(a.item) - clockMinutes(b.item))
+}
+
+/** Minutes after midnight for ordering inside a day. The time label is text ("10:00 AM" sorts before
+ *  "7:00 AM" as a string), so it is parsed; an all-day or unreadable label sorts first. */
+function clockMinutes(e: CalendarEvent): number {
+  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(e.timeLabel.trim())
+  if (!m) return -1
+  return (Number(m[1]) % 12) * 60 + Number(m[2]) + (m[3].toUpperCase() === 'PM' ? 720 : 0)
 }
 
 /** The last day an item stands on. */
