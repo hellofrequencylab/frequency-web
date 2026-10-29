@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1792",
+  "title": "Network and Designer theme pages use Nocturne's layout: name large, surfaces joined by a line, Nocturne's section order",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-midnight.tsx",
+    "ref": "Daniel, 2026-10-29: 'We used to have a large name of the theme, subtitle, buttons on the left and the preview on the right in the hero. The next section down was showing how each was connected with a line.' The live Nocturne page is the reference."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-pages-nocturne-layout.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (headline was 'Design it once', plain stacked surfaces, no Inside the kit, Thirteen kits, Built right or Setup) and passes here."
+  },
+  "detail": "Network and Designer now open like Nocturne (theme name large, 'A Frequency Theme', tagline, copy and buttons left, website preview right, then the four surfaces joined by a dotted line) and follow its sections: Today, Theme preview, Inside the kit, Make it yours, Thirteen kits, What carries over, Built right, Questions, Setup, Start. Space and Email on Network still read 'on the way'. test/theme-pages-share-one-layout.render.test.tsx renders Nocturne, Network and Designer and fails if their section order or the opening drifts. Temple and later themes copy frequency-network.tsx.",
+  "wave": "W7"
+}
