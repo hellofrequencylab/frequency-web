@@ -1,0 +1,190 @@
+/* /themes/temple, the Theme Feature Page of the Temple design system, on the Frequency tokens (LIVE-1870).
+   Tokens only: no colour literals, no font names. Every class starts tf- so nothing here reaches another page.
+   The kit accent arrives as --c on .tf-pv (the preview). Temple's own look shows only inside the framed pictures.
+   THE GRID: one 1200px wrap, 18px to 40px side gutters; one gap between columns (--tf-gap); one gap between
+   stacked cards (--tf-gap-y). Every section is a kit .sec, so the vertical rhythm is the kit's. */
+.tf{max-width:100%;overflow-x:clip;--tf-gap:clamp(28px,4vw,64px);--tf-gap-y:12px;--tf-hair:var(--fq-border-hair);--tf-card:var(--fq-surface-card);--tf-wash:color-mix(in oklab,var(--fq-text-strong) 5%,transparent);--tf-wash2:color-mix(in oklab,var(--fq-text-strong) 9%,transparent)}
+.tf>*,.tf section{min-width:0}
+.tf .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.tf-sh-p{margin:18px 0 0;font-size:17px;line-height:1.6;color:var(--fq-text-body);max-width:60ch;text-wrap:pretty}
+.tf-q{display:inline-block;margin-left:10px;vertical-align:.5em;font:600 11px/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-muted)}
+.tf-st{display:inline-block;margin-left:10px;vertical-align:.5em;padding:4px 8px;border-radius:999px;font:600 11px/1 var(--fq-font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--fq-text-muted);box-shadow:inset 0 0 0 1px var(--tf-hair)}
+.tf-st.ready{color:var(--fq-text-strong)}
+
+/* Hero: title and subtitle top left, copy and buttons under, the preview on the right, a lead-in below. */
+.tf-hero.phero{min-height:calc(100svh - 84px)}
+.tf-wrap{position:relative;z-index:2;width:100%;max-width:1200px;margin:0 auto;box-sizing:border-box;padding:clamp(96px,12vh,128px) clamp(18px,4vw,40px) clamp(20px,4vh,40px)}
+.tf-hero .crumbs{margin-bottom:clamp(14px,3vh,28px)}
+.tf-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:var(--tf-gap);align-items:center}
+.tf-top{container-type:inline-size;min-width:0;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:16px}
+.tf-h1{margin:0;font:700 clamp(38px,10.5cqw,78px)/.98 var(--fq-font-display);letter-spacing:-.05em;color:var(--fq-text-strong);text-wrap:balance}
+.tf-h1 em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}
+.tf-lead{margin:0;font:400 clamp(16px,1.25vw,19px)/1.5 var(--fq-font-sans);color:var(--fq-text-body);max-width:48ch;text-wrap:pretty}
+.tf-top .ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-start;margin-top:6px}
+.tf-hero-shot{min-width:0}
+.tf-more{display:flex;flex-direction:column;align-items:center;gap:6px;margin:clamp(18px,3.5vh,36px) auto 0;width:max-content;max-width:100%;text-align:center;font:600 13px/1.3 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted);text-decoration:none}
+.tf-more:hover{color:var(--fq-text-strong)}
+.tf-more svg{animation:tf-bob 1.8s ease-in-out infinite}
+@keyframes tf-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+@media (prefers-reduced-motion:reduce){.tf-more svg{animation:none}}
+@media (max-width:900px){.tf-hero.phero{min-height:0}.tf-split{grid-template-columns:1fr}}
+
+/* Preview stage: surface chips, the framed picture, a one-line note, the profile picker. */
+.tf-pv{display:flex;flex-direction:column;gap:14px;min-width:0;width:100%}
+.tf-chips{display:flex;flex-wrap:wrap;gap:6px}
+.tf-chips button,.tf-kits button{border:0;cursor:pointer;font:inherit}
+.tf-chips button{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:999px;background:var(--tf-wash);color:var(--fq-text-body);font:600 14px/1 var(--fq-font-sans);box-shadow:inset 0 0 0 1px var(--tf-hair)}
+.tf-chips button small{font:600 10px/1 var(--fq-font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--fq-text-muted)}
+.tf-chips button[aria-pressed="true"]{background:var(--fq-text-strong);color:var(--fq-bg-canvas)}
+
+.tf-chips button[aria-pressed="true"] small{color:inherit;opacity:.7}
+.tf-stage{position:relative;aspect-ratio:16/10;box-sizing:border-box;padding:clamp(12px,1.6vw,20px);border-radius:28px;background:radial-gradient(70% 80% at 50% 110%,color-mix(in oklab,var(--c) 24%,transparent),transparent 70%),var(--tf-card);box-shadow:inset 0 0 0 1px var(--tf-hair),0 60px 120px -50px var(--fq-bg-canvas),0 0 120px -60px var(--c)}
+.tf-fit{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.tf-stage .tf-ios{width:auto;height:100%}
+.tf-stage .tf-mail{width:auto;height:100%}
+.tf-note{margin:0;font-size:14px;line-height:1.5;color:var(--fq-text-muted);min-height:1.5em}
+.tf-note b{color:var(--fq-text-strong);font-weight:600}
+.tf-try{display:block}
+.tf-try .tf-note{min-height:2.9em}
+.tf-try .tf-pv{max-width:880px;margin:0 auto}
+.tf-kits{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+.tf-kits button{display:flex;align-items:center;gap:10px;min-height:46px;padding:6px 12px;border-radius:12px;background:var(--tf-wash);color:var(--fq-text-body);font:600 14px/1.2 var(--fq-font-sans);text-align:left;box-shadow:inset 0 0 0 1px var(--tf-hair)}
+.tf-kits i{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.tf-kits button[aria-pressed="true"]{background:color-mix(in oklab,var(--c) 22%,transparent);color:var(--fq-text-strong);box-shadow:inset 0 0 0 1.5px var(--c)}
+
+/* Frames: a browser bar, the design system's iPhone (390 by 844, 370 by 824 screen), an email card. */
+.tf-dv{display:flex;flex-direction:column;width:100%;max-height:100%;overflow:hidden;border-radius:var(--fq-radius-m);background:var(--fq-bg-canvas);box-shadow:inset 0 0 0 1px var(--tf-hair),0 50px 100px -40px var(--fq-bg-canvas)}
+.tf-bar{flex:none;height:30px;display:flex;align-items:center;gap:7px;padding:0 14px;border-bottom:1px solid var(--tf-hair);background:var(--fq-surface-raised)}
+.tf-bar i{width:10px;height:10px;border-radius:50%;background:var(--tf-wash2)}
+.tf-bar u{text-decoration:none;margin:0 auto;font:500 12px/1 var(--fq-font-sans);color:var(--fq-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tf-scr{position:relative;flex:1 1 auto;min-height:0;aspect-ratio:1280/800;line-height:0;overflow:hidden}
+.tf-scr img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+.tf-mail{display:block;width:100%;max-width:420px;aspect-ratio:900/1140;overflow:hidden;border-radius:var(--fq-radius-s);background:var(--fq-bg-canvas);box-shadow:inset 0 0 0 1px var(--tf-hair),0 50px 100px -40px var(--fq-bg-canvas);line-height:0}
+.tf-ios{display:block;container-type:size;width:100%;aspect-ratio:390/844;line-height:0}
+.tf-ios-body{display:block;box-sizing:border-box;width:100%;height:100%;padding:2.564cqw;border-radius:13.846cqw;background:linear-gradient(160deg,var(--fq-surface-raised),var(--fq-bg-canvas) 45%,var(--fq-surface-raised));box-shadow:inset 0 0 0 1px var(--tf-hair),0 50px 90px -40px var(--fq-bg-canvas),0 0 80px -40px var(--c)}
+.tf-ios-scr{position:relative;display:block;container-type:inline-size;width:100%;height:100%;overflow:hidden;border-radius:11.282cqw;background:var(--fq-bg-canvas)}
+.tf-ios-scr img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.tf-sb{position:absolute;left:0;right:0;top:0;height:13.5cqw;display:flex;align-items:center;justify-content:space-between;padding:0 8.1cqw 0 9.73cqw;font:600 4.05cqw/1 var(--fq-font-sans);color:var(--fq-text-strong);text-shadow:0 1px 2px color-mix(in oklab,var(--fq-bg-canvas) 40%,transparent);pointer-events:none}
+.tf-isl{position:absolute;left:50%;top:2.97cqw;transform:translateX(-50%);width:31.9cqw;height:9.19cqw;border-radius:999px;background:var(--fq-bg-canvas)}
+.tf-sbi{display:flex;align-items:flex-end;gap:1.08cqw}
+.tf-sbi i{width:1.08cqw;background:currentColor;border-radius:.27cqw}
+.tf-sbi i:nth-child(1){height:1.62cqw}.tf-sbi i:nth-child(2){height:2.43cqw}
+.tf-sbi i:nth-child(3){width:5.95cqw;height:2.97cqw;border-radius:.81cqw;margin-left:1.08cqw}
+.tf-sb.dk{color:var(--fq-bg-canvas);text-shadow:none}
+.tf-hi.dk{background:color-mix(in oklab,var(--fq-bg-canvas) 85%,transparent)}
+.tf-hi{position:absolute;left:50%;bottom:2.16cqw;transform:translateX(-50%);width:36.2cqw;height:1.35cqw;border-radius:999px;background:color-mix(in oklab,var(--fq-text-strong) 85%,transparent);pointer-events:none}
+
+/* A surface that is on the way: the frame, a quiet card, one word. */
+.tf-soon{display:flex;align-items:center;justify-content:center;background:var(--tf-card)}
+.tf-mail.tf-soon{aspect-ratio:900/1140}
+.tf-soon-tx{margin:0;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;line-height:1.1}
+.tf-soon-tx b{font:600 clamp(22px,2.6vw,32px)/1 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
+.tf-soon-tx small{padding:5px 10px;border-radius:999px;font:600 11px/1 var(--fq-font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--fq-text-muted);box-shadow:inset 0 0 0 1px var(--tf-hair)}
+
+/* Before and after */
+.tf-stack{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:20px;align-items:center;margin-top:36px}
+.tf-st-card{border-radius:24px;padding:26px 28px;background:var(--tf-card);box-shadow:inset 0 0 0 1px var(--tf-hair);display:flex;flex-direction:column}
+.tf-st-card .label{margin-bottom:14px}
+.tf-row{display:flex;justify-content:space-between;gap:16px;align-items:baseline;padding:13px 0;border-top:1px solid var(--tf-hair);font-size:15.5px;color:var(--fq-text-strong)}
+.tf-row span{display:flex;align-items:center;gap:10px;font-weight:600;white-space:nowrap}
+.tf-row em{font-style:normal;color:var(--fq-text-muted);font-size:14px;text-align:right}
+.tf-row i{width:10px;height:10px;border-radius:3px;background:var(--tf-wash2);box-shadow:inset 0 0 0 1px var(--tf-hair);flex:none}
+.tf-st-card.before{opacity:.82}.tf-st-card.before .tf-row span{text-decoration:line-through;text-decoration-color:var(--fq-text-faint)}
+.tf-st-card.after{box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--c) 60%,transparent),0 0 90px -40px var(--c)}
+.tf-st-card.after .tf-row i{border-radius:50%;background:var(--c)}
+.tf-st-p{margin:18px 0 0;padding-top:16px;border-top:1px solid var(--tf-hair);font-size:15px;line-height:1.55;color:var(--fq-text-body)}
+.tf-arrow{font:600 28px/1 var(--fq-font-display);color:var(--fq-x-sun-neon)}
+@media (max-width:900px){.tf-stack{grid-template-columns:1fr}.tf-arrow{transform:rotate(90deg);justify-self:center}.tf-row span{white-space:normal}}
+
+/* Four places: one row each, the picture and the words, alternating sides on the same two columns. */
+.tf-places{display:flex;flex-direction:column;gap:clamp(56px,7vw,96px);margin-top:clamp(36px,4vw,56px)}
+.tf-cz{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:var(--tf-gap);align-items:center}
+.tf-cz.r{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}.tf-cz.r .tf-cz-dev{order:2}
+.tf-cz-dev{display:flex;justify-content:center;min-width:0}
+.tf-cz-dev .tf-dv{max-width:640px}
+.tf-cz-dev .tf-ios{max-width:280px}
+.tf-cz-dev .tf-mail{max-width:380px}
+.tf-cz-tx .jn{font:600 13px/1 var(--fq-font-display);letter-spacing:.1em;color:var(--fq-x-sun-neon)}
+.tf-cz-tx h3{margin:10px 0 0;font:600 clamp(30px,3.4vw,46px)/1 var(--fq-font-display);letter-spacing:-.045em;color:var(--fq-text-strong)}
+.tf-cz-tx p{margin:14px 0 0;font-size:17px;line-height:1.55;color:var(--fq-text-body);max-width:44ch}
+.tf-cz-tx ul{list-style:none;margin:22px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.tf-cz-tx li{display:flex;gap:12px;align-items:baseline;font-size:15.5px;color:var(--fq-text-body);overflow-wrap:anywhere}
+.tf-cz-tx li b{flex:none;width:76px;font:600 11px/1.4 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-muted)}
+.tf-cz-tx .tf-out{margin:22px 0 0;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;font:400 italic 21px/1.35 var(--fq-font-serif);color:var(--fq-text-strong)}
+.tf-out b{font:600 11px/1 var(--fq-font-display);font-style:normal;letter-spacing:.12em;text-transform:uppercase;color:var(--fq-x-sun-neon)}
+@media (max-width:900px){.tf-cz,.tf-cz.r{grid-template-columns:minmax(0,1fr)}.tf-cz.r .tf-cz-dev{order:0}}
+
+/* Six Spotlight layouts */
+.tf-layouts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--tf-gap-y) clamp(14px,2vw,28px);margin-top:clamp(36px,4vw,56px)}
+.tf-layouts figure{margin:0;min-width:0;display:flex;flex-direction:column;gap:14px}
+.tf-layouts figcaption{display:flex;flex-direction:column;gap:4px;min-width:0}
+.tf-layouts figcaption b{display:flex;align-items:center;gap:8px;font:600 12px/1.2 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-strong)}
+.tf-layouts figcaption b span{color:var(--fq-x-sun-neon)}
+.tf-layouts figcaption small{font:500 13px/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+@media (max-width:1100px){.tf-layouts{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:clamp(28px,4vw,48px)}}
+@media (max-width:560px){.tf-layouts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* What carries over */
+.tf-cmp{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(4,minmax(0,1fr));margin-top:36px;border-radius:24px;overflow:hidden;background:var(--tf-card);box-shadow:inset 0 0 0 1px var(--tf-hair)}
+.tf-cmp-row{display:contents}
+.tf-cmp>.hd,.tf-cmp-row>div{padding:16px 20px;border-bottom:1px solid var(--tf-hair);font-size:14.5px;color:var(--fq-text-body);display:flex;align-items:center;gap:10px;min-height:56px}
+.tf-cmp .hd{font:600 11px/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-muted);background:var(--tf-wash)}
+.tf-cmp .rw{color:var(--fq-text-strong);font-weight:600}
+.tf-cmp .y::before,.tf-legend i.y{content:"";width:8px;height:8px;border-radius:50%;background:var(--fq-x-sun-neon);flex:none}
+.tf-cmp .p::before,.tf-legend i.p{content:"";width:8px;height:8px;border-radius:50%;background:var(--fq-x-aqua-neon);flex:none}
+.tf-legend{margin:16px 0 0;display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:14px;color:var(--fq-text-muted)}
+.tf-legend i{display:inline-block;margin-left:16px}.tf-legend i:first-child{margin-left:0}
+@media (max-width:800px){.tf-cmp>.hd,.tf-cmp-row>div{padding:12px 10px;font-size:13px}.tf-cmp .p span{display:none}}
+
+/* Cards (look controls and tools) */
+.tf-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--tf-gap-y);margin-top:36px}
+.tf-card{border-radius:24px;padding:24px;background:var(--tf-card);box-shadow:inset 0 0 0 1px var(--tf-hair);display:flex;flex-direction:column;gap:8px}
+.tf-card h3{margin:0;font:600 20px/1.15 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+.tf-card p{margin:0;font-size:15px;line-height:1.5;color:var(--fq-text-body)}
+@media (max-width:900px){.tf-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:560px){.tf-cards{grid-template-columns:1fr}}
+
+/* Questions */
+.tf-faq{display:flex;flex-direction:column;gap:8px;margin-top:36px}
+.tf-faq details{border-radius:20px;background:var(--tf-card);box-shadow:inset 0 0 0 1px var(--tf-hair)}
+.tf-faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:20px 22px;font:600 18px/1.25 var(--fq-font-display);letter-spacing:-.02em;color:var(--fq-text-strong)}
+.tf-faq summary::-webkit-details-marker{display:none}
+.tf-faq summary::after{content:"+";font:400 22px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+.tf-faq details[open] summary::after{content:"\2013"}
+.tf-faq details[open]{box-shadow:inset 0 0 0 1.5px var(--fq-x-sun-neon)}
+.tf-faq p{margin:0;padding:0 22px 22px;font-size:16px;line-height:1.55;color:var(--fq-text-body);max-width:68ch}
+
+/* The qualifier on a surface chip is a small tucked label, never the name. */
+.tf-chips .tf-q{margin:0;vertical-align:baseline;font-size:10px;letter-spacing:.1em}
+.tf-chips button[aria-pressed="true"] .tf-q{color:inherit;opacity:.7}
+
+/* What carries over, on a phone: the four surface names have to fit their columns. */
+@media (max-width:560px){.tf-cmp{grid-template-columns:minmax(0,1.15fr) repeat(4,minmax(0,1fr))}.tf-cmp>.hd{padding:12px 2px;justify-content:center;font-size:9px;letter-spacing:.02em}.tf-cmp>.hd:first-child{padding:0}.tf-cmp-row>div{padding:12px 6px}.tf-cmp-row>.y,.tf-cmp-row>.p{justify-content:center}}
+
+/* The Nocturne hero: the theme's name large, a small descriptor, then the tagline; the four surfaces follow, joined by a dotted line. */
+.tf-name{font-size:clamp(44px,17cqw,112px);line-height:.92;letter-spacing:-.06em}
+.tf-aft{margin:-4px 0 0;font:600 clamp(15px,1.6vw,20px)/1.2 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+.tf-tagline{margin:6px 0 0;font:700 clamp(22px,2.4vw,36px)/1.08 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
+.tf-tagline em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}
+.tf-cascade{display:flex;flex-direction:column;margin-top:clamp(56px,7vw,110px)}
+.tf-thread{display:block;width:100%;height:clamp(90px,10vw,150px);overflow:visible}
+.tf-thread path{fill:none;stroke:var(--c);stroke-width:2;stroke-dasharray:2 7;stroke-linecap:round;opacity:.8;filter:drop-shadow(0 0 6px var(--c))}
+.tf-cz{scroll-margin-top:96px}
+.tf-cz-dev{flex-direction:column;align-items:center;gap:14px}
+.tf-dvlab{display:inline-flex;align-items:center;height:30px;padding:0 14px;border-radius:999px;background:var(--fq-surface-glass);box-shadow:inset 0 0 0 1px var(--tf-hair);font:600 13px/1 var(--fq-font-display);letter-spacing:.08em;text-transform:uppercase;color:var(--fq-text-strong)}
+@media (max-width:900px){.tf-thread{display:none}.tf-cascade{gap:64px}}
+
+/* Inside the kit, the thirteen kits, built right and setup. */
+.tf-grp{margin:clamp(28px,3.4vw,44px) 0 14px;font:600 13px/1.3 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
+.tf-kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:var(--tf-gap-y);margin-top:clamp(24px,3vw,36px)}
+.tf-kit{display:flex;flex-direction:column;min-width:0;border-radius:18px;overflow:hidden;background:var(--tf-card);box-shadow:inset 0 0 0 1px var(--tf-hair);color:inherit;text-decoration:none}
+.tf-kit:hover{box-shadow:inset 0 0 0 1px var(--c)}
+.tf-kit img{display:block;width:100%;height:auto}
+.tf-kit span{display:flex;flex-direction:column;gap:4px;padding:14px 16px 16px}
+.tf-kit i{width:10px;height:10px;border-radius:999px;background:var(--c)}
+.tf-kit b{font:600 17px/1.2 var(--fq-font-display);letter-spacing:-.02em;color:var(--fq-text-strong)}
+.tf-kit small{font-size:14px;line-height:1.45;color:var(--fq-text-muted)}
+.tf-setup{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:var(--tf-gap-y);margin-top:clamp(24px,3vw,36px)}
+.tf-setup>div{display:flex;flex-direction:column;gap:8px;padding:20px;border-radius:18px;background:var(--tf-card);box-shadow:inset 0 0 0 1px var(--tf-hair)}
+.tf-setup .n{font:600 13px/1 var(--fq-font-display);letter-spacing:.1em;color:var(--fq-x-sun-neon)}
+.tf-setup b{font:600 19px/1.2 var(--fq-font-display);letter-spacing:-.03em;color:var(--fq-text-strong)}
+.tf-setup span:last-child{font-size:15.5px;line-height:1.5;color:var(--fq-text-body)}

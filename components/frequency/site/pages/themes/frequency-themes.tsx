@@ -107,6 +107,11 @@ export function FrequencyThemes() {
                     <Image src="/themes/network-kit/shots/general-site.jpg" alt="Network website" width={1280} height={800} sizes="(max-width: 960px) 50vw, 25vw" />
                     <Image src="/themes/network-kit/shots/general-spot.jpg" alt="Network Spotlight" width={740} height={1648} sizes="(max-width: 960px) 25vw, 12vw" />
                   </Link>
+                ) : t.id === 'temple-kit' ? (
+                  <Link href={t.href} className="tg-shots two" aria-label={`See the ${t.label} kit`}>
+                    <Image src="/themes/temple-kit/shots/general-site.jpg" alt="Temple website" width={1280} height={800} sizes="(max-width: 960px) 50vw, 25vw" />
+                    <Image src="/themes/temple-kit/shots/general-spot.jpg" alt="Temple Spotlight" width={740} height={1648} sizes="(max-width: 960px) 25vw, 12vw" />
+                  </Link>
                 ) : (
                   <Link href={t.href} aria-label={`See the ${t.label} kit`}>
                     <ThemePicture theme={t.id} label={t.label} slot="kit" />
