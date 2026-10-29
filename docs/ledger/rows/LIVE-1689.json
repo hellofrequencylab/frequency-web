@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1689",
+  "title": "Temple Theme Kit inner pages, group E: Book as a page of TempleKitInner blocks and the shared SpaceBooking block",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "components/sites/temple-kit-inner/pages-e.ts",
+    "ref": "LIVE-1688"
+  },
+  "detail": "The page builder for the design's Book page: a hero, three session types as the shared TempleKitInnerService rows pointing at /book, the shared SpaceBooking button (it reads the Space's own booking state) and a questions block. No new booking engine: the site serves the real booking page at /book once the Space has times open. No price is seeded. Registration (page list) belongs to the Temple kit registration pass.",
+  "closed": "2026-10-29",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "pages-e.ts exports the Book page and puts SpaceBooking on it.",
+    "cmd": "node -e 'const t=require(\"fs\").readFileSync(\"components/sites/temple-kit-inner/pages-e.ts\",\"utf8\");if(!t.includes(\"templeKitBookPage\")||!t.includes(\"SpaceBooking\")){console.error(\"the Temple Kit Book page is missing\");process.exit(1)}'"
+  }
+}

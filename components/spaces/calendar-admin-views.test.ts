@@ -39,9 +39,12 @@ describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
     .join('\n')
 
   it('gates the admin read on adminAllowed and mounts the slide shell', () => {
-    expect(page).toContain('if (!adminAllowed)')
-    expect(page).toContain('loadAdminCalendar(')
-    expect(page.indexOf('loadAdminCalendar(')).toBeGreaterThan(page.indexOf('if (!adminAllowed)'))
+    // ROLE BASED (owner ruling 2026-10-29): the public tab is the public calendar. An admin who opens it is
+    // sent to the suite, and sees the public calendar only on asking for it (?as=public). The admin read
+    // lives in the console route, so this page never loads it.
+    expect(page).toContain('adminAllowed && !adminWantsPublic')
+    expect(page).toContain('redirect(teamCalendarRedirect(')
+    expect(page).not.toContain('loadAdminCalendar(')
     expect(page).toContain('CalendarWorkspace')
     // The Guest feed goes through guestLiveItems ONCE, inside the one public reader every month uses
     // (ADR-1457, LIVE-468). The page names the seam and calls that reader; it does not gate again.
