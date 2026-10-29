@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1881: the hero preview on every Theme Kit page switches between Website, Spotlight, Space and Email.
+// LIVE-1882: the hero preview on every Theme Kit page switches between Website, Spotlight, Space and Email.
 // Fails on main (Network and Designer show one fixed browser picture; Nocturne's hero has no switcher).
 import { readFileSync } from 'node:fs'
 

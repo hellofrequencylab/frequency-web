@@ -28,7 +28,7 @@ export function parseTimeView(raw: string | string[] | null | undefined): Calend
 /** Per-Space cookie for the last time view, beside the surface cookie (ADR-1467). A separate cookie
  *  because `freq-cal-view-*` names the operator PANEL and its values are pinned. An empty value
  *  means "back on the month". */
-export function timeViewCookieName(slug: string): string {
+function timeViewCookieName(slug: string): string {
   const safe = slug.replace(/[^a-z0-9-]/gi, '').slice(0, 80).toLowerCase()
   return `freq-cal-look-${safe || 'space'}`
 }

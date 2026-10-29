@@ -1,21 +1,20 @@
 {
   "id": "LIVE-1881",
-  "title": "The hero preview on every Theme Kit page switches between Website, Spotlight, Space and Email",
+  "title": "A personal Spotlight can show a 0% Tip jar when the Member can receive tips (Spotlight split, SPL-06)",
   "lane": "live",
   "priority": "P1",
   "size": "S",
   "status": "done",
-  "closed": "2026-10-29",
   "source": {
-    "file": "components/frequency/site/pages/themes/frequency-network.tsx",
-    "ref": "Daniel, 2026-10-29: bring the clickable Website / Spotlight / Space / Email switcher back in the hero preview on every theme page, as the #4297 Network hero had it, with Nocturne's hero layout otherwise unchanged."
+    "file": "components/widgets/member-profile/tip.tsx",
+    "ref": "Owner picks 2026-10-28: free value first, the Tip block on the free personal Spotlight"
   },
+  "detail": "Adds the member-only tip block (label Tip jar). The public Spotlight is ISR and cookie-free, so the block is a server-rendered card with a Send a tip link to /people/<handle>#tip, where the existing composer and sign-in round trip live. The Spotlight reader gains a boolean canTip (payouts live and the Member's account ready, the same rule as the in-app canTipRecipient), fail-closed to false and never carrying a Stripe id; the block collapses when it is false. Tips stay 0% on every tier. The in-app profile keeps its own Tip button.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/theme-pages-hero-switcher.mjs",
-    "checked": "2026-10-29",
-    "evidence": "Fails on main (Network and Designer heroes show one fixed browser picture, Nocturne has no switcher) and passes here."
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/entity-blocks/registry.ts','utf8');const b=fs.readFileSync('components/widgets/member-profile/member-profile-modules.tsx','utf8');const c=fs.readFileSync('lib/spotlight/data.ts','utf8');if(!a.includes(\\\"id: 'tip'\\\")||!b.includes('tip: TipBlock')||!c.includes('readCanTip'))process.exit(1)\"",
+    "note": "Fails on main (no tip block); passes here."
   },
-  "detail": "Network, Designer and Temple heroes use their Stage (chips plus picture and note) again; Nocturne's hero gets the same four chips over its device frame. Name, subtitle, buttons left and preview right are unchanged. test/theme-pages-share-one-layout.render.test.tsx checks all three pages for the four hero chips. Network Space and Email still read 'on the way' until the Network pictures land. Temple copies frequency-network.tsx.",
+  "closed": "2026-10-29",
   "wave": "W7"
 }
