@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1787",
+  "title": "Designer Theme Kit token pass: DESIGNER_TOKENS_CSS carries the design system's own token values",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "docs/design-systems/designer/rules.json",
+    "ref": "Daniel, 2026-10-29 05:24Z, pick 4 B: move the token values to the design's numbers and check the live site on every pass."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/designer-kit-token-pass.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (76 token ids in the baseline) and passes here (0)."
+  },
+  "detail": "Pass 10, token slice. Every design-system token is now declared in DESIGNER_TOKENS_CSS with the design's value, or named in rules.json as a deviation with a reason. Moved to the design's numbers: --color-border-strong #C9BCA6, --color-ink #262827, --color-ink-elevated charcoal, --color-ink-border the dark rule, --color-on-ink-subtle .6, --color-scrim .42, --color-text-disabled #8E8A84, --color-broadcast-strong #2F4648, --color-info-bg #E6EDED, --color-danger-bg #F6E4DE, --color-signal-bg and --color-success-bg #EAEEE4, --color-signal-strong #3A4934. Added: --color-move, the --text-*, --leading-*, --tracking-* and --weight-heading scales, the --th-* contract aliases and --mn-solid. Seventeen of the old gaps were the checker reading the corner, spacing and reduced-motion overrides last: the overrides now sit before the base block with the same cascade. The primary and accent family stays the Space's own accent (deviation with reason, and the checker accepts an undeclared token that carries one). Alli Rae's eight pages were rendered before and after at 390, 1280, 1440, 1920 and 2000 (40 pairs): all are pixel-identical, because no Designer page block reads the moved tokens; they reach only the shared house chrome (ink bands, strong rules). STILL OPEN: nine Glyph, Seal and Ornament ids, and about 340 prototype copy lines (demo words the voice guide replaces).",
+  "wave": "W7"
+}
