@@ -173,9 +173,25 @@ function ProjectCard({ x, metadata, size }: { x: Props; metadata?: Props; size?:
   return to ? <a className="dz-project" data-size={size} href={to} {...rel(to)}>{inner}</a> : <article className="dz-project" data-size={size}>{inner}</article>
 }
 
+/** The design's Portfolio page card: the photo, then its number, place and year, the name and the way in. */
+function ProjectTile({ x, metadata, index }: { x: Props; metadata?: Props; index: number }) {
+  const to = hrefOf(str(x.href), metadata)
+  const src = img(x.image)
+  const inner = (
+    <>
+      <span className="dz-tile-photo"><Photo src={src} alt="" /></span>
+      <span className="dz-tile-meta"><i>{String(index + 1).padStart(2, '0')}</i>{[str(x.location), str(x.year)].filter(Boolean).join(' · ')}</span>
+      <span className="dz-tile-title">{str(x.title)}</span>
+      {to && <span className="dz-tile-go">Explore this project<b aria-hidden="true">→</b></span>}
+    </>
+  )
+  return to ? <a className="dz-tile" href={to} {...rel(to)}>{inner}</a> : <article className="dz-tile">{inner}</article>
+}
+
 function DesignerPortfolioBlock({ p, metadata, pad, vis }: Common) {
   const list = arr(p.projects).filter((x) => str(x.title))
   const [a, ...rest] = list
+  const cards = str(p.display) === 'cards'
   const hasHead = str(p.eyebrow) || str(p.title) || str(p.lead)
   return (
     <Section kind="portfolio" pad={pad} vis={vis}>
@@ -189,7 +205,8 @@ function DesignerPortfolioBlock({ p, metadata, pad, vis }: Common) {
             {str(p.lead) && <p className="dz-lead">{str(p.lead)}</p>}
           </div>
         )}
-        {a && (
+        {a && cards && <div className="dz-tiles">{list.map((x, i) => <ProjectTile key={i} x={x} metadata={metadata} index={i} />)}</div>}
+        {a && !cards && (
           <div className="dz-mosaic">
             <ProjectCard x={a} metadata={metadata} size="lg" />
             {rest.length > 0 && <div className="dz-mosaic-stack">{rest.slice(0, 2).map((x, i) => <ProjectCard key={i} x={x} metadata={metadata} />)}</div>}
@@ -498,7 +515,8 @@ export const designerComponents: Record<string, ComponentConfig> = {
   }, { ...DESIGNER_STATEMENT }, DesignerStatementBlock),
   DesignerPortfolio: block('Designer portfolio', {
     eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), lead: area('Intro'),
-    projects: { type: 'array', label: 'Projects', hint: 'The first is shown large.', arrayFields: { image, title: text('Name'), location: text('Place'), year: text('Year'), href: text('Link', LINK_HINT) } },
+    display: { type: 'select', label: 'Look', options: [{ label: 'One large, two stacked', value: 'mosaic' }, { label: 'Cards, one after another', value: 'cards' }] },
+    projects: { type: 'array', label: 'Projects', hint: 'In the large look the first is shown large and three are shown.', arrayFields: { image, title: text('Name'), location: text('Place'), year: text('Year'), href: text('Link', LINK_HINT) } },
   }, { ...DESIGNER_PORTFOLIO }, DesignerPortfolioBlock),
   DesignerSteps: block('Designer arch and steps', {
     image, alt, eyebrow: text('Small label'), title: area('Heading'),
