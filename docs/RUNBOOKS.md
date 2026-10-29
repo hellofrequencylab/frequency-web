@@ -769,6 +769,22 @@ Then set `SPACE_PICKER_ENABLED` to `1`, `true` or `on` and redeploy.
 
 **Turn it off.** Unset. The wizard opens first again; Spaces already created keep what the picker saved.
 
+## Calendar holds
+
+`CALENDAR_HOLDS_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`). The `calendar-holds` cron (`/api/cron/calendar-holds`, hourly at :10) looks at each Space once a day, in its own 9 AM (the Space's stored time zone, else the platform home zone). It releases a Plan's Pencil hold when `space_plans.hold_until` is before the Space's local today (the unpublished Pencil dates are soft-deleted with `removed_at`, the Plan drops to `plan`, `hold_until` clears), warns the Plan's owner with one day left, and nudges the person a to-do was handed to the morning after it was due. Pushes ride the `lifecycle` category through the notification registry (`plan.hold_warning`, `plan.hold_released`, `plan.todo_overdue`), so a member's own `push_lifecycle` switch and a per-Space mute decide. Off, the route answers `skipped` and logs `cron.calendar_holds.skipped`.
+
+**Gate before turning it on.** All **owner** unless tagged.
+
+1. Migration `20270346027000_calendar_suite_data_model.sql` is applied in production (`space_plans.hold_until` exists). **agent** can check with a read-only select.
+2. One live Plan with a hold dated yesterday in a staging Space, then `curl -H "Authorization: Bearer $CRON_SECRET" https://<staging>/api/cron/calendar-holds` inside that Space's 9 AM hour: the response counts one release and the Plan's dates leave the calendar. **agent** with the owner's go.
+3. The owner has read the copy in `lib/calendar/hold-lapse-core.ts` and the co-host invite email (`pnpm email:samples`, `plan-share-requested`).
+
+Then set `CALENDAR_HOLDS_ENABLED` to `1`, `true` or `on` and redeploy.
+
+**Turn it off.** Unset. Nothing already sent is recalled. To bring back dates a release removed, set `removed_at = null` on the `space_calendar_entries` rows for that Plan (the `calendar.holds.released` log line names the Plan) and set the Plan's `stage` back to `pencil`.
+
+**What to read when it looks wrong.** `cron.calendar_holds` carries `released`, `warned`, `nudged`, `quiet` (muted, suppressed or already sent) and `failed`; `calendar.holds.release_failed` names the Plan and the step.
+
 ## IndexNow ping
 
 `INDEXNOW_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`). The `indexnow` cron (`/api/cron/indexnow`, daily 14:00 UTC) reads `app/sitemap.ts`, keeps the URLs whose `lastModified` is inside the last 26 hours and posts them once to `api.indexnow.org` with the key in `lib/seo/indexnow.ts`. It can only name URLs the sitemap already advertises. The key is public by protocol; the proof is `public/<key>.txt` at the site root.

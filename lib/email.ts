@@ -1546,7 +1546,9 @@ Unsubscribe from match emails: ${unsubscribeUrl}
 // ── A Plan share, offered or answered (PROG-CAL7 Together, LIVE-545) ──────────
 // Built, not sent: the notification router transports it on the `lifecycle` category once the
 // approver's own switch and the suppression list have been read; lib/calendar/plan-notify.ts is
-// the one caller. Voice: plain, who and what, and where to answer or look.
+// the one caller. Voice: plain, who and what, and where to answer or look. `requested` IS the
+// co-host invite (calendar suite pass 8, LIVE-1709): pain point first, the handoff's own promise
+// ("it lands on your calendar, and both teams can edit it"), and an honest way out.
 
 interface PlanShareEmailParams {
   to: string
@@ -1567,17 +1569,17 @@ export function buildPlanShareEmail(params: PlanShareEmailParams): EmailPayload 
   const url = `${BASE_URL}${calendarPath}`
   const subject =
     moment === 'requested'
-      ? `${otherSpaceName} wants to work "${planTitle}" with you`
+      ? `${otherSpaceName} wants you to co-host "${planTitle}"`
       : moment === 'accepted'
         ? `${otherSpaceName} said yes to "${planTitle}"`
         : `${otherSpaceName} passed on "${planTitle}"`
   const lead =
     moment === 'requested'
-      ? `${otherSpaceName} offered to work the Plan "${planTitle}" together. Say yes or no from your calendar settings; nothing lands on your board until you do.`
+      ? `Putting on something alone is a lot, so ${otherSpaceName} asked you to co-host "${planTitle}" with them. Say yes and it lands on your calendar, and both teams can edit it. Say no and nothing changes on your side.`
       : moment === 'accepted'
         ? `${otherSpaceName} is working "${planTitle}" with you now. Both teams see the Plan, its to-dos and the thread under it.`
         : `${otherSpaceName} passed on "${planTitle}" this time. You can offer it again later.`
-  const cta = moment === 'requested' ? 'Answer the offer' : 'Open the calendar'
+  const cta = moment === 'requested' ? 'Answer the invite' : 'Open the calendar'
   const name = escapeHtml(recipientName)
   return {
     to,

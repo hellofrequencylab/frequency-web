@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1709",
+  "title": "Calendar suite notifications: a cron releases lapsed Pencil holds, warns with a day left, and nudges a slipped to-do, and the co-host invite email reads as an invite",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/api/cron/calendar-holds/route.ts",
+    "ref": "Daniel, 2026-10-28: redesign the Space calendar with the Calendar system handoff (pass 8 of 9, notifications and the hold-release cron). Handoff spec 2.6 Hold lapse."
+  },
+  "detail": "Pass 8 of the Space calendar and project suite. /api/cron/calendar-holds runs hourly (:10), withCronHeartbeat, cronBudget, rejectUnauthorizedCron, off until CALENDAR_HOLDS_ENABLED (envFlag; blank in .env.example; activation gate in docs/RUNBOOKS.md 'Calendar holds'; a skipped run logs cron.calendar_holds.skipped). Each Space is looked at once a day in its own 9 AM (spaces.time_zone, else the platform home zone). It releases a Plan's hold when hold_until is before the Space's local today: a still-Pencil Plan has its unpublished Pencil dates soft-deleted (removed_at, recoverable), drops to stage plan and clears hold_until, conditional on the exact day it read so overlapping runs release once; a Plan that already moved on only clears the stale day. It warns the Plan owner with one day left and nudges the assignee of an open to-do that was due yesterday (one note per person per Space per day, only if they work that Space). Three registry rows (plan.hold_warning, plan.hold_released, plan.todo_overdue; lifecycle, push) route through routeNotification so the member's own push_lifecycle switch and a per-Space mute decide; sends carry an outbox dedupeKey. The co-host invite is the existing plan.share 'requested' email, re-voiced (buildPlanShareEmail). Pure rules in lib/calendar/hold-lapse-core.ts, IO in hold-lapse.ts. No migration. Not done: the release is not written to the Plan's edit history (space_plan_activity inserts are signed by a signed-in actor under RLS); it logs calendar.holds.released instead. Plan: /mnt/project-files/calendar-suite/PLAN.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const need=[['app/api/cron/calendar-holds/route.ts','CALENDAR_HOLDS_ENABLED'],['vercel.json','/api/cron/calendar-holds'],['lib/notifications/registry.ts','plan.hold_released'],['docs/RUNBOOKS.md','## Calendar holds'],['.env.example','CALENDAR_HOLDS_ENABLED=']];const miss=need.filter(([f,s])=>!fs.existsSync(f)||!fs.readFileSync(f,'utf8').includes(s));if(miss.length){console.error('missing',miss);process.exit(1)}\"",
+    "note": "Fails on main (the route, the schedule entry, the registry rows and the runbook gate do not exist); passes here. The decisions themselves are proven by lib/calendar/hold-lapse-core.test.ts."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}
