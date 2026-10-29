@@ -18,7 +18,7 @@ const catalog = read('lib/email-samples/catalog.ts')
 for (const id of ['note', 'welcome', 'dates', 'receipt']) {
   if (!catalog.includes(`id: 'network-kit-${id}'`)) fail(`the stock catalog does not carry network-kit-${id}`)
 }
-if (!/id: 'network-kit',[\s\S]*?surfaces\('soon', 'ready'\)/.test(read('lib/themes/library.ts'))) fail('the Library does not list the kit email as ready')
+if (!/id: 'network-kit',[\s\S]*?surfaces\('ready', 'ready'\)/.test(read('lib/themes/library.ts'))) fail('the Library does not list the kit email as ready')
 
 const css = read('app/themes/frequency/space-page.css')
 const line = css.split('\n').find((l) => l.includes('[data-space-fonts="network-kit"] {') && l.includes('--space-font-display'))
