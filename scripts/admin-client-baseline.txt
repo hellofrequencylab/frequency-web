@@ -611,7 +611,6 @@ app/(main)/people/[handle]/page.tsx
 app/(main)/people/[handle]/vcard/route.ts
 app/(main)/people/friend-actions.ts
 app/(main)/practices/admin-actions.ts
-app/(main)/search/page.tsx
 app/(main)/search/search-data.ts
 app/(main)/settings/billing/actions.ts
 app/(main)/settings/billing/section.tsx
@@ -702,6 +701,7 @@ components/frequency/admin/admin-console.tsx
 components/frequency/admin/pages/moderation/moderation-reads.ts
 components/frequency/admin/pages/space-reads.ts
 components/frequency/admin/pages/standing/standing-reads.ts
+components/frequency/members/circle/circle-nudges.tsx
 components/frequency/members/crew/crew-body.tsx
 components/frequency/members/settings/feed-why-actions.ts
 components/layout/impersonation-banner.tsx
@@ -829,10 +829,12 @@ lib/billing/tip-receipt.ts
 lib/billing/tips-notify.ts
 lib/billing/tips.ts
 lib/blocking.ts
+lib/calendar/hold-lapse.ts
 lib/calendar/plan-notify.ts
 lib/calendar/plan-share-subjects.ts
 lib/channels/programs.ts
 lib/circles/challenges.ts
+lib/circles/circle-weeks.ts
 lib/circles/crm-roster.ts
 lib/circles/draft.ts
 lib/circles/earned.ts
@@ -841,6 +843,7 @@ lib/circles/events.ts
 lib/circles/handoff.ts
 lib/circles/join.ts
 lib/circles/next-meetups.ts
+lib/circles/page-facts.ts
 lib/circles/remix.ts
 lib/circles/sister.ts
 lib/circles/social-fuel.ts
@@ -1299,6 +1302,3 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
-components/frequency/members/circle/circle-nudges.tsx
-lib/circles/circle-weeks.ts
-lib/circles/page-facts.ts
