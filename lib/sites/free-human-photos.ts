@@ -21,3 +21,9 @@ export function freeHumanPhoto(name: string): (FreeHumanPhoto & { src: string })
   const p = FREE_HUMAN_PHOTOS[name]
   return p ? { ...p, src: freeHumanPhotoSrc(name) } : null
 }
+
+/** The loading colour behind a picture served from the library (null for an owner's own photo from anywhere else). */
+export function freeHumanAvg(src: string): string | null {
+  const m = /\/sites\/free-human\/photos\/([a-z0-9-]+)\.webp$/.exec(src)
+  return m ? (FREE_HUMAN_PHOTOS[m[1]]?.avg ?? null) : null
+}
