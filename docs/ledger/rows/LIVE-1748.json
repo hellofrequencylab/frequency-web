@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1748",
+  "title": "The launch starts from what the person already has: pick the Space, fill the page from it, save back to it",
+  "lane": "live",
+  "priority": "P0",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/launch/space-choice.ts",
+    "ref": "Vera guided launch system. The owner ruled on 2026-10-28 that anyone who already has a Spotlight, Space or website finds it filled in, and that data flows both ways."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-pick-space.mjs",
+    "note": "The choice rules and the merge that keeps an arranged Spotlight's blocks are pinned by lib/launch/space-choice.test.ts, run by the test job. The probe reads the wiring: the page lists the person's own Spaces, a pick attaches the Space to the launch (no second Space) and counts a live Spotlight as done, the form fills from the Space's own words, and saving never removes blocks. Fails on main, where a person with Spaces gets an empty form and a new Space."
+  },
+  "detail": "Signed in with no launch Space yet, the launch page asks Which Space is this for? (their Spaces, live Spotlights first, and A new one). Picking one attaches it and opens the page filled: name, the Space's tagline or first about line, and the live preview when its Spotlight is published. Saving adds the typed words in front of the blocks already there and never replaces them; a Spotlight arranged in the node editor is kept published and not rewritten. Not here: the website and email in this pick, the photos, and the personal profile Spotlight (its storage is not located yet).",
+  "wave": "W7",
+  "closed": "2026-10-28"
+}
