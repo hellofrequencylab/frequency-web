@@ -11,6 +11,7 @@ it('writes the Free Human emails', async () => {
     const e = SAMPLE_SPECS.find((s) => s.id === `free-human-${id}`)
     if (!e) throw new Error(`missing free-human-${id}`)
     const r = await e.run()
+    if (!r) throw new Error('empty sample')
     writeFileSync(join(out, `${id}.html`), r.html.replace(/https:\/\/frequencylocal\.com\/sites\//g, 'file://' + join(process.cwd(), 'public/sites/')))
   }
 })

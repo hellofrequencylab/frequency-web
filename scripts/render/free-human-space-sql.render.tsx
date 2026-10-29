@@ -20,6 +20,8 @@ it('prints the Free Human Movement Space SQL', async () => {
   const { planMegaTheme } = await import('@/lib/theme/apply-mega-theme')
   const { FREE_HUMAN_ACCENT } = await import('@/lib/theme/free-human')
 
+  // A Space holds ONE program row (unique index space_programs_one_per_space), so the four seasons are its description.
+  const PROGRAM = [{ name: 'The year-round program', description: `Join in any month. Each season brings a new module of movement, teaching and ritual, held together by a live circle. ${FREE_HUMAN_PROGRAMS.map((p) => `${p.name} (${p.description.split('.')[0]!.toLowerCase()})`).join(', ')}.`, schedule: 'A live circle each season' }]
   const lit = (v: unknown) => JSON.stringify(v).replace(/'/g, "''")
   const str = (s: string) => s.replace(/'/g, "''")
   const state = freeHumanEditorState('2026-10-29T00:00:00.000Z')
@@ -45,7 +47,7 @@ declare
   circ uuid;
   ok boolean;
   events jsonb := '${lit(FREE_HUMAN_SEED_EVENTS)}'::jsonb;
-  programs jsonb := '${lit(FREE_HUMAN_PROGRAMS)}'::jsonb;
+  programs jsonb := '${lit(PROGRAM)}'::jsonb;
   ev jsonb;
   snap jsonb := '${lit(state.draft)}'::jsonb;
   state jsonb;
@@ -76,7 +78,7 @@ begin
   -- The Space's own Circle (the spaces_ensure_space_circle trigger makes it with the Space) holds the gatherings; a Space without one keeps them standalone.
   select id into circ from circles where space_id = sid order by is_space_primary desc nulls last, created_at limit 1;
 
-  -- The year-round program: the four seasons, published.
+  -- The year-round program: one row (a Space holds one), with the four seasons in its description.
   insert into space_programs (space_id, name, description, schedule, is_published)
   select sid, p->>'name', p->>'description', p->>'schedule', true from jsonb_array_elements(programs) p;
 
@@ -96,7 +98,7 @@ end $$;
 
 commit;
 
--- Check (should return one row: freehumanmovement, business, true, free-human, true, 26, 4)
+-- Check (should return one row: freehumanmovement, business, true, free-human, true, 26, 1)
 select s.slug, s.plan, s.is_comped, s.preferences #>> '{megaTheme,theme}' as theme, (s.preferences #>> '{spotlight,published}')::boolean as spotlight_published,
        (select count(*) from events e where e.space_id = s.id) as events, (select count(*) from space_programs p where p.space_id = s.id) as programs
 from spaces s where s.slug = '${FREE_HUMAN_SLUG}';
