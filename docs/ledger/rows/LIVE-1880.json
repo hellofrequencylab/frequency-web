@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1880",
+  "title": "A personal Spotlight can show the Member's upcoming public events (Spotlight split, SPL-03)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/widgets/member-profile/events.tsx",
+    "ref": "Owner picks 2026-10-28: free value first, events on the free personal Spotlight"
+  },
+  "detail": "Adds the member-only memberEvents block (Events I host). The Spotlight reader already loaded the upcoming public events a member hosts and nothing drew them. The block renders that list with a link to each event page, collapses when there is nothing upcoming, and sits in the public starter between Links and Top Friends. No new query. Programs, Contributions and the Tip block are their own rows.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/entity-blocks/registry.ts','utf8');const b=fs.readFileSync('components/widgets/member-profile/member-profile-modules.tsx','utf8');if(!a.includes(\\\"id: 'memberEvents'\\\")||!b.includes('memberEvents: MemberEventsBlock'))process.exit(1)\"",
+    "note": "Fails on main (no memberEvents block); passes here."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

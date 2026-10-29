@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1802",
+  "title": "Network Theme Kit registration: inner blocks in the page editor and the inner pages in the thirteen profile kits",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/sites/kits/network-kit-profile-variants.ts",
+    "ref": "LIVE-1801"
+  },
+  "detail": "The Network inner blocks (NetworkKitInner*) join the page editor's components and the Network palette category, and the thirteen profile kits build Meetups, Services, Programs, Shop, Library and About from the inner page builders instead of the plain header-and-block starters (Membership keeps its starter; Book stays the site's own booking door). The kit is still not in WEBSITE_THEMES_LIVE or any picker: that waits for the seed. A voice test now ignores {{token|fallback}} fields, which carry digits in their names, and Services no longer says 'Included with membership', which a Space without membership could not honour.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "The editor registers the inner blocks and the profile kits build from the inner pages.",
+    "cmd": "node scripts/probes/network-kit-registered.mjs"
+  },
+  "closed": "2026-10-29"
+}
