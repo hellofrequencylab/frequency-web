@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1705",
+  "title": "The Space calendar List, Kanban and Timeline views, with a Plan dragged between stages and Cancelled kept as a column with Undo",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/calendar-suite/suite-board.tsx",
+    "ref": "Daniel, 2026-10-28: redesign the Space calendar with the Calendar system handoff; every Space gets the full calendar and project suite (pass 4 of 9)"
+  },
+  "detail": "Pass 4 of the Space calendar and project suite: the three views that said they were coming soon. The List shows every Plan as a row grouped under its stage, with Plan, Next date, To-dos and Health sortable inside each group and a stacked card layout on a narrow console. The Kanban has five columns (Pencil, Planning, Production, Published, Cancelled); a Plan card dragged to another column, or moved with Shift and Left or Right, writes the Plan's stage through the existing transitionPlanStage action, is shown at once, and offers Undo through the same toast and overlay as a date's move. Cancelled keeps its column: the card stays, struck through, with an Undo button that puts it back where it came from. Production stays open until the event is done and Go live launches it, so a Plan is not dragged into Published and a live Plan can only be cancelled out of it (Undo writes Production again). A Plan another Space hosts is not restaged from here. The Timeline draws nine weeks, one lane per live Plan, with a bar, a block per date and a tick per to-do, arrows where a bar runs past either end, and a Today line. List, Kanban and Timeline print their own title (All Plans, Plans by stage, Next nine weeks) and carry no paging. Cancelled Plans are read back from the archive for the last 90 days so the Cancelled column survives a reload. Pure logic with tests: stage-drop.ts, list-sort.ts, and the timeline's past-the-edge flags. Plan: /mnt/project-files/calendar-suite/PLAN.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const need=['components/calendar-suite/suite-list.tsx','components/calendar-suite/suite-board.tsx','components/calendar-suite/suite-timeline.tsx','lib/calendar/planner/stage-drop.ts','lib/calendar/planner/stage-drop.test.ts','lib/calendar/planner/list-sort.ts'];const miss=need.filter(f=>!fs.existsSync(f));if(miss.length){console.error('missing',miss);process.exit(1)}\"",
+    "note": "Fails on main (no List, Kanban or Timeline view, no stage drop planner); passes here. The stage drop, sort and timeline-edge tests run in CI."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

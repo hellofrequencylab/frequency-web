@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, type DragEvent, type KeyboardEvent } from 'react'
 import type { DropTarget } from '@/lib/calendar/planner/drop'
+import type { StageTarget } from '@/lib/calendar/planner/stage-drop'
+
+/** Anywhere a hand can let go: a day or a time on a grid, or a stage column on the Kanban. */
+type AnyTarget = DropTarget | StageTarget
 
 // THE HANDS OF A DRAG. One hook for every view: which thing is in hand, which target is lit, and the
 // drop. A browser hides a drag's payload until the drop, so the thing in hand is kept in a ref, and the
@@ -11,9 +15,9 @@ import type { DropTarget } from '@/lib/calendar/planner/drop'
 // draggable and no target accepts, which is how a person who can only read the calendar is kept from
 // moving it.
 
-/** The thing in hand: a date or a to-do, and how far down it the pointer holds it. */
+/** The thing in hand: a date, a to-do or a Plan card, and how far down it the pointer holds it. */
 export interface DragSource {
-  kind: 'item' | 'todo'
+  kind: 'item' | 'todo' | 'plan'
   id: string
   /** Pixels from the top of the dragged element to the pointer, so a card's TOP is what snaps. */
   grabPx: number
@@ -26,8 +30,8 @@ export interface SuiteDnd {
   dragProps: (kind: DragSource['kind'], id: string, grid?: boolean) => Record<string, unknown>
   /** Spread onto an element that accepts a drop. `resolve` says where the drop landed, or null to refuse. */
   targetProps: (
-    resolve: (e: DragEvent<HTMLElement>, src: DragSource) => DropTarget | null,
-    onHover?: (target: DropTarget | null, src?: DragSource) => void,
+    resolve: (e: DragEvent<HTMLElement>, src: DragSource) => AnyTarget | null,
+    onHover?: (target: AnyTarget | null, src?: DragSource) => void,
   ) => Record<string, unknown>
 }
 
@@ -36,9 +40,9 @@ const ROOT_FLAG = 'data-dragging'
 
 export function useSuiteDnd(
   enabled: boolean,
-  onDrop: (src: DragSource, target: DropTarget) => void,
+  onDrop: (src: DragSource, target: AnyTarget) => void,
   /** Where Shift with an arrow would move the focused thing, or null for any other key. */
-  keyTarget?: (kind: DragSource['kind'], id: string, e: KeyboardEvent<HTMLElement>, grid: boolean) => DropTarget | null,
+  keyTarget?: (kind: DragSource['kind'], id: string, e: KeyboardEvent<HTMLElement>, grid: boolean) => AnyTarget | null,
 ): SuiteDnd {
   const source = useRef<DragSource | null>(null)
   const lit = useRef<HTMLElement | null>(null)
