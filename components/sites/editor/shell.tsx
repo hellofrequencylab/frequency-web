@@ -618,7 +618,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {styleError && <p role="alert" className="note err">{styleError}</p>}
     <div className="cap">Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
     <div className="acts"><button type="button" className="btn sm" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="btn sm" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } }, { label: 'Logo' })}>Remove logo</button>}</div>
-    <div className="note">A theme or style you pick changes this draft only. Visitors see it when you publish. Words, photos and live blocks stay as they are.</div>
+    <div className="note">A theme or style you pick changes this draft only. Visitors see it when you publish. Words and photos stay; blocks take on the new colors and type.</div>
   </>
   // ── The rail tabs and inspector panels, shared by both designs. Under DAWN the rail tabs are the Site Editor's
   // (LIVE-907); under Frequency, the kit's. Class names go through k() (skin.ts). The handlers are the same either way.
@@ -646,7 +646,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <div className="we-actions"><button type="button" className="we-action secondary" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } })}>Remove logo</button>}</div>
       <div className="we-caption">Brand accent</div><label className="we-field">Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => commit({ ...draft, brand: { ...draft.brand, accent: event.target.value } })} /></label><button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } })}>Use theme accent</button><div className="we-swatch-list"><span className="we-swatch" style={{ background: 'var(--th-accent)' }} /><span className="we-swatch" style={{ background: 'var(--th-season)' }} /><span className="we-swatch" style={{ background: 'var(--th-text)' }} /></div>
       <div className="we-caption">Type</div>{['display', 'body', 'mono'].map((role) => <div className="we-note" key={role} style={canvasVars}>{role}<strong className="we-type-sample" data-role={role}>{String(canvasVars[`--th-${role}` as keyof React.CSSProperties]).split(',')[0].replaceAll("'", '')}</strong></div>)}
-      <div className="we-note">The editor wears the theme it edits. The theme and global styles change your live site as soon as you pick them, here or in Identity and branding. Words, photos and live blocks stay as they are. Switching themes resets element positions to the new layout; Undo restores them.</div></>
+      <div className="we-note">The editor wears the theme it edits. The theme and global styles change your live site as soon as you pick them, here or in Identity and branding. Words and photos stay; blocks take on the new colors and type. Switching themes resets element positions to the new layout; Undo restores them.</div></>
   const railBody = <>
     {tab === 'Pages' && pagesTab}
     {tab === 'Layers' && layersTab}
