@@ -22,7 +22,7 @@ const CHECKS = {
   presentation: () => (count('components/sites/presentation', /\.ts$/) >= 9 ? [] : ['fewer than nine theme presentation layers']),
   staticcss: () => (existsSync('scripts/build-theme-css.mjs') ? [] : ['theme CSS is not built as static versioned files']),
   tryiton: () => (existsSync('components/sites/theme-preview-swap.tsx') ? [] : ['no instant stylesheet swap preview']),
-  revalidate: () => (existsSync('lib/sites/editor/theme-revalidate.ts') ? [] : ['a theme change does not revalidate one Space']),
+  revalidate: () => (/export async function saveWebsiteStyle[\s\S]*?refreshSite\(auth\.space\.slug\)/.test(read('lib/sites/editor/actions.ts')) && existsSync('lib/sites/site-cache-theme.test.ts') ? [] : ['a theme change does not revalidate one Space']),
   conformance: () => (existsSync('scripts/theme-conformance.test.ts') ? [] : ['no theme conformance check']),
   catalog: () => (/manifests/.test(read('lib/themes/library.ts')) ? [] : ['the catalog is not read from the manifests']),
   intake: () => (/theme\.manifest\.json|\.manifest\.json/.test(read('scripts/ds-intake.mjs')) ? [] : ['the design-system intake does not write a manifest']),

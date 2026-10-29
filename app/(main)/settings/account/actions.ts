@@ -8,6 +8,7 @@ import { unblockUser } from '@/lib/blocking'
 import { deleteMyAccount } from '@/lib/account'
 import { readImpersonation } from '@/lib/impersonation'
 import { type ActionResult, fail } from '@/lib/action-result'
+import { showSetupAction } from '@/lib/launch/actions'
 
 export async function unblockFromSettings(profileId: string): Promise<void> {
   const myId = await getMyProfileId()
@@ -15,6 +16,14 @@ export async function unblockFromSettings(profileId: string): Promise<void> {
   await unblockUser(myId, profileId)
   revalidatePath('/settings/account')
   revalidatePath('/settings') // the section now renders on the unified Settings page
+}
+
+// Bring the Finish setup reminder back (hidden from its sheet with two confirmations, LIVE-1915).
+export async function showSetupFromSettings(): Promise<void> {
+  const myId = await getMyProfileId()
+  if (!myId) return
+  await showSetupAction()
+  revalidatePath('/settings')
 }
 
 // Permanently delete the signed-in member's account, then sign out and send them
