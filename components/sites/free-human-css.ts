@@ -1,4 +1,5 @@
 import { FREE_HUMAN_TOKENS_CSS, FREE_HUMAN_VARIANTS_CSS } from '@/lib/theme/free-human'
+import { FREE_HUMAN_CHROME_CSS } from '@/components/sites/free-human-chrome-css'
 
 // THE FREE HUMAN KIT SKIN, FOUNDATION LAYER. Scoped under [data-house-theme="free-human"], so it can only ever dress the
 // stand-alone site render (components/sites/site-chrome.tsx sets that attribute on the site root, and nothing in a
@@ -120,5 +121,6 @@ ${N} .hs-btn:active{transform:scale(var(--press-scale))}
 ${N} :focus-visible{outline:none;box-shadow:var(--ring-focus)}
 ${N} ::selection{background:var(--color-selection);color:var(--fh-ink-900)}
 ${FREE_HUMAN_CLASSES_CSS}
+${FREE_HUMAN_CHROME_CSS}
 @media (prefers-reduced-motion:reduce){${N},${N} *{--motion-instant:0ms;--motion-fast:0ms;--motion-base:0ms;--motion-slow:0ms;--motion-veil:0ms;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 `
