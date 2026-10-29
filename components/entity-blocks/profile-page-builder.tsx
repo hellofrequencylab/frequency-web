@@ -62,6 +62,7 @@ import { BlockEditPanel } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { Input } from '@/components/ui/field'
 import { capsLabel } from '@/components/ui/caps-label'
+import { SaveErrorOrCapPanel } from './spotlight-cap-panel'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
 // two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
@@ -690,11 +691,7 @@ export function EntityPageBuilder({
 
       {header}
 
-      {store.error && (
-        <p className="rounded-control bg-danger-bg px-3 py-2 text-meta font-medium text-danger" role="alert">
-          {store.error}
-        </p>
-      )}
+      <SaveErrorOrCapPanel error={store.error} capReached={store.capReached} />
 
       {/* Starters — schematic wireframe thumbnails, shown on a default / empty layout (no lock). */}
       {showStarters && (
