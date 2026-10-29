@@ -66,7 +66,7 @@ export function Ground({ p, name, pad, vis, children }: { p: Props; name: string
   )
 }
 
-const groundFields = {
+export const groundFields = {
   ground: { type: 'select', label: 'Ground', options: [{ label: 'Paper', value: 'paper' }, { label: 'Day', value: 'day' }, { label: 'Gold', value: 'gold' }, { label: 'Night', value: 'night' }, { label: 'Sunset', value: 'sunset' }, { label: 'Sky', value: 'sky' }] },
   edge: { type: 'select', label: 'Edge', options: [{ label: 'Flat', value: 'flat' }, { label: 'Flows into the next', value: 'flow' }, { label: 'Flows in from above', value: 'flow-top' }, { label: 'Flows out below', value: 'flow-bottom' }] },
   texture: { type: 'select', label: 'Texture', options: [{ label: 'None', value: 'none' }, ...TEXTURES.map((v) => ({ label: v[0].toUpperCase() + v.slice(1), value: v }))] },

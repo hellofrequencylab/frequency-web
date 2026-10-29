@@ -148,3 +148,44 @@ export function freeHumanHomeBlocks(): FreeHumanBlockSeed[] {
     { type: 'FreeHumanLineage', props: { ...FREE_HUMAN_LINEAGE } },
   ]
 }
+
+// THE CALENDAR PAGE (templates/website/Calendar.dc.html). The hero and the Calendar are LIVE: they read the Space's own events
+// and expand its series across the next thirteen months, so a recurring circle shows on every week. An event's kind comes from its
+// title (lib/sites/free-human-events.ts) until events carry a tag. The Year Wheel sits between them (it lands with its own block).
+// Voice: the design's "Times are Pacific" is one house's zone, so the note names the keys instead; the closing line does not
+// promise a letter on a schedule.
+export const FREE_HUMAN_CALENDAR_HERO = {
+  ground: 'day', edge: 'flow-bottom', texture: 'none', wander: true,
+  eyebrow: 'Calendar · synced with Frequency',
+  title: 'The year, *in circles.*',
+  lead: 'The sky and our circle in one year. Turn the wheel to see the signs, moons and festivals with every gathering on them, then find each date below.',
+  primaryLabel: 'See every date', primaryHref: '#month-by-month', feedLabel: 'Subscribe to calendar',
+  nextEmpty: 'Dates to come', nextEmptyNote: 'Soon',
+}
+
+export const FREE_HUMAN_CALENDAR = {
+  ground: 'gold', edge: 'flow', texture: 'earth', wander: true,
+  eyebrow: 'Every date we gather',
+  title: 'Month by month, *in the circle.*',
+  defaultView: 'month', wheel: true,
+  filters: ['all', 'circle', 'moon', 'turn', 'workshop', 'retreat', 'book'],
+  collapseRecurring: true,
+  empty: 'Nothing of that kind is open yet. The next letter has new dates first.',
+  note: 'Use the arrow keys to move between months. Escape closes a panel.',
+  buttonLabel: 'Reserve', subscribeLabel: 'Add the calendar feed',
+  closingEyebrow: 'The turning',
+  closingTitle: 'Mark the turns *with us.*',
+  closingLead: 'A letter when there is something to say, with the dates ahead, and a calendar feed that keeps every circle, moon and turn of the year on your phone.',
+  closingButton: 'Subscribe', closingDone: 'Thank you. You are on the list.',
+}
+
+export function freeHumanCalendarPage() {
+  return {
+    slug: 'calendar', label: 'Calendar',
+    seo: { title: 'Calendar', description: 'Circles, moon gatherings, the turns of the year, workshops and retreats.' },
+    blocks: [
+      { type: 'FreeHumanCalendarHero', props: { ...FREE_HUMAN_CALENDAR_HERO } },
+      { type: 'FreeHumanCalendar', props: { ...FREE_HUMAN_CALENDAR } },
+    ] as FreeHumanBlockSeed[],
+  }
+}
