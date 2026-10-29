@@ -21,6 +21,8 @@ import { getTopFriendsForOwner, type TopFriend } from './top-friends'
 import { getGuestbookForOwner, type GuestbookEntry } from './guestbook'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
+import { getMemberPrograms } from './programs'
+import { programsOptInFromGrid, type SpotlightPrograms } from './programs.shared'
 
 // Server data for the PUBLIC Spotlight page. Anonymous visitors get no RLS, so this
 // reads through the admin client and is fail-closed: it returns null unless the page
@@ -41,6 +43,8 @@ export interface SpotlightData {
   /** True when the member can receive tips right now (payouts live and their account ready). A boolean
    *  only, never a Stripe id. Computed for the PUBLIC page; the in-app profile has its own Tip button. */
   canTip: boolean
+  /** The public Circles, Journeys and Spaces the member opted to show (SPL-04). Empty unless a switch is on. */
+  programs: SpotlightPrograms
   /** The member's validated block layout (empty when they haven't customized). */
   layout: SpotlightLayout
   /** The validated optional background image. */
@@ -194,10 +198,19 @@ async function loadMemberSpotlight(
   // publish/layout gate already loaded — no extra query. Never returned raw; only the parsed layout.
   const grid = readMemberGridLayout(g.meta)
 
+  // The Programs block (SPL-04) reads only what the member switched on in that block, so it costs nothing
+  // for everyone else. Resolved in the same parallel wave; fails closed to empty lists.
+  const [topFriends, guestbook, programs] = await Promise.all([
+    getTopFriendsForOwner(g.id),
+    getGuestbookForOwner(g.id),
+    getMemberPrograms(g.id, programsOptInFromGrid(grid)),
+  ])
+
   return {
     profile: row as unknown as SpotlightRow,
     hostedEvents: (events ?? []) as SpotlightHostedEvent[],
     canTip,
+    programs,
     layout,
     background,
     stickers,

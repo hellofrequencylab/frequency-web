@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1882",
+  "title": "A personal Spotlight can show the public Circles, Journeys and Spaces a Member is part of, only if they opt in (Spotlight split, SPL-04)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/widgets/member-profile/programs.tsx",
+    "ref": "Owner picks 2026-10-28: free value first, programs on the free personal Spotlight"
+  },
+  "detail": "Adds the member-only memberPrograms block (What I'm part of). Three switches in the block settings (Show my Circles, Journeys, Spaces), all off by default; the reader (lib/spotlight/programs.ts) does not query a kind the member left off. Only public rows ever cross to the anonymous page: open and listed Circles, networked Spaces, public approved published Journeys, none inside a private Space; no counts, no other people, no topics. Each kind is capped at six, and any error fails closed to an empty block that collapses. Journeys show 'On it now' or 'Finished' (steps done of total needs the lesson tree and is left out to keep reads small). Contributions and the Tip block are their own rows.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/entity-blocks/registry.ts','utf8');const b=fs.readFileSync('components/widgets/member-profile/member-profile-modules.tsx','utf8');if(!a.includes(\\\"id: 'memberPrograms'\\\")||!b.includes('memberPrograms: MemberProgramsBlock'))process.exit(1)\"",
+    "note": "Fails on main (no memberPrograms block); passes here."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}
