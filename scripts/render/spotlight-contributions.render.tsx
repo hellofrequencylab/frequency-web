@@ -47,8 +47,8 @@ it('renders the public Spotlight, before and after', async () => {
       ? { ...full, content: { memberContributions: { showEvents: true, showJourneys: true } } }
       : { ...full, rows: full.rows!.filter((r) => !r.cells.flat().includes('memberContributions')) }
     const el = createElement(
-      SpotlightShell,
-      { data, showJoinCta: true, showBio: false },
+      SpotlightShell as never,
+      { data, showJoinCta: true, showBio: false } as never,
       createElement(MemberProfileModules, { member: data, grid }),
     )
     writeFileSync(`${out}/spotlight-contributions-${view}.html`, page(await html(el)))
