@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1685",
+  "title": "Temple Theme Kit inner pages, group B: Membership and Gatherings as TempleKitInner blocks",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "components/page-editor/blocks/temple-kit-inner-b.tsx",
+    "ref": "LIVE-1684"
+  },
+  "detail": "Two block types (TempleKitInnerTiers with a Monthly or Yearly switch, TempleKitInnerGatherings), one scoped sheet (components/sites/temple-kit-inner/inner-b-css.ts, tokens only) and two page builders (components/sites/temple-kit-inner/pages-b.ts) for the design's Membership and Gatherings pages. Gatherings draws the Space's upcoming events and falls back to cards typed in the editor; no member or seat counts are seeded. The design's Online or In person filter is parked: an event row carries no online flag yet. Registration (block map, the sheet into the skin, the pages into the kit) belongs to the Temple kit registration pass. Group C onward follows under LIVE-1686 to 1689.",
+  "closed": "2026-10-28",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-28",
+    "evidence": "temple-kit-inner-b.tsx exports the Tiers and Gatherings blocks.",
+    "cmd": "node -e 'const t=require(\"fs\").readFileSync(\"components/page-editor/blocks/temple-kit-inner-b.tsx\",\"utf8\");for(const b of [\"Tiers\",\"Gatherings\"])if(!t.includes(\"TempleKitInner\"+b+\":\")){console.error(\"a Temple Kit inner block is missing: \"+b);process.exit(1)}'"
+  }
+}
