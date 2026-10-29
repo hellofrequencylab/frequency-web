@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createSpaceHref } from '@/lib/create-space/href'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { FrequencyThemeKit, THEME_KIT_PAGE_IDS } from '@/components/frequency/site/pages/themes/frequency-theme-kit'
 import { THEME_TOOLS } from '@/lib/themes/library'
@@ -15,9 +16,11 @@ describe('the theme kit page', () => {
     // this generic page lists none, and each kit has a hand-built page of its own.
     const kits = id === 'network-kit' || id === 'temple-kit' ? 0 : 13
     expect(html.match(/Start with this kit/g)?.length ?? 0).toBe(kits)
-    // Every way in starts a Space wearing this theme (Space creation reads ?theme=).
-    expect(html).toContain(`/spaces/new?theme=${id}`)
-    expect(html.match(new RegExp(`/spaces/new\\?theme=${id}&amp;niche=`, 'g'))?.length ?? 0).toBe(kits)
+    // Every way in opens /create-a-space, on this kit when the builder can preview it (?kit=).
+    const start = createSpaceHref(id)
+    expect(html).toContain(start)
+    expect(html).not.toContain('/spaces/new')
+    expect(html.split(`href="${start}"`).length - 1).toBeGreaterThanOrEqual(kits)
     expect(html).not.toMatch(/—/)
     expect(html).not.toMatch(/#[0-9a-fA-F]{6}/)
   })
