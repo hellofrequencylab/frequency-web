@@ -50,6 +50,9 @@ interface MemberBlockData {
   canTip: boolean
   /** The public Circles, Journeys and Spaces the member opted to show, resolved server-side. */
   programs: SpotlightData['programs']
+  /** What the member gives back, resolved server-side (never member-supplied): the real Crew tier, plus
+   *  count-only aggregates and the lifetime Zaps. */
+  contributions: { crew: boolean; eventsHosted: number; journeysFinished: number; zaps: number }
   /** Every authored block grouped by its type, in layout order. Content blocks (heading/text/image/
    *  gallery/quote/embed/divider) render from their slice; the data-block slices are unused (their
    *  values come from the fields above), but present so the map is total. */
@@ -141,6 +144,12 @@ export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
     hostedEvents: data.hostedEvents,
     canTip: data.canTip,
     programs: data.programs ?? { circles: [], journeys: [], spaces: [] },
+    contributions: {
+      crew: profile.membership_tier === 'crew',
+      eventsHosted: data.contributionCounts?.eventsHosted ?? 0,
+      journeysFinished: data.contributionCounts?.journeysFinished ?? 0,
+      zaps: totalZaps,
+    },
     blocksByType,
   }
 }

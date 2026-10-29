@@ -55,6 +55,8 @@ export interface SpotlightData {
   theme: SpotlightTheme
   /** Lifetime Zaps earned (one SQL aggregate) — a gamification stat the member can display. */
   totalZaps: number
+  /** Count-only aggregates for the "What I give back" block (no rows, no identities). */
+  contributionCounts: { eventsHosted: number; journeysFinished: number }
   /** The member's ordered Top Friends (the "Top 8"), resolved server-side from the
    *  spotlight_top_friends table joined to each friend's public profile. Empty when none. */
   topFriends: TopFriend[]
@@ -192,12 +194,13 @@ async function loadMemberSpotlight(
   // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel (both are per-owner
   // reads joined to public profile fields). The Programs block (SPL-04) reads only what the member switched
   // on in that block, so it costs nothing for everyone else; it fails closed to empty lists.
-  const [topFriends, guestbook, canTip, programs] = await Promise.all([
+  const [topFriends, guestbook, canTip, programs, contributionCounts] = await Promise.all([
     getTopFriendsForOwner(g.id),
     getGuestbookForOwner(g.id),
     // Public page only: the in-app profile already carries the real Tip button.
     requirePublished ? readCanTip(g.id) : Promise.resolve(false),
     getMemberPrograms(g.id, programsOptInFromGrid(grid)),
+    getContributionCounts(g.id),
   ])
 
   return {
@@ -210,8 +213,34 @@ async function loadMemberSpotlight(
     stickers,
     theme,
     totalZaps,
+    contributionCounts,
     topFriends,
     guestbook,
     grid,
+  }
+}
+
+/** The "What I give back" aggregates: two HEAD counts (no rows come back, nothing identifies anyone). Events
+ *  hosted counts the member's public, published, not-cancelled events of all time (the same filter the
+ *  upcoming list uses); Journeys finished counts their stamped-complete enrollments. FAIL CLOSED to 0. */
+async function getContributionCounts(profileId: string): Promise<{ eventsHosted: number; journeysFinished: number }> {
+  try {
+    const admin = createAdminClient()
+    const [events, journeys] = await Promise.all([
+      admin
+        .from('events')
+        .select('id', { count: 'exact', head: true })
+        .eq('host_id', profileId)
+        .eq('status', 'published')
+        .eq('is_cancelled', false),
+      admin
+        .from('journey_enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', profileId)
+        .not('completed_at', 'is', null),
+    ])
+    return { eventsHosted: events.count ?? 0, journeysFinished: journeys.count ?? 0 }
+  } catch {
+    return { eventsHosted: 0, journeysFinished: 0 }
   }
 }
