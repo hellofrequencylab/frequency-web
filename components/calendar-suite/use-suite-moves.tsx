@@ -63,6 +63,8 @@ export interface SuiteMoves {
   restore: (planId: string) => void
   /** The series question and the toast, to render once inside the calendar. */
   layer: ReactNode
+  /** Says a line in the same toast a move uses, for the Details panel's own moves. */
+  say: (line: string, tone: 'success' | 'danger' | 'neutral') => void
 }
 
 export function useSuiteMoves({
@@ -315,5 +317,5 @@ export function useSuiteMoves({
     </>
   )
 
-  return { data, dnd, layer, restore }
+  return { data, dnd, layer, say, restore }
 }

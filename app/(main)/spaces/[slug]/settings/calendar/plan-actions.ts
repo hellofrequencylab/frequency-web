@@ -137,6 +137,45 @@ export async function saveSpacePlan(
   return ok({ id: res.data.id })
 }
 
+/**
+ * Change a Plan's title or its notes and nothing else (the Details panel's inline fields). `saveSpacePlan`
+ * rewrites every field a Plan has, links and files included, from a whole form; this writes only the
+ * keys given, so an inline rename can never clear what the panel did not show. The Plan must be this
+ * Space's own (`editorPlan`).
+ */
+export async function editPlanText(
+  slug: string,
+  planId: string,
+  rawPatch: { title?: unknown; notes?: unknown },
+): Promise<ActionResult<void>> {
+  const editor = await editorPlan(slug, planId)
+  if ('error' in editor) return fail(editor.error)
+  if (!rawPatch || typeof rawPatch !== 'object') return fail('There was nothing to change.')
+  const patch: { title?: string; notes?: string | null } = {}
+  if ('title' in rawPatch) {
+    const parsed = parsePlanInput({ title: typeof rawPatch.title === 'string' ? rawPatch.title : '' })
+    if ('error' in parsed) return fail(parsed.error)
+    patch.title = parsed.data.title
+  }
+  if ('notes' in rawPatch) {
+    const parsed = parsePlanInput({ title: 'x', notes: typeof rawPatch.notes === 'string' ? rawPatch.notes : '' })
+    if ('error' in parsed) return fail(parsed.error)
+    patch.notes = parsed.data.notes
+  }
+  if (Object.keys(patch).length === 0) return fail('There was nothing to change.')
+  const res = await updateSpacePlan(editor.spaceId, planId, patch)
+  if ('error' in res) return fail(res.error)
+  await recordPlanActivity({
+    planId,
+    actorProfileId: editor.profileId,
+    actorSpaceId: editor.spaceId,
+    kind: 'field',
+    summary: patch.title !== undefined ? 'Renamed the Plan.' : 'Updated the notes.',
+  })
+  revalidate(slug)
+  return ok()
+}
+
 async function transitionPlanStageForEditor(spaceId: string, planId: string, stage: string) {
   const transition = planStageTransition(stage)
   if (!transition) return { error: 'Choose a valid Plan stage.' } as const

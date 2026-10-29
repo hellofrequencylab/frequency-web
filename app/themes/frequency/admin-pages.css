@@ -710,6 +710,35 @@ button.cal-tg-head:hover { background: var(--fq-track); }
 .cal-trow:hover { background: var(--fq-track); }
 .cal-trow .cal-abar { height: 28px; align-self: auto; }
 .cal-ttext { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* Details editing (pass 5): inline title, fields, the plan card's rows, the record. */
+.cal-dhead-t { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cal-dlast { font-size: var(--fq-text-meta); }
+[data-design="frequency"] .cal-suite .cal-details textarea.cal-dtitle-in { background: transparent; border-radius: 2px; }
+.cal-suite .cal-dtitle-in { width: 100%; field-sizing: content; min-height: 1.2em; font: 600 22px/1.2 var(--fq-font-display); letter-spacing: -0.03em; color: var(--fq-text-strong); text-wrap: balance; box-shadow: 0 1px 0 var(--fq-border-hair); border-radius: 2px; }
+.cal-suite .cal-dtitle-in:hover:not(:focus) { box-shadow: 0 1px 0 var(--fq-border-strong); }
+.cal-details .mu-seg { display: flex; flex-wrap: nowrap; width: 100%; }
+.cal-details .mu-seg > button { flex: 1 1 0; min-width: 0; padding-inline: 4px; justify-content: center; font-size: var(--fq-text-meta); }
+.cal-ttitle { display: flex; align-items: center; gap: 10px; }
+.cal-ttitle .cal-dtitle-in, .cal-ttitle .cal-dtitle { flex: 1; min-width: 0; }
+.cal-drow dd > .input, .cal-drow dd > .mu-select { flex: 1; min-width: 0; }
+.cal-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cal-confirm { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 16px; background: var(--fq-bg-sunken); }
+.cal-confirm p { margin: 0; color: var(--fq-text-strong); font-size: var(--fq-text-body-s); }
+.cal-err { margin: 0; padding: 8px 12px; border-radius: 12px; background: var(--fq-live-soft); color: var(--fq-text-strong); font-size: var(--fq-text-body-s); }
+.cal-notesf { display: flex; flex-direction: column; gap: 6px; }
+.cal-checkbtn { flex: none; background: none; padding: 0; border-radius: 50%; display: inline-grid; }
+.cal-tmain { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 0; background: none; text-align: left; color: inherit; }
+.cal-opt { display: flex; align-items: center; gap: 8px; }
+.cal-opt .cal-trow { flex: 1; min-width: 0; }
+.cal-pcard .input, .cal-pcard .mu-select { width: 100%; }
+.cal-rec { display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -1px 0 var(--fq-border-hair); padding-top: 14px; }
+.cal-log { display: flex; flex-direction: column; gap: 10px; }
+.cal-logrow { display: flex; flex-direction: column; gap: 2px; }
+.cal-logrow[data-note] .cal-logtext { font-family: var(--fq-font-serif); font-style: italic; }
+.cal-logtext { color: var(--fq-text-strong); font-size: var(--fq-text-body-s); }
+.cal-more { align-self: flex-start; background: none; padding: 0; }
+.cal-compose { display: flex; align-items: center; gap: 8px; }
+.cal-compose .input { flex: 1; min-width: 0; }
 
 /* The sheets and the scrim */
 .cal-scrim { display: none; }
