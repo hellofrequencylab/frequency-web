@@ -49,12 +49,13 @@ describe('the tools a pick switches on', () => {
 
 describe('the draft', () => {
   it('round-trips, and a draft on another kit is not resumed when one was chosen', () => {
-    const d = emptyDraft('temple', true)
+    const [kit, other] = PREVIEW_KIT_ORDER
+    const d = emptyDraft(kit, true)
     d.name = 'Clay Room'
     d.goals = ['events']
     expect(parseDraft(serializeDraft(d), null)?.name).toBe('Clay Room')
-    expect(parseDraft(serializeDraft(d), 'designer')).toBeNull()
-    expect(parseDraft(serializeDraft(d), 'temple')?.goals).toEqual(['events'])
+    expect(parseDraft(serializeDraft(d), other)).toBeNull()
+    expect(parseDraft(serializeDraft(d), kit)?.goals).toEqual(['events'])
   })
   it('drops anything unexpected', () => {
     expect(parseDraft('not json', null)).toBeNull()
