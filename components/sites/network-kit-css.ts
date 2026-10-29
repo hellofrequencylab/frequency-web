@@ -1,6 +1,7 @@
 import { NETWORK_KIT_TOKENS_CSS } from '@/lib/theme/network-kit'
 import { NETWORK_KIT_BLOCKS_CSS } from '@/components/sites/network-kit-blocks-css'
 import { NETWORK_KIT_MORE_CSS } from '@/components/sites/network-kit-more-css'
+import { NETWORK_KIT_INNER_CSS } from '@/components/sites/network-kit-inner/inner-css'
 
 // THE NETWORK THEME KIT SKIN (code id `network-kit`, shown as Network). Scoped under [data-house-theme="network-kit"]
 // so every house section keeps its markup and content; every value is a token (lib/theme/network-kit.ts), never a
@@ -201,6 +202,8 @@ ${N} .hs-footer a.hs-partner:hover{color:var(--color-on-ink);box-shadow:inset 0 
 ${NETWORK_KIT_BLOCKS_CSS}
 
 ${NETWORK_KIT_MORE_CSS}
+
+${NETWORK_KIT_INNER_CSS}
 
 /* Reduced motion: every duration is zero in the token block; here the moves themselves go. */
 @media (prefers-reduced-motion:reduce){${N} *,${N} *::before,${N} *::after{transition:none!important;animation:none!important}${N} :is(.hs-btn,.nk-btn,.hs-card,.nk-card):is(:hover,:active),${N} .nk-card--lift:hover .nk-photo img,${N} .nk-btn:hover .nk-btn__arrow,${N} .hs-header .hs-btn-dark:hover::after{transform:none!important}}`

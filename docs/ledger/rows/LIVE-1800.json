@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1800",
+  "title": "Network Theme Kit inner pages, pass A: About, Services, Meetups and Programs",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "components/page-editor/blocks/network-kit-inner.tsx",
+    "ref": "LIVE-1684"
+  },
+  "detail": "Four NetworkKitInner blocks (story, organizers, service rows, a filtered index of meetups or programs that draws the Space's live events and programs and falls back to cards typed in the editor), each with a role and layout line; a photo layout on the shared NetworkKitStats and a compact card on the shared NetworkKitCTA, so no role gets a second block; one sheet under the kit theme attribute (components/sites/network-kit-inner/inner-css.ts, contract tokens for structure) layered into the kit skin; and four page builders (components/sites/network-kit-inner/pages.ts) in the voice guide's words: no seeded counts, prices or rhythms. The design's Journeys list stacks full-width cards because its grid style was lost, so the index uses the two-column grid its Workshops page has. The design's events calendar widget is left out of Meetups: the index lists the same events. Registering the pages in the profile kits is the Network kit registration pass. Pass B follows.",
+  "closed": "2026-10-29",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "network-kit-inner.tsx exports the four blocks, the sheet is in the kit skin and the four pages exist.",
+    "cmd": "node scripts/probes/network-kit-inner-a.mjs"
+  }
+}
