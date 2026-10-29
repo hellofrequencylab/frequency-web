@@ -54,11 +54,14 @@ function Wander({ orbs }: { orbs: boolean }) {
   )
 }
 
+/** The section ids the chrome's doors fall back to when a Space has no page for them (lib/sites/free-human-chrome.ts anchors). */
+const SECTION_ID: Record<string, string> = { seasons: 'program', workshops: 'workshops', events: 'events', books: 'books', speaking: 'speaking', lineage: 'lineage' }
+
 export function Ground({ p, name, pad, vis, children }: { p: Props; name: string; pad?: string; vis?: string; children: ReactNode }) {
   const ground = str(p.ground) in GROUND_CLASS ? str(p.ground) : 'day'
   const texture = TEXTURES.includes(str(p.texture)) ? str(p.texture) : ''
   return (
-    <section className={cls('fh-sec', `fh-${name}`, GROUND_CLASS[ground], EDGE_CLASS[str(p.edge)], pad, vis)} data-ground={ground}>
+    <section id={SECTION_ID[name]} className={cls('fh-sec', `fh-${name}`, GROUND_CLASS[ground], EDGE_CLASS[str(p.edge)], pad, vis)} data-ground={ground}>
       {texture && <div className={cls('fh-ground-tex', `fh-tex-${texture}${DARK.has(ground) ? '-light' : ''}`)} data-tex={texture} aria-hidden="true" />}
       {p.wander !== false && <Wander orbs={ground !== 'paper'} />}
       {children}
