@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "free-human",
+  "legacyIds": {
+    "editor": "FreeHuman",
+    "site": "free-human"
+  },
+  "offered": false,
+  "site": {
+    "label": "Free Human",
+    "description": "Limewash and honey light: a gilt arch, a madder accent and a candle-dark night, for movement, ritual and the village around it.",
+    "defaultFonts": "classic"
+  },
+  "library": null,
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "FreeHuman"
+      ]
+    }
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "free-human",
+        "names"
+      ]
+    }
+  }
+}
