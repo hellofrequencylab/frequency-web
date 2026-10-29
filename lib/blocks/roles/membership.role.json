@@ -1,0 +1,152 @@
+{
+  "role": "Membership",
+  "type": "RoleMembership",
+  "label": "Membership (all themes)",
+  "replaces": [
+    "Tiers",
+    "MidnightMembership",
+    "NetworkKitMembership",
+    "NetworkTiers",
+    "TempleTiers"
+  ],
+  "slots": {
+    "required": {
+      "items": {
+        "type": "list",
+        "min": 1,
+        "max": 4,
+        "item": {
+          "name": "text<=40",
+          "price": "text<=20",
+          "per": "text?",
+          "blurb": "text<=160",
+          "features": "lines<=8",
+          "badge": "text?",
+          "featured": "flag",
+          "label": "text",
+          "href": "link"
+        }
+      }
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280"
+    }
+  },
+  "variants": {
+    "tiers": {
+      "label": "Tier cards",
+      "max": 4
+    },
+    "table": {
+      "label": "Table rows",
+      "max": 4
+    },
+    "spotlight": {
+      "label": "One tier in the spotlight",
+      "needs": [
+        "featured"
+      ]
+    }
+  },
+  "default": "tiers",
+  "data": null,
+  "sample": {
+    "sample": true,
+    "eyebrow": "Membership",
+    "title": "Choose how you *belong*",
+    "lead": "Cancel any time. Every plan includes the monthly open table.",
+    "items": [
+      {
+        "name": "Friend",
+        "price": "$0",
+        "per": "free",
+        "blurb": "Stay in the loop.",
+        "features": "The monthly open table\nThe newsletter",
+        "badge": "",
+        "featured": false,
+        "label": "Join free",
+        "href": "~/join"
+      },
+      {
+        "name": "Member",
+        "price": "$25",
+        "per": "/ month",
+        "blurb": "Show up as often as you like.",
+        "features": "Every weekly gathering\nMember-only circles\nA seat saved for you",
+        "badge": "Most loved",
+        "featured": true,
+        "label": "Become a member",
+        "href": "~/join"
+      },
+      {
+        "name": "Patron",
+        "price": "$60",
+        "per": "/ month",
+        "blurb": "Help keep the doors open.",
+        "features": "Everything in Member\nTwo guest passes a month",
+        "badge": "",
+        "featured": false,
+        "label": "Become a patron",
+        "href": "~/join"
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "shadow-lift",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "badge",
+    "body",
+    "cta",
+    "eyebrow",
+    "features",
+    "heading",
+    "inner",
+    "item",
+    "lead",
+    "list",
+    "name",
+    "per",
+    "price",
+    "text",
+    "title"
+  ]
+}

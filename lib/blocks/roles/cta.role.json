@@ -1,0 +1,92 @@
+{
+  "role": "CTA",
+  "type": "RoleCta",
+  "label": "Closing call (all themes)",
+  "replaces": [
+    "CallToAction",
+    "MidnightCTA",
+    "NetworkKitCTA",
+    "DesignerClosing"
+  ],
+  "slots": {
+    "required": {
+      "title": "text<=120"
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "lead": "text<=280",
+      "primary": "link",
+      "secondary": "link"
+    }
+  },
+  "variants": {
+    "center": {
+      "label": "Centred"
+    },
+    "split": {
+      "label": "Words beside the buttons"
+    },
+    "band": {
+      "label": "Full-width band"
+    }
+  },
+  "default": "center",
+  "data": null,
+  "sample": {
+    "sample": true,
+    "eyebrow": "Ready when you are",
+    "title": "Pull up a *chair*",
+    "lead": "Your first gathering is on us.",
+    "primaryLabel": "Save my seat",
+    "primaryHref": "~/events",
+    "secondaryLabel": "Ask a question",
+    "secondaryHref": "~/contact"
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "actions",
+    "copy",
+    "cta",
+    "eyebrow",
+    "inner",
+    "lead",
+    "title"
+  ]
+}

@@ -9,6 +9,7 @@ import { normalizeWebsiteFields } from '@/lib/sites/website-fields'
 import { safeDataAttributes } from '@/lib/sites/editor/layout'
 import { cleanSectionAnchor } from '@/lib/sites/editor/state'
 import { bindSlots, readSlots } from '@/lib/spaces/content-slots'
+import { docHasRoleBlocks, roleBlocksCss } from '@/components/sites/role-blocks-css'
 
 /** Each tone as the site theme's own colours (DAWN aliases the website theme maps onto, WEBSITE_TOKEN_CSS),
  *  never a literal: White is the raised surface, Sand the theme's surface, Pastel a wash of its accent and
@@ -25,7 +26,7 @@ import { MensworkPage } from './menswork-page'
 
 // Shared by the website and its editor iframe. The renderer never imports editor
 // UI, history, actions, or collaboration code. Editing wraps the SAME section tree.
-export function WebsiteDocument({ doc, config, metadata, live, links, origin, title, wrapSection }: {
+export function WebsiteDocument({ doc, theme, config, metadata, live, links, origin, title, wrapSection }: {
   /** The editor theme the document was written in. Every theme draws through the same sections now. */
   doc: Data; theme: WebsiteTheme; config: Config; metadata?: Metadata
   live: MwLive; links: SiteLinkMap; origin: string; title: string
@@ -117,6 +118,8 @@ export function WebsiteDocument({ doc, config, metadata, live, links, origin, ti
     return wrapSection ? wrapSection(section, indexes) : section
   }
   return <>
+    {/* Role blocks (LIVE-1858) bring their own sheet and the active theme's token mapping, only on a page that has one. */}
+    {docHasRoleBlocks(doc) && <style>{roleBlocksCss(theme)}</style>}
     <style>{`.site-doc-section{display:var(--site-display-desktop);padding-block:var(--site-pad-desktop)}
       @media(max-width:1024px){.site-doc-section{display:var(--site-display-tablet);padding-block:var(--site-pad-tablet)}}
       @media(max-width:600px){.site-doc-section{display:var(--site-display-phone);padding-block:var(--site-pad-phone)}}

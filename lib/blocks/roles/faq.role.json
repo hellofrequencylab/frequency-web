@@ -1,0 +1,114 @@
+{
+  "role": "FAQ",
+  "type": "RoleFaq",
+  "label": "Questions (all themes)",
+  "replaces": [
+    "Accordion",
+    "SpaceFAQ",
+    "MidnightFAQ",
+    "NetworkKitFAQ",
+    "DesignerFAQ",
+    "TempleFAQ"
+  ],
+  "slots": {
+    "required": {
+      "items": {
+        "type": "list",
+        "min": 1,
+        "max": 20,
+        "item": {
+          "question": "text<=120",
+          "answer": "text<=600"
+        }
+      }
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280"
+    }
+  },
+  "variants": {
+    "split": {
+      "label": "Heading beside the questions"
+    },
+    "stack": {
+      "label": "One column"
+    },
+    "grid": {
+      "label": "Two columns of cards"
+    }
+  },
+  "default": "split",
+  "data": "faqs",
+  "sample": {
+    "sample": true,
+    "eyebrow": "Good to know",
+    "title": "Questions *people ask*",
+    "lead": "",
+    "live": true,
+    "items": [
+      {
+        "question": "Can I come alone?",
+        "answer": "Yes. Most people do, and someone will save you a seat."
+      },
+      {
+        "question": "What if I have never done this before?",
+        "answer": "Perfect. Nobody here is a pro, and we start gently."
+      },
+      {
+        "question": "How do I cancel a membership?",
+        "answer": "One click in your account, any time. No forms, no guilt."
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "answer",
+    "eyebrow",
+    "heading",
+    "inner",
+    "item",
+    "list",
+    "question",
+    "title"
+  ]
+}
