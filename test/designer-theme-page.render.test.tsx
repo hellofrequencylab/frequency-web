@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { createSpaceHref } from '@/lib/create-space/href'
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { FrequencyDesigner } from '@/components/frequency/site/pages/themes/frequency-designer'
@@ -55,7 +56,7 @@ describe('the Designer Theme Kit page (/themes/designer)', () => {
 
   it('uses the design system iPhone frame and starts a Space wearing Designer', () => {
     expect(html.match(/class="df-ios"/g)?.length ?? 0).toBeGreaterThanOrEqual(7)
-    expect(html).toContain('/spaces/new?theme=designer')
+    expect(html).toContain(createSpaceHref('designer'))
     expect(html).toContain('9:41')
   })
 

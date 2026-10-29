@@ -31,7 +31,7 @@ assert.ok(mega.isMegaThemeId('network-kit') && mega.MEGA_THEMES.some((t) => t.id
 // site-render-style imports the contract without a JSON attribute node needs, so its table is read as text.
 assert.ok(readFileSync('lib/sites/site-render-style.ts', 'utf8').includes("'network-kit': 'NetworkKit'") && readFileSync('lib/sites/editor/state.ts', 'utf8').includes("'network-kit': 'NetworkKit'"), 'both editor-theme tables name it')
 assert.ok(state.WEBSITE_THEMES.includes('NetworkKit'), 'an editor theme')
-assert.ok(!state.WEBSITE_THEMES_LIVE.has('NetworkKit'), 'not published to a live site until its render is finished')
+assert.ok(state.WEBSITE_THEMES_LIVE.has('NetworkKit'), 'published to a live site: its pages and thirteen profile kits shipped (owner phrase "rewrite probe LIVE-1710", 2026-10-29)')
 assert.ok(library.themeLibraryEntry('network-kit'), 'a library entry')
 assert.equal(library.themePagePath('network-kit'), '/themes/network')
 assert.notEqual(library.themeIdFromSlug('network-classic'), 'network')

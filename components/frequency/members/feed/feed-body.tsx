@@ -5,7 +5,7 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { loadHomeEvents, loadNeedsYou, loadZapBreakdown, type HomeEvents } from '@/lib/feed/frequency-home'
 import { SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
-import { HOME_TZ } from '@/lib/time/zone'
+import { feedGreetingTime } from '@/lib/feed/greeting-time'
 import { distanceLabel } from '@/lib/feed/home-rank'
 import type { CommunityRole } from '@/lib/community-roles'
 import { Standing, type StandingPractice } from './standing'
@@ -18,6 +18,8 @@ import { CreateButton, FeedComposer, GetStarted, NeedsYou, CaughtUpButton, type 
 import { ExploreSection } from './explore'
 import { FeedStream, type FeedSort, type JourneyRun } from './posts'
 import { FrequencyPhonePanels } from '../shell/right-rail'
+import { loadPostPublishList } from '@/lib/launch/get-started-io'
+import { LaunchGetStartedBox } from '@/components/launch/launch-get-started'
 import { loadGameStats } from '@/components/sidebar/right-sidebar'
 
 // THE FREQUENCY MEMBER FEED (design_handoff/frequency/templates/members/README.md, the centre
@@ -70,7 +72,8 @@ const SORTS: [FeedSort, string][] = [
 export async function FrequencyFeed(p: FrequencyFeedProps) {
   // The viewer's own active Circles: their own membership rows, so the session client reads them under RLS.
   const supabase = await createClient()
-  const [{ data: memberships }, zapRows, operates, practiceWeek] = await Promise.all([
+  const now = new Date()
+  const [{ data: memberships }, zapRows, operates, practiceWeek, timezone] = await Promise.all([
     supabase
       .from('memberships')
       .select('circle_id, circles!circle_id ( id, name )')
@@ -78,7 +81,8 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
       .eq('status', 'active'),
     loadZapBreakdown(p.profileId),
     hasOperatedSpaces(p.profileId),
-    loadPracticeWeek(p.profileId).catch(() => null),
+    loadPracticeWeek(p.profileId, now).catch(() => null),
+    supabase.from('profiles').select('home_timezone').eq('id', p.profileId).maybeSingle(),
   ])
   const circles = ((memberships ?? []) as unknown as { circles: { id: string; name: string } | null }[])
     .map((m) => m.circles)
@@ -90,11 +94,7 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
     ? { id: p.journey.nextLessonId, title: p.journey.nextLesson.title, href: p.journey.nextLesson.href, journey: p.journey.title }
     : null
 
-  const now = new Date()
-  const partOfDay = Number(now.toLocaleString('en-US', { timeZone: HOME_TZ, hour: '2-digit', hour12: false })) % 24
-  const hello = partOfDay < 12 ? 'Good morning' : partOfDay < 18 ? 'Good afternoon' : 'Good evening'
-  const dateLine = now.toLocaleDateString('en-US', { timeZone: HOME_TZ, weekday: 'long', month: 'long', day: 'numeric' })
-  const clock = now.toLocaleTimeString('en-US', { timeZone: HOME_TZ, hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase()
+  const { hello, dateLine, clock } = feedGreetingTime(now, timezone.data?.home_timezone)
   const rankOrder = SEASON_RANKS.find((r) => r.rank === p.standing.rank)?.order ?? 1
   const sort = p.sort === 'nearby' && !p.home ? 'relevant' : p.sort
   const nearby = p.home ? { ...p.home, radiusM: p.radiusM } : null
@@ -128,7 +128,9 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
           Feed carries the same box inline there and nowhere else (.fqm-gs-inline). It sits above
           Standing for the rail's own order (Get started, then Stats and streaks): on a phone,
           Standing IS the stats box. The rail's other panels follow Up next (FrequencyPhonePanels). */}
-      {p.onboarding && <GetStarted steps={p.onboarding} className="fqm-gs-inline" />}
+      <Suspense fallback={null}>
+        <GetStartedInline profileId={p.profileId} steps={p.onboarding} />
+      </Suspense>
 
       {/* Hidden on desktop while the right rail shows its full Stats & streaks box (members-shell.css). */}
       <div className="fa-standing">
@@ -245,6 +247,14 @@ async function ContextLine({ eventsP }: { eventsP: Promise<HomeEvents> }) {
         ? `Nothing on this minute. ${tonight === 1 ? 'One thing' : `${tonight} things`} later today.`
         : 'A quiet day near you so far.'
   return <span className="fa-ctx">{line}</span>
+}
+
+// Below 768px the rail is hidden, so the Feed repeats Get started inline. After Publish it is the launch
+// overview's own list (one list), otherwise the member's plain checklist.
+async function GetStartedInline({ profileId, steps }: { profileId: string; steps: GsStep[] | null }) {
+  const published = await loadPostPublishList(profileId)
+  if (published) return <LaunchGetStartedBox sections={published} className="fqm-gs-inline" />
+  return steps ? <GetStarted steps={steps} className="fqm-gs-inline" /> : null
 }
 
 async function PlannerSection({ eventsP, hasHome, profileId }: { eventsP: Promise<HomeEvents>; hasHome: boolean; profileId: string }) {

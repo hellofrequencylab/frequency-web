@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1884",
+  "title": "A Member who hits the Spotlight block cap sees a calm Crew panel with an equal \"Keep it as it is\" (Spotlight split, SPL-11)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/spotlight/caps.ts",
+    "ref": "Spotlight split proposal §3 moment 2 (hit a cap); owner picks 2026-10-28: Crew is the personal upgrade, no new price"
+  },
+  "detail": "saveMemberGridLayout keeps its error string and now also returns a typed `capReached` ({ used, allowed, crewAllowed, presetCents, suggestedCents, minCents }), read from the spotlight_blocks meter and the Crew contribute config. Both layout stores carry it and the three in-rail builders draw components/entity-blocks/spotlight-cap-panel.tsx in place of the red line: what they hit, what Crew adds, the contribute presets through the existing startMembershipCheckout and CheckoutPanel, and \"Keep it as it is\" as an equal choice. A Crew member at the top cap is told the fact and offered nothing to buy.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('app/(main)/settings/profile/spotlight-actions.ts','utf8');if(!a.includes('capReached')||!fs.existsSync('components/entity-blocks/spotlight-cap-panel.tsx'))process.exit(1);const p=fs.readFileSync('components/entity-blocks/spotlight-cap-panel.tsx','utf8');if(!p.includes('Keep it as it is')||!p.includes('startMembershipCheckout'))process.exit(1)\"",
+    "note": "Fails on main (no capReached signal, no panel); passes here."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

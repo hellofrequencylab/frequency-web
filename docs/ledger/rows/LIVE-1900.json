@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1900",
+  "title": "/themes/temple shows the Temple kit's Space page as a picture",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-temple.tsx",
+    "ref": "Daniel, 2026-10-29: go through the design and get everything working; no 'on the way' where a render exists."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/temple-theme-page-space.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (Space is an on-the-way frame) and passes here."
+  },
+  "detail": "The thirteen Temple Space pictures landed in #4369 (the Space page face is #4359). The Temple page shows the Space picture in the hero switcher and in the four-surfaces row, so no Temple surface is an on-the-way frame any more.",
+  "wave": "W7"
+}

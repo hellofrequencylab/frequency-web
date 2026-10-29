@@ -1,9 +1,9 @@
 import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
 import { templeKitInnerPagesA } from '@/components/sites/temple-kit-inner/pages'
 import { templeKitInnerPagesB } from '@/components/sites/temple-kit-inner/pages-b'
-import {
-  TEMPLE_KIT_CTA, TEMPLE_KIT_HERO, TEMPLE_KIT_JOURNEYS, templeKitHomeBlocks,
-} from '@/lib/sites/temple-kit-home'
+import { templeKitInnerPagesC } from '@/components/sites/temple-kit-inner/pages-c'
+import { templeKitInnerPagesD } from '@/components/sites/temple-kit-inner/pages-d'
+import { templeKitHomeBlocks } from '@/lib/sites/temple-kit-home'
 import { TEMPLE_KIT_PROFILE_KIT_INDEX } from './temple-kit-profile-index'
 import type { KitNiche, KitPage, SiteKit } from './types'
 
@@ -26,6 +26,7 @@ type Block = KitPage['blocks'][number]
 /** The design's own sentences, each softened to a starter's voice (docs/marketing/voice-and-language-guide.md): no weekly or
  *  seasonal rhythm promised, no "free", no number the owner has not checked. Applied to every string in the Home. */
 const SOFTEN: readonly (readonly [string, string])[] = [
+  [' Most of it is free.', ''],
   ['Free, ask for a time', 'Ask for a time'],
   [' Start with a walk of the grounds; it is free.', ' Start with a walk of the grounds.'],
   ['A free tour with our house host, for anyone', 'A tour with our house host, for anyone'],
@@ -87,15 +88,6 @@ function starter(block: Block): Block {
 
 const home = (): Block[] => templeKitHomeBlocks().map(starter)
 
-/** A plain page header: the Temple hero, with the page's own words, no buttons and no next-gathering card. */
-const header = (eyebrow: string, title: string, lead: string, photo: string): Block => ({
-  type: 'TempleKitHero',
-  props: { ...TEMPLE_KIT_HERO, eyebrow, title, lead, primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '', image: photo, live: false, cardLabel: '', cardTitle: '', cardWhen: '', cardNote: '', cardImage: '', cardHref: '' },
-})
-/** A home block under a page header: the header says the page's name, so the block drops its own heading. */
-const bare = (type: string, props: Record<string, unknown>): Block => starter({ type, props: { ...props, eyebrow: '', title: '', lead: '' } })
-const closing = (): Block => starter({ type: 'TempleKitCta', props: { ...TEMPLE_KIT_CTA } })
-
 const page = (slug: string, label: string, description: string, blocks: Block[]): KitPage => ({ slug, label, seo: { title: label, description }, blocks })
 
 /** An inner page's sample prices are the design house's own: a starter keeps the page and leaves the price for the owner. */
@@ -109,15 +101,10 @@ function stripPrices(value: unknown): unknown {
 }
 
 function pages(label: string, who: string): KitPage[] {
-  const photo = (n: string) => `/sites/temple-kit/photos/photo-${n}.jpg`
   return [
     page('home', 'Home', who, home()),
-    page('journeys', 'Programs', 'Small groups over a few weeks, with a practice to keep.', [
-      header('Programs', 'Practices *to take home.*', 'Small groups over a few weeks, in the studio and online.', photo('12')),
-      bare('TempleKitJourneys', TEMPLE_KIT_JOURNEYS), closing(),
-    ]),
-    // Contact stays out: every site already has its own Contact page, which the Home links to.
-    ...[...templeKitInnerPagesB(), ...templeKitInnerPagesA().filter((p) => p.slug !== 'contact')].map(unpriced),
+    // Contact and Book stay out: every site already has its own Contact and Book pages (both slugs are reserved), which the Home links to.
+    ...[...templeKitInnerPagesC(), ...templeKitInnerPagesB(), ...templeKitInnerPagesD(), ...templeKitInnerPagesA().filter((p) => p.slug !== 'contact')].map(unpriced),
   ]
 }
 

@@ -1,12 +1,17 @@
-// A /themes page that sends someone to the Create a Space wizard names the kit's theme (`?theme=`) as well
-// as the niche, so the wizard's Look step starts on the kit they were looking at. Fails while a link
-// carries only `?niche=`.
+// A /themes page that sends someone to Create a Space names the kit (`?kit=`), so the builder opens on the kit
+// they were looking at. The links go through createSpaceHref (lib/create-space/href.ts), which carries only the
+// kits the builder offers. Fails while a kit page builds the link by hand or leaves the kit off.
 import { readFileSync } from 'node:fs'
 
-const files = ['components/frequency/site/pages/themes/frequency-midnight.tsx']
-const bad = files.filter((f) => !/spaces\/new\?niche=\$\{kit\}&theme=midnight/.test(readFileSync(f, 'utf8')))
+const files = [
+  ['components/frequency/site/pages/themes/frequency-midnight.tsx', /createSpaceHref\('midnight'\)/],
+  ['components/frequency/site/pages/themes/frequency-designer.tsx', /createSpaceHref\('designer'\)/],
+  ['components/frequency/site/pages/themes/frequency-network.tsx', /createSpaceHref\('network-kit'\)/],
+  ['components/frequency/site/pages/themes/frequency-theme-kit.tsx', /createSpaceHref\(theme\)/],
+]
+const bad = files.filter(([f, re]) => !re.test(readFileSync(f, 'utf8'))).map(([f]) => f)
 if (bad.length) {
-  console.error(`Create a Space links carry the niche but not the theme: ${bad.join(', ')}`)
+  console.error(`Create a Space links do not carry the kit: ${bad.join(', ')}`)
   process.exit(1)
 }
-console.log('ok: kit pages send the theme with the niche')
+console.log('ok: kit pages send the kit to Create a Space')

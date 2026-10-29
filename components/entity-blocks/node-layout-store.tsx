@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { saveSpaceGridLayout } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
+import type { SpotlightCapReached } from '@/lib/spotlight/caps'
 import { saveMemberGridLayout } from '@/app/(main)/settings/profile/spotlight-actions'
 
 // THE NODE LAYOUT STORE (E0 task 12b, ADR-1835). The node-keyed twin of `profile-layout-context`: it holds
@@ -32,7 +33,7 @@ function hasNode(layout: NodeLayout, nid: string): boolean {
   )
 }
 
-export type SaveNodeLayout = (layout: NodeLayout) => Promise<{ error?: string } | void>
+export type SaveNodeLayout = (layout: NodeLayout) => Promise<{ error?: string; capReached?: SpotlightCapReached } | void>
 
 interface NodeLayoutStoreValue {
   /** Whether a node document has been seeded; the store is inert until then. */
@@ -55,6 +56,8 @@ interface NodeLayoutStoreValue {
   /** An edit has landed but its save has not finished (covers the debounce window `saving` does not). */
   dirty: boolean
   error: string | null
+  /** Set with `error` when a save was refused for the Spotlight block cap (SPL-11). */
+  capReached: SpotlightCapReached | null
 }
 
 const NodeLayoutCtx = createContext<NodeLayoutStoreValue | null>(null)
@@ -72,6 +75,7 @@ export function NodeLayoutProvider({ identity, save, children }: { identity?: st
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [capReached, setCapReached] = useState<SpotlightCapReached | null>(null)
   const [canUndo, setCanUndo] = useState(false)
 
   const [identityWas, setIdentityWas] = useState(identity)
@@ -116,12 +120,14 @@ export function NodeLayoutProvider({ identity, save, children }: { identity?: st
     inFlight.current = true
     setSaving(true)
     setError(null)
+    setCapReached(null)
     let failed = false
     try {
       const res = await save(next)
       if (res?.error) {
         failed = true
         setError(res.error)
+        setCapReached(res.capReached ?? null)
       }
     } catch (e) {
       failed = true
@@ -205,7 +211,7 @@ export function NodeLayoutProvider({ identity, save, children }: { identity?: st
 
   return (
     <NodeLayoutCtx.Provider
-      value={{ seeded: layout !== null, layout, selectedNid, select, selectedItemIndex, selectItem, edit, undo, canUndo, seed, saving, dirty, error }}
+      value={{ seeded: layout !== null, layout, selectedNid, select, selectedItemIndex, selectItem, edit, undo, canUndo, seed, saving, dirty, error, capReached }}
     >
       {children}
     </NodeLayoutCtx.Provider>

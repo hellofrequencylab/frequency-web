@@ -14,16 +14,21 @@ import { getMyProfileId } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { recordClockBeat } from './clock-io'
 import type { BeatKind } from './clock'
+import { inFlowHref } from './destination'
 import { launchSystemEnabled } from './enabled'
 import { recordLaunchEvent } from './events'
+import { readCarry } from './carry'
 import { clearPendingLaunch, readPendingLaunch, writePendingLaunch } from './pending-io'
 import { launchStepPublishedHref } from './published'
 import { NEW_SPACE, parseSpaceChoice } from './space-choice'
 import { listOwnedSpaces } from './spaces-io'
+import { PUBLISHED_HREF, REVIEW_HREF, parseReviewDraft, type ReviewErrorCode } from './review'
+import { publishReview } from './review-io'
 import { parseSpotlightAnswers } from './spotlight-step'
 import { publishSpotlightStep } from './spotlight-io'
 import type { LaunchSnapshot } from './state'
 import * as store from './store'
+import { launchStepHref } from './steps'
 
 const OFF = 'The launch is not open yet.'
 const SIGN_IN = 'Sign in to keep going.'
@@ -93,7 +98,7 @@ type SpotlightErrorCode = keyof typeof SPOTLIGHT_ERRORS
 /** The Spotlight step's address with an error code the page turns into a line. Codes, never text, so the address
  *  cannot be used to put words on the page. */
 function spotlightStepUrl(code?: SpotlightErrorCode): string {
-  return code ? `/launch/step/spotlight?e=${code}` : '/launch/step/spotlight'
+  return code ? `${launchStepHref('spotlight')}?e=${code}` : inFlowHref(launchStepHref('spotlight'))
 }
 
 /** The Spotlight step's Publish button (VLS-07). Signed out, the answers are held in the launch cookie and the
@@ -107,7 +112,7 @@ export async function publishSpotlightFormAction(formData: FormData): Promise<vo
   const held = await readPendingLaunch()
   const profileId = await getMyProfileId()
   if (!profileId) {
-    await writePendingLaunch({ niche: held?.niche ?? null, intents: held?.intents ?? [], answers: { ...held?.answers, spotlight: { name: answers.name, line: answers.line, link: answers.link } } })
+    await writePendingLaunch({ niche: held?.niche ?? null, intents: held?.intents ?? [], answers: { ...held?.answers, spotlight: { ...held?.answers.spotlight, name: answers.name, line: answers.line, link: answers.link } } })
     redirect('/sign-in?next=/launch/claim')
   }
 
@@ -118,7 +123,7 @@ export async function publishSpotlightFormAction(formData: FormData): Promise<vo
   }
   if (!launch) redirect(spotlightStepUrl('retry'))
 
-  const made = await publishSpotlightStep(profileId, launch, answers)
+  const made = await publishSpotlightStep(profileId, launch, answers, readCarry(held?.answers.spotlight))
   if ('error' in made) redirect(spotlightStepUrl('retry'))
   await clearPendingLaunch()
   redirect(launchStepPublishedHref('spotlight'))
@@ -151,7 +156,7 @@ export async function chooseSpaceFormAction(formData: FormData): Promise<void> {
   const spaces = await listOwnedSpaces(profileId)
   const choice = parseSpaceChoice(formData.get('space'), spaces)
   if (choice === null) redirect(spotlightStepUrl())
-  if (choice === NEW_SPACE) redirect(`${spotlightStepUrl()}?new=1`)
+  if (choice === NEW_SPACE) redirect(`${launchStepHref('spotlight')}?new=1`)
   const held = await readPendingLaunch()
   const running = await store.getActiveLaunch(profileId)
   const launch = running ?? (await store.startLaunch(profileId, { niche: held?.niche ?? null, intents: held?.intents ?? [] }))
@@ -163,4 +168,33 @@ export async function chooseSpaceFormAction(formData: FormData): Promise<void> {
     await recordLaunchEvent(profileId, { type: 'step_published', launchId: launch.id, step: 'spotlight' })
   }
   redirect(spotlightStepUrl())
+}
+
+const reviewUrl = (code: ReviewErrorCode) => `${REVIEW_HREF}?e=${code}`
+
+/** The Review + Publish screen's one Publish button. Reads the edited draft back from the form, writes it to the
+ *  Space's own records (publishReview), and lands on the overview with everything it ticked. Signed out goes to sign
+ *  in; nothing is written without the signed-in owner and their own launch. */
+export async function publishReviewFormAction(formData: FormData): Promise<void> {
+  if (!launchSystemEnabled()) redirect('/')
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in?next=/launch/claim')
+  const edits = parseReviewDraft(Object.fromEntries(formData.entries()))
+  if ('error' in edits) redirect(reviewUrl(edits.error))
+  const launch = await store.getActiveLaunch(profileId)
+  if (!launch) redirect('/launch')
+  const done = await publishReview(profileId, launch, edits)
+  if ('error' in done) redirect(reviewUrl('retry'))
+  redirect(PUBLISHED_HREF)
+}
+
+/** The "Skip for now" button on a photo item. A plain form post: it remembers the skip on the launch and lands back on
+ *  the one launch page, where the photo stays on the list with an easy way to add one later. Never a gate. */
+export async function skipPhotoFormAction(formData: FormData): Promise<void> {
+  if (!launchSystemEnabled()) redirect('/')
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in')
+  const launch = await store.getActiveLaunch(profileId)
+  if (launch) await store.skipPhotoItem(launch, String(formData.get('item') ?? ''))
+  redirect('/launch')
 }
