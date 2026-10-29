@@ -24,7 +24,7 @@ type PreviewTokens = Record<PreviewTokenKey, string>
 
 /** The kit order on the page. Designer first, and the default. */
 export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = [
-  'designer', 'midnight', 'network-kit', 'temple', 'bold', 'wildheart', 'frequency',
+  'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
 ]
 
 /** The faces the seven kits wear in the preview. The page asks Google Fonts for them only when it renders (the CSP

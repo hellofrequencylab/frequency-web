@@ -1,7 +1,8 @@
 import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
 import { templeKitInnerPagesA } from '@/components/sites/temple-kit-inner/pages'
+import { templeKitInnerPagesB } from '@/components/sites/temple-kit-inner/pages-b'
 import {
-  TEMPLE_KIT_CTA, TEMPLE_KIT_GATHERINGS, TEMPLE_KIT_HERO, TEMPLE_KIT_JOURNEYS, TEMPLE_KIT_MEMBERSHIP, templeKitHomeBlocks,
+  TEMPLE_KIT_CTA, TEMPLE_KIT_HERO, TEMPLE_KIT_JOURNEYS, templeKitHomeBlocks,
 } from '@/lib/sites/temple-kit-home'
 import { TEMPLE_KIT_PROFILE_KIT_INDEX } from './temple-kit-profile-index'
 import type { KitNiche, KitPage, SiteKit } from './types'
@@ -43,6 +44,13 @@ const SOFTEN: readonly (readonly [string, string])[] = [
   ['A letter each season. *Four a year.*', 'A letter from the house. *Now and then.*'],
   ['Members can pause for up to three months a year and keep their rate when they come back.', 'Members can pause and keep their rate when they come back.'],
   ['A 48-hour hold while you decide', 'A hold on the date while you decide'],
+  ['Two months free', 'A better rate for the year'],
+  ['Pause for up to three months a year.', 'Pause and keep your rate.'],
+  ['A standing seat at the weekly practice, a program each season and more time in the rooms', 'A standing seat at the practice, a program to start and more time in the rooms'],
+  ['A standing place at the weekly practice', 'A standing place at the practice'],
+  ['The Tuesday morning practice, every week', 'A place at the morning practice'],
+  ['One seasonal program included', 'A program to start'],
+  ['early word on every date', 'early word on dates'],
   ['We hold weekly practice, the turns of the year,', 'We hold regular practice, the turns of the year,'],
   ['Any date is held for 48 hours at no cost. We write before the hold lapses.', 'Ask us to hold a date while you decide. We write before the hold lapses.'],
 ]
@@ -104,20 +112,12 @@ function pages(label: string, who: string): KitPage[] {
   const photo = (n: string) => `/sites/temple-kit/photos/photo-${n}.jpg`
   return [
     page('home', 'Home', who, home()),
-    page('gatherings', 'Gatherings', 'What is open, and how to take a seat.', [
-      header('What is open', 'Gatherings *this season.*', 'Sound, breath, suppers and the turns of the year.', photo('05')),
-      bare('TempleKitGatherings', { ...TEMPLE_KIT_GATHERINGS, count: 12 }), closing(),
-    ]),
     page('journeys', 'Programs', 'Small groups over a few weeks, with a practice to keep.', [
       header('Programs', 'Practices *to take home.*', 'Small groups over a few weeks, in the studio and online.', photo('12')),
       bare('TempleKitJourneys', TEMPLE_KIT_JOURNEYS), closing(),
     ]),
-    page('membership', 'Membership', `How to keep a place at ${label}.`, [
-      header('Membership', 'Keep a place *at the house.*', 'Three ways to belong. Each step adds more time in the rooms.', photo('14')),
-      bare('TempleKitMembership', TEMPLE_KIT_MEMBERSHIP), closing(),
-    ]),
     // Contact stays out: every site already has its own Contact page, which the Home links to.
-    ...templeKitInnerPagesA().filter((p) => p.slug !== 'contact').map(unpriced),
+    ...[...templeKitInnerPagesB(), ...templeKitInnerPagesA().filter((p) => p.slug !== 'contact')].map(unpriced),
   ]
 }
 

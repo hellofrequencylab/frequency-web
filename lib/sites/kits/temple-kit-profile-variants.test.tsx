@@ -76,11 +76,12 @@ describe('Temple Theme Kit profile kits', () => {
       /\b48 hours\b/,
       new RegExp(`\\b(?:every|each) (?:other )?(?:${day}|week|month|season)s?\\b|\\b${day}s\\b|\\bweekly\\b|\\bmonthly\\b`),
       /"price":"[^"]/,
+      /"cost":"[^"]/,
       /"stars":"[1-9]/,
     ]
     for (const s of TEMPLE_KIT_PROFILE_KIT_INDEX) {
       const kit = (await loadKit(s.id))!
-      const words = JSON.stringify(kit.pages).replace(/"\/sites\/temple-kit\/photos\/[^"]+"/g, '""')
+      const words = JSON.stringify(kit.pages).replace(/"\/sites\/temple-kit\/photos\/[^"]+"/g, '""').replace(/"(?:monthly|yearly)":/g, '"cost":')
       for (const re of banned) {
         const hit = words.match(new RegExp(`.{0,24}${re.source}.{0,24}`, 'i'))?.[0] ?? null
         expect(hit, `${s.id} ${re}`).toBeNull()

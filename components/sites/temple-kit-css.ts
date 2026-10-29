@@ -2,6 +2,7 @@ import { TEMPLE_KIT_TOKENS_CSS, TEMPLE_KIT_VARIANTS_CSS } from '@/lib/theme/temp
 import { TEMPLE_KIT_CHROME_CSS } from '@/components/sites/temple-kit-chrome-css'
 import { TEMPLE_KIT_BLOCKS_CSS } from '@/components/sites/temple-kit-blocks-css'
 import { TEMPLE_KIT_INNER_CSS } from '@/components/sites/temple-kit-inner/inner-css'
+import { TEMPLE_KIT_INNER_B_CSS } from '@/components/sites/temple-kit-inner/inner-b-css'
 
 // THE TEMPLE KIT SKIN, FOUNDATION LAYER. Scoped under [data-house-theme="temple-kit"], so it can only ever dress the
 // stand-alone site render (components/sites/site-chrome.tsx sets that attribute on the site root, and nothing in
@@ -38,4 +39,5 @@ ${N} ::selection{background:var(--color-selection);color:var(--tk-umber-900)}
 ${TEMPLE_KIT_CHROME_CSS}
 ${TEMPLE_KIT_BLOCKS_CSS}
 ${TEMPLE_KIT_INNER_CSS}
+${TEMPLE_KIT_INNER_B_CSS}
 `

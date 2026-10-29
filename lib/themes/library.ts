@@ -92,7 +92,7 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
     // resolvable by id and is offered nowhere. Spotlight and email read 'soon' until their parts of the build ship, so no
     // public page claims them early.
     id: 'temple-kit',
-    tagline: 'Warm plaster, one clay color, built for every kind of gathering.',
+    tagline: 'A lime-washed house. Warm and unhurried.',
     madeFor: 'temples, studios, retreats, clubs, markets and anyone who brings people together',
     signature: 'Plaster and umber, one clay color, arches and soft corners, with Marcellus, Jost, Branch and Cormorant.',
     surfaces: surfaces('soon', 'soon'),
