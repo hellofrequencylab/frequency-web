@@ -484,3 +484,7 @@
 @keyframes fq-lr-tick { from { opacity: 0 } to { opacity: 1 } }
 [data-design="frequency"] [data-kit="members"] .lr-draw .lr-arc{stroke-dashoffset:0;animation:fq-lr-draw calc(var(--fq-dur-slow) * 3) var(--fq-ease-out) both}
 [data-design="frequency"] [data-kit="members"] .lr-draw .lr-tick{animation:fq-lr-tick var(--fq-dur-slow) var(--fq-ease-out) calc(var(--fq-dur-slow) * 2) both}
+@media (prefers-reduced-motion: reduce) {
+  [data-design="frequency"] [data-kit="members"] .lr-draw .lr-arc,
+  [data-design="frequency"] [data-kit="members"] .lr-draw .lr-tick { animation: none }
+}
