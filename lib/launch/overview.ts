@@ -16,10 +16,12 @@ interface InventoryItem {
   photo?: boolean
   /** The person chose to skip it for now. It stays on the list, it just stops asking. */
   skipped?: boolean
+  /** Where the item opens, when it is not one of the launch's own steps (a Space console tool, lib/launch/setup-items.ts). */
+  href?: string
 }
 
 export interface InventorySection {
-  id: 'spotlight' | 'space' | 'website' | 'email' | 'schedule' | 'circle' | 'journey' | 'paid'
+  id: 'spotlight' | 'space' | 'website' | 'email' | 'schedule' | 'circle' | 'journey' | 'paid' | 'money' | 'reach'
   title: string
   items: InventoryItem[]
 }

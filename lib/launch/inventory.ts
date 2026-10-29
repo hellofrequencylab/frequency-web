@@ -4,6 +4,7 @@
 // the list. Feeds lib/launch/overview.ts. PURE.
 
 import type { LaunchRows } from './done-checks'
+import { setupSections } from './setup-items'
 import type { InventorySection } from './overview'
 import { answersFromLayout } from './spotlight-step'
 import { readSpaceSpotlight } from '@/lib/spaces/spotlight'
@@ -15,6 +16,10 @@ interface InventoryFacts {
   logoUrl: string | null
   /** Photo items the person skipped for now (launch row). They stay on the list. */
   skippedPhotos?: readonly string[]
+  /** The Setup list after Publish: add the per-product sections (lib/launch/setup-items.ts). The launch's own overview leaves it off. */
+  extended?: boolean
+  /** Where each Space tool opens, by module id (lib/launch/inventory-io.ts builds it from the module catalog). */
+  hrefs?: Readonly<Record<string, string>>
 }
 
 const text = (v: string | null | undefined) => (typeof v === 'string' ? v.trim() : '')
@@ -27,7 +32,7 @@ export function inventorySections(f: InventoryFacts): InventorySection[] {
   const about = text(rows.about)
   const skippedIf = (id: string, url: string | null) => !url && (f.skippedPhotos ?? []).includes(id)
   const prefs = rows.preferences && typeof rows.preferences === 'object' ? (rows.preferences as Record<string, unknown>) : {}
-  return [
+  const sections: InventorySection[] = [
     {
       id: 'spotlight',
       title: 'Spotlight',
@@ -74,4 +79,5 @@ export function inventorySections(f: InventoryFacts): InventorySection[] {
       items: [{ id: 'p-ready', label: 'Be ready to take payments', state: rows.payoutsReady ? 'done' : 'todo', found: rows.payoutsReady ? 'Payouts are on' : undefined }],
     },
   ]
+  return f.extended && rows.extras ? [...sections, ...setupSections(rows.extras, f.hrefs ?? {})] : sections
 }
