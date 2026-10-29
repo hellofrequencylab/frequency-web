@@ -3,9 +3,10 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { FrequencyDesigner } from '@/components/frequency/site/pages/themes/frequency-designer'
 import { FrequencyMidnight } from '@/components/frequency/site/pages/themes/frequency-midnight'
 import { FrequencyNetwork } from '@/components/frequency/site/pages/themes/frequency-network'
+import { FrequencyTemple } from '@/components/frequency/site/pages/themes/frequency-temple'
 
 // Every Theme Kit page is the Nocturne page's layout (the reference: /themes/nocturne) with its own name, content, colours and pictures.
-// Network and Designer must open the same way (the theme's name large, the buttons left, the preview right, the four surfaces
+// Network, Designer and Temple must open the same way (the theme's name large, the buttons left, the preview right, the four surfaces
 // joined by a dotted line) and follow its sections in its order.
 // The skeleton is the sequence of section ids and screen labels plus every structural class, theme prefix removed.
 // What may differ is the picture inside a frame (a Space or Email that has a picture, or is on the way).
@@ -25,6 +26,7 @@ function skeleton(html: string, prefix: string) {
 describe('theme pages share one layout', () => {
   const net = skeleton(renderToStaticMarkup(<FrequencyNetwork />), 'nf')
   const des = skeleton(renderToStaticMarkup(<FrequencyDesigner />), 'df')
+  const tem = skeleton(renderToStaticMarkup(<FrequencyTemple />), 'tf')
 
   const noc = skeleton(renderToStaticMarkup(<FrequencyMidnight />), 'nf')
 
@@ -32,10 +34,11 @@ describe('theme pages share one layout', () => {
     const labels = (x: { sections: string[] }) => x.sections.map((m) => m.split('|')[1]).filter((l) => !l.startsWith('12 '))
     expect(labels(net)).toEqual(labels(noc))
     expect(labels(des)).toEqual(labels(noc))
+    expect(labels(tem)).toEqual(labels(noc))
   })
 
   it('opens like Nocturne: the name large, then the four surfaces joined by a line', () => {
-    for (const x of [net, des, noc]) {
+    for (const x of [net, des, tem, noc]) {
       expect(x.counts['name']).toBe(1)
       expect(x.counts['aft']).toBe(1)
       expect(x.counts['tagline']).toBe(1)
@@ -46,12 +49,14 @@ describe('theme pages share one layout', () => {
 
   it('has the same sections in the same order', () => {
     expect(des.sections).toEqual(net.sections)
+    expect(tem.sections).toEqual(net.sections)
     expect(net.sections.length).toBeGreaterThanOrEqual(9)
   })
 
   it('has the same structural parts, class for class', () => {
     const drop = (o: Record<string, number>) => Object.fromEntries(Object.entries(o).filter(([k]) => !['y', 'p', 'ready', 'soon', 'st', 'dk'].includes(k)))
     expect(drop(des.counts)).toEqual(drop(net.counts))
+    expect(drop(tem.counts)).toEqual(drop(net.counts))
   })
 
   it('lets you switch the hero preview between Website, Spotlight, Space and Email', () => {
