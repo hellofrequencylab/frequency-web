@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readSpaceSpotlight } from '../spaces/spotlight'
-import { handleFor, parseSpotlightAnswers, publishedSpotlightPreferences } from './spotlight-step'
+import { handleCandidate, handleFor, parseSpotlightAnswers, publishedSpotlightPreferences } from './spotlight-step'
 
 describe('the Spotlight step answers', () => {
   it('needs a name and one line, and keeps the link only when it is an https address', () => {
@@ -33,6 +33,14 @@ describe('the Space handle', () => {
     expect(handleFor('!!')).toBe('my-space')
     expect(handleFor('Al')).toBe('al-space')
     expect(handleFor('x'.repeat(100))).toHaveLength(32)
+  })
+
+  it('uses the handle a visitor claimed first, with a suffix on later tries, and the name\'s own otherwise', () => {
+    expect(handleCandidate('Mara Rios', 0, 'saltwater')).toBe('saltwater')
+    expect(handleCandidate('Mara Rios', 1, 'saltwater')).toBe('saltwater-2')
+    expect(handleCandidate('Mara Rios', 2, 'x'.repeat(40))).toHaveLength(38)
+    for (const bad of [undefined, null, '', 'Bad Handle', '-x', 'a']) expect(handleCandidate('Mara Rios', 0, bad)).toBe('mara-rios')
+    expect(handleCandidate('Mara Rios', 1, undefined)).toBe('mara-rios-2')
   })
 })
 

@@ -15,6 +15,7 @@ import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { inFlowHref } from './destination'
 import { launchSystemEnabled } from './enabled'
 import { recordLaunchEvent } from './events'
+import { readCarry } from './carry'
 import { clearPendingLaunch, readPendingLaunch, writePendingLaunch } from './pending-io'
 import { launchStepPublishedHref } from './published'
 import { NEW_SPACE, parseSpaceChoice } from './space-choice'
@@ -97,7 +98,7 @@ export async function publishSpotlightFormAction(formData: FormData): Promise<vo
   const held = await readPendingLaunch()
   const profileId = await getMyProfileId()
   if (!profileId) {
-    await writePendingLaunch({ niche: held?.niche ?? null, intents: held?.intents ?? [], answers: { ...held?.answers, spotlight: { name: answers.name, line: answers.line, link: answers.link } } })
+    await writePendingLaunch({ niche: held?.niche ?? null, intents: held?.intents ?? [], answers: { ...held?.answers, spotlight: { ...held?.answers.spotlight, name: answers.name, line: answers.line, link: answers.link } } })
     redirect('/sign-in?next=/launch/claim')
   }
 
@@ -108,7 +109,7 @@ export async function publishSpotlightFormAction(formData: FormData): Promise<vo
   }
   if (!launch) redirect(spotlightStepUrl('retry'))
 
-  const made = await publishSpotlightStep(profileId, launch, answers)
+  const made = await publishSpotlightStep(profileId, launch, answers, readCarry(held?.answers.spotlight))
   if ('error' in made) redirect(spotlightStepUrl('retry'))
   await clearPendingLaunch()
   redirect(launchStepPublishedHref('spotlight'))
