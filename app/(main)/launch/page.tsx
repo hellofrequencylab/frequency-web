@@ -10,7 +10,7 @@ import { flowView } from '@/lib/launch/flow'
 import { recordLaunchEvent } from '@/lib/launch/events'
 import { readPendingLaunch } from '@/lib/launch/pending-io'
 import { resumeView } from '@/lib/launch/resume'
-import { getLaunchForOwner, startLaunch } from '@/lib/launch/store'
+import { completeLaunch, getLaunchForOwner, startLaunch } from '@/lib/launch/store'
 import { launchStepHref } from '@/lib/launch/steps'
 import Link from 'next/link'
 import { LaunchOverview } from '@/components/launch/launch-overview'
@@ -77,6 +77,8 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
   if (inventory) {
     const known = await loadKnownProfile(profileId)
     const progress = overviewProgress(inventory.sections)
+    // Every item ticked is the finish line: mark it once, so the box, the clock and the emails stand down for good.
+    if (!launch.completedAt && progress.total > 0 && progress.done === progress.total) await completeLaunch(launch)
     const who = (known?.displayName ?? '').trim().split(/\s+/)[0] || 'friend'
     return (
       <FocusTemplate title={justPublished ? 'Published' : 'Your launch'} description={justPublished ? 'Here is everything, ticked as it went live.' : `You stopped at ${view.label}. Saved ${view.savedAgo}.`} width="narrow">

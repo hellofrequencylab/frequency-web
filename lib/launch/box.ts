@@ -14,7 +14,10 @@ export async function loadLaunchBox(): Promise<LaunchBoxView | null> {
     const profileId = await getMyProfileId()
     if (!profileId) return null
     const launch = await getActiveLaunch(profileId)
-    return launch ? boxView(launch, new Date()) : null
+    if (!launch) return null
+    // Once the Spotlight is published the overview's own list takes over (see below), so the pill is gone after Publish.
+    if (await loadPostPublishList(profileId)) return null
+    return boxView(launch, new Date())
   } catch {
     return null
   }
