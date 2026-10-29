@@ -44,18 +44,14 @@ export default async function LeadFlowPage({ params }: { params: Promise<{ flow:
   return (
     <>
       <FnPhotoHero image={lf.splash.image} kicker={lf.splash.eyebrow} title={lf.splash.headline} lede={lf.splash.body} />
-      <section className="sec" data-screen-label="02 Choose">
-        <div className="wrap">
-          <FrequencyPersonaChooser
-            flow={lf.slug}
-            source={lf.source}
-            prompt={lf.splash.prompt}
-            personas={lf.personas}
-            captureEmail={lf.captureEmail}
-            defaultPersona={lf.defaultPersona}
-          />
-        </div>
-      </section>
+      <FrequencyPersonaChooser
+        flow={lf.slug}
+        source={lf.source}
+        prompt={lf.splash.prompt}
+        personas={lf.personas}
+        captureEmail={lf.captureEmail}
+        defaultPersona={lf.defaultPersona}
+      />
     </>
   )
 }

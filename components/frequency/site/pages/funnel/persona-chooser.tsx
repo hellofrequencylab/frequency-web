@@ -61,7 +61,8 @@ export function FrequencyPersonaChooser({
   }
 
   return (
-    <>
+    <section className="sec" data-screen-label="02 Choose">
+      <div className="wrap">
       <FnHead label="Who are you?" title={prompt} />
       <div className="g3 fn-doors" role="group" aria-label={prompt}>
         {personas.map((id) => {
@@ -158,6 +159,7 @@ export function FrequencyPersonaChooser({
           </form>
         </div>
       )}
-    </>
+      </div>
+    </section>
   )
 }
