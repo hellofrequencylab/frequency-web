@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { moveSpaceTodo } from '@/app/(main)/spaces/[slug]/settings/calendar/task-actions'
 import { deleteCalendarEntry, saveCalendarEntry, saveCalendarEntryOccurrence } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
-import { archiveSpacePlan, transitionPlanStage } from '@/app/(main)/spaces/[slug]/settings/calendar/plan-actions'
+import { archiveSpacePlan, ensurePrivateCalendarFeed, transitionPlanStage } from '@/app/(main)/spaces/[slug]/settings/calendar/plan-actions'
 import { addQuickItem, pencilItIn } from '@/app/(main)/spaces/[slug]/settings/calendar/pencil-actions'
 import type { AstroMarker } from '@/lib/calendar/astro-markers'
 import type { DayNote } from '@/lib/calendar/day-notes'
@@ -39,6 +39,7 @@ import type { CommandRow } from '@/lib/calendar/planner/command-results'
 import { SuiteCommand } from './suite-command'
 import { SuitePencil } from './suite-pencil'
 import { SuiteQuick } from './suite-quick'
+import { SuiteSettings } from './suite-settings'
 import { SuiteTimeline } from './suite-timeline'
 import type { QuickAnchor, SuiteContext, SuiteSelection, SuiteTeamMember } from './suite-types'
 import { SuiteWeek } from './suite-week'
@@ -87,6 +88,12 @@ export interface CalendarSuiteProps {
   newEventHref: string
   httpsUrl: string
   webcalUrl: string
+  /** Whether the Space draws the sky (the stored choice; `sky` is empty when it is off). */
+  skyOn?: boolean
+  /** The Space's stored time zone, or null when it has never said. */
+  storedZone?: string | null
+  /** The team feed's address, made on first ask. Absent means the calendar's own action. */
+  teamFeedUrl?: () => Promise<string | null>
   /** False for someone who can read the calendar but not change it: nothing is draggable. */
   canEdit?: boolean
   /** Minutes since midnight on the Space's clock when the page was made, or null for no now line. */
@@ -111,7 +118,7 @@ export interface CalendarSuiteProps {
   detailsActions?: DetailsActions
 }
 
-type Sheet = 'pencil' | 'command' | null
+type Sheet = 'pencil' | 'command' | 'settings' | null
 /** What the Pencil it in sheet opens with: a day and a title carried over from a quick add. */
 interface PencilSeed {
   day: string | null
@@ -316,6 +323,20 @@ export function CalendarSuite(props: CalendarSuiteProps) {
     setQuick(null)
     setSheet('command')
   }, [])
+  const openSettings = useCallback(() => {
+    setQuick(null)
+    setSheet('settings')
+  }, [])
+  const teamFeedUrl = useMemo(
+    () =>
+      props.teamFeedUrl ??
+      (async () => {
+        const res = await ensurePrivateCalendarFeed(slug)
+        return 'error' in res ? null : `${window.location.origin}/calendar/private/${res.data.token}`
+      }),
+    [props.teamFeedUrl, slug],
+  )
+  const sharedPlanCount = useMemo(() => data.plans.filter((p) => p.spaces.length > 0).length, [data.plans])
 
   // The keys: D W M A I B L for the views, T for today, P to pencil, / for the command bar (Cmd or Ctrl
   // plus K toggles it, even from a field), the arrows to page, and Esc for the top layer. Any other key
@@ -458,6 +479,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
           }}
           onRail={() => setRailOpen(true)}
           onAsk={openCommand}
+          onSettings={openSettings}
           slug={slug}
         />
         <SuiteNeedsYou entries={needs} onOpen={openNeed} />
@@ -558,6 +580,20 @@ export function CalendarSuite(props: CalendarSuiteProps) {
           plans={data.plans}
           items={data.items}
           onRun={runCommand}
+          onClose={() => setSheet(null)}
+        />
+      ) : null}
+      {sheet === 'settings' ? (
+        <SuiteSettings
+          slug={slug}
+          canEdit={canEdit}
+          timeZone={props.storedZone ?? null}
+          skyOn={props.skyOn ?? sky.length > 0}
+          notes={dayNotes}
+          publicFeedUrl={props.httpsUrl}
+          teamFeedUrl={teamFeedUrl}
+          sharedPlans={sharedPlanCount}
+          say={moves.say}
           onClose={() => setSheet(null)}
         />
       ) : null}

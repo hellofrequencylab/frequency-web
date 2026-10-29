@@ -224,6 +224,9 @@ export interface VeventFields {
    *  ignored (harmless) on a one-off VEVENT. */
   exdates?: Date[] | null
   cancelled?: boolean
+  /** A hold that is not confirmed yet: written STATUS:TENTATIVE so a calendar app draws it dashed or
+   *  faint. Cancelled wins when both are set. */
+  tentative?: boolean
 }
 
 /** Build one VEVENT block (BEGIN..END) as an array of already-folded lines. DTSTAMP is stamped from
@@ -257,6 +260,7 @@ export function buildVevent(ev: VeventFields, now: Date = new Date()): string[] 
   if (ev.location) lines.push(foldLine(`LOCATION:${icsEscape(ev.location)}`))
   if (ev.description) lines.push(foldLine(`DESCRIPTION:${icsEscape(ev.description)}`))
   if (ev.cancelled) lines.push('STATUS:CANCELLED')
+  else if (ev.tentative) lines.push('STATUS:TENTATIVE')
   lines.push('END:VEVENT')
   return lines
 }

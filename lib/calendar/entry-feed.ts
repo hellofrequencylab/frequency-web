@@ -1,6 +1,7 @@
 import { icsEventInstants, icsLocalWallTimes, rruleForRepeat, type VeventFields } from '@/lib/events/ics'
 import { resolveZone } from '@/lib/time/zone'
 import { normaliseExceptionDates, seriesRule } from './pencil-series'
+import { monthDayLabel } from './planner/days'
 
 // THE PRIVATE FEED'S VIEW OF ONE ENTRY (PROG-CAL13). Pure: the VEVENT fields a private calendar entry
 // becomes, so app/calendar/private/[token]/route.ts maps rows and lib/events/ics.ts stamps them.
@@ -29,6 +30,10 @@ export interface FeedEntryRow {
   /** The Plan the entry belongs to, when it does. The private feed keys a co-host's shared dates
    *  on it (LIVE-546); a read that did not project it renders the row as the feed Space's own. */
   plan_id?: string | null
+  /** 'pencil' for a held date. Absent reads as a plain date. */
+  kind?: string | null
+  /** The day the Plan's hold lapses, when the row's Plan holds one. The route joins it on `plan_id`. */
+  holdUntil?: string | null
 }
 
 // SHARED PLANS ON A GUEST'S PHONES (PROG-CAL7 Together, LIVE-546). A co-host Space's private feed
@@ -73,13 +78,18 @@ function exceptionWallTime(day: string, anchor: Date): Date {
  *  `rrule`, `tzid` and an `exdates` entry per skipped day. The caller adds `tzid` to the calendar's
  *  VTIMEZONE list whenever `rrule` is set. */
 export function entryFeedFields(ev: FeedEntryRow, url: string): VeventFields {
+  // A HELD DATE (a Pencil) reads as a hold on a subscriber's phone: tentative, named Hold, and, when
+  // its Plan has a hold date, saying until when. A cancelled one stays cancelled.
+  const held = ev.kind === 'pencil' && ev.status !== 'cancelled'
+  const holdLine = held && ev.holdUntil ? `Held until ${monthDayLabel(ev.holdUntil)}. Released if nobody confirms.` : null
   const common = {
     uid: ev.id,
-    summary: ev.title,
+    summary: held ? `Hold: ${ev.title}` : ev.title,
     url,
     location: ev.location,
-    description: ev.notes,
+    description: [holdLine, ev.notes].filter(Boolean).join('\n\n') || null,
     cancelled: ev.status === 'cancelled',
+    ...(held ? { tentative: true } : {}),
   }
   const rule = seriesRule({ recurrence_rule: ev.recurrence_rule ?? null })
   if (!rule) {
@@ -97,4 +107,47 @@ export function entryFeedFields(ev: FeedEntryRow, url: string): VeventFields {
     // THE STORED SKIP, carried to the subscriber: one EXDATE per deliberately skipped day.
     exdates: normaliseExceptionDates(ev.exception_dates).map((day) => exceptionWallTime(day, start)),
   }
+}
+
+/** A to-do as the feed reads it. The columns are the CrmTask's own, so the route hands a task straight in. */
+interface FeedTodo {
+  id: string
+  title: string
+  dueAt: string | null
+  planId: string | null
+  startMinute?: number | null
+  estMinutes?: number | null
+}
+
+/** A to-do with no estimate counts as half an hour, the same as the team load (lib/calendar/planner/team-load.ts). */
+const DEFAULT_TODO_MINUTES = 30
+
+/**
+ * One to-do as a VEVENT. A to-do with a start time (crm_tasks.start_minute, a minute of the day in the
+ * Space's zone) lands as a block of its estimate on that day, as a true instant through the zone; one
+ * with only a day keeps the instant it always had, so a subscriber's calendar does not move it. A to-do
+ * with no readable day has no place on a calendar and returns null.
+ */
+export function todoFeedFields(task: FeedTodo, zone: string | null | undefined, url: string): VeventFields | null {
+  const due = Date.parse(task.dueAt ?? '')
+  const day = (task.dueAt ?? '').slice(0, 10)
+  if (Number.isNaN(due) || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+  const common = {
+    uid: `todo-${task.id}`,
+    summary: task.title,
+    url,
+    location: null,
+    description: task.planId ? 'Plan to-do' : null,
+    cancelled: false,
+  }
+  const at = task.startMinute
+  if (typeof at !== 'number' || !Number.isInteger(at) || at < 0 || at > 1439) {
+    const start = new Date(due)
+    return { ...common, start, end: start }
+  }
+  const [y, m, d] = day.split('-').map(Number)
+  const wall = (minutes: number) => new Date(Date.UTC(y!, m! - 1, d!, 0, minutes)).toISOString()
+  const length = task.estMinutes && task.estMinutes > 0 ? task.estMinutes : DEFAULT_TODO_MINUTES
+  const { start, end } = icsEventInstants(wall(at), wall(at + length), zone)
+  return { ...common, start, end }
 }

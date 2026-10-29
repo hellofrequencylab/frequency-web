@@ -14,14 +14,10 @@ import { SITE_URL } from '@/lib/site'
 import type { CalendarEvent } from '@/components/events/event-calendar'
 import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
 import { formatEventWhen } from '@/lib/time/zone'
-import { DayNotesField } from './day-notes-field'
-import { SpaceTimeZoneField } from './space-time-zone-field'
-import { SkyMarkersField } from './sky-markers-field'
 import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
 import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { SectionHeader } from '@/components/ui/section-header'
-import { CalendarSyncSoon } from './calendar-sync-soon'
 import { SpaceEventsManager, type ManagedEvent } from './space-events-manager'
 import { listSpacePlans, listRecentlyCancelledPlans, listPlaybooks, listPlanPencilEntryIds, listIncomingPlanShareRows, listPlansSharedWith } from '@/lib/calendar/plans-store'
 import { resolveShareSubjects } from '@/lib/calendar/plan-share-subjects'
@@ -238,6 +234,8 @@ export default async function SpaceCalendarConsolePage({
               newEventHref={newEventHref}
               httpsUrl={httpsUrl}
               webcalUrl={webcalUrl}
+              skyOn={readSkyMarkersEnabled(space.preferences)}
+              storedZone={spaceTimeZone}
               canEdit={canManage}
               collaborators={sharedLayer?.collaborators}
               networkNoun={sharedLayer?.networkNoun}
@@ -248,21 +246,6 @@ export default async function SpaceCalendarConsolePage({
           ) : null}
 
           <EventShareApprovals spaceId={space.id} />
-
-          <div id="calendar-settings" className="space-y-4">
-          <SpaceTimeZoneField slug={space.slug} timeZone={spaceTimeZone} canEdit={canManage} />
-
-          {/* Beside the zone on purpose: both decide how this Space's calendar READS rather than
-              what is on it, and the sky is dated in the zone above. */}
-          <SkyMarkersField
-            slug={space.slug}
-            enabled={readSkyMarkersEnabled(space.preferences)}
-            canEdit={canManage}
-          />
-
-          <DayNotesField slug={space.slug} notes={dayNotes} canEdit={canManage} />
-          <CalendarSyncSoon />
-          </div>
 
           {canManage && (
             <div id="calendar-todos">

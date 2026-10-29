@@ -743,6 +743,28 @@ export async function revokePlanShare(slug: string, shareId: string): Promise<Ac
   return ok()
 }
 
+/**
+ * The team feed the settings sheet copies (pass 9): the Space's live link, made once if it has none.
+ * Reading never rotates, so copying it twice hands out the same link and nobody's subscription dies.
+ * Rotating stays its own press (rotatePrivateCalendarFeed).
+ */
+export async function ensurePrivateCalendarFeed(slug: string): Promise<ActionResult<{ token: string }>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this calendar.')
+  const db = await createClient()
+  const { data } = await db
+    .from('space_calendar_private_feeds')
+    .select('token')
+    .eq('space_id', editor.spaceId)
+    .is('revoked_at', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const live = (data as { token: string } | null)?.token
+  if (live) return ok({ token: live })
+  return rotatePrivateCalendarFeed(slug)
+}
+
 export async function rotatePrivateCalendarFeed(slug: string): Promise<ActionResult<{ token: string }>> {
   const editor = await resolveEditor(slug)
   if (!editor) return fail('You do not have access to this calendar.')
