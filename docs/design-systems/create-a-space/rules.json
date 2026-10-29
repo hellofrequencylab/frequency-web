@@ -106,7 +106,7 @@
    "glob": "reference/Create a Space.dc.html",
    "kind": "copy",
    "targets": [
-    "components/frequency/create",
+    "components/frequency/site/pages/create-space",
     "lib/create-space",
     "lib/seo/frequency-pages.ts",
     "lib/spaces/create-wizard.ts",
