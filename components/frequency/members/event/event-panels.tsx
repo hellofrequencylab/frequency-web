@@ -77,26 +77,30 @@ export function FqEventWhere() {
   const ctx = getEventContext()
   if (!ctx) return null
   const { facts } = ctx
+  const join = facts.hasOnlineAttendance ? safeHttpUrl(facts.onlineUrl) : null
+  const joinAction = facts.hasOnlineAttendance ? (
+    join ? (
+      <a className="btn sm fqm-tag-start" href={join} target="_blank" rel="noopener noreferrer">
+        <FqIcon name="globe" />
+        Join link
+      </a>
+    ) : (
+      <span className="t2">Online. Link shows once you RSVP.</span>
+    )
+  ) : null
   if (facts.isOnline) {
-    const join = safeHttpUrl(facts.onlineUrl)
     return (
       <div className="stack">
         <h2 className="h2">Where</h2>
-        {join ? (
-          <a className="btn sm fqm-tag-start" href={join} target="_blank" rel="noopener noreferrer">
-            <FqIcon name="globe" />
-            Join link
-          </a>
-        ) : (
-          <span className="t2">Online. Link shows once you RSVP.</span>
-        )}
+        {joinAction}
       </div>
     )
   }
-  if (!facts.location && !facts.venuePoint && !facts.mapPin) return null
+  if (!facts.location && !facts.venuePoint && !facts.mapPin && !facts.hasOnlineAttendance) return null
   return (
     <div className="stack">
       <h2 className="h2">Where</h2>
+      {joinAction}
       <FqEventMap mapPin={facts.mapPin} venuePoint={facts.venuePoint} />
       {facts.location &&
         (facts.mapsHref ? (

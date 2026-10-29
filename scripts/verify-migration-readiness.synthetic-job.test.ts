@@ -63,3 +63,33 @@ for (const [name, mutate] of negatives) test(`refuses ${name}`, async () => {
   const f = fixture(); mutate(f)
   await expect(verifyReadiness(f.options)).rejects.toThrow()
 })
+
+// A PR whose SQL-free receipt was minted at its own base stays valid while main moves on; SQL receipts do not.
+const ahead = 'c'.repeat(40)
+function moveMain(f: ReturnType<typeof fixture>) {
+  const api = f.options.api
+  f.options.api = async (path: string) => path.endsWith('/branches/main') ? { commit: { sha: ahead } } : api(path)
+  const git = f.options.git
+  f.options.git = (args: string[]) => args[0] === 'show' ? git(args) : `parent ${ahead}\nparent ${f.head}\n`
+}
+function noSql(f: ReturnType<typeof fixture>) {
+  f.receipt.verdict = 'not_applicable'
+  for (const key of ['registrationSha256', 'stagingRunId', 'stagingAttempt', 'workflowSha256']) delete (f.receipt as Record<string, unknown>)[key]
+  f.seal()
+}
+test('accepts a no-SQL receipt although main moved past the PR base', async () => {
+  const f = fixture(); noSql(f); moveMain(f)
+  await expect(verifyReadiness(f.options)).resolves.toMatchObject({ ok: true, base: f.base })
+})
+test('refuses the same moved-main state for a SQL receipt', async () => {
+  const f = fixture(); moveMain(f)
+  await expect(verifyReadiness(f.options)).rejects.toThrow()
+})
+for (const [name, mutate] of [
+  ['merge tree without the exact head', (f: ReturnType<typeof fixture>) => { f.options.git = (args: string[]) => args[0] === 'show' ? Buffer.alloc(0) : `parent ${ahead}\nparent ${ahead}\n` }],
+  ['forged source digest', (f: ReturnType<typeof fixture>) => { f.receipt.sources['scripts/migration-pr-readiness.mjs'] = 'not-a-digest'; f.seal() }],
+  ['receipt for another base', (f: ReturnType<typeof fixture>) => { f.receipt.base = ahead; f.seal() }],
+] as const) test(`still refuses a no-SQL receipt with ${name}`, async () => {
+  const f = fixture(); noSql(f); moveMain(f); mutate(f)
+  await expect(verifyReadiness(f.options)).rejects.toThrow()
+})

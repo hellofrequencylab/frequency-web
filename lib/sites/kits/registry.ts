@@ -76,6 +76,11 @@ for (const niche of DESIGNER_PROFILE_IDS) LOADERS[`designer-profile-${niche}`] =
 // General kit a new Space on this look publishes (lib/spaces/starter-site.ts).
 for (const niche of MEGA_NICHES) LOADERS[`network-kit-${niche}`] = () => import('./network-kit-profile-variants').then((m) => m.networkKitProfileKit(niche))
 
+// The Temple Theme Kit's thirteen profile kits, one per niche (`temple-kit-<niche>`), the same shape as the Network Theme Kit's.
+// `temple-kit-general` is the General kit a new Space on this look publishes (lib/spaces/starter-site.ts). The earlier Temple
+// (`temple-<niche>`, Royal Temple's) keeps its loaders so a saved site still resolves, and is offered nowhere.
+for (const niche of MEGA_NICHES) LOADERS[`temple-kit-${niche}`] = () => import('./temple-kit-profile-variants').then((m) => m.templeKitProfileKit(niche))
+
 interface KitSummary { id: string; niche: KitNiche; theme: SiteKit['theme']; label: string; description: string }
 
 /** Light index for the library screen; no page content. */
@@ -131,6 +136,7 @@ export const PROFILE_KIT_INDEX: readonly KitSummary[] = PROFILE_THEMES.flatMap((
 
 export { DESIGNER_PROFILE_KIT_INDEX } from './designer-profile-index'
 export { NETWORK_KIT_PROFILE_KIT_INDEX } from './network-kit-profile-index'
+export { TEMPLE_KIT_PROFILE_KIT_INDEX } from './temple-kit-profile-index'
 
 export async function loadKit(id: string): Promise<SiteKit | null> {
   const load = Object.hasOwn(LOADERS, id) ? LOADERS[id] : undefined

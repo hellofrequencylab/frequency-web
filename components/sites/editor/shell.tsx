@@ -111,8 +111,8 @@ function subscribeViewport(callback: () => void) {
 }
 
 /** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. */
-const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', NetworkKit: 'Network', Temple: 'Temple', TempleKit: 'Temple Kit', Designer: 'Designer' }
-const EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = { ...EDITOR_THEME_OF, 'temple-kit': 'TempleKit' }
+const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', NetworkKit: 'Network', Temple: 'Temple', TempleKit: 'Temple', Designer: 'Designer' }
+const EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = EDITOR_THEME_OF
 /** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
 const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'NetworkKit' ? 'network-kit' : theme === 'Temple' ? 'temple' : theme === 'TempleKit' ? 'temple-kit' : theme === 'Midnight' ? 'midnight' : theme === 'Designer' ? 'designer' : 'frequency')
 /** A page's publish state in the design's words (Pages tab and page menu dots). */

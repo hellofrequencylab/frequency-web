@@ -382,6 +382,8 @@ const nextConfig: NextConfig = {
       { source: '/themes/midnight/demo', destination: '/themes/nocturne/demo', permanent: true },
       // The Network Theme Kit's address is /themes/network.
       { source: '/themes/network-kit', destination: '/themes/network', permanent: true },
+      // The Temple Theme Kit's address is /themes/temple.
+      { source: '/themes/temple-kit', destination: '/themes/temple', permanent: true },
       // The Quest help category was renamed from the-game -> the-quest (naming canon:
       // the year-round game is "The Quest"). Redirect old help links + bookmarks.
       { source: '/help/the-game', destination: '/help/the-quest', permanent: false },
