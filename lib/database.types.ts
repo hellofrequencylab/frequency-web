@@ -15923,8 +15923,11 @@ export type Database = {
       }
       space_launch: {
         Row: {
+          buildout: Json | null
           cancel_requested_at: string | null
           cancelled_at: string | null
+          clock_active_ms: number
+          clock_last_beat_at: string | null
           completed_at: string | null
           current_step: string
           id: string
@@ -15939,8 +15942,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          buildout?: Json | null
           cancel_requested_at?: string | null
           cancelled_at?: string | null
+          clock_active_ms?: number
+          clock_last_beat_at?: string | null
           completed_at?: string | null
           current_step?: string
           id?: string
@@ -15955,8 +15961,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          buildout?: Json | null
           cancel_requested_at?: string | null
           cancelled_at?: string | null
+          clock_active_ms?: number
+          clock_last_beat_at?: string | null
           completed_at?: string | null
           current_step?: string
           id?: string
