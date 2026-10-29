@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1791",
+  "title": "Every Theme Kit page uses the Network page's layout, content only differs",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-network.tsx",
+    "ref": "Daniel, 2026-10-29: 'Use the same layout for all of them.' The Network page is the reference."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-pages-one-layout.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (no parity test, Designer chips and email slot differed) and passes here."
+  },
+  "detail": "Network and Designer were already built on one frame (nf- and df- CSS are the same rules). Designer's preview chips, qualifiers and email label now match Network's, and test/theme-pages-share-one-layout.render.test.tsx renders both and fails if the section order or any structural class drifts. Temple and every later theme page copy frequency-network.tsx and its CSS, changing only copy, accent and pictures. Network itself is untouched.",
+  "wave": "W7"
+}
