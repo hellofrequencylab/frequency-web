@@ -151,7 +151,7 @@ export function freeHumanHomeBlocks(): FreeHumanBlockSeed[] {
 
 // THE CALENDAR PAGE (templates/website/Calendar.dc.html). The hero and the Calendar are LIVE: they read the Space's own events
 // and expand its series across the next thirteen months, so a recurring circle shows on every week. An event's kind comes from its
-// title (lib/sites/free-human-events.ts) until events carry a tag. The Year Wheel sits between them (it lands with its own block).
+// title (lib/sites/free-human-events.ts) until events carry a tag. The Year Wheel sits between them.
 // Voice: the design's "Times are Pacific" is one house's zone, so the note names the keys instead; the closing line does not
 // promise a letter on a schedule.
 export const FREE_HUMAN_CALENDAR_HERO = {
@@ -179,12 +179,23 @@ export const FREE_HUMAN_CALENDAR = {
   closingButton: 'Subscribe', closingDone: 'Thank you. You are on the list.',
 }
 
+// THE YEAR WHEEL (templates/website/YearWheel.dc.html). Turns by hand until a visitor scrolls on a wide screen; the Space's own
+// gatherings sit on it. The heading is the design's, with the stars as the italic.
+export const FREE_HUMAN_YEAR_WHEEL = {
+  ground: 'day', edge: 'flat', texture: 'wind', wander: true,
+  eyebrow: 'The year wheel · a guide to the sky',
+  title: 'Twelve signs, eight festivals, *every moon.*',
+  defaultMode: 'click', stepHeight: 32, stickOffset: 78,
+  calendarHref: '#month-by-month',
+}
+
 export function freeHumanCalendarPage() {
   return {
     slug: 'calendar', label: 'Calendar',
     seo: { title: 'Calendar', description: 'Circles, moon gatherings, the turns of the year, workshops and retreats.' },
     blocks: [
       { type: 'FreeHumanCalendarHero', props: { ...FREE_HUMAN_CALENDAR_HERO } },
+      { type: 'FreeHumanYearWheel', props: { ...FREE_HUMAN_YEAR_WHEEL } },
       { type: 'FreeHumanCalendar', props: { ...FREE_HUMAN_CALENDAR } },
     ] as FreeHumanBlockSeed[],
   }

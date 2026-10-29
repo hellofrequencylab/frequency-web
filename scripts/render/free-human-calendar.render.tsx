@@ -25,6 +25,8 @@ const face = (fam: string, f: string, style = 'normal', w = '100 900') => `@font
 it('renders the Free Human Calendar', async () => {
   if (!out) throw new Error('set RENDER_OUT')
   const { freeHumanCalendarBlocks } = await import('@/components/page-editor/blocks/free-human-calendar')
+  const { freeHumanWheelBlocks } = await import('@/components/page-editor/blocks/free-human-wheel')
+  const registry = { ...freeHumanCalendarBlocks, ...freeHumanWheelBlocks }
   const { freeHumanCalendarPage } = await import('@/lib/sites/free-human-home')
   const { SiteChrome } = await import('@/components/sites/site-chrome')
   const { FREE_HUMAN_CSS } = await import('@/components/sites/free-human-css')
@@ -57,7 +59,7 @@ it('renders the Free Human Calendar', async () => {
           spaceSlug: null,
           previewMega,
         } as never,
-        h('div', null, ...freeHumanCalendarPage().blocks.map((b, i) => { const c = freeHumanCalendarBlocks[b.type]; return h('div', { key: i }, (c.render as (p: Record<string, unknown>) => never)({ ...c.defaultProps, ...b.props, puck: { metadata: { space: { events: EVENTS }, links: { origin: 'https://x.test', slug: 'house', siteBase: '', pages: ['home'], contactHref: '/contact', bookHref: null, email: null } } } })) })),
+        h('div', null, ...freeHumanCalendarPage().blocks.map((b, i) => { const c = registry[b.type]; return h('div', { key: i }, (c.render as (p: Record<string, unknown>) => never)({ ...c.defaultProps, ...b.props, puck: { metadata: { space: { events: EVENTS }, links: { origin: 'https://x.test', slug: 'house', siteBase: '', pages: ['home'], contactHref: '/contact', bookHref: null, email: null } } } })) })),
       ),
     )
   const pub = (html: string) => html.replace(/ loading="lazy"/g, '').replace(/(src|href)="\/(sites|brand)\//g, '$1="file:///home/user/frequency-web/public/$2/')

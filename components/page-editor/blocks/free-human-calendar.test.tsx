@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { freeHumanCalendarBlocks } from './free-human-calendar'
+import { freeHumanWheelBlocks } from './free-human-wheel'
 import { freeHumanCalendarPage } from '@/lib/sites/free-human-home'
 import { hasFreeHumanGlyph } from '@/components/sites/free-human-glyph'
 import { freeHumanOccurrences } from '@/lib/sites/free-human-events'
@@ -9,7 +10,7 @@ import { FREE_HUMAN_KINDS, freeHumanAgenda, freeHumanCollapse, freeHumanMonthAt,
 
 const links = { origin: 'https://frequency.example', slug: 'house', siteBase: '', pages: ['home', 'calendar'], contactHref: '/contact', bookHref: null, email: null }
 const draw = (type: string, props: Record<string, unknown> = {}, metadata: Record<string, unknown> = { links }) => {
-  const c = freeHumanCalendarBlocks[type]
+  const c = { ...freeHumanCalendarBlocks, ...freeHumanWheelBlocks }[type]
   return renderToStaticMarkup(<>{(c.render as (p: Record<string, unknown>) => React.ReactNode)({ ...c.defaultProps, ...props, puck: { metadata } })}</>)
 }
 const occ = (id: string, title: string, startsAt: string, extra: Partial<FreeHumanOcc> = {}): FreeHumanOcc => ({ id, title, kind: 'gathering', startsAt, endsAt: null, place: '', price: '', summary: '', href: '', recurring: false, ...extra })
@@ -18,11 +19,11 @@ describe('the Free Human Calendar page seed', () => {
   it('registers every block it names and only draws marks that exist', () => {
     const page = freeHumanCalendarPage()
     const types = page.blocks.map((b: { type: string }) => b.type)
-    for (const t of types) if (t.startsWith('FreeHumanCalendar')) expect(freeHumanCalendarBlocks[t], t).toBeTruthy()
+    for (const t of types) expect({ ...freeHumanCalendarBlocks, ...freeHumanWheelBlocks }[t], t).toBeTruthy()
     for (const m of JSON.stringify(page).matchAll(/"glyph":"([^"]+)"/g)) expect(hasFreeHumanGlyph(m[1]), m[1]).toBe(true)
   })
   it('draws both blocks with their defaults, with no events', () => {
-    for (const t of Object.keys(freeHumanCalendarBlocks)) expect(draw(t)).toContain('fh-sec')
+    for (const t of [...Object.keys(freeHumanCalendarBlocks), ...Object.keys(freeHumanWheelBlocks)]) expect(draw(t)).toContain('fh-sec')
   })
   it('names a mark for every kind', () => {
     for (const k of FREE_HUMAN_KINDS) expect(hasFreeHumanGlyph(k.glyph), k.id).toBe(true)
@@ -38,6 +39,21 @@ describe('the live Calendar', () => {
   })
   it('puts the hero feed link on the Space feed', () => {
     expect(draw('FreeHumanCalendarHero', {}, { links, space: { events } })).toContain('https://frequency.example/spaces/house/calendar.ics')
+  })
+})
+
+describe('the Year Wheel block', () => {
+  it('draws the wheel, the thread and the legend with its defaults', () => {
+    const html = draw('FreeHumanYearWheel')
+    expect(html).toContain('fhw-face')
+    expect(html).toContain('Twelve signs, eight festivals, <em>every moon.</em>')
+    expect(html).toContain('fhw-t-dot')
+    expect(html).toContain('Our gatherings')
+  })
+  it('puts a Space gathering on the thread', () => {
+    const soon = new Date(Date.now() + 20 * 86_400_000).toISOString()
+    const html = draw('FreeHumanYearWheel', {}, { links, space: { events: [{ id: 'a', slug: 'moon', title: 'Full moon gathering', startsAt: soon }] } })
+    expect(html).toContain('Full moon gathering')
   })
 })
 
