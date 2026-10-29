@@ -97,7 +97,7 @@ export function DesignerStage({
         {DESIGNER_SURFACES.map((s) => (
           <button key={s.id} type="button" aria-pressed={s.id === surface} onClick={() => setSurface(s.id)}>
             {s.label}
-            {status[s.id] === 'soon' ? <small>On the way</small> : null}
+            {s.qual ? <small className="df-q">{s.qual}</small> : null}
           </button>
         ))}
       </div>

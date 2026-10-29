@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1643",
+  "title": "Give the Temple Theme Kit its four emails: the note, the welcome, the dates and the receipt",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-29",
+  "source": {
+    "file": "docs/design-systems/temple/rules.json",
+    "ref": "LIVE-1640"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/temple-kit-email.mjs",
+    "checked": "2026-10-29",
+    "evidence": "Fails on main (no kit email builders, the stock catalog has no temple-kit emails, the Library lists Email as soon) and passes here."
+  },
+  "detail": "Email pass of the Temple Theme Kit (code id temple-kit, shown as Temple). lib/theme/temple-kit-email.ts builds the design's four emails (EmailPage.html: note, welcome, dates, receipt) as nested tables with inline styles, literal colours from TEMPLE_KIT_PALETTE (plaster desk, warm card, umber ink, plaster hairline) and the chosen profile's accent from TEMPLE_KIT_PROFILES (all thirteen, accent only), Marcellus and Jost with Georgia and Helvetica fallbacks, pill buttons, and an Outlook ghost table. They ship in the stock catalog (temple-kit-note, -welcome, -dates, -receipt) and the Library lists Email as ready for the kit. Deviations from the design, on purpose: the button label is the kit's warm white unless umber ink reads better on the accent (the design's umber ink on clay measures 2.5 to 1); Marcellus is asked for weight 400, its only weight (the profile contract says 400), not the design's faux 600; the list lead column is 72 wide so 'When' does not touch its text; the receipt fixture says $45, not the design's '$$45'. Voice changes: the welcome lead drops 'one short letter most weeks' (a weekly promise); the per-profile note subjects and leads are owner placeholders ('Show one thing that changed...') so they are not shipped as email copy; the member quote drops 'forty people'. Cormorant Garamond and Branch are not in the design's email and are not loaded.",
+  "wave": "W7"
+}
