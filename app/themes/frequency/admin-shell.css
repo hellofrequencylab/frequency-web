@@ -178,12 +178,14 @@ html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top
 /* THE TOP BAR HIDES WHAT SCROLLS UNDER IT (owner screenshot 2026-10-20, the Space Spotlight editor: the
    breadcrumb and nav sat on top of a block's text, both legible at once). The kit paints the bar at 82%
    with a blur, which leaves the page readable through it wherever the blur is not applied. Raising the
-   fill to 96% keeps the glass edge and makes the bar do its job. 2026-10-29, owner screenshot of /admin:
-   the page title and the big stat numbers still ghosted through at 96%, so the fill is now solid. The blur
-   stays for the edge; nothing scrolls readably under a bar any more. */
+   fill to 96% keeps the glass edge and makes the bar do its job. */
 @layer components {
-[data-design="frequency"] [data-kit="admin"] .ad-top{background:var(--fq-surface-card)}
-[data-design="frequency"] [data-kit="admin"] .ad-topmenu{background:var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="admin"] .ad-top{background:color-mix(in oklab,var(--fq-surface-card) 96%,transparent)}
+}
+/* 2026-10-29, owner screenshot of /admin: the page title and the big stat numbers still ghosted through at
+   96%, so the fill is now solid (this rule follows the 96% one and wins). The blur stays for the edge. */
+@layer components {
+[data-design="frequency"] [data-kit="admin"] :is(.ad-top,.ad-topmenu){background:var(--fq-surface-card)}
 }
 
 /* ADMIN STAT CHARTS (components/admin/spark-charts.tsx). The charts used the primary TEXT step as a fill, which
