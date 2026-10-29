@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/sites/editor/theme-contract.json",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Seeds from lib/sites/editor/theme-contract.json. Role blocks read only these names; private prefixes stay for decoration.",
+  "detail": "Shipped: lib/theme/block-contract-tokens.ts names the 45 core tokens (CORE_TOKEN_NAMES) and serves one generated mapping per theme (coreTokenMap, coreTokensCss) from lib/theme/block-contract-map.json, seeded from lib/sites/editor/theme-contract.json for names no sheet declares (frame, display weight). Each mapping is var(--existing) or a documented constant, so nothing a live site renders moves; the map is not emitted into any render yet (role blocks read it from LIVE-1857). lib/theme/block-contract-tokens.test.ts resolves every name against today's sheets for all nine themes (cascade-aware, Space accent and font set left symbolic) and pins the result; UPDATE_CONTRACT_MAP=1 regenerates the map. The --sk-* roles in components/sites/contract-skin-css.ts are untouched.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/theme-cohesion.mjs tokens",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-29"
 }
