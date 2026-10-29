@@ -1,6 +1,6 @@
 {
   "id": "LIVE-1851",
-  "title": "Fix the three theme render defects the audit found: Bold hero clipping at 390, Default sections drawing bare, Showcase ignoring the theme",
+  "title": "Fix the theme render defects the audit found: Bold hero clipping at 390 and Designer services overlapping at 390 (Default sections drawing bare was a harness artifact, pinned by a test)",
   "lane": "live",
   "priority": "P2",
   "size": "S",
@@ -9,7 +9,7 @@
     "file": "components/sites/menswork-page-css.ts",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Reproduce each in a built site first; the Default result may be a harness artifact. Render test per defect.\n\nBold Hero headline clamps under 640px; Designer services columns collapse at 900/560 (inline --dz-cols beat the media rule, now --dz-cols-wide); Default sections bare was a harness artifact (sheet is scoped to the chrome's data-house-site root, pinned by test). Render test per defect.",
+  "detail": "Reproduce each in a built site first; the Default result may be a harness artifact. Render test per defect.\n\nBold Hero headline clamps under 640px; Designer services columns collapse at 900/560 (inline --dz-cols beat the media rule, now --dz-cols-wide); Default sections bare was a harness artifact (sheet is scoped to the chrome's data-house-site root, pinned by test). Render test per defect. Showcase ignoring the theme is not fixed here: ShowcaseBlock is ink-only by design (bg-slat, on-ink in components/page-editor/blocks/collections.tsx); the role blocks (LIVE-1858, LIVE-1859) are where a block takes a ground from the theme.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/theme-cohesion.mjs defects",
