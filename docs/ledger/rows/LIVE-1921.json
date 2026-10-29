@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1921",
+  "title": "A Space Spotlight can carry a Donate card: the Space's own fund and checkout, shown only when the Space can take a gift (Spotlight split, SPL-13)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/widgets/space-profile/donate.tsx",
+    "ref": "Owner picks 2026-10-28: Donate block on Business, tips stay 0%"
+  },
+  "detail": "Adds the space-only donate block to the Space Spotlight palette. It draws the Space's existing donation ask and the existing DonateForm checkout (startSpaceDonationCheckout), so no new money path and no new fee. Business and up falls out of spaceCanTakeDonations, which already runs the payments gate and requires a payout account that can take a gift. A published Spotlight is ISR and cookie-free, so a Space that is not ready shows visitors nothing (no preview amounts, no setup prompt); only the editor's console preview shows the owner one setup line. Not on a website host (the checkout is Frequency's), so it is outside the site-safe set.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/entity-blocks/registry.ts','utf8');const b=fs.readFileSync('lib/spaces/spotlight.ts','utf8');if(!a.includes(\\\"id: 'donate'\\\")||!b.includes(\\\"'donate'\\\"))process.exit(1)\"",
+    "note": "Fails on main (no donate block); passes here."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

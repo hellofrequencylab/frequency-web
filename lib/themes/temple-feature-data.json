@@ -1,0 +1,115 @@
+{
+ "eyebrow": "Spotlight layouts · Temple",
+ "kits": [
+  {
+   "id": "general",
+   "name": "Temple",
+   "hex": "#9C4A2C",
+   "who": "A temple house that runs gatherings, programs and ceremonies, and hires its rooms: what is open, how to take part and how to hold the space."
+  },
+  {
+   "id": "coaches",
+   "name": "Coaches and healers",
+   "hex": "#565C33",
+   "who": "Coaches, therapists and healers who work one to one and in small groups."
+  },
+  {
+   "id": "studios",
+   "name": "Studios and instructors",
+   "hex": "#2F6E80",
+   "who": "Yoga, dance, fitness and art studios that run classes and memberships."
+  },
+  {
+   "id": "hosts",
+   "name": "Event hosts",
+   "hex": "#7A4257",
+   "who": "People who run nights, gatherings and series: what is coming up, how to join, a list to stay in touch."
+  },
+  {
+   "id": "venues",
+   "name": "Venues",
+   "hex": "#B75C3C",
+   "who": "Rooms, halls and spaces for hire: show the room, the calendar and how to book it."
+  },
+  {
+   "id": "nonprofits",
+   "name": "Nonprofits",
+   "hex": "#6E7448",
+   "who": "Charities and community groups: explain the work plainly and make it easy to come along, volunteer or give."
+  },
+  {
+   "id": "networks",
+   "name": "Networks",
+   "hex": "#1D4451",
+   "who": "Many chapters under one name: find a chapter, start one, and see what is happening everywhere."
+  },
+  {
+   "id": "creators",
+   "name": "Creators",
+   "hex": "#4A2334",
+   "who": "Artists, musicians, makers and podcasters: the work, the shows and a list of people who want to hear from you."
+  },
+  {
+   "id": "schools",
+   "name": "Schools and programs",
+   "hex": "#414627",
+   "who": "Workshops, courses, camps and training: what you teach, when the next one starts and how to enroll."
+  },
+  {
+   "id": "clubs",
+   "name": "Clubs and groups",
+   "hex": "#7E3A22",
+   "who": "Hobby clubs, leagues, run and book clubs and co-ops: meetups, members and a way to join."
+  },
+  {
+   "id": "faith",
+   "name": "Spiritual community",
+   "hex": "#4A3527",
+   "who": "Churches, sanghas, temples and centers: when you gather, the small groups, and a way to give."
+  },
+  {
+   "id": "wellness",
+   "name": "Wellness and retreats",
+   "hex": "#3D8899",
+   "who": "Spas, retreat centers and wellness studios: treatments, packages, retreats and a simple way to book."
+  },
+  {
+   "id": "markets",
+   "name": "Markets and festivals",
+   "hex": "#B2792A",
+   "who": "Farmers markets, makers markets and festivals: the next dates, who is there, and how to apply as a vendor."
+  }
+ ],
+ "layouts": [
+  {
+   "id": "stack",
+   "name": "Stack",
+   "sub": "Every way in, stacked"
+  },
+  {
+   "id": "card-wall",
+   "name": "Card wall",
+   "sub": "Two columns of square cards"
+  },
+  {
+   "id": "story",
+   "name": "Story",
+   "sub": "One photo, a few lines, one button"
+  },
+  {
+   "id": "calendar-first",
+   "name": "Calendar first",
+   "sub": "Dates lead, booking follows"
+  },
+  {
+   "id": "shop-front",
+   "name": "Shop front",
+   "sub": "Sessions as products"
+  },
+  {
+   "id": "profile",
+   "name": "Profile",
+   "sub": "Who you are, then one thing to do"
+  }
+ ]
+}

@@ -59,6 +59,25 @@ describe('the Designer block family', () => {
     expect(faq).not.toContain('How early should we bring you in?')
   })
 
+  it('opens the testimonials and the closing call with the ochre ornament, and draws steps as seals', () => {
+    expect(draw('DesignerTestimonials', {}, { links })).toContain('role="separator"')
+    expect(draw('DesignerClosing', {}, { links })).toContain('dz-orn')
+    expect(draw('DesignerSteps', {}, { links })).toMatch(/class="dz-seal dz-disc"/)
+  })
+
+  it('draws the portfolio as the large-and-stacked mosaic, or as the design\'s cards, every project numbered', () => {
+    const projects = [1, 2, 3, 4].map((n) => ({ title: `Project ${n}`, location: 'Place', year: '2025', href: '~/portfolio' }))
+    const mosaic = draw('DesignerPortfolio', { projects }, { links })
+    expect(mosaic).toContain('dz-mosaic')
+    expect(mosaic).not.toContain('dz-tiles')
+    const cards = draw('DesignerPortfolio', { display: 'cards', projects }, { links })
+    expect(cards).toContain('dz-tiles')
+    expect(cards).not.toContain('dz-mosaic')
+    expect(cards.match(/class="dz-tile"/g)).toHaveLength(4)
+    expect(cards).toContain('<i>01</i>')
+    expect(cards).toContain('<i>04</i>')
+  })
+
   it('does not set an em dash in the sample copy', () => {
     const copy = JSON.stringify([designerSitePages(), ...DESIGNER_CATEGORY_COMPONENTS.map((t) => designerComponents[t].defaultProps)])
     expect(copy).not.toMatch(/—/)

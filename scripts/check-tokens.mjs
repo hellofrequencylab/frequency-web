@@ -93,6 +93,8 @@ const ALLOWLIST = [
   // It used to, and induction.tsx's `text-[10px]` rode along on an exemption granted for four hexes.
   { match: (p) => p.startsWith('app/sign-in/'), kinds: ['hex color'] },
   { match: (p) => p === 'app/join/(induction)/induction.tsx', kinds: ['hex color'] },
+  // The Create a Space claim card's Google button carries the same fixed four-colour mark as /sign-in, which it sits beside.
+  { match: (p) => p === 'components/frequency/site/pages/create-space/create-space-claim.tsx', kinds: ['hex color'] },
   // The Create a Space preview's per-kit accent swatches: each kit's own palette stands in the picker, so the fills are data, not UI styling.
   { match: (p) => p === 'lib/create-space/preview-site.ts', kinds: ['hex color'] },
   // print stylesheet: a print document renders literal CSS, not the app's CSS-var cascade.

@@ -23,6 +23,8 @@ const DESIGNER_PALETTE = {
   parchment: '#FBF8F2', sage: '#9DB2B4', sageSoft: '#D6E0E0', sageDeep: '#4E6E71', sand: '#F2DCB8', sandSoft: '#F8ECD8',
   ochre: '#D3A03F', ochreDeep: '#9A6C1C', terracotta: '#A65A3A', terracottaDeep: '#874429',
   plaster: '#F7F3EC', linen: '#EFE8DC', paper: '#FFFFFF', line: '#DAD0BF', lineSoft: '#E8E0D2', error: '#A8402F', success: '#5E7353',
+  // The design system's strong rule, disabled text, and the deep and soft shades of the status colours.
+  lineStrong: '#C9BCA6', disabled: '#8E8A84', sageInk: '#2F4648', infoSoft: '#E6EDED', errorSoft: '#F6E4DE', successDeep: '#3A4934', successSoft: '#EAEEE4',
 } as const
 
 const P = DESIGNER_PALETTE
@@ -63,7 +65,7 @@ const DESIGNER_VARS = `
 --dz-charcoal:${P.charcoal};--dz-charcoal-80:${P.charcoal80};--dz-ink:${P.ink};--dz-stone:${P.stone};--dz-walnut:${P.walnut};--dz-travertine:${P.travertine};
 --dz-parchment:${P.parchment};--dz-sage:${P.sage};--dz-sage-soft:${P.sageSoft};--dz-sage-deep:${P.sageDeep};--dz-sand:${P.sand};--dz-sand-soft:${P.sandSoft};
 --dz-ochre:${P.ochre};--dz-ochre-deep:${P.ochreDeep};--dz-terracotta:${P.terracotta};--dz-terracotta-deep:${P.terracottaDeep};
---dz-plaster:${P.plaster};--dz-linen:${P.linen};--dz-paper:${P.paper};--dz-line:${P.line};--dz-line-soft:${P.lineSoft};--dz-error:${P.error};--dz-success:${P.success};
+--dz-plaster:${P.plaster};--dz-linen:${P.linen};--dz-paper:${P.paper};--dz-line:${P.line};--dz-line-soft:${P.lineSoft};--dz-line-strong:${P.lineStrong};--dz-disabled:${P.disabled};--dz-sage-ink:${P.sageInk};--dz-info-soft:${P.infoSoft};--dz-error-soft:${P.errorSoft};--dz-success-deep:${P.successDeep};--dz-success-soft:${P.successSoft};--dz-error:${P.error};--dz-success:${P.success};
 --dz-on-dark:var(--dz-plaster);--dz-on-dark-muted:rgba(247,243,236,.82);--dz-rule-dark:rgba(247,243,236,.16);
 --dz-shadow-1:0 0 0 1px rgba(90,69,51,.05),0 1px 1px rgba(60,48,36,.04),0 2px 4px rgba(60,48,36,.05),0 8px 16px -6px rgba(60,48,36,.08);
 --dz-shadow-2:0 0 0 1px rgba(90,69,51,.05),0 1px 2px rgba(60,48,36,.05),0 6px 12px -2px rgba(60,48,36,.07),0 24px 40px -16px rgba(60,48,36,.18);
@@ -100,30 +102,37 @@ const DESIGNER_VARS = `
 /** The theme's tokens, scoped to a website root carrying data-house-theme="designer". The --color-primary*
  *  family is NOT set here: it is the Space's (designerAccentVars). */
 export const DESIGNER_TOKENS_CSS = `
+[data-house-theme="designer"][data-site-corners="subtle"]{--dz-r-1:4px;--dz-r-2:10px;--dz-r-3:16px;--dz-r-section:24px}
+[data-house-theme="designer"][data-site-corners="square"]{--dz-r-1:0px;--dz-r-2:0px;--dz-r-3:0px;--dz-r-section:0px}
+[data-house-theme="designer"][data-site-spacing="balanced"]{--dz-section-y:clamp(64px,7.5vw,104px)}
+[data-house-theme="designer"][data-site-spacing="compact"]{--dz-section-y:clamp(48px,5vw,72px)}
+@media (prefers-reduced-motion:reduce){[data-house-theme="designer"][data-house-theme]{--dz-dur-fast:0ms;--dz-dur-base:0ms;--dz-dur-slow:0ms}}
 [data-house-theme="designer"]{color-scheme:light;${DESIGNER_VARS}
 --color-canvas:var(--dz-plaster);--color-marketing-canvas:var(--dz-plaster);--color-surface:var(--dz-parchment);--color-surface-elevated:var(--dz-paper);--color-surface-post:var(--dz-parchment);--color-surface-hover:var(--dz-linen);
---color-chrome:var(--dz-glass);--color-chrome-border:var(--dz-line);--color-chrome-hover:var(--dz-linen);--color-scrim:var(--dz-glass-dark);
---color-border:var(--dz-line);--color-border-strong:var(--dz-charcoal);--color-rule:var(--dz-line);
---color-text:var(--dz-charcoal);--color-text-muted:var(--dz-stone);--color-text-subtle:var(--dz-stone);--color-text-disabled:var(--dz-charcoal-80);
---color-ink:var(--dz-charcoal);--color-ink-elevated:var(--dz-charcoal-80);--color-ink-border:var(--dz-charcoal);--color-on-ink:var(--dz-plaster);--color-on-ink-muted:var(--dz-on-dark-muted);--color-on-ink-subtle:var(--dz-on-dark-muted);
+--color-chrome:var(--dz-glass);--color-chrome-border:var(--dz-line);--color-chrome-hover:var(--dz-linen);--color-scrim:rgb(26 28 27 / 0.42);
+--color-border:var(--dz-line);--color-border-strong:var(--dz-line-strong);--color-rule:var(--dz-line);
+--color-text:var(--dz-charcoal);--color-text-muted:var(--dz-stone);--color-text-subtle:var(--dz-stone);--color-text-disabled:var(--dz-disabled);
+--color-ink:var(--dz-ink);--color-ink-elevated:var(--dz-charcoal);--color-ink-border:var(--dz-rule-dark);--color-on-ink:var(--dz-plaster);--color-on-ink-muted:var(--dz-on-dark-muted);--color-on-ink-subtle:var(--dz-on-dark-faint);
 --color-accent:var(--color-primary);--color-accent-hover:var(--color-primary-hover);--color-accent-strong:var(--color-primary-strong);--color-accent-bg:var(--color-primary-bg);--color-text-on-accent:var(--color-text-on-primary);
---color-signal:var(--dz-success);--color-signal-strong:var(--dz-success);--color-signal-bg:var(--dz-linen);--color-text-on-signal:var(--dz-paper);
---color-broadcast:var(--dz-sage-deep);--color-broadcast-strong:var(--dz-sage-deep);--color-broadcast-bg:var(--dz-sage-soft);--color-text-on-broadcast:var(--dz-paper);
---color-success:var(--dz-success);--color-success-bg:var(--dz-linen);--color-text-on-success:var(--dz-paper);
+--color-signal:var(--dz-success);--color-signal-strong:var(--dz-success-deep);--color-signal-bg:var(--dz-success-soft);--color-text-on-signal:var(--dz-paper);
+--color-broadcast:var(--dz-sage-deep);--color-broadcast-strong:var(--dz-sage-ink);--color-broadcast-bg:var(--dz-sage-soft);--color-text-on-broadcast:var(--dz-paper);
+--color-success:var(--dz-success);--color-success-bg:var(--dz-success-soft);--color-text-on-success:var(--dz-paper);
 --color-warning:var(--dz-ochre-deep);--color-warning-bg:var(--dz-sand-soft);
---color-danger:var(--dz-error);--color-danger-bg:var(--dz-sand-soft);--color-text-on-danger:var(--dz-paper);
---color-info:var(--dz-sage-deep);--color-info-bg:var(--dz-sage-soft);
+--color-danger:var(--dz-error);--color-danger-bg:var(--dz-error-soft);--color-text-on-danger:var(--dz-paper);
+--color-info:var(--dz-sage-deep);--color-info-bg:var(--dz-info-soft);--color-move:var(--dz-sage-deep);--color-move-bg:var(--dz-sage-soft);
 --color-focus-ring:var(--dz-ochre);--color-selection:var(--dz-sand);--color-on-media:var(--dz-plaster);--gradient-media-protect:var(--dz-scrim-card);
 --font-display:var(--dz-display);--font-heading:var(--dz-display);--font-body:var(--dz-sans);--font-mono:var(--dz-sans);--font-label:var(--dz-sans);--font-sans:var(--dz-sans);
 --radius-card:var(--dz-r-2);--radius-control:var(--dz-r-1);--radius-cover:var(--dz-r-3);--radius-media:var(--dz-r-3);--radius-pill:var(--dz-r-pill);
 --space-section:var(--dz-section-y);--space-section-tight:var(--dz-section-head);--space-gutter:var(--dz-gutter);
 --motion-fast:var(--dz-dur-fast);--motion-base:var(--dz-dur-base);--motion-slow:var(--dz-dur-slow);--ease-out:var(--dz-ease-out);--ease-in-out:var(--dz-ease);
 --shadow-float:var(--dz-shadow-3);--shadow-menu:var(--dz-shadow-3);
+--text-display-hero:clamp(3.25rem,6.2vw,6rem);--text-display-h1:clamp(2.75rem,5vw,4.5rem);--text-display-h2:clamp(2.375rem,4vw,3.5rem);--text-display-h3:clamp(1.875rem,3vw,2.5rem);--text-display-card:1.75rem;--text-stat:clamp(2.75rem,5vw,4.25rem);
+--text-page-title:2.5rem;--text-lead:1.375rem;--text-card-title:1.125rem;--text-body:1.125rem;--text-body-sm:1rem;--text-meta:.875rem;--text-eyebrow:.8125rem;--text-2xs:.75rem;
+--weight-heading:400;--leading-display:1.04;--leading-snug:1.25;--leading-normal:1.55;--leading-relaxed:1.7;
+--tracking-display:-0.01em;--tracking-tight:-0.005em;--tracking-label:.22em;--tracking-eyebrow:.22em;
+--th-bg:var(--color-canvas);--th-surface:var(--color-surface);--th-raised:var(--color-surface-elevated);--th-hairline:var(--color-border);--th-muted:var(--color-text-subtle);--th-secondary:var(--color-text-muted);--th-text:var(--color-text);
+--th-accent:var(--color-accent);--th-accent-text:var(--color-accent-strong);--th-on-accent:var(--color-text-on-accent);--th-season:var(--dz-terracotta);--th-on-season:var(--dz-plaster);--th-dw:400;--th-r:var(--radius-card);
+--mn-solid:var(--dz-charcoal);--mn-solid-hover:var(--dz-action-hover);--mn-on-solid:var(--dz-plaster);
 background:var(--color-canvas);color:var(--color-text);font-family:var(--dz-sans)}
-${DESIGNER_KIT_TOKENS_CSS}[data-house-theme="designer"][data-site-corners="subtle"]{--dz-r-1:4px;--dz-r-2:10px;--dz-r-3:16px;--dz-r-section:24px}
-[data-house-theme="designer"][data-site-corners="square"]{--dz-r-1:0px;--dz-r-2:0px;--dz-r-3:0px;--dz-r-section:0px}
-[data-house-theme="designer"][data-site-spacing="balanced"]{--dz-section-y:clamp(64px,7.5vw,104px)}
-[data-house-theme="designer"][data-site-spacing="compact"]{--dz-section-y:clamp(48px,5vw,72px)}
-[data-house-theme="designer"] ::selection{background:var(--dz-sand)}
-@media (prefers-reduced-motion:reduce){[data-house-theme="designer"]{--dz-dur-fast:0ms;--dz-dur-base:0ms;--dz-dur-slow:0ms}}
+${DESIGNER_KIT_TOKENS_CSS}[data-house-theme="designer"] ::selection{background:var(--dz-sand)}
 `

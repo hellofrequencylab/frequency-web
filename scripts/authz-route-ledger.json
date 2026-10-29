@@ -70,6 +70,12 @@
       "checked": "2026-08-17",
       "digest": "d5e68749660ab570"
     },
+    "app/api/check-space-handle/route.ts": {
+      "verdict": "public",
+      "reason": "Space handle availability for the signed-out /create-a-space builder. Anonymous by design and per-IP rate limited (30 per minute, fail-closed when the limiter is unconfigured in production). The whole response is one word, free, taken or invalid, over the same uniqueness rule createSpace applies; it never says whose Space holds a taken handle, whether it is active, or anything else about the row. A failed read answers 503, never free. The only data touched is the one slug the caller sent.",
+      "checked": "2026-10-29",
+      "digest": "02e255abf73643de"
+    },
     "app/api/csp-report/route.ts": {
       "verdict": "public",
       "reason": "CSP violation sink. Browsers post reports with no session, so it cannot be authenticated. Stores nothing, never throws, always 204; the handler only logs three truncated fields.",

@@ -31,7 +31,7 @@ Role blocks are the structural fix. Phase 1 is the safety net while they are bui
 
 ## 1. The token contract
 
-One set of names every role block may read. Eight groups, about 45 names. These are semantic, in the three-tier sense of `docs/THEME-PROTOCOL.md` §3 (primitives, semantic, component). Raw values stay only in token files; `check:tokens` still applies.
+One set of names every role block may read. Eleven groups, 45 names (`lib/theme/block-contract-tokens.ts`). These are semantic, in the three-tier sense of `docs/THEME-PROTOCOL.md` §3 (primitives, semantic, component). Raw values stay only in token files; `check:tokens` still applies.
 
 | Group | Names | Notes |
 |---|---|---|
@@ -39,6 +39,8 @@ One set of names every role block may read. Eight groups, about 45 names. These 
 | Ink | `--c-text`, `--c-text-muted`, `--c-text-subtle`, `--c-on-accent` | `on-accent` is measured per accent (the Accent buttons rule, #4261) |
 | Accent | `--c-accent`, `--c-accent-hover`, `--c-accent-soft`, `--c-accent-bg`, `--c-accent-deep`, `--c-accent-text` | the owner's brand accent re-binds this group only |
 | Line | `--c-line`, `--c-line-strong` | hairlines |
+| Status | `--c-success`, `--c-warning`, `--c-danger`, `--c-info`, `--c-focus` | state colours and the focus ring |
+| Band | `--c-band`, `--c-on-band` | the dark or inverted section and what reads on it |
 | Shape | `--r-control`, `--r-card`, `--r-panel`, `--r-media`, `--frame` | `--frame` is a clip or radius for media: `rect`, `arch`, `round`, `angled` values |
 | Depth | `--shadow-card`, `--shadow-lift` | may be `none` (Nocturne) |
 | Type | `--f-display`, `--f-body`, `--f-label`, `--f-voice`, `--w-display`, `--track-display`, `--case-heading`, `--lead-display` | voice is the serif-italic accent face (Instrument Serif, Cormorant) |

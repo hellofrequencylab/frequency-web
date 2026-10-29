@@ -6,6 +6,14 @@
 
 const W = 100 // viewBox width — charts scale to their container
 
+// Chart colours are three slots a theme can fill (`--chart-line`, `--chart-fill`, `--chart-fill-now`). Frequency's
+// admin kit sets them to its sky and aqua; any other design falls back to the primary text step, as before. The
+// text step is a label colour (dark teal on Frequency), so it only reads as a fill through the fallback.
+const LINE = 'var(--chart-line, var(--color-primary-strong))'
+const FILL = 'var(--chart-fill, color-mix(in oklab, var(--color-primary-strong) 15%, transparent))'
+const FILL_BAR = 'var(--chart-fill-bar, color-mix(in oklab, var(--color-primary-strong) 45%, transparent))'
+const FILL_NOW = 'var(--chart-fill-now, var(--color-primary-strong))'
+
 /** Cumulative trend as a filled area + line (e.g. total members over time). */
 export function TrendArea({ points, height = 54 }: { points: number[]; height?: number }) {
   if (points.length < 2) return <EmptyChart height={height} />
@@ -18,9 +26,9 @@ export function TrendArea({ points, height = 54 }: { points: number[]; height?: 
   const area = `${line} L${W},${height} L0,${height} Z`
   return (
     <svg viewBox={`0 0 ${W} ${height}`} preserveAspectRatio="none" className="h-full w-full" aria-hidden>
-      <path d={area} className="fill-primary-strong/15" />
-      <path d={line} className="fill-none stroke-primary-strong" strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={W} cy={y(points[points.length - 1])} r="2" className="fill-primary-strong" />
+      <path d={area} style={{ fill: FILL }} />
+      <path d={line} className="fill-none" style={{ stroke: LINE }} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={W} cy={y(points[points.length - 1])} r="2" style={{ fill: LINE }} />
     </svg>
   )
 }
@@ -43,7 +51,7 @@ export function WeekBars({ values, height = 54 }: { values: number[]; height?: n
             width={bw}
             height={h}
             rx="1"
-            className={i === values.length - 1 ? 'fill-primary-strong' : 'fill-primary-strong/45'}
+            style={{ fill: i === values.length - 1 ? FILL_NOW : FILL_BAR }}
           />
         )
       })}
@@ -64,7 +72,7 @@ export function RingGauge({ pct, label, sub }: { pct: number; label: string; sub
           cx="40"
           cy="40"
           r={r}
-          className="fill-none stroke-primary-strong"
+          className="fill-none" style={{ stroke: LINE }}
           strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={`${(clamped * c).toFixed(1)} ${c.toFixed(1)}`}

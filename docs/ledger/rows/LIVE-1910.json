@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1910",
+  "title": "Free Human Theme Kit: take in the design system and load the theme into Frequency (website, Spotlight, Space page, email, starter kits)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "L",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/design-systems/free-human/rules.json",
+    "ref": "Free Human Movement Design System.zip (2026-10-29)"
+  },
+  "detail": "The Free Human Movement design system (code id free-human, editor theme FreeHuman) goes through docs/DESIGN-SYSTEM-INTAKE.md: rules, inventory, tokens, copy and a baseline of known gaps that only shrinks. The kit is then built the way Temple was: foundation and tokens, assets, chrome, eleven blocks, Home and Calendar pages, four emails, Spotlight layouts, thirteen starter kits and a /themes page on the Nocturne layout. Owner ruling 2026-10-29: load the theme only. No Free Human Movement Space or site data is created or seeded. Photo rights in design/photos/README.md are unresolved: the copyrighted ones must not ship in anything a Space receives until cleared.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "The design-system baseline for free-human is empty and the theme is registered in the Space picker.",
+    "cmd": "node scripts/probes/free-human-registered.mjs"
+  }
+}

@@ -97,6 +97,8 @@ export function plannerKindOf(ev: CalendarEvent): PlannerKind {
 }
 
 function planStageOf(plan: SpacePlan, own: readonly PlannerItem[]): PlanStage {
+  // A Plan put away is Cancelled, whatever dates it kept.
+  if (plan.archivedAt) return 'cancelled'
   const live = own.filter((i) => i.kind !== 'cancelled')
   if (own.length > 0 && live.length === 0) return 'cancelled'
   if (plan.stage === 'production' && live.length > 0 && live.every((i) => i.kind === 'event')) return 'event'

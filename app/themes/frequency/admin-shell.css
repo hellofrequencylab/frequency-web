@@ -182,6 +182,23 @@ html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top
 @layer components {
 [data-design="frequency"] [data-kit="admin"] .ad-top{background:color-mix(in oklab,var(--fq-surface-card) 96%,transparent)}
 }
+/* 2026-10-29, owner screenshot of /admin: the page title and the big stat numbers still ghosted through at
+   96%, so the fill is now solid (this rule follows the 96% one and wins). The blur stays for the edge. */
+@layer components {
+[data-design="frequency"] [data-kit="admin"] :is(.ad-top,.ad-topmenu){background:var(--fq-surface-card)}
+}
+
+/* ADMIN STAT CHARTS (components/admin/spark-charts.tsx). The charts used the primary TEXT step as a fill, which
+   on Frequency's daytime skin is a dark teal (#26636F), so the area and bars read grey-teal. They now take
+   Frequency's own sky and aqua through these slots; other designs keep the component's fallback. */
+@layer components {
+[data-design="frequency"] [data-kit="admin"]{
+  --chart-line:var(--fq-accent);
+  --chart-fill:color-mix(in oklab,var(--fq-x-sky-neon) 45%,transparent);
+  --chart-fill-bar:color-mix(in oklab,var(--fq-x-sky-neon) 80%,transparent);
+  --chart-fill-now:var(--fq-accent);
+}
+}
 
 /* THE PHONE CONSOLE (owner, 2026-10-20: "the space console experience in Mobile is trash"). Under 960px the
    264px sidebar stops folding into a wrapping row above the page (four stacked bands, labels overlapping, the

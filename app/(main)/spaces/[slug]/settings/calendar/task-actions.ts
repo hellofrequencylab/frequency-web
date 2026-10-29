@@ -8,6 +8,8 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import {
   assignTaskInPlan,
   buildTaskPlanningPatch,
+  deleteTaskInScope,
+  retitleTaskInScope,
   getTaskInPlans,
   getTaskInScope,
   moveTaskDueInScope,
@@ -246,6 +248,57 @@ export async function setTaskPlanning(slug: string, taskId: string, rawPatch: un
       actorSpaceId: editor.spaceId,
       kind: 'field',
       summary: `Changed the timing or estimate on "${task.title}".`,
+    })
+  }
+  revalidatePath(`/spaces/${slug}/settings/calendar`)
+  revalidatePath(`/spaces/${slug}/calendar`)
+  return ok()
+}
+
+// ── RENAME AND DELETE (calendar suite pass 5, the Details panel) ─────────────────────────────────
+
+const TODO_TITLE_MAX = 200
+
+/** Rename one of this Space's own to-dos. A to-do on a Plan another Space shared is that Space's to rename. */
+export async function renameSpaceTodo(slug: string, taskId: string, rawTitle: unknown): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this Space.')
+  if (typeof taskId !== 'string' || !UUID_RE.test(taskId)) return fail('That to-do no longer exists.')
+  const title = typeof rawTitle === 'string' ? rawTitle.replace(/\s+/g, ' ').trim().slice(0, TODO_TITLE_MAX) : ''
+  if (!title) return fail('Give the to-do a title.')
+  const task = await getTaskInScope(taskId, editor.spaceId)
+  if (!task) return fail('That to-do could not be renamed.')
+  if (task.title === title) return ok()
+  if (!(await retitleTaskInScope(taskId, title, editor.spaceId))) return fail('That to-do could not be renamed.')
+  if (task.planId) {
+    await recordPlanActivity({
+      planId: task.planId,
+      actorProfileId: editor.profileId,
+      actorSpaceId: editor.spaceId,
+      kind: 'field',
+      summary: `Renamed "${task.title}" to "${title}".`,
+    })
+  }
+  revalidatePath(`/spaces/${slug}/settings/calendar`)
+  revalidatePath(`/spaces/${slug}/calendar`)
+  return ok()
+}
+
+/** Delete one of this Space's own to-dos. The Plan's record says what went. */
+export async function deleteSpaceTodo(slug: string, taskId: string): Promise<ActionResult<void>> {
+  const editor = await resolveEditor(slug)
+  if (!editor) return fail('You do not have access to this Space.')
+  if (typeof taskId !== 'string' || !UUID_RE.test(taskId)) return fail('That to-do no longer exists.')
+  const task = await getTaskInScope(taskId, editor.spaceId)
+  if (!task) return fail('That to-do could not be deleted.')
+  if (!(await deleteTaskInScope(taskId, editor.spaceId))) return fail('That to-do could not be deleted.')
+  if (task.planId) {
+    await recordPlanActivity({
+      planId: task.planId,
+      actorProfileId: editor.profileId,
+      actorSpaceId: editor.spaceId,
+      kind: 'field',
+      summary: `Deleted the to-do "${task.title}".`,
     })
   }
   revalidatePath(`/spaces/${slug}/settings/calendar`)

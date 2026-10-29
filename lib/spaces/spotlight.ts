@@ -26,6 +26,7 @@ export const SPACE_SPOTLIGHT_BLOCK_IDS = [
   'journeys',
   'events',
   'memberships',
+  'donate',
   'contactForm',
   'heading',
   'text',

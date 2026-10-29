@@ -2,9 +2,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import type { CommandRow } from '@/lib/calendar/planner/command-results'
+import type { parseCommand } from '@/lib/calendar/planner/command-parse'
 import { SuiteCommand } from './suite-command'
 import { SuitePencil, type PencilSubmit } from './suite-pencil'
 import { SuiteQuick } from './suite-quick'
+
+type Parsed = NonNullable<ReturnType<typeof parseCommand>>
 
 // THE THREE SHEETS, DRIVEN. Pencil it in holds up to three days and sends exactly what was chosen,
 // quick add sends its kind and place, and the command bar reads a sentence, shows what it understood,
@@ -124,7 +128,7 @@ describe('Quick add', () => {
 })
 
 describe('Command bar', () => {
-  const run = vi.fn(async () => null)
+  const run = vi.fn(async (_row: CommandRow, _parsed: Parsed | null): Promise<string | null> => null)
   const open = () =>
     mount(
       <SuiteCommand

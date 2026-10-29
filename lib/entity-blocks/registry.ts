@@ -61,6 +61,9 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   // Link cards (the Space Spotlight, LIVE-852): link-in-bio buttons, each to ONE thing the Space offers.
   // Offered on the Spotlight's own palette only (lib/spaces/spotlight.ts), not the Space page's core set.
   { id: 'linkCards', label: 'Link cards', description: 'Big buttons, each to one product, Journey, event, membership or booking.', category: 'data', kinds: ['space'], order: 67 },
+  // The Space's own fund as a card (SPL-13): the Donate tab's fund and checkout, shown only when the Space can
+  // take a gift (Business and up with payouts on). Space Spotlight only.
+  { id: 'donate', label: 'Donate', description: 'Your fund, with amounts people can give. 0% from Frequency.', category: 'data', kinds: ['space'], order: 68 },
   { id: 'circles', label: 'Circles', description: 'The community circles inside this space.', category: 'data', kinds: ['space'], order: 70 },
   { id: 'team', label: 'Team', description: 'The people who run this space.', category: 'data', kinds: ['space'], requiresFunction: 'members', order: 80 },
   { id: 'reviews', label: 'Reviews', description: 'What members say.', category: 'data', kinds: ['space'], order: 90 },
@@ -71,6 +74,17 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'business', label: 'Business presence', description: 'Find this space online.', category: 'data', kinds: ['space'], order: 130 },
   { id: 'topfriends', label: 'Top friends', description: 'The people this member is closest to.', category: 'data', kinds: ['member'], order: 140 },
   { id: 'guestbook', label: 'Guestbook', description: 'Notes from people who stopped by.', category: 'data', kinds: ['member'], order: 150 },
+  // The events this member hosts (SPL-03): the upcoming public ones, read from the Spotlight's own reader. A
+  // separate id from the Space `events` block, which is function-backed by the Space's own rows.
+  { id: 'memberEvents', label: 'Events I host', description: 'Your next public events, with a link to each.', category: 'data', kinds: ['member'], order: 160 },
+  // The 0% Tip jar (SPL-06): a link to the in-app tip composer, shown only when the member can receive tips.
+  { id: 'tip', label: 'Tip jar', description: 'Let people send you a tip. 0% platform fee.', category: 'data', kinds: ['member'], order: 170 },
+  // What this member is part of (SPL-04): their public Circles, Journeys and Spaces, each shown only if the
+  // member switched that kind on. Reads the Spotlight reader's allowlisted `programs`; nothing private.
+  { id: 'memberPrograms', label: "What I'm part of", description: 'The Circles, Journeys and Spaces you choose to show.', category: 'data', kinds: ['member'], order: 180 },
+  // What this member gives back (SPL-05): quiet stat pills the member chooses (Crew, events hosted, Journeys
+  // finished, Zaps). Every value is resolved server-side; the member only picks which pills show.
+  { id: 'memberContributions', label: 'What I give back', description: 'Quiet stats about how you show up for the community.', category: 'data', kinds: ['member'], order: 190 },
 ]
 
 // ── CONTENT blocks the operator authors (shared by both kinds) ─────────────────────────────────────
@@ -213,6 +227,10 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   // Member-only data sections (kept for the member profile).
   'topfriends',
   'guestbook',
+  'memberEvents',
+  'tip',
+  'memberPrograms',
+  'memberContributions',
   // SPACE free-form blocks (ADR-542): Callout, Image Gallery, Features section, Music-and-video embed.
   'callout',
   'gallery',

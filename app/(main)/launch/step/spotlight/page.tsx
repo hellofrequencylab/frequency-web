@@ -1,7 +1,9 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { LaunchClockSlot } from '@/components/launch/launch-clock-slot'
 import { LaunchFlow } from '@/components/launch/launch-flow'
 import { DashboardTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
+import { launchHomeHref, spotlightArrivalGoesHome } from '@/lib/launch/destination'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
 import { flowHeading, flowView } from '@/lib/launch/flow'
 import { loadSpotlightAnswers } from '@/lib/launch/flow-io'
@@ -16,11 +18,13 @@ import { getActiveLaunch } from '@/lib/launch/store'
 // same page shows the live preview, the form to change it, and the stages still to come. Open to a signed-out visitor:
 // an account is asked for at Publish (the action holds their answers and sends them to sign in). Answers held from an
 // earlier try fill the form again. Dark while LAUNCH_SYSTEM_ENABLED is off.
-export default async function SpotlightStepPage({ searchParams }: { searchParams: Promise<{ e?: string; new?: string }> }) {
+export default async function SpotlightStepPage({ searchParams }: { searchParams: Promise<{ e?: string; new?: string; go?: string }> }) {
   if (!launchSystemEnabled()) notFound()
-  const { e, new: startNew } = await searchParams
+  const { e, new: startNew, go } = await searchParams
   const profileId = await getMyProfileId()
   const launch = profileId ? await getActiveLaunch(profileId) : null
+  // A launch already started has one home. Only a link from inside the flow (go=1), an error line or the new-Space choice stays here.
+  if (spotlightArrivalGoesHome({ hasLaunch: !!launch, go, e, new: startNew })) redirect(launchHomeHref({ signedIn: true }))
   const view = flowView(launch)
   const saved = view.slug ? await loadSpotlightAnswers(launch) : null
   const typed = (await readPendingLaunch())?.answers.spotlight
@@ -32,6 +36,9 @@ export default async function SpotlightStepPage({ searchParams }: { searchParams
   const choices = owned.length > 0 ? spaceChoices(owned) : undefined
   return (
     <DashboardTemplate {...flowHeading(view)} adminBar={false} width="default">
+      {launch && profileId ? (
+        <LaunchClockSlot launchId={launch.id} ownerId={profileId} stages={view.stages.map((s) => s.label)} stagesDone={view.stages.filter((s) => s.state === 'live').length} done={view.stages.filter((s) => s.state === 'live').length} total={view.stages.length} />
+      ) : null}
       <LaunchFlow view={view} answers={held} errorCode={typeof e === 'string' ? e : undefined} signedIn={!!profileId} choices={choices} />
     </DashboardTemplate>
   )

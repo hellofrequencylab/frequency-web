@@ -20,6 +20,7 @@ import {
   type BuilderLayout,
 } from '@/lib/entity-blocks/rows-ops'
 import { adminScopeFor, railArchetypeFor } from '@/lib/layout/page-chrome'
+import type { SpotlightCapReached } from '@/lib/spotlight/caps'
 import { saveMemberGridLayout } from '@/app/(main)/settings/profile/spotlight-actions'
 import { NodeLayoutMount } from './node-layout-store'
 import { saveSpaceGridLayout } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
@@ -46,7 +47,7 @@ import { saveSpaceGridLayout } from '@/app/(main)/spaces/[slug]/settings/profile
 const SAVE_DEBOUNCE_MS = 600
 
 /** The injected persist action: repaints happen locally, this reconciles the server truth (debounced). */
-export type SaveLayout = (payload: BuilderLayout) => Promise<{ error?: string } | void>
+export type SaveLayout = (payload: BuilderLayout) => Promise<{ error?: string; capReached?: SpotlightCapReached } | void>
 
 interface EntityLayoutContextValue {
   /** Which entity kind this store drives — a builder guards on it so it never seeds the wrong store. */
@@ -101,6 +102,8 @@ interface EntityLayoutContextValue {
    *  the edit silently, because the leave-guard reads `saving`. */
   dirty: boolean
   error: string | null
+  /** Set with `error` when a save was refused for the Spotlight block cap (SPL-11): the builder draws a calm panel. */
+  capReached: SpotlightCapReached | null
 }
 
 const EntityLayoutCtx = createContext<EntityLayoutContextValue | null>(null)
@@ -132,6 +135,7 @@ export function EntityLayoutProvider({
   // See `dirty` on the context type: the debounce window, which `saving` does not cover.
   const [dirty, setDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [capReached, setCapReached] = useState<SpotlightCapReached | null>(null)
   // Shared selection (live-page edit mode): the block whose settings the rail should focus. Set by the live
   // grid on a block click and read by the in-rail builder; a plain piece of client state, persisted nowhere.
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -242,12 +246,16 @@ export function EntityLayoutProvider({
     inFlight.current.add(generation)
     setSaving(true)
     setError(null)
+    setCapReached(null)
     let failed = false
     try {
       const res = await save({ rows: next.rows, hidden: next.hidden, content: next.content, style: next.style })
       if (res?.error) {
         failed = true
-        if (subjectGeneration.current === generation) setError(res.error)
+        if (subjectGeneration.current === generation) {
+          setError(res.error)
+          setCapReached(res.capReached ?? null)
+        }
       }
     } catch (e) {
       failed = true
@@ -404,7 +412,7 @@ export function EntityLayoutProvider({
 
   return (
     <EntityLayoutCtx.Provider
-      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, selectedItemIndex, selectItem, bench, apply, undo, canUndo, applyContent, patchContent, applyStyle, seed, saving, dirty, error }}
+      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, selectedItemIndex, selectItem, bench, apply, undo, canUndo, applyContent, patchContent, applyStyle, seed, saving, dirty, error, capReached }}
     >
       {children}
     </EntityLayoutCtx.Provider>

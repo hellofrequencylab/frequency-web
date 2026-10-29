@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1873",
+  "title": "The 12 minute launch clock is real: kept on the launch row, paused when away, shown on both launch pages",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/launch/clock.ts",
+    "ref": "Vera guided launch system. The owner ruled on 2026-10-28: a 12 minute clock that pauses when idle or hidden, persists, encourages and never shames, runs on as bonus time after 12:00, and shrinks from a hero card to a sticky bar."
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-clock.mjs",
+    "note": "lib/launch/clock.test.ts (run by the test job) pins the rules. The probe runs the cap under node (a beat adds at most 30 seconds, a stop clears the beat, a beat with no start adds nothing) and reads the migration, the types, the owner-named write, the guarded action and the wiring on /launch and the spotlight step. Fails on main, where there is no clock."
+  },
+  "detail": "Migration 20270346027300 adds space_launch.clock_active_ms (integer, default 0) and clock_last_beat_at (timestamptz); no new policy, the owner-only ones cover them. The open page beats every 15 seconds while visible and not idle (60 seconds without input); the server adds min(time since the last beat, 30 seconds), written only when the row is unchanged so two tabs count a moment once. Hero card at the top, a pill once it scrolls away, bonus time past 12:00, a pace cheer from items done (overviewProgress) that never says behind. The reminder emails read clock_active_ms and clock_last_beat_at. SQL is applied before merge (ADR-1111): APPLY-20270346027300.sql. Not here: the clock on later steps (they do not exist yet).",
+  "wave": "W7",
+  "closed": "2026-10-29"
+}
