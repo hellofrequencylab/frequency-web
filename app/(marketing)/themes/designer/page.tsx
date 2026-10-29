@@ -15,9 +15,7 @@ export default function DesignerThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.designer)} />
-      <div className={DESIGNER_FONT_CLASS}>
-        <FrequencyDesigner />
-      </div>
+      <FrequencyDesigner fontClass={DESIGNER_FONT_CLASS} />
     </>
   )
 }

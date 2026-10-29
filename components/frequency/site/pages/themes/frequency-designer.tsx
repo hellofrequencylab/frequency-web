@@ -302,7 +302,7 @@ function Pressed({
   )
 }
 
-export function FrequencyDesigner() {
+export function FrequencyDesigner({ fontClass = '' }: { fontClass?: string }) {
   const [kitId, setKitId] = useState('general')
   const [hv, setHv] = useState<Surface>('site')
   const [ins, setIns] = useState<InsView>('pages')
@@ -320,7 +320,7 @@ export function FrequencyDesigner() {
   const soon = (id: string) => (themeLibraryEntry('designer')?.surfaces.find((x) => x.id === id)?.status ?? 'soon') === 'soon'
 
   return (
-    <div className="nf nf-dz" style={stageVars}>
+    <div className={`nf nf-dz ${fontClass}`.trim()} style={stageVars}>
       <section className="phero big nf-hero nf-hz" data-energy="flow" data-screen-label="01 Hero">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.35 })} />
         <div className="fq-grain" />
