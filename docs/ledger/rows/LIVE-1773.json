@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1773",
+  "title": "A personal Spotlight has a block cap by tier: 12 for a Member, 40 for Crew (Spotlight split, step 2)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/pricing/meter-limits.ts",
+    "ref": "Owner picks 2026-10-28: 1 A, 2 A, 3 A (Crew is the personal upgrade, no new price)"
+  },
+  "detail": "Adds the `spotlight_blocks` tier-axis meter (free 12, crew 40) and asks it in saveMemberGridLayout. The real tier decides, a layout no bigger than the saved one is always kept, and the check is fail-safe to allowed while the pricing gates are not live. Link and gallery caps follow once the block field shapes are counted; the upgrade panel is its own row.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/pricing/meter-limits.ts','utf8');const b=fs.readFileSync('app/(main)/settings/profile/spotlight-actions.ts','utf8');if(!/spotlight_blocks:\\s*\\{\\s*free:\\s*12,\\s*crew:\\s*40/.test(a)||!b.includes('spotlight_blocks'))process.exit(1)\"",
+    "note": "Fails on main (no spotlight_blocks meter and no check in the save); passes here."
+  },
+  "closed": "2026-10-28",
+  "wave": "W7"
+}

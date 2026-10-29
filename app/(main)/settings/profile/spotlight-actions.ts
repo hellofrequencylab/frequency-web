@@ -23,6 +23,9 @@ import { sanitizeNodeLayout } from '@/lib/entity-blocks/node-ops'
 import { renderPathEnabled } from '@/lib/platform-flags'
 import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
 import { withMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
+import { countPlacedBlocks, growsPastCap, SPOTLIGHT_BLOCKS_MESSAGE } from '@/lib/spotlight/caps'
+import { memberWithinLeadershipAllowance } from '@/lib/pricing/member-leadership'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 
 // PUCK RETIRED (ADR-522 follow-up). The old Puck Spotlight editor and every writer that saved the Puck
 // nodes (meta.spotlight.layout / theme / background / themes / draft + publishSpotlightDraft) are gone —
@@ -48,7 +51,7 @@ export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?
 
   const { data: me } = await supabase
     .from('profiles')
-    .select('id, handle, meta')
+    .select('id, handle, meta, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!me) return { error: 'Profile not found' }
@@ -65,6 +68,17 @@ export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?
   if (compatibilityError) return { error: compatibilityError }
 
   const safe = nativeWrite ? sanitizeNodeLayout(rawLayout, 'member') : sanitizeEntityLayout(rawLayout, 'member')
+
+  // The block cap (the `spotlight_blocks` meter, the Spotlight split). The REAL tier decides, never the beta
+  // display tier, and a layout no bigger than the saved one is always kept, so nobody is locked out of a page
+  // they already built. Fail-safe to allowed while the gates are not live.
+  const nextCount = countPlacedBlocks(safe)
+  const savedCount = countPlacedBlocks(storedGrid)
+  if (nextCount > savedCount) {
+    const tier = ((me as { membership_tier?: string | null }).membership_tier ?? 'free') as EntitlementTier
+    const allowed = await memberWithinLeadershipAllowance('spotlight_blocks', tier, nextCount - 1)
+    if (growsPastCap(nextCount, savedCount, allowed)) return { error: SPOTLIGHT_BLOCKS_MESSAGE }
+  }
   // 2026-09-05 (scan2 L6-09): the helper over an EMPTY base says whether `entityGrid` is set or dropped
   // (an empty layout deletes it), and ONLY that key is merged or removed server-side. The RPC checks
   // auth.uid() owns the row, so the write stays session-scoped.

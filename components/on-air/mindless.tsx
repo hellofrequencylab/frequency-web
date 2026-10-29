@@ -27,7 +27,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
-import { X } from 'lucide-react'
+import { Clock3, X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { loadOnAirSession } from '@/app/(main)/on-air/actions'
@@ -37,6 +37,7 @@ import { LotusIcon } from '@/components/on-air/icons'
 import { loadLiveSession, type LiveSessionRecord } from '@/lib/on-air/live-session'
 import type { MovementMode } from '@/lib/movement'
 import { Button, buttonClasses } from '@/components/ui/button'
+import { Toast } from '@/components/ui/toast'
 
 // SCAN-1118: both engines are heavy and only one runs per open, so they load on demand. This file
 // is reachable from the app shell on every member route; static imports put ~30-40 KB gzip of
@@ -186,6 +187,7 @@ function routeInitialMode(
 export function MindlessProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [state, setState] = useState<OverlayState>({ phase: 'closed' })
+  const [expiredTimerNotice, setExpiredTimerNotice] = useState(false)
   // The server-authoritative active session (ADR-521), fetched on load. Passed to the matching
   // engine so a timer running on ANOTHER device resumes here as RUNNING (never a prompt).
   const [serverResume, setServerResume] = useState<LiveSessionRecord | null>(null)
@@ -362,8 +364,11 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     void getActiveTimerSession()
       .then((res) => {
         if (!live || isError(res) || !res.data) return
-        setServerResume(res.data)
-        openInternal(undefined, res.data.kind === 'movement' ? 'move' : 'still')
+        if (res.data.expired) setExpiredTimerNotice(true)
+        const session = res.data.session
+        if (!session) return
+        setServerResume(session)
+        openInternal(undefined, session.kind === 'movement' ? 'move' : 'still')
       })
       // Swallow, matching every peer in lib/on-air/active-session.ts. This is an OPTIONAL
       // cross-device convenience: if it rejects, the member simply opens the timer normally.
@@ -408,6 +413,20 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   return (
     <MindlessContext.Provider value={api}>
       {children}
+      {expiredTimerNotice && (
+        <div className="pointer-events-none fixed inset-x-4 bottom-4 z-50 mx-auto max-w-md">
+          <Toast
+            title="Timer session expired"
+            icon={<Clock3 className="h-5 w-5" />}
+            duration={0}
+            dismissible
+            onDismiss={() => setExpiredTimerNotice(false)}
+            className="w-full"
+          >
+            We couldn&rsquo;t verify time after you left, so no extra practice or rewards were added. Any earlier saved progress is unchanged.
+          </Toast>
+        </div>
+      )}
       {/* onClose is not optional here: this shell locks body scroll, and Escape is the only
           other exit, which does not exist on a phone. A slow or failed load must never be a
           dead end. */}
