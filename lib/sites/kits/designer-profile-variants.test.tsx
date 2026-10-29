@@ -44,6 +44,17 @@ describe('Designer profile kits', () => {
     }
   })
 
+  it('gives every profile a Services page: header, the Space\'s own offers, the closing call', async () => {
+    for (const s of DESIGNER_PROFILE_KIT_INDEX) {
+      const page = (await loadKit(s.id))!.pages.find((p) => p.slug === 'services')
+      expect(page, s.id).toBeTruthy()
+      const types = page!.blocks.map((b) => b.type)
+      expect(types[0], s.id).toBe('DesignerHero')
+      expect(types, s.id).toContain('SpaceOfferings')
+      expect(types.at(-1), s.id).toBe('DesignerClosing')
+    }
+  })
+
   it('uses registered Designer blocks and the photographs the theme ships', async () => {
     const photos = new Set<string>()
     for (const s of DESIGNER_PROFILE_KIT_INDEX) {
