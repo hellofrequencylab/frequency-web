@@ -79,15 +79,31 @@ try {
     refused(await request(`/rest/v1/launch_list_attestations?launch_id=eq.${launch}`, owner.token, 'PATCH', { answer: 'declined' }), ['42501'])
     refused(await request(`/rest/v1/launch_list_attestations?launch_id=eq.${launch}`, owner.token, 'DELETE'), ['42501'])
   })
-  await check('Removing a source removes its facts', async () => {
+  await check('Removing a source removes its facts and keeps its consent evidence', async () => {
     success(await request(`/rest/v1/launch_sources?id=eq.${source}`, owner.token, 'DELETE'))
     assert.deepEqual(success(await request(`/rest/v1/launch_facts?source_id=eq.${source}&select=id`, owner.token)), [])
+    const kept = success(await request(`/rest/v1/launch_list_attestations?launch_ref=eq.${launch}&select=answer,wording_version,source_id,source_ref,launch_id`, service))
+    assert.equal(kept.length, 1); assert.equal(kept[0].source_id, null); assert.equal(kept[0].source_ref, source); assert.equal(kept[0].launch_id, launch); assert.equal(kept[0].answer, 'confirmed')
+  })
+  await check('Consent evidence: a source from another launch is refused, no role can edit or delete it, service role included', async () => {
+    const other = success(await request('/rest/v1/space_launch', stranger.token, 'POST', { owner_id: stranger.profile }))[0].id; launches.push(other)
+    const foreign = success(await request('/rest/v1/launch_sources', stranger.token, 'POST', { launch_id: other, kind: 'website', label: 'https://example.com' }))[0].id
+    refused(await request('/rest/v1/launch_list_attestations', owner.token, 'POST', { launch_id: launch, source_id: foreign, wording_version: 'v1', answer: 'confirmed' }), ['23514'])
+    refused(await request(`/rest/v1/launch_list_attestations?launch_ref=eq.${launch}`, service, 'PATCH', { answer: 'declined' }), ['42501'])
+    refused(await request(`/rest/v1/launch_list_attestations?launch_ref=eq.${launch}`, service, 'DELETE'), ['42501'])
+    refused(await request(`/rest/v1/launch_list_attestations?launch_ref=eq.${launch}`, anon, 'DELETE'), ['42501'])
   })
   await check('The reminder log is service-only and sends once per launch and trigger', async () => {
     refused(await request('/rest/v1/launch_email_log?select=id', owner.token), ['42501'])
     refused(await request('/rest/v1/launch_email_log', owner.token, 'POST', { launch_id: launch, trigger_kind: 'resume_1' }), ['42501'])
     success(await request('/rest/v1/launch_email_log', service, 'POST', { launch_id: launch, trigger_kind: 'resume_1' }))
     refused(await request('/rest/v1/launch_email_log', service, 'POST', { launch_id: launch, trigger_kind: 'resume_1' }), ['23505'])
+  })
+  await check('Deleting a launch keeps its consent evidence, detached, unreadable by its former owner', async () => {
+    success(await request(`/rest/v1/space_launch?id=eq.${launch}`, service, 'DELETE'))
+    const kept = success(await request(`/rest/v1/launch_list_attestations?launch_ref=eq.${launch}&select=answer,wording_version,attested_at,launch_id,launch_ref`, service))
+    assert.equal(kept.length, 1); assert.equal(kept[0].launch_id, null); assert.equal(kept[0].launch_ref, launch); assert.ok(kept[0].attested_at)
+    assert.deepEqual(success(await request(`/rest/v1/launch_list_attestations?launch_ref=eq.${launch}&select=id`, owner.token)), [])
   })
   console.log(JSON.stringify({ status: 'PASS', level: 'Ephemeral local Supabase full migration schema and real PostgREST/Auth HTTP; no hosted project', checks }))
 } finally {
