@@ -21,6 +21,8 @@ import { getTopFriendsForOwner, type TopFriend } from './top-friends'
 import { getGuestbookForOwner, type GuestbookEntry } from './guestbook'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
+import { getMemberPrograms } from './programs'
+import { programsOptInFromGrid, type SpotlightPrograms } from './programs.shared'
 
 // Server data for the PUBLIC Spotlight page. Anonymous visitors get no RLS, so this
 // reads through the admin client and is fail-closed: it returns null unless the page
@@ -41,6 +43,8 @@ export interface SpotlightData {
   /** True when the member can receive tips right now (payouts live and their account ready). A boolean
    *  only, never a Stripe id. Computed for the PUBLIC page; the in-app profile has its own Tip button. */
   canTip: boolean
+  /** The public Circles, Journeys and Spaces the member opted to show (SPL-04). Empty unless a switch is on. */
+  programs: SpotlightPrograms
   /** The member's validated block layout (empty when they haven't customized). */
   layout: SpotlightLayout
   /** The validated optional background image. */
@@ -181,23 +185,26 @@ async function loadMemberSpotlight(
   // reactions, joins, etc., so the stat never appeared.)
   const totalZaps = Number(g.lifetime_zaps ?? 0)
 
-  // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel
-  // (both are per-owner reads joined to public profile fields).
-  const [topFriends, guestbook, canTip] = await Promise.all([
+  // The member's saved unified grid layout (U3 module render), read fail-safe off the SAME meta blob the
+  // publish/layout gate already loaded — no extra query. Never returned raw; only the parsed layout.
+  const grid = readMemberGridLayout(g.meta)
+
+  // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel (both are per-owner
+  // reads joined to public profile fields). The Programs block (SPL-04) reads only what the member switched
+  // on in that block, so it costs nothing for everyone else; it fails closed to empty lists.
+  const [topFriends, guestbook, canTip, programs] = await Promise.all([
     getTopFriendsForOwner(g.id),
     getGuestbookForOwner(g.id),
     // Public page only: the in-app profile already carries the real Tip button.
     requirePublished ? readCanTip(g.id) : Promise.resolve(false),
+    getMemberPrograms(g.id, programsOptInFromGrid(grid)),
   ])
-
-  // The member's saved unified grid layout (U3 module render), read fail-safe off the SAME meta blob the
-  // publish/layout gate already loaded — no extra query. Never returned raw; only the parsed layout.
-  const grid = readMemberGridLayout(g.meta)
 
   return {
     profile: row as unknown as SpotlightRow,
     hostedEvents: (events ?? []) as SpotlightHostedEvent[],
     canTip,
+    programs,
     layout,
     background,
     stickers,

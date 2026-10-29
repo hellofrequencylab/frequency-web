@@ -70,7 +70,7 @@ export const TEMPLE_KIT_LIVE = {
   items: [
     { source: 'nextEvent', icon: 'calendar', label: 'Next gathering', value: 'Nov 20 · Sound bath', href: '~/gatherings' },
     { source: 'custom', icon: 'circle', label: 'Walk the grounds', value: 'Free, ask for a time', href: '~/book' },
-    { source: 'custom', icon: 'arc', label: 'Next program', value: 'Breath · from Jan 5', href: '~/journeys' },
+    { source: 'custom', icon: 'arc', label: 'Next program', value: 'Breath · from Jan 5', href: '~/programs' },
     { source: 'custom', icon: 'map-pin', label: 'Find us', value: 'Ojai, California', href: '~/contact' },
   ],
 }
@@ -155,12 +155,12 @@ export const TEMPLE_KIT_JOURNEYS = {
   title: 'Practices *to take home.*',
   lead: 'Small groups over a few weeks, in the studio and online. Each one ends with a practice you keep.',
   actionLabel: 'All programs',
-  actionHref: '~/journeys',
+  actionHref: '~/programs',
   journeys: [
-    { title: 'Four weeks of breath', outcome: 'Build a twenty-minute breath practice you can keep without a teacher.', weeks: '4', pillar: 'Breath', image: ph('industrial-blades'), host: 'Ines Aldana', price: '$180', href: '~/journeys' },
-    { title: 'The seasonal year', outcome: 'Mark each of the eight turns of the year with a short ritual you can do at home.', weeks: '8', pillar: 'Ritual', image: ph('nature-dunes'), host: 'Ines Aldana', price: '$240', href: '~/journeys' },
-    { title: 'Holding a ceremony', outcome: 'Lead a simple naming, blessing or memorial for the people you love.', weeks: '3', pillar: 'Ceremony', image: ph('council'), host: 'A visiting celebrant', price: '$320', href: '~/journeys' },
-    { title: 'Seven mornings', outcome: 'A free week of ten-minute practices. It leads into the circle.', weeks: '1', pillar: 'Practice', image: ph('nature-palm'), host: 'Ines Aldana', price: 'Free', href: '~/journeys' },
+    { title: 'Four weeks of breath', outcome: 'Build a twenty-minute breath practice you can keep without a teacher.', weeks: '4', pillar: 'Breath', image: ph('industrial-blades'), host: 'Ines Aldana', price: '$180', href: '~/programs' },
+    { title: 'The seasonal year', outcome: 'Mark each of the eight turns of the year with a short ritual you can do at home.', weeks: '8', pillar: 'Ritual', image: ph('nature-dunes'), host: 'Ines Aldana', price: '$240', href: '~/programs' },
+    { title: 'Holding a ceremony', outcome: 'Lead a simple naming, blessing or memorial for the people you love.', weeks: '3', pillar: 'Ceremony', image: ph('council'), host: 'A visiting celebrant', price: '$320', href: '~/programs' },
+    { title: 'Seven mornings', outcome: 'A free week of ten-minute practices. It leads into the circle.', weeks: '1', pillar: 'Practice', image: ph('nature-palm'), host: 'Ines Aldana', price: 'Free', href: '~/programs' },
   ],
 }
 

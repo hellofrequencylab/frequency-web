@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { createSpaceHref } from '@/lib/create-space/href'
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { FrequencyNetwork } from '@/components/frequency/site/pages/themes/frequency-network'
@@ -53,7 +54,7 @@ describe('the Network Theme Kit page (/themes/network)', () => {
 
   it('uses the design system iPhone frame and starts a Space wearing Network', () => {
     expect(html.match(/class="nf-ios"/g)?.length ?? 0).toBeGreaterThanOrEqual(7)
-    expect(html).toContain('/spaces/new?theme=network-kit')
+    expect(html).toContain(createSpaceHref('network-kit'))
     expect(html).toContain('9:41')
   })
 

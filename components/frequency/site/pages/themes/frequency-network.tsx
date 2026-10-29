@@ -6,6 +6,7 @@
 // (lib/themes/library.ts), so the page never says more than the product does. The design page's research
 // figures and its Nocturne-only lines (accent ramps tuned to black and bone) are left out on purpose.
 // Copy follows docs/marketing/voice-and-language-guide.md. Styles: network-feature.css, tokens only.
+import { createSpaceHref } from '@/lib/create-space/href'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Fragment } from 'react'
@@ -24,7 +25,7 @@ import {
 } from '@/lib/themes/network-feature-data'
 import { NetworkBrowser, NetworkMail, NetworkPhone, NetworkStage, type NetworkSurfaceStatus } from './network-preview'
 
-const START_HREF = '/spaces/new?theme=network-kit'
+const START_HREF = createSpaceHref('network-kit')
 
 const PAGES: [string, string][] = [
   ['Home', 'Hero, ways in, proof and a closing call. Blocks switch on with the kit’s tools.'],
@@ -195,7 +196,7 @@ export function FrequencyNetwork() {
               </div>
             </div>
             <div className="nf-hero-shot">
-              <NetworkBrowser src={shotFor('site')} alt="Network: website" url="yournetwork.org" width={1280} height={800} sizes="(max-width: 900px) 92vw, 640px" priority />
+              <NetworkStage priority status={status} />
             </div>
           </div>
           <a className="nf-more" href="#why">
@@ -408,7 +409,7 @@ export function FrequencyNetwork() {
           </div>
           <div className="nf-kgrid">
             {NETWORK_KITS.map((k) => (
-              <a className="nf-kit" key={k.id} href={`/spaces/new?niche=${k.id}&theme=network-kit`} style={vars({ '--c': k.hex })}>
+              <a className="nf-kit" key={k.id} href={START_HREF} style={vars({ '--c': k.hex })}>
                 <Image src={networkShot(k.id, 'site')} alt={`Network, ${k.name}: website`} width={1280} height={800} sizes="(max-width: 900px) 46vw, 280px" />
                 <span>
                   <i />
