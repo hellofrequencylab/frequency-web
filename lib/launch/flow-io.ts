@@ -5,6 +5,8 @@
 import { readSpaceSpotlight } from '@/lib/spaces/spotlight'
 import { getSpaceById } from '@/lib/spaces/store'
 import type { LaunchSnapshot } from './state'
+import { loadKnownProfile } from './known-io'
+import { prefillAnswers } from './known'
 import { answersFromLayout, type SpotlightAnswers } from './spotlight-step'
 
 export async function loadSpotlightAnswers(launch: LaunchSnapshot | null): Promise<SpotlightAnswers | null> {
@@ -13,9 +15,9 @@ export async function loadSpotlightAnswers(launch: LaunchSnapshot | null): Promi
     const space = await getSpaceById(launch.spaceId)
     if (!space) return null
     const saved = answersFromLayout(readSpaceSpotlight(space.preferences).layout)
-    // What the Space already says fills what the Spotlight does not: its tagline, then the start of its about text.
-    const line = saved.line || space.tagline || (space.about ?? '').split('\n')[0].slice(0, 300)
-    return { ...saved, name: saved.name || space.name, line }
+    // What the Spotlight does not say is filled from the Space (tagline, about, domain), then the owner's profile.
+    const profile = space.ownerProfileId ? await loadKnownProfile(space.ownerProfileId) : null
+    return prefillAnswers(saved, { name: space.name, tagline: space.tagline, about: space.about, domain: space.domain }, profile)
   } catch {
     return null
   }

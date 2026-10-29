@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ArrowUpRight, BookOpen, CalendarDays, Handshake, Camera, Mail, Play, Route, ShoppingBag, Users, type LucideIcon } from 'lucide-react'
 import { NETWORK_KIT_SCHEMES, NETWORK_KIT_TOKENS_CSS } from '@/lib/theme/network-kit'
 import { NETWORK_KIT_LAYOUTS_CSS } from './network-kit-layouts-css'
-import type { SpotlightLayoutId } from '@/lib/spotlight/layouts'
+import type { NetworkKitLayoutId } from '@/lib/spotlight/layouts'
 import type { NetworkKitSpotlightContent } from '@/lib/spotlight/network-kit-content'
 
 // THE NETWORK THEME KIT SPOTLIGHT LAYOUTS: the six whole-page layouts of the design's Spotlight Layouts page (Stack,
@@ -194,7 +194,7 @@ function Profile({ c }: { c: C }) {
 }
 
 /** The registry: a stored layout id to the component that draws it. */
-const LAYOUT_COMPONENT: Record<SpotlightLayoutId, (p: { c: C }) => ReactNode> = {
+const LAYOUT_COMPONENT: Record<NetworkKitLayoutId, (p: { c: C }) => ReactNode> = {
   'network-kit:stack': Stack,
   'network-kit:card-wall': CardWall,
   'network-kit:story': Story,
@@ -205,7 +205,7 @@ const LAYOUT_COMPONENT: Record<SpotlightLayoutId, (p: { c: C }) => ReactNode> = 
 
 /** One Network Spotlight layout, wearing the profile's scheme. The `<style>` carries the kit's tokens and the layout
  *  sheet, so it renders the same anywhere (the Spotlight route, a preview, a test). */
-export function NetworkKitSpotlightLayout({ layout, content, className }: { layout: SpotlightLayoutId; content: NetworkKitSpotlightContent; className?: string }) {
+export function NetworkKitSpotlightLayout({ layout, content, className }: { layout: NetworkKitLayoutId; content: NetworkKitSpotlightContent; className?: string }) {
   const Layout = LAYOUT_COMPONENT[layout]
   if (!Layout) return null
   const scheme = NETWORK_KIT_SCHEMES[content.scheme]

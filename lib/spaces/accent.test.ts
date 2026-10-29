@@ -83,10 +83,12 @@ describe('accentVars — hex accent (ADR-516 D2, the owner brand color picker)',
     expect(vars['--color-text-on-primary']).toBe('#ffffff')
   })
 
-  it('labels every accent in white, and only a near-white fill in dark ink', () => {
+  it('labels every accent in white, and only a light fill in dark ink', () => {
     expect(accentVars('#0A0A0A')!['--color-text-on-primary']).toBe('#ffffff')
     // A mid-blue like Daniel Tyack's accent: white, by the owner's rule (2.4:1, knowingly under AA).
     expect(accentVars('#1FB6C5')!['--color-text-on-primary']).toBe('#ffffff')
+    // A light accent (white under 2:1) reads ink: marigold and a near-white.
+    expect(accentVars('#E9B949')!['--color-text-on-primary']).toBe('#141414')
     expect(accentVars('#F5F5F5')!['--color-text-on-primary']).toBe('#141414')
   })
 

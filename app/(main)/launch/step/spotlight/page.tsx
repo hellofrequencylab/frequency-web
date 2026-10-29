@@ -5,6 +5,8 @@ import { getMyProfileId } from '@/lib/auth'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
 import { flowHeading, flowView } from '@/lib/launch/flow'
 import { loadSpotlightAnswers } from '@/lib/launch/flow-io'
+import { prefillAnswers } from '@/lib/launch/known'
+import { loadKnownProfile } from '@/lib/launch/known-io'
 import { readPendingLaunch } from '@/lib/launch/pending-io'
 import { spaceChoices } from '@/lib/launch/space-choice'
 import { listOwnedSpaces } from '@/lib/launch/spaces-io'
@@ -22,7 +24,9 @@ export default async function SpotlightStepPage({ searchParams }: { searchParams
   const view = flowView(launch)
   const saved = view.slug ? await loadSpotlightAnswers(launch) : null
   const typed = (await readPendingLaunch())?.answers.spotlight
-  const held = saved ?? (typed ? { name: typed.name ?? '', line: typed.line ?? '', link: typed.link ?? '' } : null)
+  // With nothing saved or typed yet, the person's own profile (name, bio, website) fills the form.
+  const known = !saved && !typed && profileId ? await loadKnownProfile(profileId) : null
+  const held = saved ?? (typed ? { name: typed.name ?? '', line: typed.line ?? '', link: typed.link ?? '' } : known ? prefillAnswers(null, null, known) : null)
   // A person with Spaces of their own is asked which one this is for, so what exists fills the page.
   const owned = profileId && !launch?.spaceId && startNew !== '1' ? await listOwnedSpaces(profileId) : []
   const choices = owned.length > 0 ? spaceChoices(owned) : undefined

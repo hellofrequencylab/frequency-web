@@ -4,7 +4,7 @@
 
 import type { LaunchSnapshot } from './state.ts'
 
-export type FlowStageState = 'live' | 'next' | 'later'
+type FlowStageState = 'live' | 'next' | 'later'
 
 export interface FlowStage {
   id: 'spotlight' | 'space' | 'website' | 'email'
