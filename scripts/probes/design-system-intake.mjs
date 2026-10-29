@@ -5,7 +5,9 @@ import { join } from 'node:path'
 import { ruleFor } from '../lib/design-system.mjs'
 
 const base = 'docs/design-systems'
-const themes = readdirSync(base, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
+// theme-cohesion holds the theme audit's hole baseline (LIVE-1850), not a theme's design-system snapshot.
+const NOT_A_SNAPSHOT = new Set(['theme-cohesion'])
+const themes = readdirSync(base, { withFileTypes: true }).filter((e) => e.isDirectory() && !NOT_A_SNAPSHOT.has(e.name)).map((e) => e.name)
 if (!themes.length) {
   console.error('no design-system snapshots under docs/design-systems')
   process.exit(1)

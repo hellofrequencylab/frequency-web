@@ -53,7 +53,7 @@ describe('design-system routine', () => {
 // Each theme's repo-side token block. A theme whose tokens are not built yet reads as empty (every token is a gap).
 const TOKEN_CSS: Record<string, string> = { nocturne: MIDNIGHT_TOKENS_CSS, designer: DESIGNER_TOKENS_CSS, network: NETWORK_KIT_TOKENS_CSS, temple: TEMPLE_KIT_TOKENS_CSS, 'free-human': FREE_HUMAN_TOKENS_CSS }
 
-const THEMES = readdirSync(join(process.cwd(), 'docs/design-systems'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
+const THEMES = readdirSync(join(process.cwd(), 'docs/design-systems'), { withFileTypes: true }).filter((e) => e.isDirectory() && e.name !== 'theme-cohesion').map((e) => e.name)
 
 describe.each(THEMES)('design system: %s', (theme) => {
   it('every design-system file is accounted for, and the repo matches it (baseline may only shrink)', () => {
