@@ -61,6 +61,9 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   // Link cards (the Space Spotlight, LIVE-852): link-in-bio buttons, each to ONE thing the Space offers.
   // Offered on the Spotlight's own palette only (lib/spaces/spotlight.ts), not the Space page's core set.
   { id: 'linkCards', label: 'Link cards', description: 'Big buttons, each to one product, Journey, event, membership or booking.', category: 'data', kinds: ['space'], order: 67 },
+  // The Space's own fund as a card (SPL-13): the Donate tab's fund and checkout, shown only when the Space can
+  // take a gift (Business and up with payouts on). Space Spotlight only.
+  { id: 'donate', label: 'Donate', description: 'Your fund, with amounts people can give. 0% from Frequency.', category: 'data', kinds: ['space'], order: 68 },
   { id: 'circles', label: 'Circles', description: 'The community circles inside this space.', category: 'data', kinds: ['space'], order: 70 },
   { id: 'team', label: 'Team', description: 'The people who run this space.', category: 'data', kinds: ['space'], requiresFunction: 'members', order: 80 },
   { id: 'reviews', label: 'Reviews', description: 'What members say.', category: 'data', kinds: ['space'], order: 90 },
@@ -216,6 +219,7 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'events',
   'circles', // The Space's live Circles, drawn as the shared CircleCard (ADR-1094 / ADR-1393).
   'journeys', // The journeys this space hosts (auto-pulled — ADR-542).
+  'donate', // The Space's fund as a card on its Spotlight (SPL-13).
   'team',
   'reviews',
   'faq', // The Space's own space_faqs rows.

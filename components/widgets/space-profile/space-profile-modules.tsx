@@ -40,6 +40,7 @@ import { FaqBlock } from './faq'
 import { ContactBlock } from './contact'
 import { BusinessBlock } from './business'
 import { JourneysBlock } from './journeys'
+import { DonateBlock } from './donate'
 import { LinkCardsBlock } from './link-cards'
 import { SPACE_CONTENT_BLOCKS, type SpaceContentBlockComponent } from './authored-content'
 
@@ -105,6 +106,7 @@ export const SPACE_PROFILE_BLOCKS: Record<ProfileBlockId, BlockComponent> = {
  *  never reaches the prototype chain. */
 const EXTRA_DATA_BLOCKS: Record<string, BlockComponent> = {
   journeys: JourneysBlock,
+  donate: DonateBlock,
   linkCards: LinkCardsBlock,
 }
 

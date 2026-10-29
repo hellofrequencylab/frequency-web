@@ -731,6 +731,8 @@ const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   ],
   team: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Team to feature', type: 'picker', pickerBlock: 'team' }],
   journeys: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Journeys to feature', type: 'picker', pickerBlock: 'journeys' }],
+  // DONATE (Space Spotlight): the header only; the fund and its amounts are set once, in the Donate tab's settings.
+  donate: [...DATA_HEADER_FIELDS],
   // LINK CARDS (Space Spotlight): the header + a picker over every linkable item (block-data-sources
   // listLinkCards), so each card is one product / Journey / event / membership / the Book or Contact door.
   linkCards: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Cards to show', type: 'picker', pickerBlock: 'linkCards' }],
