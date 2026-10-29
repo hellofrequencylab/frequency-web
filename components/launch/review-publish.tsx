@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { publishReviewFormAction } from '@/lib/launch/actions'
-import type { BuildoutDraft } from '@/lib/launch/buildout-contract'
+import type { BuildoutDraft } from '@/lib/launch/buildout'
 import { citesFor, REVIEW_ERRORS, type ReviewErrorCode } from '@/lib/launch/review'
 
 // REVIEW + PUBLISH (the body; the route wraps it in the Dashboard template). Everything we built from what the person

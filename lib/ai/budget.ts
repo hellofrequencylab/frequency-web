@@ -75,6 +75,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'today': 1,
   'circle-edit': 1,
   'listing-copy': 1,
+  'launch-buildout': 1, // Vera's optional polish of a launch draft (Haiku, at most two calls per launch)
   'business-import-demographic': 1,
   'support-draft': 1,
   'feature-posts': 2,

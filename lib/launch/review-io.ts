@@ -9,7 +9,7 @@
 // shown as such. TEMPORARY loader: lane E's buildout supplies the real BuildoutDraft; loadReviewDraft is replaced then.
 
 import { revalidatePath } from 'next/cache'
-import type { BuildoutDraft } from './buildout-contract'
+import type { BuildoutDraft } from './buildout'
 import { recordLaunchEvent } from './events'
 import { loadSpotlightAnswers } from './flow-io'
 import { publishSpotlightStep } from './spotlight-io'
