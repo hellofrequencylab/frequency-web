@@ -13,8 +13,8 @@ export function UpdateLayouts<D extends object>({ doc, pageLabel, onApply, onClo
   return (
     <div className="we-update-layouts">
       <p className="we-note">{changes.length ? `${changes.length} section${changes.length === 1 ? '' : 's'} on ${pageLabel} can move to the new layouts. Your words, buttons and pictures come with them. You can undo it.` : `Nothing on ${pageLabel} needs updating.`}</p>
-      {changes.map((c) => <div className="we-row" key={c.id}><strong>{c.from}</strong><small>becomes {ROLES[c.role].label}</small></div>)}
-      {kept.length > 0 && <><div className="we-caption">Staying as they are</div>{kept.map((k) => <div className="we-row" key={k.id}><span>{k.type}</span><small>has details the new layout cannot take yet</small></div>)}</>}
+      {changes.map((c) => <div className="we-row" key={c.id}><strong>{c.from}</strong><small>becomes {ROLES[c.role].label.replace(' (all themes)', '')}</small></div>)}
+      {kept.length > 0 && <><div className="we-caption">Staying as they are</div>{kept.map((k) => <div className="we-row" key={k.id}><span>{k.type}</span><small>stays as is, its lists do not fit yet</small></div>)}</>}
       <div className="we-actions">
         <button type="button" className="we-action" disabled={!changes.length} onClick={() => onApply(next as D)}>Update this page</button>
         <button type="button" className="we-action secondary" onClick={onClose}>Not now</button>
