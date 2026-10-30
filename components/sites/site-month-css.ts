@@ -64,6 +64,13 @@ ${N} .sm-arow .sm-chip{padding:7px 10px}
 ${N} .sm-arow .sm-chip-t{font-size:var(--text-body-sm);white-space:normal}
 ${N} .sm-arow .sm-chip-m{white-space:normal}
 
+/* THE PREVIEW POPUP. The Dialog portals to <body>, outside the section, so the card carries its own data-site-month
+   (site-month.tsx) to keep this sheet's scope. A hosted site wears DAWN and loads none of the Frequency theme, so the
+   shared preview's .btn has lost the one-line, icon-beside-text rules it has in the console: "Go to event" wrapped
+   its arrow onto a second line. Restore just that. */
+${N} .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+${N} .btn svg{flex:none}
+
 /* WHICH PANEL SHOWS. "auto" is the page before anyone chooses: the month on a wide screen, the Agenda under
    720px (the suite's phone rule). Pressing Month or Agenda pins the choice. Both panels are always in the markup,
    so the first paint is right with no script. */

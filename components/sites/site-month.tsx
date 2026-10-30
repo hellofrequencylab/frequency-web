@@ -218,7 +218,7 @@ export function SiteMonth({
 
       <Dialog open={open?.kind === 'event'} onClose={() => setOpen(null)} ariaLabelledBy={titleId} className="max-w-md">
         {open?.kind === 'event' && (
-          <div className="overflow-hidden rounded-card border border-border bg-surface lift-3">
+          <div data-site-month="preview" className="overflow-hidden rounded-card border border-border bg-surface lift-3">
             <CalendarPreview
               item={open.ev}
               eventOrigin={eventOrigin}
