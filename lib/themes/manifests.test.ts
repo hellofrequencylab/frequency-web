@@ -10,7 +10,7 @@ import { THEME_LIBRARY, themePagePath } from './library'
 // THE THEME MANIFESTS (LIVE-1857, docs/THEME-COHESION.md, ADR-1923). One JSON file per Mega Theme in
 // lib/themes/manifests/<id>.manifest.json: the one record the catalog, picker, Try it on, editor and
 // design-system intake read. GENERATED, never hand-edited, from MEGA_THEMES (ids and the two legacy ids),
-// SITE_THEME_DEFS (label, description), THEME_LIBRARY (the words), theme-contract.json (the editor's tokens)
+// SITE_THEME_DEFS (label, description), the `library` words (hand-edited in each manifest since LIVE-1866: lib/themes/library.ts reads them from here), theme-contract.json (the editor's tokens)
 // and block-contract-map.json (the core token mapping). This file is the generator and the drift test:
 //   pnpm gen:theme-manifests        (UPDATE_THEME_MANIFESTS=1 rewrites the files)
 // Legacy ids are kept forever: `legacyIds.editor` and `legacyIds.site` are the values saved sites already hold.
@@ -20,19 +20,21 @@ const DIR = join(process.cwd(), 'lib/themes/manifests')
 const file = (id: string) => join(DIR, `${id}.manifest.json`)
 
 type Json = Record<string, unknown>
+interface LibraryWords { tagline: string; madeFor: string; signature: string; surfaces: unknown[]; page: string }
 const contractThemes = (CONTRACT as unknown as { themes: Record<string, Json> }).themes
 const coreMap = (MAP as unknown as { themes: Record<string, { names: Record<string, string> }> }).themes
 
 function build(def: (typeof MEGA_THEMES)[number]): Json {
   const site = def.site ? SITE_THEME_DEFS.find((s) => s.id === def.site) ?? null : null
-  const lib = THEME_LIBRARY.find((t) => t.id === def.id) ?? null
+  // The words are hand-edited in the manifest itself (LIVE-1866); the generator keeps them and never rewrites them.
+  const lib = (existsSync(file(def.id)) ? (JSON.parse(readFileSync(file(def.id), 'utf8')) as { library: LibraryWords | null }).library : null)
   return {
     schema: 1,
     id: def.id,
     legacyIds: { editor: def.editor, site: def.site },
     offered: SITE_THEMES.some((s) => s.id === def.site) && lib !== null,
     site: site ? { label: site.label, description: site.description, defaultFonts: site.defaultFonts } : null,
-    library: lib ? { tagline: lib.tagline, madeFor: lib.madeFor, signature: lib.signature, surfaces: lib.surfaces, page: themePagePath(lib.id) } : null,
+    library: lib ? { ...lib, page: themePagePath(def.id) } : null,
     // Pointers, never copies: palette values live in one place, and the drift test resolves these at test time.
     editor: { tokens: { source: 'lib/sites/editor/theme-contract.json', path: ['themes', def.editor] } },
     // A theme the core token contract does not cover yet (Free Human) carries no mapping; the roles fall back to the house one.
@@ -62,6 +64,16 @@ describe('theme manifests', () => {
       expect(contractThemes[m.editor.tokens.path[1]], d.id).toBeDefined()
       if (m.core) expect(Object.keys(coreMap[m.core.names.path[1]]?.names ?? {}).length, d.id).toBeGreaterThanOrEqual(45)
       else expect(coreMap[d.id], `${d.id} has a core mapping but its manifest does not point at it`).toBeUndefined()
+    }
+  })
+  it('keeps the catalog words in the manifests, short and complete, with the page they live at', () => {
+    expect(THEME_LIBRARY.length).toBeGreaterThanOrEqual(7)
+    for (const t of THEME_LIBRARY) {
+      const m = JSON.parse(readFileSync(file(t.id), 'utf8')) as { library: LibraryWords }
+      expect(m.library.tagline, t.id).toBe(t.tagline)
+      expect(t.tagline.length, `${t.id} tagline is 70 characters or less`).toBeLessThanOrEqual(70)
+      expect(m.library.surfaces.map((s) => (s as { id: string }).id), t.id).toEqual(['spotlight', 'website', 'email', 'space'])
+      expect(m.library.page, t.id).toBe(themePagePath(t.id))
     }
   })
   it('lists a theme as offered only when the picker and the library both offer it', () => {

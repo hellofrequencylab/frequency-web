@@ -11,6 +11,13 @@
 // PURE data: no React, no Supabase.
 
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
+import frequency from './manifests/frequency.manifest.json'
+import bold from './manifests/bold.manifest.json'
+import wildheart from './manifests/wildheart.manifest.json'
+import networkKit from './manifests/network-kit.manifest.json'
+import templeKit from './manifests/temple-kit.manifest.json'
+import midnight from './manifests/midnight.manifest.json'
+import designer from './manifests/designer.manifest.json'
 
 type SurfaceId = 'spotlight' | 'website' | 'email' | 'space'
 type SurfaceStatus = 'ready' | 'soon'
@@ -34,83 +41,17 @@ interface ThemeLibraryEntry {
   surfaces: ThemeSurface[]
 }
 
-const SPACE_SURFACE: ThemeSurface = {
-  id: 'space',
-  name: 'Space page',
-  status: 'ready',
-  carries: 'Your fonts, your accent and your offers. It stays the Frequency page people already know.',
-}
+// THE WORDS LIVE IN THE MANIFESTS (LIVE-1866, ADR-1923). Each theme's tagline, "made for", signature and four surface
+// lines are the `library` section of lib/themes/manifests/<id>.manifest.json, the one record the catalog, the picker,
+// Try it on and the editor all read. Edit them there. This file only says which themes the catalog offers and in what
+// order, so a theme with no `library` section (Royal Temple, the older Network, Free Human) is offered nowhere.
+const MANIFESTS = { frequency, bold, wildheart, 'network-kit': networkKit, 'temple-kit': templeKit, midnight, designer } as const
+const OFFER_ORDER = ['frequency', 'bold', 'wildheart', 'network-kit', 'temple-kit', 'midnight', 'designer'] as const
 
-const surfaces = (spotlight: SurfaceStatus, email: SurfaceStatus): ThemeSurface[] => [
-  {
-    id: 'spotlight',
-    name: 'Spotlight',
-    status: spotlight,
-    carries: 'Your link-in-bio page in the full look: ground, type, cards and one main button.',
-  },
-  { id: 'website', name: 'Website', status: 'ready', carries: 'Every page, header, footer and block in the full look, on your own domain.' },
-  {
-    id: 'email',
-    name: 'Email',
-    status: email,
-    carries: 'Receipts, reminders and newsletters in the same ground, type and button.',
-  },
-  SPACE_SURFACE,
-]
-
-export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
-  {
-    id: 'frequency',
-    tagline: 'Warm, bright and easy. The house look.',
-    madeFor: 'anyone who wants a friendly site with nothing to fight',
-    signature: 'Soft cards, a frosted menu bar, Unbounded headlines and Instrument Serif italics.',
-    surfaces: surfaces('soon', 'soon'),
-  },
-  {
-    id: 'bold',
-    tagline: 'Dark, graphic and direct. Say it loud.',
-    madeFor: 'training, men’s work, fitness and anyone who runs a tough room',
-    signature: 'Charcoal ground, one bright accent, angled cuts and heavy uppercase headlines.',
-    surfaces: surfaces('soon', 'soon'),
-  },
-  {
-    id: 'wildheart',
-    tagline: 'Parchment, violet and a sky that turns with the year.',
-    madeFor: 'astrology, ritual, retreats and slow, seasonal work',
-    signature: 'Light parchment, violet, petal corners, and a live sky map and year journey.',
-    surfaces: surfaces('soon', 'soon'),
-  },
-  {
-    id: 'network-kit',
-    tagline: 'Paper, ink and one solid color. Thirteen ways in.',
-    madeFor: 'networking groups, clubs, hosts, studios, schools and anyone who brings people together',
-    signature: 'Paper, card tint and deep ink, one hero color in four schemes, pill buttons, with Bricolage Grotesque and Outfit.',
-    surfaces: surfaces('ready', 'ready'),
-  },
-  {
-    // The Temple Theme Kit, shown as Temple (code id `temple-kit`). The earlier `temple` theme is Royal Temple's: it stays
-    // resolvable by id and is offered nowhere. Spotlight and email are both shipped.
-    id: 'temple-kit',
-    tagline: 'A lime-washed house. Warm and unhurried.',
-    madeFor: 'temples, studios, retreats, clubs, markets and anyone who brings people together',
-    signature: 'Plaster and umber, one clay color, arches and soft corners, with Marcellus, Jost, Branch and Cormorant.',
-    surfaces: surfaces('ready', 'ready'),
-  },
-  {
-    id: 'midnight',
-    tagline: 'After dark. One violet light on true black.',
-    madeFor: 'guides, teachers and healers who work in the evening',
-    signature: 'Deep night grounds, bone type, square frames, with Bodoni Moda, Marcellus and Geist.',
-    surfaces: surfaces('ready', 'ready'),
-  },
-  {
-    id: 'designer',
-    tagline: 'Limewash and daylight, with one ochre accent.',
-    madeFor: 'designers, builders, makers and anyone selling craft',
-    signature: 'Plaster grounds, charcoal type, arched photos, with Cormorant and Jost.',
-    surfaces: surfaces('ready', 'ready'),
-  },
-]
+export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = OFFER_ORDER.map((id) => {
+  const words = MANIFESTS[id].library
+  return { id, tagline: words.tagline, madeFor: words.madeFor, signature: words.signature, surfaces: words.surfaces as ThemeSurface[] }
+})
 
 /** The path segment a theme's page lives at. Three ids are named differently from their address; each keeps its id,
  *  editor value and every saved site style, and only the address visitors see differs:
