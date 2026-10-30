@@ -16,6 +16,7 @@ import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
 import { KitLibrary } from './kit-library'
 import { ThemeChanger } from './theme-changer'
+import { TryItOnBar, legacyBlocksOn, useTryItOnSkin } from '../theme-preview-swap'
 import { ThemeDraftsPanel } from './theme-drafts-panel'
 import { activeThemeDraftId, addThemeDraft, draftLook, liveThemeDraftId, removeThemeDraft, renameThemeDraft, switchThemeDraft, themeDrafts } from '@/lib/sites/editor/theme-drafts'
 import type { KitChanges } from '@/lib/sites/kits/apply'
@@ -283,8 +284,17 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const pageSlugNow = page.slug
   const brandAccentNow = websiteBrand.accent
   const render = useMemo(() => siteRenderStyle(sitePageStyle(lookStyle, pageSlugNow), brandAccentNow, defaultAccent ?? null), [lookStyle, pageSlugNow, brandAccentNow, defaultAccent])
-  const canvasTheme = render.editorTheme
-  const canvasVars = useMemo(() => siteCanvasVars(render), [render])
+  const resolvedTheme = render.editorTheme
+  const resolvedVars = useMemo(() => siteCanvasVars(render), [render])
+  // TRY IT ON (LIVE-1863): a candidate theme worn over this Space's own pages. Client only, nothing saved. The canvas
+  // keeps the current look until the legacy skin has loaded, so the swap is one commit and never draws bare.
+  const [tryId, setTryId] = useState<SiteThemeId | null>(null)
+  const pageDocs = useMemo(() => draft.pages.map((item) => item.doc), [draft.pages])
+  const trySkin = useTryItOnSkin(pageDocs, tryId)
+  const trying = tryId && typeof trySkin === 'string' && EDITOR_THEME[tryId] !== resolvedTheme ? tryId : null
+  const canvasTheme = trying ? EDITOR_THEME[trying] : resolvedTheme
+  const canvasVars = trying ? websiteThemeVars(canvasTheme, render.accent) : resolvedVars
+  const trySheet = trying ? { css: trySkin as string, themeId: trying } : null
   const pageLookStyle = render.lookStyle
   const activeAccent = render.accent
   const accentValue = String(canvasVars['--th-accent' as keyof React.CSSProperties])
@@ -737,7 +747,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           <div className="foot"><span className="lbl">Changes save as a draft</span><a className="btn sm txt" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
         </aside>
         <main className="stage" data-device={device} aria-label="Website editor canvas" style={{ ['--pe-zoom' as string]: preview ? 1 : zoom / 100 }}>
-          <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
+          <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
           {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><FqIcon name="minus" /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><FqIcon name="plus" /></Icon></div>}
           {!preview && veraHidden && <button type="button" className="vera-orb" aria-label="Show Vera" aria-keyshortcuts="Meta+K Control+K Meta+Backslash Control+Backslash" title="Show Vera (⌘K)" onClick={() => putVeraAway(false, true)}><span className="orb" aria-hidden /></button>}
           {!preview && !veraHidden && <div className="vera">
@@ -770,7 +780,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         {modal === 'publish' && <span className="eyebrow">{draft.chrome?.name || brandName} · {page.label}</span>}
         <h2>{modal === 'publish' ? 'Ready to publish?' : modalTitle}</h2>
         {modal === 'menu' && <SiteMenuEditor slug={links.slug} />}
-        {modal === 'theme' && <ThemeChanger current={draft.theme} pages={draft.pages.map((item) => item.doc)} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
+        {modal === 'theme' && <ThemeChanger current={draft.theme} pages={pageDocs} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onTry={(id) => { setTryId(id); setModal(null) }} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
         {modal === 'insert' && <div className="modal-body">{palette}</div>}
         {modal === 'delete-page' && deletePageBody}
         {modal === 'templates' && <><label className="fld"><span className="l">Page name</span><Input className="in" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="note err">{error}</p>}<div className="blocks">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="blk" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="th" aria-hidden><i className="a s" /><i className="w" /><i /></span>{name}<small>{description}</small></button>)}</div></>}
@@ -793,6 +803,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // THE SITE EDITOR (design_handoff_site_editor, the Frequency design system): the chrome wears the system's own
   // Commons tokens and faces whatever theme the site wears; only the canvas frame wears the site's theme.
   return <div data-editor-root className={`we-shell ${fontClass ?? ''}`} data-left-folded={!left} data-right-folded={!right} data-preview={preview} onKeyDown={keys}>
+    {trying && <TryItOnBar label={SITE_THEMES.find((t) => t.id === trying)?.label ?? 'this theme'} legacyCount={legacyBlocksOn(pageDocs, trying).count} onKeep={() => { const t = SITE_THEMES.find((x) => x.id === trying); setTryId(null); if (t) pickTheme(t) }} onLeave={() => setTryId(null)} />}
     <link rel="stylesheet" href={DS_FACES} precedence="default" />
     <header className="we-top">
       <a className="we-icon" aria-label="Back to website" title="Back to website" href={websitePageUrl(host, persisted.published?.pages.some((p) => p.slug === page.slug) ? page.slug : 'home')}><ChevronLeft size={18} aria-hidden /></a>
@@ -822,7 +833,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <div className="we-foot"><span className="we-foot-lbl">Changes save as a draft</span><a className="we-action txt sm" aria-label="Website home" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
     </aside>
     <main className="we-stage" data-device={device} aria-label="Website editor canvas">
-      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
+      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
       {!preview && <div className="we-zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><Minus size={15} aria-hidden /></Icon><span>{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><Plus size={15} aria-hidden /></Icon></div>}
       {!preview && <VeraDock>
         {(asking || veraStatus || coachingQuestions.length > 0) && <div className="we-thread">
@@ -848,7 +859,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {modal && <div className="we-overlay" onClick={() => setModal(null)}><Dialog label={modalLabel}>
       <div className="we-modal-head"><h2>{modalTitle}</h2><Icon label="Close dialog" onClick={() => setModal(null)}><X size={18} /></Icon></div>
       {modal === 'menu' && <SiteMenuEditor slug={links.slug} />}
-      {modal === 'theme' && <ThemeChanger current={draft.theme} pages={draft.pages.map((item) => item.doc)} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
+      {modal === 'theme' && <ThemeChanger current={draft.theme} pages={pageDocs} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onTry={(id) => { setTryId(id); setModal(null) }} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
       {modal === 'insert' && palette}
       {modal === 'delete-page' && deletePageBody}
       {modal === 'templates' && <><label className="we-field">Page name<Input variant="seamless" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="we-error">{error}</p>}<div className="we-template-grid">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="we-template" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="we-template-mark"><span /><span /><span /></span><strong>{name}</strong><small>{description}</small><small>{draft.theme} layout</small></button>)}</div></>}
