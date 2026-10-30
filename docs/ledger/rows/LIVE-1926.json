@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1926",
+  "title": "Launcher: Founder's First Week folds into Setup as a Personal group",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-30",
+  "wave": "W7",
+  "source": {
+    "file": "lib/launch/setup-items.ts",
+    "ref": "Owner ruling 2026-10-29: fold Founder's First Week into Setup as a Personal group"
+  },
+  "detail": "After Publish the Setup list ends with a Personal group built from the same six Founder tasks and the same done signals (lib/onboarding/founder-tasks.ts), so there is one list and one set of numbers. The /founder page and its reward are unchanged. Still open: people with no Space have no launch row, so the Finish setup pill does not show for a personal-only path.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-30",
+    "evidence": "The Setup inventory appends the Personal group from getFounderTasks.",
+    "cmd": "node scripts/probes/launch-personal-group.mjs"
+  }
+}
