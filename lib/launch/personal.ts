@@ -16,7 +16,7 @@ export interface StoredProfile {
   city: string | null
 }
 
-export interface ProfileWrite {
+interface ProfileWrite {
   displayName: string
   handle: string
   bio: string
