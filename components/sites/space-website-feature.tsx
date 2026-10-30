@@ -31,16 +31,7 @@ export async function SpaceWebsiteFeature({
 }) {
   const published = readWebsitePublished(space.preferences)
   const siteHero = readSiteHero(space.preferences)
-  const plan = asSpacePlan(space.plan)
-  // `entitled` is the plan itself (gates live); `canConnect` is what the connect action allows today.
-  // `buyOpen`: domain sales are switched on (LIVE-781); off, Buy a new domain reads Coming soon.
-  const [entitled, canConnect, buyOpen] = await Promise.all([
-    featureAllowed('custom_domain', { plan }, { gatesLive: true }),
-    featureGatesLive().then((gatesLive) => featureAllowed('custom_domain', { plan }, { gatesLive })),
-    domainPurchaseOpen(),
-  ])
-  const setupDomain = readSiteDomainCandidate(space.preferences) ?? space.domain
-  const domainStatus = setupDomain ? { domain: setupDomain, ...(await siteDomainStatus(setupDomain)) } : null
+  const domainStatus = await readDomainStatus(space)
   const siteUrl = websiteUrl(space.slug, domainStatus)
   const address = siteUrl.replace(/^https?:\/\//, '')
 
@@ -83,6 +74,46 @@ export async function SpaceWebsiteFeature({
       </div>
 
       <div className="mt-6 border-t border-border pt-5">
+        <Link href="#domain" className="text-body-sm font-semibold text-primary-strong hover:underline">
+          Domain and DNS settings
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+type SpaceDomainInput = { slug: string; plan?: string | null; domain: string | null; preferences?: unknown }
+
+async function readDomainStatus(space: SpaceDomainInput) {
+  const setupDomain = readSiteDomainCandidate(space.preferences) ?? space.domain
+  return setupDomain ? { domain: setupDomain, ...(await siteDomainStatus(setupDomain)) } : null
+}
+
+/** DOMAIN AND DNS: its own card on Profile & Settings, right under the website card (anchor `#domain`).
+ *  Every domain, subdomain and DNS control lives here, in Manage, never on the public site or in the
+ *  website editor, which only link to it. Server Component behind Suspense in the board. */
+export async function SpaceDomainFeature({ space }: { space: SpaceDomainInput }) {
+  const published = readWebsitePublished(space.preferences)
+  const plan = asSpacePlan(space.plan)
+  // `entitled` is the plan itself (gates live); `canConnect` is what the connect action allows today.
+  // `buyOpen`: domain sales are switched on (LIVE-781); off, Buy a new domain reads Coming soon.
+  const [entitled, canConnect, buyOpen] = await Promise.all([
+    featureAllowed('custom_domain', { plan }, { gatesLive: true }),
+    featureGatesLive().then((gatesLive) => featureAllowed('custom_domain', { plan }, { gatesLive })),
+    domainPurchaseOpen(),
+  ])
+  const domainStatus = await readDomainStatus(space)
+  const free = siteSubdomainHost(space.slug)
+  return (
+    <section id="domain" aria-labelledby="domain-feature-title" className="scroll-mt-24 rounded-card border border-border bg-surface p-5 lift-1">
+      <h2 id="domain-feature-title" className="font-display text-lead font-bold text-text">
+        Domain and DNS
+      </h2>
+      <p className="mt-1 text-body-sm text-muted">
+        Where your website lives. {free ? <>Your free address is <span className="font-semibold text-text">{free}</span>.</> : null} Connect your own
+        domain, copy the DNS records, and watch the status here.
+      </p>
+      <div className="mt-5">
         {canConnect || domainStatus ? (
           <SiteDomainPanel key={`${space.slug}:${JSON.stringify(domainStatus)}`} slug={space.slug} initial={domainStatus} websitePublished={published} buyOpen={buyOpen} />
         ) : null}
