@@ -7,7 +7,8 @@ import { safeImageUrl, safeUrl } from '@/lib/entity-blocks/block-content'
 import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { storedWallClock } from '@/lib/sites/site-events'
 import { InlineText } from '@/components/sites/inline-text'
-import { ROLES, roleVariant, type RoleId } from '@/lib/blocks/roles/roles'
+import { ROLES, roleVariant as pickVariant, type RoleId } from '@/lib/blocks/roles/roles'
+import { presentationDefault } from '@/components/sites/presentation'
 
 // ── The seventeen role blocks (docs/THEME-COHESION.md section 2, ADR-1923, LIVE-1858 and LIVE-1859) ─────────────────────────────────
 // Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ and CTA (LIVE-1858), then Statement, Letter, Contact, Stats,
@@ -46,6 +47,9 @@ function hrefOf(raw: string, metadata: Props | undefined): string | null {
 // ── The shared pieces ────────────────────────────────────────────────────────────────────────
 
 const TONES = ['canvas', 'surface', 'band']
+
+/** The layout a block draws: the owner's pick, else the theme's default for the role, else the role's own. */
+const roleVariant = (role: RoleId, picked: unknown, metadata?: Props) => pickVariant(role, picked, presentationDefault(metadata?.theme, role))
 
 function Frame({ role, p, variant, media, children }: { role: RoleId; p: Props; variant: string; media?: boolean; children: ReactNode }) {
   const layout = (p.layout ?? {}) as LayoutValue
@@ -104,7 +108,7 @@ function Name({ text, href, metadata }: { text: string; href?: string; metadata?
 // ── Hero ───────────────────────────────────────────────────────────────────────────────────
 
 function HeroBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('hero', p.variant)
+  const variant = roleVariant('hero', p.variant, metadata)
   const src = img(p.image)
   const media = <Media src={src} alt={str(p.alt)} />
   return (
@@ -123,8 +127,8 @@ function HeroBlock({ p, metadata }: Ctx) {
 
 // ── Steps ──────────────────────────────────────────────────────────────────────────────────
 
-function StepsBlock({ p }: Ctx) {
-  const variant = roleVariant('steps', p.variant)
+function StepsBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('steps', p.variant, metadata)
   const items = arr(p.items).filter((s) => str(s.title) || str(s.body))
   return (
     <Frame role="steps" p={p} variant={variant}>
@@ -145,7 +149,7 @@ function StepsBlock({ p }: Ctx) {
 // ── Offerings ──────────────────────────────────────────────────────────────────────────────
 
 function OfferingsBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('offerings', p.variant)
+  const variant = roleVariant('offerings', p.variant, metadata)
   const items = arr(p.items).filter((s) => str(s.title))
   return (
     <Frame role="offerings" p={p} variant={variant}>
@@ -190,7 +194,7 @@ function liveEvents(metadata: Props | undefined, now: Date, count: number) {
 }
 
 function GatheringsBlock({ p, metadata, now = new Date() }: Ctx & { now?: Date }) {
-  const variant = roleVariant('gatherings', p.variant)
+  const variant = roleVariant('gatherings', p.variant, metadata)
   const count = Math.max(1, Math.min(12, Number(p.count) || 6))
   const live = p.live !== false ? liveEvents(metadata, now, count) : []
   const rows = (live.length ? live : arr(p.items).slice(0, count).map((r) => ({ month: str(r.month), day: str(r.day), title: str(r.title), time: str(r.time), place: str(r.place), href: str(r.href) }))).filter((r) => r.title)
@@ -222,7 +226,7 @@ function GatheringsBlock({ p, metadata, now = new Date() }: Ctx & { now?: Date }
 // ── Membership ─────────────────────────────────────────────────────────────────────────────
 
 function MembershipBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('membership', p.variant)
+  const variant = roleVariant('membership', p.variant, metadata)
   const plans = arr(p.items).filter((s) => str(s.name))
   // The spotlight needs one lead plan; with none marked, the middle plan leads so the layout never draws flat.
   const lead = plans.findIndex((s) => s.featured === true)
@@ -255,8 +259,8 @@ function MembershipBlock({ p, metadata }: Ctx) {
 
 // ── Proof ──────────────────────────────────────────────────────────────────────────────────
 
-function ProofBlock({ p }: Ctx) {
-  const variant = roleVariant('proof', p.variant)
+function ProofBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('proof', p.variant, metadata)
   const all = arr(p.items).filter((q) => str(q.quote))
   const items = variant === 'quote' ? all.slice(0, 3) : variant === 'stats' ? all.slice(0, 1) : all
   const stats = variant === 'stats' ? arr(p.stats).filter((s) => str(s.value) && str(s.label)).slice(0, 4) : []
@@ -295,7 +299,7 @@ function ProofBlock({ p }: Ctx) {
 // ── FAQ ────────────────────────────────────────────────────────────────────────────────────
 
 function FaqBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('faq', p.variant)
+  const variant = roleVariant('faq', p.variant, metadata)
   const space = (metadata?.space as { faqs?: { question: string; answer: string }[] } | undefined)?.faqs
   const liveRows = p.live !== false && Array.isArray(space) ? space.filter((f) => f && str(f.question)).map((f) => ({ question: str(f.question), answer: str(f.answer) })) : []
   const rows = (liveRows.length ? liveRows : arr(p.items).map((f) => ({ question: str(f.question), answer: str(f.answer) }))).filter((f) => f.question)
@@ -317,7 +321,7 @@ function FaqBlock({ p, metadata }: Ctx) {
 // ── CTA ────────────────────────────────────────────────────────────────────────────────────
 
 function CtaBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('cta', p.variant)
+  const variant = roleVariant('cta', p.variant, metadata)
   return (
     <Frame role="cta" p={p} variant={variant}>
       <div data-part="copy">
@@ -337,7 +341,7 @@ const ctaOf = (p: Props, metadata: Props | undefined) => str(p.actionLabel) ? <d
 // ── Statement ──────────────────────────────────────────────────────────────────────────────
 
 function StatementBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('statement', p.variant)
+  const variant = roleVariant('statement', p.variant, metadata)
   const phrases = variant === 'ticker' ? arr(p.items).filter((s) => str(s.text)) : []
   return (
     <Frame role="statement" p={p} variant={variant}>
@@ -355,7 +359,7 @@ function StatementBlock({ p, metadata }: Ctx) {
 // ── Letter ─────────────────────────────────────────────────────────────────────────────────
 
 function LetterBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('letter', p.variant)
+  const variant = roleVariant('letter', p.variant, metadata)
   return (
     <Frame role="letter" p={p} variant={variant}>
       <div data-part="copy" data-card={variant === 'card' ? '' : undefined}>
@@ -377,7 +381,7 @@ function LetterBlock({ p, metadata }: Ctx) {
 // Details and a way in, never a form of its own: the message section writes the lead and emails the owner.
 
 function ContactBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('contact', p.variant)
+  const variant = roleVariant('contact', p.variant, metadata)
   const rows = arr(p.items).filter((r) => str(r.label) && str(r.value))
   return (
     <Frame role="contact" p={p} variant={variant}>
@@ -406,8 +410,8 @@ function ContactBlock({ p, metadata }: Ctx) {
 
 // ── Stats ──────────────────────────────────────────────────────────────────────────────────
 
-function StatsBlock({ p }: Ctx) {
-  const variant = roleVariant('stats', p.variant)
+function StatsBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('stats', p.variant, metadata)
   const items = arr(p.items).filter((s) => str(s.value) && str(s.label)).slice(0, 6)
   return (
     <Frame role="stats" p={p} variant={variant}>
@@ -428,7 +432,7 @@ function StatsBlock({ p }: Ctx) {
 // ── Shop ───────────────────────────────────────────────────────────────────────────────────
 
 function ShopBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('shop', p.variant)
+  const variant = roleVariant('shop', p.variant, metadata)
   const items = arr(p.items).filter((s) => str(s.name))
   return (
     <Frame role="shop" p={p} variant={variant}>
@@ -452,7 +456,7 @@ function ShopBlock({ p, metadata }: Ctx) {
 // ── Library ────────────────────────────────────────────────────────────────────────────────
 
 function LibraryBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('library', p.variant)
+  const variant = roleVariant('library', p.variant, metadata)
   const items = arr(p.items).filter((s) => str(s.title))
   return (
     <Frame role="library" p={p} variant={variant}>
@@ -476,7 +480,7 @@ function LibraryBlock({ p, metadata }: Ctx) {
 // ── People ─────────────────────────────────────────────────────────────────────────────────
 
 function PeopleBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('people', p.variant)
+  const variant = roleVariant('people', p.variant, metadata)
   const all = arr(p.items).filter((s) => str(s.name))
   const items = variant === 'founder' ? all.slice(0, 1) : all
   return (
@@ -501,7 +505,7 @@ function PeopleBlock({ p, metadata }: Ctx) {
 // ── Gallery ────────────────────────────────────────────────────────────────────────────────
 
 function GalleryBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('gallery', p.variant)
+  const variant = roleVariant('gallery', p.variant, metadata)
   const items = arr(p.items).filter((s) => img(s.image) || str(s.caption))
   return (
     <Frame role="gallery" p={p} variant={variant}>
@@ -521,7 +525,7 @@ function GalleryBlock({ p, metadata }: Ctx) {
 // ── Chapters ───────────────────────────────────────────────────────────────────────────────
 
 function ChaptersBlock({ p, metadata }: Ctx) {
-  const variant = roleVariant('chapters', p.variant)
+  const variant = roleVariant('chapters', p.variant, metadata)
   const items = arr(p.items).filter((s) => str(s.name))
   return (
     <Frame role="chapters" p={p} variant={variant}>

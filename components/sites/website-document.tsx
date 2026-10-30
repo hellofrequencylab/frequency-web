@@ -129,7 +129,7 @@ export function WebsiteDocument({ doc, theme, config, metadata, live, links, ori
     {/* Every theme draws the page through the same site page sections (ADR-1727); the theme is only the
         stylesheet the page around it carries (Bold: MENSWORK_PAGE_CSS, Frequency: FREQUENCY_PAGE_CSS). */}
     <MensworkPage blocks={blocks} plan={planMensworkPage(blocks)} live={live} links={links} origin={origin} pageTitle={title}
-      renderOther={(block) => <BlockRender config={config} data={{ root: {}, content: [block] }} metadata={{ ...metadata, links }} isEditing={!!wrapSection} />}
+      renderOther={(block) => <BlockRender config={config} data={{ root: {}, content: [block] }} metadata={{ ...metadata, links, theme }} isEditing={!!wrapSection} />}
       wrapSection={wrap} />
   </>
 }
