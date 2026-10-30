@@ -110,14 +110,17 @@ export async function SpaceManageBoard({
   // keeps the command-center dashboard. Same space, same gate, same reads.
   const dashboardEmbed =
     section === 'dashboard' ? (
-      <div className="space-y-6">
-        <Suspense fallback={null}>
-          <SpaceCoachingCard spaceId={space.id} slug={space.slug} identity={{ name: brandName, tagline: space.tagline ?? null, about: space.about || readProfileData(space.preferences).about || null }} />
-        </Suspense>
-        {(
-          <FqOverviewBody spaceId={space.id} slug={space.slug} spaceName={brandName} viewerProfileId={viewerProfileId} />
-        )}
-      </div>
+      <FqOverviewBody
+        spaceId={space.id}
+        slug={space.slug}
+        spaceName={brandName}
+        viewerProfileId={viewerProfileId}
+        afterStats={
+          <Suspense fallback={null}>
+            <SpaceCoachingCard spaceId={space.id} slug={space.slug} identity={{ name: brandName, tagline: space.tagline ?? null, about: space.about || readProfileData(space.preferences).about || null }} />
+          </Suspense>
+        }
+      />
     ) : undefined
 
   const crmEmbed =
