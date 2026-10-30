@@ -39,8 +39,8 @@ async function html(el: unknown): Promise<string> {
 it('renders the Free Human Space page', async () => {
   if (!out) throw new Error('set RENDER_OUT')
   const sql = readFileSync(`${out}/free-human-space-page.sql`, 'utf8')
-  const layout = JSON.parse(/'profileLayout', '(.*?)'::jsonb\)/s.exec(sql)![1]!.replace(/''/g, "'"))
-  const offerings = JSON.parse(/'\{profileData,offerings\}', '(.*?)'::jsonb\)/s.exec(sql)![1]!.replace(/''/g, "'"))
+  const layout = JSON.parse(/'profileLayout', '([\s\S]*?)'::jsonb\)/.exec(sql)![1]!.replace(/''/g, "'"))
+  const offerings = JSON.parse(/'\{profileData,offerings\}', '([\s\S]*?)'::jsonb\)/.exec(sql)![1]!.replace(/''/g, "'"))
   const { SpaceProfileModules } = await import('@/components/widgets/space-profile/space-profile-modules')
   const { FqSpaceChrome } = await import('@/components/frequency/members/space/space-chrome')
   const { AccentScope } = await import('@/components/spaces/accent-scope')
