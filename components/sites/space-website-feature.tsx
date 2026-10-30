@@ -115,7 +115,7 @@ export async function SpaceDomainFeature({ space }: { space: SpaceDomainInput })
       </p>
       <div className="mt-5">
         {canConnect || domainStatus ? (
-          <SiteDomainPanel key={`${space.slug}:${JSON.stringify(domainStatus)}`} slug={space.slug} initial={domainStatus} websitePublished={published} buyOpen={buyOpen} />
+          <SiteDomainPanel key={`${space.slug}:${JSON.stringify(domainStatus)}`} slug={space.slug} initial={domainStatus} websitePublished={published} buyOpen={buyOpen} activated={!!domainStatus && domainStatus.domain === space.domain} />
         ) : null}
         {!entitled && <DomainUpgradeNudge slug={space.slug} openNow={canConnect} />}
       </div>
