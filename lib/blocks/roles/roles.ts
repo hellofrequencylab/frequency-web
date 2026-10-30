@@ -75,8 +75,10 @@ export const ROLES: Readonly<Record<RoleId, RoleDefinition>> = {
 
 export const ROLE_IDS = Object.keys(ROLES) as RoleId[]
 
-/** The variant a block draws: the owner's pick when it is one this role has, else the role's default. */
-export function roleVariant(role: RoleId, picked: unknown): string {
+/** The variant a block draws: the owner's pick when it is one this role has, else the theme's default for the role
+ *  (LIVE-1861, components/sites/presentation) when it is one this role has, else the role's own default. */
+export function roleVariant(role: RoleId, picked: unknown, themeDefault?: string): string {
   const def = ROLES[role]
-  return typeof picked === 'string' && picked in def.variants ? picked : def.default
+  if (typeof picked === 'string' && picked in def.variants) return picked
+  return themeDefault && themeDefault in def.variants ? themeDefault : def.default
 }

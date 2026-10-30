@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "L",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "components/sites/menswork-page.tsx",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Three PRs of three themes each. Per-theme default variant per role; owner-chosen variants win on a switch.",
+  "detail": "Per-theme default variant per role; owner-chosen variants win on a switch. Shipped as defaults only (Daniel's pick, no new art): components/sites/presentation/<theme>.ts gives each of the ten themes the layout each role draws when the owner has not picked one (DAWN is empty, so it keeps each role's own default). roleVariant takes the theme default as its middle step; WebsiteDocument passes the theme into role blocks. Frames, ornaments and section chrome from the design systems are not in this row.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/theme-cohesion.mjs presentation",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
+  "closed": "2026-10-30",
   "wave": "W7"
 }
