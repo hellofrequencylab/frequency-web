@@ -15,6 +15,8 @@ import { launchStepHref } from '@/lib/launch/steps'
 import Link from 'next/link'
 import { LaunchOverview } from '@/components/launch/launch-overview'
 import { LaunchClockSlot } from '@/components/launch/launch-clock-slot'
+import { LaunchIntent } from '@/components/launch/launch-intent'
+import { showIntent } from '@/lib/launch/intent'
 import { PublishedNote } from '@/components/launch/published-note'
 import { wentLive } from '@/lib/launch/review'
 import { loadInventory } from '@/lib/launch/inventory-io'
@@ -104,11 +106,15 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
         {view.made.length > 0 && (
           <p className="t2">What you have made so far: {view.made.join(', ')}.</p>
         )}
-        <div>
-          <Button asChild>
-            <Link href={inFlowHref(view.href)}>Pick up where I left off</Link>
-          </Button>
-        </div>
+        {showIntent({ spaceId: launch.spaceId, made: view.made }) ? (
+          <LaunchIntent spaceHref={inFlowHref(view.href)} />
+        ) : (
+          <div>
+            <Button asChild>
+              <Link href={inFlowHref(view.href)}>Pick up where I left off</Link>
+            </Button>
+          </div>
+        )}
       </div>
     </FocusTemplate>
   )
