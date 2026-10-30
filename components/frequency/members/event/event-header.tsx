@@ -1,6 +1,7 @@
 import Image from 'next/image'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import '@/app/themes/active/members-b'
+import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 
 // THE EVENT HEADER, FREQUENCY PIECES (SCAN-903). The member event page keeps the original
@@ -14,17 +15,16 @@ import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 // beside it, and the facts were loose lines. Each piece below answers one of those.
 
 /**
- * THE COVER, SHOWN WHOLE. A flyer carries its own type, so cropping it to a band cut the words off.
- * The artwork now sits `object-fit: contain` over a blurred, scaled copy of itself: the frame is
- * always filled, and nothing of the poster is ever lost. The host's focus point still decides where
- * the slack goes when the frame is wider (or taller) than the art. With the cover's measured shape
- * the frame takes that shape up to the height cap, so a cover that fits has no backdrop at all.
+ * THE COVER, CROPPED TO THE FRAME. Owner, 2026-10-30: the header "should be cropped with the focus
+ * chooser". A portrait flyer used to sit `contain`ed in a wide frame with a blurred backdrop beside
+ * it (the 2026-10 contain ruling), which read as a small poster in a lavender box. The art now fills
+ * the frame with `object-fit: cover`, and the host's focal point (events.theme.coverFocus, picked in
+ * the header controls) decides which part of the photo survives the crop. Unset focus is centered.
  */
 export function FqEventCover({
   src,
   alt,
   focus,
-  aspect,
   unoptimized,
   dateDay,
   dateMonth,
@@ -32,8 +32,6 @@ export function FqEventCover({
   src: string | null
   alt: string
   focus: string | null
-  /** width / height when the cover was measured (ADR-1248), else null. */
-  aspect: number | null
   unoptimized: boolean
   /** The no-cover placeholder leads with the date, like the DAWN one. */
   dateDay: string
@@ -49,30 +47,15 @@ export function FqEventCover({
       </div>
     )
   }
-  const shaped = typeof aspect === 'number' && Number.isFinite(aspect) && aspect > 0
-  const style = shaped ? ({ aspectRatio: String(aspect) } as CSSProperties) : undefined
-  const position = focus ?? undefined
   return (
-    <div className={shaped ? 'fqm-evh-cover is-shaped' : 'fqm-evh-cover'} style={style}>
-      {/* The backdrop: the same image, blurred and scaled, so a frame wider than the art reads as
-          the art's own light rather than a grey bar. Same `sizes` as the poster, so one download. */}
-      <Image
-        src={src}
-        alt=""
-        aria-hidden
-        fill
-        sizes="(max-width: 1024px) 100vw, 1344px"
-        className="fqm-evh-cover-bg"
-        style={{ objectPosition: position }}
-        unoptimized={unoptimized}
-      />
+    <div className="fqm-evh-cover">
       <Image
         src={src}
         alt={alt}
         fill
         sizes="(max-width: 1024px) 100vw, 1344px"
         className="fqm-evh-cover-art"
-        style={{ objectPosition: position }}
+        style={eventCoverFocusStyle(focus)}
         preload
         unoptimized={unoptimized}
       />

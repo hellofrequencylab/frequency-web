@@ -233,9 +233,7 @@
    A literal is the design's own geometry with no token (a blur radius, the cover's height cap) (token-ok). */
 /* The cover, whole: the art contained over a blurred copy of itself, never cropped through its lettering. */
 [data-design="frequency"] [data-kit="members"] .fqm-evh-cover{position:relative;isolation:isolate;overflow:hidden;width:100%;height:clamp(240px,42vw,460px);border-radius:var(--fq-radius-xl);background:var(--fq-bg-sunken);box-shadow:var(--fq-shadow-2)}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-cover.is-shaped{height:auto;max-height:clamp(240px,42vw,460px);margin-inline:auto}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-cover-bg{z-index:-1;object-fit:cover;filter:blur(40px) saturate(1.3);transform:scale(1.25);opacity:.85}
-[data-design="frequency"] [data-kit="members"] .fqm-evh-cover-art{object-fit:contain}
+[data-design="frequency"] [data-kit="members"] .fqm-evh-cover-art{object-fit:cover}
 [data-design="frequency"] [data-kit="members"] .fqm-evh-cover.is-empty{display:grid;place-items:center;height:clamp(180px,26vw,260px);background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="members"] .fqm-evh-cover-date{display:flex;flex-direction:column;align-items:center;gap:var(--fq-space-3)}
 [data-design="frequency"] [data-kit="members"] .fqm-evh-cover-date b{font:500 var(--fq-text-h1)/1 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
