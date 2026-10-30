@@ -7,6 +7,8 @@ import { inventorySections } from './inventory'
 import type { InventorySection } from './overview'
 import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
 import { loadLaunchRows } from './rows'
+import { personalSection } from './setup-items'
+import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 
 export interface Inventory {
   sections: InventorySection[]
@@ -23,6 +25,10 @@ export async function loadInventory(spaceId: string | null, ownerProfileId: stri
     if (!rows) return null
     const hrefs = Object.fromEntries(SPACE_MODULES.filter((m) => m.deepLink).map((m) => [m.id, m.deepLink!(space.slug)]))
     const sections = inventorySections({ rows, spaceName: space.name, coverImageUrl: space.coverImageUrl ?? null, logoUrl: space.brandLogoUrl ?? null, skippedPhotos, extended, hrefs })
+    if (extended) {
+      const founder = await getFounderTasks(ownerProfileId).catch(() => null)
+      if (founder) sections.push(personalSection(founder.tasks))
+    }
     return { sections, space: { id: space.id, slug: space.slug } }
   } catch {
     return null
