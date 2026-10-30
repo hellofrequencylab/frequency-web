@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { FqJourneyCompletionBand } from './journey-completion-band'
 import { readSpaceCompletionAnalytics } from '@/lib/spaces/completion-analytics'
 import Link from 'next/link'
@@ -81,11 +81,14 @@ export async function FqOverviewBody({
   slug,
   spaceName,
   viewerProfileId,
+  afterStats,
 }: {
   spaceId: string
   slug: string
   spaceName: string
   viewerProfileId: string | null
+  /** Optional band rendered under the stat rows (the Space coaching card). */
+  afterStats?: ReactNode
 }) {
   const journeyStats = readSpaceCompletionAnalytics(spaceId)
   const now = new Date()
@@ -298,6 +301,8 @@ export async function FqOverviewBody({
         />
         <Kpi label="Events, next 30 days" value={n(upcoming30)} note={noHost > 0 ? `${n(noHost)} this week ${noHost === 1 ? 'needs' : 'need'} a host` : undefined} />
       </div>
+
+      {afterStats}
 
       <Suspense fallback={null}>
         <FqJourneyCompletionBand spaceId={spaceId} slug={slug} statsPromise={journeyStats} />
