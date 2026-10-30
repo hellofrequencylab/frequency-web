@@ -74,7 +74,7 @@ export function upgradeBlock(block: Block): Block | null {
   const props: Props = { id: block.props?.id }
   for (const [from, to] of Object.entries(rule.fields)) {
     const v = block.props?.[from]
-    if (typeof v === 'string' ? v.trim() : v != null && v !== '') props[to] = v
+    if (v != null && (typeof v !== 'string' || v.trim())) props[to] = v
   }
   if (block.props?.layout) props.layout = block.props.layout
   if (rule.variant) props.variant = rule.variant
