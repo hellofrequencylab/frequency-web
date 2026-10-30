@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1938",
+  "title": "Launcher: a Setup item that makes a one-offer page from the Space's own first offering",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-30",
+  "wave": "W7",
+  "source": {
+    "file": "lib/page-editor/templates/space-offer.ts",
+    "ref": "Owner direction 2026-10-29: create a sales funnel / splash page; design approved 2026-10-30 (/mnt/project-files/launcher-lightbox/splash/)"
+  },
+  "detail": "Setup (Money group) gains 'Publish a page for one offer'. It opens /spaces/<slug>/manage/offer, which makes an 'offer' profile page seeded from the Space's first offering (About, one Offering with its price, Booking, a closing Callout with no link until the owner adds one) and opens it in the existing page editor. Done when the offer page has a stored document. Extra pages are the paid multi-page upsell, so a Space without it is pointed to plans; a Space with no offering is pointed to list one first. Idempotent: an existing page is opened, never overwritten.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-30",
+    "evidence": "The starter, the route, the Setup item and the start action exist.",
+    "cmd": "node scripts/probes/launch-offer-page.mjs"
+  }
+}

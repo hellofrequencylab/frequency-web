@@ -7,7 +7,7 @@ import { inventorySections } from './inventory'
 import type { InventorySection } from './overview'
 import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
 import { loadLaunchRows } from './rows'
-import { personalSection } from './setup-items'
+import { OFFER_PAGE_HREF_KEY, personalSection } from './setup-items'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 
 export interface Inventory {
@@ -23,7 +23,8 @@ export async function loadInventory(spaceId: string | null, ownerProfileId: stri
     if (!space) return null
     const rows = await loadLaunchRows(spaceId, ownerProfileId, extended)
     if (!rows) return null
-    const hrefs = Object.fromEntries(SPACE_MODULES.filter((m) => m.deepLink).map((m) => [m.id, m.deepLink!(space.slug)]))
+    const hrefs: Record<string, string> = Object.fromEntries(SPACE_MODULES.filter((m) => m.deepLink).map((m) => [m.id, m.deepLink!(space.slug)]))
+    hrefs[OFFER_PAGE_HREF_KEY] = `/spaces/${space.slug}/manage/offer`
     const sections = inventorySections({ rows, spaceName: space.name, coverImageUrl: space.coverImageUrl ?? null, logoUrl: space.brandLogoUrl ?? null, skippedPhotos, extended, hrefs })
     if (extended) {
       const founder = await getFounderTasks(ownerProfileId).catch(() => null)

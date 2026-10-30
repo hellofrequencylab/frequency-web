@@ -21,6 +21,9 @@ export const SETUP_ITEM_TOOLS = {
   'r-auto': 'space.automation',
 } as const
 
+/** The hrefs key for the offer page item. It opens a launch-owned page, not a module's link (LIVE-1928). */
+export const OFFER_PAGE_HREF_KEY = 'offer-page'
+
 type SetupItemId = keyof typeof SETUP_ITEM_TOOLS
 
 export function setupSections(x: SetupExtras, hrefs: Readonly<Record<string, string>>): InventorySection[] {
@@ -40,6 +43,13 @@ export function setupSections(x: SetupExtras, hrefs: Readonly<Record<string, str
         item('m-product', 'List your first product or service', x.products, (n) => `${n} listed`),
         item('m-tier', 'Open a membership tier', x.membershipTiers, (n) => `${n} open`),
         item('m-donate', 'Turn on donations', x.donationAsks, (n) => `${n} amount${n === 1 ? '' : 's'} offered`),
+        {
+          id: 'm-offerpage',
+          label: 'Publish a page for one offer',
+          state: done(x.offerPages) ? ('done' as const) : ('todo' as const),
+          found: done(x.offerPages) ? 'Your offer page is on your website' : undefined,
+          href: hrefs[OFFER_PAGE_HREF_KEY],
+        },
       ],
     },
     {

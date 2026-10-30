@@ -62,7 +62,7 @@ describe('Setup item coverage of the Space tool catalog', () => {
 })
 
 describe('setupSections', () => {
-  const none = { bookingTimes: 0, membershipTiers: 0, donationAsks: 0, products: 0, campaigns: 0, campaignsSent: 0, captureLinks: 0, automations: 0 }
+  const none = { bookingTimes: 0, membershipTiers: 0, donationAsks: 0, products: 0, campaigns: 0, campaignsSent: 0, captureLinks: 0, automations: 0, offerPages: 0 }
   const hrefs = { 'space.booking': '/spaces/a/settings/offerings#booking', 'space.comms': '/spaces/a/settings/email' }
   it('ticks only what a record says and opens the tool', () => {
     const s = setupSections({ ...none, bookingTimes: 3, campaigns: 1 }, hrefs)
