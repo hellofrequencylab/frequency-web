@@ -230,7 +230,7 @@ export function CreateSpaceWizard({
     look: <LookStep value={theme} arrivedTheme={arrivedTheme} onChange={setTheme} />,
     start: (
       <div className="space-y-5">
-        <dl className="divide-y divide-border rounded-2xl border border-border">
+        <dl className="divide-y divide-border rounded-card border border-border">
           {[
             ['Space', name.trim() || 'Not named yet'],
             ['Handle', `/spaces/${slug}`],

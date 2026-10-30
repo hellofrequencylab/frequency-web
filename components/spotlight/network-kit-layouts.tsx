@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Input } from '@/components/ui/field'
 import { ArrowUpRight, BookOpen, CalendarDays, Handshake, Camera, Mail, Play, Route, ShoppingBag, Users, type LucideIcon } from 'lucide-react'
 import { NETWORK_KIT_SCHEMES, NETWORK_KIT_TOKENS_CSS } from '@/lib/theme/network-kit'
 import { NETWORK_KIT_LAYOUTS_CSS } from './network-kit-layouts-css'
@@ -41,7 +42,7 @@ function Letter({ c, compact }: { c: C; compact?: boolean }) {
   return (
     <div className="nks-letter">
       <Display title={c.letter.title} em={c.letter.em} size={compact ? 18 : 21} />
-      <form action={c.letter.action} method="get"><input className="nks-input" type="email" name="email" aria-label="Email" placeholder="you@email.com" required /><button className="nks-btn nks-btn--sm" type="submit">Join</button></form>
+      <form action={c.letter.action} method="get"><Input variant="seamless" className="nks-input" type="email" name="email" aria-label="Email" placeholder="you@email.com" required /><button className="nks-btn nks-btn--sm" type="submit">Join</button></form>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import { Input } from '@/components/ui/field'
 
 // The Network Theme Kit's filtered catalog: the design's Shop and Library pages (ui_kits/site ShopPage.jsx,
 // ResourcesPage.jsx), a row of tabs (and, for the library, a search) over tiles or ruled rows. The server block works
@@ -40,7 +41,7 @@ export function NetworkKitInnerFilter({ items, allLabel, search, empty, note, la
             })}
           </div>
         ) : <span />}
-        {search ? <input className="nk-input nki-search" type="search" value={q} placeholder={search} aria-label={search} onChange={(e) => setQ(e.target.value)} /> : note ? <span className="nk-eyebrow nk-eyebrow--bare">{note}</span> : null}
+        {search ? <Input variant="seamless" className="nk-input nki-search" type="search" value={q} placeholder={search} aria-label={search} onChange={(e) => setQ(e.target.value)} /> : note ? <span className="nk-eyebrow nk-eyebrow--bare">{note}</span> : null}
       </div>
       {shown.length > 0 ? (
         <div className={layout === 'tiles' ? 'nki-tiles' : 'nki-rows'} role={layout === 'rows' ? 'list' : undefined}>{shown.map((i, k) => <div key={k} className="nki-cell" role={layout === 'rows' ? 'listitem' : undefined}>{i.node}</div>)}</div>

@@ -23,7 +23,7 @@ export function ChoiceTile({
     <button
       type="button"
       aria-pressed={on}
-      className={`flex items-start gap-3 rounded-2xl border p-3.5 text-left transition-colors ${
+      className={`flex items-start gap-3 rounded-card border p-3.5 text-left transition-colors ${
         on ? 'border-ink bg-[image:var(--fq-pa-soft)] ring-1 ring-ink' : 'border-border bg-surface-elevated/50 hover:bg-surface-elevated'
       }`}
       onClick={onSelect}

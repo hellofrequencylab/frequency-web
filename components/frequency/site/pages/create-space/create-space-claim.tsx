@@ -9,6 +9,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState, useTransition } from 'react'
+import { Input } from '@/components/ui/field'
 import { claimWithEmail, claimWithGoogle, continueSignedIn } from '@/app/(marketing)/create-a-space/actions'
 import { serializeDraft } from '@/lib/create-space/builder'
 import type { BuilderDraft } from '@/lib/create-space/builder'
@@ -117,7 +118,7 @@ export function ClaimCard(props: ClaimProps) {
           <form className="cs-claim-form" noValidate onSubmit={(e) => { e.preventDefault(); send() }}>
             <label className="cs-claim-field">
               <span>Email address</span>
-              <input type="email" inputMode="email" autoComplete="email" required value={email} onChange={(e) => { setErr(''); setEmail(e.target.value) }} placeholder="you@example.com" />
+              <Input variant="seamless" type="email" inputMode="email" autoComplete="email" required value={email} onChange={(e) => { setErr(''); setEmail(e.target.value) }} placeholder="you@example.com" />
             </label>
             {err ? <p role="alert" className="cs-bld-alert">{err}</p> : null}
             <button type="submit" className="btn fq-iri-btn cs-claim-go" disabled={pending}>Send my magic link<span aria-hidden="true">→</span></button>
