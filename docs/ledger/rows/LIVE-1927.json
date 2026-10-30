@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1927",
+  "title": "Launcher: member help article and runbook entry for the lightbox and Setup list",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-30",
+  "wave": "W7",
+  "source": {
+    "file": "content/help/spaces/finish-setting-up-your-space.md",
+    "ref": "Launcher lightbox program, docs half"
+  },
+  "detail": "A member how-to (pause, Finish setup, the Setup list and its Personal group, the personal-only path, hiding the button) and a RUNBOOKS paragraph under the Vera guided launch with the stage-one walk that proves it.",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-30",
+    "evidence": "The article and the RUNBOOKS entry exist.",
+    "cmd": "node scripts/probes/launch-help.mjs"
+  }
+}
