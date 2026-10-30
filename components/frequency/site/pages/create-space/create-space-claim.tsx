@@ -118,7 +118,7 @@ export function ClaimCard(props: ClaimProps) {
           <form className="cs-claim-form" noValidate onSubmit={(e) => { e.preventDefault(); send() }}>
             <label className="cs-claim-field">
               <span>Email address</span>
-              <Input variant="seamless" type="email" inputMode="email" autoComplete="email" required value={email} onChange={(e) => { setErr(''); setEmail(e.target.value) }} placeholder="you@example.com" />
+              <Input variant="seamless" className="placeholder:text-current/50!" type="email" inputMode="email" autoComplete="email" required value={email} onChange={(e) => { setErr(''); setEmail(e.target.value) }} placeholder="you@example.com" />
             </label>
             {err ? <p role="alert" className="cs-bld-alert">{err}</p> : null}
             <button type="submit" className="btn fq-iri-btn cs-claim-go" disabled={pending}>Send my magic link<span aria-hidden="true">→</span></button>

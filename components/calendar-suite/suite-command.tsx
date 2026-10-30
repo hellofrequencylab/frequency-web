@@ -102,7 +102,7 @@ export function SuiteCommand({
           <Input
             ref={input}
             variant="seamless"
-            className="cal-cmd-input"
+            className="cal-cmd-input placeholder:text-current/50!"
             value={text}
             placeholder="Tell Vera what to add, find or open"
             aria-label="Command"

@@ -41,7 +41,7 @@ export function NetworkKitInnerFilter({ items, allLabel, search, empty, note, la
             })}
           </div>
         ) : <span />}
-        {search ? <Input variant="seamless" className="nk-input nki-search" type="search" value={q} placeholder={search} aria-label={search} onChange={(e) => setQ(e.target.value)} /> : note ? <span className="nk-eyebrow nk-eyebrow--bare">{note}</span> : null}
+        {search ? <Input variant="seamless" className="nk-input nki-search placeholder:text-current/50!" type="search" value={q} placeholder={search} aria-label={search} onChange={(e) => setQ(e.target.value)} /> : note ? <span className="nk-eyebrow nk-eyebrow--bare">{note}</span> : null}
       </div>
       {shown.length > 0 ? (
         <div className={layout === 'tiles' ? 'nki-tiles' : 'nki-rows'} role={layout === 'rows' ? 'list' : undefined}>{shown.map((i, k) => <div key={k} className="nki-cell" role={layout === 'rows' ? 'listitem' : undefined}>{i.node}</div>)}</div>

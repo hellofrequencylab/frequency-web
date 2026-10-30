@@ -76,7 +76,7 @@ function Letter({ c, compact }: { c: C; compact?: boolean }) {
     <div className="dzs-letter">
       <Display title={c.letter.title} em={c.letter.em} size={compact ? 18 : 21} />
       <form action={c.letter.action} method="get">
-        <div className="dzs-field"><label htmlFor="dzs-email">Email</label><Input variant="seamless" id="dzs-email" className="dzs-input" type="email" name="email" placeholder="you@email.com" required /></div>
+        <div className="dzs-field"><label htmlFor="dzs-email">Email</label><Input variant="seamless" id="dzs-email" className="dzs-input placeholder:text-current/50!" type="email" name="email" placeholder="you@email.com" required /></div>
         <button className="dzs-btn dzs-btn--sm" type="submit">Join</button>
       </form>
     </div>
@@ -133,7 +133,7 @@ function CardWall({ c }: { c: C }) {
         {c.doors.slice(0, 4).map((d) => (
           <Link key={d.key} href={d.href} className="dzs-card"><Seal k={d.key} size={36} /><div><b>{d.title}</b><small>{d.meta}</small></div></Link>
         ))}
-        {c.letter && <div className="dzs-card dzs-card--auto"><Display title={c.letter.title} em={c.letter.em} /><form action={c.letter.action} method="get"><div className="dzs-field"><label htmlFor="dzs-email">Email</label><Input variant="seamless" id="dzs-email" className="dzs-input" type="email" name="email" placeholder="you@email.com" required /></div><button className="dzs-btn dzs-btn--sm" type="submit">Join</button></form></div>}
+        {c.letter && <div className="dzs-card dzs-card--auto"><Display title={c.letter.title} em={c.letter.em} /><form action={c.letter.action} method="get"><div className="dzs-field"><label htmlFor="dzs-email">Email</label><Input variant="seamless" id="dzs-email" className="dzs-input placeholder:text-current/50!" type="email" name="email" placeholder="you@email.com" required /></div><button className="dzs-btn dzs-btn--sm" type="submit">Join</button></form></div>}
       </div>
       <Foot />
     </>

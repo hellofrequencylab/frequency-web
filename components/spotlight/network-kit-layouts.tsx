@@ -42,7 +42,7 @@ function Letter({ c, compact }: { c: C; compact?: boolean }) {
   return (
     <div className="nks-letter">
       <Display title={c.letter.title} em={c.letter.em} size={compact ? 18 : 21} />
-      <form action={c.letter.action} method="get"><Input variant="seamless" className="nks-input" type="email" name="email" aria-label="Email" placeholder="you@email.com" required /><button className="nks-btn nks-btn--sm" type="submit">Join</button></form>
+      <form action={c.letter.action} method="get"><Input variant="seamless" className="nks-input placeholder:text-current/50!" type="email" name="email" aria-label="Email" placeholder="you@email.com" required /><button className="nks-btn nks-btn--sm" type="submit">Join</button></form>
     </div>
   )
 }
