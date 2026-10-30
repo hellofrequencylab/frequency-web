@@ -12,7 +12,7 @@
 // fonts.gstatic.com). spacePageSiteFaces (lib/theme/site-style.ts) picks the id; app/themes/frequency/space-page.css maps each id onto the page's display and body
 // faces under `data-space-fonts`.
 
-export type SiteFacesId = 'network' | 'network-kit' | 'designer' | 'temple-kit' | 'wildheart' | 'midnight'
+export type SiteFacesId = 'network' | 'network-kit' | 'designer' | 'temple-kit' | 'free-human' | 'wildheart' | 'midnight'
 
 /** The Google Fonts sheet that loads each theme's faces. */
 export const SITE_FACE_SHEETS: Record<SiteFacesId, string> = {
@@ -24,6 +24,8 @@ export const SITE_FACE_SHEETS: Record<SiteFacesId, string> = {
     'https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300..600&display=swap',
   'temple-kit':
     'https://fonts.googleapis.com/css2?family=Marcellus&family=Jost:wght@300..600&display=swap',
+  'free-human':
+    'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
   wildheart:
     'https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IM+Fell+English:ital@0;1&display=swap',
   midnight:
@@ -37,6 +39,7 @@ export const SITE_FACE_VARS: Record<SiteFacesId, Record<string, string>> = {
   'network-kit': { '--font-nk-bricolage': "'Bricolage Grotesque'", '--font-nk-outfit': "'Outfit'", '--font-nk-instrument': "'Instrument Serif'" },
   designer: { '--font-dz-cormorant': "'Cormorant'", '--font-dz-jost': "'Jost'" },
   'temple-kit': { '--font-tp-marcellus': "'Marcellus'", '--font-tp-jost': "'Jost'" },
+  'free-human': { '--font-fh-cormorant': "'Cormorant Garamond'" },
   wildheart: { '--font-wh-fell': "'IM Fell English'", '--font-wh-garamond': "'EB Garamond'" },
   midnight: { '--font-mn-bodoni': "'Bodoni Moda'", '--font-mn-geist': "'Geist'", '--font-mn-marcellus': "'Marcellus'" },
 }

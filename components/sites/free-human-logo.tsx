@@ -9,6 +9,12 @@ function nameParts(name: string): { lead: string; em: string | null } {
   return { lead: words.slice(0, -1).join(' '), em: words[words.length - 1] }
 }
 
+/** The design sets the tagline as an inscription: "Embody. Create. Rise." reads EMBODY \u2022 CREATE \u2022 RISE. */
+function inscription(tagline: string): string {
+  const words = tagline.split(/[.\u2022]/).map((w) => w.trim()).filter(Boolean)
+  return words.length > 1 ? words.join(' \u2022 ') : tagline.trim()
+}
+
 export function FreeHumanLogo({ name, tagline = null, logoUrl = null, dark = false }: { name: string; tagline?: string | null; logoUrl?: string | null; dark?: boolean }) {
   const { lead, em } = nameParts(name)
   return (
@@ -20,7 +26,7 @@ export function FreeHumanLogo({ name, tagline = null, logoUrl = null, dark = fal
           {lead}
           {em ? <> <em>{em}</em></> : null}
         </span>
-        {tagline ? <span className="fh-logo-tag">{tagline}</span> : null}
+        {tagline ? <span className="fh-logo-tag">{inscription(tagline)}</span> : null}
       </span>
     </span>
   )

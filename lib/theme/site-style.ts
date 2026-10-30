@@ -318,7 +318,7 @@ export function spacePageSiteFaces(preferences: unknown): SiteFacesId | null {
   if (readMegaTheme(preferences).theme === 'midnight') return 'midnight'
   const style = readSiteStyle(preferences)
   if (!style.synced) return null
-  return style.theme === 'network' || style.theme === 'network-kit' || style.theme === 'designer' || style.theme === 'temple-kit' || style.theme === 'wildheart' || style.theme === 'midnight' ? style.theme : null
+  return style.theme === 'network' || style.theme === 'network-kit' || style.theme === 'designer' || style.theme === 'temple-kit' || style.theme === 'free-human' || style.theme === 'wildheart' || style.theme === 'midnight' ? style.theme : null
 }
 
 /** The font set a Space wears INSIDE Frequency (member and admin routes): its own, never the website's.

@@ -1,5 +1,5 @@
 import type { WebsiteEditorState, WebsiteSnapshot } from '@/lib/sites/editor/state'
-import { freeHumanCalendarPage, freeHumanHomeBlocks } from '@/lib/sites/free-human-home'
+import { freeHumanAudreyPage, freeHumanBooksPage, freeHumanCalendarPage, freeHumanHomeBlocks, freeHumanProgramPage, freeHumanWorkshopsPage } from '@/lib/sites/free-human-home'
 import { FREE_HUMAN_ACCENT } from '@/lib/theme/free-human'
 import { freeHumanPhotoSrc } from './free-human-photos'
 
@@ -32,7 +32,7 @@ export const FREE_HUMAN_PROGRAMS = [
 
 /** The site's own pages the design's `~/` links point at that this Space does not have, mapped to the section of the Home that
  *  holds the same thing, so no button on the site goes nowhere. The Calendar is a real page and stays. */
-const SECTION_OF_PAGE: Record<string, string> = { '~/program': '#program', '~/workshops': '#workshops', '~/books': '#books', '~/shop': '#books' }
+const SECTION_OF_PAGE: Record<string, string> = { '~/shop': '~/books' }
 
 function toSections(value: unknown): unknown {
   if (typeof value === 'string') return Object.hasOwn(SECTION_OF_PAGE, value) ? SECTION_OF_PAGE[value] : value
@@ -41,12 +41,11 @@ function toSections(value: unknown): unknown {
   return value
 }
 
-/** The Home and the Calendar, with a stable id on every block. */
-function sitePages() {
-  const calendar = freeHumanCalendarPage()
+/** The Home, the Calendar and the menu's own pages (Program, Workshops, Books, Audrey), with a stable id on every block. */
+function freeHumanSitePages() {
   return [
     { slug: 'home', label: 'Home', seo: { title: 'Free Human Movement', description: FREE_HUMAN_SPACE.about }, blocks: freeHumanHomeBlocks() },
-    { slug: calendar.slug, label: calendar.label, seo: calendar.seo, blocks: calendar.blocks },
+    ...[freeHumanProgramPage(), freeHumanWorkshopsPage(), freeHumanBooksPage(), freeHumanAudreyPage(), freeHumanCalendarPage()].map((p) => ({ slug: p.slug, label: p.label, seo: p.seo, blocks: p.blocks })),
   ].map((p) => ({
     slug: p.slug,
     label: p.label,
@@ -56,12 +55,18 @@ function sitePages() {
   }))
 }
 
-/** The saved Space menu: Calendar is the one direct link; the four mega menus resolve to the Home's sections. `known` lists
- *  both pages so none joins the bar on its own. */
+/** The saved Space menu: Calendar is the one direct link in the bar; the four mega menus resolve their doors to these pages (the
+ *  header reads them by name). `known` lists every page so none joins the bar on its own. */
 export const FREE_HUMAN_MENU = {
   v: 1 as const,
-  items: [{ id: 'calendar', label: 'Calendar', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:calendar' } }],
-  known: ['page:home', 'page:calendar'],
+  items: [
+    { id: 'calendar', label: 'Calendar', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:calendar' } },
+    { id: 'program', label: 'Program', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:program' } },
+    { id: 'workshops', label: 'Workshops', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:workshops' } },
+    { id: 'books', label: 'Books', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:books' } },
+    { id: 'audrey', label: 'Audrey', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:audrey' } },
+  ],
+  known: ['page:home', 'page:program', 'page:workshops', 'page:books', 'page:audrey', 'page:calendar'],
 }
 
 /** The Space's website address, for the links a Spotlight sends visitors to (a Spotlight on a website host is part of the site). */
@@ -115,7 +120,7 @@ export function freeHumanEditorState(now: string): WebsiteEditorState {
     theme: 'FreeHuman',
     brand: { accent: FREE_HUMAN_ACCENT.accent },
     chrome: { name: FREE_HUMAN_SPACE.name, tagline: null, cta: { label: 'Join us', href: '#program' } },
-    pages: sitePages(),
+    pages: freeHumanSitePages(),
   }
   return { v: 1, revision: 1, draft: snapshot, published: structuredClone(snapshot), versions: [{ id: '1', createdAt: now, author: 'Frequency', snapshot: structuredClone(snapshot) }] }
 }

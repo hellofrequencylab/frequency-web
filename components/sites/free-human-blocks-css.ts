@@ -28,6 +28,10 @@ ${N} .fh-row{position:relative;z-index:2;box-sizing:border-box;max-width:${ROW};
 ${N} .fh-eyebrow{${INSCRIPTION};font-size:13px;letter-spacing:.2em;color:var(--text-accent)}
 ${N} .fh-sec-title{margin:0;${DISPLAY};font-size:clamp(40px,4.6vw,60px);line-height:1.08;color:var(--text-strong);text-wrap:balance}
 ${N} .fh-sec-title em,${N} .fh-hero-title em,${N} .fh-speak-name em{font-weight:var(--weight-regular);color:var(--text-lyric)}
+/* THE DOCUMENT WRAPPER: the Space page's vertical rhythm (py-8, space-y-14) would sit a 40px cream band under the menu and gaps between the sections. The design's
+   sections run flush, each ending in its own wave, so the wrapper adds nothing. Specificity (0,1,1) beats the utilities and loses to a section's own margins. */
+${N} [data-mw-own]>div{padding-block:0}
+${N} [data-mw-own]>div>*{margin-block:0}
 ${N} .fh-head{display:flex;flex-direction:column;gap:14px}
 ${N} .fh-head--center{align-items:center;text-align:center;margin:0 auto;gap:16px}
 ${N} .fh-head--split{flex-direction:row;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap}

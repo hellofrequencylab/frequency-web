@@ -70,13 +70,23 @@ ${T} .hs-nav-mega[aria-expanded="true"] .fh-glyph{transform:rotate(180deg)}
 ${T} .hs-header-actions{flex:none;gap:2px;margin-left:clamp(0px,1vw,12px)}
 ${T} .hs-header-actions .hs-btn-dark{margin-left:6px;height:38px;padding:0 20px;font-size:14px}
 
+/* THE MENU FOLDS ON SCROLL (components/sites/free-human-header-state.tsx sets data-scrolled past 40px): the announce bar closes to nothing and the
+   header takes 14px off its height on a soft shadow, so the menu stays in reach and gives the page its room back. */
+${N} .fh-bar{overflow:hidden;transition:height var(--dur-base) ${EASE},box-shadow var(--dur-base) ${EASE}}
+${N}[data-scrolled] .fh-bar{height:0;box-shadow:none}
+@media (min-width:940px){
+${T} .hs-pill{transition:height var(--dur-base) ${EASE}}
+${N}[data-scrolled] .fh-top .hs-pill{height:64px}
+${N}[data-scrolled] .fh-top .hs-nav a,${N}[data-scrolled] .fh-top .hs-nav-mega{height:64px}
+}
+
 /* THE LOGO LOCKUP: the gilt arch mark, the name in the display face with the lyric second word, the inscription tagline. */
 ${N} .fh-logo{display:flex;align-items:center;gap:12px;white-space:nowrap}
 ${N} .fh-logo-mark{flex:none;width:38px;height:48px;object-fit:contain;filter:drop-shadow(0 4px 8px color-mix(in srgb,var(--fh-clay-700) 22%,transparent))}
 ${N} .fh-logo-text{display:flex;flex-direction:column;gap:4px}
 ${N} .fh-logo-name{${DISPLAY};font-size:clamp(24px,2.6vw,31px);line-height:1;color:var(--text-strong);text-shadow:0 1px 0 color-mix(in srgb,var(--fh-cream-50) 90%,transparent)}
 ${N} .fh-logo-name em{font-weight:var(--weight-regular);color:var(--text-lyric)}
-${N} .fh-logo-tag{font-family:var(--font-inscription);font-size:10px;letter-spacing:.3em;color:var(--text-muted)}
+${N} .fh-logo-tag{font-family:var(--font-inscription);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--text-muted)}
 @media (max-width:1279px){${N} .fh-logo-tag{display:none}}
 @media (max-width:479px){${N} .fh-logo-mark{width:30px;height:38px}${N} .fh-logo-name{font-size:20px}${N} .fh-logo{gap:8px}${N} .hs-header-actions .fh-tools{display:none}${N} .hs-header-actions .hs-btn-dark{padding:0 16px}}
 
@@ -184,6 +194,10 @@ ${N} .fh-footer-ground .hs-footer{position:relative;z-index:2;box-sizing:border-
 ${N} .fh-footer-ground .hs-footer>span:first-child{opacity:.75}
 ${N} .fh-footer-ground .hs-footer a{color:var(--fh-cream-100);opacity:.75}
 ${N} .fh-footer-ground .hs-footer a:hover{opacity:1;color:var(--fh-cream-100)}
+${N} .fh-footer-ground .hs-footer a.hs-partner{order:9;margin-left:auto;opacity:1;gap:8px;padding:8px 16px 8px 12px;border:1px solid color-mix(in srgb,var(--fh-saffron-300) 45%,transparent);border-radius:999px;background:transparent;color:var(--fh-cream-100);font-size:13px}
+${N} .fh-footer-ground .hs-footer a.hs-partner svg{color:var(--fh-saffron-300)}
+${N} .fh-footer-ground .hs-footer a.hs-partner b{font-weight:600;color:var(--fh-saffron-100)}
+${N} .fh-footer-ground .hs-footer a.hs-partner:hover{border-color:var(--fh-saffron-300)}
 ${N} .fh-footer-ground .hs-footer [data-partner-line]{order:9;margin-left:auto;display:flex;align-items:center;gap:8px;opacity:.85}
 ${N} .fh-footer-ground .hs-footer [data-partner-line]::before{content:"";width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--fh-saffron-100),var(--fh-saffron-300) 55%,var(--fh-saffron-400));box-shadow:var(--glow-sun)}
 @media (max-width:939px){${N} .fh-footer-grid{grid-template-columns:1fr 1fr}${N} .fh-footer-brand{grid-column:1/-1}}

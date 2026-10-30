@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-1937",
+  "title": "Free Human site: menu pages, full Partner badge, editor canvas wears the kit, no admin links in the header",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-30",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/free-human-site-pages.mjs",
+    "checked": "2026-10-30",
+    "evidence": "Fails on main (no menu pages, no badge, unskinned canvas) and passes here."
+  },
+  "detail": "The design only drew Home, Calendar and the Year Wheel; its menus linked to Program, Workshops, Books and Audrey. Each is now a page of the Home's own designed blocks (no new visuals), added to the live site by /mnt/project-files/free-human/free-human-pages.sql. The footer carries the full Frequency Partner badge. The website editor canvas draws Free Human with its own skin (it drew unstyled). The header no longer shows admin links (the footer admin section stays). The wheel parks under the live sticky header instead of a fixed offset.",
+  "wave": "W7"
+}
