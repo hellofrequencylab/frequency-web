@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "components/sites/editor/theme-changer.tsx",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Prefetch on hover. Legacy blocks preview through the contract skin and are labelled.",
+  "detail": "Prefetch on hover. Legacy blocks preview through the contract skin and are labelled. Shipped: components/sites/theme-preview-swap.tsx (useTryItOnSkin, prefetchTheme, legacyBlocksOn, TryItOnSheet, TryItOnBar). A Try it on button on each theme card in the editor's Change theme dialog sets a client-only candidate theme; the canvas takes the candidate theme, its tokens and the contract skin for legacy family blocks in ONE React commit, and holds the current look until the lazily loaded skin has arrived, so nothing paints bare. Hover and focus on a card warm the skin chunk. The bar says nothing is saved and counts the legacy blocks that will use a new layout; Keep this look is the normal pickTheme step. No server render, no cookie client, no member route. Static theme CSS files (LIVE-1862) are not required: the swap rides the canvas's own render.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/theme-cohesion.mjs tryiton",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-29"
 }
