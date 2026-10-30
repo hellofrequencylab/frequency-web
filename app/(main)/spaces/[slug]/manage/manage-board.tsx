@@ -18,7 +18,7 @@ import { ConsoleThumbBar } from '@/components/spaces/console-thumb-bar'
 import { thumbActionsFor } from '@/lib/spaces/console-thumb'
 import { SpaceManageConsole } from './console'
 import { SpaceIdentityEditor } from './identity-editor'
-import { SpaceWebsiteFeature } from '@/components/sites/space-website-feature'
+import { SpaceDomainFeature, SpaceWebsiteFeature } from '@/components/sites/space-website-feature'
 import { FqOverviewBody } from '@/components/frequency/admin/pages/overview/overview-body'
 import { FqContactsBody } from '@/components/frequency/admin/pages/contacts/contacts-body'
 import { ManageQuickLinks } from '@/components/spaces/manage-quick-links'
@@ -162,6 +162,9 @@ export async function SpaceManageBoard({
     section === 'settings' && canManage ? (
       <Suspense fallback={<div aria-hidden className="h-48 animate-pulse rounded-card bg-surface-elevated" />}>
         <SpaceWebsiteFeature space={space} />
+        <div className="mt-6">
+          <SpaceDomainFeature space={space} />
+        </div>
       </Suspense>
     ) : undefined
 
