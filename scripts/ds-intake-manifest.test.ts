@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { readdirSync } from 'node:fs'
-// @ts-expect-error plain .mjs script
 import { scaffoldManifest } from './ds-intake.mjs'
 
 // LIVE-1867: a new design system starts with a hidden manifest and every role in the coverage baseline.
