@@ -89,7 +89,7 @@ export function CreateFlow({
   return (
     <div className="@container space-y-6">
       {kit && (
-        <div className="flex items-center gap-3 rounded-2xl border border-border bg-[image:var(--fq-pa-soft)] p-3">
+        <div className="flex items-center gap-3 rounded-card border border-border bg-[image:var(--fq-pa-soft)] p-3">
           <span aria-hidden className="grid h-11 w-11 flex-none place-items-center rounded-control bg-ink font-display text-body-sm font-bold text-on-ink">
             {kit.label.charAt(0)}
           </span>

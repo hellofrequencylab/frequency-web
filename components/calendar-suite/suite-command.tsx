@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
+import { Input } from '@/components/ui/field'
 import { VIEW_KEY, commandRows, type CommandRow } from '@/lib/calendar/planner/command-results'
 import { parseCommand } from '@/lib/calendar/planner/command-parse'
 import type { SuiteView } from '@/lib/calendar/planner/suite-model'
@@ -98,9 +99,10 @@ export function SuiteCommand({
       <div className="cal-cmd fq-panel" role="dialog" aria-modal="true" aria-label="Command bar" onKeyDown={onKey}>
         <div className="cal-cmd-field">
           <FqIcon name="vera" size={18} />
-          <input
+          <Input
             ref={input}
-            className="cal-cmd-input"
+            variant="seamless"
+            className="cal-cmd-input placeholder:text-current/50!"
             value={text}
             placeholder="Tell Vera what to add, find or open"
             aria-label="Command"
