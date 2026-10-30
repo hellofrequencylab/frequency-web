@@ -200,3 +200,59 @@ export function freeHumanCalendarPage() {
     ] as FreeHumanBlockSeed[],
   }
 }
+
+// THE MENU'S OWN PAGES (owner ask 2026-10-30: "complete all the missing pages from the design"). The design draws the Home and the
+// Calendar and links its menus to Program, Workshops, Books and Audrey without drawing them, so each is the Home's own blocks
+// (words, photos and grounds unchanged) set on a page of its own, opened by the Home's hero with the page's name. No new visual
+// is invented: a section the Home shows in full is the page's body, and the Events and Lyric bands close it.
+const pageHero = (over: Record<string, unknown>) => ({ ...FREE_HUMAN_HERO, rays: false, ...over })
+
+export function freeHumanProgramPage() {
+  return {
+    slug: 'program', label: 'Program',
+    seo: { title: 'The year-round program', description: FREE_HUMAN_SEASONS.lead },
+    blocks: [
+      { type: 'FreeHumanHero', props: pageHero({ badge: 'Join in any month', title: 'The year-round *program.*', lead: FREE_HUMAN_SEASONS.lead, primaryLabel: 'See the dates', primaryHref: '~/calendar', secondaryLabel: 'Meet Audrey', secondaryHref: '~/audrey', image: ph('heritage-madonna-nursing'), alt: 'Painting of a mother holding her newborn by candlelight', pos: 'center 30%' }) },
+      { type: 'FreeHumanSeasons', props: { ...FREE_HUMAN_SEASONS, buttonLabel: 'See the dates', buttonHref: '~/calendar', seasons: FREE_HUMAN_SEASONS.seasons.map((x) => ({ ...x, href: '~/calendar' })) } },
+      { type: 'FreeHumanLyric', props: { ...FREE_HUMAN_LYRIC } },
+      { type: 'FreeHumanEvents', props: { ...FREE_HUMAN_EVENTS } },
+    ] as FreeHumanBlockSeed[],
+  }
+}
+
+export function freeHumanWorkshopsPage() {
+  return {
+    slug: 'workshops', label: 'Workshops',
+    seo: { title: 'Workshops', description: FREE_HUMAN_WORKSHOPS.aside },
+    blocks: [
+      { type: 'FreeHumanHero', props: pageHero({ badge: 'Open to everyone', title: 'Go deeper, *in a single afternoon.*', lead: 'Small groups, long pauses. Members or not, come and take a seat.', primaryLabel: 'See the dates', primaryHref: '~/calendar', secondaryLabel: 'The year-round program', secondaryHref: '~/program', image: ph('light-honey-spoon'), alt: 'Honey on a wooden spoon in warm light', pos: 'center 60%' }) },
+      { type: 'FreeHumanWorkshops', props: { ...FREE_HUMAN_WORKSHOPS, rows: FREE_HUMAN_WORKSHOPS.rows.map((r) => ({ ...r, href: '~/calendar' })) } },
+      { type: 'FreeHumanLyric', props: { ...FREE_HUMAN_LYRIC } },
+      { type: 'FreeHumanEvents', props: { ...FREE_HUMAN_EVENTS } },
+    ] as FreeHumanBlockSeed[],
+  }
+}
+
+export function freeHumanBooksPage() {
+  return {
+    slug: 'books', label: 'Books',
+    seo: { title: 'Books by Audrey Uma Wilder', description: 'Beyond The Wild, a guide to rearing children, and Defying Men, on how to move through the modern world.' },
+    blocks: [
+      { type: 'FreeHumanHero', props: pageHero({ badge: 'Books by Audrey Uma Wilder', title: 'Words for *the wild work.*', lead: 'On raising children with rhythm, freedom and old wisdom, and on living in a body that is fully your own.', primaryLabel: 'Meet Audrey', primaryHref: '~/audrey', secondaryLabel: 'The calendar', secondaryHref: '~/calendar', image: ph('craft-beaded-deer'), alt: 'A beaded deer', pos: 'center 60%' }) },
+      { type: 'FreeHumanBooks', props: { ...FREE_HUMAN_BOOKS, books: FREE_HUMAN_BOOKS.books.map((b) => ({ ...b, secondaryHref: '~/audrey' })) } },
+      { type: 'FreeHumanLyric', props: { ...FREE_HUMAN_LYRIC } },
+    ] as FreeHumanBlockSeed[],
+  }
+}
+
+export function freeHumanAudreyPage() {
+  return {
+    slug: 'audrey', label: 'Audrey',
+    seo: { title: 'Audrey Uma Wilder', description: FREE_HUMAN_SPEAKING.body },
+    blocks: [
+      { type: 'FreeHumanSpeaking', props: { ...FREE_HUMAN_SPEAKING } },
+      { type: 'FreeHumanLineage', props: { ...FREE_HUMAN_LINEAGE } },
+      { type: 'FreeHumanLyric', props: { ...FREE_HUMAN_LYRIC } },
+    ] as FreeHumanBlockSeed[],
+  }
+}

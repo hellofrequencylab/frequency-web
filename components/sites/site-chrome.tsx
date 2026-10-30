@@ -216,8 +216,8 @@ export function SiteChrome({
       brandName={brandName}
       homeHref={homeHref}
       links={fhLinks ?? links}
-      adminLinks={adminLinks?.menu ?? null}
-      adminCheck={adminLinks?.check ?? null}
+      adminLinks={fh ? null : adminLinks?.menu ?? null}
+      adminCheck={fh ? null : adminLinks?.check ?? null}
       cta={tk && cta && /^book/i.test(cta.label) ? { ...cta, short: 'Book' } : cta}
       logoUrl={logoUrl}
       logoMode={temple || designer ? (logoUrl ? 'logo' : 'name') : skin && !net ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
@@ -379,8 +379,8 @@ export function SiteChrome({
         {footer?.line && <span className="hs-footer-line">{footer.line}</span>}
         {footer?.note && <span className="hs-footer-note">{footer.note}</span>}
         {checkIn && <CheckInBadge href={checkIn.href} line={checkIn.line} />}
-        {credit === 'badge' && !tk && !fh && <PartnerBadge />}
-        {((credit === 'line' && !nk) || (credit === 'badge' && (tk || fh))) && <PartnerLine label={tk ? TEMPLE_KIT_CHROME_COPY.credit : fh ? FREE_HUMAN_CHROME_COPY.credit : undefined} />}
+        {credit === 'badge' && !tk && <PartnerBadge />}
+        {((credit === 'line' && !nk) || (credit === 'badge' && tk)) && <PartnerLine label={tk ? TEMPLE_KIT_CHROME_COPY.credit : fh ? FREE_HUMAN_CHROME_COPY.credit : undefined} />}
       </footer>
       </div>
     </div>

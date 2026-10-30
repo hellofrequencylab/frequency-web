@@ -8,18 +8,20 @@ import { FREE_HUMAN_SEED_EVENTS } from './free-human-seed-events'
 describe('the Free Human Movement Space', () => {
   const state = freeHumanEditorState('2026-10-29T00:00:00.000Z')
 
-  it('publishes a valid Free Human website with a home and a calendar, every block registered', () => {
+  it('publishes a valid Free Human website with a home, the menu pages and a calendar, every block registered', () => {
     expect(state.published && validWebsiteSnapshot(state.published)).toBe(true)
     expect(state.published!.theme).toBe('FreeHuman')
     expect(WEBSITE_THEMES_LIVE.has('FreeHuman')).toBe(true)
-    expect(state.published!.pages.map((p) => p.slug)).toEqual(['home', 'calendar'])
+    expect(state.published!.pages.map((p) => p.slug)).toEqual(['home', 'program', 'workshops', 'books', 'audrey', 'calendar'])
     for (const p of state.published!.pages) for (const b of p.doc.content) expect(config.components[b.type as string], b.type as string).toBeTruthy()
-    expect(FREE_HUMAN_MENU.known).toEqual(['page:home', 'page:calendar'])
+    expect(FREE_HUMAN_MENU.known).toEqual(state.published!.pages.map((p) => `page:${p.slug}`))
   })
 
   it('has no button that goes to a page the site does not have', () => {
     const text = JSON.stringify(state.published!.pages)
-    expect(text).not.toMatch(/"~\/(program|workshops|books|shop)"/)
+    const pages = new Set(state.published!.pages.map((p) => p.slug))
+    for (const m of text.matchAll(/"~\/([a-z-]+)"/g)) expect(pages.has(m[1]!), m[1]).toBe(true)
+    expect(text).not.toContain('"~/shop"')
     expect(text).toContain('"~/calendar"')
   })
 

@@ -99,7 +99,7 @@ export const FREE_HUMAN_PANELS: readonly Panel[] = [
     lyric: 'Your guide, and a voice for your gathering.',
     entries: [
       { glyph: 'heart', label: 'About Audrey', desc: 'Mother, teacher, founder', match: /\b(about|audrey)\b/i, anchor: 'speaking' },
-      { glyph: 'live', label: 'Speaking & bookings', desc: 'Conferences, retreats, podcasts', match: /\b(speaking|bookings?)\b/i, anchor: 'speaking' },
+      { glyph: 'live', label: 'Speaking & bookings', desc: 'Conferences, retreats, podcasts', match: /\b(speaking|bookings?|audrey)\b/i, anchor: 'speaking' },
       { glyph: 'image', label: 'Press kit', desc: 'Bio, photos, topics', match: /\bpress\b/i },
       { glyph: 'chat', label: 'Contact', desc: 'We reply within a week', match: /\bcontact\b/i },
     ],
