@@ -302,7 +302,7 @@ export async function FqOverviewBody({
         <Kpi label="Events, next 30 days" value={n(upcoming30)} note={noHost > 0 ? `${n(noHost)} this week ${noHost === 1 ? 'needs' : 'need'} a host` : undefined} />
       </div>
 
-      {afterStats}
+      {afterStats && <div className="my-4">{afterStats}</div>}
 
       <Suspense fallback={null}>
         <FqJourneyCompletionBand spaceId={spaceId} slug={slug} statsPromise={journeyStats} />
