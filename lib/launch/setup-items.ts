@@ -54,3 +54,12 @@ export function setupSections(x: SetupExtras, hrefs: Readonly<Record<string, str
     },
   ]
 }
+
+/** The Personal group: Founder's First Week folded into Setup (LIVE-1926). Same tasks, same done signals, one list. */
+export function personalSection(tasks: readonly { key: string; label: string; href: string; done: boolean }[]): InventorySection {
+  return {
+    id: 'personal',
+    title: 'Personal',
+    items: tasks.map((t) => ({ id: `f-${t.key}`, label: t.label, state: t.done ? ('done' as const) : ('todo' as const), href: t.href })),
+  }
+}

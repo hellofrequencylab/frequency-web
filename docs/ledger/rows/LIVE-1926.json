@@ -1,21 +1,21 @@
 {
   "id": "LIVE-1926",
-  "title": "Alli Rae Design & Build Space page: fill every block from her site",
+  "title": "Launcher: Founder's First Week folds into Setup as a Personal group",
   "lane": "live",
   "priority": "P2",
   "size": "S",
   "status": "done",
+  "closed": "2026-10-30",
+  "wave": "W7",
   "source": {
-    "file": "scripts/seed-alli-rae-space-info.mts",
-    "ref": "Owner 2026-10-30: style the Alli Rae Space like her site and design system; follow the Space style system, fill the Space, link as many blocks as possible"
+    "file": "lib/launch/setup-items.ts",
+    "ref": "Owner ruling 2026-10-29: fold Founder's First Week into Setup as a Personal group"
   },
-  "detail": "The Space page already wears the Designer kit's faces and ochre accent (Space style system, ADR-1728/1906); what was missing was content. The Space had no cover, logo, address, hours, services, FAQ or story, so its blocks were empty or hidden. scripts/seed-alli-rae-space-info.mts prints one guarded, re-runnable SQL transaction: address and contact in profileData, the eight services as offerings, the story, five FAQ rows, cover and logo from /sites/alli-rae, and a profileLayout showing About, Offerings, Team, FAQ, Contact and Find us online while hiding blocks with nothing behind them. Reviews stay empty on purpose: the three testimonials need real member authors. The theme fence is untouched.",
+  "detail": "After Publish the Setup list ends with a Personal group built from the same six Founder tasks and the same done signals (lib/onboarding/founder-tasks.ts), so there is one list and one set of numbers. The /founder page and its reward are unchanged. Still open: people with no Space have no launch row, so the Finish setup pill does not show for a personal-only path.",
   "verify": {
     "kind": "cmd",
     "checked": "2026-10-30",
-    "evidence": "The seed prints the filled profile data, five FAQ rows and the layout. The SQL is applied by the owner (production write needs the owner click).",
-    "cmd": "node scripts/probes/alli-rae-space-info.mjs"
-  },
-  "wave": "W7",
-  "closed": "2026-10-30"
+    "evidence": "The Setup inventory appends the Personal group from getFounderTasks.",
+    "cmd": "node scripts/probes/launch-personal-group.mjs"
+  }
 }
