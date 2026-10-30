@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1717",
+  "title": "The website calendar draws the suite's month look from public data only, with its own scoped styles",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/sites/site-month.tsx",
+    "ref": "Daniel, 2026-10-29: pass 10 of the Space calendar suite, the month view for hosted Space websites."
+  },
+  "detail": "Pass 10. A hosted Space website's calendar now shows a month grid in the suite's look (day cells, event chips, a today marker, the Unavailable hatch, prev and next, Agenda first under 720px) from components/sites/site-month.tsx and its own sheet components/sites/site-month-css.ts, scoped to the site render. Public data only: lib/calendar/site-month.ts keeps published gatherings, called-off ones and Unavailable spans and rebuilds each from public fields. The window loads in one cached anonymous read (loadPublicSiteWindow), no server action, no cookies. Not here: the member calendar workspace is unchanged. ADR-1932.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('components/sites/site-public-calendar.tsx','utf8');if(c.includes('CalendarWorkspace')||!c.includes('SiteMonth')){console.error('the website calendar still mounts the member workspace');process.exit(1)}const css=fs.readFileSync('components/sites/site-month-css.ts','utf8');if(/#[0-9a-fA-F]{3,8}[^0-9a-zA-Z]/.test(css)||/font-size:[ ]*[0-9.]+px/.test(css)||css.includes('--fq-')){console.error('the month sheet has a literal colour, px type size or inert token');process.exit(1)}const l=fs.readFileSync('lib/calendar/site-month.ts','utf8');if(!l.includes('publicFields')){console.error('no public-only lock');process.exit(1)}\"",
+    "note": "Fails on main (the site mounts the member workspace, no site month); passes here. Render tests run in CI."
+  },
+  "closed": "2026-10-29",
+  "wave": "W7"
+}

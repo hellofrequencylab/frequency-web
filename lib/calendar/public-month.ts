@@ -54,6 +54,29 @@ export async function loadPublicSpaceWindow(spaceId: string, fromDay: string, to
   return guestLiveItems([...(await spaceEventRowsToItems(inWindow)), ...unavailable])
 }
 
+/** The store's cap on one read (listSpaceCalendarEvents' default `limit`). */
+const SITE_READ_CAP = 300
+
+/**
+ * A Space website's whole month window in ONE read, so its grid pages with no round trip (the site render is
+ * cached and viewer-free; the month grid does not call a server action). The same gated reader and the same
+ * guest filter as loadPublicSpaceWindow. `throughDay` is set only when the read hit the store's cap: the last
+ * day the rows reach, past which the grid must not draw months that would look empty and read as true.
+ */
+export async function loadPublicSiteWindow(
+  spaceId: string,
+  fromDay: string,
+  toDay: string,
+): Promise<{ items: CalendarEvent[]; throughDay: string | null }> {
+  const [rows, unavailable] = await Promise.all([
+    listSpaceCalendarEvents(spaceId, { fromDay, paintCancelled: true, limit: SITE_READ_CAP }),
+    listPublicUnavailableItems(spaceId, fromDay, toDay),
+  ])
+  const dated = (await spaceEventRowsToItems(rows)).filter((e) => e.dayKey < toDay)
+  const last = rows.length >= SITE_READ_CAP ? dated.reduce((m, e) => (e.dayKey > m ? e.dayKey : m), '') : ''
+  return { items: guestLiveItems([...dated, ...unavailable]), throughDay: last || null }
+}
+
 /**
  * THE UP NEXT BAND on the merged Calendar & Events page (LIVE-520): the next few live gatherings,
  * soonest first, from `fromDay` forward with NO month ceiling — which is the point of it. The grid

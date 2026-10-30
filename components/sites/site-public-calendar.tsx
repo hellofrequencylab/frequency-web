@@ -3,25 +3,28 @@ import { openingMonth } from '@/lib/calendar/open-month'
 import { loadSpacePageDoc } from '@/lib/spaces/page-doc'
 import { SITE_URL } from '@/lib/site'
 import { appOrigin } from '@/lib/sites/host'
-import { loadPublicSpaceWindow, spaceEventRowsToItems } from '@/lib/calendar/public-month'
+import { loadPublicSiteWindow, spaceEventRowsToItems } from '@/lib/calendar/public-month'
 import { listSpaceCalendarEvents } from '@/lib/events/store'
-import { guestFeedState, guestLiveItems } from '@/lib/calendar/guest-live'
-import { memberLayerChoices } from '@/lib/calendar/member-calendar'
-import { monthGridWindow } from '@/lib/calendar/month-window'
+import { guestLiveItems } from '@/lib/calendar/guest-live'
+import { publicSiteItems, siteWindow } from '@/lib/calendar/site-month'
 import { dayInZone } from '@/lib/time/zone'
 import { SiteCalendarAgenda } from '@/components/sites/site-calendar-agenda'
 import { SiteSubscribePanel } from '@/components/sites/site-subscribe-panel'
-import { CalendarWorkspace } from '@/components/spaces/calendar-workspace'
-import { loadSpaceCalendarMonth } from '@/app/(main)/spaces/[slug]/(profile)/calendar/actions'
+import { SiteMonth } from '@/components/sites/site-month'
 import { retreatShort } from '@/components/sites/admin/site-calendar'
 
 // THE WEBSITE'S CALENDAR (LIVE-869, reworked by LIVE-872 on the owner's ask 2026-10-08: "I wanted the Hearts
 // on Fire Frequency calendar on the main home page, not the admin version"). The Space's own Frequency
 // calendar, exactly as a visitor sees it on the Space's Calendar tab (app/(main)/spaces/[slug]/(profile)/
-// calendar/page.tsx, its guest half): the month grid and the subscribe menu, with the event list beside it (LIVE-873), over the
+// calendar/page.tsx, its guest half): the month grid and the subscribe panel, with the event list beside it (LIVE-873), over the
 // same gated public reads, without the sky overlay (astronomy-engine stays on the Space page's route; see
 // lib/astrology/chart.test.ts). A Menswork website draws it as its `calendar` page and as a section at the end
 // of Home. The admin Yearly Calendar stays behind the admin links.
+//
+// THE MONTH IS THE WEBSITE'S OWN (pass 10). It used to be the member calendar workspace in its guest half, which
+// leans on the console theme a hosted site does not load. It is now SiteMonth (components/sites/site-month.tsx)
+// with its own scoped sheet, fed one cached, anonymous read of the whole window (no server action, no cookies)
+// and narrowed to public items again before it reaches the browser (lib/calendar/site-month.ts).
 
 /** The website page that is the public calendar, when the Space lists it among its pages. */
 export const SITE_CALENDAR_SLUG = 'calendar'
@@ -48,13 +51,15 @@ export async function SitePublicCalendar({
 }) {
   const now = new Date()
   const { year: initialYear, month1: initialMonth1 } = openingMonth(now, space.timeZone)
-  const grid = monthGridWindow(initialYear, initialMonth1)
-  const [guestEvents, upcomingRows] = await Promise.all([
-    loadPublicSpaceWindow(space.id, grid.fromDay, grid.toDay),
+  const openYm = `${initialYear}-${String(initialMonth1).padStart(2, '0')}`
+  const win = siteWindow(openYm, null)
+  const [site, upcomingRows] = await Promise.all([
+    loadPublicSiteWindow(space.id, win.fromDay, win.toDay),
     // LIVE-873: the event list beside the grid. The same admin-client read the Up next band uses (no
     // cookies: this render is cached and viewer-free), as full calendar items so a row opens the preview.
     listSpaceCalendarEvents(space.id, { fromDay: dayInZone(now, space.timeZone), limit: 40 }),
   ])
+  const { minYm, maxYm } = siteWindow(openYm, site.throughDay)
   const upcoming = guestLiveItems(await spaceEventRowsToItems(upcomingRows))
     .filter((e) => (e.layer ?? 'events') === 'events')
     .slice(0, AGENDA_MAX)
@@ -66,28 +71,15 @@ export async function SitePublicCalendar({
         <SiteCalendarAgenda events={upcoming} eventOrigin={appOrigin()} />
         <SiteSubscribePanel brandName={brandName} httpsUrl={httpsUrl} webcalUrl={webcalUrl} />
       </div>
-      <CalendarWorkspace
+      <SiteMonth
+        items={publicSiteItems(site.items)}
+        today={dayInZone(now, space.timeZone)}
+        timeZone={space.timeZone}
+        openYm={openYm}
+        minYm={minYm}
+        maxYm={maxYm}
         eventOrigin={appOrigin()}
-        slug={space.slug}
-        spaceId={space.id}
         brandName={brandName}
-        adminAllowed={false}
-        canManage={false}
-        initialView="guest"
-        initialListItem={null}
-        initialPlanId={null}
-        initialYear={initialYear}
-        initialMonth1={initialMonth1}
-        guestEvents={guestEvents}
-        guestFirstUse={guestFeedState(guestEvents).isFirstUse}
-        adminEvents={[]}
-        dayNotes={[]}
-        plans={[]}
-        subscribe={null}
-        upcoming={null}
-        memberLayers={memberLayerChoices(guestEvents)}
-        skyMarkers={[]}
-        loadGuestMonth={loadSpaceCalendarMonth.bind(null, space.slug)}
       />
     </div>
   )
