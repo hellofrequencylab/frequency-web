@@ -4,13 +4,14 @@
 //
 //   node scripts/ds-intake.mjs --theme nocturne --ds /path/to/unzipped/design-system            # compare, never writes
 //   node scripts/ds-intake.mjs --theme nocturne --ds /path/to/unzipped/design-system --write     # re-snapshot after a new DS version
+//   node scripts/ds-intake.mjs --theme nocturne --scaffold-manifest                              # new theme: draft theme.manifest.json + role-coverage.json
 //   node scripts/ds-intake.mjs --theme nocturne --repo                                          # repo side only (what CI runs as a vitest file)
 //
 // With --ds it re-reads the folder and reports files added, changed and removed against the committed
 // snapshot (docs/design-systems/<theme>/inventory.json); a changed file is a file to rebuild. Without --ds it
 // checks the repo against the snapshot alone, so it runs anywhere.
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
 import { extractCopy, extractTokens, loadJson, repoViolations, ruleFor, sha256, walk } from './lib/design-system.mjs'
@@ -24,6 +25,7 @@ function args(argv) {
     else if (argv[i] === '--theme') out.theme = argv[++i]
     else if (argv[i] === '--ds') out.ds = resolve(argv[++i])
     else if (argv[i] === '--repo') out.repo = true
+    else if (argv[i] === '--scaffold-manifest') out.scaffold = true
   }
   return out
 }
@@ -52,6 +54,21 @@ export function diffInventory(before, after) {
     removed: [...b.keys()].filter((p) => !a.has(p)),
     changed: [...a.keys()].filter((p) => b.has(p) && b.get(p) !== a.get(p)),
   }
+}
+
+/** A draft theme manifest (docs/THEME-COHESION.md section 3) and the role-coverage baseline for a new design system
+ *  (LIVE-1867). Every role starts `missing` and in the baseline, so the conformance surface is visible from the first
+ *  day; each role that gets a presentation closes its baseline line, and the baseline only shrinks. The draft is
+ *  `hidden`: nothing offers a theme until its manifest says `ready`. */
+export function scaffoldManifest(theme, roleIds) {
+  const roles = Object.fromEntries(roleIds.map((r) => [r, { level: 'missing', variants: [], default: null }]))
+  const manifest = { schema: 1, id: theme, status: 'hidden', lineage: { designSystem: `docs/design-systems/${theme}`, version: 1 }, roles }
+  return { manifest, coverage: { ids: roleIds.map((r) => `role:${r}`) } }
+}
+
+function roleIdsOnDisk() {
+  const dir = join(ROOT, 'lib/blocks/roles')
+  return readdirSync(dir).filter((f) => f.endsWith('.role.json')).map((f) => f.replace('.role.json', '')).sort()
 }
 
 export function loadTheme(theme) {
@@ -97,6 +114,14 @@ function main() {
   }
   const t = loadTheme(a.theme)
   let failed = false
+  if (a.scaffold) {
+    const out = scaffoldManifest(a.theme, roleIdsOnDisk())
+    for (const [name, body] of [['theme.manifest.json', out.manifest], ['role-coverage.json', out.coverage]]) {
+      if (existsSync(join(t.dir, name))) { console.log(`kept ${name} (already there)`); continue }
+      writeFileSync(join(t.dir, name), JSON.stringify(body, null, 2) + '\n')
+      console.log(`wrote ${name}`)
+    }
+  }
   if (a.ds) {
     const snap = snapshot(a.ds, t.rules.rules)
     const d = diffInventory(t.inventory, snap.inventory)

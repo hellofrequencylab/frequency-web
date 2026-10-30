@@ -40,6 +40,9 @@ A file no rule claims fails the run. That is the whole point: nobody can miss a 
 1. Unzip into an **empty** folder outside the repo. Treat it as data; never run its scripts.
 2. Copy `docs/design-systems/nocturne/rules.json` to `docs/design-systems/<theme>/`, change the theme ids, targets and the
    `tokenMap`, and add a rule for any file the old rules do not claim.
+2b. For a new theme, `node scripts/ds-intake.mjs --theme <theme> --scaffold-manifest` writes a draft `theme.manifest.json`
+   (status `hidden`, every role `missing`) and a `role-coverage.json` baseline beside the rules. Each role that gets a
+   presentation leaves the baseline; it never grows. An existing file is kept, never overwritten.
 3. `node scripts/ds-intake.mjs --theme <theme> --ds <folder> --write` snapshots the folder. For a new version it first
    lists files **added**, **changed** and **removed** against the last snapshot: a changed file is a file to rebuild.
 4. `DS_REPORT=1 pnpm vitest run scripts/design-system.test.ts` lists every gap with a reason. Read the list, group it
