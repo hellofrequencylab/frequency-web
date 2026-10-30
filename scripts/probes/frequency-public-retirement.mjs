@@ -4,10 +4,10 @@ const read=file=>readFileSync(file,'utf8')
 const key=process.argv[2]??'all'
 function cover(){
  const component=read('components/frequency/members/event/event-header.tsx'), page=read('app/(main)/events/[slug]/event-member-page.tsx'), css=read('app/themes/frequency/members-b.css')
- assert(component.includes('export function FqEventCover('));assert(component.includes('aspectRatio: String(aspect)'));assert(component.includes('objectPosition: position'))
- assert(css.includes('.fqm-evh-cover-art{object-fit:contain}'));assert(css.includes('.fqm-evh-cover.is-shaped{height:auto;max-height:'))
- assert(page.includes('<FqEventCover'));assert(page.includes('aspect={coverAspect}'));assert(page.includes('focus={coverFocus}'))
- assert(page.includes('readEventCoverAspect(extra?.theme)'))
+ assert(component.includes('export function FqEventCover('));assert(component.includes('eventCoverFocusStyle(focus)'));assert(!component.includes('aspectRatio:'))
+ assert(css.includes('.fqm-evh-cover-art{object-fit:cover}'));assert(!css.includes('.fqm-evh-cover.is-shaped'))
+ assert(page.includes('<FqEventCover'));assert(!page.includes('aspect={coverAspect}'));assert(page.includes('focus={coverFocus}'))
+ assert(page.includes('readEventCoverFocus(extra?.theme)'))
  const control=read('components/admin/modules/event-header-controls.tsx'), action=read('app/(main)/events/admin-actions.ts')
  assert(control.includes('measureCoverAspect('));assert(control.includes('setAspect(measured)'));assert(action.includes('writeEventCoverAspect('));assert(action.includes('normalizeCoverAspect(aspect)'));assert(!action.includes("from 'sharp'"))
 }

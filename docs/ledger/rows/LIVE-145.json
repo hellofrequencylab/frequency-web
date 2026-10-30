@@ -4,7 +4,7 @@
     "verify": {
       "kind": "cmd",
       "cmd": "node scripts/probes/frequency-public-retirement.mjs cover",
-      "note": "Checks actual Frequency artwork/focus/aspect capture and consumers. The later owner whole-artwork contain ruling supersedes old global cover-only style assertions; active shared geometry helpers remain tested."
+      "note": "Checks actual Frequency artwork/focus capture and consumers. The 2026-10-30 owner cover-crop ruling (focus point) supersedes the earlier whole-artwork contain ruling; active shared geometry helpers remain tested."
     },
     "source": {
       "file": "components/frequency/members/event/event-header.tsx",
@@ -12,6 +12,6 @@
     }
   },
   "append": {
-    "detail": " 2026-10-26 (SCAN-1129): the event page cover is FqEventCover now (Frequency is the only design, ADR-1880); the PosterBand arms of this probe moved to the component alone. HYG-214 2026-10-27: retired unreachable PosterBand; verification now follows actual FqEventCover, captured aspect/focus and later owner whole-artwork contain treatment. Historical original report is preserved; no browser pixel acceptance is inferred."
+    "detail": " 2026-10-26 (SCAN-1129): the event page cover is FqEventCover now (Frequency is the only design, ADR-1880); the PosterBand arms of this probe moved to the component alone. HYG-214 2026-10-27: retired unreachable PosterBand; verification now follows actual FqEventCover, captured aspect/focus and later owner whole-artwork contain treatment. Historical original report is preserved; no browser pixel acceptance is inferred. 2026-10-30 (LIVE-1950): the probe now pins the cover-crop to the focus point; aspect shaping and contain are retired."
   }
 }
