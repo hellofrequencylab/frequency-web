@@ -595,7 +595,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {(page.seo.title.length > SEO_TITLE_ADVISED || page.seo.description.length > SEO_DESCRIPTION_ADVISED) && <p className="note">Search results cut titles past {SEO_TITLE_ADVISED} characters and descriptions past {SEO_DESCRIPTION_ADVISED}.</p>}
     <div className="cap">Address</div>
     <div className="fld"><Input className="in" readOnly aria-label="Website address" value={host} /></div>
-    <div className="tg"><span>Custom domain<small>{domainHost ? `${domainHost} · ${domainHost === host.toLowerCase() ? 'connected' : 'waiting to connect'}` : 'Not set up'}</small></span><a className="btn sm" href={`${origin}/spaces/${links.slug}/manage`} target="_blank" rel="noreferrer">{domainHost ? 'Manage' : 'Set up'}</a></div>
+    <div className="tg"><span>Custom domain<small>{domainHost ? `${domainHost} · ${domainHost === host.toLowerCase() ? 'connected' : 'waiting to connect'}` : 'Not set up'}</small></span><a className="btn sm" href={`${origin}/spaces/${links.slug}/manage?section=settings#domain`} target="_blank" rel="noreferrer">{domainHost ? 'Manage' : 'Set up'}</a></div>
     <div className="cap">Website</div>
     <button type="button" className="row" onClick={() => openChrome('header')}><span className="ic"><FqIcon name="layers" /></span><span className="t">Header and navigation</span></button>
     <button type="button" className="row" onClick={() => openChrome('footer')}><span className="ic"><FqIcon name="layers" /></span><span className="t">Footer</span></button>

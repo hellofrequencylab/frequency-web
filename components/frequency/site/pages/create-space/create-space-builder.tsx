@@ -7,6 +7,7 @@
 // Styles: create-space.css (cs-bld-*).
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { Input } from '@/components/ui/field'
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { BookOpen, Check, Clock, Globe, Heart, Mail, ShoppingBag, Ticket, Users, UsersRound } from 'lucide-react'
 import { ClaimCard, SavedCard } from '@/components/frequency/site/pages/create-space/create-space-claim'
@@ -165,7 +166,8 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, onHandOver,
       if (move === 'name') {
         return (
           <Card key={move} n="1 of 5" title="What's your Space" em="called?" lead="Watch your website and Spotlight change as you type.">
-            <input
+            <Input
+              variant="seamless"
               autoFocus={moved}
               className="cs-bld-name"
               value={draft.name}
@@ -187,7 +189,8 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, onHandOver,
             {handleOpen ? (
               <span className="cs-bld-slug">
                 <span>/spaces/</span>
-                <input
+                <Input
+                  variant="seamless"
                   value={draft.slug || handleFromName(draft.name)}
                   onChange={(e) => { setNameErr(''); update({ slug: cleanHandleInput(e.target.value) }) }}
                   onKeyDown={onEnter(saveName)}
@@ -288,7 +291,8 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, onHandOver,
         <Card key={move} n="4 of 5" title="Who's" em="hosting?" lead="Your name goes on your Spotlight and your host profile. Add a photo later.">
           <div className="cs-bld-who">
             <span className="cs-bld-avatar">{(draft.hostName.trim()[0] ?? '?').toUpperCase()}</span>
-            <input
+            <Input
+              variant="seamless"
               autoFocus={moved}
               value={draft.hostName}
               onChange={(e) => { setHostErr(false); update({ hostName: e.target.value }) }}

@@ -38,6 +38,7 @@ export function SiteDomainPanel({
   initial,
   websitePublished,
   buyOpen = false,
+  activated = true,
 }: {
   slug: string
   /** The bound domain and its status, read on the server, or null when none is connected. */
@@ -45,6 +46,8 @@ export function SiteDomainPanel({
   websitePublished: boolean
   /** Domain sales are switched on (LIVE-781, domainPurchaseOpen on the server). Off: Coming soon. */
   buyOpen?: boolean
+  /** The domain is bound to the Space (spaces.domain), so the site answers on it. False while it is only staged. */
+  activated?: boolean
 }) {
   const router = useRouter()
   const [status, setStatus] = useState<Status | null>(initial)
@@ -87,6 +90,20 @@ export function SiteDomainPanel({
   // DNS is done and only the certificate is left: Vercel issues it on its own once it sees the new
   // records, and until then a browser warns on the domain. Say so, so nobody thinks it is broken.
   const securing = status ? status.attached && status.verified && status.dnsReady && !status.secure : false
+
+  // DNS finished while nobody was on this page, so the domain is ready but still only staged: the site would
+  // 404 on it. A check is what binds it (checkSiteDomain), so run one on arrival, once.
+  const activating = useRef(false)
+  useEffect(() => {
+    if (!live || activated || activating.current) return
+    activating.current = true
+    start(async () => {
+      const result = await checkSiteDomain(slug)
+      if (isError(result)) return setError(result.error)
+      setStatus(result.data)
+      router.refresh()
+    })
+  }, [live, activated, slug, router])
 
   // Quiet auto re-check while waiting on DNS (no error banner on a failed poll; Check again still shows one).
   const polls = useRef(0)
@@ -194,6 +211,8 @@ export function SiteDomainPanel({
             <span className="font-semibold text-text">{status.domain}</span>
             {status.unchecked ? (
               <Badge tone="neutral">Status not checked here</Badge>
+            ) : live && !activated ? (
+              <Badge tone="warning">Switching on</Badge>
             ) : live ? (
               <Badge tone="success">Live</Badge>
             ) : securing ? (

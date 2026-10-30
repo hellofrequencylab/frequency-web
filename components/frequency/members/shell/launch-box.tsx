@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
+import { Input } from '@/components/ui/field'
 import { askHideSetupAction, confirmCancelAction, confirmHideSetupAction, requestCancelAction, setMinimizedAction } from '@/lib/launch/actions'
 import type { LaunchBoxView } from '@/lib/launch/box-state'
 import { launchHomeHref } from '@/lib/launch/destination'
@@ -236,7 +237,7 @@ function LaunchStepsSheet({ view, onClose }: { view: LaunchBoxView; onClose: () 
           }}
         >
           <label htmlFor="fqm-launch-stop">Type STOP to end your launch. Anything you made stays.</label>
-          <input id="fqm-launch-stop" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" spellCheck={false} />
+          <Input variant="seamless" id="fqm-launch-stop" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" spellCheck={false} />
           <button type="submit" className="ap-launch-quiet" disabled={pending || typed.trim().length === 0}>
             Stop
           </button>

@@ -37,7 +37,7 @@ function Wheel({ p, metadata, now, pad, vis }: Common) {
         gatherings={gatherings}
         defaultMode={str(p.defaultMode) === 'scroll' ? 'scroll' : 'click'}
         stepHeight={step}
-        stickOffset={Math.min(160, Math.max(0, num(p.stickOffset, 78)))}
+        stickOffset={Math.min(160, Math.max(0, num(p.stickOffset, 64)))}
         eyebrow={str(p.eyebrow) || 'The year wheel · a guide to the sky'}
         title={<InlineText text={str(p.title) || 'Twelve signs, eight festivals, *every moon.*'} />}
         calendarHref={to}

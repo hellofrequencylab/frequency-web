@@ -370,6 +370,12 @@ export async function SitePage({
           const next = mwLive?.events[0] ?? null
           return { module: next?.title ?? '', theme: null, next }
         })()
+    : freeHumanSite
+      ? (() => {
+          // The kit's announce bar names the Space's next gathering, whatever it is called.
+          const next = mwLive?.events[0] ?? null
+          return { module: next?.title ?? '', theme: null, next }
+        })()
     : midnightSite
       ? (() => {
           // Midnight's top bar names the moon and the Space's next gathering, whatever it is called.

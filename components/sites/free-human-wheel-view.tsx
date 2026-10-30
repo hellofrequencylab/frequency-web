@@ -246,7 +246,10 @@ export function FreeHumanWheelView({ today, gatherings, defaultMode, stepHeight,
     const tt = u <= 0 ? 0 : u >= 1 ? 1 : HOLD + (1 - 2 * HOLD) * invSS(u)
     return (i + tt) / (stops.length - 1)
   }
-  const stickTop = () => stickOffset - Math.max(0, Math.min(st.current.headH, st.current.stageH - window.innerHeight))
+  // The stage parks under the live sticky site header (it folds from 116 to 64 on scroll), so read that header's
+  // real bottom edge; the stickOffset prop is only the fallback where the page has no such header.
+  const topInset = () => { const h = document.querySelector('.fh-top'); return h ? Math.max(0, Math.round(h.getBoundingClientRect().bottom)) : stickOffset }
+  const stickTop = () => topInset() - Math.max(0, Math.min(st.current.headH, st.current.stageH - window.innerHeight))
   const range = () => { const r = rootRef.current, g = stageRef.current; return r && g ? Math.max(1, r.offsetHeight - g.offsetHeight) : 1 }
   const scrollToDay = (day: number, smooth: boolean) => { const r = rootRef.current; if (!r) return; window.scrollTo({ top: window.scrollY + r.getBoundingClientRect().top - stickTop() + pAt(day) * range(), behavior: smooth ? 'smooth' : 'instant' }) }
   const goDay = (i: number) => { if (st.current.mode === 'scroll') scrollToDay(i, true); else c.current.target = i }

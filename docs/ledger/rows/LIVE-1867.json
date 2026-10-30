@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "scripts/ds-intake.mjs",
     "ref": "Theme cohesion sweep (docs/THEME-COHESION.md, ADR-1923). Owner picks 2026-10-29: role blocks and manifest, phased; no live site changes on its own."
   },
-  "detail": "Extends docs/DESIGN-SYSTEM-INTAKE.md step 2.",
+  "detail": "Extends docs/DESIGN-SYSTEM-INTAKE.md step 2. Shipped: ds-intake --scaffold-manifest writes a hidden draft theme.manifest.json (every role missing) and a role-coverage.json baseline beside the rules; an existing file is kept. Opt-in flag, so no committed design system changes.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/theme-cohesion.mjs intake",
     "note": "Reads the wiring this row ships; fails on main. The behaviour is pinned by the row's own tests."
   },
+  "closed": "2026-10-30",
   "wave": "W7"
 }
