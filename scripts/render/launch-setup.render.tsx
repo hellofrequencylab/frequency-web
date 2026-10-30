@@ -16,7 +16,7 @@ vi.mock('react', async (orig) => {
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push() {}, replace() {}, refresh() {} }), usePathname: () => '/', useSearchParams: () => new URLSearchParams() }))
 vi.mock('next/link', () => ({ default: (p: Record<string, unknown>) => h('a', { href: p.href as string, className: p.className as string, style: p.style as never }, p.children as never) }))
 vi.mock('@/lib/theme/design', () => ({ SITE_DESIGN: 'frequency' }))
-vi.mock('@/lib/launch/actions', () => ({ setMinimizedAction: async () => ({}), requestCancelAction: async () => ({}), confirmCancelAction: async () => ({}), askHideSetupAction: async () => ({}), confirmHideSetupAction: async () => ({}) }))
+vi.mock('@/lib/launch/actions', () => ({ setMinimizedAction: async () => ({}), requestCancelAction: async () => ({}), confirmCancelAction: async () => ({}), askHideSetupAction: async () => ({}), confirmHideSetupAction: async () => ({}), savePersonalFormAction: async () => {} }))
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: (p: { children: ReactNode; className?: string }) =>
     h(
@@ -75,4 +75,9 @@ it('renders Finish setup', async () => {
   writeFileSync(`${out}/setup-hide2.html`, await sheetScreen(2))
   const intent = h(Suspense, { fallback: null }, h(LaunchLightbox, null, h('div', { style: { maxWidth: 720, margin: '0 auto', display: 'grid', gap: 16 } }, h('h1', { className: 'h1' }, 'Welcome back'), h(LaunchIntent, { spaceHref: '/launch/step/spotlight?go=1' }))))
   writeFileSync(`${out}/setup-intent.html`, await page(intent, `${BAR}</header>${HOME}`))
+  const { LaunchPersonal } = await import('@/components/launch/launch-personal')
+  const personal = (saved: boolean) =>
+    h(Suspense, { fallback: null }, h(LaunchLightbox, null, h('div', { style: { maxWidth: 960, margin: '0 auto', display: 'grid', gap: 16 } }, h('h1', { className: 'h1' }, 'Your Spotlight'), h(LaunchPersonal, { answers: { name: 'Ada Lovelace', line: 'I teach small yoga classes by the river, and I never rush anyone.', link: 'https://ada.example/' }, spotlightHref: '/spotlight/ada', saved, spaceHref: '/launch/step/spotlight?go=1' }))))
+  writeFileSync(`${out}/personal-form.html`, await page(personal(false), `${BAR}</header>${HOME}`))
+  writeFileSync(`${out}/personal-saved.html`, await page(personal(true), `${BAR}</header>${HOME}`))
 })

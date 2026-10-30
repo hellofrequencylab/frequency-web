@@ -26,12 +26,14 @@ import { listOwnedSpaces } from './spaces-io'
 import { PUBLISHED_HREF, REVIEW_HREF, parseReviewDraft, type ReviewErrorCode } from './review'
 import { publishReview } from './review-io'
 import { parseSpotlightAnswers } from './spotlight-step'
+import { savePersonalSpotlight } from './personal-io'
 import { publishSpotlightStep } from './spotlight-io'
 import type { LaunchSnapshot } from './state'
 import { askHideSetup, confirmHideSetup, showSetupAgain } from './setup-hidden-io'
 import * as store from './store'
 import { launchStepHref } from './steps'
 
+const PERSONAL_STEP = '/launch/personal'
 const OFF = 'The launch is not open yet.'
 const SIGN_IN = 'Sign in to keep going.'
 const GONE = 'There is no launch in progress.'
@@ -129,6 +131,17 @@ export async function publishSpotlightFormAction(formData: FormData): Promise<vo
   if ('error' in made) redirect(spotlightStepUrl('retry'))
   await clearPendingLaunch()
   redirect(launchStepPublishedHref('spotlight'))
+}
+
+/** The personal Spotlight step's Save button (LIVE-1918). Saves the name, line and link onto the person's own profile and
+ *  lands back on the same step, which then shows the Spotlight and the offer of a Space. Signed out goes to sign in. */
+export async function savePersonalFormAction(formData: FormData): Promise<void> {
+  if (!launchSystemEnabled()) redirect('/')
+  const answers = parseSpotlightAnswers({ name: formData.get('name'), line: formData.get('line'), link: formData.get('link') })
+  if ('error' in answers) redirect(`${PERSONAL_STEP}?e=${answers.error === SPOTLIGHT_ERRORS.name ? 'name' : 'line'}`)
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect(`/sign-in?next=${PERSONAL_STEP}`)
+  redirect((await savePersonalSpotlight(profileId, answers)) ? `${PERSONAL_STEP}?saved=1` : `${PERSONAL_STEP}?e=retry`)
 }
 
 /** The Space step's Keep button (VLS-17, first cut). The Space already exists the moment the Spotlight is published, so

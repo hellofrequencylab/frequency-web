@@ -3,7 +3,7 @@
 // Everyone has a personal Spotlight; a Space is the step up. Anyone who already made something, or already has a
 // Space, skips the question: the launch picks up where they stopped. PURE.
 
-export const PERSONAL_SPOTLIGHT_HREF = '/profile'
+export const PERSONAL_SPOTLIGHT_HREF = '/launch/personal'
 
 /** True when the launch should ask what the person came to set up. */
 export function showIntent(l: { spaceId: string | null | undefined; made: readonly unknown[] }): boolean {

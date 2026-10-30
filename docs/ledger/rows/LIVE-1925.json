@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1925",
+  "title": "Launcher: the personal Spotlight step inside the launch (name, line, link saved to the profile, then the Space offer)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-10-30",
+  "wave": "W7",
+  "source": {
+    "file": "lib/launch/personal.ts",
+    "ref": "Owner direction 2026-10-29: someone who only wants a personal Spotlight is taken through that build and offered a Space upsell"
+  },
+  "detail": "The 'Just my personal Spotlight' choice now opens /launch/personal inside the lightbox: a name, one line and a link, filled from the profile, saved back through the one profile writer (updateProfile, no second writer; it blanks fields it is not given, so the call is built from the stored profile and changes only name, bio and website). The real /spotlight/<handle> shows beside the form; after saving, a card offers a Space, and the Space launch fills from the same profile so the words come along. Not in this slice: the photo, the products shelf, and a Finish setup 'Personal' group for people with no Space (no launch row exists for a personal-only path yet).",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-30",
+    "evidence": "The step page, the save action and the pure builder exist and the step saves only through updateProfile.",
+    "cmd": "node scripts/probes/launch-personal.mjs"
+  }
+}
