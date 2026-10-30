@@ -33,6 +33,7 @@ import { MidnightLetterForm } from './midnight-letter-form'
 import { TempleKitLogo } from './temple-kit-logo'
 import { TempleKitBar } from './temple-kit-bar'
 import { TempleKitHeaderState } from './temple-kit-header-state'
+import { FreeHumanHeaderState } from './free-human-header-state'
 import { TempleKitTools } from './temple-kit-tools'
 import { TempleKitLetterForm } from './temple-kit-letter-form'
 import { TEMPLE_KIT_CHROME_COPY, templeKitFooterColumns, templeKitLetterParts, templeKitShopHref } from '@/lib/sites/temple-kit-chrome'
@@ -260,6 +261,7 @@ export function SiteChrome({
       {designer && <DesignerHeaderState />}
       {nk && <NetworkKitHeaderState />}
       {tk && <TempleKitHeaderState />}
+      {fh && <FreeHumanHeaderState />}
       {midnight && <MidnightBar now={new Date()} next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />}
       {wild && <WildheartInkDefs />}
       {wild ? (

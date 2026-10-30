@@ -185,7 +185,7 @@ export const FREE_HUMAN_YEAR_WHEEL = {
   ground: 'day', edge: 'flat', texture: 'wind', wander: true,
   eyebrow: 'The year wheel · a guide to the sky',
   title: 'Twelve signs, eight festivals, *every moon.*',
-  defaultMode: 'click', stepHeight: 32, stickOffset: 78,
+  defaultMode: 'click', stepHeight: 32, stickOffset: 64,
   calendarHref: '#month-by-month',
 }
 
