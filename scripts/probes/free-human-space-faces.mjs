@@ -1,4 +1,4 @@
-// A synced Free Human website gives its Space page the kit's display face (LIVE-1927).
+// A synced Free Human website gives its Space page the kit's display face (LIVE-1936).
 import { readFileSync } from 'node:fs'
 
 let bad = 0
