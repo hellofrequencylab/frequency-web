@@ -10,7 +10,7 @@ describe('showIntent', () => {
     expect(showIntent({ spaceId: null, made: ['Spotlight'] })).toBe(false)
     expect(showIntent({ spaceId: 's1', made: [] })).toBe(false)
   })
-  it('sends the personal choice to the member\'s own profile, a route that exists', () => {
-    expect(PERSONAL_SPOTLIGHT_HREF).toBe('/profile')
+  it('sends the personal choice to the personal Spotlight step', () => {
+    expect(PERSONAL_SPOTLIGHT_HREF).toBe('/launch/personal')
   })
 })

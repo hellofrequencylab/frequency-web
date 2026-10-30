@@ -27,7 +27,7 @@ const LATER: Readonly<Record<'space' | 'website' | 'email', { title: string; blu
   email: { title: 'Email', blurb: 'Write a first note to the people who find you.' },
 }
 
-function Phone({ src, live }: { src: string | null; live: boolean }) {
+export function Phone({ src, live }: { src: string | null; live: boolean }) {
   const w = Math.round(PHONE_W * SCALE)
   const h = Math.round(PHONE_H * SCALE)
   return (
