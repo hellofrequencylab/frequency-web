@@ -146,6 +146,8 @@ describe('the website faces on the Space page', () => {
   it('follows a synced Temple Theme Kit website, and only while synced', () => {
     expect(spacePageSiteFaces({ siteStyle: { theme: 'temple-kit', synced: true } })).toBe('temple-kit')
     expect(spacePageSiteFaces({ siteStyle: { theme: 'temple-kit', synced: false } })).toBeNull()
+    expect(spacePageSiteFaces({ siteStyle: { theme: 'free-human', synced: true } })).toBe('free-human')
+    expect(spacePageSiteFaces({ siteStyle: { theme: 'free-human', synced: false } })).toBeNull()
     // The earlier Royal Temple theme keeps its Classic page.
     expect(spacePageSiteFaces({ siteStyle: { theme: 'temple', synced: true } })).toBeNull()
   })

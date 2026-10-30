@@ -47,6 +47,9 @@
 /* The Temple Theme Kit takes the DISPLAY face only, the same way (ADR-1728, ADR-1906): titles and the Space name wear
    Marcellus, and the body, the UI and every size stay Frequency's. */
 [data-design="frequency"] [data-space-fonts="temple-kit"] { --space-font-display: var(--font-tp-marcellus), var(--font-playfair); --space-font-body: var(--fq-font-sans); }
+/* The Free Human Theme Kit takes the DISPLAY face only, the same way (ADR-1728, ADR-1906): titles and the Space name wear
+   Cormorant Garamond, and the body, the UI and every size stay Frequency's. */
+[data-design="frequency"] [data-space-fonts="free-human"] { --space-font-display: var(--font-fh-cormorant), var(--font-playfair); --space-font-body: var(--fq-font-sans); }
 [data-design="frequency"] [data-space-fonts="wildheart"] { --space-font-display: var(--font-wh-fell), var(--font-playfair); --space-font-body: var(--font-wh-garamond), var(--font-pt-serif); }
 [data-design="frequency"] [data-space-fonts="midnight"] { --space-font-display: var(--font-mn-bodoni), var(--font-playfair); --space-font-body: var(--font-mn-geist), var(--font-nunito); }
 
@@ -113,6 +116,10 @@
 [data-design="frequency"] [data-space-fonts="temple-kit"] { --space-display-track: -0.01em; --space-display-scale: 1.06; }
 [data-design="frequency"] [data-space-fonts="temple-kit"] :is(.fqs-hero h1, .fqs-card-t, .fqs-date b, [data-space-page] .font-display, [data-space-page] .font-section) { font-weight: 400; }
 [data-design="frequency"] [data-space-fonts="temple-kit"] .fqs-id .h1 { font-family: var(--space-font-display), var(--fq-font-display); font-weight: 400; letter-spacing: var(--space-display-track); }
+/* Free Human display: Cormorant Garamond 500, a light serif like the Designer kit, so the track is near zero and the scale lifts it a size. */
+[data-design="frequency"] [data-space-fonts="free-human"] { --space-display-track: -0.005em; --space-display-scale: 1.12; }
+[data-design="frequency"] [data-space-fonts="free-human"] :is(.fqs-hero h1, .fqs-card-t, .fqs-date b, [data-space-page] .font-display, [data-space-page] .font-section) { font-weight: 500; }
+[data-design="frequency"] [data-space-fonts="free-human"] .fqs-id .h1 { font-family: var(--space-font-display), var(--fq-font-display); font-weight: 500; letter-spacing: var(--space-display-track); }
 [data-design="frequency"] [data-space-fonts="menswork"] { --space-display-track: 0.005em; --space-display-scale: 1.18; }
 
 /* ══ 1. TYPE: Unbounded titles, Hanken body, Instrument Serif italic accents ══════════════════════ */

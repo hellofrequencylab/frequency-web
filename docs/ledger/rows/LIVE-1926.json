@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1926",
+  "title": "Give the Free Human Space page the kit's display face, and fill the Space's own blocks",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-30",
+  "source": {
+    "file": "docs/design-systems/free-human/rules.json",
+    "ref": "LIVE-1910"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/free-human-space-faces.mjs",
+    "checked": "2026-10-30",
+    "evidence": "Fails on main (the Space page stood in Classic's Playfair for a synced Free Human website) and passes here."
+  },
+  "detail": "The in-app Free Human Movement Space page read as Classic (Playfair) because spacePageSiteFaces knew every kit but this one. A synced Free Human website now wears the kit's DISPLAY face only on the Space page (Cormorant Garamond 500, lib/theme/site-faces.ts 'free-human', space-page.css under data-space-fonts), the way the Designer and Temple kits do (ADR-1728, ADR-1906); the body, the UI and every size stay Frequency's, and the accent already rode spacePageDefaultAccent. The Space's own blocks are filled by one guarded SQL transaction (/mnt/project-files/free-human/free-human-space-blocks.sql): profileData story and nine offerings (the four seasons, three workshops, two books) from the website's own copy, and five FAQs. No price, address, phone or email is invented: offerings read as price on request, and Contact stays empty until the owner supplies them.",
+  "wave": "W7"
+}
