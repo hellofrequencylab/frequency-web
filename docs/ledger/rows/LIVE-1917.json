@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1917",
+  "title": "Launcher slice five: a fresh launch asks what you are setting up (a Space, or just a personal Spotlight)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-10-29",
+  "wave": "W7",
+  "source": {
+    "file": "lib/launch/intent.ts",
+    "ref": "Owner direction 2026-10-29: someone who only wants a personal Spotlight is taken through that build and offered a Space"
+  },
+  "detail": "A launch with nothing made and no Space opens with two choices: a Space for what they run (the whole launch) or just their personal Spotlight (their own profile, where it is built). The Space note says their name, bio and link come along. Not in this slice: building the personal Spotlight inside the lightbox (needs the Spotlight split builder, which is paused), the products shelf in the Spotlight, website and email steps, and an entry-aware start step (the launch is one page, so there is no step route to land on).",
+  "verify": {
+    "kind": "cmd",
+    "checked": "2026-10-29",
+    "evidence": "The launch page asks and the personal route exists.",
+    "cmd": "node scripts/probes/launch-intent.mjs"
+  }
+}

@@ -154,8 +154,8 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   // is no longer a preset: it is offered nowhere.
   { id: 'temple-kit', label: 'Temple', theme: { ...surfacePreset('temple-kit', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'temple-kit:stack', kit: 'general' } },
   // The Free Human Theme Kit (lib/theme/free-human.ts): limewash ground, umber type, one madder accent, soft cards. Cormorant and
-  // Hanken Grotesk load on websites only, so the nearest allowlisted faces stand in. Its own Spotlight layouts wait on design screens.
-  { id: 'free-human', label: 'Free Human', theme: surfacePreset('free-human', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) },
+  // Hanken Grotesk load on websites and on its Spotlight layouts only, so the nearest allowlisted faces stand in for the block body.
+  { id: 'free-human', label: 'Free Human', theme: { ...surfacePreset('free-human', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'free-human:stack', kit: 'general' } },
   {
     id: 'mono', label: 'Mono',
     theme: { accent: '#111111', surface: '#ffffff', text: '#111111', font: { heading: 'sans', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },
