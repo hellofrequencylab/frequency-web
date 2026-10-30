@@ -26,7 +26,7 @@ const BUTTON = { eyebrow: 'eyebrow', title: 'title', buttonLabel: 'primaryLabel'
 const LETTER = { title: 'title', lead: 'lead', buttonLabel: 'primaryLabel' }
 const EVENTS = { eyebrow: 'eyebrow', title: 'title', lead: 'lead', actionLabel: 'actionLabel', actionHref: 'actionHref', count: 'count', image: 'image', alt: 'alt', empty: 'empty' }
 
-export const LEGACY_RULES: Readonly<Record<string, Rule>> = {
+const LEGACY_RULES: Readonly<Record<string, Rule>> = {
   Hero: { role: 'hero', fields: { eyebrow: 'eyebrow', title: 'title', subtitle: 'lead', image: 'image', ctaPrimaryLabel: 'primaryLabel', ctaPrimaryHref: 'primaryHref', ctaSecondaryLabel: 'secondaryLabel', ctaSecondaryHref: 'secondaryHref' } },
   PhotoHero: { role: 'hero', variant: 'full', fields: { eyebrow: 'eyebrow', title: 'title', subtitle: 'lead', image: 'image', alt: 'alt', actionPrimaryLabel: 'primaryLabel', actionPrimaryHref: 'primaryHref', actionSecondaryLabel: 'secondaryLabel', actionSecondaryHref: 'secondaryHref' } },
   MidnightHero: { role: 'hero', fields: HERO },
@@ -59,16 +59,9 @@ const ROLE_BY_TYPE = new Map((Object.keys(ROLES) as RoleId[]).map((r) => [ROLES[
 const LEGACY_TYPES = new Set((Object.keys(ROLES) as RoleId[]).flatMap((r) => ROLES[r].replaces))
 const isLegacyType = (type: unknown): type is string => typeof type === 'string' && LEGACY_TYPES.has(type)
 
-/** Every legacy type a role claims through `replaces`, with whether this map converts it. */
-export function legacyCoverage(): { type: string; role: RoleId; converts: boolean }[] {
-  const out: { type: string; role: RoleId; converts: boolean }[] = []
-  for (const role of Object.keys(ROLES) as RoleId[]) for (const type of ROLES[role].replaces) out.push({ type, role, converts: type in LEGACY_RULES })
-  return out
-}
-
 /** The block as its role stands in for it, or null when this map does not convert it. The block keeps its id, so
  *  comments, layout positions and anchors still find it. */
-export function upgradeBlock(block: Block): Block | null {
+function upgradeBlock(block: Block): Block | null {
   const rule = LEGACY_RULES[block?.type]
   if (!rule) return null
   const props: Props = { id: block.props?.id }
@@ -82,8 +75,8 @@ export function upgradeBlock(block: Block): Block | null {
   return { type: ROLES[rule.role].type, props }
 }
 
-export interface LegacyChange { id: string; from: string; to: string; role: RoleId }
-export interface LegacyUpgrade { doc: Doc; changes: LegacyChange[]; kept: { id: string; type: string }[] }
+interface LegacyChange { id: string; from: string; to: string; role: RoleId }
+interface LegacyUpgrade { doc: Doc; changes: LegacyChange[]; kept: { id: string; type: string }[] }
 
 /** Upgrade every convertible block on a page. Pure: the input is not touched, `changes` is the diff the owner reads
  *  before keeping it, and `kept` lists the old blocks left alone because their words would not carry over. */

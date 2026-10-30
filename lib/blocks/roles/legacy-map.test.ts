@@ -1,22 +1,25 @@
 import { describe, it, expect } from 'vitest'
-import { LEGACY_RULES, legacyCoverage, upgradeBlock, upgradeDocument } from './legacy-map'
-import { ROLES } from './roles'
+import { upgradeDocument } from './legacy-map'
+import { ROLES, type RoleId } from './roles'
+
+const one = (type: string, props: Record<string, unknown> = {}) => upgradeDocument({ content: [{ type, props: { id: 'x', ...props } }] })
 
 describe('legacy map (LIVE-1860)', () => {
-  it('every rule names a legacy type its role claims', () => {
-    for (const type of Object.keys(LEGACY_RULES)) {
-      expect(legacyCoverage().find((c) => c.type === type), type).toBeTruthy()
-      expect(ROLES[LEGACY_RULES[type].role].replaces, type).toContain(type)
+  it('only converts to a role that claims the old type', () => {
+    const claimed = new Map((Object.keys(ROLES) as RoleId[]).flatMap((r) => ROLES[r].replaces.map((t) => [t, ROLES[r].type] as const)))
+    for (const [type, roleType] of claimed) {
+      const r = one(type)
+      if (r.changes.length) expect(r.doc.content?.[0].type, type).toBe(roleType)
     }
   })
 
   it('carries words and buttons over and keeps the block id', () => {
-    const out = upgradeBlock({ type: 'MidnightCTA', props: { id: 'b1', title: 'Join us', buttonLabel: 'Go', buttonHref: '/x', frame: 'x' } })
-    expect(out).toEqual({ type: 'RoleCta', props: { id: 'b1', title: 'Join us', primaryLabel: 'Go', primaryHref: '/x' } })
+    const r = upgradeDocument({ content: [{ type: 'MidnightCTA', props: { id: 'b1', title: 'Join us', buttonLabel: 'Go', buttonHref: '/x', frame: 'x' } }] })
+    expect(r.doc.content?.[0]).toEqual({ type: 'RoleCta', props: { id: 'b1', title: 'Join us', primaryLabel: 'Go', primaryHref: '/x' } })
   })
 
   it('turns a Space-fed block into a live role block', () => {
-    expect(upgradeBlock({ type: 'LiveEvents', props: { id: 'e' } })?.props.live).toBe(true)
+    expect(one('LiveEvents').doc.content?.[0].props.live).toBe(true)
   })
 
   it('leaves blocks it cannot carry over untouched and says so', () => {
