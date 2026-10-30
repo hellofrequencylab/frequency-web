@@ -4,6 +4,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getConnectStatus } from '@/lib/billing/connect'
 import type { LaunchRows, SetupExtras } from './done-checks'
+import { offerPageCount } from './offer-page'
 
 export async function loadLaunchRows(spaceId: string, ownerProfileId: string, withExtras = false): Promise<LaunchRows | null> {
   const db = await createClient()
@@ -31,7 +32,7 @@ export async function loadLaunchRows(spaceId: string, ownerProfileId: string, wi
           count(db.from('lead_entry_points').select('id', { count: 'exact', head: true }).eq('space_id', spaceId)),
           count(db.from('space_automation_rules').select('id', { count: 'exact', head: true }).eq('space_id', spaceId)),
         ])
-        return { bookingTimes, membershipTiers, donationAsks, products, campaigns, campaignsSent, captureLinks, automations }
+        return { bookingTimes, membershipTiers, donationAsks, products, campaigns, campaignsSent, captureLinks, automations, offerPages: offerPageCount((spaceRes.data as { preferences?: unknown } | null)?.preferences) }
       })()
     : undefined
   const space = spaceRes.data as { preferences: unknown; tagline: string | null; about: string | null } | null

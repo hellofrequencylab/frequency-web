@@ -37,6 +37,8 @@ export interface SetupExtras {
   campaignsSent: number
   captureLinks: number
   automations: number
+  /** 1 once the Space has its one-offer page (lib/launch/offer-page.ts). */
+  offerPages: number
 }
 
 function record(v: unknown): Record<string, unknown> {

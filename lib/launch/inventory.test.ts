@@ -29,7 +29,7 @@ describe('inventorySections', () => {
 })
 
 describe('the Setup list after Publish (LIVE-1916)', () => {
-  const base = { rows: { ...rows, extras: { bookingTimes: 0, membershipTiers: 1, donationAsks: 0, products: 0, campaigns: 0, campaignsSent: 0, captureLinks: 0, automations: 0 } }, spaceName: 'A', coverImageUrl: null, logoUrl: null }
+  const base = { rows: { ...rows, extras: { bookingTimes: 0, membershipTiers: 1, donationAsks: 0, products: 0, campaigns: 0, campaignsSent: 0, captureLinks: 0, automations: 0, offerPages: 0 } }, spaceName: 'A', coverImageUrl: null, logoUrl: null }
   it('adds the Money and Reach sections only when asked', () => {
     expect(inventorySections(base).map((s) => s.id)).not.toContain('money')
     const ext = inventorySections({ ...base, extended: true, hrefs: { 'space.memberships': '/spaces/a/settings/offerings#members' } })

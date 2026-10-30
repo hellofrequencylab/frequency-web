@@ -10,6 +10,8 @@ import { getSpaceCapabilities, spaceCanUseFullWebsite, spaceHasEntitlement } fro
 import { isValidAccent } from '@/lib/spaces/accent'
 import {
   hasPage,
+  readPageDoc,
+  withPageDoc,
   addPage,
   renamePage,
   removePage,
@@ -22,6 +24,8 @@ import {
 import { withProfileData, type ProfileDataPatch } from '@/lib/spaces/profile-data'
 import { normalizeSpaceLocation } from '@/lib/spaces/location'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { generateOfferPage } from '@/lib/page-editor/templates/space-offer'
+import { OFFER_PAGE_LABEL, OFFER_PAGE_SLUG, firstOfferSeed } from '@/lib/launch/offer-page'
 import { parseSiteDomain } from '@/lib/sites/domain'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { siteSubdomainHost } from '@/lib/sites/host'
@@ -689,6 +693,32 @@ export async function createSpacePage(slug: string, label: string): Promise<Acti
   if (!(await writePreferences(auth.spaceId, preferences))) {
     return fail('Could not add the page. Try again.')
   }
+  revalidateNav(slug)
+  return ok(plan.slug)
+}
+
+/**
+ * Start the one-offer page (LIVE-1928): add an "offer" page to the nav and seed its document from the Space's own first
+ * offering. Idempotent: an existing offer page is left as it is and its slug returned, so the Setup item can open it again
+ * and never overwrites an edit. Rejects with a plain message when the Space has no offering yet or may not add pages.
+ * Owner/admin/editor-gated.
+ */
+export async function startOfferPage(slug: string): Promise<ActionResult<string>> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+  if (hasPage(auth.preferences, OFFER_PAGE_SLUG) && readPageDoc(auth.preferences, OFFER_PAGE_SLUG)) return ok(OFFER_PAGE_SLUG)
+
+  const seed = firstOfferSeed(auth.preferences)
+  if (!seed) return fail('List a product or service first, then come back to make its page.')
+  const plan = hasPage(auth.preferences, OFFER_PAGE_SLUG)
+    ? ({ ok: true, slug: OFFER_PAGE_SLUG, label: OFFER_PAGE_LABEL } as const)
+    : planAddPage(auth.preferences, OFFER_PAGE_LABEL, MAX_PROFILE_PAGES, auth.canUseFullWebsite)
+  if (!plan.ok) return fail(addPageError(plan.reason))
+
+  const space = await getVisibleSpaceBySlug(slug, (await getCallerProfile())?.id ?? null)
+  const withPage = hasPage(auth.preferences, OFFER_PAGE_SLUG) ? auth.preferences : addPage(auth.preferences, plan.slug, plan.label, auth.canUseFullWebsite)
+  const preferences = withPageDoc(withPage, plan.slug, generateOfferPage(space?.name ?? '', seed))
+  if (!(await writePreferences(auth.spaceId, preferences))) return fail('Could not make the page. Try again.')
   revalidateNav(slug)
   return ok(plan.slug)
 }
