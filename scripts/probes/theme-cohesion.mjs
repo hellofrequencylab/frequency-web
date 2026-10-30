@@ -18,7 +18,7 @@ const CHECKS = {
   manifest: () => (count('lib/themes/manifests', /\.manifest\.json$/) >= 9 ? [] : ['fewer than nine theme manifests']),
   roles8: () => (count('lib/blocks/roles', /\.role\.json$/) >= 8 ? [] : ['fewer than eight role definitions']),
   roles17: () => (count('lib/blocks/roles', /\.role\.json$/) >= 17 ? [] : ['fewer than seventeen role definitions']),
-  legacy: () => (existsSync('lib/blocks/roles/legacy-map.ts') ? [] : ['no legacy block to role map']),
+  legacy: () => (existsSync('lib/blocks/roles/legacy-map.ts') && existsSync('components/sites/editor/update-layouts.tsx') ? [] : ['no legacy block to role map or no Update to new layouts action']),
   presentation: () => (count('components/sites/presentation', /\.ts$/) >= 9 ? [] : ['fewer than nine theme presentation layers']),
   staticcss: () => (existsSync('scripts/build-theme-css.mjs') ? [] : ['theme CSS is not built as static versioned files']),
   tryiton: () => (existsSync('components/sites/theme-preview-swap.tsx') ? [] : ['no instant stylesheet swap preview']),
