@@ -19,6 +19,7 @@ const SECTION_STEP = {
   // The Setup items open their own Space tool (item.href); these are only the fallback.
   money: 'paid',
   reach: 'people',
+  personal: 'spotlight',
 } as const
 
 interface GetStartedItem {
