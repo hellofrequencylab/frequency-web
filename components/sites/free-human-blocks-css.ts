@@ -190,6 +190,10 @@ ${N} .fh-field[data-wide]{grid-column:1/-1}
 ${N} .fh-field-label{font-family:var(--font-lyric);font-style:italic;font-size:17px;color:var(--text-muted)}
 ${N} .fh-field input,${N} .fh-field select,${N} .fh-field textarea{box-sizing:border-box;width:100%;font:inherit;font-size:17px;color:var(--text-body-ink);background:transparent;border:0;border-radius:0;padding:12px 2px;border-bottom:1px solid color-mix(in srgb,var(--fh-brass-600) 45%,transparent)}
 ${N} .fh-field input,${N} .fh-field select{height:46px;padding-block:0}
+${N} .fh-field .mu-select{position:relative;display:block;width:100%}
+${N} .fh-field .mu-select>svg{display:none}
+${N} .fh-field .mu-select>select{appearance:none;-webkit-appearance:none;padding-right:28px;cursor:pointer}
+${N} .fh-field .mu-select::after{content:"";position:absolute;right:6px;top:50%;width:8px;height:8px;border-right:1.5px solid var(--fh-brass-600);border-bottom:1.5px solid var(--fh-brass-600);transform:translateY(-70%) rotate(45deg);pointer-events:none}
 ${N} .fh-field textarea{resize:vertical;min-height:96px}
 ${N} .fh-field input::placeholder,${N} .fh-field textarea::placeholder{color:var(--text-muted)}
 ${N} .fh-field input:focus-visible,${N} .fh-field select:focus-visible,${N} .fh-field textarea:focus-visible{outline:2px solid var(--fh-clay-500);outline-offset:2px}
