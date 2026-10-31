@@ -1,0 +1,5 @@
+{
+  "id": "SCAN-940",
+  "patch": { "source": { "file": "components/frequency/members/shell/header.tsx", "ref": "Owner mobile Zap regression screenshot 2026-10-15" } },
+  "append": { "detail": "\n\n2026-10-31: the separate Zap sheet (zap-sheet.tsx) was removed; Zap now opens the one Capture a moment pop-up (components/feed/capture-launcher.tsx), so the source points at the header that hands Zap to it." }
+}
