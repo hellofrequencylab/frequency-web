@@ -18,7 +18,7 @@ describe('retired AppShell consequences move to actual Frequency consumers', () 
     expect(activeShellProblems('breadcrumb', mutated(SOURCES.rails, '{children}', '<Breadcrumbs />{children}'))).toContain('Global shell must not duplicate page-owned trails')
   })
   it('rejects the actual phone action opening a different sheet', () => {
-    expect(activeShellProblems('zap', mutated(SOURCES.header, "onZap={() => toggle('zap')}", "onZap={() => toggle('me')}"))).toContain('Actual phone Zap must open its sheet')
+    expect(activeShellProblems('zap', mutated(SOURCES.header, "onZap={() => toggle('zap')}", "onZap={() => toggle('me')}"))).toContain('Actual phone Zap must open the one Capture pop-up, not a second Zap sheet')
   })
   it('rejects a second viewport minimum in the actual content rule', () => {
     expect(activeShellProblems('viewport', mutated(SOURCES.css, '.fqm-body{--fqm-l:', '.fqm-body{min-height:100vh;--fqm-l:'))).toContain('Content adds a second viewport below the header')

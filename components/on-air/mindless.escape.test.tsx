@@ -12,6 +12,7 @@ vi.mock('./session', () => ({ OnAirSession: () => <div data-testid="still-sessio
 vi.mock('./movement-session', () => ({ MovementSession: () => <div data-testid="move-session">Running movement</div> }))
 
 import { MindlessProvider, useMindless } from './mindless'
+import { ZapToastContainer } from '@/components/zap-toast'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 let root: Root
@@ -91,7 +92,7 @@ describe('Mindless escape ownership', () => {
 
   it('announces an expired server timer without opening a fabricated practice session', async () => {
     active.mockResolvedValue({ data: { session: null, expired: true } })
-    await act(async () => root.render(<MindlessProvider><OpenSetup /></MindlessProvider>))
+    await act(async () => root.render(<><ZapToastContainer /><MindlessProvider><OpenSetup /></MindlessProvider></>))
 
     expect(container.querySelector('[role="status"]')?.textContent).toContain('Timer session expired')
     expect(container.textContent).toContain('no extra practice or rewards were added')

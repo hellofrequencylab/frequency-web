@@ -637,11 +637,6 @@
      dialogs at 80). The drawer stops at the bar, so Menu stays on screen to close what it opened. */
   [data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{bottom:var(--tab-bar-h);border-radius:0 var(--fq-radius-xl) var(--fq-radius-xl) 0;overflow-y:auto;overscroll-behavior:contain}
 
-  /* The Zap sheet rises from the bar on a phone: full width less the gutter, above the orb. */
-  [data-design="frequency"] [data-kit="members"] #fqm-zap{position:fixed;top:auto;left:12px;right:12px;width:auto;bottom:calc(var(--tab-bar-h) + var(--tab-bar-lift) + 14px);transform:translateY(16px) scale(.98);transform-origin:bottom center}
-  [data-design="frequency"] [data-kit="members"] #fqm-zap.on{transform:none}
-  [data-design="frequency"] [data-kit="members"] #fqm-zap{background:color-mix(in oklab,var(--fq-surface-card) 96%,transparent);box-shadow:0 30px 70px -30px color-mix(in oklab,var(--fq-ink) 35%,transparent),inset 0 0 0 1px var(--fqm-white-90)}
-  [data-design="frequency"] [data-kit="members"] #fqm-zap .ap-zapg i{background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fqm-white-90)}
 }
 @media (min-width:768px){[data-design="frequency"] [data-kit="members"] .ap-rail.fqm-drawer{display:none}}
 [data-design="frequency"] [data-kit="members"][data-console] .fqm-tabbar{display:none}
@@ -680,7 +675,7 @@
 [data-design="frequency"] [data-kit="members"] .fqm-tile>b{position:absolute;top:4px;right:calc(50% - 30px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--fq-x-magenta-deep);color:var(--fq-text-on-accent);font:600 var(--fq-text-label)/18px var(--fq-font-sans)}
 
 @media (prefers-reduced-motion:reduce){
-  [data-design="frequency"] [data-kit="members"] .fqm-tb-ic,[data-design="frequency"] [data-kit="members"] .fqm-tb-orb,[data-design="frequency"] [data-kit="members"] .fqm-tb-orb svg,[data-design="frequency"] [data-kit="members"] #fqm-zap{transition:none}
+  [data-design="frequency"] [data-kit="members"] .fqm-tb-ic,[data-design="frequency"] [data-kit="members"] .fqm-tb-orb,[data-design="frequency"] [data-kit="members"] .fqm-tb-orb svg{transition:none}
 }
 }
 
@@ -935,8 +930,7 @@ html:has([data-design="frequency"] [data-kit="members"]),html[data-design="frequ
 /* SCAN-948: floating navigation shares a readable material, not whole-panel opacity.
    Opening/closing opacity animations stay owned by the shell. Page cards stay glass. */
 @layer components {
-[data-design="frequency"] [data-kit="members"] :is(.ap-mega,.ap-sheet,.fqm-menu-p,.mu-menu,.ap-rail.fqm-drawer),
-[data-design="frequency"] [data-kit="members"] #fqm-zap {
+[data-design="frequency"] [data-kit="members"] :is(.ap-mega,.ap-sheet,.fqm-menu-p,.mu-menu,.ap-rail.fqm-drawer) {
   background:var(--fq-menu-surface,var(--fq-surface-card));
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);

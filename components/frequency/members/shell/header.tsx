@@ -52,10 +52,14 @@ import { hasAccount, readStoredMode, syncMode, writeStoredMode, type ThemeMode }
 import { clearAllDrafts } from '@/components/studio/spark/draft/draft-store'
 import { NavProgress } from '@/components/frequency/shared/nav-progress'
 import { FqTabBar, tabActive } from './tab-bar'
-import { ZapSheet } from './zap-sheet'
 import { LaunchPill, LaunchSheet } from './launch-box'
 import type { LaunchBoxView } from '@/lib/launch/box-state'
 import { AccountTools, type AccountToolsProps } from './account-tools'
+
+/** Hand a Zap tap to the one Capture pop-up (components/feed/capture-launcher.tsx listens). */
+function openCapture(mode?: 'post' | 'contact') {
+  window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode } }))
+}
 
 type Open = FqNavSection['key'] | 'zap' | 'bell' | 'me' | 'launch' | 'drawer' | null
 
@@ -229,6 +233,13 @@ export function FqHeader({
   const showTabBar = !isFullWidthEditor(pathname) && !isFullTakeover(pathname) && !/^\/messages\/.+/.test(pathname)
 
   const toggle = (k: Exclude<Open, null>) => {
+    // Zap is not a header sheet any more: it opens the one Capture pop-up (CaptureLauncher, mounted in
+    // app/(main)/layout.tsx), so every Zap door lands on the same surface.
+    if (k === 'zap') {
+      setOpen(null)
+      openCapture()
+      return
+    }
     const next = open === k ? null : k
     const s = FQ_NAV.find((x) => x.key === next)
     if (s) setShown(s)
@@ -296,7 +307,7 @@ export function FqHeader({
             {messagesUnread > 0 && <i />}
           </Link>
           <BellButton unreadCount={unreadCount} open={open === 'bell'} onToggle={() => toggle('bell')} />
-          <button type="button" className="btn pa ap-zap" aria-expanded={open === 'zap'} aria-controls="fqm-zap" onClick={() => toggle('zap')} aria-label="Zap">
+          <button type="button" className="btn pa ap-zap" aria-haspopup="dialog" onClick={() => toggle('zap')} aria-label="Zap">
             <FqIcon name="zap" />
             <span className="ap-zap-l">Zap</span>
           </button>
@@ -341,16 +352,6 @@ export function FqHeader({
         {shown && <MegaMenu section={shown} navAccess={navAccess} profileHref={profileHref} streak={streak} />}
       </div>
       <div className="ap-sheets">
-        <div
-          className={open === 'zap' ? 'ap-sheet on' : 'ap-sheet'}
-          id="fqm-zap"
-          role="dialog"
-          aria-label="Capture a moment"
-          aria-hidden={open !== 'zap'}
-          inert={open !== 'zap'}
-        >
-          {open === 'zap' && <ZapSheet onClose={() => setOpen(null)} />}
-        </div>
         <div
           className={open === 'bell' ? 'ap-sheet on' : 'ap-sheet'}
           data-s="bell"
@@ -426,7 +427,7 @@ export function FqHeader({
           workGroups={workGroups}
           accountGroups={accountGroups}
           standing={standing}
-          onCapture={() => setOpen('zap')}
+          onCapture={() => { setOpen(null); openCapture() }}
           onAction={(a) => {
             setOpen(null)
             menuAction(a)
@@ -440,7 +441,6 @@ export function FqHeader({
           pathname={pathname}
           viewer={viewer}
           menuOpen={drawerOn}
-          zapOpen={open === 'zap'}
           onMenu={() => toggle('drawer')}
           onZap={() => toggle('zap')}
           menuCount={circles.reduce((sum, c) => sum + (c.notices > 0 ? 1 : 0), 0)}
