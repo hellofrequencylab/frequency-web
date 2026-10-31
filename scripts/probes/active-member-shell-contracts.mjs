@@ -43,7 +43,7 @@ export function activeShellProblems(mode, read, retiredExists = false) {
     check(!/<Breadcrumbs\b/.test(src('shell') + src('rails')), 'Global shell must not duplicate page-owned trails')
   } else if (mode === 'zap') {
     check(src('tab').includes('Zap, capture a moment') && src('tab').includes('onClick={onZap}'), 'Phone centre action must remain Zap')
-    check(src('header').includes("onZap={() => toggle('zap')}") && src('header').includes('id="fqm-zap"'), 'Actual phone Zap must open its sheet')
+    check(src('header').includes("onZap={() => toggle('zap')}") && src('header').includes("new CustomEvent('open-capture'") && !src('header').includes('id="fqm-zap"'), 'Actual phone Zap must open the one Capture pop-up, not a second Zap sheet')
     check(!/\bCreateButton\b/.test(src('header') + src('tab')), 'Create sheet returned on the centre action')
     const actions = src('actions').split('\n')
     for (const href of ['/events/new', '/circles/new']) check(actions.some(line => line.includes(href) && line.includes('EVERYONE')), `${href} lost its every-member gate`)

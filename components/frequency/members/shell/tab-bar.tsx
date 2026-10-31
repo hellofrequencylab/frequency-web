@@ -28,7 +28,6 @@ interface FqTabBarProps {
   pathname: string
   viewer: NavViewer
   menuOpen: boolean
-  zapOpen: boolean
   onMenu: () => void
   onZap: () => void
   /** A small count on the Menu tab: the viewer's Circles with something new. */
@@ -36,13 +35,13 @@ interface FqTabBarProps {
 }
 
 export const FqTabBar = forwardRef<HTMLButtonElement, FqTabBarProps>(function FqTabBar(
-  { pathname, viewer, menuOpen, zapOpen, onMenu, onZap, menuCount },
+  { pathname, viewer, menuOpen, onMenu, onZap, menuCount },
   menuRef,
 ) {
   const tabs = calmSpine().filter((t) => canSee(t.node, viewer))
   const split = Math.floor(tabs.length / 2)
   const tab = (t: (typeof tabs)[number]) => {
-    const on = !menuOpen && !zapOpen && tabActive(pathname, t.node.href)
+    const on = !menuOpen && tabActive(pathname, t.node.href)
     return (
       <Link
         key={t.node.id}
@@ -78,14 +77,13 @@ export const FqTabBar = forwardRef<HTMLButtonElement, FqTabBarProps>(function Fq
       {tabs.slice(0, split).map(tab)}
       <button
         type="button"
-        className={zapOpen ? 'fqm-tb fqm-tb-zap on' : 'fqm-tb fqm-tb-zap'}
-        aria-label={zapOpen ? 'Close Zap' : 'Zap, capture a moment'}
-        aria-expanded={zapOpen}
-        aria-controls="fqm-zap"
+        className="fqm-tb fqm-tb-zap"
+        aria-label="Zap, capture a moment"
+        aria-haspopup="dialog"
         onClick={onZap}
       >
         <span className="fqm-tb-orb">
-          <FqIcon name={zapOpen ? 'close' : 'zap'} />
+          <FqIcon name="zap" />
         </span>
         <span className="fqm-tb-l">Zap</span>
       </button>

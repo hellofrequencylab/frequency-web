@@ -4,7 +4,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// CAPTURE IS `Dialog align="sheet"`, NOT A HAND-ROLLED BOX (LIVE-089).
+// CAPTURE IS `Dialog align="bottom"` (a pop-up), NOT A HAND-ROLLED BOX (LIVE-089).
 //
 // This one had a real ESC handler and a real scroll lock, so the interesting failures were the
 // other three: it declared aria-modal="true" with no focus trap and no focus restore; it did NOT
@@ -90,9 +90,10 @@ describe('the capture sheet is the shared overlay primitive', () => {
     expect(overlay()!.className).not.toContain('bg-ink/70')
   })
 
-  it('keeps the sheet geometry: full-bleed on mobile, a centred card at sm+', async () => {
+  it('is a pop-up, not a takeover: a bottom sheet on a phone, a centred card at sm+', async () => {
     await openCapture()
-    expect(overlay()!.className).toContain('items-stretch')
+    expect(overlay()!.className).toContain('items-end')
+    expect(overlay()!.className).not.toContain('items-stretch')
     expect(overlay()!.className).toContain('sm:items-center')
     expect(dialog()!.className).toContain('sm:max-w-md')
   })
@@ -100,8 +101,8 @@ describe('the capture sheet is the shared overlay primitive', () => {
   it('takes its notch padding from the primitive instead of re-solving it in the panel', async () => {
     await openCapture()
     expect(overlay()!.className).toContain('pt-[env(safe-area-inset-top)]')
-    expect(overlay()!.className).toContain('pb-[env(safe-area-inset-bottom)]')
-    // The panel's own hand-rolled copies are gone, not merely overridden.
+    // The sheet touches the bottom edge, so its panel owns the bottom inset.
+    expect(dialog()!.innerHTML).toContain('pb-[max(1rem,env(safe-area-inset-bottom))]')
     expect(dialog()!.innerHTML).not.toContain('padding-bottom: max(1rem')
     expect(dialog()!.innerHTML).not.toContain('pt-[max(0px,env(safe-area-inset-top))]')
   })

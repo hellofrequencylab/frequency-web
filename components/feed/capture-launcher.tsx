@@ -4,12 +4,11 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { X, BookOpen, Zap, ChevronRight } from 'lucide-react'
 import { observe } from '@/lib/analytics/observe'
-import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { useMindless } from '@/components/on-air/mindless'
 import { Dialog } from '@/components/ui/dialog'
 import { CaptureBox } from './capture-box'
 import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, MindlessArt } from './zap-menu-art'
-import { capsLabel } from '@/components/ui/caps-label'
+import { Badge } from '@/components/ui/badge'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
 
@@ -20,8 +19,11 @@ type Mode = 'post' | 'note' | 'photo' | 'contact'
 // The modal is always mounted so either trigger can open it from any page. Posts
 // default to the member's wall.
 //
-// THE OVERLAY IS `Dialog align="sheet"` (LIVE-089) — full-bleed on mobile, a centred card at sm+,
-// which is the exact geometry this hand-rolled one described. It had a real ESC handler and a real
+// THE OVERLAY IS `Dialog align="bottom"` — a POP-UP, never a takeover: a bottom sheet that rises from
+// the edge on a phone (the page stays visible, dimmed, above it) and a centred card at sm+. It was
+// `align="sheet"` (LIVE-089, full-bleed on mobile) until Zap became this one surface; the second Zap
+// menu ("Make a moment") is gone, so every Zap door (header, tab bar, drawer) dispatches
+// 'open-capture' and lands here. No fullscreen request: a pop-up does not take the screen. It had a real ESC handler and a real
 // scroll lock, but it set aria-modal="true" with NO focus trap and no focus restore, so Tab left the
 // sheet while a screen reader was told the feed behind it was inert; and it did not portal, so
 // opening it from inside the sliding admin rail (which is `transform`ed, and `fixed` anchors to a
@@ -49,9 +51,6 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
 
   const mindless = useMindless()
   const close = useCallback(() => {
-    // Drop true fullscreen the open gesture entered (C.1-3); the modal's own dvh
-    // takeover unmounts with it.
-    void exitAppFullscreen()
     setOpen(false)
   }, [])
   const tapTile = useCallback(
@@ -66,9 +65,8 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   // sheet hands straight off to the timer with no flash of the page behind while it loads.
   const openMindless = useCallback(() => {
     observe('zap_menu.tile_tap', { tile: 'mindless' })
-    // Hand the fullscreen straight to the Mindless overlay — open it first (it
-    // keeps/re-requests fullscreen), then just drop the Capture modal WITHOUT
-    // exiting fullscreen, so there's no flicker between the two takeovers.
+    // Open the timer first (its loading takeover paints instantly), then drop the pop-up so the
+    // page behind never flashes between the two.
     mindless.open()
     setOpen(false)
   }, [mindless])
@@ -95,10 +93,6 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
     const onOpen = (e: Event) => {
       const m = (e as CustomEvent).detail?.mode as Mode | undefined
       setMode(m ?? 'post')
-      // Go fullscreen on the same gesture that dispatched 'open-capture' (the
-      // centre-nav button / FAB) — window listeners run synchronously inside that
-      // click, so the gesture-gated request still lands (C.1-3). Best-effort.
-      void requestAppFullscreen()
       setOpen(true)
       observe('zap_menu.open')
       try {
@@ -118,9 +112,9 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
     <>
       {/* No desktop button — Capture lives in the mobile centre-nav; on web the feed's
           inline Capture box is the entry. This component only hosts the modal. */}
-      <Dialog open={open} onClose={close} ariaLabel="Capture a moment" align="sheet" className="h-full sm:h-auto sm:max-w-md">
-        {/* Full-screen on mobile, a centred card on desktop. */}
-        <div className="relative flex h-full w-full flex-col overflow-y-auto border-border bg-canvas p-4 lift-3 sm:h-auto sm:max-h-[90vh] sm:rounded-card sm:border">
+      <Dialog open={open} onClose={close} ariaLabel="Capture a moment" align="bottom" className="sm:max-w-md">
+        {/* A bottom sheet on a phone, a centred card on desktop. The panel owns its bottom safe area. */}
+        <div className="relative flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-card border-x border-t border-border bg-canvas p-4 pb-[max(1rem,env(safe-area-inset-bottom))] lift-3 sm:max-h-[90dvh] sm:rounded-card sm:border">
           {/* Header — the Zap menu: where the interactive energy starts.
               Vera's live line reacts to the member's day (streak, next step);
               it renders instantly from a fallback and swaps when the cheap
@@ -175,9 +169,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-2">
                 <span className="block text-body font-bold leading-tight text-text">Mindless</span>
-                <span className={capsLabel('hidden shrink-0 rounded-pill bg-primary/15 px-2 py-0.5 text-2xs font-bold text-primary-strong min-[400px]:inline-block')}>
-                  Daily timer
-                </span>
+                <Badge size="sm" className="shrink-0">Daily timer</Badge>
               </span>
               <span className="mt-0.5 block truncate text-meta leading-snug text-muted">
                 Tune out.
@@ -244,9 +236,9 @@ function ZapTile({
       <span className="mt-1.5 block text-body-sm font-bold text-text">{label}</span>
       <span className="block text-2xs leading-snug text-muted">{soon ? 'Soon' : sub}</span>
       {zaps && (
-        <span className="mt-1 inline-flex items-center gap-0.5 rounded-pill bg-primary-bg px-1.5 py-0.5 text-3xs font-bold text-primary-strong">
-          <Zap className="h-2.5 w-2.5" /> {zaps}
-        </span>
+        <Badge tone="primary" size="sm" className="mt-1" icon={<Zap className="h-2.5 w-2.5" aria-hidden />}>
+          {zaps}
+        </Badge>
       )}
     </>
   )

@@ -6,7 +6,7 @@ import { FqTabBar, tabActive } from './tab-bar'
 
 // THE FREQUENCY PHONE TAB BAR: DAWN's five slots in DAWN's order (Menu · Feed · Zap · Events ·
 // Marketplace), the destinations from the one registry, the active tab marked for a screen reader, and
-// Menu and Zap as the toggles for the header's drawer and Zap sheet.
+// Menu as the toggle for the header's drawer and Zap as the door to the Capture pop-up.
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -25,7 +25,6 @@ function render(props: Partial<React.ComponentProps<typeof FqTabBar>> = {}) {
     pathname: '/events/abc',
     viewer: { role: 'member' as const, staffRole: null, operatesSpaces: false },
     menuOpen: false,
-    zapOpen: false,
     onMenu: vi.fn(),
     onZap: vi.fn(),
     menuCount: 0,
@@ -51,11 +50,11 @@ describe('FqTabBar', () => {
     expect(render({ menuOpen: true }).host.querySelector('[aria-current="page"]')).toBeNull()
   })
 
-  it('Menu and Zap call their toggles and report their state', () => {
-    const { host, onMenu, onZap } = render({ zapOpen: true })
+  it('Menu and Zap call their handlers; Zap announces a dialog', () => {
+    const { host, onMenu, onZap } = render()
     const menu = host.querySelector<HTMLButtonElement>('button[aria-controls="fqm-drawer"]')!
-    const zap = host.querySelector<HTMLButtonElement>('button[aria-controls="fqm-zap"]')!
-    expect(zap.getAttribute('aria-expanded')).toBe('true')
+    const zap = host.querySelector<HTMLButtonElement>('button[aria-label="Zap, capture a moment"]')!
+    expect(zap.getAttribute('aria-haspopup')).toBe('dialog')
     expect(menu.getAttribute('aria-expanded')).toBe('false')
     expect(menu.querySelector('path')?.getAttribute('d')).toBe('M4 6h16M4 12h16M4 18h16')
     act(() => menu.click())

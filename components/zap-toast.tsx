@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Gem, Zap } from 'lucide-react'
+import { Clock3, Gem, Zap } from 'lucide-react'
 import { Toast } from '@/components/ui/toast'
 
 // Lightweight "you earned zaps" toast. Mirrors the achievement-toast pattern: a
@@ -20,6 +20,20 @@ export interface ZapReward {
 }
 
 const EVENT = 'zaps-earned'
+const NOTICE_EVENT = 'lane-notice'
+
+/** A plain, sticky notice that is not a reward (the timer's "session expired" line). It rides the
+ *  same lane and the same Toast card as the rewards, so a Mindless notice can never sit in a box
+ *  of its own on top of a "+15 Zaps". */
+export interface LaneNotice {
+  title: string
+  body: string
+}
+
+export function showLaneNotice(notice: LaneNotice) {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(NOTICE_EVENT, { detail: notice }))
+}
 
 function ZapToastCard({ reward, onDismiss }: { reward: ZapReward; onDismiss: () => void }) {
   return (
@@ -37,6 +51,7 @@ function ZapToastCard({ reward, onDismiss }: { reward: ZapReward; onDismiss: () 
 
 export function ZapToastContainer() {
   const [toasts, setToasts] = useState<{ key: number; reward: ZapReward }[]>([])
+  const [notices, setNotices] = useState<{ key: number; notice: LaneNotice }[]>([])
 
   useEffect(() => {
     function handle(e: Event) {
@@ -44,8 +59,17 @@ export function ZapToastContainer() {
       if (!reward || reward.amount <= 0) return
       setToasts((prev) => [...prev, { key: Date.now() + Math.random(), reward }])
     }
+    function handleNotice(e: Event) {
+      const notice = (e as CustomEvent<LaneNotice>).detail
+      if (!notice?.title) return
+      setNotices((prev) => [...prev, { key: Date.now() + Math.random(), notice }])
+    }
     window.addEventListener(EVENT, handle)
-    return () => window.removeEventListener(EVENT, handle)
+    window.addEventListener(NOTICE_EVENT, handleNotice)
+    return () => {
+      window.removeEventListener(EVENT, handle)
+      window.removeEventListener(NOTICE_EVENT, handleNotice)
+    }
   }, [])
 
   const dismiss = useCallback((key: number) => {
@@ -60,6 +84,19 @@ export function ZapToastContainer() {
     // alongside the Vera panel and BELOW it in DOM order, so a "+15 Zaps" toast fired while the
     // panel was open was awarded to a member who never saw it. See components/toast-lane.tsx.
     <div className="flex flex-col items-end gap-2">
+      {notices.map((n) => (
+        <Toast
+          key={n.key}
+          title={n.notice.title}
+          icon={<Clock3 className="h-5 w-5" />}
+          tone="neutral"
+          duration={0}
+          dismissible
+          onDismiss={() => setNotices((prev) => prev.filter((x) => x.key !== n.key))}
+        >
+          {n.notice.body}
+        </Toast>
+      ))}
       {toasts.map((t) => (
         <ZapToastCard key={t.key} reward={t.reward} onDismiss={() => dismiss(t.key)} />
       ))}
