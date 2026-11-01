@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-1953",
+  "title": "Make the personal Spotlight a link-in-bio with one Edit your Spotlight page and a Show Frequency features switch",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": { "file": "components/spotlight/spotlight-page-editor.tsx", "ref": "Daniel request 2026-11-01, design pick B" },
+  "detail": "The personal Spotlight was a block stack with the links buried and every Frequency feature shown to every visitor. Members now edit it on one page (Links, Profile, Frequency tabs, live preview of the real public render): ordered links with title, icon, drag or arrow reorder, show or hide, one highlight, optional start and end, a social row, and the master switch Show Frequency features. Off is a clean link page; both end with a small Get your spotlight on Frequency link. The link count rides the spotlight_blocks meter (Member 12, Crew 40). A member who has not saved the new page keeps the older render. Follow-up, not in this row: per-link click counts need a table and migration.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/spotlight-link-in-bio.mjs", "checked": "2026-11-01", "evidence": "Editor, link-in-bio render, public page wiring and the Frequency link are present." },
+  "closed": "2026-11-01",
+  "wave": "W7"
+}

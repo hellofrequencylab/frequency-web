@@ -33,3 +33,20 @@ describe('publicSpotlightGrid', () => {
     expect(placed(publicSpotlightGrid(null, [{ type: 'text' }]))).not.toContain('guestbook')
   })
 })
+
+describe('frequencyExtrasGrid', () => {
+  it('drops the blocks the link-in-bio page owns and empty rows', async () => {
+    const { frequencyExtrasGrid } = await import('./public-grid')
+    const grid = frequencyExtrasGrid(null, [], new Set(['about', 'links', 'topfriends']))
+    const ids = grid?.rows?.flatMap((r) => r.cells.flat()) ?? []
+    expect(ids).not.toContain('about')
+    expect(ids).not.toContain('links')
+    expect(ids).not.toContain('topfriends')
+    expect(ids.length).toBeGreaterThan(0)
+  })
+  it('is null when nothing is left', async () => {
+    const { frequencyExtrasGrid } = await import('./public-grid')
+    const saved = { rows: [{ id: 'r0', columns: 1, cells: [['links']] }] } as never
+    expect(frequencyExtrasGrid(saved, [], new Set(['links']))).toBeNull()
+  })
+})

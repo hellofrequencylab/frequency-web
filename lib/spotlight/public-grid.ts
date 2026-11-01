@@ -29,3 +29,19 @@ export function publicSpotlightGrid(
   const rows: RowDef[] = ids.map((id, i) => ({ id: `r${i}`, columns: 1, cells: [[id]] }))
   return { ...(saved ?? {}), rows }
 }
+
+/** The "On Frequency" body under a configured link-in-bio page: the member's grid minus the blocks the page
+ *  already owns (the bio, the link list and Top Friends). A saved grid without rows (an older template or slots
+ *  shape) falls back to the public starter, so nothing is ever blank. Returns null when nothing is left. */
+export function frequencyExtrasGrid(
+  saved: EntityLayout | null,
+  authored: readonly { type: string }[],
+  owned: ReadonlySet<string>,
+): EntityLayout | null {
+  const base = publicSpotlightGrid(saved, authored)
+  const source = base?.rows?.length ? base : publicSpotlightGrid(null, authored)
+  const rows = (source?.rows ?? [])
+    .map((r) => ({ ...r, cells: r.cells.map((cell) => cell.filter((id) => !owned.has(id))) }))
+    .filter((r) => r.cells.some((cell) => cell.length > 0))
+  return rows.length ? { ...(source ?? {}), rows } : null
+}

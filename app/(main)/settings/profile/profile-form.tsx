@@ -506,14 +506,12 @@ export function ProfileForm({
             </div>
           </div>
 
-          {/* The page BUILDER lives inline in the rail on your own profile (ADR-516 Phase C; ADR-522: the
-              grid is the single engine now). Open your profile and the rail's Layout section is the full
-              rows/slots builder, previewing every change live. */}
+          {/* Links, social row and the Frequency switch live on one Edit your Spotlight page. */}
           <Link
-            href={`/people/${initial.handle}`}
+            href="/settings/profile/spotlight"
             className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
-            <Sparkles className="h-3.5 w-3.5" /> Build your page (arrange your blocks)
+            <Sparkles className="h-3.5 w-3.5" /> Edit your Spotlight
           </Link>
 
           <div className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-3 py-2.5">

@@ -1,27 +1,64 @@
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { FocusTemplate } from '@/components/templates'
+import { SpotlightPageEditor } from '@/components/spotlight/spotlight-page-editor'
+import { SPOTLIGHT_SELECT, type SpotlightRow } from '@/lib/spotlight/privacy'
+import { readSpotlightEnabled, readSpotlightPublished, readSpotlightLayoutRaw } from '@/lib/profile/spotlight-flags'
+import { validateSpotlightLayout } from '@/lib/spotlight/blocks/validate'
+import { readPageSettings, validatePageSettings, type PageLink } from '@/lib/spotlight/link-in-bio'
+import { allowanceAt } from '@/lib/pricing/feature-meters'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { robots: { index: false } }
+export const metadata: Metadata = { title: 'Edit your Spotlight', robots: { index: false } }
 
-// RETIRED (ADR-522 follow-up): the Puck Spotlight editor is gone. The GRID is the single engine end to
-// end — members design their page with the in-rail Layout builder on their own profile (/people/<handle>),
-// and the public /spotlight/<handle> renders that same grid. This route now just forwards owners to the
-// grid builder so any old link or bookmark lands in the right place. Owner-only + session-derived: it
-// resolves the caller's own handle and redirects there; a signed-out visitor 404s, and a member without a
-// handle falls back to Settings.
-export default async function RetiredSpotlightEditorPage() {
+// EDIT YOUR SPOTLIGHT (personal). One page for the link-in-bio: ordered links, a social row, the "Show Frequency
+// features" switch and a live preview of the real public render. Owner-only and session-derived. A member who has
+// never saved here starts from the links they already had in their older Spotlight, so nothing is lost.
+export default async function EditSpotlightPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
   const { data: me } = await supabase
     .from('profiles')
-    .select('handle')
+    .select('id, handle, meta, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
+  if (!me) notFound()
+  const own = me as { id: string; handle: string | null; meta?: unknown; membership_tier?: string | null }
+  if (!own.handle) redirect('/settings/profile')
 
-  const handle = (me as { handle?: string | null } | null)?.handle
-  redirect(handle ? `/people/${handle}` : '/settings/profile')
+  const { data: row } = await supabase.from('profiles').select(SPOTLIGHT_SELECT).eq('id', own.id).maybeSingle()
+  if (!row) notFound()
+
+  let settings = readPageSettings(own.meta)
+  if (!settings.configured) {
+    const legacy = validateSpotlightLayout(readSpotlightLayoutRaw(own.meta), user.id)
+    const links: PageLink[] = legacy.blocks
+      .flatMap((b) => (b.type === 'links' ? b.items : []))
+      .map((l, i) => ({ id: `legacy${i}`, title: l.label, url: l.url, icon: 'link', hidden: false, highlight: false }))
+    settings = { ...validatePageSettings({ links }), configured: false }
+  }
+
+  const tier = (own.membership_tier ?? 'free') as EntitlementTier
+  const maxLinks = allowanceAt('spotlight_blocks', tier)
+
+  return (
+    <FocusTemplate
+      width="xl"
+      title="Edit your Spotlight"
+      description="Your links, in the order you want them. Save, and your page updates."
+      back={{ href: `/people/${own.handle}`, label: 'Your profile' }}
+    >
+      <SpotlightPageEditor
+        profile={row as unknown as SpotlightRow}
+        initial={settings}
+        maxLinks={typeof maxLinks === 'number' ? maxLinks : null}
+        enabled={readSpotlightEnabled(own.meta)}
+        published={readSpotlightPublished(own.meta)}
+      />
+    </FocusTemplate>
+  )
 }
