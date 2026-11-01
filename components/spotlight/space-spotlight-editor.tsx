@@ -9,6 +9,7 @@ import { NodeLayoutProvider, type SaveNodeLayout } from '@/components/entity-blo
 import { NodeLinkListBuilder } from '@/components/entity-blocks/node-link-list-builder'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { Switch } from '@/components/ui/switch'
+import { buttonClasses } from '@/components/ui/button'
 import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { SPACE_SPOTLIGHT_BLOCK_IDS } from '@/lib/spaces/spotlight'
 import {
@@ -102,7 +103,7 @@ export function SpaceSpotlightEditor({
                   {published ? 'Your Spotlight is live' : 'Your Spotlight is hidden'}
                 </p>
                 <p className="text-meta text-muted">
-                  {published ? 'Anyone with the link can see it.' : 'Turn it on when you are ready to share it.'}
+                  {published ? 'Anyone with the link can see it.' : 'Turn it on to get a link you can open and share. The preview below shows how it looks.'}
                 </p>
               </div>
               <Switch
@@ -115,13 +116,10 @@ export function SpaceSpotlightEditor({
             </div>
             {published && (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <Link
-                  href={href}
-                  target="_blank"
-                  className="inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline"
-                >
-                  frequencylocal.com{href} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                <Link href={href} target="_blank" className={buttonClasses('primary', 'sm')}>
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden /> View your Spotlight
                 </Link>
+                <span className="text-meta text-muted">frequencylocal.com{href}</span>
                 {/* QR & Share (LIVE-853): the Space's QR studio with a code for this page filled in. */}
                 <Link
                   href={`/spaces/${slug}/settings/qr?title=Spotlight&target=${encodeURIComponent(href)}`}

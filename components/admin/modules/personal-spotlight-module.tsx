@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles } from 'lucide-react'
+import { ExternalLink, Sparkles } from 'lucide-react'
 import { Toggle } from '@/components/admin/toggle'
 import { getProfileRailData } from '@/app/(main)/settings/rail-getters'
 import { setMySpotlightEnabled, setSpotlightPublished } from '@/app/(main)/settings/profile/actions'
@@ -140,6 +140,22 @@ export function PersonalSpotlightModule() {
                   <Sparkles className="h-3.5 w-3.5" aria-hidden /> Build your page
                 </Link>
               ))}
+
+            {handle && (
+              <div className="border-t border-border pt-3">
+                {published ? (
+                  <Link
+                    href={`/spotlight/${handle}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden /> View your Spotlight
+                  </Link>
+                ) : (
+                  <p className="text-meta text-muted">Publish to get a link you can open and share.</p>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
