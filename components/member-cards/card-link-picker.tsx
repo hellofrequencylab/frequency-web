@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/field'
 import { findCardPages, type CardPage } from '@/lib/member-cards/actions'
+import { normalizeCardLink } from '@/lib/member-cards/face'
 
 // FIND A PAGE for a card's "Open my link" (LIVE-1301). Searches as you type for any public page on the
 // site (a Space, an event, a Journey, a person, an offer or a feature), the same search the console's
@@ -29,6 +30,9 @@ export function CardLinkPicker({ onPick, disabled }: { onPick: (url: string) => 
   }, [query])
 
   const shown = query.trim().length < 2 ? null : results
+  // Anything that reads as a web address (a full https:// link or a bare domain) is usable as typed, so
+  // pasting a link into the finder never dead-ends at "no pages match".
+  const typedLink = /^(https:\/\/)?[^\s/]+\.[^\s/]+/i.test(query.trim()) ? normalizeCardLink(query) : null
 
   return (
     <div className="space-y-2">
@@ -44,7 +48,22 @@ export function CardLinkPicker({ onPick, disabled }: { onPick: (url: string) => 
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
-      {shown && shown.length === 0 && <p className="text-meta text-muted">No pages match. Paste the link below instead.</p>}
+      {typedLink && (
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 rounded-control-nested border border-border bg-surface px-3 py-2 text-left hover:bg-surface-elevated focus-visible:bg-surface-elevated"
+          disabled={disabled}
+          onClick={() => {
+            onPick(typedLink)
+            setQuery('')
+            setResults(null)
+          }}
+        >
+          <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">Link</span>
+          <span className="min-w-0 truncate text-body-sm font-medium text-text">Use {typedLink}</span>
+        </button>
+      )}
+      {!typedLink && shown && shown.length === 0 && <p className="text-meta text-muted">No pages match. Paste the link below instead.</p>}
       {shown && shown.length > 0 && (
         <ul className="max-h-64 space-y-1 overflow-y-auto rounded-card border border-border bg-surface p-1">
           {shown.map((p) => (
