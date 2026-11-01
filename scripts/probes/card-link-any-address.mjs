@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// SCAN-1178: a card's "Open my link" finder must accept a pasted web address. Typing or pasting a link into the
+// SCAN-1179: a card's "Open my link" finder must accept a pasted web address. Typing or pasting a link into the
 // page search used to end at "No pages match", which read as "can't find it". Fails when the picker does not offer
 // the typed address as a choice. Run on main it fails: the picker only lists searched pages.
 import { existsSync, readFileSync } from 'node:fs'
