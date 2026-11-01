@@ -95,6 +95,13 @@ describe('EventCalendar focus and announcements (LIVE-469)', () => {
   })
 
   it('says a month did not load instead of drawing it empty, and retries', async () => {
+    // Pinned: these cases read the month after September 2026 as "Next", which moves once the real
+    // calendar reaches October (it broke on 2026-11-01).
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-15T12:00:00Z'))
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const loadMonth = vi.fn().mockRejectedValue(new Error('offline'))
     const el = mount(
       <EventCalendar events={[item()]} initialYear={2026} initialMonth1={9} loadMonth={loadMonth} />,

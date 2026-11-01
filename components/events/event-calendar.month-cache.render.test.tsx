@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { EventCalendar, type CalendarEvent } from './event-calendar'
@@ -98,6 +98,13 @@ describe('EventCalendar month cache (LIVE-528)', () => {
   })
 
   it('says which month did not load, once, and retries that month', async () => {
+    // Pinned: these cases read the month after September 2026 as "Next", which moves once the real
+    // calendar reaches October (it broke on 2026-11-01).
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-15T12:00:00Z'))
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const loadMonth = vi.fn((_y: number, m1: number) =>
       m1 === 10 ? Promise.reject(new Error('offline')) : Promise.resolve([]),
     )
