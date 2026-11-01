@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // an hour to it.
 vi.mock('./dns-provider', () => ({ detectDnsProvider: async () => null }))
 
-import { errorMessage, upsertZoneDnsRecords } from './vercel-domains'
+import { errorMessage, siteDomainStatus, upsertZoneDnsRecords } from './vercel-domains'
 
 const calls: Array<{ url: string; body: unknown }> = []
 let answer: (url: string) => { status: number; json: unknown } = () => ({ status: 200, json: {} })
@@ -72,5 +72,30 @@ describe('errorMessage', () => {
     expect(errorMessage({ error: { message: 'x'.repeat(250) } })).toBe(`${'x'.repeat(200)}...`)
     expect(errorMessage({ error: { code: 'forbidden' } })).toBe('')
     expect(errorMessage({})).toBe('')
+  })
+})
+
+describe('siteDomainStatus: the www record counts', () => {
+  const reply = (wwwMisconfigured: boolean) => (url: string) => {
+    if (url.includes('/v6/domains/www.')) return { status: 200, json: { misconfigured: wwwMisconfigured } }
+    if (url.includes('/v6/domains/')) return { status: 200, json: { misconfigured: false } }
+    if (url.includes('/v8/certs')) return { status: 200, json: { certs: [{ cns: ['govanta.pro'], expiresAt: Date.now() + 1e9 }] } }
+    return { status: 200, json: { verified: true } }
+  }
+
+  it('is not ready when only the apex A record is in place', async () => {
+    answer = reply(true)
+    const s = await siteDomainStatus('govanta.pro')
+    expect(s.dnsReady).toBe(false)
+    expect(s.secure).toBe(false)
+    expect(s.problem).toContain('www.govanta.pro')
+  })
+
+  it('is ready when the apex and www both point at hosting', async () => {
+    answer = reply(false)
+    const s = await siteDomainStatus('govanta.pro')
+    expect(s.dnsReady).toBe(true)
+    expect(s.secure).toBe(true)
+    expect(s.problem).toBeUndefined()
   })
 })

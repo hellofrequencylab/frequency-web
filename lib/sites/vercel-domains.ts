@@ -214,7 +214,10 @@ async function readStatus(domain: string): Promise<DomainStatus> {
       const verify = await call(cfg, 'POST', `${project}/verify`)
       if (verify.ok) attachedRes = verify
     }
-    const configRes = await call(cfg, 'GET', `/v6/domains/${encodeURIComponent(domain)}/config`)
+    const [configRes, wwwRes] = await Promise.all([
+      call(cfg, 'GET', `/v6/domains/${encodeURIComponent(domain)}/config`),
+      call(cfg, 'GET', `/v6/domains/${encodeURIComponent(`www.${domain}`)}/config`),
+    ])
 
     const attached = attachedRes.ok
     const verified = attached && attachedRes.json.verified === true
@@ -223,7 +226,11 @@ async function readStatus(domain: string): Promise<DomainStatus> {
     const cname = configRes.json.recommendedCNAME as { rank: number; value: string }[] | undefined
     const apexA = ipv4?.find((r) => r.rank === 1)?.value?.[0]
     const wwwCname = cname?.find((r) => r.rank === 1)?.value?.replace(/\.$/, '')
-    const dnsReady = configRes.ok && configRes.json.misconfigured === false
+    // BOTH names must point at hosting: the apex A record AND the www CNAME. Saving with only the A
+    // record used to read as done, then www failed for visitors. An unreadable www check counts as not ready.
+    const apexReady = configRes.ok && configRes.json.misconfigured === false
+    const wwwReady = wwwRes.ok && wwwRes.json.misconfigured === false
+    const dnsReady = apexReady && wwwReady
 
     return {
       attached,
@@ -231,7 +238,11 @@ async function readStatus(domain: string): Promise<DomainStatus> {
       dnsReady,
       secure: dnsReady && (await certificateIssued(cfg, domain)),
       records: recordsFor(domain, { apexA, wwwCname, verification: verified ? [] : verification }),
-      problem: attached ? undefined : 'This domain is not connected to Frequency hosting yet. Press Connect again.',
+      problem: !attached
+        ? 'This domain is not connected to Frequency hosting yet. Press Connect again.'
+        : apexReady && !wwwReady
+          ? `Your main address is set. Still missing: the www record (CNAME, name www) for www.${domain}. Add it below, then Check again.`
+          : undefined,
     }
   } catch {
     return {

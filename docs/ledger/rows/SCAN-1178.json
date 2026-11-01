@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-1178",
+  "title": "A custom domain only reads as done once www points at hosting too",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-01",
+  "source": { "file": "lib/sites/vercel-domains.ts", "ref": "Vanta govanta.pro, 2026-11-01: A record saved alone showed four Done lines and Live" },
+  "detail": "Domain status checked only the apex, so saving the A record alone marked DNS done and the Space Live while www had no CNAME. readStatus now requires the apex and www to both be correctly configured, and says which record is missing.",
+  "verify": { "kind": "grep-present", "pattern": "wwwReady", "paths": ["lib/sites/vercel-domains.ts"] }
+}
