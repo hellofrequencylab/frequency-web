@@ -98,8 +98,7 @@ describe('EventCalendar month cache (LIVE-528)', () => {
   })
 
   it('says which month did not load, once, and retries that month', async () => {
-    // Pinned: these cases read the month after September 2026 as "Next", which moves once the real
-    // calendar reaches October (it broke on 2026-11-01).
+    // Pinned to September 2026 so 'Next month' means October whatever the real date is (it broke on 1 Nov).
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-09-15T12:00:00Z'))
     onTestFinished(() => {

@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-1951",
+  "title": "Make Build your page open the builder on your own profile",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/admin/modules/personal-spotlight-module.tsx",
+    "ref": "Daniel report 2026-11-01"
+  },
+  "detail": "On /people/<handle> the rail's Build your page button linked to the same URL, so it did nothing. It now scrolls to the Layout builder in the rail; from settings it still links to the profile.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/spotlight-build-button.mjs",
+    "checked": "2026-11-01",
+    "evidence": "The Spotlight module scrolls to the Layout builder anchor on your own profile."
+  },
+  "closed": "2026-11-01",
+  "wave": "W7"
+}

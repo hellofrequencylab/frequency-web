@@ -10,6 +10,9 @@ import { MemberPageBuilderSwitch } from '@/components/entity-blocks/member-page-
 // slide-over previews every change live. The builder self-fetches the owner's handle + saved layout and
 // renders NOTHING unless the page's handle is the viewer's own (self-owner gate, fail-safe).
 
+/** Anchor the Spotlight module's "Build your page" button scrolls to when already on the profile. */
+export const MEMBER_LAYOUT_BUILDER_ID = 'member-layout-builder'
+
 /** Extract the handle from a `/people/<handle>` path, else null. */
 function handleFromPath(pathname: string): string | null {
   const m = pathname.match(/^\/people\/([^/]+)/)
@@ -20,5 +23,9 @@ export function PersonalLayoutModule() {
   const pathname = usePathname()
   const handle = handleFromPath(pathname)
   if (!handle) return null
-  return <MemberPageBuilderSwitch pageHandle={handle} />
+  return (
+    <div id={MEMBER_LAYOUT_BUILDER_ID} className="scroll-mt-4">
+      <MemberPageBuilderSwitch pageHandle={handle} />
+    </div>
+  )
 }
