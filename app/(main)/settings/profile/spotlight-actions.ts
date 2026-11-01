@@ -6,10 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { mergeProfileMeta, mergeProfileMetaPath, removeProfileMetaKeys } from '@/lib/profiles/meta'
 import { readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { validateSpotlightTheme } from '@/lib/spotlight/theme'
-import { validateSpotlightBackground, validateSpotlightStickers } from '@/lib/spotlight/blocks/validate'
-import { SPOTLIGHT_STICKERS } from '@/lib/spotlight/stickers'
-import { missingRequiredItems, requiredItemsFor } from '@/lib/spotlight/cosmetics'
-import { memberHeldItems } from '@/lib/awards/holdings'
+import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import {
   normalizeTopFriendIds,
   keepAcceptedFriends,
@@ -244,48 +241,6 @@ export async function setSpotlightBackground(rawBackground: unknown): Promise<{ 
   const safe = validateSpotlightBackground(rawBackground, user.id)
   // 2026-09-07 (LIVE-171): only `background` is sent, merged INSIDE the `spotlight` key server-side.
   const { error } = await mergeProfileMetaPath(supabase, (me as { id: string }).id, ['spotlight'], { background: safe })
-  if (error) return { error }
-
-  revalidateSpotlight((me as { handle?: string | null }).handle ?? null)
-  return {}
-}
-
-/**
- * Save the member's Spotlight sticker layer (PROG-SPOT increment 2, ADR-1275): a list of allowlisted
- * sticker ids at percentage coordinates. validateSpotlightStickers is the same boundary the public read
- * applies: unknown ids drop whole, coordinates clamp to 0..100, the list caps at MAX_STICKERS, so a
- * tampered blob can at worst place fewer stickers. Owner-only, session-derived, requires Spotlight enabled.
- */
-export async function setSpotlightStickers(rawStickers: unknown): Promise<{ error?: string }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
-
-  const { data: me } = await supabase
-    .from('profiles')
-    .select('id, handle, meta')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!me) return { error: 'Profile not found' }
-  if (!readSpotlightEnabled((me as { meta?: unknown }).meta)) {
-    return { error: 'Your Spotlight page is not turned on yet.' }
-  }
-
-  const safe = validateSpotlightStickers(rawStickers)
-
-  // The earned gate (ADR-1279): a sticker with a requiredItem is refused unless the owner holds
-  // the item. The inventory is read only when a pick needs it, under the owner's own session
-  // (store_redemptions lets a member read their own rows). Same gate as updateProfileTheme.
-  const pickedIds = safe.items.map((s) => s.id)
-  if (requiredItemsFor(SPOTLIGHT_STICKERS, pickedIds).length > 0) {
-    const held = await memberHeldItems(supabase, (me as { id: string }).id)
-    if (missingRequiredItems(SPOTLIGHT_STICKERS, pickedIds, held).length > 0) {
-      return { error: 'That sticker is earned. Unlock it and it will be here.' }
-    }
-  }
-
-  // Only `stickers` is sent, merged INSIDE the `spotlight` key server-side (the LIVE-171 shape).
-  const { error } = await mergeProfileMetaPath(supabase, (me as { id: string }).id, ['spotlight'], { stickers: safe })
   if (error) return { error }
 
   revalidateSpotlight((me as { handle?: string | null }).handle ?? null)

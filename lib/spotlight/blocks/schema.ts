@@ -157,27 +157,5 @@ export interface SpotlightBackground {
   zoom: number
 }
 
-/** The most stickers a Spotlight can carry (PROG-SPOT increment 2, ADR-1275). */
-export const MAX_STICKERS = 12
-
-/** One placed sticker: an id from the CLOSED allowlist (lib/spotlight/stickers.ts) at a point on the
- *  page, both axes as percentages of the Spotlight column. The blob never carries the glyph itself; the
- *  renderer resolves the id against the allowlist, so a tampered id can at worst contribute nothing. */
-export interface SpotlightSticker {
-  id: string
-  /** 0..100, percent across the column (left edge = 0). */
-  x: number
-  /** 0..100, percent down the column (top edge = 0). */
-  y: number
-}
-
-/** Page chrome (sibling of `background`, not a block): the decorative sticker layer. Stored at
- *  profiles.meta.spotlight.stickers and validated on read AND write (validateSpotlightStickers). */
-export interface SpotlightStickers {
-  items: SpotlightSticker[]
-}
-
-export const EMPTY_STICKERS: SpotlightStickers = { items: [] }
-
 export const EMPTY_LAYOUT: SpotlightLayout = { version: SPOTLIGHT_LAYOUT_VERSION, blocks: [] }
 

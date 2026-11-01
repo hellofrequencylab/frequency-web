@@ -9,7 +9,6 @@ import { getAppearanceRailData } from '@/app/(main)/settings/rail-getters'
 import {
   setSpotlightTheme,
   setSpotlightBackground,
-  setSpotlightStickers,
   uploadSpotlightImage,
   setTopFriends,
   reorderTopFriends,
@@ -18,8 +17,7 @@ import {
 import { updateProfileTheme } from '@/lib/profile/profile-theme-actions'
 import { PROFILE_SKINS } from '@/lib/theme/profile-skins'
 import { SPOTLIGHT_FONTS, type SpotlightTheme } from '@/lib/spotlight/theme'
-import { MAX_STICKERS, type SpotlightBackground, type SpotlightStickers } from '@/lib/spotlight/blocks/schema'
-import { SPOTLIGHT_STICKERS, spotlightStickerById } from '@/lib/spotlight/stickers'
+import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { unlockedCosmetics } from '@/lib/spotlight/cosmetics'
 import type { TopFriend } from '@/lib/spotlight/top-friends.types'
 import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
@@ -50,7 +48,6 @@ export function PersonalAppearanceModule() {
   const [profileTheme, setProfileTheme] = useState<string | null>(null)
   const [theme, setTheme] = useState<SpotlightTheme | null>(null)
   const [background, setBackground] = useState<SpotlightBackground | null>(null)
-  const [stickers, setStickers] = useState<SpotlightStickers | null>(null)
   const [topFriends, setTopFriendsState] = useState<TopFriend[]>([])
 
   const [pending, setPending] = useState(false)
@@ -58,12 +55,11 @@ export function PersonalAppearanceModule() {
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // The earned gate's picker half (ADR-1279): an earned skin or sticker is offered only when the
+  // The earned gate's picker half (ADR-1279): an earned skin is offered only when the
   // member holds its item. The writers re-check server-side, so hiding here is honesty, not security.
   const held = new Set(data?.heldItems ?? [])
   // A Crew theme (LIVE-757) is offered only to a member on Crew; the writer re-checks it.
   const skinOptions = unlockedCosmetics(PROFILE_SKINS, held).filter((s) => !s.crewOnly || data?.crewPerks === true)
-  const stickerOptions = unlockedCosmetics(SPOTLIGHT_STICKERS, held)
 
   useEffect(() => {
     let active = true
@@ -74,7 +70,6 @@ export function PersonalAppearanceModule() {
         setProfileTheme(d.profileTheme)
         setTheme(d.theme)
         setBackground(d.background)
-        setStickers(d.stickers)
         setTopFriendsState(d.topFriends)
       }
       setLoading(false)
@@ -147,27 +142,6 @@ export function PersonalAppearanceModule() {
     }
   }
 
-  // ── Stickers (setSpotlightStickers takes the FULL list; each edit sends the whole layer) ──
-  function saveStickers(next: SpotlightStickers) {
-    setStickers(next)
-    void run(() => setSpotlightStickers(next))
-  }
-  function addSticker(id: string) {
-    if (!stickers || stickers.items.length >= MAX_STICKERS) return
-    // A new sticker lands centred; the sliders below move it. Staggered a little so two added in a
-    // row do not sit exactly on top of each other.
-    const n = stickers.items.length
-    saveStickers({ items: [...stickers.items, { id, x: 20 + ((n * 15) % 60), y: 10 + ((n * 20) % 80) }] })
-  }
-  function patchSticker(index: number, patch: Partial<{ x: number; y: number }>) {
-    if (!stickers) return
-    saveStickers({ items: stickers.items.map((s, i) => (i === index ? { ...s, ...patch } : s)) })
-  }
-  function dropSticker(index: number) {
-    if (!stickers) return
-    saveStickers({ items: stickers.items.filter((_, i) => i !== index) })
-  }
-
   // ── Top Friends ───────────────────────────────────────────────────────────────
   function addFriend(id: string) {
     const next = [...topFriends.map((f) => f.profileId), id]
@@ -192,7 +166,7 @@ export function PersonalAppearanceModule() {
     return <div className="h-40 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
   // Signed out / no profile, or the member cannot turn Spotlight on → no chrome (fail-safe).
-  if (!data || !data.canEnableSpotlight || !theme || !background || !stickers) return null
+  if (!data || !data.canEnableSpotlight || !theme || !background) return null
 
   const featuredIds = new Set(topFriends.map((f) => f.profileId))
   const pickable = data.friendOptions.filter((f) => !featuredIds.has(f.profileId))
@@ -384,83 +358,6 @@ export function PersonalAppearanceModule() {
                 onCommit={(v) => saveBackground({ ...background, zoom: v })}
               />
             </>
-          )}
-        </div>
-      </div>
-
-      {/* Stickers (ADR-1275): place a few from the closed set; each saves through setSpotlightStickers. */}
-      <div>
-        <SectionHeader title="Stickers" count={stickers.items.length} />
-        <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-4">
-          {stickers.items.length === 0 ? (
-            <p className="text-body-sm text-muted">Drop a few stickers on your Spotlight page. They float over your blocks.</p>
-          ) : (
-            <ul className="space-y-3">
-              {stickers.items.map((s, i) => {
-                const def = spotlightStickerById(s.id)
-                if (!def) return null
-                return (
-                  <li key={`${s.id}-${i}`} className="space-y-2 border-b border-border pb-3 last:border-b-0 last:pb-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-display-card leading-none" aria-hidden>
-                        {def.glyph}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-body-sm text-text">{def.label}</span>
-                      <button
-                        type="button"
-                        onClick={() => dropSticker(i)}
-                        disabled={pending}
-                        aria-label={`Remove ${def.label} sticker`}
-                        className="rounded-control p-1 text-subtle transition-colors hover:text-danger disabled:opacity-40"
-                      >
-                        <X className="h-4 w-4" aria-hidden />
-                      </button>
-                    </div>
-                    <RangeRow
-                      label="Across"
-                      value={s.x}
-                      min={0}
-                      max={100}
-                      suffix="%"
-                      disabled={pending}
-                      onCommit={(v) => patchSticker(i, { x: v })}
-                    />
-                    <RangeRow
-                      label="Down"
-                      value={s.y}
-                      min={0}
-                      max={100}
-                      suffix="%"
-                      disabled={pending}
-                      onCommit={(v) => patchSticker(i, { y: v })}
-                    />
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-
-          {stickers.items.length < MAX_STICKERS ? (
-            <div className={stickers.items.length > 0 ? 'border-t border-border pt-3' : ''}>
-              <p className="mb-2 eyebrow text-muted">Add a sticker</p>
-              <div className="flex flex-wrap gap-1.5">
-                {stickerOptions.map((def) => (
-                  <button
-                    key={def.id}
-                    type="button"
-                    onClick={() => addSticker(def.id)}
-                    disabled={pending}
-                    aria-label={`Add ${def.label} sticker`}
-                    title={def.label}
-                    className="flex h-9 w-9 items-center justify-center rounded-control border border-border text-lead leading-none transition-colors hover:bg-surface-elevated disabled:opacity-50"
-                  >
-                    <span aria-hidden>{def.glyph}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-meta text-muted">That is the most stickers a page can hold. Remove one to add another.</p>
           )}
         </div>
       </div>

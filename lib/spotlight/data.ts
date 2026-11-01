@@ -6,14 +6,12 @@ import {
   readSpotlightLayoutRaw,
   readSpotlightBackgroundRaw,
   readSpotlightThemeRaw,
-  readSpotlightStickersRaw,
 } from '@/lib/profile/spotlight-flags'
 import {
   validateSpotlightLayout,
   validateSpotlightBackground,
-  validateSpotlightStickers,
 } from '@/lib/spotlight/blocks/validate'
-import type { SpotlightLayout, SpotlightBackground, SpotlightStickers } from '@/lib/spotlight/blocks/schema'
+import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
@@ -49,8 +47,6 @@ export interface SpotlightData {
   layout: SpotlightLayout
   /** The validated optional background image. */
   background: SpotlightBackground
-  /** The validated decorative sticker layer (page chrome, ADR-1275). Empty when none are placed. */
-  stickers: SpotlightStickers
   /** The validated custom theme (colours/gradient/fonts/card). */
   theme: SpotlightTheme
   /** Lifetime Zaps earned (one SQL aggregate) — a gamification stat the member can display. */
@@ -160,7 +156,6 @@ async function loadMemberSpotlight(
   const layout = validateSpotlightLayout(readSpotlightLayoutRaw(g.meta), ownerAuthId)
   const background = validateSpotlightBackground(readSpotlightBackgroundRaw(g.meta), ownerAuthId)
   const theme = validateSpotlightTheme(readSpotlightThemeRaw(g.meta))
-  const stickers = validateSpotlightStickers(readSpotlightStickersRaw(g.meta))
 
   // Page row: the explicit allowlist only.
   const { data: row } = await admin
@@ -210,7 +205,6 @@ async function loadMemberSpotlight(
     programs,
     layout,
     background,
-    stickers,
     theme,
     totalZaps,
     contributionCounts,

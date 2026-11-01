@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { cosmeticUnlocked, unlockedCosmetics, requiredItemsFor, missingRequiredItems } from './cosmetics'
-import { SPOTLIGHT_STICKERS } from './stickers'
 import { PROFILE_SKINS } from '@/lib/theme/profile-skins'
 
 // The pure gate at the two cosmetic seams (ADR-1279). A fixture list proves the rules; the last
@@ -51,20 +50,13 @@ describe('the shipped lists only require items the catalog can grant', () => {
   )
   const catalogSlugs = new Set([...seed.matchAll(/^\s*\('([a-z0-9-]+)',/gm)].map((m) => m[1]))
 
-  it('every sticker requiredItem is a seeded store_items slug', () => {
+  it('the seeded catalog is read', () => {
     expect(catalogSlugs.size).toBeGreaterThan(10)
-    for (const s of SPOTLIGHT_STICKERS) {
-      if (s.requiredItem) expect(catalogSlugs.has(s.requiredItem), `${s.id} requires ${s.requiredItem}`).toBe(true)
-    }
   })
 
   it('every skin requiredItem (none today) would be a seeded slug', () => {
     for (const s of PROFILE_SKINS) {
       if (s.requiredItem) expect(catalogSlugs.has(s.requiredItem), `${s.id} requires ${s.requiredItem}`).toBe(true)
     }
-  })
-
-  it('at least one shipped sticker is earned, so the gate has a live consumer', () => {
-    expect(SPOTLIGHT_STICKERS.some((s) => !!s.requiredItem)).toBe(true)
   })
 })

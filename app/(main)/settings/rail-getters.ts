@@ -28,15 +28,14 @@ import {
   readSpotlightPublished,
   readSpotlightThemeRaw,
   readSpotlightBackgroundRaw,
-  readSpotlightStickersRaw,
 } from '@/lib/profile/spotlight-flags'
 import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
 import { avatarSrc } from '@/lib/images/avatar-focus'
 import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
 import { columnImageUrl } from '@/lib/library/column-image'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
-import { validateSpotlightBackground, validateSpotlightStickers } from '@/lib/spotlight/blocks/validate'
-import type { SpotlightBackground, SpotlightStickers } from '@/lib/spotlight/blocks/schema'
+import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
+import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { getTopFriendsForOwner, getAcceptedFriendsForPicker } from '@/lib/spotlight/top-friends'
 import type { TopFriend } from '@/lib/spotlight/top-friends.types'
 import { computeCompleteness } from '@/lib/profile/completeness'
@@ -312,8 +311,6 @@ export interface AppearanceRailData {
   theme: SpotlightTheme
   /** The validated Spotlight page background (assetPath pinned to the owner + focus/dim/zoom). */
   background: SpotlightBackground
-  /** The validated sticker layer (allowlisted ids at clamped percentage coordinates, ADR-1275). */
-  stickers: SpotlightStickers
   /** The store item slugs the member holds (ADR-1279): the picker offers an earned skin or sticker
    *  only when its requiredItem is in here. The writers re-check, so this is the honest list, not the gate. */
   heldItems: string[]
@@ -361,7 +358,6 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
     theme: validateSpotlightTheme(readSpotlightThemeRaw(meta)),
     // The auth user id pins the background asset path to the owner's own folder, exactly as the public read.
     background: validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id),
-    stickers: validateSpotlightStickers(readSpotlightStickersRaw(meta)),
     heldItems: [...held],
     crewPerks: effective.tier === 'crew',
     topFriends,
