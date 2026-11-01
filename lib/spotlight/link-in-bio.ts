@@ -6,8 +6,8 @@
 
 export const PAGE_META_KEY = 'spotlightPage'
 export const MAX_PAGE_LINKS = 40
-export const TITLE_MAX = 60
-export const SOCIAL_MAX = 8
+const TITLE_MAX = 60
+const SOCIAL_MAX = 8
 
 export const LINK_ICONS = ['link', 'calendar', 'mail', 'music', 'video', 'shop', 'book', 'heart'] as const
 export type LinkIcon = (typeof LINK_ICONS)[number]
