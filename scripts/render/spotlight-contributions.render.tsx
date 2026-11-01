@@ -37,6 +37,7 @@ it('renders the public Spotlight, before and after', async () => {
       ...base,
       profile,
       theme: EMPTY_THEME,
+      stickers: { items: [] },
       totalZaps: 1240,
       contributionCounts: { eventsHosted: 12, journeysFinished: 3 },
     }

@@ -37,8 +37,8 @@ describe('slot-key injection guard (CodeQL remote property injection)', () => {
   })
 })
 
-// The member palette (about/stats/links/guestbook + content blocks) and space-only ids drive the
-// kind-filtering cases below. Ids used: 'about','stats','links','guestbook' (member), 'offerings'
+// The member palette (about/stats/links/topfriends + content blocks) and space-only ids drive the
+// kind-filtering cases below. Ids used: 'about','stats','links','topfriends' (member), 'offerings'
 // (space-only), 'heading' (shared content).
 
 describe('parseEntityLayout', () => {
@@ -59,14 +59,14 @@ describe('parseEntityLayout', () => {
     const parsed = parseEntityLayout({
       template: 'main-side',
       slots: { main: ['about', 'stats'], side: ['links'], junk: [] },
-      hidden: ['guestbook'],
+      hidden: ['topfriends'],
     })
     // toMatchObject, not toEqual: E0 task 9 added a read-path-only `nodes` projection to every
     // successful parse. The named fields are what this test is about.
     expect(parsed).toMatchObject({
       template: 'main-side',
       slots: { main: ['about', 'stats'], side: ['links'] },
-      hidden: ['guestbook'],
+      hidden: ['topfriends'],
     })
   })
 
@@ -126,12 +126,12 @@ describe('parseEntityLayout', () => {
 })
 
 describe('mergeEntityLayout', () => {
-  const memberDefaults = ['about', 'stats', 'links', 'guestbook']
+  const memberDefaults = ['about', 'stats', 'links', 'topfriends']
 
   it('null saved → fresh default in the single template default slot', () => {
     const merged = mergeEntityLayout(memberDefaults, null, 'member')
     expect(merged.template).toBe('single')
-    expect(merged.slots).toEqual({ main: ['about', 'stats', 'links', 'guestbook'] })
+    expect(merged.slots).toEqual({ main: ['about', 'stats', 'links', 'topfriends'] })
     expect(merged.hidden).toEqual([])
   })
 
@@ -142,20 +142,20 @@ describe('mergeEntityLayout', () => {
     }
     const merged = mergeEntityLayout(memberDefaults, saved, 'member')
     expect(merged.template).toBe('main-side')
-    // 'links' stays in side; 'guestbook' was never placed → appended to the default (main) slot.
-    expect(merged.slots?.main).toEqual(['stats', 'about', 'guestbook'])
+    // 'links' stays in side; 'topfriends' was never placed → appended to the default (main) slot.
+    expect(merged.slots?.main).toEqual(['stats', 'about', 'topfriends'])
     expect(merged.slots?.side).toEqual(['links'])
   })
 
   it('drops hidden ids from every slot', () => {
-    const saved: EntityLayout = { slots: { main: ['about', 'stats', 'links', 'guestbook'] }, hidden: ['stats'] }
+    const saved: EntityLayout = { slots: { main: ['about', 'stats', 'links', 'topfriends'] }, hidden: ['stats'] }
     const merged = mergeEntityLayout(memberDefaults, saved, 'member')
     expect(merged.slots?.main).not.toContain('stats')
     expect(merged.hidden).toContain('stats')
   })
 
   it('appends a new default id the saved layout never placed', () => {
-    const saved: EntityLayout = { slots: { main: ['about'] }, hidden: ['stats', 'links', 'guestbook'] }
+    const saved: EntityLayout = { slots: { main: ['about'] }, hidden: ['stats', 'links', 'topfriends'] }
     const withNew = mergeEntityLayout([...memberDefaults, 'heading'], saved, 'member')
     // hidden ones stay out; the brand-new 'heading' is appended to main.
     expect(withNew.slots?.main).toEqual(['about', 'heading'])
@@ -173,7 +173,7 @@ describe('mergeEntityLayout', () => {
     const merged = mergeEntityLayout(memberDefaults, { order: ['links', 'about'] }, 'member')
     expect(merged.template).toBe('single')
     // saved order first, then the untouched defaults appended.
-    expect(merged.slots?.main).toEqual(['links', 'about', 'stats', 'guestbook'])
+    expect(merged.slots?.main).toEqual(['links', 'about', 'stats', 'topfriends'])
   })
 
   it('reassigns ids from a slot the new template no longer has into the default slot', () => {
@@ -182,7 +182,7 @@ describe('mergeEntityLayout', () => {
     const merged = mergeEntityLayout(memberDefaults, saved, 'member')
     expect(merged.template).toBe('single')
     // everything lands in main.
-    expect(new Set(merged.slots?.main)).toEqual(new Set(['links', 'stats', 'about', 'guestbook']))
+    expect(new Set(merged.slots?.main)).toEqual(new Set(['links', 'stats', 'about', 'topfriends']))
   })
 })
 
@@ -256,8 +256,8 @@ describe('rows validation (parseEntityLayout)', () => {
   })
 
   it('drops wrong-kind ids on sanitize', () => {
-    // 'guestbook' is member-only; sanitizing for a SPACE (which keeps the 2-column row) must null it.
-    const clean = sanitizeEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'guestbook'] }] }, 'space')
+    // 'topfriends' is member-only; sanitizing for a SPACE (which keeps the 2-column row) must null it.
+    const clean = sanitizeEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'topfriends'] }] }, 'space')
     expect(clean?.rows?.[0].cells).toEqual([['about'], []])
   })
 
@@ -301,7 +301,7 @@ describe('per-kind max columns clamp', () => {
   })
 
   it('resolveRows clamps a member 2-col row to one column on read', () => {
-    const layout: EntityLayout = { rows: [{ id: 'r0', columns: 2, cells: [['links'], ['guestbook']] }] }
+    const layout: EntityLayout = { rows: [{ id: 'r0', columns: 2, cells: [['links'], ['topfriends']] }] }
     expect(resolveRows(layout, 'member')).toEqual([{ id: 'r0', columns: 1, cells: [['links']] }])
   })
 })
@@ -331,7 +331,7 @@ describe('2-column ratio (even / lead = 66/33)', () => {
 
   it('drops the ratio when a member row is clamped out of 2 columns', () => {
     const clean = sanitizeEntityLayout(
-      { rows: [{ id: 'r0', columns: 2, slots: ['links', 'guestbook'], ratio: 'lead' }] },
+      { rows: [{ id: 'r0', columns: 2, slots: ['links', 'topfriends'], ratio: 'lead' }] },
       'member',
     )
     expect(clean?.rows?.[0]).toEqual({ id: 'r0', columns: 1, cells: [['links']] })
@@ -399,7 +399,7 @@ describe('templateToRows (all 7 templates)', () => {
         header: ['about'],
         footer: ['stats'],
         'col-1': ['links'],
-        'col-2': ['guestbook'],
+        'col-2': ['topfriends'],
         'col-3': ['heading'],
       }
       const rows = templateToRows(tpl, slots, 'member')
@@ -411,12 +411,12 @@ describe('templateToRows (all 7 templates)', () => {
   })
 
   it('single → one 1-column row per block, order preserved (byte-identical default stack)', () => {
-    const rows = templateToRows('single', { main: ['about', 'stats', 'links', 'guestbook'] }, 'member')
+    const rows = templateToRows('single', { main: ['about', 'stats', 'links', 'topfriends'] }, 'member')
     expect(rows).toEqual([
       { id: 'r0', columns: 1, cells: [['about']] },
       { id: 'r1', columns: 1, cells: [['stats']] },
       { id: 'r2', columns: 1, cells: [['links']] },
-      { id: 'r3', columns: 1, cells: [['guestbook']] },
+      { id: 'r3', columns: 1, cells: [['topfriends']] },
     ])
   })
 
@@ -428,13 +428,13 @@ describe('templateToRows (all 7 templates)', () => {
   it('header-main-side-footer → header row(s), a 2-col body, then footer row(s)', () => {
     const rows = templateToRows(
       'header-main-side-footer',
-      { header: ['about'], main: ['stats'], side: ['links'], footer: ['guestbook'] },
+      { header: ['about'], main: ['stats'], side: ['links'], footer: ['topfriends'] },
       'member',
     )
     expect(rows).toEqual([
       { id: 'r0', columns: 1, cells: [['about']] },
       { id: 'r1', columns: 2, cells: [['stats'], ['links']] },
-      { id: 'r2', columns: 1, cells: [['guestbook']] },
+      { id: 'r2', columns: 1, cells: [['topfriends']] },
     ])
   })
 
@@ -476,12 +476,12 @@ describe('resolveRows fallbacks', () => {
 
   it('proves the LIVE default render is unchanged: merged member default → 4 stacked 1-col rows', () => {
     // The exact live member path: mergeEntityLayout(defaultMemberLayout(), null) → resolveRows.
-    const merged = mergeEntityLayout(['about', 'stats', 'links', 'guestbook'], null, 'member')
+    const merged = mergeEntityLayout(['about', 'stats', 'links', 'topfriends'], null, 'member')
     expect(resolveRows(merged, 'member')).toEqual([
       { id: 'r0', columns: 1, cells: [['about']] },
       { id: 'r1', columns: 1, cells: [['stats']] },
       { id: 'r2', columns: 1, cells: [['links']] },
-      { id: 'r3', columns: 1, cells: [['guestbook']] },
+      { id: 'r3', columns: 1, cells: [['topfriends']] },
     ])
   })
 })
@@ -506,9 +506,10 @@ describe('starter layouts', () => {
     }
   })
 
-  it('member basic omits the chrome-owned about/stats and leads with links (ADR-522)', () => {
+  it('member basic omits the chrome-owned about/stats and leads with links, topfriends (ADR-522)', () => {
     expect(starterRows('member', 'basic')).toEqual([
       { id: 'r0', columns: 1, cells: [['links']] },
+      { id: 'r1', columns: 1, cells: [['topfriends']] },
     ])
     // The chrome (bio + Standing card) is canonical; the member grid never re-renders it by default.
     const ids = starterRows('member', 'basic').flatMap((r) => r.cells.flat())

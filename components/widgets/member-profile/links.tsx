@@ -13,6 +13,7 @@ export function LinksBlock({ data }: MemberBlockProps) {
       <BlockView
         block={{ id: 'links', type: 'links', items: data.links }}
         stats={EMPTY_SPOTLIGHT_META.stats}
+        topFriends={[]}
       />
     </MemberSection>
   )

@@ -12,6 +12,7 @@ export function StatsBlock({ data }: MemberBlockProps) {
       <BlockView
         block={{ id: 'stats', type: 'stats', show: data.statKeys }}
         stats={data.stats}
+        topFriends={[]}
       />
     </MemberSection>
   )

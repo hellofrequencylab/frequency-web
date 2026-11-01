@@ -21,6 +21,7 @@ function fixture(over: Partial<SpotlightData> = {}): SpotlightData {
     background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 },
     theme: {},
     totalZaps: 1234,
+    topFriends: [],
     guestbook: [],
     ...over,
   } as unknown as SpotlightData
@@ -37,6 +38,11 @@ describe('spotlightRenderMeta', () => {
       region: 'London',
     })
     expect(meta.publicBase).toBe(SPOTLIGHT_PUBLIC_BASE)
+  })
+
+  it('passes Top Friends through untouched', () => {
+    const topFriends = [{ handle: 'grace' }] as unknown as SpotlightData['topFriends']
+    expect(spotlightRenderMeta(fixture({ topFriends })).topFriends).toBe(topFriends)
   })
 
   it('degrades missing region / created_at to null', () => {

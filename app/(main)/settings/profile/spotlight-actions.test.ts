@@ -26,6 +26,14 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({}) }))
+vi.mock('@/lib/spotlight/top-friends', () => ({
+  normalizeTopFriendIds: vi.fn(),
+  keepAcceptedFriends: vi.fn(),
+  toTopFriendRows: vi.fn(),
+  rewriteTopFriends: vi.fn(),
+  deleteOneTopFriend: vi.fn(),
+  getOwnerTopFriendIds: vi.fn(),
+}))
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 
 import { saveMemberGridLayout, setSpotlightTheme, setSpotlightBackground } from './spotlight-actions'

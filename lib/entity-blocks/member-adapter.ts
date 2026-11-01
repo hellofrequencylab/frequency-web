@@ -2,6 +2,7 @@ import type { EntityIdentity } from './context'
 import { memberJoinedYear } from '@/lib/spotlight/member-year'
 import type { SpotlightData } from '@/lib/spotlight/data'
 import type { SpotlightStatsContext } from '@/components/spotlight/blocks/render'
+import type { TopFriend } from '@/lib/spotlight/top-friends.types'
 import type { GuestbookEntry } from '@/lib/spotlight/guestbook.shared'
 import {
   SPOTLIGHT_STAT_KEYS,
@@ -20,7 +21,7 @@ import {
 // Being pure, it is trivially unit-testable and safe to import from an RSC render or the pure lib alike.
 //
 // The Spotlight layout is AUTHORED (a member arranges many block instances), whereas the unified
-// registry layout is keyed by block TYPE. So the DATA blocks (about/stats/links) resolve
+// registry layout is keyed by block TYPE. So the DATA blocks (about/stats/links/topfriends) resolve
 // from the member's resolved data, and the authored CONTENT blocks are grouped by type here — the
 // per-instance authoring order is the editor's concern (U2b), not this type-keyed preview.
 
@@ -37,6 +38,10 @@ interface MemberBlockData {
   statKeys: SpotlightStatKey[]
   /** The bio-link rows, flattened from every authored `links` block in layout order. */
   links: LinkItem[]
+  /** The member's ordered Top Friends, resolved server-side (never member-supplied). */
+  topFriends: TopFriend[]
+  /** The optional Top Friends grid heading (first authored `topfriends` block's title), or undefined. */
+  topFriendsTitle?: string
   /** The newest visible Guestbook notes, resolved server-side (never member-supplied). */
   guestbook: GuestbookEntry[]
   /** The member's upcoming public events, resolved server-side by the Spotlight reader. */
@@ -82,18 +87,18 @@ export function toMemberEntity(data: SpotlightData): EntityIdentity {
 function emptyBlocksByType(): Record<BlockType, SpotlightBlock[]> {
   return {
     heading: [], text: [], links: [], image: [], gallery: [],
-    quote: [], stats: [], embed: [], divider: [],
+    quote: [], stats: [], topfriends: [], embed: [], divider: [],
   }
 }
 
 /**
  * Resolve the per-block DATA bag from a member's Spotlight. PURE: groups the authored blocks by type,
  * flattens the bio-link rows, unions the chosen stat keys (falling back to every key so the preview
- * surfaces whatever numbers exist), and lifts the authoritative stat values the reader
- * already resolved. Never carries a member-supplied stat number or identity.
+ * surfaces whatever numbers exist), and lifts the authoritative stat values + Top Friends the reader
+ * already resolved. Never carries a member-supplied stat number or friend identity.
  */
 export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
-  const { profile, totalZaps, guestbook } = data
+  const { profile, totalZaps, topFriends, guestbook } = data
 
   const blocksByType = emptyBlocksByType()
   for (const block of data.layout.blocks) {
@@ -118,6 +123,10 @@ export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
   }
   const statKeys = chosen.length > 0 ? chosen : [...SPOTLIGHT_STAT_KEYS]
 
+  // The first authored Top Friends grid heading, if any.
+  const firstTopFriends = blocksByType.topfriends.find((b) => b.type === 'topfriends')
+  const topFriendsTitle = firstTopFriends?.type === 'topfriends' ? firstTopFriends.title : undefined
+
   return {
     about: profile.bio ?? null,
     stats: {
@@ -129,6 +138,8 @@ export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
     },
     statKeys,
     links,
+    topFriends,
+    topFriendsTitle,
     guestbook,
     hostedEvents: data.hostedEvents,
     canTip: data.canTip,

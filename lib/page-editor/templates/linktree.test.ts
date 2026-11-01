@@ -37,6 +37,7 @@ describe('the brand/space Spotlight preset (shared identity, Phase 4)', () => {
   it('keeps the member link-tree body below the identity header', () => {
     const ts = spaceSpotlightPreset().content.map((b) => b.type)
     expect(ts).toContain(SPOTLIGHT_PUCK_TYPES.links)
+    expect(ts).toContain(SPOTLIGHT_PUCK_TYPES.topfriends)
   })
 })
 

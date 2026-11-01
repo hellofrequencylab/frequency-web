@@ -20,7 +20,7 @@ function shellFor(layout: string, kit = 'general', sample = true) {
   const theme = validateSpotlightTheme({ ...designerPreset.theme, layout, kit })
   const data = {
     profile: { display_name: 'Your Studio', handle: 'yourstudio', avatar_url: null, header_image_url: null, bio: null, community_role: null, nexus_regions: null, profile_theme: null },
-    background: { assetPath: null }, theme, layout: { blocks: [] },
+    background: { assetPath: null }, stickers: [], theme, layout: { blocks: [] },
   } as unknown as Parameters<typeof SpotlightShell>[0]['data']
   return renderToStaticMarkup(<SpotlightShell data={data} showBio={false} sampleContent={sample}><div>body</div></SpotlightShell>)
 }
@@ -112,7 +112,7 @@ describe('Designer Theme Kit Spotlight layouts', () => {
 
   it('leaves a Network Spotlight layout alone', () => {
     const network = validateSpotlightTheme({ ...THEME_PRESETS.find((p) => p.id === 'network-kit')!.theme, layout: 'network-kit:story', kit: 'coaches' })
-    const data = { profile: { display_name: 'Your Network', handle: 'n', avatar_url: null, header_image_url: null, bio: null, community_role: null, nexus_regions: null, profile_theme: null }, background: { assetPath: null }, theme: network, layout: { blocks: [] } } as unknown as Parameters<typeof SpotlightShell>[0]['data']
+    const data = { profile: { display_name: 'Your Network', handle: 'n', avatar_url: null, header_image_url: null, bio: null, community_role: null, nexus_regions: null, profile_theme: null }, background: { assetPath: null }, stickers: [], theme: network, layout: { blocks: [] } } as unknown as Parameters<typeof SpotlightShell>[0]['data']
     const html = renderToStaticMarkup(<SpotlightShell data={data} sampleContent><div>body</div></SpotlightShell>)
     expect(html).toContain('data-house-theme="network-kit"')
     expect(html).not.toContain('dzs')

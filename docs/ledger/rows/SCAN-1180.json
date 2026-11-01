@@ -1,6 +1,6 @@
 {
   "id": "SCAN-1180",
-  "title": "Remove Stickers and Top friends from Space layouts and member profiles",
+  "title": "Remove Stickers from member Spotlight pages",
   "lane": "live",
   "priority": "P2",
   "size": "M",
@@ -9,12 +9,12 @@
   "source": {
     "file": "lib/entity-blocks/registry.ts"
   },
-  "detail": "Owner ask: take Stickers and Top friends out. Both are gone from the block picker, the starter layouts, the Layout builder, the appearance panel and the Spotlight page render, and their writers and readers are deleted. A saved Top friends block now renders nothing and is dropped the next time the layout is saved. The spotlight_top_friends table and any stored meta.spotlight.stickers are left in the database untouched.",
+  "detail": "Owner ask: take Stickers out. The sticker layer no longer renders on a Spotlight page, the Stickers section is gone from the appearance panel, and the writer, reader, allowlist and validator are deleted. Any stored meta.spotlight.stickers is left in the database untouched. Top friends follows in its own change.",
   "closed": "2026-11-01",
   "verify": {
     "kind": "cmd",
     "checked": "2026-11-01",
     "evidence": "Neither block is offered or rendered.",
-    "cmd": "node scripts/probes/no-stickers-or-top-friends.mjs"
+    "cmd": "node scripts/probes/no-stickers.mjs"
   }
 }

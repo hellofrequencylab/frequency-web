@@ -3,9 +3,9 @@ import { defaultMemberLayout } from './context'
 import { entityBlockById } from './registry'
 
 describe('member fresh-default layout', () => {
-  it('leads with about, stats, links', () => {
+  it('leads with about, stats, links, topfriends', () => {
     const layout = defaultMemberLayout()
-    expect(layout.slice(0, 3)).toEqual(['about', 'stats', 'links'])
+    expect(layout.slice(0, 4)).toEqual(['about', 'stats', 'links', 'topfriends'])
   })
 
   it('contains only member-supporting blocks, no duplicates', () => {

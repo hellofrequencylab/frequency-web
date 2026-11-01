@@ -15,6 +15,8 @@ export const SPOTLIGHT_LAYOUT_VERSION = 1
 export const MAX_BLOCKS = 40
 export const MAX_LINKS_PER_BLOCK = 10
 export const MAX_GALLERY_IMAGES = 12
+/** The "Top 8": the most friends a Top Friends block can feature. */
+export const MAX_TOP_FRIENDS = 8
 export const HEADING_MAX = 80
 export const TEXT_MAX = 1000
 export const QUOTE_MAX = 280
@@ -24,7 +26,7 @@ export const ALT_MAX = 140
 
 import type { EmbedProvider } from '../embeds'
 
-export type BlockType = 'heading' | 'text' | 'links' | 'image' | 'gallery' | 'quote' | 'stats' | 'embed' | 'divider'
+export type BlockType = 'heading' | 'text' | 'links' | 'image' | 'gallery' | 'quote' | 'stats' | 'topfriends' | 'embed' | 'divider'
 
 /** The gamification numbers a `stats` block can surface. Values are read SERVER-SIDE from
  *  the allowlisted profile row (privacy.ts) — the block only stores WHICH to show, never a
@@ -104,6 +106,14 @@ export interface StatsBlock {
    *  server-side from the profile row — the block never carries the numbers themselves. */
   show: SpotlightStatKey[]
 }
+export interface TopFriendsBlock {
+  id: string
+  type: 'topfriends'
+  /** Optional grid heading (e.g. "Top 8"). The picks themselves live in the
+   *  `spotlight_top_friends` table and are resolved SERVER-SIDE at render — the block
+   *  never carries friend identities, so the grid can't be spoofed (mirrors `stats`). */
+  title?: string
+}
 export interface EmbedBlock {
   id: string
   type: 'embed'
@@ -125,6 +135,7 @@ export type SpotlightBlock =
   | GalleryBlock
   | QuoteBlock
   | StatsBlock
+  | TopFriendsBlock
   | EmbedBlock
   | DividerBlock
 

@@ -19,7 +19,7 @@ function shellFor(layout: string, kit = 'general', scheme?: Record<string, unkno
   const theme = validateSpotlightTheme({ ...preset.theme, ...scheme, layout, kit })
   const data = {
     profile: { display_name: 'Your Network', handle: 'yournetwork', avatar_url: null, header_image_url: null, bio: null, community_role: null, nexus_regions: null, profile_theme: null },
-    background: { assetPath: null }, theme, layout: { blocks: [] },
+    background: { assetPath: null }, stickers: [], theme, layout: { blocks: [] },
   } as unknown as SpotlightData
   return renderToStaticMarkup(<SpotlightShell data={data} showBio={false} sampleContent><div>body</div></SpotlightShell>)
 }

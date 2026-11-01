@@ -36,6 +36,8 @@ import { columnImageUrl } from '@/lib/library/column-image'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
+import { getTopFriendsForOwner, getAcceptedFriendsForPicker } from '@/lib/spotlight/top-friends'
+import type { TopFriend } from '@/lib/spotlight/top-friends.types'
 import { computeCompleteness } from '@/lib/profile/completeness'
 import { deriveTier, ENTITLEMENT_LABEL } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
@@ -314,6 +316,10 @@ export interface AppearanceRailData {
   heldItems: string[]
   /** True when the member is on Crew (real effective tier), so Crew themes are offered (LIVE-757). */
   crewPerks: boolean
+  /** The member's current ordered Top Friends (resolved to public identity fields). */
+  topFriends: TopFriend[]
+  /** Every accepted friend, as the picker's source list (only the caller's own friends). */
+  friendOptions: TopFriend[]
 }
 
 /** The Spotlight appearance bundle for the rail module, or null when signed out / the profile is missing
@@ -336,7 +342,9 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
   const profileId = profile.id as string
   const canEnableSpotlight = (await getProfileCapabilities(profileId)).has('spotlight.enable')
 
-  const [held, effective] = await Promise.all([
+  const [topFriends, friendOptions, held, effective] = await Promise.all([
+    getTopFriendsForOwner(profileId),
+    getAcceptedFriendsForPicker(profileId),
     memberHeldItems(supabase, profileId),
     // Crew perks (LIVE-757) read the REAL effective tier, never the Beta grant.
     effectiveTierFor(profileId, (profile as { membership_tier?: string | null }).membership_tier ?? null),
@@ -352,5 +360,7 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
     background: validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id),
     heldItems: [...held],
     crewPerks: effective.tier === 'crew',
+    topFriends,
+    friendOptions,
   }
 }

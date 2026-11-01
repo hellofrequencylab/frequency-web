@@ -53,7 +53,7 @@ describe('saveSpaceGridLayout - rows sanitize', () => {
       rows: [
         { id: 'x', columns: 2, slots: ['offerings', 'offerings'] }, // dup -> 2nd null; id regenerated
         { id: 'r1', columns: 9, slots: ['events'] }, // bad columns -> row dropped
-        { id: 'r2', columns: 1, slots: ['guestbook'] }, // member-only id -> null cell
+        { id: 'r2', columns: 1, slots: ['topfriends'] }, // member-only id -> null cell
       ],
       hidden: ['events'],
     } as unknown as LayoutArg)

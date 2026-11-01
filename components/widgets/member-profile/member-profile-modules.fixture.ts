@@ -31,6 +31,7 @@ export function member(): SpotlightData {
     theme: {} as SpotlightData['theme'],
     totalZaps: 42,
     contributionCounts: { eventsHosted: 0, journeysFinished: 0 },
+    topFriends: [{ profileId: 'f1', handle: 'bob', displayName: 'Bob', avatarUrl: null }],
     guestbook: [],
     grid: null,
   } as unknown as SpotlightData
@@ -40,7 +41,7 @@ export function member(): SpotlightData {
 export const GOLDEN_DOCS: Record<string, unknown> = {
   'null grid (the starter)': null,
   'empty object': {},
-  'legacy single template': { template: 'single', slots: { main: ['about', 'stats', 'links'] } },
+  'legacy single template': { template: 'single', slots: { main: ['about', 'stats', 'links', 'topfriends'] } },
   'legacy order list': { order: ['heading', 'about', 'links'] },
   'rows, one column, data and content': {
     rows: [

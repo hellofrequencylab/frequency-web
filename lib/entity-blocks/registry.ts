@@ -72,6 +72,7 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   // block; a saved grid naming it drops fail-safe (resolveRows skips unknown ids).
   { id: 'contact', label: 'Contact and hours', description: 'How and when to reach this space.', category: 'data', kinds: ['space'], order: 120 },
   { id: 'business', label: 'Business presence', description: 'Find this space online.', category: 'data', kinds: ['space'], order: 130 },
+  { id: 'topfriends', label: 'Top friends', description: 'The people this member is closest to.', category: 'data', kinds: ['member'], order: 140 },
   { id: 'guestbook', label: 'Guestbook', description: 'Notes from people who stopped by.', category: 'data', kinds: ['member'], order: 150 },
   // The events this member hosts (SPL-03): the upcoming public ones, read from the Spotlight's own reader. A
   // separate id from the Space `events` block, which is function-backed by the Space's own rows.
@@ -224,6 +225,7 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'contact',
   'business', // "Find us online" — the social + business links from Info & Connect (SPACE).
   // Member-only data sections (kept for the member profile).
+  'topfriends',
   'guestbook',
   'memberEvents',
   'tip',

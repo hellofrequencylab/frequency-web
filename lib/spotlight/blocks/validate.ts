@@ -148,6 +148,13 @@ function coerceBlock(raw: unknown, index: number, ownerAuthUserId: string): Spot
       if (show.length === 0) return null
       return { id, type: 'stats', show }
     }
+    case 'topfriends': {
+      // The block carries no friend identities — only an optional grid title. The picks
+      // live in the spotlight_top_friends table and are resolved server-side at render
+      // (lib/spotlight/top-friends.ts), so a tampered blob can at worst rename the grid.
+      const title = clampStr(b.title, LABEL_MAX).trim()
+      return title ? { id, type: 'topfriends', title } : { id, type: 'topfriends' }
+    }
     case 'embed': {
       // The read-side authority: only a (provider, ref) that matches the closed host
       // allowlist survives. The renderer reconstructs the iframe src from this — a member

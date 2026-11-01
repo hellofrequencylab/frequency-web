@@ -105,11 +105,10 @@ describe('unified entity-block registry', () => {
     for (const id of ['highlights', 'stats', 'practices', 'updates', 'quote', 'divider', 'heading', 'text', 'image']) {
       expect(space).not.toContain(id)
     }
-    // The member palette keeps guestbook + the authored links list + the content essentials; `business` is
+    // The member palette keeps topfriends + the authored links list + the content essentials; `business` is
     // space-only so it never reaches the member palette.
     const member = profilePaletteForKind('member').map((b) => b.id)
-    expect(member).toContain('guestbook')
-    expect(member).not.toContain('topfriends') // retired
+    expect(member).toContain('topfriends')
     expect(member).toContain('links')
     expect(member).not.toContain('business')
     expect(member).not.toContain('gallery')
@@ -119,11 +118,10 @@ describe('unified entity-block registry', () => {
   it('blocksForKind returns member vs space palettes', () => {
     const member = blocksForKind('member').map((b) => b.id)
     const space = blocksForKind('space').map((b) => b.id)
-    expect(member).toContain('guestbook')
-    expect(member).not.toContain('topfriends') // retired
+    expect(member).toContain('topfriends')
     expect(member).not.toContain('offerings')
     expect(space).toContain('offerings')
-    expect(space).not.toContain('guestbook')
+    expect(space).not.toContain('topfriends')
     // shared blocks appear in both
     for (const id of ['about', 'stats', 'heading', 'links']) {
       expect(member).toContain(id)

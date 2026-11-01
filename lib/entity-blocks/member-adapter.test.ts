@@ -42,6 +42,7 @@ function data(layout: SpotlightLayout, over: Partial<SpotlightData> = {}): Spotl
     stickers: { items: [] },
     theme: { header: { show: false, height: 0, focusY: 50 } } as unknown as SpotlightData['theme'],
     totalZaps: 1234,
+    topFriends: [{ profileId: 'f1', handle: 'bob', displayName: 'Bob', avatarUrl: null }],
     guestbook: [],
     grid: null,
     ...over,
@@ -70,6 +71,7 @@ describe('resolveMemberBlockData', () => {
     expect(bag.about).toBe('Building things.')
     expect(bag.stats).toEqual({ zaps: 1234, streak: 7, gems: 42, joinedYear: 2021, region: 'Portland' })
     expect(bag.statKeys).toEqual([...SPOTLIGHT_STAT_KEYS])
+    expect(bag.topFriends).toHaveLength(1)
   })
 
   it('unions the chosen stat keys across stats blocks, first-seen order, deduped', () => {
@@ -98,7 +100,7 @@ describe('resolveMemberBlockData', () => {
     expect(bag.links.map((i) => i.label)).toEqual(['A', 'B'])
   })
 
-  it('groups authored blocks by type', () => {
+  it('groups authored blocks by type and lifts the first topfriends title', () => {
     const bag = resolveMemberBlockData(
       data({
         version: 1,
@@ -106,12 +108,14 @@ describe('resolveMemberBlockData', () => {
           { id: 'h1', type: 'heading', text: 'One', level: 2 },
           { id: 't1', type: 'text', text: 'para' },
           { id: 'h2', type: 'heading', text: 'Two', level: 3 },
+          { id: 'tf', type: 'topfriends', title: 'My crew' },
         ],
       }),
     )
     expect(bag.blocksByType.heading).toHaveLength(2)
     expect(bag.blocksByType.text).toHaveLength(1)
     expect(bag.blocksByType.gallery).toEqual([])
+    expect(bag.topFriendsTitle).toBe('My crew')
   })
 
   it('reads null about when the member has no bio', () => {

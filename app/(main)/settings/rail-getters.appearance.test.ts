@@ -1,15 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // getAppearanceRailData (ADR-525) — the read-gated bundle behind the Spotlight appearance rail module. It
-// RE-GATES on the authed viewer (reads only the caller's own row) and returns
+// RE-GATES on the authed viewer (reads only the caller's own row + only their accepted friends) and returns
 // null when signed out. The stored theme/background are VALIDATED here (the read-side security boundary), so
 // the module always seeds from a safe subset.
 
-const { getUser, maybeSingle, capsHas } = vi.hoisted(
+const { getUser, maybeSingle, capsHas, getTopFriendsForOwner, getAcceptedFriendsForPicker } = vi.hoisted(
   () => ({
     getUser: vi.fn(),
     maybeSingle: vi.fn(),
     capsHas: vi.fn(),
+    getTopFriendsForOwner: vi.fn(),
+    getAcceptedFriendsForPicker: vi.fn(),
   }),
 )
 
@@ -24,6 +26,10 @@ vi.mock('@/lib/core/load-capabilities', () => ({
 }))
 vi.mock('@/lib/billing/crew-grants', () => ({
   effectiveTierFor: async () => ({ stripeTier: 'free', granted: true, tier: 'crew' }),
+}))
+vi.mock('@/lib/spotlight/top-friends', () => ({
+  getTopFriendsForOwner,
+  getAcceptedFriendsForPicker,
 }))
 
 import { getAppearanceRailData } from './rail-getters'
@@ -46,6 +52,11 @@ beforeEach(() => {
     },
   })
   capsHas.mockReturnValue(true)
+  getTopFriendsForOwner.mockResolvedValue([{ profileId: 'f1', handle: 'bo', displayName: 'Bo', avatarUrl: null }])
+  getAcceptedFriendsForPicker.mockResolvedValue([
+    { profileId: 'f1', handle: 'bo', displayName: 'Bo', avatarUrl: null },
+    { profileId: 'f2', handle: 'cy', displayName: 'Cy', avatarUrl: null },
+  ])
 })
 
 describe('getAppearanceRailData', () => {
@@ -62,6 +73,8 @@ describe('getAppearanceRailData', () => {
     expect(data!.theme.header.height).toBe(360)
     expect(data!.background.assetPath).toBe('auth-1/spotlight/x.png')
     expect(data!.background.dim).toBe(30)
+    expect(data!.topFriends).toHaveLength(1)
+    expect(data!.friendOptions).toHaveLength(2)
   })
 
   it('returns null when signed out (fail-safe)', async () => {

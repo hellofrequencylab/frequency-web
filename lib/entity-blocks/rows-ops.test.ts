@@ -305,18 +305,18 @@ describe('setRowMargin (ADR-569 C3)', () => {
 describe('placeBlock / moveBlock', () => {
   it('places a benched block into an empty column', () => {
     const start = setRowColumns(base(), 'r0', 2) // [['about'], []]
-    const out = placeBlock(start, 'guestbook', 'r0', 1)
-    expect(out.rows[0].cells).toEqual([['about'], ['guestbook']])
+    const out = placeBlock(start, 'topfriends', 'r0', 1)
+    expect(out.rows[0].cells).toEqual([['about'], ['topfriends']])
   })
   it('appends into an occupied column, stacking (no displacement) — ADR-542', () => {
-    const out = placeBlock(base(), 'guestbook', 'r0', 0) // r0 col0 was ['about']
-    expect(out.rows[0].cells).toEqual([['about', 'guestbook']])
+    const out = placeBlock(base(), 'topfriends', 'r0', 0) // r0 col0 was ['about']
+    expect(out.rows[0].cells).toEqual([['about', 'topfriends']])
     expect(deriveBench(out, 'member')).not.toContain('about') // about stays placed
   })
   it('inserts at a given stack index', () => {
-    const stacked = placeBlock(base(), 'guestbook', 'r0', 0) // ['about','guestbook']
+    const stacked = placeBlock(base(), 'topfriends', 'r0', 0) // ['about','topfriends']
     const out = placeBlock(stacked, 'faq', 'r0', 0, 1) // insert faq at index 1
-    expect(out.rows[0].cells[0]).toEqual(['about', 'faq', 'guestbook'])
+    expect(out.rows[0].cells[0]).toEqual(['about', 'faq', 'topfriends'])
   })
   it('moving a placed block frees its old column (no duplication)', () => {
     const out = moveBlock(base(), 'links', 'r0', 0) // links moves from r1 into r0 col0
@@ -418,14 +418,14 @@ describe('removeBlock (delete)', () => {
 describe('deriveBench', () => {
   it('is palette minus placed minus hidden', () => {
     const palette = blocksForKind('member').map((b) => b.id)
-    const layout = hideBlock(base(), 'guestbook')
+    const layout = hideBlock(base(), 'topfriends')
     const bench = deriveBench(layout, 'member')
     expect(bench).not.toContain('about') // placed
     expect(bench).not.toContain('stats') // placed
-    expect(bench).not.toContain('guestbook') // hidden
+    expect(bench).not.toContain('topfriends') // hidden
     // everything else in the member palette is benched
     for (const id of palette) {
-      if (!['about', 'stats', 'links', 'guestbook'].includes(id)) expect(bench).toContain(id)
+      if (!['about', 'stats', 'links', 'topfriends'].includes(id)) expect(bench).toContain(id)
     }
   })
 })

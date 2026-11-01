@@ -1,7 +1,11 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { Flame, Gem, CalendarDays, MapPin, Zap } from 'lucide-react'
 import type { SpotlightBlock, SpotlightStatKey, BlockTint } from '@/lib/spotlight/blocks/schema'
+import type { TopFriend } from '@/lib/spotlight/top-friends'
+import { getInitials } from '@/lib/utils'
+import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { buildEmbedSrc, embedHeight } from '@/lib/spotlight/embeds'
 import { GalleryLightbox } from './gallery-lightbox'
 
@@ -64,11 +68,61 @@ function StatsView({ show, stats, cardStyle }: { show: SpotlightStatKey[]; stats
   return <div className="flex flex-wrap gap-2">{pills.map((p) => <div key={p.key}>{p.node}</div>)}</div>
 }
 
+// The Top Friends grid (the "Top 8"): avatars resolved server-side from the
+// spotlight_top_friends table (lib/spotlight/top-friends.ts) — the block carries no
+// identities, so the people shown can't be faked. Each avatar links to that member's
+// own profile. Renders nothing when the member has featured nobody.
+function TopFriendsView({ title, friends, cardStyle, headingFont }: {
+  title?: string
+  friends: TopFriend[]
+  cardStyle?: CSSProperties
+  headingFont?: string
+}) {
+  if (friends.length === 0) return null
+  return (
+    <section>
+      <h2 className="mb-3 eyebrow text-subtle" style={{ fontFamily: headingFont }}>
+        {title || 'Top Friends'}
+      </h2>
+      <div className="grid grid-cols-4 gap-3">
+        {friends.map((f) => {
+          const name = f.displayName || `@${f.handle}`
+          return (
+            <Link
+              key={f.profileId}
+              href={`/people/${f.handle}`}
+              className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
+              style={cardStyle}
+            >
+              {f.avatarUrl ? (
+                <Image
+                  src={avatarSrc(f.avatarUrl)}
+                  alt={name}
+                  width={64}
+                  height={64}
+                  className="h-14 w-14 rounded-pill object-cover"
+                  style={avatarFocusStyle(f.avatarUrl)}
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-bold text-primary-strong">
+                  {getInitials(name)}
+                </div>
+              )}
+              <span className="w-full truncate text-meta font-medium text-text">{name}</span>
+            </Link>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 export function BlockView({
-  block, stats, cardStyle, headingFont,
+  block, stats, topFriends, cardStyle, headingFont,
 }: {
   block: SpotlightBlock
   stats: SpotlightStatsContext
+  topFriends: TopFriend[]
   cardStyle?: CSSProperties
   headingFont?: string
 }) {
@@ -146,6 +200,8 @@ export function BlockView({
       )
     case 'stats':
       return <StatsView show={block.show} stats={stats} cardStyle={cardStyle} />
+    case 'topfriends':
+      return <TopFriendsView title={block.title} friends={topFriends} cardStyle={cardStyle} headingFont={headingFont} />
     case 'divider':
       return <hr className="my-2 border-border" style={{ borderColor: block.tint?.text }} />
     default:
@@ -156,6 +212,6 @@ export function BlockView({
 // This file also exported `SpotlightBlocks`, a map() wrapper that rendered a whole block list in
 // one <div>. Nothing imported it (verified 2026-08-25, after the Spotlight Guestbook merge —
 // SCAN-501). Every consumer is a widget that renders exactly ONE block: the five member-profile
-// widgets (about, links, stats, authored-group) each call `BlockView` directly so the
+// widgets (about, links, stats, topfriends, authored-group) each call `BlockView` directly so the
 // module grid owns the spacing, which is why the list wrapper never found a caller. Deleted, so
 // there stays ONE way to render a Spotlight block.
