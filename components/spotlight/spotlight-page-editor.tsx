@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowDown, ArrowUp, ExternalLink, EyeOff, GripVertical, Plus, Star, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Toggle } from '@/components/admin/toggle'
 import { LinkInBioPage } from '@/components/spotlight/link-in-bio'
@@ -190,11 +191,13 @@ export function SpotlightPageEditor({
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2 pl-6">
                     <label className="sr-only" htmlFor={`i-${l.id}`}>Icon</label>
-                    <select id={`i-${l.id}`} className="input w-auto" value={l.icon} onChange={(e) => patchLink(l.id, { icon: e.target.value as LinkIcon })}>
-                      {LINK_ICONS.map((k) => (
-                        <option key={k} value={k}>{ICON_LABEL[k]}</option>
-                      ))}
-                    </select>
+                    <Select
+                      id={`i-${l.id}`}
+                      wrapperClassName="inline-block w-max max-w-full"
+                      value={l.icon}
+                      onChange={(e) => patchLink(l.id, { icon: e.target.value as LinkIcon })}
+                      options={LINK_ICONS.map((k) => ({ value: k, label: ICON_LABEL[k] }))}
+                    />
                     <Button variant="ghost" size="sm" aria-label="Move up" onClick={() => move(i, i - 1)} disabled={i === 0}><ArrowUp className="h-4 w-4" aria-hidden /></Button>
                     <Button variant="ghost" size="sm" aria-label="Move down" onClick={() => move(i, i + 1)} disabled={i === page.links.length - 1}><ArrowDown className="h-4 w-4" aria-hidden /></Button>
                     <Button
