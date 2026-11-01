@@ -106,7 +106,7 @@ export interface StatsBlock {
    *  server-side from the profile row — the block never carries the numbers themselves. */
   show: SpotlightStatKey[]
 }
-export interface TopFriendsBlock {
+interface TopFriendsBlock {
   id: string
   type: 'topfriends'
   /** Optional grid heading (e.g. "Top 8"). The picks themselves live in the

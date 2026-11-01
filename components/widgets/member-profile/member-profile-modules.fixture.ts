@@ -41,7 +41,7 @@ export function member(): SpotlightData {
 export const GOLDEN_DOCS: Record<string, unknown> = {
   'null grid (the starter)': null,
   'empty object': {},
-  'legacy single template': { template: 'single', slots: { main: ['about', 'stats', 'links', 'topfriends'] } },
+  'legacy single template': { template: 'single', slots: { main: ['about', 'stats', 'links'] } },
   'legacy order list': { order: ['heading', 'about', 'links'] },
   'rows, one column, data and content': {
     rows: [

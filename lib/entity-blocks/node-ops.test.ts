@@ -210,7 +210,7 @@ describe('sanitizeNodeLayout (the write guard)', () => {
             [
               { nid: 'naaaaaaaaa1', type: 'text', content: { text: 'keep <b>bold</b>', __proto__x: 'drop me', notAField: 'drop me' }, style: { pad: 'lg', bogus: 1 } },
               { nid: 'naaaaaaaaa2', type: 'retiredBlock', content: { anything: { nested: true } }, style: { pad: 'weird' } },
-              { nid: 'naaaaaaaaa3', type: 'topfriends' },
+              { nid: 'naaaaaaaaa3', type: 'guestbook' },
             ],
           ],
         },
@@ -219,7 +219,7 @@ describe('sanitizeNodeLayout (the write guard)', () => {
     }
     const out = sanitizeNodeLayout(raw, 'space')!
     const [text, unknown] = out.rows[0].cells[0]
-    expect(out.rows[0].cells[0]).toHaveLength(2) // topfriends is member-only: dropped for a space
+    expect(out.rows[0].cells[0]).toHaveLength(2) // guestbook is member-only: dropped for a space
     expect(text.content).toEqual({ text: 'keep <b>bold</b>' })
     expect(text.style).toEqual({ pad: 'lg' })
     expect(unknown).toEqual(raw.rows[0].cells[0][1])
@@ -272,7 +272,7 @@ describe('resolveNodeRows (the render resolver)', () => {
           columns: 2,
           cells: [
             [node('naaaaaaaaa1', 'text', { hidden: true }), node('naaaaaaaaa2', 'retiredBlock'), node('naaaaaaaaa3', 'text')],
-            [node('naaaaaaaaa4', 'topfriends'), node('naaaaaaaaa6', 'offerings'), node('naaaaaaaaa7', 'offerings')],
+            [node('naaaaaaaaa4', 'guestbook'), node('naaaaaaaaa6', 'offerings'), node('naaaaaaaaa7', 'offerings')],
           ],
         },
       ],
