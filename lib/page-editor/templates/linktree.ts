@@ -76,13 +76,6 @@ export function linktreePreset(options: LinktreePresetOptions = {}): Data {
           tint: { text: '', bg: '' },
         },
       },
-      {
-        type: SPOTLIGHT_PUCK_TYPES.topfriends,
-        props: {
-          id: 'lt-friends',
-          title: 'Top Friends',
-        },
-      },
     ],
   }
 }

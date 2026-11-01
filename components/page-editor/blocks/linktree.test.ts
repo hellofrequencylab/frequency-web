@@ -5,12 +5,12 @@ import { MAX_LINKS_PER_BLOCK, MAX_GALLERY_IMAGES, SPOTLIGHT_STAT_KEYS } from '@/
 
 // The link-tree block registry contract: every Spotlight block is registered, each has the
 // field schema + defaultProps the converter + editor rely on, and the privacy-shaped blocks
-// (Stats, TopFriends) carry NO server-resolved value in their stored contract.
+// (Stats) carries NO server-resolved value in their stored contract.
 
 describe('the registry covers every Spotlight block', () => {
-  it('registers exactly the ten link-tree blocks', () => {
+  it('registers exactly the nine link-tree blocks', () => {
     expect(Object.keys(linktreeComponents).sort()).toEqual([...LINKTREE_CATEGORY_COMPONENTS].sort())
-    expect(Object.keys(linktreeComponents)).toHaveLength(10)
+    expect(Object.keys(linktreeComponents)).toHaveLength(9)
   })
 
   it('the category list matches the mapped Puck types', () => {
@@ -55,11 +55,6 @@ describe('privacy: server-resolved blocks carry NO values', () => {
     // Its options are exactly the allowlisted stat keys (no free-form value input).
     const show = linktreeComponents.SpotlightStats.fields!.show as unknown as { arrayFields: { key: { options: { value: string }[] } } }
     expect(show.arrayFields.key.options.map((o) => o.value).sort()).toEqual([...SPOTLIGHT_STAT_KEYS].sort())
-  })
-
-  it('TopFriends stores only an optional title, never friend identities', () => {
-    expect(Object.keys(linktreeComponents.TopFriends.fields!)).toEqual(['title'])
-    expect(linktreeComponents.TopFriends.defaultProps).toEqual({ title: '' })
   })
 
   it('SpotlightEmbed stores a validated (provider, ref), never a raw iframe src', () => {

@@ -3,7 +3,7 @@
 // ONE builder + ONE registry (Phase 3 of unifying every builder onto Puck).
 //
 // Keys:   SpotlightHeading | SpotlightText | LinkTree | SpotlightImage |
-//         SpotlightGallery | SpotlightQuote | SpotlightStats | TopFriends |
+//         SpotlightGallery | SpotlightQuote | SpotlightStats |
 //         SpotlightEmbed | SpotlightDivider
 // Category: link-tree (appended last in lib/page-editor/config.tsx)
 //
@@ -25,16 +25,12 @@
 // renderer did. No hardcoded brand hex.
 
 import Image from 'next/image'
-import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { Flame, Gem, CalendarDays, MapPin, Zap } from 'lucide-react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
-import { getInitials } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import {
   MAX_LINKS_PER_BLOCK,
   MAX_GALLERY_IMAGES,
-  MAX_TOP_FRIENDS,
   SPOTLIGHT_STAT_KEYS,
   type SpotlightStatKey,
   type BlockTint,
@@ -275,50 +271,6 @@ function StatsView({ show, meta }: { show: SpotlightStatKey[]; meta: SpotlightRe
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 8. TopFriends — the "Top 8" grid. Faces come from puck.metadata (server-resolved).
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRenderMeta }) {
-  const friends = meta.topFriends.slice(0, MAX_TOP_FRIENDS)
-  if (friends.length === 0) {
-    return (
-      <section>
-        <h2 className="mb-3 eyebrow text-subtle">{title?.trim() || 'Top Friends'}</h2>
-        <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-meta text-subtle">
-          Pick your Top Friends to fill this grid
-        </p>
-      </section>
-    )
-  }
-  return (
-    <section>
-      <h2 className="mb-3 eyebrow text-subtle">{title?.trim() || 'Top Friends'}</h2>
-      <div className="grid grid-cols-4 gap-3">
-        {friends.map((f) => {
-          const name = f.displayName || `@${f.handle}`
-          return (
-            <Link
-              key={f.profileId}
-              href={`/people/${f.handle}`}
-              className="flex flex-col items-center gap-1.5 rounded-control border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
-            >
-              {f.avatarUrl ? (
-                <Image src={avatarSrc(f.avatarUrl)} alt={name} width={64} height={64} className="h-14 w-14 rounded-pill object-cover" style={avatarFocusStyle(f.avatarUrl)} />
-              ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary-bg text-body-sm font-bold text-primary-strong">
-                  {getInitials(name)}
-                </div>
-              )}
-              <span className="w-full truncate text-meta font-medium text-text">{name}</span>
-            </Link>
-          )
-        })}
-      </div>
-    </section>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // 9. SpotlightEmbed — a first-party music/video player. src REBUILT from a validated
 //    (provider, ref); a member never supplies a raw iframe src.
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -511,19 +463,6 @@ export const linktreeComponents: Record<string, ComponentConfig> = {
     },
   },
 
-  TopFriends: {
-    label: 'Top Friends',
-    fields: {
-      title: { type: 'text', label: 'Grid title (optional)' },
-    },
-    defaultProps: { title: '' },
-    render: ({ title, puck }) => (
-      <Row>
-        <TopFriendsView title={title as string | undefined} meta={readMeta(puck)} />
-      </Row>
-    ),
-  },
-
   SpotlightEmbed: {
     label: 'Music / Video',
     fields: {
@@ -562,7 +501,6 @@ export const LINKTREE_CATEGORY_COMPONENTS = [
   'SpotlightGallery',
   'SpotlightQuote',
   'SpotlightStats',
-  'TopFriends',
   'SpotlightEmbed',
   'SpotlightDivider',
 ] as const

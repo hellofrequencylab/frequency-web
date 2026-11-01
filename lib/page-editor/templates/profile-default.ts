@@ -16,11 +16,10 @@ import type { Data } from '@/lib/page-editor/types'
 //                      server-resolved and ride puck.metadata.spotlight, never the stored
 //                      block (same channel the Spotlight render bridge feeds).
 //   LinkTree        -> the core bio-link list (link-tree-forward).
-//   TopFriends      -> the member's Top Friends grid (faces server-resolved via metadata).
 //
 // HONEST AT DAY ZERO (AGENTS.md): the live/dynamic blocks render NOTHING until there is
 // real data — the About body seeds EMPTY (so a visitor never reads fill-me-in copy; the
-// editor shows the designed placeholder), and the Stats + Top Friends resolve to nothing
+// editor shows the designed placeholder), and the Stats resolves to nothing
 // until the member has positive counts / picked friends. The links seed a single
 // placeholder the member replaces (the established member link-tree pattern, matching
 // linktreePreset). Semantic DAWN tokens only, no hex; copy is plain, sentence-case, with
@@ -71,29 +70,21 @@ function links(): Block {
   }
 }
 
-// ── TOP FRIENDS grid. Faces are server-resolved via metadata; nothing until friends exist.
-function topFriends(): Block {
-  return {
-    type: 'TopFriends',
-    props: { id: `${P}-friends`, title: 'Top Friends' },
-  }
-}
-
 /**
  * The default member (user) page body, as a Puck `Data` document. PURE + total.
  *
  * A FLAT, identity-first single column of TOP-LEVEL blocks (no layout wrapper), so every
  * block is individually reorder/hide/remove-able in the editor:
  *
- *   About -> Stats -> Links -> Top Friends
+ *   About -> Stats -> Links
  *
- * The dynamic blocks (Stats / Top Friends) render nothing until the member has real data,
+ * The dynamic blocks (Stats) render nothing until the member has real data,
  * and the About body seeds empty, so the page self-composes to whatever the member has.
  */
 export function generateDefaultProfilePage(name: string): Data {
   const who = name.trim() || 'me'
   return {
     root: {},
-    content: [about(who), stats(), links(), topFriends()],
+    content: [about(who), stats(), links()],
   }
 }

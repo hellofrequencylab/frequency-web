@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ChevronDown, ChevronUp, Loader2, Plus, Upload, X } from 'lucide-react'
+import { Loader2, Upload, X } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { getAppearanceRailData } from '@/app/(main)/settings/rail-getters'
@@ -10,21 +10,15 @@ import {
   setSpotlightTheme,
   setSpotlightBackground,
   uploadSpotlightImage,
-  setTopFriends,
-  reorderTopFriends,
-  removeTopFriend,
 } from '@/app/(main)/settings/profile/spotlight-actions'
 import { updateProfileTheme } from '@/lib/profile/profile-theme-actions'
 import { PROFILE_SKINS } from '@/lib/theme/profile-skins'
 import { SPOTLIGHT_FONTS, type SpotlightTheme } from '@/lib/spotlight/theme'
 import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { unlockedCosmetics } from '@/lib/spotlight/cosmetics'
-import type { TopFriend } from '@/lib/spotlight/top-friends.types'
 import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { SectionHeader } from '@/components/ui/section-header'
-import { getInitials } from '@/lib/utils'
-import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
 // Personal "You" module (ADR-525): the grid-side APPEARANCE surface for the Spotlight looks that lost their
 // editor when the Puck Spotlight editor was retired (ADR-524). Their VALUES still render on the public
@@ -48,7 +42,6 @@ export function PersonalAppearanceModule() {
   const [profileTheme, setProfileTheme] = useState<string | null>(null)
   const [theme, setTheme] = useState<SpotlightTheme | null>(null)
   const [background, setBackground] = useState<SpotlightBackground | null>(null)
-  const [topFriends, setTopFriendsState] = useState<TopFriend[]>([])
 
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
@@ -70,7 +63,6 @@ export function PersonalAppearanceModule() {
         setProfileTheme(d.profileTheme)
         setTheme(d.theme)
         setBackground(d.background)
-        setTopFriendsState(d.topFriends)
       }
       setLoading(false)
     })
@@ -142,34 +134,11 @@ export function PersonalAppearanceModule() {
     }
   }
 
-  // ── Top Friends ───────────────────────────────────────────────────────────────
-  function addFriend(id: string) {
-    const next = [...topFriends.map((f) => f.profileId), id]
-    const added = data?.friendOptions.find((f) => f.profileId === id)
-    if (added) setTopFriendsState((prev) => [...prev, added])
-    void run(() => setTopFriends(next))
-  }
-  function moveFriend(index: number, dir: -1 | 1) {
-    const target = index + dir
-    if (target < 0 || target >= topFriends.length) return
-    const next = [...topFriends]
-    ;[next[index], next[target]] = [next[target], next[index]]
-    setTopFriendsState(next)
-    void run(() => reorderTopFriends(next.map((f) => f.profileId)))
-  }
-  function dropFriend(id: string) {
-    setTopFriendsState((prev) => prev.filter((f) => f.profileId !== id))
-    void run(() => removeTopFriend(id))
-  }
-
   if (loading) {
     return <div className="h-40 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
   // Signed out / no profile, or the member cannot turn Spotlight on → no chrome (fail-safe).
   if (!data || !data.canEnableSpotlight || !theme || !background) return null
-
-  const featuredIds = new Set(topFriends.map((f) => f.profileId))
-  const pickable = data.friendOptions.filter((f) => !featuredIds.has(f.profileId))
 
   return (
     <section className="min-w-0 space-y-6">
@@ -362,78 +331,6 @@ export function PersonalAppearanceModule() {
         </div>
       </div>
 
-      {/* Top Friends */}
-      <div>
-        <SectionHeader title="Top Friends" count={topFriends.length} />
-        <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-4">
-          {topFriends.length === 0 ? (
-            <p className="text-body-sm text-muted">Feature the friends you want front and center.</p>
-          ) : (
-            <ul className="space-y-2">
-              {topFriends.map((f, i) => (
-                <li key={f.profileId} className="flex items-center gap-2">
-                  <Avatar friend={f} />
-                  <span className="min-w-0 flex-1 truncate text-body-sm text-text">
-                    {f.displayName || `@${f.handle}`}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => moveFriend(i, -1)}
-                    disabled={pending || i === 0}
-                    aria-label={`Move ${f.displayName || f.handle} up`}
-                    className="rounded-control p-1 text-subtle transition-colors hover:text-text disabled:opacity-40"
-                  >
-                    <ChevronUp className="h-4 w-4" aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveFriend(i, 1)}
-                    disabled={pending || i === topFriends.length - 1}
-                    aria-label={`Move ${f.displayName || f.handle} down`}
-                    className="rounded-control p-1 text-subtle transition-colors hover:text-text disabled:opacity-40"
-                  >
-                    <ChevronDown className="h-4 w-4" aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => dropFriend(f.profileId)}
-                    disabled={pending}
-                    aria-label={`Remove ${f.displayName || f.handle}`}
-                    className="rounded-control p-1 text-subtle transition-colors hover:text-danger disabled:opacity-40"
-                  >
-                    <X className="h-4 w-4" aria-hidden />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {pickable.length > 0 && (
-            <div className="border-t border-border pt-3">
-              <p className="mb-2 eyebrow text-muted">Add a friend</p>
-              <ul className="max-h-48 space-y-1 overflow-y-auto">
-                {pickable.map((f) => (
-                  <li key={f.profileId}>
-                    <button
-                      type="button"
-                      onClick={() => addFriend(f.profileId)}
-                      disabled={pending}
-                      className="flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left transition-colors hover:bg-surface-elevated disabled:opacity-50"
-                    >
-                      <Avatar friend={f} />
-                      <span className="min-w-0 flex-1 truncate text-body-sm text-text">
-                        {f.displayName || `@${f.handle}`}
-                      </span>
-                      <Plus className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-
       {error && <p className="text-meta text-danger">{error}</p>}
     </section>
   )
@@ -441,24 +338,6 @@ export function PersonalAppearanceModule() {
 
 function emptyBackground(): SpotlightBackground {
   return { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }
-}
-
-function Avatar({ friend }: { friend: TopFriend }) {
-  const name = friend.displayName || `@${friend.handle}`
-  return friend.avatarUrl ? (
-    <Image
-      src={avatarSrc(friend.avatarUrl)}
-      alt=""
-      width={28}
-      height={28}
-      className="h-7 w-7 shrink-0 rounded-pill object-cover"
-      style={avatarFocusStyle(friend.avatarUrl)}
-    />
-  ) : (
-    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-2xs font-bold text-primary-strong">
-      {getInitials(name)}
-    </span>
-  )
 }
 
 /** A labeled slider that reports its value on release (onCommit), keeping saves off every tick. */

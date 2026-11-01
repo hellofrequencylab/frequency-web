@@ -11,13 +11,10 @@
 // RSC render bridge alike, so no `server-only` module is ever reachable from <Puck>.
 
 import type { SpotlightStatsContext } from '@/components/spotlight/blocks/render'
-import type { TopFriend } from '@/lib/spotlight/top-friends.types'
 
 export interface SpotlightRenderMeta {
   /** Authoritative gamification values a Stats block surfaces (never member-supplied). */
   stats: SpotlightStatsContext
-  /** The member's ordered Top Friends, resolved server-side (never member-supplied). */
-  topFriends: TopFriend[]
   /** The public-bucket base URL the Image/Gallery blocks derive an asset URL from. */
   publicBase: string
 }
@@ -32,6 +29,5 @@ export interface SpotlightPuckMetadata {
 /** A safe empty context so a block renders nothing (not a crash) when metadata is absent. */
 export const EMPTY_SPOTLIGHT_META: SpotlightRenderMeta = {
   stats: { zaps: null, streak: null, gems: null, joinedYear: null, region: null },
-  topFriends: [],
   publicBase: '',
 }
