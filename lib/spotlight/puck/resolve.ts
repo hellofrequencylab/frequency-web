@@ -34,7 +34,7 @@ export const SPOTLIGHT_PUBLIC_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? 
  * stat to surface, never fake a number or a face.
  */
 export function spotlightRenderMeta(data: SpotlightData): SpotlightRenderMeta {
-  const { profile, totalZaps, topFriends } = data
+  const { profile, totalZaps } = data
   return {
     stats: {
       zaps: totalZaps,
@@ -43,7 +43,6 @@ export function spotlightRenderMeta(data: SpotlightData): SpotlightRenderMeta {
       joinedYear: memberJoinedYear(profile.created_at),
       region: profile.nexus_regions?.name ?? null,
     },
-    topFriends,
     publicBase: SPOTLIGHT_PUBLIC_BASE,
   }
 }

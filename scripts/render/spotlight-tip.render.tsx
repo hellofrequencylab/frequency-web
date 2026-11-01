@@ -32,7 +32,7 @@ it('renders the public Spotlight, before and after', async () => {
   const { EMPTY_THEME } = await import('@/lib/spotlight/theme')
   for (const view of ['current', 'proposed'] as const) {
     const base = member()
-    const data = { ...base, theme: EMPTY_THEME, stickers: { items: [] }, hostedEvents: [], canTip: view === 'proposed' } as unknown as SpotlightData
+    const data = { ...base, theme: EMPTY_THEME, hostedEvents: [], canTip: view === 'proposed' } as unknown as SpotlightData
     const el = (
       <SpotlightShell data={data} showJoinCta showBio={false}>
         <MemberProfileModules member={data} grid={publicSpotlightGrid(data.grid, data.layout.blocks)} />

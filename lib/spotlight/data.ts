@@ -6,18 +6,15 @@ import {
   readSpotlightLayoutRaw,
   readSpotlightBackgroundRaw,
   readSpotlightThemeRaw,
-  readSpotlightStickersRaw,
 } from '@/lib/profile/spotlight-flags'
 import {
   validateSpotlightLayout,
   validateSpotlightBackground,
-  validateSpotlightStickers,
 } from '@/lib/spotlight/blocks/validate'
-import type { SpotlightLayout, SpotlightBackground, SpotlightStickers } from '@/lib/spotlight/blocks/schema'
+import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
-import { getTopFriendsForOwner, type TopFriend } from './top-friends'
 import { getGuestbookForOwner, type GuestbookEntry } from './guestbook'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
@@ -49,17 +46,12 @@ export interface SpotlightData {
   layout: SpotlightLayout
   /** The validated optional background image. */
   background: SpotlightBackground
-  /** The validated decorative sticker layer (page chrome, ADR-1275). Empty when none are placed. */
-  stickers: SpotlightStickers
   /** The validated custom theme (colours/gradient/fonts/card). */
   theme: SpotlightTheme
   /** Lifetime Zaps earned (one SQL aggregate) — a gamification stat the member can display. */
   totalZaps: number
   /** Count-only aggregates for the "What I give back" block (no rows, no identities). */
   contributionCounts: { eventsHosted: number; journeysFinished: number }
-  /** The member's ordered Top Friends (the "Top 8"), resolved server-side from the
-   *  spotlight_top_friends table joined to each friend's public profile. Empty when none. */
-  topFriends: TopFriend[]
   /** The newest visible Guestbook notes (spotlight_guestbook), signer identity resolved
    *  server-side from each signer's public profile. Hidden entries never appear. */
   guestbook: GuestbookEntry[]
@@ -160,7 +152,6 @@ async function loadMemberSpotlight(
   const layout = validateSpotlightLayout(readSpotlightLayoutRaw(g.meta), ownerAuthId)
   const background = validateSpotlightBackground(readSpotlightBackgroundRaw(g.meta), ownerAuthId)
   const theme = validateSpotlightTheme(readSpotlightThemeRaw(g.meta))
-  const stickers = validateSpotlightStickers(readSpotlightStickersRaw(g.meta))
 
   // Page row: the explicit allowlist only.
   const { data: row } = await admin
@@ -191,11 +182,9 @@ async function loadMemberSpotlight(
   // publish/layout gate already loaded — no extra query. Never returned raw; only the parsed layout.
   const grid = readMemberGridLayout(g.meta)
 
-  // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel (both are per-owner
-  // reads joined to public profile fields). The Programs block (SPL-04) reads only what the member switched
+  // The visible Guestbook notes, resolved in parallel with the other per-owner reads. The Programs block (SPL-04) reads only what the member switched
   // on in that block, so it costs nothing for everyone else; it fails closed to empty lists.
-  const [topFriends, guestbook, canTip, programs, contributionCounts] = await Promise.all([
-    getTopFriendsForOwner(g.id),
+  const [guestbook, canTip, programs, contributionCounts] = await Promise.all([
     getGuestbookForOwner(g.id),
     // Public page only: the in-app profile already carries the real Tip button.
     requirePublished ? readCanTip(g.id) : Promise.resolve(false),
@@ -210,11 +199,9 @@ async function loadMemberSpotlight(
     programs,
     layout,
     background,
-    stickers,
     theme,
     totalZaps,
     contributionCounts,
-    topFriends,
     guestbook,
     grid,
   }

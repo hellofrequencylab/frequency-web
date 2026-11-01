@@ -1,10 +1,9 @@
 // EARNED COSMETICS — the pure gate both cosmetic seams share (PROG-SPOT increment 4, ADR-1279).
 //
-// `ProfileSkin.requiredItem` (lib/theme/profile-skins.ts) and `SpotlightStickerDef.requiredItem`
-// (lib/spotlight/stickers.ts) were declared as one seam in two places so that ONE inventory read
-// could gate both. This module is that gate: given a definition list, the ids a member picked, and
+// `ProfileSkin.requiredItem` (lib/theme/profile-skins.ts) is the seam (the sticker half retired
+// with Stickers). This module is that gate: given a definition list, the ids a member picked, and
 // the set of item slugs they hold (lib/awards/holdings.ts), it says which required items are
-// missing. The two writers refuse on a non-empty answer; the appearance rail hides what the
+// missing. The writer refuses on a non-empty answer; the appearance rail hides what the
 // member has not earned.
 //
 // PURE: no IO, no React, no Supabase. The read that fills `held` lives in lib/awards/holdings.ts

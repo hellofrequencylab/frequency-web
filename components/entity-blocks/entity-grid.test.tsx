@@ -12,7 +12,7 @@ const renderBlock = (id: string) => <div key={id} data-block={id} />
 
 describe('EntityGrid (data-driven rows)', () => {
   it('renders the legacy single default byte-identically (blocks stacked in one @container)', () => {
-    const rows = resolveRows({ template: 'single', slots: { main: ['about', 'stats', 'links', 'topfriends'] } }, 'member')
+    const rows = resolveRows({ template: 'single', slots: { main: ['about', 'stats', 'links'] } }, 'member')
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
     // One outer stack container, no inner grid wrappers, blocks in order.
     expect(html).toBe(
@@ -20,7 +20,6 @@ describe('EntityGrid (data-driven rows)', () => {
         '<div data-block="about"></div>' +
         '<div data-block="stats"></div>' +
         '<div data-block="links"></div>' +
-        '<div data-block="topfriends"></div>' +
         '</div>',
     )
   })

@@ -28,17 +28,14 @@ import {
   readSpotlightPublished,
   readSpotlightThemeRaw,
   readSpotlightBackgroundRaw,
-  readSpotlightStickersRaw,
 } from '@/lib/profile/spotlight-flags'
 import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
 import { avatarSrc } from '@/lib/images/avatar-focus'
 import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
 import { columnImageUrl } from '@/lib/library/column-image'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
-import { validateSpotlightBackground, validateSpotlightStickers } from '@/lib/spotlight/blocks/validate'
-import type { SpotlightBackground, SpotlightStickers } from '@/lib/spotlight/blocks/schema'
-import { getTopFriendsForOwner, getAcceptedFriendsForPicker } from '@/lib/spotlight/top-friends'
-import type { TopFriend } from '@/lib/spotlight/top-friends.types'
+import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
+import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { computeCompleteness } from '@/lib/profile/completeness'
 import { deriveTier, ENTITLEMENT_LABEL } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
@@ -312,17 +309,11 @@ export interface AppearanceRailData {
   theme: SpotlightTheme
   /** The validated Spotlight page background (assetPath pinned to the owner + focus/dim/zoom). */
   background: SpotlightBackground
-  /** The validated sticker layer (allowlisted ids at clamped percentage coordinates, ADR-1275). */
-  stickers: SpotlightStickers
   /** The store item slugs the member holds (ADR-1279): the picker offers an earned skin or sticker
    *  only when its requiredItem is in here. The writers re-check, so this is the honest list, not the gate. */
   heldItems: string[]
   /** True when the member is on Crew (real effective tier), so Crew themes are offered (LIVE-757). */
   crewPerks: boolean
-  /** The member's current ordered Top Friends (resolved to public identity fields). */
-  topFriends: TopFriend[]
-  /** Every accepted friend, as the picker's source list (only the caller's own friends). */
-  friendOptions: TopFriend[]
 }
 
 /** The Spotlight appearance bundle for the rail module, or null when signed out / the profile is missing
@@ -345,9 +336,7 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
   const profileId = profile.id as string
   const canEnableSpotlight = (await getProfileCapabilities(profileId)).has('spotlight.enable')
 
-  const [topFriends, friendOptions, held, effective] = await Promise.all([
-    getTopFriendsForOwner(profileId),
-    getAcceptedFriendsForPicker(profileId),
+  const [held, effective] = await Promise.all([
     memberHeldItems(supabase, profileId),
     // Crew perks (LIVE-757) read the REAL effective tier, never the Beta grant.
     effectiveTierFor(profileId, (profile as { membership_tier?: string | null }).membership_tier ?? null),
@@ -361,10 +350,7 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
     theme: validateSpotlightTheme(readSpotlightThemeRaw(meta)),
     // The auth user id pins the background asset path to the owner's own folder, exactly as the public read.
     background: validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id),
-    stickers: validateSpotlightStickers(readSpotlightStickersRaw(meta)),
     heldItems: [...held],
     crewPerks: effective.tier === 'crew',
-    topFriends,
-    friendOptions,
   }
 }

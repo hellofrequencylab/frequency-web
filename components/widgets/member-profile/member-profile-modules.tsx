@@ -19,7 +19,6 @@ import {
 import { AboutBlock } from './about'
 import { StatsBlock } from './stats'
 import { LinksBlock } from './links'
-import { TopFriendsBlock } from './topfriends'
 import { GuestbookBlock } from './guestbook'
 import { MemberEventsBlock } from './events'
 import { TipBlock } from './tip'
@@ -59,7 +58,6 @@ export const MEMBER_PROFILE_BLOCKS: Record<string, MemberBlockComponent> = {
   about: AboutBlock,
   stats: StatsBlock,
   links: LinksBlock,
-  topfriends: TopFriendsBlock,
   guestbook: GuestbookBlock,
   memberEvents: MemberEventsBlock,
   tip: TipBlock,
