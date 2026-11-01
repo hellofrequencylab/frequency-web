@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { Toggle } from '@/components/admin/toggle'
 import { getProfileRailData } from '@/app/(main)/settings/rail-getters'
@@ -15,9 +16,13 @@ import { setMySpotlightEnabled, setSpotlightPublished } from '@/app/(main)/setti
 // Fail-safe: getProfileRailData returns null when signed out; a member who cannot enable Spotlight sees
 // nothing, so the section never nudges a member who lacks it.
 
+// Same id personal-layout-module.tsx puts on its wrapper (not imported: that would drag the builder into this chunk).
+const MEMBER_LAYOUT_BUILDER_ID = 'member-layout-builder'
+
 type Data = NonNullable<Awaited<ReturnType<typeof getProfileRailData>>>
 
 export function PersonalSpotlightModule() {
+  const pathname = usePathname()
   const [data, setData] = useState<Data | null>(null)
   const [loading, setLoading] = useState(true)
   const [enabled, setEnabled] = useState(false)
@@ -84,6 +89,17 @@ export function PersonalSpotlightModule() {
   if (!data || !data.initial.canEnableSpotlight) return null
 
   const handle = data.initial.handle
+  // On your own profile the builder IS the rail's Layout section, so a link to this same URL does
+  // nothing. Scroll to the builder instead; from anywhere else (settings) go to the profile.
+  const onOwnProfile = !!handle && pathname === `/people/${handle}`
+  function jumpToBuilder() {
+    const el = document.getElementById(MEMBER_LAYOUT_BUILDER_ID)
+    if (!el) return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    el.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' })
+  }
+  const buttonCls =
+    'inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none'
 
   return (
     <section className="min-w-0 space-y-3">
@@ -114,14 +130,16 @@ export function PersonalSpotlightModule() {
               />
             </div>
 
-            {handle && (
-              <Link
-                href={`/people/${handle}`}
-                className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
-              >
-                <Sparkles className="h-3.5 w-3.5" aria-hidden /> Build your page
-              </Link>
-            )}
+            {handle &&
+              (onOwnProfile ? (
+                <button type="button" onClick={jumpToBuilder} className={buttonCls}>
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden /> Build your page
+                </button>
+              ) : (
+                <Link href={`/people/${handle}`} className={buttonCls}>
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden /> Build your page
+                </Link>
+              ))}
           </>
         )}
       </div>
