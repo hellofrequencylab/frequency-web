@@ -23,7 +23,7 @@ const bridge = load('lib/spotlight/puck/resolve.ts', {
   '@/lib/page-editor/templates/linktree': {},
 })
 for (const [input, expected] of [['2024-01-01T00:00:00Z', 2024], ['2023-12-31T23:30:00-02:00', 2024], ['2024-01-01T00:30:00+02:00', 2023], [null, null], ['invalid', null]]) {
-  const data = { profile: { created_at: input }, totalZaps: 0, topFriends: [], guestbook: [], layout: { blocks: [] } }
+  const data = { profile: { created_at: input }, totalZaps: 0, guestbook: [], layout: { blocks: [] } }
   assert.equal(adapter.resolveMemberBlockData(data).stats.joinedYear, expected)
   assert.equal(bridge.spotlightRenderMeta(data).stats.joinedYear, expected)
 }

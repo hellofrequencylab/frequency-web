@@ -40,7 +40,6 @@ function puckOnlyMember(): SpotlightData {
     background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 },
     theme: {} as SpotlightData['theme'],
     totalZaps: 42,
-    topFriends: [],
     guestbook: [],
     grid: null, // the crux: no saved grid — the Puck-only member
   } as unknown as SpotlightData

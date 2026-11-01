@@ -31,7 +31,6 @@ export function member(): SpotlightData {
     theme: {} as SpotlightData['theme'],
     totalZaps: 42,
     contributionCounts: { eventsHosted: 0, journeysFinished: 0 },
-    topFriends: [{ profileId: 'f1', handle: 'bob', displayName: 'Bob', avatarUrl: null }],
     guestbook: [],
     grid: null,
   } as unknown as SpotlightData

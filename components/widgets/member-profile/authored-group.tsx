@@ -7,7 +7,7 @@ import { MemberSection } from './section'
 // The unified registry keys blocks by TYPE, so a member's many authored instances of one type render
 // together here, each through the EXISTING Spotlight <BlockView> (the closed-allowlist server renderer
 // in components/spotlight/blocks/render.tsx) — no block UI is re-implemented. FAIL-SAFE: an empty slice
-// renders nothing (no section, no gap). Stats/topFriends context is empty here because these authored
+// renders nothing (no section, no gap). Stats context is empty here because these authored
 // types never read it; the data blocks pass their own.
 
 export function AuthoredBlockGroup({ blocks, anchor }: { blocks: SpotlightBlock[]; anchor: string }) {
@@ -16,7 +16,7 @@ export function AuthoredBlockGroup({ blocks, anchor }: { blocks: SpotlightBlock[
     <MemberSection anchor={anchor}>
       <div className="space-y-4">
         {blocks.map((block) => (
-          <BlockView key={block.id} block={block} stats={EMPTY_SPOTLIGHT_META.stats} topFriends={[]} />
+          <BlockView key={block.id} block={block} stats={EMPTY_SPOTLIGHT_META.stats} />
         ))}
       </div>
     </MemberSection>
