@@ -38,7 +38,6 @@ import { reviewsBlock } from './reviews'
 import { faqBlock } from './faq'
 import { contactBlock } from './contact'
 import { businessBlock } from './business'
-import { topfriendsBlock } from './topfriends'
 import { guestbookBlock } from './guestbook'
 import { memberEventsBlock } from './memberEvents'
 import { tipBlock } from './tip'
@@ -90,7 +89,6 @@ export const ADOPTED_BLOCKS = [
   faqBlock,
   contactBlock,
   businessBlock,
-  topfriendsBlock,
   guestbookBlock,
   memberEventsBlock,
   tipBlock,
