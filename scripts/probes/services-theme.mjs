@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Services theme build (design-system intake, 2026-11-02). One probe, one area per ledger row:
-//   node scripts/probes/services-theme.mjs <intake|foundation|chrome|kits|spotlight|email|picker|dials|conformance>
+//   node scripts/probes/services-theme.mjs <intake|foundation|register|chrome|kits|spotlight|email|picker|dials|conformance>
 // Each area passes only when the files that area promises exist and carry what the handoff names. The intake area
 // reads the committed snapshot; the rest read the repo, so a row cannot close on a promise.
 import { existsSync, readFileSync } from 'node:fs'
@@ -22,7 +22,11 @@ const checks = {
   foundation() {
     need('lib/theme/services.ts', /SERVICES_TOKENS_CSS/, 'token block the intake compares')
     need('lib/sites/editor/theme-contract.json', /"Services"/, 'themes.Services')
-    need('lib/themes/manifests/services.manifest.json', /"id": "services"/, 'manifest')
+  },
+  register() {
+    need('lib/themes/manifests/services.manifest.json', /"id": "services"/, 'manifest (generated from MEGA_THEMES)')
+    need('lib/theme/mega-theme.ts', /id: 'services'/, 'registered, hidden from every picker')
+    need('lib/theme/site-style.ts', /'services'/, 'SiteThemeId')
   },
   chrome() {
     need('components/page-editor/blocks/services.tsx', /ServicesHero/, 'the Services blocks')

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readSitePageStyle, readSiteStyle, siteLook, siteLookOverrides, siteTheme, spacePageDefaultAccent, spacePageFonts, spacePageSiteFaces, withSitePageTheme, withSiteStyle, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK } from './site-style'
+import { readSitePageStyle, readSiteStyle, siteDials, siteLook, siteLookOverrides, siteTheme, spacePageDefaultAccent, spacePageFonts, spacePageSiteFaces, withSitePageTheme, withSiteStyle, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK } from './site-style'
 import { MENSWORK_PALETTE } from './menswork'
 import { WILDHEART_PALETTE } from './wildheart'
 
@@ -154,5 +154,33 @@ describe('the website faces on the Space page', () => {
 
   it('leaves a Space with no theme of its own on the font set it picked', () => {
     expect(spacePageSiteFaces({})).toBeNull()
+  })
+})
+
+// LIVE-1997: the theme editor's dials sit beside the four styles and are stored the same sparse way.
+describe('the theme editor dials', () => {
+  it('reads back a site that never set one exactly as before', () => {
+    expect(readSiteStyle({ siteStyle: { theme: 'designer', corners: 'square' } }).dials).toBeUndefined()
+    expect('dials' in readSiteStyle(null)).toBe(false)
+    expect(siteDials(readSiteStyle(null))).toEqual({ register: 'day', type: 'caps', motion: 'full', hero: 'glow', image: 'glow', accent: null })
+    expect(siteDials(readSiteStyle({ siteStyle: { theme: 'midnight' } }))).toMatchObject({ register: 'night' })
+  })
+  it('writes only the dials that were set and round-trips them', () => {
+    const prefs = withSiteStyle({}, { dials: { register: 'night', accent: '#1aa7c0' } })
+    expect(prefs.siteStyle).toEqual({ theme: 'frequency', synced: true, spaceFonts: 'frequency', register: 'night', accent: '#1aa7c0' })
+    expect(readSiteStyle(prefs).dials).toEqual({ register: 'night', accent: '#1aa7c0' })
+    expect(siteDials(readSiteStyle(prefs))).toMatchObject({ register: 'night', type: 'caps', accent: '#1aa7c0' })
+  })
+  it('lets a theme\'s declared default beat the fallback, and an owner choice beat both', () => {
+    expect(siteDials(readSiteStyle(null), { type: 'quiet' }).type).toBe('quiet')
+    expect(siteDials(readSiteStyle({ siteStyle: { type: 'editorial' } }), { type: 'quiet' }).type).toBe('editorial')
+  })
+  it('ignores an unknown stored value and clears when asked', () => {
+    expect(readSiteStyle({ siteStyle: { register: 'dusk', motion: 'off', accent: 'Not An Accent' } }).dials).toEqual({ motion: 'off' })
+    expect(readSiteStyle(withSiteStyle({ siteStyle: { motion: 'off' } }, { dials: undefined })).dials).toBeUndefined()
+  })
+  it('keeps the dials when a page wears its own theme', () => {
+    const prefs = withSiteStyle({}, { dials: { type: 'quiet' } })
+    expect(readSitePageStyle(prefs, 'x').dials).toEqual({ type: 'quiet' })
   })
 })

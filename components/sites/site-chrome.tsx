@@ -336,7 +336,7 @@ export function SiteChrome({
           ) : links.length > 0 ? (
             <nav aria-label={`${brandName} pages`} className="hs-footer-links">
               {links.map((l) => (
-                <a key={l.href} href={l.href}>
+                <a key={`${l.href}:${l.label}`} href={l.href}>
                   {l.label}
                 </a>
               ))}
