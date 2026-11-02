@@ -6,7 +6,7 @@
   "size": "XS",
   "status": "done",
   "closed": "2026-11-02",
-  "source": { "file": "public/sites/network-kit/photos", "ref": "Rescan 2026-11-02 (audits/rescan-2026-11-02.md)" },
+  "source": { "file": "scripts/probes/network-kit-no-dead-png.mjs", "ref": "Rescan 2026-11-02 (audits/rescan-2026-11-02.md)" },
   "verify": { "kind": "cmd", "cmd": "node scripts/probes/network-kit-no-dead-png.mjs", "note": "Fails before the change: the seven placeholder-0N.png files exist." },
   "detail": "public/sites/network-kit/photos carried placeholder-01..07.png (0.7 to 1.5 MB each, 7.5 MB). Nothing in lib, components or app references them (the Designer kit's placeholder-0N keys resolve to dz-*.webp). Removed. Still open from the same scan, not part of this row: Alli Rae bath-hero.webp is 1.3 MB and path-logo.jpg 0.5 MB for a logo; both are referenced, so they need a resize rather than a delete.",
   "wave": "W7"
