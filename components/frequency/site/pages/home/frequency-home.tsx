@@ -38,7 +38,7 @@ import { homeFaq } from '@/lib/marketing/quick-answers'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getActiveCircleCount, getRankedSpaces, getWhatsOn, type SiteEvent } from '../shared/data'
 import { SITE } from '../shared/links'
-import { Acts, aura, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
+import { Acts, aura, Chapter, LocPill, photo, photoImg, WhatsOnList } from '../shared/parts'
 import { HomeMotion } from './home-motion'
 import { Weave } from './weave'
 import { WEAVE } from './weave-data'
@@ -233,7 +233,7 @@ export async function FrequencyHome() {
                 <span className="pdg" />
                 <Link className="pd l" href={SITE.join}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- decorative backdrop, sized by .pd img */}
-                  <img loading="lazy" decoding="async" src={photo('day-parachute-play.jpg')} alt="" />
+                  <img loading="lazy" decoding="async" {...photoImg(photo('day-parachute-play.jpg'))} alt="" />
                   <span className="dk">Path one</span>
                   <b>I’m looking for an experience.</b>
                   <span className="dp">Find a local Circle, a walk or a night out. Choose a gathering to try. Free to join.</span>
@@ -244,7 +244,7 @@ export async function FrequencyHome() {
                 <span className="pdg" />
                 <Link className="pd r" href={SITE.join}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- decorative backdrop, sized by .pd img */}
-                  <img loading="lazy" decoding="async" src={photo('gathering-07.jpg')} alt="" />
+                  <img loading="lazy" decoding="async" {...photoImg(photo('gathering-07.jpg'))} alt="" />
                   <span className="dk">Path two</span>
                   <b>I want to host an experience.</b>
                   <span className="dp">Studios, cafés, clubs and hosts. Share your next gathering and invite people along.</span>
@@ -318,9 +318,9 @@ export async function FrequencyHome() {
         <Chapter label="03b Show up" rev>
           <div className="photo fq-iri-rim" data-px=".08">
             {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img */}
-            <img loading="lazy" decoding="async" className="p-only" src={photo('day-parachute-play.jpg')} alt="Adults playing with a parachute in a park" />
+            <img loading="lazy" decoding="async" className="p-only" {...photoImg(photo('day-parachute-play.jpg'))} alt="Adults playing with a parachute in a park" />
             {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img */}
-            <img loading="lazy" decoding="async" className="e-only" src={photo('gathering-07.jpg')} alt="Guests arriving at a local venue" />
+            <img loading="lazy" decoding="async" className="e-only" {...photoImg(photo('gathering-07.jpg'))} alt="Guests arriving at a local venue" />
           </div>
           <div>
             <span className="n">
@@ -456,18 +456,18 @@ export async function FrequencyHome() {
           </div>
           <div className="photo fq-iri-rim" data-px=".08">
             {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img */}
-            <img loading="lazy" decoding="async" className="p-only" src={photo('day-meditation-circle.jpg')} alt="A circle of people sitting together outdoors" />
+            <img loading="lazy" decoding="async" className="p-only" {...photoImg(photo('day-meditation-circle.jpg'))} alt="A circle of people sitting together outdoors" />
             {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img */}
-            <img loading="lazy" decoding="async" className="e-only" src={photo('gathering-09.jpg')} alt="A regular group mid-session at a studio" />
+            <img loading="lazy" decoding="async" className="e-only" {...photoImg(photo('gathering-09.jpg'))} alt="A regular group mid-session at a studio" />
           </div>
         </Chapter>
 
         <Chapter label="03d Pass it on" rev>
           <div className="photo fq-iri-rim" data-px=".08">
             {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img */}
-            <img loading="lazy" decoding="async" className="p-only" src={photo('day-beach-hoop.jpg')} alt="Someone dancing on the beach" />
+            <img loading="lazy" decoding="async" className="p-only" {...photoImg(photo('day-beach-hoop.jpg'))} alt="Someone dancing on the beach" />
             {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img */}
-            <img loading="lazy" decoding="async" className="e-only" src={photo('night-yoga-rave-web.jpg')} alt="People gathering at night" />
+            <img loading="lazy" decoding="async" className="e-only" {...photoImg(photo('night-yoga-rave-web.jpg'))} alt="People gathering at night" />
           </div>
           <div>
             <span className="n">

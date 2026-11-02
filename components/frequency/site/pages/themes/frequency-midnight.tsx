@@ -813,12 +813,14 @@ export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: st
             <h2 className="h-l">One profile. Every surface follows.</h2>
           </div>
           <div className="nf-cmp" role="table" aria-label="What carries to each surface">
-            <div className="hd" role="columnheader" />
-            {['Spotlight', 'Space', 'Website', 'Email'].map((h) => (
-              <div className="hd" role="columnheader" key={h}>
-                {h}
-              </div>
-            ))}
+            <div className="nf-cmp-row" role="row">
+              <div className="hd" role="columnheader" />
+              {['Spotlight', 'Space', 'Website', 'Email'].map((h) => (
+                <div className="hd" role="columnheader" key={h}>
+                  {h}
+                </div>
+              ))}
+            </div>
             {CARRY.map((r) => (
               <div className="nf-cmp-row" role="row" key={r.row}>
                 <div className="rw" role="rowheader">
