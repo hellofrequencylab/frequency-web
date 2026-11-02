@@ -4,7 +4,7 @@
 // these render the page between them.
 
 import type { ReactNode } from 'react'
-import { photoBg } from '../shared/parts'
+import { photoBg } from '../shared/photo-bg'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import '@/app/themes/active/site-pages-b'

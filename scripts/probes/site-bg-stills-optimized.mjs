@@ -2,11 +2,11 @@
 // LIVE-2000: a hero `.bg` on the public site is a CSS background, which a srcset cannot reach, so every
 // visitor downloaded the 1600px JPEG (285 to 420KB each). Measured 2026-11-02 at 1280x900: /pricing
 // shipped 2043KB of background stills, /for 590KB, / 1409KB; 269KB, 301KB and 742KB after. The fix routes
-// each still through the image optimizer: shared parts.tsx exports optimizedPhoto() and photoBg(), the
+// each still through the image optimizer: shared photo-bg.ts exports optimizedPhoto() and photoBg(), the
 // pages set `--fq-bg` / `--fq-bg-sm` with photoBg(), and the kit CSS paints the 1920px rendition with the
 // 1080px one under 860px wide. The home hero preload points at the same rendition so it shares the fetch.
 // This probe reads the site pages and kit CSS for a brand still that bypasses the optimizer.
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const bad = []
@@ -28,9 +28,10 @@ for (const f of walk('components/frequency/site/pages')) {
     bad.push(`${f}: image preload fetches the raw file: ${m[0].slice(0, 90)}`)
   }
 }
-const parts = readFileSync('components/frequency/site/pages/shared/parts.tsx', 'utf8')
-if (!/export function optimizedPhoto\(/.test(parts) || !/\/_next\/image\?url=/.test(parts)) bad.push('shared/parts.tsx has no optimizedPhoto() built on the image optimizer')
-if (!/export function photoBg\(/.test(parts) || !/'--fq-bg-sm'/.test(parts)) bad.push('shared/parts.tsx has no photoBg() setting --fq-bg and --fq-bg-sm')
+const helpers = existsSync('components/frequency/site/pages/shared/photo-bg.ts') ? readFileSync('components/frequency/site/pages/shared/photo-bg.ts', 'utf8') : ''
+if (!/export function optimizedPhoto\(/.test(helpers) || !/\/_next\/image\?url=/.test(helpers)) bad.push('shared/photo-bg.ts has no optimizedPhoto() built on the image optimizer')
+if (!/export function photoBg\(/.test(helpers) || !/'--fq-bg-sm'/.test(helpers)) bad.push('shared/photo-bg.ts has no photoBg() setting --fq-bg and --fq-bg-sm')
+if (/^import /m.test(helpers.replace(/^import type [^\n]*\n/m, ''))) bad.push('shared/photo-bg.ts imports a module, so the timer-runtime probe can no longer load it bare')
 for (const css of ['app/themes/frequency/kit-site.css', 'app/themes/frequency/site-pages-a.css']) {
   const s = readFileSync(css, 'utf8')
   for (const m of s.matchAll(/url\(['"]?\/brand\/frequency\/(?:photos|broll)\/[^)]*\)/g)) {
