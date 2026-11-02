@@ -1,0 +1,18 @@
+{
+  "id": "BLD-105",
+  "title": "Builder BLD-105: Generated Tune rail, two layers",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-105."
+  },
+  "detail": "B1 Shell, pass BLD-105 (spec: docs/EDITOR-NEXT.md#bld-105). Generated Tune rail, two layers. Scope: components/builder/tune. Build: Layer 1 renders slots.required then slots.optional, from role.json, with counts from slot limits. Layer 2 (More): tone, width, spacing, columns, devices, anchor, reveal, density per surface, from defineBlock.fields. 'Always show more' per person. Done when: For every adopted role, rendered fields equal the projection, no more and no fewer; No component file names a block type. Gates: vitest suite (required test job), check:blocks, a11y ratchet, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-104. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-02",
+    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-105.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "BLD-301",
+  "title": "Builder BLD-301: Surface switcher",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-301."
+  },
+  "detail": "B3 Lenses, pass BLD-301 (spec: docs/EDITOR-NEXT.md#bld-301). Surface switcher. Scope: components/builder/surfaces. Build: Site, Profile, Spotlight, Email in the top bar; selection persists across switches. Canvas renders at the surface's declared density; sections the surface cannot show are listed with the reason. Done when: Per block and surface, golden markup matches; Hidden-on-surface list equals blocks without that surface. Gates: vitest suite (required test job), check:blocks, pr-compare visual suite, Pass probes, check:surface-binding, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-108. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-02",
+    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-301.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  }
+}
