@@ -1,80 +1,72 @@
 'use client'
 
-// /create-a-space, the fifth move: save what was built and claim the handle. A card of its own under the four moves.
-// Signed out it asks for an email (a magic link) or Google, the same two doors /sign-in has, through the actions in
-// app/(marketing)/create-a-space/actions.ts. Signed in there is no account to make: one button takes the answers to
-// the launch page. After the link is sent the card says so ("Saved") and offers the launch page to keep going on.
-// Nothing is promised that has not happened: the Space is made on the launch page, when the Spotlight is published.
-// Styles: create-space.css (cs-claim-*).
+// /create-a-space, the fifth step: save what was built and claim the handle (README section 3, step 5), and the
+// saved state after it. Signed out there are two doors, the same two /sign-in has: Google, or a link emailed to the
+// address from step 3, through the actions in app/(marketing)/create-a-space/actions.ts. Signed in there is no
+// account to make: one button takes the answers to the launch page. Nothing is promised that has not happened: the
+// Space is made on the launch page, when the Spotlight is published. Styles: create-space.css (cs-sum, cs-google...).
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState, useTransition } from 'react'
-import { Input } from '@/components/ui/field'
+import { FqIcon } from '@/components/frequency/icon'
 import { claimWithEmail, claimWithGoogle, continueSignedIn } from '@/app/(marketing)/create-a-space/actions'
 import { serializeDraft } from '@/lib/create-space/builder'
 import type { BuilderDraft } from '@/lib/create-space/builder'
-import type { KitImagery } from '@/lib/create-space/preview-site'
+import { joinList } from '@/lib/create-space/preview-site'
 
 export interface Saved {
   email: string
   keepBuildingHref: string | null
 }
 
-interface ClaimProps {
-  draft: BuilderDraft
-  handle: string
-  siteName: string
-  kitLabel: string
-  imagery: KitImagery
-  /** The local draft has left the browser: stop keeping it. */
-  onHandOver: () => void
-  onSaved: (saved: Saved) => void
-}
+/** Who is signed in, if anyone. The page is static, so the browser asks once the card is on screen. */
+interface Viewer { signedIn: boolean; name: string }
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-function Summary({ draft, handle, siteName, kitLabel, imagery }: Pick<ClaimProps, 'draft' | 'handle' | 'siteName' | 'kitLabel' | 'imagery'>) {
-  return (
-    <div className="cs-claim-sum">
-      <span className="cs-claim-thumb">
-        <span className="cs-kit-img"><Image src={imagery.hero} alt="" fill sizes="38px" style={{ objectFit: 'cover', objectPosition: imagery.heroPos }} /></span>
-      </span>
-      <span className="cs-claim-sum-main">
-        <b>{siteName}</b>
-        <span>frequency.community/{handle} · {kitLabel} kit · hosted by {draft.hostName.trim()}</span>
-      </span>
-      <span className="ig-d up">Ready</span>
-    </div>
-  )
-}
-
-/** Whether the visitor already has a session. The page is static, so the browser asks once the card is on screen. */
-function useSignedIn(): boolean | null {
-  const [signedIn, setSignedIn] = useState<boolean | null>(null)
+function useViewer(): Viewer | null {
+  const [viewer, setViewer] = useState<Viewer | null>(null)
   useEffect(() => {
     let live = true
     fetch('/api/viewer', { credentials: 'same-origin', cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => { if (live) setSignedIn(data?.signedIn === true) })
-      .catch(() => { if (live) setSignedIn(false) })
+      .then((data) => { if (live) setViewer({ signedIn: data?.signedIn === true, name: String(data?.profile?.display_name ?? '').trim() }) })
+      .catch(() => { if (live) setViewer({ signedIn: false, name: '' }) })
     return () => { live = false }
   }, [])
-  return signedIn
+  return viewer
 }
 
-export function ClaimCard(props: ClaimProps) {
-  const { draft, handle, onHandOver, onSaved } = props
-  const signedIn = useSignedIn()
-  const [email, setEmail] = useState('')
+interface SaveCardProps {
+  draft: BuilderDraft
+  handle: string
+  siteName: string
+  kitLabel: string
+  /** The cover the preview wears, for the summary row. */
+  coverSrc: string
+  /** The honeypot was filled: nothing leaves the browser, the card only looks like it worked. */
+  trapped: boolean
+  /** The local draft has left the browser: stop keeping it. */
+  onHandOver: () => void
+  onSaved: (saved: Saved) => void
+  /** The email from step 3 is missing or malformed: go back and fix it. */
+  onNeedEmail: () => void
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export function SaveCard({ draft, handle, siteName, kitLabel, coverSrc, trapped, onHandOver, onSaved, onNeedEmail }: SaveCardProps) {
+  const viewer = useViewer()
   const [err, setErr] = useState('')
   const [pending, start] = useTransition()
+  const email = draft.email.trim()
+  const hostName = draft.hostName.trim() || 'you'
 
-  const send = () => {
-    if (!EMAIL.test(email.trim())) { setErr('Enter a full email address.'); return }
+  const sendLink = () => {
+    if (!EMAIL.test(email)) { onNeedEmail(); return }
     setErr('')
+    if (trapped) { onSaved({ email, keepBuildingHref: null }); return }
     start(async () => {
       const data = new FormData()
-      data.set('email', email.trim())
+      data.set('email', email)
       data.set('draft', serializeDraft(draft))
       const res = await claimWithEmail(data)
       if (!res.ok) { setErr(res.error); return }
@@ -96,37 +88,27 @@ export function ClaimCard(props: ClaimProps) {
   }
 
   return (
-    <section aria-labelledby="cs-claim-h" className="cs-bld-card cs-claim fq-iri-rim">
-      <div className="cs-bld-head">
-        <span className="cs-bld-count">5 of 5 · last one</span>
-        <h3 id="cs-claim-h" className="cs-bld-h">
-          {signedIn ? <>Take it to <em>launch.</em></> : <>Save it. Claim <em>/{handle}.</em></>}
-        </h3>
-        <p className="cs-bld-lead">
-          {signedIn ? 'You already have an account, so there is nothing to make. Your name, handle, look and tools come with you.' : 'One step keeps everything you just built. No password, no card.'}
-        </p>
+    <div className="cs-card fq-iri-rim">
+      <h2 className="cs-card-h">Save it. Claim <em>/{handle}.</em></h2>
+      <div className="cs-sum">
+        <span className="cs-sum-thumb"><Image src={coverSrc} alt="" fill sizes="38px" unoptimized={coverSrc.startsWith('blob:')} style={{ objectFit: 'cover' }} /></span>
+        <span className="cs-sum-main">
+          <b>{siteName}</b>
+          <span>{kitLabel} theme · hosted by {hostName}</span>
+        </span>
+        <span className="ig-d">Draft</span>
       </div>
-      <Summary {...props} />
-
-      {signedIn ? (
-        <div className="cs-claim-form">
-          {err ? <p role="alert" className="cs-bld-alert">{err}</p> : null}
-          <button type="button" className="btn fq-iri-btn cs-claim-go" onClick={launch} disabled={pending}>Launch my Space<span aria-hidden="true">→</span></button>
-        </div>
+      {err ? <p role="alert" className="cs-alert">{err}</p> : null}
+      {viewer?.signedIn ? (
+        <>
+          <button type="button" className="fq-iri-btn cs-google" onClick={launch} disabled={pending}>Continue as {viewer.name || 'me'}<FqIcon name="arrow" size={16} /></button>
+          <p className="cs-fine cs-fine-c">You are signed in, so there is no account to make. Your name, handle, look and tools come with you to the launch page.</p>
+        </>
       ) : (
         <>
-          <form className="cs-claim-form" noValidate onSubmit={(e) => { e.preventDefault(); send() }}>
-            <label className="cs-claim-field">
-              <span>Email address</span>
-              <Input variant="seamless" className="placeholder:text-current/50!" type="email" inputMode="email" autoComplete="email" required value={email} onChange={(e) => { setErr(''); setEmail(e.target.value) }} placeholder="you@example.com" />
-            </label>
-            {err ? <p role="alert" className="cs-bld-alert">{err}</p> : null}
-            <button type="submit" className="btn fq-iri-btn cs-claim-go" disabled={pending}>Send my magic link<span aria-hidden="true">→</span></button>
-          </form>
-          <p aria-hidden="true" className="cs-claim-or"><span />or<span /></p>
-          <form action={claimWithGoogle} onSubmit={onHandOver}>
+          <form action={claimWithGoogle} onSubmit={(e) => { if (trapped) { e.preventDefault(); onSaved({ email, keepBuildingHref: null }); return } onHandOver() }}>
             <input type="hidden" name="draft" value={serializeDraft(draft)} />
-            <button type="submit" className="cs-claim-google">
+            <button type="submit" className="cs-google" disabled={pending}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 {/* Google's own four-colour mark: brand colours, not theme colours. */}
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -134,33 +116,33 @@ export function ClaimCard(props: ClaimProps) {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
-              Continue with Google
+              Save with Google
             </button>
           </form>
-          <div className="cs-claim-fine">
-            <p>Already a member? Use the same email or Google account you joined with.</p>
-            <p>Saving makes your free account. You agree to the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy</Link>.</p>
-          </div>
+          <button type="button" className="cs-email-go" onClick={sendLink} disabled={pending}>Email my link to {email || 'my email'}</button>
+          <p className="cs-fine cs-fine-c">No password, no card. Saving makes your free account and host profile. You agree to the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy</Link>.</p>
         </>
       )}
-    </section>
+    </div>
   )
 }
 
-interface SavedProps {
+interface SavedCardProps {
   draft: BuilderDraft
-  siteName: string
-  kitLabel: string
-  toolsLabel: string
+  /** The first offering's title, from the preview. */
+  firstOffer: string
+  tools: readonly string[]
   saved: Saved
+  trapped: boolean
 }
 
-/** After the link is sent: what was kept, and the one page a visitor can keep going on while the email travels. */
-export function SavedCard({ draft, siteName, kitLabel, toolsLabel, saved }: SavedProps) {
+/** After the link is sent: what the launch page adds next, the one page to keep going on, and a resend. */
+export function SavedCard({ draft, firstOffer, tools, saved, trapped }: SavedCardProps) {
   const [again, setAgain] = useState<'idle' | 'sent' | 'failed'>('idle')
   const [pending, start] = useTransition()
 
   const resend = () => {
+    if (trapped) { setAgain('sent'); return }
     start(async () => {
       const data = new FormData()
       data.set('email', saved.email)
@@ -169,33 +151,28 @@ export function SavedCard({ draft, siteName, kitLabel, toolsLabel, saved }: Save
     })
   }
 
-  const kept = [
-    { k: 'Spotlight', v: `${siteName}, ready for one line about what you do.` },
-    { k: 'Website', v: `Dressed in the ${kitLabel} kit.` },
-    { k: 'Tools', v: toolsLabel },
-  ]
+  const walk = [
+    { icon: 'edit', label: 'Your story', sub: 'A few lines on who you are and who it is for.' },
+    { icon: 'ticket', label: 'Your first offering', sub: `${firstOffer}, with a time and a price.` },
+    { icon: 'check', label: 'Switched on for you', sub: joinList(tools) },
+  ] as const
 
   return (
-    <section aria-labelledby="cs-saved-h" className="cs-bld-card cs-claim fq-iri-rim">
-      <div className="cs-bld-head">
-        <span className="cs-claim-badge"><span className="cs-dot" />Saved</span>
-        <h3 id="cs-saved-h" className="cs-bld-h">{siteName} is <em className="fq-iri-text">saved.</em></h3>
-        <p className="cs-bld-lead">
-          We sent a link to <b>{saved.email}</b>. Open it when you are ready and your answers are waiting for you. Nothing goes public until you say so.
-        </p>
-      </div>
-      <ul className="cs-claim-kept">
-        {kept.map((row) => (
-          <li key={row.k}><b>{row.k}</b><span>{row.v}</span></li>
+    <div className="cs-card fq-iri-rim" aria-live="polite">
+      <span className="cs-card-eyebrow"><i className="cs-dot fq-breathe" />Draft saved</span>
+      <div className="cs-walk">
+        {walk.map((w) => (
+          <div key={w.label} className="cs-walk-row">
+            <span className="fq-icon-tile"><FqIcon name={w.icon} size={18} /></span>
+            <span className="cs-walk-text"><b>{w.label}</b><span>{w.sub}</span></span>
+          </div>
         ))}
-      </ul>
-      <div className="cs-claim-acts">
-        {saved.keepBuildingHref ? <Link className="btn fq-iri-btn cs-claim-go" href={saved.keepBuildingHref}>Keep building<span aria-hidden="true">→</span></Link> : null}
-        {again === 'sent' ? <span className="cs-claim-again is-ok" aria-live="polite">Sent again</span> : (
-          <button type="button" className="cs-bld-text" onClick={resend} disabled={pending}>Send it again</button>
-        )}
-        {again === 'failed' ? <span role="alert" className="cs-claim-again">That did not send. Try again in a few minutes.</span> : null}
       </div>
-    </section>
+      <div className="cs-acts">
+        {saved.keepBuildingHref ? <Link className="cs-go" href={saved.keepBuildingHref}>Keep building<FqIcon name="arrow" size={16} /></Link> : null}
+        {again === 'sent' ? <span className="cs-again-ok">Sent again</span> : <button type="button" className="cs-again" onClick={resend} disabled={pending}>Send it again</button>}
+        {again === 'failed' ? <span role="alert" className="cs-err">That did not send. Try again in a few minutes.</span> : null}
+      </div>
+    </div>
   )
 }

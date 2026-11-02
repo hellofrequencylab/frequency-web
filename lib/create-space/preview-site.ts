@@ -147,7 +147,17 @@ interface SiteInput {
   offer?: string
   /** How clients reach them (v3 step 3): the contact strip and the Spotlight read these. */
   reach?: { email?: string; phone?: string; where?: string }
+  /** Before step 2 is done the preview is a ghost (README section 4): placeholder lines that say what the mock-up
+   *  will fill, at half opacity, instead of a sample Space that could be mistaken for theirs. */
+  ghost?: boolean
 }
+
+/** The ghost preview's lines, as the handoff words them. */
+const GHOST = {
+  eyebrow: 'A Space on Frequency',
+  tagline: 'Your one-line description goes here, mocked up from what you offer.',
+  offers: [{ t: 'Your first offering', s: 'Mocked up for you' }, { t: 'What people book', s: 'From one sentence' }, { t: 'A way to stay close', s: 'Edit any time' }],
+} as const
 
 /** The preview's clipping limits (README section 4): short lines stay on one line in the browser window. */
 export const PREVIEW_CLIP = { em: 28, tagline: 110, eyebrow: 32, offerTitle: 26, offerDetail: 30 } as const
@@ -185,7 +195,8 @@ export interface PreviewSite {
   fromOffer: boolean
 }
 
-const joinList = (a: readonly string[]) => (a.length < 2 ? (a[0] ?? '') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`)
+/** "a, b and c". Shared with the hero's toast, which names the tools a mock-up switched on. */
+export const joinList = (a: readonly string[]) => (a.length < 2 ? (a[0] ?? '') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`)
 const cap = (s: string) => s.replace(/^./, (c) => c.toUpperCase())
 const isIntent = (id: string): id is IntentId => id in INTENT_LOOK
 
@@ -205,19 +216,20 @@ export function deriveSite(input: SiteInput): PreviewSite {
   const host = input.hostName.trim()
   const nouns = picks.map((p) => INTENT_LOOK[p.id].noun)
   const sentence = input.offer ? clipPreview(asSentence(input.offer), PREVIEW_CLIP.tagline) : ''
+  const ghost = input.ghost === true
   return {
     name,
-    em: clipPreview(first?.em ?? FALLBACK_EM, PREVIEW_CLIP.em),
+    em: ghost ? '' : clipPreview(first?.em ?? FALLBACK_EM, PREVIEW_CLIP.em),
     nav1: imagery.nav1,
-    cta: first?.cta ?? 'Join',
-    ctaLong: first ? `${first.cta} now` : 'Join us',
+    cta: ghost ? 'Join' : (first?.cta ?? 'Join'),
+    ctaLong: ghost ? 'Join now' : first ? `${first.cta} now` : 'Join us',
     cta2: imagery.cta2,
-    eyebrow: clipPreview(picks.length ? picks.slice(0, 2).map((p) => cap(p.label.split(' ').slice(-1)[0])).join(' · ') : FALLBACK_EYEBROW, PREVIEW_CLIP.eyebrow),
-    tagline: sentence || (nouns.length ? `${cap(joinList(nouns))}, all in one place.` : FALLBACK_TAGLINE),
+    eyebrow: ghost ? GHOST.eyebrow : clipPreview(picks.length ? picks.slice(0, 2).map((p) => cap(p.label.split(' ').slice(-1)[0])).join(' · ') : FALLBACK_EYEBROW, PREVIEW_CLIP.eyebrow),
+    tagline: ghost ? GHOST.tagline : sentence || (nouns.length ? `${cap(joinList(nouns))}, all in one place.` : FALLBACK_TAGLINE),
     handle,
     domain: `frequency.community/${handle}`,
     host: host || 'you',
-    offers: offers.map((o) => ({ ...o, t: clipPreview(o.t, PREVIEW_CLIP.offerTitle), s: clipPreview(o.s, PREVIEW_CLIP.offerDetail) })),
+    offers: offers.map((o, i) => ({ ...o, ...(ghost ? GHOST.offers[i] : { t: clipPreview(o.t, PREVIEW_CLIP.offerTitle), s: clipPreview(o.s, PREVIEW_CLIP.offerDetail) }) })),
     links: [offers[1].t, 'Join the list', `About ${host ? host.split(' ')[0] : 'the host'}`],
     contact: {
       visit: clipPreview(input.reach?.where ?? '', 80),

@@ -45,6 +45,12 @@ describe('preview site', () => {
     expect(s.fromOffer).toBe(true)
     expect(s.tagline).toBe('Weekly pottery classes and open studio nights.')
     expect(deriveSite({ ...base, offer: 'x'.repeat(200) }).tagline).toHaveLength(PREVIEW_CLIP.tagline)
+    const g = deriveSite({ ...base, ghost: true })
+    expect(g.em).toBe('')
+    expect(g.eyebrow).toBe('A Space on Frequency')
+    expect(g.tagline).toContain('mocked up from what you offer')
+    expect(g.offers.map((o) => o.t)).toEqual(['Your first offering', 'What people book', 'A way to stay close'])
+    expect(g.offers[0].img).toBeTruthy()
   })
 
   it('fills the contact strip from step 3 and leaves it empty before', () => {
