@@ -1207,6 +1207,7 @@ lib/rewards/creation.ts
 lib/rewards/gifts.ts
 lib/rewards/spark.ts
 lib/seasons.ts
+lib/share/short-link-store.ts
 lib/sites/domain-purchase.ts
 lib/sites/domain-renewals.ts
 lib/sites/editor/authorization.ts
