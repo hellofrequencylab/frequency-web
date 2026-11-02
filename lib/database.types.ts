@@ -6631,6 +6631,7 @@ export type Database = {
           theme: Json
           time_zone: string
           title: string
+          updated_at: string
           venmo_handle: string | null
           venue_name: string | null
           visibility: string
@@ -6698,6 +6699,7 @@ export type Database = {
           theme?: Json
           time_zone?: string
           title: string
+          updated_at?: string
           venmo_handle?: string | null
           venue_name?: string | null
           visibility?: string
@@ -6765,6 +6767,7 @@ export type Database = {
           theme?: Json
           time_zone?: string
           title?: string
+          updated_at?: string
           venmo_handle?: string | null
           venue_name?: string | null
           visibility?: string

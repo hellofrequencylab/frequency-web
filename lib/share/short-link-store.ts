@@ -77,3 +77,28 @@ export async function openShareLink(
     return null
   }
 }
+
+/** Opens of the short link for `path` shared by `sharerProfileId` over the last `days` days, or null when
+ *  no link exists yet or the read failed (logged). Counts only; no visitor data is stored (LIVE-1960). */
+export async function readShareLinkOpens(
+  path: string,
+  sharerProfileId: string | null,
+  days = 30,
+): Promise<number | null> {
+  try {
+    const sb = createAdminClient()
+    const base = sb.from('share_links').select('id').eq('path', path)
+    const { data: link } = await (sharerProfileId
+      ? base.eq('sharer_profile_id', sharerProfileId)
+      : base.is('sharer_profile_id', null)
+    ).maybeSingle()
+    if (!link) return null
+    const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10)
+    const { data, error } = await sb.from('share_link_opens').select('opens').eq('link_id', link.id).gte('day', since)
+    if (error) throw error
+    return (data ?? []).reduce((n, r) => n + r.opens, 0)
+  } catch (err) {
+    log.warn('share_link_opens_read_failed', { path, message: briefError(err) })
+    return null
+  }
+}

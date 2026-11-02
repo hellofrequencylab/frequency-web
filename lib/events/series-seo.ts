@@ -49,10 +49,12 @@ export interface SitemapEventEntry {
   slug: string
   /** ISO instant of the date this URL represents. NOT the sitemap's `lastModified` any more
    *  (SCAN-661): a start date is in the future for every upcoming event, and a future lastmod is
-   *  the one value Google documents as a reason to stop trusting the field for the whole file.
-   *  `events` carries no updated-at column (created_at only), so an event entry has NO lastmod:
-   *  absent beats invented (LIVE-197). */
+   *  the one value Google documents as a reason to stop trusting the field for the whole file. */
   startsAt: string
+  /** ISO instant of the row's last write (`events.updated_at`, SCAN-1184: a trigger-maintained
+   *  column, backfilled from published_at or created_at). The sitemap's `lastModified` when it is
+   *  not in the future; absent when the column is null, so absent still beats invented (LIVE-197). */
+  updatedAt?: string
   /**
    * The event's PUBLIC cover image URL, for the image-sitemap extension — or absent when the row
    * has no uploaded cover.
@@ -330,7 +332,7 @@ export async function listSitemapEventEntries(opts: {
       // looking finished while the sitemap still carries every date.
       // `cover_image_path` rides along for the image-sitemap entry — the PUBLIC bucket only; see
       // the note on SitemapEventEntry.image for why the other two hero sources must never appear.
-      .select(`id, slug, starts_at, ends_at, time_zone, is_cancelled, cover_image_path, ${SERIES_COLUMNS}`)
+      .select(`id, slug, starts_at, ends_at, time_zone, is_cancelled, cover_image_path, updated_at, ${SERIES_COLUMNS}`)
       .eq('status', 'published')
       .eq('visibility', 'public')
       .eq('is_cancelled', false)
@@ -351,6 +353,7 @@ export async function listSitemapEventEntries(opts: {
       time_zone: string | null
       is_cancelled: boolean | null
       cover_image_path: string | null
+      updated_at: string | null
       recurrence_type: string | null
       recurrence_until: string | null
       parent_event_id: string | null
@@ -386,6 +389,7 @@ export async function listSitemapEventEntries(opts: {
           slug: r.slug,
           startsAt: r.starts_at,
           isSeriesHome: group.recurring && i === 0,
+          ...(typeof r.updated_at === 'string' ? { updatedAt: r.updated_at } : {}),
           ...(cover ? { image: cover } : {}),
         })
       })

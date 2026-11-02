@@ -269,6 +269,9 @@ describe('sitemap wiring', () => {
     expect(sitemap).not.toContain('e.starts_at')
     // And never the start date as lastmod (SCAN-661): it is in the future for every upcoming event.
     expect(sitemap).not.toContain('lastModified: new Date(e.startsAt)')
+    // The lastmod is the row's own updated_at (SCAN-1184), behind the same future guard.
+    expect(sitemap).toContain('lastModified: new Date(e.updatedAt as string)')
+    expect(sitemap).toContain('pastInstant(e.updatedAt)')
   })
 
   it('ranks the series page above its individual dates', () => {
