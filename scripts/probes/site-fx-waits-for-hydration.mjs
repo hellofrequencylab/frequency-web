@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1963: the site FX island must not decorate server HTML React has not hydrated yet.
+// LIVE-1972: the site FX island must not decorate server HTML React has not hydrated yet.
 // Measured 2026-11-02 in a real browser on /pricing, /themes, /for, /help, /discover (about 25 routes):
 // "Hydration failed ... tx-field" because SiteFx ran on mount, before a Suspense-wrapped page hydrated.
 // This probe reads the shipped code: the effect must not call run() unguarded.
