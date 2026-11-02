@@ -1,11 +1,10 @@
 'use client'
 
-// /create-a-space, the four step cards of the hero builder (docs/design-systems/create-a-space, README section 3):
-// the name and accent, what they offer (with the mock-up moment), how clients find them, and photos. Each card is
+// /create-a-space, three of the step cards of the hero builder (docs/design-systems/create-a-space, README section 3):
+// the name and accent, what they offer (with the mock-up moment), and how clients find them. Photos: create-space-photos.tsx. Each card is
 // markup over the draft the island (create-space-studio.tsx) holds; the rules (handles, progress, the tools a
 // sentence switches on) are lib/create-space/builder.ts. Styles: create-space.css (cs-card, cs-name, cs-offer...).
-import Image from 'next/image'
-import type { CSSProperties, KeyboardEvent, RefObject } from 'react'
+import type { KeyboardEvent, RefObject } from 'react'
 import { useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import type { BuilderDraft } from '@/lib/create-space/builder'
@@ -13,7 +12,6 @@ import { claimedHandle, cleanHandleInput } from '@/lib/create-space/builder'
 import type { HandleStatus } from '@/lib/create-space/handle'
 import { suggestHandle } from '@/lib/create-space/handle'
 import { OFFER_MAX } from '@/lib/create-space/intents-from-offer'
-import type { KitImagery } from '@/lib/create-space/preview-site'
 
 /** Which field the last Next tripped over; the card shows the matching line. */
 export type StepError = 'name' | 'slug' | 'accent' | 'offer' | 'fullName' | 'email' | null
@@ -204,70 +202,6 @@ export function ContactCard({ draft, patch, err, onNext, inputRef, onTrap }: Con
       {err === 'fullName' || err === 'email' ? <p role="alert" className="cs-err">{ERROR_TEXT[err]}</p> : null}
       <div className="cs-foot">
         <button type="button" className="cs-next" onClick={onNext}>Add to my site<Arrow /></button>
-      </div>
-    </div>
-  )
-}
-
-type PhotoTab = 'cover' | 'logo' | 'profile'
-const PHOTO_TABS: readonly [PhotoTab, string][] = [['cover', 'Cover photo'], ['logo', 'Logo'], ['profile', 'Your photo']]
-
-interface PhotosCardProps {
-  draft: BuilderDraft
-  patch: (p: Partial<BuilderDraft>) => void
-  imagery: KitImagery
-  /** The kit's --pv-* tokens, so the logo tiles wear the kit. */
-  vars: Record<string, string>
-  siteName: string
-  initial: string
-  hostInitial: string
-  onLater: () => void
-  onNext: () => void
-}
-
-/** Step 4 without uploads: the kit's covers and portraits, a wordmark or monogram, and their initial. Their own
- *  pictures come with create-space-photos.tsx (LIVE-1966). */
-export function PhotosCard({ draft, patch, imagery, vars, siteName, initial, hostInitial, onLater, onNext }: PhotosCardProps) {
-  const [tab, setTab] = useState<PhotoTab>('cover')
-  const kitStyle = vars as CSSProperties
-  return (
-    <div className="cs-card fq-iri-rim">
-      <h2 className="cs-card-h">Add a few <em>photos.</em></h2>
-      <div role="tablist" aria-label="Photos" className="cs-tabs">
-        {PHOTO_TABS.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={tab === id} className="cs-tab" onClick={() => setTab(id)}>{label}</button>)}
-      </div>
-      {tab === 'cover' ? (
-        <div className="cs-photo-grid" role="tabpanel">
-          {imagery.covers.map((src, i) => (
-            <button key={src} type="button" className="cs-photo" aria-label="Use this cover" aria-pressed={draft.cover === `s${i}`} onClick={() => patch({ cover: `s${i}` })}>
-              <Image src={src} alt="" fill sizes="120px" style={{ objectFit: 'cover' }} />
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {tab === 'logo' ? (
-        <div className="cs-photo-grid cs-photo-grid-3" role="tabpanel" style={kitStyle}>
-          <button type="button" className="cs-logo-opt" aria-pressed={draft.logo === 'word'} onClick={() => patch({ logo: 'word' })}>
-            <span className="cs-logo-word">{siteName}</span><span className="cs-logo-k">Wordmark</span>
-          </button>
-          <button type="button" className="cs-logo-opt" aria-pressed={draft.logo === 'mono'} onClick={() => patch({ logo: 'mono' })}>
-            <span className="cs-logo-mono">{initial}</span><span className="cs-logo-k">Monogram</span>
-          </button>
-        </div>
-      ) : null}
-      {tab === 'profile' ? (
-        <div className="cs-photo-grid" role="tabpanel" style={kitStyle}>
-          {imagery.portraits.map((src, i) => (
-            <button key={src} type="button" className="cs-photo cs-photo-round" aria-label="Use this photo" aria-pressed={draft.profile === `s${i}`} onClick={() => patch({ profile: `s${i}` })}>
-              <Image src={src} alt="" fill sizes="120px" style={{ objectFit: 'cover' }} />
-            </button>
-          ))}
-          <button type="button" className="cs-initials" aria-label="Use my initials" aria-pressed={draft.profile === 'initials'} onClick={() => patch({ profile: 'initials' })}>{hostInitial}</button>
-        </div>
-      ) : null}
-      <div className="cs-foot cs-foot-between">
-        <button type="button" className="cs-later" onClick={onLater}>No photos yet? Keep these</button>
-        <button type="button" className="cs-next" onClick={onNext}>Looks good<Arrow /></button>
       </div>
     </div>
   )

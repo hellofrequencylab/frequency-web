@@ -14,7 +14,9 @@ import type { CSSProperties } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { SaveCard, SavedCard } from '@/components/frequency/site/pages/create-space/create-space-claim'
 import type { Saved } from '@/components/frequency/site/pages/create-space/create-space-claim'
-import { ContactCard, MOCKUP_LINES, NameCard, OfferCard, PhotosCard } from '@/components/frequency/site/pages/create-space/create-space-steps'
+import { PhotosCard } from '@/components/frequency/site/pages/create-space/create-space-photos'
+import type { UploadUrls } from '@/components/frequency/site/pages/create-space/create-space-photos'
+import { ContactCard, MOCKUP_LINES, NameCard, OfferCard } from '@/components/frequency/site/pages/create-space/create-space-steps'
 import type { StepError } from '@/components/frequency/site/pages/create-space/create-space-steps'
 import { SpacePreview } from '@/components/frequency/site/pages/create-space/space-preview'
 import { useHandleStatus } from '@/components/frequency/site/pages/create-space/use-handle-status'
@@ -26,6 +28,8 @@ import type { BuilderDraft, BuilderMove } from '@/lib/create-space/builder'
 import { isHandleShape } from '@/lib/create-space/handle'
 import { intentsFromOffer } from '@/lib/create-space/intents-from-offer'
 import { PREVIEW_KITS, deriveSite, isPreviewKit, joinList, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
+import { acceptUpload, getUploads, putUpload } from '@/lib/create-space/uploads'
+import type { UploadKind } from '@/lib/create-space/uploads'
 import { CLOCK_BUDGET_MS, formatClock } from '@/lib/launch/clock'
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import { PREVIEW_FONT_SHEET, previewAccentVars, previewTokens } from '@/lib/theme/preview-tokens'
@@ -60,8 +64,9 @@ const lightGround = (hex: string) => {
   return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255) > 0.4
 }
 
-/** A kit slot (s0, s1...) to its picture, else the kit's own. Uploads (`up`) come with LIVE-1966. */
-const slotSrc = (slot: string, list: readonly string[], fallback: string) => {
+/** A kit slot (s0, s1...) to its picture, `up` to their own when the browser still has it, else the kit's own. */
+const slotSrc = (slot: string, list: readonly string[], fallback: string, own?: string) => {
+  if (slot === 'up' && own) return own
   const m = /^s(\d)$/.exec(slot)
   return (m && list[Number(m[1])]) || fallback
 }
@@ -82,6 +87,8 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   const [saved, setSaved] = useState<Saved | null>(null)
   const [trapped, setTrapped] = useState(false)
   const [contentKey, setContentKey] = useState(0)
+  const [uploads, setUploads] = useState<UploadUrls>({})
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const heroRef = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -110,6 +117,19 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
     window.clearTimeout(timers.current.save)
     timers.current.save = window.setTimeout(() => setSaveState('saved'), 700)
   }, [draft])
+
+  // ── Their own pictures, kept in IndexedDB between visits; object URLs for this one.
+  useEffect(() => {
+    let live = true
+    const made: string[] = []
+    getUploads().then((files) => {
+      if (!live) return
+      const urls: UploadUrls = {}
+      for (const [kind, blob] of Object.entries(files)) { const u = URL.createObjectURL(blob); made.push(u); urls[kind as UploadKind] = u }
+      if (made.length) setUploads(urls)
+    })
+    return () => { live = false; made.forEach((u) => URL.revokeObjectURL(u)) }
+  }, [])
 
   // ── The clock: counts from the first keystroke while building, every second.
   useEffect(() => {
@@ -179,8 +199,9 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
     name: draft.name, handle: handleOf(draft), hostName: draft.hostName, intents: draft.goals, kit: draft.kit,
     offer: draft.done.offer ? draft.offer : undefined, reach: { email: draft.email, phone: draft.phone, where: draft.where }, ghost: !draft.done.offer,
   })
-  const coverSrc = slotSrc(draft.cover, imagery.covers, imagery.hero)
-  const portraitSrc = slotSrc(draft.profile, imagery.portraits, imagery.portrait)
+  const coverSrc = slotSrc(draft.cover, imagery.covers, imagery.hero, uploads.cover)
+  const portraitSrc = slotSrc(draft.profile, imagery.portraits, imagery.portrait, uploads.profile)
+  const ownCount = [draft.cover === 'up' && uploads.cover, draft.logo === 'up' && uploads.logo, draft.profile === 'up' && uploads.profile].filter(Boolean).length
   const initial = (siteName[0] ?? 'Y').toUpperCase()
   const hostInitial = initialOf(draft.hostName, draft.name)
   const flags: Record<BuilderMove | 'launch', boolean> = { ...draft.done, launch: !building }
@@ -194,7 +215,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   const h1Lead = intro ? INTRO_H1_LEAD : building ? 'Launch your business in ' : `${siteName}, saved in `
   const h1Time = intro ? '' : building ? formatClock(Math.max(0, CLOCK_BUDGET_MS - elapsedMs)) : `${formatClock(elapsedMs)}.`
   const sub = intro ? INTRO_SUB : building ? `Step ${step + 1} of 5 · ${stepPrompt(step, kitLabel)}` : `We sent your link to ${saved?.email ?? draft.email.trim()}. It stays a private draft until you open it.`
-  const rowValue = [`${siteName} · /${handle || 'yourspace'}`, draft.offer.trim(), `${draft.hostName.trim()} · ${draft.email.trim()}`, `${kitLabel} photos for now`]
+  const rowValue = [`${siteName} · /${handle || 'yourspace'}`, draft.offer.trim(), `${draft.hostName.trim()} · ${draft.email.trim()}`, ownCount ? `${ownCount} of yours, the rest from ${kitLabel}` : `${kitLabel} photos for now`]
   const doneRows = building ? BUILDER_MOVES.map((k, i) => ({ k, i })).filter(({ k, i }) => draft.done[k] && i !== step) : []
   const saveLabel = saveState === 'saving' ? 'Saving' : 'Draft saved'
   const stepsHead = intro ? 'Five steps to live' : `${pct}% built`
@@ -271,6 +292,15 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
       flash('Photos in place')
       advance({ ...draft.done, photos: true }, 3)
     }
+  }
+  const onUpload = (kind: UploadKind, file: File) => {
+    const why = acceptUpload(file)
+    if (why) { setUploadError(why); return }
+    setUploadError(null)
+    const url = URL.createObjectURL(file)
+    setUploads((u) => { if (u[kind]) URL.revokeObjectURL(u[kind]) ; return { ...u, [kind]: url } })
+    patch({ [kind]: 'up' } as Partial<BuilderDraft>)
+    void putUpload(kind, file)
   }
   const photosLater = () => {
     markDone('photos')
@@ -352,7 +382,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
             ) : null}
             {building && step === 2 ? <ContactCard draft={draft} patch={patch} err={err} onNext={next} inputRef={contactRef} onTrap={setTrapped} /> : null}
             {building && step === 3 ? (
-              <PhotosCard draft={draft} patch={patch} imagery={imagery} vars={vars} siteName={siteName} initial={initial} hostInitial={hostInitial} onLater={photosLater} onNext={next} />
+              <PhotosCard draft={draft} patch={patch} imagery={imagery} vars={vars} siteName={siteName} initial={initial} hostInitial={hostInitial} uploads={uploads} onUpload={onUpload} uploadError={uploadError} onLater={photosLater} onNext={next} />
             ) : null}
             {building && step === 4 ? (
               <SaveCard draft={draft} handle={handle} siteName={siteName} kitLabel={kitLabel} coverSrc={coverSrc} trapped={trapped} onHandOver={handOver} onSaved={onSaved} onNeedEmail={() => { go(2); setErr('email') }} />
@@ -371,7 +401,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
               imagery={imagery}
               cover={coverSrc}
               portrait={portraitSrc}
-              logo={draft.logo === 'mono' ? 'mono' : 'word'}
+              logo={draft.logo === 'up' && uploads.logo ? { src: uploads.logo } : draft.logo === 'mono' ? 'mono' : 'word'}
               profile={draft.profile === 'initials' ? 'initials' : 'photo'}
               initial={initial}
               hostInitial={hostInitial}
@@ -412,7 +442,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
       {started && pastHero ? (
         <div className="cs-dock">
           <div className="cs-dock-in">
-            <span className="cs-dock-thumb"><Image src={coverSrc} alt="" fill sizes="42px" style={{ objectFit: 'cover' }} /></span>
+            <span className="cs-dock-thumb"><Image src={coverSrc} alt="" fill sizes="42px" unoptimized={coverSrc.startsWith('blob:')} style={{ objectFit: 'cover' }} /></span>
             <span className="cs-dock-text"><b>{siteName}</b><span>{building ? `${pct}% built · still a draft` : 'Saved · still a draft'}</span></span>
             {!building && saved?.keepBuildingHref ? (
               <Link className="fq-iri-btn cs-dock-go" href={saved.keepBuildingHref}>Keep building<FqIcon name="arrow" size={16} /></Link>
