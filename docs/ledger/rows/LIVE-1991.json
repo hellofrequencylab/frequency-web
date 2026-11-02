@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1991",
+  "title": "Services foundation: token block, theme contract, fonts and a hidden registration",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/design-systems/services/rules.json",
+    "ref": "ds-intake services"
+  },
+  "detail": "Plan step 3 and the token half of step 5: SERVICES_TOKENS_CSS (lib/theme/services.ts) compared by the intake, themes.Services in theme-contract.json (Night root, day{}, six accents), Bricolage Grotesque, Lora italic and DM Mono through next/font, manifest, registered but hidden (private like House of Fates) until its surfaces ship. Theme fence: scoped to the stand-alone site render, console renders before and after.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/services-theme.mjs foundation"
+  },
+  "wave": "W7"
+}

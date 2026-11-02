@@ -104,12 +104,23 @@ interface TwinMatch {
  * or the lookup the caller must perform, or null when the path has no twin (the overwhelmingly
  * common case, and the one that must stay cheap).
  */
+/**
+ * Member sub-routes that sit one segment under a twin family's prefix but are PAGES, not entities:
+ * app/(main)/journeys/{library,mine,new}, practices/new, circles/{new,starter,templates}. The one-segment
+ * pattern cannot tell `/journeys/mine` from `/journeys/<slug>`, and a signed-out visitor following a
+ * link to /journeys/mine was sent to /discover/journeys/mine, a 404, instead of the sign-in that
+ * carries them back there (visual sweep 2026-11-02, LIVE-1979). A reserved segment has no twin, so
+ * proxy.ts keeps it protected.
+ */
+export const RESERVED_SEGMENTS: ReadonlySet<string> = new Set(['new', 'mine', 'library', 'starter', 'templates'])
+
 export function matchPublicTwin(pathname: string | null): TwinMatch | null {
   if (!pathname) return null
   for (const rule of TWIN_RULES) {
     const m = rule.re.exec(pathname)
     if (!m) continue
     const segment = m[1]!
+    if (RESERVED_SEGMENTS.has(segment)) return null
     return rule.kind === 'direct'
       ? { segment, path: rule.to(segment) }
       : { segment, lookup: rule.entity }
@@ -138,6 +149,9 @@ export function hasPublicTwin(pathname: string | null): boolean {
  */
 export const PUBLIC_INDEX_TWINS: Readonly<Record<string, string>> = {
   '/circles': '/discover/circles',
+  // /journeys joined PROTECTED_PATHS with LIVE-1979 so its member pages (mine, library, new) bounce to
+  // sign-in; the index itself keeps going to the public listing, as /circles does.
+  '/journeys': '/discover/journeys',
 }
 
 /** The public listing for a member index path, or null when it has none. */
