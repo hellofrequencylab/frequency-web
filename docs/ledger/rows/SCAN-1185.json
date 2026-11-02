@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-1185",
+  "title": "space_email tables: initplan the three owner-read policies and index two composite foreign keys",
+  "lane": "live",
+  "priority": "P3",
+  "size": "XS",
+  "status": "done",
+  "closed": "2026-11-02",
+  "source": { "file": "supabase/migrations/20270346028200_space_email_policy_initplan_and_fk_indexes.sql", "ref": "Meta scan 2026-11-02, Supabase performance advisor" },
+  "detail": "Three owner-read RLS policies re-evaluated auth.uid() per row (auth_rls_initplan WARN) and two composite foreign keys had no covering index (unindexed_foreign_keys). Expected lift: Space email settings reads and parent-side deletes stay flat as the tables grow; the advisor shows zero WARN.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/space-email-advisor-hygiene.mjs", "checked": "2026-11-02", "evidence": "Probe passes on this branch; migration applied to production and the advisor re-read." },
+  "wave": "W7"
+}
