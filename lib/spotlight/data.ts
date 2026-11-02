@@ -15,6 +15,7 @@ import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/block
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
+import { readPageSettings, type SpotlightPageSettings } from './link-in-bio'
 import { getGuestbookForOwner, type GuestbookEntry } from './guestbook'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
@@ -59,6 +60,9 @@ export interface SpotlightData {
    *  absent / malformed so the module render falls back to the fresh member default. DELIBERATELY
    *  separate from the live Puck nodes (meta.spotlight.*): reading it never affects the Puck render. */
   grid: EntityLayout | null
+  /** The link-in-bio settings (links, social row, Show Frequency features). `configured` is false until the
+   *  member saves the editor, and then the public page keeps its older render. */
+  page?: SpotlightPageSettings
 }
 
 /** Can this member receive a tip right now? The same rule as the in-app profile's `canTipRecipient`
@@ -204,6 +208,7 @@ async function loadMemberSpotlight(
     contributionCounts,
     guestbook,
     grid,
+    page: readPageSettings(g.meta),
   }
 }
 

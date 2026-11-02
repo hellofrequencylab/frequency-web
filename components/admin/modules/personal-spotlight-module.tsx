@@ -130,6 +130,10 @@ export function PersonalSpotlightModule() {
               />
             </div>
 
+            <Link href="/settings/profile/spotlight" className={buttonCls}>
+              <Sparkles className="h-3.5 w-3.5" aria-hidden /> Edit your Spotlight
+            </Link>
+
             {handle &&
               (onOwnProfile ? (
                 <button type="button" onClick={jumpToBuilder} className={buttonCls}>

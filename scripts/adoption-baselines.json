@@ -1661,13 +1661,13 @@
         "**/*.{test,spec}.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 3,
+      "baseline": 1,
       "frozen": {
-        "at": "2026-08-17",
-        "value": 3,
-        "direction": "rebased",
+        "at": "2026-11-01",
+        "value": 1,
+        "direction": "lowered",
         "basis": "1e0d98756efd",
-        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 3 before and 3 after, measured on the committed tree and again in the worktree. Only the fingerprint moves.",
+        "reason": "Re-freeze: sweeps already on main retired sites in this class",
         "from": 3
       },
       "history": [
@@ -1726,6 +1726,13 @@
           "to": 3,
           "direction": "rebased",
           "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 3 before and 3 after, measured on the committed tree and again in the worktree. Only the fingerprint moves."
+        },
+        {
+          "at": "2026-11-01",
+          "from": 3,
+          "to": 1,
+          "direction": "lowered",
+          "reason": "Re-freeze: sweeps already on main retired sites in this class"
         }
       ]
     },
@@ -1805,7 +1812,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 70,
+      "baseline": 66,
       "history": [
         {
           "at": "2026-08-05",
@@ -1890,15 +1897,22 @@
           "to": 70,
           "direction": "raised",
           "reason": "Frequency public site search (components/frequency/site/shell/site-header.tsx): the kit's label.fq-sin styles a bare input verbatim; the Input primitive's utility classes outrank the kit layer and would repaint it"
+        },
+        {
+          "at": "2026-11-01",
+          "from": 70,
+          "to": 66,
+          "direction": "lowered",
+          "reason": "Re-freeze: sweeps already on main retired sites in this class"
         }
       ],
       "frozen": {
-        "at": "2026-10-13",
-        "value": 70,
-        "direction": "raised",
+        "at": "2026-11-01",
+        "value": 66,
+        "direction": "lowered",
         "basis": "a76a8556a0ed",
-        "reason": "Frequency public site search (components/frequency/site/shell/site-header.tsx): the kit's label.fq-sin styles a bare input verbatim; the Input primitive's utility classes outrank the kit layer and would repaint it",
-        "from": 69
+        "reason": "Re-freeze: sweeps already on main retired sites in this class",
+        "from": 70
       }
     },
     {
@@ -1987,14 +2001,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 215,
+      "baseline": 200,
       "frozen": {
-        "at": "2026-10-26",
-        "value": 215,
+        "at": "2026-11-01",
+        "value": 200,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "DAWN branches removed from the discover, public share and help pages retired hand-rolled eyebrows (SCAN-1128 parts 2 and 3)",
-        "from": 220
+        "reason": "Re-freeze: sweeps already on main retired sites in this class",
+        "from": 215
       },
       "history": [
         {
@@ -2122,6 +2136,13 @@
           "to": 215,
           "direction": "lowered",
           "reason": "DAWN branches removed from the discover, public share and help pages retired hand-rolled eyebrows (SCAN-1128 parts 2 and 3)"
+        },
+        {
+          "at": "2026-11-01",
+          "from": 215,
+          "to": 200,
+          "direction": "lowered",
+          "reason": "Re-freeze: sweeps already on main retired sites in this class"
         }
       ]
     }

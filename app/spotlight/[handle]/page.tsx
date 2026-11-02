@@ -10,7 +10,11 @@ import { JsonLd } from '@/components/json-ld'
 import { personSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { avatarSrc } from '@/lib/images/avatar-focus'
 import { OG_SITE } from '@/lib/site'
-import { publicSpotlightGrid } from '@/lib/spotlight/public-grid'
+import { publicSpotlightGrid, frequencyExtrasGrid } from '@/lib/spotlight/public-grid'
+import { LinkInBioPage } from '@/components/spotlight/link-in-bio'
+import { LINK_IN_BIO_OWNED_BLOCKS } from '@/lib/spotlight/link-in-bio'
+import { spotlightThemeStyles } from '@/lib/spotlight/theme'
+import { resolveProfileSkin } from '@/lib/theme/profile-skins'
 
 // PUBLIC, top-level route (outside the auth-gated (main) group) so a signed-out
 // visitor or non-member can open a shared link. Fail-closed: a page that is not
@@ -86,6 +90,30 @@ export default async function SpotlightRoute({
   // `about` block renders the bio, so the header must not repeat it. With no saved grid, the body is the
   // PUBLIC starter (publicSpotlightGrid: About + the member's authored blocks), not the in-app one, which
   // has no About and dropped every authored block.
+  // A member who saved the Spotlight editor gets the link-in-bio page. "Show Frequency features" off is the bare
+  // page; on adds the member's Frequency blocks under one quiet label. A themed whole-page layout keeps its render.
+  if (data.page?.configured && !data.theme.layout) {
+    const extras = data.page.frequencyFeatures
+      ? frequencyExtrasGrid(data.grid, data.layout.blocks, LINK_IN_BIO_OWNED_BLOCKS)
+      : null
+    const themeStyles = spotlightThemeStyles(data.theme)
+    return (
+      <>
+        <JsonLd
+          data={[
+            personSchema({ name, path, image: data.profile.avatar_url ? avatarSrc(data.profile.avatar_url) : data.profile.avatar_url }),
+            breadcrumbSchema([{ name: 'Spotlight', path }]),
+          ]}
+        />
+        <div data-skin={resolveProfileSkin(data.profile.profile_theme)} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <LinkInBioPage profile={data.profile} page={data.page} headingFont={themeStyles.headingFont}>
+            {extras ? <MemberProfileModules member={data} grid={extras} /> : null}
+          </LinkInBioPage>
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
       <JsonLd
