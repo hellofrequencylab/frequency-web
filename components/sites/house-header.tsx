@@ -208,7 +208,7 @@ export function HouseHeader({
                     )}
                   </button>
                 ) : (
-                  <a key={l.href} href={l.href} aria-current={l.current ? 'page' : undefined} onMouseEnter={closeMega} {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                  <a key={`${l.href}:${l.label}`} href={l.href} aria-current={l.current ? 'page' : undefined} onMouseEnter={closeMega} {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
                     {l.icon}
                     {l.label}
                   </a>
@@ -218,7 +218,7 @@ export function HouseHeader({
                 <span className="hs-nav-admin">
                   <span className="hs-nav-admin-tag">Admin<span className="hs-nav-admin-colon">:</span></span>
                   {adminLinks.filter((l) => !l.footerOnly).map((l, i) => (
-                    <Fragment key={l.href}>
+                    <Fragment key={`${l.href}:${l.label}`}>
                       {i > 0 && <span className="hs-nav-admin-sep" aria-hidden>|</span>}
                       <a href={l.href} aria-current={l.current ? 'page' : undefined} onMouseEnter={closeMega}>
                         {l.label}

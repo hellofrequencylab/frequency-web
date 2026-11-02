@@ -26,7 +26,7 @@ export function HouseMenu({ label, links, cta, foot }: { label: string; links: {
       {open && (
         <nav id="hs-menu-panel" aria-label={label} className="hs-menu-panel">
           {links.map((l, i) => (
-            <Fragment key={l.href}>
+            <Fragment key={`${l.href}:${l.label}`}>
               {l.group && l.group !== links[i - 1]?.group && <span data-menu-group="">{l.group}</span>}
               <a href={l.href} className={l.className} aria-current={l.current ? 'page' : undefined} data-grouped={l.group ? '' : undefined} onClick={() => setOpen(false)}>
                 {l.label}
