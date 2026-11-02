@@ -129,6 +129,12 @@ describe('selectRecoveryLeads (pure)', () => {
     expect(selectRecoveryLeads([guest], NOW)).toEqual([])
   })
 
+  it('skips a Create a Space draft lead: the draft reminder cron owns that come-back (ADR-1933)', () => {
+    const drafter = lead({ id: 'drafter', source: 'create_space' })
+    expect(isRecoveryDue(drafter, NOW)).toBe(false)
+    expect(selectRecoveryLeads([drafter], NOW)).toEqual([])
+  })
+
   it('still selects a beta_induction lead, so the exclusion cannot pass by excluding everything', () => {
     const joiner = lead({ id: 'joiner', source: 'beta_induction' })
     expect(isRecoveryDue(joiner, NOW)).toBe(true)
@@ -136,8 +142,8 @@ describe('selectRecoveryLeads (pure)', () => {
   })
 
   it('the query exclusion list is the same list the rule reads', () => {
-    expect(RECOVERY_EXCLUDED_SOURCES).toEqual(['event_rsvp'])
-    expect(recoveryExcludedSourceFilter()).toBe('("event_rsvp")')
+    expect(RECOVERY_EXCLUDED_SOURCES).toEqual(['event_rsvp', 'create_space'])
+    expect(recoveryExcludedSourceFilter()).toBe('("event_rsvp","create_space")')
   })
 
   it('skips a row whose updated_at does not parse rather than treating it as infinitely old', () => {
