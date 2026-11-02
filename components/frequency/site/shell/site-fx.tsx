@@ -510,22 +510,52 @@ function run(root: HTMLElement): () => void {
   }
 }
 
+// HYDRATION GUARD. A page behind a loading.tsx / Suspense boundary hydrates AFTER this layout island
+// commits, so decorating on mount inserted .tx-field into server HTML React had not claimed yet and the
+// page logged "Hydration failed" and re-rendered on the client (found by the 2026-11-02 visual sweep on
+// /pricing, /themes, /for, /help, /discover and more). React stamps every host node it has hydrated with
+// a __reactFiber$ key, so the island waits until the nodes it decorates carry one. It gives up after
+// MAX_WAIT_MS and decorates anyway (hosts React does not own, such as injected HTML, never get a key),
+// so the effect is late at worst and never missing.
+const HOSTS = '.hero,.phero,.hp-hero,.jx-panel,.half,.chap,.sec,.lv,.closer,.fold-stage,.pop'
+const MAX_WAIT_MS = 2500
+
+function hydrated(root: HTMLElement): boolean {
+  return Array.from(root.querySelectorAll<HTMLElement>(HOSTS))
+    .filter((e) => !e.closest('[data-kit]:not([data-kit="site"])'))
+    .every((e) => Object.keys(e).some((k) => k.startsWith('__reactFiber$')))
+}
+
 /** Mount once inside the kit root; it re-decorates on every page view. */
 export function SiteFx() {
   const pathname = usePathname()
   useEffect(() => {
     const root = document.querySelector<HTMLElement>('[data-kit="site"]')
     if (!root) return
-    let stop = run(root)
+    let stop = () => {}
+    let started = false
+    let wait = 0
+    const t0 = performance.now()
+    const start = () => {
+      started = true
+      stop = run(root)
+    }
+    const tick = () => {
+      if (hydrated(root) || performance.now() - t0 > MAX_WAIT_MS) start()
+      else wait = window.setTimeout(tick, 40)
+    }
+    tick()
     // Switching reduced motion on or off mid-visit takes effect now, not on the next page load.
     const mq = matchMedia('(prefers-reduced-motion:reduce)')
     const onChange = () => {
+      if (!started) return
       stop()
       stop = run(root)
     }
     mq.addEventListener('change', onChange)
     window.addEventListener('fq-motion-change', onChange)
     return () => {
+      clearTimeout(wait)
       mq.removeEventListener('change', onChange)
       window.removeEventListener('fq-motion-change', onChange)
       stop()
