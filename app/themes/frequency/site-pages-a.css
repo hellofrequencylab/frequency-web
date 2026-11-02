@@ -266,6 +266,8 @@
 [data-design="frequency"] [data-kit="site"] .fqm.pa-static[data-fqmap="spaces"] .fqm-it .ic{background:color-mix(in oklab,var(--fq-x-sun-neon) 12%,transparent);color:var(--fq-x-sun-neon)}
 [data-design="frequency"] [data-kit="site"] .fqm.pa-static[data-fqmap="spaces"] .fqm-live{color:var(--fq-x-sun-neon)}
 [data-design="frequency"] [data-kit="site"] .fqm.pa-static .fqm-note{margin:0;padding:18px;font-size:var(--fq-text-body-s);line-height:1.5;color:var(--fq-text-muted)}
+/* The note's one link ("Host the first one.") sits in running text, so it is underlined, not colour-only (WCAG 1.4.1, LIVE-1978). */
+[data-design="frequency"] [data-kit="site"] .fqm.pa-static .fqm-note a{color:var(--fq-text-body);text-decoration:underline;text-underline-offset:3px}
 [data-design="frequency"] [data-kit="site"] .chap-map .fqm.pa-static .fqm-list{right:16px;width:auto}
 [data-design="frequency"] [data-kit="site"] .chap-map .fqm.pa-static{min-height:0}
 @media (max-width:900px){[data-design="frequency"] [data-kit="site"] .fqm.pa-static .fqm-map{display:none}
