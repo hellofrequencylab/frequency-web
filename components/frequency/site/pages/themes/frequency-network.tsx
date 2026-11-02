@@ -432,21 +432,23 @@ export function FrequencyNetwork() {
             <h2 className="h-l">One profile. Every surface follows.</h2>
           </div>
           <div className="nf-cmp" role="table" aria-label="What carries to each surface">
-            <div className="hd" />
-            <div className="hd">Spotlight</div>
-            <div className="hd">Space</div>
-            <div className="hd">Website</div>
-            <div className="hd">Email</div>
+            <div className="nf-cmp-row" role="row">
+              <div className="hd" role="columnheader" />
+              <div className="hd" role="columnheader">Spotlight</div>
+              <div className="hd" role="columnheader">Space</div>
+              <div className="hd" role="columnheader">Website</div>
+              <div className="hd" role="columnheader">Email</div>
+            </div>
             {CARRY.map((r) => (
-              <div className="nf-cmp-row" key={r.row}>
-                <div className="rw">{r.row}</div>
+              <div className="nf-cmp-row" role="row" key={r.row}>
+                <div className="rw" role="rowheader">{r.row}</div>
                 {r.cells.map((c, i) =>
                   c === true ? (
-                    <div className="y" key={i}>
+                    <div className="y" role="cell" key={i}>
                       <span className="vh">Carries in full</span>
                     </div>
                   ) : (
-                    <div className="p" key={i}>
+                    <div className="p" role="cell" key={i}>
                       <span>{c}</span>
                     </div>
                   ),
