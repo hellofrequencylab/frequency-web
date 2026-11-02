@@ -230,6 +230,14 @@ async function sectionRead<T>(section: string, read: Promise<T[]>): Promise<T[]>
 // disallowed and only redirect to /sign-in.
 export const revalidate = 3600;
 
+/** An ISO instant that parses and is not in the future, or null. A lastmod ahead of the clock is
+ *  the one value Google documents as grounds to distrust the field for the whole file (SCAN-661). */
+function pastInstant(iso: string | undefined): string | null {
+  if (typeof iso !== "string") return null;
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) && ms <= Date.now() ? iso : null;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -596,9 +604,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // sitemap" until 2026-09-07; it did carry a URL, and that URL served HTML — see below.)
     const eventRoutes: MetadataRoute.Sitemap = (events as SitemapEventEntry[]).map((e) => ({
       url: `${SITE_URL}/events/${e.slug}`,
-      // NO lastModified (SCAN-661): it used to be the start date, which is in the future for every
-      // upcoming event, and a future lastmod is what Google names as grounds to ignore the field for
-      // the whole file. `events` has no updated-at column, so there is nothing true to send.
+      // lastModified is the row's `updated_at` (SCAN-1184), never the start date (SCAN-661): a start
+      // date is in the future for every upcoming event, and a future lastmod is what Google names as
+      // grounds to ignore the field for the whole file. The same future guard applies here, so a
+      // clock-skewed write still cannot poison the file; a missing stamp emits nothing (LIVE-197).
+      ...(pastInstant(e.updatedAt) ? { lastModified: new Date(e.updatedAt as string) } : {}),
       changeFrequency: "daily",
       priority: e.isSeriesHome ? 0.8 : 0.7,
       // The event's own PUBLIC cover, when it has one (LIVE-207). A row with no uploaded cover
