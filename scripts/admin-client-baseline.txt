@@ -387,6 +387,9 @@
 # space_spotlight_clicks is internal (RLS on, no policy, revoked from anon and authenticated), so only the
 # service role reaches it: the anonymous beacon writes one identity-free row after checking the Space's
 # Spotlight is published, and the console reads counts only after resolveSpaceManageAccess(...).canManage.
+# lib/spotlight/link-clicks.ts (added 2026-11-02, LIVE-1954): personal Spotlight link press counts. member_spotlight_link_clicks is
+# internal (RLS on, no policy), so only the service role reaches it: the anonymous beacon writes one identity-free row after
+# checking the profile's Spotlight is published and the link is on the page; the editor reads counts for the signed-in owner only.
 # LIVE-763: owner-authenticated cross-Space attachment and service-only locking RPCs;
 # both owners are checked in the transaction, and no browser gains table writes.
 # LIVE-763: read-time member-plan resolution and owner-gated management projection;
@@ -1266,6 +1269,7 @@ lib/spaces/segments.ts
 lib/spaces/space-discussion.ts
 lib/spaces/space-image-store.ts
 lib/spaces/spotlight-clicks.ts
+lib/spotlight/link-clicks.ts
 lib/spaces/standing-rollup.ts
 lib/spaces/store.ts
 lib/spaces/tagline.ts

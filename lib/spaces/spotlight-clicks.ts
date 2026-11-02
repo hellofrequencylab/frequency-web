@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { briefError, log } from '@/lib/log'
 import { clientIp, rateLimitOk } from '@/lib/rate-limit'
 import { readSpaceSpotlight } from './spotlight'
+import { recordMemberLinkClick } from '@/lib/spotlight/link-clicks'
 
 // SPOTLIGHT CLICK COUNTS (LIVE-856, PR 7 of the Space Spotlight). A press on a Link card sends a beacon to
 // POST /api/spotlight/click on Frequency, or to `/spotlight-click` on a website host (its own origin, so the
@@ -61,8 +62,10 @@ export async function readSpotlightClicks(spaceId: string, days = 30): Promise<M
 export async function handleSpotlightClick(req: Request): Promise<Response> {
   if (await rateLimitOk('spotlight-click', clientIp(req), 60, '60 s', { whenUnconfigured: 'allow' })) {
     try {
-      const body = JSON.parse(await req.text()) as { space?: unknown; target?: unknown }
-      await recordSpotlightClick(body?.space, body?.target)
+      const body = JSON.parse(await req.text()) as { space?: unknown; target?: unknown; profile?: unknown; link?: unknown }
+      // A member's personal Spotlight link (LIVE-1954) names `profile` and `link`; a Space's Link card names `space`.
+      if (body?.profile !== undefined) await recordMemberLinkClick(body.profile, body.link)
+      else await recordSpotlightClick(body?.space, body?.target)
     } catch {
       // A malformed beacon is dropped.
     }

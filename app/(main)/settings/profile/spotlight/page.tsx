@@ -7,6 +7,7 @@ import { SPOTLIGHT_SELECT, type SpotlightRow } from '@/lib/spotlight/privacy'
 import { readSpotlightEnabled, readSpotlightPublished, readSpotlightLayoutRaw } from '@/lib/profile/spotlight-flags'
 import { validateSpotlightLayout } from '@/lib/spotlight/blocks/validate'
 import { readPageSettings, validatePageSettings, type PageLink } from '@/lib/spotlight/link-in-bio'
+import { readMemberLinkClicks } from '@/lib/spotlight/link-clicks'
 import { allowanceAt } from '@/lib/pricing/feature-meters'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 
@@ -42,6 +43,7 @@ export default async function EditSpotlightPage() {
     settings = { ...validatePageSettings({ links }), configured: false }
   }
 
+  const clicks = await readMemberLinkClicks(own.id)
   const tier = (own.membership_tier ?? 'free') as EntitlementTier
   const maxLinks = allowanceAt('spotlight_blocks', tier)
 
@@ -58,6 +60,7 @@ export default async function EditSpotlightPage() {
         maxLinks={typeof maxLinks === 'number' ? maxLinks : null}
         enabled={readSpotlightEnabled(own.meta)}
         published={readSpotlightPublished(own.meta)}
+        clicks={clicks}
       />
     </FocusTemplate>
   )
