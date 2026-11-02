@@ -295,6 +295,8 @@ function run(root: HTMLElement): () => void {
   offs.push(() => pio.disconnect())
 
   // ── One scroll loop: read everything, then write. ──
+  // How many viewports tall a .phero may be and still get the departure fade (LIVE-1980).
+  const PHERO_MAX_SCREENS = 1.5
   const hero = root.querySelector<HTMLElement>('.hero')
   const hs = hero?.querySelector<HTMLElement>('.tx-sphere')
   const hh = hero?.querySelector<HTMLElement>('.tx-halo')
@@ -350,7 +352,11 @@ function run(root: HTMLElement): () => void {
         const t = `${x} ${(((r.top + r.height / 2 - vh / 2) / vh) * -Number(el.dataset.px) * 100).toFixed(1)}px`
         w.push(() => (el.style.translate = t))
       })
-      if (ph) {
+      // The departure (the hero fades and slides up as it leaves) is for a one-screen photo hero. A hero
+      // that carries a page's own sections, like /themes/nocturne, whose `.phero` holds the four-surface
+      // cascade and runs 3480px at 1280, would otherwise be read at 10% opacity and slid 675px up its box,
+      // leaving a viewport of fog where the Email template section is (visual sweep 2026-11-02, LIVE-1980).
+      if (ph && ph.offsetHeight <= vh * PHERO_MAX_SCREENS) {
         const py = Math.max(0, -ph.getBoundingClientRect().top)
         const k = Math.min(1, py / (ph.offsetHeight * 0.7))
         w.push(() => {

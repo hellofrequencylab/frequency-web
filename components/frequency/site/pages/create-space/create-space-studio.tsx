@@ -386,10 +386,12 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
 
           <div className="cs-steps" data-morph="steps">
             <div className="cs-steps-top">
-              <span className="cs-steps-k">{stepsHead}</span>
+              <span role="progressbar" aria-label="Your Space, built" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className="cs-steps-k">{stepsHead}</span>
               {started ? <span className="cs-save" data-state={saveState}><i />{saveLabel}</span> : null}
             </div>
-            <div role="progressbar" aria-label="Your Space, built" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className="cs-segs">
+            {/* The progressbar is the "built" reading, not the segments: the segments are buttons that reopen a step, and a
+                control inside a progressbar is a nested interactive (axe, LIVE-1978). */}
+            <div role="group" aria-label="Steps" className="cs-segs">
               {STEP_SEGMENTS.map((seg, i) => {
                 const key = (i < 4 ? BUILDER_MOVES[i] : 'launch') as BuilderMove | 'launch'
                 const done = flags[key]

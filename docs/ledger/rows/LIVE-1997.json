@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1997",
+  "title": "Theme editor framework: dial registry, schema 2 manifests and ThemeControls",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/design-systems/services/rules.json",
+    "ref": "ds-intake services"
+  },
+  "detail": "Plan steps 1, 2 and 4: dials.json and typed accessors, SiteStyle look keys (register, type, motion, hero, image, centered header, accent) stored sparsely so every existing site reads back identically, manifest schema 2 with schema 1 still valid, and the generic ThemeControls (Simple bar, Advanced sheet, Looks). Services is the first theme on it; converting the other themes (plan step 9) is separate rows.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/services-theme.mjs dials"
+  },
+  "wave": "W7"
+}
