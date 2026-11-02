@@ -51,7 +51,7 @@ function Btn({ href, children, tone = 'accent', size = 'lg' }: { href: string; c
   return <Link href={href} className={`svs-btn${t} svs-btn--${size}`}>{children}</Link>
 }
 function Name({ c, size = 24 }: { c: C; size?: number }) {
-  return <div className="svs-name"><span className="svs-mark" style={{ width: 40, height: 40, fontSize: 18 }} aria-hidden>{c.name.charAt(0)}</span><span style={{ fontSize: size }}>{c.name}</span></div>
+  return <div className="svs-name"><span className="svs-mark" style={{ width: 40, height: 40 }} aria-hidden>{c.name.charAt(0)}</span><span style={{ fontSize: size }}>{c.name}</span></div>
 }
 function Socials({ size }: { size: number }) {
   return <div className="svs-socials">{[Phone, MessageCircle, Mail].map((I, i) => <span key={i} className="svs-iconbtn" style={{ width: size * 2.6, height: size * 2.6 }}><I size={size} aria-hidden /></span>)}</div>
