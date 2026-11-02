@@ -42,12 +42,15 @@ export function SpotlightPageEditor({
   maxLinks,
   enabled: enabledInitial,
   published: publishedInitial,
+  clicks = {},
 }: {
   profile: SpotlightRow
   initial: SpotlightPageSettings
   maxLinks: number | null
   enabled: boolean
   published: boolean
+  /** Presses per link id over the last 30 days (LIVE-1954). */
+  clicks?: Record<string, number>
 }) {
   const [tab, setTab] = useState<Tab>('links')
   const [page, setPage] = useState<SpotlightPageSettings>({ ...initial, configured: true })
@@ -209,6 +212,7 @@ export function SpotlightPageEditor({
                       <Star className="h-4 w-4" aria-hidden /> {l.highlight ? 'Highlighted' : 'Highlight'}
                     </Button>
                     <span className="ml-auto inline-flex items-center gap-2 text-meta text-muted">
+                      <span title="Presses in the last 30 days">{clicks[l.id] ?? 0} {(clicks[l.id] ?? 0) === 1 ? 'click' : 'clicks'}</span>
                       {l.hidden && <EyeOff className="h-3.5 w-3.5" aria-hidden />}
                       <Toggle checked={!l.hidden} onChange={(on) => patchLink(l.id, { hidden: !on })} ariaLabel={`Show ${l.title || 'this link'} on your page`} />
                     </span>
