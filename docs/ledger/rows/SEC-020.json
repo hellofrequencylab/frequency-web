@@ -1,0 +1,12 @@
+{
+  "id": "SEC-020",
+  "title": "A follow-up that goes quiet raises an alarm",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": { "file": "lib/observability/slos.ts", "ref": "Systems audit 2026-11-02, AUD-2 (audits/systems-audit-2026-11-02.md)" },
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/follow-up-silence-alarm.mjs", "note": "Fails today: the heartbeat proves the cron ran, not that it sent anything." },
+  "detail": "The drip crons ping their heartbeat when they run, even when nothing is enrolled. Space drips have no enrollments and the journey drip last sent on 2026-08-13, and nothing noticed. Add a silence check per follow-up (sent-in-window versus enrolled-and-due) and one end-to-end enrol-and-send check for Space and journey drips.",
+  "wave": "W7"
+}

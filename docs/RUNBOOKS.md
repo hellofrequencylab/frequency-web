@@ -106,6 +106,17 @@ set a fact in the repo rather than a list of check names in an account.
 period; `cron.run` shows `ok:true` with `over_budget:false`; and if wiring changed,
 `pnpm check:cron-freshness` is clean. Record any new rule as a row, not here.
 
+### If Vercel Cron itself stops (single scheduler)
+
+Every job runs from `vercel.json`; there is no second scheduler. When Vercel Cron stops firing,
+every Healthchecks check goes late at once, so more than a handful of pages in the same hour means
+the scheduler, not the jobs. Confirm in the Vercel dashboard (Settings, Cron Jobs) that the jobs are
+listed and the last invocation is recent. Manual stopgap: call the route with
+`Authorization: Bearer $CRON_SECRET`, most urgent first: `process-queue`, `space-drips`,
+`journey-drips`, `event-followups`. Do not add a second scheduler without an idempotent claim on
+every job (the drip runners and the queue already lease their rows, so a double fire is safe for
+those). Filed as SEC-019 (AUD-3 in the systems audit).
+
 ---
 
 ## 2. Queue backlog
