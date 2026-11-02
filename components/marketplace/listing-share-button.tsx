@@ -7,7 +7,7 @@ import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { DEFAULT_STYLE } from '@/lib/qr/style'
 import { publicShareUrl } from '@/lib/qr/public-url'
 import { useShortShareUrl } from '@/components/share/use-short-share-url'
-import { ShorterLinkSwitch } from '@/components/share/shorter-link-switch'
+import { LinkOpensNote } from '@/components/share/link-opens-note'
 import {
   inlineQrStyleLogo,
   downloadQrSvgString,
@@ -38,8 +38,7 @@ export function ListingShareButton({
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const { path: sharePath, url: longUrl } = publicShareUrl(origin, path, { ref: sharerProfileId })
   // The short /s/<code> once the panel is open (LIVE-1960); the long URL until then or if it cannot be made.
-  const [shorter, setShorter] = useState(false)
-  const { url, canShorten, opens } = useShortShareUrl(longUrl, sharePath, origin, open, shorter)
+  const { url, opens } = useShortShareUrl(longUrl, sharePath, origin, open)
 
   const svg = useMemo(() => renderStyledQrSvg(url, { ...DEFAULT_STYLE }, 240), [url])
 
@@ -116,7 +115,7 @@ export function ListingShareButton({
               <code className="block truncate rounded-control border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted" title={url}>
                 {url}
               </code>
-              <ShorterLinkSwitch checked={shorter} onCheckedChange={setShorter} available={canShorten} opens={opens} />
+              <LinkOpensNote opens={opens} />
               <div className="flex items-center gap-2">
                 <button
                   type="button"

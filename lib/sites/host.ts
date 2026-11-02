@@ -111,27 +111,6 @@ export function chapterHostParts(
   return { label, networkDomain }
 }
 
-/** SHORT LINK HOSTS (LIVE-1960). `freq.ie/<code>` is the shortest form of a share link: the same code as
- *  `<app>/s/<code>`, answered by the same route. It is never a Space's website, so it is decided before any
- *  site lookup. `www.` goes to the bare host. */
-export const SHORT_LINK_HOST = 'freq.ie'
-
-export function isShortLinkHost(host: string | null | undefined): boolean {
-  const h = normalizeHost(host)
-  return h === SHORT_LINK_HOST || h === `www.${SHORT_LINK_HOST}`
-}
-
-/** What a request on a short-link host does. The bare host goes to Frequency, `/<code>` is rewritten to
- *  the share-link resolver, and everything else is a 404 (no other page lives here). PURE. */
-export function shortLinkHostRoute(host: string | null | undefined, pathname: string, search: string): SiteRoute {
-  const h = normalizeHost(host)
-  if (h.startsWith('www.')) return { kind: 'redirect', location: `https://${SHORT_LINK_HOST}${pathname}${search}`, permanent: true }
-  const segments = pathname.split('/').filter(Boolean)
-  if (segments.length === 0) return { kind: 'redirect', location: appOrigin(), permanent: false }
-  if (segments.length === 1 && /^[a-z0-9-]{3,48}$/.test(segments[0]!)) return { kind: 'rewrite', pathname: `/s/${segments[0]}` }
-  return { kind: 'not-found' }
-}
-
 /** Frequency's own apex domains. Every subdomain of these is the app too. */
 const APP_APEXES = ['frequencylocal.com', 'vercel.app', 'localhost']
 
@@ -250,7 +229,6 @@ export function routeSiteHost(
   appHosts: Set<string> = new Set(),
 ): SiteRoute {
   const h = normalizeHost(host)
-  if (isShortLinkHost(h)) return shortLinkHostRoute(h, pathname, search)
   // `spotlight.<domain>` (LIVE-855) is the Spotlight alone: its root is the Spotlight, and every other path
   // belongs to the Space's website on `<domain>`, so it goes there.
   const spotlightOf = spotlightHostDomain(h, appHosts)
