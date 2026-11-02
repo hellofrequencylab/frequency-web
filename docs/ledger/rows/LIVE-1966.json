@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1966",
+  "title": "Create a Space v3 steps 3 to 5: contact, photos, save, saved state, finish dock, FAQ",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/design-systems/create-a-space/rules.json",
+    "ref": "design_handoff create-a-space v3 README sections 3 steps 3 to 5, 8; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+  },
+  "detail": "Contact step, photo step with browser-only uploads, save step on the existing claim actions, saved state, finish dock, closing CTA and FAQ copy.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('components/frequency/site/pages/create-space/create-space-photos.tsx')?0:1)\"",
+    "checked": "2026-11-02",
+    "evidence": "Fails today: the file or change the probe names is not on main."
+  },
+  "wave": "W7"
+}
