@@ -11,9 +11,10 @@
   },
   "verify": {
     "kind": "cmd",
-    "cmd": "// SCAN-1201: the Reviews block renders nothing, not a \"coming soon\" card, when no rating is set.\nimport { readFileSync } from 'node:fs'\nconst src = readFileSync('components/widgets/space-profile/reviews.tsx', 'utf8')\nif (/coming soon|on the way/i.test(src.replace(/\\/\\/.*$/gm, ''))) { console.error('FAIL: reviews block still renders a coming-soon card'); process.exit(1) }\nconsole.log('ok')"
+    "cmd": "node scripts/probes/reviews-block-no-coming-soon.mjs",
+    "note": "Fails before the fix: the block's fallback is an EmptyState reading Ratings, coming soon."
   },
-  "detail": "Member reviews are off by owner decision, so every Space without an operator-entered rating published an empty on-the-way box (seen live on govanta.pro). The block now renders nothing until a rating exists.\n\nReviews block renders nothing without a rating",
+  "detail": "Member reviews are off by owner decision, so every Space without an operator-entered rating published an empty on-the-way box (seen live on govanta.pro). The block now renders nothing until a rating exists.",
   "closed": "2026-11-02",
   "wave": "W7"
 }
