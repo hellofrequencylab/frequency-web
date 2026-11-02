@@ -1,10 +1,10 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookOpen, Calendar, Globe, Heart, Link2, Mail, Music, ShoppingBag, Video, type LucideIcon } from 'lucide-react'
+import { AtSign, BookOpen, Briefcase, Calendar, Camera, Globe, Headphones, Heart, Link2, Mail, Music, ShoppingBag, Users, Video, type LucideIcon } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { BETA_CTA_HREF } from '@/lib/site'
-import { SOCIAL_LABEL, visibleLinks, type LinkIcon, type SpotlightPageSettings } from '@/lib/spotlight/link-in-bio'
+import { SOCIAL_LABEL, visibleLinks, type LinkIcon, type SocialKind, type SpotlightPageSettings } from '@/lib/spotlight/link-in-bio'
 import type { SpotlightRow } from '@/lib/spotlight/privacy'
 import { CountedExternalLink } from '@/components/spotlight/counted-external-link'
 
@@ -22,6 +22,19 @@ const ICONS: Record<LinkIcon, LucideIcon> = {
   shop: ShoppingBag,
   book: BookOpen,
   heart: Heart,
+}
+
+// One distinct, neutral glyph per network (the icon set carries no brand marks), so the row reads at a glance.
+const SOCIAL_ICONS: Record<SocialKind, LucideIcon> = {
+  instagram: Camera,
+  tiktok: Music,
+  youtube: Video,
+  spotify: Headphones,
+  x: AtSign,
+  linkedin: Briefcase,
+  facebook: Users,
+  email: Mail,
+  website: Globe,
 }
 
 export function LinkInBioPage({
@@ -73,7 +86,10 @@ export function LinkInBioPage({
                   rel="noopener noreferrer me"
                   className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated"
                 >
-                  {s.kind === 'email' ? <Mail className="h-3.5 w-3.5" aria-hidden /> : <Globe className="h-3.5 w-3.5" aria-hidden />}
+                  {(() => {
+                    const SocialIcon = SOCIAL_ICONS[s.kind]
+                    return <SocialIcon className="h-3.5 w-3.5" aria-hidden />
+                  })()}
                   {SOCIAL_LABEL[s.kind]}
                 </a>
               </li>
