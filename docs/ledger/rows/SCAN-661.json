@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-661",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const sm=fs.readFileSync(\"app/sitemap.ts\",\"utf8\");const r=fs.readFileSync(\"lib/events/series-seo.ts\",\"utf8\");const mig=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).map(f=>fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")).join(\"\\n\");const hasCol=/alter table public\\.events\\s+add column if not exists updated_at/i.test(mig);if(/lastModified: new Date\\(e\\.startsAt\\)/.test(sm)||(/updated_at/.test(r)&&!hasCol)){console.error(\"SCAN-661: event sitemap entries declare lastmod as the START date (future for every upcoming event, grounds for Google to ignore the field file-wide), or the reader selects an updated_at column no migration adds, which fails the read and empties the events section.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it. 2026-11-02: the updated_at clause now allows the column once a migration adds it (SCAN-1184)."
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-11-02 (SCAN-1184): the migration this row anticipated landed. events.updated_at exists (trigger-maintained, backfilled), the reader selects it, and the sitemap sends it as lastmod behind a future guard. The probe keeps refusing the start date; its updated_at clause now checks that a migration adds the column instead of banning the word."
+  },
+  "wave": "W7"
+}
