@@ -53709,3 +53709,13 @@ AccentScope still carries its optional surface and faces props. Nothing passes t
 **Decision.** The site draws its own month (`components/sites/site-month.tsx`) with its own sheet (`site-month-css.ts`), scoped to `[data-site-month]` and imported only inside components/sites, so the theme fence (LIVE-1509) holds and nothing in the member or admin area can pick it up. The sheet reads only tokens the site render defines: the `--color-*` aliases for colour and the DAWN type scale (`--text-*`) for size. The `--fq-*` names are scoped to the Frequency design and inert on a site, which wears DAWN, so they are not used. The server loads the whole window in one cached, anonymous read (`loadPublicSiteWindow`), with no server action and no cookies, and the grid pages inside it. A second lock (`lib/calendar/site-month.ts`) keeps only published gatherings, called-off ones and Unavailable spans, and rebuilds each from a whitelist of fields, so a Pencil, Plan, Production date, to-do, shared-layer item or private note cannot reach a visitor. Under 720px the Agenda is the first view, chosen by CSS so the first paint is right.
 
 **Consequences.** One more sheet to keep in step with the suite's month look. The List and the jump panel the member workspace gave a visitor are replaced by Agenda and paging. A read that hits the store's 300-row cap stops the grid before the last month it can vouch for.
+
+## ADR-1936: The Stripe API version moves to 2026-10-28.endive with stripe 23.1.0
+
+**Status:** Accepted 2026-11-02 (owner chose to take the bump now rather than after launch). Builds on the pin in `lib/billing/stripe.ts` and `lib/billing/stripe-api-version.test.ts`.
+
+**Context.** The minor-and-patch dependency group (#4486) carried stripe 23.1.0, whose baked-in API version is 2026-10-28.endive. Our pin was 2026-09-30.endive and the pin test fails when the two differ, so the move had to be a decision.
+
+**Decision.** Take stripe 23.1.0 and move the pin to 2026-10-28.endive. Stripe's Endive changelog states that versions after the first Endive release (2026-09-30) contain additive changes only, and this repo already uses the Endive checkout shapes. The billing, Stripe route and webhook test sets pass (888 tests). No real-card payment run; the owner declined manual payment tests.
+
+**Consequences.** Webhook endpoints keep the API version they were created with in the Stripe dashboard; only calls made through our client use the new pin. A future bump that moves the baked-in version fails the pin test again and needs its own ADR.
