@@ -1,3 +1,4 @@
+import { HOME_TZ } from '../time/home-zone.ts'
 import 'server-only'
 
 // WHAT A TAG CAN OPEN, for the CyberUnicorn console's "Any page" tags. A Space's door placard keeps its
@@ -56,7 +57,7 @@ export function tagPathFromLink(raw: string): string | null {
 function shortDate(iso: string | null): string | null {
   if (!iso) return null
   const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' })
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: HOME_TZ })
 }
 
 /** Pages a tag can open, matching `query`. A failed read drops that kind, never the whole list. */

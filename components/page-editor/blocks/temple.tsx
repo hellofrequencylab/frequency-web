@@ -1,3 +1,4 @@
+import { HOME_TZ } from '@/lib/time/home-zone'
 import type { ReactNode } from 'react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from '@/lib/page-editor/layout'
@@ -118,7 +119,7 @@ function rowsOf(metadata: Props | undefined, now: Date): Row[] {
   return out
 }
 
-const ZONE = 'America/Los_Angeles'
+const ZONE = HOME_TZ
 const todayIn = (now: Date) => {
   try {
     return new Intl.DateTimeFormat('en-CA', { timeZone: ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)

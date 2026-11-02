@@ -1,3 +1,4 @@
+import { HOME_TZ } from '../time/home-zone'
 import 'server-only'
 import { createHash } from 'node:crypto'
 import { zonedWallClockToInstant } from '@/lib/time/zone'
@@ -80,8 +81,8 @@ function period(start: string, end: string, now: Date): { from: string; to: stri
   if (!valid(start) || !valid(end) || end < start || Date.parse(end) - Date.parse(start) > 30 * 86400000) return null
   const [y, m, d] = start.split('-').map(Number)
   const next = new Date(Date.parse(end) + 86400000)
-  const from = zonedWallClockToInstant(y, m, d, 0, 0, 0, 'America/Los_Angeles')
-  const to = zonedWallClockToInstant(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate(), 0, 0, 0, 'America/Los_Angeles')
+  const from = zonedWallClockToInstant(y, m, d, 0, 0, 0, HOME_TZ)
+  const to = zonedWallClockToInstant(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate(), 0, 0, 0, HOME_TZ)
   return to.getTime() <= now.getTime() ? { from: from.toISOString(), to: to.toISOString() } : null
 }
 /** Concrete read-only ingestion: fresh permission/consent -> token -> live property permission ->

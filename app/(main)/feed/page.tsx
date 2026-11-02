@@ -1,3 +1,4 @@
+import { HOME_TZ } from '@/lib/time/home-zone'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCachedViewerProfile } from '@/lib/auth'
@@ -285,7 +286,7 @@ export default async function FeedPage({
   // Warm, time-aware greeting headline (the feed is "home", so it greets you).
   // Greet in the community's timezone (the beta is North County San Diego) so the
   // server's UTC clock doesn't roll the date + greeting forward late at night.
-  const tz = 'America/Los_Angeles'
+  const tz = HOME_TZ
   const hour = Number(new Date().toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
   const partOfDay = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
   const greeting = firstName ? `${partOfDay}, ${firstName}` : partOfDay

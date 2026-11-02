@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_TZ } from '@/lib/time/home-zone'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -70,7 +71,7 @@ export function CirclePlaceTimeModule() {
 
   // Prepend the circle's own saved zone when it falls outside the curated list, so a rare zone is never
   // silently dropped on save.
-  const zone = data.timezone ?? 'America/Los_Angeles'
+  const zone = data.timezone ?? HOME_TZ
   const zones = COMMON_TIME_ZONES.some((z) => z.value === zone)
     ? COMMON_TIME_ZONES
     : [{ value: zone, label: zone }, ...COMMON_TIME_ZONES]

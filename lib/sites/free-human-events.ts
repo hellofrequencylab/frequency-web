@@ -1,3 +1,4 @@
+import { HOME_TZ } from '../time/home-zone.ts'
 import { expandSiteSeries, storedWallClock, type SiteEventRow } from '@/lib/sites/site-events'
 import { freeHumanKindMeta, type FreeHumanOcc } from '@/lib/sites/free-human-calendar'
 
@@ -40,7 +41,7 @@ export function freeHumanKind(title: string): { id: string; label: string; glyph
 /** The Space's own calendar day (YYYY-MM-DD), the day stored wall-clock starts are compared with. The UTC day flips at about
  *  5pm Pacific and dropped the evening's gatherings from "upcoming" hours early (SCAN-1191). */
 export function freeHumanToday(now: Date): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+  return new Intl.DateTimeFormat('en-CA', { timeZone: HOME_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
 }
 
 /** The Space's upcoming events from its data bag (its own rows and its series, every recurring anchor expanded through the next

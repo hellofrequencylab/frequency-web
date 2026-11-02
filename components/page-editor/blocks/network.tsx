@@ -1,3 +1,4 @@
+import { HOME_TZ } from '@/lib/time/home-zone'
 import type { ReactNode } from 'react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from '@/lib/page-editor/layout'
@@ -153,7 +154,7 @@ const todayIn = (now: Date, tz: string) => {
     return now.toISOString().slice(0, 10)
   }
 }
-const ZONE = 'America/Los_Angeles'
+const ZONE = HOME_TZ
 
 /** The Space's upcoming events, soonest first from today in the Space's zone, cancelled rows dropped. */
 function upcoming(metadata: Props | undefined, now: Date): EventRow[] {
@@ -1059,7 +1060,7 @@ export const networkComponents: Record<string, ComponentConfig> = {
   NetworkBand: block('Accent band with countdown', {
     anchor, eyebrow: head.eyebrow, title: head.title, body: area('Body text', 'Each new line starts a paragraph.'), countdownTo: text('Count down to', 'Local date and time, like 2026-10-21T17:30.'), timeZone: text('Time zone', 'Like America/Los_Angeles.'),
     countdownLabel: text('Countdown description', 'Read aloud by screen readers.'), image, alt: text('Photo description', 'For screen readers.'), focus: focusField, ...buttons,
-  }, { anchor: '', eyebrow: '', title: '', body: '', countdownTo: '', timeZone: 'America/Los_Angeles', countdownLabel: '', image: '', alt: '', focus: '', primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '' }, NetworkBandBlock),
+  }, { anchor: '', eyebrow: '', title: '', body: '', countdownTo: '', timeZone: HOME_TZ, countdownLabel: '', image: '', alt: '', focus: '', primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '' }, NetworkBandBlock),
   NetworkEvents: block('Events list and calendar (live)', {
     anchor, ...head, ...action, max: { type: 'number', label: 'How many to list', min: 1, max: 24 },
     source: chapterSource,

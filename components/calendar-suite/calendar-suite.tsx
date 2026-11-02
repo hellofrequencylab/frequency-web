@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_TZ } from '@/lib/time/home-zone'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { moveSpaceTodo } from '@/app/(main)/spaces/[slug]/settings/calendar/task-actions'
 import { deleteCalendarEntry, saveCalendarEntry, saveCalendarEntryOccurrence } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
@@ -575,7 +576,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       {sheet === 'command' ? (
         <SuiteCommand
           today={todayKey}
-          timeZone={props.timeZone ?? 'America/Los_Angeles'}
+          timeZone={props.timeZone ?? HOME_TZ}
           views={SUITE_VIEWS}
           plans={data.plans}
           items={data.items}

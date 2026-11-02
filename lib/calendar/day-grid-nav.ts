@@ -3,6 +3,8 @@
 // 'YYYY-MM-DD' key read in UTC, so a key never shifts with the viewer's own zone: what the server and
 // the browser compute for the same key is the same key.
 
+import { HOME_TZ } from '../time/home-zone.ts'
+
 const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/
 
 function at(dayKey: string): Date | null {
@@ -64,7 +66,7 @@ export function dayForKey(dayKey: string, k: string): string | null {
 export function dayKeyIn(zone: string | null | undefined, now: Date = new Date()): string {
   try {
     return new Intl.DateTimeFormat('en-CA', {
-      timeZone: zone || 'America/Los_Angeles',
+      timeZone: zone || HOME_TZ,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

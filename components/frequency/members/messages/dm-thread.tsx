@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_TZ } from '@/lib/time/home-zone'
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, useTransition, type FormEvent, type KeyboardEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { markConversationRead, sendMessage } from '@/app/(main)/messages/actions'
@@ -11,7 +12,6 @@ import { Textarea } from '@/components/ui/field'
 import { FqIcon } from '@/components/frequency/icon'
 
 // HOME_TZ from lib/time/zone.ts, written out: that module carries tz-lookup, too heavy for a client bundle.
-const HOME_TZ = 'America/Los_Angeles'
 
 // The Frequency DM transcript and composer (Messages.html): their bubble left on white, yours right
 // on the accent gradient, the time under each, a pill input and Send. The behaviour is the
