@@ -112,7 +112,7 @@
 .cs-pill-tick,.cs-tick{width:24px;height:24px;flex:none;border-radius:50%;background:var(--fq-pa);color:var(--fq-bg-canvas);display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px color-mix(in oklab,var(--fq-accent-2) 35%,transparent)}
 .cs-pill-tick svg,.cs-tick svg{width:12px;height:12px;stroke-width:3}
 .cs-pill-dot{width:10px;height:10px;flex:none;border-radius:50%}
-@media (pointer:coarse){.cs-pill{height:44px}}
+@media (pointer:coarse){.cs-pill{height:44px}.cs-chip-btn{min-height:44px}}
 
 /* Step cards. */
 .cs-card{border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:0 30px 80px -40px color-mix(in oklab,var(--fq-accent-2) 32%,transparent);padding:clamp(18px,2vw,24px);display:flex;flex-direction:column;gap:14px;animation:cs-pop .42s var(--fq-ease-out) both}
