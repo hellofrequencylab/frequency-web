@@ -13,6 +13,7 @@ import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
 import { runDueSpaceDrips } from '@/lib/spaces/drip-runner'
+import { reportFollowUp } from '@/lib/cron/follow-up-stall'
 import { log } from '@/lib/log'
 
 export const runtime = 'nodejs'
@@ -29,6 +30,8 @@ async function handler(req: NextRequest) {
     const result = await log.time('cron.space_drips', () => runDueSpaceDrips(budget.items))
     const summary = budget.summary(result.due)
     log.info('cron.space_drips.counts', { ...result, ...summary })
+    // SEC-020: due work with nothing delivered is a stalled follow-up, not an idle one.
+    reportFollowUp('space-drips', { due: result.due, delivered: result.sent + result.completed + result.stopped })
     return NextResponse.json({ ok: true, ...result, budget: summary })
   } catch {
     return NextResponse.json({ error: 'space drip run failed' }, { status: 500 })
