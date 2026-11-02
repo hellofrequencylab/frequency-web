@@ -15,6 +15,7 @@
 // PURE: no React, no Next, no database, no clock of its own. Imported by the site reader (lib/sites/
 // menswork-data.ts, server) and by the Wildheart block (a Server Component). Never by a client island.
 
+import { HOME_TZ } from '../time/home-zone.ts'
 import { expandRepeat, repeatFor } from '@/lib/events/repeat-rule'
 
 /** The columns a site event carries for the expansion. Every field but the identity and the start is
@@ -117,6 +118,6 @@ export function expandSiteSeries<T extends SiteEventRow>(rows: readonly T[], opt
 
 /** The site's own calendar day (YYYY-MM-DD, Pacific, where the sites launch) for comparing with stored wall-clock dates.
  *  The UTC day flips at about 5pm Pacific and dropped the evening's events hours early (SCAN-1191). */
-export function siteToday(now: Date, timeZone = 'America/Los_Angeles'): string {
+export function siteToday(now: Date, timeZone = HOME_TZ): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
 }

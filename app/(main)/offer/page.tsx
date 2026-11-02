@@ -1,3 +1,4 @@
+import { HOME_TZ } from '@/lib/time/home-zone'
 import { redirect } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
@@ -35,7 +36,7 @@ export default async function OfferPage({ searchParams }: { searchParams: Promis
   const offer = await startOperatorOffer(caller.id)
   if (offer.status !== 'live') redirect(`/spaces/${space.slug}/settings/billing`)
 
-  const endsLabel = new Date(offer.endsAtMs).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Los_Angeles' })
+  const endsLabel = new Date(offer.endsAtMs).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: HOME_TZ })
 
   return (
     <FocusTemplate

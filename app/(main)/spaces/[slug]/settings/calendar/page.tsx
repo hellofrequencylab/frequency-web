@@ -1,3 +1,4 @@
+import { HOME_TZ } from '@/lib/time/home-zone'
 import { notFound } from 'next/navigation'
 import { openingMonth } from '@/lib/calendar/open-month'
 import { cookies } from 'next/headers'
@@ -149,7 +150,7 @@ export default async function SpaceCalendarConsolePage({
   const zoneLabel = (() => {
     try {
       return (
-        new Intl.DateTimeFormat('en-US', { timeZone: space.timeZone || 'America/Los_Angeles', timeZoneName: 'long' })
+        new Intl.DateTimeFormat('en-US', { timeZone: space.timeZone || HOME_TZ, timeZoneName: 'long' })
           .formatToParts(now)
           .find((p) => p.type === 'timeZoneName')?.value ?? 'Local time'
       )
@@ -158,7 +159,7 @@ export default async function SpaceCalendarConsolePage({
     }
   })()
   // The now line: the minute on the Space's own clock, and the zone's short name for the time grid.
-  const clockZone = space.timeZone || 'America/Los_Angeles'
+  const clockZone = space.timeZone || HOME_TZ
   const nowMin = wallMinutes(now, clockZone)
   const zoneShort = (() => {
     try {

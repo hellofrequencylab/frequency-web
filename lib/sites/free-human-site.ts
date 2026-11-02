@@ -1,3 +1,4 @@
+import { HOME_TZ } from '../time/home-zone.ts'
 import type { WebsiteEditorState, WebsiteSnapshot } from '@/lib/sites/editor/state'
 import { freeHumanAudreyPage, freeHumanBooksPage, freeHumanCalendarPage, freeHumanHomeBlocks, freeHumanProgramPage, freeHumanWorkshopsPage } from '@/lib/sites/free-human-home'
 import { FREE_HUMAN_ACCENT } from '@/lib/theme/free-human'
@@ -17,7 +18,7 @@ export const FREE_HUMAN_SPACE = {
   /** The Space's cover (a wide photo), its mark and its time zone, all from the design's own shipped files. */
   cover: freeHumanPhotoSrc('place-sea-sunset'),
   logo: '/sites/free-human/logo-mark.svg',
-  timeZone: 'America/Los_Angeles',
+  timeZone: HOME_TZ,
   about: 'Embodiment and child-rearing for women in their season of creation: conceiving, carrying, birthing and raising. A year-round program, circles at the full moon and a calendar of gatherings. Created by Audrey Uma Wilder.',
 } as const
 

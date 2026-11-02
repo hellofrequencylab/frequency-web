@@ -16,7 +16,8 @@
 // here rather than imported so this module does not pull the tz tables into a client bundle for one
 // string.
 
-const FALLBACK_ZONE = 'America/Los_Angeles'
+import { HOME_TZ } from '../time/home-zone.ts'
+const FALLBACK_ZONE = HOME_TZ
 
 /** The browser's IANA zone, or the house zone when the browser cannot say. Client only. */
 export function browserZone(): string {

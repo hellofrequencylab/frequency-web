@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_TZ } from '@/lib/time/home-zone'
 import { useState, useTransition, type ReactNode } from 'react'
 import Link from 'next/link'
 import { reviewReport, warnMember, suspendMember, cancelEventFromReport } from '@/app/(main)/feed/report-actions'
@@ -11,7 +12,6 @@ import { FqIcon } from '@/components/frequency/icon'
 import { Av, EMPTY } from '../shared'
 
 // HOME_TZ from lib/time/zone.ts, written out: that module carries tz-lookup, too heavy for a client bundle.
-const HOME_TZ = 'America/Los_Angeles'
 
 // The Frequency report cards (templates/admin/Moderation.html `.panel.stack.rep`). The SAME server actions
 // the DAWN queue calls (app/(main)/admin/moderation/moderation-queue.tsx): hide the content, warn or suspend

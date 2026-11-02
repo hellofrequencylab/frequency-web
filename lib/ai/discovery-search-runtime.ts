@@ -1,3 +1,4 @@
+import { HOME_TZ } from '../time/home-zone'
 import 'server-only'
 import { authorizeDiscoveryEditor } from '@/lib/spaces/discovery-access'
 import { loadSpaceDiscoveryConsent, loadSpaceCoachProfile } from '@/lib/spaces/private-state'
@@ -96,7 +97,7 @@ export async function reviewSearchSignals(spaceId: string, provider: DiscoverySe
   const deps = searchProviderDependencies(provider)
   const now = new Date()
   // Google final web data uses Pacific calendar dates, leaving three days for provider lag.
-  const pacific = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+  const pacific = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: HOME_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
   const result = provider === 'google_search_console'
     ? await observeGoogleSearchConsole(spaceId, { startDate: pacific(new Date(now.getTime() - 30 * 86_400_000)), endDate: pacific(new Date(now.getTime() - 3 * 86_400_000)) }, deps)
     : await observeBingDiscovery(spaceId, { from: new Date(now.getTime() - 30 * 86_400_000).toISOString(), to: now.toISOString() }, deps)
