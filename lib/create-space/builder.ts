@@ -7,7 +7,7 @@ import { WIZARD_INTENTS, suggestModeForIntents } from '@/lib/spaces/create-wizar
 import { slugify } from '@/lib/utils'
 import { OFFER_MAX } from '@/lib/create-space/intents-from-offer'
 import { isPreviewKit } from '@/lib/create-space/preview-site'
-import type { MegaThemeId } from '@/lib/theme/mega-theme'
+import { isMegaNicheId, type MegaNicheId, type MegaThemeId } from '@/lib/theme/mega-theme'
 
 /** The four moves answered in the builder; the fifth (save) is the account step. */
 export const BUILDER_MOVES = ['name', 'offer', 'contact', 'photos'] as const
@@ -32,6 +32,8 @@ export interface BuilderDraft {
   offer: string
   /** The goals the sentence named (intentsFromOffer), editable later on the launch. */
   goals: IntentId[]
+  /** The Mega niche the door named (lib/create-space/door.ts); rides to the launch hold, never asked here. */
+  niche: MegaNicheId | null
   hostName: string
   email: string
   phone: string
@@ -56,7 +58,7 @@ const DRAFT_KEY_V1 = 'fq-create-space-draft-v1'
 
 export function emptyDraft(kit: MegaThemeId, kitChosen: boolean): BuilderDraft {
   return {
-    kit, kitChosen, accentAt: 0, accentPicked: false, name: '', slug: '', offer: '', goals: [], hostName: '', email: '', phone: '', where: '',
+    kit, kitChosen, accentAt: 0, accentPicked: false, name: '', slug: '', offer: '', goals: [], niche: null, hostName: '', email: '', phone: '', where: '',
     cover: 's0', logo: 'word', profile: 's0', startedAt: null, endedAt: null, leadToken: null,
     done: { name: false, offer: false, contact: false, photos: false },
   }
@@ -178,6 +180,7 @@ export function parseDraft(raw: string | null, arrivedKit: MegaThemeId | null): 
     slug: cleanHandleInput(text(o.slug, 40)),
     offer: text(o.offer, OFFER_MAX),
     goals,
+    niche: isMegaNicheId(o.niche) ? o.niche : null,
     hostName: text(o.hostName, 80),
     email: text(o.email, 254),
     phone: text(o.phone, 30),
