@@ -29,7 +29,7 @@ export function SiteFooter() {
         <div className="ft2-top">
           <div className="ft2-brand">
             <Link href={ROUTES.home} aria-label="Frequency home" className="lg-fx">
-              <Image className="w" src={WORDMARK} alt="Frequency Community Collective" width={1920} height={389} loading="lazy" />
+              <Image className="w" src={WORDMARK} alt="Frequency Community Collective" width={1920} height={389} sizes="176px" loading="lazy" />
               <span className="lg-sheen" aria-hidden="true" style={{ '--fq-lg': `url("${WORDMARK}")` } as React.CSSProperties} />
             </Link>
             <p>

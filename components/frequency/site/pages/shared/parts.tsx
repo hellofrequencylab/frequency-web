@@ -3,6 +3,7 @@
 
 import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
+import { getImageProps } from 'next/image'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import type { SiteEvent, SiteSpace } from './data'
 import { eventCityPins, spaceCityPins } from './map-pins'
@@ -60,13 +61,28 @@ export function ChapPhoto({ src, alt, sheen, className }: { src: string; alt: st
   return (
     <div className={sheen ? 'photo fq-iri-sheen fq-iri-rim' : 'photo fq-iri-rim'} data-px=".08">
       {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img itself (object-fit cover) */}
-      <img loading="lazy" decoding="async" className={className} src={src} alt={alt} />
+      <img loading="lazy" decoding="async" className={className} {...photoImg(src)} alt={alt} />
     </div>
   )
 }
 
 const PHOTOS = '/brand/frequency/photos'
 export const photo = (name: string) => `${PHOTOS}/${name}`
+
+/** A chapter photo or path door is half the wrap on a desktop and the full width on a phone. */
+export const PHOTO_SIZES = '(max-width: 860px) 100vw, 50vw'
+
+/**
+ * The src, srcSet and sizes for a brand photo in a kit-sized slot (`.photo img`, `.pd img`, `.jph img`).
+ * The photos are 1600px JPEGs of 250 to 430KB each; a raw `<img src>` shipped every one of them at full
+ * size into a 400 to 500px slot, 1.7MB on / and 2.6MB on /for (visual sweep 2026-11-02, LIVE-1977).
+ * next/image's optimizer serves the width the slot asks for, as AVIF or WebP, and the kit keeps sizing
+ * the element: the nominal width and height only seed the candidate list, never the layout.
+ */
+export function photoImg(src: string, sizes: string = PHOTO_SIZES) {
+  const { props } = getImageProps({ src, alt: '', width: 1600, height: 1066, sizes })
+  return { src: props.src, srcSet: props.srcSet, sizes: props.sizes }
+}
 
 /**
  * THE MAP, AS ITS LIST. The design mounts a Leaflet map on `[data-fqmap]` (web/eventmap.js) with a list

@@ -127,14 +127,14 @@
 /* What carries over */
 .tf-cmp{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(4,minmax(0,1fr));margin-top:36px;border-radius:24px;overflow:hidden;background:var(--tf-card);box-shadow:inset 0 0 0 1px var(--tf-hair)}
 .tf-cmp-row{display:contents}
-.tf-cmp>.hd,.tf-cmp-row>div{padding:16px 20px;border-bottom:1px solid var(--tf-hair);font-size:14.5px;color:var(--fq-text-body);display:flex;align-items:center;gap:10px;min-height:56px}
+.tf-cmp-row>.hd,.tf-cmp-row>div{padding:16px 20px;border-bottom:1px solid var(--tf-hair);font-size:14.5px;color:var(--fq-text-body);display:flex;align-items:center;gap:10px;min-height:56px}
 .tf-cmp .hd{font:600 11px/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-muted);background:var(--tf-wash)}
 .tf-cmp .rw{color:var(--fq-text-strong);font-weight:600}
 .tf-cmp .y::before,.tf-legend i.y{content:"";width:8px;height:8px;border-radius:50%;background:var(--fq-x-sun-neon);flex:none}
 .tf-cmp .p::before,.tf-legend i.p{content:"";width:8px;height:8px;border-radius:50%;background:var(--fq-x-aqua-neon);flex:none}
 .tf-legend{margin:16px 0 0;display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:14px;color:var(--fq-text-muted)}
 .tf-legend i{display:inline-block;margin-left:16px}.tf-legend i:first-child{margin-left:0}
-@media (max-width:800px){.tf-cmp>.hd,.tf-cmp-row>div{padding:12px 10px;font-size:13px}.tf-cmp .p span{display:none}}
+@media (max-width:800px){.tf-cmp-row>.hd,.tf-cmp-row>div{padding:12px 10px;font-size:13px}.tf-cmp .p span{display:none}}
 
 /* Cards (look controls and tools) */
 .tf-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--tf-gap-y);margin-top:36px}
@@ -158,7 +158,7 @@
 .tf-chips button[aria-pressed="true"] .tf-q{color:inherit;opacity:.7}
 
 /* What carries over, on a phone: the four surface names have to fit their columns. */
-@media (max-width:560px){.tf-cmp{grid-template-columns:minmax(0,1.15fr) repeat(4,minmax(0,1fr))}.tf-cmp>.hd{padding:12px 2px;justify-content:center;font-size:9px;letter-spacing:.02em}.tf-cmp>.hd:first-child{padding:0}.tf-cmp-row>div{padding:12px 6px}.tf-cmp-row>.y,.tf-cmp-row>.p{justify-content:center}}
+@media (max-width:560px){.tf-cmp{grid-template-columns:minmax(0,1.15fr) repeat(4,minmax(0,1fr))}.tf-cmp-row>.hd{padding:12px 2px;justify-content:center;font-size:9px;letter-spacing:.02em}.tf-cmp-row>.hd:first-child{padding:0}.tf-cmp-row>div{padding:12px 6px}.tf-cmp-row>.y,.tf-cmp-row>.p{justify-content:center}}
 
 /* The Nocturne hero: the theme's name large, a small descriptor, then the tagline; the four surfaces follow, joined by a dotted line. */
 .tf-name{font-size:clamp(44px,17cqw,112px);line-height:.92;letter-spacing:-.06em}

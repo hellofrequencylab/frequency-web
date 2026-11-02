@@ -17,6 +17,7 @@ import '@/app/themes/active/site-pages-b'
 import { CONTACT_EMAIL } from '@/lib/site'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { StoryForm } from './story-form'
+import { photo, photoImg } from '../shared/parts'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
@@ -128,7 +129,7 @@ export function FrequencyStories() {
                   <article className="pc">
                     <div className="ph">
                       {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .pc .ph img itself (object-fit cover) */}
-                      <img loading="lazy" decoding="async" src={`/brand/frequency/photos/${p.photo}`} alt="" />
+                      <img loading="lazy" decoding="async" {...photoImg(photo(p.photo), '(max-width: 860px) 100vw, 33vw')} alt="" />
                     </div>
                     <span className="v">{p.kind}</span>
                     <h3>{p.title}</h3>
