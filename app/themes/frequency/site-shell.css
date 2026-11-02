@@ -146,11 +146,13 @@
     border-bottom-color: var(--fq-border-hair) !important;
   }
 
-  /* The kit's few Stage literals that a Commons body meets: crumbs, and the focus ring. */
-  [data-design="frequency"] [data-kit="site"][data-surface="commons"] main .crumbs {
+  /* The kit's few Stage literals that a Commons body meets: crumbs, and the focus ring. A photo hero
+     (.phero) is dark on every surface, so its crumbs keep the kit's light literals: re-inked on Commons
+     they were ink on a dark photo (Discover pages and the not-found page, visual sweep 2026-11-02). */
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"] main .crumbs:not(.phero *) {
     color: var(--fq-text-muted);
   }
-  [data-design="frequency"] [data-kit="site"][data-surface="commons"] main .crumbs a {
+  [data-design="frequency"] [data-kit="site"][data-surface="commons"] main .crumbs:not(.phero *) a {
     color: var(--fq-text-body);
   }
   [data-design="frequency"] [data-kit="site"][data-surface="commons"] main :is(a, button):focus-visible {

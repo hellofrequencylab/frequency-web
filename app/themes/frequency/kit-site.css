@@ -38,7 +38,8 @@
 [data-design="frequency"] [data-kit="site"] .hero .h-xl em{font:400 italic 1.02em/1 var(--fq-font-serif);letter-spacing:-0.02em}
 [data-design="frequency"] [data-kit="site"] .hero p{color:#C9D3E0;max-width:56ch;font-size:clamp(17px,1.6vw,21px);line-height:1.55;margin:28px 0 36px}
 [data-design="frequency"] [data-kit="site"] .hero .ctas{display:flex;gap:12px;flex-wrap:wrap}
-[data-design="frequency"] [data-kit="site"] .hero .btn-ghost{color:#F2F5FA;box-shadow:inset 0 0 0 1.5px rgba(242,245,250,.35)}
+/* The second selector outranks the members-kit .btn rule that a Commons body re-inks (members-ui.css), which made these ghost pills ink on a dark photo hero (visual sweep 2026-11-02). */
+[data-design="frequency"] [data-kit="site"] :is(.hero,.phero) .btn-ghost,[data-design="frequency"] [data-kit="site"] .fq-commons-body :is(.hero,.phero) .btn-ghost:not(.fq-commons-body [data-kit] *){color:#F2F5FA;box-shadow:inset 0 0 0 1.5px rgba(242,245,250,.35)}
 [data-design="frequency"] [data-kit="site"] .sides{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:-48px;position:relative;z-index:3}
 [data-design="frequency"] [data-kit="site"] .side{position:relative;overflow:hidden;border-radius:var(--fq-radius-xl);padding:clamp(24px,3vw,36px);min-height:220px;display:flex;flex-direction:column;justify-content:space-between;gap:24px;text-decoration:none;box-shadow:var(--fq-shadow-float)}
 [data-design="frequency"] [data-kit="site"] .side>*{position:relative;z-index:1}
