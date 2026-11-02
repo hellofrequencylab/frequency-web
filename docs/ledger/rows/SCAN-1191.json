@@ -4,7 +4,8 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
+  "closed": "2026-11-02",
   "source": {
     "file": "lib/sites/free-human-events.ts",
     "ref": "Rescan 2026-11-02 (audits/rescan-2026-11-02.md)"
