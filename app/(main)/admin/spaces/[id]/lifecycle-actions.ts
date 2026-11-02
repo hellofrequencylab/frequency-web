@@ -7,6 +7,7 @@ import { authorizeAction } from '@/lib/admin/guard'
 import { logAdminAction } from '@/lib/admin/audit'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { addSpaceMember } from '@/lib/spaces/membership'
+import { refreshSite } from '@/lib/sites/site-cache'
 import type { SpaceStatus } from '@/lib/spaces/types'
 import { parseInput, z, uuid } from '@/lib/validation'
 
@@ -131,6 +132,9 @@ export async function setSpaceStatus(spaceId: string, to: SpaceStatus): Promise<
   })
 
   revalidateSpace(id)
+  // A suspended or archived Space must come down NOW: its website is cached under `site:<slug>`
+  // (lib/sites/site-cache.ts), so without this a takedown keeps serving until the cache expires (SEC-017).
+  if (space.slug) refreshSite(space.slug)
   return ok()
 }
 
