@@ -20,7 +20,7 @@ import { UpdateLayouts } from './update-layouts'
 import { upgradableCount } from '@/lib/blocks/roles/legacy-map'
 import { TryItOnBar, legacyBlocksOn, useTryItOnSkin } from '../theme-preview-swap'
 import { ThemeDraftsPanel } from './theme-drafts-panel'
-import { activeThemeDraftId, addThemeDraft, draftLook, liveThemeDraftId, removeThemeDraft, renameThemeDraft, switchThemeDraft, themeDrafts } from '@/lib/sites/editor/theme-drafts'
+import { activeThemeDraftId, addThemeDraft, draftDials, draftLook, liveThemeDraftId, removeThemeDraft, renameThemeDraft, switchThemeDraft, themeDrafts } from '@/lib/sites/editor/theme-drafts'
 import type { KitChanges } from '@/lib/sites/kits/apply'
 import type { KitApplyMode, KitNiche } from '@/lib/sites/kits/types'
 import { editorBlockMeta, editorPickerGroups, VERA_SUGGESTIONS } from '@/lib/sites/editor/block-meta'
@@ -31,7 +31,10 @@ import { duplicateWebsiteSection } from '@/lib/sites/editor/duplicate'
 import { FqIcon, type FqEditorIconName, type FqIconName } from '@/components/frequency/icon'
 import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsiteSnapshot, resolveWebsiteBrand, updateSectionDisplay, setSectionVisibility, sectionVisibility, patchSectionBase, type WebsiteSnapshot, type WebsiteTheme, type WebsiteEditorState, type Device, type WebsitePresence, type SectionDisplay } from '@/lib/sites/editor/state'
 import type { MwLive } from '@/lib/sites/menswork-data'
-import { SITE_LOOK_OPTIONS, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { SITE_LOOK_OPTIONS, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK, siteDials, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { ThemeControls } from './theme-controls'
+import { themeAccents, themeEditor } from '@/lib/themes/editor-dials'
+import type { LookPreset } from '@/lib/theme/dials'
 import { EDITOR_THEME_OF, siteCanvasVars, siteRenderStyle } from '@/lib/sites/site-render-style'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { LoomPicker } from '@/components/loom/loom-picker'
@@ -179,7 +182,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     const theme = siteThemeOf(draft.theme)
     const same = theme === style.theme
     const own = draftLook(draft.look) as SiteStyle['look'] | undefined
-    return { ...style, theme, fonts: same ? style.fonts : SITE_THEME_DEFS.find((t) => t.id === theme)!.defaultFonts, look: own ?? (same ? style.look : { corners: null, spacing: null, header: null, footer: null }) }
+    const dials = draftDials(draft.look) ?? (same ? style.dials : undefined)
+    return { ...style, theme, fonts: same ? style.fonts : SITE_THEME_DEFS.find((t) => t.id === theme)!.defaultFonts, look: own ?? (same ? style.look : { corners: null, spacing: null, header: null, footer: null }), dials }
   }, [style, draft.theme, draft.look])
   async function saveStyle(patch: Parameters<NonNullable<WebsiteEditorShellProps['onStyle']>>[0], optimistic: SiteStyle) {
     const before = style
@@ -472,8 +476,16 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   }
   /** One global style on the ACTIVE draft. It is saved with the draft and goes live when the draft is published. */
   function setLook(key: SiteLookKey, value: string | null) {
-    const next = Object.entries({ ...lookStyle.look, [key]: value }).filter(([, v]) => v !== null)
+    const next = Object.entries({ ...lookStyle.look, ...lookStyle.dials, [key]: value }).filter(([, v]) => v != null)
     commit({ ...draft, look: Object.fromEntries(next) as NonNullable<WebsiteSnapshot['look']> }, { label: 'Style' })
+  }
+  // THE THEME EDITOR'S DIALS (LIVE-1997): written into the same draft `look`, so each change is one undo step and goes
+  // live on publish. A value equal to the theme's own is not stored (`null`), exactly as the four legacy styles.
+  function changeDials(patch: Record<string, string | null>, drop: readonly string[] = [], label = 'Style') {
+    const base: Record<string, string | null | undefined> = { ...lookStyle.look, ...lookStyle.dials }
+    for (const key of drop) delete base[key]
+    const next = Object.entries({ ...base, ...patch }).filter(([, v]) => v != null)
+    commit({ ...draft, look: Object.fromEntries(next) as NonNullable<WebsiteSnapshot['look']> }, { label })
   }
   // THEME DRAFTS: several themes over the same pages. A switch is one undo step; when the theme differs the element
   // positions reset to that theme's layout (Undo restores them), exactly as picking a theme does.
@@ -602,6 +614,20 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <button type="button" className="row" onClick={() => setModal('menu')}><span className="ic"><FqIcon name="link" /></span><span className="t">Menu and logo<small>Shared with your Space page</small></span></button>
     <a className="row" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer"><span className="ic"><FqIcon name="space" /></span><span className="t">Space home</span></a>
   </>
+  // The theme editor's controls: drawn from the registry and this theme's manifest. A theme that has declared no dial
+  // beyond the four above (every theme until it is converted) draws nothing here, so its editor is unchanged.
+  const themeUi = themeEditor(lookStyle.theme, WEBSITE_THEME_LABEL[draft.theme])
+  const { accent: _ownAccent, ...ownDials } = siteDials({ ...lookStyle, dials: undefined }, themeUi.own)
+  const { accent: dialAccent, ...nowDials } = siteDials(lookStyle, themeUi.own)
+  void _ownAccent
+  const dialOwn: Record<string, string> = { ...THEME_LOOK[lookStyle.theme], ...ownDials }
+  const dialNow: Record<string, string> = { ...siteLook(lookStyle), ...nowDials }
+  const dialIds = themeUi.dials.map((d) => d.id)
+  const themeControls = <ThemeControls dials={themeUi.dials} values={dialNow} own={dialOwn} looks={themeUi.looks} accents={themeAccents(draft.theme)} accent={dialAccent}
+    onChange={(id, value) => changeDials({ [id]: value })}
+    onAccent={(value) => changeDials({ accent: value })}
+    onPreset={(look: LookPreset) => changeDials(Object.fromEntries(Object.entries(look.dials).filter(([id, v]) => v !== dialOwn[id])), dialIds.filter((id) => id !== 'accent'), 'Look')}
+    onReset={() => changeDials({}, [...dialIds, 'accent'], 'Style')} />
   const themeFonts = String(canvasVars['--th-display' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const bodyFont = String(canvasVars['--th-body' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const spaceAccent = brandAccent && /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(brandAccent) ? brandAccent : null
@@ -628,6 +654,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <div className="row on" role="note"><span className="ic type-aa" aria-hidden>Aa</span><span className="t">{themeFonts}{bodyFont && bodyFont !== themeFonts ? ` + ${bodyFont}` : ''}<small>Comes with the {WEBSITE_THEME_LABEL[draft.theme]} theme</small></span></div>
     <div className="cap">Style</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="fld"><span className="l">{LOOK_LABEL[key]}</span><div className="seg wrap" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className={on(siteLook(lookStyle)[key] === o.id).trim() || undefined} aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; setLook(key, stored) }}>{o.label}</button>)}</div></div>)}
     {styleError && <p role="alert" className="note err">{styleError}</p>}
+    {themeControls}
     <div className="cap">Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
     <div className="acts"><button type="button" className="btn sm" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="btn sm" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } }, { label: 'Logo' })}>Remove logo</button>}</div>
     <div className="note">A theme or style you pick changes this draft only. Visitors see it when you publish. Words and photos stay; blocks take on the new colors and type.</div>
@@ -654,6 +681,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       {/* GLOBAL STYLES (ADR-1728): the same setting Identity and branding edits, live at once. */}
       <div className="we-caption">Global styles</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="we-field">{LOOK_LABEL[key]}<div className="we-choice-row" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className="we-action secondary" aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; setLook(key, stored) }}>{o.label}</button>)}</div></div>)}
       {styleError && <p role="alert" className="we-note">{styleError}</p>}
+      {themeControls}
       <div className="we-caption">Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
       <div className="we-actions"><button type="button" className="we-action secondary" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } })}>Remove logo</button>}</div>
       <div className="we-caption">Brand accent</div><label className="we-field">Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => commit({ ...draft, brand: { ...draft.brand, accent: event.target.value } })} /></label><button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } })}>Use theme accent</button><div className="we-swatch-list"><span className="we-swatch" style={{ background: 'var(--th-accent)' }} /><span className="we-swatch" style={{ background: 'var(--th-season)' }} /><span className="we-swatch" style={{ background: 'var(--th-text)' }} /></div>

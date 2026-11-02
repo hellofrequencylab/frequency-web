@@ -88,3 +88,24 @@ describe('theme drafts', () => {
     expect(draftLook({ corners: 'square' })).toEqual({ corners: 'square', spacing: null, header: null, footer: null })
   })
 })
+
+// LIVE-1997: a draft's look carries the theme editor's dials beside the four styles.
+describe('draft dials', () => {
+  it('splits a look into the four styles and the dials', async () => {
+    const { draftDials, draftLook } = await import('./theme-drafts')
+    const look = { corners: 'square', register: 'day', accent: 'tide' } as const
+    expect(draftLook(look)).toEqual({ corners: 'square', spacing: null, header: null, footer: null })
+    expect(draftDials(look)).toEqual({ register: 'day', accent: 'tide' })
+    expect(draftDials({ corners: 'square' })).toBeUndefined()
+    expect(draftDials(undefined)).toBeUndefined()
+  })
+})
+
+describe('draft dial validation', () => {
+  it('accepts known dial values and rejects unknown keys and values', () => {
+    expect(validWebsiteSnapshot({ ...base, look: { register: 'day', hero: 'split', accent: '#1aa7c0', corners: 'soft' } })).toBe(true)
+    expect(validWebsiteSnapshot({ ...base, look: { register: 'dusk' } })).toBe(false)
+    expect(validWebsiteSnapshot({ ...base, look: { colour: 'red' } })).toBe(false)
+    expect(validWebsiteSnapshot({ ...base, look: { accent: 'Not An Accent' } })).toBe(false)
+  })
+})

@@ -10,6 +10,7 @@ import { DESIGNER_ACCENT } from '@/lib/theme/designer'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteFacesId } from '@/lib/theme/site-faces'
 import { readMegaTheme } from '@/lib/theme/mega-theme'
+import { SITE_DIAL_KEYS, isDialAccent, isSiteDialValue, type SiteDialKey } from '@/lib/theme/dials'
 
 // THE SITE STYLE (owner ask 2026-10-11, ADR-1726). A Space and its website wear one of four THEMES:
 //
@@ -46,6 +47,10 @@ import { readMegaTheme } from '@/lib/theme/mega-theme'
 // (airy, balanced, compact), the HEADER (a floating pill or a full-width bar) and the FOOTER (full or
 // minimal). Each is stored only when the owner picked it (`null` means "the theme's own"), so switching
 // themes keeps an explicit choice and otherwise brings the new theme's defaults.
+//
+// THEME EDITOR DIALS (LIVE-1997, lib/theme/dials.ts): register, type voice, motion, hero, image treatment and an accent sit
+// beside those four, stored the same sparse way (`null` is the theme's own, so a site that never set one reads back
+// identically). They live on `SiteStyle.dials` and appear on the node only when set.
 //
 // A THEME PER PAGE (LIVE-699): `preferences.siteStyle.pages` maps a page slug to its own theme. A page with
 // no entry wears the site's theme ("same as site", the default); a page on the other theme wears that
@@ -213,6 +218,14 @@ export interface SiteLook {
   footer: SiteFooter
 }
 
+/** The theme editor's dials the owner set: five enumerated ones and an accent (a theme swatch id or #rrggbb). */
+type SiteDialStore = Partial<Record<SiteDialKey | 'accent', string>>
+
+/** What the new dials resolve to before the owner changes anything. A theme's manifest default beats these. */
+const THEME_DIAL_FALLBACK: Record<SiteDialKey, string> = { register: 'day', type: 'caps', motion: 'full', hero: 'glow', image: 'glow' }
+/** Themes whose own register is night. */
+const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight'])
+
 export interface SiteStyle {
   theme: SiteThemeId
   /** The website's font set. */
@@ -223,6 +236,8 @@ export interface SiteStyle {
   spaceFonts: SpaceThemeId
   /** The owner's global style choices; `null` keeps the theme's own. */
   look: { [K in SiteLookKey]: SiteLook[K] | null }
+  /** The theme editor's dials the owner set; absent when none are (LIVE-1997). */
+  dials?: SiteDialStore
   /** Pages that wear their own theme, by slug. A page not listed wears the site's (LIVE-699). */
   pages?: Record<string, SiteThemeId>
 }
@@ -247,7 +262,23 @@ export function readSiteStyle(preferences: unknown): SiteStyle {
     const v = node?.[key]
     return SITE_LOOK_OPTIONS[key].some((o) => o.id === v) ? (v as SiteLook[K]) : null
   }
-  return { theme, fonts, synced, spaceFonts, look: { corners: pick('corners'), spacing: pick('spacing'), header: pick('header'), footer: pick('footer') }, pages: readPageThemes(node?.pages) }
+  const dials = readDials(node)
+  return { theme, fonts, synced, spaceFonts, look: { corners: pick('corners'), spacing: pick('spacing'), header: pick('header'), footer: pick('footer') }, ...(dials ? { dials } : {}), pages: readPageThemes(node?.pages) }
+}
+
+function readDials(node: Record<string, unknown> | null): SiteDialStore | undefined {
+  if (!node) return undefined
+  const out: SiteDialStore = {}
+  for (const key of SITE_DIAL_KEYS) if (isSiteDialValue(key, node[key])) out[key] = node[key]
+  if (isDialAccent(node.accent)) out.accent = node.accent
+  return Object.keys(out).length ? out : undefined
+}
+
+/** The dial values a site wears: each owner choice, else the theme's declared default (`own`, from its manifest), else
+ *  the fallback. `accent` is null until the owner picks one: the theme's own accent stands. */
+export function siteDials(style: SiteStyle, own: Partial<Record<SiteDialKey, string>> = {}): Record<SiteDialKey, string> & { accent: string | null } {
+  const base = { ...THEME_DIAL_FALLBACK, ...(NIGHT_THEMES.has(style.theme) ? { register: 'night' } : {}), ...own }
+  return { register: style.dials?.register ?? base.register, type: style.dials?.type ?? base.type, motion: style.dials?.motion ?? base.motion, hero: style.dials?.hero ?? base.hero, image: style.dials?.image ?? base.image, accent: style.dials?.accent ?? null }
 }
 
 function readPageThemes(raw: unknown): Record<string, SiteThemeId> {
@@ -343,7 +374,8 @@ export function withSiteStyle(preferences: unknown, patch: Partial<SiteStyle>): 
   else next.theme = style.fonts
   const look = Object.fromEntries(Object.entries(style.look).filter(([, v]) => v !== null))
   const pages = readPageThemes(style.pages)
-  next.siteStyle = { theme: style.theme, synced: style.synced, spaceFonts: style.spaceFonts, ...look, ...(Object.keys(pages).length ? { pages } : {}) }
+  const dials = Object.fromEntries(Object.entries(style.dials ?? {}).filter(([k, v]) => v != null && (k === 'accent' ? isDialAccent(v) : isSiteDialValue(k as SiteDialKey, v))))
+  next.siteStyle = { theme: style.theme, synced: style.synced, spaceFonts: style.spaceFonts, ...look, ...dials, ...(Object.keys(pages).length ? { pages } : {}) }
   return next
 }
 
