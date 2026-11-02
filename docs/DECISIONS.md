@@ -52128,7 +52128,7 @@ Wellness signals are sensitive data. A persona, archetype, arrival answer, age b
 
 ## ADR-1737: One setting picks the platform's design system, DAWN or Frequency, and Frequency overrides every older theme layer
 
-**Status:** Accepted · 2026-10-13 · backlog `LIVE-920` · owner-ruled · sits above [ADR-249](DECISIONS.md) (skins) and the four-axis model in docs/THEME.md · beside [ADR-1748](DECISIONS.md) (the name Frequency) · **Superseded in part or whole by [ADR-1877](DECISIONS.md)**; read that ADR for what it retires.
+**Status:** Accepted · 2026-10-13 · backlog `LIVE-920` · owner-ruled · sits above [ADR-249](DECISIONS.md) (skins) and the four-axis model in docs/THEME.md · beside [ADR-1748](DECISIONS.md) (the name Frequency) · **Superseded in part or whole by [ADR-1877](DECISIONS.md)**; read that ADR for what it retires. · **Superseded in part or whole by [ADR-1880](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** The owner is replacing DAWN with a new design system, Frequency, and asked for a one-button change-over: "The only two themes for the main site should be DAWN and Frequency", "The new Frequency theme will override everything. Midnight will become a theme for users." The survey of 2026-10-13 found colour about 99% on tokens but four things a token swap could not reach: `@theme inline` held the shadows, the radius steps (`rounded-sm` to `rounded-2xl`, about 2,200 call sites) and the body font as literals, which Tailwind compiles into each utility; the browser chrome colour and the MapLibre maps carried their own DAWN hex; five older theme layers (skins, generations, occasions, Space font sets and accents, Theme Studio `<style>`) re-point tokens below the shell root, where a site-level value cannot win; and the root layout must stay static, so a per-request switch was ruled out.
 
@@ -53479,3 +53479,233 @@ The home hero ("Businesses host free", pinned by migrations and the home copy ca
 **Rejected.** Deleting the DAWN registry entry (it would break stored values and email fixtures that still name it). Keeping DAWN selectable behind a flag (the owner retired it).
 
 **Consequences.** `scripts/probes/platform-design-selection.mjs` is the standing proof: it runs the real resolver and the real redirect body across five selections. LIVE-1328's ledger probe now points at it.
+
+## ADR-1823: Server-side fetches of outside urls resolve once and pin the socket (SEC-010)
+
+**Status:** Accepted · 2026-10-26 · backlog `SEC-010`
+
+**Context.** A hostname check is not an SSRF guard: a public name can resolve to a private address, resolve differently on the second lookup, or redirect there. The QR logo fetch already solved this (#3919). The OG remote image, the importer crawler and importer media capture still used global `fetch`.
+
+**Decision.** One module, `lib/net/pinned-fetch.ts`. It resolves the host once, refuses any address outside global unicast, pins the socket to that answer, follows redirects by hand and re-checks every hop, and bounds bytes and total time. Callers get `null` on any refusal. New server code that fetches a url a user influenced uses it; it does not call `fetch` directly. A weekly live-catalog step covers the database side the same way (SEC-012).
+
+**Rejected.** A hostname regex alone. Resolving first, then calling `fetch` (the second lookup can differ). Rewriting the QR logo fetch onto the module now: it is correct and tested, so it moves when next touched.
+
+**Consequences.** Importer crawls and OG cards go through node `http` and `https` rather than the platform `fetch`, so no HTTP cache and no proxy env. Pages over the byte cap are truncated, not refused. Tests that exercised these paths mock the module.
+
+## ADR-1878: /join is crawlable and noindex, follow; only /join/ beneath it stays walled
+**Status:** Accepted 2026-10-26 (owner answer 2A). Narrows the robots piece of [ADR-1090](DECISIONS.md).
+**Context.** app/robots.ts disallowed the whole /join segment, so Google could not fetch /join, never saw a noindex, and listed it as a blocked URL in Search Console, while the page's links to the funnel and its doors passed nothing.
+**Decision.** /join itself is crawlable and carries `robots: { index: false, follow: true }`, so it stays out of results and its links count. The robots rule becomes `/join/`, which still walls the splashes, invite tokens and /join/complete|preview, each of which also carries its own noindex.
+**Consequences.** Search Console stops reporting /join as blocked by robots.txt. A new route under /join/ is walled by default; a new crawlable page directly at /join is not possible without revisiting this.
+
+## ADR-1880: Frequency is the only platform design; DAWN is retired from the switch and its variants are removed from the primitives (SCAN-1110, SCAN-1127)
+
+**Status:** Accepted · 2026-10-26 · backlog `SCAN-1110`, `SCAN-1127` · owner-directed (#3903) · **Supersedes** [ADR-1737](DECISIONS.md) (the DAWN or Frequency switch)
+
+**Context.** Daniel retired DAWN as a deployable design and required Frequency to be fully implemented (#3903, `LIVE-1328`). `resolveDesign` now returns Frequency for any value, and `pnpm design:use dawn` exits non-zero. ADR-1737 still said the platform picks DAWN or Frequency, unset reads as DAWN, and a DAWN deploy is the rollback, so the decision trail contradicted the code. Every shared primitive and template also still carried a `SITE_DESIGN === 'frequency'` branch with a DAWN fallback nobody could reach.
+
+**Decision.** (1) Frequency is the only design the platform wears. `lib/theme/design.ts` keeps DAWN as a historical registry entry for stored data and fixtures, never as a selection. (2) There is no DAWN rollback. A bad deploy is recovered by redeploying the last good tree, as docs/RUNBOOKS.md already says. (3) Primitives in `components/ui` and templates in `components/templates` keep only the Frequency path. The `FREQUENCY` constants and DAWN class maps are deleted, and a prop that only a DAWN path read stays in the type, ignored, until its callers are swept. (4) Three pieces keep a DAWN path for now because a test pins the DAWN text: `page-heading.tsx` (`test/e2e/visual-masks.test.ts`), `detail-template.tsx` (`lib/theme/page-title-role.test.ts`) and `listing-detail-template.tsx` (`components/journey/journey-sale-wiring.test.ts`). Each goes when its pin is rewritten with the owner's say.
+
+**Rejected.** Keeping the switch as a rollback (the path is untested and the CLI already refuses it). Deleting the DAWN registry entry now (stored data and fixtures still name it).
+
+**Consequences.** One render path per primitive, so route sweeps (`SCAN-1128`, `SCAN-1129`, `SCAN-1130`) are mechanical. The DAWN token blocks in `app/globals.css` and the legacy skin, generation, occasion and Theme Studio axes are removed last (`SCAN-1130`).
+
+## ADR-1881: One Mega Theme id model, and the Space stores its theme and niche in preferences (LIVE-1360)
+
+**Status:** Accepted · 2026-10-26 · backlog `LIVE-1360` · owner-directed (the Mega Theme plan, piece 1)
+
+**Context.** Three lists named the same themes: `SiteThemeId` (the stored website theme), `WebsiteTheme` (the editor's document theme) and `SpaceThemeId`, which is really a font set. Two tables restated the site-to-editor mapping (`WORN_EDITOR_THEME`, `EDITOR_THEME_OF`). The niche a visitor chose at a `/for` door was lost once the Space was created, so nothing could start a Space from a niche variant of a theme.
+
+**Decision.** (1) A Mega Theme id is the lowercase theme name (`frequency`, `bold`, `wildheart`, `network`, `temple`, `midnight`). `MEGA_THEMES` in `lib/theme/mega-theme.ts` maps each to its editor theme and, where installed, its site theme. `SpaceThemeId` stays a font set and is not a theme. The two restated tables stay for now, pinned to the map by a test; they collapse into it as their owners next touch them. (2) The six niches are `coaches`, `studios`, `hosts`, `venues`, `nonprofits`, `networks`, the same ids the funnel sequences and `KitNiche` use. (3) A Space's choice is stored at `spaces.preferences.megaTheme = { theme?, niche?, version? }`. No table. Creation seeds the niche when the door supplies one, and the owner profile save can set or clear either part. (4) Nothing rewrites existing content. A Space with no stored choice keeps wearing the site style it has, and its niche reads as unset.
+
+**Rejected.** A new table (the data is two short strings per Space and already travels with `preferences`). Adding `midnight` to `SiteThemeId` here (the Midnight install owns that change). Folding `SpaceThemeId` into the theme id (a font set is chosen inside a theme).
+
+**Consequences.** Later pieces (shared content slots, adapters, picker, switcher) read one choice. `midnight` is a valid stored id before it is wearable, and maps to no site theme until the install lands.
+
+## ADR-1882: A niche starts a Space's tools from an existing preset, and the owner sees it on Menu and features (LIVE-1361)
+
+**Status:** Accepted · 2026-10-26 · backlog `LIVE-1361` · owner-directed (the Mega Theme plan, piece 5) · builds on [ADR-1881](DECISIONS.md)
+
+**Context.** Piece 1 stores a Space's niche. The plan wants that niche to start the Space's feature switches, using the mechanisms that already exist: `spaces.entitlements` function keys, `feature_roles` and `preferences.moduleMenu`. Those mechanisms already include the capability bundles (`lib/pricing/bundles.ts`, ADR-1294): subtractive "core on, the rest off but switchable" presets that a Mode and Focus pick at birth, and that never grant a paid tool.
+
+**Decision.** (1) A niche picks one of those bundles in `NICHE_DEFAULTS` (`lib/spaces/niche-defaults.ts`): coaches use `practice`, studios `studio`, event hosts and venues `venue`, nonprofits `nonprofit`, networks none. A niche adds no new switch and no new writer, so every bundle rule holds: the core stays on, no tier-marked tool (CRM, email, Shop, Program) is named on, and a plan limit cannot be passed. Newsletter and the Shop therefore start off and one switch away. (2) At creation the niche applies only when nothing stronger picked a preset (an explicit choice, then the Focus, then the niche). (3) For an existing Space the owner chooses the niche on Menu and features. The preset applies only to a Space with no saved niche whose function switches and role floors were never touched; any other Space saves the niche and keeps every switch. (4) The owner flips each tool in the grid that already sits on that page; the new card only names the niche and what it started.
+
+**Rejected.** Writing switches for names the registry does not have (waitlist, inquiry form, volunteer form, chapters, directory, dues): they are not Space tools with a switch, so a preset cannot say anything true about them yet. A second writer or manifest format for entitlements. Applying a niche to an existing Space without the untouched check.
+
+**Consequences.** Networks start with every tool on. When a tool such as waitlist or dues becomes a registry function, its bundle row gains it and the niche follows with no new code. The create wizard still does not pass the door's niche, which is the picker's job (piece 6).
+
+## ADR-1883: A four-question picker at Space creation, behind a switch (LIVE-1367)
+
+**Status:** Accepted · 2026-10-26 · backlog `LIVE-1367` · owner-directed (the Mega Theme plan, piece 6, groundwork) · builds on [ADR-1881](DECISIONS.md) and [ADR-1882](DECISIONS.md)
+
+**Context.** A Space's niche and theme are now stored (ADR-1881) and the niche starts its tools (ADR-1882), but nothing asks for them. Daniel decided the picker lives in both places: at creation, and later as a Change theme button in the editor. Only Midnight's theme package is live, and the live preview needs the niche variants, which are not built.
+
+**Decision.** (1) `lib/spaces/space-picker.ts` holds the four questions as typed data (niche cards plus Something else, the one thing people should do, a feel, an optional existing site) and a pure resolver, `resolvePicker`, that turns raw answers into `{ niche, action, theme, sourceUrl }`. The resolver trusts nothing: an unknown niche, an action the niche does not offer, a feel whose theme is not live, or a link that is not https reads as no answer. A niche from a door answers question one before it is asked. (2) `createSpace` takes `niche`, `action`, `feel` and `site`, runs them through the same resolver, and stores them on `preferences.megaTheme`, so the server never keeps what the client could not. (3) The picker renders before the wizard only when `SPACE_PICKER_ENABLED` is on; the wizard and its step list are unchanged. A door's niche (a `?niche=` value, else the `fq_beta_seq` funnel cookie) is saved with the Space whether or not the picker is on. (4) The feel step lists four feels and marks any whose theme is not live as coming soon; only Midnight is live. The preview is a text stub that echoes the answers, with the props the live preview will use.
+
+**Rejected.** Changing the wizard's steps or the `/for` hand-off URL (both are pinned by tests and the hand-off is shared with the funnel). Adding `niche` to the door URL for that reason: the cookie already carries the door. Inferring the niche from the Mode (venues and hosts share a Mode, as do studios and networks). Showing every feel as choosable before its package exists.
+
+**Consequences.** The existing-site answer is stored as `megaTheme.sourceUrl` for the importer and nothing reads it yet. Turning the switch on is gated in docs/RUNBOOKS.md. The editor's Change theme button is a later piece.
+
+## ADR-1885: Midnight is the first mega theme, one token set for Website, Spotlight and Space (LIVE-1365)
+
+**Status:** Accepted · 2026-10-26 · backlog `LIVE-1365`
+
+**Context.** The owner is building a template system per mega theme (Spotlight, Space and Web Theme) with blocks and content synced across them. The old Midnight (navy and amber) was a placeholder.
+
+**Decision.** The Midnight Design System takes the Midnight slot. One token source, `lib/theme/midnight.ts`, feeds the site skin (`--mn-*`), the Spotlight preset and the Space default accent through `MIDNIGHT_SURFACE`. The design's 13 blocks are editor blocks in their own `midnight` category and follow the Temple pattern: own skin, own block family, faces loaded on the site page only. Violet values live in `theme-contract.json`, not in tracked source, and a Space accent overrides them.
+
+**Consequences.** Email and events can adopt `MIDNIGHT_SURFACE` without a new palette. The app skin `data-skin="midnight"` shares the name and is unchanged.
+
+**Violet exception.** The owner chose to keep Midnight's violet (#A68BF2) as the theme's own accent (2026-10-26). A stock website theme's palette may carry violet. The exception is explicit: `scripts/probes/violet-family.mjs` scans `lib/sites/editor/theme-contract.json` like any other file and allows only the listed hexes of the Wildheart and Midnight entries. Any other violet anywhere still fails. A Space's own accent overrides the theme accent.
+
+## ADR-1890: A Change theme button in the website editor (LIVE-1450)
+
+**Status:** Accepted · 2026-10-26 · backlog `LIVE-1450` · owner-directed (the Mega Theme plan, the editor half of the switcher) · builds on [ADR-1881](DECISIONS.md) and [ADR-1883](DECISIONS.md)
+
+**Context.** Daniel decided the theme picker lives at Space creation and as a Change theme button in the editor. The editor's Theme tab already listed the themes and the starter kits, but as one long run of rows with no single place that says what the Space wears now.
+
+**Decision.** (1) The Theme tab opens with a Change theme row that names the current theme. It opens a dialog (`components/sites/editor/theme-changer.tsx`) showing every theme as a card with its swatch and description, the current one marked, and a preview note for a theme not yet live. (2) Below the cards sits the kit library, filtered to the theme the draft now wears, so a pick leads straight to that theme's niche kits. (3) The tab and the dialog share one `pickTheme` handler: one undo step, positions reset to the new layout, the site style saved at once, nothing live until publish. (4) The inline theme list stays as it was, so no pinned test moves.
+
+**Rejected.** Replacing the inline list with the button alone (it moves a test pin that needs the owner's words, and it hides the swatches). A second pick path with its own save logic.
+
+**Consequences.** Each theme that gains niche kits shows them in this dialog with no further editor change. A theme with no kit yet shows no Starter kits section.
+
+## ADR-1895: A theme gallery at /themes (LIVE-1460)
+
+**Status:** Accepted · 2026-10-26 · backlog `LIVE-1460` · owner-directed (the Mega Theme plan, the gallery) · builds on [ADR-1881](DECISIONS.md)
+
+**Context.** Midnight has a feature page and a live preview. The other themes had nowhere to be seen outside the editor, and no page answered "which look fits my work".
+
+**Decision.** (1) `/themes` lists every theme as a card, read from `SITE_THEMES` and the light kit index, so it cannot drift from the editor. (2) Each kit links to Space creation with its niche (`/spaces/new?niche=`); a theme with a feature page links to it; Midnight carries its live preview. (3) The page uses the template kit only, with no CSS of its own, and is static (no request data). Kit content is not imported; only the index is. (4) The page names the editor's Change theme button as the way back.
+
+**Rejected.** Real previews for every theme now (only Midnight has a demo site; each theme adds its own as its variants land). A new palette swatch component (it would need CSS of its own).
+
+**Consequences.** A theme gains its preview and kits on the gallery by adding them to the kit index and, optionally, `THEME_PAGES`.
+
+## ADR-1900: The Designer mega theme (LIVE-1490)
+
+**Status:** Accepted · 2026-10-26 · backlog `LIVE-1490` · owner-directed (a seventh theme from the Alli Rae Build + Design system) · follows [ADR-1885](DECISIONS.md) (Midnight)
+
+**Context.** Alli Rae Build + Design supplied a design system for a light, material, photography-led site. The mega theme model (ADR-1881) already dresses website, Spotlight and Space page from one package.
+
+**Decision.** (1) `designer` joins the site theme registry, the mega theme list and the editor theme list, with a contract entry. (2) One token file, `lib/theme/designer.ts`, feeds the skin, the block sheet and the Spotlight preset; no CSS file spells a color. (3) The design's 13 sections are 13 registered editor blocks in the `designer` palette category, drawn as their own render by the planner. (4) The faces load on the site page only. (5) The Program template and the page set carry plain placeholder copy; a business's own words and photos belong to its Space, never to the theme.
+
+**Rejected.** Copying the design's inline styles (they hold raw values). A client carousel for every block (only the testimonials and the form need script). A dark Space surface (Designer is light, so the app's own surfaces stand).
+
+**Consequences.** Niche kits, the gallery card and a feature page follow as data on this package.
+
+## ADR-1905: A Midnight variant is a set of opt-in blocks and block props, never a change to Midnight
+
+**Status:** Accepted. 2026-10-27.
+
+House of Fates is a Midnight site with its own practice sections. The variant lives in new blocks (`midnight-practice.tsx`), new opt-in props on existing blocks (hero `left` layout, `pos`, `tone`), and CSS appended after the Midnight blocks CSS and scoped under `[data-house-theme="midnight"]`. Every default stays as it was, so no other Midnight Space changes. The soft photo tone is `data-tone="soft"` on the block, not a theme change. Chrome additions (a saved footer utility line in the top bar, a footer sign-up) render only when the Space has saved those fields.
+
+The site's booking links point to the contact page until the Space has weekly hours (`HOF_BOOKING_LIVE`), so no button leads to an empty /book.
+
+## ADR-1906: A white-label website theme never styles a Frequency member or admin area
+
+**Status:** Accepted. 2026-10-27. Owner ruling (Daniel).
+
+A Space's website theme (Midnight, Designer and the other mega themes) is scoped to the stand-alone site render. Anything under `app/(main)` resolves a Space's own brand accent and its own Space-page fonts (`memberSpaceFonts`) and nothing from the website: no surface, no faces, no website accent or font set. The Space layout had passed all four to the AccentScope around the console, which is how House of Fates' Midnight ground reached `/spaces/<slug>/manage`.
+
+`app/(main)/no-site-theme-in-member-area.test.ts` holds it. Exceptions stay named and open: the signed-out share page under `app/(public)/spaces`, and Network blocks inside a member profile page.
+
+## ADR-1907: The named exceptions to ADR-1906 are closed
+
+**Status:** Accepted. 2026-10-27. Owner ruling (Daniel): the rule has no exceptions.
+
+ADR-1906 kept two doors open: the signed-out Space share page, and Network sections on a member profile page. Both are closed. The share page and the public event page live on frequencylocal.com, so they wear the Frequency look plus the Space's own accent and fonts. Network sections on a Frequency page take only their structural block sheet, never the Network paper, scheme or faces. `app/(main)/no-site-theme-in-member-area.test.ts` now walks `app/(main)`, `app/(public)/spaces`, `app/(public)/events`, `components/spaces` and `components/frequency/members`.
+
+AccentScope still carries its optional surface and faces props. Nothing passes them, and the test fails if something does.
+
+## ADR-1910: The theme library is seven theme pages read from one catalog, not 42 kit pages (LIVE-1514)
+
+**Status:** Accepted · 2026-10-27 · backlog `LIVE-1514` · owner-directed (the theme library) · builds on [ADR-1895](DECISIONS.md) and [ADR-1906](DECISIONS.md)
+
+**Context.** The owner wants a slick theme library: an index of every kit in two columns showing the full kit, and a full sales page per kit, where each theme carries every option and the owner turns on only what they need. Shopify's theme store models a theme with style presets; Webflow lists cards with thumbnail and feature icons.
+
+**Decision.** (1) The theme is the product and its six niche kits are its presets, so there are seven pages, not 42. (2) `lib/themes/library.ts` is the one catalog (tagline of 70 characters or less, who it is for, per-surface status, tools, look controls, picture slots); the index and `/themes/[theme]` read it with SITE_THEMES and KIT_INDEX. (3) A surface is marked ready only when it ships; today Spotlight and email are ready for Midnight alone, and Designer has Spotlight. (4) Pictures are listed in `lib/themes/library-assets.ts` and a test fails when the list and `public/themes` disagree, because a serverless render cannot check the filesystem. (5) The Space page is described as the Frequency frame wearing fonts and accent only (ADR-1906).
+
+**Rejected.** One page per kit (42 thin pages, weak for search). A filesystem check at render. Claiming a theme on every surface before its Spotlight and email exist.
+
+**Consequences.** A new theme is a catalog entry, not a page. Open work: a General stock kit per theme, Spotlight and email surfaces for the rest, a theme parameter on Space creation, demos, and the owner's 42 pictures.
+
+## ADR-1911: One apply function for a Mega Theme (design once)
+
+**Status:** Accepted 2026-10-27. Builds on [ADR-1881](DECISIONS.md) and respects [ADR-1906](DECISIONS.md).
+
+**Context.** A Mega Theme was a stored choice (`preferences.megaTheme`) that nothing applied to every surface. The editor's picker set the website style only, and the create Wizard had no theme step.
+
+**Decision.** `lib/theme/apply-mega-theme.ts` is the one place a theme choice is applied. `applyMegaTheme(spaceId, themeId)` saves the choice record and the website style with its font set, fills a blank brand accent, and dresses the owner's Spotlight when the caller names their profile. Email reads the saved choice through `lib/theme/surface.ts`. `megaThemeSurfaces()` states which surfaces exist per theme. The Space page takes only a font set and an accent; the site-theme fence ([ADR-1906](DECISIONS.md)) is unchanged and this module imports no site skin.
+
+**Consequences.** The editor picker, the `?theme=` option on Space creation and the Wizard call this function instead of writing their own. A brand color the owner picked is never replaced. Spotlight is written only on an explicit owner pick.
+
+## ADR-1920: A design system is walked file by file against the repo
+
+**Status:** Accepted 2026-10-28. Builds on [ADR-1911](DECISIONS.md) and [ADR-1906](DECISIONS.md).
+
+**Context.** Alli Rae's design system was called verified after a section-by-section glance, and the header, footer, arch, service tiles, FAQ and form were all off. Nocturne arrived with 348 files and thirteen kits. Looking is not a method.
+
+**Decision.** Every design-system file matches one rule in `docs/design-systems/<theme>/rules.json` (skip, reference, mirror, asset, tokens, copy, built). `scripts/ds-intake.mjs` snapshots the folder (inventory with hashes, tokens, copy) and diffs it against the last snapshot, so a revised design system lists exactly which files to rebuild. `scripts/design-system.test.ts` measures the repo against the snapshot in CI with no copy of the design system: unclaimed files, missing targets, asset bytes, token values and every sentence of the copy-checked sources. Known gaps sit in `baseline.json` and can only shrink.
+
+**Consequences.** A later theme copies the rules file and runs the same steps (`docs/DESIGN-SYSTEM-INTAKE.md`). The visual pass (rendered side by side at two widths) stays human work, but it starts from a list that cannot miss a file.
+
+## ADR-1922: The personal Spotlight is free for every Member
+
+**Status:** Accepted 2026-10-28. Narrows the Spotlight rule in [ADR-431](DECISIONS.md); builds on [ADR-1709](DECISIONS.md).
+
+**Context.** A free Member could not turn on a Spotlight (`spotlight.enable` was Crew+), while the page is the front door of the product and its footer introduces Frequency to every visitor. Link-in-bio products give the page away and charge for control and insight.
+
+**Decision.** `spotlight.enable` and `spotlight.view` are granted to every owner and viewer. Personal selling stays off; tips stay 0%. Crew's part is the look studio, per-link numbers and bigger caps, added in later rows, with no new price. One engine serves personal and Space Spotlights, differentiated by palette and capability.
+
+**Consequences.** More published pages, more moderation surface (the guestbook and report flow already exist). The meters, new blocks and upgrade moments follow in the Spotlight split rows.
+
+## ADR-1923: A theme is a manifest plus a presentation over role blocks
+
+**Status:** Accepted 2026-10-29. Builds on [ADR-1906](DECISIONS.md) (theme fence) and [ADR-1728](DECISIONS.md) (site look).
+
+**Context.** About 95 theme-named blocks (Nocturne, Designer, Network kit, Temple, Temple kit, Wildheart) are styled only on their own theme. A Space that switches theme keeps its pages, so those blocks render as bare text. Themes share no token names; seven private vocabularies exist. The Theme tab promises live blocks stay as they are.
+
+**Decision.** Blocks become roles (Proof, Hero, Steps and about thirteen more) with a fixed slot contract and three to five layout variants. A theme supplies a manifest, core tokens and a presentation layer, and chooses default layouts; an owner's own layout choice wins on a switch. One manifest per theme feeds the catalog, picker, Try it on, editor and design-system intake. Theme CSS moves to static versioned files after a measurement. A required conformance test fails when a theme leaves a role unstyled, with a baseline that can only shrink. Phase 1 ships first: a contract skin for foreign blocks, a palette that offers a family only on its own theme, and a switch warning.
+
+**Consequences.** Live sites never change on their own; legacy block types render as today on their own theme, and owners convert per page. Old theme ids stay in code. The theme fence holds: theme CSS reaches only the stand-alone site render and the editor canvas. Plan and rows: `docs/THEME-COHESION.md`, `LIVE-1850` to `LIVE-1867`.
+
+## ADR-1926: Consent evidence outlives the Launch it was given in
+
+**Status:** Accepted 2026-10-28. Builds on [ADR-1111](DECISIONS.md).
+
+**Context.** `launch_list_attestations` recorded the consent answer given before an imported email list, but its `launch_id` cascaded on delete, so removing a Launch (or its owner) erased the evidence the record exists to keep.
+
+**Decision.** Keep the minimal evidence: wording version, answer, time and the original launch and source ids as plain uuids (`launch_ref`, `source_ref`). Foreign keys detach (`ON DELETE SET NULL`); triggers stamp the refs, bind a source to its Launch, and refuse any edit or delete; `service_role` can only read and insert. Owner reads end when the evidence detaches. Owner policy (Daniel, 2026-10-28): keep evidence 3 years after the list was imported; a legal hold is a flag only a database owner can set; a subject request deletes the answer and leaves a dated tombstone; only Daniel purges, by a logged SQL change. No scheduled purge job is built, and the hold flag and tombstone are not in this migration.
+
+**Consequences.** Deleting a Launch no longer deletes consent evidence. Privileged database owners can still bypass the controls, so a purge is a deliberate, logged SQL change by the owner, as decided in [`docs/LAUNCH-CONSENT-RETENTION.md`](LAUNCH-CONSENT-RETENTION.md).
+
+## ADR-1930: A PR with no SQL needs only a matching head for migration readiness
+
+**Status:** Accepted 2026-10-29. Narrows the current-base rule of HYG-217 (see `docs/DATABASE.md`); builds on [ADR-1111](DECISIONS.md).
+
+**Context.** The readiness proof required the PR's base to equal current main for every PR. Each merge to main made every open PR's proof stale, including PRs with no migration, so lanes re-merged main and re-ran CI in a loop and the merge freezes grew to cover every lane. The base only matters when the PR adds SQL, because only then does main's migration list have to match production's ledger.
+
+**Decision.** The runner judges SQL or no SQL from the PR's own base and head. A no-SQL PR gets the `not_applicable` result bound to its exact head, and the consumer accepts it whatever main has moved to. A PR that adds SQL keeps every current rule: base equal to current main, the ledger comparison, registration pins, staging proof and the source hashes of the gate files on main. Merge freezes apply only to the migration PR being proven.
+
+**Consequences.** A moving main no longer re-stales ordinary PRs. A no-SQL receipt authenticates by the trusted run identity and the exact head, not by the gate source of today's main; it still states no production claim.
+
+## ADR-1931: The calendar's settings live in one sheet, and the team feed is read before it is made
+
+**Status:** Accepted 2026-10-29. Builds on [ADR-1386](DECISIONS.md) (the private layer and its feed) and [ADR-1531](DECISIONS.md) (the sky).
+
+**Context.** The calendar suite's header had a settings gear that was an anchor to a block of three cards under the calendar, and the handoff draws one Calendar settings sheet. The private team feed could only be made by rotating, which revokes the old link, so a "Copy team feed" button built on it would have broken every subscriber each time someone copied. The team feed also left out two things the suite now has: a Plan's hold, and the hour of a timed to-do.
+
+**Decision.** The gear opens a sheet (`components/calendar-suite/suite-settings.tsx`) over the three fields the page already had, so each still saves through its own gated action and nothing is written twice. Copy team feed calls `ensurePrivateCalendarFeed`, which returns the live link and makes one only when none exists; rotating stays its own press. In the team feed a penciled date is `STATUS:TENTATIVE`, named Hold, with a line saying until when its Plan holds it, and a to-do with `crm_tasks.start_minute` is a block at that minute in the Space's zone, as long as its estimate or half an hour. The website calendar gains a Subscribe panel under its Upcoming list. The suite's own month component does not go on the website: its styles are the console theme's, the handoff marks the website calendar out of scope, and a second set of styles for it would be the one-off CSS the theme fence forbids.
+
+**Consequences.** One place to read how the calendar reads and where it goes. A subscriber's phone shows a hold as a hold and a timed to-do at its hour; an untimed to-do is unchanged. The private feed reads one more row (the Plans behind its pencils) and the Space's zone. If the website should show the suite's month, that is its own row with its own styles.
+
+## ADR-1932: The website calendar draws its own month, from public data only
+
+**Status:** Accepted 2026-10-29. Builds on [ADR-1931](DECISIONS.md), which kept the suite's month off the website because its styles are the console theme's.
+
+**Context.** A Space website's calendar mounted the member calendar workspace in its guest half. That month leans on the console theme (app/themes/frequency/*), which a hosted site never loads, and it fetched later months through a server action that reads the viewer's cookies. The owner asked for the suite's month look on the site.
+
+**Decision.** The site draws its own month (`components/sites/site-month.tsx`) with its own sheet (`site-month-css.ts`), scoped to `[data-site-month]` and imported only inside components/sites, so the theme fence (LIVE-1509) holds and nothing in the member or admin area can pick it up. The sheet reads only tokens the site render defines: the `--color-*` aliases for colour and the DAWN type scale (`--text-*`) for size. The `--fq-*` names are scoped to the Frequency design and inert on a site, which wears DAWN, so they are not used. The server loads the whole window in one cached, anonymous read (`loadPublicSiteWindow`), with no server action and no cookies, and the grid pages inside it. A second lock (`lib/calendar/site-month.ts`) keeps only published gatherings, called-off ones and Unavailable spans, and rebuilds each from a whitelist of fields, so a Pencil, Plan, Production date, to-do, shared-layer item or private note cannot reach a visitor. Under 720px the Agenda is the first view, chosen by CSS so the first paint is right.
+
+**Consequences.** One more sheet to keep in step with the suite's month look. The List and the jump panel the member workspace gave a visitor are replaced by Agenda and paging. A read that hits the store's 300-row cap stops the grid before the last month it can vouch for.
