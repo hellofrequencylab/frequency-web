@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { appOrigin, isShortLinkHost } from '@/lib/sites/host'
 import { publicShareUrl } from '@/lib/qr/public-url'
 import { isPreviewFetcher, isShareSlug, shortenablePath } from '@/lib/share/short-link'
 import { openShareLink } from '@/lib/share/short-link-store'
@@ -12,7 +13,9 @@ export const dynamic = 'force-dynamic'
 // anyone off-site or to a private page. No visitor data is read or stored.
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const origin = new URL(request.url).origin
+  // On freq.ie the visitor always lands on Frequency's own origin, never on the short host.
+  const requestUrl = new URL(request.url)
+  const origin = isShortLinkHost(request.headers.get('host')) ? appOrigin() : requestUrl.origin
   const gone = NextResponse.redirect(new URL('/code-unavailable', origin))
   if (!isShareSlug(slug)) return gone
 

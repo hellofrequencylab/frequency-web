@@ -330,9 +330,9 @@
     },
     "app/s/[slug]/route.ts": {
       "verdict": "public",
-      "reason": "Short share link resolver (LIVE-1960). Anonymous by design: it takes a public slug, counts one open through the service-role-only open_share_link RPC, and redirects to the stored PUBLIC page on this origin with the sharer's ?ref. No caller-supplied value reaches a write beyond the slug lookup. The stored path is re-validated against the public-page resolver on every open, so a bad row cannot reach an admin, manage or feed route. Link-preview fetchers are redirected but not counted. No visitor data is read or stored.",
+      "reason": "Short share link resolver (LIVE-1960). Anonymous by design: it takes a public slug, counts one open through the service-role-only open_share_link RPC, and redirects to the stored PUBLIC page on this origin with the sharer's ?ref. No caller-supplied value reaches a write beyond the slug lookup. The stored path is re-validated against the public-page resolver on every open, so a bad row cannot reach an admin, manage or feed route. Link-preview fetchers are redirected but not counted. No visitor data is read or stored. Re-read 2026-11-02: on the freq.ie short host the redirect is built on Frequency's own origin (appOrigin), never on the short host; no read or write is added.",
       "checked": "2026-11-02",
-      "digest": "e1684e8e7853392f"
+      "digest": "36586496f520465e"
     }
   }
 }

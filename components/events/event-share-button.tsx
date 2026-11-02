@@ -7,6 +7,7 @@ import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { DEFAULT_STYLE } from '@/lib/qr/style'
 import { publicShareUrl } from '@/lib/qr/public-url'
 import { useShortShareUrl } from '@/components/share/use-short-share-url'
+import { ShorterLinkSwitch } from '@/components/share/shorter-link-switch'
 import {
   inlineQrStyleLogo,
   downloadQrSvgString,
@@ -58,7 +59,8 @@ export function EventShareButton({
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const { path: sharePath, url: longUrl } = publicShareUrl(origin, `/events/${slug}`, { ref: sharerProfileId })
   // The short /s/<code> once the panel is open (LIVE-1960); the long URL until then or if it cannot be made.
-  const url = useShortShareUrl(longUrl, sharePath, origin, open)
+  const [shorter, setShorter] = useState(false)
+  const { url, canShorten } = useShortShareUrl(longUrl, sharePath, origin, open, shorter)
 
   const svg = useMemo(() => renderStyledQrSvg(url, { ...DEFAULT_STYLE }, 240), [url])
 
@@ -154,6 +156,7 @@ export function EventShareButton({
               >
                 {url}
               </code>
+              <ShorterLinkSwitch checked={shorter} onCheckedChange={setShorter} available={canShorten} />
               <div className="flex items-center gap-2">
                 <button
                   type="button"

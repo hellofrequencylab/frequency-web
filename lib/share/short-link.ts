@@ -1,3 +1,4 @@
+import { SHORT_LINK_HOST } from '@/lib/sites/host'
 import { publicUrlFor, SAFE_FALLBACK } from '@/lib/qr/public-url'
 
 // SHORT SHARE LINKS (LIVE-1960). The pure half: which pages may get a short link, and what the link looks
@@ -43,4 +44,10 @@ export function isPreviewFetcher(userAgent: string | null | undefined): boolean 
   return /bot|crawl|spider|slurp|preview|facebookexternalhit|embedly|whatsapp|telegram|skype|discord|linkedin|pinterest|headless|curl|wget/i.test(
     userAgent,
   )
+}
+
+/** The shortest form of a `/s/<code>` path: `https://freq.ie/<code>`. Null for anything that is not one. PURE. */
+export function shorterLinkFor(shortPath: string): string | null {
+  const m = /^\/s\/([a-z0-9-]{3,48})$/.exec(shortPath)
+  return m ? `https://${SHORT_LINK_HOST}/${m[1]}` : null
 }
