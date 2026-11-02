@@ -2,15 +2,30 @@
 
 import { useState } from 'react'
 
-// The card people see when this page's link is shared (the page's own opengraph-image route). It sits at
-// the top of the QR & Share panel so a host sees exactly what a link preview will show. A page with no
-// card of its own answers 404, so the image hides itself on error and the panel stays unchanged.
-// Tokens only, no hex; copy carries no em or en dashes.
+// The card people see when this page's link is shared. It reads the page's own og:image tag, which is the
+// exact card URL (the card routes carry a build hash, so the path cannot be guessed). The URL is reduced to
+// its path so the image loads from the same origin as the page. A page with no card has no tag, or the image
+// fails to load, and the preview hides so the panel stays unchanged. Tokens only, no hex; copy carries no
+// em or en dashes.
 
-export function SharePreviewCard({ pathname }: { pathname: string }) {
+function cardPathFromMeta(): string | null {
+  if (typeof document === 'undefined') return null
+  try {
+    const content = document.querySelector('meta[property="og:image"]')?.getAttribute('content')
+    if (!content) return null
+    const u = new URL(content, window.location.origin)
+    return `${u.pathname}${u.search}`
+  } catch {
+    return null
+  }
+}
+
+export function SharePreviewCard() {
+  // Read once when the panel opens (this mounts inside the dialog, never during server render).
+  const [src] = useState(cardPathFromMeta)
   const [failed, setFailed] = useState(false)
-  if (failed || !pathname || pathname === '/') return null
-  const src = `${pathname.replace(/\/$/, '')}/opengraph-image`
+
+  if (!src || failed) return null
 
   return (
     <figure className="mb-4 overflow-hidden rounded-card border border-border bg-canvas">
@@ -20,7 +35,6 @@ export function SharePreviewCard({ pathname }: { pathname: string }) {
         alt="Preview of the card shown when this page is shared"
         width={1200}
         height={630}
-        loading="lazy"
         onError={() => setFailed(true)}
         className="block h-auto w-full"
       />

@@ -101,7 +101,7 @@ export function QrShareDropdown({
         className="max-w-3xl"
       >
         <div className="rounded-card border border-border bg-surface p-4 shadow-pop sm:p-6">
-          <SharePreviewCard pathname={publicPath} />
+          <SharePreviewCard />
           {manager ? (
             <PageQrManager pathname={publicPath} url={url} imageUrl={shareImage} />
           ) : (
