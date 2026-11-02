@@ -14,7 +14,7 @@ import { FqIcon } from '@/components/frequency/icon'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { FEATURE_FALLBACK, ROUTES } from '@/lib/frequency/site-nav'
 import { SITE } from '../shared/links'
-import { aura, photo } from '../shared/parts'
+import { aura, photo, photoImg } from '../shared/parts'
 import { featureCount, PEOPLE, SPACES, type Half } from './features-data'
 import { FeaturesMotion } from './features-motion'
 
@@ -63,7 +63,7 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
               <p>{job.line}</p>
               <div className="jph" data-px=".08">
                 {/* eslint-disable-next-line @next/next/no-img-element -- decorative, sized by .jph img */}
-                <img loading="lazy" decoding="async" src={photo(job.photo)} alt="" />
+                <img loading="lazy" decoding="async" {...photoImg(photo(job.photo), '(max-width: 860px) 100vw, 33vw')} alt="" />
               </div>
             </div>
             <div className="jr">
