@@ -144,6 +144,7 @@
 [data-design="frequency"] [data-kit="members"] .fqc-search{flex:1 1 220px;display:flex;align-items:center;gap:10px;height:42px;padding:0 16px;border-radius:999px;background:color-mix(in oklab,var(--fq-ink) 4%,transparent);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fqc-search .fq-icon{width:16px;height:16px;flex:none}
 [data-design="frequency"] [data-kit="members"] .fqc-search input{flex:1;min-width:0;border:0;background:none;outline:0;font:400 15px/1 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqc-search:focus-within{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
 [data-design="frequency"] [data-kit="members"] .fqc-chips{display:flex;gap:8px}
 [data-design="frequency"] [data-kit="members"] .fqc-fchip{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--fq-border-hair);background:none;color:var(--fq-text-body);font:500 14px/1 var(--fq-font-sans);cursor:pointer}
 [data-design="frequency"] [data-kit="members"] .fqc-fchip.on{background:var(--fq-text-strong);border-color:var(--fq-text-strong);color:var(--fq-surface-card)}
