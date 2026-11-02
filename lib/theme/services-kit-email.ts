@@ -18,7 +18,7 @@
 // a button when none is given), and they promise nothing on a schedule and state no count.
 
 export const SERVICES_EMAIL_TYPES = ['confirm', 'reminder', 'welcome', 'review', 'receipt', 'post', 'event', 'order', 'member', 'letter', 'inquiry'] as const
-export type ServicesEmailType = (typeof SERVICES_EMAIL_TYPES)[number]
+type ServicesEmailType = (typeof SERVICES_EMAIL_TYPES)[number]
 
 /** Who the email is from and how the Space wears the theme. */
 export interface ServicesKitEmailBrand {
@@ -49,7 +49,7 @@ interface ServicesKitEmailRow {
 }
 
 /** The Space's own facts for a send. Every field is optional; the defaults are the design's sample words. */
-export interface ServicesKitEmailFacts {
+interface ServicesKitEmailFacts {
   /** The service booked or bought. */
   service?: { name: string; meta: string; price: string }
   /** When it happens, and a line on where. */
