@@ -12,4 +12,4 @@ for (const f of after) {
     console.error(`FAIL: ${f} re-creates an event RPC with a per-call pg_timezone_names scan`); process.exit(1)
   }
 }
-console.log('ok: event RPCs read private.tz_names')
+console.log('ok: event RPCs read private.tz_names()')
