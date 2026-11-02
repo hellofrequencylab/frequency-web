@@ -36,6 +36,11 @@
   --fqm-glass-tab:linear-gradient(160deg,color-mix(in oklab,var(--fq-surface-card) 86%,transparent),color-mix(in oklab,var(--fq-surface-card) 62%,transparent));
   position:relative;min-height:100dvh;display:flex;flex-direction:column;overflow-x:clip;
 }
+/* A members-kit island nested inside a members page (HubLinks' nav, which carries data-kit so the kit's
+   .sec / .chips classes mean the same thing on a site-kit page) is a row, not a second shell: without this
+   it took the shell's screen-tall minimum and left a viewport of nothing under "More in Events" on /events
+   (visual sweep 2026-11-02). */
+[data-design="frequency"] [data-kit="members"] [data-kit="members"]{min-height:0}
 
 /* The background wash bleeds 12vh past the viewport so ambient.tsx can drift it with the scroll. */
 [data-design="frequency"] [data-kit="members"]>.fq-wash{inset:-12vh 0;will-change:translate}
