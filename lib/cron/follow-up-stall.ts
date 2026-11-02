@@ -7,11 +7,11 @@
 import * as Sentry from '@sentry/nextjs'
 import { log } from '@/lib/log'
 
-export type FollowUpState = 'idle' | 'ok' | 'stalled'
+type FollowUpState = 'idle' | 'ok' | 'stalled'
 
 /** PURE. `due` = items owed this pass, `delivered` = items actually sent, completed or deliberately
  *  stopped. Due work with zero delivered is stalled; no due work is idle. */
-export function assessFollowUp(input: { due: number; delivered: number }): FollowUpState {
+function assessFollowUp(input: { due: number; delivered: number }): FollowUpState {
   if (input.due <= 0) return 'idle'
   return input.delivered > 0 ? 'ok' : 'stalled'
 }

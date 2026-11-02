@@ -1,12 +1,15 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('@sentry/nextjs', () => ({ captureMessage: vi.fn() }))
 vi.mock('@/lib/log', () => ({ log: { error: vi.fn(), info: vi.fn() } }))
 
 import * as Sentry from '@sentry/nextjs'
-import { assessFollowUp, reportFollowUp } from './follow-up-stall'
+import { reportFollowUp } from './follow-up-stall'
+
+const assessFollowUp = reportFollowUp.bind(null, 'job')
 
 describe('follow-up stall', () => {
+  beforeEach(() => vi.clearAllMocks())
   it('nothing due is idle, not a failure', () => {
     expect(assessFollowUp({ due: 0, delivered: 0 })).toBe('idle')
   })
