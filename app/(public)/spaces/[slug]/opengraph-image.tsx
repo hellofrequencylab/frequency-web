@@ -82,6 +82,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     kicker: spaceTypeLabel(space.type),
     title: hero.heading,
     line: hero.tagline,
+    cta: 'Join',
     coverUrl: space.coverImageUrl,
     coverPlaceholder: await coverPlaceholderDataUrl(coverPlaceholderFor(space.id)),
     logoUrl: space.brandLogoUrl,

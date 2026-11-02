@@ -58,7 +58,9 @@ export async function eventCardResponse(input: EventCardInput): Promise<Response
     title: input.title,
     meta: [input.when, input.where].filter(Boolean).join(' · ') || null,
     line: input.hostLine ?? 'A community gathering',
-    chip: input.chip,
+    badge: input.chip,
+    // A cancelled event has nothing to RSVP to, so the card drops the button rather than invite one.
+    cta: input.isCancelled ? null : 'RSVP',
     chipIsWarning: input.isCancelled,
     coverUrl: input.coverUrl,
     coverFocus: input.coverFocus,

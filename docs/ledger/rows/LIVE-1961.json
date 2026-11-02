@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1961",
+  "title": "Rebuild every share card in the dark Frequency marketing style",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "lib/og/stage-card.tsx",
+    "ref": "Owner request 2026-11-02: marketing-style share cards, header image, pills, key facts, RSVP on events"
+  },
+  "detail": "One shared Stage card in a new marketing layout: full-bleed header image under angled pink and blue washes, mirrored orbs, uniform white-text pills (type top left, badge top right, tags bottom left), title and one subtitle, one small details line on an angled dark gradient, and a drawn action button (RSVP, Join, View). PR 1 rebuilds the shared component and wires events, Spaces and listings. Later PRs wire the remaining routes (Circles, Journeys, Spotlights, cities, practices, help, claim cards, theme and marketing pages) and the in-app share panel previews. No persona, Journey, Circle topic or wellness data on any card.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-02",
+    "remaining": "Remaining routes and the in-app share panel still render the older layout inputs.",
+    "evidence": "Shared component rendered through the real renderer for event, Space, listing and no-photo cards; lib/og tests pass."
+  },
+  "wave": "W7"
+}
