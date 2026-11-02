@@ -91,8 +91,16 @@ const SERIF = "'Instrument Serif', Georgia, serif"
 const SANS = "'Hanken Grotesk', Helvetica, Arial, sans-serif"
 const MONO = DISP
 
-// The design's own register neutrals (EmailPage.html, revision 2) and the ink on a filled accent button.
-const NIGHT = { page: '#06030C', bg: '#0A0612', card: '#140B22', text: '#F6F0FF', muted: '#A89BC2', hair: '#2A1A45', on: '#0A0612' }
+// The design's register neutrals (EmailPage.html, revision 2) and the ink on a filled accent button. The Night card and
+// hairline are the design's deep violet tints; the platform keeps violet hexes out of lib (LIVE-962),
+// so both are derived here from the page and text colours the design names, a few steps lighter than the page.
+function mix(a: string, b: string, t: number): string {
+  const ch = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16)
+  return `#${[0, 1, 2].map((i) => Math.round(ch(a, i) * t + ch(b, i) * (1 - t)).toString(16).padStart(2, '0')).join('').toUpperCase()}`
+}
+const NIGHT_BG = '#0A0612'
+const NIGHT_TEXT = '#F6F0FF'
+const NIGHT = { page: '#06030C', bg: NIGHT_BG, card: mix(NIGHT_TEXT, NIGHT_BG, 0.06), text: NIGHT_TEXT, muted: '#A89BC2', hair: mix(NIGHT_TEXT, NIGHT_BG, 0.14), on: NIGHT_BG }
 const DAY = { page: '#F6F5F3', bg: '#FFFFFF', card: '#F6F5F3', text: '#34312E', muted: '#7C766F', hair: '#ECE9E4', on: '#FFFFFF' }
 
 const esc = (s: string): string =>
