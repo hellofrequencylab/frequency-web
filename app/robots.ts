@@ -83,6 +83,8 @@ const DISALLOW = [
   // opens (/card/<token>, which carries its own noindex). Token-addressed, one person's card each.
   "/c/",
   "/card/",
+  // Short share links (LIVE-1960): redirects to a public page that is indexed on its own address.
+  "/s/",
 ];
 
 // AI answer engines and their crawlers. We name each one explicitly (allow "/",

@@ -1,0 +1,21 @@
+{
+  "id": "PERF-003",
+  "title": "Stop six event RPCs scanning pg_timezone_names on every call (/discover statement timeouts)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "supabase/migrations/20270346024600_public_discovery_event_instants.sql",
+    "ref": "Meta scan 2026-11-02 (audits/meta-scan-2026-11-02.md), live EXPLAIN ANALYZE plus Vercel runtime errors"
+  },
+  "detail": "public_events(200) took 537 ms in production against 2.7 ms with the zone list fixed. Its materialized CTE reads pg_catalog.pg_timezone_names (1,196 rows, about 80 ms alone) per call; density_by_city, event_calendar_feed, public_calendar_feed, public_organizer_events and space_public_calendar_feed do the same. Vercel runtime errors: 17 'canceling statement due to statement timeout' on /discover/events, circles, cities, topics since 2026-09-14. Expected lift: /discover and the home live data drop about 500 ms of database time per uncached request and the timeouts stop.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/perf-event-rpcs-tz.mjs",
+    "checked": "2026-11-02",
+    "evidence": "Probe passes on this branch; migration applied to production and public_events(200) re-measured."
+  },
+  "wave": "W7",
+  "closed": "2026-11-02"
+}
