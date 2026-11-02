@@ -15,6 +15,64 @@ export type Database = {
   public: {
     Tables: {
       // Migration 20270346025300 schema; refresh from the catalog after canonical apply.
+      share_link_opens: {
+        Row: {
+          day: string
+          link_id: string
+          opens: number
+        }
+        Insert: {
+          day: string
+          link_id: string
+          opens?: number
+        }
+        Update: {
+          day?: string
+          link_id?: string
+          opens?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_link_opens_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "share_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      share_links: {
+        Row: {
+          created_at: string
+          id: string
+          path: string
+          sharer_profile_id: string | null
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          path: string
+          sharer_profile_id?: string | null
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          path?: string
+          sharer_profile_id?: string | null
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_links_sharer_profile_id_fkey"
+            columns: ["sharer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_discovery_connections: {
         Row: {
           space_id: string
@@ -19129,6 +19187,13 @@ export type Database = {
         Returns: Json
       }
       next_member_card_number: { Args: never; Returns: number }
+      open_share_link: {
+        Args: { p_count?: boolean; p_slug: string }
+        Returns: {
+          path: string
+          sharer_profile_id: string
+        }[]
+      }
       read_accepted_email_provider_attempt: {
         Args: {
           p_queue_job_id: string

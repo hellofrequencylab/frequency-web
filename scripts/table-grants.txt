@@ -374,3 +374,5 @@ launch_sources                        authenticated
 launch_facts                          authenticated
 launch_list_attestations              authenticated
 launch_email_log                      internal
+share_links                           internal
+share_link_opens                      internal

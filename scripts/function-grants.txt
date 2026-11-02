@@ -335,3 +335,4 @@ card_meet                            internal
 room_create_atomic internal
 room_remove_member_atomic internal
 room_set_member_admin_atomic internal
+open_share_link internal
