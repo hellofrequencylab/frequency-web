@@ -1,3 +1,4 @@
+import { siteToday } from '@/lib/sites/site-events'
 import type { ReactNode } from 'react'
 import { ArrowRight, Calendar, ChevronDown, Clock, MapPin, Users } from 'lucide-react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
@@ -149,7 +150,7 @@ function upcoming(metadata: Props | undefined, now: Date): EventRow[] {
     rows = expandSiteSeries(own, { through: new Date(now.getTime() + WINDOW_DAYS * 86_400_000), from: now })
     CACHE.set(space, rows)
   }
-  const today = now.toISOString().slice(0, 10)
+  const today = siteToday(now)
   return rows.filter((e) => !e.isCancelled && e.startsAt.slice(0, 10) >= today).sort((a, b) => a.startsAt.localeCompare(b.startsAt))
 }
 

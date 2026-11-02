@@ -1,3 +1,4 @@
+import { siteToday } from '@/lib/sites/site-events'
 import type { ReactNode } from 'react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 import { layoutField, layoutDefault, type LayoutValue } from '@/lib/page-editor/layout'
@@ -181,7 +182,7 @@ const clock = (d: Date) => `${d.getUTCHours() % 12 || 12}:${String(d.getUTCMinut
 function liveEvents(metadata: Props | undefined, now: Date, count: number) {
   const raw = (metadata?.space as { events?: unknown } | undefined)?.events
   if (!Array.isArray(raw)) return []
-  const today = now.toISOString().slice(0, 10)
+  const today = siteToday(now)
     return raw
     .filter(isRow)
     .filter((e) => !e.isCancelled && e.startsAt.slice(0, 10) >= today)
