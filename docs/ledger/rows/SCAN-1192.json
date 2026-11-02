@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-1192",
+  "title": "The Circle search field shows a keyboard focus ring",
+  "lane": "live",
+  "priority": "P2",
+  "size": "XS",
+  "status": "done",
+  "closed": "2026-11-02",
+  "source": { "file": "app/themes/frequency/members-circle.css", "ref": "Rescan 2026-11-02 (audits/rescan-2026-11-02.md), WCAG 2.4.7" },
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/circle-search-focus-ring.mjs", "note": "Fails before the fix: .fqc-search input sets outline:0 and the wrapper has no :focus-within rule." },
+  "detail": "Same class as the 2026-10-22 audit finding 1. The input inside .fqc-search removes its outline and nothing replaced it, so keyboard users get no indicator. The wrapper now carries a 2px outline in the focus-ring token on :focus-within.",
+  "wave": "W7"
+}
