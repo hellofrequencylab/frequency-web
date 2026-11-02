@@ -205,6 +205,8 @@
 .cs-upload:hover{background:color-mix(in oklab,var(--fq-text-strong) 5%,transparent)}
 .cs-upload input{position:absolute;width:1px;height:1px;opacity:0}
 .cs-upload svg{width:18px;height:18px}
+.cs-upload.cs-photo-round{border-radius:50%}
+.cs-logo-img{position:relative;width:70%;height:40px}
 
 /* Step 5: save, and the saved state. */
 .cs-sum{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:var(--fq-radius-m);background:color-mix(in oklab,var(--fq-text-strong) 4%,transparent);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
