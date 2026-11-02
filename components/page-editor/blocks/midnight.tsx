@@ -1,3 +1,4 @@
+import { siteToday } from '@/lib/sites/site-events'
 import type { ReactNode } from 'react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from '@/lib/page-editor/layout'
@@ -127,7 +128,7 @@ const clock = (d: Date) => `${d.getUTCHours() % 12 || 12}:${String(d.getUTCMinut
 function upcoming(metadata: Props | undefined, now: Date): EventRow[] {
   const raw = spaceOf(metadata)?.events
   if (!Array.isArray(raw)) return []
-  const today = now.toISOString().slice(0, 10)
+  const today = siteToday(now)
   return raw.filter(isRow).filter((e) => !e.isCancelled && e.startsAt.slice(0, 10) >= today).sort((a, b) => a.startsAt.localeCompare(b.startsAt))
 }
 
