@@ -4145,6 +4145,38 @@ export type Database = {
           },
         ]
       }
+      create_space_draft_email_log: {
+        Row: {
+          draft_id: string
+          id: string
+          message_ref: string | null
+          sent_at: string
+          trigger_kind: string
+        }
+        Insert: {
+          draft_id: string
+          id?: string
+          message_ref?: string | null
+          sent_at?: string
+          trigger_kind: string
+        }
+        Update: {
+          draft_id?: string
+          id?: string
+          message_ref?: string | null
+          sent_at?: string
+          trigger_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "create_space_draft_email_log_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "create_space_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_tips: {
         Row: {
           content_id: string

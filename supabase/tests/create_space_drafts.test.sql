@@ -17,7 +17,7 @@
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
 begin;
-select plan(14);
+select plan(18);
 
 -- ── 1. Posture ──────────────────────────────────────────────────────────────────────────────────
 
@@ -32,6 +32,15 @@ select is(has_table_privilege('anon', 'public.create_space_drafts', 'select'), f
 select is(has_table_privilege('anon', 'public.create_space_drafts', 'insert'), false, 'anon cannot insert');
 select is(has_table_privilege('authenticated', 'public.create_space_drafts', 'select'), false, 'authenticated cannot select');
 select is(has_table_privilege('authenticated', 'public.create_space_drafts', 'update'), false, 'authenticated cannot update');
+
+-- ── 1b. The claim log (20270346028700) wears the same posture ─────────────────────────────────
+
+select has_table('public', 'create_space_draft_email_log', 'create_space_draft_email_log exists');
+select is(
+  (select relrowsecurity from pg_class where oid = 'public.create_space_draft_email_log'::regclass),
+  true, 'the log has RLS on');
+select is(has_table_privilege('anon', 'public.create_space_draft_email_log', 'select'), false, 'anon cannot read the log');
+select is(has_table_privilege('authenticated', 'public.create_space_draft_email_log', 'insert'), false, 'authenticated cannot write the log');
 
 -- ── 2. Ceilings ─────────────────────────────────────────────────────────────────────────────────
 

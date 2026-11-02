@@ -114,9 +114,9 @@
     },
     "app/api/unsubscribe/route.ts": {
       "verdict": "delegated",
-      "reason": "RFC 8058 one-click unsubscribe. Mailbox providers POST with no session by spec. The handler forwards to processUnsubscribe / processSpaceUnsubscribe (app/unsubscribe/actions.ts), which verify the signed `t` token themselves; the route never touches the DB. 2026-09-05 (scan two L2-01): GET no longer forwards to POST; it redirects to the /unsubscribe confirm page, so only the RFC 8058 POST acts.",
-      "checked": "2026-09-05",
-      "digest": "a2d07c56b8f58fba"
+      "reason": "RFC 8058 one-click unsubscribe. Mailbox providers POST with no session by spec. The handler forwards to processUnsubscribe / processSpaceUnsubscribe (app/unsubscribe/actions.ts), which verify the signed `t` token themselves; the route never touches the DB. 2026-09-05 (scan two L2-01): GET no longer forwards to POST; it redirects to the /unsubscribe confirm page, so only the RFC 8058 POST acts. 2026-11-02 (LIVE-1968): a third branch, `d`, forwards to processDraftUnsubscribe, which verifies the draft's HMAC link token (lib/create-space/draft-io.ts unsubscribeDrafts) before it writes; the route still reads nothing and always answers 200.",
+      "checked": "2026-11-02",
+      "digest": "692952f43ff7bf61"
     },
     "app/api/vera/turn/route.ts": {
       "verdict": "public",
