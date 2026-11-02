@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { WIZARD_INTENTS } from '@/lib/spaces/create-wizard'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
-import { INTENT_LOOK, PREVIEW_KITS, deriveSite, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
+import { INTENT_LOOK, PREVIEW_CLIP, PREVIEW_KITS, asSentence, clipPreview, deriveSite, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
 
 const base = { name: '', handle: '', hostName: '', intents: [] as string[], kit: 'designer' as const }
 
@@ -11,7 +11,12 @@ describe('preview site', () => {
   })
 
   it('every kit has pictures; every offered kit has accents', () => {
-    for (const t of MEGA_THEMES) expect(kitImagery(t.id).strip).toHaveLength(3)
+    for (const t of MEGA_THEMES) {
+      expect(kitImagery(t.id).strip).toHaveLength(3)
+      expect(kitImagery(t.id).covers.length, t.id).toBeGreaterThan(0)
+      expect(kitImagery(t.id).portraits.length, t.id).toBeGreaterThan(0)
+    }
+    expect(kitImagery('designer').covers).toHaveLength(5)
     for (const k of PREVIEW_KITS) expect(kitAccents(k.id).length, k.id).toBeGreaterThan(0)
   })
 
@@ -32,5 +37,27 @@ describe('preview site', () => {
     expect(s.tagline).toBe('Classes and gatherings, all in one place.')
     expect(s.links[2]).toBe('About Sam')
     expect(s.offers.map((o) => o.n)).toEqual(['I', 'II', 'III'])
+  })
+
+  it('is a ghost until step 2, then their own sentence is the tagline', () => {
+    expect(deriveSite(base).fromOffer).toBe(false)
+    const s = deriveSite({ ...base, intents: ['classes'], offer: 'weekly pottery classes and open studio nights' })
+    expect(s.fromOffer).toBe(true)
+    expect(s.tagline).toBe('Weekly pottery classes and open studio nights.')
+    expect(deriveSite({ ...base, offer: 'x'.repeat(200) }).tagline).toHaveLength(PREVIEW_CLIP.tagline)
+  })
+
+  it('fills the contact strip from step 3 and leaves it empty before', () => {
+    expect(deriveSite(base).contact).toEqual({ visit: '', write: '', call: '' })
+    const s = deriveSite({ ...base, reach: { email: 'sam@example.com', phone: '555 0100', where: 'Carlsbad' } })
+    expect(s.contact).toEqual({ visit: 'Carlsbad', write: 'sam@example.com', call: '555 0100' })
+  })
+
+  it('clips and cleans what it shows', () => {
+    expect(clipPreview('  **Bold** `code`  — and  more  ', 40)).toBe('Bold code , and more')
+    expect(asSentence('hello  there')).toBe('Hello there.')
+    expect(asSentence('Done!')).toBe('Done!')
+    expect(asSentence('   ')).toBe('')
+    for (const o of deriveSite(base).offers) expect(o.t.length).toBeLessThanOrEqual(PREVIEW_CLIP.offerTitle)
   })
 })

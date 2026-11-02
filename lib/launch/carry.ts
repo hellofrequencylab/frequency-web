@@ -4,7 +4,9 @@
 // PURE and client-safe: no imports from the app, so a probe can run it under node.
 //
 // The Spotlight form itself reads `name`, `line` and `link`. The keys below ride beside them in the same hold:
-// the handle the visitor claimed, the Theme Kit they picked, their accent, and the host's name.
+// the handle the visitor claimed, the Theme Kit they picked, their accent, the host's name, and (from the v3 builder,
+// ADR-1933) their one offer sentence, phone, place and photo choices. The hold keeps twelve keys per step
+// (lib/launch/pending.ts), and name + link + the ten here are exactly twelve: a new key needs that cap raised first.
 
 export interface LaunchCarry {
   /** A Space handle, lowercase letters and digits with single hyphens inside, 2 to 40 characters. */
@@ -15,7 +17,26 @@ export interface LaunchCarry {
   accent?: string
   /** The host's name as the visitor typed it. */
   host?: string
+  /** The one sentence they wrote about what they offer (/create-a-space step 2). The Spotlight form reads `line`. */
+  line?: string
+  /** A phone number for the contact section: digits, spaces and + ( ) - only, up to 30 characters. */
+  phone?: string
+  /** Where they work, as typed ("A city, or Online"), up to 80 characters. */
+  where?: string
+  /** Which cover picture they chose on /create-a-space: a theme photo slot (s0, s1...) or their own upload (up). */
+  cover?: string
+  /** The logo choice: the wordmark, a monogram or an upload. */
+  logo?: string
+  /** The host photo choice: a theme portrait slot, their initials or an upload. */
+  profile?: string
 }
+
+/** The photo tokens the hold may carry: a slot, an upload marker, or the drawn choices. Never a file, never a URL
+ *  (lib/launch/pending.ts holds short text only; the files stay in the visitor's browser until there is an account). */
+const PHOTO_TOKEN = /^(s\d|up|word|mono|initials)$/
+const PHONE = /^[\d\s+()-]{3,30}$/
+const LINE_MAX = 160
+const WHERE_MAX = 80
 
 const HANDLE = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const THEME = /^[a-z0-9-]{1,40}$/
@@ -34,6 +55,16 @@ export function readCarry(answers: Record<string, string> | undefined | null): L
   if (typeof answers?.accent === 'string' && /^\d{1,2}$/.test(answers.accent)) carry.accent = answers.accent
   const host = typeof answers?.host === 'string' ? answers.host.replace(/\s+/g, ' ').trim().slice(0, 80) : ''
   if (host) carry.host = host
+  const line = typeof answers?.line === 'string' ? answers.line.replace(/\s+/g, ' ').trim().slice(0, LINE_MAX) : ''
+  if (line) carry.line = line
+  const phone = typeof answers?.phone === 'string' ? answers.phone.trim() : ''
+  if (phone && PHONE.test(phone)) carry.phone = phone
+  const where = typeof answers?.where === 'string' ? answers.where.replace(/\s+/g, ' ').trim().slice(0, WHERE_MAX) : ''
+  if (where) carry.where = where
+  for (const key of ['cover', 'logo', 'profile'] as const) {
+    const v = answers?.[key]
+    if (typeof v === 'string' && PHOTO_TOKEN.test(v)) carry[key] = v
+  }
   return carry
 }
 
@@ -44,5 +75,11 @@ export function carryFields(carry: LaunchCarry): Record<string, string> {
   if (carry.theme) out.theme = carry.theme
   if (carry.accent) out.accent = carry.accent
   if (carry.host) out.host = carry.host
+  if (carry.line) out.line = carry.line
+  if (carry.phone) out.phone = carry.phone
+  if (carry.where) out.where = carry.where
+  if (carry.cover) out.cover = carry.cover
+  if (carry.logo) out.logo = carry.logo
+  if (carry.profile) out.profile = carry.profile
   return out
 }

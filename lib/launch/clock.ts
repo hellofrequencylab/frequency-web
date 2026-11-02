@@ -5,8 +5,6 @@
 // never more than thirty seconds, so a closed tab cannot run the clock. It never shames: past twelve minutes the clock
 // keeps counting as bonus time and the person keeps going. PURE (no app imports), so a probe can run it under node.
 
-const CLOCK_BUDGET_MS = 12 * 60 * 1000
-
 /** How often the open page reports in while the person is working. */
 export const BEAT_EVERY_MS = 15_000
 /** The most one heartbeat may add. Twice the beat, so one late beat is forgiven and a gap is not. */
@@ -54,7 +52,11 @@ export interface ClockView {
   running: boolean
 }
 
-function formatClock(ms: number): string {
+/** The twelve minutes the clock counts down from. /create-a-space shows the same number in its H1 (ADR-1933). */
+export const CLOCK_BUDGET_MS = 12 * 60 * 1000
+
+/** m:ss from milliseconds, rounded up to the next second. Shared with the /create-a-space hero so both clocks agree. */
+export function formatClock(ms: number): string {
   const total = Math.max(0, Math.ceil(ms / 1000))
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 }

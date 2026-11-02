@@ -46,6 +46,10 @@ export interface KitImagery {
   strip: readonly [string, string, string]
   nav1: string
   cta2: string
+  /** Cover pictures the Photos step offers (slot s0 is the hero). A kit without its own library offers the gathering photos. */
+  covers: readonly string[]
+  /** Host portraits the Photos step offers (slot s0 is the portrait). */
+  portraits: readonly string[]
 }
 
 const DESIGNER_PHOTO = (name: string) => `/sites/designer/photos/${name}.webp`
@@ -54,6 +58,7 @@ const FREQUENCY_PHOTO = (n: 1 | 2 | 3) => `/create-a-space/photos/pain-${n}.jpg`
 const FREQUENCY_IMAGERY: KitImagery = {
   hero: FREQUENCY_PHOTO(2), heroPos: 'center', portrait: FREQUENCY_PHOTO(1), portraitPos: 'center',
   strip: [FREQUENCY_PHOTO(1), FREQUENCY_PHOTO(3), FREQUENCY_PHOTO(2)], nav1: 'Offerings', cta2: 'Learn more',
+  covers: [FREQUENCY_PHOTO(2), FREQUENCY_PHOTO(1), FREQUENCY_PHOTO(3)], portraits: [FREQUENCY_PHOTO(1)],
 }
 
 /** Each kit's sample pictures. Designer wears its own library; every other kit wears the gathering photography
@@ -64,6 +69,8 @@ const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<Meg
     portrait: DESIGNER_PHOTO('dz-portrait-01'), portraitPos: '48% 30%',
     strip: [DESIGNER_PHOTO('dz-house-front'), DESIGNER_PHOTO('dz-kitchen-island'), DESIGNER_PHOTO('dz-designer-sofa')],
     nav1: 'Portfolio', cta2: 'View work',
+    covers: [DESIGNER_PHOTO('dz-designer-kitchen-hero'), DESIGNER_PHOTO('dz-courtyard-arch'), DESIGNER_PHOTO('dz-house-front'), DESIGNER_PHOTO('dz-kitchen-island'), DESIGNER_PHOTO('dz-designer-sofa')],
+    portraits: [DESIGNER_PHOTO('dz-portrait-01'), DESIGNER_PHOTO('dz-portrait-02')],
   },
   midnight: FREQUENCY_IMAGERY,
   'network-kit': FREQUENCY_IMAGERY,
@@ -136,6 +143,26 @@ interface SiteInput {
   hostName: string
   intents: readonly string[]
   kit: MegaThemeId
+  /** Their one sentence about what they offer (v3 step 2). When given, it is the tagline, as they wrote it. */
+  offer?: string
+  /** How clients reach them (v3 step 3): the contact strip and the Spotlight read these. */
+  reach?: { email?: string; phone?: string; where?: string }
+}
+
+/** The preview's clipping limits (README section 4): short lines stay on one line in the browser window. */
+export const PREVIEW_CLIP = { em: 28, tagline: 110, eyebrow: 32, offerTitle: 26, offerDetail: 30 } as const
+
+/** Text as the preview shows it: markdown-ish characters stripped, dashes read as commas, spaces folded, cut to n. */
+export function clipPreview(v: string, n: number): string {
+  return v.replace(/[*_`#\\]+/g, '').replace(/[\u2014\u2013]/g, ', ').replace(/\s+/g, ' ').trim().slice(0, n)
+}
+
+/** A sentence from what they typed: first letter up, one full stop at the end, nothing when empty. */
+export function asSentence(v: string): string {
+  const t = v.replace(/\s+/g, ' ').trim()
+  if (!t) return ''
+  const up = t[0].toUpperCase() + t.slice(1)
+  return /[.!?]$/.test(up) ? up : `${up}.`
 }
 
 export interface PreviewSite {
@@ -152,6 +179,10 @@ export interface PreviewSite {
   host: string
   offers: readonly { t: string; s: string; img: string; n: string }[]
   links: readonly [string, string, string]
+  /** The contact strip: Visit, Write and Call, each empty until step 3 fills it. */
+  contact: { visit: string; write: string; call: string }
+  /** True once their own sentence drives the tagline; false in the ghost state before step 2. */
+  fromOffer: boolean
 }
 
 const joinList = (a: readonly string[]) => (a.length < 2 ? (a[0] ?? '') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`)
@@ -173,19 +204,26 @@ export function deriveSite(input: SiteInput): PreviewSite {
   const handle = input.handle || 'yourspace'
   const host = input.hostName.trim()
   const nouns = picks.map((p) => INTENT_LOOK[p.id].noun)
+  const sentence = input.offer ? clipPreview(asSentence(input.offer), PREVIEW_CLIP.tagline) : ''
   return {
     name,
-    em: first?.em ?? FALLBACK_EM,
+    em: clipPreview(first?.em ?? FALLBACK_EM, PREVIEW_CLIP.em),
     nav1: imagery.nav1,
     cta: first?.cta ?? 'Join',
     ctaLong: first ? `${first.cta} now` : 'Join us',
     cta2: imagery.cta2,
-    eyebrow: picks.length ? picks.slice(0, 2).map((p) => cap(p.label.split(' ').slice(-1)[0])).join(' · ') : FALLBACK_EYEBROW,
-    tagline: nouns.length ? `${cap(joinList(nouns))}, all in one place.` : FALLBACK_TAGLINE,
+    eyebrow: clipPreview(picks.length ? picks.slice(0, 2).map((p) => cap(p.label.split(' ').slice(-1)[0])).join(' · ') : FALLBACK_EYEBROW, PREVIEW_CLIP.eyebrow),
+    tagline: sentence || (nouns.length ? `${cap(joinList(nouns))}, all in one place.` : FALLBACK_TAGLINE),
     handle,
     domain: `frequency.community/${handle}`,
     host: host || 'you',
-    offers,
+    offers: offers.map((o) => ({ ...o, t: clipPreview(o.t, PREVIEW_CLIP.offerTitle), s: clipPreview(o.s, PREVIEW_CLIP.offerDetail) })),
     links: [offers[1].t, 'Join the list', `About ${host ? host.split(' ')[0] : 'the host'}`],
+    contact: {
+      visit: clipPreview(input.reach?.where ?? '', 80),
+      write: clipPreview(input.reach?.email ?? '', 254),
+      call: clipPreview(input.reach?.phone ?? '', 30),
+    },
+    fromOffer: sentence.length > 0,
   }
 }
