@@ -6,6 +6,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { DEFAULT_STYLE } from '@/lib/qr/style'
 import { publicShareUrl } from '@/lib/qr/public-url'
+import { useShortShareUrl } from '@/components/share/use-short-share-url'
 import {
   inlineQrStyleLogo,
   downloadQrSvgString,
@@ -34,7 +35,9 @@ export function ListingShareButton({
   const [copied, setCopied] = useState(false)
 
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const { path: sharePath, url } = publicShareUrl(origin, path, { ref: sharerProfileId })
+  const { path: sharePath, url: longUrl } = publicShareUrl(origin, path, { ref: sharerProfileId })
+  // The short /s/<code> once the panel is open (LIVE-1960); the long URL until then or if it cannot be made.
+  const url = useShortShareUrl(longUrl, sharePath, origin, open)
 
   const svg = useMemo(() => renderStyledQrSvg(url, { ...DEFAULT_STYLE }, 240), [url])
 
