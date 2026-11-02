@@ -5,15 +5,15 @@
 // `<img src>`; 1407KB and 523KB after (each chapter photo 250KB -> 25KB). The footer wordmark gets a
 // `sizes` so next/image stops picking the 1920px rendition for a 176px mark. This probe reads the site
 // pages for a raw photo `<img src=` that bypasses the helper, and the footer for its sizes.
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const bad = []
 function walk(dir, out = []) {
-  for (const f of readdirSync(dir)) {
-    const p = join(dir, f)
-    if (statSync(p).isDirectory()) walk(p, out)
-    else if (/\.tsx$/.test(f) && !/\.test\.tsx$/.test(f)) out.push(p)
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name)
+    if (e.isDirectory()) walk(p, out)
+    else if (/\.tsx$/.test(e.name) && !/\.test\.tsx$/.test(e.name)) out.push(p)
   }
   return out
 }
