@@ -4,15 +4,16 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/design-systems/services/rules.json",
     "ref": "ds-intake services"
   },
-  "detail": "Plan step 8: lib/theme/conformance.ts and Playwright specs for contrast, no literal colours, type height stability, motion additive, reduced motion, empty states, hidden functions, reset total, surface parity and repaint budget, run for Services first.",
+  "detail": "Plan step 8: lib/theme/conformance.ts and Playwright specs for contrast, no literal colours, type height stability, motion additive, reduced motion, empty states, hidden functions, reset total, surface parity and repaint budget, run for Services first.\n\nThe ten invariants are pure checks in lib/theme/conformance.ts (contrast, no literal colours, type height stability, motion additive, reduced motion, empty states, hidden functions, reset total, surface parity, repaint budget) with the handoff's thresholds and the sampled dial matrix, each tested with a passing and a failing case. Collecting the data (rendering a themed site, measuring heights, toggling dials) is LIVE-2032, because it needs a theme that declares the new dials.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/services-theme.mjs conformance"
   },
+  "closed": "2026-11-02",
   "wave": "W7"
 }
