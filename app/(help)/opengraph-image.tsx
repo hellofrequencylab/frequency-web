@@ -21,6 +21,7 @@ export default async function Image() {
   // drew nothing for months and nothing else could have noticed.
   return stageCardResponse({
     kicker: "Help Center",
+    cta: "Read",
     title: `${SITE_NAME} Help Center`,
     line: "Answers for members, hosts and Space owners.",
     coverPlaceholder: `data:image/jpeg;base64,${heroData.toString("base64")}`,

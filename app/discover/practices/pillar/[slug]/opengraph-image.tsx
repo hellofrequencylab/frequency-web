@@ -27,6 +27,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   return stageCardResponse({
     kicker: 'Practice pillar',
+    cta: 'Explore',
     title,
     line: pillar?.description ?? (isFallback ? `Practices on ${SITE_NAME}` : `${SITE_NAME} practice library`),
   })

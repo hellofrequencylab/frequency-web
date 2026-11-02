@@ -46,6 +46,7 @@ export async function GET() {
   // calls itself, and the beach photograph is the entity image for the brand.
   return stageCardResponse({
     kicker: SITE_TAGLINE,
+    cta: "Join",
     title: SITE_NAME,
     line: "A place to be human.",
     coverPlaceholder: `data:image/jpeg;base64,${heroData.toString("base64")}`,

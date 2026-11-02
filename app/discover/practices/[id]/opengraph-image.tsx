@@ -26,6 +26,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
   return stageCardResponse({
     kicker: subcategory ?? 'Practice',
+    cta: 'Try it',
     title,
     line: practice?.summary ?? (isFallback ? `Practices on ${SITE_NAME}` : `A practice on ${SITE_NAME}`),
     coverUrl: practice?.header_image ?? null,

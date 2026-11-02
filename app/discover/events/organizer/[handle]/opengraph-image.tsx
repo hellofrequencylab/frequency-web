@@ -68,6 +68,7 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
 
   return stageCardResponse({
     kicker: 'Host',
+    cta: 'See events',
     title: name,
     line: isFallback ? `Hosts on ${SITE_NAME}` : `Events hosted on ${SITE_NAME}`,
     meta: [organizer ? `@${organizer.handle}` : null, chip].filter(Boolean).join(' · ') || null,
