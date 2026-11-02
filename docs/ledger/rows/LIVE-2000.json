@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2000",
+  "title": "Serve the public site's CSS background stills through the image optimizer at the slot's width",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/site/pages/shared/parts.tsx",
+    "ref": "Visual sweep 2026-11-02 follow-up: image bytes per route at 1280x900 and 390x844 after LIVE-1977"
+  },
+  "detail": "LIVE-1977 gave every brand photo in an <img> a srcset, but a hero `.bg` is a CSS background-image, which no srcset reaches, so every visitor still downloaded the 1600px JPEG for each one (285 to 420KB apiece). Measured 2026-11-02 at 1280x900: /pricing shipped 2043KB of background stills (its calculator node photos plus the hero), /for 590KB, / 1409KB (the hero broll was fetched twice: the SCAN-1120 preload took the raw file and the stylesheet painted it). Fix: shared parts.tsx gains optimizedPhoto() (a plain GET on the image optimizer the <img> renditions already use; a remote photo passes through untouched because its host is not in remotePatterns) and photoBg(), which sets --fq-bg (1920px) and --fq-bg-sm (1080px) on the element; the kit's .hero, .closer and .phero `.bg` rules read --fq-bg and switch to --fq-bg-sm under 860px, with the kit defaults and the home hero's two sides as optimizer URLs in the stylesheet. The pricing calculator nodes take the 384px rendition. The home preload points at the same renditions with a media split so it shares the fetch. Measured after at 1280: /pricing 269KB, /for 301KB, / 742KB, /spaces hero 43KB (was 285KB); at 390: /pricing 214KB, / 555KB.\n\n Fixed 2026-11-02; the probe reads the site pages and kit CSS for a brand still that bypasses the optimizer.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/site-bg-stills-optimized.mjs"
+  },
+  "closed": "2026-11-02",
+  "wave": "W7"
+}
