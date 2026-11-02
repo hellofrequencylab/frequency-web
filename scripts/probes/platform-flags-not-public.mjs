@@ -1,5 +1,5 @@
 // SEC-016: platform_flags is not readable by anon or authenticated, and no app code reads it through a user-scoped client.
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 const bad = []
 const mig = readdirSync('supabase/migrations').filter((f) => f.endsWith('platform_flags_not_public.sql'))
@@ -10,7 +10,7 @@ else {
   if (!/revoke all on table public\.platform_flags from anon, authenticated/i.test(sql)) bad.push('grants not revoked')
 }
 // A file that queries platform_flags must do it through the admin client.
-const walk = (d) => readdirSync(d).flatMap((n) => { const p = join(d, n); return n === 'node_modules' || n === '.next' ? [] : statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx)$/.test(n) && !/\.test\./.test(n) ? [p] : [] })
+const walk = (d) => readdirSync(d, { withFileTypes: true }).flatMap((e) => { const p = join(d, e.name); return e.name === 'node_modules' || e.name === '.next' ? [] : e.isDirectory() ? walk(p) : /\.(ts|tsx)$/.test(e.name) && !/\.test\./.test(e.name) ? [p] : [] })
 for (const f of ['app', 'lib', 'components'].flatMap(walk)) {
   const s = readFileSync(f, 'utf8')
   if (/from\(\s*['"]platform_flags['"]\s*\)/.test(s) && !/createAdminClient/.test(s)) bad.push(`${f} reads platform_flags without the admin client`)
