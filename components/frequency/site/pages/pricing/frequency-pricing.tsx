@@ -34,6 +34,7 @@ import type { CalcModel } from './calculator-model'
 import { MotionLinks, OwnersMotion, PlanLadderMotion } from './plan-motion'
 import { PricingAddOns } from './pricing-addons'
 import { PricingCalculator } from './pricing-calculator'
+import { photoBg } from '../shared/parts'
 
 export { splitPrice }
 
@@ -204,7 +205,7 @@ export function FrequencyPricing({
   return (
     <>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={{ backgroundImage: "url('/brand/frequency/photos/day-park-yoga.jpg')" }} />
+        <div className="bg" style={photoBg('/brand/frequency/photos/day-park-yoga.jpg')} />
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.3 })} />
         <div className="shade" />
         <div className="fq-grain" />

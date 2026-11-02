@@ -22,7 +22,7 @@ import { feature, SITE } from '../shared/links'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
-import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
+import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, photoBg, WhatsOnList } from '../shared/parts'
 
 /** Each kind links to its door (SCAN-1017): under the Frequency design nothing else on the site reached
  *  the /for pages. Venues have no door of their own, so their card opens the Spaces directory. */
@@ -66,7 +66,7 @@ export async function FrequencySpaces() {
   return (
     <div className="pa-page pa-spaces" data-pa-side="e" data-motion-scope style={{ display: 'contents' }}>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={{ backgroundImage: `url('${photo('gathering-09.jpg')}')` }} />
+        <div className="bg" style={photoBg(photo('gathering-09.jpg'))} />
         <div className="fq-aura" style={aura(0.3)} />
         <div className="shade" />
         <div className="fq-grain" />

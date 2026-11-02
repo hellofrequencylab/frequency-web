@@ -21,7 +21,7 @@ import { feature, SITE } from '../shared/links'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
-import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
+import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, photoBg, WhatsOnList } from '../shared/parts'
 
 const FIRST_GATHERING: { icon: FqIconName; title: string; body: string }[] = [
   { icon: 'host', title: 'The Host at the door', body: 'Check the listing for arrival details, and ask the Host if you have a question.' },
@@ -53,7 +53,7 @@ export async function FrequencyPeople() {
   return (
     <div className="pa-page pa-people" data-pa-side="p" data-motion-scope style={{ display: 'contents' }}>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={{ backgroundImage: `url('${photo('day-meditation-circle.jpg')}')` }} />
+        <div className="bg" style={photoBg(photo('day-meditation-circle.jpg'))} />
         <div className="fq-aura" style={aura(0.3)} />
         <div className="shade" />
         <div className="fq-grain" />
