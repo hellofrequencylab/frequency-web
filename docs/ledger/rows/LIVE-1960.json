@@ -4,9 +4,18 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
-  "source": { "file": "app/s/[slug]/route.ts", "ref": "Daniel request 2026-11-02, short path on the apex, three PRs" },
-  "detail": "Share buttons copy a long URL with ?ref=<profile id>. PR 1 (this row) adds the short code: share_links and share_link_opens tables (internal, per-day counts, no visitor data), the open_share_link RPC, lib/share (shortenablePath admits only public pages, ensureShareLink makes one stable code per page and sharer), and the /s/<slug> redirect that re-checks the public page and attaches the ref so the existing referral cookie and onboarding credit run unchanged. PR 2 switches the event, Space, profile, Spotlight, listing and invite share buttons and emails over. PR 3 shows link opens on each console. No new domain; a separate short domain was declined.",
-  "verify": { "kind": "cmd", "cmd": "node scripts/probes/short-share-links.mjs" },
+  "status": "done",
+  "source": {
+    "file": "app/s/[slug]/route.ts",
+    "ref": "Daniel request 2026-11-02, short path on the apex, three PRs"
+  },
+  "detail": "Share buttons copy a long URL with ?ref=<profile id>. PR 1 (this row) adds the short code: share_links and share_link_opens tables (internal, per-day counts, no visitor data), the open_share_link RPC, lib/share (shortenablePath admits only public pages, ensureShareLink makes one stable code per page and sharer), and the /s/<slug> redirect that re-checks the public page and attaches the ref so the existing referral cookie and onboarding credit run unchanged. PR 2 switches the event, Space, profile, Spotlight, listing and invite share buttons and emails over. PR 3 shows link opens on each console. No new domain; a separate short domain was declined.\n\nShort codes, freq.ie switch and per-link open counts shipped across PRs 1 to 3.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/short-share-links.mjs",
+    "checked": "2026-11-02",
+    "evidence": "Resolver, store, migration, share panels and open counts are present."
+  },
+  "closed": "2026-11-02",
   "wave": "W7"
 }
