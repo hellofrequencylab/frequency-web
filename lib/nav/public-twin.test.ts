@@ -77,6 +77,18 @@ describe('member detail routes redirect a signed-out visitor to their public twi
     }
   })
 
+  it('a member page one segment under a family is not an entity, so it keeps no twin (LIVE-1979)', () => {
+    // Signed out, these must reach the sign-in bounce with `next`, not /discover/journeys/mine (a 404).
+    for (const p of ['/journeys/mine', '/journeys/library', '/journeys/new', '/practices/new', '/circles/new', '/circles/starter', '/circles/templates']) {
+      expect(hasPublicTwin(p), `${p} is a member page, not a slug, and must not redirect to Discover`).toBe(false)
+    }
+  })
+
+  it('the /journeys index goes to its public listing, like /circles (LIVE-1979)', () => {
+    expect(publicIndexTwin('/journeys')).toBe('/discover/journeys')
+    expect(PROXY).toMatch(/'\/journeys',/)
+  })
+
   it('leaves unrelated member surfaces alone', () => {
     for (const p of ['/feed', '/messages', '/settings', '/admin', '/people/danny', '/hubs/north-county']) {
       expect(hasPublicTwin(p)).toBe(false)
