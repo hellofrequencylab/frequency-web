@@ -325,8 +325,10 @@ export function CreateSpaceBuilder({ draft, update, markDone, reset, onHandOver,
             <p className="cs-bld-sub">Five quick moves build your Space, website and Spotlight. Then the setup walk adds your story, photos and first offering, and you&apos;re open.</p>
           </div>
 
-          <div role="progressbar" aria-label="Your Space, built" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className="cs-bld-meter">
-            <div className="ig-ring" style={{ '--fq-v': pct, '--fq-s': '76px', '--fq-w': '6px' } as CSSProperties}>
+          {/* The progressbar is the ring, not the whole meter: the meter also holds the Start over button, and a
+              control inside a progressbar is a nested interactive (axe, LIVE-1978). */}
+          <div className="cs-bld-meter">
+            <div role="progressbar" aria-label="Your Space, built" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className="ig-ring" style={{ '--fq-v': pct, '--fq-s': '76px', '--fq-w': '6px' } as CSSProperties}>
               <span><b>{pct}<small>%</small></b></span>
             </div>
             <div className="cs-bld-meter-main">
