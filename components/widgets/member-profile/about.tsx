@@ -13,7 +13,6 @@ export function AboutBlock({ data }: MemberBlockProps) {
       <BlockView
         block={{ id: 'about', type: 'text', text: data.about }}
         stats={EMPTY_SPOTLIGHT_META.stats}
-        topFriends={[]}
       />
     </MemberSection>
   )

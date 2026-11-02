@@ -15,7 +15,6 @@ const sources=new Map([
  ['@/lib/supabase/admin','export const createAdminClient=()=>{throw Error("Admin writer forbidden")}'],
  ['@/lib/awards/holdings','export const memberHeldItems=()=>[]'],
  ['@/lib/platform-flags','export const renderPathEnabled=async()=>false'],
- ['@/lib/spotlight/top-friends','export const normalizeTopFriendIds=()=>[];export const keepAcceptedFriends=()=>[];export const toTopFriendRows=()=>[];export const rewriteTopFriends=()=>{};export const deleteOneTopFriend=()=>{};export const getOwnerTopFriendIds=()=>[]'],
 ])
 registerHooks({resolve(spec,context,next){if(sources.has(spec))return {url:`data:text/javascript,${encodeURIComponent(sources.get(spec))}`,shortCircuit:true};return next(spec,context)}})
 const {saveMemberGridLayout}=await import('../app/(main)/settings/profile/spotlight-actions.ts')

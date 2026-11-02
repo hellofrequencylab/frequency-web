@@ -12,9 +12,8 @@
 // LOSSLESS: each SpotlightBlock maps 1:1 to a dedicated `Spotlight*` Puck block whose
 // props ARE the block's fields (plus the id). `spotlightLayoutToPuck` then
 // `puckToSpotlightLayout` returns the input unchanged (proven in convert.test.ts). The
-// server-resolved blocks (Stats which stores only `show`, TopFriends which stores only a
-// title) carry no values in either representation, so they round-trip on their config
-// alone — the numbers/faces are injected at render via metadata, never stored.
+// server-resolved block (Stats, which stores only `show`) carries no values in either representation, so it round-trips on its config
+// alone — the numbers are injected at render via metadata, never stored.
 
 import type { Data } from '@/lib/page-editor/types'
 import {
@@ -36,7 +35,6 @@ export const SPOTLIGHT_PUCK_TYPES = {
   gallery: 'SpotlightGallery',
   quote: 'SpotlightQuote',
   stats: 'SpotlightStats',
-  topfriends: 'TopFriends',
   embed: 'SpotlightEmbed',
   divider: 'SpotlightDivider',
 } as const

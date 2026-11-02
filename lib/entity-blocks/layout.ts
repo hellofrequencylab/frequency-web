@@ -612,9 +612,9 @@ const MEMBER_STARTERS: Record<StarterId, readonly RowDef[]> = {
   // renders the bio (identity band) and the Zaps/Gems/Streak/Rank (Standing card), so the member grid
   // leads with the blocks the chrome does NOT own: links, then Top Friends. The MEMBER profile is a
   // single-column block LIST (maxColumnsForKind('member') === 1), so every starter row is one column.
-  basic: [r('r0', 1, ['links']), r('r1', 1, ['topfriends'])],
-  // Links, then Top Friends (stacked — member is single-column).
-  showcase: [r('r0', 1, ['links']), r('r1', 1, ['topfriends'])],
+  basic: [r('r0', 1, ['links'])],
+  // Same as basic (member is single-column).
+  showcase: [r('r0', 1, ['links'])],
   // Just the bio-link row.
   minimal: [r('r0', 1, ['links'])],
 }

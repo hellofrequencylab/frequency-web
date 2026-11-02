@@ -28,7 +28,7 @@ export interface EntityIdentity {
 // The member (Spotlight) fresh default: identity-led and content-forward (a member authors their page),
 // with the two shared DATA blocks up top. Space defaults are resolved by lib/spaces/profile-modules
 // resolveProfileLayout (function-gated). Only ids that support 'member' and exist in the registry.
-const MEMBER_DEFAULT_ORDER: readonly string[] = ['about', 'stats', 'links', 'topfriends']
+const MEMBER_DEFAULT_ORDER: readonly string[] = ['about', 'stats', 'links']
 
 /** The fresh-default ordered block ids for a MEMBER profile (Spotlight), before any editor
  *  customization. Filtered to blocks that actually support the member kind, in the given order,

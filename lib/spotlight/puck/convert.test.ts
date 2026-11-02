@@ -31,7 +31,6 @@ const FULL_LAYOUT: SpotlightLayout = {
     { id: 'g1', type: 'gallery', items: [{ assetPath: `${OWNER}/spotlight/a.jpg`, alt: 'a', focusX: 50, focusY: 50, zoom: 100 }, { assetPath: `${OWNER}/spotlight/b.png`, alt: 'b', focusX: 20, focusY: 80, zoom: 150 }] },
     { id: 'q1', type: 'quote', text: 'A line worth sharing.', cite: 'Me', tint: { text: '#222222' } },
     { id: 's1', type: 'stats', show: ['zaps', 'streak', 'region'] },
-    { id: 'f1', type: 'topfriends', title: 'My crew' },
     { id: 'e1', type: 'embed', provider: 'spotify', ref: 'track/4cOdK2wGLETKBW3PvgPWqT' },
     { id: 'd1', type: 'divider', tint: { text: '#333333' } },
   ] as SpotlightBlock[],
@@ -56,7 +55,6 @@ describe('spotlightLayoutToPuck', () => {
       SPOTLIGHT_PUCK_TYPES.gallery,
       SPOTLIGHT_PUCK_TYPES.quote,
       SPOTLIGHT_PUCK_TYPES.stats,
-      SPOTLIGHT_PUCK_TYPES.topfriends,
       SPOTLIGHT_PUCK_TYPES.embed,
       SPOTLIGHT_PUCK_TYPES.divider,
     ])
