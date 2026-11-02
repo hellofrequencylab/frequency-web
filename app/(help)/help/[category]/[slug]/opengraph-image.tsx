@@ -69,6 +69,7 @@ export default async function Image({
   // scrim keeps them legible over the bright hero photograph (opengraph-image.test.tsx measures it).
   return stageCardResponse({
     kicker: found?.category.title ?? 'Help Center',
+    cta: 'Read',
     title: found?.article.title ?? `${SITE_NAME} Help Center`,
     line: found?.article.description ?? null,
     coverPlaceholder: await heroDataUrl(),
