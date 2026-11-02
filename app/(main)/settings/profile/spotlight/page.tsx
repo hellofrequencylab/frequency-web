@@ -60,7 +60,8 @@ export default async function EditSpotlightPage() {
         maxLinks={typeof maxLinks === 'number' ? maxLinks : null}
         enabled={readSpotlightEnabled(own.meta)}
         published={readSpotlightPublished(own.meta)}
-        clicks={clicks}
+        clicks={clicks.byLink}
+        daily={clicks.daily}
       />
     </FocusTemplate>
   )

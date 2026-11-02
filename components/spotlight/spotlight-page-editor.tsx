@@ -45,6 +45,7 @@ export function SpotlightPageEditor({
   enabled: enabledInitial,
   published: publishedInitial,
   clicks = {},
+  daily = [],
 }: {
   profile: SpotlightRow
   initial: SpotlightPageSettings
@@ -53,6 +54,8 @@ export function SpotlightPageEditor({
   published: boolean
   /** Presses per link id over the last 30 days (LIVE-1954). */
   clicks?: Record<string, number>
+  /** Presses per day over the same 30 days, oldest first. */
+  daily?: number[]
 }) {
   const [tab, setTab] = useState<Tab>('links')
   const [page, setPage] = useState<SpotlightPageSettings>({ ...initial, configured: true })
@@ -193,6 +196,22 @@ export function SpotlightPageEditor({
               <p className="text-meta text-muted">
                 {totalClicks} {totalClicks === 1 ? 'click' : 'clicks'} on your links in the last 30 days.
               </p>
+            )}
+            {Math.max(0, ...daily) > 0 && (
+              <div
+                className="flex h-10 items-end gap-0.5"
+                role="img"
+                aria-label={`Clicks per day for the last ${daily.length} days, most recent on the right`}
+              >
+                {daily.map((n, i) => (
+                  <span
+                    key={i}
+                    title={`${n} ${n === 1 ? 'click' : 'clicks'}`}
+                    className="min-w-0 flex-1 rounded-sm bg-primary"
+                    style={{ height: `${Math.max(n > 0 ? 8 : 2, (n / Math.max(...daily)) * 100)}%`, opacity: n > 0 ? 1 : 0.25 }}
+                  />
+                ))}
+              </div>
             )}
             {page.links.length === 0 && (
               <p className="rounded-card border border-dashed border-border p-6 text-center text-body-sm text-muted">

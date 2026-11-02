@@ -36,21 +36,39 @@ export async function recordMemberLinkClick(profileId: unknown, linkId: unknown)
   }
 }
 
-/** Presses per link id over the last `days` days. Empty on any failure (logged). */
-export async function readMemberLinkClicks(profileId: string, days = 30): Promise<Record<string, number>> {
-  const counts: Record<string, number> = {}
+/** Presses over the last `days` days: per link id, and per calendar day (UTC), oldest first, `days` entries.
+ *  Empty on any failure (logged). */
+export interface LinkClickStats {
+  byLink: Record<string, number>
+  daily: number[]
+}
+
+/** Fold raw press rows into the per-link and per-day totals. PURE. */
+export function foldLinkClicks(rows: ReadonlyArray<{ link_id: string; clicked_at: string }>, days: number, now: number = Date.now()): LinkClickStats {
+  const byLink: Record<string, number> = {}
+  const daily = new Array<number>(days).fill(0)
+  const today = Math.floor(now / 86_400_000)
+  for (const row of rows) {
+    byLink[row.link_id] = (byLink[row.link_id] ?? 0) + 1
+    const age = today - Math.floor(Date.parse(row.clicked_at) / 86_400_000)
+    if (age >= 0 && age < days) daily[days - 1 - age] += 1
+  }
+  return { byLink, daily }
+}
+
+export async function readMemberLinkClicks(profileId: string, days = 30): Promise<LinkClickStats> {
   try {
     const since = new Date(Date.now() - days * 86_400_000).toISOString()
     const { data, error } = await createAdminClient()
       .from('member_spotlight_link_clicks')
-      .select('link_id')
+      .select('link_id, clicked_at')
       .eq('profile_id', profileId)
       .gte('clicked_at', since)
       .limit(20_000)
     if (error) throw error
-    for (const row of data ?? []) counts[row.link_id] = (counts[row.link_id] ?? 0) + 1
+    return foldLinkClicks(data ?? [], days)
   } catch (err) {
     log.warn('member_link_click_read_failed', { profileId, message: briefError(err) })
+    return foldLinkClicks([], days)
   }
-  return counts
 }
