@@ -286,3 +286,8 @@
 .we-try-bar button,.we-try-btn{padding:6px 12px;border:0;border-radius:999px;background:var(--surface,transparent);box-shadow:inset 0 0 0 1px var(--border-hair);font:600 12px/1 var(--font-ui);color:var(--text-strong);cursor:pointer}
 .we-try-btn{margin:-2px 0 8px 10px}
 .we-update-layouts .we-row{flex-direction:column;align-items:flex-start;justify-content:center;gap:2px}.we-update-layouts .we-row small{margin-left:0;color:var(--text-muted);font-size:12px}
+
+/* THEME CONTROLS (LIVE-1997): the radios mirror the pressed state the other editor choices read from aria-pressed. */
+.we-choice-row .we-action[role=radio][aria-checked=true]{color:var(--text-strong);box-shadow:inset 0 0 0 2px var(--x-violet-deep)}
+.we-swatch-list .we-swatch[role=radio][aria-checked=true]{box-shadow:0 0 0 3px var(--text-strong)}
+.we-theme-controls [data-changed]{display:inline-block;width:6px;height:6px;margin-left:6px;border-radius:50%;background:var(--x-violet-deep)}

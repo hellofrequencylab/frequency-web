@@ -1,4 +1,5 @@
 import type { Data } from '@/lib/page-editor/types'
+import { isDialAccent, isSiteDialValue, SITE_DIAL_KEYS, type SiteDialKey } from '@/lib/theme/dials'
 import { isSiteLookValue, SITE_LOOK_OPTIONS, siteTheme, type SiteLookKey, type SiteThemeId } from '@/lib/theme/site-style'
 
 // Website-only documents. Never written to pageDocs/profileLayout; public readers
@@ -14,8 +15,9 @@ interface WebsitePage {
 }
 interface WebsiteBrand { logo?: string | null; accent?: string | null }
 export interface WebsiteChrome { name?: string; tagline?: string | null; cta?: { label: string; href: string } | null }
-/** The global styles a theme draft holds (corners, spacing, header, footer); a key left out is the theme's own. */
-export type WebsiteLook = Partial<Record<SiteLookKey, string>>
+/** The global styles a theme draft holds (corners, spacing, header, footer, and the theme editor's dials: register,
+ *  type, motion, hero, image, accent); a key left out is the theme's own. */
+export type WebsiteLook = Partial<Record<SiteLookKey | SiteDialKey | 'accent', string>>
 /** A THEME DRAFT: one saved way the same website could look. The pages, words, photos and menu are shared by every
  *  draft; a draft holds only the theme and its per-theme settings. The snapshot's own `theme`, `brand` and `look`
  *  are the ACTIVE draft's working values (lib/sites/editor/theme-drafts.ts settles them back into this list). */
@@ -112,7 +114,10 @@ function validWebsiteBrand(brand: unknown): boolean {
 }
 
 function validWebsiteLook(look: unknown): boolean {
-  return record(look) && Object.entries(look).every(([key, value]) => key in SITE_LOOK_OPTIONS && isSiteLookValue(key as SiteLookKey, value))
+  return record(look) && Object.entries(look).every(([key, value]) =>
+    key in SITE_LOOK_OPTIONS ? isSiteLookValue(key as SiteLookKey, value)
+    : key === 'accent' ? isDialAccent(value)
+    : (SITE_DIAL_KEYS as readonly string[]).includes(key) && isSiteDialValue(key as SiteDialKey, value))
 }
 
 function validThemeDrafts(snapshot: Record<string, unknown>): boolean {
