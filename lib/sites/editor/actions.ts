@@ -71,7 +71,7 @@ export async function saveWebsiteDraft(host: string, expectedRevision: number, d
  *  saved; a theme the site already wears needs no write. A theme change goes through the one apply (applyMegaTheme),
  *  so the website, email and Space page font set follow it exactly as they do from the Wizard. */
 async function publishDraftStyle(auth: NonNullable<Awaited<ReturnType<typeof authorizeWebsiteEditor>>>, draft: WebsiteSnapshot): Promise<{ ok: true } | { ok: false; error: string }> {
-  const [{ MEGA_THEMES }, { readSiteStyle, withSiteStyle }, { draftLook }] = await Promise.all([import('@/lib/theme/mega-theme'), import('@/lib/theme/site-style'), import('./theme-drafts')])
+  const [{ MEGA_THEMES }, { readSiteStyle, withSiteStyle }, { draftLook, draftDials }] = await Promise.all([import('@/lib/theme/mega-theme'), import('@/lib/theme/site-style'), import('./theme-drafts')])
   const site = MEGA_THEMES.find((m) => m.editor === draft.theme)?.site
   if (!site) return { ok: true }
   const prefs = auth.preferences && typeof auth.preferences === 'object' && !Array.isArray(auth.preferences) ? (auth.preferences as Record<string, unknown>) : {}
@@ -83,8 +83,10 @@ async function publishDraftStyle(auth: NonNullable<Awaited<ReturnType<typeof aut
     base = planMegaTheme(prefs, site)
   }
   const look = draftLook(draft.look)
-  if (!look || JSON.stringify(look) === JSON.stringify(readSiteStyle(base).look)) return { ok: true }
-  const next = withSiteStyle(base, { look: look as ReturnType<typeof readSiteStyle>['look'] })
+  const dials = draftDials(draft.look)
+  const stored = readSiteStyle(base)
+  if (!look || (JSON.stringify(look) === JSON.stringify(stored.look) && JSON.stringify(dials ?? null) === JSON.stringify(stored.dials ?? null))) return { ok: true }
+  const next = withSiteStyle(base, { look: look as ReturnType<typeof readSiteStyle>['look'], dials })
   // KEY-SCOPED (SCAN-833): the style owns exactly `theme` and `siteStyle`; every other key stays as stored.
   const db = auth.db as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }
   const result = await db.rpc('set_space_preferences', { p_space_id: auth.space.id, p_patch: { theme: next.theme ?? null, siteStyle: next.siteStyle ?? null } })

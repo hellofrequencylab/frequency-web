@@ -1,4 +1,5 @@
 import { slugify } from '@/lib/utils'
+import { SITE_DIAL_KEYS, type SiteDialKey } from '@/lib/theme/dials'
 import { MAX_THEME_DRAFTS, type WebsiteLook, type WebsiteSnapshot, type WebsiteTheme, type WebsiteThemeDraft } from './state'
 
 // THEME DRAFTS (owner ask 2026-10-27): an owner can keep several themes alive over the SAME website, edit and preview
@@ -114,6 +115,12 @@ export function removeThemeDraft(snapshot: WebsiteSnapshot, id: string, liveId: 
 
 /** The global styles a draft publishes: every key, `null` where the draft leaves it to the theme. Undefined when the
  *  draft never set any (the site's current styles stand). */
+/** The theme editor's dials a draft holds (register, type, motion, hero, image, accent), or undefined when it holds none. */
+export function draftDials(look: WebsiteLook | undefined): Partial<Record<SiteDialKey | 'accent', string>> | undefined {
+  const out = Object.fromEntries(Object.entries(look ?? {}).filter(([k]) => k === 'accent' || (SITE_DIAL_KEYS as readonly string[]).includes(k)))
+  return Object.keys(out).length ? out : undefined
+}
+
 export function draftLook(look: WebsiteLook | undefined): { corners: string | null; spacing: string | null; header: string | null; footer: string | null } | undefined {
   if (!look) return undefined
   return { corners: look.corners ?? null, spacing: look.spacing ?? null, header: look.header ?? null, footer: look.footer ?? null }

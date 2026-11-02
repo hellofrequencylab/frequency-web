@@ -1,0 +1,43 @@
+{
+  "$schema": "frequency://theme-editor/dials/1",
+  "version": 1,
+  "_note": "The canonical dial registry every Frequency theme implements. A dial is one owner-facing control. Each names its tier, its options, what it drives (a token modifier, a root data attribute, a component variant or a record field) and the invariants a theme must pass for it. Themes may ADD dials (tier 'theme') but may not remove or rename a core one; a theme that does not vary on a core dial declares it 'fixed' and the editor hides it.",
+  "tiers": {
+    "look": "Layer 0. Named presets of every dial below, shown as preview cards. One tap sets everything.",
+    "simple": "Layer 1. Always visible. Three dials, no more.",
+    "advanced": "Layer 2. One tap down ('More'). Grouped: Shape, Type, Motion, Layout, Order. One Reset.",
+    "block": "Layer 3. Inside a block, on the block. Variant and per-block switches only.",
+    "theme": "A dial one theme adds. Appears in Advanced under its own group, flagged with the theme name."
+  },
+  "dials": [
+    { "id": "kit", "tier": "simple", "label": "Kit", "kind": "content", "drives": "record.kit", "options": "theme.kits[]", "stored": "preferences.siteStyle.kit", "note": "Sets the words, the sample rows and which functions are on. Never sets colour or type." },
+    { "id": "accent", "tier": "simple", "label": "Accent", "kind": "token-modifier", "drives": "modifier:accent", "options": "theme.accents[] + custom hex", "stored": "preferences.siteStyle.accent", "invariants": ["Every derived step (hover, text, soft, deep, two glows) is computed from the one accent.", "Accent text on bg ≥ 4.5:1 in both registers; filled button label ≥ 3:1 at ≥ 12px bold, else the theme substitutes its darker step."] },
+    { "id": "register", "tier": "simple", "label": "Register", "kind": "token-modifier", "drives": "modifier:register", "options": [["night", "Night"], ["day", "Day"]], "stored": "preferences.siteStyle.register", "invariants": ["Only the ink and chrome scales re-map. No block names a colour."] },
+    { "id": "corners", "tier": "advanced", "group": "Shape", "label": "Corners", "kind": "root-attr", "drives": "data-site-corners", "options": [["soft", "Soft"], ["subtle", "Subtle"], ["square", "Square"]], "stored": "preferences.siteStyle.corners", "existing": true },
+    { "id": "spacing", "tier": "advanced", "group": "Shape", "label": "Spacing", "kind": "root-attr", "drives": "data-site-spacing", "options": [["airy", "Airy"], ["balanced", "Balanced"], ["compact", "Compact"]], "stored": "preferences.siteStyle.spacing", "existing": true },
+    { "id": "type", "tier": "advanced", "group": "Type", "label": "Type voice", "kind": "root-attr", "drives": "data-type", "options": [["caps", "Display"], ["quiet", "Quiet"], ["editorial", "Editorial"]], "stored": "preferences.siteStyle.type", "invariants": ["One display class, three voices. Layout never moves: line-height and tracking are set per voice so blocks keep their height within 8%."] },
+    { "id": "motion", "tier": "advanced", "group": "Motion", "label": "Motion", "kind": "root-attr", "drives": "data-motion", "options": [["full", "Full"], ["calm", "Calm"], ["off", "Off"]], "stored": "preferences.siteStyle.motion", "invariants": ["Effects are additive layers over a finished static page.", "prefers-reduced-motion wins over the dial."] },
+    { "id": "hero", "tier": "advanced", "group": "Layout", "label": "Hero", "kind": "component-variant", "drives": "Hero.variant", "options": [["glow", "Glow"], ["photo", "Photo"], ["split", "Split"], ["minimal", "Minimal"]], "stored": "preferences.siteStyle.hero", "invariants": ["Photo variants have a designed empty state; a site with no photo still looks finished."] },
+    { "id": "header", "tier": "advanced", "group": "Layout", "label": "Header", "kind": "component-variant", "drives": "Header.variant", "options": [["bar", "Bar"], ["pill", "Pill"], ["centered", "Centered"]], "stored": "preferences.siteStyle.header", "existing": true, "note": "Extends the existing pill|bar with centered." },
+    { "id": "footer", "tier": "advanced", "group": "Layout", "label": "Footer", "kind": "component-variant", "drives": "Footer.variant", "options": [["full", "Full"], ["minimal", "Minimal"]], "stored": "preferences.siteStyle.footer", "existing": true },
+    { "id": "image", "tier": "advanced", "group": "Layout", "label": "Images", "kind": "root-attr", "drives": "data-image", "options": [["glow", "Glow"], ["grain", "Grain"], ["mono", "Mono"], ["clean", "Clean"]], "stored": "preferences.siteStyle.image" },
+    { "id": "order", "tier": "advanced", "group": "Order", "label": "Section order", "kind": "record", "drives": "page.blocks order", "options": "home blocks the kit has on", "stored": "page draft (existing)", "invariants": ["Hero is pinned first.", "Blocks for functions the kit has off are hidden, never rendered empty."] },
+    { "id": "variant", "tier": "block", "label": "Block layout", "kind": "block-prop", "drives": "block.props.variant", "options": "per block type", "stored": "block props (existing)", "note": "The design's existing per-block variants (split, grid, list, cards...). Stays on the block." }
+  ],
+  "modifiers": {
+    "_note": "DTCG Resolver Module 2025.10 shape. The theme contract resolves base sets through these modifiers; the editor only ever changes a modifier's context.",
+    "register": { "contexts": ["night", "day"] },
+    "accent": { "contexts": "theme.accents[].id | custom" }
+  },
+  "rootAttributes": ["data-th", "data-site-corners", "data-site-spacing", "data-site-header", "data-site-footer", "data-type", "data-motion", "data-hero", "data-image"],
+  "looks": {
+    "_note": "Layer 0 presets: a theme ships 4 to 6 named combinations of every dial, with a preview card. Picking one writes each dial; the owner can then change any single dial. 'Theme's own' is always the first card.",
+    "example_services": [
+      { "id": "own", "label": "Theme's own", "dials": {} },
+      { "id": "studio", "label": "Studio", "dials": { "register": "day", "type": "quiet", "motion": "calm", "hero": "split", "header": "pill", "image": "clean", "corners": "soft" } },
+      { "id": "nightline", "label": "Nightline", "dials": { "register": "night", "type": "caps", "motion": "full", "hero": "glow", "header": "bar", "image": "glow" } },
+      { "id": "paper", "label": "Paper", "dials": { "register": "day", "type": "editorial", "motion": "off", "hero": "minimal", "header": "centered", "image": "mono", "corners": "square", "spacing": "balanced" } },
+      { "id": "trade", "label": "Trade", "dials": { "register": "night", "type": "caps", "motion": "calm", "hero": "photo", "header": "bar", "image": "grain", "corners": "subtle", "spacing": "compact" } }
+    ]
+  }
+}
