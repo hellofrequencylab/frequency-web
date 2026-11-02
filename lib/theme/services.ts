@@ -6,7 +6,7 @@
 // Scope: these tokens live under [data-house-theme="services"] and are only ever emitted by the stand-alone site
 // render. A site theme never styles a member, Space console or admin area (ADR-1906).
 
-/** The owner accent presets that ship now (Tide, Ember, Fern; Signal, Bloom and Iris wait on LIVE-2000). Id to the steps the site engine reads. */
+/** The owner accent presets that ship now (Tide, Ember, Fern; Signal, Bloom and Iris wait on LIVE-2041). Id to the steps the site engine reads. */
 export const SERVICES_ACCENTS = {
   tide: {
     label: "Tide",
