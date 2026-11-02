@@ -1,13 +1,11 @@
 import { Star } from 'lucide-react'
-import { EmptyState } from '@/components/ui/empty-state'
 import type { SpaceContentData } from '@/lib/spaces/content-data'
 import type { SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { ModuleSection } from './section'
 
 // REVIEWS / RATINGS (ADR-529 item 3). The operator-entered rating moved here from the Business block, so
 // "Find us online" is links-only and the rating stands on its own. When the operator has set a rating it
-// renders a compact rating card; otherwise it stays the on-brand "coming soon" card (member reviews are
-// still off, owner decision). FAIL-SAFE: reads the central profile data, renders nothing broken.
+// renders a compact rating card; otherwise it renders nothing (member reviews are still off, owner decision). FAIL-SAFE: reads the central profile data, renders nothing broken.
 export function ReviewsBlock({
   data,
   header,
@@ -55,13 +53,7 @@ export function ReviewsBlock({
     )
   }
 
-  return (
-    <ModuleSection anchor="reviews">
-      <EmptyState
-        icon={Star}
-        title="Ratings, coming soon"
-        description="Ratings and reviews are on the way. Check back soon to see what members say."
-      />
-    </ModuleSection>
-  )
+  // No rating set and member reviews are off: render nothing. A public "coming soon" box on a live
+  // site is an empty promise (SCAN-1201).
+  return null
 }
