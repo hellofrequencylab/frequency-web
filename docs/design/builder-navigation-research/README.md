@@ -15,3 +15,13 @@ Source: the Frequency design project, "Builder Audit and Proposal" and "Builder 
 ## Not applied
 
 Nothing here is wired into the build. To start the build, follow `RUN-WITH-CLAUDE-CODE.md` in a separate PR (the rows then become real ledger fragments). Five owner rulings (BLD-000) are still pending.
+
+## Owner rulings (BLD-000), Daniel, 2026-11-02
+
+1. Vera coaches with questions only; she does not rewrite owner copy.
+2. The calendar is called "What's Happening" everywhere.
+3. Banned surface words: owner-chosen names and theme names are exempt. The banned-word rules apply to Frequency's own content, and are softened for what an individual owner writes (follow the content suggestions for that person).
+4. First surface: Space site, profile, Spotlight and email together.
+5. The member shell moves to the shared 600, 840 and 1200 breakpoints.
+
+These are recorded here for the design side. The BLD-000 ledger row is not closed by this PR.
