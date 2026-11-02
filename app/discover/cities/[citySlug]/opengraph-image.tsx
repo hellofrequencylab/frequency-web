@@ -46,6 +46,7 @@ export default async function Image({ params }: { params: Promise<{ citySlug: st
 
   return stageCardResponse({
     kicker: 'Find your people',
+    cta: 'Explore',
     title: city,
     line: isFallback ? `Local Circles and events on ${SITE_NAME}` : `Circles and real-world events in ${city}`,
     meta: counts,

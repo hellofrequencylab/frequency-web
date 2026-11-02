@@ -23,6 +23,7 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
 
   return stageCardResponse({
     kicker: 'Spotlight',
+    cta: 'View',
     title: name,
     line: data?.profile.bio ?? (isFallback ? `Spotlights on ${SITE_NAME}` : `A spotlight on ${SITE_NAME}`),
     // The member's own avatar rides the chip, never the full-bleed slot: a small profile photo

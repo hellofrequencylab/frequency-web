@@ -31,6 +31,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
   return stageCardResponse({
     kicker: 'Circle',
+    cta: 'Join',
     title,
     line: circle?.about ?? (isFallback ? `Circles on ${SITE_NAME}` : `A circle on ${SITE_NAME}`),
     meta: [where, members].filter(Boolean).join(' · ') || null,

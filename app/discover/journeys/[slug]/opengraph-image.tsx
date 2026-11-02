@@ -24,6 +24,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   return stageCardResponse({
     kicker: 'Journey',
+    cta: 'Start',
     title,
     line: plan?.summary ?? (isFallback ? `Journeys on ${SITE_NAME}` : `A guided Journey on ${SITE_NAME}`),
     coverUrl: plan?.cover_image ?? null,
