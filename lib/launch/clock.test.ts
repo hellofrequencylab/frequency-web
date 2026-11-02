@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { applyBeat, BEAT_EVERY_MS, clockView } from './clock'
+import { applyBeat, BEAT_EVERY_MS, CLOCK_BUDGET_MS, clockView, formatClock } from './clock'
+
+describe('formatClock', () => {
+  it('reads m:ss and rounds a part second up, from the twelve minute budget', () => {
+    expect(formatClock(CLOCK_BUDGET_MS)).toBe('12:00')
+    expect(formatClock(59_001)).toBe('1:00')
+    expect(formatClock(0)).toBe('0:00')
+    expect(formatClock(-5)).toBe('0:00')
+  })
+})
 
 const T = new Date('2026-10-29T12:00:00Z')
 const ago = (ms: number) => new Date(T.getTime() - ms).toISOString()

@@ -34,7 +34,10 @@ assert.ok(ts.isObjectLiteralExpression(options))
 for (const property of options.properties) {
   if (!ts.isPropertyAssignment(property)) continue
   if (['skip', 'todo', 'only'].includes(property.name.getText(ast))) assert.notEqual(property.initializer.kind, ts.SyntaxKind.TrueKeyword)
-  if (property.name.getText(ast) === 'timeout') assert.ok(Number(property.initializer.getText(ast).replace(/_/g, '')) <= 90_000)
+  // 360s since 2026-11-02 (HYG-219; owner: "LIVE-047: raise the sweep timeout pin from 90s to 360s").
+  // The ceiling this row guards is CPU, asserted below; the vitest timeout is a hang detector, and
+  // 2,158 probes at 314s of CPU on 4 cores read 88.8s of wall on a green tree against the old 90s.
+  if (property.name.getText(ast) === 'timeout') assert.ok(Number(property.initializer.getText(ast).replace(/_/g, '')) <= 360_000)
 }
 const body = sweep.arguments.at(-1)
 const constants = new Map()
