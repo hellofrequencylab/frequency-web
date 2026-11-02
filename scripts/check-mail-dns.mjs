@@ -99,6 +99,15 @@ async function spfAuthorises(name, target, depth = 0) {
   return { ok: true, found: false, chain: [spf] }
 }
 
+// CANARY (SCAN-1183). ENOTFOUND is an ANSWER for the records below, but a resolver with no network answers
+// ENOTFOUND for everything, which printed seven red rows in a sandbox with no DNS at all. A name that always
+// carries an MX must resolve first; if it does not, the resolver is the problem and nothing was measured.
+const canary = await dns.resolveMx('google.com').then((r) => r.length > 0, () => false)
+if (!canary) {
+  console.error('✖ DNS unreachable (google.com has no MX from this resolver). Records NOT measured.')
+  process.exit(2)
+}
+
 const rows = []
 const add = (name, pass, detail, fix) => rows.push({ name, pass, detail, fix })
 
