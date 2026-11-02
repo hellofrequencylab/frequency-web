@@ -74,7 +74,7 @@ export function SpaceShareButton({
   const { path, url: longUrl } = publicShareUrl(origin, `/spaces/${slug}`, { ref: sharerProfileId })
   // The short /s/<code> once the panel is open (LIVE-1960); the long URL until then or if it cannot be made.
   const [shorter, setShorter] = useState(false)
-  const { url, canShorten } = useShortShareUrl(longUrl, path, origin, open, shorter)
+  const { url, canShorten, opens } = useShortShareUrl(longUrl, path, origin, open, shorter)
 
   // The SPACE's brand logo centered in the code (never the viewer's avatar). Render-time only.
   const svg = useMemo(
@@ -155,7 +155,7 @@ export function SpaceShareButton({
               >
                 {url}
               </code>
-              <ShorterLinkSwitch checked={shorter} onCheckedChange={setShorter} available={canShorten} />
+              <ShorterLinkSwitch checked={shorter} onCheckedChange={setShorter} available={canShorten} opens={opens} />
               <div className="flex items-center gap-2">
                 <button
                   type="button"

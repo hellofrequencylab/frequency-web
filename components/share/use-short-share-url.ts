@@ -15,21 +15,21 @@ export function useShortShareUrl(
   origin: string,
   enabled: boolean,
   shorter = false,
-): { url: string; canShorten: boolean } {
-  const [short, setShort] = useState<{ path: string; rel: string } | null>(null)
+): { url: string; canShorten: boolean; opens: number | null } {
+  const [short, setShort] = useState<{ path: string; rel: string; opens: number | null } | null>(null)
   useEffect(() => {
     if (!enabled || !origin) return
     let live = true
     shortShareLink(sharePath)
-      .then((rel) => {
-        if (live && rel) setShort({ path: sharePath, rel })
+      .then((res) => {
+        if (live && res) setShort({ path: sharePath, rel: res.rel, opens: res.opens })
       })
       .catch(() => {})
     return () => {
       live = false
     }
   }, [enabled, sharePath, origin])
-  const mine = short && short.path === sharePath ? short.rel : null
-  if (!mine) return { url: longUrl, canShorten: false }
-  return { url: (shorter ? shorterLinkFor(mine) : null) ?? `${origin}${mine}`, canShorten: true }
+  const hit = short && short.path === sharePath ? short : null
+  if (!hit) return { url: longUrl, canShorten: false, opens: null }
+  return { url: (shorter ? shorterLinkFor(hit.rel) : null) ?? `${origin}${hit.rel}`, canShorten: true, opens: hit.opens }
 }

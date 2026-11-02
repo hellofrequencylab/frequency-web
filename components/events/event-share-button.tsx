@@ -60,7 +60,7 @@ export function EventShareButton({
   const { path: sharePath, url: longUrl } = publicShareUrl(origin, `/events/${slug}`, { ref: sharerProfileId })
   // The short /s/<code> once the panel is open (LIVE-1960); the long URL until then or if it cannot be made.
   const [shorter, setShorter] = useState(false)
-  const { url, canShorten } = useShortShareUrl(longUrl, sharePath, origin, open, shorter)
+  const { url, canShorten, opens } = useShortShareUrl(longUrl, sharePath, origin, open, shorter)
 
   const svg = useMemo(() => renderStyledQrSvg(url, { ...DEFAULT_STYLE }, 240), [url])
 
@@ -156,7 +156,7 @@ export function EventShareButton({
               >
                 {url}
               </code>
-              <ShorterLinkSwitch checked={shorter} onCheckedChange={setShorter} available={canShorten} />
+              <ShorterLinkSwitch checked={shorter} onCheckedChange={setShorter} available={canShorten} opens={opens} />
               <div className="flex items-center gap-2">
                 <button
                   type="button"
