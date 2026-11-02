@@ -1,3 +1,4 @@
+import { siteToday } from '@/lib/sites/site-events'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 import { storedWallClock } from '@/lib/sites/site-events'
 import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
@@ -337,7 +338,7 @@ const clock = (d: Date) => `${d.getUTCHours() % 12 || 12}${d.getUTCMinutes() ? `
 function MidnightEventRowsBlock({ p, metadata, now = new Date(), pad, vis }: Common) {
   const count = Math.max(1, Math.min(24, Number(p.count) || 12))
   const raw = (metadata?.space as { events?: unknown } | undefined)?.events
-  const today = now.toISOString().slice(0, 10)
+  const today = siteToday(now)
   const live = (Array.isArray(raw) ? raw : []).filter(isRow).filter((e) => !e.isCancelled && e.startsAt.slice(0, 10) >= today).sort((a, b) => a.startsAt.localeCompare(b.startsAt)).slice(0, count)
   const links = metadata?.links as SiteLinkMap | undefined
   const rows = live.length

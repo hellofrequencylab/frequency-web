@@ -1,3 +1,4 @@
+import { siteToday } from '@/lib/sites/site-events'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 import { InlineText } from '@/components/sites/inline-text'
 import { FreeHumanWheelView } from '@/components/sites/free-human-wheel-view'
@@ -33,7 +34,7 @@ function Wheel({ p, metadata, now, pad, vis }: Common) {
   return (
     <Ground p={p} name="wheel" pad={pad} vis={vis}>
       <FreeHumanWheelView
-        today={at.toISOString().slice(0, 10)}
+        today={siteToday(at)}
         gatherings={gatherings}
         defaultMode={str(p.defaultMode) === 'scroll' ? 'scroll' : 'click'}
         stepHeight={step}

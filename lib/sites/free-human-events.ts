@@ -37,6 +37,12 @@ export function freeHumanKind(title: string): { id: string; label: string; glyph
   return { id, label, glyph }
 }
 
+/** The Space's own calendar day (YYYY-MM-DD), the day stored wall-clock starts are compared with. The UTC day flips at about
+ *  5pm Pacific and dropped the evening's gatherings from "upcoming" hours early (SCAN-1191). */
+export function freeHumanToday(now: Date): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+}
+
 /** The Space's upcoming events from its data bag (its own rows and its series, every recurring anchor expanded through the next
  *  four months), cancelled ones dropped, soonest first. Empty when the bag carries none. */
 export function freeHumanUpcoming(space: { events?: unknown; series?: unknown } | undefined, now: Date): FreeHumanEventRow[] {
@@ -49,7 +55,7 @@ export function freeHumanUpcoming(space: { events?: unknown; series?: unknown } 
     own.push(e)
   }
   const rows = expandSiteSeries(own, { through: new Date(now.getTime() + WINDOW_DAYS * 86_400_000), from: now })
-  const today = now.toISOString().slice(0, 10)
+  const today = freeHumanToday(now)
   return rows.filter((e) => !e.isCancelled && e.startsAt.slice(0, 10) >= today).sort((a, b) => a.startsAt.localeCompare(b.startsAt))
 }
 
@@ -78,7 +84,7 @@ export function freeHumanOccurrences(space: { events?: unknown; series?: unknown
     own.push(e)
   }
   const through = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + months, 1))
-  const today = now.toISOString().slice(0, 10)
+  const today = freeHumanToday(now)
   return expandSiteSeries(own, { through, from: now })
     .filter((e) => !e.isCancelled && (e.endsAt ?? e.startsAt).slice(0, 10) >= today && e.startsAt.slice(0, 10) < through.toISOString().slice(0, 10))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))

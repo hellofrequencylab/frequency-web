@@ -1,3 +1,4 @@
+import { siteToday } from '@/lib/sites/site-events'
 import { ArrowRight, Calendar as CalendarIcon } from 'lucide-react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 import { type SiteLinkMap } from '@/lib/sites/house-theme'
@@ -89,7 +90,7 @@ function CalendarHero({ p, metadata, now, pad, vis }: Common) {
 function Calendar({ p, metadata, now, pad, vis }: Common) {
   const at = now ?? new Date()
   const occs = freeHumanOccurrences(metadata?.space as Space, at, MONTHS_AHEAD, pageOf(metadata))
-  const today = at.toISOString().slice(0, 10)
+  const today = siteToday(at)
   const featured = occs.filter((o) => o.kind !== 'circle').slice(0, 3)
   const filters = Array.isArray(p.filters) ? (p.filters as unknown[]).map(str).filter(Boolean) : ['all']
   const feed = feedOf(metadata)
