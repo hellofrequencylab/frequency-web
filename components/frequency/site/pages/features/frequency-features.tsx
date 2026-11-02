@@ -111,7 +111,7 @@ export function FrequencyFeatures() {
       <FeaturesMotion />
 
       <section className="phero" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={{ backgroundImage: "url('/brand/frequency/broll/yoga-rave-uv-swirl-web.jpg')" }} />
+        <div className="bg" />
         <div className="fq-aura" style={aura(0.3)} />
         <div className="shade" />
         <div className="fq-grain" />

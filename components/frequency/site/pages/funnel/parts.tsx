@@ -4,6 +4,7 @@
 // these render the page between them.
 
 import type { ReactNode } from 'react'
+import { photoBg } from '../shared/parts'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import '@/app/themes/active/site-pages-b'
@@ -64,7 +65,7 @@ export function FnPhotoHero({
 }) {
   return (
     <section className="phero" data-energy="flow" data-screen-label="01 Hero">
-      <div className="bg" style={{ backgroundImage: `url('${image}')` }} />
+      <div className="bg" style={photoBg(image)} />
       <div className="fq-aura" style={{ '--fq-aura-opacity': 0.3 } as React.CSSProperties} />
       <div className="shade" />
       <div className="fq-grain" />
