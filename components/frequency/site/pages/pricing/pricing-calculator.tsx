@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/field";
 import { operatorStartHref } from "@/lib/site";
+import { optimizedPhoto } from "../shared/parts";
 import {
   intentsForPicks,
   type CalcModel,
@@ -945,7 +946,7 @@ export function PricingCalculator({ model }: { model: CalcModel }) {
                       style={
                         /^P\d$/.test(id)
                           ? {
-                              backgroundImage: `url(/brand/frequency/photos/${PHOTOS[Number(id.slice(1)) - 1]})`,
+                              backgroundImage: `url(${optimizedPhoto(`/brand/frequency/photos/${PHOTOS[Number(id.slice(1)) - 1]}`, 384)})`,
                             }
                           : undefined
                       }

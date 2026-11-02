@@ -4,7 +4,7 @@
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
-import { ChapPhoto } from '../shared/parts'
+import { ChapPhoto, photoBg } from '../shared/parts'
 import { NICHE_DESIGN, NICHE_PHOTO_DIR } from '@/lib/marketing/funnel-design'
 import type { FunnelConfig } from '@/lib/marketing/funnel-config'
 import { ROUTES } from '@/lib/frequency/site-nav'
@@ -17,7 +17,7 @@ export function FrequencyForIndex({ doors }: { doors: FunnelConfig[] }) {
   return (
     <>
       <section className="phero" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={{ backgroundImage: `url('${NICHE_PHOTO_DIR}/day-park-yoga.jpg')` }} />
+        <div className="bg" style={photoBg(`${NICHE_PHOTO_DIR}/day-park-yoga.jpg`)} />
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.3 })} />
         <div className="shade" />
         <div className="fq-grain" />
