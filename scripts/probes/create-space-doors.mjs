@@ -27,7 +27,8 @@ if (!/launchHomeHref\(\{ signedIn: true \}\)/.test(page) || !/\/launch\/start/.t
 // session route there (it was the sign-in wall the page's own redirect never got past).
 const proxy = read('proxy.ts')
 if (/SESSION_ROUTES = new Set\(\[[^\]]*'\/spaces\/new'/.test(proxy)) bad.push('proxy.ts still walls /spaces/new behind sign-in')
-for (const door of ['/spaces/new', '/launch', '/launch/start']) if (!new RegExp(`CREATE_SPACE_DOORS = new Set\\(\\[[^\\]]*'${door.replace(/\//g, '\\/')}'`).test(proxy)) bad.push(`proxy.ts does not send a signed-out ${door} to the wizard`)
+const doorSet = proxy.match(/CREATE_SPACE_DOORS = new Set\(\[([^\]]*)\]\)/)?.[1] ?? ''
+for (const door of ['/spaces/new', '/launch', '/launch/start']) if (!doorSet.includes(`'${door}'`)) bad.push(`proxy.ts does not send a signed-out ${door} to the wizard`)
 if (!/CREATE_SPACE_WIZARD = '\/create-a-space'/.test(proxy) || !/!user && CREATE_SPACE_DOORS\.has\(pathname\.replace\(\/\\\/\$\/, ''\)\)/.test(proxy)) bad.push('proxy.ts does not make the signed-out hop to /create-a-space')
 // The other operator doors (owner 2026-11-02): the /spaces page, the home cards and the Spaces header CTA open the
 // wizard, never the member sign-up; a cold /launch for a visitor resolves to the wizard too.
