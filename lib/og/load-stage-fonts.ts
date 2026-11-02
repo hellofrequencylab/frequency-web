@@ -39,7 +39,6 @@ let inflight: Promise<StageFont[]> | null = null
 
 export const STAGE_DISPLAY = 'Unbounded, Nunito'
 export const STAGE_SANS = 'Hanken Grotesk, Nunito'
-export const STAGE_SERIF = 'Instrument Serif, Nunito'
 
 /** Every face a Stage card draws with, in one array ready for `ImageResponse({ fonts })`. */
 export async function loadStageFonts(): Promise<StageFont[]> {

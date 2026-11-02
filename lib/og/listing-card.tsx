@@ -27,7 +27,8 @@ export async function listingCardResponse(noun: string, input: ListingCardInput 
   return stageCardResponse({
     kicker: noun,
     title: input.title,
-    chip: input.price,
+    badge: input.price,
+    cta: 'View',
     meta: input.facts.filter(Boolean).join(' · ') || null,
     line: input.blurb?.replace(/\s+/g, ' ').trim() || `Listed on ${SITE_NAME}`,
     coverUrl: input.image,
