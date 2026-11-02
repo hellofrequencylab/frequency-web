@@ -185,3 +185,7 @@ export function LocPill({ href, city, line }: { href: string; city: string | nul
 
 /** `--fq-aura-opacity` for a `.fq-aura` layer (the design's inline `--aura-opacity`). */
 export const aura = (opacity: number) => ({ '--fq-aura-opacity': opacity }) as CSSProperties
+
+// CSS background stills through the optimizer (LIVE-2000) live in ./photo-bg.ts, a module with no
+// imports so a probe can load a page that uses it; re-exported here for the pages' one import.
+export { optimizedPhoto, photoBg } from './photo-bg'

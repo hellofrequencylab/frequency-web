@@ -1,7 +1,0 @@
-{
-  "id": "LIVE-047",
-  "append": {
-    "detail": "2026-11-02 (HYG-219): the probe's vitest-timeout pin on the sweep case moved from 90s to 360s on the owner's phrase (\"LIVE-047: raise the sweep timeout pin from 90s to 360s\"). The sweep had grown to 2,158 probes at 314s of CPU, which on the 4-core runner is 88.8s of wall on a green tree (#4481), and the next PR (#4482) timed out at 90s with nothing in it touching a probe's cost. The CPU ceilings this row guards (PER_PROBE_CEILING_MS, BASE_CPU_MS, PER_PROBE_ALLOWANCE_MS, guardCpuMs against budget) are unchanged and still asserted by the same probe."
-  },
-  "wave": "W7"
-}
