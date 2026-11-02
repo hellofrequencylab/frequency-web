@@ -18,6 +18,7 @@ import type { NetworkedSpace } from '@/lib/spaces/discovery'
 import { eventDateBadge } from '@/lib/utils'
 import { FOUNDING_PLACE, SOCIAL_PROOF_FLOOR } from '@/lib/site'
 import { eventWhen } from '../shared/data'
+import { photoImg } from '../shared/parts'
 import { groupByMonth, groupByWhen, splitAt, type EventGroup } from './group'
 
 export const PHOTOS = '/brand/frequency/photos'
@@ -363,7 +364,7 @@ export function DxChapter({
             capture (VISUAL_MASK_SITES in test/e2e/surfaces.ts, kind 'load'). */}
         <div className="photo fq-iri-rim" data-visual-mask="discover-chapter-photo">
           {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img itself (object-fit cover) */}
-          <img loading="lazy" decoding="async" src={photo} alt={alt} />
+          <img loading="lazy" decoding="async" {...photoImg(photo)} alt={alt} />
         </div>
       </div>
     </section>
