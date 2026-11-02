@@ -50,6 +50,12 @@ const ENDPOINTS = [
     description:
       'The allowed-failure fraction each ratio SLO target implies, for computing burn against a live measurement.',
   },
+  {
+    path: '/api/status/queue-lag',
+    method: 'GET',
+    description:
+      'Live: minutes the oldest due queued job has waited. 503 past 15 minutes. Read by the queue-watch workflow, the second clock.',
+  },
 ] as const
 
 /** Which build is answering. `dynamic = 'force-static'` means this route is rendered at

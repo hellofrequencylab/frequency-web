@@ -117,6 +117,11 @@ listed and the last invocation is recent. Manual stopgap: call the route with
 every job (the drip runners and the queue already lease their rows, so a double fire is safe for
 those). Filed as SEC-019 (AUD-3 in the systems audit).
 
+**The second clock (SEC-021).** `.github/workflows/queue-watch.yml` runs on GitHub's scheduler every 20
+minutes and reads `GET /api/status/queue-lag`. It only reads, so it never competes with Vercel Cron. A
+red run (GitHub emails it) means the oldest due job has waited over 15 minutes or the read failed: check
+the Vercel Cron page first, then run the stopgap above.
+
 ---
 
 ## 2. Queue backlog

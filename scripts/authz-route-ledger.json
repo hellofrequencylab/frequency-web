@@ -96,9 +96,15 @@
     },
     "app/api/status/route.ts": {
       "verdict": "public",
-      "reason": "Read-only status index (H0-8). Serves the static SLO contract, VERCEL_GIT_*/VERCEL_ENV build identity, and FOUR booleans: monitoring.sentry, derived in lib/observability/sentry.ts and never the DSN (LIVE-053); monitoring.push, derived in lib/push.ts and never the VAPID key (OWN-020); monitoring.nativePush, derived in lib/push-native.ts from whether EXPO_ACCESS_TOKEN is set and never the token (LIVE-720); and monitoring.rateLimit, derived in lib/rate-limit.ts from whether a client was built and never a URL or token (LIVE-195, so an operator can see that AI throttling is unconfigured - every AI door allows in that state). Its own route.test.ts fails the suite on ANY other process.env read in this file, and separately asserts each boolean is imported rather than read here; both assertions are mutation-proven. Re-read in full 2026-08-24 when the push boolean was added: the handler still takes no input, touches no DB, and its env surface is unchanged at exactly the four build-metadata vars. Verdict unchanged. Re-read 2026-10-06 when nativePush was added (LIVE-720): still no input, no DB, the same env surface in this file. Verdict unchanged.",
-      "checked": "2026-10-06",
-      "digest": "dee6d560054b5b5c"
+      "reason": "Read-only status index (H0-8). Serves the static SLO contract, VERCEL_GIT_*/VERCEL_ENV build identity, and FOUR booleans: monitoring.sentry, derived in lib/observability/sentry.ts and never the DSN (LIVE-053); monitoring.push, derived in lib/push.ts and never the VAPID key (OWN-020); monitoring.nativePush, derived in lib/push-native.ts from whether EXPO_ACCESS_TOKEN is set and never the token (LIVE-720); and monitoring.rateLimit, derived in lib/rate-limit.ts from whether a client was built and never a URL or token (LIVE-195, so an operator can see that AI throttling is unconfigured - every AI door allows in that state). Its own route.test.ts fails the suite on ANY other process.env read in this file, and separately asserts each boolean is imported rather than read here; both assertions are mutation-proven. Re-read in full 2026-08-24 when the push boolean was added: the handler still takes no input, touches no DB, and its env surface is unchanged at exactly the four build-metadata vars. Verdict unchanged. Re-read 2026-10-06 when nativePush was added (LIVE-720): still no input, no DB, the same env surface in this file. Verdict unchanged. Re-read 2026-11-02 when the queue-lag line was added to ENDPOINTS (SEC-021): a static description string only, still no input, no DB, same env surface. Verdict unchanged.",
+      "checked": "2026-11-02",
+      "digest": "42ff08c90408fbd7"
+    },
+    "app/api/status/queue-lag/route.ts": {
+      "verdict": "public",
+      "reason": "Live queue-lag reading for the outside queue-watch workflow (SEC-021, AUD-3). Takes no input. One service-role read through queueHealth() that returns three counts and a boolean: minutes the oldest due job has waited, pending, dead-lettered, measured. No job content, id, address or member data. Not cached, so a stale answer cannot hide a stopped scheduler. Public on purpose: the watcher runs on GitHub with no secret.",
+      "checked": "2026-11-02",
+      "digest": "2f06175a1cab7098"
     },
     "app/api/status/slos/route.ts": {
       "verdict": "public",
