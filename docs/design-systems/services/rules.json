@@ -46,13 +46,45 @@
   {
    "from": "--danger-",
    "to": "--sv-danger-"
+  },
+  {
+   "from": "--fw-black",
+   "to": "--sv-fw-heavy"
+  },
+  {
+   "from": "--",
+   "to": "--sv-"
   }
  ],
  "rules": [
   {
+   "glob": "design_handoff_theme_editor/reference/tokens/frequency.css",
+   "kind": "built",
+   "target": "lib/sites/editor/theme-contract.json",
+   "reason": "The --th-* bridge is published as themes.Services; the site-look attribute rules (data-site-*, data-th, data-type, data-motion) land in components/sites/services-css.ts with the chrome (LIVE-1992)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/tokens/base.css",
+   "kind": "built",
+   "target": "components/sites/services-css.ts",
+   "reason": "Type voices, image treatments and base element rules (LIVE-1992)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/tokens/effects.css",
+   "kind": "built",
+   "target": "components/sites/services-css.ts",
+   "reason": "Orbs, glints, sweep and reveals behind prefers-reduced-motion (LIVE-1992)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/tokens/textures.css",
+   "kind": "built",
+   "target": "components/sites/services-css.ts",
+   "reason": "Grain and dot-grid textures (LIVE-1992)."
+  },
+  {
    "glob": "design_handoff_theme_editor/reference/tokens/*.css",
    "kind": "tokens",
-   "reason": "Compared value for value with SERVICES_TOKENS_CSS (lib/theme/services.ts) under tokenMap."
+   "reason": "Compared value for value with SERVICES_TOKENS_CSS under tokenMap (every name gains --sv-)."
   },
   {
    "glob": "design_handoff_theme_editor/reference/assets/frequency-logo.png",
