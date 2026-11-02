@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Input } from '@/components/ui/field'
 import {
   ArrowRight, Award, Check, Briefcase, CalendarDays, Car, ChartColumn, Clock, Droplet, Eye, Heart, House, Leaf, Mail, MapPin, MessageCircle,
   Phone, ShieldCheck, Sparkles, Star, Sun, Tag, User, Users, Wrench, Zap, type LucideIcon,
@@ -64,7 +65,7 @@ function Letter({ c, compact }: { c: C; compact?: boolean }) {
     <div className="svs-card svs-letter">
       <Display title={c.letter.title} em={c.letter.em} size={compact ? 20 : 24} />
       <p>{c.letter.body}</p>
-      <form action={c.letter.action} method="get"><input className="svs-input" type="email" name="email" aria-label="Email" placeholder="you@email.com" required /><button className="svs-btn svs-btn--accent svs-btn--sm" type="submit">Join</button></form>
+      <form action={c.letter.action} method="get"><Input variant="seamless" className="svs-input" type="email" name="email" aria-label="Email" placeholder="you@email.com" required /><button className="svs-btn svs-btn--accent svs-btn--sm" type="submit">Join</button></form>
     </div>
   )
 }
