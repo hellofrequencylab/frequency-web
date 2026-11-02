@@ -175,7 +175,7 @@ export function FrequencyVision() {
               <figure key={c.file} className={c.wide ? 'vz-c wide' : 'vz-c'}>
                 <div className="photo fq-iri-rim">
                   {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img itself (object-fit cover) */}
-                  <img loading="lazy" decoding="async" {...photoImg(`/brand/frequency/facilities/${c.file}`, '(max-width: 860px) 100vw, 33vw')} alt={c.alt} />
+                  <img loading="lazy" decoding="async" {...photoImg(`/brand/frequency/facilities/${c.file}`, c.wide ? '(max-width: 860px) 100vw, 60vw' : '(max-width: 860px) 100vw, 33vw')} alt={c.alt} />
                   <span className="concept">{VISION}</span>
                 </div>
                 <figcaption>{c.room}</figcaption>
