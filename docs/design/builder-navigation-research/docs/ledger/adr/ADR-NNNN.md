@@ -1,4 +1,4 @@
-## ADR-NNNN: The next editor is generated from the role and block contracts
+## ADR-<n>: The next editor is generated from the role and block contracts
 
 **Date:** 2026-11-02 · **Status:** accepted (owner approval, 2026-11-02) · **Rows:** BLD-000 to BLD-902 · **Spec:** [`EDITOR-NEXT.md`](../../EDITOR-NEXT.md)
 
