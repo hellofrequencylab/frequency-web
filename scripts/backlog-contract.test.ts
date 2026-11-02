@@ -903,10 +903,15 @@ describe('the real tree', () => {
   // per-probe ceiling is the signal this budget exists for (LIVE-034, nine rows converted), and
   // over the scoped run it would only ever see the ~30% of probes a pull request asks about.
   //
-  // ⏱️ 90s, INHERITED FROM THE CASE THIS REPLACES and still the right number: one full run,
-  // measured 19.5s wall / 64s CPU standalone on 2026-09-28 and 20.4s inside this suite. The
-  // history of why an explicit budget beats the 30s default is on the sibling case below.
-  it('the full --probes=all sweep is green, and stays inside its cost budget', { timeout: 90_000 }, () => {
+  // ⏱️ 90s WAS INHERITED FROM THE CASE THIS REPLACES: one full run measured 19.5s wall / 64s CPU
+  // standalone on 2026-09-28 and 20.4s inside this suite. By 2026-11-02 (HYG-219) the sweep asked
+  // 2,158 probes and the SAME green tree read 88.8s of wall on CI (#4481) and timed out at 90s on
+  // the next PR (#4482): the wall clock had become the gate, which is the exact false failure the
+  // CPU doctrine below exists to prevent. The vitest timeout is a hang detector, not the budget;
+  // the budget is guardCpuMs against BASE + allowance x n, asserted further down. So the timeout is
+  // set well clear of the measured wall (4x the 2026-11-02 reading, HYG-219's probe holds it there),
+  // and the history of why an explicit budget beats the 30s default is on the sibling case below.
+  it('the full --probes=all sweep is green, and stays inside its cost budget', { timeout: 360_000 }, () => {
     const cpuBefore = childCpuMs()
     const startedAt = Date.now()
     const withRg = run(BACKLOG_GUARD, ROOT, ['--probes=all'])
@@ -1104,7 +1109,9 @@ describe('the real tree', () => {
   // command the `checks` job runs is green, including the scoping path that only the default
   // takes. The sweep does imply this one today; it implies it through an argument, and the
   // argument is one line of code away from stopping being true.
-  it('satisfies both contracts', { timeout: 90_000 }, () => {
+  // 2026-11-02 (HYG-219): 50 to 53s of wall on CI against the 90s here, for the same reason as the
+  // sweep case (the suite runs it under full contention), so it gets the same headroom.
+  it('satisfies both contracts', { timeout: 180_000 }, () => {
     const { code, out } = run(BACKLOG_GUARD, ROOT)
     expect(code, `pnpm check:backlog\n\n${out}`).toBe(0)
     // The per-PR run SAYS what it did not probe. Without this, the day the scope line stops
