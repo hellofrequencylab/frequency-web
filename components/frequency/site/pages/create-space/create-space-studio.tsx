@@ -20,7 +20,7 @@ import { SaveCard, SavedCard } from '@/components/frequency/site/pages/create-sp
 import type { Saved } from '@/components/frequency/site/pages/create-space/create-space-claim'
 import { PhotosCard } from '@/components/frequency/site/pages/create-space/create-space-photos'
 import type { UploadUrls } from '@/components/frequency/site/pages/create-space/create-space-photos'
-import { ContactCard, MOCKUP_LINES, NameCard, OfferCard } from '@/components/frequency/site/pages/create-space/create-space-steps'
+import { ContactCard, MOCKUP_LINES, NameCard, OFFER_EXAMPLES, OfferCard } from '@/components/frequency/site/pages/create-space/create-space-steps'
 import type { StepError } from '@/components/frequency/site/pages/create-space/create-space-steps'
 import { SpacePreview } from '@/components/frequency/site/pages/create-space/space-preview'
 import { useHandleStatus } from '@/components/frequency/site/pages/create-space/use-handle-status'
@@ -34,6 +34,8 @@ import type { DoorArrival } from '@/lib/create-space/door'
 import { isHandleShape } from '@/lib/create-space/handle'
 import { intentsFromOffer } from '@/lib/create-space/intents-from-offer'
 import { browserZone, leadEmailOf } from '@/lib/create-space/lead'
+import { SIGNAL_URL, visitorKeyFrom } from '@/lib/create-space/signal'
+import type { CreateSpaceSignal } from '@/lib/create-space/signal'
 import { PREVIEW_KITS, deriveSite, joinList, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
 import { acceptUpload, getUploads, putUpload } from '@/lib/create-space/uploads'
 import type { UploadKind } from '@/lib/create-space/uploads'
@@ -112,6 +114,16 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
   const ownRef = useRef(false)
   /** The draft as last sent to the server (its token left out), so a token write-back does not send it again. */
   const lastSent = useRef('')
+  /** The tab's own key for the funnel signals (lib/create-space/signal.ts): minted on the first signal, never a cookie. */
+  const visitor = useRef<string | null>(null)
+
+  // ── The funnel signals (LIVE-1970): nine closed events, no typed text, one per tab and event. A count, never a blocker.
+  const signal = useCallback((event: CreateSpaceSignal, props: Record<string, string | number | boolean> = {}) => {
+    try {
+      visitor.current ??= visitorKeyFrom(window.sessionStorage, () => crypto.randomUUID())
+      void fetch(SIGNAL_URL, { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ v: visitor.current, event, props }) }).catch(() => {})
+    } catch { /* no fetch, no storage: the page is still the page */ }
+  }, [])
 
   // ── The browser's own draft: read back once after mount (server markup is the cold render), kept on every change.
   useEffect(() => {
@@ -121,7 +133,8 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
       if (back && hasProgress(back)) setResume(back)
     } catch { /* storage blocked: the page works without it */ }
     restored.current = true
-  }, [arrival])
+    signal('createspace.view', { kit: arrival.kit, chosen: arrival.chosen })
+  }, [arrival, signal])
 
   // ── A ?draft= link: the server copy comes back as a "Welcome back", never restored by itself (ADR-1933).
   useEffect(() => {
@@ -302,9 +315,17 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
   }, [])
   const patch = (p: Partial<BuilderDraft>) => {
     if (typeof p.name === 'string' && building && step === 0 && hasName !== p.name.trim().length > 0) capture()
+    if (!draft.startedAt && typeof p.name === 'string' && p.name.trim()) signal('createspace.name_started')
+    if (p.accentPicked === true) signal('createspace.accent_picked', { accent: p.accentAt ?? draft.accentAt })
     edit((d) => ({ ...d, ...p, startedAt: d.startedAt ?? (typeof p.name === 'string' && p.name.trim() ? new Date().toISOString() : null) }))
   }
-  const markDone = (move: BuilderMove, p?: Partial<BuilderDraft>) => edit((d) => ({ ...d, ...p, done: { ...d.done, [move]: true } }))
+  /** Whole seconds since the first letter, for the step signal, off the clock's own tick; 0 before a name or a tick. */
+  const secondsIn = () => (draft.startedAt && now ? Math.max(0, Math.min(86_400, Math.round((now - Date.parse(draft.startedAt)) / 1000))) : 0)
+  const markDone = (move: BuilderMove, p?: Partial<BuilderDraft>) => {
+    signal('createspace.step_done', { step: move, seconds: secondsIn() })
+    if (move === 'photos') signal('createspace.photos', { uploaded: ownCount > 0, kept_theme: ownCount === 0 })
+    edit((d) => ({ ...d, ...p, done: { ...d.done, [move]: true } }))
+  }
   const focusStep = (i: number) => {
     window.clearTimeout(timers.current.focus)
     timers.current.focus = window.setTimeout(() => { ([nameRef, offerRef, contactRef] as const)[i]?.current?.focus({ preventScroll: true }) }, 420)
@@ -329,6 +350,7 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
     window.clearInterval(timers.current.line)
     timers.current.line = window.setInterval(() => setBusyLine((l) => Math.min((l ?? 0) + 1, MOCKUP_LINES.length - 1)), MOCKUP_LINE_MS)
     const goals = intentsFromOffer(offer)
+    signal('createspace.offer', { example_used: (OFFER_EXAMPLES as readonly string[]).includes(offer.trim()), intents: goals.join(',') })
     timers.current.mock = window.setTimeout(() => {
       window.clearInterval(timers.current.line)
       const done = { ...draft.done, offer: true }
@@ -352,6 +374,7 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
     } else if (step === 2) {
       if (!draft.hostName.trim()) { setErr('fullName'); return }
       if (!EMAIL.test(draft.email.trim())) { setErr('email'); return }
+      signal('createspace.lead', { has_phone: draft.phone.trim().length > 0, has_where: draft.where.trim().length > 0 })
       markDone('contact')
       flash('Contact section added. Saving your draft to your email.')
       advance({ ...draft.done, contact: true }, 2)
@@ -379,6 +402,7 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
     const d = resume
     if (!d) return
     capture()
+    signal('createspace.resume', { source: draftToken ? 'email' : 'local' })
     setResume(null)
     edit(() => ({ ...d, startedAt: new Date().toISOString(), endedAt: null }))
     const n = nextOpenMove(d.done, -1) ?? 4
@@ -397,6 +421,7 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
     flash(`/${handle} is saved as a draft`)
   }
   const toTop = () => {
+    signal('createspace.dock_click')
     window.scrollTo({ top: 0, behavior: 'smooth' })
     if (building) focusStep(step)
   }
@@ -513,7 +538,7 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
             <span className="cs-dock-thumb"><Image src={coverSrc} alt="" fill sizes="42px" unoptimized={coverSrc.startsWith('blob:')} style={{ objectFit: 'cover' }} /></span>
             <span className="cs-dock-text"><b>{siteName}</b><span>{building ? `${pct}% built · still a draft` : 'Saved · still a draft'}</span></span>
             {!building && saved?.keepBuildingHref ? (
-              <Link className="fq-iri-btn cs-dock-go" href={saved.keepBuildingHref}>Keep building<FqIcon name="arrow" size={16} /></Link>
+              <Link className="fq-iri-btn cs-dock-go" href={saved.keepBuildingHref} onClick={() => signal('createspace.dock_click')}>Keep building<FqIcon name="arrow" size={16} /></Link>
             ) : (
               <button type="button" className="fq-iri-btn cs-dock-go" onClick={toTop}>Finish my launch<FqIcon name="arrow" size={16} /></button>
             )}
