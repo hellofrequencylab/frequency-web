@@ -1,13 +1,13 @@
-// THE HAND-OVER FROM /create-a-space TO THE LAUNCH, the pure half. The builder's answers (name, handle, kit, accent,
-// goals, host) leave the visitor's browser exactly once, at the last move, and ride into the launch hold
+// THE HAND-OVER FROM /create-a-space TO THE LAUNCH, the pure half. The builder's answers ride into the launch hold
 // (lib/launch/pending.ts) that the launch page already prefills from. PURE and client-safe: it only maps shapes and
 // names the one address. The cookie write and the sign-in are in app/(marketing)/create-a-space/actions.ts.
 //
-// Mapping, builder to hold:
-//   name   -> answers.spotlight.name   (the Spotlight form opens with it)
-//   goals  -> intents                  (WIZARD_INTENTS ids are the launch's starting intents)
-//   handle, kit, accent, host -> answers.spotlight.{handle, theme, accent, host} (lib/launch/carry.ts)
-// Nothing is made up: the Spotlight's one line and link stay empty for the visitor to write on the launch page.
+// Mapping, builder to hold (ADR-1933):
+//   name    -> answers.spotlight.name   (the Spotlight form opens with it)
+//   offer   -> answers.spotlight.line   (the Spotlight form's one line, their own sentence)
+//   goals   -> intents                  (WIZARD_INTENTS ids are the launch's starting intents)
+//   handle, kit, accent, host, phone, where, cover, logo, profile -> answers.spotlight.* (lib/launch/carry.ts)
+// Photo files never ride here: the hold carries the CHOICE (a slot or `up`), and the files wait in the browser.
 
 import { carryFields } from '@/lib/launch/carry'
 import type { PendingLaunch } from '@/lib/launch/pending'
@@ -30,7 +30,18 @@ export function holdFor(draft: BuilderDraft): Omit<PendingLaunch, 'savedAt'> {
     answers: {
       spotlight: {
         name: draft.name.trim(),
-        ...carryFields({ handle: claimedHandle(draft), theme: draft.kit, accent: String(draft.accentAt), host: draft.hostName.trim() }),
+        ...carryFields({
+          handle: claimedHandle(draft),
+          theme: draft.kit,
+          accent: String(draft.accentAt),
+          host: draft.hostName.trim(),
+          line: draft.offer.trim(),
+          phone: draft.phone.trim(),
+          where: draft.where.trim(),
+          cover: draft.cover,
+          logo: draft.logo,
+          profile: draft.profile,
+        }),
       },
     },
   }

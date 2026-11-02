@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import type { FqIconName } from '@/components/frequency/icon'
+import { ClosingCta } from '@/components/frequency/site/pages/create-space/create-space-closing-cta'
 
 const PAINS = [
   {
@@ -43,32 +44,32 @@ const TOOLS: { name: string; body: string; icon: FqIconName }[] = [
 
 const FAQ = [
   {
+    q: 'Is my site public while I build?',
+    a: 'No. Your website, Spotlight and host profile stay a private draft that only you can see. They go public when you publish from the launch page, after you open the link or continue with Google.',
+  },
+  {
     q: 'How long does it really take?',
-    a: 'The target is about 12 minutes. A couple of minutes here builds your Space, and the setup walk covers your story, photos and first offering. Have a few photos handy and you can finish in one sitting. If you take payments, connecting payouts adds a few minutes.',
+    a: 'About 12 minutes for most people. A few minutes here builds your Space, and the launch page covers your story, prices and first offering.',
+  },
+  {
+    q: 'What if I do not have photos yet?',
+    a: 'Keep the photos picked for your theme. Swap in your own whenever you have them.',
   },
   {
     q: 'Does it cost anything to start?',
-    a: 'No. Every Space starts on the free plan, with no card. Plans and prices live on the pricing page, and you can change plan from your Space’s billing page.',
+    a: 'No. Every Space starts on the free plan, with no card. Plans and prices live on the pricing page.',
   },
   {
-    q: 'Do I have to wait for the email?',
-    a: 'No. Your Space is saved the moment you add your email, and you can keep building. Opening the link makes it public. Continue with Google and it goes live straight away.',
+    q: 'Can I come back later?',
+    a: 'Yes. Your draft saves in this browser as you go. Once you save it with your email, the link brings you back to it on any device.',
   },
   {
     q: 'Can I change the look later?',
     a: 'Yes. Switch Theme Kits or your accent any time. Your website, Spotlight and email change together.',
   },
   {
-    q: 'Who can find my Space?',
-    a: 'You choose. A listed Space shows in the Spaces directory. A private Space is only open to you and your members.',
-  },
-  {
-    q: 'Do I need a website already?',
-    a: 'No. Your Space comes with a website and a Spotlight page in the look you pick.',
-  },
-  {
     q: 'Can I bring my own domain?',
-    a: 'Yes. Your website can run on a domain you own. You connect it from your Space’s settings once you are set up.',
+    a: 'Yes. Connect a domain you own from your Space settings once you are set up.',
   },
 ]
 
@@ -170,8 +171,8 @@ export function Closing() {
       <div className="fq-aura" aria-hidden="true" />
       <div className="cs-close-in">
         <h2 id="cs-close-h" className="cs-close-h">Get people together. Do things on <em className="fq-iri-text">purpose.</em></h2>
-        <a className="btn fq-iri-btn cs-go" href="#get-started">Start my Free Space<FqIcon name="arrow" size={18} /></a>
-        <p className="cs-close-fine">Free to start. You can change everything later.</p>
+        <ClosingCta />
+        <p className="cs-close-fine">Free to start. You can change everything later. No card, and it stays a private draft until you activate it.</p>
       </div>
     </section>
   )

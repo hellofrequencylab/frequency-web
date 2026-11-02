@@ -13,8 +13,15 @@ const draft = () => ({
   accentAt: 2,
   goals: ['events', 'community'] as ('events' | 'community')[],
   hostName: ' Sam Rivera ',
-  done: { name: true, look: true, goals: true, host: true },
+  offer: ' Supper clubs and a circle. ',
+  phone: '+1 (760) 555-0100',
+  where: 'Carlsbad',
+  cover: 's2',
+  logo: 'mono' as const,
+  profile: 'initials',
+  done: { name: true, offer: true, contact: true, photos: true },
 })
+const carried = { handle: 'saltwater', theme: 'designer', accent: '2', host: 'Sam Rivera', line: 'Supper clubs and a circle.', phone: '+1 (760) 555-0100', where: 'Carlsbad', cover: 's2', logo: 'mono', profile: 'initials' }
 
 describe('the draft as the server receives it', () => {
   it('is the browser JSON cut to the closed shape', () => {
@@ -37,18 +44,19 @@ describe('the launch hold for a draft', () => {
     const hold = holdFor(parseHandoff(serializeDraft(draft()))!)
     expect(hold.niche).toBeNull()
     expect(hold.intents).toEqual(['events', 'community'])
-    expect(hold.answers.spotlight).toEqual({ name: 'Saltwater Collective', handle: 'saltwater', theme: 'designer', accent: '2', host: 'Sam Rivera' })
+    expect(hold.answers.spotlight).toEqual({ name: 'Saltwater Collective', ...carried })
   })
   it('is read back whole by the hold and by the carry reader', () => {
     const hold = holdFor(parseHandoff(serializeDraft(draft()))!)
     const back = parsePendingLaunch(serializePendingLaunch(hold, now), now)
     expect(back?.intents).toEqual(['events', 'community'])
     expect(back?.answers.spotlight?.name).toBe('Saltwater Collective')
-    expect(readCarry(back?.answers.spotlight)).toEqual({ handle: 'saltwater', theme: 'designer', accent: '2', host: 'Sam Rivera' })
+    expect(readCarry(back?.answers.spotlight)).toEqual(carried)
+    expect(Object.keys(back?.answers.spotlight ?? {})).toHaveLength(11)
   })
   it('follows the name when no handle was typed, and leaves out an empty host', () => {
-    const d = parseHandoff(serializeDraft({ ...draft(), slug: '', hostName: '' }))!
-    expect(holdFor(d).answers.spotlight).toEqual({ name: 'Saltwater Collective', handle: 'saltwatercollective', theme: 'designer', accent: '2' })
+    const d = parseHandoff(serializeDraft({ ...draft(), slug: '', hostName: '', offer: '', phone: '', where: '' }))!
+    expect(holdFor(d).answers.spotlight).toEqual({ name: 'Saltwater Collective', handle: 'saltwatercollective', theme: 'designer', accent: '2', cover: 's2', logo: 'mono', profile: 'initials' })
   })
 })
 

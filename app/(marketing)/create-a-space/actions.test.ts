@@ -49,7 +49,7 @@ vi.mock('@/lib/spaces/store', () => ({
 import { claimWithEmail, claimWithGoogle, continueSignedIn } from './actions'
 
 const draft = (over: Record<string, unknown> = {}) =>
-  serializeDraft({ ...emptyDraft('designer', true), name: 'Saltwater Collective', slug: '', goals: ['events'], hostName: 'Sam Rivera', done: { name: true, look: true, goals: true, host: true }, ...over })
+  serializeDraft({ ...emptyDraft('designer', true), name: 'Saltwater Collective', slug: '', goals: ['events'], hostName: 'Sam Rivera', done: { name: true, offer: true, contact: true, photos: false }, ...over })
 
 const form = (fields: Record<string, string>) => {
   const fd = new FormData()
