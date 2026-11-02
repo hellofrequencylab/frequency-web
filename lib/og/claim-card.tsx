@@ -63,6 +63,7 @@ export async function claimCardResponse(
 
   return stageCardResponse({
     kicker: input.pill,
+    cta: "Claim",
     title: name,
     line: `Claim your ${input.noun} on ${SITE_NAME}`,
     coverUrl: input.coverUrl,
