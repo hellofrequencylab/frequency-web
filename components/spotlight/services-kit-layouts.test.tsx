@@ -28,7 +28,7 @@ describe('New World (Services theme) Kit Spotlight layouts', () => {
         expect(body, `${kit} ${key}`).not.toMatch(RAW_COLOR)
         expect(body).not.toContain('href="#"')
         expect(body).not.toContain('—')
-        expect(body).toContain(c.name.replace('&', '&amp;'))
+        expect(body).toContain(c.name.replaceAll('&', '&amp;'))
       }
     }
   })
