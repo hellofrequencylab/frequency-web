@@ -137,7 +137,7 @@ const pillBase = {
 } as const
 
 // Pink to blue, deep enough that white type clears contrast on it. The brand's magenta and sky, angled.
-const PILL_FILL = 'linear-gradient(115deg, #C42FB6 0%, #7A5FE0 52%, #3F7CF0 100%)'
+const PILL_FILL = 'linear-gradient(115deg, #C42FB6 0%, #3F7CF0 100%)'
 const PILL_GLASS = 'rgba(8,13,30,0.62)'
 
 function Orb({ size, top, left, right, tint }: { size: number; top: number; left?: number; right?: number; tint: 'pink' | 'blue' }) {
