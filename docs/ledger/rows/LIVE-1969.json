@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-1969",
+  "title": "Every signed-out way in opens the Create a Space wizard",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/design-systems/create-a-space/rules.json",
+    "ref": "Daniel 2026-11-02: this should launch for anybody not logged in; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+  },
+  "detail": "Signed-out /spaces/new, the operator CTA, /go and /for doors and theme-kit CTAs go to /create-a-space with kit, mode and niche hints. Signed-in stays on /launch.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const f=require('fs');process.exit(f.readFileSync('app/(main)/spaces/new/page.tsx','utf8').includes('/create-a-space')?0:1)\"",
+    "checked": "2026-11-02",
+    "evidence": "Fails today: the file or change the probe names is not on main."
+  },
+  "wave": "W7"
+}
