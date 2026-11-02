@@ -160,3 +160,7 @@ space_discovery_connections
 
 # LIVE-1550: reminder log; only the reminder cron on the service role writes it.
 launch_email_log
+
+# LIVE-1960: short share links; only the /s resolver and the share-button action on the service role touch them.
+share_links
+share_link_opens
