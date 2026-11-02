@@ -1,0 +1,23 @@
+# A second clock for the queue (SEC-021, AUD-3). Vercel Cron is the only scheduler; this runs on GitHub's.
+# It only READS /api/status/queue-lag, so a double fire is harmless. A red run is the page: GitHub emails
+# the failure to the repository owner. Runbook: docs/RUNBOOKS.md, "If Vercel Cron itself stops".
+name: queue-watch
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Read the queue lag
+        run: |
+          set -euo pipefail
+          code=$(curl -sS --retry 3 --retry-delay 10 -o body.json -w '%{http_code}' https://frequencylocal.com/api/status/queue-lag)
+          cat body.json; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::queue-lag answered $code. Vercel Cron may have stopped; see docs/RUNBOOKS.md, 'If Vercel Cron itself stops'."
+            exit 1
+          fi
