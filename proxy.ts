@@ -58,6 +58,7 @@ const PROTECTED_PATHS = [
   '/nearby',
   '/circles',
   '/practices',
+  '/journeys',
   '/channels',
   '/events',
   '/messages',
