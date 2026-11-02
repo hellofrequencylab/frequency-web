@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ArrowDown, ArrowUp, ExternalLink, EyeOff, GripVertical, Plus, Star, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, Copy, ExternalLink, EyeOff, GripVertical, Plus, Star, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -78,6 +78,26 @@ export function SpotlightPageEditor({
     links.splice(to, 0, item)
     edit({ ...page, links })
   }
+  // Leaving with unsaved edits loses them: ask the browser to confirm (LIVE-1956).
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
+  const [copied, setCopied] = useState(false)
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/spotlight/${profile.handle}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setMessage({ kind: 'error', text: 'Could not copy. Your link is /spotlight/' + profile.handle })
+    }
+  }
+  const totalClicks = page.links.reduce((n, l) => n + (clicks[l.id] ?? 0), 0)
   const atCap = maxLinks != null && page.links.length >= maxLinks
 
   function addLink() {
@@ -147,6 +167,11 @@ export function SpotlightPageEditor({
           />
           <div className="flex items-center gap-2">
             {published && (
+              <Button variant="ghost" size="sm" onClick={copyLink}>
+                {copied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />} {copied ? 'Copied' : 'Copy link'}
+              </Button>
+            )}
+            {published && (
               <Link href={`/spotlight/${profile.handle}`} target="_blank" className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline">
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden /> View your Spotlight
               </Link>
@@ -164,6 +189,11 @@ export function SpotlightPageEditor({
 
         {tab === 'links' && (
           <section className="space-y-3" aria-label="Links">
+            {totalClicks > 0 && (
+              <p className="text-meta text-muted">
+                {totalClicks} {totalClicks === 1 ? 'click' : 'clicks'} on your links in the last 30 days.
+              </p>
+            )}
             {page.links.length === 0 && (
               <p className="rounded-card border border-dashed border-border p-6 text-center text-body-sm text-muted">
                 Add the first thing you want people to find. A booking page, a podcast, a shop.
