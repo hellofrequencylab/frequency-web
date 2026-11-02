@@ -1,23 +1,21 @@
-// THE SERVICES THEME KIT'S ELEVEN EMAILS (code id `services`): confirm, reminder, welcome, review, receipt, post,
-// event, order, member, letter and inquiry. Built from the Services design system's EmailPage.html
-// (docs/design-systems/services). PURE: no React, no Supabase, no Next, so the stock catalog, a test and a render
+// THE NEW WORLD / SERVICES THEME KIT'S ELEVEN EMAILS (code id `services`): confirm, reminder, welcome, review, receipt, post,
+// event, order, member, letter and inquiry. Built from the New World design system's EmailPage.html
+// (Services revision 2; the intake lands in docs/design-systems/services). PURE: no React, no Supabase, no Next, so the stock catalog, a test and a render
 // script read it the same way. Standalone: nothing registers the theme here.
 //
 // EMAIL-SAFE BY CONSTRUCTION. Nested tables, inline styles and bgcolor attributes, so it holds in a client that
 // ignores a <style> block. Every colour is a literal (a mail client cannot resolve a CSS variable): the page and
-// card follow the register (Night or Day), the one accent is the owner's preset from SERVICES_ACCENTS, and the
-// button label is ink (SERVICES_ON_ACCENT), never white. The type voice (caps, quiet, editorial) and the corners
-// (soft, subtle, square) follow the Space's look. The faces are a progressive enhancement: Bricolage Grotesque, Lora
-// and DM Mono load from Google Fonts where the client allows it, and every stack ends in Helvetica, Georgia or Menlo.
+// card follow the register (Night or Day), the one accent is handed in already resolved for that register (the
+// theme's hue maths lives in the theme, not here), and the button label is the register's ink: dark on Night, white
+// on Day. The type voice (charge, caps, editorial) and the corners
+// (soft, subtle, square) follow the Space's look. The faces are a progressive enhancement: Unbounded, Instrument Serif
+// and Hanken Grotesk load from Google Fonts where the client allows it, and every stack ends in Helvetica or Georgia.
 // Rounded corners, the pill button and the page glow are hints: Outlook draws square ones and the email still reads.
 //
 // THEME FENCE: this module is part of the Services kit and stays out of app/(main), components/spaces and every
 // member or admin area. A Space's emails reach it through the catalog and the email senders only.
 // VOICE: the copy a Space owner supplies is theirs. The words this file adds are the labels (a kicker, a footer line,
 // a button when none is given), and they promise nothing on a schedule and state no count.
-
-import { contrastRatio } from '@/lib/spaces/accent'
-import { SERVICES_ACCENTS, SERVICES_ON_ACCENT, type ServicesAccentId } from '@/lib/theme/services'
 
 export const SERVICES_EMAIL_TYPES = ['confirm', 'reminder', 'welcome', 'review', 'receipt', 'post', 'event', 'order', 'member', 'letter', 'inquiry'] as const
 export type ServicesEmailType = (typeof SERVICES_EMAIL_TYPES)[number]
@@ -32,10 +30,10 @@ export interface ServicesKitEmailBrand {
   role?: string
   city?: string
   phone?: string
-  /** Owner accent preset; unknown or absent: tide. */
-  accent?: string
+  /** The owner's accent, resolved for the chosen register: the fill for buttons and rules, and the step used for accent text. Each is a 6-digit hex. */
+  accent: { fill: string; text: string }
   register?: 'night' | 'day'
-  type?: 'caps' | 'quiet' | 'editorial'
+  type?: 'charge' | 'caps' | 'editorial'
   corners?: 'soft' | 'subtle' | 'square'
   /** The footer: the postal line the law asks for, the Space's site and the unsubscribe link. */
   postalLine?: string
@@ -87,16 +85,15 @@ interface ServicesKitEmail {
   text: string
 }
 
-const FONT_SHEET =
-  'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600..800&family=Lora:ital@1&family=DM+Mono&display=swap'
-const DISP = "'Bricolage Grotesque', Helvetica, Arial, sans-serif"
-const SERIF = 'Lora, Georgia, serif'
-const SANS = 'Helvetica, Arial, sans-serif'
-const MONO = "'DM Mono', Menlo, monospace"
+const FONT_SHEET = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Instrument+Serif:ital@1&family=Hanken+Grotesk:wght@400;600&display=swap'
+const DISP = "Unbounded, Helvetica, Arial, sans-serif"
+const SERIF = "'Instrument Serif', Georgia, serif"
+const SANS = "'Hanken Grotesk', Helvetica, Arial, sans-serif"
+const MONO = DISP
 
-// The design's own register neutrals (EmailPage.html).
-const NIGHT = { page: '#06080A', bg: '#0B0F13', card: '#10161B', text: '#F5F6F7', muted: '#A3ACB4', hair: '#222B34' }
-const DAY = { page: '#ECE6DC', bg: '#F5F1EA', card: '#FFFFFF', text: '#15181C', muted: '#5E5850', hair: '#E2DACD' }
+// The design's own register neutrals (EmailPage.html, revision 2) and the ink on a filled accent button.
+const NIGHT = { page: '#06030C', bg: '#0A0612', card: '#140B22', text: '#F6F0FF', muted: '#A89BC2', hair: '#2A1A45', on: '#0A0612' }
+const DAY = { page: '#F6F5F3', bg: '#FFFFFF', card: '#F6F5F3', text: '#34312E', muted: '#7C766F', hair: '#ECE9E4', on: '#FFFFFF' }
 
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -115,7 +112,7 @@ function spec(type: ServicesEmailType, b: ServicesKitEmailBrand, f: ServicesKitE
   const whenNote = f.whenNote ?? 'Please arrive or be ready 5 minutes early'
   const rows = f.rows ?? []
   const visit: ServicesKitEmailRow[] = [
-    { lead: 'Service', title: s.name, sub: s.meta },
+    { lead: 'What', title: s.name, sub: s.meta },
     { lead: 'When', title: when, sub: whenNote },
     { lead: 'Price', title: s.price, sub: 'Your total is confirmed before any work begins' },
     { lead: 'Where', title: f.where ?? b.city ?? 'At the address on your booking', sub: 'Reply to this email with access notes' },
@@ -135,11 +132,11 @@ function spec(type: ServicesEmailType, b: ServicesKitEmailBrand, f: ServicesKitE
     case 'reminder':
       return { ...base, subject: 'See you tomorrow', title: 'Coming up', em: 'tomorrow.', lead: 'A quick reminder about your visit. If anything has changed, you can move it in one tap.', ctaLabel: ctaOr('Confirm I am coming'), kicker: 'Your booking', featureTitle: 'The details', rows: visit, featureCtaLabel: 'Reschedule' }
     case 'welcome':
-      return { quote: true, subject: `Welcome to ${b.name}`, title: 'Glad you are', em: 'here.', lead: `Thanks for getting in touch. ${first} reads every message and will reply.`, ctaLabel: ctaOr('Book a visit'), kicker: 'What happens next', featureTitle: 'Three steps', rows: steps, featureCtaLabel: 'See services' }
+      return { quote: true, subject: `Welcome to ${b.name}`, title: 'Glad you are', em: 'here.', lead: `Thanks for getting in touch. ${first} reads every message and will reply.`, ctaLabel: ctaOr('Book a visit'), kicker: 'What happens next', featureTitle: 'Three steps', rows: steps, featureCtaLabel: 'See the ways in' }
     case 'review':
       return { ...base, subject: 'How did we do?', title: 'How did we', em: 'do?', lead: `Thanks for booking with ${b.name}. A short review helps neighbors find us and takes about a minute.`, ctaLabel: ctaOr('Leave a review'), kicker: 'Your visit', featureTitle: s.name, rows: [{ lead: 'When', title: when, sub: 'Completed' }, { lead: 'Next', title: 'Book again', sub: 'Open times are shown live' }], featureCtaLabel: 'Book again' }
     case 'receipt':
-      return { ...base, subject: 'Your receipt', title: 'Thank', em: 'you.', lead: `Here is your receipt for today's ${s.name.toLowerCase()}. Nothing else is due.`, ctaLabel: ctaOr('View receipt'), kicker: 'Receipt', featureTitle: s.name, rows: [{ lead: 'Service', title: s.name, sub: s.meta }, { lead: 'Total', title: s.price, sub: 'Paid in full' }, { lead: 'Date', title: when, sub: 'Thank you for booking online' }], featureCtaLabel: 'Book again' }
+      return { ...base, subject: 'Your receipt', title: 'Thank', em: 'you.', lead: `Here is your receipt for today's ${s.name.toLowerCase()}. Nothing else is due.`, ctaLabel: ctaOr('View receipt'), kicker: 'Receipt', featureTitle: s.name, rows: [{ lead: 'What', title: s.name, sub: s.meta }, { lead: 'Total', title: s.price, sub: 'Paid in full' }, { lead: 'Date', title: when, sub: 'Thank you for booking online' }], featureCtaLabel: 'Book again' }
     case 'post': {
       const [head, ...rest] = rows
       return { ...base, subject: head ? head.title : `New from ${b.name}`, title: 'Worth a', em: 'read.', lead: head ? `A new ${head.lead.toLowerCase()} from ${first}: ${head.title}.` : `Something new from ${first}.`, ctaLabel: ctaOr('Read it'), kicker: 'From the library', featureTitle: 'Also new', rows: rest.slice(0, 3), featureCtaLabel: 'All posts' }
@@ -163,11 +160,9 @@ export function servicesKitEmail(type: ServicesEmailType, brand: ServicesKitEmai
   const first = brand.owner.split(' ')[0] || brand.owner
   const day = brand.register === 'day'
   const N = day ? DAY : NIGHT
-  const P = SERVICES_ACCENTS[(brand.accent as ServicesAccentId) in SERVICES_ACCENTS ? (brand.accent as ServicesAccentId) : 'tide']
-  const A = P.accent
-  // Accent text: the design's step (lighter on Night, darker on Day), falling to a darker one until it reads at 4.5:1.
-  const AT = (day ? [P.hover, P.soft] : [P.deep]).find((c) => contrastRatio(c, N.bg) >= 4.5) ?? (day ? P.soft : P.deep)
-  const voice = brand.type ?? 'caps'
+  const A = brand.accent.fill
+  const AT = brand.accent.text
+  const voice = brand.type ?? 'charge'
   const R = brand.corners === 'square' ? '0' : brand.corners === 'subtle' ? '10px' : '20px'
   const BR = brand.corners === 'square' ? '0' : '999px'
 
@@ -177,18 +172,14 @@ export function servicesKitEmail(type: ServicesEmailType, brand: ServicesKitEmai
   const hair = () => row(`<div style="height:1px;background:${A};background-image:linear-gradient(90deg,${N.bg},${A},${N.bg});font-size:0;line-height:0">&nbsp;</div>`)
 
   const em = (t: string) =>
-    voice === 'quiet'
-      ? `<span style="font-weight:300;color:${AT}">${esc(t)}</span>`
-      : voice === 'editorial'
-        ? `<span style="font-family:${DISP};font-weight:700;text-transform:uppercase;font-size:.8em;color:${AT}">${esc(t)}</span>`
-        : `<span style="font-family:${SERIF};font-style:italic;font-weight:400;text-transform:none;color:${AT}">${esc(t)}</span>`
+    voice === 'editorial'
+      ? `<span style="font-family:${DISP};font-weight:700;text-transform:uppercase;font-size:.8em;color:${AT}">${esc(t)}</span>`
+      : `<span style="font-family:${SERIF};font-style:italic;font-weight:400;color:${AT}">${esc(t)}</span>`
 
   const heading = (inner: string, size: number) =>
-    voice === 'quiet'
-      ? `<div style="font:600 ${size}px/1 ${DISP};letter-spacing:-.03em;color:${N.text};margin-top:12px">${inner}</div>`
-      : voice === 'editorial'
-        ? `<div style="font:500 ${size}px/1.02 ${SERIF};font-style:normal;letter-spacing:-.02em;color:${N.text};margin-top:12px">${inner}</div>`
-        : `<div style="font:800 ${size}px/.95 ${DISP};font-stretch:80%;letter-spacing:-.02em;text-transform:uppercase;color:${N.text};margin-top:12px">${inner}</div>`
+    voice === 'editorial'
+      ? `<div style="font:500 ${size}px/1.02 ${SERIF};font-style:normal;letter-spacing:-.02em;color:${N.text};margin-top:12px">${inner}</div>`
+      : `<div style="font:600 ${size}px/1 ${DISP};letter-spacing:-.035em;color:${N.text};margin-top:12px">${inner}</div>`
 
   const kicker = (t: string) => `<div style="font:500 10px/1 ${MONO};letter-spacing:.18em;text-transform:uppercase;color:${AT}">&#9679; ${esc(t)}</div>`
   const para = (t: string) => `<div style="font:400 15px/1.6 ${SANS};color:${N.muted};margin-top:12px">${esc(t)}</div>`
@@ -196,7 +187,7 @@ export function servicesKitEmail(type: ServicesEmailType, brand: ServicesKitEmai
   const button = (label: string, url: string, ghost: boolean) => {
     const bg = ghost ? N.bg : A
     const edge = ghost ? `border:1px solid ${N.hair};` : ''
-    const ink = ghost ? N.text : SERVICES_ON_ACCENT
+    const ink = ghost ? N.text : N.on
     return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="${bg}" style="background:${bg};${edge}border-radius:${BR};text-align:center"><a href="${href(url)}" style="display:block;padding:15px 28px;font:700 12px/1 ${DISP};letter-spacing:.12em;text-transform:uppercase;color:${ink};text-decoration:none">${esc(label)}</a></td></tr></table>`
   }
 
@@ -222,7 +213,7 @@ export function servicesKitEmail(type: ServicesEmailType, brand: ServicesKitEmai
 <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="600"><tr><td><![endif]-->
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%" bgcolor="${N.bg}" style="width:100%;max-width:600px;margin:0 auto;background:${N.bg};background-image:linear-gradient(to bottom left,${A}30 0%,${A}14 24%,${A}00 58%);color:${N.text}">
 ${spacer(28)}
-${row(tbl(`<tr><td style="font:800 22px/1 ${DISP};font-stretch:80%;text-transform:uppercase;color:${N.text}">${esc(brand.name)}<div style="height:2px;width:80px;background:${A};margin-top:8px;font-size:0;line-height:0">&nbsp;</div></td>${brand.descriptor ? `<td align="right" style="font:500 10px/1 ${MONO};letter-spacing:.16em;text-transform:uppercase;color:${N.muted}">${esc(brand.descriptor)}</td>` : ''}</tr>`))}
+${row(tbl(`<tr><td style="font:600 20px/1 ${DISP};letter-spacing:-.03em;color:${N.text}">${esc(brand.name)}<div style="height:2px;width:80px;background:${A};margin-top:8px;font-size:0;line-height:0">&nbsp;</div></td>${brand.descriptor ? `<td align="right" style="font:500 10px/1 ${MONO};letter-spacing:.16em;text-transform:uppercase;color:${N.muted}">${esc(brand.descriptor)}</td>` : ''}</tr>`))}
 ${spacer(36)}
 ${row(`${kicker(sp.subject)}${heading(`${esc(sp.title)} ${em(sp.em)}`, 40)}${para(sp.lead)}`)}
 ${spacer(26)}
