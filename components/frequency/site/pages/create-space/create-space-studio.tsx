@@ -35,6 +35,12 @@ const COLD_KIT: MegaThemeId = 'frequency'
 /** The hero wears its mode as a class too, so a probe and a test can read it off the markup. */
 const HERO_CLASS = { intro: 'cs-hero cs-hero-intro', building: 'cs-hero cs-hero-building' } as const
 const ROW_LABELS = ['Name', 'Offer', 'Contact', 'Photos'] as const
+/** The intro H1 as one sentence, the one lib/seo/frequency-pages.ts pins as the page's headline. It renders in two
+ *  pieces (the lead inside the h1, the clause read to a screen reader there and drawn on its own line beside it), so
+ *  the sentence lives here whole and the pieces are cut from it. */
+const INTRO_H1 = 'Your whole business, live in 12 minutes.'
+const INTRO_H1_CLAUSE = 'live in 12 minutes.'
+const INTRO_H1_LEAD = INTRO_H1.slice(0, -(INTRO_H1_CLAUSE.length + 1))
 const INTRO_SUB = 'You have a practice, a studio, a gathering or a group, and the tools are scattered. Build one home for all of it: your website, Spotlight, bookings and people.'
 /** The mock-up moment is never shorter than this, so the lines are read, not flashed. */
 const MOCKUP_MIN_MS = 2600
@@ -185,7 +191,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   const startedAt = draft.startedAt ? Date.parse(draft.startedAt) : NaN
   const endAt = building ? now : (draft.endedAt ? Date.parse(draft.endedAt) : now)
   const elapsedMs = Number.isFinite(startedAt) && now ? Math.max(0, endAt - startedAt) : 0
-  const h1Lead = intro ? 'Your whole business,' : building ? 'Launch your business in ' : `${siteName}, saved in `
+  const h1Lead = intro ? INTRO_H1_LEAD : building ? 'Launch your business in ' : `${siteName}, saved in `
   const h1Time = intro ? '' : building ? formatClock(Math.max(0, CLOCK_BUDGET_MS - elapsedMs)) : `${formatClock(elapsedMs)}.`
   const sub = intro ? INTRO_SUB : building ? `Step ${step + 1} of 5 · ${stepPrompt(step, kitLabel)}` : `We sent your link to ${saved?.email ?? draft.email.trim()}. It stays a private draft until you open it.`
   const rowValue = [`${siteName} · /${handle || 'yourspace'}`, draft.offer.trim(), `${draft.hostName.trim()} · ${draft.email.trim()}`, `${kitLabel} photos for now`]
@@ -316,7 +322,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
             </div>
             <h1 id="cs-h1" className="cs-h1" data-morph="h1">
               <span>{h1Lead}</span><em className="fq-iri-text">{h1Time}</em>
-              {intro ? <span className="cs-sr"> live in 12 minutes.</span> : null}
+              {intro ? <span className="cs-sr"> {INTRO_H1_CLAUSE}</span> : null}
             </h1>
           </div>
 
