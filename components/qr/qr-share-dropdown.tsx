@@ -7,6 +7,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { PageQrManager, PageShareKit } from '@/components/qr/page-qr-manager'
 import { publicShareUrl } from '@/lib/qr/public-url'
 import { useShareRef } from '@/components/qr/share-ref-context'
+import { SharePreviewCard } from '@/components/qr/share-card-preview'
 import { useShareImage } from '@/components/qr/share-image-context'
 
 // "QR & Share" — the page's share affordance, split out of PageAdminBar (D.1).
@@ -100,6 +101,7 @@ export function QrShareDropdown({
         className="max-w-3xl"
       >
         <div className="rounded-card border border-border bg-surface p-4 shadow-pop sm:p-6">
+          <SharePreviewCard pathname={publicPath} />
           {manager ? (
             <PageQrManager pathname={publicPath} url={url} imageUrl={shareImage} />
           ) : (
