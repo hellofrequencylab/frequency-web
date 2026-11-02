@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-1191",
+  "title": "Free Human site events compare against the Space's own day, not the UTC day",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": { "file": "lib/sites/free-human-events.ts", "ref": "Rescan 2026-11-02 (audits/rescan-2026-11-02.md)" },
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/free-human-today-local.mjs", "note": "Fails before the fix: freeHumanToday does not exist and today comes from toISOString." },
+  "detail": "freeHumanUpcoming and freeHumanOccurrences used now.toISOString().slice(0,10), the UTC day, against stored wall-clock dates. After about 5pm Pacific the day flips and the evening's gatherings leave the upcoming list and the Calendar block hours early (same class as SCAN-1037 and SCAN-1126). Fixed for the Free Human helpers with the Space's zone (America/Los_Angeles). Still open under this row: the 'today' mark in the Nocturne, Temple, Network and Roles blocks (midnight.tsx:130, network-kit.tsx:131, temple-kit.tsx:152, roles.tsx:184, free-human-calendar.tsx:92), which need the Space zone passed in; row stays open until those use it.",
+  "wave": "W7"
+}
