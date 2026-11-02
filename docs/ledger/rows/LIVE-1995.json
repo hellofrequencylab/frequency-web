@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1995",
+  "title": "Services email and Space page: eleven email types and the Space face",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/design-systems/services/rules.json",
+    "ref": "ds-intake services"
+  },
+  "detail": "Plan step 7b: eleven email templates (confirm, reminder, welcome, review, receipt, post, event, order, member, letter, inquiry) following register, accent, type voice and corners; Space page follows fonts, accent and register while synced inside Frequency's own frame (only the Space area wears the kit).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/services-theme.mjs email"
+  },
+  "wave": "W7"
+}
