@@ -164,3 +164,6 @@ launch_email_log
 # LIVE-1960: short share links; only the /s resolver and the share-button action on the service role touch them.
 share_links
 share_link_opens
+
+# SEC-016: operator switches; every reader uses the service role, anon and authenticated are revoked.
+platform_flags
