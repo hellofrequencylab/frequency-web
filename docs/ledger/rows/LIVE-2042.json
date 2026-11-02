@@ -1,0 +1,18 @@
+{
+ "id": "LIVE-2042",
+ "title": "Intake New World (Services revision 2): re-snapshot, list added/changed files, re-group the baseline",
+ "lane": "live",
+ "priority": "P1",
+ "size": "S",
+ "status": "open",
+ "source": {
+  "file": "docs/design-systems/services/rules.json",
+  "ref": "Daniel 2026-11-02 New World thread"
+ },
+ "detail": "Run docs/DESIGN-SYSTEM-INTAKE.md on the New World zip against the LIVE-1990 snapshot. Revision 2 renames Services to New World and changes tokens (three tiers, scoped registers, OKLCH accents with vividness), dials (pairing, mix, charge voice) and blocks (Groups, Your first visit, Tools, Events). Every changed file is a file to rebuild; the Services rows LIVE-1992..1996 are re-scoped to it, not duplicated. Coordinate with the Services thread, which owns site-style.ts registration.",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node -e \"const i=require('./docs/design-systems/services/inventory.json');process.exit(JSON.stringify(i).includes('tokens/core/themes.css')?0:1)\""
+ },
+ "wave": "W7"
+}
