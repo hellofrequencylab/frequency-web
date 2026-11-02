@@ -2,9 +2,6 @@
  "ledger": "LIVE-1990",
  "ids": [
   "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#2780147d",
-  "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#3d26a335",
-  "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#7caa245b",
-  "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#86ece231",
   "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#b3fc3253",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#00c51d11",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#03029622",
@@ -80,10 +77,8 @@
   "missing:design_handoff_theme_editor/reference/tokens/base.css",
   "missing:design_handoff_theme_editor/reference/tokens/effects.css",
   "missing:design_handoff_theme_editor/reference/tokens/textures.css",
-  "missing:design_handoff_theme_editor/reference/ui_kits/products/Spotlight.jsx",
   "missing:design_handoff_theme_editor/reference/ui_kits/site/Blocks.jsx",
   "missing:design_handoff_theme_editor/reference/ui_kits/site/Chrome.jsx",
-  "missing:design_handoff_theme_editor/reference/ui_kits/site/kits.js",
-  "missing:design_handoff_theme_editor/reference/ui_kits/site/record.js"
+  "missing:design_handoff_theme_editor/reference/ui_kits/site/kits.js"
  ]
 }

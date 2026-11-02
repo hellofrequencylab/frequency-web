@@ -4,15 +4,16 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/design-systems/services/rules.json",
     "ref": "ds-intake services"
   },
-  "detail": "Plan step 7a: Stack, Card wall, Story, Calendar first, Shop front, Profile, registered as services-kit:* beside network-kit-layouts. Every pin a theme addition trips (layouts none-for-others, CONTRACT_THEME_IDS) is batched into one phrase ask.",
+  "detail": "Plan step 7a: Stack, Card wall, Story, Calendar first, Shop front, Profile, registered as services-kit:* beside network-kit-layouts. Every pin a theme addition trips (layouts none-for-others, CONTRACT_THEME_IDS) is batched into one phrase ask.\n\nSix New World (Services) Spotlight layouts and kit doors built as standalone modules (services-kit-layouts.tsx, services-kit-layouts-css.ts, lib/spotlight/services-kit-content.ts, revision 2 kits). Not registered: layouts.ts, theme.ts and spotlight-shell wait for LIVE-2040, whose pinned tests need Daniel's phrases. Photos are the owner's or the theme gradient; live pages pass sample:false.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/services-theme.mjs spotlight"
+    "cmd": "node scripts/probes/services-theme.mjs spotlight && pnpm vitest run components/spotlight/services-kit-layouts.test.tsx"
   },
+  "closed": "2026-11-02",
   "wave": "W7"
 }
