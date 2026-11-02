@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-1961",
+  "title": "Serve share links on freq.ie and add a Shorter link switch to the share panels",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": { "file": "lib/sites/host.ts", "ref": "Daniel request 2026-11-02, parked until the Irish registration documents are done" },
+  "detail": "Short share links work on frequencylocal.com/s/<code> (LIVE-1960). Daniel bought freq.ie for an even shorter form and parked it: it needs Irish registration documents he does not have yet. freq.ie is already added to the frequency-web Vercel project and shows Invalid Configuration; its DNS is not set. The finished code is in the history of PR 4448, commit ad89c35: a short-link host in lib/sites/host.ts (freq.ie/<code> rewrites to /s/<code>, the bare host goes to frequencylocal.com, www goes to the bare host, anything else is a 404), the /s route building its redirect on Frequency's own origin, a shorterLinkFor helper, and an off-by-default Shorter link switch on the event, Space and listing share panels. To finish: set the Vercel redirect on freq.ie to none and www.freq.ie to a 308 to freq.ie; at the registrar delete parking records, add an A record @ to 216.150.1.1 and a CNAME www to d4bc968f91cd136b.vercel-dns-017.com. (values from Vercel's own recommendation for this project, checked 2026-11-02); wait for Valid Configuration on both rows; re-apply the commit; re-record the authz digest of app/s/[slug]/route.ts.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/freq-ie-short-host.mjs" },
+  "wave": "W7"
+}

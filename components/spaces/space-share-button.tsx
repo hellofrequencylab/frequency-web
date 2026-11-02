@@ -6,6 +6,8 @@ import { Dialog } from '@/components/ui/dialog'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { DEFAULT_STYLE, withCenterLogo } from '@/lib/qr/style'
 import { publicShareUrl } from '@/lib/qr/public-url'
+import { useShortShareUrl } from '@/components/share/use-short-share-url'
+import { LinkOpensNote } from '@/components/share/link-opens-note'
 import {
   inlineQrStyleLogo,
   downloadQrSvgString,
@@ -69,7 +71,9 @@ export function SpaceShareButton({
   }
 
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const { path, url } = publicShareUrl(origin, `/spaces/${slug}`, { ref: sharerProfileId })
+  const { path, url: longUrl } = publicShareUrl(origin, `/spaces/${slug}`, { ref: sharerProfileId })
+  // The short /s/<code> once the panel is open (LIVE-1960); the long URL until then or if it cannot be made.
+  const { url, opens } = useShortShareUrl(longUrl, path, origin, open)
 
   // The SPACE's brand logo centered in the code (never the viewer's avatar). Render-time only.
   const svg = useMemo(
@@ -150,6 +154,7 @@ export function SpaceShareButton({
               >
                 {url}
               </code>
+              <LinkOpensNote opens={opens} />
               <div className="flex items-center gap-2">
                 <button
                   type="button"

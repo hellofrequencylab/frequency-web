@@ -8,6 +8,6 @@ if (!sql.includes('open_share_link') || !sql.includes('share_link_opens')) { con
 if (!route.includes('shortenablePath') || !route.includes('publicShareUrl')) { console.error('route does not re-check the public page or attach the ref'); process.exit(1) }
 // PR 2: the share buttons make short codes. PR 3: consoles read the opens.
 const btn = readFileSync('components/events/event-share-button.tsx', 'utf8')
-if (!btn.includes('shortLink') && !btn.includes('ShareLink')) { console.error('event share button still copies the long URL'); process.exit(1) }
+if (!btn.includes('useShortShareUrl')) { console.error('event share button still copies the long URL'); process.exit(1) }
 if (!existsSync('lib/share/short-link-stats.ts')) { console.error('no link-open counts reader'); process.exit(1) }
 console.log('ok')
