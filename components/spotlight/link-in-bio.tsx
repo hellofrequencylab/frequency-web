@@ -6,6 +6,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { BETA_CTA_HREF } from '@/lib/site'
 import { SOCIAL_LABEL, visibleLinks, type LinkIcon, type SpotlightPageSettings } from '@/lib/spotlight/link-in-bio'
 import type { SpotlightRow } from '@/lib/spotlight/privacy'
+import { CountedExternalLink } from '@/components/spotlight/counted-external-link'
 
 // THE PERSONAL SPOTLIGHT AS A LINK-IN-BIO. Server Component, kit tokens only. Photo, name, bio, a social row, then the
 // member's ordered links (the highlighted one filled). `children` is the optional "On Frequency" body: the shell passes
@@ -87,10 +88,9 @@ export function LinkInBioPage({
             const Icon = ICONS[l.icon]
             return (
               <li key={l.id}>
-                <a
+                <CountedExternalLink
                   href={l.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  beacon={preview ? null : { profile: profile.id, link: l.id }}
                   className={`flex items-center gap-3 rounded-card border px-4 py-3.5 text-body-sm font-semibold transition-colors ${
                     l.highlight
                       ? 'border-primary bg-primary text-on-primary hover:bg-primary-hover'
@@ -100,7 +100,7 @@ export function LinkInBioPage({
                   <Icon className="h-5 w-5 shrink-0" aria-hidden />
                   <span className="min-w-0 flex-1 truncate text-center">{l.title}</span>
                   <span className="h-5 w-5 shrink-0" aria-hidden />
-                </a>
+                </CountedExternalLink>
               </li>
             )
           })}

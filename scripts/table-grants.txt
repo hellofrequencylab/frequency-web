@@ -285,6 +285,7 @@ space_programs                       authenticated
 space_reviews                        authenticated
 space_segments                       authenticated
 space_service_types                  authenticated
+member_spotlight_link_clicks        internal
 space_spotlight_clicks               internal
 space_standing                       internal
 space_subscription_items             authenticated

@@ -9670,6 +9670,35 @@ export type Database = {
           },
         ]
       }
+      member_spotlight_link_clicks: {
+        Row: {
+          clicked_at: string
+          id: number
+          link_id: string
+          profile_id: string
+        }
+        Insert: {
+          clicked_at?: string
+          id?: never
+          link_id: string
+          profile_id: string
+        }
+        Update: {
+          clicked_at?: string
+          id?: never
+          link_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_spotlight_link_clicks_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_practices: {
         Row: {
           active: boolean
