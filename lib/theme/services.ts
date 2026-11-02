@@ -104,7 +104,7 @@ export const SERVICES_TOKENS_CSS = `
 --sv-fw-regular:400;
 --sv-fw-medium:500;
 --sv-fw-bold:700;
---sv-fw-black:800;
+--sv-fw-heavy:800;
 }
 `
 

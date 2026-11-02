@@ -48,6 +48,10 @@
    "to": "--sv-danger-"
   },
   {
+   "from": "--fw-black",
+   "to": "--sv-fw-heavy"
+  },
+  {
    "from": "--",
    "to": "--sv-"
   }
