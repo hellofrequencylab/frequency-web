@@ -254,8 +254,8 @@
     },
     {
       "glob": "assets/images/placeholder-*.png",
-      "kind": "asset",
-      "target": "public/sites/network-kit/photos/{base}"
+      "kind": "skip",
+      "reason": "Seven 0.7 to 1.5 MB PNGs that nothing renders (the Designer kit's placeholder-0N keys resolve to dz-*.webp). Not copied into the repo; the owner retired the LIVE-1671 byte-for-byte pin on 2026-11-02 (SCAN-1198)."
     },
     {
       "glob": "assets/images/README.md",
