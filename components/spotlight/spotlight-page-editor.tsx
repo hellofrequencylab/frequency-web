@@ -8,6 +8,8 @@ import { Input, Label } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Toggle } from '@/components/admin/toggle'
+import { PersonalAppearanceModule } from '@/components/admin/modules/personal-appearance-module'
+import { resolveProfileSkin } from '@/lib/theme/profile-skins'
 import { LinkInBioPage } from '@/components/spotlight/link-in-bio'
 import { saveSpotlightPage } from '@/app/(main)/settings/profile/spotlight-page-actions'
 import { setMySpotlightEnabled, setSpotlightPublished } from '@/app/(main)/settings/profile/actions'
@@ -27,7 +29,7 @@ import type { SpotlightRow } from '@/lib/spotlight/privacy'
 // render (LinkInBioPage) fed from the editor's own state, so what you see is what a visitor gets. Edits stay local
 // until "Save changes"; the live and publish switches write at once, like the rail card they replace.
 
-type Tab = 'links' | 'profile' | 'frequency'
+type Tab = 'links' | 'profile' | 'look' | 'frequency'
 const ICON_LABEL: Record<LinkIcon, string> = {
   link: 'Link', calendar: 'Calendar', mail: 'Mail', music: 'Music', video: 'Video', shop: 'Shop', book: 'Book', heart: 'Heart',
 }
@@ -58,6 +60,7 @@ export function SpotlightPageEditor({
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
   const [enabled, setEnabled] = useState(enabledInitial)
   const [published, setPublished] = useState(publishedInitial)
+  const [skin, setSkin] = useState(profile.profile_theme)
   const [dragId, setDragId] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
@@ -138,6 +141,7 @@ export function SpotlightPageEditor({
             segments={[
               { value: 'links', label: 'Links' },
               { value: 'profile', label: 'Profile' },
+              { value: 'look', label: 'Look' },
               { value: 'frequency', label: 'Frequency' },
             ]}
           />
@@ -273,6 +277,15 @@ export function SpotlightPageEditor({
           </section>
         )}
 
+        {tab === 'look' && (
+          <section className="space-y-3" aria-label="Look">
+            <p className="text-body-sm text-muted">
+              Your theme, fonts and background. Each choice saves as you make it, and the preview follows the theme.
+            </p>
+            <PersonalAppearanceModule onSkinChange={setSkin} />
+          </section>
+        )}
+
         {tab === 'frequency' && (
           <section className="space-y-4" aria-label="Frequency">
             <div className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
@@ -302,7 +315,7 @@ export function SpotlightPageEditor({
 
       <aside className="lg:sticky lg:top-4 lg:self-start" aria-label="Live preview">
         <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">Live preview</p>
-        <div className="max-h-[78vh] overflow-y-auto rounded-card border border-border bg-canvas">
+        <div data-skin={resolveProfileSkin(skin)} className="max-h-[78vh] overflow-y-auto rounded-card border border-border bg-canvas">
           <LinkInBioPage profile={profile} page={previewPage} preview>
             {page.frequencyFeatures ? (
               <div className="rounded-card border border-border bg-surface p-4 text-center text-meta text-muted">
