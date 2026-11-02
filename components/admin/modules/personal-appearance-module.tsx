@@ -34,7 +34,7 @@ type Data = NonNullable<Awaited<ReturnType<typeof getAppearanceRailData>>>
 const HEADER_MIN = 80
 const HEADER_MAX = 360
 
-export function PersonalAppearanceModule() {
+export function PersonalAppearanceModule({ onSkinChange }: { onSkinChange?: (skin: string) => void } = {}) {
   const [data, setData] = useState<Data | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -88,6 +88,7 @@ export function PersonalAppearanceModule() {
   // ── Profile skin ──────────────────────────────────────────────────────────────
   function pickSkin(id: string) {
     setProfileTheme(id)
+    onSkinChange?.(id)
     void run(() => updateProfileTheme(id))
   }
 
