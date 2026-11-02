@@ -47,6 +47,10 @@ vi.mock('@/lib/spaces/membership', () => ({
 // ── Mock next/cache (revalidatePath is a no-op here) ────────────────────────────────────────
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }))
 
+// The site cache is the thing a status change must expire (SEC-017); record the call, skip the real cache.
+const refreshSite = vi.fn()
+vi.mock('@/lib/sites/site-cache', () => ({ refreshSite: (slug: string) => refreshSite(slug) }))
+
 // ── A chainable admin-client mock over a tiny store ─────────────────────────────────────────
 // One space row + a set of known profile ids. Tracks the update patch the action writes.
 type Row = { id: string; type: string; slug: string; status: string; owner_profile_id: string | null; name: string }
@@ -173,6 +177,12 @@ describe('setSpaceStatus — happy path', () => {
         detail: expect.objectContaining({ from: 'active', to: 'suspended' }),
       }),
     )
+  })
+
+  it('expires the Space website cache so a takedown shows on the next request', async () => {
+    seedSpace({ status: 'active' })
+    await setSpaceStatus(SPACE_ID, 'suspended')
+    expect(refreshSite).toHaveBeenCalledWith('river-yoga')
   })
 
   it('maps reactivate to the space.reactivated audit kind', async () => {
