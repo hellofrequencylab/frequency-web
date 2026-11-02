@@ -4,9 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
-  "source": { "file": "lib/observability/slos.ts", "ref": "Systems audit 2026-11-02, AUD-2 (audits/systems-audit-2026-11-02.md)" },
-  "verify": { "kind": "cmd", "cmd": "node scripts/probes/follow-up-silence-alarm.mjs", "note": "Fails today: the heartbeat proves the cron ran, not that it sent anything." },
-  "detail": "The drip crons ping their heartbeat when they run, even when nothing is enrolled. Space drips have no enrollments and the journey drip last sent on 2026-08-13, and nothing noticed. Add a silence check per follow-up (sent-in-window versus enrolled-and-due) and one end-to-end enrol-and-send check for Space and journey drips.",
-  "wave": "W7"
+  "status": "done",
+  "source": {
+    "file": "lib/cron/follow-up-stall.ts",
+    "ref": "Systems audit 2026-11-02, AUD-2 (audits/systems-audit-2026-11-02.md)"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/follow-up-silence-alarm.mjs",
+    "note": "Fails before the change: the drip crons never reported a pass that found work due and delivered none."
+  },
+  "detail": "The drip crons ping their heartbeat when they run, so a pass with work due and nothing delivered looked the same as an idle one. lib/cron/follow-up-stall.ts names the states (idle, ok, stalled) and the space-drips and journey-drips crons report each pass; a stalled pass logs cron.<job>.stalled and captures a Sentry error. Checked production 2026-11-02: no break behind the quiet. Space drips have zero sequences (nobody has built one), and the journey drip's only open enrolments are either fully sent (the 28-day reset, phases 1 to 3) or not yet due (Hearts on Fire, 30-day interval, next phase 2026-11-06). The last send on 2026-08-13 was real; nothing has been owed since.",
+  "wave": "W7",
+  "closed": "2026-11-02"
 }

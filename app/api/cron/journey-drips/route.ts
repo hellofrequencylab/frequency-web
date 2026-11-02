@@ -15,6 +15,7 @@ import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
 import { runDueJourneyDripSends } from '@/lib/journeys/drip-sends'
+import { reportFollowUp } from '@/lib/cron/follow-up-stall'
 import { log } from '@/lib/log'
 
 export const runtime = 'nodejs'
@@ -32,6 +33,8 @@ async function handler(req: NextRequest) {
     const result = await log.time('cron.journey_drips', () => runDueJourneyDripSends(budget.items))
     const summary = budget.summary(result.scanned)
     log.info('cron.journey_drips.counts', { ...result, ...summary })
+    // SEC-020: due work with nothing delivered is a stalled follow-up, not an idle one.
+    reportFollowUp('journey-drips', { due: result.due, delivered: result.sent + result.skipped })
     return NextResponse.json({ ok: true, ...result, budget: summary })
   } catch {
     return NextResponse.json({ error: 'journey drip run failed' }, { status: 500 })
