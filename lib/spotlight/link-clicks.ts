@@ -38,7 +38,7 @@ export async function recordMemberLinkClick(profileId: unknown, linkId: unknown)
 
 /** Presses over the last `days` days: per link id, and per calendar day (UTC), oldest first, `days` entries.
  *  Empty on any failure (logged). */
-export interface LinkClickStats {
+interface LinkClickStats {
   byLink: Record<string, number>
   daily: number[]
 }
