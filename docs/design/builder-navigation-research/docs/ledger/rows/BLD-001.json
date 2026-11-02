@@ -1,0 +1,18 @@
+{
+  "id": "BLD-001",
+  "title": "Builder BLD-001: Token map to the 45 contract names",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-001."
+  },
+  "detail": "B0 Align, pass BLD-001 (spec: docs/EDITOR-NEXT.md#bld-001). Token map to the 45 contract names. Scope: design system + lib/theme. Build: Generate one map from Frequency tokens (Commons, Commons night, Stage) to the contract groups: ground, ink, accent, line, status, band, shape, depth, type, rhythm, motion. Retire --th-* in element-library.md and theme-pack.json; point them at contract names. Done when: Pin test: every contract name resolves on Commons, Commons night and Stage; Computed values equal today's on the 31 design pages. Gates: check:tokens, check:theme-conformance, Design system adherence check, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: nothing. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-02",
+    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-001.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  }
+}

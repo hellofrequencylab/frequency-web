@@ -1,0 +1,18 @@
+{
+  "id": "BLD-201",
+  "title": "Builder BLD-201: Role contract additions and check:roles",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-201."
+  },
+  "detail": "B2 Roles, pass BLD-201 (spec: docs/EDITOR-NEXT.md#bld-201). Role contract additions and check:roles. Scope: lib/blocks/roles. Build: Add intent, icon, variants[x].thumb and slots[x].label / hint to all 17 role.json files. Extend RoleDefinition; add check:roles validating every file. Replace the regex tables in block-meta.ts with role fields; keep a fallback for legacy types. Done when: block-meta.ts has no type-name regex for role blocks; Every role icon resolves in the sprite. Gates: tsc --noEmit and lint, vitest suite (required test job), check:roles (new), check:blocks, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-003. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-02",
+    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-201.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "BLD-002",
+  "title": "Builder BLD-002: Radius, breakpoints and editor tokens",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-002."
+  },
+  "detail": "B0 Align, pass BLD-002 (spec: docs/EDITOR-NEXT.md#bld-002). Radius, breakpoints and editor tokens. Scope: design system tokens. Build: Five radius steps (10, 14, 18, 24, 32) plus pill, mapped to --r-control, --r-card, --r-panel, --r-media. Breakpoints 600, 840, 1200, 1600 as tokens. --editor-canvas, --editor-thumb, --editor-ring, --editor-select in Commons and night. Done when: No radius literal outside tokens in templates/admin; Thermal renders from night tokens, no invert filter. Gates: check:tokens, Design system adherence check, pr-compare visual suite, Pass probes, check:contrast, check:backlog, check:one-list, check:adr, check:id-collisions. After: nothing. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-02",
+    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-002.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  }
+}

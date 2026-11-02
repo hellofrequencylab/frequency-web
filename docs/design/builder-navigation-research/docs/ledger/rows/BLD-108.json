@@ -1,0 +1,18 @@
+{
+  "id": "BLD-108",
+  "title": "Builder BLD-108: Shadow render and cutover",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-108."
+  },
+  "detail": "B1 Shell, pass BLD-108 (spec: docs/EDITOR-NEXT.md#bld-108). Shadow render and cutover. Scope: flag config. Build: Render old and new editors on the same documents; log deltas. Turn on for internal Spaces, then a cohort. Done when: Zero or explained delta on the frozen corpus. Gates: check:node-document-safety, check:stored-blocks, check:render-path and render_path flag-off test, pr-compare visual suite, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-103, BLD-105, BLD-107. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-02",
+    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-108.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  }
+}
