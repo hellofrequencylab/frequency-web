@@ -213,7 +213,7 @@ ${S} .sv-stepper li[aria-current] button{border-top-color:var(--sv-accent);color
 ${S} .sv-stepper li[data-done] button{border-top-color:var(--sv-accent);color:var(--sv-text-secondary);cursor:pointer}
 ${S} .sv-stepper-num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:var(--sv-radius-pill);border:1px solid var(--sv-border-strong);font-size:10px}
 ${S} .sv-stepper li[aria-current] .sv-stepper-num,${S} .sv-stepper li[data-done] .sv-stepper-num{background:var(--sv-accent);border-color:transparent;color:var(--sv-action-primary-text)}
-${S} .sv-qf-card{${CARD};display:flex;flex-direction:column;gap:28px;padding:clamp(24px,4vw,40px);border-radius:var(--sv-radius-xl);box-shadow:var(--sv-shadow-lg),var(--sv-shadow-glow)}
+${S} .sv-qf-card{${CARD};display:flex;flex-direction:column;gap:28px;padding:clamp(24px,4vw,40px);border-radius:var(--sv-radius-xl)}
 ${S} .sv-qf-done{align-items:flex-start}
 ${S} .sv-qf-badge{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:var(--sv-radius-pill);background:var(--sv-accent-tint);color:var(--sv-text-accent);${MONO};font-size:10px}
 ${S} .sv-fieldset{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -273,7 +273,7 @@ ${S} .hs-pill{background:color-mix(in oklab,var(--sv-ink-950) 82%,transparent);-
 ${S} .hs-logo{flex:none;display:block;height:clamp(28px,6vw,36px);width:auto;max-width:160px;object-fit:contain}
 ${S} .hs-nav a,${S} .hs-nav-mega{${LABEL};color:var(--sv-text-secondary)}
 ${S} .hs-nav a:hover,${S} .hs-nav a[aria-current="page"]{color:var(--sv-text-primary)}
-${S} .hs-menu-panel,${S} .hs-mega-panel{background:var(--sv-ink-800);border:var(--sv-border-hairline) solid var(--sv-border-subtle);border-radius:var(--sv-radius-lg);box-shadow:var(--sv-shadow-lg)}
+${S} .hs-menu-panel,${S} .hs-mega-panel{background:var(--sv-ink-800);border:var(--sv-border-hairline) solid var(--sv-border-subtle);border-radius:var(--sv-radius-lg);box-shadow:0 40px 80px -24px color-mix(in oklab,var(--sv-ink-950) 80%,transparent)}
 ${S} .hs-footer-top{background:var(--sv-glow-sky,var(--sv-surface-sunken)),var(--sv-surface-sunken);border-top:var(--sv-border-hairline) solid var(--sv-border-subtle)}
 ${S} .hs-footer-col-title{${LABEL};color:var(--sv-text-muted)}
 ${S} .hs-footer-top{grid-template-columns:1.6fr repeat(3,1fr)}
