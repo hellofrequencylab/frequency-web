@@ -250,6 +250,12 @@
       "checked": "2026-10-07",
       "digest": "6550d2cc6b5fe42c"
     },
+    "app/api/create-space/draft/route.ts": {
+      "verdict": "public",
+      "reason": "The pagehide beacon of /create-a-space (LIVE-1967, ADR-1933): the last save of a signed-out visitor's own draft, the same write the saveDraftLead action makes. Anonymous by design: there is no account yet. Rate limits by IP and by the draft's mailbox (fail-open when the limiter is unconfigured, because a denied save loses the lead), refuses a body over 10KB, one that does not parse, a filled honeypot or a draft without an address, then calls saveDraft (lib/create-space/draft-io.ts), which updates only the row whose token hash matches the token the body carries or inserts a new row with a fresh token, and sends the address through the anon-granted capture_signup_lead RPC. Always 204 with no body, so it discloses nothing about any address or token.",
+      "checked": "2026-11-02",
+      "digest": "591411e95c647fa2"
+    },
     "app/api/spotlight/click/route.ts": {
       "verdict": "public",
       "reason": "A Spotlight Link card press beacon (LIVE-856, on frequencylocal.com). Anonymous by design: a visitor on a public Spotlight has no session. Calls handleSpotlightClick (lib/spaces/spotlight-clicks.ts), which rate limits by IP, accepts only a valid Space id and a Link cards target id, counts only a Space whose Spotlight is published, and writes one row (Space, target, time) with no visitor data. Returns 204 with no body, so it discloses nothing.",

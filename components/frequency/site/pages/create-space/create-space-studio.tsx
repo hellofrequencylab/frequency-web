@@ -5,13 +5,17 @@
 // column while the preview on the right fills in; saved steps collapse to pills; the steps bar reads "built", never
 // "live". One state object feeds all of it. The kit arrives as ?kit=<MegaThemeId> from the Theme Kit pages; no param
 // starts on the house look. Server markup is the cold-traffic render (the intro), so the page reads without script.
-// The draft lives in the visitor's own browser until the hand-over (create-space-claim.tsx). Styles: create-space.css.
+// The draft lives in the visitor's own browser, and from step 3 (an address) also on the server (ADR-1933): every
+// change after that is sent, debounced, to saveDraftLead, the tab's last changes go by beacon on pagehide, and a
+// ?draft= link reads it back as a "Welcome back" the visitor picks up. The hand-over is create-space-claim.tsx.
+// Styles: create-space.css.
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
+import { restoreDraft, saveDraftLead } from '@/app/(marketing)/create-a-space/actions'
 import { SaveCard, SavedCard } from '@/components/frequency/site/pages/create-space/create-space-claim'
 import type { Saved } from '@/components/frequency/site/pages/create-space/create-space-claim'
 import { PhotosCard } from '@/components/frequency/site/pages/create-space/create-space-photos'
@@ -21,7 +25,7 @@ import type { StepError } from '@/components/frequency/site/pages/create-space/c
 import { SpacePreview } from '@/components/frequency/site/pages/create-space/space-preview'
 import { useHandleStatus } from '@/components/frequency/site/pages/create-space/use-handle-status'
 import {
-  BUILDER_MOVES, DRAFT_KEY, STEP_SEGMENTS, claimedHandle, emptyDraft, handleOf, hasProgress, initialOf, nextOpenMove, progressOf,
+  BUILDER_MOVES, DRAFT_KEY, STEP_SEGMENTS, claimedHandle, emptyDraft, handleOf, hasProgress, initialOf, nextOpenMove, parseDraft, progressOf,
   readStoredDraft, serializeDraft, startingModeFor, stepPrompt,
 } from '@/lib/create-space/builder'
 import type { BuilderDraft, BuilderMove } from '@/lib/create-space/builder'
@@ -29,6 +33,7 @@ import { doorArrival } from '@/lib/create-space/door'
 import type { DoorArrival } from '@/lib/create-space/door'
 import { isHandleShape } from '@/lib/create-space/handle'
 import { intentsFromOffer } from '@/lib/create-space/intents-from-offer'
+import { browserZone, leadEmailOf } from '@/lib/create-space/lead'
 import { PREVIEW_KITS, deriveSite, joinList, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
 import { acceptUpload, getUploads, putUpload } from '@/lib/create-space/uploads'
 import type { UploadKind } from '@/lib/create-space/uploads'
@@ -51,6 +56,10 @@ const MOCKUP_MIN_MS = 2600
 const MOCKUP_LINE_MS = 600
 const TOAST_MS = 3200
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+/** How long after the last change the draft goes to the server (ADR-1933). */
+const SERVER_SAVE_MS = 1500
+/** Where the tab's last changes go on pagehide (app/api/create-space/draft/route.ts). */
+const BEACON_URL = '/api/create-space/draft'
 
 const lightGround = (hex: string) => {
   const n = parseInt(hex.replace('#', ''), 16)
@@ -67,7 +76,7 @@ const slotSrc = (slot: string, list: readonly string[], fallback: string, own?: 
 
 type Phase = 'build' | 'saved'
 
-function Island({ arrival }: { arrival: DoorArrival }) {
+function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: string | null }) {
   // A door's hints (lib/create-space/door.ts) prime the start: the name is typed in, the goals light the preview's
   // offer cards before a sentence is written, and the niche rides to the launch. Nothing is marked done for them.
   const [draft, setDraft] = useState<BuilderDraft>(() => ({ ...emptyDraft(arrival.kit, arrival.chosen), name: arrival.name, goals: arrival.goals, niche: arrival.niche }))
@@ -85,6 +94,8 @@ function Island({ arrival }: { arrival: DoorArrival }) {
   const [contentKey, setContentKey] = useState(0)
   const [uploads, setUploads] = useState<UploadUrls>({})
   const [uploadError, setUploadError] = useState<string | null>(null)
+  /** The address the server holds the draft under, once it does. */
+  const [savedTo, setSavedTo] = useState<string | null>(null)
 
   const heroRef = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -94,7 +105,13 @@ function Island({ arrival }: { arrival: DoorArrival }) {
   const restored = useRef(false)
   // Once the draft has been handed to the launch it is not kept here any more.
   const sealed = useRef(false)
-  const timers = useRef<{ toast?: number; save?: number; mock?: number; line?: number; focus?: number }>({})
+  const timers = useRef<{ toast?: number; save?: number; mock?: number; line?: number; focus?: number; server?: number }>({})
+  // The server save reads the latest draft from here, so a debounced timer and the pagehide beacon never send stale state.
+  const latest = useRef(draft)
+  const trappedRef = useRef(false)
+  const ownRef = useRef(false)
+  /** The draft as last sent to the server (its token left out), so a token write-back does not send it again. */
+  const lastSent = useRef('')
 
   // ── The browser's own draft: read back once after mount (server markup is the cold render), kept on every change.
   useEffect(() => {
@@ -106,6 +123,18 @@ function Island({ arrival }: { arrival: DoorArrival }) {
     restored.current = true
   }, [arrival])
 
+  // ── A ?draft= link: the server copy comes back as a "Welcome back", never restored by itself (ADR-1933).
+  useEffect(() => {
+    if (!draftToken) return
+    let live = true
+    restoreDraft(draftToken).then(({ draft: json }) => {
+      if (!live || !json) return
+      const back = parseDraft(json, null)
+      if (back && hasProgress(back)) setResume(back)
+    }).catch(() => { /* the link opened nothing: the page is still the page */ })
+    return () => { live = false }
+  }, [draftToken])
+
   useEffect(() => {
     if (!restored.current || sealed.current) return
     try { window.localStorage.setItem(DRAFT_KEY, serializeDraft(draft)) } catch { /* private window */ }
@@ -113,6 +142,47 @@ function Island({ arrival }: { arrival: DoorArrival }) {
     window.clearTimeout(timers.current.save)
     timers.current.save = window.setTimeout(() => setSaveState('saved'), 700)
   }, [draft])
+
+  // ── From step 3, the draft also goes to the server: debounced after every change, and by beacon when the tab goes.
+  const flashRef = useRef<((text: string) => void) | null>(null)
+  const sendable = (d: BuilderDraft) => Boolean(d.done.contact && leadEmailOf(d) && d.name.trim()) && !trappedRef.current && !sealed.current
+  const fingerprint = (d: BuilderDraft) => serializeDraft({ ...d, leadToken: null })
+  const sendToServer = useCallback(async () => {
+    const d = latest.current
+    if (!sendable(d) || fingerprint(d) === lastSent.current) return
+    lastSent.current = fingerprint(d)
+    const form = new FormData()
+    form.set('draft', serializeDraft(d))
+    if (d.leadToken) form.set('token', d.leadToken)
+    const tz = browserZone()
+    if (tz) form.set('tz', tz)
+    if (ownRef.current) form.set('own', '1')
+    setSaveState('saving')
+    const r = await saveDraftLead(form).catch(() => ({ ok: false as const }))
+    if (!r.ok) { lastSent.current = ''; setSaveState('saved'); return }
+    setSavedTo(leadEmailOf(d))
+    setSaveState('saved')
+    if (r.token !== d.leadToken) setDraft((cur) => ({ ...cur, leadToken: r.token }))
+    if (r.handleTaken) { setErr('slug'); flashRef.current?.('That handle was just taken. Pick another.') }
+  }, [])
+  useEffect(() => {
+    if (!restored.current || !sendable(draft)) return
+    window.clearTimeout(timers.current.server)
+    timers.current.server = window.setTimeout(() => { void sendToServer() }, SERVER_SAVE_MS)
+  }, [draft, sendToServer])
+  useEffect(() => {
+    const flush = () => {
+      const d = latest.current
+      if (!sendable(d) || fingerprint(d) === lastSent.current || !('sendBeacon' in navigator)) return
+      lastSent.current = fingerprint(d)
+      const body = JSON.stringify({ draft: serializeDraft(d), token: d.leadToken, tz: browserZone(), own: ownRef.current ? 1 : 0 })
+      navigator.sendBeacon(BEACON_URL, new Blob([body], { type: 'application/json' }))
+    }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush() }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => { window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onVisibility) }
+  }, [])
 
   // ── Their own pictures, kept in IndexedDB between visits; object URLs for this one.
   useEffect(() => {
@@ -145,7 +215,7 @@ function Island({ arrival }: { arrival: DoorArrival }) {
 
   useEffect(() => {
     const t = timers.current
-    return () => { window.clearTimeout(t.toast); window.clearTimeout(t.save); window.clearTimeout(t.mock); window.clearInterval(t.line); window.clearTimeout(t.focus) }
+    return () => { window.clearTimeout(t.toast); window.clearTimeout(t.save); window.clearTimeout(t.mock); window.clearInterval(t.line); window.clearTimeout(t.focus); window.clearTimeout(t.server) }
   }, [])
 
   // ── The morph: anything marked data-morph slides from where it was to where it is (FLIP), unless motion is reduced.
@@ -213,7 +283,7 @@ function Island({ arrival }: { arrival: DoorArrival }) {
   const sub = intro ? INTRO_SUB : building ? `Step ${step + 1} of 5 · ${stepPrompt(step, kitLabel)}` : `We sent your link to ${saved?.email ?? draft.email.trim()}. It stays a private draft until you open it.`
   const rowValue = [`${siteName} · /${handle || 'yourspace'}`, draft.offer.trim(), `${draft.hostName.trim()} · ${draft.email.trim()}`, ownCount ? `${ownCount} of yours, the rest from ${kitLabel}` : `${kitLabel} photos for now`]
   const doneRows = building ? BUILDER_MOVES.map((k, i) => ({ k, i })).filter(({ k, i }) => draft.done[k] && i !== step) : []
-  const saveLabel = saveState === 'saving' ? 'Saving' : 'Draft saved'
+  const saveLabel = saveState === 'saving' ? 'Saving' : savedTo ? `Saved to ${savedTo}` : 'Draft saved'
   const stepsHead = intro ? 'Five steps to live' : `${pct}% built`
   const chip = vars as CSSProperties
 
@@ -223,6 +293,8 @@ function Island({ arrival }: { arrival: DoorArrival }) {
     setToast((t) => ({ text, key: (t?.key ?? 0) + 1 }))
     timers.current.toast = window.setTimeout(() => setToast(null), TOAST_MS)
   }
+  // What the server save and the beacon read at their own time: the latest of these, after each render.
+  useEffect(() => { latest.current = draft; trappedRef.current = trapped; ownRef.current = ownCount > 0; flashRef.current = flash })
   const edit = useCallback((fn: (d: BuilderDraft) => BuilderDraft) => {
     setDraft(fn)
     setSaveState('saving')
@@ -281,7 +353,7 @@ function Island({ arrival }: { arrival: DoorArrival }) {
       if (!draft.hostName.trim()) { setErr('fullName'); return }
       if (!EMAIL.test(draft.email.trim())) { setErr('email'); return }
       markDone('contact')
-      flash('Contact section added.')
+      flash('Contact section added. Saving your draft to your email.')
       advance({ ...draft.done, contact: true }, 2)
     } else if (step === 3) {
       markDone('photos')
@@ -455,12 +527,12 @@ function Island({ arrival }: { arrival: DoorArrival }) {
 function FromUrl() {
   const params = useSearchParams()
   const arrival = doorArrival((k) => params.get(k))
-  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} />
+  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} draftToken={params.get('draft')} />
 }
 
 export function CreateSpaceStudio() {
   return (
-    <Suspense fallback={<Island arrival={doorArrival(() => null)} />}>
+    <Suspense fallback={<Island arrival={doorArrival(() => null)} draftToken={null} />}>
       <FromUrl />
     </Suspense>
   )

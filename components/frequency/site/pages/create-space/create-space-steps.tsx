@@ -200,6 +200,7 @@ export function ContactCard({ draft, patch, err, onNext, inputRef, onTrap }: Con
         <label className="cs-honey" aria-hidden="true"><span>Website</span><input tabIndex={-1} autoComplete="off" name="website" onChange={(e) => onTrap(e.target.value.length > 0)} /></label>
       </div>
       {err === 'fullName' || err === 'email' ? <p role="alert" className="cs-err">{ERROR_TEXT[err]}</p> : null}
+      <p className="cs-fine">We save your draft to this address, so you can pick it up on any device. It stays private.</p>
       <div className="cs-foot">
         <button type="button" className="cs-next" onClick={onNext}>Add to my site<Arrow /></button>
       </div>

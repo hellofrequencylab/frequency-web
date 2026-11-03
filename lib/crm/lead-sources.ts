@@ -30,7 +30,12 @@
  * Both call sites guard on `.length > 0` before building a PostgREST `not.in` filter, because
  * PostgREST cannot parse `not in ()`. That keeps emptying this list a safe one-line edit.
  */
-export const RECOVERY_EXCLUDED_SOURCES = ['event_rsvp'] as const
+export const RECOVERY_EXCLUDED_SOURCES = [
+  'event_rsvp',
+  // LIVE-1967 (ADR-1933): a Create a Space draft has its own come-back note, about the draft itself, from the
+  // reminder cron over create_space_drafts. Nobody gets both that and "finish setting up your account".
+  'create_space',
+] as const
 
 /** True when this lead came through a door that completed something rather than abandoning it. */
 export function isRecoveryExcludedSource(source: string): boolean {
