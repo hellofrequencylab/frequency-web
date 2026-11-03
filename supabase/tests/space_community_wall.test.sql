@@ -73,10 +73,10 @@ insert into public.space_follows (space_id, follower_profile_id) values
   ('00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-b400-000000000005');
 
 -- W1: a wall post on SA by the owner. W2: a wall post by the member. W3: a wall post on the private Space.
-insert into public.posts (id, author_id, body, scope_id, visibility, post_type, parent_id) values
-  ('00000000-0000-4000-f400-000000000001', '00000000-0000-4000-b400-000000000001', 'W owner post', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed', null),
-  ('00000000-0000-4000-f400-000000000002', '00000000-0000-4000-b400-000000000004', 'W member post', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed', null),
-  ('00000000-0000-4000-f400-000000000003', '00000000-0000-4000-b400-000000000001', 'W private post', '00000000-0000-4000-c400-00000000000b', 'cluster', 'feed', null);
+insert into public.posts (id, author_id, body, scope_id, scope_space_id, visibility, post_type, parent_id) values
+  ('00000000-0000-4000-f400-000000000001', '00000000-0000-4000-b400-000000000001', 'W owner post', '00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed', null),
+  ('00000000-0000-4000-f400-000000000002', '00000000-0000-4000-b400-000000000004', 'W member post', '00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed', null),
+  ('00000000-0000-4000-f400-000000000003', '00000000-0000-4000-b400-000000000001', 'W private post', '00000000-0000-4000-c400-00000000000b', '00000000-0000-4000-c400-00000000000b', 'cluster', 'feed', null);
 
 grant select, insert, update, delete on public.posts to anon, authenticated;
 grant select on public.spaces, public.profiles, public.circles, public.memberships, public.space_members,
@@ -86,7 +86,7 @@ grant select on public.spaces, public.profiles, public.circles, public.membershi
 select is(
   (select scope_space_id from public.posts where id = '00000000-0000-4000-f400-000000000001'),
   '00000000-0000-4000-c400-00000000000a'::uuid,
-  'sync_post_scope_arc derives scope_space_id from a Space id in scope_id');
+  'a wall post carries its Space in scope_space_id');
 
 select is(
   (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -148,26 +148,26 @@ select results_eq($$ select count(*)::int from posts where scope_space_id = '000
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a400-000000000006', 'role', 'authenticated')::text, true);
 select throws_ok(
-  $$ insert into posts (author_id, body, scope_id, visibility, post_type)
-     values ('00000000-0000-4000-b400-000000000006', 'outsider', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed') $$,
+  $$ insert into posts (author_id, body, scope_id, scope_space_id, visibility, post_type)
+     values ('00000000-0000-4000-b400-000000000006', 'outsider', '00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed') $$,
   '42501', null, 'an outsider cannot post on the wall');
 
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a400-000000000004', 'role', 'authenticated')::text, true);
 select lives_ok(
-  $$ insert into posts (author_id, body, scope_id, visibility, post_type)
-     values ('00000000-0000-4000-b400-000000000004', 'member', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed') $$,
+  $$ insert into posts (author_id, body, scope_id, scope_space_id, visibility, post_type)
+     values ('00000000-0000-4000-b400-000000000004', 'member', '00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed') $$,
   'a paid Space member posts on the wall');
 select throws_ok(
-  $$ insert into posts (author_id, body, scope_id, visibility, post_type)
-     values ('00000000-0000-4000-b400-000000000004', 'sneaky', '00000000-0000-4000-c400-00000000000a', 'public', 'feed') $$,
+  $$ insert into posts (author_id, body, scope_id, scope_space_id, visibility, post_type)
+     values ('00000000-0000-4000-b400-000000000004', 'sneaky', '00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-c400-00000000000a', 'public', 'feed') $$,
   '42501', null, 'a public post cannot name a Space as its scope to dodge the wall rules');
 
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a400-000000000005', 'role', 'authenticated')::text, true);
 select throws_ok(
-  $$ insert into posts (author_id, body, scope_id, visibility, post_type)
-     values ('00000000-0000-4000-b400-000000000005', 'follower', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed') $$,
+  $$ insert into posts (author_id, body, scope_id, scope_space_id, visibility, post_type)
+     values ('00000000-0000-4000-b400-000000000005', 'follower', '00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed') $$,
   '42501', null, 'by default a follower cannot post on the wall');
 
 reset role;
@@ -176,8 +176,8 @@ set local role authenticated;
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a400-000000000005', 'role', 'authenticated')::text, true);
 select lives_ok(
-  $$ insert into posts (author_id, body, scope_id, visibility, post_type)
-     values ('00000000-0000-4000-b400-000000000005', 'follower ok', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed') $$,
+  $$ insert into posts (author_id, body, scope_id, scope_space_id, visibility, post_type)
+     values ('00000000-0000-4000-b400-000000000005', 'follower ok', '00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-c400-00000000000a', 'cluster', 'feed') $$,
   'once the owner lets followers interact, a follower posts');
 
 -- ── MODERATE ──────────────────────────────────────────────────────────────────────────────────────
