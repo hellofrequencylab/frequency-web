@@ -33,7 +33,10 @@ function pages(s: ServicesTradeSpec): KitPage[] {
       panelTitle: 'Book online', panelNote: 'Pick a time', offers: offers.map((o) => ({ name: o.name, meta: o.meta, price: o.price, href: o.href })), areas: [],
     },
   }
-  const trustLines = s.trust.map((t) => (hasNumber(t) ? 'Say what you stand behind' : t))
+  // A trust line with a number in it (a score, a count, a time) is a claim only the owner can make: it becomes a prompt for that kind of line.
+  const prompt = (t: string) =>
+    /review|rating|star/i.test(t) ? 'Your review score, once you have one' : /guarantee|warrant/i.test(t) ? 'What you guarantee, in plain words' : /hour|day|week|same|minute/i.test(t) ? 'How soon you can be there' : 'Say what you stand behind'
+  const trustLines = s.trust.map((t) => (hasNumber(t) ? prompt(t) : t))
   const trust: Block = { type: 'ServicesTrust', props: { items: trustLines.map((title) => ({ title, line: '' })) } }
   const list: Block = {
     type: 'ServicesList',
