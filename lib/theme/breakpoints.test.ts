@@ -12,7 +12,7 @@ describe('shared breakpoints', () => {
 })
 
 describe('builder shape and editor tokens', () => {
-  const css = readFileSync('app/themes/frequency.css', 'utf8')
+  const css = readFileSync('app/themes/frequency/editor-shell.css', 'utf8')
   it('declares the five radius steps, the pill and the four roles', () => {
     for (const d of ['--r-1: 10px', '--r-2: 14px', '--r-3: 18px', '--r-4: 24px', '--r-5: 32px', '--r-pill:', '--r-control:', '--r-card:', '--r-panel:', '--r-media:']) expect(css).toContain(d)
   })

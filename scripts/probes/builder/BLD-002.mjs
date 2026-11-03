@@ -1,6 +1,6 @@
 // BLD-002: the five radius steps, the four shared breakpoints and the editor tokens exist, built from room tokens.
 import fs from 'node:fs'
-const css = fs.readFileSync('app/themes/frequency.css', 'utf8')
+const css = fs.readFileSync('app/themes/frequency/editor-shell.css', 'utf8')
 const bp = fs.readFileSync('lib/theme/breakpoints.ts', 'utf8')
 const bad = []
 for (const d of ['--r-1: 10px', '--r-2: 14px', '--r-3: 18px', '--r-4: 24px', '--r-5: 32px', '--r-pill:', '--r-control:', '--r-card:', '--r-panel:', '--r-media:']) if (!css.includes(d)) bad.push(d)
