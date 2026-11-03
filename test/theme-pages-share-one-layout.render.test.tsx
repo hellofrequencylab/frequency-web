@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { FrequencyDesigner } from '@/components/frequency/site/pages/themes/frequency-designer'
 import { FrequencyMidnight } from '@/components/frequency/site/pages/themes/frequency-midnight'
 import { FrequencyNetwork } from '@/components/frequency/site/pages/themes/frequency-network'
+import { FrequencyNewWorld } from '@/components/frequency/site/pages/themes/frequency-new-world'
 import { FrequencyTemple } from '@/components/frequency/site/pages/themes/frequency-temple'
 
 // Every Theme Kit page is the Nocturne page's layout (the reference: /themes/nocturne) with its own name, content, colours and pictures.
@@ -27,6 +28,7 @@ describe('theme pages share one layout', () => {
   const net = skeleton(renderToStaticMarkup(<FrequencyNetwork />), 'nf')
   const des = skeleton(renderToStaticMarkup(<FrequencyDesigner />), 'df')
   const tem = skeleton(renderToStaticMarkup(<FrequencyTemple />), 'tf')
+  const nw = skeleton(renderToStaticMarkup(<FrequencyNewWorld />), 'nwf')
 
   const noc = skeleton(renderToStaticMarkup(<FrequencyMidnight />), 'nf')
 
@@ -35,10 +37,11 @@ describe('theme pages share one layout', () => {
     expect(labels(net)).toEqual(labels(noc))
     expect(labels(des)).toEqual(labels(noc))
     expect(labels(tem)).toEqual(labels(noc))
+    expect(labels(nw)).toEqual(labels(noc))
   })
 
   it('opens like Nocturne: the name large, then the four surfaces joined by a line', () => {
-    for (const x of [net, des, tem, noc]) {
+    for (const x of [net, des, tem, nw, noc]) {
       expect(x.counts['name']).toBe(1)
       expect(x.counts['aft']).toBe(1)
       expect(x.counts['tagline']).toBe(1)
@@ -50,6 +53,7 @@ describe('theme pages share one layout', () => {
   it('has the same sections in the same order', () => {
     expect(des.sections).toEqual(net.sections)
     expect(tem.sections).toEqual(net.sections)
+    expect(nw.sections).toEqual(net.sections)
     expect(net.sections.length).toBeGreaterThanOrEqual(9)
   })
 
@@ -57,10 +61,14 @@ describe('theme pages share one layout', () => {
     const drop = (o: Record<string, number>) => Object.fromEntries(Object.entries(o).filter(([k]) => !['y', 'p', 'ready', 'soon', 'st', 'dk'].includes(k)))
     expect(drop(des.counts)).toEqual(drop(net.counts))
     expect(drop(tem.counts)).toEqual(drop(net.counts))
+    // New World has seven kits (not thirteen), eleven emails and six pages, so only the cards and kit tiles and their parts count differently.
+    const COUNTED = ['card', 'kit', 'jn', 'cn', 'cz-dev']
+    const sameButLists = (o: Record<string, number>) => Object.fromEntries(Object.entries(drop(o)).filter(([k]) => !COUNTED.includes(k)))
+    expect(sameButLists(nw.counts)).toEqual(sameButLists(net.counts))
   })
 
   it('lets you switch the hero preview between Website, Spotlight, Space and Email', () => {
-    for (const el of [<FrequencyNetwork key="n" />, <FrequencyDesigner key="d" />, <FrequencyMidnight key="m" />, <FrequencyTemple key="t" />]) {
+    for (const el of [<FrequencyNetwork key="n" />, <FrequencyDesigner key="d" />, <FrequencyMidnight key="m" />, <FrequencyTemple key="t" />, <FrequencyNewWorld key="w" />]) {
       const html = renderToStaticMarkup(el)
       const hero = html.slice(html.indexOf('data-screen-label="01 Hero"'), html.indexOf('data-screen-label="02'))
       const group = hero.match(/aria-label="Surface"[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? ''
