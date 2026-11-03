@@ -14,7 +14,7 @@ if (stage === 'w0') {
   const adrs = readdirSync('docs/ledger/adr').map((f) => read(join('docs/ledger/adr', f)))
   if (!adrs.some((a) => /Community wall/i.test(a) && /Supersedes/i.test(a))) bad.push('no ADR records the Community wall decision and the ADRs it supersedes')
 } else if (stage === 'w1') {
-  const m = migrations().filter(([, sql]) => /space_wall_settings/.test(sql) && /'space'/.test(sql) && /\bposts\b/.test(sql))
+  const m = migrations().filter(([, sql]) => /space_wall_settings/.test(sql) && /scope_space_id/.test(sql) && /can_read_space_wall/.test(sql))
   if (!m.length) bad.push('no migration adds the Space post scope and the wall settings table')
 } else if (stage === 'w2') {
   if (!existsSync('app/(main)/spaces/[slug]/(profile)/community/page.tsx')) bad.push('the Space Community page does not exist')

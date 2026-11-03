@@ -259,7 +259,7 @@
   the Space's name rides beside it, because "Space Circle" is the staff word, per the rule above.
 - **Community** = a Space's wall and public communications hub ([ADR-1938](DECISIONS.md), owner
   2026-11-03, superseding ADR-1091, ADR-1469 and ADR-1534). Every Space has a **Community** tab: a
-  wall of posts, replies and reactions scoped to the Space itself (`posts.scope_type = 'space'`), read
+  wall of posts, replies and reactions scoped to the Space itself (`posts.scope_space_id`), read
   by anyone or by members only at the owner's choice, posted to by the Space team and members, with the
   owner choosing whether followers may reply and react. **Circles** is a second tab beside it that lists
   the topic Circles the Space started. A Space no longer has a built-in Circle: **Space Circle** and
