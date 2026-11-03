@@ -1,3 +1,4 @@
+import { HEX_ACCENT, contrastRatio, type AccentVars } from "@/lib/spaces/accent";
 import type { ThemeSurface } from "@/lib/theme/surface-vars";
 // THE NEW WORLD THEME (code id `new-world`, editor theme `NewWorld`), built from the New World design system
 // (docs/design-systems/new-world, revision 2). PURE. New World is the mega template every new Space starts in. It is
@@ -307,3 +308,26 @@ export const NEW_WORLD_SURFACE = {
   },
   semantic: { success: "#7CC97F", info: "#3FC1D6", danger: "#FF6A5B" },
 } as const satisfies ThemeSurface;
+
+/** The Space's --color-primary* family on a New World website (Night). No accent, or Tide itself: the measured Tide. Any other hex:
+ *  that hex, a lighter text shade, and a label (ink or white) that reads on it. */
+export function newWorldAccentVars(brandAccent: string | null | undefined): AccentVars {
+  const accent = brandAccent?.trim() || null;
+  const t = NEW_WORLD_ACCENTS.tide;
+  if (!accent || !HEX_ACCENT.test(accent) || accent.toUpperCase() === t.accent) {
+    return {
+      "--color-primary": t.accent,
+      "--color-primary-hover": t.text,
+      "--color-primary-strong": t.text,
+      "--color-primary-bg": t.soft,
+      "--color-text-on-primary": NEW_WORLD_ON_ACCENT,
+    };
+  }
+  return {
+    "--color-primary": accent,
+    "--color-primary-hover": `color-mix(in srgb, ${accent} 80%, white)`,
+    "--color-primary-strong": `color-mix(in srgb, ${accent} 70%, white)`,
+    "--color-primary-bg": `color-mix(in srgb, ${accent} 22%, ${NEW_WORLD_SURFACE.canvas})`,
+    "--color-text-on-primary": contrastRatio(NEW_WORLD_ON_ACCENT, accent) >= 4.5 ? NEW_WORLD_ON_ACCENT : "#FFFFFF",
+  };
+}

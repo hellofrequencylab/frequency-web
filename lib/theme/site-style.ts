@@ -242,7 +242,7 @@ type SiteDialStore = Partial<Record<SiteDialKey | 'accent', string>>
 /** What the new dials resolve to before the owner changes anything. A theme's manifest default beats these. */
 const THEME_DIAL_FALLBACK: Record<SiteDialKey, string> = { register: 'day', type: 'caps', motion: 'full', hero: 'glow', image: 'glow' }
 /** Themes whose own register is night. */
-const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight'])
+const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight', 'new-world'])
 
 export interface SiteStyle {
   theme: SiteThemeId
