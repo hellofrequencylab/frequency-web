@@ -13,7 +13,9 @@ import { NetworkKitSpotlightLayout } from './network-kit-layouts'
 import { networkKitSpotlightContent } from '@/lib/spotlight/network-kit-content'
 import { DesignerKitSpotlightLayout } from './designer-kit-layouts'
 import { designerKitSpotlightContent } from '@/lib/spotlight/designer-kit-content'
-import { isDesignerKitLayout, isFreeHumanLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { isDesignerKitLayout, isFreeHumanLayout, isNewWorldKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { NewWorldKitSpotlightLayout } from './new-world-kit-layouts'
+import { newWorldKitSpotlightContent } from '@/lib/spotlight/new-world-kit-content'
 import { TempleKitSpotlightLayout } from './temple-kit-layouts'
 import { templeKitSpotlightContent } from '@/lib/spotlight/temple-kit-content'
 import { FreeHumanSpotlightLayout } from './free-human-layouts'
@@ -70,6 +72,17 @@ export function SpotlightShell({
         <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
           <main className="relative mx-auto max-w-xl">
             <FreeHumanSpotlightLayout layout={theme.layout} content={content} />
+          </main>
+        </div>
+      )
+    }
+    if (isNewWorldKitLayout(theme.layout)) {
+      // The New World kit draws its own page inside the same wrapper and footer (LIVE-2057).
+      const content = newWorldKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <main className="relative mx-auto max-w-xl">
+            <NewWorldKitSpotlightLayout layout={theme.layout} content={content} />
           </main>
         </div>
       )
