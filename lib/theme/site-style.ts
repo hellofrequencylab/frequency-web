@@ -179,7 +179,7 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
 
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
  *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human', 'services', 'new-world'])
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human', 'services'])
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
