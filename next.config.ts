@@ -532,27 +532,11 @@ const nextConfig: NextConfig = {
       // Sending it through the wildcard would land on the nonexistent /join/operator-calendar.
       { source: '/onboarding/beta/operator-calendar', destination: '/join', permanent: true },
       { source: '/onboarding/beta/:path*', destination: '/join/:path*', permanent: true },
-      // Circles C3.3 (ADR-1091, LIVE-059): Space Communities is removed and a Space's community
-      // is its Circles, which live on the Space's own page. The old Community tab URL carries to
-      // the Space root. Permanent (308): the URL resolves for all 20 live Spaces, carries its own
-      // canonical, and old notification emails already sent cannot be rewritten, so bookmarks and
-      // indexed links should transfer their signals for good. Query strings ride through
-      // automatically, same as the Funnels rules above.
-      //
-      // C3.3 shipped BEFORE C3.4 deleted app/(main)/spaces/[slug]/(profile)/community/page.tsx,
-      // never with it, so there was no window where the URL 404d: while the route still existed,
-      // this rule shadowed it, because redirects are checked before the filesystem router
-      // (node_modules/next/dist/docs/.../next-config-js/redirects.md: "Redirects are checked
-      // before the filesystem which includes pages and /public files" — the same mechanism
-      // lib/marketing/funnel-redirects.test.ts guards against when it is unintended). Since C3.4
-      // the rule shadows nothing; it is the only thing keeping the old URL alive. No :path* pair:
-      // the community segment had no nested routes, and proxy.ts carries no carve-out for it.
-      //
-      // RE-POINTED 2026-08-21 (ADR-1094). The destination was the Space ROOT because in C3.3 there was
-      // no circles surface to send anyone to; there is one now, and it is the page this URL always
-      // meant. Still 308: the same bookmarks and the same already-sent notification emails, now
-      // landing on the list of circles instead of one scroll away from a teaser.
-      { source: '/spaces/:slug/community', destination: '/spaces/:slug/circles', permanent: true },
+      // /spaces/:slug/community is a PAGE again (ADR-1938, LIVE-2077): a Space's Community wall. The
+      // 308 that used to send it to /circles (C3.3, ADR-1091, re-pointed ADR-1094) is gone, because a
+      // redirect is checked before the filesystem and would shadow the page. Browsers that cached the
+      // old 308 keep landing on /circles until their cache clears; that is the Circles tab, which is
+      // still a real page, so nothing dead-ends.
 
       // ── HYG-043 / HYG-044: 41 redirect-only route files become config rules (ADR-1199) ──────────
       //

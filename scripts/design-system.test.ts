@@ -12,6 +12,7 @@ import { NETWORK_KIT_TOKENS_CSS } from '@/lib/theme/network-kit'
 import { FREE_HUMAN_TOKENS_CSS } from '@/lib/theme/free-human'
 import { SERVICES_TOKENS_CSS } from '@/lib/theme/services'
 import { NEW_WORLD_TOKENS_CSS } from '@/lib/theme/new-world'
+import { MENSWORK_TOKENS_CSS } from '@/lib/theme/menswork'
 import { repoReport } from './ds-intake.mjs'
 import { extractCopy, extractTokens, flatDeclarations, globToRegExp, normValue, repoViolations, resolveVars, ruleFor, squash } from './lib/design-system.mjs'
 
@@ -54,7 +55,7 @@ describe('design-system routine', () => {
 })
 
 // Each theme's repo-side token block. A theme whose tokens are not built yet reads as empty (every token is a gap).
-const TOKEN_CSS: Record<string, string> = { nocturne: MIDNIGHT_TOKENS_CSS, designer: DESIGNER_TOKENS_CSS, network: NETWORK_KIT_TOKENS_CSS, temple: TEMPLE_KIT_TOKENS_CSS, 'free-human': FREE_HUMAN_TOKENS_CSS, services: SERVICES_TOKENS_CSS, 'new-world': NEW_WORLD_TOKENS_CSS, wildheart: WILDHEART_TOKENS_CSS.split('[data-house-theme="wildheart"][data-mode=')[0] }
+const TOKEN_CSS: Record<string, string> = { nocturne: MIDNIGHT_TOKENS_CSS, designer: DESIGNER_TOKENS_CSS, network: NETWORK_KIT_TOKENS_CSS, temple: TEMPLE_KIT_TOKENS_CSS, 'free-human': FREE_HUMAN_TOKENS_CSS, services: SERVICES_TOKENS_CSS, 'new-world': NEW_WORLD_TOKENS_CSS, bold: MENSWORK_TOKENS_CSS, wildheart: WILDHEART_TOKENS_CSS.split('[data-house-theme="wildheart"][data-mode=')[0] }
 
 const THEMES = readdirSync(join(process.cwd(), 'docs/design-systems'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
 

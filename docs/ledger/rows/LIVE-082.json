@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-082",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const P='app/(main)/spaces/[slug]/(profile)/circles/page.tsx';const C='app/(main)/spaces/[slug]/manage/circles/page.tsx';if(!fs.existsSync(P)||!fs.existsSync(C))process.exit(1);if(fs.existsSync('app/(main)/spaces/[slug]/circles'))process.exit(1);const n=fs.readFileSync('lib/spaces/profile-nav.ts','utf8');const i=n.indexOf('DEDICATED_TAB_ANCHORS');const set=i<0?'':n.slice(i,n.indexOf(')',i));const okNav=n.includes(\\\"'circles'\\\")&&n.includes('${base}/circles')&&set.includes(\\\"'circles'\\\");const mod=fs.readFileSync('lib/admin/modules/space-modules.ts','utf8').includes('/manage/circles');process.exit(okNav&&mod?0:1)\"",
+      "note": "Probe widened 2026-09-25 (LIVE-502): it asserted the literal set `new Set(['reviews', 'circles'])`, so adding a THIRD dedicated-tab anchor failed a row that had not regressed. It now measures the consequence \u2014 that `circles` is inside the suppression set \u2014 which is what the row is about."
+    }
+  },
+  "append": {
+    "detail": " Pin rewritten 2026-11-03 with the owner's own phrase (Daniel 17:46Z, ADR-1938 Community wall): the probe no longer requires /spaces/:slug/community to 308 to /circles, because /community is now the Space's own Community wall page."
+  }
+}
