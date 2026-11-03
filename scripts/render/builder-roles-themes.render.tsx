@@ -1,4 +1,4 @@
-// FIXTURE RENDER: the builder roles (the five new ones plus hero, stats, chapters) drawn in each theme's default layout with that
+// FIXTURE RENDER: every builder role drawn in each theme's default layout with that
 // theme's real token sheet. Writes $RENDER_OUT/<theme>.html. Check with scripts/render/builder-roles-themes-shots.mjs.
 // Run: RENDER_OUT=<dir> pnpm exec vitest run -c scripts/render/vitest.render.config.ts scripts/render/builder-roles-themes.render.tsx
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -7,13 +7,12 @@ import { it } from 'vitest'
 
 const THEMES = ['DAWN', 'Menswork', 'Midnight', 'Wildheart', 'Network', 'NetworkKit', 'Temple', 'TempleKit', 'Designer', 'FreeHuman'] as const
 const SCOPE_ID: Record<string, string> = { Menswork: 'menswork', Midnight: 'midnight', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Designer: 'designer', FreeHuman: 'free-human' }
-const SHOW = ['hero', 'stats', 'chapters', 'firstvisit', 'booking', 'locations', 'business', 'story'] as const
 
 it('renders the builder roles in every theme', async () => {
   const out = process.env.RENDER_OUT
   if (!out) throw new Error('set RENDER_OUT')
   const { rolesComponents } = await import('@/components/page-editor/blocks/roles')
-  const { ROLES } = await import('@/lib/blocks/roles/roles')
+  const { ROLES, ROLE_IDS } = await import('@/lib/blocks/roles/roles')
   const { roleBlocksCss } = await import('@/components/sites/role-blocks-css')
   const { presentationDefault } = await import('@/components/sites/presentation')
   const css = {
@@ -25,7 +24,7 @@ it('renders the builder roles in every theme', async () => {
     DAWN: readFileSync('app/themes/frequency.css', 'utf8'),
   } as Record<string, string>
   for (const theme of THEMES) {
-    const body = SHOW.map((id) => {
+    const body = ROLE_IDS.map((id) => {
       const base = { ...ROLES[id].sample } as Record<string, unknown>
       delete base.sample
       const variant = presentationDefault(theme, id) ?? ROLES[id].default

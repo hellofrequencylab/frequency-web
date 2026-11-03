@@ -15,4 +15,13 @@ export default {
   locations: 'card',
   business: 'list',
   story: 'center',
+  membership: 'tiers',
+  cta: 'center',
+  contact: 'center',
+  stats: 'row',
+  shop: 'grid',
+  library: 'featured',
+  people: 'founder',
+  gallery: 'carousel',
+  chapters: 'list',
 } satisfies PresentationDefaults
