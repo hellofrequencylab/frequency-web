@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { pathToFileURL } from 'node:url'
 import { resolve } from 'node:path'
 import { conformanceMatrix, contrast, heightStability, reducedMotion, repaintBudget, resetTotal } from '../../lib/theme/conformance'
