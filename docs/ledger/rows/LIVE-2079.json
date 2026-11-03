@@ -13,5 +13,6 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/space-community-wall.mjs w4"
-  }
+  },
+  "wave": "W7"
 }
