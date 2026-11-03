@@ -470,14 +470,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 48,
+      "baseline": 47,
       "frozen": {
         "at": "2026-11-03",
-        "value": 48,
+        "value": 47,
         "direction": "raised",
         "basis": "fa00e74e05ee",
-        "reason": "False positive from #4547 (LIVE-2069): components/sites/services-css.ts names the CSS custom property var(--sv-shadow-md), which the pattern matches inside the variable name. No Tailwind shadow literal was added; main has read 48 since that merge.",
-        "from": 47
+        "reason": "Create a Space v3 hero builder and Services kit CSS added literal shadows; counter re-frozen to the measured count",
+        "from": 38
       },
       "history": [
         {
@@ -577,13 +577,6 @@
           "to": 47,
           "direction": "raised",
           "reason": "Create a Space v3 hero builder and Services kit CSS added literal shadows; counter re-frozen to the measured count"
-        },
-        {
-          "at": "2026-11-03",
-          "from": 47,
-          "to": 48,
-          "direction": "raised",
-          "reason": "False positive from #4547 (LIVE-2069): components/sites/services-css.ts names the CSS custom property var(--sv-shadow-md), which the pattern matches inside the variable name. No Tailwind shadow literal was added; main has read 48 since that merge."
         }
       ]
     },
