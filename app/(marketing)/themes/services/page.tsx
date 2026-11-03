@@ -1,4 +1,4 @@
-// /themes/services (LIVE-2121): the feature page for the Services theme, on Nocturne's layout with a real render of every surface
+// /themes/services (LIVE-2130): the feature page for the Services theme, on Nocturne's layout with a real render of every surface
 // (frequency-theme-feature.tsx). A Frequency-only route; a static segment wins over /themes/[theme]. Services is registered but not
 // offered in the pickers yet, so the page stays out of search and the sitemap until it is, the way /themes/new-world did (#4544).
 // Its words come from THEME_FEATURES.services, so the SEO lives here, the way /themes/[theme] builds Bold's and Wildheart's.
