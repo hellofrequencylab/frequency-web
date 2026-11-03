@@ -110,5 +110,11 @@
     "label",
     "list",
     "value"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "freeze"
+  }
 }
