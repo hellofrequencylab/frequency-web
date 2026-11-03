@@ -90,12 +90,6 @@ export function ServicesQuoteForm({ slug, services, frequencies, propertyTypes, 
     )
   }
 
-  const field = (key: string, label: string, control: React.ReactNode, wide = false) => (
-    <label className={wide ? 'sv-field sv-field--wide' : 'sv-field'} htmlFor={`${id}-${key}`}>
-      <span className="sv-field-label">{label}</span>
-      {control}
-    </label>
-  )
   const choice = (key: string, label: string, on: boolean, onClick: () => void) => (
     <button key={key} type="button" className="sv-choice" aria-pressed={on} onClick={onClick} disabled={off}>
       <span className="sv-choice-box" aria-hidden="true">{on && <Check size={12} strokeWidth={3} />}</span>
@@ -132,13 +126,9 @@ export function ServicesQuoteForm({ slug, services, frequencies, propertyTypes, 
         )}
         {step === 1 && (
           <div className="sv-fields">
-            {field('address', 'Street address', <Input id={`${id}-address`} className="sv-input" autoComplete="street-address" placeholder="Street, city" value={address} onChange={(e) => setAddress(e.target.value)} disabled={off} />, true)}
-            {propertyTypes.length > 0 && field('property', 'Property type', (
-              <Select id={`${id}-property`} className="sv-input" wrapperClassName="sv-select" value={property} onChange={(e) => setProperty(e.target.value)} options={propertyTypes} emptyLabel="Choose one" disabled={off} />
-            ))}
-            {sizes.length > 0 && field('size', 'About how many windows', (
-              <Select id={`${id}-size`} className="sv-input" wrapperClassName="sv-select" value={size} onChange={(e) => setSize(e.target.value)} options={sizes} emptyLabel="Choose one" disabled={off} />
-            ))}
+            <label className="sv-field sv-field--wide"><span className="sv-field-label">Street address</span><Input id={`${id}-address`} aria-label="Street address" className="sv-input" autoComplete="street-address" placeholder="Street, city" value={address} onChange={(e) => setAddress(e.target.value)} disabled={off} /></label>
+            {propertyTypes.length > 0 && (<label className="sv-field"><span className="sv-field-label">Property type</span><Select id={`${id}-property`} aria-label="Property type" className="sv-input" wrapperClassName="sv-select" value={property} onChange={(e) => setProperty(e.target.value)} options={propertyTypes} emptyLabel="Choose one" disabled={off} /></label>)}
+            {sizes.length > 0 && (<label className="sv-field"><span className="sv-field-label">About how many windows</span><Select id={`${id}-size`} aria-label="About how many windows" className="sv-input" wrapperClassName="sv-select" value={size} onChange={(e) => setSize(e.target.value)} options={sizes} emptyLabel="Choose one" disabled={off} /></label>)}
             <fieldset className="sv-fieldset sv-field--wide">
               <legend className="sv-field-label">Include</legend>
               <div className="sv-choices">
@@ -150,10 +140,10 @@ export function ServicesQuoteForm({ slug, services, frequencies, propertyTypes, 
         )}
         {step === 2 && (
           <div className="sv-fields">
-            {field('name', 'Full name', <Input id={`${id}-name`} className="sv-input" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} disabled={off} />)}
-            {field('phone', 'Phone', <Input id={`${id}-phone`} className="sv-input" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={off} />)}
-            {field('email', 'Email', <Input id={`${id}-email`} className="sv-input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={off} />, true)}
-            {field('note', 'Notes', <Textarea id={`${id}-note`} className="sv-input" rows={4} placeholder="Gate code, pets, preferred days" value={note} onChange={(e) => setNote(e.target.value)} disabled={off} />, true)}
+            <label className="sv-field"><span className="sv-field-label">Full name</span><Input id={`${id}-name`} aria-label="Full name" className="sv-input" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} disabled={off} /></label>
+            <label className="sv-field"><span className="sv-field-label">Phone</span><Input id={`${id}-phone`} aria-label="Phone" className="sv-input" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={off} /></label>
+            <label className="sv-field sv-field--wide"><span className="sv-field-label">Email</span><Input id={`${id}-email`} aria-label="Email" className="sv-input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={off} /></label>
+            <label className="sv-field sv-field--wide"><span className="sv-field-label">Notes</span><Textarea id={`${id}-note`} aria-label="Notes" className="sv-input" rows={4} placeholder="Gate code, pets, preferred days" value={note} onChange={(e) => setNote(e.target.value)} disabled={off} /></label>
             <Input className="sv-hp" type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" value={company} onChange={(e) => setCompany(e.target.value)} />
           </div>
         )}

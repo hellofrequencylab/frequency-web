@@ -112,7 +112,7 @@ ${S} .sv-hero--minimal .sv-hero-copy .sv-display{font-size:clamp(48px,7vw,112px)
 ${S} .sv-hero-lead{margin:0;font-size:20px;line-height:1.55;max-width:560px;color:var(--sv-chrome-200);text-wrap:pretty}
 ${S} .sv-proof{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--sv-chrome-200)}
 ${S} .sv-stars{display:inline-flex;gap:2px;color:var(--sv-flare-300)}
-${S} .sv-panel{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:var(--sv-radius-lg);background:color-mix(in oklab,var(--sv-ink-900) 62%,transparent);border:1px solid var(--sv-border-default);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--sv-shadow-lg)}
+${S} .sv-panel{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:var(--sv-radius-lg);background:color-mix(in oklab,var(--sv-ink-900) 62%,transparent);border:1px solid var(--sv-border-default);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 ${S} .sv-panel-top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px 8px;${MONO};font-size:10.5px;color:var(--sv-chrome-200)}
 ${S} .sv-panel-top i{display:inline-block;width:6px;height:6px;border-radius:9px;background:var(--sv-flare-400);margin-right:8px}
 ${S} .sv-panel-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--sv-radius-md);border:1px solid var(--sv-border-subtle);background:color-mix(in oklab,var(--sv-chrome-50) 4%,transparent);color:inherit;text-decoration:none}
@@ -273,7 +273,9 @@ ${S} .hs-pill{background:color-mix(in oklab,var(--sv-ink-950) 82%,transparent);-
 ${S} .hs-logo{flex:none;display:block;height:clamp(28px,6vw,36px);width:auto;max-width:160px;object-fit:contain}
 ${S} .hs-nav a,${S} .hs-nav-mega{${LABEL};color:var(--sv-text-secondary)}
 ${S} .hs-nav a:hover,${S} .hs-nav a[aria-current="page"]{color:var(--sv-text-primary)}
-${S} .hs-menu-panel,${S} .hs-mega-panel{background:var(--sv-ink-800);border:var(--sv-border-hairline) solid var(--sv-border-subtle);border-radius:var(--sv-radius-lg);box-shadow:0 40px 80px -24px color-mix(in oklab,var(--sv-ink-950) 80%,transparent)}
+${S} .hs-menu-panel,${S} .hs-mega-panel{background:var(--sv-ink-800);border:var(--sv-border-hairline) solid var(--sv-border-subtle);border-radius:var(--sv-radius-lg)}
+/* One lifted-panel rule for the hero panel and the header menus. */
+${S} .sv-panel,${S} .hs-menu-panel,${S} .hs-mega-panel{box-shadow:var(--sv-shadow-lg)}
 ${S} .hs-footer-top{background:var(--sv-glow-sky,var(--sv-surface-sunken)),var(--sv-surface-sunken);border-top:var(--sv-border-hairline) solid var(--sv-border-subtle)}
 ${S} .hs-footer-col-title{${LABEL};color:var(--sv-text-muted)}
 ${S} .hs-footer-top{grid-template-columns:1.6fr repeat(3,1fr)}
