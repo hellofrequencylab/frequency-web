@@ -1,4 +1,4 @@
-// FIXTURE RENDER: the public header and footer (LIVE-2068) in the real kit root with the real CSS.
+// FIXTURE RENDER: the public header and footer (LIVE-2090) in the real kit root with the real CSS.
 // Writes $RENDER_OUT/menu-header.html, menu-footer-closed.html and menu-footer-open.html.
 // Run: RENDER_OUT=<dir> pnpm exec vitest run -c scripts/render/vitest.render.config.ts scripts/render/menu-overhaul.render.tsx
 import { createElement as h } from 'react'
