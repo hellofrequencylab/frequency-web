@@ -9,6 +9,10 @@ import { WIZARD_INTENTS, WIZARD_THEMES } from '@/lib/spaces/create-wizard'
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
 import { NETWORK_KIT_SCHEMES, NETWORK_KIT_SCHEME_ORDER } from '@/lib/theme/network-kit'
+import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
+import { FREE_HUMAN_PROFILES } from '@/lib/theme/free-human'
+import { SERVICES_ACCENTS } from '@/lib/theme/services'
+import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 
@@ -56,6 +60,7 @@ export interface KitImagery {
 const DESIGNER_PHOTO = (name: string) => `/sites/designer/photos/${name}.webp`
 const FREQUENCY_PHOTO = (n: 1 | 2 | 3) => `/create-a-space/photos/pain-${n}.jpg`
 const NETWORK_PHOTO = (n: string) => `/sites/network-kit/photos/photo-${n}.jpg`
+const TEMPLE_KIT_PHOTO = (n: string) => `/sites/temple-kit/photos/photo-${n}.jpg`
 
 const FREQUENCY_IMAGERY: KitImagery = {
   hero: FREQUENCY_PHOTO(2), heroPos: 'center', portrait: FREQUENCY_PHOTO(1), portraitPos: 'center',
@@ -65,7 +70,7 @@ const FREQUENCY_IMAGERY: KitImagery = {
 
 /** Each kit's sample pictures. Designer wears its own library; every other kit wears the gathering photography
  *  until it has a library of its own. A Space's uploads replace these in the setup walk. */
-const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<MegaThemeId, 'temple-kit' | 'free-human' | 'services' | 'new-world'>, KitImagery> = {
+const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<MegaThemeId, 'free-human' | 'services' | 'new-world'>, KitImagery> = {
   designer: {
     hero: DESIGNER_PHOTO('dz-designer-kitchen-hero'), heroPos: '38% center',
     portrait: DESIGNER_PHOTO('dz-portrait-01'), portraitPos: '48% 30%',
@@ -84,14 +89,22 @@ const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<Meg
   },
   network: FREQUENCY_IMAGERY,
   temple: FREQUENCY_IMAGERY,
+  // The Temple kit's own library (lib/sites/temple-kit-home.ts wears the same photos): the pool temple is its hero.
+  'temple-kit': {
+    hero: TEMPLE_KIT_PHOTO('02'), heroPos: 'center 60%', portrait: TEMPLE_KIT_PHOTO('11'), portraitPos: 'center 40%',
+    strip: [TEMPLE_KIT_PHOTO('10'), TEMPLE_KIT_PHOTO('05'), TEMPLE_KIT_PHOTO('13')], nav1: 'Retreats', cta2: 'See the space',
+    covers: [TEMPLE_KIT_PHOTO('02'), TEMPLE_KIT_PHOTO('10'), TEMPLE_KIT_PHOTO('11'), TEMPLE_KIT_PHOTO('05'), TEMPLE_KIT_PHOTO('13')],
+    portraits: [TEMPLE_KIT_PHOTO('11'), TEMPLE_KIT_PHOTO('13')],
+  },
   bold: FREQUENCY_IMAGERY,
   wildheart: FREQUENCY_IMAGERY,
   frequency: FREQUENCY_IMAGERY,
 }
 
-/** Temple kit is not a Mega Theme yet; it wears Temple's pictures and accents. */
-export const kitImagery = (kit: MegaThemeId): KitImagery => KIT_IMAGERY[kit] ?? KIT_IMAGERY.temple
-export const kitAccents = (kit: MegaThemeId): readonly PreviewAccent[] => KIT_ACCENTS[kit] ?? KIT_ACCENTS.temple
+/** Free Human, Services and New World are not in the builder's picker (lib/spaces/create-wizard.ts); until they are, they wear the gathering photography. */
+export const kitImagery = (kit: MegaThemeId): KitImagery => KIT_IMAGERY[kit] ?? FREQUENCY_IMAGERY
+/** Every kit's accents are its own: no kit falls back to another kit's family (Daniel, 2026-11-03). */
+export const kitAccents = (kit: MegaThemeId): readonly PreviewAccent[] => KIT_ACCENTS[kit]
 
 /** The hex a kit's accent choice stands for, as the launch hold carries it (lib/launch/carry.ts `accent`, the place in the
  *  kit's list as digits). Null when the kit or the place is not one of ours, so a hand-edited hold writes no colour. */
@@ -111,7 +124,18 @@ interface PreviewAccent {
 
 /** The accents each kit offers, first = the kit's own. The violets of Nocturne and Wildheart are read from their palettes, never restated here (LIVE-962). Designer's six are verified against the Designer
  *  handoff; the others are the kit's family as the prototype listed it. */
-const KIT_ACCENTS: Partial<Record<MegaThemeId, readonly PreviewAccent[]>> & Record<Exclude<MegaThemeId, 'temple-kit' | 'free-human' | 'services' | 'new-world'>, readonly PreviewAccent[]> = {
+/** The audience profiles whose accents differ, in the kit's order; the ones that only repeat an earlier hex are left out. */
+const distinctProfiles = <K extends string>(profiles: Record<K, { label: string; accent: string; text: string }>, order: readonly K[]): PreviewAccent[] => {
+  const seen = new Set<string>()
+  return order.flatMap((k) => {
+    const p = profiles[k]
+    if (seen.has(p.accent.toUpperCase())) return []
+    seen.add(p.accent.toUpperCase())
+    return [{ name: p.label, fill: p.accent, text: p.text === p.accent ? null : p.text }]
+  })
+}
+
+const KIT_ACCENTS: Record<MegaThemeId, readonly PreviewAccent[]> = {
   designer: [
     { name: 'Ochre', fill: '#D3A03F', text: '#9A6C1C' }, { name: 'Terracotta', fill: '#A65A3A', text: '#874429' },
     { name: 'Sage', fill: '#4E6E71', text: '#4E6E71' }, { name: 'Walnut', fill: '#5A4533', text: '#5A4533' },
@@ -129,6 +153,14 @@ const KIT_ACCENTS: Partial<Record<MegaThemeId, readonly PreviewAccent[]>> & Reco
     { name: 'Clay', fill: '#B5643C', text: null }, { name: 'Ochre', fill: '#9C7130', text: null },
     { name: 'Sage', fill: '#6F7D5A', text: null }, { name: 'Madder', fill: '#9C4F4F', text: null },
   ],
+  // The Temple kit's audience profiles (lib/theme/temple-kit.ts), Temple's clay first: six families, the repeats dropped.
+  'temple-kit': distinctProfiles(TEMPLE_KIT_PROFILES, ['general', 'coaches', 'studios', 'hosts', 'markets', 'faith']),
+  // Free Human's profiles (lib/theme/free-human.ts), the madder first.
+  'free-human': distinctProfiles(FREE_HUMAN_PROFILES, ['general', 'coaches', 'creators', 'studios', 'hosts']),
+  // Services' six presets (lib/theme/services.ts), Tide first. Night register: the fill reads as text, so no text step.
+  services: (['tide', 'signal', 'bloom', 'ember', 'fern', 'iris'] as const).map((id) => ({ name: SERVICES_ACCENTS[id].label, fill: SERVICES_ACCENTS[id].accent, text: null })),
+  // New World's presets (lib/theme/new-world.ts): Tide, until the owner adds more.
+  'new-world': (Object.keys(NEW_WORLD_ACCENTS) as (keyof typeof NEW_WORLD_ACCENTS)[]).map((id) => ({ name: NEW_WORLD_ACCENTS[id].label, fill: NEW_WORLD_ACCENTS[id].accent, text: null })),
   bold: [
     { name: 'Volt', fill: '#D4FF3D', text: null }, { name: 'Flare', fill: '#FF5A36', text: null },
     { name: 'Ice', fill: '#3DD9FF', text: null }, { name: 'Gold', fill: '#FFD23D', text: null },
