@@ -210,11 +210,19 @@ async function main() {
   const env = process.env
   requireFact(env.GITHUB_TOKEN, 'read-only metadata token required')
   const request = async (url, token, options = {}) => {
-    const res = await fetch(url, { ...options, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, ...options.headers }, redirect: 'error', signal: AbortSignal.timeout(15000) })
-    requireFact(res.ok, `proof read HTTP ${res.status}`)
-    const text = await res.text()
-    requireFact(text.length < 16 * 1024 * 1024, 'oversized proof response')
-    return JSON.parse(text)
+    // A transient network error (fetch failed, a stalled body) is retried; our own rule refusals never are.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const res = await fetch(url, { ...options, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, ...options.headers }, redirect: 'error', signal: AbortSignal.timeout(30000) })
+        requireFact(res.ok, `proof read HTTP ${res.status}`)
+        const text = await res.text()
+        requireFact(text.length < 16 * 1024 * 1024, 'oversized proof response')
+        return JSON.parse(text)
+      } catch (error) {
+        if (error?.safe === true || attempt >= 3) throw error
+        await new Promise(resolve => setTimeout(resolve, attempt * 2000))
+      }
+    }
   }
   const collectorArgs = {
     env, collectorSha256: hashBytes(readFileSync(process.argv[1])), event: JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8')),
