@@ -46,6 +46,9 @@
     },
     "split": {
       "label": "List beside a photo"
+    },
+    "agenda": {
+      "label": "Date ribbon above ruled rows"
     }
   },
   "default": "rows",
@@ -130,6 +133,7 @@
   ],
   "parts": [
     "actions",
+    "chip",
     "cta",
     "date",
     "eyebrow",
@@ -140,6 +144,7 @@
     "media",
     "meta",
     "name",
+    "ribbon",
     "side",
     "text",
     "title"
