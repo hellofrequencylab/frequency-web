@@ -402,8 +402,12 @@ export const loadCircleShell = cache(async (slug: string): Promise<CircleShell |
       .eq('status', 'active')
       .order('joined_at', { ascending: true })
 
-    // Host first, then join order (the read already sorted by joined_at ascending).
-    const members = ((rawMembers ?? []) as unknown as MemberRow[]).slice().sort((a, b) => {
+    // Host first, then join order (the read already sorted by joined_at ascending). A membership whose
+    // profile join came back empty (a profile row gone under a dangling membership) is dropped HERE,
+    // once: MemberRow declares `profile` non-null and the Circle home, members tab and Space circles
+    // page all read `m.profile.id` on the strength of that (visual sweep 2026-11-03: one such row
+    // threw "Cannot read properties of undefined (reading 'id')" and took the whole page down).
+    const members = ((rawMembers ?? []) as unknown as MemberRow[]).filter((m) => m.profile).sort((a, b) => {
       const aHost = circle.host?.id === a.profile?.id ? 0 : 1
       const bHost = circle.host?.id === b.profile?.id ? 0 : 1
       return aHost - bHost

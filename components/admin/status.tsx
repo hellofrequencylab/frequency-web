@@ -110,7 +110,7 @@ export function Banner({
     >
       <div className="min-w-0 flex-1">
         <p className="text-body-sm font-semibold">{title}</p>
-        {children && <div className="mt-0.5 text-body-sm text-text/80">{children}</div>}
+        {children && <div className="mt-0.5 text-body-sm text-text">{children}</div>}
         {action && <div className="mt-2">{action}</div>}
       </div>
       {dismissible && (
