@@ -1,0 +1,115 @@
+{
+ "theme": "circles",
+ "repoThemeId": "commons",
+ "note": "The Circles handoff (Claude Design, 2026-11-03): redesigned Circle page and Circles index, never implemented before the Community-wall decision. See docs/DESIGN-SYSTEM-INTAKE.md. First match wins.",
+ "tokenSources": [],
+ "baseline": "docs/design-systems/circles/baseline.json",
+ "tokenMap": [],
+ "rules": [
+  {
+   "glob": "README.md",
+   "kind": "reference",
+   "reason": "Handoff text for the Circle page and Circles index; every value in it is checked through the files it describes."
+  },
+  {
+   "glob": "templates/circles/support.js",
+   "kind": "skip",
+   "reason": "Design Component runtime for the prototype only; never shipped."
+  },
+  {
+   "glob": "templates/circles/ds-base.js",
+   "kind": "skip",
+   "reason": "Prototype runtime; never shipped."
+  },
+  {
+   "glob": "assets/icons/inline.js",
+   "kind": "skip",
+   "reason": "Prototype runtime that inlines the icon sprite; never shipped."
+  },
+  {
+   "glob": "assets/icons/icons.js",
+   "kind": "skip",
+   "reason": "Prototype runtime icon table; the repo has its own icon kit."
+  },
+  {
+   "glob": "assets/icons/frequency-icons.svg",
+   "kind": "reference",
+   "reason": "The in-house icon sprite, byte-identical to design_handoff/frequency; the repo icon kit is the authority."
+  },
+  {
+   "glob": "assets/logo/*",
+   "kind": "reference",
+   "reason": "Frequency's wordmark and icon, identical to design_handoff/frequency."
+  },
+  {
+   "glob": "_ds_bundle.js",
+   "kind": "reference",
+   "reason": "Compiled design-system bundle for the prototype; the repo kit under components/frequency is the authority."
+  },
+  {
+   "glob": "styles.css",
+   "kind": "reference",
+   "reason": "Byte-identical to design_handoff/frequency/styles.css."
+  },
+  {
+   "glob": "tokens/colors.css",
+   "kind": "reference",
+   "reason": "Byte-identical to design_handoff/frequency/tokens."
+  },
+  {
+   "glob": "tokens/typography.css",
+   "kind": "reference",
+   "reason": "Byte-identical to design_handoff/frequency/tokens."
+  },
+  {
+   "glob": "tokens/features.css",
+   "kind": "reference",
+   "reason": "Byte-identical to design_handoff/frequency/tokens."
+  },
+  {
+   "glob": "tokens/space-motion.css",
+   "kind": "reference",
+   "reason": "Byte-identical to design_handoff/frequency/tokens."
+  },
+  {
+   "glob": "tokens/base.css",
+   "kind": "reference",
+   "reason": "Differs from design_handoff/frequency only by the ambient .fq-wash drift (two blurred orbs). Member shell already carries the Commons wash; confirm in the render pass before adopting the drift."
+  },
+  {
+   "glob": "tokens/themes.css",
+   "kind": "reference",
+   "reason": "The Commons variant of the member theme (white canvas, ink action). The repo's data-theme=commons is the authority; compare in the render pass."
+  },
+  {
+   "glob": "tokens/infographics.css",
+   "kind": "reference",
+   "reason": "Differs from design_handoff/frequency only by ink in place of the banned violet on two infographic rules."
+  },
+  {
+   "glob": "assets/photos/*.jpg",
+   "kind": "reference",
+   "reason": "Sample gathering photos that stand in for member uploads in the prototype; never shipped as product assets."
+  },
+  {
+   "glob": "templates/members/app/*",
+   "kind": "reference",
+   "reason": "Member shell prototype files (app.css, nav.js, shell.js, ambient.js, circle.js/css); the repo's real member shell is the authority."
+  },
+  {
+   "glob": "templates/members/Circle.html",
+   "kind": "reference",
+   "reason": "The previous in-shell Circle page, kept by the designer for placement reference; superseded by Circles.dc.html."
+  },
+  {
+   "glob": "templates/members/Circles.html",
+   "kind": "built",
+   "target": "app/(main)/circles/page.tsx"
+  },
+  {
+   "glob": "templates/circles/Circles.dc.html",
+   "kind": "built",
+   "target": "app/(main)/circles/[slug]/(circle)/page.tsx"
+  }
+ ]
+}
