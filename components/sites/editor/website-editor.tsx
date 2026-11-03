@@ -37,7 +37,7 @@ export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onS
   const sources = useMemo(() => ({ load: loadSource, error: sourceError }), [loadSource, sourceError])
   const save = useCallback((revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string | null) => saveWebsiteDraft(host, revision, draft, publish, scheduledAt), [host])
   const propose = useCallback((request: string, value: string) => proposeWebsiteText(host, request, value), [host])
-  const layout = useCallback((request: string, outline: Parameters<typeof proposeWebsiteLayout>[2], styleMenu?: Parameters<typeof proposeWebsiteLayout>[3]) => proposeWebsiteLayout(host, request, outline, styleMenu), [host])
+  const layout = useCallback((request: string, outline: Parameters<typeof proposeWebsiteLayout>[2], styleMenu?: Parameters<typeof proposeWebsiteLayout>[3], facts?: Parameters<typeof proposeWebsiteLayout>[4]) => proposeWebsiteLayout(host, request, outline, styleMenu, facts), [host])
   const style = useCallback((patch: Parameters<NonNullable<WebsiteEditorShellProps['onStyle']>>[0]) => saveWebsiteStyle(host, patch), [host])
   const presence = useCallback((cursor: Parameters<typeof syncWebsitePresence>[1]) => syncWebsitePresence(host, cursor), [host])
   const media = useMemo(() => ({
