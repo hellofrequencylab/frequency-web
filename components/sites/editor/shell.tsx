@@ -34,7 +34,7 @@ import type { MwLive } from '@/lib/sites/menswork-data'
 import { SITE_LOOK_OPTIONS, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK, siteDials, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { ThemeControls } from './theme-controls'
 import { themeAccents, themeEditor } from '@/lib/themes/editor-dials'
-import type { LookPreset } from '@/lib/theme/dials'
+import { hasNewDials, type LookPreset } from '@/lib/theme/dials'
 import { EDITOR_THEME_OF, siteCanvasVars, siteRenderStyle } from '@/lib/sites/site-render-style'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { LoomPicker } from '@/components/loom/loom-picker'
@@ -694,11 +694,16 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <button type="button" className="row" onClick={() => setModal('menu')}><span className="ic"><FqIcon name="link" /></span><span className="t">Menu and logo<small>Shared with your Space page</small></span></button>
     <a className="row" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer"><span className="ic"><FqIcon name="space" /></span><span className="t">Space home</span></a>
   </>
-  const themeControls = <ThemeControls dials={themeUi.dials} values={dialNow} own={dialOwn} looks={themeUi.looks} accents={themeAccents(draft.theme)} accent={dialAccent}
-    onChange={(id, value) => changeDials({ [id]: value })}
-    onAccent={(value) => changeDials({ accent: value })}
-    onPreset={(look: LookPreset) => changeDials(Object.fromEntries(Object.entries(look.dials).filter(([id, v]) => v !== dialOwn[id])), dialIds.filter((id) => id !== 'accent'), 'Look')}
-    onReset={() => changeDials({}, [...dialIds, 'accent'], 'Style')} />
+  // The theme editor's controls: drawn from the registry and this theme's manifest. A theme that has declared no dial
+  // beyond the four above (every theme until it is converted) draws nothing here, so its editor is unchanged.
+  const themeControlProps = { dials: themeUi.dials, values: dialNow, own: dialOwn, looks: themeUi.looks, accents: themeAccents(draft.theme), accent: dialAccent,
+    onChange: (id: string, value: string | null) => changeDials({ [id]: value }),
+    onAccent: (value: string | null) => changeDials({ accent: value }),
+    onPreset: (look: LookPreset) => changeDials(Object.fromEntries(Object.entries(look.dials).filter(([id, v]) => v !== dialOwn[id])), dialIds.filter((id) => id !== 'accent'), 'Look'),
+    onReset: () => changeDials({}, [...dialIds, 'accent'], 'Style') }
+  const themeControls = <ThemeControls {...themeControlProps} variant="panel" />
+  // LIVE-2031: the same controls as a compact bar floated over the preview, calling the same handlers (null for a theme with only the legacy dials).
+  const themeBar = hasNewDials(themeUi.dials) && !preview ? <div className={k('we-float-bar')} role="region" aria-label="Quick style"><ThemeControls {...themeControlProps} variant="bar" /></div> : null
   const themeFonts = String(canvasVars['--th-display' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const bodyFont = String(canvasVars['--th-body' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const spaceAccent = brandAccent && /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(brandAccent) ? brandAccent : null
@@ -848,6 +853,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           <div className="foot"><span className="lbl">Changes save as a draft</span><a className="btn sm txt" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
         </aside>
         <main className="stage" data-device={device} aria-label="Website editor canvas" style={{ ['--pe-zoom' as string]: preview ? 1 : zoom / 100 }}>
+          {themeBar}
           <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
           {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><FqIcon name="minus" /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><FqIcon name="plus" /></Icon></div>}
           {!preview && veraHidden && <button type="button" className="vera-orb" aria-label="Show Vera" aria-keyshortcuts="Meta+K Control+K Meta+Backslash Control+Backslash" title="Show Vera (⌘K)" onClick={() => putVeraAway(false, true)}><span className="orb" aria-hidden /></button>}
@@ -935,6 +941,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <div className="we-foot"><span className="we-foot-lbl">Changes save as a draft</span><a className="we-action txt sm" aria-label="Website home" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
     </aside>
     <main className="we-stage" data-device={device} aria-label="Website editor canvas">
+      {themeBar}
       <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
       {!preview && <div className="we-zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><Minus size={15} aria-hidden /></Icon><span>{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><Plus size={15} aria-hidden /></Icon></div>}
       {!preview && <VeraDock>
