@@ -32,7 +32,7 @@ export const VANTA_ACCENT = '#1AA7C0' // token-ok: the stored brand accent is da
 const HOODS = ['Oceanside', 'Carlsbad', 'Encinitas', 'Cardiff', 'Solana Beach', 'Del Mar', 'San Marcos', 'Vista']
 
 type Block = { type: string; props: Record<string, unknown> }
-export interface VantaPageSeed { slug: string; title: string; seo: { title: string; description: string }; blocks: Block[] }
+interface VantaPageSeed { slug: string; title: string; seo: { title: string; description: string }; blocks: Block[] }
 const b = (type: string, props: Record<string, unknown>): Block => ({ type, props })
 
 const QUOTE = '~/quote'
