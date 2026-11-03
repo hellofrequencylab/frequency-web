@@ -259,10 +259,6 @@ export const WING_MENUS: WingMenu[] = [
   },
 ]
 
-/** Whether the header draws the Features mega menu. Off (menu strategy 2026-11-03): /features stays, linked
- *  from the For Spaces menu, and the 28 features no longer repeat in three places. */
-export const FEATURES_MENU_ENABLED = false as boolean
-
 /** The Features menu trigger: its panel is FEATURE_JOURNEYS. */
 export const FEATURES_LABEL = 'Features'
 

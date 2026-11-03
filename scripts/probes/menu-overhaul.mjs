@@ -7,13 +7,13 @@ import { loadProbeModule } from '../lib/probe-module.mjs'
 const legal = loadProbeModule('lib/nav/legal-links.ts')
 const nav = loadProbeModule('lib/frequency/site-nav.ts', { '@/lib/nav/legal-links': legal })
 assert.deepEqual(nav.WING_MENUS.map((m) => m.label), ['Discover', 'For Spaces'])
-assert.equal(nav.FEATURES_MENU_ENABLED, false, 'the Features mega menu is retired')
 assert.deepEqual(nav.DIRECT_LINKS.map((l) => l.label), ['Business Spaces', 'Pricing', 'Help'])
 const doors = nav.WING_MENUS.find((m) => m.key === 'spaces').cols.flatMap((c) => c.links.map((l) => l.href))
 for (const d of ['/for/coaches-and-healers', '/for/studios', '/for/event-hosts', '/for/venues', '/for/nonprofits', '/for/networks', '/for']) assert.ok(doors.includes(d), `For Spaces carries ${d}`)
 
 const header = readFileSync('components/frequency/site/shell/site-header.tsx', 'utf8')
 assert.ok(!header.includes('p-only') && !header.includes('SIDE_CTA'), 'one Get started button, not the side pair')
+assert.ok(!header.includes('FeaturesPanel') && !header.includes('FEATURE_JOURNEYS'), 'the Features mega menu is retired')
 const footer = readFileSync('components/frequency/site/shell/site-footer.tsx', 'utf8')
 assert.ok(footer.includes('More from Frequency') && footer.includes('<details'), 'the footer folds behind More from Frequency')
 

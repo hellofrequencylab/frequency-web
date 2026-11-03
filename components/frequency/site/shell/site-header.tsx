@@ -24,13 +24,8 @@ import { FqIcon } from '@/components/frequency/icon'
 import { useSite } from '@/components/frequency/site/shell/site-root'
 import {
   DIRECT_LINKS,
-  FEATURE_JOURNEYS,
-  FEATURES_LABEL,
-  FEATURES_MENU_ENABLED,
   ROUTES,
   WING_MENUS,
-  featureHref,
-  featuresWingHref,
   feedHomeLink,
   searchSite,
   siteLogoHref,
@@ -104,44 +99,6 @@ function MmCard({ card }: { card: MegaCard }) {
   )
 }
 
-function FeaturesPanel() {
-  return (
-    <>
-      <div className="mm-fx">
-        {FEATURE_JOURNEYS.map((s) => (
-          <div className="mm-fxs" data-wing={s.side === 'e' ? 'spaces' : 'community'} key={s.side}>
-            <Link className="mm-fxh" href={featuresWingHref(s.side)}>
-              {s.label} →
-            </Link>
-            <div className="mm-fxrow">
-              {s.jobs.map((j) => (
-                <div className="mm-fxj" key={j.job}>
-                  <span className="mm-h">{j.job}</span>
-                  <div className="mm-pkf">
-                    {j.features.map((f) => (
-                      <Link key={f.id} href={featureHref(f.id)}>
-                        {f.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mm-foot">
-        <span>Open any feature to see how it works.</span>
-        {ROUTES.features && (
-          <Link className="btn fq-iri-btn" href={ROUTES.features}>
-            All features →
-          </Link>
-        )}
-      </div>
-    </>
-  )
-}
-
 function WingPanel({ wing }: { wing: Wing }) {
   const m = WING_MENUS.find((x) => x.key === wing)!
   return (
@@ -177,7 +134,6 @@ function wingOf(pathname: string): MenuKey | null {
   const under = (r: string | null) => !!r && (pathname === r || pathname.startsWith(`${r}/`))
   if (under(ROUTES.people)) return 'people'
   if (under(ROUTES.spaces)) return 'spaces'
-  if (under(ROUTES.features)) return 'packages'
   return null
 }
 
@@ -450,7 +406,7 @@ export function SiteHeader({ initialNavigation = null }: { initialNavigation?: P
           <Link className="mm-trig" href={feedLink.href} onMouseEnter={() => intent(hideMenu, timings.openDelayMs)}>
             {feedLink.label}
           </Link>
-          {(navigation ? navigation.groups.map(group => [group.id, group.label] as const) : [...WING_MENUS.map((m) => [m.key, m.label] as const), ...(FEATURES_MENU_ENABLED ? [['packages', FEATURES_LABEL] as const] : [])]).map(([k, label]) => {
+          {(navigation ? navigation.groups.map(group => [group.id, group.label] as const) : WING_MENUS.map((m) => [m.key, m.label] as const)).map(([k, label]) => {
             const group = navigation?.groups.find(group=>group.id===k)
             if(group && !group.children.length && group.items.length===1) return <EditedHeaderLink key={k} link={{...group.items[0],label}} className="mm-trig"/>
             return (
@@ -536,11 +492,11 @@ export function SiteHeader({ initialNavigation = null }: { initialNavigation?: P
           id={PANEL_ID}
           className={`mm-panel${menu.on ? ' on' : ''}`}
           role="region"
-          aria-label={navigation?.groups.find(group=>group.id===menuKey)?.label ?? (menuKey === 'packages' ? FEATURES_LABEL : WING_MENUS.find((m) => m.key === menuKey)?.label)}
+          aria-label={navigation?.groups.find(group=>group.id===menuKey)?.label ?? WING_MENUS.find((m) => m.key === menuKey)?.label}
           hidden={!menu.mounted}
           onClick={closeOnLink(hideMenu)}
         >
-          {menu.mounted && (navigation ? (()=>{const group=navigation.groups.find(group=>group.id===menuKey);return group?<EditedHeaderPanel group={group} cards={navigation.cards}/>:null})() : menuKey === 'packages' ? <FeaturesPanel /> : <WingPanel wing={menuKey as Wing} />)}
+          {menu.mounted && (navigation ? (()=>{const group=navigation.groups.find(group=>group.id===menuKey);return group?<EditedHeaderPanel group={group} cards={navigation.cards}/>:null})() : <WingPanel wing={menuKey as Wing} />)}
         </div>
         <span className="fq-progress" aria-hidden="true" />
       </header>
@@ -647,20 +603,6 @@ export function SiteHeader({ initialNavigation = null }: { initialNavigation?: P
                 ))}
               </details>
             ))}
-            {FEATURES_MENU_ENABLED && <details open={here === 'packages'}>
-              <summary>{FEATURES_LABEL}</summary>
-              {FEATURE_JOURNEYS.map((s) => (
-                <MmLink
-                  key={s.side}
-                  link={{
-                    href: featuresWingHref(s.side),
-                    label: s.label,
-                    hint: s.jobs.map((j) => j.job).join(' · '),
-                    icon: s.side === 'e' ? 'space' : 'circle',
-                  }}
-                />
-              ))}
-            </details>}
             {DIRECT_LINKS.filter((d) => d.href).map((d) => (
               <Link className="mm-shlink" href={d.href!} key={d.label}>
                 {d.label}
