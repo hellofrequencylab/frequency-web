@@ -444,7 +444,7 @@ export function NicheDoor({ config, week }: { config: FunnelConfig; week: readon
             </Link>
           </div>
           <p className="nk-pnote">
-            Want it all in one place? <Link href={SITE.system}>See the whole system</Link>.
+            Want to see everything it does? <Link href={SITE.features ?? SITE.help}>See every feature</Link>.
           </p>
         </div>
       </section>

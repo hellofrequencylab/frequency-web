@@ -103,14 +103,6 @@ export const SITE_PAGES: Record<string, SitePageState> = {
     surface: 'stage',
     innerSurface: 'commons',
   },
-  [ROUTES.vision]: {
-    mood: 'vision',
-    energy: 'still',
-    hues: ['v', 'c', 'l'],
-    side: 'p',
-    locked: true,
-    cta: { href: `${ROUTES.vision}#partner`, label: 'Talk to us' },
-  },
 }
 
 /** The row for a pathname: exact, then the longest matching section prefix, then the default. */
