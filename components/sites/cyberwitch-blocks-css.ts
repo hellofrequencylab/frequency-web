@@ -48,9 +48,9 @@ ${C}{
 --cw-radius-lg:var(--cw-corner-lg);
 --cw-radius-xl:var(--cw-corner-lg);
 --cw-sheen:linear-gradient(180deg,color-mix(in oklab,var(--cw-chrome-50) 4%,transparent),transparent 40%);
---cw-shadow-sm:0 2px 0 rgba(0,0,0,.55);
---cw-shadow-md:var(--cw-shadow-plate);
---cw-shadow-lg:var(--cw-shadow-poster);
+--cw-depth-sm:0 2px 0 rgba(0,0,0,.55);
+--cw-depth-md:var(--cw-shadow-plate);
+--cw-depth-lg:var(--cw-shadow-poster);
 --cw-shadow-glow:var(--cw-glow-md);
 --cw-glow-sunset:var(--cw-haze-top);
 --cw-glow-sky:var(--cw-haze-bottom);
@@ -62,5 +62,5 @@ ${C}{
 
 export const CYBERWITCH_BLOCKS_CSS = `${CYBERWITCH_BLOCK_ALIASES}
 ${SERVICES_CSS.replaceAll('[data-house-theme="services"]', C)
-  .replace(/--sv-shadow-(sm|md|lg)\b/g, '--cw-shadow-$1')
+  .replace(/--sv-shadow-(sm|md|lg)\b/g, '--cw-depth-$1')
   .replace(/--sv-(?!min\b|ratio\b)/g, '--cw-')}`
