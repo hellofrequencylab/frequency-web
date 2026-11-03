@@ -61,7 +61,8 @@ const POLICY_PATH = 'scripts/migration-readiness-policy.json'
 const SQL_PATH = /^supabase\/migrations\/(\d{14})_([A-Za-z0-9_.-]+)\.sql$/
 const sha = /^[a-f0-9]{40}$/
 const hashBytes = bytes => createHash('sha256').update(bytes).digest('hex')
-const requireFact = (condition, message) => { if (!condition) throw new Error(message) }
+// `safe` marks our own fixed-text refusals so the job log can name the failed rule; provider/Git errors never carry it.
+const requireFact = (condition, message) => { if (!condition) throw Object.assign(new Error(message), { safe: true }) }
 
 // One native Git process reads the corpus; never spawn a process per historical migration.
 export function readGitBlobs(git, revision, paths) {
@@ -109,7 +110,7 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
   requireFact(sha.test(mainSha) && sha.test(baseSha) && sha.test(headSha) && headSha === event.pull_request.head.sha, 'stale or moving event/base/head')
   for (const revision of [baseSha, headSha]) git(['fetch', '--no-tags', '--filter=blob:none', 'origin', revision])
   // This job checks out main on an isolated runner and never executes candidate code.
-  requireFact(env.GITHUB_WORKFLOW_REF === `${REPOSITORY}/.github/workflows/migration-readiness.yml@refs/heads/main` && env.GITHUB_SHA === baseSha && String(git(['rev-parse', 'HEAD'])).trim() === baseSha, 'trusted current-main workflow checkout required')
+  requireFact(env.GITHUB_WORKFLOW_REF === `${REPOSITORY}/.github/workflows/migration-readiness.yml@refs/heads/main` && String(git(['rev-parse', 'HEAD'])).trim() === baseSha, 'trusted current-main workflow checkout required')
   const blob = (revision, path) => git(['show', `${revision}:${path}`], true)
   const inventory = revision => {
     const names = String(git(['ls-tree', '-r', '--name-only', revision, '--', 'supabase/migrations/'])).trim().split('\n')
@@ -140,7 +141,8 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
     requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === headSha && finalPr.base.sha === baseSha, 'branch moved during no-SQL fallback')
     return { ok: true, status: 'not_applicable', proof: { baseSha, headSha, collectorSha256 } }
   }
-  requireFact(baseSha === mainSha, 'stale or moving event/base/head')
+  // Only a PR that adds SQL must sit on the current main tip (and the workflow run must be that tip's).
+  requireFact(baseSha === mainSha && env.GITHUB_SHA === baseSha, 'stale or moving event/base/head')
   const paths = reviewedChanges.map(change => change.file)
   const baseModes = gitModes(git, baseSha, paths), headModes = gitModes(git, headSha, paths)
   for (const change of reviewedChanges) { change.baseMode = baseModes.get(change.file) ?? '000000'; change.headMode = headModes.get(change.file) ?? '000000' }
@@ -227,7 +229,8 @@ async function main() {
   if (result.status === 'strict_parity') { console.log('Migration PR historical SQL unchanged; current main/production strict parity VERIFIED.'); return }
   console.log(`Migration PR staging VERIFIED; ${result.pending.length} exact registered migration(s) PENDING APPLY. Production was NOT changed. Main remains strict.`)
 }
-if (invokedDirectly(import.meta.url)) main().catch(() => {
+if (invokedDirectly(import.meta.url)) main().catch(error => {
+  if (error?.safe === true) console.error(`Migration readiness rule refused: ${error.message}`)
   // No API body, token, SQL, state or Git command arguments are copied into CI diagnostics.
   console.error('Migration PR readiness failed closed; registration, current base/ledger or exact-head staging proof was not satisfied.')
   process.exitCode = 1
