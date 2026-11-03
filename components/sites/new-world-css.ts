@@ -33,6 +33,10 @@ ${N} .hs-btn-soft:hover{background:var(--nw-accent-tint);color:var(--color-text)
 /* The header: a frosted bar with a hairline under it, labels in the mono voice. */
 ${N} .hs-header{position:sticky;top:0;z-index:40}
 ${N} .hs-pill{background:color-mix(in oklab,var(--nw-ink-900) 82%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:var(--nw-border-hairline) solid var(--nw-border-subtle)}
+/* The owner's logo or photo in the bar: house-css sizes only .hs-logo-avatar and .hs-logo-image, and a skinned header prints a bare .hs-logo, so without this the image fills the bar and the header and headline vanish. */
+${N} .hs-logo{flex:none;display:block;height:clamp(28px,6vw,36px);width:auto;max-width:160px;object-fit:contain;border-radius:var(--nw-radius-sm)}
+/* A hero is a photo under a wash: the wash is Night ink and the words are light in both registers (the bridge above points ink at the accent for bands, which turned the wash teal and the headline dark). */
+${N} .hs-hero{--color-ink:var(--nw-ink-950);--color-on-ink:var(--nw-chrome-50);--color-on-ink-muted:var(--nw-chrome-200)}
 ${N} .hs-nav a,${N} .hs-nav-mega{${LABEL};color:var(--nw-text-secondary)}
 ${N} .hs-nav a:hover,${N} .hs-nav a[aria-current="page"]{color:var(--nw-text-primary)}
 ${N} .hs-menu-panel,${N} .hs-mega-panel{background:var(--nw-ink-800);border:var(--nw-border-hairline) solid var(--nw-border-subtle);border-radius:var(--nw-radius-lg);box-shadow:var(--nw-depth-lg)}
