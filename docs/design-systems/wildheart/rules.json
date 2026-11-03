@@ -237,13 +237,8 @@
   },
   {
    "glob": "templates/website/Website.dc.html",
-   "kind": "copy",
-   "targets": [
-    "lib/sites",
-    "components/sites",
-    "components/page-editor/blocks",
-    "lib/themes"
-   ]
+   "kind": "reference",
+   "reason": "The Wildheart program's own website copy (its circles, retreat, pillars and year). Wildheart is a general website for women-led Spaces (owner 2026-11-03: take every recommended option), so its starter copy is general and lives in lib/sites/kits/wildheart-*.ts; the program's words do not ship. Look reference only."
   },
   {
    "glob": "Vision.html",
