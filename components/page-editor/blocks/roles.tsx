@@ -214,11 +214,18 @@ function GatheringsBlock({ p, metadata, now = new Date() }: Ctx & { now?: Date }
       ))}
     </ul>
   )
+  // The agenda layout opens with a ribbon of the dates on offer (one chip per gathering, in order), then the rows.
+  const ribbon = variant === 'agenda' && rows.length > 0 && (
+    <ol data-part="ribbon" aria-hidden="true">
+      {rows.map((r, i) => <li key={i} data-part="chip"><b>{r.month}</b><span>{r.day}</span></li>)}
+    </ol>
+  )
   return (
     <Frame role="gatherings" p={p} variant={variant} media={!!src}>
       <Heading p={p}>{str(p.actionLabel) && <div data-part="actions"><Cta label={str(p.actionLabel)} href={str(p.actionHref)} kind="secondary" metadata={metadata} /></div>}</Heading>
       <div data-part="side">
         <Media src={src} alt={str(p.alt)} />
+        {ribbon}
         {rows.length ? list : str(p.empty) ? <p data-part="empty">{str(p.empty)}</p> : null}
       </div>
     </Frame>

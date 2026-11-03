@@ -14,12 +14,8 @@ for (const f of readdirSync(dir).filter((x) => x.endsWith('.html'))) {
     await page.goto(pathToFileURL(`${dir}/${f}`).href)
     const over = await page.evaluate(() => {
       const w = document.documentElement.clientWidth
-<<<<<<< HEAD
       const scrolls = (e) => { for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) { const o = getComputedStyle(a).overflowX; if (o === 'auto' || o === 'scroll' || o === 'hidden') return true } return false }
       const wide = [...document.querySelectorAll('body *')].filter((e) => e.getBoundingClientRect().right > w + 1 && !scrolls(e)).slice(0, 3).map((e) => e.getAttribute('data-part') || e.tagName)
-=======
-      const wide = [...document.querySelectorAll('body *')].filter((e) => e.getBoundingClientRect().right > w + 1).slice(0, 3).map((e) => e.getAttribute('data-part') || e.tagName)
->>>>>>> origin/claude/project-thread-tbsulv
       return { scroll: document.documentElement.scrollWidth - w, wide }
     })
     if (over.scroll > 0 || over.wide.length) { bad++; console.log(`OVERFLOW ${f} ${width}: +${over.scroll}px`, over.wide.join(',')) }

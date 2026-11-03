@@ -1,5 +1,6 @@
 // FIXTURE RENDER: every builder role drawn in each theme's default layout with that
 // theme's real token sheet. Writes $RENDER_OUT/<theme>.html. Check with scripts/render/builder-roles-themes-shots.mjs.
+// RENDER_VARIANTS=gatherings=agenda forces a layout (to check one before a theme picks it).
 // Run: RENDER_OUT=<dir> pnpm exec vitest run -c scripts/render/vitest.render.config.ts scripts/render/builder-roles-themes.render.tsx
 import { renderToStaticMarkup } from 'react-dom/server'
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -27,7 +28,8 @@ it('renders the builder roles in every theme', async () => {
     const body = ROLE_IDS.map((id) => {
       const base = { ...ROLES[id].sample } as Record<string, unknown>
       delete base.sample
-      const variant = presentationDefault(theme, id) ?? ROLES[id].default
+      const forced = Object.fromEntries((process.env.RENDER_VARIANTS ?? '').split(',').filter(Boolean).map((x) => x.split('=')))
+      const variant = forced[id] ?? presentationDefault(theme, id) ?? ROLES[id].default
       const render = rolesComponents[ROLES[id].type].render as (p: unknown) => React.ReactElement
       return renderToStaticMarkup(render({ ...base, variant, puck: { metadata: { theme } } }))
     }).join('\n')
