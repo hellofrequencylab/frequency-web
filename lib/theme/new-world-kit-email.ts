@@ -16,6 +16,9 @@
 // VOICE: the copy a Space owner supplies is theirs. The words this file adds are the labels (a kicker, a footer line,
 // a button when none is given), and they promise nothing on a schedule and state no count.
 
+/** The starting accent (Tide), resolved for the Night register: what a Space that has not chosen one wears. */
+export const NEW_WORLD_EMAIL_TIDE = { fill: '#1AA7C0', text: '#3FC1D6' }
+
 export const NEW_WORLD_EMAIL_TYPES = ['confirm', 'reminder', 'welcome', 'review', 'receipt', 'post', 'event', 'order', 'member', 'letter', 'inquiry'] as const
 type NewWorldEmailType = (typeof NEW_WORLD_EMAIL_TYPES)[number]
 

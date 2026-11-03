@@ -65,7 +65,7 @@ import { networkKitDatesEmail, networkKitNoteEmail, networkKitReceiptEmail, netw
 import { templeKitDatesEmail, templeKitNoteEmail, templeKitReceiptEmail, templeKitWelcomeEmail, type TempleKitEmailBrand } from '@/lib/theme/temple-kit-email'
 import { SERVICES_SURFACE } from '@/lib/theme/services'
 import { SERVICES_EMAIL_TYPES, servicesKitEmail, type ServicesKitEmailBrand } from '@/lib/theme/services-kit-email'
-import { NEW_WORLD_EMAIL_TYPES, newWorldKitEmail } from '@/lib/theme/new-world-kit-email'
+import { NEW_WORLD_EMAIL_TIDE, NEW_WORLD_EMAIL_TYPES, newWorldKitEmail } from '@/lib/theme/new-world-kit-email'
 import { freeHumanDatesEmail, freeHumanNoteEmail, freeHumanReceiptEmail, freeHumanWelcomeEmail, type FreeHumanEmailBrand } from '@/lib/theme/free-human-email'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
@@ -355,6 +355,6 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'free-human-welcome', group: 'Spaces and campaigns', run: () => { const out = freeHumanWelcomeEmail(FREE_HUMAN_BRAND, { coverUrl: FREE_HUMAN_COVER, coverAlt: 'The sea at sunset, warm and wide.', ctaLabel: 'See what is open', ctaUrl: 'https://freehumanmovement.example/calendar', steps: [{ title: 'Come to one thing', sub: 'Pick a date from the calendar and show up. No account needed.' }, { title: 'See the next few dates', sub: 'Circles, suppers and wheels, all on the calendar.' }, { title: 'Say hello', sub: 'Reply to this letter. It goes to a person, not a robot.' }], quote: { text: 'I walked in carrying everything and walked out lighter.', who: 'A member', role: 'Came to the new moon circle' } }); return { to: TO, ...out } } },
   { id: 'free-human-dates', group: 'Spaces and campaigns', run: () => { const out = freeHumanDatesEmail(FREE_HUMAN_BRAND, { dates: FREE_HUMAN_DATES, ctaUrl: 'https://freehumanmovement.example/calendar' }); return { to: TO, ...out } } },
   { id: 'free-human-receipt', group: 'Spaces and campaigns', run: () => { const out = freeHumanReceiptEmail(FREE_HUMAN_BRAND, { what: 'New moon circle', when: 'Thursday, November 20 · 7:00 PM', where: 'The long room', who: 'One place', whoNote: 'Reserved under your name', paid: '$25', paidNote: 'Card ending 4242 · Receipt no. 1047', calendarUrl: 'https://freehumanmovement.example/calendar.ics', manageUrl: 'https://freehumanmovement.example/bookings' }); return { to: TO, ...out } } },
-  ...NEW_WORLD_EMAIL_TYPES.map((type) => ({ id: `new-world-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...newWorldKitEmail(type, { ...SERVICES_BRAND, accent: { fill: '#1AA7C0', text: '#3FC1D6' } }) }) })),
+  ...NEW_WORLD_EMAIL_TYPES.map((type) => ({ id: `new-world-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...newWorldKitEmail(type, { ...SERVICES_BRAND, accent: NEW_WORLD_EMAIL_TIDE }) }) })),
   ...SERVICES_EMAIL_TYPES.map((type) => ({ id: `services-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...servicesKitEmail(type, SERVICES_BRAND) }) })),
 ]
