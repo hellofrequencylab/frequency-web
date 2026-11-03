@@ -38,7 +38,7 @@ describe('the site style', () => {
     expect(prefs.siteStyle).toEqual({ theme: 'frequency', synced: true, spaceFonts: 'classic' })
   })
 
-  it('offers the seven themes Default, Bold, Wildheart, Network, Temple, Nocturne and Designer (the Temple Theme Kit is the Temple), each with its own default fonts', () => {
+  it('offers the eight themes Default, Bold, Wildheart, Network, Temple, Nocturne, Designer and New World (the Temple Theme Kit is the Temple), each with its own default fonts', () => {
     expect(SITE_THEMES.map((t) => [t.id, t.label, t.defaultFonts])).toEqual([
       ['frequency', 'Default', 'frequency'],
       ['bold', 'Bold', 'menswork'],
@@ -47,6 +47,7 @@ describe('the site style', () => {
       ['temple-kit', 'Temple', 'classic'],
       ['midnight', 'Nocturne', 'classic'],
       ['designer', 'Designer', 'classic'],
+      ['new-world', 'New World', 'modern'],
     ])
     // The earlier network theme is worn by live sites but offered nowhere; it still resolves and renders.
     expect(SITE_THEMES.some((t) => t.id === 'network')).toBe(false)

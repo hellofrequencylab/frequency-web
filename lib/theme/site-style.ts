@@ -179,7 +179,7 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
 
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
  *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human', 'services', 'new-world'])
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human', 'services'])
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
@@ -242,7 +242,7 @@ type SiteDialStore = Partial<Record<SiteDialKey | 'accent', string>>
 /** What the new dials resolve to before the owner changes anything. A theme's manifest default beats these. */
 const THEME_DIAL_FALLBACK: Record<SiteDialKey, string> = { register: 'day', type: 'caps', motion: 'full', hero: 'glow', image: 'glow' }
 /** Themes whose own register is night. */
-const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight', 'new-world'])
+const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight', 'new-world', 'services'])
 
 export interface SiteStyle {
   theme: SiteThemeId

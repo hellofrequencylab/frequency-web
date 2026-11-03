@@ -40,8 +40,8 @@ describe('the New World theme page (/themes/new-world, LIVE-2059)', () => {
     expect(html).not.toContain('—')
   })
 
-  it('is reachable by its address but hidden from search and the sitemap until the theme is un-hidden', () => {
-    expect(metadata.robots).toMatchObject({ index: false })
-    expect(readFileSync('app/sitemap.ts', 'utf8')).not.toContain('/themes/new-world')
+  it('is indexable and listed in the sitemap', () => {
+    expect(metadata.robots).not.toMatchObject({ index: false })
+    expect(readFileSync('app/sitemap.ts', 'utf8')).toContain('/themes/new-world')
   })
 })
