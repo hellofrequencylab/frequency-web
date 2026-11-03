@@ -12,7 +12,8 @@ export type NetworkKitLayoutId = `network-kit:${LayoutName}`
 export type DesignerKitLayoutId = `designer-kit:${LayoutName}`
 export type TempleKitLayoutId = `temple-kit:${LayoutName}`
 export type FreeHumanLayoutId = `free-human:${LayoutName}`
-export type SpotlightLayoutId = NetworkKitLayoutId | DesignerKitLayoutId | TempleKitLayoutId | FreeHumanLayoutId
+export type NewWorldKitLayoutId = `new-world-kit:${LayoutName}`
+export type SpotlightLayoutId = NetworkKitLayoutId | DesignerKitLayoutId | TempleKitLayoutId | FreeHumanLayoutId | NewWorldKitLayoutId
 
 interface SpotlightLayoutInfo {
   id: SpotlightLayoutId
@@ -42,6 +43,7 @@ const SPOTLIGHT_LAYOUTS_BY_THEME: Record<string, readonly SpotlightLayoutInfo[]>
   'designer-kit': LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `designer-kit:${n}` as DesignerKitLayoutId, label, blurb })),
   'temple-kit': LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `temple-kit:${n}` as TempleKitLayoutId, label, blurb })),
   'free-human': LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `free-human:${n}` as FreeHumanLayoutId, label, blurb })),
+  'new-world': LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `new-world-kit:${n}` as NewWorldKitLayoutId, label, blurb })),
 }
 
 const ALL_IDS: ReadonlySet<string> = new Set(Object.values(SPOTLIGHT_LAYOUTS_BY_THEME).flatMap((l) => l.map((i) => i.id)))
@@ -69,4 +71,9 @@ export function isTempleKitLayout(id: SpotlightLayoutId): id is TempleKitLayoutI
 /** True for a layout the Free Human Theme Kit draws (components/spotlight/free-human-layouts.tsx). */
 export function isFreeHumanLayout(id: SpotlightLayoutId): id is FreeHumanLayoutId {
   return id.startsWith('free-human:')
+}
+
+/** True for a layout the New World kit draws (components/spotlight/new-world-kit-layouts.tsx). */
+export function isNewWorldKitLayout(id: SpotlightLayoutId): id is NewWorldKitLayoutId {
+  return id.startsWith('new-world-kit:')
 }
