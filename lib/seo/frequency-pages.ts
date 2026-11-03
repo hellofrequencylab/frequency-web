@@ -234,7 +234,7 @@ export const FREQUENCY_PAGE_SEO = {
       'New World is the theme every new Space starts in. Your Spotlight, Space, website and emails wear one look, changed once.',
     shareTitle: 'New World: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
-    lede: 'Your link in bio, your Space, your website and your emails each look a little different. New World is the theme every new Space starts in: one look to wear on all four, read from one profile. Change it once and every surface follows.',
+    lede: 'Your link in bio, your Space, your website and your emails each look a little different. New World is the theme every new Space starts in: studios, coaches, hosts, venues, non-profits and networks, one look to wear on all four, read from one profile. Night to start, Day when you want it. Change it once and every surface follows.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
