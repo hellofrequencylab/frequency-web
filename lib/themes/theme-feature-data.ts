@@ -15,7 +15,7 @@ export const THEME_FEATURE_SURFACES: readonly { id: ThemeFeatureSurface; label: 
 
 export const themeFeatureShot = (id: ThemeFeatureId, shot: string): string => `/brand/theme-pages/${id}/${shot}.jpg`
 
-export interface ThemeFeatureCopy {
+interface ThemeFeatureCopy {
   id: ThemeFeatureId
   /** The name on the page. */
   name: string
