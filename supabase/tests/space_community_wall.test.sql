@@ -14,7 +14,7 @@
 -- One transaction, rolled back. Fixture style follows feed_rls_space_scope.test.sql.
 
 begin;
-select plan(20);
+select plan(24);
 
 insert into auth.users (id, email) values
   ('00000000-0000-4000-a400-000000000001', 'w-owner@test.local'),
@@ -113,6 +113,10 @@ select results_eq($$ select count(*)::int from posts where id = '00000000-0000-4
   'default: anon reads a wall post');
 select is_empty($$ select id from posts where id = '00000000-0000-4000-f400-000000000003' $$,
   'a private Space wall is not read by anon');
+select results_eq($$ select count(*)::int from public.space_wall_feed('00000000-0000-4000-c400-00000000000a') $$, $$ values (2) $$,
+  'space_wall_feed: anon gets the public wall newest first');
+select is_empty($$ select id from public.space_wall_feed('00000000-0000-4000-c400-00000000000b') $$,
+  'space_wall_feed: a private Space wall returns no rows to anon');
 
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a400-000000000006', 'role', 'authenticated')::text, true);
@@ -129,6 +133,8 @@ insert into public.space_wall_settings (space_id, read_access) values ('00000000
 set local role anon;
 select is_empty($$ select id from posts where id = '00000000-0000-4000-f400-000000000001' $$,
   'members-only: anon reads nothing');
+select is_empty($$ select id from public.space_wall_feed('00000000-0000-4000-c400-00000000000a') $$,
+  'space_wall_feed: members-only wall returns no rows to anon');
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a400-000000000006', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -138,6 +144,8 @@ select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a400-000000000004', 'role', 'authenticated')::text, true);
 select results_eq($$ select count(*)::int from posts where scope_space_id = '00000000-0000-4000-c400-00000000000a' $$, $$ values (2) $$,
   'members-only: a Space member reads the wall');
+select results_eq($$ select count(*)::int from public.space_wall_feed('00000000-0000-4000-c400-00000000000a') $$, $$ values (2) $$,
+  'space_wall_feed: members-only wall returns its posts to a Space member');
 
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a400-000000000003', 'role', 'authenticated')::text, true);

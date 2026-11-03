@@ -81,31 +81,31 @@ export function CommunityStatsCard({
 }) {
   return (
     <SidebarCard title="At a glance">
-      <dl className="flex flex-col gap-3 p-4">
-        <div className="flex items-center gap-3">
+      <ul className="flex flex-col gap-3 p-4">
+        <li className="flex items-center gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
             <Users className="h-4 w-4" />
           </span>
           <span className="min-w-0">
-            <dt className="text-meta text-subtle">Total members</dt>
-            <dd className="text-body font-bold tabular-nums text-text">{totalMembers}</dd>
+            <span className="block text-meta text-subtle">Total members</span>
+            <span className="block text-body font-bold tabular-nums text-text">{totalMembers}</span>
           </span>
-        </div>
-        <div className="flex items-center gap-3">
+        </li>
+        <li className="flex items-center gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
             <MapPin className="h-4 w-4" />
           </span>
           <span className="min-w-0">
-            <dt className="text-meta text-subtle">Most popular place</dt>
-            <dd className="truncate text-body font-bold text-text">
+            <span className="block text-meta text-subtle">Most popular place</span>
+            <span className="block truncate text-body font-bold text-text">
               {topPlace ?? '–'}
               {topPlace && topPlaceCount ? (
                 <span className="ml-1.5 text-meta font-medium text-subtle">{topPlaceCount} members</span>
               ) : null}
-            </dd>
+            </span>
           </span>
-        </div>
-      </dl>
+        </li>
+      </ul>
     </SidebarCard>
   )
 }

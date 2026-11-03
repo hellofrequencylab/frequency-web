@@ -63,6 +63,7 @@ const NETWORK_PHOTO = (n: string) => `/sites/network-kit/photos/photo-${n}.jpg`
 const TEMPLE_KIT_PHOTO = (n: string) => `/sites/temple-kit/photos/photo-${n}.jpg`
 const NOCTURNE_PHOTO = (name: string) => `/sites/midnight/photos/${name}.jpg`
 const NEW_WORLD_PHOTO = (name: string) => `/sites/new-world/photos/${name}.webp`
+const FREE_HUMAN_PHOTO = (name: string) => `/sites/free-human/photos/${name}.webp`
 
 const FREQUENCY_IMAGERY: KitImagery = {
   hero: FREQUENCY_PHOTO(2), heroPos: 'center', portrait: FREQUENCY_PHOTO(1), portraitPos: 'center',
@@ -70,9 +71,9 @@ const FREQUENCY_IMAGERY: KitImagery = {
   covers: [FREQUENCY_PHOTO(2), FREQUENCY_PHOTO(1), FREQUENCY_PHOTO(3)], portraits: [FREQUENCY_PHOTO(1)],
 }
 
-/** Each kit's sample pictures. Designer wears its own library; every other kit wears the gathering photography
- *  until it has a library of its own. A Space's uploads replace these in the setup walk. */
-const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<MegaThemeId, 'free-human'>, KitImagery> = {
+/** Each kit's sample pictures. A kit with a library of its own wears it; the rest wear the gathering photography
+ *  until theirs arrives. A Space's uploads replace these in the setup walk. */
+const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
   // New World's own gathering library (lib/sites/new-world-photos.json, LIVE-2060): the beach is its hero.
   'new-world': {
     hero: NEW_WORLD_PHOTO('beach-joy'), heroPos: 'center 40%', portrait: NEW_WORLD_PHOTO('group-hug'), portraitPos: 'center 30%',
@@ -86,6 +87,14 @@ const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<Meg
     strip: [NEW_WORLD_PHOTO('cafe-table'), NEW_WORLD_PHOTO('backyard-class'), NEW_WORLD_PHOTO('beach-gong')], nav1: 'Services', cta2: 'See prices',
     covers: [NEW_WORLD_PHOTO('backyard-class'), NEW_WORLD_PHOTO('beach-gong'), NEW_WORLD_PHOTO('cafe-table'), NEW_WORLD_PHOTO('workshop-table')],
     portraits: [NEW_WORLD_PHOTO('workshop-table'), NEW_WORLD_PHOTO('cafe-table')],
+  },
+  // Free Human's own library (lib/sites/free-human-home.ts wears the same files): the walking virgin is its hero, the
+  // founder its portrait.
+  'free-human': {
+    hero: FREE_HUMAN_PHOTO('heritage-a-virgin'), heroPos: 'center 20%', portrait: FREE_HUMAN_PHOTO('founder-audrey'), portraitPos: 'center 30%',
+    strip: [FREE_HUMAN_PHOTO('place-daisies'), FREE_HUMAN_PHOTO('light-sun'), FREE_HUMAN_PHOTO('light-floating-candles')], nav1: 'Program', cta2: 'See the program',
+    covers: [FREE_HUMAN_PHOTO('heritage-a-virgin'), FREE_HUMAN_PHOTO('place-daisies'), FREE_HUMAN_PHOTO('light-sun'), FREE_HUMAN_PHOTO('light-floating-candles'), FREE_HUMAN_PHOTO('light-lanterns')],
+    portraits: [FREE_HUMAN_PHOTO('founder-audrey'), FREE_HUMAN_PHOTO('light-honey-dipper')],
   },
   designer: {
     hero: DESIGNER_PHOTO('dz-designer-kitchen-hero'), heroPos: '38% center',
@@ -124,8 +133,8 @@ const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<Meg
   frequency: FREQUENCY_IMAGERY,
 }
 
-/** Free Human is not in the builder's picker (lib/spaces/create-wizard.ts); until it is, it wears the gathering photography. */
-export const kitImagery = (kit: MegaThemeId): KitImagery => KIT_IMAGERY[kit] ?? FREQUENCY_IMAGERY
+/** Every kit's pictures: a kit with its own library never borrows another's. */
+export const kitImagery = (kit: MegaThemeId): KitImagery => KIT_IMAGERY[kit]
 /** Every kit's accents are its own: no kit falls back to another kit's family (Daniel, 2026-11-03). */
 export const kitAccents = (kit: MegaThemeId): readonly PreviewAccent[] => KIT_ACCENTS[kit]
 

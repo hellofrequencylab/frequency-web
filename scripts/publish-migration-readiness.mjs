@@ -5,6 +5,13 @@ const sha = /^[a-f0-9]{40}$/, digest = /^[a-f0-9]{64}$/
 const hash = value => createHash('sha256').update(value).digest('hex')
 const requireFact = (condition, message) => { if (!condition) throw Object.assign(Error(message), { safe: true }) }
 const files = ['scripts/migration-pr-readiness.mjs', 'scripts/publish-migration-readiness.mjs', '.github/workflows/migration-readiness.yml', 'scripts/migration-readiness-policy.json']
+// A log-safe label for any failure: our own rule text, or only the error class, code, exit status and the stage that
+// raised it. Never the message, stderr, command arguments or any provider body.
+export function describeFailure(error) {
+  if (error?.safe === true) return `rule refused: ${error.message}`
+  const part = value => ((typeof value === 'string' || typeof value === 'number') && /^[A-Za-z0-9_.:-]{1,40}$/.test(String(value)) ? String(value) : '?')
+  return `error ${part(error?.name)} code=${part(error?.code ?? error?.cause?.code)} status=${part(error?.status)} stage=${part(error?.stage)}`
+}
 export async function publishReadiness({ env, event, api, git, publisherSha256, evaluate }) {
   requireFact(env.GITHUB_ACTIONS === 'true' && env.GITHUB_EVENT_NAME === 'pull_request_target' && env.GITHUB_REPOSITORY === repo && env.GITHUB_WORKFLOW_REF === `${repo}/.github/workflows/migration-readiness.yml@refs/heads/main`, 'trusted workflow required')
   requireFact(Number.isSafeInteger(event?.number) && event.number > 0 && sha.test(event.pull_request?.head?.sha) && /^\d+$/.test(env.GITHUB_RUN_ID ?? '') && /^\d+$/.test(env.GITHUB_RUN_ATTEMPT ?? ''), 'unknown PR/run identity')
@@ -45,7 +52,7 @@ export async function publishReadiness({ env, event, api, git, publisherSha256, 
     return result
   } catch (error) {
     // Only our own fixed-text rule names are printed; provider, Git and API errors are never serialized.
-    if (error?.safe === true) console.error(`Migration readiness rule refused: ${error.message}`)
+    console.error(`Migration readiness ${describeFailure(error)}`)
     await finish('failure', { title: 'Trusted migration readiness failed closed', summary: 'Evaluation, identity or proof was refused, unavailable or moved. No production SQL was applied. Rerun against the current PR head and main.' })
     throw Error('trusted candidate-head readiness failed')
   }

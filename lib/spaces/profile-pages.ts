@@ -54,6 +54,7 @@ export const RESERVED_PAGE_SLUGS: ReadonlySet<string> = new Set([
   'partners', // the Collective Partners tab (SCAN-982). A custom page must not shadow it.
   'people', // the member directory (LIVE-420). A custom page must not shadow it.
   'discussion', // the Space Circle conversation (LIVE-421). A custom page must not shadow it.
+  'community', // the Community wall (ADR-1938, LIVE-2077). A custom page must not shadow it.
   'contact', // the Contact tab (LIVE-502). A custom page must not shadow it.
   'memberships', // the Memberships tab (LIVE-509). A custom page must not shadow it.
   // `events` folded into the Calendar page (LIVE-520): `(profile)/events/page.tsx` forwards to

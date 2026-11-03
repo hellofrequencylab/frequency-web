@@ -27,11 +27,14 @@ export function FormSection({
   if (FREQUENCY) {
     return (
       <section className="adp-formsec grid gap-x-8 gap-y-4 md:grid-cols-3">
-        <div className="stack adp-tight md:col-span-1">
+        {/* min-w-0 on both columns (visual sweep 2026-11-03): a grid item's min-width is auto, so a wide
+            table inside an overflow-x-auto panel pushed the whole section past a phone's edge on
+            /admin/roles instead of scrolling inside its wrapper. */}
+        <div className="stack adp-tight min-w-0 md:col-span-1">
           <h3 className="t1">{title}</h3>
           {description && <p className="t2">{description}</p>}
         </div>
-        <div className="md:col-span-2">
+        <div className="min-w-0 md:col-span-2">
           <div className="panel">{children}</div>
         </div>
       </section>
@@ -39,11 +42,11 @@ export function FormSection({
   }
   return (
     <section className="grid gap-x-8 gap-y-4 border-t border-border/70 py-6 first:border-t-0 first:pt-0 md:grid-cols-3">
-      <div className="md:col-span-1">
+      <div className="min-w-0 md:col-span-1">
         <h3 className="text-body-sm font-bold text-text">{title}</h3>
         {description && <p className="mt-1 text-body-sm leading-relaxed text-muted">{description}</p>}
       </div>
-      <div className="md:col-span-2">
+      <div className="min-w-0 md:col-span-2">
         <div className="rounded-card border border-border bg-surface p-4 sm:p-5">{children}</div>
       </div>
     </section>
