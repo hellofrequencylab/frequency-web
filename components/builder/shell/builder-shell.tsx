@@ -22,6 +22,8 @@ import { resolveWebsiteBrand, type WebsiteSnapshot } from '@/lib/sites/editor/st
 import { sitePageStyle, siteLook, siteLookOverrides, type SiteStyle } from '@/lib/theme/site-style'
 import { EDITOR_THEME_OF } from '@/lib/sites/site-render-style'
 import styles from './builder-shell.module.css'
+// The editor sheet declares the builder's shape and editor tokens (BLD-002) on [data-builder].
+import '@/app/themes/active/editor-shell'
 
 const WebsiteCanvas = dynamic(() => import('@/components/sites/editor/canvas').then((m) => m.WebsiteCanvas), { ssr: false, loading: () => <div role="status">Loading your page…</div> })
 
