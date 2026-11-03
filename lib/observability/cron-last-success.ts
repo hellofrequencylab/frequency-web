@@ -47,7 +47,7 @@ export async function recordCronSuccess(jobName: string, now: Date = new Date())
   }
 }
 
-export type CronStamp = { job: string; ageMin: number | null; windowMin: number | null; state: 'fresh' | 'stale' | 'unreported' }
+type CronStamp = { job: string; ageMin: number | null; windowMin: number | null; state: 'fresh' | 'stale' | 'unreported' }
 
 /** Pure: turn stored stamps into a verdict per stamped job. A job with no stamp yet is
  *  `unreported` (a new deploy, or a weekly job that has not fired); it is listed, not failed. */
