@@ -213,8 +213,10 @@ async function main() {
   }
   const collectorArgs = {
     env, collectorSha256: hashBytes(readFileSync(process.argv[1])), event: JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8')),
-    git: (args, binary = false, input) => execFileSync('git', ['--no-replace-objects', ...args], { input, encoding: binary ? undefined : 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] }),
-    api: (path, options) => request(`https://api.github.com${path}`, env.GITHUB_TOKEN, options),
+    git: (args, binary = false, input) => {
+      try { return execFileSync('git', ['--no-replace-objects', ...args], { input, encoding: binary ? undefined : 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] }) } catch (error) { throw Object.assign(error, { stage: `git-${/^[a-z-]{1,20}$/.test(args[0]) ? args[0] : 'cmd'}` }) }
+    },
+    api: async (path, options) => { try { return await request(`https://api.github.com${path}`, env.GITHUB_TOKEN, options) } catch (error) { throw error?.safe ? error : Object.assign(error, { stage: 'github-api' }) } },
     ledger: async () => {
       requireFact(env.SUPABASE_ACCESS_TOKEN && /^[a-z0-9]+$/.test(env.SUPABASE_PROJECT_REF ?? ''), 'live comparison credentials required')
       const payload = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}/database/query`, env.SUPABASE_ACCESS_TOKEN, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: 'select version, name from supabase_migrations.schema_migrations order by version' }) })
@@ -230,7 +232,7 @@ async function main() {
   console.log(`Migration PR staging VERIFIED; ${result.pending.length} exact registered migration(s) PENDING APPLY. Production was NOT changed. Main remains strict.`)
 }
 if (invokedDirectly(import.meta.url)) main().catch(error => {
-  if (error?.safe === true) console.error(`Migration readiness rule refused: ${error.message}`)
+  import('./publish-migration-readiness.mjs').then(({ describeFailure }) => console.error(`Migration readiness ${describeFailure(error)}`)).catch(() => {})
   // No API body, token, SQL, state or Git command arguments are copied into CI diagnostics.
   console.error('Migration PR readiness failed closed; registration, current base/ledger or exact-head staging proof was not satisfied.')
   process.exitCode = 1
