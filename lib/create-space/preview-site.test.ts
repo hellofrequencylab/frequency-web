@@ -36,6 +36,15 @@ describe('preview site', () => {
     expect(kitImagery('temple-kit').hero).toMatch(/^\/sites\/temple-kit\/photos\//)
   })
 
+  it('Free Human wears its own library; Services wears New World\'s until it has one (LIVE-2102)', () => {
+    const fh = kitImagery('free-human')
+    expect(fh.hero).toBe('/sites/free-human/photos/heritage-a-virgin.webp')
+    expect(fh.portrait).toMatch(/^\/sites\/free-human\/photos\//)
+    for (const src of [...fh.strip, ...fh.covers, ...fh.portraits]) expect(src).toMatch(/^\/sites\/free-human\/photos\//)
+    expect(fh).not.toEqual(kitImagery('frequency'))
+    expect(kitImagery('services').hero).toMatch(/^\/sites\/new-world\/photos\//)
+  })
+
   it('reads as a sample Space when nothing is filled in', () => {
     const s = deriveSite(base)
     expect(s.name).toBe('Your Space')

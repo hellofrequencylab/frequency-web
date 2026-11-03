@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2102",
+  "title": "Create a Space builder: the Free Human and Services previews wear their own shape and pictures; SHAPE and KIT_IMAGERY are total",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/create-space/preview-site.ts",
+    "ref": "Promised to Daniel 2026-11-03 05:52Z: the signed-out builder previews for Free Human and Services wear their own accents, shape and photos, like the Temple kit (LIVE-2066) and Nocturne (LIVE-2082)"
+  },
+  "detail": "Free Human had accents of its own (LIVE-2066) but no shape and no pictures in the builder preview: previewTokens fell back to Temple's shape and kitImagery to the gathering photos. The preview now wears the kit's own faces (Cormorant Garamond display with the clay on the emphasised word, Hanken Grotesk body, .2em labels), its 16px controls, 40px cards, the arch on its pictures and its depth-2 shadow, and its own photo library (the walking virgin hero, the founder portrait, the daisies, sun and floating candles). The font sheet loads Cormorant Garamond at 400 too. free-human joins the preview kit order behind New World and Services, gated like them on the one hidden flag (RETIRED_FROM_PICKERS), so it reaches the builder the moment it is un-hidden. Services already had its shape (Bricolage and Lora italic, 20px cards, pill buttons) and the New World pictures from LIVE-2067 and its six accents from LIVE-2066; it has no photo library of its own, so nothing more to give it until one lands. SHAPE and KIT_IMAGERY are now plain Records over every kit id and the two fallbacks are gone. Probe: node scripts/probes/create-space-kit-previews.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/create-space-kit-previews.mjs"
+  },
+  "closed": "2026-11-03"
+}
