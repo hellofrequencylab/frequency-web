@@ -16,4 +16,12 @@ export default {
   locations: 'card',
   business: 'list',
   story: 'center',
+  membership: 'spotlight',
+  letter: 'inline',
+  contact: 'card',
+  stats: 'band',
+  shop: 'list',
+  library: 'featured',
+  people: 'founder',
+  chapters: 'list',
 } satisfies PresentationDefaults

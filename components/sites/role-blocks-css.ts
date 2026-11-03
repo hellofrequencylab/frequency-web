@@ -130,6 +130,13 @@ const GATHERINGS = `
 [data-role="gatherings"][data-variant="rows"] [data-part="item"]{background:transparent;border:0;border-radius:0;box-shadow:none;border-block-end:1px solid var(--c-line)}
 [data-role="gatherings"][data-variant="cards"] [data-part="item"]{grid-template-columns:1fr;align-content:start;justify-items:start}
 @container (min-width:40rem){[data-role="gatherings"][data-variant="cards"] [data-part="list"]{grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))}}
+[data-role="gatherings"][data-variant="agenda"] [data-part="side"]{display:grid;gap:calc(var(--sp-gap) * 1.25);min-width:0}
+[data-role="gatherings"][data-variant="agenda"] [data-part="ribbon"]{list-style:none;margin:0;padding:0 0 calc(var(--sp-gap) * .6);display:flex;gap:calc(var(--sp-gap) * .6);overflow-x:auto;border-block-end:1px solid var(--c-line-strong)}
+[data-role="gatherings"][data-variant="agenda"] [data-part="chip"]{flex:0 0 auto;display:grid;place-items:center;min-width:3.5rem;padding:.45rem .6rem;border-radius:var(--r-control);background:var(--c-accent-bg);color:var(--c-accent-text);line-height:1.05}
+[data-role="gatherings"][data-variant="agenda"] [data-part="chip"] b{font-family:var(--f-label);font-size:.625rem;letter-spacing:.14em;text-transform:uppercase}
+[data-role="gatherings"][data-variant="agenda"] [data-part="chip"] span{font-family:var(--f-display);font-weight:var(--w-display);font-size:1.25rem}
+[data-role="gatherings"][data-variant="agenda"] [data-part="list"]{gap:0}
+[data-role="gatherings"][data-variant="agenda"] [data-part="item"]{background:transparent;border:0;border-radius:0;box-shadow:none;border-block-end:1px solid var(--c-line)}
 [data-role="gatherings"][data-variant="split"] [data-part="side"]{display:grid;gap:calc(var(--sp-gap) * 1.5);align-content:start;min-width:0}
 @container (min-width:56rem){[data-role="gatherings"][data-variant="split"][data-media] [data-part="inner"]{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:start}}
 `
@@ -440,7 +447,7 @@ export const ROLE_CSS_CHUNKS: Readonly<Record<string, string>> = { base: BASE, h
 
 /** Editor theme id to the contract theme whose mapping it wears. */
 const CONTRACT_OF: Partial<Record<WebsiteTheme, ContractThemeId>> = {
-  DAWN: 'frequency', Menswork: 'bold', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Midnight: 'midnight', Designer: 'designer', FreeHuman: 'free-human', Services: 'services',
+  DAWN: 'frequency', Menswork: 'bold', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Midnight: 'midnight', Designer: 'designer', FreeHuman: 'free-human', Services: 'services', NewWorld: 'new-world',
 }
 
 /** The sheet for a page that carries role blocks: the active theme's contract mapping, then the structure. */

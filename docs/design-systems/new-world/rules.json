@@ -64,19 +64,19 @@
   {
    "glob": "design_handoff_theme_editor/reference/tokens/base.css",
    "kind": "built",
-   "target": "components/sites/new-world-css.ts",
+   "target": "components/sites/new-world-effects-css.ts",
    "reason": "Type voices, image treatments and base element rules (LIVE-1992)."
   },
   {
    "glob": "design_handoff_theme_editor/reference/tokens/effects.css",
    "kind": "built",
-   "target": "components/sites/new-world-css.ts",
+   "target": "components/sites/new-world-effects-css.ts",
    "reason": "Orbs, glints, sweep and reveals behind prefers-reduced-motion (LIVE-1992)."
   },
   {
    "glob": "design_handoff_theme_editor/reference/tokens/textures.css",
    "kind": "built",
-   "target": "components/sites/new-world-css.ts",
+   "target": "components/sites/new-world-effects-css.ts",
    "reason": "Grain and dot-grid textures (LIVE-1992)."
   },
   {
@@ -133,7 +133,7 @@
    "glob": "design_handoff_theme_editor/reference/ui_kits/site/kits.js.txt",
    "kind": "built",
    "target": "lib/sites/kits/new-world-variants.ts",
-   "reason": "The sixteen kits as SiteKit pages (plan step 6)."
+   "reason": "The seven niche kits as SiteKit pages (plan step 6). The sixteen trade kits of kits.services.json are Services."
   },
   {
    "glob": "design_handoff_theme_editor/reference/ui_kits/site/record.js.txt",
@@ -281,6 +281,52 @@
    "glob": "design_handoff_theme_editor/README.md",
    "kind": "reference",
    "reason": "Handoff front page."
+  }
+ ],
+ "tokenDeviations": [
+  {
+   "name": "--n-flare-300",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--n-flare-400",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--n-flare-500",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--n-flare-600",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--n-flare-700",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--d-flare-300",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--d-flare-400",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--d-flare-500",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--d-flare-600",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--d-flare-700",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--grad-sunset",
+   "reason": "The zip core sweep carries violet stops; the repo no-violet sweep (app/themes/frequency.css --fq-iridescent-sweep) is used."
   }
  ]
 }
