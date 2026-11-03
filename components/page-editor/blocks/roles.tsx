@@ -220,6 +220,20 @@ function liveChapters(metadata: Props | undefined) {
     .map((c) => ({ name: c.name, place: c.city ?? '', body: c.tagline ?? '', image: '', href: `/spaces/${c.slug}` }))
 }
 
+/** The Space's own address and contact lines, from the one Business Info form (profile-data.ts) every surface reads. */
+function liveLocation(metadata: Props | undefined) {
+  const prof = spaceOf(metadata)?.profile as Record<string, unknown> | undefined
+  if (!prof) return null
+  const address = str(prof.address)
+  const hours = str(prof.hours).split(/\n+/).map((l) => l.trim()).filter(Boolean).join(' · ')
+  const items = [
+    { label: 'Hours', value: hours },
+    { label: 'Phone', value: str(prof.phone) },
+    { label: 'Email', value: str(prof.email) },
+  ].filter((r) => r.value)
+  return address || items.length ? { address, items } : null
+}
+
 /** What the Space offers: its live practices, journeys and circles, in that order. */
 function liveOfferings(metadata: Props | undefined) {
   const sp = spaceOf(metadata)
@@ -508,6 +522,8 @@ function StatsBlock({ p, metadata }: Ctx) {
 
 function ShopBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('shop', p.variant, metadata)
+  // A Space has no shop of its own to read yet (listings belong to people, not Spaces): on a live page the sample draws nothing.
+  if (emptyLive(p, metadata, false)) return null
   const items = arr(p.items).filter((s) => str(s.name))
   return (
     <Frame role="shop" p={p} variant={variant}>
@@ -532,6 +548,8 @@ function ShopBlock({ p, metadata }: Ctx) {
 
 function LibraryBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('library', p.variant, metadata)
+  // Same as the shop: no Space-owned source yet, so only the owner's own words show on a live page.
+  if (emptyLive(p, metadata, false)) return null
   const items = arr(p.items).filter((s) => str(s.title))
   return (
     <Frame role="library" p={p} variant={variant}>
@@ -683,12 +701,15 @@ function BookingBlock({ p, metadata }: Ctx) {
 function LocationsBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('locations', p.variant, metadata)
   const src = img(p.image)
-  const rows = arr(p.items).filter((r) => str(r.label) && str(r.value))
+  const live = liveAsked(p) ? liveLocation(metadata) : null
+  if (emptyLive(p, metadata, !!live)) return null
+  const rows = (live ? live.items : arr(p.items)).filter((r) => str(r.label) && str(r.value))
+  const address = live?.address || str(p.address)
   return (
     <Frame role="locations" p={p} variant={variant} media={!!src && variant === 'split'}>
       <div data-part="copy">
         <Heading p={p} />
-        {str(p.address) && <address data-part="address">{str(p.address)}</address>}
+        {address && <address data-part="address">{address}</address>}
         {rows.length > 0 && (
           <ul data-part="list">
             {rows.map((r, i) => (
@@ -696,7 +717,7 @@ function LocationsBlock({ p, metadata }: Ctx) {
             ))}
           </ul>
         )}
-        {str(p.areas) && <p data-part="note">{str(p.areas)}</p>}
+        {str(p.areas) && !(live && p.sample === true) && <p data-part="note">{str(p.areas)}</p>}
         <Actions p={p} metadata={metadata} />
       </div>
       {variant === 'split' && <Media src={src} alt={str(p.alt)} />}
@@ -866,6 +887,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
   }, BookingBlock),
   [ROLES.locations.type]: role('locations', {
     ...head,
+    live: yesNo('Use the Space\'s own address, hours and contact lines'),
     address: text('Address'),
     items: { type: 'array', label: 'Details', arrayFields: { label: text('Label'), value: text('Detail') } },
     areas: area('Neighbourhoods people come from'),
