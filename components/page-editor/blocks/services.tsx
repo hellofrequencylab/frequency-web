@@ -18,6 +18,8 @@ import {
   type Props,
 } from "./midnight";
 import type { ComponentConfig } from "@/lib/page-editor/types";
+import type { SiteLinkMap } from "@/lib/sites/house-theme";
+import { ServicesQuoteForm } from "@/components/sites/services-quote-lazy";
 
 // ── The Services block family (Services design system, "Website" kit: ui_kits/site/Sections.jsx and Blocks.jsx) ───────────────
 // One registered block per section of the design's Home: hero (four looks), trust bar, story, services, steps, reviews, FAQ and the
@@ -822,6 +824,31 @@ function Letter({ p, metadata, pad, vis }: Common) {
   );
 }
 
+function Quote({ p, metadata, pad, vis }: Common) {
+  const slug = (metadata?.links as SiteLinkMap | undefined)?.slug ?? null;
+  const lines = (v: unknown) => (Array.isArray(v) ? (v as unknown[]).map(str).filter(Boolean) : []);
+  return (
+    <Section look="aurora" orb="a" id="quote" pad={pad} vis={vis}>
+      <div className="sv-wrap sv-qf">
+        <div className="sv-qf-copy">
+          <Head p={p} />
+          {img(p.image) && <Photo src={img(p.image)} alt={str(p.alt)} shape="wide" />}
+        </div>
+        <ServicesQuoteForm
+          slug={slug}
+          services={lines(p.services)}
+          frequencies={lines(p.frequencies)}
+          propertyTypes={lines(p.propertyTypes)}
+          sizes={lines(p.sizes)}
+          submitLabel={str(p.submitLabel)}
+          successTitle={str(p.successTitle)}
+          successBody={str(p.successBody)}
+        />
+      </div>
+    </Section>
+  );
+}
+
 // ── Registry ────────────────────────────────────────────────────────────────────────────────
 
 const links = (n: string, label = "Button") => ({
@@ -1222,6 +1249,36 @@ export const servicesBlocks: Record<string, ComponentConfig> = {
       secondaryHref: "",
     },
     Contact,
+  ),
+  ServicesQuote: block(
+    "Services quote form",
+    {
+      ...head,
+      image,
+      alt: text("Photo description"),
+      services: list("Services to choose from"),
+      frequencies: list("How often choices"),
+      propertyTypes: list("Property types"),
+      sizes: list("Size choices"),
+      submitLabel: text("Send button"),
+      successTitle: text("Thank-you heading"),
+      successBody: area("Thank-you line"),
+    },
+    {
+      eyebrow: "Free quote",
+      title: "Tell us about *your place.*",
+      lede: "Three quick steps. We reply with your quote, usually the same day.",
+      image: "",
+      alt: "",
+      services: ["Window washing", "Solar panels"],
+      frequencies: ["One time", "Quarterly", "Let us plan it"],
+      propertyTypes: ["Single-story home", "Two-story home", "Townhome or condo", "Small business"],
+      sizes: ["Under 15", "15 to 30", "30 to 50", "50 or more", "Not sure"],
+      submitLabel: "Send request",
+      successTitle: "You are on the books.",
+      successBody: "We will call or text within one business day to confirm your visit and a firm price.",
+    },
+    Quote,
   ),
   ServicesLetter: block(
     "Services newsletter",
