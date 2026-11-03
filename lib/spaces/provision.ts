@@ -334,7 +334,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   // No pick ("Pick later", a door with no theme) starts the Space in New World (LIVE-2058): website, email, Spotlight
   // and the Tide accent. Only an explicit pick also publishes a starter website and adds the welcome sequence; the
   // default dresses the Space and leaves publishing to the owner. Existing Spaces are never touched.
-  const pickedTheme = isMegaThemeId(input.theme)
+  const pickedTheme = isMegaThemeId(input.theme) ? input.theme : null
   if (!pickedTheme) {
     const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
     const applied = await applyMegaTheme(spaceId, NEW_SPACE_THEME).catch(() => null)
@@ -347,12 +347,12 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
       if (!(await fillSpaceBrandAccent(spaceId, input.accent).catch(() => false))) console.error('[createSpace] could not write the chosen accent to the new space')
     }
     const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
-    const applied = await applyMegaTheme(spaceId, input.theme).catch(() => null)
+    const applied = await applyMegaTheme(spaceId, pickedTheme).catch(() => null)
     if (!applied?.ok) console.error('[createSpace] could not apply the chosen theme to the new space')
     // The same theme's General kit is the new Space's first published website (LIVE-1533).
     if (applied?.ok) {
       const { publishStarterSite } = await import('@/lib/spaces/starter-site')
-      if (!(await publishStarterSite(spaceId, input.theme))) console.error('[createSpace] could not publish the starter website')
+      if (!(await publishStarterSite(spaceId, pickedTheme))) console.error('[createSpace] could not publish the starter website')
       // And the Theme Kit welcome: a sequence that links the Space page and the member's Spotlight. Created OFF
       // (the owner turns it on), best-effort like the rest of birth. Space email already wears the theme.
       const { instantiateAutomationTemplate } = await import('@/lib/spaces/automation')
