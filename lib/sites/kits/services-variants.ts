@@ -16,7 +16,7 @@ import type { KitPage, SiteKit } from './types'
 // has filled in its own offers and people shows those instead. No photos: the design's picture names have no files in this repo.
 
 /** The Frequency tools a kit turns on (design record.js FUNCTIONS[].tool). Lane A reads them to build a Spotlight's doors. */
-export type ServicesTool = 'book' | 'sell' | 'belong' | 'publish' | 'gather' | 'learn'
+type ServicesTool = 'book' | 'sell' | 'belong' | 'publish' | 'gather' | 'learn'
 /** The design's palette name for a kit. Only 'blue' has a shipped accent (tide) until the other presets land (LIVE-2041). */
 type ServicesPalette = 'purple' | 'yellow' | 'red' | 'blue'
 export type ServicesKitNiche = Extract<MegaNicheId, 'general' | 'coaches' | 'studios' | 'hosts' | 'venues' | 'nonprofits' | 'networks'>
@@ -24,7 +24,7 @@ export type ServicesKitNiche = Extract<MegaNicheId, 'general' | 'coaches' | 'stu
 export const SERVICES_KIT_NICHES: readonly ServicesKitNiche[] = ['general', 'coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks']
 
 /** A site kit that wears the Services theme. Same shape as SiteKit; `theme` is the literal until the theme type admits it. */
-export type ServicesKit = Omit<SiteKit, 'theme' | 'niche'> & { theme: 'Services'; niche: ServicesKitNiche; palette: ServicesPalette; tools: readonly ServicesTool[] }
+type ServicesKit = Omit<SiteKit, 'theme' | 'niche'> & { theme: 'Services'; niche: ServicesKitNiche; palette: ServicesPalette; tools: readonly ServicesTool[] }
 
 type Block = KitPage['blocks'][number]
 type Pair = readonly [string, string]
