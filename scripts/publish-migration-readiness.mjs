@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 const repo = 'hellofrequencylab/frequency-web'
 const sha = /^[a-f0-9]{40}$/, digest = /^[a-f0-9]{64}$/
 const hash = value => createHash('sha256').update(value).digest('hex')
-const requireFact = (condition, message) => { if (!condition) throw Error(message) }
+const requireFact = (condition, message) => { if (!condition) throw Object.assign(Error(message), { safe: true }) }
 const files = ['scripts/migration-pr-readiness.mjs', 'scripts/publish-migration-readiness.mjs', '.github/workflows/migration-readiness.yml', 'scripts/migration-readiness-policy.json']
 export async function publishReadiness({ env, event, api, git, publisherSha256, evaluate }) {
   requireFact(env.GITHUB_ACTIONS === 'true' && env.GITHUB_EVENT_NAME === 'pull_request_target' && env.GITHUB_REPOSITORY === repo && env.GITHUB_WORKFLOW_REF === `${repo}/.github/workflows/migration-readiness.yml@refs/heads/main`, 'trusted workflow required')
@@ -43,7 +43,9 @@ export async function publishReadiness({ env, event, api, git, publisherSha256, 
     // A branch movement during the API write invalidates even the old-head result.
     await current(result.status !== 'not_applicable')
     return result
-  } catch {
+  } catch (error) {
+    // Only our own fixed-text rule names are printed; provider, Git and API errors are never serialized.
+    if (error?.safe === true) console.error(`Migration readiness rule refused: ${error.message}`)
     await finish('failure', { title: 'Trusted migration readiness failed closed', summary: 'Evaluation, identity or proof was refused, unavailable or moved. No production SQL was applied. Rerun against the current PR head and main.' })
     throw Error('trusted candidate-head readiness failed')
   }
