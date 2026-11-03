@@ -122,6 +122,14 @@ minutes and reads `GET /api/status/queue-lag`. It only reads, so it never compet
 red run (GitHub emails it) means the oldest due job has waited over 15 minutes or the read failed: check
 the Vercel Cron page first, then run the stopgap above.
 
+**The free pager for the unmonitored crons (SEC-022).** Healthchecks' free plan holds 20 checks, so the
+jobs in `CRON_UNMONITORED` (`lib/observability/slos.ts`) have no check. Each one stamps its last success
+into `cron_run_markers` (key `cron-ok:<job>`), and the same workflow reads
+`GET /api/status/cron-freshness` right after the queue read. A red run names the stale jobs: open the
+Vercel runtime logs for that job (`cron.run`, `cron.failed`), fix the cause, and the next healthy run
+turns it green. A job listed under `unreported` simply has not run since the stamp shipped (a weekly job
+can take up to a week); it does not fail the run. No env var or Healthchecks account change is needed.
+
 ---
 
 ## 2. Queue backlog

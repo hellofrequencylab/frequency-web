@@ -14,7 +14,9 @@ export async function publishReadiness({ env, event, api, git, publisherSha256, 
     return { head: pr.head.sha, base: pr.base.sha, main: main.commit.sha }
   }
   const binding = await read()
-  requireFact(env.GITHUB_SHA === binding.base && String(git(['rev-parse', 'HEAD'])).trim() === binding.base, 'current main checkout required')
+  // The checkout is always the PR's own base. A no-SQL result does not need that base to be the live main tip
+  // (main moves every few minutes); a SQL result does, and is refused below when GITHUB_SHA is not the base.
+  requireFact(String(git(['rev-parse', 'HEAD'])).trim() === binding.base, 'current main checkout required')
   const sources = Object.fromEntries(files.map(file => [file, hash(git(['show', `${binding.base}:${file}`], true))]))
   requireFact(digest.test(publisherSha256 ?? '') && sources[files[1]] === publisherSha256, 'publisher differs from trusted main')
   // A no-SQL result needs only the exact head; a SQL result also needs the PR's base to still be current main.
@@ -31,6 +33,7 @@ export async function publishReadiness({ env, event, api, git, publisherSha256, 
   try {
     const result = await evaluate()
     requireFact(result?.ok === true && ['not_applicable', 'strict_parity', 'registered_pending_apply'].includes(result.status), 'evaluation refused')
+    requireFact(result.status === 'not_applicable' || env.GITHUB_SHA === binding.base, 'current main checkout required for SQL PRs')
     const proof = result.proof
     requireFact(proof?.baseSha === binding.base && proof.headSha === binding.head && proof.collectorSha256 === sources[files[0]], 'unbound evaluator result')
     if (result.status === 'registered_pending_apply') requireFact(proof.policySha256 === sources[files[3]] && digest.test(proof.registrationSha256 ?? '') && digest.test(proof.workflowSha256 ?? '') && Number.isSafeInteger(proof.stagingRunId) && proof.stagingRunId > 0 && Number.isSafeInteger(proof.stagingAttempt) && proof.stagingAttempt > 0, 'incomplete registered staging proof')

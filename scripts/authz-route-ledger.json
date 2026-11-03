@@ -96,9 +96,15 @@
     },
     "app/api/status/route.ts": {
       "verdict": "public",
-      "reason": "Read-only status index (H0-8). Serves the static SLO contract, VERCEL_GIT_*/VERCEL_ENV build identity, and FOUR booleans: monitoring.sentry, derived in lib/observability/sentry.ts and never the DSN (LIVE-053); monitoring.push, derived in lib/push.ts and never the VAPID key (OWN-020); monitoring.nativePush, derived in lib/push-native.ts from whether EXPO_ACCESS_TOKEN is set and never the token (LIVE-720); and monitoring.rateLimit, derived in lib/rate-limit.ts from whether a client was built and never a URL or token (LIVE-195, so an operator can see that AI throttling is unconfigured - every AI door allows in that state). Its own route.test.ts fails the suite on ANY other process.env read in this file, and separately asserts each boolean is imported rather than read here; both assertions are mutation-proven. Re-read in full 2026-08-24 when the push boolean was added: the handler still takes no input, touches no DB, and its env surface is unchanged at exactly the four build-metadata vars. Verdict unchanged. Re-read 2026-10-06 when nativePush was added (LIVE-720): still no input, no DB, the same env surface in this file. Verdict unchanged. Re-read 2026-11-02 when the queue-lag line was added to ENDPOINTS (SEC-021): a static description string only, still no input, no DB, same env surface. Verdict unchanged.",
-      "checked": "2026-11-02",
-      "digest": "42ff08c90408fbd7"
+      "reason": "Read-only status index (H0-8). Serves the static SLO contract, VERCEL_GIT_*/VERCEL_ENV build identity, and FOUR booleans: monitoring.sentry, derived in lib/observability/sentry.ts and never the DSN (LIVE-053); monitoring.push, derived in lib/push.ts and never the VAPID key (OWN-020); monitoring.nativePush, derived in lib/push-native.ts from whether EXPO_ACCESS_TOKEN is set and never the token (LIVE-720); and monitoring.rateLimit, derived in lib/rate-limit.ts from whether a client was built and never a URL or token (LIVE-195, so an operator can see that AI throttling is unconfigured - every AI door allows in that state). Its own route.test.ts fails the suite on ANY other process.env read in this file, and separately asserts each boolean is imported rather than read here; both assertions are mutation-proven. Re-read in full 2026-08-24 when the push boolean was added: the handler still takes no input, touches no DB, and its env surface is unchanged at exactly the four build-metadata vars. Verdict unchanged. Re-read 2026-10-06 when nativePush was added (LIVE-720): still no input, no DB, the same env surface in this file. Verdict unchanged. Re-read 2026-11-02 when the queue-lag line was added to ENDPOINTS (SEC-021): a static description string only, still no input, no DB, same env surface. Verdict unchanged. Re-read 2026-11-03 when the cron-freshness line was added to ENDPOINTS (SEC-022): a static description string only, same env surface. Verdict unchanged.",
+      "checked": "2026-11-03",
+      "digest": "154b8b053cb70143"
+    },
+    "app/api/status/cron-freshness/route.ts": {
+      "verdict": "public",
+      "reason": "Freshness reading for the crons with no Healthchecks check (SEC-022), read by the queue-watch workflow on GitHub with no secret. Takes no input. One service-role read of cron_run_markers keys cron-ok:<job> that returns route names, ages in minutes and a state. No id, address or member data. Not cached, so a stale answer cannot hide a stopped job.",
+      "checked": "2026-11-03",
+      "digest": "5785c6e06f7c8f59"
     },
     "app/api/status/queue-lag/route.ts": {
       "verdict": "public",
