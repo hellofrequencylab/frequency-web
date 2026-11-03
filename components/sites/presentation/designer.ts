@@ -9,4 +9,9 @@ export default {
   people: 'founder',
   steps: 'strip',
   statement: 'pull',
+  firstvisit: 'thread',
+  booking: 'board',
+  locations: 'split',
+  business: 'list',
+  story: 'split',
 } satisfies PresentationDefaults

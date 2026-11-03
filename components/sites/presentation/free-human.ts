@@ -7,4 +7,9 @@ export default {
   steps: 'timeline',
   proof: 'quote',
   statement: 'pull',
+  firstvisit: 'thread',
+  booking: 'cards',
+  locations: 'card',
+  business: 'list',
+  story: 'center',
 } satisfies PresentationDefaults

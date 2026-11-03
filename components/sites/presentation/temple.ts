@@ -9,4 +9,9 @@ export default {
   statement: 'pull',
   faq: 'stack',
   letter: 'card',
+  firstvisit: 'thread',
+  booking: 'cards',
+  locations: 'card',
+  business: 'list',
+  story: 'center',
 } satisfies PresentationDefaults

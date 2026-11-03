@@ -8,4 +8,9 @@ export default {
   proof: 'wall',
   membership: 'spotlight',
   gallery: 'carousel',
+  firstvisit: 'grid',
+  booking: 'cards',
+  locations: 'card',
+  business: 'grid',
+  story: 'split',
 } satisfies PresentationDefaults
