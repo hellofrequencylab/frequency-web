@@ -8,6 +8,110 @@
  "baseline": "docs/design-systems/bold/baseline.json",
  "tokenMap": [
   {
+   "from": "--fill-primary-pressed",
+   "to": "--mw-teal-pressed"
+  },
+  {
+   "from": "--fill-primary",
+   "to": "--mw-teal"
+  },
+  {
+   "from": "--focus-ring-width",
+   "to": "--mw-focus-ring-width"
+  },
+  {
+   "from": "--focus-ring",
+   "to": "--mw-teal-text"
+  },
+  {
+   "from": "--text-link",
+   "to": "--mw-teal-text"
+  },
+  {
+   "from": "--text-on-fill",
+   "to": "--mw-charcoal"
+  },
+  {
+   "from": "--text-on-accent",
+   "to": "--mw-charcoal"
+  },
+  {
+   "from": "--angle",
+   "to": "--mw-angle"
+  },
+  {
+   "from": "--chamfer-",
+   "to": "--mw-chamfer-"
+  },
+  {
+   "from": "--clip-chamfer-",
+   "to": "--mw-clip-chamfer-"
+  },
+  {
+   "from": "--dur-",
+   "to": "--mw-dur-"
+  },
+  {
+   "from": "--ease",
+   "to": "--mw-ease"
+  },
+  {
+   "from": "--slide-60-",
+   "to": "--mw-slide-60-"
+  },
+  {
+   "from": "--shadow-none",
+   "to": "--mw-shadow-none"
+  },
+  {
+   "from": "--space-",
+   "to": "--mw-space-"
+  },
+  {
+   "from": "--radius-",
+   "to": "--mw-radius-"
+  },
+  {
+   "from": "--border-1",
+   "to": "--mw-border-1"
+  },
+  {
+   "from": "--border-2",
+   "to": "--mw-border-2"
+  },
+  {
+   "from": "--measure",
+   "to": "--mw-measure"
+  },
+  {
+   "from": "--tracking-",
+   "to": "--mw-tracking-"
+  },
+  {
+   "from": "--pattern-lattice-48",
+   "to": "--mw-lattice"
+  },
+  {
+   "from": "--pattern-lattice-24",
+   "to": "--mw-lattice-24"
+  },
+  {
+   "from": "--pattern-chevron",
+   "to": "--mw-chevron"
+  },
+  {
+   "from": "--pattern-brushed",
+   "to": "--mw-brushed"
+  },
+  {
+   "from": "--pattern-contour",
+   "to": "--mw-contour"
+  },
+  {
+   "from": "--pattern-grain",
+   "to": "--mw-grain"
+  },
+  {
    "from": "--hof-charcoal",
    "to": "--mw-charcoal"
   },
@@ -190,6 +294,82 @@
    "glob": "assets/screens/*",
    "kind": "reference",
    "reason": "Screenshots of the prototype screens."
+  }
+ ],
+ "tokenDeviations": [
+  {
+   "name": "--pattern-grain",
+   "reason": "The snapshot parser cuts the design's base64 data URL at its first semicolon; the repo carries the same 4% monochrome noise (baseFrequency 0.9, two octaves, alpha 0.04) as a URL-encoded SVG."
+  },
+  {
+   "name": "--type-body",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-body-l",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-body-s",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-body-strong",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-l",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-m",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-s",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-xl",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-xs",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-label",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-label-l",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-label-s",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-numeral",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-numeral-l",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
   }
  ]
 }
