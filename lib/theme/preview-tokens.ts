@@ -51,7 +51,7 @@ interface Shape {
 
 const hairline = (line: string) => `inset 0 0 0 1px ${line}`
 
-const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, 'temple-kit' | 'free-human' | 'services' | 'new-world'>, Shape> = {
+const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, 'free-human' | 'services' | 'new-world'>, Shape> = {
   designer: {
     display: "'Cormorant', 'Cormorant Garamond', Georgia, serif", body: "'Jost', system-ui, sans-serif",
     weight: '400', textCase: 'none', track: '-0.01em', label: '.18em',
@@ -84,6 +84,15 @@ const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, '
     weight: '400', textCase: 'none', track: '0', label: '.08em',
     btn: '999px', card: '10px', inner: '10px', photo: '999px 999px 12px 12px', mat: '0', shadow: hairline, rule: '0', ring: '0',
   },
+  // The Temple kit (lib/theme/temple-kit.ts): Marcellus display, Jost body, wide labels, the arched picture, the clay
+  // on the emphasised word (--display-em-color), the kit's soft depth shadow in place of a hairline.
+  'temple-kit': {
+    display: "'Marcellus', Georgia, serif", body: "'Jost', system-ui, sans-serif",
+    weight: '400', textCase: 'none', track: '-0.015em', label: '.18em',
+    btn: '10px', card: '16px', inner: '10px', photo: '50% 50% 6px 6px / 42% 42% 6px 6px', mat: '0',
+    shadow: () => '0 2px 6px rgba(74,53,39,.07)', rule: '0', ring: '0',
+    em: '#9C4A2C', // token-ok: Temple kit clay 600, lib/theme/temple-kit.ts
+  },
   bold: {
     display: "'Anton', Impact, sans-serif", body: "'Hanken Grotesk', system-ui, sans-serif",
     weight: '400', textCase: 'uppercase', track: '0.01em', label: '.08em',
@@ -110,9 +119,8 @@ const FREQUENCY_SURFACE: ThemeSurface = {
   semantic: { success: '#3C8C7C', info: '#4F8FC0', danger: '#B3402F' }, // token-ok: Frequency notes
 }
 
-/** A theme's flat surface; Temple kit wears Temple's until it is a Mega Theme of its own, and Network (classic) reads the Network kit's until it has a preview of its own. */
+/** A theme's flat surface; Network (classic) reads the Network kit's until it has a preview of its own. */
 function surfaceOf(id: MegaThemeId): ThemeSurface {
-  if (id === 'temple-kit') return MEGA_SURFACES.temple as ThemeSurface
   return MEGA_SURFACES[id] ?? (id === 'frequency' ? FREQUENCY_SURFACE : (MEGA_SURFACES['network-kit'] as ThemeSurface))
 }
 
