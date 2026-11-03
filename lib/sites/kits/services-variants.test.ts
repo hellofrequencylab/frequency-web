@@ -14,7 +14,7 @@ describe('Services starter kits', () => {
     for (const s of SERVICES_KIT_INDEX) {
       const kit = servicesKit(s.niche)
       expect([kit.id, kit.niche, kit.theme, kit.label, kit.description]).toEqual([s.id, s.niche, s.theme, s.label, s.description])
-      expect(kit.pages.map((p) => p.slug)).toEqual(['home', 'services', 'about', 'book'])
+      expect(kit.pages.map((p) => p.slug)).toEqual(['home', 'services', 'about', 'booking'])
     }
   })
   it('names the Frequency tools each kit runs, from the design', () => {
@@ -47,7 +47,7 @@ describe('Services starter kits', () => {
     for (const key of ['offer1Title', 'offer3Price', 'person1Name', 'event1Title']) expect(text).toContain(`{{${key}|`)
   })
   it('starts a blue kit in Tide and leaves the accent unset when its preset has not shipped', () => {
-    expect(servicesKit('hosts').accent).toBe('tide')
+    expect(servicesKit('hosts').accent).toBe(SERVICES_ACCENTS.tide.accent)
     expect(Object.keys(SERVICES_ACCENTS)).toContain('tide')
     expect(servicesKit('coaches').accent).toBeUndefined()
   })

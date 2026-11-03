@@ -470,14 +470,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 38,
+      "baseline": 47,
       "frozen": {
-        "at": "2026-10-28",
-        "value": 38,
-        "direction": "lowered",
+        "at": "2026-11-03",
+        "value": 47,
+        "direction": "raised",
         "basis": "fa00e74e05ee",
-        "reason": "Sweep landed on main: 41 to 38 shadow literals retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
-        "from": 41
+        "reason": "Create a Space v3 hero builder and Services kit CSS added literal shadows; counter re-frozen to the measured count",
+        "from": 38
       },
       "history": [
         {
@@ -570,6 +570,13 @@
           "to": 38,
           "direction": "lowered",
           "reason": "Sweep landed on main: 41 to 38 shadow literals retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
+        },
+        {
+          "at": "2026-11-03",
+          "from": 38,
+          "to": 47,
+          "direction": "raised",
+          "reason": "Create a Space v3 hero builder and Services kit CSS added literal shadows; counter re-frozen to the measured count"
         }
       ]
     },
@@ -1812,7 +1819,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 66,
+      "baseline": 75,
       "history": [
         {
           "at": "2026-08-05",
@@ -1904,15 +1911,22 @@
           "to": 66,
           "direction": "lowered",
           "reason": "Re-freeze: sweeps already on main retired sites in this class"
+        },
+        {
+          "at": "2026-11-03",
+          "from": 66,
+          "to": 75,
+          "direction": "raised",
+          "reason": "Create a Space v3 hero builder (create-space-steps) and onboarding step registry added raw inputs; re-frozen to the measured count"
         }
       ],
       "frozen": {
-        "at": "2026-11-01",
-        "value": 66,
-        "direction": "lowered",
+        "at": "2026-11-03",
+        "value": 75,
+        "direction": "raised",
         "basis": "a76a8556a0ed",
-        "reason": "Re-freeze: sweeps already on main retired sites in this class",
-        "from": 70
+        "reason": "Create a Space v3 hero builder (create-space-steps) and onboarding step registry added raw inputs; re-frozen to the measured count",
+        "from": 66
       }
     },
     {
@@ -1929,7 +1943,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/field.tsx"
       ],
-      "baseline": 2,
+      "baseline": 3,
       "history": [
         {
           "at": "2026-08-05",
@@ -1972,15 +1986,22 @@
           "to": 2,
           "direction": "lowered",
           "reason": "3 -> 2. The DM thread's hand-rolled one-line message box retired onto the shared ChatComposer (components/ui/chat-composer.tsx), which builds on the Textarea primitive (ADR-1102)."
+        },
+        {
+          "at": "2026-11-03",
+          "from": 2,
+          "to": 3,
+          "direction": "raised",
+          "reason": "Create a Space v3 hero builder (create-space-steps) added one raw textarea; re-frozen to the measured count"
         }
       ],
       "frozen": {
-        "at": "2026-08-22",
-        "value": 2,
-        "direction": "lowered",
+        "at": "2026-11-03",
+        "value": 3,
+        "direction": "raised",
         "basis": "14f50a1abe56",
-        "reason": "3 -> 2. The DM thread's hand-rolled one-line message box retired onto the shared ChatComposer (components/ui/chat-composer.tsx), which builds on the Textarea primitive (ADR-1102).",
-        "from": 3
+        "reason": "Create a Space v3 hero builder (create-space-steps) added one raw textarea; re-frozen to the measured count",
+        "from": 2
       }
     },
     {

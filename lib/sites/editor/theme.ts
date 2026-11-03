@@ -28,6 +28,7 @@ export const WEBSITE_THEME_FONT_VARS: Record<WebsiteTheme, [display: string, bod
   TempleKit: ['tp-marcellus', 'tp-jost', 'tp-jost'],
   Designer: ['dz-cormorant', 'dz-jost', 'dz-jost'],
   FreeHuman: ['fh-cormorant', 'fh-hanken', 'fh-marcellus'],
+  Services: ['sv-bricolage', 'sv-bricolage', 'sv-mono'],
 }
 
 export function websiteThemeVars(theme: WebsiteTheme, brandAccent?: string | null, date = new Date()): CSSProperties {
