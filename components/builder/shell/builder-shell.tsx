@@ -16,6 +16,7 @@ import type { WebsiteEditorShellProps } from '@/components/sites/editor/shell'
 import { SectionIcon } from '@/components/sites/editor/section-icon'
 import { updateBlockPropsDeep } from '@/components/page-editor/mobile/data-ops'
 import { sectionCommand } from '@/lib/builder/section-actions'
+import { TuneRail } from '@/components/builder/tune/tune-rail'
 import type { Data } from '@/lib/page-editor/types'
 import { moveSection, spineItems, stepSection } from '@/lib/builder/spine'
 import { railInit, railModes, railPinnable, railReducer, RAIL_PREFS_KEY, RAIL_WIDTH, type RailSide } from '@/lib/builder/rails'
@@ -132,13 +133,14 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   const canvasVars = useMemo(() => (render ? siteCanvasVars(render) : undefined), [render])
   const canvasTheme = render?.editorTheme ?? (style ? EDITOR_THEME_OF[style.theme] : state.draft.theme)
 
-  const edit = useCallback((next: WebsiteSnapshot) => dispatch({ type: 'edit', draft: next }), [])
-  const editDoc = useCallback((change: (doc: Data) => Data) => {
+  const edit = useCallback((next: WebsiteSnapshot, burst?: string) => dispatch({ type: 'edit', draft: next, burst }), [])
+  const editDoc = useCallback((change: (doc: Data) => Data, burst?: string) => {
     const now = latest.current
     const current = builderPage(now)
-    edit({ ...now.draft, pages: now.draft.pages.map((p) => (p.slug === current.slug ? { ...p, doc: change(p.doc) } : p)) })
+    edit({ ...now.draft, pages: now.draft.pages.map((p) => (p.slug === current.slug ? { ...p, doc: change(p.doc) } : p)) }, burst)
   }, [edit])
-  const editProps = useCallback((id: string, patch: Record<string, unknown>) => editDoc((doc) => updateBlockPropsDeep(doc, config, id, patch)), [config, editDoc])
+  // Typing into one field is one undo step (the burst), whether the words were typed on the canvas or in Tune.
+  const editProps = useCallback((id: string, patch: Record<string, unknown>) => editDoc((doc) => updateBlockPropsDeep(doc, config, id, patch), `props:${id}:${Object.keys(patch).join(',')}`), [config, editDoc])
   // The section toolbar (BLD-104): move, duplicate, hide on this device and delete, each one edit and one undo.
   // A delete says so in a toast with Undo; the toast leaves on its own after a few seconds.
   const [toast, setToast] = useState<{ say: string; undo: boolean } | null>(null)
@@ -259,7 +261,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <div className={styles.panelBody}>
         {selected ? <>
           <h2>{config.components[selected.type]?.label ?? selected.type}</h2>
-          <p>Click any words on the page to change them. The full settings for this section arrive in the next builder pass.</p>
+          <TuneRail key={String(selected.props.id)} type={selected.type} props={selected.props as Record<string, unknown>} config={config} onChange={(key, value) => editProps(String(selected.props.id), { [key]: value })} />
         </> : <>
           <h2>Nothing selected</h2>
           <p>Click a section on the page, or pick one in the outline.</p>

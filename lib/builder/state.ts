@@ -31,6 +31,8 @@ export interface BuilderState {
   save: BuilderSave
   past: WebsiteSnapshot[]
   future: WebsiteSnapshot[]
+  /** The burst the last edit belonged to: typing into one field is one undo step, not one per key (BLD-105). */
+  burst: string | null
 }
 
 type BuilderAction =
@@ -39,7 +41,7 @@ type BuilderAction =
   | { type: 'device'; device: BuilderDevice }
   | { type: 'surface'; surface: BuilderSurface }
   | { type: 'preview'; on: boolean }
-  | { type: 'edit'; draft: WebsiteSnapshot }
+  | { type: 'edit'; draft: WebsiteSnapshot; burst?: string }
   | { type: 'undo' }
   | { type: 'redo' }
   | { type: 'saving' }
@@ -52,7 +54,7 @@ export function builderInit(initial: WebsiteEditorState): BuilderState {
   return {
     draft: initial.draft, revision: initial.revision, published: initial.published,
     pageSlug: first?.slug ?? 'home', selectedId: first?.doc.content[0]?.props.id ?? null,
-    device: 'desktop', surface: 'site', preview: false, save: 'saved', past: [], future: [],
+    device: 'desktop', surface: 'site', preview: false, save: 'saved', past: [], future: [], burst: null,
   }
 }
 
@@ -70,7 +72,7 @@ export function builderDirty(state: BuilderState): boolean {
 export function builderReducer(state: BuilderState, action: BuilderAction): BuilderState {
   switch (action.type) {
     case 'select':
-      return state.selectedId === action.id ? state : { ...state, selectedId: action.id }
+      return state.selectedId === action.id ? state : { ...state, selectedId: action.id, burst: null }
     case 'page': {
       const page = state.draft.pages.find((p) => p.slug === action.slug)
       return page ? { ...state, pageSlug: page.slug, selectedId: page.doc.content[0]?.props.id ?? null } : state
@@ -81,18 +83,22 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
       return { ...state, surface: action.surface }
     case 'preview':
       return { ...state, preview: action.on, selectedId: action.on ? null : state.selectedId }
-    case 'edit':
+    case 'edit': {
       if (action.draft === state.draft) return state
-      return { ...state, draft: action.draft, past: [...state.past, state.draft].slice(-BUILDER_HISTORY_DEPTH), future: [], save: state.save === 'offline' ? 'offline' : 'unsaved' }
+      const save = state.save === 'offline' ? 'offline' : 'unsaved'
+      // The next key in the same field folds into the step it started, so one undo takes back the whole word.
+      if (action.burst && action.burst === state.burst && state.past.length) return { ...state, draft: action.draft, future: [], save }
+      return { ...state, draft: action.draft, past: [...state.past, state.draft].slice(-BUILDER_HISTORY_DEPTH), future: [], save, burst: action.burst ?? null }
+    }
     case 'undo': {
       const previous = state.past[state.past.length - 1]
       if (!previous) return state
-      return { ...state, draft: previous, past: state.past.slice(0, -1), future: [state.draft, ...state.future].slice(0, BUILDER_HISTORY_DEPTH), save: 'unsaved' }
+      return { ...state, draft: previous, past: state.past.slice(0, -1), future: [state.draft, ...state.future].slice(0, BUILDER_HISTORY_DEPTH), save: 'unsaved', burst: null }
     }
     case 'redo': {
       const next = state.future[0]
       if (!next) return state
-      return { ...state, draft: next, future: state.future.slice(1), past: [...state.past, state.draft].slice(-BUILDER_HISTORY_DEPTH), save: 'unsaved' }
+      return { ...state, draft: next, future: state.future.slice(1), past: [...state.past, state.draft].slice(-BUILDER_HISTORY_DEPTH), save: 'unsaved', burst: null }
     }
     case 'saving':
       return { ...state, save: 'saving' }
