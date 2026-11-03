@@ -4,7 +4,7 @@
  *  them from here and a media query that needs one writes it with a comment naming this table. */
 export const BREAKPOINTS = { sm: 600, md: 840, lg: 1200, xl: 1600 } as const
 
-export type BreakpointName = keyof typeof BREAKPOINTS
+type BreakpointName = keyof typeof BREAKPOINTS
 
 /** The widest breakpoint the width has reached, or 'xs' below the first. */
 export function breakpointFor(width: number): BreakpointName | 'xs' {
