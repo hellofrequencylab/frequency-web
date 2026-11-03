@@ -8,6 +8,8 @@ import { WebsiteEditorShell } from './shell'
 vi.mock('next/dynamic', () => ({ default: () => (props: { onTextSelect: (value: unknown) => void; onChromeSelect: (value: string) => void }) => <><button onClick={() => props.onTextSelect({ blockId: 'cards', field: 'items', path: [1, 'body'], value: 'Second card text' })}>Select second card text</button><button onClick={() => props.onChromeSelect('header')}>Select header</button></> }))
 vi.mock('@/components/loom/loom-picker', () => ({ LoomPicker: () => null }))
 vi.mock('./inspector', () => ({ WebsiteInspector: () => <div>Section inspector</div>, WebsiteChromeInspector: ({ area }: { area: string }) => <div>Editing {area} chrome</div> }))
+const dialed: { value: unknown } = { value: null }
+vi.mock('@/lib/themes/editor-dials', async (original) => { const real = await original<typeof import('@/lib/themes/editor-dials')>(); return { ...real, themeEditor: (...args: Parameters<typeof real.themeEditor>) => (dialed.value as ReturnType<typeof real.themeEditor> | null) ?? real.themeEditor(...args) } })
 vi.mock('./editor.css', () => ({}))
 beforeAll(() => { Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true }); window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) })
 const config: Config = { components: { Cards: { fields: { items: { type: 'array', arrayFields: { body: { type: 'textarea' } } } }, render: () => null } } }
@@ -68,3 +70,18 @@ vi.mock('@/lib/theme/design', async (original) => ({
   ...(await original<typeof import('@/lib/theme/design')>()),
   SITE_DESIGN: 'dawn',
 }))
+it('floats the compact style bar over the preview for a theme with dials, and leaves a legacy theme alone', async () => {
+ const legacy = mount()
+ expect(legacy.node.querySelector('[aria-label="Quick style"]')).toBeNull()
+ const real = await vi.importActual<typeof import('@/lib/themes/editor-dials')>('@/lib/themes/editor-dials')
+ const { dialsFor, looksFor } = await import('@/lib/theme/dials')
+ type ThemeEditorDecl = import('@/lib/theme/dials').ThemeEditorDecl
+ const decl = { dials: Object.fromEntries(['accent', 'register', 'corners', 'spacing', 'type', 'motion', 'hero', 'header', 'footer', 'image'].map((i) => [i, 'supported'])), looks: [] } as unknown as ThemeEditorDecl
+ const dials = dialsFor(decl, 'Services')
+ dialed.value = { ...real.themeEditor('services', 'Services'), dials, looks: looksFor(decl, dials), own: { register: 'night' } }
+ const on = mount()
+ const bar = on.node.querySelector('[aria-label="Quick style"]')
+ expect(bar).not.toBeNull()
+ expect(bar?.querySelector('[data-variant="bar"]')).not.toBeNull()
+ dialed.value = null
+})

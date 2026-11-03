@@ -1,0 +1,6 @@
+{
+  "id": "LIVE-2031",
+  "append": {
+    "detail": " PROGRESS (2026-11-03): piece 2 built: ThemeControls variant=bar is mounted as a compact bar floated over the preview in both editor skins (shell.tsx, editor.css, kit editor-shell.css), calling the same handlers as the Theme tab; it draws only for a theme that declares dials beyond the legacy four, so nothing changes in any editor today. Still open: piece 1, the centered header, which needs a header design the handoff does not ship."
+  }
+}

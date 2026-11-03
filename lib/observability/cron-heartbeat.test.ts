@@ -11,6 +11,12 @@ vi.mock('@sentry/nextjs', () => ({
   withScope: (fn: () => unknown) => fn(),
 }))
 
+const recordCronSuccess = vi.fn(async (_job: string) => {})
+vi.mock('@/lib/observability/cron-last-success', async () => ({
+  ...(await vi.importActual<object>('@/lib/observability/cron-last-success')),
+  recordCronSuccess: (...a: unknown[]) => recordCronSuccess(...(a as [string])),
+}))
+
 import {
   DEFAULT_CRON_BUDGET_MS,
   CRON_CEILING_MS,
@@ -648,5 +654,23 @@ describe('withCronHeartbeat — the stated per-invocation budget', () => {
     const run = lines.find((l) => l.event === 'cron.run')
     expect(run?.fields.budget_ms).toBe(5_000)
     expect(typeof run?.fields.over_budget).toBe('boolean')
+  })
+})
+
+describe('free last-success stamp for jobs with no Healthchecks check (SEC-022)', () => {
+  beforeEach(() => recordCronSuccess.mockClear())
+
+  it('stamps an unmonitored job on a healthy run and not on a failed one', async () => {
+    const job = CRON_UNMONITORED[0].job
+    await withCronHeartbeat(job, async () => new Response('ok', { status: 200 }))(new Request('http://x'))
+    expect(recordCronSuccess).toHaveBeenCalledWith(job)
+    recordCronSuccess.mockClear()
+    await withCronHeartbeat(job, async () => new Response('no', { status: 500 }))(new Request('http://x'))
+    expect(recordCronSuccess).not.toHaveBeenCalled()
+  })
+
+  it('does not stamp a job that has a real Healthchecks check', async () => {
+    await withCronHeartbeat(CRON_MONITORED[0], async () => new Response('ok'))(new Request('http://x'))
+    expect(recordCronSuccess).not.toHaveBeenCalled()
   })
 })
