@@ -273,10 +273,10 @@ export const NEW_WORLD_DAY_CSS = `
 /** The Detail type pairing, kept as a Look (Bricolage Grotesque, Lora, DM Mono). */
 export const NEW_WORLD_DETAIL_CSS = `
 [data-house-theme="new-world"][data-pairing="detail"]{
---nw-font-display:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
---nw-font-accent:'Lora',Georgia,serif;
---nw-font-body:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
---nw-font-mono:'DM Mono',ui-monospace,Menlo,monospace;
+--nw-font-display:var(--font-nwd-bricolage,'Bricolage Grotesque'),'Helvetica Neue',Arial,sans-serif;
+--nw-font-accent:var(--font-nwd-lora,'Lora'),Georgia,serif;
+--nw-font-body:var(--font-nwd-bricolage,'Bricolage Grotesque'),'Helvetica Neue',Arial,sans-serif;
+--nw-font-mono:var(--font-nwd-mono,'DM Mono'),ui-monospace,Menlo,monospace;
 --nw-stretch-display:80%;
 --nw-lh-display:0.9;
 --nw-ls-display:-0.02em;

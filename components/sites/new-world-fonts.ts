@@ -13,5 +13,27 @@ const unbounded = localFont({ src: '../../app/fonts/unbounded/unbounded.woff2', 
 const hanken = localFont({ src: '../../app/fonts/hanken-grotesk/hanken-grotesk.woff2', variable: '--font-nw-hanken', weight: '100 900', display: 'swap', preload: false })
 const instrument = localFont({ src: '../../app/fonts/instrument-serif/instrument-serif-italic.woff2', variable: '--font-nw-instrument', weight: '400', style: 'italic', display: 'swap', preload: false })
 
-/** The class that sets the three `--font-nw-*` variables; put it on the New World site root. */
-export const NEW_WORLD_FONT_CLASS = [unbounded, hanken, instrument].map((f) => f.variable).join(' ')
+// The Detail pairing (Bricolage Grotesque, Lora, DM Mono; NEW_WORLD_DETAIL_CSS in lib/theme/new-world.ts) used to ask Google Fonts. These
+// three self-host the same way, under `--font-nwd-*`, so the Look needs no third-party request (BLD-214).
+const bricolage = localFont({ src: '../../app/fonts/bricolage-grotesque/bricolage-grotesque.woff2', variable: '--font-nwd-bricolage', weight: '200 800', display: 'swap', preload: false })
+const lora = localFont({
+  src: [
+    { path: '../../app/fonts/lora/lora.woff2', weight: '400 700', style: 'normal' },
+    { path: '../../app/fonts/lora/lora-italic.woff2', weight: '400 700', style: 'italic' },
+  ],
+  variable: '--font-nwd-lora',
+  display: 'swap',
+  preload: false,
+})
+const dmMono = localFont({
+  src: [
+    { path: '../../app/fonts/dm-mono/dm-mono-400.woff2', weight: '400' },
+    { path: '../../app/fonts/dm-mono/dm-mono-500.woff2', weight: '500' },
+  ],
+  variable: '--font-nwd-mono',
+  display: 'swap',
+  preload: false,
+})
+
+/** The class that sets the three `--font-nw-*` variables and the three Detail `--font-nwd-*` ones; put it on the New World site root. */
+export const NEW_WORLD_FONT_CLASS = [unbounded, hanken, instrument, bricolage, lora, dmMono].map((f) => f.variable).join(' ')
