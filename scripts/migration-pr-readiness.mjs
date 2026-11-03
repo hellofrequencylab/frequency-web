@@ -109,7 +109,7 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
   requireFact(sha.test(mainSha) && sha.test(baseSha) && sha.test(headSha) && headSha === event.pull_request.head.sha, 'stale or moving event/base/head')
   for (const revision of [baseSha, headSha]) git(['fetch', '--no-tags', '--filter=blob:none', 'origin', revision])
   // This job checks out main on an isolated runner and never executes candidate code.
-  requireFact(env.GITHUB_WORKFLOW_REF === `${REPOSITORY}/.github/workflows/migration-readiness.yml@refs/heads/main` && env.GITHUB_SHA === baseSha && String(git(['rev-parse', 'HEAD'])).trim() === baseSha, 'trusted current-main workflow checkout required')
+  requireFact(env.GITHUB_WORKFLOW_REF === `${REPOSITORY}/.github/workflows/migration-readiness.yml@refs/heads/main` && String(git(['rev-parse', 'HEAD'])).trim() === baseSha, 'trusted current-main workflow checkout required')
   const blob = (revision, path) => git(['show', `${revision}:${path}`], true)
   const inventory = revision => {
     const names = String(git(['ls-tree', '-r', '--name-only', revision, '--', 'supabase/migrations/'])).trim().split('\n')
@@ -140,7 +140,8 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
     requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === headSha && finalPr.base.sha === baseSha, 'branch moved during no-SQL fallback')
     return { ok: true, status: 'not_applicable', proof: { baseSha, headSha, collectorSha256 } }
   }
-  requireFact(baseSha === mainSha, 'stale or moving event/base/head')
+  // Only a PR that adds SQL must sit on the current main tip (and the workflow run must be that tip's).
+  requireFact(baseSha === mainSha && env.GITHUB_SHA === baseSha, 'stale or moving event/base/head')
   const paths = reviewedChanges.map(change => change.file)
   const baseModes = gitModes(git, baseSha, paths), headModes = gitModes(git, headSha, paths)
   for (const change of reviewedChanges) { change.baseMode = baseModes.get(change.file) ?? '000000'; change.headMode = headModes.get(change.file) ?? '000000' }
