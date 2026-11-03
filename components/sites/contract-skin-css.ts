@@ -156,6 +156,8 @@ const WILDHEART: Overrides = {
   '--wh-a-violet-12': mix('accent', 12), '--wh-a-violet-13': mix('accent', 13), '--wh-a-violet-35': mix('accent', 35),
   '--wh-a-madder-05': mix('accent', 5), '--wh-a-madder-16': mix('accent', 16), '--wh-a-madder-35': mix('accent', 35),
   '--wh-a-lavender-75': mix('accent', 45), '--wh-a-honey-14': mix('accent', 14), '--wh-a-star-honey': ACCENT, '--wh-a-sage-18': mix('accent', 18),
+  '--wh-a-star-55': mix('ink', 55), '--wh-a-star-45': mix('ink', 45), '--wh-a-star-50': mix('ink', 50), '--wh-a-star-40': mix('ink', 40), '--wh-a-star-madder': mix('accent', 50),
+  '--wh-a-mist-95': mix('accent', 10), '--wh-a-blush-55': mix('accent', 8), '--wh-honey-soft': mix('accent', 10), '--wh-sage-soft': mix('accent', 10), '--wh-winter-soft': mix('accent', 10),
   '--wh-a-night-28': mix('band', 28), '--wh-a-veil-0': 'color-mix(in srgb,var(--sk-canvas) 0%,transparent)', '--wh-a-veil-85': mix('canvas', 85),
   '--wh-a-wash-violet': mix('accent', 10), '--wh-a-wash-madder': mix('accent', 8), '--wh-a-wash-moon': mix('accent', 6), '--wh-a-wash-blush': mix('accent', 8),
   '--wh-text-on-fill': ON_ACCENT, '--wh-text-on-season': INK,
