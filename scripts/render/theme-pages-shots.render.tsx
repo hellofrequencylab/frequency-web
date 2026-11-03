@@ -1,5 +1,5 @@
-// FIXTURE RENDER: the Website, Spotlight, Space and Email pictures for the Default, Bold and Wildheart theme pages
-// (/themes/frequency, /themes/bold, /themes/wildheart), as bare HTML pages. Same four surfaces as /themes/new-world and
+// FIXTURE RENDER: the Website, Spotlight, Space and Email pictures for the Bold and Wildheart theme pages
+// (/themes/bold, /themes/wildheart), as bare HTML pages. Same four surfaces as /themes/new-world and
 // the same real components: the Website is the theme's starter kit Home through the real SiteChrome, blocks and skin; the
 // Spotlight is the real SpotlightShell on the theme's own preset; the Space is a Space page inside the real member shell
 // (only the Space area wears the theme's faces and accent); the Email is the real campaign mail in the theme's colours.
@@ -24,8 +24,7 @@ const FACES = face('Unbounded', 'unbounded/unbounded.woff2', 'normal', '200 900'
 const pub = (html: string) => html.replace(/ loading="lazy"/g, '').replace(/(src|href)="\/(sites|brand|themes|create-a-space)\//g, `$1="file://${ROOT}/public/$2/`)
 
 type Skin = { theme: 'menswork' | 'wildheart'; season: 'fall' } | null
-const THEMES: { ed: 'DAWN' | 'Menswork' | 'Wildheart'; id: string; mega: 'frequency' | 'bold' | 'wildheart'; kit: string; skin: Skin; photo: string; cover: string; accent: string }[] = [
-  { ed: 'DAWN', id: 'frequency', mega: 'frequency', kit: 'default-coaches', skin: null, photo: '/brand/frequency/photos/gathering-04.jpg', cover: '/brand/frequency/photos/gathering-07.jpg', accent: '#E0457B' },
+const THEMES: { ed: 'Menswork' | 'Wildheart'; id: string; mega: 'bold' | 'wildheart'; kit: string; skin: Skin; photo: string; cover: string; accent: string }[] = [
   { ed: 'Menswork', id: 'bold', mega: 'bold', kit: 'bold-coaches', skin: { theme: 'menswork', season: 'fall' }, photo: '/brand/frequency/photos/gathering-10.jpg', cover: '/brand/frequency/photos/gathering-12.jpg', accent: '#1F8A8A' },
   { ed: 'Wildheart', id: 'wildheart', mega: 'wildheart', kit: 'wildheart-coaches', skin: { theme: 'wildheart', season: 'fall' }, photo: '/brand/wildheart/photos/huddle.jpg', cover: '/brand/wildheart/photos/sisters-shore.jpg', accent: '#6D4AFF' },
 ]
@@ -39,7 +38,7 @@ async function html(el: unknown): Promise<string> {
 const shellDoc = (body: string) =>
   `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
 
-it('renders the Default, Bold and Wildheart surfaces', async () => {
+it('renders the Bold and Wildheart surfaces', async () => {
   if (!out) throw new Error('set RENDER_OUT')
   const only = process.env.THEME_ONLY
   const { WebsiteDocument } = await import('@/components/sites/website-document')

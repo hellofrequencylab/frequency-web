@@ -1,4 +1,4 @@
-// /themes/frequency, /themes/bold and /themes/wildheart: the feature page for Default, Bold and Wildheart, on Nocturne's layout
+// /themes/bold and /themes/wildheart: the feature page for Bold and Wildheart, on Nocturne's layout
 // (frequency-new-world.tsx is the template): the theme's name large with the buttons left and the preview right, the four surfaces
 // joined by a dotted line, then Today, Try it on, Inside the kit, Make it yours, Starter kits, What carries over, Built right,
 // Questions and Setup. Server component; the one client island is the preview stage (theme-feature-preview.tsx). Every picture is a

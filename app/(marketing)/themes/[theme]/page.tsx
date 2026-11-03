@@ -1,4 +1,4 @@
-// /themes/[theme] (LIVE-1514): the sales page for one Mega Theme. Default, Bold and Wildheart draw Nocturne's layout with real
+// /themes/[theme] (LIVE-1514): the sales page for one Mega Theme. Bold and Wildheart draw Nocturne's layout with real
 // renders (frequency-theme-feature.tsx); every other theme here keeps the generic kit page. A Frequency-only route. Midnight keeps its
 // own static page at /themes/nocturne, which wins over this segment. Static: the six other themes are known
 // at build time and anything else is a 404.

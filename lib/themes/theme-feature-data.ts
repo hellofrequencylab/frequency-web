@@ -1,9 +1,10 @@
-// Data for the Nocturne-layout theme pages of Default, Bold and Wildheart (/themes/frequency, /themes/bold, /themes/wildheart).
+// Data for the Nocturne-layout theme pages of Bold and Wildheart (/themes/bold, /themes/wildheart). Default is not a theme people
+// pick (New World is the default, owner ruling 2026-11-03), so it has no page here.
 // The pictures are renders of each theme's own surfaces, stored under public/brand/theme-pages/<id>: the Website through the real
 // site chrome and blocks, the Spotlight through the real shell on the theme's preset, the Space inside the real member shell and the
 // Email through the real campaign mail (scripts/render/theme-pages-shots.render.tsx). Copy follows docs/marketing/voice-and-language-guide.md.
 
-export type ThemeFeatureId = 'frequency' | 'bold' | 'wildheart'
+export type ThemeFeatureId = 'bold' | 'wildheart'
 export type ThemeFeatureSurface = 'site' | 'spotlight' | 'space' | 'email'
 
 export const THEME_FEATURE_SURFACES: readonly { id: ThemeFeatureSurface; label: string; qual?: string; shot: 'site' | 'spot' | 'spacedesk' | 'email'; width: number; height: number }[] = [
@@ -32,25 +33,6 @@ interface ThemeFeatureCopy {
 }
 
 export const THEME_FEATURES: Record<ThemeFeatureId, ThemeFeatureCopy> = {
-  frequency: {
-    id: 'frequency',
-    name: 'Default',
-    accentVar: 'var(--fq-x-sun-neon)',
-    tagline: ['Warm, bright and easy.', 'Nothing to fight.'],
-    lead:
-      'Your link in bio, your Space, your website and your emails each look a little different. Default is the house look: soft cards, a frosted menu bar and friendly headlines, ' +
-      'read from one profile. It is the calm place to start, and a good one to stay.',
-    signature: 'Soft cards, a frosted menu bar, Unbounded headlines and Instrument Serif italics.',
-    madeFor: 'anyone who wants a friendly site with nothing to fight',
-    faq: [
-      ['Is Default the plain one?', 'It is the one with the fewest opinions. Warm grounds, soft corners and easy type, so your words and photos do the talking.'],
-      ['Can I change it later?', 'Press Change theme in your editor. Your words, offers and photos stay saved. Default is only the dress they wear.'],
-      ['Will my Space look exactly like my website?', 'Your Space keeps Frequency’s page frame, so people on the network always know where they are. It wears your name, fonts, accent and offers.'],
-      ['Does it work for my kind of Space?', 'If people gather at your place, yes. The starter kits cover coaches, studios, hosts, venues, non-profits and networks.'],
-      ['Who owns my contacts?', 'You do. Sign-ups, RSVPs and check-ins build your list, and your list stays yours.'],
-      ['What does it cost?', 'Free to start. Business when you charge.'],
-    ],
-  },
   bold: {
     id: 'bold',
     name: 'Bold',
@@ -91,4 +73,4 @@ export const THEME_FEATURES: Record<ThemeFeatureId, ThemeFeatureCopy> = {
   },
 }
 
-export const isThemeFeatureId = (id: string | null | undefined): id is ThemeFeatureId => id === 'frequency' || id === 'bold' || id === 'wildheart'
+export const isThemeFeatureId = (id: string | null | undefined): id is ThemeFeatureId => id === 'bold' || id === 'wildheart'
