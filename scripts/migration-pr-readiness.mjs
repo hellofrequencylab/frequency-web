@@ -61,7 +61,8 @@ const POLICY_PATH = 'scripts/migration-readiness-policy.json'
 const SQL_PATH = /^supabase\/migrations\/(\d{14})_([A-Za-z0-9_.-]+)\.sql$/
 const sha = /^[a-f0-9]{40}$/
 const hashBytes = bytes => createHash('sha256').update(bytes).digest('hex')
-const requireFact = (condition, message) => { if (!condition) throw new Error(message) }
+// `safe` marks our own fixed-text refusals so the job log can name the failed rule; provider/Git errors never carry it.
+const requireFact = (condition, message) => { if (!condition) throw Object.assign(new Error(message), { safe: true }) }
 
 // One native Git process reads the corpus; never spawn a process per historical migration.
 export function readGitBlobs(git, revision, paths) {
@@ -228,7 +229,8 @@ async function main() {
   if (result.status === 'strict_parity') { console.log('Migration PR historical SQL unchanged; current main/production strict parity VERIFIED.'); return }
   console.log(`Migration PR staging VERIFIED; ${result.pending.length} exact registered migration(s) PENDING APPLY. Production was NOT changed. Main remains strict.`)
 }
-if (invokedDirectly(import.meta.url)) main().catch(() => {
+if (invokedDirectly(import.meta.url)) main().catch(error => {
+  if (error?.safe === true) console.error(`Migration readiness rule refused: ${error.message}`)
   // No API body, token, SQL, state or Git command arguments are copied into CI diagnostics.
   console.error('Migration PR readiness failed closed; registration, current base/ledger or exact-head staging proof was not satisfied.')
   process.exitCode = 1
