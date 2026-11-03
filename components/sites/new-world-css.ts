@@ -19,6 +19,8 @@ ${R}{color-scheme:inherit;--color-canvas:var(--nw-ink-900);--color-surface:var(-
 ${N}{font-family:var(--nw-font-body);line-height:var(--nw-lh-body);background:var(--nw-surface-page);color:var(--color-text)}
 ${N} .hs-root{background:var(--nw-surface-page);color:var(--color-text)}
 ${N} .hs-h1,${N} .hs-h2,${N} .hs-brand{font-family:var(--nw-font-display);font-stretch:var(--nw-stretch-display);font-weight:var(--nw-fw-display);letter-spacing:var(--nw-ls-display);line-height:var(--nw-lh-display)}
+/* The root carries data-design="frequency", whose heading rule paints h1 to h4 in the console's ink; on a New World site that ink is pointed at the register's text colour instead. */
+${R}{--fq-text-strong:var(--color-text)}
 ${N} .hs-h1 em,${N} .hs-h2 em{font-family:var(--nw-font-accent);font-style:italic;font-weight:var(--nw-fw-regular);font-size:var(--nw-em-size);letter-spacing:-.01em;color:var(--color-primary-strong)}
 ${N} .hs-eyebrow,${N} .hs-label,${N} .hs-badge{${LABEL}}
 ${N} .hs-card{background:var(--nw-surface-card);border:var(--nw-border-hairline) solid var(--nw-border-subtle);border-radius:var(--nw-radius-lg);box-shadow:var(--nw-depth-md)}
@@ -30,15 +32,28 @@ ${N} .hs-btn-primary,${N} .hs-btn-dark{background:var(--color-primary);color:var
 ${N} .hs-btn-primary:hover,${N} .hs-btn-dark:hover{background:var(--color-primary-hover);color:var(--color-text-on-primary)}
 ${N} .hs-btn-soft{background:transparent;color:var(--color-text);border:var(--nw-border-hairline) solid var(--nw-border-default)}
 ${N} .hs-btn-soft:hover{background:var(--nw-accent-tint);color:var(--color-text)}
-/* The header: a frosted bar with a hairline under it, labels in the mono voice. */
-${N} .hs-header{position:sticky;top:0;z-index:40}
-${N} .hs-pill{background:color-mix(in oklab,var(--nw-ink-900) 82%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:var(--nw-border-hairline) solid var(--nw-border-subtle)}
+/* THE KIT'S HEADER (handoff ui_kits/site/Chrome.jsx SiteHeader, look "bar"): a full-width ink bar with a glow hairline under it, the
+   brand left, the menu in a glass capsule on the right with the flare dot on the current page, then the small accent button. Over a
+   photo hero it lies on the picture under a soft top shade. Never the house's floating rounded pill. */
+${N} .hs-header{position:sticky;top:0;z-index:40;padding:0;background:linear-gradient(180deg,color-mix(in oklab,var(--nw-chrome-50) 3.5%,transparent),transparent),var(--nw-ink-950);border-bottom:var(--nw-border-hairline) solid var(--nw-border-subtle);box-shadow:0 20px 40px -24px color-mix(in oklab,var(--nw-ink-950) 70%,transparent)}
+${N} .hs-header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent 0%,color-mix(in oklab,var(--nw-flare-400) 55%,transparent) 30%,color-mix(in oklab,var(--nw-swell-300) 50%,transparent) 55%,color-mix(in oklab,var(--nw-halo-300) 45%,transparent) 75%,transparent 100%);opacity:.7;pointer-events:none}
+${N}:has(#top .sv-hero-bg--photo) .hs-header{position:absolute;left:0;right:0;background:linear-gradient(180deg,color-mix(in oklab,var(--nw-ink-950) 55%,transparent) 0%,transparent 100%);border-bottom-color:transparent;box-shadow:none}
+${N} .hs-pill{max-width:var(--nw-container-max);margin:0 auto;padding:18px var(--nw-gutter);border-radius:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;animation:none;overflow:visible}
+${N} .hs-header .hs-brand{padding-left:0;color:var(--nw-chrome-50);text-decoration:none}
+${N} .hs-nav{-webkit-mask-image:none;mask-image:none}
+${N} .hs-header-actions .hs-btn,${N} .hs-header-actions .hs-btn-primary,${N} .hs-header-actions .hs-btn-dark{min-height:36px;padding:0 18px;font-size:11px}
+@media (min-width:940px){${N} .hs-pill{grid-template-columns:auto minmax(0,1fr) auto;column-gap:32px}
+${N} .hs-nav{justify-self:end;width:max-content;max-width:100%;padding:10px 22px;border-radius:var(--nw-radius-pill);border:var(--nw-border-hairline) solid var(--nw-border-subtle);background:linear-gradient(180deg,color-mix(in oklab,var(--nw-chrome-50) 5%,transparent),color-mix(in oklab,var(--nw-chrome-50) 1%,transparent));-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 color-mix(in oklab,var(--nw-chrome-50) 6%,transparent)}
+${N} .hs-nav-track{gap:32px;padding:0}${N} .hs-nav a,${N} .hs-nav-mega{padding:0;background:none}${N} .hs-header-actions{gap:24px}}
+@media (max-width:939px){${N} .hs-nav{display:none}${N} .hs-pill{padding:14px var(--nw-gutter)}}
 /* The owner's logo or photo in the bar: house-css sizes only .hs-logo-avatar and .hs-logo-image, and a skinned header prints a bare .hs-logo, so without this the image fills the bar and the header and headline vanish. */
 ${N} .hs-logo{flex:none;display:block;height:clamp(28px,6vw,36px);width:auto;max-width:160px;object-fit:contain;border-radius:var(--nw-radius-sm)}
 /* A hero is a photo under a wash: the wash is Night ink and the words are light in both registers (the bridge above points ink at the accent for bands, which turned the wash teal and the headline dark). */
 ${N} .hs-hero{--color-ink:var(--nw-ink-950);--color-on-ink:var(--nw-chrome-50);--color-on-ink-muted:var(--nw-chrome-200)}
-${N} .hs-nav a,${N} .hs-nav-mega{${LABEL};color:var(--nw-text-secondary)}
-${N} .hs-nav a:hover,${N} .hs-nav a[aria-current="page"]{color:var(--nw-text-primary)}
+${N} .hs-nav a,${N} .hs-nav-mega{display:inline-flex;align-items:center;gap:8px;${LABEL};letter-spacing:.14em;color:var(--nw-chrome-200);white-space:nowrap}
+${N} .hs-nav a::before{content:"";width:5px;height:5px;border-radius:var(--nw-radius-pill);background:var(--color-primary);opacity:0;transition:opacity var(--nw-dur-fast) ${EASE}}
+${N} .hs-nav a:hover,${N} .hs-nav a[aria-current="page"]{color:var(--nw-chrome-50)}
+${N} .hs-nav a:hover::before,${N} .hs-nav a[aria-current="page"]::before{opacity:1}
 ${N} .hs-menu-panel,${N} .hs-mega-panel{background:var(--nw-ink-800);border:var(--nw-border-hairline) solid var(--nw-border-subtle);border-radius:var(--nw-radius-lg);box-shadow:var(--nw-depth-lg)}
 /* The footer: sunk ground, mono labels. */
 ${N} .hs-footer-top{background:var(--nw-surface-sunken);border-top:var(--nw-border-hairline) solid var(--nw-border-subtle)}
