@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2082",
+  "title": "The signed-out builder's Nocturne preview wears Nocturne's own pictures",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-03",
+  "source": {
+    "file": "lib/create-space/preview-site.ts",
+    "ref": "Theme readiness audit 2026-11-03: Nocturne's preview showed the warm gathering photos while its seven monochrome pictures sat unused"
+  },
+  "detail": "KIT_IMAGERY.midnight read the generic gathering photos. It now reads the seven monochrome pictures under public/sites/midnight/photos (the ones Nocturne's own site home wears), with the ribs as the hero. Nocturne has no portrait photography, so the host portrait stays the gathering photo. Bold, Wildheart and Default still have no library of their own (asset, listed for the owner).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/nocturne-preview-photos.mjs"
+  }
+}
