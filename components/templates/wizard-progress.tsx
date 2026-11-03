@@ -30,6 +30,7 @@ export function WizardProgress({
       <div
         className={dots ? 'mu-dots' : 'mu-steps'}
         role="progressbar"
+        aria-label="Progress"
         aria-valuemin={1}
         aria-valuemax={total}
         aria-valuenow={current}
