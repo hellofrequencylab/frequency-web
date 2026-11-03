@@ -6,8 +6,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { it } from 'vitest'
 
-const THEMES = ['DAWN', 'Menswork', 'Midnight', 'Wildheart', 'Network', 'NetworkKit', 'Temple', 'TempleKit', 'Designer', 'FreeHuman', 'NewWorld'] as const
-const SCOPE_ID: Record<string, string> = { Menswork: 'menswork', Midnight: 'midnight', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Designer: 'designer', FreeHuman: 'free-human', NewWorld: 'new-world' }
+const THEMES = ['DAWN', 'Menswork', 'Midnight', 'Wildheart', 'Network', 'NetworkKit', 'Temple', 'TempleKit', 'Designer', 'FreeHuman', 'Services', 'NewWorld'] as const
+const SCOPE_ID: Record<string, string> = { Menswork: 'menswork', Midnight: 'midnight', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Designer: 'designer', FreeHuman: 'free-human', Services: 'services', NewWorld: 'new-world' }
 
 it('renders the builder roles in every theme', async () => {
   const out = process.env.RENDER_OUT
@@ -22,6 +22,7 @@ it('renders the builder roles in every theme', async () => {
     NetworkKit: (await import('@/components/sites/network-kit-css')).NETWORK_KIT_CSS, Temple: (await import('@/components/sites/temple-css')).TEMPLE_CSS,
     TempleKit: (await import('@/components/sites/temple-kit-css')).TEMPLE_KIT_CSS, Designer: (await import('@/components/sites/designer-css')).DESIGNER_CSS,
     FreeHuman: (await import('@/components/sites/free-human-css')).FREE_HUMAN_CSS,
+    Services: (await import('@/lib/theme/services')).SERVICES_TOKENS_CSS + (await import('@/components/sites/services-css')).SERVICES_CSS,
     NewWorld: (await import('@/components/sites/new-world-css')).NEW_WORLD_CSS,
     DAWN: readFileSync('app/themes/frequency.css', 'utf8'),
   } as Record<string, string>
