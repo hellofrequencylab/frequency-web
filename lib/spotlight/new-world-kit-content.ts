@@ -251,9 +251,6 @@ export function newWorldLinkPageContent(opts: {
   closing: { label: string; href: string } | null
 }): NewWorldSpotlightContent {
   const base = newWorldKitSpotlightContent('general', { name: opts.name, sample: false, photo: opts.photo ?? undefined })
-  const words = opts.name.trim().split(/\s+/)
-  const em = words.length > 1 ? words.pop()! : ''
-  const title = words.join(' ')
   const doors: NewWorldDoor[] = opts.links.map((l, i) => {
     let meta = l.url
     let host = ''
@@ -267,7 +264,7 @@ export function newWorldLinkPageContent(opts: {
     openings: [],
     letter: null,
     descriptor: opts.tagline ?? '',
-    hero: { eyebrow: opts.tagline ?? '', title: title || opts.name, em, body: '', photo: opts.photo ?? null },
+    hero: { eyebrow: opts.tagline ?? '', title: 'Find me', em: 'online.', body: '', photo: opts.photo ?? null },
     cta: { label: 'Message me', href: opts.messageHref ?? '/' },
     footerCta: opts.closing ?? undefined,
     layouts: ['stack'],

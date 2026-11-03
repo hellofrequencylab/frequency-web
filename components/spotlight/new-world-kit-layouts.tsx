@@ -107,7 +107,7 @@ function Stack({ c }: { c: C }) {
     <>
       <Hero c={c} height={380} />
       <div className="nws-stack-list">{c.doors.map((d) => <Door key={d.id} d={d} />)}</div>
-      {c.footerCta && <div className="nws-pad" style={{ paddingTop: 20 }}><Btn href={c.footerCta.href}>{c.footerCta.label}<ArrowRight size={14} aria-hidden /></Btn></div>}
+      {c.footerCta && <div className="nws-pad nws-closing" style={{ paddingTop: 20 }}><Btn href={c.footerCta.href}>{c.footerCta.label}<ArrowRight size={14} aria-hidden /></Btn></div>}
       {c.letter && <div className="nws-pad" style={{ paddingTop: 12 }}><Letter c={c} compact /></div>}
       <Foot />
     </>
