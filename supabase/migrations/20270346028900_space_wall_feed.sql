@@ -35,7 +35,7 @@ as $$
   limit greatest(1, least(coalesce(_limit, 30), 100));
 $$;
 
-revoke all on function public.space_wall_feed(uuid, integer, timestamptz) from public;
+revoke all on function public.space_wall_feed(uuid, integer, timestamptz) from public, anon, authenticated;
 grant execute on function public.space_wall_feed(uuid, integer, timestamptz) to anon, authenticated;
 
 comment on function public.space_wall_feed(uuid, integer, timestamptz) is

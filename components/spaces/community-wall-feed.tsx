@@ -53,7 +53,7 @@ export async function CommunityWallFeed({
   }
 
   return (
-    <div data-visual-mask="feed-stream" className="space-y-4">
+    <div className="space-y-4">
       {posts.map((post) => (
         <PostCard key={post.id} post={post} myProfileId={myProfileId} viewerRole={viewerRole} />
       ))}
