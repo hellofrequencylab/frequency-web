@@ -8,6 +8,7 @@
 import { WIZARD_INTENTS, WIZARD_THEMES } from '@/lib/spaces/create-wizard'
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
+import { NETWORK_KIT_SCHEMES, NETWORK_KIT_SCHEME_ORDER } from '@/lib/theme/network-kit'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 
@@ -54,6 +55,7 @@ export interface KitImagery {
 
 const DESIGNER_PHOTO = (name: string) => `/sites/designer/photos/${name}.webp`
 const FREQUENCY_PHOTO = (n: 1 | 2 | 3) => `/create-a-space/photos/pain-${n}.jpg`
+const NETWORK_PHOTO = (n: string) => `/sites/network-kit/photos/photo-${n}.jpg`
 
 const FREQUENCY_IMAGERY: KitImagery = {
   hero: FREQUENCY_PHOTO(2), heroPos: 'center', portrait: FREQUENCY_PHOTO(1), portraitPos: 'center',
@@ -73,7 +75,13 @@ const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<Meg
     portraits: [DESIGNER_PHOTO('dz-portrait-01'), DESIGNER_PHOTO('dz-portrait-02')],
   },
   midnight: FREQUENCY_IMAGERY,
-  'network-kit': FREQUENCY_IMAGERY,
+  // The Network kit's own library (lib/sites/network-kit-home.ts wears the same photos): the huddle is its hero.
+  'network-kit': {
+    hero: NETWORK_PHOTO('03'), heroPos: 'center 30%', portrait: NETWORK_PHOTO('04'), portraitPos: '60% 20%',
+    strip: [NETWORK_PHOTO('01'), NETWORK_PHOTO('06'), NETWORK_PHOTO('11')], nav1: 'Meetups', cta2: 'How it works',
+    covers: [NETWORK_PHOTO('03'), NETWORK_PHOTO('01'), NETWORK_PHOTO('06'), NETWORK_PHOTO('11'), NETWORK_PHOTO('10')],
+    portraits: [NETWORK_PHOTO('04'), NETWORK_PHOTO('09')],
+  },
   network: FREQUENCY_IMAGERY,
   temple: FREQUENCY_IMAGERY,
   bold: FREQUENCY_IMAGERY,
@@ -84,6 +92,15 @@ const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<Meg
 /** Temple kit is not a Mega Theme yet; it wears Temple's pictures and accents. */
 export const kitImagery = (kit: MegaThemeId): KitImagery => KIT_IMAGERY[kit] ?? KIT_IMAGERY.temple
 export const kitAccents = (kit: MegaThemeId): readonly PreviewAccent[] => KIT_ACCENTS[kit] ?? KIT_ACCENTS.temple
+
+/** The hex a kit's accent choice stands for, as the launch hold carries it (lib/launch/carry.ts `accent`, the place in the
+ *  kit's list as digits). Null when the kit or the place is not one of ours, so a hand-edited hold writes no colour. */
+export function kitAccentFill(kit: unknown, at: unknown): string | null {
+  if (typeof kit !== 'string' || !isPreviewKit(kit)) return null
+  const n = typeof at === 'string' && /^\d{1,2}$/.test(at) ? Number(at) : typeof at === 'number' ? at : NaN
+  const fill = Number.isInteger(n) ? kitAccents(kit)[n]?.fill : undefined
+  return fill && /^#[0-9a-fA-F]{6}$/.test(fill) ? fill : null
+}
 
 interface PreviewAccent {
   name: string
@@ -104,10 +121,9 @@ const KIT_ACCENTS: Partial<Record<MegaThemeId, readonly PreviewAccent[]>> & Reco
     { name: 'Violet', fill: MEGA_SURFACES.midnight?.accent.accent ?? '#8FB8FF', text: null }, { name: 'Moon blue', fill: '#8FB8FF', text: null },
     { name: 'Candle', fill: '#E8C27A', text: null }, { name: 'Rose', fill: '#F2A0B8', text: null },
   ],
-  'network-kit': [
-    { name: 'Cobalt', fill: '#2F5BEA', text: null }, { name: 'Tomato', fill: '#D94B34', text: null },
-    { name: 'Fern', fill: '#1F8A5B', text: null }, { name: 'Marigold', fill: '#C98A16', text: null },
-  ],
+  // The kit's four schemes, Marigold (its default) first, read from the one token module so the preview, the website
+  // and the Space agree on the hex (Daniel, 2026-11-03: the preview showed generic accents, not the Network kit's).
+  'network-kit': NETWORK_KIT_SCHEME_ORDER.map((id) => ({ name: NETWORK_KIT_SCHEMES[id].label, fill: NETWORK_KIT_SCHEMES[id].accent, text: NETWORK_KIT_SCHEMES[id].accentText })),
   network: [],
   temple: [
     { name: 'Clay', fill: '#B5643C', text: null }, { name: 'Ochre', fill: '#9C7130', text: null },

@@ -76,6 +76,10 @@ export interface CreateSpaceInput {
   /** The Mega Theme a /themes page named. The new Space is dressed in it once it exists (applyMegaTheme: website,
    *  fonts, accent). An unknown value does nothing. */
   theme?: string | null
+  /** The accent the owner picked beside the theme (#rrggbb), from the signed-out builder (lib/create-space/preview-site.ts
+   *  kitAccents). Written as the Space's brand colour, which the Space page, its Spotlight and the website all read, before
+   *  the theme's default would fill that blank. Anything else writes nothing. */
+  accent?: string | null
   /** The picker's other answers (lib/spaces/space-picker.ts, ADR-1883): the one thing people should do, a
    *  feel id, and an optional existing site. Each is re-validated here and an invalid one stores nothing. */
   action?: string | null
@@ -328,6 +332,11 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   // The theme the owner chose on /themes dresses the new Space (LIVE-SYS-7). Best-effort and logged: a failed
   // theme write never blocks the Space, and the owner can pick the theme again from the editor.
   if (isMegaThemeId(input.theme)) {
+    // Their own accent first: applyMegaTheme fills the brand colour only while it is blank, so the pick must land before it.
+    if (typeof input.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.accent)) {
+      const { fillSpaceBrandAccent } = await import('@/lib/spaces/store')
+      if (!(await fillSpaceBrandAccent(spaceId, input.accent).catch(() => false))) console.error('[createSpace] could not write the chosen accent to the new space')
+    }
     const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
     const applied = await applyMegaTheme(spaceId, input.theme).catch(() => null)
     if (!applied?.ok) console.error('[createSpace] could not apply the chosen theme to the new space')

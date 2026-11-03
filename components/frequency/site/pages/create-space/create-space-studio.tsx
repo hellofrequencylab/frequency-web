@@ -156,9 +156,11 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
     timers.current.save = window.setTimeout(() => setSaveState('saved'), 700)
   }, [draft])
 
-  // ── From step 3, the draft also goes to the server: debounced after every change, and by beacon when the tab goes.
+  // ── The moment a name and a full address are typed, the draft also goes to the server (the owner's rule, 2026-11-03:
+  // capture before Save, so an abandoned draft gets its come-back email): debounced after every change, and by beacon
+  // when the tab goes. Not gated on the contact step's Continue.
   const flashRef = useRef<((text: string) => void) | null>(null)
-  const sendable = (d: BuilderDraft) => Boolean(d.done.contact && leadEmailOf(d) && d.name.trim()) && !trappedRef.current && !sealed.current
+  const sendable = (d: BuilderDraft) => Boolean(leadEmailOf(d) && d.name.trim()) && !trappedRef.current && !sealed.current
   const fingerprint = (d: BuilderDraft) => serializeDraft({ ...d, leadToken: null })
   const sendToServer = useCallback(async () => {
     const d = latest.current

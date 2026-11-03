@@ -20,7 +20,7 @@ import { redirect } from 'next/navigation'
 import { signInWithGoogle, sendSignupLink } from '@/app/sign-in/actions'
 import { getMyProfileId } from '@/lib/auth'
 import { claimedHandle } from '@/lib/create-space/builder'
-import { markDraftConverted, readDraftByToken, saveDraft } from '@/lib/create-space/draft-io'
+import { readDraftByToken, saveDraft } from '@/lib/create-space/draft-io'
 import { destinationFor, holdFor, parseHandoff } from '@/lib/create-space/handoff'
 import { isLeadToken, isZone } from '@/lib/create-space/lead'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
@@ -42,9 +42,10 @@ async function handOver(raw: FormDataEntryValue | null): Promise<Handed> {
   // Only a read that SAYS the handle is taken stops the hand-over: a failed read (null) is not a reason to lose the visitor.
   if ((await isSpaceSlugTaken(claimedHandle(draft)).catch(() => null)) === true) return { error: HANDLE_TAKEN }
   const where = destinationFor(launchSystemEnabled())
+  // The server copy is NOT stamped converted here: a tap on Claim is not an arrival. The hold carries the draft's token,
+  // and /launch/claim stamps it the moment the person has signed in (the owner's rule, 2026-11-03: an abandoned claim,
+  // a magic link never opened or a Google sign-in never finished, still gets the come-back emails, ADR-1933).
   await writePendingLaunch(holdFor(draft))
-  // The server copy is finished with: the launch owns the draft now, and the reminders stop (ADR-1933).
-  if (draft.leadToken) await markDraftConverted(draft.leadToken)
   return { next: where.next, keepBuildingHref: where.keepBuildingHref }
 }
 

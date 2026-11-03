@@ -16,7 +16,7 @@ export const PENDING_LAUNCH_COOKIE = 'fq_pending_launch'
 export const PENDING_LAUNCH_MAX_AGE = 60 * 60 * 24 * 30 // 30 days, the same as the funnel's other parked answers
 
 const MAX_INTENTS = 8
-const MAX_KEYS_PER_STEP = 12
+const MAX_KEYS_PER_STEP = 13 // name + link + the eleven carry keys (lib/launch/carry.ts)
 const MAX_TOKEN = 40
 const MAX_ANSWER = 500
 

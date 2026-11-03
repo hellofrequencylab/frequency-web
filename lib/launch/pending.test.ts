@@ -38,7 +38,7 @@ describe('the launch hold', () => {
     const fields = Object.fromEntries(Array.from({ length: 30 }, (_, i) => [`f${i}`, 'y'.repeat(900)]))
     const out = parsePendingLaunch(JSON.stringify({ savedAt: now.toISOString(), answers: { offer: fields } }), now)
     const kept = out?.answers.offer ?? {}
-    expect(Object.keys(kept)).toHaveLength(12)
+    expect(Object.keys(kept)).toHaveLength(13)
     expect(Object.values(kept).every((v) => v.length === 500)).toBe(true)
   })
 })

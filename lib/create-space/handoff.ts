@@ -42,6 +42,7 @@ export function holdFor(draft: BuilderDraft): Omit<PendingLaunch, 'savedAt'> {
           cover: draft.cover,
           logo: draft.logo,
           profile: draft.profile,
+          lead: draft.leadToken ?? undefined,
         }),
       },
     },
