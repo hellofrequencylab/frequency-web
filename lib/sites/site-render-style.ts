@@ -10,6 +10,7 @@ import { freeHumanAccentVars } from '@/lib/theme/free-human'
 import { midnightAccentVars } from '@/lib/theme/midnight'
 import { designerAccentVars } from '@/lib/theme/designer'
 import { newWorldAccentVars } from '@/lib/theme/new-world'
+import { servicesAccentVars } from '@/lib/theme/services'
 import { SPACE_THEMES, SPACE_THEME_FONT_VARS, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteStyle, SiteThemeId } from '@/lib/theme/site-style'
 import { websiteThemeVars } from '@/lib/sites/editor/theme'
@@ -72,7 +73,9 @@ export function siteRenderStyle(pageStyle: SiteStyle, accent: string | null | un
                     ? freeHumanAccentVars(brandAccent)
                     : theme === 'new-world'
                       ? newWorldAccentVars(brandAccent)
-                      : resolveAccentVars(brandAccent, typeDefaultAccent)
+                      : theme === 'services'
+                        ? servicesAccentVars(brandAccent)
+                        : resolveAccentVars(brandAccent, typeDefaultAccent)
   return {
     theme,
     editorTheme: editorThemeOf(theme),
