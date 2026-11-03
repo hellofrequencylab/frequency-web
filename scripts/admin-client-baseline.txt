@@ -433,6 +433,7 @@
 #   lib/circles/page-facts.ts: the meetup "going" count and (only when the circle shows faces) first names of members going, the viewer's own RSVP, and the count of members who practiced this week; event_rsvps and practice_logs are RLS-readable only to their owner, the same case as lib/events/going-counts.ts. Circle meeting text, agreements and channel names are public circle fields. Writes nothing.
 #   lib/circles/circle-weeks.ts: per-week "did this circle meet quorum" over members' practice_logs for the Stats weeks strip. Reads profile_id and day only, returns booleans per week, never who practiced.
 #   components/frequency/members/circle/circle-nudges.tsx: hands the admin client to loadMatesAtRisk (components/widgets/leaderboard/leaderboard-consistency.tsx, already on this list) scoped to one circle the viewer belongs to; the nudge itself still goes through nudgeStreakMate's own checks.
+# lib/spaces/community-wall.ts (added 2026-11-03, LIVE-2077, ADR-1938): NOT a new read surface. It resolves the VIEWER'S OWN standing on one Space wall (owner, team, member, follower) from space_members, space_memberships and space_follows, so reply and high-five writes, which sit on crew-plus policies, can be gated by the owner's followers_interact setting. Rows RLS cannot serve: a follower or a team seat cannot read other tenants' roster tables. It returns one enum for one (profile, Space) pair, never a row, and fails closed to "no interaction" on any error. Reading the wall itself and posting to it run under the session client and RLS.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -1233,6 +1234,7 @@ lib/spaces/campaigns.ts
 lib/spaces/checkin.ts
 lib/spaces/claim.ts
 lib/spaces/collaborations.ts
+lib/spaces/community-wall.ts
 lib/spaces/completion-analytics.ts
 lib/spaces/content-actions.ts
 lib/spaces/content-data.ts
@@ -1309,6 +1311,3 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
-
-# lib/spaces/community-wall.ts (added 2026-11-03, LIVE-2077, ADR-1938): NOT a new read surface. It resolves the VIEWER'S OWN standing on one Space wall (owner, team, member, follower) from space_members, space_memberships and space_follows, so reply and high-five writes, which sit on crew-plus policies, can be gated by the owner's followers_interact setting. Rows RLS cannot serve: a follower or a team seat cannot read other tenants' roster tables. It returns one enum for one (profile, Space) pair, never a row, and fails closed to "no interaction" on any error. Reading the wall itself and posting to it run under the session client and RLS.
-lib/spaces/community-wall.ts

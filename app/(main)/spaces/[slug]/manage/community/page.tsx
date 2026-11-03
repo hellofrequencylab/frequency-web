@@ -7,7 +7,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { consoleBackFor } from '@/lib/spaces/console-back'
 import { readWallSettings } from '@/lib/spaces/community-wall'
-import { IndexTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { WallSettingsForm } from './wall-settings-form'
@@ -60,12 +60,12 @@ export default async function ManageCommunityPage({ params }: { params: Promise<
   const posts = (recent.data ?? []) as unknown as WallRow[]
 
   return (
-    <IndexTemplate
+    <ConsoleFocusTemplate
       back={consoleBackFor(space, 'programs')}
       eyebrow={space.brandName ?? space.name}
       title="Community wall"
       description="Choose who reads and posts on your wall, and keep it the way you want it."
-      action={
+      actions={
         <Link href={`/spaces/${space.slug}/community`} className={buttonClasses('secondary', 'sm')}>
           <Eye className="h-4 w-4" aria-hidden />
           View the wall
@@ -108,6 +108,6 @@ export default async function ManageCommunityPage({ params }: { params: Promise<
           )}
         </section>
       </div>
-    </IndexTemplate>
+    </ConsoleFocusTemplate>
   )
 }
