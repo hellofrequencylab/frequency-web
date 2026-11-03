@@ -448,6 +448,16 @@ const nextConfig: NextConfig = {
       { source: '/for/event-spaces', destination: '/pricing', permanent: false },
       { source: '/for/service-businesses', destination: '/pricing', permanent: false },
       { source: '/for/product-businesses', destination: '/pricing', permanent: false },
+      // LIVE-2093 (menu overhaul, owner ruling 2026-11-03): thirteen doors cut to nine. Each retired door lands
+      // on the survivor that sells the same Space Mode; Search Console showed no impressions on any of the four.
+      { source: '/for/creators', destination: '/for/coaches-and-healers', permanent: true },
+      { source: '/for/wellness-and-retreats', destination: '/for/studios', permanent: true },
+      { source: '/for/markets-and-festivals', destination: '/for/event-hosts', permanent: true },
+      { source: '/for/schools-and-programs', destination: '/for/clubs-and-groups', permanent: true },
+      // /calm-down-fast MERGED into /mindless (LIVE-2093): the guide's promise was five quiet minutes, and the
+      // timer is that promise kept. The member help twin is self-canonical now. The /go/calm-down-fast
+      // campaign door (lib/marketing/launch-doors.ts) is a separate route and keeps working.
+      { source: '/calm-down-fast', destination: '/mindless', permanent: true },
       // Founder-pricing retirement: the founders marketing funnel is gone and the beta
       // price framing is "Opening Beta" on /pricing. Permanent — the routes are deleted
       // for good, so inbound links + old emails should transfer straight to /pricing.

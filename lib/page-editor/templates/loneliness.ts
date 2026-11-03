@@ -196,7 +196,7 @@ export const spec: ArticleSpec = {
           title: 'Start small, then show up twice',
           kicker:
             'You do not have to fix your whole life this week. You have to walk into one room.',
-          body: "The easiest first step is to look at what is already happening near you: the Circles meeting this week, the events you could just walk into. Pick one that meets again, go once, and go back. Nothing more than that.\n\nNew to town and starting from zero? The [new-city guide](/friendship-as-an-adult) is the same idea aimed at week one. Always wired and can't switch off? Start with [a few ways to calm down fast](/calm-down-fast).",
+          body: "The easiest first step is to look at what is already happening near you: the Circles meeting this week, the events you could just walk into. Pick one that meets again, go once, and go back. Nothing more than that.\n\nNew to town and starting from zero? The [new-city guide](/friendship-as-an-adult) is the same idea aimed at week one. Always wired and can't switch off? Start with [five quiet minutes on the breathing timer](/mindless).",
           side: 'right',
           links: [
             { label: "See what's happening near you", href: '/discover', variant: 'primary' },
