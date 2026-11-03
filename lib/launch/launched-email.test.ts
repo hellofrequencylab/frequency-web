@@ -5,7 +5,7 @@ const base = { to: 'sam@example.com', firstName: 'Sam', spaceName: 'Harbor Meetu
 
 describe('the launched welcome', () => {
   it('names the three addresses from the handle, Spotlight first', () => {
-    const text = buildLaunchedEmail(base).text
+    const text = buildLaunchedEmail(base).text ?? ''
     const at = (s: string) => text.indexOf(s)
     expect(at('Your Spotlight: https://frequencylocal.com/spaces/harbor-meetups/spotlight')).toBeGreaterThan(0)
     expect(at('Your Space: https://frequencylocal.com/spaces/harbor-meetups\n')).toBeGreaterThan(at('Your Spotlight:'))

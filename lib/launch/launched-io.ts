@@ -1,4 +1,5 @@
 import 'server-only'
+// authz-delegated: the gate is the call site (app/(main)/launch/page.tsx, the signed-in owner's own launch read under their session); the write is a platform ledger row (launch_email_log, service-only by design) and the outbox, the same shape as lib/launch/comeback-io.ts.
 // THE LAUNCHED WELCOME, the IO half (LIVE-2064). Sent once, the moment a launch is marked complete (app/(main)/launch/page.tsx
 // completeLaunch). Same shape as the come-back runner (lib/launch/comeback-io.ts, ADR-1212): the lifecycle send gate first,
 // then the claim (one launch_email_log row per launch and kind, so a second tab cannot send twice), then the send. A skip
