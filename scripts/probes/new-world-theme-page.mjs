@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2064: /themes/new-world exists on the Nocturne layout: a static route that wins over /themes/[theme] (which skips it), the
+// LIVE-2065: /themes/new-world exists on the Nocturne layout: a static route that wins over /themes/[theme] (which skips it), the
 // preview stage with the four-surface switcher, a real picture for every surface of every kit and every Spotlight layout, and
 // noindex until the theme is un-hidden. Fails on main (no route, no pictures).
 import { existsSync, readFileSync } from 'node:fs'
