@@ -3,13 +3,12 @@
 // nudge, the come-back email link) asks THIS file where to go and gets one answer: /launch, the page that shows
 // what the account already has and what is next. PURE and client-safe.
 //
-// The one exception is a visitor with no account: /launch is the signed-in owner's page, so they go to the
-// Spotlight form, which holds what they type in the launch cookie (lib/launch/pending.ts) until they sign in.
-
-import { launchStepHref } from './steps.ts'
+// The one exception is a visitor with no account: /launch is the signed-in owner's page, so they go to the Create a
+// Space wizard (LIVE-1969, ADR-1933), which needs no account and hands over to /launch/claim when they save. proxy.ts
+// makes the same hop for a cold /launch and /launch/start before the member layout runs.
 
 const LAUNCH_HOME = '/launch'
-const SPOTLIGHT_FORM = launchStepHref('spotlight')
+const WIZARD = '/create-a-space'
 /** The marker a link INSIDE the flow carries, so the Spotlight step can tell "I was sent here by the launch page"
  *  from "I arrived at a step address cold" (which goes to /launch). */
 const IN_FLOW_PARAM = 'go'
@@ -18,7 +17,7 @@ const LAUNCH_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 /** Where every entry to the launch lands. `lid` names one launch (the come-back email link); anything that is not
  *  a launch id is dropped, so the address cannot carry text. */
 export function launchHomeHref(opts: { signedIn?: boolean; lid?: string | null } = {}): string {
-  if (opts.signedIn === false) return SPOTLIGHT_FORM
+  if (opts.signedIn === false) return WIZARD
   return opts.lid && LAUNCH_ID.test(opts.lid) ? `${LAUNCH_HOME}?lid=${opts.lid.toLowerCase()}` : LAUNCH_HOME
 }
 
