@@ -9,7 +9,7 @@ export type FqIconName =
 /** The page editor's own glyphs (undo, redo, devices, folds, section toolbar). The export draws them inline in
  *  templates/admin/editor/editor.js; they live in a HAND-KEPT supplementary sprite beside the generated one,
  *  because the installer copies frequency-icons.svg verbatim and would drop anything added to it. */
-export const FQ_EDITOR_ICONS = ['undo', 'redo', 'eye', 'eye-off', 'desktop', 'tablet', 'phone', 'arrow-up', 'arrow-down', 'copy', 'trash', 'fold-left', 'fold-right', 'back', 'caret', 'minus', 'layers', 'palette'] as const
+export const FQ_EDITOR_ICONS = ['undo', 'redo', 'eye', 'eye-off', 'desktop', 'tablet', 'phone', 'arrow-up', 'arrow-down', 'copy', 'trash', 'fold-left', 'fold-right', 'back', 'caret', 'minus', 'layers', 'palette', 'outline', 'unpin', 'history', 'surface', 'variant', 'sample'] as const
 export type FqEditorIconName = (typeof FQ_EDITOR_ICONS)[number]
 
 const SPRITE = '/brand/frequency/frequency-icons.svg'
