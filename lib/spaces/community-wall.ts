@@ -130,3 +130,28 @@ export async function canInteractOnWall(args: {
     return false
   }
 }
+
+/**
+ * Save the owner's wall choices. The table refuses writes from anon and authenticated, so this runs
+ * on the service role, and the CALLER must already have checked that the viewer can edit the Space
+ * (the manage/community action does, through getSpaceCapabilities). Returns false on any error.
+ */
+export async function writeWallSettings(spaceId: string, settings: WallSettings): Promise<boolean> {
+  try {
+    const { error } = await createAdminClient()
+      .from('space_wall_settings')
+      .upsert(
+        {
+          space_id: spaceId,
+          read_access: settings.readAccess,
+          post_access: settings.postAccess,
+          followers_interact: settings.followersInteract,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'space_id' },
+      )
+    return !error
+  } catch {
+    return false
+  }
+}

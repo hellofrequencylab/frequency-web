@@ -77,6 +77,11 @@ export default async function SpaceCommunityPage({ params }: { params: Promise<{
         <p className="text-body-sm text-muted">
           What is happening at {brandName}, from the people who run it and the people in it.
         </p>
+        {canManage ? (
+          <Link href={`/spaces/${space.slug}/manage/community`} className={buttonClasses('secondary', 'sm', 'mt-3')}>
+            Wall settings
+          </Link>
+        ) : null}
       </header>
 
       {canRead ? (
