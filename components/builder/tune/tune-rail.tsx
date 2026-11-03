@@ -94,8 +94,8 @@ function Row({ tune, props, onChange }: { tune: TuneField; props: Props; onChang
     case 'custom': control = tune.field.type === 'custom' ? tune.field.render({ field: tune.field, name: tune.key, id, value, onChange: set }) : null; break
   }
   return (
-    <div className={styles.row}>
-      <label id={`${id}-label`} htmlFor={id} className={styles.label}>{tune.label}{tune.required && <span className={styles.req} aria-label="needed">·</span>}</label>
+    <div className={styles.field}>
+      <label id={`${id}-label`} htmlFor={id} className={styles.fieldLabel}>{tune.label}{tune.required && <span className={styles.req} aria-label="needed">·</span>}</label>
       {control}
     </div>
   )
