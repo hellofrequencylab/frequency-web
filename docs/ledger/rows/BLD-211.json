@@ -1,0 +1,19 @@
+{
+  "id": "BLD-211",
+  "title": "Builder: the four variants the builder names that the roles lack (Hero glow and minimal, Gatherings agenda, Figures bar)",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Revision 2, builder v3 (2026-11-03): docs/design/frequency-builder-v3/v3-review-and-needs.md"
+  },
+  "detail": "Adds hero variants glow and minimal, gatherings variant agenda (week ribbon plus rows), stats variant bar. Existing variants and stored pages are untouched; presentation defaults stay as they are until BLD-212. Done when: the three role JSON files list the variants, each renders with its sample and an empty state, and a page stored before this change renders identically.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-03",
+    "evidence": "Filed from the builder v3 audit. The pass writes scripts/probes/builder/BLD-211.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  },
+  "wave": "W7"
+}
