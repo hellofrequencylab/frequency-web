@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-2077",
+  "title": "W2 The Community page: wall, composer, moderation, Space capability set",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1938.md",
+    "ref": "Daniel 2026-11-03: Space circles become a Community wall; thread plan /mnt/project-files/community-wall/PLAN.md"
+  },
+  "detail": "/spaces/[slug]/community (tab beside Circles) built from the Circles handoff: cover, What's on, sticky tabs, arrivals strip, composer (Photo, Poll, Ask, Announce for team), post cards with replies and high fives, pinned posts, side column (About, Circles, How we meet, Who's here). Wall settings for the owner. Moderation: pin, hide, lock replies, remove, ban from the wall, Space report queue. New space.* capabilities for the Space team ladder. Signed-out and private-wall states. Render at 390, 768, 1440 and 2000 beside the design before merge.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-community-wall.mjs w2"
+  }
+}

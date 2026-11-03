@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-2076",
+  "title": "W1 Additive migration: Space-scoped posts, wall settings, access rules, copy of existing Space Circle posts",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1938.md",
+    "ref": "Daniel 2026-11-03: Space circles become a Community wall; thread plan /mnt/project-files/community-wall/PLAN.md"
+  },
+  "detail": "posts.scope_type gains 'space' (scope_id is a polymorphic uuid with no FK); a space_wall_settings table holds the owner's choices (read: anyone or members, post: team and members, followers_interact); RLS and scoped_feed_for_viewer learn the space scope (keep the function-body guard in 20270345009100); existing Space Circle posts, replies and reactions are COPIED then verified, never moved; space_memberships and follows backfilled from the Space Circle roster, honouring space_circle_optouts. Additive and idempotent, timestamped after every migration on main and production; applied by this thread before merge (ADR-1111).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-community-wall.mjs w1"
+  }
+}
