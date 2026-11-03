@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-1562",
+  "patch": {
+    "source": {
+      "file": "next.config.ts",
+      "ref": "Owner 2026-10-27 15:56Z: /system, both fee facts, House of Fates and Alli Rae as the named demos; 19:09Z: the Frequency default theme fronts the page. Handoff: /mnt/project-files/mega-system/04-claude-code-handoff.md"
+    },
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/menu-merges.mjs",
+      "note": "/system merged into /features (LIVE-2103): the route is gone and the old URL 301s to /features."
+    }
+  },
+  "append": {
+    "detail": "2026-11-03 (LIVE-2103): /system merged into /features (owner ruling, menu overhaul, Daniel picked the recommended cull). The page and its components are deleted and /system 301s to /features; the probe now proves the merge. Probe replaced: scripts/probes/menu-merges.mjs proves /system 301s to /features and the page is gone (Daniel approved the pin 18:04Z)."
+  },
+  "wave": "W7"
+}

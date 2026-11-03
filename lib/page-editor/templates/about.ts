@@ -223,6 +223,46 @@ export const data: Data = {
       },
     },
 
+    // ── The Lab (LIVE-2103). /vision merged in here (owner ruling 2026-11-03), and /the-lab had
+    // merged into /vision before it, so the dated plan lives on this page now. FUTURE TENSE (ADR-1735):
+    // the Lab is a plan, nothing is bookable, and the first one is planned for 2028.
+    {
+      type: 'BuildTimeline',
+      props: {
+        id: 'ab-lab',
+        eyebrow: 'The Lab · community first, building second',
+        title: 'Where this actually is.',
+        titleAccent: '',
+        kicker: 'A third space the community is planning: not home, not work, a real room to move, warm up and switch off in person.',
+        intro: "We want to understand the people and groups who would use a place before planning the building. There's nothing to sell yet, so there are no membership rates here.",
+        items: [
+          {
+            label: 'Now',
+            title: 'Circles, in borrowed rooms.',
+            body: "Circles meet in parks, living rooms and rented studios. Check a Circle's own plans for its location and schedule.",
+            highlight: 'normal',
+          },
+          {
+            label: '2027',
+            title: 'Site and permits.',
+            body: `The plan includes finding a site in ${FOUNDING_PLACE}, reviewing zoning, and planning the facilities.`,
+            highlight: 'normal',
+          },
+          {
+            label: '2028',
+            title: 'The first Lab is planned.',
+            body: 'The first building is planned for 2028. Future locations would depend on what we learn and what each town needs.',
+            highlight: 'normal',
+          },
+        ],
+        footnote: 'Planning dates, not promises. The Lab is not open and nothing there is bookable.',
+        texture: 'none',
+        flow: 'soft',
+        tone: 'canvas',
+        layout: L,
+      },
+    },
+
     // ── The explainer, as questions (SCAN-1017). These five answers came over from the retired
     // /what-is-frequency page, which told this page's story a second time at three times the length;
     // the Accordion block emits the FAQPage node, so the answer engines that quoted that page quote
@@ -254,6 +294,20 @@ export const data: Data = {
           {
             q: 'Where is Frequency available?',
             a: `Frequency is taking root in ${FOUNDING_PLACE} first, where the first Circles are forming, and the first Lab is planned for 2028. It spreads the way real community always has: person to person, one Circle and one city at a time.`,
+          },
+          // The Lab's short answers, from the retired /vision page (and /the-lab before it). One FAQ
+          // block per page, so they join this one rather than emit a second FAQPage node.
+          {
+            q: 'What is The Lab?',
+            a: `The Lab is a third space the Frequency community is planning: not home, not work, a real room to move, warm up in the sauna, cool down in the plunge, and switch off in person. The first one is planned for 2028 in ${FOUNDING_PLACE}. It is not open yet.`,
+          },
+          {
+            q: 'When will The Lab open?',
+            a: 'The first Lab is planned for 2028, with site and permit work planned for 2027. Those are planning dates. Nothing at The Lab is bookable yet, and you can browse Circles and Events near you in the meantime.',
+          },
+          {
+            q: 'What will be inside The Lab?',
+            a: 'The plan includes movement studios, a cedar thermal circuit, a cold plunge pool, a no-alcohol connection bar, and a flexible events floor. Details may change as the site is planned.',
           },
         ],
         emphasis: { scale: 'default', accent: 'none' },

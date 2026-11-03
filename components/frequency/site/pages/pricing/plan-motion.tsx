@@ -298,7 +298,7 @@ export function MotionLinks() {
       {' · '}
       <Link href="/help/spaces/plans-and-pricing">Plans and pricing, in detail</Link>
       {' · '}
-      <Link href={ROUTES.system}>The whole system</Link>
+      <Link href={ROUTES.features ?? ROUTES.help}>Every feature</Link>
     </p>
   )
 }
