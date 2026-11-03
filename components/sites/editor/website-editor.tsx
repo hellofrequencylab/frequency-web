@@ -8,11 +8,11 @@ import { loadWebsiteMenu, saveWebsiteMenu, resetWebsiteMenu, saveWebsiteHeaderLo
 import { WebsiteFeatureSourceContext } from './feature-source-context'
 import type { WebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { config } from '@/lib/page-editor/config'
-import { saveWebsiteDraft, saveWebsiteStyle, proposeWebsiteText, syncWebsitePresence, loadWebsiteFeatureSource } from '@/lib/sites/editor/actions'
+import { saveWebsiteDraft, saveWebsiteStyle, proposeWebsiteText, proposeWebsiteLayout, syncWebsitePresence, loadWebsiteFeatureSource } from '@/lib/sites/editor/actions'
 import type { WebsiteSnapshot } from '@/lib/sites/editor/state'
 import { WebsiteEditorShell, type WebsiteEditorShellProps } from './shell'
 
-export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onSave' | 'onPropose' | 'onPresence' | 'onStyle' | 'config'>) {
+export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onSave' | 'onPropose' | 'onLayout' | 'onPresence' | 'onStyle' | 'config'>) {
   const host = props.host
   const [features, setFeatures] = useState<WebsiteFeatures>(() => (props.metadata?.websiteFeatures as WebsiteFeatures | undefined) ?? {})
   const [sourceError, setSourceError] = useState<string | null>(null)
@@ -37,6 +37,7 @@ export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onS
   const sources = useMemo(() => ({ load: loadSource, error: sourceError }), [loadSource, sourceError])
   const save = useCallback((revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string | null) => saveWebsiteDraft(host, revision, draft, publish, scheduledAt), [host])
   const propose = useCallback((request: string, value: string) => proposeWebsiteText(host, request, value), [host])
+  const layout = useCallback((request: string, outline: Parameters<typeof proposeWebsiteLayout>[2]) => proposeWebsiteLayout(host, request, outline), [host])
   const style = useCallback((patch: Parameters<NonNullable<WebsiteEditorShellProps['onStyle']>>[0]) => saveWebsiteStyle(host, patch), [host])
   const presence = useCallback((cursor: Parameters<typeof syncWebsitePresence>[1]) => syncWebsitePresence(host, cursor), [host])
   const media = useMemo(() => ({
@@ -52,5 +53,5 @@ export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onS
     saveLogo: (logo: { mode: string; logoUrl: string | null }) => saveWebsiteHeaderLogo(host, logo),
     uploadLogo: (data: FormData) => uploadWebsiteLogo(host, data),
   }), [host])
-  return <SiteMenuActionsProvider actions={menu}><LoomPickerActionsProvider actions={media}><WebsiteFeatureSourceContext.Provider value={sources}><WebsiteEditorShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onPropose={propose} onPresence={presence} onStyle={style} /></WebsiteFeatureSourceContext.Provider></LoomPickerActionsProvider></SiteMenuActionsProvider>
+  return <SiteMenuActionsProvider actions={menu}><LoomPickerActionsProvider actions={media}><WebsiteFeatureSourceContext.Provider value={sources}><WebsiteEditorShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onPropose={propose} onLayout={layout} onPresence={presence} onStyle={style} /></WebsiteFeatureSourceContext.Provider></LoomPickerActionsProvider></SiteMenuActionsProvider>
 }

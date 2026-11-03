@@ -124,5 +124,11 @@
     "side",
     "title",
     "value"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "hide"
+  }
 }

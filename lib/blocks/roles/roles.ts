@@ -51,6 +51,9 @@ interface RoleDefinition {
   default: string
   /** The Space rows a live role reads when its block asks for them: events or faqs. */
   data: 'events' | 'faqs' | null
+  /** Where the role must appear (BLD-215): drawn on the site and the profile, a door on Spotlight, and in email either drawn,
+   *  hidden (no email form of it) or frozen (the rows at send are fixed, never live). */
+  surfaces: { site: 'draw'; profile: 'draw'; spotlight: 'door'; email: 'draw' | 'hide' | 'freeze' }
   /** Core token names (without the dashes) the role's structure reads. */
   tokens: string[]
   /** The `data-part` hooks the markup exposes and a presentation may target. */
