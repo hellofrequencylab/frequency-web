@@ -161,9 +161,9 @@ export const NEW_WORLD_TOKENS_CSS = `
 --nw-aura-opacity:.6;
 --nw-glow-strength:1;
 --nw-logo-filter:invert(1);
---nw-shadow-sm:0 1px 0 rgba(255,255,255,.06) inset,0 1px 2px rgba(0,0,0,.4);
---nw-shadow-md:0 1px 0 rgba(255,255,255,.08) inset,0 18px 40px -16px rgba(0,0,0,.7);
---nw-shadow-lg:0 1px 0 rgba(255,255,255,.1) inset,0 40px 80px -24px rgba(0,0,0,.8);
+--nw-depth-sm:0 1px 0 rgba(255,255,255,.06) inset,0 1px 2px rgba(0,0,0,.4);
+--nw-depth-md:0 1px 0 rgba(255,255,255,.08) inset,0 18px 40px -16px rgba(0,0,0,.7);
+--nw-depth-lg:0 1px 0 rgba(255,255,255,.1) inset,0 40px 80px -24px rgba(0,0,0,.8);
 --nw-grad-lit:linear-gradient(100deg,var(--nw-halo-300) 0%,var(--nw-chrome-50) 30%,var(--nw-swell-300) 55%,var(--nw-flare-400) 78%,var(--nw-halo-300) 100%);
 --nw-sp:1.15;
 --nw-surface-page:var(--nw-surface-page-base,var(--nw-ink-900));
@@ -262,9 +262,9 @@ export const NEW_WORLD_DAY_CSS = `
 --nw-aura-opacity:.85;
 --nw-glow-strength:0;
 --nw-logo-filter:none;
---nw-shadow-sm:0 1px 2px rgba(60,40,20,.06);
---nw-shadow-md:0 1px 2px rgba(60,40,20,.04),0 18px 40px -22px rgba(60,40,20,.16);
---nw-shadow-lg:0 2px 4px rgba(60,40,20,.04),0 40px 80px -34px rgba(60,40,20,.22);
+--nw-depth-sm:0 1px 2px rgba(60,40,20,.06);
+--nw-depth-md:0 1px 2px rgba(60,40,20,.04),0 18px 40px -22px rgba(60,40,20,.16);
+--nw-depth-lg:0 2px 4px rgba(60,40,20,.04),0 40px 80px -34px rgba(60,40,20,.22);
 --nw-grad-lit:var(--nw-iridescent-sweep-deep);
 --nw-sp:.45;
 --nw-surface-page-base:radial-gradient(60% 50% at 6% 0%,color-mix(in oklab,var(--nw-flare-300) 26%,transparent),transparent 70%),radial-gradient(50% 50% at 98% 14%,color-mix(in oklab,var(--nw-halo-300) 24%,transparent),transparent 70%),radial-gradient(55% 50% at 70% 100%,color-mix(in oklab,var(--nw-swell-300) 18%,transparent),transparent 70%),var(--nw-ink-900);
@@ -273,10 +273,10 @@ export const NEW_WORLD_DAY_CSS = `
 /** The Detail type pairing, kept as a Look (Bricolage Grotesque, Lora, DM Mono). */
 export const NEW_WORLD_DETAIL_CSS = `
 [data-house-theme="new-world"][data-pairing="detail"]{
---nw-font-display:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
---nw-font-accent:'Lora',Georgia,serif;
---nw-font-body:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
---nw-font-mono:'DM Mono',ui-monospace,Menlo,monospace;
+--nw-font-display:var(--font-nwd-bricolage,'Bricolage Grotesque'),'Helvetica Neue',Arial,sans-serif;
+--nw-font-accent:var(--font-nwd-lora,'Lora'),Georgia,serif;
+--nw-font-body:var(--font-nwd-bricolage,'Bricolage Grotesque'),'Helvetica Neue',Arial,sans-serif;
+--nw-font-mono:var(--font-nwd-mono,'DM Mono'),ui-monospace,Menlo,monospace;
 --nw-stretch-display:80%;
 --nw-lh-display:0.9;
 --nw-ls-display:-0.02em;

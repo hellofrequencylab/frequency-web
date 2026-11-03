@@ -259,9 +259,11 @@ describe('live rows', () => {
     reviews: { latest: [{ body: 'It felt like coming home.', rating: 5, author: { displayName: 'Maya R.', avatarUrl: null } }] },
     team: [{ name: 'Jo Lee', role: 'admin', avatarUrl: null, handle: 'jo' }],
     chapters: [{ name: 'North County', city: 'Encinitas', tagline: 'Meets Thursdays', slug: 'north-county' }],
+    practices: { practices: [{ id: 'p1', title: 'Morning breath', summary: 'Five quiet minutes' }], journeys: [{ slug: 'j1', title: 'Thirty days of walking', summary: null }] },
+    community: [{ slug: 'c1', name: 'Sunrise circle', about: 'Meets on the beach' }],
   }
-  const empty = { spaceId: 's1', stats: [], reviews: { latest: [] }, team: [], chapters: [] }
-  const cases: [RoleId, string, string][] = [['stats', '1,234', 'People here'], ['proof', 'It felt like coming home.', 'Maya R.'], ['people', 'Jo Lee', 'Admin'], ['chapters', 'North County', 'Encinitas']]
+  const empty = { spaceId: 's1', stats: [], reviews: { latest: [] }, team: [], chapters: [], practices: { practices: [], journeys: [] }, community: [] }
+  const cases: [RoleId, string, string][] = [['stats', '1,234', 'People here'], ['proof', 'It felt like coming home.', 'Maya R.'], ['people', 'Jo Lee', 'Admin'], ['chapters', 'North County', 'Encinitas'], ['offerings', 'Morning breath', 'Sunrise circle']]
   it.each(cases)('%s draws the Space\'s rows', (id, a, b) => {
     const html = render(id, sampleOf(id), { space })
     expect(html).toContain(a)
@@ -271,6 +273,10 @@ describe('live rows', () => {
   it.each(cases)('%s draws nothing on a live page with no rows, but keeps the sample in the editor', (id) => {
     expect(render(id, sampleOf(id), { space: empty })).toBe('')
     expect(render(id, sampleOf(id), undefined)).toContain('data-role="' + id + '"')
+  })
+  it('Booking draws nothing on a live page while it only holds the sample times', () => {
+    expect(render('booking', sampleOf('booking'), { space: empty })).toBe('')
+    expect(render('booking', sampleOf('booking'), undefined)).toContain('data-role="booking"')
   })
   it('a block the owner has written stays when the Space has no rows, and live can be turned off', () => {
     const own = { ...sampleOf('stats'), sample: false, items: [{ value: '40', label: 'Years in practice' }] }
