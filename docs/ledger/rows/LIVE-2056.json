@@ -9,7 +9,7 @@
   "file": "docs/design-systems/new-world/rules.json",
   "ref": "Daniel 2026-11-03: New World is the new mega template, default theme for every new Space"
  },
- "detail": "Per-niche starter kits from kits.js with tools[] and copy overrides, in house voice (voice guide wins over the design's words).",
+ "detail": "Per-niche starter kits from kits.js with tools[] and copy overrides, in house voice (voice guide wins over the design's words). The seven kits already exist in lib/sites/kits/services-variants.ts (#4508, built from the New World design): move them under new-world when the theme is registered (after the Services thread's LIVE-2040 merges); Services rebuilds its own 16 trade kits.",
  "verify": {
   "kind": "cmd",
   "cmd": "node -e \"process.exit(require('fs').existsSync('lib/sites/kits/new-world-variants.ts')?0:1)\""
