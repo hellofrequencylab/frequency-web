@@ -55,8 +55,21 @@ ${N} .hs-nav a::before{content:"";width:5px;height:5px;border-radius:var(--nw-ra
 ${N} .hs-nav a:hover,${N} .hs-nav a[aria-current="page"]{color:var(--nw-chrome-50)}
 ${N} .hs-nav a:hover::before,${N} .hs-nav a[aria-current="page"]::before{opacity:1}
 ${N} .hs-menu-panel,${N} .hs-mega-panel{background:var(--nw-ink-800);border:var(--nw-border-hairline) solid var(--nw-border-subtle);border-radius:var(--nw-radius-lg);box-shadow:var(--nw-depth-lg)}
-/* The footer: sunk ground, mono labels. */
-${N} .hs-footer-top{background:var(--nw-surface-sunken);border-top:var(--nw-border-hairline) solid var(--nw-border-subtle)}
-${N} .hs-footer-col-title{${LABEL};color:var(--nw-text-muted)}
+/* THE KIT'S FOOTER (handoff Chrome.jsx SiteFooter): the sky ground under a glow line, the wordmark and closing line with the accent
+   button first, the columns with mono heads, contact lines with their icons, the dim wordmark across the width, and the mono base line. */
+${N} > div:has(> .hs-footer-top){position:relative;overflow:hidden;background:var(--nw-glow-sky,none),var(--nw-ink-950);border-top:var(--nw-border-hairline) solid var(--nw-border-subtle)}
+${N} > div:has(> .hs-footer-top)::before{content:"";position:absolute;left:0;right:0;top:-1px;height:1px;background:linear-gradient(90deg,transparent 0%,color-mix(in oklab,var(--nw-flare-400) 55%,transparent) 30%,color-mix(in oklab,var(--nw-swell-300) 50%,transparent) 55%,color-mix(in oklab,var(--nw-halo-300) 45%,transparent) 75%,transparent 100%);opacity:.7;pointer-events:none}
+${N} .hs-footer-top{max-width:var(--nw-container-max);margin:0 auto;padding:96px var(--nw-gutter) 56px;gap:48px;background:none;border:0}
+${N} .hs-footer-brand{display:flex;flex-direction:column;align-items:flex-start;gap:20px}
+${N} .hs-footer-brand p{margin:0;color:var(--nw-text-secondary)}
+${N} .sv-wordmark{display:block;font-family:var(--nw-font-display);font-stretch:var(--nw-stretch-display);font-weight:var(--nw-fw-display);letter-spacing:var(--nw-ls-display);line-height:1;font-size:clamp(24px,2.4vw,30px);color:var(--nw-chrome-50)}
+${N} .sv-foot-band{margin:0;font-size:34px;line-height:1.05}
+${N} .hs-footer-col-title{${LABEL};letter-spacing:.14em;color:var(--nw-text-muted)}
+${N} .hs-footer-col{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+${N} .hs-footer-col a,${N} .sv-foot-line{display:inline-flex;align-items:center;gap:10px;font-size:15px;color:var(--nw-chrome-200)}
+${N} .hs-footer-col a:hover{color:var(--nw-chrome-50)}
+${N} .sv-foot-icon{display:inline-flex;color:var(--color-primary-strong)}
+${N} .sv-foot-mark{position:relative;max-width:var(--nw-container-max);margin:0 auto;padding:0 var(--nw-gutter);font-family:var(--nw-font-display);font-stretch:var(--nw-stretch-display);font-weight:var(--nw-fw-display);text-transform:uppercase;line-height:.8;letter-spacing:-.01em;font-size:clamp(44px,9vw,150px);text-align:center;color:var(--nw-chrome-50);opacity:.07;user-select:none;overflow:hidden;white-space:nowrap}
+${N} .hs-footer{max-width:var(--nw-container-max);margin:0 auto;padding:24px var(--nw-gutter);${LABEL};font-size:10.5px;letter-spacing:.12em;color:var(--nw-text-muted);border-top:0;background:none}
 @media (prefers-reduced-motion:reduce){${N} *{transition:none!important;animation:none!important}}
 `
