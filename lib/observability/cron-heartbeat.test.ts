@@ -11,7 +11,7 @@ vi.mock('@sentry/nextjs', () => ({
   withScope: (fn: () => unknown) => fn(),
 }))
 
-const recordCronSuccess = vi.fn(async () => {})
+const recordCronSuccess = vi.fn(async (_job: string) => {})
 vi.mock('@/lib/observability/cron-last-success', async () => ({
   ...(await vi.importActual<object>('@/lib/observability/cron-last-success')),
   recordCronSuccess: (...a: unknown[]) => recordCronSuccess(...(a as [string])),
