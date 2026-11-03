@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2098: the second batch from the 2026-11-03 signed-in sweep (member app, Space and Circle
+// LIVE-2099: the second batch from the 2026-11-03 signed-in sweep (member app, Space and Circle
 // consoles, admin). Source reads for each fix; every one failed on the tree before it.
 import { readFileSync } from 'node:fs'
 const read = (p) => readFileSync(p, 'utf8')
