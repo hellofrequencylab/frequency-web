@@ -214,6 +214,9 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     // The Collaborators tab (ADR-799 B1): the businesses that operate together with this space. Shown
     // only when there is at least one accepted collaboration.
     ...(hasCollaborators ? [{ key: 'feature:collaborators', href: `${base}/collaborators`, label: 'Collaborators' }] : []),
+    // Community (ADR-1938): the Space's wall, its public communications hub. Every Space that is not the
+    // platform root has one, so it needs no presence read; Circles sits beside it as the second tab.
+    ...(space.type !== 'root' ? [{ key: 'feature:community', href: `${base}/community`, label: 'Community' }] : []),
     // Circles: a Space's community IS its Circles (NAMING.md, ADR-1091), and this is where they are.
     // A manager sees it even at zero, because the empty state is where "Start your first circle"
     // lives; a visitor only sees it once there is a circle they could actually open.
