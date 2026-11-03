@@ -29,7 +29,12 @@ describe('the Vanta site (Services theme, the Vanta design system content)', () 
 
   it('every menu and footer target is a page that exists', () => {
     const slugs = new Set(vantaSitePages().map((p) => p.slug))
-    for (const m of VANTA_MENU.items) expect(slugs.has(m.target.key.replace('page:', ''))).toBe(true)
+    const ids = new Set(vantaSitePages().find((p) => p.slug === 'home')!.blocks.map((b) => b.type))
+    for (const m of VANTA_MENU.items) {
+      if (m.target.kind === 'auto') expect(slugs.has(m.target.key.replace('page:', ''))).toBe(true)
+      // A section of Home: the block that carries that section id is on Home (ServicesSteps is #process, ServicesFaq is #faq).
+      else expect(ids.has(m.target.href === '/#process' ? 'ServicesSteps' : m.target.href === '/#faq' ? 'ServicesFaq' : '')).toBe(true)
+    }
     for (const c of VANTA_FOOTER.columns) for (const l of c.links) if (l.href.startsWith('/')) expect(slugs.has(l.href.slice(1))).toBe(true)
   })
 
