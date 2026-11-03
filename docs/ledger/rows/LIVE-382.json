@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-382",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const mig=fs.readFileSync(\"supabase/migrations/20270345005600_space_circle.sql\",\"utf8\");if(!mig.includes(\"is_space_primary and member_cap <= 300\"))fail(\"no 300 cap for the Space Circle\");if(!mig.includes(\"create trigger spaces_ensure_space_circle\"))fail(\"new Spaces do not get a Space Circle\");if(!mig.includes(\"space_circle_is_attached\"))fail(\"the Space Circle is not held attached\");const lay=fs.readFileSync(\"app/(main)/circles/[slug]/(circle)/layout.tsx\",\"utf8\");if(!lay.includes(\"circle.is_space_primary && circle.space\"))fail(\"the Circle page does not name the Space as host\");const caps=fs.readFileSync(\"lib/core/load-capabilities.ts\",\"utf8\");if(!caps.includes(\"circle?.is_space_primary\"))fail(\"Space editors do not manage the Space Circle\")'",
+      "note": "Space Circle migrations, trigger, attachment and capabilities. The On/Off card check was removed when the card retired (ADR-1938)."
+    }
+  },
+  "append": {
+    "detail": " Pin rewrite 2026-11-03 (ADR-1938, LIVE-2078, owner's phrase Daniel 20:38Z): the Space Circle readers this probe named were deleted with the Space Circle; the probe now measures the Community wall that replaced them."
+  }
+}

@@ -10,7 +10,6 @@ import { loadCircleShell } from '@/lib/circles/store'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { setCircleContext } from '@/lib/circles/active-circle'
-import { FqModules } from '@/components/frequency/members/modules'
 import { FqCircleFeed } from '@/components/frequency/members/circle/circle-feed'
 
 // ── THE FEED TAB (the default tab) ──────────────────────────────────────────────────────────────
@@ -42,11 +41,6 @@ import { FqCircleFeed } from '@/components/frequency/members/circle/circle-feed'
 // belong once the tab routes are known to lib/widgets.
 
 
-/** The blocks the Feed tab still draws after the posts. The rest of the old subset moved to where the
- *  redesigned page puts them (templates/circles/Circles.dc.html): "How we meet" and Circle health are in the
- *  side column, the practice is on What's Happening, and the Challenges are on Circle Stats. Only a Space
- *  Circle's info board stays here: it is the Space's own hub (ADR-1393). */
-const FQ_FEED_MODULE_IDS = ['circle-space-info'] as const
 
 export async function generateMetadata({
   params,
@@ -177,7 +171,6 @@ export default async function CircleHomePage({
   return (
     <div id="circle-post" className="stack">
       <FqCircleFeed />
-      <FqModules ids={FQ_FEED_MODULE_IDS} />
     </div>
   )
 }

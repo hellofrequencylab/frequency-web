@@ -8,8 +8,10 @@ describe('redirects follow the canonical platform design',()=>{
     const {default:config}=await import('../next.config')
     const rules=await config.redirects!()
     const frequency=resolveDesign(raw)==='frequency'
-    for(const [source,destination]of [['/practice',frequency?'/features#f-zaps':'/help/the-quest'],['/the-quest',frequency?'/features#f-zaps':'/help/the-quest'],['/the-lab',frequency?'/vision':'/about']]){
+    for(const [source,destination]of [['/practice',frequency?'/features#f-zaps':'/help/the-quest'],['/the-quest',frequency?'/features#f-zaps':'/help/the-quest'],]){
       expect(rules.find(rule=>rule.source===source)).toMatchObject({source,destination,permanent:frequency})
     }
+    // /the-lab and /vision merged into /about (LIVE-2103), which both designs serve: permanent everywhere.
+    expect(rules.find(rule=>rule.source==='/the-lab')).toMatchObject({source:'/the-lab',destination:'/about',permanent:true})
   })
 })

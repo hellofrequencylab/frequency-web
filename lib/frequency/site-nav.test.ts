@@ -114,7 +114,6 @@ describe('the page table', () => {
   })
   it('gives Stories, Vision, Join and Help their rows, and every help article the Help row', () => {
     expect(resolveSitePage('/stories').mood).toBe('stories')
-    expect(resolveSitePage('/vision').mood).toBe('vision')
     expect(resolveSitePage('/join').mood).toBe('join')
     expect(resolveSitePage('/help/getting-started/what-happens-at-a-gathering')).toMatchObject({ mood: 'help', quiet: 2 })
   })

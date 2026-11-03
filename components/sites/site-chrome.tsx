@@ -219,6 +219,9 @@ export function SiteChrome({
   // menu in a glass capsule on the right, the phone from the footer's contact column, and the accent button. Over a photo hero it lies
   // on the picture. The footer leads with the closing band, prints contact lines with their icons, and ends on the dim wordmark.
   const sv = skin?.theme === 'services'
+  // New World's footer is the same kit footer (handoff ui_kits/site/Chrome.jsx SiteFooter): closing line and button, contact lines with
+  // their icons, the dim wordmark. Without a closing band of its own it closes on the blurb and the site's own button.
+  const kitFoot = sv || skin?.theme === 'new-world'
   const svPhone = sv ? footer?.columns.flatMap((c) => c.links).find((l) => /^tel:/i.test(l.href)) ?? null : null
   const fhShop = fh ? templeKitShopHref(links) : null
   const fhLinks: HouseHeaderLink[] | null = fh ? freeHumanNavLinks(links, homeHref) : null
@@ -251,7 +254,7 @@ export function SiteChrome({
     return <span className="sv-foot-icon" aria-hidden="true"><Icon size={16} strokeWidth={2} /></span>
   }
   const footerColumn = (col: { title: string; links: { label: string; href: string }[]; lines?: string[] }) => {
-    const contact = sv && col.links.some((l) => /^(tel|mailto):/i.test(l.href))
+    const contact = kitFoot && col.links.some((l) => /^(tel|mailto):/i.test(l.href))
     return (
       <nav key={col.title} aria-label={col.title} className="hs-footer-col">
         <span className="hs-footer-col-title">{col.title}</span>
@@ -261,7 +264,7 @@ export function SiteChrome({
             {l.label}
           </a>
         ))}
-        {sv && col.lines?.map((line) => (
+        {kitFoot && col.lines?.map((line) => (
           <span key={line} className="sv-foot-line">
             {contact && svIcon(null, line)}
             {line}
@@ -344,13 +347,13 @@ export function SiteChrome({
                 <MidnightLogo name={brandName} tagline={tagline} />
               ) : tk ? (
                 <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} />
-              ) : sv && footer?.band ? (
+              ) : kitFoot && (footer?.band || !sv) ? (
                 <span className="sv-wordmark">{brandName}</span>
               ) : (
                 brandName
               )}
             </a>
-            {sv && footer?.band ? (
+            {kitFoot && footer?.band ? (
               <>
                 <h3 className="sv-display sv-foot-band"><InlineText text={footer.band.title} /></h3>
                 {footer.band.ctas.map((c) => (
@@ -359,7 +362,16 @@ export function SiteChrome({
                   </a>
                 ))}
               </>
-            ) : (tk ? footer?.blurb : footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
+            ) : (
+              <>
+                {(tk ? footer?.blurb : footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
+                {kitFoot && !sv && cta && (
+                  <a className="sv-btn sv-btn--accent" href={cta.href} {...(cta.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                    <span>{cta.label}</span>
+                  </a>
+                )}
+              </>
+            )}
             {tk && <TempleKitLetter slug={spaceSlug ?? null} subscribe={footer?.subscribe ?? null} />}
             {midnight && footer?.subscribe && (
               <div className="mn-footer-subscribe">
@@ -383,7 +395,7 @@ export function SiteChrome({
           ) : null}
         </div>
       )}
-      {sv && (showBrandFooter ?? !!skin) && <div className="sv-foot-mark" aria-hidden="true">{brandName}</div>}
+      {kitFoot && (showBrandFooter ?? !!skin) && <div className="sv-foot-mark" aria-hidden="true">{brandName}</div>}
       {adminLinks && <SiteFooterAdmin links={adminLinks.menu} console={adminLinks.console} check={adminLinks.check} />}
       {wild && (
         <div className="hs-footer-ornament">

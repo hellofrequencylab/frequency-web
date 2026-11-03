@@ -10,7 +10,7 @@ const files = ['scripts/migration-pr-readiness.mjs', 'scripts/publish-migration-
 export function describeFailure(error) {
   if (error?.safe === true) return `rule refused: ${error.message}`
   const part = value => ((typeof value === 'string' || typeof value === 'number') && /^[A-Za-z0-9_.:-]{1,40}$/.test(String(value)) ? String(value) : '?')
-  return `error ${part(error?.name)} code=${part(error?.code)} status=${part(error?.status)} stage=${part(error?.stage)}`
+  return `error ${part(error?.name)} code=${part(error?.code ?? error?.cause?.code)} status=${part(error?.status)} stage=${part(error?.stage)}`
 }
 export async function publishReadiness({ env, event, api, git, publisherSha256, evaluate }) {
   requireFact(env.GITHUB_ACTIONS === 'true' && env.GITHUB_EVENT_NAME === 'pull_request_target' && env.GITHUB_REPOSITORY === repo && env.GITHUB_WORKFLOW_REF === `${repo}/.github/workflows/migration-readiness.yml@refs/heads/main`, 'trusted workflow required')

@@ -70,6 +70,7 @@ export const PARKED = new Map([
   ['circle-practice', 'the weekly practice block; the redesigned What\'s Happening tab draws it as its This week panel (LIVE-1510)'],
   ['circle-meeting', 'the How we meet block; the redesigned Circle shell draws it in its side column (LIVE-1510)'],
   ['circle-challenges', 'the Challenges block; the redesigned Circle Stats tab draws it (LIVE-1510)'],
+  ['circle-feed', 'the DAWN Circle feed block; the Frequency Circle shell draws FqCircleFeed, and the Space Circle Discussion band that mounted it retired with the Space Circle (ADR-1938, LIVE-2078)'],
   ['channels-list', 'the DAWN Channels browse; the Frequency forum board (FqChannelsBody) draws its own pillars, so /channels has no Layout panel (SCAN-1129)'],
   ['event-checkin', 'the check-in notice + door note; moved into the event header surface (ADR-1315)'],
 ])
