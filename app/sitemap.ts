@@ -270,7 +270,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/themes/network`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/temple (LIVE-1870): the Temple Theme Kit's feature page.
           { url: `${SITE_URL}/themes/temple`, changeFrequency: "monthly", priority: 0.5 },
-          ...['frequency', 'bold', 'wildheart'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
+          ...['bold', 'wildheart'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
         ] satisfies MetadataRoute.Sitemap)
       : []),
     { url: `${SITE_URL}/the-community`, lastModified: GUIDE_LAST_MODIFIED["the-community"], changeFrequency: "monthly", priority: 0.8 },

@@ -384,6 +384,9 @@ const nextConfig: NextConfig = {
       { source: '/themes/network-kit', destination: '/themes/network', permanent: true },
       // The Temple Theme Kit's address is /themes/temple.
       { source: '/themes/temple-kit', destination: '/themes/temple', permanent: true },
+      // "Default doesn't exist; New World is the default" (owner, 2026-11-03). The old `frequency` id stays in code so
+      // sites that saved it render unchanged; its sales page is retired.
+      { source: '/themes/frequency', destination: '/themes/new-world', permanent: true },
       // The Quest help category was renamed from the-game -> the-quest (naming canon:
       // the year-round game is "The Quest"). Redirect old help links + bookmarks.
       { source: '/help/the-game', destination: '/help/the-quest', permanent: false },
