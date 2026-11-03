@@ -33,5 +33,8 @@ if ((read('components/admin/menu/item-editor.tsx').match(/role="img"/g) || []).l
 if (/text-text\/80">\{children\}/.test(read('components/admin/status.tsx'))) bad.push('status.tsx: the banner body is text-text/80 (4.44:1 on the info tone)')
 // 11. Two QR destinations share /crew; the option key carries the label.
 if (/<option key=\{d\.path\} value=\{d\.path\}>/.test(read('app/(main)/admin/qr/dynamic-links.tsx'))) bad.push('dynamic-links.tsx: destination options are keyed by path alone')
+// 12. axe: a labelled MapLibre pin that opens nothing is role=img (a bare div may not carry aria-label).
+const canvas = read('components/maps/maplibre-canvas.tsx')
+if (!/el\.setAttribute\('role', 'img'\)/.test(canvas)) bad.push('maplibre-canvas.tsx: a labelled non-interactive pin has aria-label and no role')
 if (bad.length) { console.error(bad.join('\n')); process.exit(1) }
-console.log('circle members without a profile are dropped; drawer links unique; grids shrink; filter chips, lists, labels and link styling pass axe')
+console.log('circle members without a profile are dropped; drawer links unique; grids shrink; filter chips, lists, labels, map pins and link styling pass axe')
