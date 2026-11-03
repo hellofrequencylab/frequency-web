@@ -1,0 +1,18 @@
+{
+ "id": "LIVE-2058",
+ "title": "Make New World the default theme every new Space starts in, with the first-selection picker",
+ "lane": "live",
+ "priority": "P1",
+ "size": "M",
+ "status": "open",
+ "source": {
+  "file": "docs/design-systems/new-world/rules.json",
+  "ref": "Daniel 2026-11-03: New World is the new mega template, default theme for every new Space"
+ },
+ "detail": "New Spaces start on New World; the picker (LIVE-2043) lets them choose Kit, Accent, Register and Look first. Existing Spaces keep their theme. Never offered in a way that restyles a member or console area.",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node scripts/probes/new-world-theme.mjs default"
+ },
+ "wave": "W7"
+}

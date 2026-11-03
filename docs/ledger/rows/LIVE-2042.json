@@ -1,18 +1,19 @@
 {
  "id": "LIVE-2042",
- "title": "Intake New World (Services revision 2): re-snapshot, list added/changed files, re-group the baseline",
+ "title": "Intake New World (its own theme, the default for every new Space): snapshot, rules and baseline in docs/design-systems/new-world",
  "lane": "live",
  "priority": "P1",
  "size": "S",
- "status": "open",
+ "status": "done",
  "source": {
   "file": "docs/design-systems/services/rules.json",
   "ref": "Daniel 2026-11-02 New World thread"
  },
- "detail": "Run docs/DESIGN-SYSTEM-INTAKE.md on the New World zip against the LIVE-1990 snapshot. Revision 2 renames Services to New World and changes tokens (three tiers, scoped registers, OKLCH accents with vividness), dials (pairing, mix, charge voice) and blocks (Groups, Your first visit, Tools, Events). Every changed file is a file to rebuild; the Services rows LIVE-1992..1996 are re-scoped to it, not duplicated. Coordinate with the Services thread, which owns site-style.ts registration.",
+ "detail": "New World is NOT a revision of Services (Daniel 2026-11-03): Services is the 'Good work, done right.' theme and keeps the `services` id and its intake untouched. New World is the new mega template and the default theme every new Space starts in, with its own id `new-world`, its own --nw-* tokens and its own design-system folder. Ran docs/DESIGN-SYSTEM-INTAKE.md on its zip: 90 files snapshotted, rules claim the framework files as built by LIVE-1997, baseline 74 known gaps (64 copy, 10 missing built targets), draft theme.manifest.json (hidden) and role-coverage baseline. Token gaps appear once NEW_WORLD_TOKENS_CSS exists (LIVE-2054). Flag for Daniel: the zip's default neon accent is violet (#8A6AFF, deep #5B42C9); keep Tide until he rules.",
  "verify": {
   "kind": "cmd",
-  "cmd": "node -e \"const i=require('./docs/design-systems/services/inventory.json');process.exit(JSON.stringify(i).includes('tokens/core/themes.css')?0:1)\""
+  "cmd": "node -e \"process.exit(require('fs').existsSync('docs/design-systems/new-world/inventory.json')?0:1)\""
  },
- "wave": "W7"
+ "wave": "W7",
+ "closed": "2026-11-03"
 }
