@@ -1,0 +1,19 @@
+{
+  "id": "BLD-215",
+  "title": "Builder: surface parity for the 21 roles on site, profile, Spotlight and email",
+  "lane": "program",
+  "priority": "P2",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Revision 2, builder v3 (2026-11-03): docs/design/frequency-builder-v3/v3-review-and-needs.md"
+  },
+  "detail": "Each role has a profile (Frequency frame, no site theme), Spotlight door and email block. Email hides faq, gallery, business, forms and locations and freezes trust, events, circles, plans, booking and services at send. Done when: check:surface-binding resolves every role on all four surfaces and the freeze rule has a test.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-03",
+    "evidence": "Filed from the builder v3 audit. The pass writes scripts/probes/builder/BLD-215.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  },
+  "wave": "W7"
+}
