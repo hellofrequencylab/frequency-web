@@ -19,11 +19,7 @@ import {
 } from "./midnight";
 import type { ComponentConfig } from "@/lib/page-editor/types";
 import type { SiteLinkMap } from "@/lib/sites/house-theme";
-import dynamic from "next/dynamic";
-
-// The quote form is client code only Services quote pages use, so it loads as its own chunk and stays off every
-// other route's first load (check:shell-weight, the front door budget).
-const ServicesQuoteForm = dynamic(() => import("@/components/sites/services-quote-form").then((m) => m.ServicesQuoteForm));
+import { ServicesQuoteForm } from "@/components/sites/services-quote-lazy";
 
 // ── The Services block family (Services design system, "Website" kit: ui_kits/site/Sections.jsx and Blocks.jsx) ───────────────
 // One registered block per section of the design's Home: hero (four looks), trust bar, story, services, steps, reviews, FAQ and the
