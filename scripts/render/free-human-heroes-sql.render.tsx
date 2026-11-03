@@ -8,7 +8,7 @@ import { it } from 'vitest'
 it('prints the Free Human pages SQL', async () => {
   const out = process.env.RENDER_OUT
   if (!out) throw new Error('set RENDER_OUT')
-  const { FREE_HUMAN_MENU, FREE_HUMAN_SLUG, freeHumanEditorState } = await import('@/lib/sites/free-human-site')
+  const { FREE_HUMAN_SLUG, freeHumanEditorState } = await import('@/lib/sites/free-human-site')
   const lit = (v: unknown) => JSON.stringify(v).replace(/'/g, "''")
   const pages = freeHumanEditorState('2026-10-30T00:00:00.000Z').draft.pages.filter((p) => ['program', 'workshops', 'books'].includes(p.slug))
   const sql = `-- Free Human Movement: new hero photos and lines on the Program, Workshops and Books pages. Replaces the first block of those three pages, nothing else.
