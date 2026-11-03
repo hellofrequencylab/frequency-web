@@ -294,7 +294,7 @@ async function AboutTheSpace({
     <section aria-labelledby="community-about" className="rounded-card border border-border bg-surface p-4">
       <SectionHeader id="community-about" title={`About ${brandName}`} />
       {tagline ? <p className="text-body-sm text-text">{tagline}</p> : null}
-      <h3 className="mt-3 text-meta font-semibold uppercase tracking-wide text-muted">Who&apos;s here</h3>
+      <h3 className="mt-3 eyebrow text-muted">Who&apos;s here</h3>
       <p className="text-body-sm text-text">
         {members} {members === 1 ? 'member' : 'members'} · {followers.length}{' '}
         {followers.length === 1 ? 'follower' : 'followers'}

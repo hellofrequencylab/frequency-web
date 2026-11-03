@@ -11,7 +11,7 @@ import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { WallSettingsForm } from './wall-settings-form'
-import { WallModerationRow } from './wall-moderation-row'
+import { WallModerationRow } from './wall-moderation-controls'
 
 // THE OWNER'S COMMUNITY WALL CONSOLE (ADR-1938, LIVE-2077). Two jobs: the wall's three settings
 // (who reads, who posts, whether followers join in) and moderation of recent posts (pin, hide,
@@ -73,7 +73,7 @@ export default async function ManageCommunityPage({ params }: { params: Promise<
       }
     >
       <div className="max-w-3xl space-y-8">
-        <section aria-labelledby="wall-settings" className="rounded-xl border border-border bg-surface p-5">
+        <section aria-labelledby="wall-settings" className="rounded-card border border-border bg-surface p-5">
           <h2 id="wall-settings" className="mb-4 font-section text-lead font-bold text-text">
             Settings
           </h2>
@@ -90,7 +90,7 @@ export default async function ManageCommunityPage({ params }: { params: Promise<
               description="When your team or members post, each one shows up here so you can pin it or hide it."
             />
           ) : (
-            <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+            <ul className="divide-y divide-border rounded-card border border-border bg-surface">
               {posts.map((p) => (
                 <li key={p.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
