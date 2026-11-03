@@ -8,17 +8,22 @@ const state: { rows: Map<string, Row>; updates: Array<{ patch: Row; where: Row }
 
 function fakeTable() {
   const where: Row = {}
+  const matches = (row: Row) => Object.entries(where).every(([k, v]) => (row[k] ?? null) === v)
+  const find = () => [...state.rows.values()].find(matches)
   let op: 'select' | 'update' | 'insert' = 'select'
   let patch: Row = {}
   const chain = {
     select: () => { op = 'select'; return chain },
     update: (p: Row) => { op = 'update'; patch = p; return chain },
-    insert: (p: Row) => { op = 'insert'; patch = p; state.rows.set(String(p.token_hash), p); return Promise.resolve({ error: null }) },
+    insert: (p: Row) => { op = 'insert'; patch = p; const id = `00000000-0000-4000-8000-${String(state.rows.size + 1).padStart(12, '0')}`; state.rows.set(String(p.token_hash), { ...p, id }); return Promise.resolve({ error: null }) },
     eq: (k: string, v: unknown) => { where[k] = v; return chain },
     is: (k: string, v: unknown) => { where[k] = v; return chain },
-    maybeSingle: () => Promise.resolve({ data: state.rows.get(String(where.token_hash)) ?? null, error: null }),
+    maybeSingle: () => Promise.resolve({ data: find() ?? null, error: null }),
     then: (res: (v: { error: null }) => void) => {
-      if (op === 'update') { state.updates.push({ patch, where }); const row = state.rows.get(String(where.token_hash)); if (row) Object.assign(row, patch) }
+      if (op === 'update') {
+        state.updates.push({ patch, where })
+        for (const row of state.rows.values()) if (matches(row)) Object.assign(row, patch)
+      }
       return Promise.resolve({ error: null }).then(res)
     },
   }
@@ -29,10 +34,11 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: () =>
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ rpc: async () => ({ data: state.rpc, error: null }) }) }))
 vi.mock('@/lib/attribution/server', () => ({ resolveAcquisition: async () => ({}) }))
 vi.mock('@/lib/spaces/store', () => ({ isSpaceSlugTaken: async (slug: string) => slug === 'taken' }))
+vi.mock('@/lib/signing-secret', () => ({ signingSecret: () => 'test-secret' }))
 
 import { emptyDraft } from '@/lib/create-space/builder'
 import type { BuilderDraft } from '@/lib/create-space/builder'
-import { markDraftConverted, readDraftByToken, saveDraft } from '@/lib/create-space/draft-io'
+import { draftLinkToken, markDraftConverted, readDraftByToken, saveDraft, unsubscribeDrafts } from '@/lib/create-space/draft-io'
 
 const draft = (over: Partial<BuilderDraft> = {}): BuilderDraft => ({
   ...emptyDraft('designer', true),
@@ -73,7 +79,7 @@ describe('saveDraft (ADR-1933)', () => {
     expect(again!.token).toBe(first!.token)
     expect(state.rows.size).toBe(1)
     expect(state.updates).toHaveLength(1)
-    expect(state.updates[0].where.token_hash).toMatch(/^[0-9a-f]{64}$/)
+    expect(state.updates[0].where.id).toBe([...state.rows.values()][0].id)
     expect(state.updates[0].patch.step_reached).toBe(4)
     expect(state.updates[0].patch.tz).toBe('Asia/Tokyo')
   })
@@ -117,5 +123,46 @@ describe('readDraftByToken and markDraftConverted', () => {
     expect(state.updates.at(-1)?.where).toMatchObject({ converted_at: null })
     expect(typeof state.updates.at(-1)?.patch.converted_at).toBe('string')
     expect(await readDraftByToken(r!.token)).toBeNull()
+  })
+})
+
+describe('link tokens (the reminder emails)', () => {
+  const idOf = () => String([...state.rows.values()][0].id)
+
+  it('is the row id signed, 48 hex chars, and opens the row without the browser token', async () => {
+    await saveDraft({ draft: draft(), token: null, tz: null, ownPhoto: false })
+    const link = draftLinkToken(idOf())
+    expect(link).toMatch(/^[0-9a-f]{48}$/)
+    const back = JSON.parse((await readDraftByToken(link))!) as BuilderDraft
+    expect(back.name).toBe('Limewell Studio')
+    expect(back.leadToken).toBe(link)
+  })
+
+  it('refuses a link whose signature is wrong', async () => {
+    await saveDraft({ draft: draft(), token: null, tz: null, ownPhoto: false })
+    const link = draftLinkToken(idOf())
+    const forged = link.slice(0, 32) + link.slice(32).replace(/./g, (c) => (c === 'a' ? 'b' : 'a'))
+    expect(await readDraftByToken(forged)).toBeNull()
+  })
+
+  it('a save with a link token re-keys the row to that browser and hands it a token of its own', async () => {
+    await saveDraft({ draft: draft(), token: null, tz: null, ownPhoto: false })
+    const link = draftLinkToken(idOf())
+    const r = await saveDraft({ draft: draft({ offer: 'From the link.' }), token: link, tz: null, ownPhoto: false })
+    expect(state.rows.size).toBe(1)
+    expect(r!.token).not.toBe(link)
+    expect(r!.token).toMatch(/^[A-Za-z0-9_-]{32}$/)
+    expect(typeof state.updates.at(-1)?.patch.token_hash).toBe('string')
+    // the link keeps working, and so does the new browser token
+    expect(await readDraftByToken(link)).not.toBeNull()
+    expect(await readDraftByToken(r!.token)).not.toBeNull()
+  })
+
+  it('unsubscribes every draft under the address the link opens', async () => {
+    await saveDraft({ draft: draft(), token: null, tz: null, ownPhoto: false })
+    await saveDraft({ draft: draft({ name: 'Second Try' }), token: null, tz: null, ownPhoto: false })
+    expect(await unsubscribeDrafts(draftLinkToken(idOf()))).toBe(true)
+    expect([...state.rows.values()].every((r) => typeof r.unsubscribed_at === 'string')).toBe(true)
+    expect(await unsubscribeDrafts('unknown-token-xx')).toBe(false)
   })
 })
