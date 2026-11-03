@@ -95,6 +95,7 @@ export function siteName(src) {
 // there is no page to hold metadata, so there is nothing to exclude.
 const INTENTIONALLY_EXCLUDED = new Map([
   ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
+  ['/themes/new-world', 'robots noindex (LIVE-2065): New World is hidden from the pickers until the New World lane un-hides it; the page is reachable by address and joins the sitemap then'],
   ['/subscribe', 'robots noindex (SCAN-1017): the newsletter form is reached from the footer, not from search; the index keeps the 24 pages that earn a visit'],
   // PARKED, not live: next.config.ts answers /stories with a temporary 302 to /the-community before the
   // filesystem router runs (owner ruling 2026-10-14, ADR-1747), so no visitor or crawler reaches this

@@ -29,6 +29,7 @@ const BODIES: Record<keyof typeof FREQUENCY_PAGE_SEO, string> = {
   temple: 'components/frequency/site/pages/themes/frequency-temple.tsx',
   system: 'components/frequency/site/pages/system/frequency-system.tsx',
   freeSpotlight: 'components/frequency/site/pages/launch/free-spotlight.tsx',
+  newWorld: 'components/frequency/site/pages/themes/frequency-new-world.tsx',
 }
 
 /** The body's source as the reader sees it: JSX tags and braces removed, whitespace collapsed. */
