@@ -172,6 +172,52 @@ function OfferingsBlock({ p, metadata }: Ctx) {
   )
 }
 
+// ── Live rows for the other roles (BLD-213) ────────────────────────────────────────────────
+// A live render carries the Space's own rows in `puck.metadata.space` (lib/spaces/content-data.ts). A role asked to be live
+// (the default) draws them; with none it falls back to the words the owner wrote, and a block still showing the sample copy
+// draws nothing at all, so no sample number or name ever reaches a live page. The editor canvas has no `space`, so it keeps the sample.
+const spaceOf = (metadata: Props | undefined) => metadata?.space as Record<string, unknown> | undefined
+const isLiveRender = (metadata: Props | undefined) => !!spaceOf(metadata) && typeof spaceOf(metadata)?.spaceId === 'string'
+const liveAsked = (p: Props) => p.live !== false
+/** True when this block is the sample copy on a live page and there is nothing real to put in its place. */
+const emptyLive = (p: Props, metadata: Props | undefined, haveLive: boolean) => isLiveRender(metadata) && p.sample === true && !haveLive
+
+function liveStats(metadata: Props | undefined) {
+  const raw = spaceOf(metadata)?.stats
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((s): s is { label: string; value: number } => !!s && typeof (s as { label?: unknown }).label === 'string' && Number.isFinite((s as { value?: unknown }).value) && (s as { value: number }).value > 0)
+    .slice(0, 6)
+    .map((s) => ({ value: s.value.toLocaleString('en-US'), label: s.label, note: '' }))
+}
+
+function liveReviews(metadata: Props | undefined) {
+  const raw = (spaceOf(metadata)?.reviews as { latest?: unknown } | undefined)?.latest
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((r): r is { body: string; rating: number; author: { displayName: string; avatarUrl: string | null } | null } => !!r && typeof (r as { body?: unknown }).body === 'string' && !!(r as { body: string }).body.trim())
+    .slice(0, 6)
+    .map((r) => ({ quote: r.body.trim(), name: r.author?.displayName ?? '', role: '', photo: r.author?.avatarUrl ?? '', rating: r.rating }))
+}
+
+function liveTeam(metadata: Props | undefined) {
+  const raw = spaceOf(metadata)?.team
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((m): m is { name: string; role: string; avatarUrl: string | null; handle: string | null } => !!m && typeof (m as { name?: unknown }).name === 'string' && !!(m as { name: string }).name.trim())
+    .slice(0, 12)
+    .map((m) => ({ name: m.name, role: m.role ? m.role.charAt(0).toUpperCase() + m.role.slice(1) : '', photo: m.avatarUrl ?? '', bio: '', href: m.handle ? `/u/${m.handle}` : '' }))
+}
+
+function liveChapters(metadata: Props | undefined) {
+  const raw = spaceOf(metadata)?.chapters
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((c): c is { name: string; city: string | null; tagline: string | null; slug: string } => !!c && typeof (c as { name?: unknown }).name === 'string' && typeof (c as { slug?: unknown }).slug === 'string')
+    .slice(0, 25)
+    .map((c) => ({ name: c.name, place: c.city ?? '', body: c.tagline ?? '', image: '', href: `/spaces/${c.slug}` }))
+}
+
 // ── Gatherings ─────────────────────────────────────────────────────────────────────────────
 
 interface EventRow { id: string; slug?: string; title: string; startsAt: string; location?: string | null; isCancelled?: boolean }
@@ -270,7 +316,9 @@ function MembershipBlock({ p, metadata }: Ctx) {
 
 function ProofBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('proof', p.variant, metadata)
-  const all = arr(p.items).filter((q) => str(q.quote))
+  const liveRows = liveAsked(p) ? liveReviews(metadata) : []
+  if (emptyLive(p, metadata, liveRows.length > 0)) return null
+  const all = (liveRows.length ? liveRows : arr(p.items)).filter((q) => str(q.quote))
   const items = variant === 'quote' ? all.slice(0, 3) : variant === 'stats' ? all.slice(0, 1) : all
   const stats = variant === 'stats' ? arr(p.stats).filter((s) => str(s.value) && str(s.label)).slice(0, 4) : []
   const stars = (n: unknown) => { const r = Math.round(Number(n)); return r >= 1 && r <= 5 ? r : 0 }
@@ -421,7 +469,9 @@ function ContactBlock({ p, metadata }: Ctx) {
 
 function StatsBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('stats', p.variant, metadata)
-  const items = arr(p.items).filter((s) => str(s.value) && str(s.label)).slice(0, 6)
+  const liveRows = liveAsked(p) ? liveStats(metadata) : []
+  if (emptyLive(p, metadata, liveRows.length > 0)) return null
+  const items = (liveRows.length ? liveRows : arr(p.items)).filter((s) => str(s.value) && str(s.label)).slice(0, 6)
   return (
     <Frame role="stats" p={p} variant={variant}>
       <Heading p={p} />
@@ -490,7 +540,9 @@ function LibraryBlock({ p, metadata }: Ctx) {
 
 function PeopleBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('people', p.variant, metadata)
-  const all = arr(p.items).filter((s) => str(s.name))
+  const liveRows = liveAsked(p) ? liveTeam(metadata) : []
+  if (emptyLive(p, metadata, liveRows.length > 0)) return null
+  const all = (liveRows.length ? liveRows : arr(p.items)).filter((s) => str(s.name))
   const items = variant === 'founder' ? all.slice(0, 1) : all
   return (
     <Frame role="people" p={p} variant={variant}>
@@ -535,7 +587,9 @@ function GalleryBlock({ p, metadata }: Ctx) {
 
 function ChaptersBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('chapters', p.variant, metadata)
-  const items = arr(p.items).filter((s) => str(s.name))
+  const liveRows = liveAsked(p) ? liveChapters(metadata) : []
+  if (emptyLive(p, metadata, liveRows.length > 0)) return null
+  const items = (liveRows.length ? liveRows : arr(p.items)).filter((s) => str(s.name))
   return (
     <Frame role="chapters" p={p} variant={variant}>
       <Heading p={p}>{ctaOf(p, metadata)}</Heading>
@@ -723,6 +777,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     items: { type: 'array', label: 'Plans', hint: 'Mark one as the lead plan. The spotlight layout needs one.', arrayFields: { name: text('Name'), blurb: area('Line under the name'), price: text('Price'), per: text('After the price', 'Like / month.'), features: area('What it includes', 'One per line.'), badge: text('Badge'), featured: yesNo('Lead plan'), label: text('Button'), href: text('Link', LINK_HINT) } },
   }, MembershipBlock),
   [ROLES.proof.type]: role('proof', {
+    live: yesNo('Use the Space\'s own reviews'),
     ...head,
     items: { type: 'array', label: 'Quotes', arrayFields: { quote: area('Quote'), name: text('Name'), role: text('Role'), photo: { ...loomImageField, label: 'Face' }, rating: { type: 'number', label: 'Stars (1 to 5)', min: 1, max: 5 } } },
     stats: { type: 'array', label: 'Figures (quote beside figures only)', hint: 'Real numbers only.', arrayFields: { value: text('Number'), label: text('What it counts') } },
@@ -756,6 +811,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     note: text('Small print'),
   }, ContactBlock),
   [ROLES.stats.type]: role('stats', {
+    live: yesNo('Use the Space\'s own figures'),
     ...head,
     items: { type: 'array', label: 'Figures', hint: 'Real numbers only.', arrayFields: { value: text('Number'), label: text('What it counts'), note: text('Small line') } },
   }, StatsBlock),
@@ -768,6 +824,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     items: { type: 'array', label: 'Things to watch, read or do', arrayFields: { image, title: text('Name'), kind: text('Kind'), meta: text('Length or detail'), href: text('Link', LINK_HINT) } },
   }, LibraryBlock),
   [ROLES.people.type]: role('people', {
+    live: yesNo('Use the Space\'s own team'),
     ...head,
     items: { type: 'array', label: 'People', hint: 'The one-person layout shows the first.', arrayFields: { photo: { ...loomImageField, label: 'Photo' }, name: text('Name'), role: text('Role'), bio: area('A few words'), href: text('Link', LINK_HINT) } },
   }, PeopleBlock),
@@ -776,6 +833,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     items: { type: 'array', label: 'Photos', arrayFields: { image, alt: text('Photo description', 'For screen readers.'), caption: text('Caption') } },
   }, GalleryBlock),
   [ROLES.chapters.type]: role('chapters', {
+    live: yesNo('Use the Space\'s own chapters'),
     ...head, ...action,
     items: { type: 'array', label: 'Groups', arrayFields: { image, name: text('Name'), place: text('Place'), body: area('Line under the name'), href: text('Link', LINK_HINT) } },
   }, ChaptersBlock),
