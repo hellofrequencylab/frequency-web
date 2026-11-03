@@ -203,6 +203,42 @@ ${S} .sv-footer-min{display:flex;flex-wrap:wrap;justify-content:space-between;al
 ${S} .sv-footer-base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;max-width:var(--sv-container-max);margin:0 auto;padding:24px ${GUT};color:var(--sv-text-muted);font-size:10.5px}
 @media (max-width:760px){${S} .sv-footer-cols{grid-template-columns:1fr}${S} .sv-header-in{flex-wrap:wrap}${S} .sv-header-in--centered{grid-template-columns:1fr}${S} .sv-header-end{margin-left:0;flex-wrap:wrap}}
 
+/* QUOTE FORM (ServicesQuote, design: Vanta Quote.jsx): copy left and sticky, the stepper and the glass card right. */
+${S} .sv-qf{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(40px,6vw,80px);align-items:start}
+${S} .sv-qf-copy{position:sticky;top:120px;display:flex;flex-direction:column;gap:36px}
+${S} .sv-qf-form{display:flex;flex-direction:column;gap:32px;min-width:0}
+${S} .sv-stepper{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+${S} .sv-stepper button{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:12px;padding-top:14px;border-top:2px solid var(--sv-border-subtle);${MONO};font-size:10.5px;color:var(--sv-text-muted);cursor:default}
+${S} .sv-stepper li[aria-current] button{border-top-color:var(--sv-accent);color:var(--sv-text-primary)}
+${S} .sv-stepper li[data-done] button{border-top-color:var(--sv-accent);color:var(--sv-text-secondary);cursor:pointer}
+${S} .sv-stepper-num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:var(--sv-radius-pill);border:1px solid var(--sv-border-strong);font-size:10px}
+${S} .sv-stepper li[aria-current] .sv-stepper-num,${S} .sv-stepper li[data-done] .sv-stepper-num{background:var(--sv-accent);border-color:transparent;color:var(--sv-action-primary-text)}
+${S} .sv-qf-card{${CARD};display:flex;flex-direction:column;gap:28px;padding:clamp(24px,4vw,40px);border-radius:var(--sv-radius-xl);box-shadow:var(--sv-shadow-lg),var(--sv-shadow-glow)}
+${S} .sv-qf-done{align-items:flex-start}
+${S} .sv-qf-badge{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:var(--sv-radius-pill);background:var(--sv-accent-tint);color:var(--sv-text-accent);${MONO};font-size:10px}
+${S} .sv-fieldset{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:14px;min-width:0}
+${S} .sv-field-label{${MONO};font-size:10.5px;color:var(--sv-text-muted);padding:0}
+${S} .sv-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+${S} .sv-choices--3{grid-template-columns:repeat(3,minmax(0,1fr))}
+${S} .sv-choice{display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 16px;border-radius:var(--sv-radius-md);border:1px solid var(--sv-border-default);background:var(--sv-surface-sunken);color:var(--sv-text-primary);font:inherit;font-size:15px;text-align:left;cursor:pointer;transition:border-color var(--sv-dur-fast),background var(--sv-dur-fast)}
+${S} .sv-choice:hover{border-color:var(--sv-border-strong)}
+${S} .sv-choice[aria-pressed="true"]{border-color:var(--sv-accent);background:var(--sv-accent-tint)}
+${S} .sv-choice-box{flex:none;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:var(--sv-radius-sm);border:1px solid var(--sv-border-strong);color:var(--sv-action-primary-text)}
+${S} .sv-choice[aria-pressed="true"] .sv-choice-box{background:var(--sv-accent);border-color:transparent}
+${S} .sv-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+${S} .sv-field{display:flex;flex-direction:column;gap:10px;min-width:0}
+${S} .sv-field--wide{grid-column:1/-1}
+${S} .sv-input{width:100%;box-sizing:border-box;min-height:48px;padding:12px 14px;border-radius:var(--sv-radius-md);border:1px solid var(--sv-border-default);background:var(--sv-surface-sunken);color:var(--sv-text-primary);font:inherit;font-size:15px}
+${S} .sv-input::placeholder{color:var(--sv-text-muted)}
+${S} .sv-input:focus-visible,${S} .sv-choice:focus-visible,${S} .sv-stepper button:focus-visible{outline:2px solid var(--sv-focus-ring);outline-offset:2px}
+${S} textarea.sv-input{resize:vertical}
+${S} .sv-qf-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:24px;border-top:1px solid var(--sv-border-subtle)}
+${S} .sv-qf-note{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--sv-text-muted)}
+${S} .sv-btn:disabled{opacity:.5;cursor:not-allowed}
+${S} .sv-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+@media (max-width:900px){${S} .sv-qf{grid-template-columns:1fr}${S} .sv-qf-copy{position:static}}
+@media (max-width:600px){${S} .sv-choices,${S} .sv-choices--3,${S} .sv-fields{grid-template-columns:1fr}${S} .sv-stepper button{font-size:9.5px;gap:8px}}
+
 /* MOTION (data-motion): calm keeps the slow glow and drops the sweeps; off stops everything. Reduced motion always wins. */
 @keyframes sv-drift{0%,100%{transform:translate3d(-5%,-3%,0) scale(1)}50%{transform:translate3d(5%,4%,0) scale(1.12)}}
 @keyframes sv-marquee{to{transform:translateX(-50%)}}

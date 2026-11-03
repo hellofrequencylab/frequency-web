@@ -168,10 +168,15 @@ const about = (): Block[] => [
 ]
 
 const quote = (): Block[] => [
-  b('ServicesContact', {
+  b('ServicesQuote', {
     eyebrow: 'Free quote', title: 'Tell us about *your place.*', lede: 'Three quick steps. Aiden replies with your quote, usually the same day.',
-    body: 'Send the service you need (window washing, solar panels or both), your address and a phone number. Your details stay private.',
-    buttonLabel: 'Email Aiden', buttonHref: `mailto:${VANTA.email}`, secondaryLabel: '', secondaryHref: '',
+    image: VANTA.hero, alt: 'A window being washed in the morning light',
+    services: ['Window washing', 'Solar panels'],
+    frequencies: ['One time', 'Quarterly', 'Let us plan it'],
+    propertyTypes: ['Single-story home', 'Two-story home', 'Townhome or condo', 'Small business'],
+    sizes: ['Under 15', '15 to 30', '30 to 50', '50 or more', 'Not sure'],
+    submitLabel: 'Send request', successTitle: 'You are on the books.',
+    successBody: 'Aiden will call or text within one business day to confirm your visit and a firm price.',
   }),
   b('ServicesLocations', {
     eyebrow: 'Reach Aiden', title: 'Call, text *or write.*', lede: 'Aiden answers.',
