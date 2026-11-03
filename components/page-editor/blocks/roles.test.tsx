@@ -113,7 +113,7 @@ describe.each(ROLE_IDS)('role %s', (id) => {
 describe('the ten themes', () => {
   it('map every token the role sheet reads, with a real value', () => {
     const read = new Set(ROLE_IDS.flatMap((id) => varsRead(cssFor(id))))
-    expect(CONTRACT_THEME_IDS).toHaveLength(10)
+    expect(CONTRACT_THEME_IDS).toHaveLength(11)
     for (const theme of CONTRACT_THEME_IDS) {
       const map = coreTokenMap(theme)
       for (const v of read) expect(map[v as keyof typeof map]?.trim(), `${theme} has no value for ${v}`).toBeTruthy()

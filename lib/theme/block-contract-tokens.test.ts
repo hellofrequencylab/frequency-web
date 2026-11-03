@@ -11,6 +11,7 @@ import { TEMPLE_KIT_TOKENS_CSS } from '@/lib/theme/temple-kit'
 import { MIDNIGHT_TOKENS_CSS } from '@/lib/theme/midnight'
 import { DESIGNER_TOKENS_CSS } from '@/lib/theme/designer'
 import { FREE_HUMAN_TOKENS_CSS } from '@/lib/theme/free-human'
+import { SERVICES_TOKENS_CSS } from '@/lib/theme/services'
 import { CONTRACT_THEME_IDS, CORE_TOKEN_NAMES, coreTokenMap, coreTokensCss, type ContractThemeId, type CoreTokenName } from '@/lib/theme/block-contract-tokens'
 
 // THE PIN (LIVE-1856). The contract adds names; it must move no value. This resolves every contract name against the
@@ -38,12 +39,13 @@ const SHEETS: Record<Exclude<ContractThemeId, 'frequency'>, { css: string; selec
   midnight: { css: MIDNIGHT_TOKENS_CSS, selector: '[data-house-theme="midnight"]' },
   designer: { css: DESIGNER_TOKENS_CSS, selector: '[data-house-theme="designer"]' },
   'free-human': { css: FREE_HUMAN_TOKENS_CSS, selector: '[data-house-theme="free-human"]' },
+  services: { css: SERVICES_TOKENS_CSS, selector: '[data-house-theme="services"]' },
 }
 
 /** The seed's key for each theme (lib/sites/editor/theme-contract.json). */
 const SEED_KEY: Record<ContractThemeId, string> = {
   frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', 'network-kit': 'NetworkKit',
-  temple: 'Temple', 'temple-kit': 'TempleKit', midnight: 'Midnight', designer: 'Designer', 'free-human': 'FreeHuman',
+  temple: 'Temple', 'temple-kit': 'TempleKit', midnight: 'Midnight', designer: 'Designer', 'free-human': 'FreeHuman', services: 'Services',
 }
 
 type Decls = Map<string, string>
