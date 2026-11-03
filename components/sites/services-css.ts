@@ -212,6 +212,42 @@ ${S} .sv-footer-min{display:flex;flex-wrap:wrap;justify-content:space-between;al
 ${S} .sv-footer-base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;max-width:var(--sv-container-max);margin:0 auto;padding:24px ${GUT};color:var(--sv-text-muted);font-size:10.5px}
 @media (max-width:760px){${S} .sv-footer-cols{grid-template-columns:1fr}${S} .sv-header-in{flex-wrap:wrap}${S} .sv-header-in--centered{grid-template-columns:1fr}${S} .sv-header-end{margin-left:0;flex-wrap:wrap}}
 
+/* QUOTE FORM (ServicesQuote, design: Vanta Quote.jsx): copy left and sticky, the stepper and the glass card right. */
+${S} .sv-qf{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(40px,6vw,80px);align-items:start}
+${S} .sv-qf-copy{position:sticky;top:120px;display:flex;flex-direction:column;gap:36px}
+${S} .sv-qf-form{display:flex;flex-direction:column;gap:32px;min-width:0}
+${S} .sv-stepper{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+${S} .sv-stepper button{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:12px;padding-top:14px;border-top:2px solid var(--sv-border-subtle);${MONO};font-size:10.5px;color:var(--sv-text-muted);cursor:default}
+${S} .sv-stepper li[aria-current] button{border-top-color:var(--sv-accent);color:var(--sv-text-primary)}
+${S} .sv-stepper li[data-done] button{border-top-color:var(--sv-accent);color:var(--sv-text-secondary);cursor:pointer}
+${S} .sv-stepper-num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:var(--sv-radius-pill);border:1px solid var(--sv-border-strong);font-size:10px}
+${S} .sv-stepper li[aria-current] .sv-stepper-num,${S} .sv-stepper li[data-done] .sv-stepper-num{background:var(--sv-accent);border-color:transparent;color:var(--sv-action-primary-text)}
+${S} .sv-qf-card{${CARD};display:flex;flex-direction:column;gap:28px;padding:clamp(24px,4vw,40px);border-radius:var(--sv-radius-xl)}
+${S} .sv-qf-done{align-items:flex-start}
+${S} .sv-qf-badge{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:var(--sv-radius-pill);background:var(--sv-accent-tint);color:var(--sv-text-accent);${MONO};font-size:10px}
+${S} .sv-fieldset{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:14px;min-width:0}
+${S} .sv-field-label{${MONO};font-size:10.5px;color:var(--sv-text-muted);padding:0}
+${S} .sv-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+${S} .sv-choices--3{grid-template-columns:repeat(3,minmax(0,1fr))}
+${S} .sv-choice{display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 16px;border-radius:var(--sv-radius-md);border:1px solid var(--sv-border-default);background:var(--sv-surface-sunken);color:var(--sv-text-primary);font:inherit;font-size:15px;text-align:left;cursor:pointer;transition:border-color var(--sv-dur-fast),background var(--sv-dur-fast)}
+${S} .sv-choice:hover{border-color:var(--sv-border-strong)}
+${S} .sv-choice[aria-pressed="true"]{border-color:var(--sv-accent);background:var(--sv-accent-tint)}
+${S} .sv-choice-box{flex:none;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:var(--sv-radius-sm);border:1px solid var(--sv-border-strong);color:var(--sv-action-primary-text)}
+${S} .sv-choice[aria-pressed="true"] .sv-choice-box{background:var(--sv-accent);border-color:transparent}
+${S} .sv-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+${S} .sv-field{display:flex;flex-direction:column;gap:10px;min-width:0}
+${S} .sv-field--wide{grid-column:1/-1}
+${S} .sv-input{width:100%;box-sizing:border-box;min-height:48px;padding:12px 14px;border-radius:var(--sv-radius-md);border:1px solid var(--sv-border-default);background:var(--sv-surface-sunken);color:var(--sv-text-primary);font:inherit;font-size:15px}
+${S} .sv-input::placeholder{color:var(--sv-text-muted)}
+${S} .sv-input:focus-visible,${S} .sv-choice:focus-visible,${S} .sv-stepper button:focus-visible{outline:2px solid var(--sv-focus-ring);outline-offset:2px}
+${S} textarea.sv-input{resize:vertical}
+${S} .sv-qf-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:24px;border-top:1px solid var(--sv-border-subtle)}
+${S} .sv-qf-note{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--sv-text-muted)}
+${S} .sv-btn:disabled{opacity:.5;cursor:not-allowed}
+${S} .sv-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+@media (max-width:900px){${S} .sv-qf{grid-template-columns:1fr}${S} .sv-qf-copy{position:static}}
+@media (max-width:600px){${S} .sv-choices,${S} .sv-choices--3,${S} .sv-fields{grid-template-columns:1fr}${S} .sv-stepper button{font-size:9.5px;gap:8px}}
+
 /* MOTION (data-motion): calm keeps the slow glow and drops the sweeps; off stops everything. Reduced motion always wins. */
 @keyframes sv-drift{0%,100%{transform:translate3d(-5%,-3%,0) scale(1)}50%{transform:translate3d(5%,4%,0) scale(1.12)}}
 @keyframes sv-marquee{to{transform:translateX(-50%)}}
@@ -260,5 +296,37 @@ ${S} .hs-footer-brand{display:flex;flex-direction:column;align-items:flex-start;
 ${S} .hs-footer-brand p{margin:0;color:var(--sv-text-secondary)}
 ${S} .hs-footer-top a{color:var(--sv-text-secondary)}
 ${S} .hs-footer-top a:hover{color:var(--sv-text-primary)}
+/* THE KIT'S HEADER (Chrome.jsx SiteHeader): a full-width ink bar, a glow hairline under it, the wordmark left, the menu in a glass capsule
+   on the right with the flare dot on the current page, the phone in mono, then the small accent button. Over a photo hero it lies on the
+   picture with a soft top shade. */
+${S} .hs-header{position:sticky;top:0;z-index:40;padding:0;background:linear-gradient(180deg,color-mix(in oklab,var(--sv-chrome-50) 3.5%,transparent),transparent),var(--sv-ink-950);border-bottom:var(--sv-border-hairline) solid var(--sv-border-subtle);box-shadow:0 20px 40px -24px color-mix(in oklab,var(--sv-ink-950) 70%,transparent)}
+${S} .hs-header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent 0%,color-mix(in oklab,var(--sv-flare-400) 55%,transparent) 30%,color-mix(in oklab,var(--sv-halo-300) 50%,transparent) 55%,color-mix(in oklab,var(--sv-swell-300) 45%,transparent) 75%,transparent 100%);opacity:.7;pointer-events:none}
+${S}:has(.sv-hero-bg--photo) .hs-header{position:absolute;left:0;right:0;background:linear-gradient(180deg,color-mix(in oklab,var(--sv-ink-950) 55%,transparent) 0%,transparent 100%);box-shadow:none}
+${S} .hs-pill{max-width:var(--sv-container-max);margin:0 auto;padding:18px var(--sv-gutter);border-radius:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;animation:none;overflow:visible}
+${S} .hs-header .hs-brand{padding-left:0;color:var(--sv-chrome-50);text-decoration:none}
+${S} .sv-wordmark{display:block;font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-heavy);text-transform:uppercase;letter-spacing:.02em;line-height:1;font-size:clamp(24px,2.4vw,30px);color:var(--sv-chrome-50)}
+${S} .hs-nav{-webkit-mask-image:none;mask-image:none}
+${S} .hs-nav a,${S} .hs-nav-mega{display:inline-flex;align-items:center;gap:8px;${LABEL};letter-spacing:.14em;color:var(--sv-chrome-200);white-space:nowrap;transition:color var(--sv-dur-fast)}
+${S} .hs-nav a::before{content:"";width:5px;height:5px;border-radius:9px;background:var(--sv-flare-500);opacity:0;transition:opacity var(--sv-dur-fast)}
+${S} .hs-nav a:hover,${S} .hs-nav a[aria-current="page"]{color:var(--sv-chrome-50)}
+${S} .hs-nav a:hover::before,${S} .hs-nav a[aria-current="page"]::before{opacity:1}
+${S} .sv-head-phone{display:none;align-items:center;gap:8px;color:var(--sv-chrome-50);text-decoration:none;font-family:var(--sv-font-mono);font-size:11px;letter-spacing:.1em;white-space:nowrap}
+${S} .hs-header-actions .hs-btn{min-height:36px;padding:0 18px;font-size:11px}
+@media (min-width:940px){${S} .hs-pill{grid-template-columns:auto minmax(0,1fr) auto;column-gap:32px}${S} .hs-nav{width:max-content;max-width:100%}
+${S} .hs-nav{justify-self:end;padding:10px 22px;border-radius:var(--sv-radius-pill);border:var(--sv-border-hairline) solid var(--sv-border-subtle);background:linear-gradient(180deg,color-mix(in oklab,var(--sv-chrome-50) 5%,transparent),color-mix(in oklab,var(--sv-chrome-50) 1%,transparent));-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 color-mix(in oklab,var(--sv-chrome-50) 6%,transparent)}
+${S} .hs-nav-track{gap:32px;padding:0}${S} .hs-nav a,${S} .hs-nav-mega{padding:0;background:none}${S} .hs-header-actions{gap:24px}}
+@media (min-width:1100px){${S} .sv-head-phone{display:inline-flex}}
+@media (max-width:939px){${S} .hs-nav{display:none}${S} .hs-pill{padding:14px var(--sv-gutter)}}
+@media (max-width:760px){${S} .sv-hero-bg--photo::after{background:linear-gradient(180deg,color-mix(in oklab,var(--sv-ink-950) 55%,transparent) 0%,color-mix(in oklab,var(--sv-ink-950) 72%,transparent) 55%,var(--sv-ink-950) 100%)}${S} .sv-panel-top{flex-wrap:wrap;gap:6px}}
+/* THE KIT'S FOOTER (Chrome.jsx SiteFooter): the closing line and button first, three columns, contact lines with their flare icons, the
+   dim wordmark across the width, and the mono base line. */
+${S} .hs-footer-top{max-width:var(--sv-container-max);margin:0 auto;padding:96px var(--sv-gutter) 56px;gap:48px;background:none;border:0}
+${S} > div:has(> .hs-footer-top){position:relative;overflow:hidden;background:var(--sv-glow-sky,none),var(--sv-ink-950);border-top:var(--sv-border-hairline) solid var(--sv-border-subtle)}
+${S} .sv-foot-band{margin:0;font-size:34px;line-height:1.05}
+${S} .hs-footer-brand .hs-brand{display:none}
+${S} .hs-footer-col a,${S} .sv-foot-line{display:inline-flex;align-items:center;gap:10px;font-size:15px;color:var(--sv-chrome-200)}
+${S} .sv-foot-icon{display:inline-flex;color:var(--sv-flare-300)}
+${S} .sv-foot-mark{position:relative;max-width:var(--sv-container-max);margin:0 auto;padding:0 var(--sv-gutter);font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-heavy);text-transform:uppercase;line-height:.8;letter-spacing:-.01em;font-size:clamp(96px,22vw,320px);text-align:center;color:var(--sv-chrome-50);opacity:.07;user-select:none;overflow:hidden;white-space:nowrap}
+${S} .hs-footer{max-width:var(--sv-container-max);margin:0 auto;padding:24px var(--sv-gutter);font-family:var(--sv-font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--sv-text-muted);border-top:0;background:none}
 @media (prefers-reduced-motion:reduce){${S} *{transition:none!important;animation:none!important}}
 `;
