@@ -1,7 +1,7 @@
 // /themes/new-world (LIVE-2059): the feature page for the New World theme, set up the way Nocturne's is
 // (frequency-midnight.tsx). Server component; the one client island is the preview stage (new-world-preview.tsx).
 // Every picture is a render of the kit's own surfaces (real site chrome and blocks, real Spotlight layout, a Space inside the real
-// member shell, the real email module) under public/themes/new-world-kit. New World is not in the theme library catalog yet (it is
+// member shell, the real email module) under public/brand/new-world-kit. New World is not in the theme library catalog yet (it is
 // hidden from the pickers until Daniel rules), so every surface is read as ready here: each one has a real render. The page is
 // reachable by its address and carries noindex until the theme is un-hidden. Copy follows docs/marketing/voice-and-language-guide.md.
 // Styles: new-world-feature.css, tokens only.

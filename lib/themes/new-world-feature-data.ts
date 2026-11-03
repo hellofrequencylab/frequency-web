@@ -1,6 +1,6 @@
 // New World data for the /themes/new-world feature page (LIVE-2059). The seven kits come from the kit index
 // (lib/sites/kits/new-world-profile-index.ts), the accent from the theme's own tokens (lib/theme/new-world.ts: Tide is the only
-// shipped accent, so every kit chip wears it). The pictures are renders of the kit's own surfaces, stored under public/themes/new-world-kit:
+// shipped accent, so every kit chip wears it). The pictures are renders of the kit's own surfaces, stored under public/brand/new-world-kit:
 // the Website through the real site chrome and blocks, the Spotlight through the real layout, the Space inside the real member shell
 // and the Email through the real email module (scripts/render/new-world-theme-shots.render.tsx and new-world-space-shots.render.tsx).
 import { NEW_WORLD_KIT_INDEX } from '@/lib/sites/kits/new-world-profile-index'
@@ -25,6 +25,6 @@ export const NEW_WORLD_SURFACES: readonly { id: NewWorldSurface; label: string; 
 export const NEW_WORLD_KITS: NewWorldFeatureKit[] = NEW_WORLD_KIT_INDEX.map((k) => ({ id: k.niche, name: k.label, hex: NEW_WORLD_ACCENTS.tide.accent, who: k.description }))
 export const NEW_WORLD_DEFAULT_KIT = 'general'
 
-export const newWorldShot = (kit: string, shot: string): string => `/themes/new-world-kit/shots/${kit}-${shot}.jpg`
+export const newWorldShot = (kit: string, shot: string): string => `/brand/new-world-kit/shots/${kit}-${shot}.jpg`
 /** The six Spotlight layouts, drawn for the General kit. */
-export const newWorldLayoutShot = (id: string): string => `/themes/new-world-kit/layouts/${id}.jpg`
+export const newWorldLayoutShot = (id: string): string => `/brand/new-world-kit/layouts/${id}.jpg`

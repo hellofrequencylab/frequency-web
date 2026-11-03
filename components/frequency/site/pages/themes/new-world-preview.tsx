@@ -2,7 +2,7 @@
 
 // The New World preview stage (LIVE-2059): the four surfaces of the New World theme, one chip each, and, when
 // asked, a picker for the seven kits. The pictures are renders of the kit's own surfaces
-// (public/themes/new-world-kit/shots). The frames are the same as the other theme pages: a browser bar for the website and the
+// (public/brand/new-world-kit/shots). The frames are the same as the other theme pages: a browser bar for the website and the
 // Space, and the iPhone 390 by 844. Server markup shows the first surface, so the
 // page reads without script. Tokens only; styles are in new-world-feature.css.
 import Image from 'next/image'

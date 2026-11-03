@@ -14,9 +14,9 @@ for (const p of [
   'lib/themes/new-world-feature-data.ts',
 ]) need(p)
 for (const kit of ['general', 'coaches', 'studios', 'hosts', 'venues', 'nonprofits', 'networks']) {
-  for (const shot of ['site', 'spot', 'spacedesk', 'email']) need(`public/themes/new-world-kit/shots/${kit}-${shot}.jpg`)
+  for (const shot of ['site', 'spot', 'spacedesk', 'email']) need(`public/brand/new-world-kit/shots/${kit}-${shot}.jpg`)
 }
-for (const id of ['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile']) need(`public/themes/new-world-kit/layouts/${id}.jpg`)
+for (const id of ['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile']) need(`public/brand/new-world-kit/layouts/${id}.jpg`)
 if (!bad.length) {
   const route = readFileSync('app/(marketing)/themes/new-world/page.tsx', 'utf8')
   if (!/index:\s*false/.test(route)) bad.push('the page does not tell search engines to skip it')

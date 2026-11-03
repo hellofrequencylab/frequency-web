@@ -1,5 +1,5 @@
 // FIXTURE RENDER: the New World kit's Website, Spotlight and Email for each of its seven kits, as bare HTML pages (the
-// pictures on /themes/new-world: public/themes/new-world-kit/shots/<kit>-site.jpg, -spot.jpg and -email.jpg). The Website is the
+// pictures on /themes/new-world: public/brand/new-world-kit/shots/<kit>-site.jpg, -spot.jpg and -email.jpg). The Website is the
 // kit's Home drawn with the real SiteChrome, blocks and skin; the Spotlight is the kit's default layout through the real
 // layout component; the email is the kit's welcome through the real email module.
 // Run: RENDER_OUT=<dir> pnpm exec vitest run -c scripts/render/vitest.render.config.ts scripts/render/new-world-theme-shots.render.tsx

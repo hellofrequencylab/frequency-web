@@ -1,5 +1,5 @@
 // FIXTURE RENDER: the New World kit's Space page for each of its seven kits, as bare HTML pages (the pictures on /themes/new-world:
-// public/themes/new-world-kit/shots/<kit>-spacedesk.jpg). The Space sits inside the real member shell (Frequency's header and rails);
+// public/brand/new-world-kit/shots/<kit>-spacedesk.jpg). The Space sits inside the real member shell (Frequency's header and rails);
 // only the Space area wears the kit: its faces and the Tide accent, through the same resolvers the route calls.
 // Run: node scripts/render/build-css.mjs $RENDER_OUT/app.css, then
 // RENDER_OUT=<dir> pnpm exec vitest run -c scripts/render/vitest.render.config.ts scripts/render/new-world-space-shots.render.tsx
