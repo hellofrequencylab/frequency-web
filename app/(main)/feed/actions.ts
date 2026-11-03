@@ -11,6 +11,7 @@ import { awardGems } from '@/lib/gems'
 import { isReactionKey } from '@/lib/feed/reactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { canModeratePost } from '@/lib/moderation/scope'
+import { canInteractOnWall } from '@/lib/spaces/community-wall'
 import { isBlockedBetween } from '@/lib/blocking'
 import { routeNotification } from '@/lib/notifications/router'
 import { log } from '@/lib/log'
@@ -51,7 +52,7 @@ async function readVisibleParent(parentId: string) {
   const supabase = await createClient()
   const { data } = await supabase
     .from('posts')
-    .select('scope_id, visibility, author_id')
+    .select('scope_id, scope_space_id, visibility, author_id')
     .eq('id', parentId)
     .maybeSingle()
   return data
@@ -421,7 +422,13 @@ export async function createReply(parentId: string, body: string): Promise<Actio
   // predicate a top-level post in that scope passes (group membership, cluster membership or
   // hosting, the caller's own region). Any user could otherwise write into a thread by replying.
   const admin = createAdminClient()
-  if (!(await canWriteInScope(admin, profileId, parent.visibility ?? '', parent.scope_id))) {
+  if (parent.scope_space_id) {
+    // A Space's Community wall (ADR-1938): the circle membership rule below does not apply, the wall's
+    // own does. The owner, the team and members reply; a follower only when the owner allows it.
+    if (!(await canInteractOnWall({ wallSpaceId: parent.scope_space_id, profileId }))) {
+      return fail('Replying here is for the people this Space has let in.')
+    }
+  } else if (!(await canWriteInScope(admin, profileId, parent.visibility ?? '', parent.scope_id))) {
     return fail(parent.visibility === 'group' ? 'Join this circle to reply here.' : 'You can’t reply here.')
   }
 
@@ -429,6 +436,7 @@ export async function createReply(parentId: string, body: string): Promise<Actio
     author_id:  profileId,
     body:       trimmed,
     scope_id:   parent.scope_id,
+    scope_space_id: parent.scope_space_id,
     visibility: parent.visibility,
     post_type:  'feed',
     parent_id:  parentId,
@@ -594,6 +602,15 @@ export async function toggleReaction(
   const supabase = await createClient()
 
   if (activate) {
+    // A reaction on a Space wall post follows the wall's rule, not the open crew+ policy (ADR-1938).
+    const { data: target } = await createAdminClient()
+      .from('posts')
+      .select('scope_space_id')
+      .eq('id', postId)
+      .maybeSingle()
+    if (!(await canInteractOnWall({ wallSpaceId: target?.scope_space_id, profileId }))) {
+      return fail('Reacting here is for the people this Space has let in.')
+    }
     // Idempotent insert against the unique (post_id, profile_id, reaction_type)
     // constraint: a double-tap that races just no-ops instead of erroring.
     // `.select()` returns the row only when this upsert actually INSERTED — a
