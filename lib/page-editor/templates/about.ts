@@ -223,7 +223,7 @@ export const data: Data = {
       },
     },
 
-    // ── The Lab (LIVE-2091). /vision merged in here (owner ruling 2026-11-03), and /the-lab had
+    // ── The Lab (LIVE-2098). /vision merged in here (owner ruling 2026-11-03), and /the-lab had
     // merged into /vision before it, so the dated plan lives on this page now. FUTURE TENSE (ADR-1735):
     // the Lab is a plan, nothing is bookable, and the first one is planned for 2028.
     {

@@ -12,6 +12,6 @@ const FREQUENCY = SITE_DESIGN === 'frequency'
 /** /the-quest merged into the Features page's Zaps card. DAWN: the Quest help category. */
 export const QUEST_HREF = FREQUENCY ? '/features#f-zaps' : '/help/the-quest'
 
-/** /the-lab merged into /vision (2026-10-14), and /vision merged into /about (LIVE-2091, 2026-11-03):
+/** /the-lab merged into /vision (2026-10-14), and /vision merged into /about (LIVE-2098, 2026-11-03):
  *  the Lab's dated plan and its short answers are blocks on the About page now, on both designs. */
 export const LAB_HREF = '/about'

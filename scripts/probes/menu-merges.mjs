@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2091 probe: /vision, /the-lab, /system and /networks are merged into their survivors.
+// LIVE-2098 probe: /vision, /the-lab, /system and /networks are merged into their survivors.
 // Each old route is gone, each answers with a permanent redirect to its survivor, the sitemap no
 // longer lists it, and the Lab's dated plan and short answers live on the About page.
 import { existsSync, readFileSync } from 'node:fs'
@@ -29,7 +29,7 @@ for (const q of ['What is The Lab?', 'When will The Lab open?']) {
 }
 
 if (bad.length) {
-  for (const m of bad) console.error(`LIVE-2091: ${m}`)
+  for (const m of bad) console.error(`LIVE-2098: ${m}`)
   process.exit(1)
 }
-console.log('LIVE-2091: /vision, /the-lab, /system and /networks merged into their survivors')
+console.log('LIVE-2098: /vision, /the-lab, /system and /networks merged into their survivors')

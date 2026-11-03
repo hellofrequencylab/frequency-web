@@ -1,5 +1,5 @@
 // The Independent Network conversation, as a mailto link. A leaf (one import) so both pricing surfaces quote
-// the same door. The quote-only Network link went with /networks (merged into /for/networks, LIVE-2091).
+// the same door. The quote-only Network link went with /networks (merged into /for/networks, LIVE-2098).
 import { CONTACT_EMAIL } from '@/lib/site'
 
 /** The Independent Network conversation: a sales call, never checkout. */

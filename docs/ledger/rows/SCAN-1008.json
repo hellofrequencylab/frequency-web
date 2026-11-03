@@ -11,7 +11,7 @@
     }
   },
   "append": {
-    "detail": "2026-11-03 (LIVE-2091): /networks merged into /for/networks (owner ruling, menu overhaul). The Network door copy lives in lib/marketing/funnel-config.ts now, so the source and the probe read that file. Probe re-pointed at the door copy, Daniel approved the pin 18:04Z."
+    "detail": "2026-11-03 (LIVE-2098): /networks merged into /for/networks (owner ruling, menu overhaul). The Network door copy lives in lib/marketing/funnel-config.ts now, so the source and the probe read that file. Probe re-pointed at the door copy, Daniel approved the pin 18:04Z."
   },
   "wave": "W7"
 }
