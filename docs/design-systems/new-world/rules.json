@@ -64,19 +64,19 @@
   {
    "glob": "design_handoff_theme_editor/reference/tokens/base.css",
    "kind": "built",
-   "target": "components/sites/new-world-css.ts",
+   "target": "components/sites/new-world-effects-css.ts",
    "reason": "Type voices, image treatments and base element rules (LIVE-1992)."
   },
   {
    "glob": "design_handoff_theme_editor/reference/tokens/effects.css",
    "kind": "built",
-   "target": "components/sites/new-world-css.ts",
+   "target": "components/sites/new-world-effects-css.ts",
    "reason": "Orbs, glints, sweep and reveals behind prefers-reduced-motion (LIVE-1992)."
   },
   {
    "glob": "design_handoff_theme_editor/reference/tokens/textures.css",
    "kind": "built",
-   "target": "components/sites/new-world-css.ts",
+   "target": "components/sites/new-world-effects-css.ts",
    "reason": "Grain and dot-grid textures (LIVE-1992)."
   },
   {
