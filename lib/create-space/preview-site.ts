@@ -61,6 +61,7 @@ const DESIGNER_PHOTO = (name: string) => `/sites/designer/photos/${name}.webp`
 const FREQUENCY_PHOTO = (n: 1 | 2 | 3) => `/create-a-space/photos/pain-${n}.jpg`
 const NETWORK_PHOTO = (n: string) => `/sites/network-kit/photos/photo-${n}.jpg`
 const TEMPLE_KIT_PHOTO = (n: string) => `/sites/temple-kit/photos/photo-${n}.jpg`
+const NEW_WORLD_PHOTO = (name: string) => `/sites/new-world/photos/${name}.webp`
 
 const FREQUENCY_IMAGERY: KitImagery = {
   hero: FREQUENCY_PHOTO(2), heroPos: 'center', portrait: FREQUENCY_PHOTO(1), portraitPos: 'center',
@@ -70,7 +71,21 @@ const FREQUENCY_IMAGERY: KitImagery = {
 
 /** Each kit's sample pictures. Designer wears its own library; every other kit wears the gathering photography
  *  until it has a library of its own. A Space's uploads replace these in the setup walk. */
-const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<MegaThemeId, 'free-human' | 'services' | 'new-world'>, KitImagery> = {
+const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<MegaThemeId, 'free-human'>, KitImagery> = {
+  // New World's own gathering library (lib/sites/new-world-photos.json, LIVE-2060): the beach is its hero.
+  'new-world': {
+    hero: NEW_WORLD_PHOTO('beach-joy'), heroPos: 'center 40%', portrait: NEW_WORLD_PHOTO('group-hug'), portraitPos: 'center 30%',
+    strip: [NEW_WORLD_PHOTO('circle-sunrise'), NEW_WORLD_PHOTO('hands-up'), NEW_WORLD_PHOTO('fire-circle')], nav1: "What's happening", cta2: 'Come along',
+    covers: [NEW_WORLD_PHOTO('beach-joy'), NEW_WORLD_PHOTO('circle-sunrise'), NEW_WORLD_PHOTO('hands-up'), NEW_WORLD_PHOTO('fire-circle'), NEW_WORLD_PHOTO('garden-picnic')],
+    portraits: [NEW_WORLD_PHOTO('group-hug'), NEW_WORLD_PHOTO('cafe-table')],
+  },
+  // Services has no library of its own yet; it wears the New World pictures of people at work together.
+  services: {
+    hero: NEW_WORLD_PHOTO('backyard-class'), heroPos: 'center 45%', portrait: NEW_WORLD_PHOTO('workshop-table'), portraitPos: 'center 30%',
+    strip: [NEW_WORLD_PHOTO('cafe-table'), NEW_WORLD_PHOTO('backyard-class'), NEW_WORLD_PHOTO('beach-gong')], nav1: 'Services', cta2: 'See prices',
+    covers: [NEW_WORLD_PHOTO('backyard-class'), NEW_WORLD_PHOTO('beach-gong'), NEW_WORLD_PHOTO('cafe-table'), NEW_WORLD_PHOTO('workshop-table')],
+    portraits: [NEW_WORLD_PHOTO('workshop-table'), NEW_WORLD_PHOTO('cafe-table')],
+  },
   designer: {
     hero: DESIGNER_PHOTO('dz-designer-kitchen-hero'), heroPos: '38% center',
     portrait: DESIGNER_PHOTO('dz-portrait-01'), portraitPos: '48% 30%',
@@ -101,7 +116,7 @@ const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<Meg
   frequency: FREQUENCY_IMAGERY,
 }
 
-/** Free Human, Services and New World are not in the builder's picker (lib/spaces/create-wizard.ts); until they are, they wear the gathering photography. */
+/** Free Human is not in the builder's picker (lib/spaces/create-wizard.ts); until it is, it wears the gathering photography. */
 export const kitImagery = (kit: MegaThemeId): KitImagery => KIT_IMAGERY[kit] ?? FREQUENCY_IMAGERY
 /** Every kit's accents are its own: no kit falls back to another kit's family (Daniel, 2026-11-03). */
 export const kitAccents = (kit: MegaThemeId): readonly PreviewAccent[] => KIT_ACCENTS[kit]
