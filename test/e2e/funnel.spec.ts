@@ -24,7 +24,9 @@ test.describe('try-first funnel', { tag: '@smoke' }, () => {
     })
   }
 
-  for (const route of ['/spaces/new', '/offer']) {
+  // LIVE-1969: /spaces/new no longer sends a signed-out visitor to sign in; it opens the Create a Space wizard,
+  // which needs no account (test/e2e/create-space.spec.ts proves that hop). /offer still signs in first.
+  for (const route of ['/offer']) {
     test(`${route} sends a signed-out visitor to sign in and back`, async ({ page }) => {
       const hops: string[] = []
       page.on('response', (r) => {
