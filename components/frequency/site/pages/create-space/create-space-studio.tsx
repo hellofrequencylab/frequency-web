@@ -25,17 +25,17 @@ import {
   readStoredDraft, serializeDraft, startingModeFor, stepPrompt,
 } from '@/lib/create-space/builder'
 import type { BuilderDraft, BuilderMove } from '@/lib/create-space/builder'
+import { doorArrival } from '@/lib/create-space/door'
+import type { DoorArrival } from '@/lib/create-space/door'
 import { isHandleShape } from '@/lib/create-space/handle'
 import { intentsFromOffer } from '@/lib/create-space/intents-from-offer'
-import { PREVIEW_KITS, deriveSite, isPreviewKit, joinList, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
+import { PREVIEW_KITS, deriveSite, joinList, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
 import { acceptUpload, getUploads, putUpload } from '@/lib/create-space/uploads'
 import type { UploadKind } from '@/lib/create-space/uploads'
 import { CLOCK_BUDGET_MS, formatClock } from '@/lib/launch/clock'
-import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import { PREVIEW_FONT_SHEET, previewAccentVars, previewTokens } from '@/lib/theme/preview-tokens'
 import './create-space.css'
 
-const COLD_KIT: MegaThemeId = 'frequency'
 /** The hero wears its mode as a class too, so a probe and a test can read it off the markup. */
 const HERO_CLASS = { intro: 'cs-hero cs-hero-intro', building: 'cs-hero cs-hero-building' } as const
 const ROW_LABELS = ['Name', 'Offer', 'Contact', 'Photos'] as const
@@ -52,12 +52,6 @@ const MOCKUP_LINE_MS = 600
 const TOAST_MS = 3200
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-/** The kit a visit starts on, and whether the visitor arrived having chosen it. Total. */
-export function arrivalFromParam(param: string | null): { kit: MegaThemeId; chosen: boolean } {
-  if (param && isPreviewKit(param)) return { kit: param, chosen: true }
-  return { kit: COLD_KIT, chosen: false }
-}
-
 const lightGround = (hex: string) => {
   const n = parseInt(hex.replace('#', ''), 16)
   const lin = (c: number) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 }
@@ -73,8 +67,10 @@ const slotSrc = (slot: string, list: readonly string[], fallback: string, own?: 
 
 type Phase = 'build' | 'saved'
 
-function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } }) {
-  const [draft, setDraft] = useState<BuilderDraft>(() => emptyDraft(arrival.kit, arrival.chosen))
+function Island({ arrival }: { arrival: DoorArrival }) {
+  // A door's hints (lib/create-space/door.ts) prime the start: the name is typed in, the goals light the preview's
+  // offer cards before a sentence is written, and the niche rides to the launch. Nothing is marked done for them.
+  const [draft, setDraft] = useState<BuilderDraft>(() => ({ ...emptyDraft(arrival.kit, arrival.chosen), name: arrival.name, goals: arrival.goals, niche: arrival.niche }))
   const [step, setStep] = useState(0)
   const [phase, setPhase] = useState<Phase>('build')
   const [busyLine, setBusyLine] = useState<number | null>(null)
@@ -457,13 +453,14 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
 }
 
 function FromUrl() {
-  const arrival = arrivalFromParam(useSearchParams().get('kit'))
-  return <Island key={`${arrival.kit}:${arrival.chosen}`} arrival={arrival} />
+  const params = useSearchParams()
+  const arrival = doorArrival((k) => params.get(k))
+  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} />
 }
 
 export function CreateSpaceStudio() {
   return (
-    <Suspense fallback={<Island arrival={arrivalFromParam(null)} />}>
+    <Suspense fallback={<Island arrival={doorArrival(() => null)} />}>
       <FromUrl />
     </Suspense>
   )

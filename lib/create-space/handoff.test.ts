@@ -43,6 +43,7 @@ describe('the launch hold for a draft', () => {
   it('maps the builder onto the hold the launch page reads', () => {
     const hold = holdFor(parseHandoff(serializeDraft(draft()))!)
     expect(hold.niche).toBeNull()
+    expect(holdFor({ ...draft(), niche: 'coaches' }).niche).toBe('coaches')
     expect(hold.intents).toEqual(['events', 'community'])
     expect(hold.answers.spotlight).toEqual({ name: 'Saltwater Collective', ...carried })
   })

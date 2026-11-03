@@ -31,7 +31,8 @@
 [data-design="frequency"] [data-kit="site"] .nav ul a:hover{opacity:.7}
 [data-design="frequency"] [data-kit="site"] .nav .btn{height:44px;padding:0 20px;font-size:15px}
 [data-design="frequency"] [data-kit="site"] .hero{min-height:max(680px,100vh);background:var(--fq-uv-void);display:flex;align-items:flex-end}
-[data-design="frequency"] [data-kit="site"] .hero .bg{position:absolute;inset:0;background:url('/brand/frequency/broll/yoga-rave-uv-swirl-web.jpg') center/cover;opacity:.6}
+/* Background stills go through the optimizer (LIVE-2000): a page sets --fq-bg / --fq-bg-sm inline (photoBg in shared/parts.tsx) and these rules pick the rendition by viewport. */
+[data-design="frequency"] [data-kit="site"] .hero .bg{position:absolute;inset:0;background:var(--fq-bg,url('/_next/image?url=%2Fbrand%2Ffrequency%2Fbroll%2Fyoga-rave-uv-swirl-web.jpg&w=1920&q=75')) center/cover;opacity:.6}
 [data-design="frequency"] [data-kit="site"] .hero .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,18,.35) 0%,rgba(10,6,18,.55) 45%,rgba(10,6,18,.96) 100%)}
 [data-design="frequency"] [data-kit="site"] .hero .wrap{padding-bottom:clamp(56px,8vw,96px);padding-top:140px;width:100%;box-sizing:border-box}
 [data-design="frequency"] [data-kit="site"] .hero .h-xl{color:#F2F5FA;max-width:11ch}
@@ -89,7 +90,7 @@
 [data-design="frequency"] [data-kit="site"] .ring .node.on{background:var(--fq-iridescent-sweep);background-size:220% 100%;color:#0C1424;box-shadow:0 0 24px rgba(163,212,255,.55)}
 [data-design="frequency"] [data-kit="site"] .ring .core{position:absolute;inset:24%;border-radius:50%;background:var(--fq-surface-glass);backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;overflow:hidden}
 [data-design="frequency"] [data-kit="site"] .closer{background:var(--fq-uv-void);padding:clamp(110px,14vw,180px) 0;text-align:center}
-[data-design="frequency"] [data-kit="site"] .closer .bg{position:absolute;inset:0;background:url('/brand/frequency/broll/yoga-rave-glowsticks-web.jpg') center/cover;opacity:.4}
+[data-design="frequency"] [data-kit="site"] .closer .bg{position:absolute;inset:0;background:var(--fq-bg,url('/_next/image?url=%2Fbrand%2Ffrequency%2Fbroll%2Fyoga-rave-glowsticks-web.jpg&w=1920&q=75')) center/cover;opacity:.4}
 [data-design="frequency"] [data-kit="site"] .closer .shade{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(10,6,18,.4),rgba(10,6,18,.92) 70%)}
 [data-design="frequency"] [data-kit="site"] .closer .wrap{position:relative;z-index:2}
 [data-design="frequency"] [data-kit="site"] .closer .h-xl{color:#F2F5FA;max-width:16ch;margin:0 auto}
@@ -115,7 +116,8 @@
 [data-design="frequency"] [data-kit="site"] .subnav a{font:600 13px/1 var(--fq-font-sans);padding:10px 14px;border-radius:999px;text-decoration:none;color:var(--fq-text-body);box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
 [data-design="frequency"] [data-kit="site"] .subnav a.on{background:var(--fq-text-strong);color:var(--fq-bg-canvas)}
 [data-design="frequency"] [data-kit="site"] .phero{min-height:520px;background:var(--fq-uv-void);display:flex;align-items:flex-end}
-[data-design="frequency"] [data-kit="site"] .phero .bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.5}
+[data-design="frequency"] [data-kit="site"] .phero .bg{position:absolute;inset:0;background-image:var(--fq-bg);background-size:cover;background-position:center;opacity:.5}
+@media (max-width:860px){[data-design="frequency"] [data-kit="site"] .hero .bg{background-image:var(--fq-bg-sm,var(--fq-bg,url('/_next/image?url=%2Fbrand%2Ffrequency%2Fbroll%2Fyoga-rave-uv-swirl-web.jpg&w=1080&q=75')))}[data-design="frequency"] [data-kit="site"] .closer .bg{background-image:var(--fq-bg-sm,var(--fq-bg,url('/_next/image?url=%2Fbrand%2Ffrequency%2Fbroll%2Fyoga-rave-glowsticks-web.jpg&w=1080&q=75')))}[data-design="frequency"] [data-kit="site"] .phero .bg{background-image:var(--fq-bg-sm,var(--fq-bg))}}
 [data-design="frequency"] [data-kit="site"] .phero .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,18,.35),rgba(10,6,18,.95))}
 [data-design="frequency"] [data-kit="site"] .phero .wrap{padding-top:140px;padding-bottom:72px;width:100%;box-sizing:border-box}
 [data-design="frequency"] [data-kit="site"] .phero .h-xl{color:#F2F5FA;max-width:16ch}

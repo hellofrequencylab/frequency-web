@@ -38,10 +38,13 @@ import { homeFaq } from '@/lib/marketing/quick-answers'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getActiveCircleCount, getRankedSpaces, getWhatsOn, type SiteEvent } from '../shared/data'
 import { SITE } from '../shared/links'
-import { Acts, aura, Chapter, LocPill, photo, photoImg, WhatsOnList } from '../shared/parts'
+import { Acts, aura, Chapter, LocPill, optimizedPhoto, photo, photoImg, WhatsOnList } from '../shared/parts'
+
 import { HomeMotion } from './home-motion'
 import { Weave } from './weave'
 import { WEAVE } from './weave-data'
+
+const HERO_BROLL = '/brand/frequency/broll/yoga-rave-uv-swirl-web.jpg'
 
 const SIG = 'Gather like it matters.'
 
@@ -112,8 +115,11 @@ export async function FrequencyHome() {
       <HomeMotion />
       {/* SCAN-1120: the hero photo is a CSS background, which the browser only discovers after the
           stylesheet parses. React hoists this link into <head> so the LCP image starts fetching with
-          the document. Only the default side (experiences) is preloaded; the other is a stored choice. */}
-      <link rel="preload" as="image" href="/brand/frequency/broll/yoga-rave-uv-swirl-web.jpg" fetchPriority="high" />
+          the document. Only the default side (experiences) is preloaded; the other is a stored choice.
+          LIVE-2000: the href is the same optimizer rendition the kit CSS paints (1920 wide, 1080 under
+          860px) so the preload and the background share one fetch. */}
+      <link rel="preload" as="image" href={optimizedPhoto(HERO_BROLL, 1920)} media="(min-width: 861px)" fetchPriority="high" />
+      <link rel="preload" as="image" href={optimizedPhoto(HERO_BROLL, 1080)} media="(max-width: 860px)" fetchPriority="high" />
 
       <section className="hero" data-time="night" data-night="uv" data-energy="charge" data-screen-label="01 Hero">
         <div className="bg p" />
@@ -292,8 +298,8 @@ export async function FrequencyHome() {
             <Acts
               className="e-only"
               items={[
-                { href: SITE.join, icon: 'space', title: 'Join to open your Space', sub: 'Add your name and next gathering' },
-                { href: SITE.join, icon: 'page', title: 'Join to set up your page', sub: 'Change it yourself, anytime' },
+                { href: SITE.createSpace, icon: 'space', title: 'Open your Space', sub: 'Your name, your look, your first offer. No account yet.' },
+                { href: SITE.createSpace, icon: 'page', title: 'Set up your page', sub: 'Change it yourself, anytime' },
                 { href: SITE.join, icon: 'event', title: 'Join to post your first experience', sub: 'A Circle, an event or a program' },
               ]}
             />
