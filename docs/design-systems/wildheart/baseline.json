@@ -1,4 +1,15 @@
 {
  "ledger": "LIVE-2084",
- "ids": []
+ "ids": [
+  "token:--aura-violet",
+  "token:--fill-primary",
+  "token:--fill-primary-pressed",
+  "token:--focus-ring",
+  "token:--gradient-violet",
+  "token:--symbol-ink",
+  "token:--text-link",
+  "token:--wh-violet",
+  "token:--wh-violet-pressed",
+  "token:--wh-violet-text"
+ ]
 }
