@@ -32,7 +32,7 @@ const DEVICES: readonly Device[] = ['desktop', 'tablet', 'phone']
 export const MAX_VERA_LAYOUT_CHANGES = 12
 
 /** A change to one section of the page in view. */
-export type WebsiteVeraSectionChange =
+type WebsiteVeraSectionChange =
   | { kind: 'move'; sectionId: string; toPosition: number }
   | { kind: 'visibility'; sectionId: string; device: Device; visible: boolean }
   | { kind: 'duplicate'; sectionId: string }
@@ -40,7 +40,7 @@ export type WebsiteVeraSectionChange =
   | { kind: 'width'; sectionId: string; width: (typeof VERA_SECTION_WIDTHS)[number] }
 
 /** A change to the whole site's style on this draft: one of the theme's own dials, accents or Looks. */
-export type WebsiteVeraStyleChange =
+type WebsiteVeraStyleChange =
   | { kind: 'style'; dial: string; option: string }
   | { kind: 'accent'; accent: string }
   | { kind: 'look'; look: string }
@@ -48,7 +48,7 @@ export type WebsiteVeraStyleChange =
 export type WebsiteVeraChange = WebsiteVeraSectionChange | WebsiteVeraStyleChange
 
 const STYLE_KINDS = new Set(['style', 'accent', 'look'])
-export const isWebsiteVeraStyleChange = (change: WebsiteVeraChange): change is WebsiteVeraStyleChange => STYLE_KINDS.has(change.kind)
+const isWebsiteVeraStyleChange = (change: WebsiteVeraChange): change is WebsiteVeraStyleChange => STYLE_KINDS.has(change.kind)
 
 /**
  * THE THEME'S OWN MENU (LIVE-2098): exactly the dials, accents and Looks the editor's Style panel offers for the
