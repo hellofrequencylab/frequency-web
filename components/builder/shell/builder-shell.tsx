@@ -11,7 +11,8 @@
 
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { ChevronLeft, Eye, Maximize2, Monitor, PanelLeft, PanelRight, Pin, PinOff, Redo2, Smartphone, Tablet, Undo2 } from 'lucide-react'
+import { ChevronLeft, Eye, ListTree, Maximize2, Monitor, PanelLeft, PanelRight, Pin, PinOff, Plus, Redo2, SlidersHorizontal, Smartphone, Sparkles, Tablet, Undo2 } from 'lucide-react'
+import { BREAKPOINTS } from '@/lib/theme/breakpoints'
 import type { WebsiteEditorShellProps } from '@/components/sites/editor/shell'
 import { SectionIcon } from '@/components/sites/editor/section-icon'
 import { updateBlockPropsDeep } from '@/components/page-editor/mobile/data-ops'
@@ -87,6 +88,8 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
     if (mode === 'pinned') return `${side === 'left' ? OUTLINE : rails.prefs.rightWidth}px`
     return width < 600 ? '0px' : `${STRIP}px`
   }
+  // Under the sm breakpoint (600) the rails become bottom sheets and a bottom bar opens them (BLD-107).
+  const phone = width < BREAKPOINTS.sm
   const gridVars = { '--rail-left': railColumn('left'), '--rail-right': railColumn('right'), '--rail-width': `${rails.prefs.rightWidth}px` } as CSSProperties
   const toggleRail = (side: RailSide) => railDispatch({ type: 'toggle', side, width, trigger: `builder-rail-${side}` })
   // Drag the panel's left edge to widen it (300 to 420); arrow keys do the same ten pixels at a time.
@@ -221,7 +224,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   }
 
   return (
-    <div className={`${styles.root} ${fontClass ?? ''}`} data-builder="v3" data-preview={state.preview} data-focus={rails.focus} style={gridVars} onKeyDown={keys}>
+    <div className={`${styles.root} ${fontClass ?? ''}`} data-builder="v3" data-preview={state.preview} data-focus={rails.focus} data-phone={phone || undefined} style={gridVars} onKeyDown={keys}>
       <header className={styles.top}>
         <a className={styles.back} href={`https://${host}/${page.slug === 'home' ? '' : page.slug}`} aria-label="Back to your website" title="Back to your website"><ChevronLeft size={18} aria-hidden /></a>
         <nav className={styles.crumbs} aria-label="Where you are">
@@ -298,6 +301,12 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       </aside>
 
       <div className={styles.toastSlot} role="status" aria-live="polite">{toast && <div className={styles.toast}><span>{toast.say}</span>{toast.undo && <button type="button" className={styles.btn} onClick={() => { dispatch({ type: 'undo' }); setToast(null) }}>Undo</button>}</div>}</div>
+      {phone && !state.preview && <nav className={styles.bottomBar} aria-label="Builder tools">
+        <button type="button" data-action="rail-left" aria-pressed={modes.left === 'overlay'} onClick={() => toggleRail('left')}><ListTree size={20} aria-hidden /><span>Outline</span></button>
+        <button type="button" disabled title="Adding a section arrives with add by intent"><Plus size={20} aria-hidden /><span>Add</span></button>
+        <button type="button" data-action="rail-right" aria-pressed={modes.right === 'overlay'} onClick={() => toggleRail('right')}><SlidersHorizontal size={20} aria-hidden /><span>Tune</span></button>
+        <button type="button" onClick={() => setCommandOpen(true)}><Sparkles size={20} aria-hidden /><span>Vera</span></button>
+      </nav>}
       {commandOpen && <CommandBar sections={spine} pages={state.draft.pages} selected={!!state.selectedId} onRun={runCommand} onClose={() => setCommandOpen(false)} />}
       {state.preview && <div className={styles.previewPill} role="status">Previewing as a visitor · press Esc to edit</div>}
     </div>
