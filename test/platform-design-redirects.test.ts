@@ -11,7 +11,7 @@ describe('redirects follow the canonical platform design',()=>{
     for(const [source,destination]of [['/practice',frequency?'/features#f-zaps':'/help/the-quest'],['/the-quest',frequency?'/features#f-zaps':'/help/the-quest'],]){
       expect(rules.find(rule=>rule.source===source)).toMatchObject({source,destination,permanent:frequency})
     }
-    // /the-lab and /vision merged into /about (LIVE-2098), which both designs serve: permanent everywhere.
+    // /the-lab and /vision merged into /about (LIVE-2103), which both designs serve: permanent everywhere.
     expect(rules.find(rule=>rule.source==='/the-lab')).toMatchObject({source:'/the-lab',destination:'/about',permanent:true})
   })
 })

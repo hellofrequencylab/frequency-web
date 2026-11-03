@@ -244,7 +244,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1 },
     // /start MERGED into /join (2026-10-14): it 301s, so it is not listed. /join is the front door.
     // /the-lab and /vision MERGED into /about, /system into /features and /networks into /for/networks
-    // (LIVE-2098, owner ruling 2026-11-03): each 301s, so none is listed.
+    // (LIVE-2103, owner ruling 2026-11-03): each 301s, so none is listed.
     // Frequency-only pages (ADR-1737) are advertised only when the build wears Frequency. /stories is HIDDEN until
     // three real stories exist (owner ruling 2026-10-14): it 302s to /the-community, so it is not listed.
     ...(SITE_DESIGN === "frequency"

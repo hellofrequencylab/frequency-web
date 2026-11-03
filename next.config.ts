@@ -695,14 +695,14 @@ const nextConfig: NextConfig = {
       FREQUENCY_DESIGN
         ? { source: '/the-quest', destination: '/features#f-zaps', permanent: true }
         : { source: '/the-quest', destination: '/help/the-quest', permanent: false },
-      // /the-lab MERGED into /vision (2026-10-14), and /vision MERGED into /about (LIVE-2098, owner ruling
+      // /the-lab MERGED into /vision (2026-10-14), and /vision MERGED into /about (LIVE-2103, owner ruling
       // 2026-11-03): the Lab's dated plan and short answers are blocks on the About page, which both
       // designs serve, so both rules are permanent. The printed QR destination keeps working through them.
       { source: '/the-lab', destination: '/about', permanent: true },
       { source: '/vision', destination: '/about', permanent: true },
-      // /networks MERGED into its /for door (LIVE-2098): one Network page, the door that already sells it.
+      // /networks MERGED into its /for door (LIVE-2103): one Network page, the door that already sells it.
       { source: '/networks', destination: '/for/networks', permanent: true },
-      // /system MERGED into /features (LIVE-2098). /features is Frequency-only, so a DAWN build sends the
+      // /system MERGED into /features (LIVE-2103). /features is Frequency-only, so a DAWN build sends the
       // old URL to /pricing with a temporary 307, never a cached 308 that would block a later switch.
       FREQUENCY_DESIGN
         ? { source: '/system', destination: '/features', permanent: true }

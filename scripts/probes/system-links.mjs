@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // LIVE-1600 probe: Features, Pricing and the door pages each carry an onward link to the whole offer.
-// /system merged into /features (LIVE-2098, owner-approved pin 2026-11-03), so the link is to Features or
+// /system merged into /features (LIVE-2103, owner-approved pin 2026-11-03), so the link is to Features or
 // Pricing now, and none of the three may still point at the retired /system.
 import { readFileSync } from 'node:fs'
 
