@@ -12,7 +12,7 @@ const WRAP = `max-width:var(--sv-container-max);margin:0 auto;padding:clamp(72px
 const MONO =
   "font-family:var(--sv-font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase";
 const CARD =
-  "border:1px solid var(--sv-border-subtle);border-radius:var(--sv-radius-lg);background:var(--sv-sheen),var(--sv-ink-850);box-shadow:var(--sv-shadow-md)";
+  "border:1px solid var(--sv-border-subtle);border-radius:var(--sv-radius-lg);background:var(--sv-sheen),var(--sv-ink-850);box-shadow:var(--sv-depth-md)";
 
 /* THE CONTRACT BRIDGE: the shared block contract (lib/theme/block-contract-map.json) reads --color-*, --radius-*, --font-* and
  * the motion names, never --sv-*, so a role block would draw unthemed without these aliases. Night is the default register; Day
@@ -112,7 +112,7 @@ ${S} .sv-hero--minimal .sv-hero-copy .sv-display{font-size:clamp(48px,7vw,112px)
 ${S} .sv-hero-lead{margin:0;font-size:20px;line-height:1.55;max-width:560px;color:var(--sv-chrome-200);text-wrap:pretty}
 ${S} .sv-proof{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--sv-chrome-200)}
 ${S} .sv-stars{display:inline-flex;gap:2px;color:var(--sv-flare-300)}
-${S} .sv-panel{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:var(--sv-radius-lg);background:color-mix(in oklab,var(--sv-ink-900) 62%,transparent);border:1px solid var(--sv-border-default);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--sv-shadow-lg)}
+${S} .sv-panel{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:var(--sv-radius-lg);background:color-mix(in oklab,var(--sv-ink-900) 62%,transparent);border:1px solid var(--sv-border-default);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--sv-depth-lg)}
 ${S} .sv-panel-top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px 8px;${MONO};font-size:10.5px;color:var(--sv-chrome-200)}
 ${S} .sv-panel-top i{display:inline-block;width:6px;height:6px;border-radius:9px;background:var(--sv-flare-400);margin-right:8px}
 ${S} .sv-panel-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--sv-radius-md);border:1px solid var(--sv-border-subtle);background:color-mix(in oklab,var(--sv-chrome-50) 4%,transparent);color:inherit;text-decoration:none}
@@ -190,7 +190,7 @@ ${S} .sv-nav a,${S} .sv-phone{${MONO};color:var(--sv-chrome-200);text-decoration
 ${S} .sv-nav a:hover,${S} .sv-phone:hover{color:var(--sv-chrome-50)}
 ${S} .sv-header--bar .sv-nav{padding:10px 22px;border-radius:var(--sv-radius-pill);border:1px solid var(--sv-border-subtle)}
 ${S} .sv-header--pill{background:transparent;border-bottom:0;padding:16px ${GUT};position:sticky;top:0}
-${S} .sv-header--pill .sv-header-in{max-width:min(var(--sv-container-max),1080px);height:64px;padding:0 10px 0 22px;border-radius:var(--sv-radius-pill);background:color-mix(in oklab,var(--sv-ink-950) 72%,transparent);border:1px solid var(--sv-border-default);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--sv-shadow-lg)}
+${S} .sv-header--pill .sv-header-in{max-width:min(var(--sv-container-max),1080px);height:64px;padding:0 10px 0 22px;border-radius:var(--sv-radius-pill);background:color-mix(in oklab,var(--sv-ink-950) 72%,transparent);border:1px solid var(--sv-border-default);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--sv-depth-lg)}
 ${S} .sv-footer{position:relative;overflow:hidden;background:var(--sv-glow-sunset),var(--sv-ink-950);color:var(--sv-chrome-50);border-top:1px solid var(--sv-border-subtle)}
 ${S} .sv-footer-cols{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:48px;max-width:var(--sv-container-max);margin:0 auto;padding:clamp(56px,7vw,96px) ${GUT} 56px}
 ${S} .sv-footer-brand{display:flex;flex-direction:column;gap:24px;align-items:flex-start}
@@ -237,7 +237,7 @@ ${S} .hs-pill{background:color-mix(in oklab,var(--sv-ink-950) 82%,transparent);-
 ${S} .hs-logo{flex:none;display:block;height:clamp(28px,6vw,36px);width:auto;max-width:160px;object-fit:contain}
 ${S} .hs-nav a,${S} .hs-nav-mega{${LABEL};color:var(--sv-text-secondary)}
 ${S} .hs-nav a:hover,${S} .hs-nav a[aria-current="page"]{color:var(--sv-text-primary)}
-${S} .hs-menu-panel,${S} .hs-mega-panel{background:var(--sv-ink-800);border:var(--sv-border-hairline) solid var(--sv-border-subtle);border-radius:var(--sv-radius-lg);box-shadow:var(--sv-shadow-lg)}
+${S} .hs-menu-panel,${S} .hs-mega-panel{background:var(--sv-ink-800);border:var(--sv-border-hairline) solid var(--sv-border-subtle);border-radius:var(--sv-radius-lg);box-shadow:var(--sv-depth-lg)}
 ${S} .hs-footer-top{background:var(--sv-glow-sky,var(--sv-surface-sunken)),var(--sv-surface-sunken);border-top:var(--sv-border-hairline) solid var(--sv-border-subtle)}
 ${S} .hs-footer-col-title{${LABEL};color:var(--sv-text-muted)}
 ${S} .hs-footer-top{grid-template-columns:1.6fr repeat(3,1fr)}
