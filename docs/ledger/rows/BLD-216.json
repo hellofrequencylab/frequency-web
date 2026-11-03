@@ -1,0 +1,19 @@
+{
+  "id": "BLD-216",
+  "title": "Builder top bar fits a 390px phone with no sideways scroll",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/builder/shell/builder-shell.module.css",
+    "ref": "render check of #4585, 2026-11-03"
+  },
+  "detail": "Rendering the builder shell at 390 showed the top bar 15px wider than the viewport: the two placeholder buttons (Show as, Find) and the device switch kept their width while the breadcrumb shrank. Under md (840) the two placeholder buttons now hide; under the phone step (600) the device switch hides and the bar tightens, so back, save state, undo, redo, preview and Publish fit. Rendered at 390, 1280, 1440, 1920 and 2000 with no horizontal overflow.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/builder/shell/builder-shell.module.css','utf8');if(!/max-width: 599px/.test(s)||!/\\.top \\.devices \\{ display: none/.test(s)||!/\\.top \\.wide \\{ display: none/.test(s))process.exit(1)\""
+  },
+  "wave": "W7",
+  "closed": "2026-11-03"
+}
