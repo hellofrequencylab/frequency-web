@@ -378,3 +378,4 @@ launch_email_log                      internal
 share_links                           internal
 share_link_opens                      internal
 create_space_drafts                   internal
+create_space_draft_email_log         internal

@@ -8,7 +8,7 @@
 // the profile exists.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { processUnsubscribe, processSpaceUnsubscribe } from '@/app/unsubscribe/actions'
+import { processUnsubscribe, processSpaceUnsubscribe, processDraftUnsubscribe } from '@/app/unsubscribe/actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 
 export const dynamic = 'force-dynamic'
@@ -21,8 +21,12 @@ export async function POST(req: NextRequest) {
   // space-scoped suppression. Otherwise fall back to the GLOBAL member unsubscribe (`p` + `c`).
   const s = searchParams.get('s')
   const e = searchParams.get('e')
+  // A Create a Space draft's reminders (LIVE-1968): `d` is the draft's own signed link.
+  const d = searchParams.get('d')
   const result: ActionResult<unknown> =
-    s || e
+    d
+      ? await processDraftUnsubscribe({ token: d })
+      : s || e
       ? await processSpaceUnsubscribe({ spaceId: s ?? '', email: e ?? '', token: t })
       : await processUnsubscribe({
           profileId: searchParams.get('p') ?? '',
