@@ -1,0 +1,18 @@
+{
+ "id": "LIVE-2050",
+ "title": "Convert Bold to the style-picker model (schema 2 manifest, dials, accents, Looks)",
+ "lane": "live",
+ "priority": "P2",
+ "size": "M",
+ "status": "open",
+ "source": {
+  "file": "docs/design-systems/services/rules.json",
+  "ref": "Daniel 2026-11-02 New World thread"
+ },
+ "detail": "Plan step 9 for Bold: (1) manifest to schema 2 declaring today's four dials supported with THEME_LOOK defaults (owners see no change); (2) register, accent swatches, type voice, motion, hero/header/footer variants, image treatment, Looks, theme dials as the style system allows; (3) functions table mapping existing blocks to the twelve functions; conformance suite green before any dial flips to supported. NEEDS FROM DANIEL: Updated Bold style system, or confirmation it stays a single-look theme.",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node -e \"const s=require('./lib/themes/editor-schema2.json');const m=require('./lib/theme/mega-theme');process.exit(Object.keys(s).length&&s['bold']?0:1)\""
+ },
+ "wave": "W7"
+}

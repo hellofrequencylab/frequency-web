@@ -1,0 +1,19 @@
+{
+  "id": "BLD-213",
+  "title": "Builder: the live connections each role reads (trust, circles, booking, reviews, team, posts, shop, locations)",
+  "lane": "program",
+  "priority": "P2",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Revision 2, builder v3 (2026-11-03): docs/design/frequency-builder-v3/v3-review-and-needs.md"
+  },
+  "detail": "Only offerings, events, memberships and tickets resolve through resolveFeatureSourceItems today. Wire the rest to the Space's rows with an empty state each: trust counts, circles with next session, booking openings, reviews, team, posts, shop, and a Space hours field for locations. No sample number reaches a live page. Done when: each live role renders real rows for a fixture Space and nothing when the Space has none.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-03",
+    "evidence": "Filed from the builder v3 audit. The pass writes scripts/probes/builder/BLD-213.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  },
+  "wave": "W7"
+}

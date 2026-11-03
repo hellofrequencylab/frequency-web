@@ -1,0 +1,19 @@
+{
+  "id": "BLD-402",
+  "title": "Builder BLD-402: Vera collaborator",
+  "lane": "program",
+  "priority": "P2",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-402."
+  },
+  "detail": "B4 Together, pass BLD-402 (spec: docs/EDITOR-NEXT.md#bld-402). Vera collaborator. Scope: components/builder/vera, lib/ai. Build: Vera joins as a client. Tools: read_page, plan_page, apply_edits, validate. Proposals show as ghosted diffs, accepted per section, one transaction each. Speaks first only at page creation; after that, only from ⌘K or her rail. Done when: Vera output names only tokens and known slot keys; Accept and undo are one step each. Gates: raw-css-paths ratchet, vitest suite (required test job), check:roles (new), Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-401, BLD-004. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-02",
+    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-402.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  },
+  "wave": "W7"
+}
