@@ -1,0 +1,21 @@
+{
+  "id": "BLD-000",
+  "title": "Builder rulings: Vera's authority, calendar name, banned-word scope, first surface, shared breakpoints",
+  "lane": "owner",
+  "ownerAction": "ruling",
+  "priority": "P1",
+  "size": "XS",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02. BLD-004 records these rulings; BLD-402 needs the first one."
+  },
+  "detail": "Five product calls before B0 closes. 1) Vera: owners accept her copy as a diff, or she coaches with questions only (today's VERA_SUGGESTIONS). 2) Calendar name everywhere: What's happening (canon) or What's On (Circle tab, ADR-1023). 3) Banned surface words: exempt owner names and theme names such as Temple. 4) First surface: Space site only, or site, profile, Spotlight and email together. 5) Member shell moves to the 600, 840, 1200 breakpoints.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-03",
+    "evidence": "Owner rulings 2026-11-02 17:25Z: 1) Vera coaches with questions only. 2) The calendar is named What's Happening everywhere. 3) Owner and theme names are exempt from banned words; banned words apply to Frequency's own content and are softened, individuals follow content suggestions. 4) The builder covers site, profile, Spotlight and email together. 5) The member shell moves to the shared 600/840/1200 breakpoints."
+  },
+  "wave": "W7",
+  "closed": "2026-11-03"
+}

@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "new-world",
+  "legacyIds": {
+    "editor": "NewWorld",
+    "site": "new-world"
+  },
+  "offered": false,
+  "site": {
+    "label": "New World",
+    "description": "The Frequency house look: Night and Day in one theme, Tide teal to start, and a kit for every kind of gathering.",
+    "defaultFonts": "modern"
+  },
+  "library": null,
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "NewWorld"
+      ]
+    }
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "new-world",
+        "names"
+      ]
+    }
+  }
+}

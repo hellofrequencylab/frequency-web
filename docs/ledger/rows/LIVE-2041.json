@@ -1,18 +1,5 @@
 {
   "id": "LIVE-2041",
-  "title": "Services accents Signal, Bloom and Iris: ship them once the owner allows their violet hexes",
-  "lane": "live",
-  "priority": "P2",
-  "size": "S",
-  "status": "open",
-  "source": {
-    "file": "scripts/probes/violet-family.mjs",
-    "ref": "LIVE-962 probe bars the violet band; Services Iris and the Signal and Bloom third glows fall in it"
-  },
-  "detail": "The handoff's six accents include Iris (#7C6CF2 family) and third glows #8B7BFF (Signal) and #B57CFF (Bloom). violet-family.mjs allows violet per hex with an owner phrase (ADR-1885 pattern), and editing a probe needs Daniel's own phrase. Foundation shipped Tide, Ember and Fern. Closes by adding the three accents to themes.Services and SERVICES_ACCENTS after the phrase, batched into the single probe-pin ask with the other Services pins.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node -e \"const c=require('./lib/sites/editor/theme-contract.json').themes.Services; process.exit(c.accents.iris&&c.accents.signal&&c.accents.bloom?0:1)\""
-  },
-  "wave": "W7"
+  "patch": { "status": "done", "closed": "2026-11-03" },
+  "append": { "detail": "\n\nOwner approved the eight violet hexes for the theme contract (2026-11-03). Signal, Bloom and Iris are in themes.Services in theme-contract.json. SERVICES_ACCENTS in lib/theme/services.ts stays at Tide, Ember and Fern: the approval named the theme contract only, so adding the three there needs its own phrase for lib/theme/services.ts." }
 }

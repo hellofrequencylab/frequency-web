@@ -20,6 +20,9 @@ export const SITE = {
   spaces: '/spaces',
   spacesMap: '/spaces#map',
   join: BETA_CTA_HREF,
+  // Every operator door (open a Space, set up your page, launch, Spotlight) opens the wizard that needs no account
+  // (LIVE-1969, ADR-1933; owner 2026-11-02): never the member sign-up first.
+  createSpace: '/create-a-space',
   pricing: '/pricing',
   features: '/features',
 } as const

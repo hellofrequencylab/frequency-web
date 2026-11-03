@@ -1,0 +1,19 @@
+{
+ "id": "LIVE-2042",
+ "title": "Intake New World (its own theme, the default for every new Space): snapshot, rules and baseline in docs/design-systems/new-world",
+ "lane": "live",
+ "priority": "P1",
+ "size": "S",
+ "status": "done",
+ "source": {
+  "file": "docs/design-systems/services/rules.json",
+  "ref": "Daniel 2026-11-02 New World thread"
+ },
+ "detail": "New World is NOT a revision of Services (Daniel 2026-11-03): Services is the 'Good work, done right.' theme and keeps the `services` id and its intake untouched. New World is the new mega template and the default theme every new Space starts in, with its own id `new-world`, its own --nw-* tokens and its own design-system folder. Ran docs/DESIGN-SYSTEM-INTAKE.md on its zip: 90 files snapshotted, rules claim the framework files as built by LIVE-1997, baseline 74 known gaps (64 copy, 10 missing built targets), draft theme.manifest.json (hidden) and role-coverage baseline. Token gaps appear once NEW_WORLD_TOKENS_CSS exists (LIVE-2054). Flag for Daniel: the zip's default neon accent is violet (#8A6AFF, deep #5B42C9); keep Tide until he rules.",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node -e \"process.exit(require('fs').existsSync('docs/design-systems/new-world/inventory.json')?0:1)\""
+ },
+ "wave": "W7",
+ "closed": "2026-11-03"
+}

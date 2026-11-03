@@ -1,20 +1,15 @@
 {
   "id": "LIVE-1970",
-  "title": "Create a Space funnel: anonymous signals, lead score, median name-to-saved time",
-  "lane": "live",
-  "priority": "P2",
-  "size": "M",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/create-a-space/rules.json",
-    "ref": "design_handoff create-a-space v3 README section 5 analytics; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+  "patch": {
+    "status": "done",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/create-space-funnel.mjs"
+    },
+    "closed": "2026-11-02"
   },
-  "detail": "Anonymous first-party signal route and taxonomy entries, no typed text and no pixel, lead score in contacts.meta, a funnel read in admin analytics.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('app/api/create-space/signal/route.ts')?0:1)\"",
-    "checked": "2026-11-02",
-    "evidence": "Fails today: the file or change the probe names is not on main."
+  "append": {
+    "detail": "\n\nNine createspace.* signals (lib/create-space/signal.ts, closed props per event, never typed text) posted from the builder to its own anonymous sink app/api/create-space/signal (rate limited, exactly once per tab and event, through track() with no actor, always 204; authz ledger entry). Registered in the taxonomy server-side only. The admin Insights engagement tab shows the Create a Space funnel (visits per builder step, then launch members from every door) with the median name-to-hand-over time read from create_space_drafts' two timestamps (lib/create-space/funnel.ts). The lead score the funnel writes into signup_leads.payload flags a lead hot at 60 and up; the leads page shows the flag and lists hot leads first. There is no Frequency-level contact row for a signup lead, so the score lives on the lead row rather than contacts.meta. Probe runs signal, funnel and taxonomy tests and reads the wiring."
   },
   "wave": "W7"
 }

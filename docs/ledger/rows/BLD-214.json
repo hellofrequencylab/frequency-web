@@ -1,0 +1,19 @@
+{
+  "id": "BLD-214",
+  "title": "Builder and New World: the asset set (photos, icons, fonts)",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Revision 2, builder v3 (2026-11-03): docs/design/frequency-builder-v3/v3-review-and-needs.md"
+  },
+  "detail": "Owner and design inputs: the twelve named New World photos with written descriptions (circle-sunrise to fire-crew; the zip ships seven placeholders), about 14 builder icons on the 24px grid (BLD-003), self-hosted fonts for New World's detail pairing, and the six acceptance pages the handoff names but does not ship (Web Theme, Kit Overview, Conformance, Theme Feature Page, Spotlight Layouts, Templates). Done when: every asset slot the roles name resolves to a file or a designed empty state. PROGRESS (2026-11-03): icons done (#4516); photos covered by #4517; Detail pairing fonts (Bricolage Grotesque, Lora, DM Mono) now self-hosted in components/sites/new-world-fonts.ts. Still open: the six acceptance pages, which need Claude Design screens (never invented from the handoff).",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-03",
+    "evidence": "Filed from the builder v3 audit. The pass writes scripts/probes/builder/BLD-214.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  },
+  "wave": "W7"
+}

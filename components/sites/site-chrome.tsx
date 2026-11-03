@@ -18,6 +18,8 @@ import { NetworkKitBar } from './network-kit-bar'
 import { NetworkKitHeaderState } from './network-kit-header-state'
 import { DESIGNER_CSS } from './designer-css'
 import { FREE_HUMAN_CSS } from './free-human-css'
+import { NEW_WORLD_CSS } from './new-world-css'
+import { SERVICES_SITE_CSS } from './services-css'
 import { DesignerFooterTop, DesignerUtilityBar, phoneMenuFoot } from './designer-chrome'
 import { DesignerHeaderState } from './designer-header-state'
 import { FreeHumanBar } from './free-human-bar'
@@ -94,10 +96,12 @@ export type SiteLink = HouseHeaderLink
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human'
+  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'new-world' | 'services'
   season: MensworkSeason
   /** Network and Network Theme Kit: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
+  /** New World: the register the owner's Register dial picked (Night by default). */
+  register?: 'night' | 'day'
 }
 
 function skinCss(skin: SiteSkin | null, look = ''): string {
@@ -111,6 +115,8 @@ function skinCss(skin: SiteSkin | null, look = ''): string {
   if (skin.theme === 'midnight') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MIDNIGHT_CSS
   if (skin.theme === 'designer') return HOUSE_CSS + FREQUENCY_PAGE_CSS + DESIGNER_CSS
   if (skin.theme === 'free-human') return HOUSE_CSS + FREQUENCY_PAGE_CSS + FREE_HUMAN_CSS
+  if (skin.theme === 'new-world') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NEW_WORLD_CSS
+  if (skin.theme === 'services') return HOUSE_CSS + FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
 
@@ -249,6 +255,7 @@ export function SiteChrome({
       data-house-site=""
       data-house-fonts={themeFonts ? 'theme' : 'house'}
       data-house-theme={skin?.theme}
+      data-th={skin?.theme === 'new-world' || skin?.theme === 'services' ? skin.register ?? 'night' : undefined}
       data-season={net || nk ? undefined : skin?.season}
       data-scheme={net || nk ? skin?.scheme : undefined}
       data-sign={skin?.theme === 'wildheart' ? sky(new Date()).sign : undefined}

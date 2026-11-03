@@ -143,13 +143,21 @@ export function suggestModeForIntents(picks: readonly string[], available: reado
   return null
 }
 
-/** The themes the look step offers: every Mega Theme, in the library's order, with its one-line pitch. Free Human is held back
- *  like the earlier Network and Temple: a private theme, loaded for the Spaces that wear it and offered to no one. */
-export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.filter(({ id }) => id !== 'network' && id !== 'temple' && id !== 'free-human').map(({ id }) => ({
+/** The one-line pitch of a theme the library (lib/themes/library.ts) has no page for yet. */
+const WIZARD_HINTS: Partial<Record<MegaThemeId, string>> = {
+  'new-world': 'Night and Day in one look. Tide teal to start.',
+  services: 'Night-first and glossy. Built for bookings.',
+}
+
+/** The themes the look step offers: every Mega Theme the pickers offer (SITE_THEMES, which drops RETIRED_FROM_PICKERS: the
+ *  earlier Network and Temple, private Free Human, and New World and Services until each is un-hidden), in the library's
+ *  order, with its one-line pitch. One hidden flag: a theme that leaves RETIRED_FROM_PICKERS is offered here the same moment;
+ *  Free Human is named too, because it stays private whatever the pickers do (LIVE-1910). */
+export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.filter(({ id }) => id !== 'free-human' && SITE_THEMES.some((t) => t.id === id)).map(({ id }) => ({
   id,
   // The site theme's own label, so Midnight reads as Nocturne (its saved id stays `midnight`).
-  label: id === 'frequency' ? 'Default' : id === 'network-kit' ? 'Network' : id === 'temple-kit' ? 'Temple' : (SITE_THEMES.find((t) => t.id === id)?.label ?? id.charAt(0).toUpperCase() + id.slice(1)),
-  hint: THEME_LIBRARY.find((t) => t.id === id)?.tagline ?? '',
+  label: id === 'frequency' ? 'Default' : id === 'network-kit' ? 'Network' : id === 'temple-kit' ? 'Temple' : id === 'new-world' ? 'New World' : (SITE_THEMES.find((t) => t.id === id)?.label ?? id.charAt(0).toUpperCase() + id.slice(1)),
+  hint: THEME_LIBRARY.find((t) => t.id === id)?.tagline ?? WIZARD_HINTS[id] ?? '',
 }))
 
 /** The theme the wizard sends: the owner's pick, else the one a /themes page named, else none. Total. PURE. */

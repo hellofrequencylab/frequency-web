@@ -1,0 +1,19 @@
+{
+  "id": "BLD-212",
+  "title": "Builder: a presentation default for every role on all ten site themes",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Revision 2, builder v3 (2026-11-03): docs/design/frequency-builder-v3/v3-review-and-needs.md"
+  },
+  "detail": "components/sites/presentation/*.ts sets 0 to 9 role defaults per theme today (Default 0, Free Human 5, Bold and Wildheart 6, Designer 7, Network 7, Temple 8, Nocturne 9). Give each theme a default variant for all 23 roles, chosen from that theme's design system, one file per theme, no new art. A layout an owner picked still wins. Done when: presentationDefault(theme, role) is defined for every theme and role pair and presentation.test.ts pins the table. 2026-11-03 progress: the five new roles (firstvisit, booking, locations, business, story) now have a default on all nine themed sites, pinned in presentation.test.ts. Still open: the older roles no theme sets yet; DAWN stays empty on purpose.\n\nAll 22 roles now have a default layout on all nine themed sites, pinned in presentation.test.ts and rendered at 390, 1280, 1440, 1920 and 2000 with no overflow.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-212.mjs"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

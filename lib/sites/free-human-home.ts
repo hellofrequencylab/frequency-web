@@ -212,7 +212,7 @@ export function freeHumanProgramPage() {
     slug: 'program', label: 'Program',
     seo: { title: 'The year-round program', description: FREE_HUMAN_SEASONS.lead },
     blocks: [
-      { type: 'FreeHumanHero', props: pageHero({ badge: 'Join in any month', title: 'The year-round *program.*', lead: FREE_HUMAN_SEASONS.lead, primaryLabel: 'See the dates', primaryHref: '~/calendar', secondaryLabel: 'Meet Audrey', secondaryHref: '~/audrey', image: ph('heritage-madonna-nursing'), alt: 'Painting of a mother holding her newborn by candlelight', pos: 'center 30%' }) },
+      { type: 'FreeHumanHero', props: pageHero({ badge: 'Join in any month', title: 'The year-round *program.*', lead: 'Four seasons, one live circle. Come in any month and begin where the year is.', primaryLabel: 'See the dates', primaryHref: '~/calendar', secondaryLabel: 'Meet Audrey', secondaryHref: '~/audrey', image: ph('craft-folk-circle'), alt: 'A painted circle of birds, deer and spirals on green and blue', pos: 'center 50%' }) },
       { type: 'FreeHumanSeasons', props: { ...FREE_HUMAN_SEASONS, buttonLabel: 'See the dates', buttonHref: '~/calendar', seasons: FREE_HUMAN_SEASONS.seasons.map((x) => ({ ...x, href: '~/calendar' })) } },
       { type: 'FreeHumanLyric', props: { ...FREE_HUMAN_LYRIC } },
       { type: 'FreeHumanEvents', props: { ...FREE_HUMAN_EVENTS } },
@@ -225,7 +225,7 @@ export function freeHumanWorkshopsPage() {
     slug: 'workshops', label: 'Workshops',
     seo: { title: 'Workshops', description: FREE_HUMAN_WORKSHOPS.aside },
     blocks: [
-      { type: 'FreeHumanHero', props: pageHero({ badge: 'Open to everyone', title: 'Go deeper, *in a single afternoon.*', lead: 'Small groups, long pauses. Members or not, come and take a seat.', primaryLabel: 'See the dates', primaryHref: '~/calendar', secondaryLabel: 'The year-round program', secondaryHref: '~/program', image: ph('light-honey-spoon'), alt: 'Honey on a wooden spoon in warm light', pos: 'center 60%' }) },
+      { type: 'FreeHumanHero', props: pageHero({ badge: 'Open to everyone', title: 'Small groups, *long pauses.*', lead: 'Go deeper in a single afternoon. Members or not, come and take a seat.', primaryLabel: 'See the dates', primaryHref: '~/calendar', secondaryLabel: 'The year-round program', secondaryHref: '~/program', image: ph('craft-mosaic-sun'), alt: 'A quilted sun ringed with birds and flowers', pos: 'center 50%' }) },
       { type: 'FreeHumanWorkshops', props: { ...FREE_HUMAN_WORKSHOPS, rows: FREE_HUMAN_WORKSHOPS.rows.map((r) => ({ ...r, href: '~/calendar' })) } },
       { type: 'FreeHumanLyric', props: { ...FREE_HUMAN_LYRIC } },
       { type: 'FreeHumanEvents', props: { ...FREE_HUMAN_EVENTS } },
@@ -238,7 +238,7 @@ export function freeHumanBooksPage() {
     slug: 'books', label: 'Books',
     seo: { title: 'Books by Audrey Uma Wilder', description: 'Beyond The Wild, a guide to rearing children, and Defying Men, on how to move through the modern world.' },
     blocks: [
-      { type: 'FreeHumanHero', props: pageHero({ badge: 'Books by Audrey Uma Wilder', title: 'Words for *the wild work.*', lead: 'On raising children with rhythm, freedom and old wisdom, and on living in a body that is fully your own.', primaryLabel: 'Meet Audrey', primaryHref: '~/audrey', secondaryLabel: 'The calendar', secondaryHref: '~/calendar', image: ph('craft-beaded-deer'), alt: 'A beaded deer', pos: 'center 60%' }) },
+      { type: 'FreeHumanHero', props: pageHero({ badge: 'New and on the way', title: 'Books by *Audrey Uma Wilder.*', lead: 'On raising children with rhythm, freedom and old wisdom, and on living in a body that is fully your own.', primaryLabel: 'Meet Audrey', primaryHref: '~/audrey', secondaryLabel: 'The calendar', secondaryHref: '~/calendar', image: ph('craft-cave-nest'), alt: 'A reading nook with bookshelves in a soft stone cave', pos: 'center 40%' }) },
       { type: 'FreeHumanBooks', props: { ...FREE_HUMAN_BOOKS, books: FREE_HUMAN_BOOKS.books.map((b) => ({ ...b, secondaryHref: '~/audrey' })) } },
       { type: 'FreeHumanLyric', props: { ...FREE_HUMAN_LYRIC } },
     ] as FreeHumanBlockSeed[],

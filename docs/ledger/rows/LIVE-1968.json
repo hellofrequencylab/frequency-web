@@ -1,20 +1,15 @@
 {
   "id": "LIVE-1968",
-  "title": "Create a Space abandon recovery: three draft emails on a dedicated cron",
-  "lane": "live",
-  "priority": "P1",
-  "size": "L",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/create-a-space/rules.json",
-    "ref": "design_handoff create-a-space v3 DRAFT-RECOVERY-EMAILS.md; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+  "patch": {
+    "status": "done",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/create-space-draft-reminders.mjs"
+    },
+    "closed": "2026-11-02"
   },
-  "detail": "Pure timing rule, email log, runner, cron route with heartbeat and vercel.json entry, runbook gate, conversion hook that ends Track A.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('app/api/cron/create-space-draft-reminders/route.ts')?0:1)\"",
-    "checked": "2026-11-02",
-    "evidence": "Fails today: the file or change the probe names is not on main."
+  "append": {
+    "detail": "\n\nPure rule draft-recovery.ts (1h/1d/3d from the last save, max three, 8am to 8pm in the browser zone, ends on save, launch or unsubscribe, day 3 skipped for a taken handle), unique (draft, kind) claim log create_space_draft_email_log, runner with suppression check, purge and outbox send, cron every 15 min with heartbeat and budget behind CREATE_SPACE_DRAFT_REMINDERS_ENABLED (RUNBOOKS gate), draft unsubscribe branch on /unsubscribe and the one-click POST. Probe runs the rule under node and reads the wiring."
   },
   "wave": "W7"
 }

@@ -227,6 +227,20 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'Temple', path: '/themes/temple' },
     ],
   },
+  newWorld: {
+    path: '/themes/new-world',
+    title: 'New World: design it once, wear it on every surface',
+    description:
+      'New World is the theme every new Space starts in. Your Spotlight, Space, website and emails wear one look, changed once.',
+    shareTitle: 'New World: design it once, same theme everywhere',
+    headline: 'Design it once. Same theme everywhere.',
+    lede: 'Your link in bio, your Space, your website and your emails each look a little different. New World is the theme every new Space starts in: studios, coaches, hosts, venues, non-profits and networks, one look to wear on all four, read from one profile. Night to start, Day when you want it. Change it once and every surface follows.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Themes', path: '/themes' },
+      { name: 'New World', path: '/themes/new-world' },
+    ],
+  },
 } as const satisfies Record<string, FrequencyPageSeo>
 
 /** The page's Metadata under Frequency: title, description, canonical, OpenGraph and X card, all from

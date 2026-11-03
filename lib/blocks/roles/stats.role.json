@@ -36,6 +36,9 @@
     },
     "band": {
       "label": "Full band"
+    },
+    "bar": {
+      "label": "One bar"
     }
   },
   "default": "row",

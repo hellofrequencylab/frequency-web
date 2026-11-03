@@ -20,6 +20,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { RECOVERY_EXCLUDED_SOURCES, recoveryExcludedSourceFilter } from '@/lib/crm/lead-sources'
+import { LEAD_HOT_SCORE } from '@/lib/create-space/lead'
 import type { Json } from '@/lib/database.types'
 
 /** How far the visitor got before they left. `step_reached` is written by the induction:
@@ -53,6 +54,10 @@ export interface AbandonedSignupLead {
   updatedAt: string
   /** Whole days since the row was last touched. */
   ageDays: number
+  /** The lead score the funnel wrote into the payload (Create a Space, lib/create-space/lead.ts); null when none. */
+  score: number | null
+  /** Score 60 and up: worth a person's follow-up now, ahead of the rest (LIVE-1970). */
+  hot: boolean
 }
 
 export interface SignupLeadRow {
@@ -101,6 +106,8 @@ export function mapSignupLeadRow(row: SignupLeadRow, now: number = Date.now()): 
   const name = display || [first, last].filter(Boolean).join(' ') || null
   const touched = Date.parse(row.updated_at)
   const ageDays = Number.isFinite(touched) ? Math.max(0, Math.floor((now - touched) / DAY_MS)) : 0
+  const p = row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload) ? (row.payload as Record<string, unknown>) : {}
+  const score = typeof p.score === 'number' && Number.isFinite(p.score) ? Math.round(p.score) : null
   return {
     id: row.id,
     email: row.email,
@@ -113,6 +120,8 @@ export function mapSignupLeadRow(row: SignupLeadRow, now: number = Date.now()): 
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     ageDays,
+    score,
+    hot: score !== null && score >= LEAD_HOT_SCORE,
   }
 }
 

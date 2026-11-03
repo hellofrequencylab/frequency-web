@@ -4083,6 +4083,100 @@ export type Database = {
           },
         ]
       }
+      create_space_drafts: {
+        Row: {
+          converted_at: string | null
+          created_at: string
+          draft: Json
+          email: string
+          handle: string | null
+          id: string
+          purge_after: string
+          saved_at: string
+          signup_lead_id: string | null
+          started_at: string | null
+          step_reached: number
+          token_hash: string
+          tz: string | null
+          unsubscribed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string
+          draft?: Json
+          email: string
+          handle?: string | null
+          id?: string
+          purge_after?: string
+          saved_at?: string
+          signup_lead_id?: string | null
+          started_at?: string | null
+          step_reached?: number
+          token_hash: string
+          tz?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string
+          draft?: Json
+          email?: string
+          handle?: string | null
+          id?: string
+          purge_after?: string
+          saved_at?: string
+          signup_lead_id?: string | null
+          started_at?: string | null
+          step_reached?: number
+          token_hash?: string
+          tz?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "create_space_drafts_signup_lead_id_fkey"
+            columns: ["signup_lead_id"]
+            isOneToOne: false
+            referencedRelation: "signup_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      create_space_draft_email_log: {
+        Row: {
+          draft_id: string
+          id: string
+          message_ref: string | null
+          sent_at: string
+          trigger_kind: string
+        }
+        Insert: {
+          draft_id: string
+          id?: string
+          message_ref?: string | null
+          sent_at?: string
+          trigger_kind: string
+        }
+        Update: {
+          draft_id?: string
+          id?: string
+          message_ref?: string | null
+          sent_at?: string
+          trigger_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "create_space_draft_email_log_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "create_space_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_tips: {
         Row: {
           content_id: string
@@ -12027,6 +12121,7 @@ export type Database = {
           scope_event_id: string | null
           scope_id: string | null
           scope_profile_id: string | null
+          scope_space_id: string | null
           updated_at: string | null
           visibility: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -12051,6 +12146,7 @@ export type Database = {
           scope_event_id?: string | null
           scope_id?: string | null
           scope_profile_id?: string | null
+          scope_space_id?: string | null
           updated_at?: string | null
           visibility?: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -12075,6 +12171,7 @@ export type Database = {
           scope_event_id?: string | null
           scope_id?: string | null
           scope_profile_id?: string | null
+          scope_space_id?: string | null
           updated_at?: string | null
           visibility?: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -12119,6 +12216,13 @@ export type Database = {
             columns: ["scope_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_scope_space_id_fkey"
+            columns: ["scope_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -17375,6 +17479,38 @@ export type Database = {
             columns: ["undo_of"]
             isOneToOne: false
             referencedRelation: "space_vera_changes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_wall_settings: {
+        Row: {
+          followers_interact: boolean
+          post_access: string
+          read_access: string
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          followers_interact?: boolean
+          post_access?: string
+          read_access?: string
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          followers_interact?: boolean
+          post_access?: string
+          read_access?: string
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_wall_settings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]

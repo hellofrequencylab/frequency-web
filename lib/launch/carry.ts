@@ -5,15 +5,17 @@
 //
 // The Spotlight form itself reads `name`, `line` and `link`. The keys below ride beside them in the same hold:
 // the handle the visitor claimed, the Theme Kit they picked, their accent, the host's name, and (from the v3 builder,
-// ADR-1933) their one offer sentence, phone, place and photo choices. The hold keeps twelve keys per step
-// (lib/launch/pending.ts), and name + link + the ten here are exactly twelve: a new key needs that cap raised first.
+// ADR-1933) their one offer sentence, phone, place, photo choices and the server draft's resume token. The hold
+// keeps thirteen keys per step (lib/launch/pending.ts), and name + link + the eleven here are exactly thirteen: a new
+// key needs that cap raised first.
 
 export interface LaunchCarry {
   /** A Space handle, lowercase letters and digits with single hyphens inside, 2 to 40 characters. */
   handle?: string
   /** A Theme Kit id (the Mega Theme the Space is dressed in once it exists). createSpace re-validates it. */
   theme?: string
-  /** The accent's place in the kit's accent list. Kept for the Website step; nothing reads it yet. */
+  /** The accent's place in the kit's accent list (lib/create-space/preview-site.ts kitAccents). The Spotlight step
+   *  turns it into the new Space's brand colour, which the Space page, its Spotlight and the website all wear. */
   accent?: string
   /** The host's name as the visitor typed it. */
   host?: string
@@ -29,6 +31,9 @@ export interface LaunchCarry {
   logo?: string
   /** The host photo choice: a theme portrait slot, their initials or an upload. */
   profile?: string
+  /** The server draft's resume token (create_space_drafts). The launch claim stamps that draft converted once the
+   *  person has signed in, so the draft reminders run until they really arrive, not from the moment they tap Claim. */
+  lead?: string
 }
 
 /** The photo tokens the hold may carry: a slot, an upload marker, or the drawn choices. Never a file, never a URL
@@ -40,6 +45,8 @@ const WHERE_MAX = 80
 
 const HANDLE = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const THEME = /^[a-z0-9-]{1,40}$/
+/** The same shape as lib/create-space/lead.ts LEAD_TOKEN_RE (restated: this file imports nothing from the app). */
+const LEAD = /^[A-Za-z0-9_-]{8,64}$/
 
 /** A carried handle, or null when it is missing or not a handle. Total. */
 export function carriedHandle(raw: unknown): string | null {
@@ -65,6 +72,7 @@ export function readCarry(answers: Record<string, string> | undefined | null): L
     const v = answers?.[key]
     if (typeof v === 'string' && PHOTO_TOKEN.test(v)) carry[key] = v
   }
+  if (typeof answers?.lead === 'string' && LEAD.test(answers.lead)) carry.lead = answers.lead
   return carry
 }
 
@@ -81,5 +89,6 @@ export function carryFields(carry: LaunchCarry): Record<string, string> {
   if (carry.cover) out.cover = carry.cover
   if (carry.logo) out.logo = carry.logo
   if (carry.profile) out.profile = carry.profile
+  if (carry.lead) out.lead = carry.lead
   return out
 }

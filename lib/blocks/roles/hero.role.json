@@ -37,6 +37,12 @@
     },
     "center": {
       "label": "Centred"
+    },
+    "glow": {
+      "label": "Glow"
+    },
+    "minimal": {
+      "label": "Minimal"
     }
   },
   "default": "split",

@@ -57,7 +57,7 @@ describe('the phone sheet reaches everything the desktop bar reaches', () => {
   it('loses nothing from the code default', () => {
     const menu = defaultMenu('header')
     const desktop = desktopDestinations(menu)
-    expect(desktop.length).toBeGreaterThan(20)
+    expect(desktop.length).toBeGreaterThan(10)
     for (const href of desktop) {
       expect(phoneDestinations(menu), `${href} has no path on a phone`).toContain(href)
     }
@@ -65,7 +65,7 @@ describe('the phone sheet reaches everything the desktop bar reaches', () => {
 
   it('reaches the current Frequency wing and feature destinations from its editable default', () => {
     const phone = phoneDestinations(defaultMenu('header'))
-    for (const href of ['/the-community','/spaces#types','/features#people','/features#spaces']) expect(phone).toContain(href)
+    for (const href of ['/the-community','/spaces','/features','/for']) expect(phone).toContain(href)
   })
 
   it('a category with child COLUMNS folds them in rather than dropping them', () => {

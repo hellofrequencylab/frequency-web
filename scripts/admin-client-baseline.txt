@@ -908,6 +908,8 @@ lib/connections/welcomes.ts
 lib/consent/consent.ts
 lib/consent/retention.ts
 lib/core/load-capabilities.ts
+lib/create-space/draft-io.ts
+lib/create-space/draft-recovery-io.ts
 lib/crew/boost.ts
 lib/crew/circle-tasks.ts
 lib/crew/verification-queue.ts
@@ -1064,6 +1066,7 @@ lib/journeys/sell-gate.ts
 lib/journeys/tier-gate.ts
 lib/keystone/store.ts
 lib/launch/comeback-io.ts
+lib/launch/launched-io.ts
 lib/layout/chrome-sources.ts
 lib/layout/content-cascade.ts
 lib/layout/page-chrome.ts
@@ -1269,7 +1272,6 @@ lib/spaces/segments.ts
 lib/spaces/space-discussion.ts
 lib/spaces/space-image-store.ts
 lib/spaces/spotlight-clicks.ts
-lib/spotlight/link-clicks.ts
 lib/spaces/standing-rollup.ts
 lib/spaces/store.ts
 lib/spaces/tagline.ts
@@ -1279,6 +1281,7 @@ lib/spaces/type-defaults.ts
 lib/spaces/venue-holds.ts
 lib/spotlight/data.ts
 lib/spotlight/guestbook.ts
+lib/spotlight/link-clicks.ts
 lib/spotlight/programs.ts
 lib/staff.ts
 lib/stewardships.ts

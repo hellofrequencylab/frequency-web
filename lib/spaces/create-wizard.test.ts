@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { operatorStartHref } from '@/lib/site'
 import { SPACE_MANIFEST } from '@/lib/studio/entities/space'
+import { SITE_THEMES } from '@/lib/theme/site-style'
 import { withLookStep, chosenWizardTheme, WIZARD_THEMES, createWizardSteps, parseIntents, parsePlanHint, planWantsBilling, setupFinishFor, suggestModeForIntents, WIZARD_PLANS } from './create-wizard'
 
 describe('parsePlanHint', () => {
@@ -60,7 +61,7 @@ describe('the look step (LIVE-1531)', () => {
     expect(withLookStep(createWizardSteps(SPACE_MANIFEST)).map((s) => s.key)).toEqual(['intents', 'model', 'identity', 'look', 'start'])
   })
   it('offers every Mega Theme with a pitch', () => {
-    expect(WIZARD_THEMES.map((t) => t.id)).toEqual(['frequency', 'bold', 'wildheart', 'network-kit', 'temple-kit', 'midnight', 'designer'])
+    expect(WIZARD_THEMES.map((t) => t.id)).toEqual(['frequency', 'bold', 'wildheart', 'network-kit', 'temple-kit', 'midnight', 'designer', 'services', 'new-world'].filter((id) => SITE_THEMES.some((t) => t.id === id)))
     for (const t of WIZARD_THEMES) expect(t.hint.length, t.id).toBeGreaterThan(0)
   })
   it("sends the owner's pick, else the theme a /themes page named, else none", () => {

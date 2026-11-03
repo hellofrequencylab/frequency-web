@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2080",
+  "title": "W5 Cutover: re-key posts, archive Space Circles, stop creating one per Space, update seeds",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1938.md",
+    "ref": "Daniel 2026-11-03: Space circles become a Community wall; thread plan /mnt/project-files/community-wall/PLAN.md"
+  },
+  "detail": "Re-key verified copies, archive every is_space_primary circle (status archived, slug kept for the redirect), drop the spaces_ensure_space_circle trigger and the auto-enrol triggers, point the-group, wildheart, menswork and free-human seeds at the Space. No post, reply, reaction or member is lost; a count check before and after is the gate.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-community-wall.mjs w5"
+  },
+  "wave": "W7"
+}

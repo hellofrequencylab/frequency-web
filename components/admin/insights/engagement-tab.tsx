@@ -10,6 +10,7 @@ import { RankList } from '@/components/admin/rank-list'
 import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getEngagementDashboard, type FunnelStep, type EventTypeCount } from '@/lib/analytics/dashboard'
+import { formatMedian } from '@/lib/create-space/funnel'
 import { ProgressTrack } from '@/components/ui/progress-track'
 
 // The "Engagement" tab of the consolidated Insights suite (ADR-263) — formerly /admin/engagement.
@@ -60,6 +61,9 @@ async function EngagementContent() {
           </Tile>
           <Tile label="Engagement funnel" span={3} caption="Distinct members reaching each broad step across the app.">
             <FunnelView steps={d.funnel} />
+          </Tile>
+          <Tile label="Create a Space, signed out" span={3} caption={`Visits reaching each builder step (anonymous, one per tab), then members starting and finishing the launch from every door. Name to hand-over, median: ${formatMedian(d.createSpaceMedianMs)}.`}>
+            <FunnelView steps={d.createSpaceFunnel} />
           </Tile>
         </TileGrid>
       </DashArea>

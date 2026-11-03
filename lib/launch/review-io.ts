@@ -10,6 +10,7 @@
 
 import { revalidatePath } from 'next/cache'
 import type { BuildoutDraft } from './buildout'
+import type { LaunchCarry } from './carry'
 import { recordLaunchEvent } from './events'
 import { loadSpotlightAnswers } from './flow-io'
 import { publishSpotlightStep } from './spotlight-io'
@@ -73,11 +74,12 @@ export async function loadReviewDraft(launch: LaunchSnapshot): Promise<BuildoutD
   }
 }
 
-/** Publish the edited draft. The Spotlight first (it makes the Space when this launch has none), then the Space's
- *  words, then the website and email kept as a draft. Each step is marked only when its real record now exists.
- *  Returns the Space's handle, or the line to show. */
-export async function publishReview(profileId: string, launch: LaunchSnapshot, edits: Omit<BuildoutDraft, 'cites'>): Promise<{ slug: string } | { error: string }> {
-  const made = await publishSpotlightStep(profileId, launch, edits.spotlight)
+/** Publish the edited draft. The Spotlight first (it makes the Space when this launch has none, with the handle, Theme
+ *  Kit and accent the visitor chose on /create-a-space: `carry`, the same hold the Spotlight step reads), then the
+ *  Space's words, then the website and email kept as a draft. Each step is marked only when its real record now
+ *  exists. Returns the Space's handle, or the line to show. */
+export async function publishReview(profileId: string, launch: LaunchSnapshot, edits: Omit<BuildoutDraft, 'cites'>, carry: LaunchCarry = {}): Promise<{ slug: string } | { error: string }> {
+  const made = await publishSpotlightStep(profileId, launch, edits.spotlight, carry)
   if ('error' in made) return made
   const space = await getSpaceBySlug(made.slug)
   if (!space || space.ownerProfileId !== profileId) return { error: 'We could not find your Space. Try again.' }

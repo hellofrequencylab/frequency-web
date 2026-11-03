@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { SITE_THEMES } from '@/lib/theme/site-style'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { PREVIEW_KIT_ORDER, PREVIEW_TOKEN_KEYS, previewAccentVars, previewDefaultAccent, previewOnAccent, previewTokens } from '@/lib/theme/preview-tokens'
 
@@ -8,9 +9,9 @@ describe('preview tokens', () => {
     for (const key of PREVIEW_TOKEN_KEYS) expect(tokens[key], `${id} ${key}`).toBeTruthy()
   })
 
-  it('offers every Mega Theme but the retired classic Network and Temple once, Designer first', () => {
-    expect([...PREVIEW_KIT_ORDER].sort()).toEqual(MEGA_THEMES.map((t) => t.id).filter((i) => i !== 'network' && i !== 'temple' && i !== 'free-human').sort())
-    expect(PREVIEW_KIT_ORDER[0]).toBe('designer')
+  it('offers every Mega Theme but the retired classic Network and Temple once, New World first once it is offered', () => {
+    expect([...PREVIEW_KIT_ORDER].sort()).toEqual(MEGA_THEMES.map((t) => t.id).filter((i) => SITE_THEMES.some((t) => t.id === i)).sort())
+    expect(PREVIEW_KIT_ORDER[0]).toBe(SITE_THEMES.some((t) => t.id === 'new-world') ? 'new-world' : 'designer')
   })
 
   it('Designer reads its own palette, with a charcoal primary', () => {

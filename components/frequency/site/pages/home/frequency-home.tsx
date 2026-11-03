@@ -298,8 +298,8 @@ export async function FrequencyHome() {
             <Acts
               className="e-only"
               items={[
-                { href: SITE.join, icon: 'space', title: 'Join to open your Space', sub: 'Add your name and next gathering' },
-                { href: SITE.join, icon: 'page', title: 'Join to set up your page', sub: 'Change it yourself, anytime' },
+                { href: SITE.createSpace, icon: 'space', title: 'Open your Space', sub: 'Your name, your look, your first offer. No account yet.' },
+                { href: SITE.createSpace, icon: 'page', title: 'Set up your page', sub: 'Change it yourself, anytime' },
                 { href: SITE.join, icon: 'event', title: 'Join to post your first experience', sub: 'A Circle, an event or a program' },
               ]}
             />
