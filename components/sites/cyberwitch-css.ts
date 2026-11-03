@@ -17,11 +17,14 @@ export const CYBERWITCH_CSS = `${CYBERWITCH_TOKENS_CSS}${CYBERWITCH_DIALS_CSS}${
 ${CYBERWITCH_BLOCKS_CSS}
 /* The owner's accent drives the neon: the ramps the glows and rules read follow --color-primary, and the spray colour that fights it
  * is its complement where the browser can compute one (the Hex lime stays as the fallback). */
+/* token-ok: CyberWitch skin literal (fallback accent, scrim, white-hot glow) */
 ${C}{--cw-flare-500:var(--color-primary,#FF00FF);--cw-flare-400:var(--color-primary-strong,#FF4DE6);--cw-flare-300:var(--color-primary-hover,#FF8CF0)}
+/* token-ok: CyberWitch skin literal (fallback accent, scrim, white-hot glow) */
 @supports (color:oklch(from red l c h)){${C}{--cw-clash-500:oklch(from var(--color-primary,#FF00FF) 0.92 0.24 calc(h + 150));--cw-clash-300:oklch(from var(--color-primary,#FF00FF) 0.9 0.14 calc(h + 150))}}
 ${C}{color-scheme:dark;--color-canvas:var(--cw-ink-900);--color-surface:var(--cw-ink-850);--color-surface-post:var(--cw-ink-850);--color-surface-elevated:var(--cw-ink-800);--color-surface-hover:var(--cw-ink-700);--color-border:var(--cw-border-default);--color-border-strong:var(--cw-border-strong);--color-text:var(--cw-text-primary);--color-text-muted:var(--cw-text-secondary);--color-text-subtle:var(--cw-text-muted);--color-focus-ring:var(--cw-flare-300);--color-success:var(--cw-success);--color-warning:var(--cw-warning);--color-danger:var(--cw-danger);--color-info:var(--cw-flare-300);--color-ink:var(--cw-ink-950);--color-on-ink:var(--cw-chrome-50);--color-on-ink-muted:var(--cw-chrome-200);--radius-control:var(--cw-corner-sm);--radius-card:var(--cw-corner);--radius-cover:var(--cw-corner-lg);--radius-media:var(--cw-corner);--font-display:var(--cw-font-gothic);--font-body:var(--cw-font-body);--font-label:var(--cw-font-caps)}
 ${C}{position:relative;font-family:var(--cw-font-body);font-size:var(--cw-fs-body);line-height:var(--cw-lh-body);font-synthesis-weight:none;background:var(--cw-tex-grime) 0 0/900px 900px fixed,var(--cw-surface-page);color:var(--color-text)}
 /* The page's two fixed layers: ONE film grain and a wet-street vignette, never per section. */
+/* token-ok: CyberWitch skin literal (fallback accent, scrim, white-hot glow) */
 ${C}::before{content:"";position:fixed;inset:0;z-index:998;pointer-events:none;background:radial-gradient(130% 100% at 50% 35%,transparent 55%,rgba(0,0,0,.45) 100%)}
 ${C}::after{content:"";position:fixed;inset:0;z-index:999;pointer-events:none;background:var(--cw-tex-grain);background-size:140px 140px;opacity:.11;mix-blend-mode:overlay}
 ${C} .hs-root{background:transparent;color:var(--color-text)}
@@ -31,6 +34,7 @@ ${C} a:hover{color:var(--cw-accent-hover)}
 ${C} :focus-visible{outline:2px solid var(--cw-flare-300);outline-offset:3px}
 /* Headlines: a blackletter statement with the one lit phrase sprayed over it in marker (three voices, data-type). */
 ${C} .hs-h1,${C} .hs-h2,${C} .hs-brand,${C} .sv-display{font-family:var(--cw-font-gothic);font-weight:700;font-stretch:100%;text-transform:none;letter-spacing:var(--cw-ls-display);line-height:var(--cw-lh-display);text-shadow:var(--cw-shadow-text);text-wrap:balance}
+/* token-ok: CyberWitch skin literal (fallback accent, scrim, white-hot glow) */
 ${C} .hs-h1 em,${C} .hs-h2 em,${C} .sv-display em{font-family:var(--cw-font-scrawl);font-style:normal;font-weight:400;font-size:.8em;line-height:.9;text-transform:uppercase;letter-spacing:.01em;color:var(--cw-flare-400);text-shadow:0 0 1px #fff,var(--cw-glow-text);display:inline-block;transform:rotate(-4deg) translateY(.06em)}
 ${C}[data-type="quiet"] .hs-h1,${C}[data-type="quiet"] .hs-h2,${C}[data-type="quiet"] .sv-display{font-family:var(--cw-font-body);font-weight:500;font-style:italic;letter-spacing:-.02em;line-height:.98}
 ${C}[data-type="quiet"] .hs-h1 em,${C}[data-type="quiet"] .hs-h2 em,${C}[data-type="quiet"] .sv-display em{text-transform:none;font-size:.82em}
@@ -38,6 +42,7 @@ ${C}[data-type="editorial"] .hs-h1,${C}[data-type="editorial"] .hs-h2,${C}[data-
 ${C}[data-type="editorial"] .hs-h1 em,${C}[data-type="editorial"] .hs-h2 em,${C}[data-type="editorial"] .sv-display em{font-family:var(--cw-font-gothic);font-weight:700;text-transform:none;transform:none;font-size:1.04em;color:var(--cw-accent-text);text-shadow:var(--cw-glow-sm)}
 /* Labels: Spectral tracked caps. Section labels are duct tape, a degree off. */
 ${C} .hs-eyebrow,${C} .hs-label,${C} .hs-badge,${C} .sv-mono{${LABEL}}
+/* token-ok: tape grain stripes, the skin's own texture */
 ${C} .sv-eyebrow{display:inline-flex;align-items:center;gap:10px;padding:6px 12px 5px;background:repeating-linear-gradient(97deg,transparent 0 22px,rgba(0,0,0,.06) 22px 23px,transparent 23px 51px),linear-gradient(180deg,#F3EFE6,#E2DDD2);color:var(--cw-ink-900);transform:rotate(-1.5deg);box-shadow:0 2px 0 rgba(0,0,0,.35);clip-path:polygon(0 6%,2% 0,98% 4%,100% 0,99% 100%,1% 94%)}
 ${C} .sv-eyebrow b{color:var(--cw-ink-700)}
 ${C} .sv-eyebrow::before{display:none}

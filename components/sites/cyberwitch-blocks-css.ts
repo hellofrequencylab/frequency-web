@@ -48,6 +48,7 @@ ${C}{
 --cw-radius-lg:var(--cw-corner-lg);
 --cw-radius-xl:var(--cw-corner-lg);
 --cw-sheen:linear-gradient(180deg,color-mix(in oklab,var(--cw-chrome-50) 4%,transparent),transparent 40%);
+/* token-ok: hard 2px plate shadow, the skin literal */
 --cw-depth-sm:0 2px 0 rgba(0,0,0,.55);
 --cw-depth-md:var(--cw-shadow-plate);
 --cw-depth-lg:var(--cw-shadow-poster);

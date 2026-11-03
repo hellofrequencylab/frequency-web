@@ -29,7 +29,7 @@ type PreviewTokens = Record<PreviewTokenKey, string>
  *  lib/theme/site-style.ts, the one hidden flag) is left out here too, so New World and Services reach the builder the
  *  moment that flag lets them go and never before. */
 const PREVIEW_KIT_PREFERENCE: readonly MegaThemeId[] = [
-  'new-world', 'services', 'cyberwitch', 'free-human', 'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
+  'new-world', 'services', 'free-human', 'cyberwitch', 'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
 ]
 export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = PREVIEW_KIT_PREFERENCE.filter((id) => SITE_THEMES.some((t) => t.id === id))
 

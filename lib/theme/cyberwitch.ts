@@ -11,7 +11,7 @@ import type { ThemeSurface } from "@/lib/theme/surface-vars";
 //
 // Deliberate differences from the zip, recorded in docs/design-systems/cyberwitch/rules.json:
 //  - Blood's fill is #F2184C, not the zip's #F0164A: ink on #F0164A reads 4.45:1 and a label must reach 4.5:1 (the design's own rule is 3:1).
-//  - Five accents ship, not six: Volt (#8A70FF) is a violet, and the violet family is retired (ADR-1792, Daniel 2026-11-03).
+//  - Five accents ship, not six: Volt is a violet, and the violet family is retired (ADR-1792, Daniel 2026-11-03).
 //  - The zip's names (--ink-*, --flare-*, --accent ...) are prefixed --cw- so they sit beside other themes on one page.
 
 /** The owner accent presets (Hex, Absinthe, Ice, Blood, Venom). Id to the steps the site engine reads. `clash` is the spray colour
