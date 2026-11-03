@@ -29,12 +29,13 @@
 // and the Nightshade palette under `[data-mode="nightshade"]`. NO UI sets that attribute yet: the owner has
 // not ruled on a member toggle versus a device setting, so nothing here reads prefers-color-scheme.
 //
-// TOKENS V4 (the revised design system, 2026-11-03, intake docs/design-systems/wildheart, LIVE-2084): the opal
-// stops and the stars take the design's named soft fills and alphas, and the bloom texture, logo ground and
-// wordmark tracking are added. Kept from v3 on purpose, each named with its reason in the rules file's
-// tokenDeviations: muted #6B5B51, the madder gradient's AA light stop, the flat pressed violet, and the vellum
-// and dusk gradients built from tokens. The design's violet family (#6E4D96, pressed #5A3D7E, text #654590,
-// light stop #7D5BA8; vellum on it 6.21:1) waits on the owner: LIVE-1363's probe pins #6A3FA0.
+// TOKENS V4 (the revised design system, 2026-11-03, intake docs/design-systems/wildheart, LIVE-2084): the violet
+// family moves to #6E4D96 / pressed #5A3D7E / text #654590 / light stop #7D5BA8 (owner 2026-11-03 moved
+// LIVE-1363's pin; vellum on the violet 6.21:1, on the pressed 8.18:1; violet text on parchment 6.49:1, on
+// lavender 4.86:1), the opal stops and the stars take the design's named soft fills and alphas, and the bloom
+// texture, logo ground and wordmark tracking are added. Kept from v3 on purpose, each named with its reason in
+// the rules file's tokenDeviations: muted #6B5B51, the madder gradient's AA light stop, the flat pressed violet,
+// and the vellum and dusk gradients built from tokens. The v3 figures below for the violet family are the old values.
 //
 // Rules the design system sets and this module keeps (the pass-1 contrast audit, measured by
 // lib/theme/wildheart.test.ts with lib/spaces/accent's contrastRatio): never pure black or white; text on a
@@ -67,10 +68,10 @@ export const WILDHEART_PALETTE = {
   muted: '#6B5B51',
   secondary: '#5E5048',
   ink: '#3A2E29',
-  violet: '#6A3FA0',
-  violetPressed: '#55308A',
-  violetText: '#5F3694',
-  violetTop: '#7A52AE',
+  violet: '#6E4D96',
+  violetPressed: '#5A3D7E',
+  violetText: '#654590',
+  violetTop: '#7D5BA8',
   lavender: '#D9CBE6',
   mist: '#ECE4F1',
   nightshade: '#2E2138',
@@ -140,8 +141,8 @@ const ALPHA = {
   ink04: 'rgba(58,46,41,.04)',
   ink06: 'rgba(58,46,41,.06)',
   ink12: 'rgba(58,46,41,.12)',
-  violet12: 'rgba(106,63,160,.12)',
-  violet35: 'rgba(106,63,160,.35)',
+  violet12: 'rgba(110,77,150,.12)',
+  violet35: 'rgba(110,77,150,.35)',
   madder35: 'rgba(148,80,94,.35)',
   symbol70: 'rgba(101,69,144,.7)',
   symbol32: 'rgba(101,69,144,.32)',
@@ -163,7 +164,7 @@ const ALPHA = {
   vellum0: 'rgba(251,247,239,0)',
   vellum85: 'rgba(251,247,239,.85)',
   vellum12: 'rgba(251,247,239,.12)',
-  violet13: 'rgba(106,63,160,.13)',
+  violet13: 'rgba(110,77,150,.13)',
   madder05: 'rgba(148,80,94,.05)',
   madder16: 'rgba(148,80,94,.16)',
   nightshade28: 'rgba(46,33,56,.28)',
@@ -186,7 +187,7 @@ const NIGHT_ALPHA = {
   lilac50: 'rgba(199,173,232,.5)',
   lilac40: 'rgba(199,173,232,.4)',
   rose50: 'rgba(222,154,168,.5)',
-  violet28: 'rgba(106,63,160,.28)',
+  violet28: 'rgba(110,77,150,.28)',
   madder22: 'rgba(148,80,94,.22)',
   rose35: 'rgba(222,154,168,.35)',
 } as const
