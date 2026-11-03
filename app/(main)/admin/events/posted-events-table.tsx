@@ -194,6 +194,17 @@ function PostedRow({ row, canManage }: { row: PostedEventRow; canManage: boolean
           </div>
           {notice && <p className="mt-1.5 text-right text-meta text-success">{notice}</p>}
           {error && panel === 'none' && <p className="mt-1.5 text-right text-meta text-danger">{error}</p>}
+          {/* Inside the cell, never a sibling of <tr> (visual sweep 2026-11-03): a closed Dialog renders a
+              hidden <span>, which is not legal in <tbody>, so the whole table failed hydration and was
+              rebuilt on the client on every /admin/events load. */}
+          <DangerModal
+            open={confirmNewLink}
+            onClose={() => setConfirmNewLink(false)}
+            title="Mint a new claim link?"
+            body="The current claim link stops working immediately. Anyone holding the old link can no longer claim this event."
+            confirmLabel="Mint new link"
+            onConfirm={handleNewLink}
+          />
         </td>
       </tr>
       {panel === 'assign' && (
@@ -225,14 +236,6 @@ function PostedRow({ row, canManage }: { row: PostedEventRow; canManage: boolean
           </td>
         </tr>
       )}
-      <DangerModal
-        open={confirmNewLink}
-        onClose={() => setConfirmNewLink(false)}
-        title="Mint a new claim link?"
-        body="The current claim link stops working immediately. Anyone holding the old link can no longer claim this event."
-        confirmLabel="Mint new link"
-        onConfirm={handleNewLink}
-      />
     </>
   )
 }
