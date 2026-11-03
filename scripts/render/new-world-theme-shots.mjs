@@ -6,7 +6,7 @@
 // Usage: node scripts/render/new-world-theme-shots.mjs <dir>
 import { chromium } from '@playwright/test'
 import { pathToFileURL } from 'node:url'
-import { mkdirSync, readFileSync, existsSync, statSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { extname, join, normalize } from 'node:path'
 
@@ -20,8 +20,15 @@ const TYPES = { '.html': 'text/html', '.css': 'text/css', '.webp': 'image/webp',
 const server = createServer((req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
   const file = /^\/(brand|sites|themes)\//.test(path) ? join('public', path) : path.startsWith('/fonts/') ? join('app', path) : join(dir, path)
-  if (!existsSync(file) || !statSync(file).isFile()) { res.writeHead(404).end(); return }
-  res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' }).end(readFileSync(file))
+  // One read, no existence check first: a check then a read is a race (CodeQL js/file-system-race).
+  let body
+  try {
+    body = readFileSync(file)
+  } catch {
+    res.writeHead(404).end()
+    return
+  }
+  res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' }).end(body)
 })
 await new Promise((r) => server.listen(0, '127.0.0.1', r))
 const base = `http://127.0.0.1:${server.address().port}`
