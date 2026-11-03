@@ -159,7 +159,7 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   // Services (lib/theme/services.ts): the Night register, one Tide accent, soft cards. Its own Spotlight layouts follow with LIVE-1994.
   { id: 'services', label: 'Services', theme: { ...surfacePreset('services', { heading: 'display', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) } },
   // New World (lib/theme/new-world.ts): the Night register, one Tide accent, soft cards. Its own Spotlight layouts follow with LIVE-2057.
-  { id: 'new-world', label: 'New World', theme: { ...surfacePreset('new-world', { heading: 'display', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) } },
+  { id: 'new-world', label: 'New World', theme: { ...surfacePreset('new-world', { heading: 'display', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'new-world-kit:stack', kit: 'general' } },
   {
     id: 'mono', label: 'Mono',
     theme: { accent: '#111111', surface: '#ffffff', text: '#111111', font: { heading: 'sans', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },
