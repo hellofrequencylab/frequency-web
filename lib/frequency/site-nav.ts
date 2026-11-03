@@ -157,7 +157,7 @@ export const FEATURE_JOURNEYS: FeatureSide[] = [
     side: 'p',
     label: 'For people',
     jobs: [
-      { job: 'Find', features: [{ id: 'calendar', label: 'What’s happening' }, { id: 'circles', label: 'Circles' }, { id: 'events', label: 'Events' }, { id: 'programs', label: 'Programs' }] },
+      { job: 'Find', features: [{ id: 'calendar', label: 'What’s Happening' }, { id: 'circles', label: 'Circles' }, { id: 'events', label: 'Events' }, { id: 'programs', label: 'Programs' }] },
       { job: 'Show up', features: [{ id: 'checkin', label: 'Check-in' }, { id: 'reminders', label: 'Reminders' }] },
       { job: 'Come back', features: [{ id: 'zaps', label: 'Zaps' }, { id: 'seasons', label: 'Seasons' }, { id: 'meter', label: 'Circle meter' }, { id: 'membership-p', label: 'Memberships' }] },
       { job: 'Pass it on', features: [{ id: 'invites', label: 'Invites' }, { id: 'host', label: 'Host an experience' }] },
@@ -205,7 +205,7 @@ export const WING_MENUS: WingMenu[] = [
       {
         heading: 'Find',
         links: [
-          { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
+          { href: ROUTES.happening, label: 'What’s Happening near you', hint: 'This week in your town', icon: 'pin' },
           { href: '/discover/circles', label: 'Circles', hint: 'Small groups that meet near you', icon: 'circle' },
         ],
       },
@@ -292,7 +292,7 @@ const PAGE_INDEX: SiteLink[] = [
   { href: ROUTES.stories, label: 'Stories', hint: 'Hosts and Spaces', icon: 'message' },
   { href: ROUTES.vision, label: 'Vision', hint: 'Third spaces, 2028', icon: 'breath' },
   { href: FIRST_NIGHT, label: 'Your first gathering', hint: 'What to expect', icon: 'checkin' },
-  { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
+  { href: ROUTES.happening, label: 'What’s Happening near you', hint: 'This week in your town', icon: 'pin' },
   { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, venues, Non Profits', icon: 'contacts' },
   { href: ROUTES.networks, label: 'Networks', hint: 'One organization, every chapter', icon: 'space' },
 ]
@@ -328,7 +328,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: ROUTES.people, label: 'Find your Circle' },
       { href: ROUTES.directory, label: 'Business Spaces' },
       { href: FIRST_NIGHT, label: 'Your first gathering' },
-      { href: ROUTES.happening, label: 'What’s happening near you' },
+      { href: ROUTES.happening, label: 'What’s Happening near you' },
       { href: ROUTES.features ? `${ROUTES.features}#people` : null, label: 'Features for people' },
     ],
   },
