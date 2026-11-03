@@ -61,7 +61,8 @@ const POLICY_PATH = 'scripts/migration-readiness-policy.json'
 const SQL_PATH = /^supabase\/migrations\/(\d{14})_([A-Za-z0-9_.-]+)\.sql$/
 const sha = /^[a-f0-9]{40}$/
 const hashBytes = bytes => createHash('sha256').update(bytes).digest('hex')
-const requireFact = (condition, message) => { if (!condition) throw new Error(message) }
+// `safe` marks our own fixed-text refusals so the job log can name the failed rule; provider/Git errors never carry it.
+const requireFact = (condition, message) => { if (!condition) throw Object.assign(new Error(message), { safe: true }) }
 
 // One native Git process reads the corpus; never spawn a process per historical migration.
 export function readGitBlobs(git, revision, paths) {
@@ -204,16 +205,26 @@ async function main() {
   const env = process.env
   requireFact(env.GITHUB_TOKEN, 'read-only metadata token required')
   const request = async (url, token, options = {}) => {
-    const res = await fetch(url, { ...options, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, ...options.headers }, redirect: 'error', signal: AbortSignal.timeout(15000) })
-    requireFact(res.ok, `proof read HTTP ${res.status}`)
-    const text = await res.text()
-    requireFact(text.length < 16 * 1024 * 1024, 'oversized proof response')
-    return JSON.parse(text)
+    // A transient network error (fetch failed, a stalled body) is retried; our own rule refusals never are.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const res = await fetch(url, { ...options, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, ...options.headers }, redirect: 'error', signal: AbortSignal.timeout(30000) })
+        requireFact(res.ok, `proof read HTTP ${res.status}`)
+        const text = await res.text()
+        requireFact(text.length < 16 * 1024 * 1024, 'oversized proof response')
+        return JSON.parse(text)
+      } catch (error) {
+        if (error?.safe === true || attempt >= 3) throw error
+        await new Promise(resolve => setTimeout(resolve, attempt * 2000))
+      }
+    }
   }
   const collectorArgs = {
     env, collectorSha256: hashBytes(readFileSync(process.argv[1])), event: JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8')),
-    git: (args, binary = false, input) => execFileSync('git', ['--no-replace-objects', ...args], { input, encoding: binary ? undefined : 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] }),
-    api: (path, options) => request(`https://api.github.com${path}`, env.GITHUB_TOKEN, options),
+    git: (args, binary = false, input) => {
+      try { return execFileSync('git', ['--no-replace-objects', ...args], { input, encoding: binary ? undefined : 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] }) } catch (error) { throw Object.assign(error, { stage: `git-${/^[a-z-]{1,20}$/.test(args[0]) ? args[0] : 'cmd'}` }) }
+    },
+    api: async (path, options) => { try { return await request(`https://api.github.com${path}`, env.GITHUB_TOKEN, options) } catch (error) { throw error?.safe ? error : Object.assign(error, { stage: 'github-api' }) } },
     ledger: async () => {
       requireFact(env.SUPABASE_ACCESS_TOKEN && /^[a-z0-9]+$/.test(env.SUPABASE_PROJECT_REF ?? ''), 'live comparison credentials required')
       const payload = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}/database/query`, env.SUPABASE_ACCESS_TOKEN, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: 'select version, name from supabase_migrations.schema_migrations order by version' }) })
@@ -228,7 +239,8 @@ async function main() {
   if (result.status === 'strict_parity') { console.log('Migration PR historical SQL unchanged; current main/production strict parity VERIFIED.'); return }
   console.log(`Migration PR staging VERIFIED; ${result.pending.length} exact registered migration(s) PENDING APPLY. Production was NOT changed. Main remains strict.`)
 }
-if (invokedDirectly(import.meta.url)) main().catch(() => {
+if (invokedDirectly(import.meta.url)) main().catch(error => {
+  import('./publish-migration-readiness.mjs').then(({ describeFailure }) => console.error(`Migration readiness ${describeFailure(error)}`)).catch(() => {})
   // No API body, token, SQL, state or Git command arguments are copied into CI diagnostics.
   console.error('Migration PR readiness failed closed; registration, current base/ledger or exact-head staging proof was not satisfied.')
   process.exitCode = 1

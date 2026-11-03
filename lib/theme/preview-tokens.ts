@@ -29,7 +29,7 @@ type PreviewTokens = Record<PreviewTokenKey, string>
  *  lib/theme/site-style.ts, the one hidden flag) is left out here too, so New World and Services reach the builder the
  *  moment that flag lets them go and never before. */
 const PREVIEW_KIT_PREFERENCE: readonly MegaThemeId[] = [
-  'new-world', 'services', 'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
+  'new-world', 'services', 'free-human', 'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
 ]
 export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = PREVIEW_KIT_PREFERENCE.filter((id) => SITE_THEMES.some((t) => t.id === id))
 
@@ -37,7 +37,7 @@ export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = PREVIEW_KIT_PREFERENCE.
  *  allows it), the way the Space page does for a themed Space (lib/theme/site-faces.ts), so they register on no
  *  other route. Unbounded, Hanken Grotesk and Instrument Serif are the site's own. */
 export const PREVIEW_FONT_SHEET =
-  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Geist:wght@300..600&family=Instrument+Serif:ital@1&family=Jost:wght@300..500&family=Lora:ital@1&family=Marcellus&family=Outfit:wght@300..500&display=swap'
+  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Geist:wght@300..600&family=Instrument+Serif:ital@1&family=Jost:wght@300..500&family=Lora:ital@1&family=Marcellus&family=Outfit:wght@300..500&display=swap'
 
 interface Shape {
   display: string; body: string; weight: string; textCase: string; track: string; label: string
@@ -56,7 +56,7 @@ interface Shape {
 
 const hairline = (line: string) => `inset 0 0 0 1px ${line}`
 
-const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, 'free-human'>, Shape> = {
+const SHAPE: Record<MegaThemeId, Shape> = {
   // New World (lib/theme/new-world.ts): Bricolage display and body, Lora italic for the one-word voice, the kit's 20px
   // cards and pill buttons, on the Night register. Services (lib/theme/services.ts) shares the type system and the radii.
   'new-world': {
@@ -70,6 +70,15 @@ const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, '
     weight: '700', textCase: 'none', track: '-0.03em', label: '.08em',
     btn: '999px', card: '20px', inner: '12px', photo: '20px', mat: '0', shadow: hairline, rule: '0', ring: '0',
     emFont: "'Lora', Georgia, serif",
+  },
+  // Free Human (lib/theme/free-human.ts): Cormorant Garamond display with the clay on the emphasised word, Hanken Grotesk
+  // body, wide labels, the kit's 16px controls, 40px cards, the arch on its pictures and its depth-2 shadow.
+  'free-human': {
+    display: "'Cormorant Garamond', Georgia, serif", body: "'Hanken Grotesk', system-ui, sans-serif",
+    weight: '600', textCase: 'none', track: '-0.01em', label: '.2em',
+    btn: '16px', card: '40px', inner: '16px', photo: '999px 999px 120px 120px', mat: '0',
+    shadow: () => '0 2px 4px -2px rgba(90,30,12,.10),0 12px 24px -14px rgba(90,30,12,.22),0 34px 64px -34px rgba(120,50,20,.30)', rule: '0', ring: '0',
+    em: '#B3361F', // token-ok: Free Human clay 500 (--text-lyric), lib/theme/free-human.ts
   },
   designer: {
     display: "'Cormorant', 'Cormorant Garamond', Georgia, serif", body: "'Jost', system-ui, sans-serif",
@@ -146,7 +155,7 @@ function surfaceOf(id: MegaThemeId): ThemeSurface {
 /** The --pv-* tokens of one theme, generated from its own palette and the SHAPE table. */
 export function previewTokens(id: MegaThemeId): PreviewTokens {
   const s = surfaceOf(id)
-  const p = SHAPE[id] ?? SHAPE.temple
+  const p = SHAPE[id]
   return {
     '--pv-bg': s.canvas,
     '--pv-ink': s.text,
