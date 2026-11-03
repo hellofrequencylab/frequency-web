@@ -152,7 +152,9 @@ function StepsBlock({ p, metadata }: Ctx) {
 
 function OfferingsBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('offerings', p.variant, metadata)
-  const items = arr(p.items).filter((s) => str(s.title))
+  const liveRows = liveAsked(p) ? liveOfferings(metadata) : []
+  if (emptyLive(p, metadata, liveRows.length > 0)) return null
+  const items = (liveRows.length ? liveRows : arr(p.items)).filter((s) => str(s.title))
   return (
     <Frame role="offerings" p={p} variant={variant}>
       <Heading p={p}>{str(p.actionLabel) && <div data-part="actions"><Cta label={str(p.actionLabel)} href={str(p.actionHref)} kind="secondary" metadata={metadata} /></div>}</Heading>
@@ -216,6 +218,20 @@ function liveChapters(metadata: Props | undefined) {
     .filter((c): c is { name: string; city: string | null; tagline: string | null; slug: string } => !!c && typeof (c as { name?: unknown }).name === 'string' && typeof (c as { slug?: unknown }).slug === 'string')
     .slice(0, 25)
     .map((c) => ({ name: c.name, place: c.city ?? '', body: c.tagline ?? '', image: '', href: `/spaces/${c.slug}` }))
+}
+
+/** What the Space offers: its live practices, journeys and circles, in that order. */
+function liveOfferings(metadata: Props | undefined) {
+  const sp = spaceOf(metadata)
+  const named = (x: unknown): x is Record<string, unknown> => !!x && typeof (x as { title?: unknown; name?: unknown }).title === 'string' || !!x && typeof (x as { name?: unknown }).name === 'string'
+  const list = (v: unknown) => (Array.isArray(v) ? v.filter(named) : [])
+  const practices = (sp?.practices as { practices?: unknown; journeys?: unknown } | undefined) ?? {}
+  const rows = [
+    ...list(practices.practices).map((x) => ({ title: str(x.title), body: str(x.summary), href: `/practices/${str(x.id)}` })),
+    ...list(practices.journeys).map((x) => ({ title: str(x.title), body: str(x.summary), href: `/journeys/${str(x.slug)}` })),
+    ...list(sp?.community).map((x) => ({ title: str(x.name), body: str(x.about), href: `/circles/${str(x.slug)}` })),
+  ]
+  return rows.filter((r) => r.title).slice(0, 6).map((r) => ({ ...r, image: '', price: '' }))
 }
 
 // ── Gatherings ─────────────────────────────────────────────────────────────────────────────
@@ -636,6 +652,8 @@ function FirstVisitBlock({ p, metadata }: Ctx) {
 
 function BookingBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('booking', p.variant, metadata)
+  // Openings are not a stored thing yet: a live page with only the sample copy draws nothing, and the owner's own typed times stay.
+  if (emptyLive(p, metadata, false)) return null
   const items = arr(p.items).filter((s) => str(s.title)).slice(0, 6)
   return (
     <Frame role="booking" p={p} variant={variant}>
@@ -762,6 +780,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
   }, StepsBlock),
   [ROLES.offerings.type]: role('offerings', {
     ...head, ...action,
+    live: yesNo('Use the Space\'s own practices, journeys and circles'),
     items: { type: 'array', label: 'Offerings', arrayFields: { image, title: text('Name'), body: area('Line under the name'), price: text('Price'), href: text('Link', LINK_HINT) } },
   }, OfferingsBlock),
   [ROLES.gatherings.type]: role('gatherings', {
