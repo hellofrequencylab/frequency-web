@@ -1,0 +1,6 @@
+{
+  "id": "LIVE-1937",
+  "append": {
+    "detail": "2026-11-03 pass: the Program, Workshops and Books pages opened on a photo the page repeated two sections later (Program: the nursing Madonna also on the Raise card; Workshops: the honey spoon also on Breath for birth; Books: the beaded deer also on the Beyond The Wild cover). Each now opens on its own photo (a painted circle of birds and deer; the quilted sun; the reading nook) and a line that does not repeat the section heading below it. The live website needs scripts/render/free-human-heroes-sql.render.tsx printed and run once (guarded, replaces only the first block of those three pages; backup zz_backup_free_human_heroes_20261103)."
+  }
+}

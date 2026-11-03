@@ -224,6 +224,7 @@ ${N} .fh-book-grid{grid-template-columns:1fr;gap:64px}
 ${N} .fh-book:nth-child(even){margin-top:0}
 ${N} .fh-speaking .fh-row{grid-template-columns:1fr}
 ${N} .fh-speak-art{position:relative;top:auto;max-width:420px;margin:0 auto;width:100%}
+${N} .fh-speak-round{right:-8px}
 ${N} .fh-lineage-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media (max-width:599px){
