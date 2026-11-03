@@ -1,3 +1,4 @@
+import { NEW_WORLD_BLOCKS_CSS } from '@/components/sites/new-world-blocks-css'
 import { NEW_WORLD_DAY_CSS, NEW_WORLD_DETAIL_CSS, NEW_WORLD_TOKENS_CSS } from '@/lib/theme/new-world'
 
 // THE NEW WORLD SKIN. Scoped under [data-house-theme="new-world"] so every house section keeps its markup and content; values come
@@ -12,6 +13,7 @@ const EASE = 'var(--nw-ease-out)'
 const LABEL = 'font-family:var(--nw-font-mono);text-transform:uppercase;letter-spacing:var(--nw-ls-mono);font-weight:var(--nw-fw-medium);font-size:11px'
 
 export const NEW_WORLD_CSS = `${NEW_WORLD_TOKENS_CSS}${NEW_WORLD_DAY_CSS}${NEW_WORLD_DETAIL_CSS}
+${NEW_WORLD_BLOCKS_CSS}
 ${N}{--nw-font-display:var(--font-nw-unbounded,'Unbounded'),'Hanken Grotesk',system-ui,sans-serif;--nw-font-body:var(--font-nw-hanken,'Hanken Grotesk'),system-ui,-apple-system,'Segoe UI',sans-serif;--nw-font-accent:var(--font-nw-instrument,'Instrument Serif'),Georgia,serif;--nw-font-mono:var(--nw-font-display)}
 ${R}{color-scheme:inherit;--color-canvas:var(--nw-ink-900);--color-surface:var(--nw-ink-850);--color-surface-post:var(--nw-ink-850);--color-surface-elevated:var(--nw-ink-800);--color-surface-hover:var(--nw-ink-700);--color-border:var(--nw-border-default);--color-border-strong:var(--nw-border-strong);--color-text:var(--nw-text-primary);--color-text-muted:var(--nw-text-secondary);--color-text-subtle:var(--nw-text-muted);--color-focus-ring:var(--nw-focus-ring);--color-success:var(--nw-success-500);--color-warning:var(--nw-warning-500);--color-danger:var(--nw-danger-500);--color-info:var(--nw-halo-500);--color-ink:var(--color-primary);--color-on-ink:var(--color-text-on-primary);--radius-control:var(--nw-radius-pill);--radius-card:var(--nw-radius-lg);--radius-cover:var(--nw-radius-xl);--radius-media:var(--nw-radius-lg);--font-display:var(--nw-font-display);--font-body:var(--nw-font-body);--font-label:var(--nw-font-mono)}
 ${N}{font-family:var(--nw-font-body);line-height:var(--nw-lh-body);background:var(--nw-surface-page);color:var(--color-text)}
