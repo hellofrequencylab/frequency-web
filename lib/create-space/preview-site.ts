@@ -61,6 +61,7 @@ const DESIGNER_PHOTO = (name: string) => `/sites/designer/photos/${name}.webp`
 const FREQUENCY_PHOTO = (n: 1 | 2 | 3) => `/create-a-space/photos/pain-${n}.jpg`
 const NETWORK_PHOTO = (n: string) => `/sites/network-kit/photos/photo-${n}.jpg`
 const TEMPLE_KIT_PHOTO = (n: string) => `/sites/temple-kit/photos/photo-${n}.jpg`
+const NOCTURNE_PHOTO = (name: string) => `/sites/midnight/photos/${name}.jpg`
 const NEW_WORLD_PHOTO = (name: string) => `/sites/new-world/photos/${name}.webp`
 
 const FREQUENCY_IMAGERY: KitImagery = {
@@ -94,7 +95,14 @@ const KIT_IMAGERY: Partial<Record<MegaThemeId, KitImagery>> & Record<Exclude<Meg
     covers: [DESIGNER_PHOTO('dz-designer-kitchen-hero'), DESIGNER_PHOTO('dz-courtyard-arch'), DESIGNER_PHOTO('dz-house-front'), DESIGNER_PHOTO('dz-kitchen-island'), DESIGNER_PHOTO('dz-designer-sofa')],
     portraits: [DESIGNER_PHOTO('dz-portrait-01'), DESIGNER_PHOTO('dz-portrait-02')],
   },
-  midnight: FREQUENCY_IMAGERY,
+  // Nocturne's own seven monochrome pictures (lib/sites/midnight-home.ts wears the same files): the ribs are its hero. It has no
+  // portrait photography, so the host portrait stays the gathering photo.
+  midnight: {
+    hero: NOCTURNE_PHOTO('industrial-ribs'), heroPos: 'center', portrait: FREQUENCY_PHOTO(1), portraitPos: 'center',
+    strip: [NOCTURNE_PHOTO('nature-dunes'), NOCTURNE_PHOTO('nature-fern'), NOCTURNE_PHOTO('industrial-blades')], nav1: 'Offerings', cta2: 'Learn more',
+    covers: [NOCTURNE_PHOTO('industrial-ribs'), NOCTURNE_PHOTO('industrial-panel'), NOCTURNE_PHOTO('industrial-blades'), NOCTURNE_PHOTO('nature-dunes'), NOCTURNE_PHOTO('nature-fern'), NOCTURNE_PHOTO('nature-grain'), NOCTURNE_PHOTO('nature-palm')],
+    portraits: [FREQUENCY_PHOTO(1)],
+  },
   // The Network kit's own library (lib/sites/network-kit-home.ts wears the same photos): the huddle is its hero.
   'network-kit': {
     hero: NETWORK_PHOTO('03'), heroPos: 'center 30%', portrait: NETWORK_PHOTO('04'), portraitPos: '60% 20%',

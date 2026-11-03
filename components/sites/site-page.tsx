@@ -34,6 +34,8 @@ import { FREE_HUMAN_FONT_CLASS } from '@/components/sites/free-human-fonts'
 import { FREE_HUMAN_CSS } from '@/components/sites/free-human-css'
 import { NEW_WORLD_CSS } from '@/components/sites/new-world-css'
 import { NEW_WORLD_FONT_CLASS } from '@/components/sites/new-world-fonts'
+import { SERVICES_SITE_CSS } from '@/components/sites/services-css'
+import { SERVICES_FONT_CLASS } from '@/components/sites/services-fonts'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
 import { contractSkinCss } from '@/components/sites/contract-skin-css'
 import { skinFamiliesIn } from '@/lib/sites/skin-family'
@@ -220,6 +222,8 @@ export async function SitePage({
   const freeHumanSite = siteStyle.theme === 'free-human'
   // New World (lib/theme/new-world.ts): the Frequency house look, Night or Day, Tide to start. Its faces ride the website root.
   const newWorldSite = siteStyle.theme === 'new-world'
+  // Services (lib/theme/services.ts): the Vanta design system's night-first, glossy look with a Day register; Tide to start.
+  const servicesSite = siteStyle.theme === 'services'
   // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
   const theme = render.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
@@ -245,8 +249,10 @@ export async function SitePage({
                 ? { theme: 'free-human' as const, season: mensworkSeason(new Date()) }
                 : newWorldSite
                   ? { theme: 'new-world' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const) }
-                  : null
-  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : newWorldSite ? NEW_WORLD_FONT_CLASS : undefined
+                  : servicesSite
+                    ? { theme: 'services' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const) }
+                    : null
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : newWorldSite ? NEW_WORLD_FONT_CLASS : servicesSite ? SERVICES_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
   const lookOverrides = siteLookOverrides(render.lookStyle)
   const fullFooter = siteLook(render.lookStyle).footer === 'full'
@@ -263,8 +269,8 @@ export async function SitePage({
     return (
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
-          <div data-house-theme={skin.theme} data-th={skin.theme === 'new-world' ? skin.register ?? 'night' : undefined} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
-            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : newWorldSite ? NEW_WORLD_CSS : MENSWORK_CSS}</style>
+          <div data-house-theme={skin.theme} data-th={skin.theme === 'new-world' || skin.theme === 'services' ? skin.register ?? 'night' : undefined} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : newWorldSite ? NEW_WORLD_CSS : servicesSite ? SERVICES_SITE_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
