@@ -6,8 +6,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { it } from 'vitest'
 
-const THEMES = ['DAWN', 'Menswork', 'Midnight', 'Wildheart', 'Network', 'NetworkKit', 'Temple', 'TempleKit', 'Designer', 'FreeHuman'] as const
-const SCOPE_ID: Record<string, string> = { Menswork: 'menswork', Midnight: 'midnight', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Designer: 'designer', FreeHuman: 'free-human' }
+const THEMES = ['DAWN', 'Menswork', 'Midnight', 'Wildheart', 'Network', 'NetworkKit', 'Temple', 'TempleKit', 'Designer', 'FreeHuman', 'NewWorld'] as const
+const SCOPE_ID: Record<string, string> = { Menswork: 'menswork', Midnight: 'midnight', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Designer: 'designer', FreeHuman: 'free-human', NewWorld: 'new-world' }
 
 it('renders the builder roles in every theme', async () => {
   const out = process.env.RENDER_OUT
@@ -22,6 +22,7 @@ it('renders the builder roles in every theme', async () => {
     NetworkKit: (await import('@/components/sites/network-kit-css')).NETWORK_KIT_CSS, Temple: (await import('@/components/sites/temple-css')).TEMPLE_CSS,
     TempleKit: (await import('@/components/sites/temple-kit-css')).TEMPLE_KIT_CSS, Designer: (await import('@/components/sites/designer-css')).DESIGNER_CSS,
     FreeHuman: (await import('@/components/sites/free-human-css')).FREE_HUMAN_CSS,
+    NewWorld: (await import('@/components/sites/new-world-css')).NEW_WORLD_CSS,
     DAWN: readFileSync('app/themes/frequency.css', 'utf8'),
   } as Record<string, string>
   for (const theme of THEMES) {
@@ -33,6 +34,7 @@ it('renders the builder roles in every theme', async () => {
       const render = rolesComponents[ROLES[id].type].render as (p: unknown) => React.ReactElement
       return renderToStaticMarkup(render({ ...base, variant, puck: { metadata: { theme } } }))
     }).join('\n')
-    writeFileSync(`${out}/${theme}.html`, `<!doctype html><html data-design="frequency"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css[theme]}${roleBlocksCss(theme)}*,*::before,*::after{box-sizing:border-box}body{margin:0}</style></head><body><div data-house-theme="${SCOPE_ID[theme] ?? ''}" style="background:var(--c-canvas);color:var(--c-text)">${body}</div></body></html>`)
+    const files = theme === 'NewWorld' ? [['NewWorld', ''], ['NewWorldDay', ' data-th="day"']] : [[theme, '']]
+    for (const [name, attr] of files) writeFileSync(`${out}/${name}.html`, `<!doctype html><html data-design="frequency"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css[theme]}${roleBlocksCss(theme)}*,*::before,*::after{box-sizing:border-box}body{margin:0}</style></head><body><div data-house-theme="${SCOPE_ID[theme] ?? ''}"${attr} style="background:var(--c-canvas);color:var(--c-text)">${body}</div></body></html>`)
   }
 })
