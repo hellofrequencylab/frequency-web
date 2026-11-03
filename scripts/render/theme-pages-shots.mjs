@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// FIXTURE RENDER, step 2 for the Bold and Wildheart theme pictures: screenshot <dir>/<theme>-site.html (1280x800), <theme>-spot.html (390x844 at 2x,
+// FIXTURE RENDER, step 2 for the Bold, Wildheart and Services theme pictures: screenshot <dir>/<theme>-site.html (1280x800), <theme>-spot.html (390x844 at 2x,
 // 780x1688) and <theme>-email.html (900x760) into public/brand/theme-pages/<theme>/{site,spot,email,spacedesk}.jpg.
 // The Space pages (new-world-space-shots.render.tsx) read the app's compiled CSS and the public assets over http, so this serves <dir>
 // with /brand, /sites, /themes from public/ and /fonts from app/fonts, and writes <kit>-spacedesk.jpg (1280x770) too.
@@ -15,7 +15,8 @@ if (!dir) {
   console.error('usage: node scripts/render/theme-pages-shots.mjs <dir>')
   process.exit(2)
 }
-const themes = ['bold', 'wildheart']
+// THEME_ONLY=<id> writes one theme's pictures and leaves the others as they are.
+const themes = ['bold', 'wildheart', 'services'].filter((t) => !process.env.THEME_ONLY || t === process.env.THEME_ONLY)
 const TYPES = { '.html': 'text/html', '.css': 'text/css', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' }
 const server = createServer((req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
@@ -48,4 +49,4 @@ for (const t of themes) {
 }
 await browser.close()
 server.close()
-console.log('wrote 8 pictures')
+console.log(`wrote ${themes.length * 4} pictures`)
