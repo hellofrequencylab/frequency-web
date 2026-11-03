@@ -10,6 +10,7 @@
 
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
+import { SITE_THEMES } from '@/lib/theme/site-style'
 import type { ThemeSurface } from '@/lib/theme/surface-vars'
 
 /** Every key SpacePreview may read from the theme. The runtime accent trio is added by `previewAccentVars`. */
@@ -24,9 +25,13 @@ type PreviewTokenKey = (typeof PREVIEW_TOKEN_KEYS)[number]
 type PreviewTokens = Record<PreviewTokenKey, string>
 
 /** The kit order on the page. Designer first, and the default. */
-export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = [
+/** The page's order once every kit is offered. A kit still hidden from the pickers (RETIRED_FROM_PICKERS in
+ *  lib/theme/site-style.ts, the one hidden flag) is left out here too, so New World and Services reach the builder the
+ *  moment that flag lets them go and never before. */
+const PREVIEW_KIT_PREFERENCE: readonly MegaThemeId[] = [
   'new-world', 'services', 'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
 ]
+export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = PREVIEW_KIT_PREFERENCE.filter((id) => SITE_THEMES.some((t) => t.id === id))
 
 /** The faces the seven kits wear in the preview. The page asks Google Fonts for them only when it renders (the CSP
  *  allows it), the way the Space page does for a themed Space (lib/theme/site-faces.ts), so they register on no

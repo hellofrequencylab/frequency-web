@@ -17,6 +17,7 @@
 import { WIZARD_INTENTS, parseIntents } from '@/lib/spaces/create-wizard'
 import { isMegaNicheId, type MegaNicheId, type MegaThemeId } from '@/lib/theme/mega-theme'
 import { isPreviewKit } from './preview-site'
+import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 
 type IntentId = (typeof WIZARD_INTENTS)[number]['id']
 
@@ -30,8 +31,8 @@ export interface DoorArrival {
   niche: MegaNicheId | null
 }
 
-/** The kit a cold visit starts on. */
-export const COLD_KIT: MegaThemeId = 'new-world'
+/** The kit a cold visit starts on: New World once it is offered (Daniel, 2026-11-03), the house look until then. */
+export const COLD_KIT: MegaThemeId = PREVIEW_KIT_ORDER.includes('new-world') ? 'new-world' : 'frequency'
 
 const NAME_MAX = 80
 const MODE_RE = /^[a-z]+:[a-z]+$/
