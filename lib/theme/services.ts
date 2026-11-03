@@ -7,7 +7,7 @@ import type { ThemeSurface } from "@/lib/theme/surface-vars";
 // Scope: these tokens live under [data-house-theme="services"] and are only ever emitted by the stand-alone site
 // render. A site theme never styles a member, Space console or admin area (ADR-1906).
 
-/** The owner accent presets that ship now (Tide, Ember, Fern; Signal, Bloom and Iris wait on LIVE-2041). Id to the steps the site engine reads. */
+/** The owner accent presets that ship now (Tide, Signal, Bloom, Ember, Fern, Iris). Id to the steps the site engine reads. */
 export const SERVICES_ACCENTS = {
   tide: {
     label: "Tide",
@@ -38,6 +38,36 @@ export const SERVICES_ACCENTS = {
     deep: "#9CE8C2",
     glow2: "#2BB3A6",
     glow3: "#8FD94A",
+  },
+  signal: {
+    label: "Signal",
+    accent: "#2F7CF6",
+    hover: "#1F60CC",
+    text: "#6AA2FF",
+    soft: "#164593",
+    deep: "#A9C8FF",
+    glow2: "#22B8D6",
+    glow3: "#8B7BFF",
+  },
+  bloom: {
+    label: "Bloom",
+    accent: "#F05A73",
+    hover: "#CC3F58",
+    text: "#FF8398",
+    soft: "#8F2A3C",
+    deep: "#FFB8C3",
+    glow2: "#FF9466",
+    glow3: "#B57CFF",
+  },
+  iris: {
+    label: "Iris",
+    accent: "#7C6CF2",
+    hover: "#5E4FD1",
+    text: "#A193FF",
+    soft: "#3F3494",
+    deep: "#C9C1FF",
+    glow2: "#3CC6D8",
+    glow3: "#E879F9",
   },
 } as const;
 
