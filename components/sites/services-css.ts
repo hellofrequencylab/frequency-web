@@ -1,3 +1,4 @@
+import { SERVICES_DAY_CSS, SERVICES_TOKENS_CSS } from "@/lib/theme/services";
 // THE SERVICES SKIN (design: Services design system, ui_kits/site Sections.jsx + Blocks.jsx + tokens base/effects/textures). Scoped
 // under [data-house-theme="services"], so it can only ever dress the stand-alone site render (components/sites/site-chrome.tsx sets the
 // attribute; nothing in a member, Space console or admin area does: app/(main)/no-site-theme-in-member-area.test.ts guards it, ADR-1906).
@@ -209,4 +210,44 @@ ${S}[data-motion="calm"] .sv-orb{animation-duration:44s}
 ${S}[data-motion="off"] .sv-orb,${S}[data-motion="off"] .sv-ticker-track{animation:none}
 @media (prefers-reduced-motion:reduce){${S} .sv-orb,${S} .sv-ticker-track{animation:none}${S} a.sv-card{transition:none}}
 @media (max-width:600px){${S} .sv-trust-item{border-left:0;padding-left:0}${S} .sv-row{grid-template-columns:48px 1fr}${S} .sv-row>:last-child{grid-column:2}}
+`;
+
+/* THE SITE SHEET (LIVE-2040, the integration the skin above waited on): what components/sites/site-chrome.tsx and site-page.tsx emit on a
+ * Services website. The token block (Night, then the Day register), the faces the site root's font class sets, the skin above, then the
+ * house chrome (header bar, nav, buttons, footer) re-pointed at the tokens so a Services site draws the design's glass header, mono
+ * labels and ink footer around the Services blocks. The owner's accent (--color-primary*) comes from servicesAccentVars, never set here. */
+const LABEL = "font-family:var(--sv-font-mono);text-transform:uppercase;letter-spacing:var(--sv-ls-mono);font-weight:var(--sv-fw-medium);font-size:11px";
+
+export const SERVICES_SITE_CSS = `${SERVICES_TOKENS_CSS}${SERVICES_DAY_CSS}
+${S}{--sv-font-display:var(--font-sv-bricolage,'Bricolage Grotesque'),'Helvetica Neue',Arial,sans-serif;--sv-font-body:var(--font-sv-bricolage,'Bricolage Grotesque'),'Helvetica Neue',Arial,sans-serif;--sv-font-accent:var(--font-sv-lora,'Lora'),Georgia,serif;--sv-font-mono:var(--font-sv-mono,'DM Mono'),ui-monospace,Menlo,monospace}
+${SERVICES_CSS}
+${S}{font-family:var(--sv-font-body);line-height:var(--sv-lh-body);background:var(--sv-surface-page);color:var(--sv-text-primary)}
+${S} .hs-root{background:var(--sv-surface-page);color:var(--sv-text-primary)}
+${S} .hs-h1,${S} .hs-h2,${S} .hs-brand{font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-heavy);text-transform:uppercase;letter-spacing:var(--sv-ls-display);line-height:var(--sv-lh-display)}
+${S} .hs-h1 em,${S} .hs-h2 em{font-family:var(--sv-font-accent);font-style:italic;font-weight:var(--sv-fw-regular);text-transform:none;font-stretch:100%;letter-spacing:-.01em;color:var(--color-primary-strong)}
+${S} .hs-eyebrow,${S} .hs-label,${S} .hs-badge{${LABEL}}
+${S} .hs-btn,${S} .hs-btn-primary,${S} .hs-btn-dark{${LABEL};letter-spacing:var(--sv-ls-button);min-height:44px;padding:0 24px;border-radius:var(--sv-radius-pill)}
+${S} .hs-btn-primary,${S} .hs-btn-dark{background:var(--color-primary);color:var(--color-text-on-primary);border:0;box-shadow:var(--sv-shadow-glow)}
+${S} .hs-btn-primary:hover,${S} .hs-btn-dark:hover{background:var(--color-primary-hover);color:var(--color-text-on-primary)}
+${S} .hs-btn-soft{background:transparent;color:var(--sv-text-primary);border:var(--sv-border-hairline) solid var(--sv-border-default)}
+${S} .hs-btn-soft:hover{background:var(--sv-accent-tint)}
+${S} :focus-visible{outline:2px solid var(--sv-focus-ring);outline-offset:3px}
+${S} .hs-header{position:sticky;top:0;z-index:40}
+${S} .hs-pill{background:color-mix(in oklab,var(--sv-ink-950) 82%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:var(--sv-border-hairline) solid var(--sv-border-subtle)}
+${S} .hs-logo{flex:none;display:block;height:clamp(28px,6vw,36px);width:auto;max-width:160px;object-fit:contain}
+${S} .hs-nav a,${S} .hs-nav-mega{${LABEL};color:var(--sv-text-secondary)}
+${S} .hs-nav a:hover,${S} .hs-nav a[aria-current="page"]{color:var(--sv-text-primary)}
+${S} .hs-menu-panel,${S} .hs-mega-panel{background:var(--sv-ink-800);border:var(--sv-border-hairline) solid var(--sv-border-subtle);border-radius:var(--sv-radius-lg);box-shadow:var(--sv-shadow-lg)}
+${S} .hs-footer-top{background:var(--sv-glow-sky,var(--sv-surface-sunken)),var(--sv-surface-sunken);border-top:var(--sv-border-hairline) solid var(--sv-border-subtle)}
+${S} .hs-footer-col-title{${LABEL};color:var(--sv-text-muted)}
+${S} .hs-footer-top{grid-template-columns:1.6fr repeat(3,1fr)}
+@media (max-width:860px){${S} .hs-footer-top{grid-template-columns:1fr}}
+${S} .hs-footer-col{display:flex;flex-direction:column;align-items:flex-start;gap:12px;font-size:15px;color:var(--sv-text-secondary)}
+${S} .hs-footer-col p{margin:0;font-size:15px;line-height:1.6;color:var(--sv-text-secondary)}
+${S} .hs-footer-col-title{margin:0 0 6px}
+${S} .hs-footer-brand{display:flex;flex-direction:column;align-items:flex-start;gap:20px}
+${S} .hs-footer-brand p{margin:0;color:var(--sv-text-secondary)}
+${S} .hs-footer-top a{color:var(--sv-text-secondary)}
+${S} .hs-footer-top a:hover{color:var(--sv-text-primary)}
+@media (prefers-reduced-motion:reduce){${S} *{transition:none!important;animation:none!important}}
 `;
