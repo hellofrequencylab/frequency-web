@@ -21,6 +21,7 @@ import { siteCanvasVars, siteRenderStyle } from '@/lib/sites/site-render-style'
 import { resolveWebsiteBrand, type WebsiteSnapshot } from '@/lib/sites/editor/state'
 import { sitePageStyle, siteLook, siteLookOverrides, type SiteStyle } from '@/lib/theme/site-style'
 import { EDITOR_THEME_OF } from '@/lib/sites/site-render-style'
+import { Select } from '@/components/ui/select'
 import styles from './builder-shell.module.css'
 // The editor sheet declares the builder's shape and editor tokens (BLD-002) on [data-builder].
 import '@/app/themes/active/editor-shell'
@@ -113,9 +114,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
           <span>{brandName}</span><span aria-hidden>/</span><span>Site builder</span><span aria-hidden>/</span>
           <label>
             <span className={styles.hidden}>Page</span>
-            <select value={page.slug} aria-current="page" onChange={(e) => dispatch({ type: 'page', slug: e.target.value })}>
-              {state.draft.pages.map((p) => <option key={p.slug} value={p.slug}>{p.label}</option>)}
-            </select>
+            <Select value={page.slug} aria-current="page" wrapperClassName="inline-block w-max max-w-full" onChange={(e) => dispatch({ type: 'page', slug: e.target.value })} options={state.draft.pages.map((p) => ({ value: p.slug, label: p.label }))} />
           </label>
         </nav>
         <span className={styles.save} data-state={state.save} role="status"><i className={styles.dot} aria-hidden />{builderSaveLabel(state.save)}</span>
