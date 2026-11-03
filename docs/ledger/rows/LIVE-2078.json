@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2078",
+  "title": "W3 Reader rewires: Circles tab, calendar, launch, Spotlight, digest, notifications, QR, journeys, meters",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1938.md",
+    "ref": "Daniel 2026-11-03: Space circles become a Community wall; thread plan /mnt/project-files/community-wall/PLAN.md"
+  },
+  "detail": "Circles tab and side panel list topic Circles only; Space calendar moves to the Community page; front-door CTA, launch rows, Menswork finder, Spotlight showCircles, Email Studio blocks, digest and dispatch audiences, notification mutes, QR resolver (destination_type circle for a Space Circle), Journeys run-gate (Space steward runs the Space's Journeys), meters and pricing copy rewired off is_space_primary. Space Circle readers deleted: space-discussion.ts, space-circle-card.tsx, circle-space-info widget. Coordinate rail and menu rows with the menu overhaul thread.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-community-wall.mjs w3"
+  },
+  "wave": "W7"
+}

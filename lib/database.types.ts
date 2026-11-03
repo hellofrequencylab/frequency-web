@@ -12121,6 +12121,7 @@ export type Database = {
           scope_event_id: string | null
           scope_id: string | null
           scope_profile_id: string | null
+          scope_space_id: string | null
           updated_at: string | null
           visibility: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -12145,6 +12146,7 @@ export type Database = {
           scope_event_id?: string | null
           scope_id?: string | null
           scope_profile_id?: string | null
+          scope_space_id?: string | null
           updated_at?: string | null
           visibility?: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -12169,6 +12171,7 @@ export type Database = {
           scope_event_id?: string | null
           scope_id?: string | null
           scope_profile_id?: string | null
+          scope_space_id?: string | null
           updated_at?: string | null
           visibility?: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -12213,6 +12216,13 @@ export type Database = {
             columns: ["scope_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_scope_space_id_fkey"
+            columns: ["scope_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -17469,6 +17479,38 @@ export type Database = {
             columns: ["undo_of"]
             isOneToOne: false
             referencedRelation: "space_vera_changes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_wall_settings: {
+        Row: {
+          followers_interact: boolean
+          post_access: string
+          read_access: string
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          followers_interact?: boolean
+          post_access?: string
+          read_access?: string
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          followers_interact?: boolean
+          post_access?: string
+          read_access?: string
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_wall_settings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]

@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2081",
+  "title": "W6 Retire: drop the guards, the 300 cap special case, circles.is_space_primary and the Space Circle code and tests",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1938.md",
+    "ref": "Daniel 2026-11-03: Space circles become a Community wall; thread plan /mnt/project-files/community-wall/PLAN.md"
+  },
+  "detail": "Last. Drops circles_space_primary_guard, circles_one_space_primary, the cap branch, the column and its type, space_circle_optouts, the Space Circle code paths, pgTAP tests and probes (owner phrases per pinned probe, one code block, run all probes first). Never before W5 is verified in production.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-community-wall.mjs w6"
+  },
+  "wave": "W7"
+}
