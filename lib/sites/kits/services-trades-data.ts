@@ -3,7 +3,7 @@
 // Sample prices, the sample review score and the sample quotes are NOT here: prices become `{{offerNPrice|...}}` slot tokens, trust lines with
 // numbers become prompts, and reviews become prompts to ask a real client (docs/marketing/voice-and-language-guide.md).
 
-export type ServicesAccentName = 'tide' | 'signal' | 'bloom' | 'ember' | 'fern' | 'iris'
+type ServicesAccentName = 'tide' | 'signal' | 'bloom' | 'ember' | 'fern' | 'iris'
 type Pair = readonly [string, string]
 export interface ServicesTradeSpec {
   label: string

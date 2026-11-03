@@ -15,7 +15,7 @@ import { SERVICES_TRADES, servicesKitDescription, type ServicesTradeId, type Ser
 /** The Frequency tools a kit turns on (design kits.js tools). Lane A reads them to build a Spotlight's doors. */
 type ServicesTool = ServicesTradeSpec['tools'][number]
 /** A kit of the Services theme. Same shape as SiteKit, plus the trade it is and the tools it runs. */
-export type ServicesKit = Omit<SiteKit, 'theme' | 'niche'> & { theme: 'Services'; niche: 'general'; trade: ServicesTradeId; tools: readonly ServicesTool[] }
+type ServicesKit = Omit<SiteKit, 'theme' | 'niche'> & { theme: 'Services'; niche: 'general'; trade: ServicesTradeId; tools: readonly ServicesTool[] }
 
 type Block = KitPage['blocks'][number]
 const slot = (key: string, sample: string) => `{{${key}|${sample}}}`
