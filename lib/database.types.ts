@@ -20840,6 +20840,25 @@ export type Database = {
           visibility: string
         }[]
       }
+      space_wall_feed: {
+        Args: { _before?: string; _limit?: number; _space_id: string }
+        Returns: {
+          author: Json
+          body: string
+          comment_count: number
+          created_at: string
+          engagement_score: number
+          id: string
+          is_demo: boolean
+          is_pinned: boolean
+          media_urls: string[]
+          post_type: string
+          reaction_count: number
+          reactions: Json
+          scope_id: string
+          visibility: string
+        }[]
+      }
       search_handles_public: {
         Args: { q: string }
         Returns: {
