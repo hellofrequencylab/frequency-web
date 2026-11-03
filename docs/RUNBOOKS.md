@@ -122,6 +122,14 @@ minutes and reads `GET /api/status/queue-lag`. It only reads, so it never compet
 red run (GitHub emails it) means the oldest due job has waited over 15 minutes or the read failed: check
 the Vercel Cron page first, then run the stopgap above.
 
+**The free pager for the unmonitored crons (SEC-022).** Healthchecks' free plan holds 20 checks, so the
+jobs in `CRON_UNMONITORED` (`lib/observability/slos.ts`) have no check. Each one stamps its last success
+into `cron_run_markers` (key `cron-ok:<job>`), and the same workflow reads
+`GET /api/status/cron-freshness` right after the queue read. A red run names the stale jobs: open the
+Vercel runtime logs for that job (`cron.run`, `cron.failed`), fix the cause, and the next healthy run
+turns it green. A job listed under `unreported` simply has not run since the stamp shipped (a weekly job
+can take up to a week); it does not fail the run. No env var or Healthchecks account change is needed.
+
 ---
 
 ## 2. Queue backlog
@@ -853,3 +861,7 @@ Keep `ROOM_ATOMIC_WRITES` blank/off until the CLI-registered staging migration20
 Post-consent callbacks use fixed stages: `token_exchange_failed`, `property_scope_changed`, `provider_property_unverified`, `provider_auth_failed`, `property_provider_unavailable`, `property_provider_invalid_response`, `property_provider_rate_limited`, or `storage_failed`. The optional `provider_status` is limited to400/401/403/404/408/429/500/502/503/504; it is not a provider body, token or raw message. Token approval is not property verification, and property verification is not a successful save. Check these stages before changing account configuration.
 
 The pinned API transport intentionally discards non-2xx bodies: HTTP400 alone cannot establish InvalidToken, and missing fetch instrumentation cannot establish that no API request ran. Bing uses documented Bearer authentication with JSON/HTTP; do not add an API-key fallback, management scope, or relaxed property/state gate to mask a provider failure. Preserve only the fixed stage and bounded status in receipts; never log raw responses or callback parameters.
+
+## New site builder
+
+`BUILDER_V3` (blank by default) makes the new builder (docs/EDITOR-NEXT.md, BLD-101 onward) the website editor for every owner. Off, the current editor renders and any owner can open the new one at `/admin/editor?builder=v3`; `?builder=classic` always forces the current one. Both read and write the same draft, so switching back loses nothing. Gate: BLD-108 (shadow render and cutover) done, and the owner has used `?builder=v3` on danieltyack.com and said it is ready. Turn it off by unsetting it.

@@ -19,7 +19,7 @@ import {
 } from "./midnight";
 import type { ComponentConfig } from "@/lib/page-editor/types";
 import type { SiteLinkMap } from "@/lib/sites/house-theme";
-import { ServicesQuoteForm } from "@/components/sites/services-quote-form";
+import { ServicesQuoteForm } from "@/components/sites/services-quote-lazy";
 
 // ── The Services block family (Services design system, "Website" kit: ui_kits/site/Sections.jsx and Blocks.jsx) ───────────────
 // One registered block per section of the design's Home: hero (four looks), trust bar, story, services, steps, reviews, FAQ and the

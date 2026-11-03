@@ -400,10 +400,13 @@ describe('the Space menu carries ONE row for the community', () => {
     expect(hrefFor(tabs, 'Circles')).toBe('/spaces/ojai/circles')
   })
 
-  it('is never named Community', async () => {
+  // Rewritten with the owner's own phrase (Daniel 2026-11-03, ADR-1938): the Space Community wall is
+  // its own tab beside Circles, so the menu now carries a Community row that points at /community.
+  it('carries the Community wall tab beside Circles', async () => {
     hub.live = true
     const { tabs } = await buildSpaceProfileNav(space())
-    expect(labels(tabs)).not.toContain('Community')
+    expect(labels(tabs)).toContain('Community')
+    expect(hrefFor(tabs, 'Community')).toBe('/spaces/ojai/community')
   })
 })
 

@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-421",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst rd=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch(e){return null}}\nconst code=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\" \").replace(/^\\s*\\/\\/.*$/gm,\" \")\nconst P=\"app/(main)/spaces/[slug]/(profile)/circles/page.tsx\"\nconst C=rd(P)\nif(C===null)fail(\"the Space community page is gone, so the Space Circle conversation has no home\")\nconst cc=code(C)\nif(cc.indexOf(\"getLiveSpaceCircle(space.id)\")<0)fail(\"the Space community page no longer CALLS the hub reader (an import left behind is not a read): the conversation ADR-1469 put on the Space has no room to render\")\nif(!/<CircleFeed[\\s/>]/.test(cc))fail(\"the Space community page no longer renders the Circle feed, which is the whole substance of this row\")\nconst D=rd(\"lib/spaces/space-discussion.ts\")\nif(D===null)fail(\"the Space discussion module is gone\")\nconst dc=code(D)\nif(dc.indexOf(\"export function canSeeSpaceDiscussion\")<0)fail(\"the conversation gate is gone\")\nif(dc.indexOf(\"export async function getLiveSpaceCircle\")<0)fail(\"the hub reader is gone\")\nconst N=rd(\"lib/spaces/profile-nav.ts\")\nif(N===null)fail(\"the Space profile nav is gone\")\nconst nc=code(N)\nconst F=rd(\"app/(main)/spaces/[slug]/(profile)/discussion/page.tsx\")\nif(F===null)fail(\"the discussion segment is gone: a reserved slug already sent out in notifications would 404\")\nconsole.log(\"LIVE-421 ok\")'",
+      "note": "Passes when a Space profile route named Discussion loads the Space Circle feed. Fails if the door is gone or the tab is named Community."
+    }
+  },
+  "append": {
+    "detail": " Pin rewritten 2026-11-03 with the owner's own phrase (Daniel 17:46Z, ADR-1938 Community wall): the probe no longer forbids a Space menu row named Community; NAMING.md was amended by ADR-1938 and the Community wall is that row."
+  }
+}
