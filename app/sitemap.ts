@@ -263,8 +263,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/themes/nocturne`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/designer (LIVE-1743): the Designer Theme Kit's feature page.
           { url: `${SITE_URL}/themes/designer`, changeFrequency: "monthly", priority: 0.5 },
-          // /themes/new-world (LIVE-2065): the New World Theme Kit's feature page, public once New World is offered in the pickers.
-          { url: `${SITE_URL}/themes/new-world`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/[theme] (LIVE-1514): the other six themes' kit pages.
           // /themes/network (LIVE-1751): the Network Theme Kit's feature page.
           { url: `${SITE_URL}/themes/network`, changeFrequency: "monthly", priority: 0.5 },
