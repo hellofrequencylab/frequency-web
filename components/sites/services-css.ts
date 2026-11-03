@@ -13,8 +13,16 @@ const MONO =
 const CARD =
   "border:1px solid var(--sv-border-subtle);border-radius:var(--sv-radius-lg);background:var(--sv-sheen),var(--sv-ink-850);box-shadow:var(--sv-shadow-md)";
 
+/* THE CONTRACT BRIDGE: the shared block contract (lib/theme/block-contract-map.json) reads --color-*, --radius-*, --font-* and
+ * the motion names, never --sv-*, so a role block would draw unthemed without these aliases. Night is the default register; Day
+ * (data-th="day") swaps the surfaces to the salt-and-cream set. The accent follows the owner's picked preset through --sv-flare-*. */
+const BRIDGE = `
+${S}{--color-canvas:var(--sv-surface-page);--color-surface:var(--sv-surface-raised);--color-surface-post:var(--sv-surface-raised);--color-surface-elevated:var(--sv-surface-card);--color-surface-hover:var(--sv-ink-700);--color-border:var(--sv-border-default);--color-border-strong:var(--sv-border-strong);--color-text:var(--sv-text-primary);--color-text-muted:var(--sv-text-secondary);--color-text-subtle:var(--sv-text-muted);--color-primary:var(--sv-accent);--color-primary-hover:var(--sv-accent-hover);--color-primary-strong:var(--sv-flare-400);--color-primary-bg:var(--sv-accent-tint);--color-text-on-primary:var(--sv-accent-text);--color-focus-ring:var(--sv-focus-ring);--color-success:var(--sv-success-500);--color-warning:var(--sv-warning-500);--color-danger:var(--sv-danger-500);--color-info:var(--sv-halo-500);--color-ink:var(--sv-action-primary);--color-on-ink:var(--sv-action-primary-text);--radius-control:var(--sv-radius-pill);--radius-card:var(--sv-radius-lg);--radius-cover:var(--sv-radius-xl);--radius-media:var(--sv-radius-lg);--font-display:var(--sv-font-display);--font-body:var(--sv-font-body);--font-label:var(--sv-font-mono);--space-section:clamp(72px,9vw,128px);--motion-fast:var(--sv-dur-fast);--motion-base:var(--sv-dur-base);--ease-out:var(--sv-ease-out)}
+${S}[data-th="day"]{--color-canvas:var(--sv-surface-light);--color-surface:var(--sv-surface-light);--color-surface-post:var(--sv-surface-light);--color-surface-elevated:var(--sv-surface-light-sunken);--color-surface-hover:var(--sv-salt-300);--color-border:var(--sv-border-light);--color-border-strong:var(--sv-salt-700);--color-text:var(--sv-text-on-light);--color-text-muted:var(--sv-text-on-light-muted);--color-text-subtle:var(--sv-text-on-light-muted);--color-primary-strong:var(--sv-flare-700);--color-ink:var(--sv-ink-900);--color-on-ink:var(--sv-chrome-50)}
+`;
+
 export const SERVICES_CSS = `
-/* DISPLAY TYPE: condensed caps with a Lora italic, three voices (data-type). */
+${BRIDGE}/* DISPLAY TYPE: condensed caps with a Lora italic, three voices (data-type). */
 ${S} .sv-display{font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:800;text-transform:uppercase;letter-spacing:var(--sv-ls-display);line-height:var(--sv-lh-display);margin:0;color:var(--sv-text-primary);text-wrap:balance}
 ${S} .sv-display em{font-family:var(--sv-font-accent);font-style:italic;font-weight:400;font-stretch:100%;text-transform:none;letter-spacing:-.01em;font-size:1.04em;line-height:.8}
 ${S}[data-type="quiet"] .sv-display{text-transform:none;font-stretch:100%;font-weight:600;letter-spacing:-.03em;line-height:1}
