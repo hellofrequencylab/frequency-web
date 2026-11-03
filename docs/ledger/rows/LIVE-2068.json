@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2068",
+  "title": "Wire the New World Spotlight layouts into the live Spotlight",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/spotlight/layouts.ts",
+    "ref": "Theme readiness audit 2026-11-03: the six New World layouts (LIVE-2057) were drawn only on /themes/new-world"
+  },
+  "detail": "layouts.ts registers `new-world-kit:*`, the Spotlight shell draws them inside the same wrapper as the other kits, and the public Spotlight page loads New World's faces for them. The New World preset does not carry a default layout yet: the pin in components/spotlight/network-kit-layouts.test.tsx ('layouts none-for-others') needs the owner's own phrase before it can name new-world, so an owner reaches the layouts once that pin is rewritten.\n\nWired; the default-layout pin awaits the owner's phrase",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "// LIVE-2068: the New World Spotlight layouts are registered and drawn on a live Spotlight, not only on /themes/new-world.\n// Reads the files under node, never a test runner (LIVE-034).\nimport { readFileSync, existsSync } from 'node:fs'\n\nconst bad = []\nconst read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')\n\nconst layouts = read('lib/spotlight/layouts.ts')\nif (!/'new-world': LAYOUT_BLURBS\\.map/.test(layouts)) bad.push('lib/spotlight/layouts.ts does not register the new-world layouts')\nif (!/export function isNewWorldKitLayout/.test(layouts)) bad.push('isNewWorldKitLayout is missing')\nconst shell = read('components/spotlight/spotlight-shell.tsx')\nif (!/isNewWorldKitLayout\\(theme\\.layout\\)[\\s\\S]*NewWorldKitSpotlightLayout/.test(shell)) bad.push('the Spotlight shell does not draw the New World layouts')\nconst page = read('app/spotlight/[handle]/page.tsx')\nif (!/NEW_WORLD_FONT_CLASS/.test(page)) bad.push('the public Spotlight page does not load New World faces for its layouts')\n\nif (bad.length) {\n  console.error(bad.map((b) => `FAIL ${b}`).join('\\n'))\n  process.exit(1)\n}\nconsole.log('ok: New World Spotlight layouts are registered and drawn')"
+  },
+  "closed": "2026-11-03"
+}
