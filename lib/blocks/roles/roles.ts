@@ -15,6 +15,11 @@ import library from './library.role.json'
 import people from './people.role.json'
 import gallery from './gallery.role.json'
 import chapters from './chapters.role.json'
+import firstvisit from './firstvisit.role.json'
+import booking from './booking.role.json'
+import locations from './locations.role.json'
+import business from './business.role.json'
+import story from './story.role.json'
 
 // THE ROLE REGISTRY (docs/THEME-COHESION.md section 2, ADR-1923, LIVE-1858, LIVE-1859: seventeen roles). One *.role.json per role is the whole
 // contract: the slots a role takes, the structural variants, the parts a theme's presentation may target, the core
@@ -24,6 +29,7 @@ import chapters from './chapters.role.json'
 
 export type RoleId = 'hero' | 'steps' | 'offerings' | 'gatherings' | 'membership' | 'proof' | 'faq' | 'cta'
   | 'statement' | 'letter' | 'contact' | 'stats' | 'shop' | 'library' | 'people' | 'gallery' | 'chapters'
+  | 'firstvisit' | 'booking' | 'locations' | 'business' | 'story'
 
 interface RoleVariant {
   label: string
@@ -71,6 +77,11 @@ export const ROLES: Readonly<Record<RoleId, RoleDefinition>> = {
   people: people as RoleDefinition,
   gallery: gallery as RoleDefinition,
   chapters: chapters as RoleDefinition,
+  firstvisit: firstvisit as RoleDefinition,
+  booking: booking as RoleDefinition,
+  locations: locations as RoleDefinition,
+  business: business as RoleDefinition,
+  story: story as RoleDefinition,
 }
 
 export const ROLE_IDS = Object.keys(ROLES) as RoleId[]

@@ -40,6 +40,9 @@
     },
     "list": {
       "label": "List"
+    },
+    "timetable": {
+      "label": "Photo and timetable"
     }
   },
   "default": "grid",

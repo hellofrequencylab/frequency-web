@@ -9,7 +9,7 @@
     "file": "docs/EDITOR-NEXT.md",
     "ref": "Revision 2, builder v3 (2026-11-03): docs/design/frequency-builder-v3/v3-review-and-needs.md"
   },
-  "detail": "Adds hero variants glow and minimal, gatherings variant agenda (week ribbon plus rows), stats variant bar. Existing variants and stored pages are untouched; presentation defaults stay as they are until BLD-212. Done when: the three role JSON files list the variants, each renders with its sample and an empty state, and a page stored before this change renders identically.",
+  "detail": "Adds hero variants glow and minimal, gatherings variant agenda (week ribbon plus rows), stats variant bar. Existing variants and stored pages are untouched; presentation defaults stay as they are until BLD-212. Done when: the three role JSON files list the variants, each renders with its sample and an empty state, and a page stored before this change renders identically. PROGRESS (2026-11-03, with BLD-210): hero glow and minimal, stats bar and chapters timetable are built. Still open: gatherings agenda (week ribbon plus rows), which needs the date logic.",
   "verify": {
     "kind": "manual",
     "checked": "2026-11-03",

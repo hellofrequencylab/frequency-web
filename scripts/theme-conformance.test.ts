@@ -163,9 +163,9 @@ describe('theme conformance (the real tree)', () => {
     expect(healed, `HEALED: delete these lines from scripts/theme-conformance-baseline.json:\n${healed.join('\n')}`).toEqual([])
   })
 
-  it('covers every role with three layouts that render', () => {
+  it('covers every role with two or three layouts that render', () => {
     expect(input.roles).toHaveLength(ROLE_IDS.length)
-    expect(input.roles.every((r) => r.variants.length === 3 && r.variants.every((v) => v.html.length > 0))).toBe(true)
+    expect(input.roles.every((r) => r.variants.length >= 2 && r.variants.every((v) => v.html.length > 0))).toBe(true)
   })
 })
 

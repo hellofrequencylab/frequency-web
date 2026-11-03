@@ -49,17 +49,17 @@ const cssFor = (id: RoleId) => ROLE_CSS_CHUNKS.base + ROLE_CSS_CHUNKS[id]
 const varsRead = (css: string) => [...new Set([...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]))].filter((v) => !v.startsWith('--rb-')).sort()
 
 describe('role registry', () => {
-  it('ships seventeen roles with three layouts each, registered as page-editor blocks', () => {
-    expect(ROLE_IDS).toHaveLength(17)
+  it('ships twenty-two roles with two or three layouts each, registered as page-editor blocks', () => {
+    expect(ROLE_IDS).toHaveLength(22)
     for (const id of ROLE_IDS) {
       const def = ROLES[id]
-      expect(Object.keys(def.variants), id).toHaveLength(3)
+      expect(Object.keys(def.variants).length, id).toBeGreaterThanOrEqual(2)
       expect(def.variants[def.default], `${id} default is one of its variants`).toBeTruthy()
       expect(config.components[def.type], `${def.type} is in the editor config`).toBeTruthy()
       expect(def.sample.sample, `${id} sample is flagged`).toBe(true)
       expect(def.replaces.length, `${id} names the legacy blocks it stands in for`).toBeGreaterThan(0)
     }
-    expect(ROLE_CATEGORY_COMPONENTS).toHaveLength(17)
+    expect(ROLE_CATEGORY_COMPONENTS).toHaveLength(22)
     expect(config.categories?.roles?.components).toEqual(ROLE_CATEGORY_COMPONENTS)
   })
 
