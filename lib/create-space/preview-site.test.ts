@@ -36,7 +36,7 @@ describe('preview site', () => {
     expect(kitImagery('temple-kit').hero).toMatch(/^\/sites\/temple-kit\/photos\//)
   })
 
-  it('Free Human wears its own library; Services wears New World\'s until it has one (LIVE-2084)', () => {
+  it('Free Human wears its own library; Services wears New World\'s until it has one (LIVE-2102)', () => {
     const fh = kitImagery('free-human')
     expect(fh.hero).toBe('/sites/free-human/photos/heritage-a-virgin.webp')
     expect(fh.portrait).toMatch(/^\/sites\/free-human\/photos\//)

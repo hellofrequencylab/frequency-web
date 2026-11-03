@@ -1,4 +1,4 @@
-// LIVE-2084: the Free Human and Services builder previews wear their own shape, surface and pictures; SHAPE and
+// LIVE-2102: the Free Human and Services builder previews wear their own shape, surface and pictures; SHAPE and
 // KIT_IMAGERY are total over every kit id, so no kit falls back to Temple's shape or the gathering photos. Reads the
 // files under node, never a test runner (LIVE-034). Exit 1 on the first miss.
 import { readFileSync, existsSync } from 'node:fs'

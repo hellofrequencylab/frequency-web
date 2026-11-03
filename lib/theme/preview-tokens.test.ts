@@ -14,7 +14,7 @@ describe('preview tokens', () => {
     expect(PREVIEW_KIT_ORDER[0]).toBe(SITE_THEMES.some((t) => t.id === 'new-world') ? 'new-world' : 'designer')
   })
 
-  it('Free Human and Services wear shapes of their own, never Temple\'s (LIVE-2084)', () => {
+  it('Free Human and Services wear shapes of their own, never Temple\'s (LIVE-2102)', () => {
     const fh = previewTokens('free-human')
     expect(fh['--pv-font-display']).toMatch(/^'Cormorant Garamond'/)
     expect(fh['--pv-radius-card']).toBe('40px')
