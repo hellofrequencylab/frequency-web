@@ -16,7 +16,7 @@ import { WebsiteEditorShell, type WebsiteEditorShellProps } from './shell'
 // THE NEW BUILDER (BLD-101): loaded only when asked for, so the current editor's page carries none of it.
 const BuilderShell = dynamic(() => import('@/components/builder/shell/builder-shell').then((m) => m.BuilderShell), { ssr: false, loading: () => <div role="status">Loading the builder…</div> })
 
-export function ConnectedWebsiteEditor({ builder, ...props }: Omit<WebsiteEditorShellProps, 'onSave' | 'onPropose' | 'onPresence' | 'onStyle' | 'config'> & { builder?: 'v3' }) {
+export function ConnectedWebsiteEditor({ builder, ...props }: Omit<WebsiteEditorShellProps, 'onSave' | 'onPropose' | 'onLayout' | 'onPresence' | 'onStyle' | 'config'> & { builder?: 'v3' }) {
   const host = props.host
   const [features, setFeatures] = useState<WebsiteFeatures>(() => (props.metadata?.websiteFeatures as WebsiteFeatures | undefined) ?? {})
   const [sourceError, setSourceError] = useState<string | null>(null)
