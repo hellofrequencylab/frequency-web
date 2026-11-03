@@ -133,12 +133,6 @@ export function featureHref(id: string): string {
   return ROUTES.features ? `${ROUTES.features}#f-${id}` : (FEATURE_FALLBACK[id] ?? ROUTES.help)
 }
 
-/** Features.html#people / #spaces, or the wing's own page if /features has no route. */
-export function featuresWingHref(side: Side): string {
-  if (ROUTES.features) return `${ROUTES.features}#${side === 'e' ? 'spaces' : 'people'}`
-  return side === 'e' ? ROUTES.spaces : ROUTES.people
-}
-
 interface FeatureJob {
   /** The job the visitor is doing: Find, Show up, Come back, … */
   job: string
