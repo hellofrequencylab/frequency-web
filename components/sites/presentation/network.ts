@@ -9,4 +9,9 @@ export default {
   proof: 'wall',
   stats: 'cards',
   cta: 'split',
+  firstvisit: 'grid',
+  booking: 'cards',
+  locations: 'split',
+  business: 'grid',
+  story: 'split',
 } satisfies PresentationDefaults
