@@ -81,7 +81,7 @@ export interface WebsiteEditorShellProps {
   onSave: (revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string | null) => Promise<SaveResult>
   onPresence?: (cursor: WebsitePresence['cursor']) => Promise<{ ok: true; people: WebsitePresence[] } | { ok: false; error: string }>
   onPropose?: (request: string, value: string) => Promise<{ ok: true; promptIds: WebsiteCoachingPromptId[] } | { ok: false; error: string }>
-  /** Vera's layout proposals (LIVE-2083): structure only, applied by the person to the draft. */
+  /** Vera's layout proposals (LIVE-2097): structure only, applied by the person to the draft. */
   onLayout?: (request: string, outline: WebsiteVeraSection[]) => Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }>
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
@@ -571,7 +571,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     finally { setAsking(false) }
   }
 
-  // THE VERA BAR'S ROUTER (LIVE-2083): a typed ask with no text selected is about the page's STRUCTURE and goes to
+  // THE VERA BAR'S ROUTER (LIVE-2097): a typed ask with no text selected is about the page's STRUCTURE and goes to
   // the layout proposal; selected text (and every chip) stays on the questions-only coaching path in askVera.
   function submitVera() {
     const text = request

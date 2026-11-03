@@ -12,7 +12,7 @@ export function VeraDock({ children }: { children: ReactNode }) {
 /** One proposed line as the person reads it, with whether it is ticked. */
 interface VeraLayoutLine { line: string; ticked: boolean }
 
-// VERA'S LAYOUT PROPOSAL (LIVE-2083): the lines she proposes, each a tickable box, default ticked; Apply puts
+// VERA'S LAYOUT PROPOSAL (LIVE-2097): the lines she proposes, each a tickable box, default ticked; Apply puts
 // only the ticked ones on the DRAFT as one undo step. Refused lines are listed so nothing is dropped silently.
 // The two editor layouts pass their own button classes; the list itself is the same.
 export function VeraLayoutProposal({ className, note, lines, refused, onToggle, onApply, onDismiss, buttonClass, dismissClass }: {

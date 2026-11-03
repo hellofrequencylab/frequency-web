@@ -135,7 +135,7 @@ function readOutline(value: unknown): WebsiteVeraSection[] | null {
   return new Set(out.map((s) => s.id)).size === out.length ? out : null
 }
 
-/** Vera proposes LAYOUT changes for the page in view (LIVE-2083). Nothing is written here: the browser shows the lines,
+/** Vera proposes LAYOUT changes for the page in view (LIVE-2097). Nothing is written here: the browser shows the lines,
  *  the person ticks them, and the editor applies them to its draft as one undo step. */
 export async function proposeWebsiteLayout(host: string, request: string, outline0: unknown): Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }> {
   const outline = readOutline(outline0)

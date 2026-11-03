@@ -7,7 +7,7 @@ import type { WebsiteEditorState } from '@/lib/sites/editor/state'
 import type { WebsiteEditorShellProps } from './shell'
 import { WebsiteEditorShell } from './shell'
 
-// LIVE-2083: a typed ask with no text selected becomes a LAYOUT proposal. The person ticks lines; Apply writes
+// LIVE-2097: a typed ask with no text selected becomes a LAYOUT proposal. The person ticks lines; Apply writes
 // only the ticked ones to the DRAFT as one undo step; nothing saves or publishes on its own.
 vi.mock('@/lib/theme/design', () => ({ SITE_DESIGN: 'frequency' }))
 vi.mock('next/dynamic', () => ({ default: () => () => <div>canvas</div> }))

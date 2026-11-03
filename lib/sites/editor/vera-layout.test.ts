@@ -15,7 +15,7 @@ const doc: Data = { root: {}, content: [
 ] }
 const ids = new Set(['hero', 'contact', 'about'])
 
-describe('Vera layout vocabulary (LIVE-2083)', () => {
+describe('Vera layout vocabulary (LIVE-2097)', () => {
   it('keeps tone and width in lock-step with what the section renderer reads', () => {
     for (const tone of VERA_SECTION_TONES) expect(sectionDisplay({ root: { props: { websiteLayout: { a: { desktop: { tone } } } } }, content: [] }, 'a', 'desktop').tone).toBe(tone)
     for (const width of VERA_SECTION_WIDTHS) expect(sectionDisplay({ root: { props: { websiteLayout: { a: { desktop: { width } } } } }, content: [] }, 'a', 'desktop').width).toBe(width)

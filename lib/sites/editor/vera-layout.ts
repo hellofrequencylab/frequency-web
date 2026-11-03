@@ -1,4 +1,4 @@
-// VERA'S LAYOUT CHANGES IN THE WEBSITE EDITOR (LIVE-2083; the Web Assistant plan in
+// VERA'S LAYOUT CHANGES IN THE WEBSITE EDITOR (LIVE-2097; the Web Assistant plan in
 // /mnt/project-files/vera-assistants-2026-11-03/REPORT.md, BLD-402's first slice on the live editor).
 //
 // A plain-words ask ("put my story first and hide the contact form on phones") becomes a LIST OF PROPOSED

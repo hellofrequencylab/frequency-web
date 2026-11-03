@@ -1,4 +1,4 @@
-// VERA'S LAYOUT CALL FOR THE WEBSITE EDITOR (LIVE-2083). One forced tool, one model call, centrally accounted.
+// VERA'S LAYOUT CALL FOR THE WEBSITE EDITOR (LIVE-2097). One forced tool, one model call, centrally accounted.
 // The caller (lib/sites/editor/actions.ts proposeWebsiteLayout) owns authorization, the switches, the rate limit
 // and the parse; this file only asks. The reply is returned RAW (the tool input) because it is untrusted: the
 // action parses it against the page outline and the editor parses it again against its own document.

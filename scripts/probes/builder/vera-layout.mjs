@@ -4,7 +4,7 @@ import vm from 'node:vm'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 
-// LIVE-2083: Vera proposes LAYOUT changes in the website editor and never words. Runs the real vocabulary
+// LIVE-2097: Vera proposes LAYOUT changes in the website editor and never words. Runs the real vocabulary
 // (lib/sites/editor/vera-layout.ts) on a page: a proposal that tries to write a heading is refused, the
 // structural lines apply to the draft, the owner's text is unchanged, and the editor is wired to the action.
 const root = process.cwd()
@@ -40,4 +40,4 @@ const connected = fs.readFileSync(path.join(root, 'components/sites/editor/websi
 assert.match(shell, /<VeraLayoutProposal /, 'the editor shows the proposal for ticking')
 assert.match(shell, /updateDoc\(doc, \{ label: `Vera: /, 'applied lines land as one labelled undo step')
 assert.match(connected, /onLayout=\{layout\}/, 'the live editor is connected to proposeWebsiteLayout')
-console.log('LIVE-2083 ok: Vera proposes structure only, applied to the draft as one undo step')
+console.log('LIVE-2097 ok: Vera proposes structure only, applied to the draft as one undo step')
