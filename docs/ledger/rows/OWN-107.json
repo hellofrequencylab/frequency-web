@@ -1,0 +1,12 @@
+{
+  "id": "OWN-107",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-03",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Daniel confirmed 2026-11-03 that Postmaster Tools shows frequencylocal.com (verified via the existing root TXT) and people.frequencylocal.com (verified via a new people TXT at GoDaddy, the live DNS host) as Verified.",
+      "checked": "2026-11-03"
+    }
+  }
+}

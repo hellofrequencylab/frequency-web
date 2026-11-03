@@ -1,3 +1,4 @@
+import { HEX_ACCENT, contrastRatio, type AccentVars } from "@/lib/spaces/accent";
 import type { ThemeSurface } from "@/lib/theme/surface-vars";
 // THE SERVICES THEME (code id `services`, editor theme `Services`), built from the Services design system
 // (docs/design-systems/services). PURE. Night is the default register; Day (`data-th="day"`) is the salt-and-cream
@@ -167,3 +168,26 @@ export const SERVICES_SURFACE = {
   },
   semantic: { success: "#4CC38A", info: "#3FC1D6", danger: "#FF5A5F" },
 } as const satisfies ThemeSurface;
+
+/** The Space's --color-primary* family on a Services website (Night). No accent, or Tide itself: the measured Tide. Any other hex:
+ *  that hex, a lighter text shade, and a label (ink or white) that reads on it. */
+export function servicesAccentVars(brandAccent: string | null | undefined): AccentVars {
+  const accent = brandAccent?.trim() || null;
+  const t = SERVICES_ACCENTS.tide;
+  if (!accent || !HEX_ACCENT.test(accent) || accent.toUpperCase() === t.accent) {
+    return {
+      "--color-primary": t.accent,
+      "--color-primary-hover": t.text,
+      "--color-primary-strong": t.text,
+      "--color-primary-bg": t.soft,
+      "--color-text-on-primary": SERVICES_ON_ACCENT,
+    };
+  }
+  return {
+    "--color-primary": accent,
+    "--color-primary-hover": `color-mix(in srgb, ${accent} 80%, white)`,
+    "--color-primary-strong": `color-mix(in srgb, ${accent} 70%, white)`,
+    "--color-primary-bg": `color-mix(in srgb, ${accent} 22%, ${SERVICES_SURFACE.canvas})`,
+    "--color-text-on-primary": contrastRatio(SERVICES_ON_ACCENT, accent) >= 4.5 ? SERVICES_ON_ACCENT : "#FFFFFF",
+  };
+}

@@ -79,7 +79,7 @@ describe('edited menus reach the actual Frequency header',()=>{
  })
  it('retains current Frequency navigation when the scoped request rejects',async()=>{
   fetcher.mockRejectedValue(new Error('offline'));await render()
-  expect(host.textContent).toContain('For people');expect(host.textContent).toContain('For spaces');expect(host.textContent).toContain('Features')
+  expect(host.textContent).toContain('Discover');expect(host.textContent).toContain('For Spaces');expect(host.textContent).not.toContain('Features')
   expect(fetcher).toHaveBeenCalledWith('/api/viewer',{credentials:'same-origin',cache:'no-store'})
  })
 })

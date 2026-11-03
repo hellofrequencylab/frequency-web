@@ -253,3 +253,5 @@
 [data-design="frequency"] [data-kit="editor"] .vera-orb{position:absolute;right:12px;bottom:12px;z-index:20;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:var(--fq-radius-orb);background:var(--fq-surface-raised);box-shadow:0 12px 28px -14px var(--fq-ink),inset 0 0 0 1px var(--fq-border-hair);transition:transform var(--fq-dur-fast) var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="editor"] .vera-orb:hover{transform:translateY(-2px)}
 [data-design="frequency"] [data-kit="editor"] .vera-orb .orb{width:24px;height:24px;border-radius:50%;background:var(--fq-pa-orb)}
+[data-design="frequency"] [data-kit="editor"] [data-vera-layout] fieldset{display:grid;gap:6px;margin:0 0 10px;padding:0;border:0}
+[data-design="frequency"] [data-kit="editor"] [data-vera-layout] ul{margin:6px 0 10px;padding-left:18px}
