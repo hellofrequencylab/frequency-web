@@ -36,6 +36,8 @@ export interface NewWorldSpotlightContent {
   openings: NewWorldOpening[]
   featured: { eyebrow: string; title: string; meta: string; cta: string; href: string }
   review: NewWorldReview | null
+  /** A closing call under the doors (the link page's "Get your free Spotlight"). */
+  footerCta?: { label: string; href: string }
   secondReview: NewWorldReview | null
   quote: { text: string; who: string; role: string } | null
   proof: { icon: IconName; label: string; sub: string } | null
@@ -227,5 +229,47 @@ export function newWorldKitSpotlightContent(kit: string, opts: { name?: string; 
     headings: { openings: pair(k.headings.openings, { title: 'Open', em: 'this week.' }), services: pair(k.headings.services, { title: 'Ways', em: 'in.' }) },
     defaultLayout: 'stack',
     layouts,
+  }
+}
+
+/** The icon a link page door wears, by where the link goes. */
+function linkIcon(host: string): IconName {
+  if (host.includes('instagram')) return 'eye'
+  if (host.includes('tiktok')) return 'star'
+  if (host.includes('frequency')) return 'bolt'
+  return 'user'
+}
+
+/** THE LINK PAGE (a Space's Spotlight on New World): the design's Stack layout fed by the owner's own links, one door
+ *  each, a "message me" button in the hero and one closing call. Nothing is invented: no sample time, price or quote. */
+export function newWorldLinkPageContent(opts: {
+  name: string
+  tagline: string | null
+  photo?: string | null
+  messageHref: string | null
+  links: { label: string; url: string }[]
+  closing: { label: string; href: string } | null
+}): NewWorldSpotlightContent {
+  const base = newWorldKitSpotlightContent('general', { name: opts.name, sample: false, photo: opts.photo ?? undefined })
+  const words = opts.name.trim().split(/\s+/)
+  const em = words.length > 1 ? words.pop()! : ''
+  const title = words.join(' ')
+  const doors: NewWorldDoor[] = opts.links.map((l, i) => {
+    let meta = l.url
+    let host = ''
+    try { const u = new URL(l.url); host = u.hostname; meta = `${u.hostname.replace(/^www\./, '')}${u.pathname === '/' ? '' : u.pathname}` } catch { /* keep the raw url */ }
+    return { id: `link-${i}`, key: 'publish', icon: linkIcon(host), title: l.label, meta, href: l.url }
+  })
+  return {
+    ...base,
+    doors,
+    offers: [],
+    openings: [],
+    letter: null,
+    descriptor: opts.tagline ?? '',
+    hero: { eyebrow: opts.tagline ?? '', title: title || opts.name, em, body: '', photo: opts.photo ?? null },
+    cta: { label: 'Message me', href: opts.messageHref ?? '/' },
+    footerCta: opts.closing ?? undefined,
+    layouts: ['stack'],
   }
 }
