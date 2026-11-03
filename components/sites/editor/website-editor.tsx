@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { LoomPickerActionsProvider } from '@/components/loom/picker-actions-context'
 import { websiteLoomScopes, websiteLoomScope, websiteLoomImages, uploadWebsiteLoomImage } from '@/lib/sites/editor/media-actions'
 import { SiteMenuActionsProvider } from '@/components/spaces/site-menu-actions'
@@ -12,7 +13,10 @@ import { saveWebsiteDraft, saveWebsiteStyle, proposeWebsiteText, proposeWebsiteL
 import type { WebsiteSnapshot } from '@/lib/sites/editor/state'
 import { WebsiteEditorShell, type WebsiteEditorShellProps } from './shell'
 
-export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onSave' | 'onPropose' | 'onLayout' | 'onPresence' | 'onStyle' | 'config'>) {
+// THE NEW BUILDER (BLD-101): loaded only when asked for, so the current editor's page carries none of it.
+const BuilderShell = dynamic(() => import('@/components/builder/shell/builder-shell').then((m) => m.BuilderShell), { ssr: false, loading: () => <div role="status">Loading the builder…</div> })
+
+export function ConnectedWebsiteEditor({ builder, ...props }: Omit<WebsiteEditorShellProps, 'onSave' | 'onPropose' | 'onPresence' | 'onStyle' | 'config'> & { builder?: 'v3' }) {
   const host = props.host
   const [features, setFeatures] = useState<WebsiteFeatures>(() => (props.metadata?.websiteFeatures as WebsiteFeatures | undefined) ?? {})
   const [sourceError, setSourceError] = useState<string | null>(null)
@@ -53,5 +57,5 @@ export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onS
     saveLogo: (logo: { mode: string; logoUrl: string | null }) => saveWebsiteHeaderLogo(host, logo),
     uploadLogo: (data: FormData) => uploadWebsiteLogo(host, data),
   }), [host])
-  return <SiteMenuActionsProvider actions={menu}><LoomPickerActionsProvider actions={media}><WebsiteFeatureSourceContext.Provider value={sources}><WebsiteEditorShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onPropose={propose} onLayout={layout} onPresence={presence} onStyle={style} /></WebsiteFeatureSourceContext.Provider></LoomPickerActionsProvider></SiteMenuActionsProvider>
+  return <SiteMenuActionsProvider actions={menu}><LoomPickerActionsProvider actions={media}><WebsiteFeatureSourceContext.Provider value={sources}>{builder === 'v3' ? <BuilderShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onStyle={style} /> : <WebsiteEditorShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onPropose={propose} onLayout={layout} onPresence={presence} onStyle={style} />}</WebsiteFeatureSourceContext.Provider></LoomPickerActionsProvider></SiteMenuActionsProvider>
 }
