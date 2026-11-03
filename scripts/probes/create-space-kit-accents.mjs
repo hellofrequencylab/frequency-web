@@ -1,4 +1,4 @@
-// LIVE-2065: every kit in the signed-out builder wears its own accents, surface, shape and pictures; no kit falls back to
+// LIVE-2066: every kit in the signed-out builder wears its own accents, surface, shape and pictures; no kit falls back to
 // Temple's. Reads the files and the pure modules under node, never a test runner (LIVE-034). Exit 1 on the first miss.
 import { readFileSync, existsSync } from 'node:fs'
 
