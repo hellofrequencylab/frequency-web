@@ -18,13 +18,14 @@ if (stage === 'w0') {
   if (!m.length) bad.push('no migration adds the Space post scope and the wall settings table')
 } else if (stage === 'w2') {
   if (!existsSync('app/(main)/spaces/[slug]/(profile)/community/page.tsx')) bad.push('the Space Community page does not exist')
+  if (!existsSync('app/(main)/spaces/[slug]/manage/community/page.tsx')) bad.push('the owner has no wall settings and moderation page')
 } else if (stage === 'w3') {
   for (const f of ['lib/spaces/space-discussion.ts', 'components/spaces/space-circle-card.tsx', 'components/widgets/circles/circle-space-info.tsx'])
     if (existsSync(f)) bad.push(`${f} still exists`)
 } else if (stage === 'w4') {
   const cfg = read('next.config.ts')
   if (/source:\s*'\/spaces\/:slug\/community'[\s\S]{0,120}destination:\s*'\/spaces\/:slug\/circles'/.test(cfg)) bad.push('/spaces/:slug/community still redirects to /circles')
-  if (!/community/i.test(read('app/sitemap.ts'))) bad.push('sitemap has no Community URL')
+  if (!/\/community`|\/community"|\/community'/.test(read('app/sitemap.ts').split('\n').filter((l) => /spaces/.test(l) || /slug/.test(l)).join('\n'))) bad.push('sitemap has no Space Community URL')
 } else if (stage === 'w5') {
   const live = (sql) => sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
   if (!migrations().some(([f, sql]) => f > '20270346028700' && /drop trigger[^;]*spaces_ensure_space_circle/i.test(live(sql)))) bad.push('no migration stops creating a Space Circle per new Space')
