@@ -256,6 +256,12 @@
       "checked": "2026-11-02",
       "digest": "591411e95c647fa2"
     },
+    "app/api/create-space/signal/route.ts": {
+      "verdict": "public",
+      "reason": "The funnel signal sink of /create-a-space (LIVE-1970, ADR-1933). Anonymous by design: a signed-out visitor has no account, and /api/track drops anonymous posts on purpose. Rate limits by IP (fail-open when the limiter is unconfigured, because a dropped signal costs a count, never a person), refuses a body over 2KB or one that does not parse, then admits only the nine createspace.* events through parseSignalBody (lib/create-space/signal.ts), which keeps a closed set of props per event (a kit id, a step id, an accent index, flags, intent ids) and drops everything else, so no typed text can be stored. Writes through track() with no actor and an exactly-once key per tab and event, so nothing counts twice. Always 204 with no body.",
+      "checked": "2026-11-02",
+      "digest": "beee64e20b837458"
+    },
     "app/api/spotlight/click/route.ts": {
       "verdict": "public",
       "reason": "A Spotlight Link card press beacon (LIVE-856, on frequencylocal.com). Anonymous by design: a visitor on a public Spotlight has no session. Calls handleSpotlightClick (lib/spaces/spotlight-clicks.ts), which rate limits by IP, accepts only a valid Space id and a Link cards target id, counts only a Space whose Spotlight is published, and writes one row (Space, target, time) with no visitor data. Returns 204 with no body, so it discloses nothing.",
