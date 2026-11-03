@@ -59,6 +59,7 @@ export const MEGA_THEMES: readonly MegaThemeDef[] = [
   { id: 'free-human', editor: 'FreeHuman', site: 'free-human' },
   { id: 'services', editor: 'Services', site: 'services' },
   { id: 'new-world', editor: 'NewWorld', site: 'new-world' },
+  { id: 'cyberwitch', editor: 'CyberWitch', site: 'cyberwitch' },
 ]
 
 export interface MegaThemeChoice {

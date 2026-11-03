@@ -29,7 +29,7 @@ type PreviewTokens = Record<PreviewTokenKey, string>
  *  lib/theme/site-style.ts, the one hidden flag) is left out here too, so New World and Services reach the builder the
  *  moment that flag lets them go and never before. */
 const PREVIEW_KIT_PREFERENCE: readonly MegaThemeId[] = [
-  'new-world', 'services', 'free-human', 'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
+  'new-world', 'services', 'cyberwitch', 'free-human', 'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
 ]
 export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = PREVIEW_KIT_PREFERENCE.filter((id) => SITE_THEMES.some((t) => t.id === id))
 
@@ -37,7 +37,7 @@ export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = PREVIEW_KIT_PREFERENCE.
  *  allows it), the way the Space page does for a themed Space (lib/theme/site-faces.ts), so they register on no
  *  other route. Unbounded, Hanken Grotesk and Instrument Serif are the site's own. */
 export const PREVIEW_FONT_SHEET =
-  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Geist:wght@300..600&family=Instrument+Serif:ital@1&family=Jost:wght@300..500&family=Lora:ital@1&family=Marcellus&family=Outfit:wght@300..500&display=swap'
+  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Geist:wght@300..600&family=Instrument+Serif:ital@1&family=Jost:wght@300..500&family=Lora:ital@1&family=Marcellus&family=Outfit:wght@300..500&family=Permanent+Marker&family=Spectral:ital,wght@0,400;0,600;1,400&family=UnifrakturCook:wght@700&display=swap'
 
 interface Shape {
   display: string; body: string; weight: string; textCase: string; track: string; label: string
@@ -64,6 +64,13 @@ const SHAPE: Record<MegaThemeId, Shape> = {
     weight: '700', textCase: 'none', track: '-0.03em', label: '.08em',
     btn: '999px', card: '20px', inner: '12px', photo: '20px', mat: '0', shadow: hairline, rule: '0', ring: '0',
     emFont: "'Lora', Georgia, serif",
+  },
+  // CyberWitch (lib/theme/cyberwitch.ts): blackletter display, Spectral body, the sprayed Permanent Marker phrase, square plates on iron.
+  cyberwitch: {
+    display: "'UnifrakturCook', 'Old English Text MT', serif", body: "'Spectral', Georgia, serif",
+    weight: '700', textCase: 'none', track: '0', label: '.14em',
+    btn: '5px', card: '5px', inner: '3px', photo: '5px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+    emFont: "'Permanent Marker', 'Marker Felt', cursive",
   },
   services: {
     display: "'Bricolage Grotesque', system-ui, sans-serif", body: "'Bricolage Grotesque', system-ui, sans-serif",

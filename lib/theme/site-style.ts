@@ -59,7 +59,7 @@ import { SITE_DIAL_KEYS, isDialAccent, isSiteDialValue, type SiteDialKey } from 
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
-export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'services' | 'new-world'
+export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'services' | 'new-world' | 'cyberwitch'
 
 interface SiteThemeDef {
   id: SiteThemeId
@@ -175,11 +175,19 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
     description: 'The Frequency house look: Night and Day in one theme, Tide teal to start, and a kit for every kind of gathering.',
     defaultFonts: 'modern',
   },
+  {
+    // THE CYBERWITCH THEME (id `cyberwitch`, lib/theme/cyberwitch.ts): industrial street-punk witch, dark only, one neon accent, blackletter,
+    // marker and Spectral. Hidden from every picker until its pages, emails, Spotlight and Space page ship, then it leaves RETIRED_FROM_PICKERS.
+    id: 'cyberwitch',
+    label: 'CyberWitch',
+    description: 'Concrete and chain-link under a blackletter grimoire, one neon accent sprayed over everything. Dark only, five accents, six starter kits.',
+    defaultFonts: 'classic',
+  },
 ]
 
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
  *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human', 'services'])
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human', 'services', 'cyberwitch'])
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
@@ -227,6 +235,7 @@ export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
   'free-human': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   services: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   'new-world': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  cyberwitch: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
 }
 
 export interface SiteLook {
@@ -242,7 +251,7 @@ type SiteDialStore = Partial<Record<SiteDialKey | 'accent', string>>
 /** What the new dials resolve to before the owner changes anything. A theme's manifest default beats these. */
 const THEME_DIAL_FALLBACK: Record<SiteDialKey, string> = { register: 'day', type: 'caps', motion: 'full', hero: 'glow', image: 'glow' }
 /** Themes whose own register is night. */
-const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight', 'new-world', 'services'])
+const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight', 'new-world', 'services', 'cyberwitch'])
 
 export interface SiteStyle {
   theme: SiteThemeId
@@ -267,7 +276,7 @@ const MAX_PAGE_THEMES = 30
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 export function isSiteThemeId(v: unknown): v is SiteThemeId {
-  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human' || v === 'services' || v === 'new-world'
+  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human' || v === 'services' || v === 'new-world' || v === 'cyberwitch'
 }
 
 export function readSiteStyle(preferences: unknown): SiteStyle {
