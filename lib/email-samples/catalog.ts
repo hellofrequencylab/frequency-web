@@ -63,6 +63,7 @@ import { envString } from '@/lib/env/string'
 import { designerKitDatesEmail, designerKitNoteEmail, designerKitReceiptEmail, designerKitWelcomeEmail, type DesignerKitEmailBrand } from '@/lib/theme/designer-kit-email'
 import { networkKitDatesEmail, networkKitNoteEmail, networkKitReceiptEmail, networkKitWelcomeEmail, type NetworkKitEmailBrand } from '@/lib/theme/network-kit-email'
 import { templeKitDatesEmail, templeKitNoteEmail, templeKitReceiptEmail, templeKitWelcomeEmail, type TempleKitEmailBrand } from '@/lib/theme/temple-kit-email'
+import { SERVICES_SURFACE } from '@/lib/theme/services'
 import { SERVICES_EMAIL_TYPES, servicesKitEmail, type ServicesKitEmailBrand } from '@/lib/theme/services-kit-email'
 import { freeHumanDatesEmail, freeHumanNoteEmail, freeHumanReceiptEmail, freeHumanWelcomeEmail, type FreeHumanEmailBrand } from '@/lib/theme/free-human-email'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
@@ -246,7 +247,7 @@ const FREE_HUMAN_BRAND: FreeHumanEmailBrand = {
 }
 const SERVICES_BRAND: ServicesKitEmailBrand = {
   name: 'Harbor Home Care', descriptor: 'Home repair & maintenance', owner: 'Alex Rivera', role: 'Owner', city: 'San Diego', phone: '(619) 555-0100',
-  accent: { fill: '#1AA7C0', text: '#3FC1D6' }, register: 'night', postalLine: PLATFORM_POSTAL_LINE,
+  accent: { fill: SERVICES_SURFACE.accent.accent, text: SERVICES_SURFACE.accent.text }, register: 'night', postalLine: PLATFORM_POSTAL_LINE,
   siteUrl: 'https://harborhomecare.example', siteLabel: 'harborhomecare.example', unsubscribeUrl: `${SITE}/unsubscribe/s`,
 }
 const FREE_HUMAN_COVER = `${SITE}/sites/free-human/email/place-sea-sunset.jpg`

@@ -47,7 +47,7 @@ describe('Services starter kits', () => {
     for (const key of ['offer1Title', 'offer3Price', 'person1Name', 'event1Title']) expect(text).toContain(`{{${key}|`)
   })
   it('starts a blue kit in Tide and leaves the accent unset when its preset has not shipped', () => {
-    expect(servicesKit('hosts').accent).toBe(SERVICES_ACCENTS.tide.accent.toUpperCase())
+    expect(servicesKit('hosts').accent).toBe(SERVICES_ACCENTS.tide.accent)
     expect(Object.keys(SERVICES_ACCENTS)).toContain('tide')
     expect(servicesKit('coaches').accent).toBeUndefined()
   })

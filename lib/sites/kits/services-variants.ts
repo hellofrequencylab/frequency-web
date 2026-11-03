@@ -1,4 +1,5 @@
 import type { MegaNicheId } from '@/lib/theme/mega-theme'
+import { SERVICES_ACCENTS } from '@/lib/theme/services'
 import type { KitPage, SiteKit } from './types'
 
 // The Services Theme Kit's starter kits (design system "New World", revision 2, ui_kits/site/kits.js): one sample business per niche,
@@ -319,7 +320,7 @@ export function servicesKit(niche: ServicesKitNiche): ServicesKit {
     id: `services-${niche}`, version: 1, theme: 'Services', niche, label: s.label, description: s.description,
     palette: s.palette, tools: s.tools,
     // Tide (#1AA7C0, a brand accent is a hex) is the one shipped accent that matches a kit's palette (blue). The rest wait on LIVE-2041.
-    ...(s.palette === 'blue' ? { accent: '#1AA7C0' } : {}),
+    ...(s.palette === 'blue' ? { accent: SERVICES_ACCENTS.tide.accent } : {}),
     pages: pages(s),
   }
 }
