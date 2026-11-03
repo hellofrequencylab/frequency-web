@@ -213,27 +213,27 @@ const head = (c: SectionCopy, eyebrow: string) => ({ eyebrow, title: star(c), le
 
 function pages(s: Spec): KitPage[] {
   const offers = s.offers.map((o, i) => ({
-    name: slot(`offer${i + 1}Title`, o.name), meta: o.dur, body: slot(`offer${i + 1}Blurb`, o.meta), price: slot(`offer${i + 1}Price`, o.price), href: '~/book',
+    name: slot(`offer${i + 1}Title`, o.name), meta: o.dur, body: slot(`offer${i + 1}Blurb`, o.meta), price: slot(`offer${i + 1}Price`, o.price), href: '~/booking',
   }))
   const hero: Block = {
     type: 'ServicesHero',
     props: {
       look: 'split', eyebrow: s.hero.eyebrow, title: `${s.hero.title} *${s.hero.em}*`, lead: s.hero.body,
-      primaryLabel: s.cta, primaryHref: '~/book', secondaryLabel: s.cta2, secondaryHref: '~/services', proof: '', image: '', alt: '',
+      primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: s.cta2, secondaryHref: '~/services', proof: '', image: '', alt: '',
       panelTitle: 'Book online', panelNote: 'Pick a time', offers: offers.map((o) => ({ name: o.name, meta: o.meta, price: o.price, href: o.href })), areas: [],
     },
   }
   const trust: Block = { type: 'ServicesTrust', props: { items: s.trust.map(([title, line]) => ({ title, line })) } }
   const groups: Block = {
     type: 'ServicesList',
-    props: { ...head(copy(s, 'circles'), 'Groups'), buttonLabel: 'Book a spot', buttonHref: '~/book', rows: s.groups.map(([name, when, line]) => ({ meta: when, name, body: line, price: '', href: '~/book' })) },
+    props: { ...head(copy(s, 'circles'), 'Groups'), buttonLabel: 'Book a spot', buttonHref: '~/booking', rows: s.groups.map(([name, when, line]) => ({ meta: when, name, body: line, price: '', href: '~/booking' })) },
   }
   const first: Block = { type: 'ServicesSteps', props: { ...head(copy(s, 'firstnight'), 'Your first visit'), rows: s.firstVisit.map(([title, body]) => ({ title, body })) } }
   const events: Block = {
     type: 'ServicesEvents',
     props: {
       ...head(copy(s, 'events'), 'Events'), buttonLabel: '', buttonHref: '',
-      rows: s.events.map(([title, body], i) => ({ meta: '', title: slot(`event${i + 1}Title`, title), body, price: '', href: '~/book', featured: i === 0 })),
+      rows: s.events.map(([title, body], i) => ({ meta: '', title: slot(`event${i + 1}Title`, title), body, price: '', href: '~/booking', featured: i === 0 })),
     },
   }
   const reviews: Block = {
@@ -252,14 +252,14 @@ function pages(s: Spec): KitPage[] {
     props: { eyebrow: 'Notes', title: 'Worth *a read.*', lede: '', buttonLabel: '', buttonHref: '', rows: s.posts.map(([kind, title]) => ({ meta: kind, title, body: '', price: '', href: '', image: '', alt: '' })) },
   }
   const plans: Block | null = s.plans
-    ? { type: 'ServicesPlans', props: { ...head(copy(s, 'plans'), 'Plans'), rows: s.plans.map(([title, body], i) => ({ meta: '', title, body, price: 'Set your price', href: '~/book', featured: i === 1 })) } }
+    ? { type: 'ServicesPlans', props: { ...head(copy(s, 'plans'), 'Plans'), rows: s.plans.map(([title, body], i) => ({ meta: '', title, body, price: 'Set your price', href: '~/booking', featured: i === 1 })) } }
     : null
   const shop: Block | null = s.products
     ? { type: 'ServicesShop', props: { ...head(copy(s, 'shop'), 'Shop'), buttonLabel: 'Open the shop', buttonHref: '~/services', rows: s.products.map(([title, body]) => ({ meta: '', title, body, price: 'Set your price', href: '', image: '', alt: '' })) } }
     : null
   const list: Block = {
     type: 'ServicesList',
-    props: { ...head(copy(s, 'services'), 'Services'), buttonLabel: 'See open times', buttonHref: '~/book', rows: offers.map((o) => ({ meta: o.meta, name: o.name, body: o.body, price: o.price, href: o.href })) },
+    props: { ...head(copy(s, 'services'), 'Services'), buttonLabel: 'See open times', buttonHref: '~/booking', rows: offers.map((o) => ({ meta: o.meta, name: o.name, body: o.body, price: o.price, href: o.href })) },
   }
   const faq: Block = {
     type: 'ServicesFaq',
@@ -275,7 +275,7 @@ function pages(s: Spec): KitPage[] {
   }
   const band: Block = {
     type: 'ServicesBand',
-    props: { eyebrow: 'Next opening', title: star(copy(s, 'cta')), primaryLabel: s.cta, primaryHref: '~/book', secondaryLabel: '', secondaryHref: '' },
+    props: { eyebrow: 'Next opening', title: star(copy(s, 'cta')), primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: '', secondaryHref: '' },
   }
   const story: Block = {
     type: 'ServicesStory',
@@ -284,13 +284,13 @@ function pages(s: Spec): KitPage[] {
   const booking: Block = {
     type: 'ServicesBooking',
     props: {
-      eyebrow: 'Book online', title: 'Next *openings.*', lede: 'Live availability. Pick a time, see the total, get a confirmation.', buttonLabel: s.cta, buttonHref: '~/book',
-      rows: s.groups.map(([name, when, line]) => ({ day: when, title: name, meta: line, time: '', href: '~/book' })),
+      eyebrow: 'Book online', title: 'Next *openings.*', lede: 'Live availability. Pick a time, see the total, get a confirmation.', buttonLabel: s.cta, buttonHref: '~/booking',
+      rows: s.groups.map(([name, when, line]) => ({ day: when, title: name, meta: line, time: '', href: '~/booking' })),
     },
   }
   const contact: Block = {
     type: 'ServicesContact',
-    props: { eyebrow: 'Get in touch', title: 'Ask us *anything.*', lede: 'A person answers. Usually the same day.', body: '', buttonLabel: 'Send a message', buttonHref: '~/book', secondaryLabel: '', secondaryHref: '' },
+    props: { eyebrow: 'Get in touch', title: 'Ask us *anything.*', lede: 'A person answers. Usually the same day.', body: '', buttonLabel: 'Send a message', buttonHref: '~/booking', secondaryLabel: '', secondaryHref: '' },
   }
   const locations: Block = {
     type: 'ServicesLocations',
@@ -301,7 +301,7 @@ function pages(s: Spec): KitPage[] {
   }
   const letter: Block = {
     type: 'ServicesLetter',
-    props: { eyebrow: 'Newsletter', title: 'Stay in *the loop.*', lede: 'A short note when something is coming up. Nothing else.', buttonLabel: 'Join the list', buttonHref: '~/book' },
+    props: { eyebrow: 'Newsletter', title: 'Stay in *the loop.*', lede: 'A short note when something is coming up. Nothing else.', buttonLabel: 'Join the list', buttonHref: '~/booking' },
   }
   const compact = (xs: (Block | null)[]) => xs.filter((b): b is Block => b !== null)
   const seo = (title: string, description: string) => ({ title, description })
@@ -309,7 +309,7 @@ function pages(s: Spec): KitPage[] {
     { slug: 'home', label: 'Home', seo: seo(s.name, s.descriptor), blocks: compact([hero, trust, groups, first, events, reviews, band]) },
     { slug: 'services', label: 'Services', seo: seo('Services', `${s.name}: what is on and what it costs.`), blocks: compact([list, plans, shop, faq, band]) },
     { slug: 'about', label: 'About', seo: seo('About', `Who is behind ${s.name}.`), blocks: compact([story, team, posts, locations, letter]) },
-    { slug: 'book', label: 'Book', seo: seo('Book', `Pick a time at ${s.name}.`), blocks: compact([booking, contact]) },
+    { slug: 'booking', label: 'Book', seo: seo('Book', `Pick a time at ${s.name}.`), blocks: compact([booking, contact]) },
   ]
 }
 
@@ -318,8 +318,8 @@ export function servicesKit(niche: ServicesKitNiche): ServicesKit {
   return {
     id: `services-${niche}`, version: 1, theme: 'Services', niche, label: s.label, description: s.description,
     palette: s.palette, tools: s.tools,
-    // tide is the one shipped accent that matches a kit's palette (blue). The rest wait on the other presets (LIVE-2041).
-    ...(s.palette === 'blue' ? { accent: 'tide' } : {}),
+    // Tide (#1AA7C0, a brand accent is a hex) is the one shipped accent that matches a kit's palette (blue). The rest wait on LIVE-2041.
+    ...(s.palette === 'blue' ? { accent: '#1AA7C0' } : {}),
     pages: pages(s),
   }
 }

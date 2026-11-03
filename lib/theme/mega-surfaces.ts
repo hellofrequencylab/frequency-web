@@ -19,6 +19,7 @@ import { NETWORK_KIT_SURFACE } from '@/lib/theme/network-kit'
 import { TEMPLE_ACCENT, TEMPLE_PALETTE as T } from '@/lib/theme/temple'
 import { TEMPLE_KIT_SURFACE } from '@/lib/theme/temple-kit'
 import { FREE_HUMAN_SURFACE } from '@/lib/theme/free-human'
+import { SERVICES_SURFACE } from '@/lib/theme/services'
 import { WILDHEART_PALETTE as W } from '@/lib/theme/wildheart'
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import { palette } from '@/lib/theme/palette'
@@ -75,4 +76,5 @@ export const MEGA_SURFACES: Partial<Record<MegaThemeId, ThemeSurface>> = {
   midnight: MIDNIGHT_SURFACE,
   designer: DESIGNER_SURFACE,
   'free-human': FREE_HUMAN_SURFACE,
+  services: SERVICES_SURFACE,
 }

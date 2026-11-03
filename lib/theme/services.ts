@@ -1,3 +1,4 @@
+import type { ThemeSurface } from "@/lib/theme/surface-vars";
 // THE SERVICES THEME (code id `services`, editor theme `Services`), built from the Services design system
 // (docs/design-systems/services). PURE. Night is the default register; Day (`data-th="day"`) is the salt-and-cream
 // light register. Six accent presets change only the flare, swell and halo ramps. The raw ramps are --sv-* so they
@@ -106,7 +107,7 @@ export const SERVICES_TOKENS_CSS = `
 --sv-fw-bold:700;
 --sv-fw-heavy:800;
 }
-`
+`;
 
 /** The Day register: flips the ink and chrome scales so every surface follows. Kept apart so the intake compares Night alone. */
 export const SERVICES_DAY_CSS = `
@@ -114,3 +115,25 @@ export const SERVICES_DAY_CSS = `
 --sv-glow-sunset:linear-gradient(to top left,color-mix(in oklab,var(--sv-flare-500) 18%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-flare-500) 10%,var(--sv-ink-900)) 22%,color-mix(in oklab,var(--sv-flare-500) 4%,var(--sv-ink-900)) 48%,transparent 72%);--sv-spread-tr:linear-gradient(to bottom left,color-mix(in oklab,var(--sv-flare-500) 14%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-flare-500) 8%,var(--sv-ink-900)) 22%,color-mix(in oklab,var(--sv-flare-500) 3%,var(--sv-ink-900)) 48%,transparent 72%);--sv-spread-tl:linear-gradient(to bottom right,color-mix(in oklab,var(--sv-flare-500) 10%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-flare-500) 6%,var(--sv-ink-900)) 22%,color-mix(in oklab,var(--sv-flare-500) 2%,var(--sv-ink-900)) 48%,transparent 72%);--sv-spread-br:linear-gradient(to top left,color-mix(in oklab,var(--sv-halo-500) 10%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-halo-500) 6%,var(--sv-ink-900)) 22%,color-mix(in oklab,var(--sv-halo-500) 2%,var(--sv-ink-900)) 48%,transparent 72%);--sv-spread-bl:linear-gradient(to top right,color-mix(in oklab,var(--sv-swell-500) 9%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-swell-500) 5%,var(--sv-ink-900)) 22%,color-mix(in oklab,var(--sv-swell-500) 2%,var(--sv-ink-900)) 48%,transparent 72%);--sv-spread-bottom:linear-gradient(to top,color-mix(in oklab,var(--sv-flare-500) 16%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-flare-500) 6%,var(--sv-ink-900)) 30%,transparent 62%);--sv-spread-top:linear-gradient(to bottom,color-mix(in oklab,var(--sv-flare-500) 8%,var(--sv-ink-900)) 0%,transparent 55%);--sv-ink-950:#ECE6DC;--sv-ink-900:#F5F1EA;--sv-ink-850:#FFFFFF;--sv-ink-800:#FBF9F5;--sv-ink-700:#E2DACD;--sv-ink-600:#CBC1B2;--sv-graphite-400:#6A645B;--sv-chrome-50:#15181C;--sv-chrome-200:#3A3F46;--sv-chrome-400:#5B6168;--sv-sheen:linear-gradient(180deg,rgba(255,255,255,.8) 0%,rgba(255,255,255,0) 38%);--sv-border-subtle:color-mix(in oklab,var(--sv-chrome-50) 10%,transparent);--sv-border-default:color-mix(in oklab,var(--sv-chrome-50) 18%,transparent);--sv-grad-lit:linear-gradient(100deg,var(--sv-flare-600) 0%,var(--sv-chrome-50) 30%,var(--sv-flare-500) 55%,var(--sv-halo-500) 78%,var(--sv-flare-600) 100%);--sv-shadow-sm:0 1px 2px rgba(60,40,20,.06);--sv-shadow-md:0 1px 2px rgba(60,40,20,.05),0 18px 40px -20px rgba(60,40,20,.22);--sv-shadow-lg:0 2px 4px rgba(60,40,20,.05),0 40px 80px -30px rgba(60,40,20,.3);color-scheme:light
 }
 `;
+
+/** The flat token set the Spaces, mail and previews wear for Services: the Night register, the Tide accent, ink on filled accent
+ *  buttons. A Space's own picked accent still wins over `accent`. Literal hex, because a mail client reads no variable. */
+export const SERVICES_SURFACE = {
+  canvas: "#0B0F13",
+  raised: "#10161B",
+  elevated: "#161D24",
+  border: "rgba(245,246,247,.16)",
+  text: "#F5F6F7",
+  muted: "#D3D9DE",
+  subtle: "#A3ACB4",
+  solid: "#1AA7C0",
+  onSolid: SERVICES_ON_ACCENT,
+  dark: true,
+  accent: {
+    accent: "#1AA7C0",
+    text: "#3FC1D6",
+    on: SERVICES_ON_ACCENT,
+    bg: "#0C5F70",
+  },
+  semantic: { success: "#4CC38A", info: "#3FC1D6", danger: "#FF5A5F" },
+} as const satisfies ThemeSurface;

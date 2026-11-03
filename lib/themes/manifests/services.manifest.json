@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "id": "services",
+  "legacyIds": {
+    "editor": "Services",
+    "site": "services"
+  },
+  "offered": false,
+  "site": {
+    "label": "Services",
+    "description": "Night-first and glossy, with a day register: for people who book, sell and show up for clients. Six accents, sixteen starter kits.",
+    "defaultFonts": "modern"
+  },
+  "library": null,
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "Services"
+      ]
+    }
+  },
+  "core": null
+}
