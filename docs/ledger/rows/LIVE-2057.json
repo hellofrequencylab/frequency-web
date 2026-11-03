@@ -1,0 +1,18 @@
+{
+ "id": "LIVE-2057",
+ "title": "New World Spotlight layouts, Space face and eleven email types",
+ "lane": "live",
+ "priority": "P1",
+ "size": "L",
+ "status": "open",
+ "source": {
+  "file": "docs/design-systems/new-world/rules.json",
+  "ref": "Daniel 2026-11-03: New World is the new mega template, default theme for every new Space"
+ },
+ "detail": "Six Spotlight layouts and doors from each kit's tools, the Space page following register, accent and type voice while synced, eleven email templates.",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node -e \"process.exit(require('fs').existsSync('components/spotlight/new-world-kit-layouts.tsx')?0:1)\""
+ },
+ "wave": "W7"
+}

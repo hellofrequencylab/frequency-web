@@ -1,0 +1,18 @@
+{
+ "id": "LIVE-2056",
+ "title": "New World kits: Your place, Coaches, Studios, Hosts, Venues, Non-profits, Networks",
+ "lane": "live",
+ "priority": "P1",
+ "size": "M",
+ "status": "open",
+ "source": {
+  "file": "docs/design-systems/new-world/rules.json",
+  "ref": "Daniel 2026-11-03: New World is the new mega template, default theme for every new Space"
+ },
+ "detail": "Per-niche starter kits from kits.js with tools[] and copy overrides, in house voice (voice guide wins over the design's words).",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node -e \"process.exit(require('fs').existsSync('lib/sites/kits/new-world-variants.ts')?0:1)\""
+ },
+ "wave": "W7"
+}
