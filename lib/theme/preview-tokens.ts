@@ -18,6 +18,7 @@ export const PREVIEW_TOKEN_KEYS = [
   '--pv-font-display', '--pv-font-body', '--pv-display-weight', '--pv-display-case', '--pv-display-track', '--pv-label-track',
   '--pv-radius-btn', '--pv-radius-card', '--pv-radius-inner', '--pv-radius-photo',
   '--pv-mat', '--pv-shadow', '--pv-rule-w', '--pv-ring-opacity', '--pv-btn-bg', '--pv-btn-ink', '--pv-em-ink',
+  '--pv-font-em', '--pv-art', '--pv-badge',
 ] as const
 type PreviewTokenKey = (typeof PREVIEW_TOKEN_KEYS)[number]
 type PreviewTokens = Record<PreviewTokenKey, string>
@@ -31,7 +32,7 @@ export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = [
  *  allows it), the way the Space page does for a themed Space (lib/theme/site-faces.ts), so they register on no
  *  other route. Unbounded, Hanken Grotesk and Instrument Serif are the site's own. */
 export const PREVIEW_FONT_SHEET =
-  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Geist:wght@300..600&family=Jost:wght@300..500&family=Marcellus&family=Outfit:wght@300..500&display=swap'
+  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Geist:wght@300..600&family=Instrument+Serif:ital@1&family=Jost:wght@300..500&family=Marcellus&family=Outfit:wght@300..500&display=swap'
 
 interface Shape {
   display: string; body: string; weight: string; textCase: string; track: string; label: string
@@ -40,6 +41,12 @@ interface Shape {
   /** A fixed primary button; undefined means the button wears the chosen accent. */
   button?: { bg: string; ink: string }
   em?: string
+  /** The face of the emphasised words (the kit's "one-word voice"); undefined means the display face. */
+  emFont?: string
+  /** Background art behind the website (the Network kit's contour lines); undefined means none. */
+  art?: (line: string) => string
+  /** A round accent badge beside the wordmark (the Network kit's mark). */
+  badge?: boolean
 }
 
 const hairline = (line: string) => `inset 0 0 0 1px ${line}`
@@ -57,10 +64,15 @@ const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, '
     weight: '600', textCase: 'none', track: '-0.01em', label: '.08em',
     btn: '2px', card: '2px', inner: '2px', photo: '2px', mat: '0', shadow: hairline, rule: '0', ring: '0',
   },
+  // The Network kit (lib/theme/network-kit.ts): Bricolage display, Outfit body, Instrument Serif italic for the one-word
+  // voice, a round accent mark beside the wordmark, the arched hero picture and the contour lines of its hero.
   'network-kit': {
     display: "'Bricolage Grotesque', system-ui, sans-serif", body: "'Outfit', system-ui, sans-serif",
-    weight: '700', textCase: 'none', track: '-0.03em', label: '.08em',
-    btn: '999px', card: '14px', inner: '14px', photo: '18px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+    weight: '700', textCase: 'none', track: '-0.035em', label: '0',
+    btn: '999px', card: '14px', inner: '14px', photo: '18px 34% 18px 18px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+    emFont: "'Instrument Serif', Georgia, serif",
+    art: (line) => `repeating-radial-gradient(ellipse 140% 70% at 0% 100%, transparent 0 5.6cqi, ${line} 5.6cqi calc(5.6cqi + 1px))`,
+    badge: true,
   },
   network: {
     display: "'Bricolage Grotesque', system-ui, sans-serif", body: "'Outfit', system-ui, sans-serif",
@@ -132,6 +144,9 @@ export function previewTokens(id: MegaThemeId): PreviewTokens {
     '--pv-btn-bg': p.button?.bg ?? (id === 'designer' ? s.solid : 'var(--pv-accent)'),
     '--pv-btn-ink': p.button?.ink ?? (id === 'designer' ? s.onSolid : 'var(--pv-on-accent)'),
     '--pv-em-ink': p.em ?? 'var(--pv-accent-ink)',
+    '--pv-font-em': p.emFont ?? p.display,
+    '--pv-art': p.art ? p.art(s.border) : 'none',
+    '--pv-badge': p.badge ? 'inline-flex' : 'none',
   }
 }
 

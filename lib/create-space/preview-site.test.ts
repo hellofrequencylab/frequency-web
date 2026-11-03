@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { WIZARD_INTENTS } from '@/lib/spaces/create-wizard'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
-import { INTENT_LOOK, PREVIEW_CLIP, PREVIEW_KITS, asSentence, clipPreview, deriveSite, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
+import { INTENT_LOOK, PREVIEW_CLIP, PREVIEW_KITS, asSentence, clipPreview, deriveSite, kitAccentFill, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
 
 const base = { name: '', handle: '', hostName: '', intents: [] as string[], kit: 'designer' as const }
 
@@ -65,5 +65,14 @@ describe('preview site', () => {
     expect(asSentence('Done!')).toBe('Done!')
     expect(asSentence('   ')).toBe('')
     for (const o of deriveSite(base).offers) expect(o.t.length).toBeLessThanOrEqual(PREVIEW_CLIP.offerTitle)
+  })
+
+  it('turns a carried accent place into the kit accent hex, and nothing into nothing', () => {
+    expect(kitAccentFill('designer', '2')).toBe('#4E6E71')
+    expect(kitAccentFill('designer', 1)).toBe('#A65A3A')
+    expect(kitAccentFill('designer', '9')).toBeNull()
+    expect(kitAccentFill('not-a-kit', '0')).toBeNull()
+    expect(kitAccentFill('designer', 'x')).toBeNull()
+    expect(kitAccentFill('network', '0')).toBeNull()
   })
 })
