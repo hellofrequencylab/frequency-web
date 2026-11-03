@@ -1,0 +1,375 @@
+{
+ "theme": "bold",
+ "repoThemeId": "menswork",
+ "note": "Bold's code id stays `menswork` (lib/theme/menswork.ts, --mw-* tokens). The design names its tokens --hof-* plus an unprefixed semantic layer (--bg-page, --fill-primary); the repo keeps the look under --mw-* and re-points DAWN --color-*. First match wins.",
+ "tokenSources": [
+  "MENSWORK_TOKENS_CSS"
+ ],
+ "baseline": "docs/design-systems/bold/baseline.json",
+ "tokenMap": [
+  {
+   "from": "--fill-primary-pressed",
+   "to": "--mw-teal-pressed"
+  },
+  {
+   "from": "--fill-primary",
+   "to": "--mw-teal"
+  },
+  {
+   "from": "--focus-ring-width",
+   "to": "--mw-focus-ring-width"
+  },
+  {
+   "from": "--focus-ring",
+   "to": "--mw-teal-text"
+  },
+  {
+   "from": "--text-link",
+   "to": "--mw-teal-text"
+  },
+  {
+   "from": "--text-on-fill",
+   "to": "--mw-charcoal"
+  },
+  {
+   "from": "--text-on-accent",
+   "to": "--mw-charcoal"
+  },
+  {
+   "from": "--angle",
+   "to": "--mw-angle"
+  },
+  {
+   "from": "--chamfer-",
+   "to": "--mw-chamfer-"
+  },
+  {
+   "from": "--clip-chamfer-",
+   "to": "--mw-clip-chamfer-"
+  },
+  {
+   "from": "--dur-",
+   "to": "--mw-dur-"
+  },
+  {
+   "from": "--ease",
+   "to": "--mw-ease"
+  },
+  {
+   "from": "--slide-60-",
+   "to": "--mw-slide-60-"
+  },
+  {
+   "from": "--shadow-none",
+   "to": "--mw-shadow-none"
+  },
+  {
+   "from": "--space-",
+   "to": "--mw-space-"
+  },
+  {
+   "from": "--radius-",
+   "to": "--mw-radius-"
+  },
+  {
+   "from": "--border-1",
+   "to": "--mw-border-1"
+  },
+  {
+   "from": "--border-2",
+   "to": "--mw-border-2"
+  },
+  {
+   "from": "--measure",
+   "to": "--mw-measure"
+  },
+  {
+   "from": "--tracking-",
+   "to": "--mw-tracking-"
+  },
+  {
+   "from": "--pattern-lattice-48",
+   "to": "--mw-lattice"
+  },
+  {
+   "from": "--pattern-lattice-24",
+   "to": "--mw-lattice-24"
+  },
+  {
+   "from": "--pattern-chevron",
+   "to": "--mw-chevron"
+  },
+  {
+   "from": "--pattern-brushed",
+   "to": "--mw-brushed"
+  },
+  {
+   "from": "--pattern-contour",
+   "to": "--mw-contour"
+  },
+  {
+   "from": "--pattern-grain",
+   "to": "--mw-grain"
+  },
+  {
+   "from": "--hof-charcoal",
+   "to": "--mw-charcoal"
+  },
+  {
+   "from": "--hof-surface",
+   "to": "--mw-surface"
+  },
+  {
+   "from": "--hof-raised",
+   "to": "--mw-raised"
+  },
+  {
+   "from": "--hof-hairline",
+   "to": "--mw-hairline"
+  },
+  {
+   "from": "--hof-muted",
+   "to": "--mw-muted"
+  },
+  {
+   "from": "--hof-secondary",
+   "to": "--mw-secondary"
+  },
+  {
+   "from": "--hof-primary",
+   "to": "--mw-text"
+  },
+  {
+   "from": "--hof-",
+   "to": "--mw-"
+  },
+  {
+   "from": "--bg-page",
+   "to": "--color-canvas"
+  },
+  {
+   "from": "--surface-card",
+   "to": "--color-surface"
+  },
+  {
+   "from": "--surface-raised",
+   "to": "--color-surface-elevated"
+  },
+  {
+   "from": "--border-hairline",
+   "to": "--color-border"
+  },
+  {
+   "from": "--border-strong",
+   "to": "--color-border-strong"
+  },
+  {
+   "from": "--text-primary",
+   "to": "--color-text"
+  },
+  {
+   "from": "--text-secondary",
+   "to": "--color-text-muted"
+  },
+  {
+   "from": "--text-muted",
+   "to": "--color-text-subtle"
+  },
+  {
+   "from": "--accent",
+   "to": "--mw-accent"
+  }
+ ],
+ "rules": [
+  {
+   "glob": "readme.md",
+   "kind": "reference",
+   "reason": "Handoff text; the files it names are checked by their own rules."
+  },
+  {
+   "glob": "HANDOFF.md",
+   "kind": "reference",
+   "reason": "Handoff text; the files it names are checked by their own rules."
+  },
+  {
+   "glob": "styles.css",
+   "kind": "reference",
+   "reason": "Prototype stylesheet that imports tokens/*.css."
+  },
+  {
+   "glob": "_ds_bundle.js",
+   "kind": "reference",
+   "reason": "Generated prototype bundle."
+  },
+  {
+   "glob": "support.js",
+   "kind": "reference",
+   "reason": "Prototype runtime."
+  },
+  {
+   "glob": "templates/*/support.js",
+   "kind": "reference",
+   "reason": "Prototype runtime."
+  },
+  {
+   "glob": "templates/*/ds-base.js",
+   "kind": "reference",
+   "reason": "Prototype loader."
+  },
+  {
+   "glob": "tokens/*.css",
+   "kind": "tokens"
+  },
+  {
+   "glob": "Website.html",
+   "kind": "reference",
+   "reason": "Hearts on Fire program content. Bold is a general website geared to men (owner 2026-11-03: based on Hearts on Fire, use none of its content), so this is a look reference only."
+  },
+  {
+   "glob": "standalone/**",
+   "kind": "reference",
+   "reason": "Hearts on Fire program content. Bold is a general website geared to men (owner 2026-11-03: based on Hearts on Fire, use none of its content), so this is a look reference only."
+  },
+  {
+   "glob": "website/**",
+   "kind": "reference",
+   "reason": "Hearts on Fire program content. Bold is a general website geared to men (owner 2026-11-03: based on Hearts on Fire, use none of its content), so this is a look reference only."
+  },
+  {
+   "glob": "pages/**",
+   "kind": "reference",
+   "reason": "Prototype specimen and page sources; Hearts on Fire program content. Bold is a general website geared to men (owner 2026-11-03: based on Hearts on Fire, use none of its content), so this is a look reference only."
+  },
+  {
+   "glob": "Core Styles.html",
+   "kind": "reference",
+   "reason": "Design-system specimen page; the tokens rule checks its values."
+  },
+  {
+   "glob": "core/foundations/**",
+   "kind": "reference",
+   "reason": "Design-system specimen pages; the tokens rule checks their values."
+  },
+  {
+   "glob": "core/components/**",
+   "kind": "reference",
+   "reason": "Prototype component sources; Frequency's own components carry the restyle."
+  },
+  {
+   "glob": "Calendar.html",
+   "kind": "reference",
+   "reason": "Hearts on Fire program calendar (an admin page for that program, not a theme surface)."
+  },
+  {
+   "glob": "Executive Overview.html",
+   "kind": "reference",
+   "reason": "Hearts on Fire leadership overview (an admin page for that program, not a theme surface)."
+  },
+  {
+   "glob": "templates/calendar/Calendar.dc.html",
+   "kind": "reference",
+   "reason": "Hearts on Fire program calendar (an admin page for that program, not a theme surface)."
+  },
+  {
+   "glob": "templates/executive-overview/ExecutiveOverview.dc.html",
+   "kind": "reference",
+   "reason": "Hearts on Fire leadership overview (an admin page for that program, not a theme surface)."
+  },
+  {
+   "glob": "assets/seasons.json",
+   "kind": "reference",
+   "reason": "Season palette as data; lib/theme/menswork.ts MENSWORK_SEASONS carries it and the tokens rule checks the hexes."
+  },
+  {
+   "glob": "assets/logo/*",
+   "kind": "reference",
+   "reason": "Hearts on Fire logo and mark. Bold ships no program brand: the Space's own logo goes in the header."
+  },
+  {
+   "glob": "assets/photos/*",
+   "kind": "reference",
+   "reason": "Hearts on Fire program photography (its men, its retreats, a named person). Bold needs its own general photo set; listed for the owner in the theme readiness asset list."
+  },
+  {
+   "glob": "assets/screens/*",
+   "kind": "reference",
+   "reason": "Screenshots of the prototype screens."
+  }
+ ],
+ "tokenDeviations": [
+  {
+   "name": "--pattern-grain",
+   "reason": "The snapshot parser cuts the design's base64 data URL at its first semicolon; the repo carries the same 4% monochrome noise (baseFrequency 0.9, two octaves, alpha 0.04) as a URL-encoded SVG."
+  },
+  {
+   "name": "--type-body",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-body-l",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-body-s",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-body-strong",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-l",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-m",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-s",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-xl",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-xs",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-label",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-label-l",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-label-s",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-numeral",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-numeral-l",
+   "reason": "The type scale is applied per element in components/sites/menswork-css.ts through --mw-display, --mw-body and --mw-mono; a shorthand font token per size is not declared.",
+   "undeclared": true
+  }
+ ]
+}

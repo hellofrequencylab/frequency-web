@@ -145,7 +145,7 @@ export function FrequencyFeatures() {
       <section className="sec">
         <div className="wrap">
           <p className="pb-note">
-            Want every feature as one setup? <Link href={ROUTES.system}>See the whole system</Link>.
+            Ready to pick a plan? <Link href={ROUTES.pricing}>See plans and pricing</Link>.
           </p>
         </div>
       </section>

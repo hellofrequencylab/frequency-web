@@ -16,10 +16,19 @@ const CARD =
 
 /* THE CONTRACT BRIDGE: the shared block contract (lib/theme/block-contract-map.json) reads --color-*, --radius-*, --font-* and
  * the motion names, never --sv-*, so a role block would draw unthemed without these aliases. Night is the default register; Day
- * (data-th="day") swaps the surfaces to the salt-and-cream set. The accent follows the owner's picked preset through --sv-flare-*. */
+ * (data-th="day") needs no aliases of its own: the Day register (SERVICES_DAY_CSS) flips the ink and chrome ramps, so the same names
+ * resolve to salt and cream. On Day the eyebrow step and the accent text step are darkened toward the ink so they read on cream. The --color-primary family is never set here: it is the owner's accent
+ * (servicesAccentVars, Tide when none), set on the site root's accent scope. ACCENT_BRIDGE (in SERVICES_SITE_CSS, not the skin, which
+ * reads only --sv-* and is shared with New World) points the skin's own accent ramp (--sv-flare-*) at it. */
 const BRIDGE = `
-${S}{--color-canvas:var(--sv-surface-page);--color-surface:var(--sv-surface-raised);--color-surface-post:var(--sv-surface-raised);--color-surface-elevated:var(--sv-surface-card);--color-surface-hover:var(--sv-ink-700);--color-border:var(--sv-border-default);--color-border-strong:var(--sv-border-strong);--color-text:var(--sv-text-primary);--color-text-muted:var(--sv-text-secondary);--color-text-subtle:var(--sv-text-muted);--color-primary:var(--sv-accent);--color-primary-hover:var(--sv-accent-hover);--color-primary-strong:var(--sv-flare-400);--color-primary-bg:var(--sv-accent-tint);--color-text-on-primary:var(--sv-accent-text);--color-focus-ring:var(--sv-focus-ring);--color-success:var(--sv-success-500);--color-warning:var(--sv-warning-500);--color-danger:var(--sv-danger-500);--color-info:var(--sv-halo-500);--color-ink:var(--sv-action-primary);--color-on-ink:var(--sv-action-primary-text);--radius-control:var(--sv-radius-pill);--radius-card:var(--sv-radius-lg);--radius-cover:var(--sv-radius-xl);--radius-media:var(--sv-radius-lg);--font-display:var(--sv-font-display);--font-body:var(--sv-font-body);--font-label:var(--sv-font-mono);--space-section:clamp(72px,9vw,128px);--motion-fast:var(--sv-dur-fast);--motion-base:var(--sv-dur-base);--ease-out:var(--sv-ease-out)}
-${S}[data-th="day"]{--color-canvas:var(--sv-surface-light);--color-surface:var(--sv-surface-light);--color-surface-post:var(--sv-surface-light);--color-surface-elevated:var(--sv-surface-light-sunken);--color-surface-hover:var(--sv-salt-300);--color-border:var(--sv-border-light);--color-border-strong:var(--sv-salt-700);--color-text:var(--sv-text-on-light);--color-text-muted:var(--sv-text-on-light-muted);--color-text-subtle:var(--sv-text-on-light-muted);--color-primary-strong:var(--sv-flare-700);--color-ink:var(--sv-ink-900);--color-on-ink:var(--sv-chrome-50)}
+${S}{--color-canvas:var(--sv-surface-page);--color-surface:var(--sv-surface-raised);--color-surface-post:var(--sv-surface-raised);--color-surface-elevated:var(--sv-surface-card);--color-surface-hover:var(--sv-ink-700);--color-border:var(--sv-border-default);--color-border-strong:var(--sv-border-strong);--color-text:var(--sv-text-primary);--color-text-muted:var(--sv-text-secondary);--color-text-subtle:var(--sv-text-muted);--color-focus-ring:var(--sv-focus-ring);--color-success:var(--sv-success-500);--color-warning:var(--sv-warning-500);--color-danger:var(--sv-danger-500);--color-info:var(--sv-halo-500);--color-ink:var(--sv-action-primary);--color-on-ink:var(--sv-action-primary-text);--radius-control:var(--sv-radius-pill);--radius-card:var(--sv-radius-lg);--radius-cover:var(--sv-radius-xl);--radius-media:var(--sv-radius-lg);--font-display:var(--sv-font-display);--font-body:var(--sv-font-body);--font-label:var(--sv-font-mono);--space-section:clamp(72px,9vw,128px);--motion-fast:var(--sv-dur-fast);--motion-base:var(--sv-dur-base);--ease-out:var(--sv-ease-out)}
+`;
+
+/* THE ACCENT BRIDGE: the skin's accent ramp follows the owner's accent, so an Ember or Fern site draws Ember or Fern everywhere, not
+ * only in the role blocks. On Day the light flare step and the accent text step mix toward the light chrome so they read on cream. */
+const ACCENT_BRIDGE = `
+${S}{--sv-flare-500:var(--color-primary,var(--sv-flare-600));--sv-flare-400:var(--color-primary-strong,var(--sv-flare-600));--sv-flare-300:color-mix(in oklab,var(--sv-flare-500) 50%,white);--sv-flare-700:color-mix(in oklab,var(--sv-flare-500) 45%,var(--sv-ink-900));--sv-accent-hover:var(--color-primary-hover,var(--sv-flare-600));--sv-accent-text:var(--color-text-on-primary,var(--sv-ink-900))}
+${S}[data-th="day"]{--sv-flare-300:color-mix(in oklab,var(--sv-flare-500) 55%,var(--sv-chrome-50));--color-primary-strong:color-mix(in oklab,var(--color-primary) 62%,var(--sv-chrome-50))}
 `;
 
 export const SERVICES_CSS = `
@@ -256,7 +265,7 @@ const LABEL = "font-family:var(--sv-font-mono);text-transform:uppercase;letter-s
 
 export const SERVICES_SITE_CSS = `${SERVICES_TOKENS_CSS}${SERVICES_DAY_CSS}
 ${S}{--sv-font-display:var(--font-sv-bricolage,'Bricolage Grotesque'),'Helvetica Neue',Arial,sans-serif;--sv-font-body:var(--font-sv-bricolage,'Bricolage Grotesque'),'Helvetica Neue',Arial,sans-serif;--sv-font-accent:var(--font-sv-lora,'Lora'),Georgia,serif;--sv-font-mono:var(--font-sv-mono,'DM Mono'),ui-monospace,Menlo,monospace}
-${SERVICES_CSS}
+${SERVICES_CSS}${ACCENT_BRIDGE}
 ${S}{font-family:var(--sv-font-body);line-height:var(--sv-lh-body);background:var(--sv-surface-page);color:var(--sv-text-primary)}
 ${S} .hs-root{background:var(--sv-surface-page);color:var(--sv-text-primary)}
 ${S} .hs-h1,${S} .hs-h2,${S} .hs-brand{font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-heavy);text-transform:uppercase;letter-spacing:var(--sv-ls-display);line-height:var(--sv-lh-display)}

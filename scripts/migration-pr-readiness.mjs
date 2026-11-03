@@ -110,7 +110,8 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
   requireFact(sha.test(mainSha) && sha.test(baseSha) && sha.test(headSha) && headSha === event.pull_request.head.sha, 'stale or moving event/base/head')
   for (const revision of [baseSha, headSha]) git(['fetch', '--no-tags', '--filter=blob:none', 'origin', revision])
   // This job checks out main on an isolated runner and never executes candidate code.
-  requireFact(env.GITHUB_WORKFLOW_REF === `${REPOSITORY}/.github/workflows/migration-readiness.yml@refs/heads/main` && String(git(['rev-parse', 'HEAD'])).trim() === baseSha, 'trusted current-main workflow checkout required')
+  requireFact(env.GITHUB_WORKFLOW_REF === `${REPOSITORY}/.github/workflows/migration-readiness.yml@refs/heads/main`, 'trusted current-main workflow checkout required')
+  const checkedOutBase = () => requireFact(String(git(['rev-parse', 'HEAD'])).trim() === baseSha, 'trusted current-main workflow checkout required')
   const blob = (revision, path) => git(['show', `${revision}:${path}`], true)
   const inventory = revision => {
     const names = String(git(['ls-tree', '-r', '--name-only', revision, '--', 'supabase/migrations/'])).trim().split('\n')
@@ -125,7 +126,7 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
     })
     return inventoryRows
   }
-  requireFact(digest.test(collectorSha256 ?? '') && hashBytes(blob(baseSha, 'scripts/migration-pr-readiness.mjs')) === collectorSha256, 'collector differs from current main')
+  const collectorIsBases = () => requireFact(digest.test(collectorSha256 ?? '') && hashBytes(blob(baseSha, 'scripts/migration-pr-readiness.mjs')) === collectorSha256, 'collector differs from current main')
   // NUL paths and no rename folding: delete+add cannot hide historical SQL edits.
   const fields = String(git(['diff', '--name-status', '--no-renames', '-z', baseSha, headSha, '--'])).split('\0')
   fields.pop()
@@ -141,6 +142,10 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
     requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === headSha && finalPr.base.sha === baseSha, 'branch moved during no-SQL fallback')
     return { ok: true, status: 'not_applicable', proof: { baseSha, headSha, collectorSha256 } }
   }
+  // A SQL PR is judged by this checkout, so it must be the PR's base and carry the base's collector; a no-SQL PR only
+  // reports not_applicable above and can sit on any older base while main moves.
+  checkedOutBase()
+  collectorIsBases()
   // Only a PR that adds SQL must sit on the current main tip (and the workflow run must be that tip's).
   requireFact(baseSha === mainSha && env.GITHUB_SHA === baseSha, 'stale or moving event/base/head')
   const paths = reviewedChanges.map(change => change.file)
@@ -205,11 +210,19 @@ async function main() {
   const env = process.env
   requireFact(env.GITHUB_TOKEN, 'read-only metadata token required')
   const request = async (url, token, options = {}) => {
-    const res = await fetch(url, { ...options, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, ...options.headers }, redirect: 'error', signal: AbortSignal.timeout(15000) })
-    requireFact(res.ok, `proof read HTTP ${res.status}`)
-    const text = await res.text()
-    requireFact(text.length < 16 * 1024 * 1024, 'oversized proof response')
-    return JSON.parse(text)
+    // A transient network error (fetch failed, a stalled body) is retried; our own rule refusals never are.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const res = await fetch(url, { ...options, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, ...options.headers }, redirect: 'error', signal: AbortSignal.timeout(30000) })
+        requireFact(res.ok, `proof read HTTP ${res.status}`)
+        const text = await res.text()
+        requireFact(text.length < 16 * 1024 * 1024, 'oversized proof response')
+        return JSON.parse(text)
+      } catch (error) {
+        if (error?.safe === true || attempt >= 3) throw error
+        await new Promise(resolve => setTimeout(resolve, attempt * 2000))
+      }
+    }
   }
   const collectorArgs = {
     env, collectorSha256: hashBytes(readFileSync(process.argv[1])), event: JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8')),

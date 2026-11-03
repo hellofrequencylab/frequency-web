@@ -14,6 +14,19 @@ describe('preview tokens', () => {
     expect(PREVIEW_KIT_ORDER[0]).toBe(SITE_THEMES.some((t) => t.id === 'new-world') ? 'new-world' : 'designer')
   })
 
+  it('Free Human and Services wear shapes of their own, never Temple\'s (LIVE-2102)', () => {
+    const fh = previewTokens('free-human')
+    expect(fh['--pv-font-display']).toMatch(/^'Cormorant Garamond'/)
+    expect(fh['--pv-radius-card']).toBe('40px')
+    expect(fh['--pv-radius-photo']).toBe('999px 999px 120px 120px')
+    expect(fh['--pv-em-ink']).toBe('#B3361F')
+    expect(fh['--pv-font-display']).not.toBe(previewTokens('temple')['--pv-font-display'])
+    const sv = previewTokens('services')
+    expect(sv['--pv-font-display']).toMatch(/^'Bricolage Grotesque'/)
+    expect(sv['--pv-font-em']).toMatch(/^'Lora'/)
+    expect(sv['--pv-radius-card']).toBe('20px')
+  })
+
   it('Designer reads its own palette, with a charcoal primary', () => {
     const t = previewTokens('designer')
     expect(t['--pv-bg']).toBe('#F7F3EC')

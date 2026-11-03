@@ -30,20 +30,12 @@ export const ROUTES = {
    *  app/(marketing)/stories is kept, and next.config.ts sends /stories to /the-community with a
    *  temporary 302 meanwhile. Set this back to '/stories' and drop that rule to bring it back. */
   stories: null as string | null,
-  /** Vision.html, the third-space vision (footer and search only, per the website strategy): a
-   *  Frequency-only route, app/(marketing)/vision, which also carries the Lab's plan and FAQ since
-   *  /the-lab merged into it (2026-10-14). */
-  vision: '/vision',
   join: '/join',
   help: '/help',
   privacy: '/privacy',
   terms: '/terms',
-  /** The Network plan's page (SCAN-961), Frequency-only like /vision. */
-  networks: '/networks',
   /** Build a Space before signing in (the marketing funnel's second step). Linked from the Theme Kit pages, /for and /pricing. */
   createSpace: '/create-a-space',
-  /** The whole system in one story (LIVE-1562), Frequency-only like /themes. */
-  system: '/system',
   /** The accessibility statement, a page of its own (app/accessibility). */
   accessibility: '/accessibility' as string | null,
   /** "What we believe" in the footer. */
@@ -280,11 +272,11 @@ const PAGE_INDEX: SiteLink[] = [
   { href: ROUTES.spaces, label: 'For spaces', hint: 'Open your Space', icon: 'space' },
   { href: ROUTES.pricing, label: 'Pricing', hint: 'Free, Business, Collective, Network', icon: 'tip' },
   { href: ROUTES.stories, label: 'Stories', hint: 'Hosts and Spaces', icon: 'message' },
-  { href: ROUTES.vision, label: 'Vision', hint: 'Third spaces, 2028', icon: 'breath' },
+  { href: ROUTES.about, label: 'The Lab', hint: 'Third spaces, 2028', icon: 'breath' },
   { href: FIRST_NIGHT, label: 'Your first gathering', hint: 'What to expect', icon: 'checkin' },
   { href: ROUTES.happening, label: 'What’s Happening near you', hint: 'This week in your town', icon: 'pin' },
   { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, venues, Non Profits', icon: 'contacts' },
-  { href: ROUTES.networks, label: 'Networks', hint: 'One organization, every chapter', icon: 'space' },
+  { href: '/for/networks', label: 'Networks', hint: 'One organization, every chapter', icon: 'space' },
 ]
 
 /** IDX: the pages, then every feature as "<side> · <job>", in megamenu.js order. Routed items only. */
@@ -329,9 +321,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: `${ROUTES.spaces}#types`, label: 'For your type' },
       { href: ROUTES.features ? `${ROUTES.features}#spaces` : null, label: 'Features for Spaces' },
       { href: ROUTES.pricing, label: 'Pricing' },
-      { href: ROUTES.system, label: 'The whole system' },
       { href: '/themes', label: 'Theme Kits' },
-      { href: ROUTES.networks, label: 'Networks' },
     ],
   },
   // The six doors (SCAN-1140): each /for page was linked only from inside the funnel, so the footer gives
@@ -380,7 +370,6 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
     heading: 'Frequency',
     links: [
       { href: ROUTES.stories, label: 'Stories' },
-      { href: ROUTES.vision, label: 'Vision' },
       { href: ROUTES.join, label: 'Get started' },
       { href: ROUTES.about, label: 'What we believe' },
       { href: ROUTES.help, label: 'Help' },

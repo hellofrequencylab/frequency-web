@@ -58,7 +58,9 @@ it('shows ticked lines, applies only the ticked ones as one undo step, and keeps
   const { node, click, ask, order, onSave, onPropose } = mount(onLayout)
   await ask('Put my story before the contact form')
   expect(onPropose).not.toHaveBeenCalled()
-  expect(onLayout).toHaveBeenCalledWith('Put my story before the contact form', expect.arrayContaining([expect.objectContaining({ id: 'about', position: 3 })]))
+  expect(onLayout).toHaveBeenCalledWith('Put my story before the contact form', expect.arrayContaining([expect.objectContaining({ id: 'about', position: 3 })]),
+    // LIVE-2098: the theme's own style menu rides along, so Vera can only pick what the Style panel offers.
+    expect.objectContaining({ dials: expect.arrayContaining([expect.objectContaining({ id: 'corners', options: expect.arrayContaining([expect.objectContaining({ id: 'square' })]) })]) }))
   const boxes = Array.from(node.querySelectorAll<HTMLInputElement>('[data-vera-layout] input[type=checkbox]'))
   expect(boxes.map((b) => b.closest('label')?.textContent)).toEqual(['Move About to position 2', 'Hide Contact on phones'])
   expect(node.querySelector('[data-vera-layout]')?.textContent).toContain('does not write or rewrite your words')
@@ -82,4 +84,24 @@ it('dismisses a proposal without touching the draft', async () => {
   click('Dismiss')
   expect(node.querySelector('[data-vera-layout]')).toBeNull()
   expect(await order()).toEqual(['hero', 'contact', 'about'])
+})
+
+it('applies a section move and a site style together as one undo step, on the draft only (LIVE-2098)', async () => {
+  const onLayout = vi.fn(async () => ({ ok: true as const, note: '', refused: [], changes: [
+    { kind: 'move' as const, sectionId: 'about', toPosition: 1 },
+    { kind: 'style' as const, dial: 'corners', option: 'soft' },
+    { kind: 'style' as const, dial: 'corners', option: 'blobby' },
+  ] }))
+  const { node, click, ask, order, onSave } = mount(onLayout)
+  await ask('Story first and softer corners')
+  const boxes = Array.from(node.querySelectorAll<HTMLInputElement>('[data-vera-layout] input[type=checkbox]'))
+  expect(boxes.map((b) => b.closest('label')?.textContent)).toEqual(['Move About to position 1', 'Set Corners to Soft across your site'])
+  expect(node.querySelector('[data-vera-layout]')?.textContent).toContain('corners option your theme does not offer')
+  click('Apply to draft')
+  expect(await order()).toEqual(['about', 'hero', 'contact'])
+  expect(onSave.mock.calls.at(-1)![1].look).toEqual({ corners: 'soft' })
+  expect(onSave.mock.calls.at(-1)![2]).toBe(false)
+  click('Undo')
+  expect(await order()).toEqual(['hero', 'contact', 'about'])
+  expect(onSave.mock.calls.at(-1)![1].look ?? {}).toEqual({})
 })
