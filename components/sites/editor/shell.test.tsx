@@ -75,7 +75,8 @@ it('floats the compact style bar over the preview for a theme with dials, and le
  expect(legacy.node.querySelector('[aria-label="Quick style"]')).toBeNull()
  const real = await vi.importActual<typeof import('@/lib/themes/editor-dials')>('@/lib/themes/editor-dials')
  const { dialsFor, looksFor } = await import('@/lib/theme/dials')
- const decl = { dials: Object.fromEntries(['accent', 'register', 'corners', 'spacing', 'type', 'motion', 'hero', 'header', 'footer', 'image'].map((i) => [i, 'supported'])), looks: [] }
+ type ThemeEditorDecl = import('@/lib/theme/dials').ThemeEditorDecl
+ const decl = { dials: Object.fromEntries(['accent', 'register', 'corners', 'spacing', 'type', 'motion', 'hero', 'header', 'footer', 'image'].map((i) => [i, 'supported'])), looks: [] } as unknown as ThemeEditorDecl
  const dials = dialsFor(decl, 'Services')
  dialed.value = { ...real.themeEditor('services', 'Services'), dials, looks: looksFor(decl, dials), own: { register: 'night' } }
  const on = mount()
