@@ -45,7 +45,7 @@ import type { FieldFocus } from '@/lib/sites/editor/field-sync'
 import { WebsiteInspector, WebsiteChromeInspector } from './inspector'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
 import { VeraDock, VeraLayoutProposal } from './vera-dock'
-import { applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, websiteVeraOutline, type WebsiteVeraChange, type WebsiteVeraSection } from '@/lib/sites/editor/vera-layout'
+import { applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, websiteVeraOutline, websiteVeraStylePatch, type WebsiteVeraChange, type WebsiteVeraSection, type WebsiteVeraStyleMenu } from '@/lib/sites/editor/vera-layout'
 import { SectionIcon, sectionLine } from './section-icon'
 import { FQ_EDITOR, k, on } from './skin'
 import './editor.css'
@@ -81,8 +81,8 @@ export interface WebsiteEditorShellProps {
   onSave: (revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string | null) => Promise<SaveResult>
   onPresence?: (cursor: WebsitePresence['cursor']) => Promise<{ ok: true; people: WebsitePresence[] } | { ok: false; error: string }>
   onPropose?: (request: string, value: string) => Promise<{ ok: true; promptIds: WebsiteCoachingPromptId[] } | { ok: false; error: string }>
-  /** Vera's layout proposals (LIVE-2097): structure only, applied by the person to the draft. */
-  onLayout?: (request: string, outline: WebsiteVeraSection[]) => Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }>
+  /** Vera's layout proposals (LIVE-2097): structure and the theme's own styles (LIVE-2098), applied by the person to the draft. */
+  onLayout?: (request: string, outline: WebsiteVeraSection[], styleMenu?: WebsiteVeraStyleMenu) => Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }>
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
   onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>>; pages?: Record<string, SiteThemeId | null> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
@@ -242,7 +242,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [fieldFocus, setFieldFocus] = useState<FieldFocus | null>(null)
   const [coachingQuestions, setCoachingQuestions] = useState<string[]>([])
   const [veraStatus, setVeraStatus] = useState('')
-  const [layoutProposal, setLayoutProposal] = useState<{ slug: string; note: string; changes: WebsiteVeraChange[]; ticked: boolean[]; refused: string[] } | null>(null)
+  const [layoutProposal, setLayoutProposal] = useState<{ slug: string; menu: WebsiteVeraStyleMenu; note: string; changes: WebsiteVeraChange[]; ticked: boolean[]; refused: string[] } | null>(null)
   const [asking, setAsking] = useState(false)
   // Frequency-only view state (no effect on the draft): the top bar's page menu and the inspector tab.
   const [pickOpen, setPickOpen] = useState(false)
@@ -351,10 +351,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     return () => document.removeEventListener('focusout', end)
   }, [])
   const blockName = (id: string | null | undefined, doc = page.doc) => { const type = id ? findBlockDeep(doc, config, id)?.type : undefined; return type ? config.components[type]?.label ?? type : 'Section' }
-  function updateDoc(doc: Data, meta?: { label?: string; burst?: string }) {
+  /** The snapshot with this page's document replaced: stale layout positions and comments on removed blocks drop out. */
+  function withPageDoc(snapshot: WebsiteSnapshot, doc: Data): WebsiteSnapshot {
     const layout = doc.root.props?.websiteLayout
     if (layout && typeof layout === 'object') doc = { ...doc, root: { ...doc.root, props: { ...doc.root.props, websiteLayout: Object.fromEntries(Object.entries(layout).filter(([id]) => !!findBlockDeep(doc, config, id))) } } }
-    commit({ ...latest.current, pages: latest.current.pages.map((p) => p.slug === page.slug ? { ...p, doc, comments: p.comments.filter((comment) => !!findBlockDeep(doc, config, comment.blockId)) } : p) }, meta) }
+    return { ...snapshot, pages: snapshot.pages.map((p) => p.slug === page.slug ? { ...p, doc, comments: p.comments.filter((comment) => !!findBlockDeep(doc, config, comment.blockId)) } : p) }
+  }
+  function updateDoc(doc: Data, meta?: { label?: string; burst?: string }) { commit(withPageDoc(latest.current, doc), meta) }
   const updateDisplay = useCallback((id: string, value: SectionDisplay | null, typing = false) => {
     const current = latest.current
     const target = current.pages.find((p) => p.slug === page.slug)
@@ -485,11 +488,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   }
   // THE THEME EDITOR'S DIALS (LIVE-1997): written into the same draft `look`, so each change is one undo step and goes
   // live on publish. A value equal to the theme's own is not stored (`null`), exactly as the four legacy styles.
-  function changeDials(patch: Record<string, string | null>, drop: readonly string[] = [], label = 'Style') {
+  function lookWith(patch: Record<string, string | null>, drop: readonly string[] = []): NonNullable<WebsiteSnapshot['look']> {
     const base: Record<string, string | null | undefined> = { ...lookStyle.look, ...lookStyle.dials }
     for (const key of drop) delete base[key]
-    const next = Object.entries({ ...base, ...patch }).filter(([, v]) => v != null)
-    commit({ ...draft, look: Object.fromEntries(next) as NonNullable<WebsiteSnapshot['look']> }, { label })
+    return Object.fromEntries(Object.entries({ ...base, ...patch }).filter(([, v]) => v != null)) as NonNullable<WebsiteSnapshot['look']>
+  }
+  function changeDials(patch: Record<string, string | null>, drop: readonly string[] = [], label = 'Style') {
+    commit({ ...draft, look: lookWith(patch, drop) }, { label })
   }
   // THEME DRAFTS: several themes over the same pages. A switch is one undo step; when the theme differs the element
   // positions reset to that theme's layout (Undo restores them), exactly as picking a theme does.
@@ -571,6 +576,26 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     finally { setAsking(false) }
   }
 
+  // The theme editor's controls: drawn from the registry and this theme's manifest. A theme that has declared no dial
+  // beyond the four above (every theme until it is converted) draws nothing here, so its editor is unchanged.
+  const themeUi = themeEditor(lookStyle.theme, WEBSITE_THEME_LABEL[draft.theme])
+  const { accent: _ownAccent, ...ownDials } = siteDials({ ...lookStyle, dials: undefined }, themeUi.own)
+  const { accent: dialAccent, ...nowDials } = siteDials(lookStyle, themeUi.own)
+  void _ownAccent
+  const dialOwn: Record<string, string> = { ...THEME_LOOK[lookStyle.theme], ...ownDials }
+  const dialNow: Record<string, string> = { ...siteLook(lookStyle), ...nowDials }
+  const dialIds = themeUi.dials.map((d) => d.id)
+  // VERA'S STYLE MENU (LIVE-2098): exactly what the Style panel offers this theme, the four global styles and every
+  // dial the theme declares, its named accents and its Looks. Vera can only pick from it; nothing else is storable.
+  const veraStyleMenu: WebsiteVeraStyleMenu = {
+    dials: [
+      ...(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => ({ id: key as string, label: LOOK_LABEL[key], options: SITE_LOOK_OPTIONS[key].map((o) => ({ id: o.id, label: o.label })), current: dialNow[key] ?? '', own: dialOwn[key] ?? '' })),
+      ...themeUi.dials.filter((d) => d.id !== 'accent' && d.options.length > 0 && !(d.id in SITE_LOOK_OPTIONS)).map((d) => ({ id: d.id, label: d.label, options: d.options.map((o) => ({ id: o.id, label: o.label })), current: dialNow[d.id] ?? '', own: dialOwn[d.id] ?? '' })),
+    ],
+    accents: themeAccents(draft.theme).map((a) => ({ id: a.id, label: a.label })),
+    accent: dialAccent ?? null,
+    looks: themeUi.looks.filter((l) => l.id !== 'own').map((l) => ({ id: l.id, label: l.label, dials: l.dials })),
+  }
   // THE VERA BAR'S ROUTER (LIVE-2097): a typed ask with no text selected is about the page's STRUCTURE and goes to
   // the layout proposal; selected text (and every chip) stays on the questions-only coaching path in askVera.
   function submitVera() {
@@ -585,16 +610,17 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     setAsking(true)
     try {
       const slug = page.slug
-      const result = await onLayout(text, websiteVeraOutline(page.doc, config))
+      const menu = veraStyleMenu
+      const result = await onLayout(text, websiteVeraOutline(page.doc, config), menu)
       if (!result.ok) { setVeraStatus(result.error); return }
       // The reply crossed the network: parse it again against THIS page's own sections before showing a line.
       const current = latest.current.pages.find((p) => p.slug === slug)
       const ids = new Set((current?.doc.content ?? []).map((block) => String(block.props.id ?? '')))
-      const parsed = parseWebsiteVeraLayout({ changes: result.changes }, ids)
+      const parsed = parseWebsiteVeraLayout({ changes: result.changes }, ids, menu)
       const refused = [...new Set([...(Array.isArray(result.refused) ? result.refused.filter((r): r is string => typeof r === 'string').slice(0, 12) : []), ...parsed.refused])]
       const note = typeof result.note === 'string' ? result.note.slice(0, 240) : ''
-      if (!parsed.changes.length && !refused.length) { setVeraStatus(note || 'Vera had no layout change for that. Try naming the section.'); return }
-      setLayoutProposal({ slug, note, changes: parsed.changes, ticked: parsed.changes.map(() => true), refused })
+      if (!parsed.changes.length && !refused.length) { setVeraStatus(note || 'Vera had no change for that. Try naming the section or the style.'); return }
+      setLayoutProposal({ slug, menu, note, changes: parsed.changes, ticked: parsed.changes.map(() => true), refused })
     } catch { setVeraStatus('Vera could not reply. Try again in a moment.') }
     finally { setAsking(false) }
   }
@@ -602,9 +628,15 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     if (!layoutProposal) return
     if (layoutProposal.slug !== page.slug) { setLayoutProposal(null); setVeraStatus('That proposal was for another page. Ask again here.'); return }
     const chosen = layoutProposal.changes.filter((_, i) => layoutProposal.ticked[i])
-    const { doc, results } = applyWebsiteVeraLayout(page.doc, config, chosen)
+    const { doc, results: sectionResults } = applyWebsiteVeraLayout(page.doc, config, chosen)
+    const style = websiteVeraStylePatch(veraStyleMenu, chosen)
+    const results = [...sectionResults, ...style.results]
     const applied = results.filter((r) => r.ok).length
-    if (applied) updateDoc(doc, { label: `Vera: ${applied} layout ${applied === 1 ? 'change' : 'changes'}` })
+    // ONE undo step for the whole proposal: when style lines are ticked, the page's sections and the draft's style
+    // move together in one commit. Style lines are checked again against the theme the draft wears NOW.
+    const label = `Vera: ${applied} ${applied === 1 ? 'change' : 'changes'}`
+    if (applied && style.results.some((r) => r.ok)) commit({ ...withPageDoc(latest.current, doc), look: lookWith(style.patch, style.drop) }, { label })
+    else if (applied) updateDoc(doc, { label: `Vera: ${applied} layout ${applied === 1 ? 'change' : 'changes'}` })
     setLayoutProposal(null)
     const missed = results.filter((r) => !r.ok).map((r) => r.line)
     setVeraStatus([applied ? `Applied ${applied} to your draft. Undo reverses ${applied === 1 ? 'it' : 'them'} in one step.` : 'Nothing was applied.', ...missed].join(' '))
@@ -613,7 +645,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   function toggleLayoutLine(index: number) {
     setLayoutProposal((p) => p && { ...p, ticked: p.ticked.map((t, i) => (i === index ? !t : t)) })
   }
-  const layoutLines = layoutProposal && layoutProposal.slug === page.slug ? layoutProposal.changes.map((change, i) => ({ line: describeWebsiteVeraChange(change, page.doc, config), ticked: layoutProposal.ticked[i] })) : null
+  const layoutLines = layoutProposal && layoutProposal.slug === page.slug ? layoutProposal.changes.map((change, i) => ({ line: describeWebsiteVeraChange(change, page.doc, config, layoutProposal.menu), ticked: layoutProposal.ticked[i] })) : null
 
   function openChrome(area: 'header' | 'footer') { setTextSelection(null); setSelectedId(null); setPanel(area); openRight() }
   function movePage(direction: -1 | 1) {
@@ -662,15 +694,6 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <button type="button" className="row" onClick={() => setModal('menu')}><span className="ic"><FqIcon name="link" /></span><span className="t">Menu and logo<small>Shared with your Space page</small></span></button>
     <a className="row" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer"><span className="ic"><FqIcon name="space" /></span><span className="t">Space home</span></a>
   </>
-  // The theme editor's controls: drawn from the registry and this theme's manifest. A theme that has declared no dial
-  // beyond the four above (every theme until it is converted) draws nothing here, so its editor is unchanged.
-  const themeUi = themeEditor(lookStyle.theme, WEBSITE_THEME_LABEL[draft.theme])
-  const { accent: _ownAccent, ...ownDials } = siteDials({ ...lookStyle, dials: undefined }, themeUi.own)
-  const { accent: dialAccent, ...nowDials } = siteDials(lookStyle, themeUi.own)
-  void _ownAccent
-  const dialOwn: Record<string, string> = { ...THEME_LOOK[lookStyle.theme], ...ownDials }
-  const dialNow: Record<string, string> = { ...siteLook(lookStyle), ...nowDials }
-  const dialIds = themeUi.dials.map((d) => d.id)
   const themeControls = <ThemeControls dials={themeUi.dials} values={dialNow} own={dialOwn} looks={themeUi.looks} accents={themeAccents(draft.theme)} accent={dialAccent}
     onChange={(id, value) => changeDials({ [id]: value })}
     onAccent={(value) => changeDials({ accent: value })}
@@ -832,7 +855,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
             <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is thinking…' : <><b>Vera</b>{veraStatus && <p>{veraStatus}</p>}{coachingQuestions.map(question => <p key={question}>{question}</p>)}{coachingQuestions.length > 0 && <button type="button" className="btn sm txt" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button>}{layoutLines && layoutProposal && <VeraLayoutProposal note={layoutProposal.note} lines={layoutLines} refused={layoutProposal.refused} onToggle={toggleLayoutLine} onApply={applyLayout} onDismiss={() => setLayoutProposal(null)} buttonClass="btn sm ink" dismissClass="btn sm txt" />}</>}</div>
             <form className="bar" onSubmit={(e) => { e.preventDefault(); submitVera() }}>
               <span className="orb" aria-hidden />
-              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder={onLayout ? 'Ask Vera to rearrange this page…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder={onLayout ? 'Ask Vera to rearrange or restyle your site…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
               <span className="ctx">{veraContext}</span>
               <button type="submit" className="btn sm ink" disabled={asking}>Ask</button>
               <button type="button" className="ib vera-hide" aria-label="Hide Vera" aria-keyshortcuts="Meta+Backslash Control+Backslash" title="Hide Vera (⌘\\)" onClick={() => putVeraAway(true)}><FqIcon name="close" /></button>
@@ -920,7 +943,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         <div className="we-suggestions"><button type="button" onClick={() => void askVera('Help me decide which details to keep in this passage.')}>Review length</button><button type="button" onClick={() => void askVera('What should I consider about welcoming tone while writing in my own words?')}>Review tone</button><button type="button" onClick={() => void askVera('Which questions should I consider while writing my own heading for this section?')}>Review the heading</button><button type="button" onClick={() => insert(page.doc.content.length)}>Add a section</button></div>
         <form className="we-vera-bar" onSubmit={(e) => { e.preventDefault(); submitVera() }}>
           <span className="we-orb" aria-hidden />
-          <Input variant="seamless" aria-label="Ask Vera" placeholder={onLayout ? 'Ask Vera to rearrange this page…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+          <Input variant="seamless" aria-label="Ask Vera" placeholder={onLayout ? 'Ask Vera to rearrange or restyle your site…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
           <span className="we-context" title={textSelection ? `Selected text · ${textSelection.field}` : undefined}>{textSelection ? 'Selected text' : selected ? config.components[selected.type]?.label ?? selected.type : page.label}</span>
           <button type="submit" className="we-action ink sm" disabled={asking}>Ask</button>
         </form>

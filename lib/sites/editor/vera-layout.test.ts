@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Config, Data } from '@/lib/page-editor/types'
 import { sectionDisplay, sectionVisibility } from './state'
-import { VERA_SECTION_TONES, VERA_SECTION_WIDTHS, MAX_VERA_LAYOUT_CHANGES, applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, websiteVeraOutline } from './vera-layout'
+import { VERA_SECTION_TONES, VERA_SECTION_WIDTHS, MAX_VERA_LAYOUT_CHANGES, applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, readWebsiteVeraStyleMenu, websiteVeraOutline, websiteVeraStylePatch, type WebsiteVeraStyleMenu } from './vera-layout'
 
 const config: Config = { components: {
   Hero: { label: 'Hero', fields: { title: { type: 'text' } }, render: () => null },
@@ -84,5 +84,74 @@ describe('Vera layout vocabulary (LIVE-2097)', () => {
   it('describes each line in plain words', () => {
     expect(describeWebsiteVeraChange({ kind: 'visibility', sectionId: 'contact', device: 'phone', visible: false }, doc, config)).toBe('Hide Contact on phones')
     expect(describeWebsiteVeraChange({ kind: 'move', sectionId: 'about', toPosition: 1 }, doc, config)).toBe('Move About to position 1')
+  })
+})
+
+describe('Vera style changes from the theme menu (LIVE-2098)', () => {
+  const menu: WebsiteVeraStyleMenu = {
+    dials: [
+      { id: 'corners', label: 'Corners', options: [{ id: 'soft', label: 'Soft' }, { id: 'square', label: 'Square' }], current: 'soft', own: 'soft' },
+      { id: 'motion', label: 'Motion', options: [{ id: 'calm', label: 'Calm' }, { id: 'lively', label: 'Lively' }], current: 'calm', own: 'calm' },
+    ],
+    accents: [{ id: 'tide', label: 'Tide' }, { id: 'ember', label: 'Ember' }],
+    accent: null,
+    looks: [{ id: 'crisp', label: 'Crisp', dials: { corners: 'square' } }],
+  }
+
+  it('parses dial, accent and Look picks that are on the menu and refuses everything else', () => {
+    const parsed = parseWebsiteVeraLayout({ changes: [
+      { kind: 'style', dial: 'corners', option: 'square' },
+      { kind: 'accent', accent: 'ember' },
+      { kind: 'look', look: 'crisp' },
+      { kind: 'style', dial: 'corners', option: 'blobby' },
+      { kind: 'style', dial: 'font', option: 'comic' },
+      { kind: 'accent', accent: '#ff00aa' },
+      { kind: 'look', look: 'neon' },
+      { kind: 'style', dial: 'corners', option: 'square', value: 'x' },
+      { kind: 'style', dial: 'corners', option: 'square', css: 'color:red' },
+    ] }, ids, menu)
+    expect(parsed.changes).toEqual([
+      { kind: 'style', dial: 'corners', option: 'square' },
+      { kind: 'accent', accent: 'ember' },
+      { kind: 'look', look: 'crisp' },
+    ])
+    expect(parsed.refused).toHaveLength(6)
+    expect(parsed.refused[4]).toMatch(/does not write or rewrite your words/)
+  })
+
+  it('refuses every style line when no menu is open', () => {
+    const parsed = parseWebsiteVeraLayout({ changes: [{ kind: 'accent', accent: 'tide' }] }, ids)
+    expect(parsed.changes).toEqual([])
+    expect(parsed.refused[0]).toMatch(/not open here/)
+  })
+
+  it('describes style lines in the theme\'s own labels', () => {
+    expect(describeWebsiteVeraChange({ kind: 'style', dial: 'motion', option: 'lively' }, doc, config, menu)).toBe('Set Motion to Lively across your site')
+    expect(describeWebsiteVeraChange({ kind: 'accent', accent: 'tide' }, doc, config, menu)).toBe('Use the Tide accent across your site')
+    expect(describeWebsiteVeraChange({ kind: 'look', look: 'crisp' }, doc, config, menu)).toBe('Use the Crisp Look across your site')
+  })
+
+  it('patches the draft look the way the Style panel does: own values store nothing, a Look resets the dials first', () => {
+    expect(websiteVeraStylePatch(menu, [{ kind: 'style', dial: 'motion', option: 'lively' }, { kind: 'style', dial: 'corners', option: 'soft' }]).patch).toEqual({ motion: 'lively', corners: null })
+    const look = websiteVeraStylePatch(menu, [{ kind: 'style', dial: 'motion', option: 'lively' }, { kind: 'look', look: 'crisp' }, { kind: 'accent', accent: 'tide' }])
+    expect(look.patch).toEqual({ corners: 'square', accent: 'tide' })
+    expect(look.drop).toEqual(['motion'])
+    const stale = websiteVeraStylePatch({ ...menu, accents: [] }, [{ kind: 'accent', accent: 'tide' }])
+    expect(stale.results[0].ok).toBe(false)
+    expect(stale.patch).toEqual({})
+  })
+
+  it('section changes ignore style lines and style patches ignore section lines', () => {
+    const changes = [{ kind: 'accent', accent: 'tide' } as const, { kind: 'move', sectionId: 'about', toPosition: 1 } as const]
+    expect(applyWebsiteVeraLayout(doc, config, [...changes]).results.map((r) => r.change.kind)).toEqual(['move'])
+    expect(websiteVeraStylePatch(menu, changes).results.map((r) => r.change.kind)).toEqual(['accent'])
+  })
+
+  it('reads a menu that crossed the network by shape, and drops Look settings outside the dials', () => {
+    const read = readWebsiteVeraStyleMenu({ ...menu, looks: [{ id: 'crisp', label: 'Crisp', dials: { corners: 'square', font: 'comic', motion: 'warp' } }] })
+    expect(read?.looks[0].dials).toEqual({ corners: 'square' })
+    expect(readWebsiteVeraStyleMenu({ ...menu, dials: [{ id: 'Bad Id', label: 'x', options: [{ id: 'a', label: 'A' }] }] })).toBeNull()
+    expect(readWebsiteVeraStyleMenu({ ...menu, dials: [{ id: 'corners', label: 'x', options: [] }] })).toBeNull()
+    expect(readWebsiteVeraStyleMenu('nope')).toBeNull()
   })
 })
