@@ -110,6 +110,25 @@
   --radius-pill: var(--fq-radius-orb);
   --radius-cover: var(--fq-radius-l);
 
+  /* ── Builder shape and editor tokens (BLD-002, docs/EDITOR-NEXT.md#bld-002) ──
+     Five steps plus the pill, named for what they round. New names only: nothing existing re-points at
+     them, so no page changes. The editor tokens are built from the room's own tokens, so Commons, Commons
+     at night and Stage each get their own value with no second set and no filter. */
+  --r-1: 10px;
+  --r-2: 14px;
+  --r-3: 18px;
+  --r-4: 24px;
+  --r-5: 32px;
+  --r-pill: var(--fq-radius-orb);
+  --r-control: var(--r-2);
+  --r-card: var(--r-3);
+  --r-panel: var(--r-4);
+  --r-media: var(--r-5);
+  --editor-canvas: var(--fq-bg-sunken);
+  --editor-thumb: var(--fq-surface-raised);
+  --editor-ring: var(--fq-focus-ring);
+  --editor-select: var(--fq-accent);
+
   /* ── Type steps: DAWN's text roles on Frequency's scale (typography.css) ──
      DAWN's steps are rem on a 106.25% root, so they land between Frequency's: 12.75px meta, 11.7px and
      10.6px chrome. Frequency's floor for read text is its 13px meta; its 11px label is the only smaller
