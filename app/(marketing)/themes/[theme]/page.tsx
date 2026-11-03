@@ -1,4 +1,5 @@
-// /themes/[theme] (LIVE-1514): the sales page for one Mega Theme. A Frequency-only route. Midnight keeps its
+// /themes/[theme] (LIVE-1514): the sales page for one Mega Theme. Bold and Wildheart draw Nocturne's layout with real
+// renders (frequency-theme-feature.tsx); every other theme here keeps the generic kit page. A Frequency-only route. Midnight keeps its
 // own static page at /themes/nocturne, which wins over this segment. Static: the six other themes are known
 // at build time and anything else is a 404.
 import type { Metadata } from 'next'
@@ -6,6 +7,8 @@ import { notFound } from 'next/navigation'
 import { JsonLd } from '@/components/json-ld'
 import { frequencyPageJsonLd, frequencyPageMetadata, type FrequencyPageSeo } from '@/lib/seo/frequency-pages'
 import { FrequencyThemeKit, THEME_KIT_PAGE_IDS } from '@/components/frequency/site/pages/themes/frequency-theme-kit'
+import { FrequencyThemeFeature } from '@/components/frequency/site/pages/themes/frequency-theme-feature'
+import { isThemeFeatureId } from '@/lib/themes/theme-feature-data'
 import { SITE_THEMES } from '@/lib/theme/site-style'
 import { themeIdFromSlug, themeLibraryEntry, themeSlug } from '@/lib/themes/library'
 
@@ -51,7 +54,7 @@ export default async function ThemeKitPage({ params }: { params: Promise<{ theme
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(seo)} />
-      <FrequencyThemeKit theme={id} />
+      {isThemeFeatureId(id) ? <FrequencyThemeFeature theme={id} /> : <FrequencyThemeKit theme={id} />}
     </>
   )
 }
