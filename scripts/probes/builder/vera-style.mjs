@@ -48,7 +48,7 @@ assert.equal(JSON.stringify(patch.patch), JSON.stringify({ corners: 'soft', acce
 assert.equal(v.websiteVeraStylePatch(menu, [{ kind: 'style', dial: 'corners', option: 'square' }]).patch.corners, null, "the theme's own value stores nothing, as the Style panel does")
 const shell = fs.readFileSync(path.join(root, 'components/sites/editor/shell.tsx'), 'utf8')
 const action = fs.readFileSync(path.join(root, 'lib/sites/editor/actions.ts'), 'utf8')
-assert.match(shell, /onLayout\(text, websiteVeraOutline\(page\.doc, config\), menu\)/, 'the editor sends the theme menu with the ask')
+assert.match(shell, /onLayout\(text, websiteVeraOutline\(page\.doc, config\), menu[,)]/, 'the editor sends the theme menu with the ask')
 assert.match(shell, /websiteVeraStylePatch\(veraStyleMenu, chosen\)/, 'style lines are checked again against the theme the draft wears now')
 assert.match(shell, /commit\(\{ \.\.\.withPageDoc\(latest\.current, doc\), look: lookWith\(/, 'sections and style land in one undo step')
 assert.match(action, /parseWebsiteVeraLayout\(input, new Set\(outline\.map\(\(s\) => s\.id\)\), menu\)/, 'the server parses the reply against the menu too')
