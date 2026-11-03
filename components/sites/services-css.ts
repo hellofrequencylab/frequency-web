@@ -285,5 +285,37 @@ ${S} .hs-footer-brand{display:flex;flex-direction:column;align-items:flex-start;
 ${S} .hs-footer-brand p{margin:0;color:var(--sv-text-secondary)}
 ${S} .hs-footer-top a{color:var(--sv-text-secondary)}
 ${S} .hs-footer-top a:hover{color:var(--sv-text-primary)}
+/* THE KIT'S HEADER (Chrome.jsx SiteHeader): a full-width ink bar, a glow hairline under it, the wordmark left, the menu in a glass capsule
+   on the right with the flare dot on the current page, the phone in mono, then the small accent button. Over a photo hero it lies on the
+   picture with a soft top shade. */
+${S} .hs-header{position:sticky;top:0;z-index:40;padding:0;background:linear-gradient(180deg,color-mix(in oklab,var(--sv-chrome-50) 3.5%,transparent),transparent),var(--sv-ink-950);border-bottom:var(--sv-border-hairline) solid var(--sv-border-subtle);box-shadow:0 20px 40px -24px color-mix(in oklab,var(--sv-ink-950) 70%,transparent)}
+${S} .hs-header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent 0%,color-mix(in oklab,var(--sv-flare-400) 55%,transparent) 30%,color-mix(in oklab,var(--sv-halo-300) 50%,transparent) 55%,color-mix(in oklab,var(--sv-swell-300) 45%,transparent) 75%,transparent 100%);opacity:.7;pointer-events:none}
+${S}:has(.sv-hero-bg--photo) .hs-header{position:absolute;left:0;right:0;background:linear-gradient(180deg,color-mix(in oklab,var(--sv-ink-950) 55%,transparent) 0%,transparent 100%);box-shadow:none}
+${S} .hs-pill{max-width:var(--sv-container-max);margin:0 auto;padding:18px var(--sv-gutter);border-radius:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;animation:none;overflow:visible}
+${S} .hs-header .hs-brand{padding-left:0;color:var(--sv-chrome-50);text-decoration:none}
+${S} .sv-wordmark{display:block;font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-heavy);text-transform:uppercase;letter-spacing:.02em;line-height:1;font-size:clamp(24px,2.4vw,30px);color:var(--sv-chrome-50)}
+${S} .hs-nav{-webkit-mask-image:none;mask-image:none}
+${S} .hs-nav a,${S} .hs-nav-mega{display:inline-flex;align-items:center;gap:8px;${LABEL};letter-spacing:.14em;color:var(--sv-chrome-200);white-space:nowrap;transition:color var(--sv-dur-fast)}
+${S} .hs-nav a::before{content:"";width:5px;height:5px;border-radius:9px;background:var(--sv-flare-500);opacity:0;transition:opacity var(--sv-dur-fast)}
+${S} .hs-nav a:hover,${S} .hs-nav a[aria-current="page"]{color:var(--sv-chrome-50)}
+${S} .hs-nav a:hover::before,${S} .hs-nav a[aria-current="page"]::before{opacity:1}
+${S} .sv-head-phone{display:none;align-items:center;gap:8px;color:var(--sv-chrome-50);text-decoration:none;font-family:var(--sv-font-mono);font-size:11px;letter-spacing:.1em;white-space:nowrap}
+${S} .hs-header-actions .hs-btn{min-height:36px;padding:0 18px;font-size:11px}
+@media (min-width:940px){${S} .hs-pill{grid-template-columns:auto minmax(0,1fr) auto;column-gap:32px}${S} .hs-nav{width:max-content;max-width:100%}
+${S} .hs-nav{justify-self:end;padding:10px 22px;border-radius:var(--sv-radius-pill);border:var(--sv-border-hairline) solid var(--sv-border-subtle);background:linear-gradient(180deg,color-mix(in oklab,var(--sv-chrome-50) 5%,transparent),color-mix(in oklab,var(--sv-chrome-50) 1%,transparent));-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 color-mix(in oklab,var(--sv-chrome-50) 6%,transparent)}
+${S} .hs-nav-track{gap:32px;padding:0}${S} .hs-nav a,${S} .hs-nav-mega{padding:0;background:none}${S} .hs-header-actions{gap:24px}}
+@media (min-width:1100px){${S} .sv-head-phone{display:inline-flex}}
+@media (max-width:939px){${S} .hs-nav{display:none}${S} .hs-pill{padding:14px var(--sv-gutter)}}
+@media (max-width:760px){${S} .sv-hero-bg--photo::after{background:linear-gradient(180deg,color-mix(in oklab,var(--sv-ink-950) 55%,transparent) 0%,color-mix(in oklab,var(--sv-ink-950) 72%,transparent) 55%,var(--sv-ink-950) 100%)}${S} .sv-panel-top{flex-wrap:wrap;gap:6px}}
+/* THE KIT'S FOOTER (Chrome.jsx SiteFooter): the closing line and button first, three columns, contact lines with their flare icons, the
+   dim wordmark across the width, and the mono base line. */
+${S} .hs-footer-top{max-width:var(--sv-container-max);margin:0 auto;padding:96px var(--sv-gutter) 56px;gap:48px;background:none;border:0}
+${S} > div:has(> .hs-footer-top){position:relative;overflow:hidden;background:var(--sv-glow-sky,none),var(--sv-ink-950);border-top:var(--sv-border-hairline) solid var(--sv-border-subtle)}
+${S} .sv-foot-band{margin:0;font-size:34px;line-height:1.05}
+${S} .hs-footer-brand .hs-brand{display:none}
+${S} .hs-footer-col a,${S} .sv-foot-line{display:inline-flex;align-items:center;gap:10px;font-size:15px;color:var(--sv-chrome-200)}
+${S} .sv-foot-icon{display:inline-flex;color:var(--sv-flare-300)}
+${S} .sv-foot-mark{position:relative;max-width:var(--sv-container-max);margin:0 auto;padding:0 var(--sv-gutter);font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-heavy);text-transform:uppercase;line-height:.8;letter-spacing:-.01em;font-size:clamp(96px,22vw,320px);text-align:center;color:var(--sv-chrome-50);opacity:.07;user-select:none;overflow:hidden;white-space:nowrap}
+${S} .hs-footer{max-width:var(--sv-container-max);margin:0 auto;padding:24px var(--sv-gutter);font-family:var(--sv-font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--sv-text-muted);border-top:0;background:none}
 @media (prefers-reduced-motion:reduce){${S} *{transition:none!important;animation:none!important}}
 `;

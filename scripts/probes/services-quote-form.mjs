@@ -9,5 +9,8 @@ const form = read('components/sites/services-quote-form.tsx')
 if (!/submitContactForm\(/.test(form) || !/name="company"/.test(form)) bad.push('the quote form does not send through the lead door with its honeypot')
 if (!/\.sv-qf\{/.test(read('components/sites/services-css.ts'))) bad.push('the quote form has no Services styling')
 if (!/b\('ServicesQuote'/.test(read('lib/sites/vanta-site.ts'))) bad.push("Vanta's quote page does not use the quote form")
+const chrome = read('components/sites/site-chrome.tsx')
+if (!/const sv = skin\?\.theme === 'services'/.test(chrome) || !/sv-wordmark/.test(chrome)) bad.push('site-chrome.tsx does not draw the Services header and footer')
+if (!/\.hs-header::after/.test(read('components/sites/services-css.ts'))) bad.push('the Services sheet does not dress the header')
 if (bad.length) { console.error(bad.join('\n')); process.exit(1) }
 console.log('Services sites have a three-step quote form; Vanta uses it')

@@ -195,13 +195,15 @@ export function vantaSitePages(): VantaPageSeed[] {
   ]
 }
 
-/** The saved Space menu the site's header draws: About, Services, a quote. Home is the logo. */
+/** The saved Space menu the site's header draws, as the design's header has it: About, Services, How it works and FAQ (the last two
+ *  are sections of Home). Home is the wordmark and the quote is the header's button. */
 export const VANTA_MENU = {
   v: 1 as const,
   items: [
     { id: 'about', label: 'About', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:about' } },
     { id: 'services', label: 'Services', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:services' } },
-    { id: 'quote', label: 'Free quote', visibility: 'website' as const, target: { kind: 'auto' as const, key: 'page:quote' } },
+    { id: 'process', label: 'How it works', visibility: 'website' as const, target: { kind: 'url' as const, href: '/#process' } },
+    { id: 'faq', label: 'FAQ', visibility: 'website' as const, target: { kind: 'url' as const, href: '/#faq' } },
   ],
   known: ['home', 'services', 'about', 'quote'].map((k) => `page:${k}`),
 }

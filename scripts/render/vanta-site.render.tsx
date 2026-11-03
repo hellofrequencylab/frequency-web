@@ -24,7 +24,7 @@ it('renders the Vanta pages', async () => {
     })
     const body = renderToStaticMarkup(
       h(SiteChrome as never, {
-        brandName: 'Vanta', homeHref: '/', links: [{ label: 'About', href: '/about' }, { label: 'Services', href: '/services' }, { label: 'Free quote', href: '/quote' }],
+        brandName: 'Vanta', homeHref: '/', links: [{ label: 'About', href: '/about' }, { label: 'Services', href: '/services' }, { label: 'How it works', href: '/#process' }, { label: 'FAQ', href: '/#faq' }],
         cta: { href: '/quote', label: 'Free quote', external: false }, themeFonts: false,
         skin: { theme: 'services', season: 'fall', register: 'night' }, logoUrl: null, logoMode: null,
         tagline: 'Window & solar cleaning · North County', footer: VANTA_FOOTER, credit: 'badge', spaceSlug: null,
