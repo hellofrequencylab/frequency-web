@@ -1,6 +1,6 @@
 import { MEGA_NICHES, MEGA_PROFILE_NICHES, MEGA_THEMES, type MegaThemeId } from '@/lib/theme/mega-theme'
 import { NICHE_SPECS } from './niche-spec'
-import { SERVICES_KIT_INDEX } from './services-profile-index'
+import { NEW_WORLD_KIT_INDEX } from './new-world-profile-index'
 import type { KitNiche, SiteKit } from './types'
 
 // Kit CONTENT is loaded on demand, only by the editor and the apply step. The public site never imports
@@ -85,9 +85,11 @@ for (const niche of MEGA_NICHES) LOADERS[`temple-kit-${niche}`] = () => import('
 // The Free Human Theme Kit's thirteen profile kits, one per niche (`free-human-<niche>`), the same shape as the Temple Theme Kit's.
 for (const niche of MEGA_NICHES) LOADERS[`free-human-${niche}`] = () => import('./free-human-profile-variants').then((m) => m.freeHumanProfileKit(niche)).then((k) => withJoinPage(k, niche))
 
-// The Services Theme Kit's seven kits (`services-<niche>`: the General template and six doors). Loaded on demand; the kit library lists them
-// from SERVICES_KIT_INDEX once the theme is offered (LIVE-1996).
-for (const { niche } of SERVICES_KIT_INDEX) LOADERS[`services-${niche}`] = () => import('./services-variants').then((m) => m.servicesKit(niche)).then((k) => withJoinPage(k, niche))
+// The New World seven niche kits (`new-world-<niche>`: the General template and six doors). Loaded on demand; the kit library lists them
+// from NEW_WORLD_KIT_INDEX once the theme is offered (LIVE-2056).
+for (const { niche } of NEW_WORLD_KIT_INDEX) LOADERS[`new-world-${niche}`] = () => import('./new-world-variants').then((m) => m.newWorldKit(niche)).then((k) => withJoinPage(k, niche))
+// Services keeps one General template until its own trade kits land (services-variants.ts); every Mega Theme names a General kit, lib/spaces/starter-site.ts.
+LOADERS['services-general'] = () => import('./services-variants').then((m) => m.servicesKit('general')).then((k) => withJoinPage(k, 'general'))
 
 interface KitSummary { id: string; niche: KitNiche; theme: SiteKit['theme']; label: string; description: string }
 
@@ -150,4 +152,4 @@ export async function loadKit(id: string): Promise<SiteKit | null> {
   const load = Object.hasOwn(LOADERS, id) ? LOADERS[id] : undefined
   return load ? load() : null
 }
-export { SERVICES_KIT_INDEX }
+export { NEW_WORLD_KIT_INDEX }

@@ -29,6 +29,7 @@ export const WEBSITE_THEME_FONT_VARS: Record<WebsiteTheme, [display: string, bod
   Designer: ['dz-cormorant', 'dz-jost', 'dz-jost'],
   FreeHuman: ['fh-cormorant', 'fh-hanken', 'fh-marcellus'],
   Services: ['sv-bricolage', 'sv-bricolage', 'sv-mono'],
+  NewWorld: ['nw-unbounded', 'nw-hanken', 'nw-hanken'],
 }
 
 export function websiteThemeVars(theme: WebsiteTheme, brandAccent?: string | null, date = new Date()): CSSProperties {

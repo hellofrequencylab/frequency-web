@@ -8,6 +8,7 @@ import midnight from './midnight'
 import network from './network'
 import networkKit from './network-kit'
 import services from './services'
+import newWorld from './new-world'
 import temple from './temple'
 import templeKit from './temple-kit'
 import wildheart from './wildheart'
@@ -21,7 +22,7 @@ export type PresentationDefaults = Partial<Record<RoleId, string>>
 
 const BY_THEME: Record<WebsiteTheme, PresentationDefaults> = {
   DAWN: dawn, Menswork: menswork, Midnight: midnight, Wildheart: wildheart, Network: network, NetworkKit: networkKit,
-  Temple: temple, TempleKit: templeKit, Designer: designer, FreeHuman: freeHuman, Services: services,
+  Temple: temple, TempleKit: templeKit, Designer: designer, FreeHuman: freeHuman, Services: services, NewWorld: newWorld,
 }
 
 /** The layout this theme draws a role in when the owner has not picked one, or undefined for the role's own default. */
