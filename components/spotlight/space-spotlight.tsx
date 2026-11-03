@@ -11,6 +11,11 @@ import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { readSpaceSpotlight, spaceSpotlightGrid, spotlightSiteGrid } from '@/lib/spaces/spotlight'
 import { markSpotlightRender } from '@/lib/spaces/spotlight-site'
+import { readSiteStyle } from '@/lib/theme/site-style'
+import { NewWorldKitSpotlightLayout } from '@/components/spotlight/new-world-kit-layouts'
+import { NEW_WORLD_FONT_CLASS } from '@/components/sites/new-world-fonts'
+import { newWorldLinkPageContent } from '@/lib/spotlight/new-world-kit-content'
+import { safeUrl } from '@/lib/entity-blocks/block-content'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 
 // THE SPACE SPOTLIGHT PAGE: a Space's one-column link page (lib/spaces/spotlight.ts). The identity header
@@ -58,6 +63,29 @@ export function SpotlightHeader({ space, tagline }: { space: Space; tagline: str
   )
 }
 
+/** A New World Space whose Spotlight holds a Links block wears the design's Stack layout: each link a door, the
+ *  Button block its closing call, "Message me" the Space's own email. Null: the block page renders as before. */
+function newWorldLinkPage(space: Space, tagline: string | null, grid: ReturnType<typeof spaceSpotlightGrid>) {
+  if (readSiteStyle(space.preferences).theme !== 'new-world') return null
+  const bag = (id: string) => (grid.content as Record<string, Record<string, unknown>> | undefined)?.[id]
+  const raw = bag('links')?.items
+  const links = (Array.isArray(raw) ? raw : [])
+    .map((it: { label?: unknown; url?: unknown }) => ({ label: typeof it.label === 'string' ? it.label : '', url: safeUrl(it.url) }))
+    .filter((it) => it.url && it.label)
+  if (!links.length) return null
+  const btn = bag('button')
+  const closingUrl = safeUrl(btn?.url)
+  const email = (space.preferences as { profileData?: { email?: unknown } } | null)?.profileData?.email
+  return newWorldLinkPageContent({
+    name: space.brandName?.trim() || space.name,
+    tagline,
+    photo: space.brandLogoUrl ?? null,
+    messageHref: typeof email === 'string' && email.includes('@') ? `mailto:${email.trim()}` : null,
+    links,
+    closing: typeof btn?.label === 'string' && btn.label && closingUrl ? { label: btn.label, href: closingUrl } : null,
+  })
+}
+
 /** `appOrigin` is set on a website host (LIVE-855): the grid keeps only the blocks a stand-alone site shows,
  *  and the one Frequency link, the footer, is absolute and labeled as Frequency's. */
 export async function SpaceSpotlight({
@@ -72,6 +100,19 @@ export async function SpaceSpotlight({
   markSpotlightRender()
   const saved = spaceSpotlightGrid(readSpaceSpotlight(space.preferences))
   const grid = appOrigin ? spotlightSiteGrid(saved) : saved
+
+  const linkPage = newWorldLinkPage(space, tagline, saved)
+  if (linkPage) {
+    return (
+      <SpotlightAccent space={space}>
+        <div className={`min-h-screen bg-canvas ${NEW_WORLD_FONT_CLASS}`}>
+          <main className="mx-auto max-w-xl">
+            <NewWorldKitSpotlightLayout layout="new-world-kit:stack" content={linkPage} />
+          </main>
+        </div>
+      </SpotlightAccent>
+    )
+  }
 
   return (
     <SpotlightAccent space={space}>
