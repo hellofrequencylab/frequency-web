@@ -19,7 +19,7 @@ ${N} .hs-root{background:var(--nw-surface-page);color:var(--color-text)}
 ${N} .hs-h1,${N} .hs-h2,${N} .hs-brand{font-family:var(--nw-font-display);font-stretch:var(--nw-stretch-display);font-weight:var(--nw-fw-display);letter-spacing:var(--nw-ls-display);line-height:var(--nw-lh-display)}
 ${N} .hs-h1 em,${N} .hs-h2 em{font-family:var(--nw-font-accent);font-style:italic;font-weight:var(--nw-fw-regular);font-size:var(--nw-em-size);letter-spacing:-.01em;color:var(--color-primary-strong)}
 ${N} .hs-eyebrow,${N} .hs-label,${N} .hs-badge{${LABEL}}
-${N} .hs-card{background:var(--nw-surface-card);border:var(--nw-border-hairline) solid var(--nw-border-subtle);border-radius:var(--nw-radius-lg);box-shadow:var(--nw-shadow-md)}
+${N} .hs-card{background:var(--nw-surface-card);border:var(--nw-border-hairline) solid var(--nw-border-subtle);border-radius:var(--nw-radius-lg);box-shadow:var(--nw-depth-md)}
 ${N} a{transition:color var(--nw-dur-fast) ${EASE}}
 ${N} a:hover{color:var(--nw-text-link-hover)}
 ${N} :focus-visible{outline:2px solid var(--nw-focus-ring);outline-offset:3px}
@@ -33,7 +33,7 @@ ${N} .hs-header{position:sticky;top:0;z-index:40}
 ${N} .hs-pill{background:color-mix(in oklab,var(--nw-ink-900) 82%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:var(--nw-border-hairline) solid var(--nw-border-subtle)}
 ${N} .hs-nav a,${N} .hs-nav-mega{${LABEL};color:var(--nw-text-secondary)}
 ${N} .hs-nav a:hover,${N} .hs-nav a[aria-current="page"]{color:var(--nw-text-primary)}
-${N} .hs-menu-panel,${N} .hs-mega-panel{background:var(--nw-ink-800);border:var(--nw-border-hairline) solid var(--nw-border-subtle);border-radius:var(--nw-radius-lg);box-shadow:var(--nw-shadow-lg)}
+${N} .hs-menu-panel,${N} .hs-mega-panel{background:var(--nw-ink-800);border:var(--nw-border-hairline) solid var(--nw-border-subtle);border-radius:var(--nw-radius-lg);box-shadow:var(--nw-depth-lg)}
 /* The footer: sunk ground, mono labels. */
 ${N} .hs-footer-top{background:var(--nw-surface-sunken);border-top:var(--nw-border-hairline) solid var(--nw-border-subtle)}
 ${N} .hs-footer-col-title{${LABEL};color:var(--nw-text-muted)}

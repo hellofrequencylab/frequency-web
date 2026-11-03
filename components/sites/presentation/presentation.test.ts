@@ -33,3 +33,11 @@ describe('new roles on every themed site (BLD-212)', () => {
     }
   })
 })
+
+describe('every role on every themed site (BLD-212)', () => {
+  it('each themed site (all but DAWN) gives every role a layout', () => {
+    for (const theme of THEMES.filter((t) => t !== 'DAWN')) for (const role of ROLE_IDS) {
+      expect(presentationDefault(theme, role), `${theme} ${role}`).toBeTypeOf('string')
+    }
+  })
+})
