@@ -197,23 +197,23 @@ const PHOTO = '/brand/frequency/photos/'
 
 export const WING_MENUS: WingMenu[] = [
   {
+    // The People menu is "Discover" (menu strategy 2026-11-03): where to go and what to expect. Every link
+    // appears once across the header (Business Spaces rides the plain links after the menus, owner 2026-10-16).
     key: 'people',
-    label: 'For people',
+    label: 'Discover',
     cols: [
+      {
+        heading: 'Find',
+        links: [
+          { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
+          { href: '/discover/circles', label: 'Circles', hint: 'Small groups that meet near you', icon: 'circle' },
+        ],
+      },
       {
         heading: 'Start',
         links: [
           { href: ROUTES.people, label: 'Find your Circle', hint: 'How Frequency works for you', icon: 'circle' },
           { href: FIRST_NIGHT, label: 'Your first gathering', hint: 'What to expect, no pressure', icon: 'checkin' },
-          { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
-        ],
-      },
-      {
-        heading: 'Play + lead',
-        links: [
-          { href: featureHref('zaps'), label: 'The game', hint: 'Only showing up earns Zaps', icon: 'zap' },
-          { href: ROUTES.spaces, label: 'Host an experience', hint: 'Your living room, garden or park counts', icon: 'host' },
-          { href: ROUTES.stories, label: 'Host stories', hint: 'Regulars who became Hosts', icon: 'message' },
         ],
       },
     ],
@@ -225,23 +225,29 @@ export const WING_MENUS: WingMenu[] = [
     foot: { line: 'A hundred contacts. No one to call on a Tuesday.', cta: { href: ROUTES.people, label: 'Find your Circle' } },
   },
   {
+    // The Spaces menu carries the operator doors (menu strategy 2026-11-03): the six core niches, then /for
+    // for the rest. Features and Theme Kits live here now that the Features menu is gone.
     key: 'spaces',
-    label: 'For spaces',
+    label: 'For Spaces',
     cols: [
       {
-        heading: 'Start',
+        heading: 'Grow',
         links: [
           { href: ROUTES.spaces, label: 'Grow your community', hint: 'What the network does for you', icon: 'space' },
-          { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, hosts, venues, Non Profits', icon: 'contacts' },
-          { href: featureHref('doorqr'), label: 'Remember who came', hint: 'Door QR and contacts', icon: 'qr' },
+          { href: ROUTES.features, label: 'Features', hint: 'Everything a Space can do', icon: 'program' },
+          { href: '/themes', label: 'Theme Kits', hint: 'A website that looks like you', icon: 'page' },
         ],
       },
       {
-        heading: 'Trust',
+        heading: 'Find your door',
         links: [
-          { href: featureHref('standing'), label: 'Standing', hint: 'Earned by gathering, never sold', icon: 'standing' },
-          { href: `${ROUTES.pricing}#spaces`, label: 'Pricing', hint: 'Free, Business, Collective, Network', icon: 'tip' },
-          { href: ROUTES.stories, label: 'Space stories', hint: 'In their own words', icon: 'message' },
+          { href: '/for/coaches-and-healers', label: 'Coaches and healers', icon: 'host' },
+          { href: '/for/studios', label: 'Studios', icon: 'space' },
+          { href: '/for/event-hosts', label: 'Event hosts', icon: 'event' },
+          { href: '/for/venues', label: 'Venues', icon: 'pin' },
+          { href: '/for/nonprofits', label: 'Non Profits', icon: 'contacts' },
+          { href: '/for/networks', label: 'Networks', icon: 'space' },
+          { href: '/for', label: 'All doors', hint: 'Clubs, schools, faith and more', icon: 'contacts' },
         ],
       },
     ],
@@ -249,9 +255,13 @@ export const WING_MENUS: WingMenu[] = [
       { href: featureHref('doorqr'), photo: `${PHOTO}gathering-04.jpg`, kicker: 'Door QR', title: 'Remember everyone who walked in' },
       { href: featureHref('standing'), photo: `${PHOTO}day-park-yoga.jpg`, kicker: 'Standing', title: 'Nobody can buy their way up' },
     ],
-    foot: { line: 'Host free. We only earn when we help your community grow.', cta: { href: ROUTES.spaces, label: 'Open your Space' } },
+    foot: { line: 'Host free. We only earn when we help your community grow.', cta: { href: ROUTES.createSpace, label: 'Open your Space' } },
   },
 ]
+
+/** Whether the header draws the Features mega menu. Off (menu strategy 2026-11-03): /features stays, linked
+ *  from the For Spaces menu, and the 28 features no longer repeat in three places. */
+export const FEATURES_MENU_ENABLED = false as boolean
 
 /** The Features menu trigger: its panel is FEATURE_JOURNEYS. */
 export const FEATURES_LABEL = 'Features'
@@ -261,7 +271,6 @@ export const DIRECT_LINKS: SiteLink[] = [
   // Owner, 2026-10-16: the Business Spaces directory is prominent in every navigation.
   { href: ROUTES.directory, label: 'Business Spaces' },
   { href: ROUTES.pricing, label: 'Pricing' },
-  { href: ROUTES.stories, label: 'Stories' },
   { href: ROUTES.help, label: 'Help' },
 ]
 

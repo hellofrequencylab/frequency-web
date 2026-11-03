@@ -26,8 +26,8 @@ import {
   DIRECT_LINKS,
   FEATURE_JOURNEYS,
   FEATURES_LABEL,
+  FEATURES_MENU_ENABLED,
   ROUTES,
-  SIDE_CTA,
   WING_MENUS,
   featureHref,
   featuresWingHref,
@@ -191,7 +191,7 @@ const signedOutOnServer = () => false
 // ── The header ─────────────────────────────────────────────────────────────────────────────────────
 
 export function SiteHeader({ initialNavigation = null }: { initialNavigation?: PublicHeaderMenu | null } = {}) {
-  const { page, side } = useSite()
+  const { page } = useSite()
   const pathname = usePathname() || '/'
   const router = useRouter()
   const here = wingOf(pathname)
@@ -408,15 +408,12 @@ export function SiteHeader({ initialNavigation = null }: { initialNavigation?: P
   }).slice(0, 9)
   const cta = page.cta ?? 'side'
   const ctaNode =
+    // One entrance, one verb (menu strategy 2026-11-03, owner pick 1A): /join forks Looking / Hosting itself,
+    // and a Hosting visitor goes on to the Create a Space wizard.
     cta === 'none' ? null : cta === 'side' ? (
-      <>
-        <Link className="btn fq-iri-btn p-only" href={SIDE_CTA.p.href!}>
-          {SIDE_CTA.p.label}
-        </Link>
-        <Link className="btn fq-iri-btn e-only" href={SIDE_CTA.e.href!}>
-          {SIDE_CTA.e.label}
-        </Link>
-      </>
+      <Link className="btn fq-iri-btn" href={ROUTES.join}>
+        Get started
+      </Link>
     ) : (
       <Link className="btn fq-iri-btn" href={cta.href}>
         {cta.label}
@@ -453,7 +450,7 @@ export function SiteHeader({ initialNavigation = null }: { initialNavigation?: P
           <Link className="mm-trig" href={feedLink.href} onMouseEnter={() => intent(hideMenu, timings.openDelayMs)}>
             {feedLink.label}
           </Link>
-          {(navigation ? navigation.groups.map(group => [group.id, group.label] as const) : [...WING_MENUS.map((m) => [m.key, m.label] as const), ['packages', FEATURES_LABEL] as const]).map(([k, label]) => {
+          {(navigation ? navigation.groups.map(group => [group.id, group.label] as const) : [...WING_MENUS.map((m) => [m.key, m.label] as const), ...(FEATURES_MENU_ENABLED ? [['packages', FEATURES_LABEL] as const] : [])]).map(([k, label]) => {
             const group = navigation?.groups.find(group=>group.id===k)
             if(group && !group.children.length && group.items.length===1) return <EditedHeaderLink key={k} link={{...group.items[0],label}} className="mm-trig"/>
             return (
@@ -632,8 +629,8 @@ export function SiteHeader({ initialNavigation = null }: { initialNavigation?: P
                   <Link className="btn btn-ghost fq-iri-rim" href={ROUTES.signIn}>
                     Log in
                   </Link>
-                  <Link className="btn fq-iri-btn" href={SIDE_CTA[side].href!}>
-                    {SIDE_CTA[side].label}
+                  <Link className="btn fq-iri-btn" href={ROUTES.join}>
+                    Get started
                   </Link>
                 </>
               )}
@@ -650,7 +647,7 @@ export function SiteHeader({ initialNavigation = null }: { initialNavigation?: P
                 ))}
               </details>
             ))}
-            <details open={here === 'packages'}>
+            {FEATURES_MENU_ENABLED && <details open={here === 'packages'}>
               <summary>{FEATURES_LABEL}</summary>
               {FEATURE_JOURNEYS.map((s) => (
                 <MmLink
@@ -663,7 +660,7 @@ export function SiteHeader({ initialNavigation = null }: { initialNavigation?: P
                   }}
                 />
               ))}
-            </details>
+            </details>}
             {DIRECT_LINKS.filter((d) => d.href).map((d) => (
               <Link className="mm-shlink" href={d.href!} key={d.label}>
                 {d.label}
