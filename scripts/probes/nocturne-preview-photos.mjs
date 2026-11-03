@@ -1,4 +1,4 @@
-// LIVE-2077: the signed-out builder's Nocturne preview wears Nocturne's own monochrome pictures, not the warm gathering photos.
+// LIVE-2082: the signed-out builder's Nocturne preview wears Nocturne's own monochrome pictures, not the warm gathering photos.
 import { readFileSync, existsSync } from 'node:fs'
 
 const bad = []
