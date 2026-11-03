@@ -44,7 +44,8 @@ const WebsiteCanvas = dynamic(() => import('./canvas').then((module) => module.W
 import type { FieldFocus } from '@/lib/sites/editor/field-sync'
 import { WebsiteInspector, WebsiteChromeInspector } from './inspector'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
-import { VeraDock } from './vera-dock'
+import { VeraDock, VeraLayoutProposal } from './vera-dock'
+import { applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, websiteVeraOutline, type WebsiteVeraChange, type WebsiteVeraSection } from '@/lib/sites/editor/vera-layout'
 import { SectionIcon, sectionLine } from './section-icon'
 import { FQ_EDITOR, k, on } from './skin'
 import './editor.css'
@@ -80,6 +81,8 @@ export interface WebsiteEditorShellProps {
   onSave: (revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string | null) => Promise<SaveResult>
   onPresence?: (cursor: WebsitePresence['cursor']) => Promise<{ ok: true; people: WebsitePresence[] } | { ok: false; error: string }>
   onPropose?: (request: string, value: string) => Promise<{ ok: true; promptIds: WebsiteCoachingPromptId[] } | { ok: false; error: string }>
+  /** Vera's layout proposals (LIVE-2083): structure only, applied by the person to the draft. */
+  onLayout?: (request: string, outline: WebsiteVeraSection[]) => Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }>
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
   onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>>; pages?: Record<string, SiteThemeId | null> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
@@ -157,7 +160,7 @@ function Icon({ label, hint, children, className = '', ...props }: { label: stri
   return <button type="button" className={k(`we-icon ${className}`)} aria-label={label} title={hint ?? label} {...props}>{children}</button>
 }
 
-export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain }: WebsiteEditorShellProps) {
+export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onLayout, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain }: WebsiteEditorShellProps) {
   const [people, setPeople] = useState<WebsitePresence[]>([])
   const cursor = useRef<WebsitePresence['cursor']>(null)
   useEffect(() => {
@@ -239,6 +242,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [fieldFocus, setFieldFocus] = useState<FieldFocus | null>(null)
   const [coachingQuestions, setCoachingQuestions] = useState<string[]>([])
   const [veraStatus, setVeraStatus] = useState('')
+  const [layoutProposal, setLayoutProposal] = useState<{ slug: string; note: string; changes: WebsiteVeraChange[]; ticked: boolean[]; refused: string[] } | null>(null)
   const [asking, setAsking] = useState(false)
   // Frequency-only view state (no effect on the draft): the top bar's page menu and the inspector tab.
   const [pickOpen, setPickOpen] = useState(false)
@@ -567,6 +571,50 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     finally { setAsking(false) }
   }
 
+  // THE VERA BAR'S ROUTER (LIVE-2083): a typed ask with no text selected is about the page's STRUCTURE and goes to
+  // the layout proposal; selected text (and every chip) stays on the questions-only coaching path in askVera.
+  function submitVera() {
+    const text = request
+    if (!onLayout || text.trim().startsWith('/') || (textSelection && textSelection.blockId === selectedId)) { void askVera(); return }
+    if (!text.trim() || asking) return
+    setVeraStatus(''); setCoachingQuestions([]); setRequest(''); setLayoutProposal(null)
+    void askLayout(text)
+  }
+  async function askLayout(text: string) {
+    if (!onLayout) return
+    setAsking(true)
+    try {
+      const slug = page.slug
+      const result = await onLayout(text, websiteVeraOutline(page.doc, config))
+      if (!result.ok) { setVeraStatus(result.error); return }
+      // The reply crossed the network: parse it again against THIS page's own sections before showing a line.
+      const current = latest.current.pages.find((p) => p.slug === slug)
+      const ids = new Set((current?.doc.content ?? []).map((block) => String(block.props.id ?? '')))
+      const parsed = parseWebsiteVeraLayout({ changes: result.changes }, ids)
+      const refused = [...new Set([...(Array.isArray(result.refused) ? result.refused.filter((r): r is string => typeof r === 'string').slice(0, 12) : []), ...parsed.refused])]
+      const note = typeof result.note === 'string' ? result.note.slice(0, 240) : ''
+      if (!parsed.changes.length && !refused.length) { setVeraStatus(note || 'Vera had no layout change for that. Try naming the section.'); return }
+      setLayoutProposal({ slug, note, changes: parsed.changes, ticked: parsed.changes.map(() => true), refused })
+    } catch { setVeraStatus('Vera could not reply. Try again in a moment.') }
+    finally { setAsking(false) }
+  }
+  function applyLayout() {
+    if (!layoutProposal) return
+    if (layoutProposal.slug !== page.slug) { setLayoutProposal(null); setVeraStatus('That proposal was for another page. Ask again here.'); return }
+    const chosen = layoutProposal.changes.filter((_, i) => layoutProposal.ticked[i])
+    const { doc, results } = applyWebsiteVeraLayout(page.doc, config, chosen)
+    const applied = results.filter((r) => r.ok).length
+    if (applied) updateDoc(doc, { label: `Vera: ${applied} layout ${applied === 1 ? 'change' : 'changes'}` })
+    setLayoutProposal(null)
+    const missed = results.filter((r) => !r.ok).map((r) => r.line)
+    setVeraStatus([applied ? `Applied ${applied} to your draft. Undo reverses ${applied === 1 ? 'it' : 'them'} in one step.` : 'Nothing was applied.', ...missed].join(' '))
+    if (FQ_EDITOR && applied) say(`Vera applied ${applied} ${applied === 1 ? 'change' : 'changes'} to your draft`)
+  }
+  function toggleLayoutLine(index: number) {
+    setLayoutProposal((p) => p && { ...p, ticked: p.ticked.map((t, i) => (i === index ? !t : t)) })
+  }
+  const layoutLines = layoutProposal && layoutProposal.slug === page.slug ? layoutProposal.changes.map((change, i) => ({ line: describeWebsiteVeraChange(change, page.doc, config), ticked: layoutProposal.ticked[i] })) : null
+
   function openChrome(area: 'header' | 'footer') { setTextSelection(null); setSelectedId(null); setPanel(area); openRight() }
   function movePage(direction: -1 | 1) {
     const index = draft.pages.indexOf(page), target = index + direction
@@ -728,7 +776,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // layout. Top bar, left rail (Pages, Layers, Add, Theme, Site), the stage with the Vera bar, the inspector
   // (Content, Design, Advanced, Notes) and the publish modal. Folding is the kit's data-lf / data-rf.
   if (FQ_EDITOR) {
-    const veraVisible = asking || !!veraStatus || coachingQuestions.length > 0
+    const veraVisible = asking || !!veraStatus || coachingQuestions.length > 0 || !!layoutLines
     // The design's save line: "Saving…", then "Draft saved · 2 min ago". A failed save says so and the line retries.
     const fqSaveLabel = status === 'saving' ? 'Saving…' : status === 'saved' ? (savedAt ? `Draft saved · ${savedAgo(savedAt, now)}` : 'Draft saved') : status === 'unsaved' ? 'Unsaved changes' : status === 'conflict' ? 'A newer draft exists' : 'Not saved · Retry'
     // "Section 2 of 8 · Live data" (the design's inspector header) for a top-level section; nested blocks keep the scope line.
@@ -781,10 +829,10 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><FqIcon name="minus" /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><FqIcon name="plus" /></Icon></div>}
           {!preview && veraHidden && <button type="button" className="vera-orb" aria-label="Show Vera" aria-keyshortcuts="Meta+K Control+K Meta+Backslash Control+Backslash" title="Show Vera (⌘K)" onClick={() => putVeraAway(false, true)}><span className="orb" aria-hidden /></button>}
           {!preview && !veraHidden && <div className="vera">
-            <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is choosing coaching questions…' : <><b>Vera</b>{veraStatus && <p>{veraStatus}</p>}{coachingQuestions.map(question => <p key={question}>{question}</p>)}{coachingQuestions.length > 0 && <button type="button" className="btn sm txt" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button>}</>}</div>
-            <form className="bar" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
+            <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is thinking…' : <><b>Vera</b>{veraStatus && <p>{veraStatus}</p>}{coachingQuestions.map(question => <p key={question}>{question}</p>)}{coachingQuestions.length > 0 && <button type="button" className="btn sm txt" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button>}{layoutLines && layoutProposal && <VeraLayoutProposal note={layoutProposal.note} lines={layoutLines} refused={layoutProposal.refused} onToggle={toggleLayoutLine} onApply={applyLayout} onDismiss={() => setLayoutProposal(null)} buttonClass="btn sm ink" dismissClass="btn sm txt" />}</>}</div>
+            <form className="bar" onSubmit={(e) => { e.preventDefault(); submitVera() }}>
               <span className="orb" aria-hidden />
-              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder="Ask Vera to help review your writing…" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder={onLayout ? 'Ask Vera to rearrange this page…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
               <span className="ctx">{veraContext}</span>
               <button type="submit" className="btn sm ink" disabled={asking}>Ask</button>
               <button type="button" className="ib vera-hide" aria-label="Hide Vera" aria-keyshortcuts="Meta+Backslash Control+Backslash" title="Hide Vera (⌘\\)" onClick={() => putVeraAway(true)}><FqIcon name="close" /></button>
@@ -867,12 +915,12 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
       {!preview && <div className="we-zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><Minus size={15} aria-hidden /></Icon><span>{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><Plus size={15} aria-hidden /></Icon></div>}
       {!preview && <VeraDock>
-        {(asking || veraStatus || coachingQuestions.length > 0) && <div className="we-thread">
-          <p role="status"><b>Vera</b>{selected ? ` · ${config.components[selected.type]?.label ?? selected.type}` : ''}<br />{asking ? 'Vera is choosing coaching questions…' : veraStatus}</p>{coachingQuestions.length > 0 && <div className="we-proposal"><div className="we-caption">Questions for your writing</div>{coachingQuestions.map(question => <p key={question}>{question}</p>)}<button type="button" className="we-action txt sm" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button></div>}</div>}
+        {(asking || veraStatus || coachingQuestions.length > 0 || !!layoutLines) && <div className="we-thread">
+          <p role="status"><b>Vera</b>{selected ? ` · ${config.components[selected.type]?.label ?? selected.type}` : ''}<br />{asking ? 'Vera is thinking…' : veraStatus}</p>{coachingQuestions.length > 0 && <div className="we-proposal"><div className="we-caption">Questions for your writing</div>{coachingQuestions.map(question => <p key={question}>{question}</p>)}<button type="button" className="we-action txt sm" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button></div>}{layoutLines && layoutProposal && <VeraLayoutProposal className="we-proposal" note={layoutProposal.note} lines={layoutLines} refused={layoutProposal.refused} onToggle={toggleLayoutLine} onApply={applyLayout} onDismiss={() => setLayoutProposal(null)} buttonClass="we-action ink sm" dismissClass="we-action txt sm" />}</div>}
         <div className="we-suggestions"><button type="button" onClick={() => void askVera('Help me decide which details to keep in this passage.')}>Review length</button><button type="button" onClick={() => void askVera('What should I consider about welcoming tone while writing in my own words?')}>Review tone</button><button type="button" onClick={() => void askVera('Which questions should I consider while writing my own heading for this section?')}>Review the heading</button><button type="button" onClick={() => insert(page.doc.content.length)}>Add a section</button></div>
-        <form className="we-vera-bar" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
+        <form className="we-vera-bar" onSubmit={(e) => { e.preventDefault(); submitVera() }}>
           <span className="we-orb" aria-hidden />
-          <Input variant="seamless" aria-label="Ask Vera" placeholder="Ask Vera to help review your writing…" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+          <Input variant="seamless" aria-label="Ask Vera" placeholder={onLayout ? 'Ask Vera to rearrange this page…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
           <span className="we-context" title={textSelection ? `Selected text · ${textSelection.field}` : undefined}>{textSelection ? 'Selected text' : selected ? config.components[selected.type]?.label ?? selected.type : page.label}</span>
           <button type="submit" className="we-action ink sm" disabled={asking}>Ask</button>
         </form>

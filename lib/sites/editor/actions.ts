@@ -6,6 +6,7 @@ import { authorizeWebsiteEditor } from './authorization'
 import { shareWebsiteAbout } from './share-about'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { readWebsiteEditor, nextWebsiteState, validWebsiteSnapshot, type WebsiteSnapshot, type WebsiteEditorState } from './state'
+import { parseWebsiteVeraLayout, type WebsiteVeraChange, type WebsiteVeraSection } from './vera-layout'
 
 
 export async function saveWebsiteDraft(host: string, expectedRevision: number, draft0: WebsiteSnapshot, publish = false, scheduledAt?: string | null): Promise<{ ok: true; state: WebsiteEditorState } | { ok: false; error: string; conflict?: boolean }> {
@@ -115,6 +116,48 @@ export async function proposeWebsiteText(host: string, request: string, value: s
     if (!current || current.profileId !== auth.profileId || current.space.id !== auth.space.id) return { ok: false, error: 'Your editing access changed. Reopen the builder before asking Vera.' }
     return { ok: true, promptIds: websiteCoachingPromptIds(result.text) }
   } catch { return { ok: false, error: 'Vera could not prepare coaching questions. Try again in a moment.' } }
+}
+
+/** Read the outline the browser sent. It is the person's own page, but it crossed the network: shape and size only. */
+function readOutline(value: unknown): WebsiteVeraSection[] | null {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 60) return null
+  const devices = ['desktop', 'tablet', 'phone'] as const
+  const out: WebsiteVeraSection[] = []
+  for (const [index, row] of value.entries()) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) return null
+    const r = row as Record<string, unknown>
+    const shows = r.shows as Record<string, unknown> | undefined
+    if (typeof r.id !== 'string' || !r.id || r.id.length > 120 || typeof r.type !== 'string' || r.type.length > 80) return null
+    out.push({ id: r.id, type: r.type, label: String(r.label ?? '').slice(0, 80), summary: String(r.summary ?? '').slice(0, 120), position: index + 1,
+      tone: typeof r.tone === 'string' ? r.tone.slice(0, 20) : null, width: typeof r.width === 'string' ? r.width.slice(0, 20) : null,
+      shows: Object.fromEntries(devices.map((d) => [d, shows?.[d] !== false])) as WebsiteVeraSection['shows'] })
+  }
+  return new Set(out.map((s) => s.id)).size === out.length ? out : null
+}
+
+/** Vera proposes LAYOUT changes for the page in view (LIVE-2083). Nothing is written here: the browser shows the lines,
+ *  the person ticks them, and the editor applies them to its draft as one undo step. */
+export async function proposeWebsiteLayout(host: string, request: string, outline0: unknown): Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }> {
+  const outline = readOutline(outline0)
+  if (typeof request !== 'string' || !request.trim() || request.length > 2000 || !outline) return { ok: false, error: 'Say what you want to change on this page, then ask again.' }
+  const auth = await authorizeWebsiteEditor(host)
+  if (!auth) return { ok: false, error: 'Reopen the builder to sign in before asking Vera.' }
+  const [{ proposeWebsiteLayoutWithModel }, { aiEnabled }, { aiRateLimited }, { featureOverBudget }, { stripEmDashes }] = await Promise.all([
+    import('@/lib/ai/website-layout'), import('@/lib/ai/client'), import('@/lib/ai/rate-limit'), import('@/lib/ai/usage'), import('@/lib/ai/space-copilot'),
+  ])
+  const feature = 'website-editor'
+  if (!aiEnabled()) return { ok: false, error: 'Vera is unavailable right now. You can keep editing on the page.' }
+  if (await aiRateLimited(feature, auth.profileId) || await featureOverBudget(feature, auth.space.id)) return { ok: false, error: 'Vera has reached its limit for now. Try again later.' }
+  try {
+    const input = await proposeWebsiteLayoutWithModel({ request, outline, profileId: auth.profileId, spaceId: auth.space.id })
+    const current = await authorizeWebsiteEditor(host)
+    if (!current || current.profileId !== auth.profileId || current.space.id !== auth.space.id) return { ok: false, error: 'Your editing access changed. Reopen the builder before asking Vera.' }
+    if (input === null) return { ok: false, error: 'Vera could not turn that into changes. Try naming the section.' }
+    const parsed = parseWebsiteVeraLayout(input, new Set(outline.map((s) => s.id)))
+    const rawNote = (input as { note?: unknown } | null)?.note
+    const note = typeof rawNote === 'string' ? stripEmDashes(rawNote).slice(0, 240) : ''
+    return { ok: true, changes: parsed.changes, refused: parsed.refused, note }
+  } catch { return { ok: false, error: 'Vera could not prepare changes. Try again in a moment.' } }
 }
 
 /** Presence shares only the current site's authorized owner/team editing session. */
