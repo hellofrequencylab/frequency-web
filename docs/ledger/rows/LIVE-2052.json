@@ -1,0 +1,18 @@
+{
+ "id": "LIVE-2052",
+ "title": "Apply New World to Daniel Tyack's website",
+ "lane": "live",
+ "priority": "P1",
+ "size": "M",
+ "status": "open",
+ "source": {
+  "file": "docs/design-systems/services/rules.json",
+  "ref": "Daniel 2026-11-02 New World thread"
+ },
+ "detail": "Set the danieltyack Space's site style to New World (kit, accent, register) once the blocks exist; content stays in the Space's own fields. Design check at 390, 1280, 1440, 1920, 2000 and the console rendered before and after (theme fence).",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node scripts/probes/services-theme.mjs danieltyack"
+ },
+ "wave": "W7"
+}

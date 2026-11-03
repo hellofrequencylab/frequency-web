@@ -22,7 +22,7 @@ import { feature, SITE } from '../shared/links'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
-import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
+import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, photoBg, WhatsOnList } from '../shared/parts'
 
 /** Each kind links to its door (SCAN-1017): under the Frequency design nothing else on the site reached
  *  the /for pages. Venues have no door of their own, so their card opens the Spaces directory. */
@@ -66,7 +66,7 @@ export async function FrequencySpaces() {
   return (
     <div className="pa-page pa-spaces" data-pa-side="e" data-motion-scope style={{ display: 'contents' }}>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={{ backgroundImage: `url('${photo('gathering-09.jpg')}')` }} />
+        <div className="bg" style={photoBg(photo('gathering-09.jpg'))} />
         <div className="fq-aura" style={aura(0.3)} />
         <div className="shade" />
         <div className="fq-grain" />
@@ -84,8 +84,8 @@ export async function FrequencySpaces() {
             Give your community a place to find the next class, Circle or event. Share your dates on the local calendar and keep in touch with people who come.
           </p>
           <div className="ctas">
-            <Link className="btn fq-iri-btn" href={SITE.join}>
-              Join to open your Space
+            <Link className="btn fq-iri-btn" href={SITE.createSpace}>
+              Open your Space
             </Link>
             <Link className="btn btn-ghost fq-iri-rim" href={SITE.people}>
               I’m looking for a community →
@@ -186,7 +186,7 @@ export async function FrequencySpaces() {
             title={ranked.city ? `Spaces near you in ${ranked.city}` : 'Spaces on Frequency'}
             spaces={ranked.spaces}
             ok={ranked.ok}
-            emptyHref={SITE.join}
+            emptyHref={SITE.createSpace}
             style={{ height: 'min(620px,78vh)' }}
           />
           <p className="body-l" style={{ marginTop: 20 }}>
@@ -300,7 +300,7 @@ export async function FrequencySpaces() {
       <KeepGoing
         title="Open your Space. It’s free."
         body="Start with your name and next gathering. See the plan details before you start charging."
-        primary={{ href: SITE.join, label: 'Open your Space →' }}
+        primary={{ href: SITE.createSpace, label: 'Open your Space →' }}
         secondary={{ href: SITE.pricing, label: 'See pricing' }}
       />
     </div>

@@ -49,17 +49,17 @@ const cssFor = (id: RoleId) => ROLE_CSS_CHUNKS.base + ROLE_CSS_CHUNKS[id]
 const varsRead = (css: string) => [...new Set([...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]))].filter((v) => !v.startsWith('--rb-')).sort()
 
 describe('role registry', () => {
-  it('ships seventeen roles with three layouts each, registered as page-editor blocks', () => {
-    expect(ROLE_IDS).toHaveLength(17)
+  it('ships twenty-two roles with two or three layouts each, registered as page-editor blocks', () => {
+    expect(ROLE_IDS).toHaveLength(22)
     for (const id of ROLE_IDS) {
       const def = ROLES[id]
-      expect(Object.keys(def.variants), id).toHaveLength(3)
+      expect(Object.keys(def.variants).length, id).toBeGreaterThanOrEqual(2)
       expect(def.variants[def.default], `${id} default is one of its variants`).toBeTruthy()
       expect(config.components[def.type], `${def.type} is in the editor config`).toBeTruthy()
       expect(def.sample.sample, `${id} sample is flagged`).toBe(true)
       expect(def.replaces.length, `${id} names the legacy blocks it stands in for`).toBeGreaterThan(0)
     }
-    expect(ROLE_CATEGORY_COMPONENTS).toHaveLength(17)
+    expect(ROLE_CATEGORY_COMPONENTS).toHaveLength(22)
     expect(config.categories?.roles?.components).toEqual(ROLE_CATEGORY_COMPONENTS)
   })
 
@@ -113,7 +113,7 @@ describe.each(ROLE_IDS)('role %s', (id) => {
 describe('the ten themes', () => {
   it('map every token the role sheet reads, with a real value', () => {
     const read = new Set(ROLE_IDS.flatMap((id) => varsRead(cssFor(id))))
-    expect(CONTRACT_THEME_IDS).toHaveLength(10)
+    expect(CONTRACT_THEME_IDS).toHaveLength(12)
     for (const theme of CONTRACT_THEME_IDS) {
       const map = coreTokenMap(theme)
       for (const v of read) expect(map[v as keyof typeof map]?.trim(), `${theme} has no value for ${v}`).toBeTruthy()
@@ -249,3 +249,38 @@ if (process.env.UPDATE_ROLE_MANIFEST === '1') {
     }
   })
 }
+
+// BLD-213: the stats, proof, people and chapters roles draw the Space's own rows on a live page, and nothing of the sample.
+describe('live rows', () => {
+  const sampleOf = (id: RoleId) => ({ ...ROLES[id].sample, variant: undefined }) as Record<string, unknown>
+  const space = {
+    spaceId: 's1',
+    stats: [{ metric: 'members', label: 'People here', value: 1234 }, { metric: 'events', label: 'Gatherings', value: 0 }],
+    reviews: { latest: [{ body: 'It felt like coming home.', rating: 5, author: { displayName: 'Maya R.', avatarUrl: null } }] },
+    team: [{ name: 'Jo Lee', role: 'admin', avatarUrl: null, handle: 'jo' }],
+    chapters: [{ name: 'North County', city: 'Encinitas', tagline: 'Meets Thursdays', slug: 'north-county' }],
+    practices: { practices: [{ id: 'p1', title: 'Morning breath', summary: 'Five quiet minutes' }], journeys: [{ slug: 'j1', title: 'Thirty days of walking', summary: null }] },
+    community: [{ slug: 'c1', name: 'Sunrise circle', about: 'Meets on the beach' }],
+  }
+  const empty = { spaceId: 's1', stats: [], reviews: { latest: [] }, team: [], chapters: [], practices: { practices: [], journeys: [] }, community: [] }
+  const cases: [RoleId, string, string][] = [['stats', '1,234', 'People here'], ['proof', 'It felt like coming home.', 'Maya R.'], ['people', 'Jo Lee', 'Admin'], ['chapters', 'North County', 'Encinitas'], ['offerings', 'Morning breath', 'Sunrise circle']]
+  it.each(cases)('%s draws the Space\'s rows', (id, a, b) => {
+    const html = render(id, sampleOf(id), { space })
+    expect(html).toContain(a)
+    expect(html).toContain(b)
+    expect(html).not.toContain('Replace with')
+  })
+  it.each(cases)('%s draws nothing on a live page with no rows, but keeps the sample in the editor', (id) => {
+    expect(render(id, sampleOf(id), { space: empty })).toBe('')
+    expect(render(id, sampleOf(id), undefined)).toContain('data-role="' + id + '"')
+  })
+  it('Booking draws nothing on a live page while it only holds the sample times', () => {
+    expect(render('booking', sampleOf('booking'), { space: empty })).toBe('')
+    expect(render('booking', sampleOf('booking'), undefined)).toContain('data-role="booking"')
+  })
+  it('a block the owner has written stays when the Space has no rows, and live can be turned off', () => {
+    const own = { ...sampleOf('stats'), sample: false, items: [{ value: '40', label: 'Years in practice' }] }
+    expect(render('stats', own, { space: empty })).toContain('Years in practice')
+    expect(render('stats', { ...sampleOf('stats'), live: false }, { space })).not.toContain('1,234')
+  })
+})

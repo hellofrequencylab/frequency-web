@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { WIZARD_INTENTS } from '@/lib/spaces/create-wizard'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
-import { INTENT_LOOK, PREVIEW_CLIP, PREVIEW_KITS, asSentence, clipPreview, deriveSite, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
+import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
+import { FREE_HUMAN_PROFILES } from '@/lib/theme/free-human'
+import { SERVICES_ACCENTS } from '@/lib/theme/services'
+import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
+import { INTENT_LOOK, PREVIEW_CLIP, PREVIEW_KITS, asSentence, clipPreview, deriveSite, kitAccentFill, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
 
 const base = { name: '', handle: '', hostName: '', intents: [] as string[], kit: 'designer' as const }
 
@@ -18,6 +22,18 @@ describe('preview site', () => {
     }
     expect(kitImagery('designer').covers).toHaveLength(5)
     for (const k of PREVIEW_KITS) expect(kitAccents(k.id).length, k.id).toBeGreaterThan(0)
+  })
+
+  it('every kit wears its own accents, never another kit\'s (Daniel, 2026-11-03)', () => {
+    const fills = (k: Parameters<typeof kitAccents>[0]) => kitAccents(k).map((a) => a.fill)
+    expect(fills('temple-kit')[0]).toBe(TEMPLE_KIT_PROFILES.general.accent)
+    expect(fills('temple-kit')).not.toEqual(fills('temple'))
+    expect(new Set(fills('temple-kit')).size).toBe(fills('temple-kit').length)
+    expect(fills('free-human')[0]).toBe(FREE_HUMAN_PROFILES.general.accent)
+    expect(fills('services')[0]).toBe(SERVICES_ACCENTS.tide.accent)
+    expect(fills('services')).toHaveLength(6)
+    expect(fills('new-world')[0]).toBe(NEW_WORLD_ACCENTS.tide.accent)
+    expect(kitImagery('temple-kit').hero).toMatch(/^\/sites\/temple-kit\/photos\//)
   })
 
   it('reads as a sample Space when nothing is filled in', () => {
@@ -65,5 +81,14 @@ describe('preview site', () => {
     expect(asSentence('Done!')).toBe('Done!')
     expect(asSentence('   ')).toBe('')
     for (const o of deriveSite(base).offers) expect(o.t.length).toBeLessThanOrEqual(PREVIEW_CLIP.offerTitle)
+  })
+
+  it('turns a carried accent place into the kit accent hex, and nothing into nothing', () => {
+    expect(kitAccentFill('designer', '2')).toBe('#4E6E71')
+    expect(kitAccentFill('designer', 1)).toBe('#A65A3A')
+    expect(kitAccentFill('designer', '9')).toBeNull()
+    expect(kitAccentFill('not-a-kit', '0')).toBeNull()
+    expect(kitAccentFill('designer', 'x')).toBeNull()
+    expect(kitAccentFill('network', '0')).toBeNull()
   })
 })

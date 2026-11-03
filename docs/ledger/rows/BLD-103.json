@@ -1,0 +1,19 @@
+{
+  "id": "BLD-103",
+  "title": "Builder BLD-103: Spine and outline",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-103."
+  },
+  "detail": "B1 Shell, pass BLD-103 (spec: docs/EDITOR-NEXT.md#bld-103). Spine and outline. Scope: components/builder/spine. Build: Spine reads the node tree: one thumbnail per section, selected state, drag to reorder, + between. Outline drawer: section names from role intent and the title slot, hidden-on-device dimming. Done when: Reorder by drag and by keyboard produces the same document; Doc-safety corpus round-trips after reorder. Gates: vitest suite (required test job), check:node-document-safety, a11y ratchet, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-102. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-02",
+    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-103.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+  },
+  "wave": "W7"
+}

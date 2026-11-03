@@ -59,7 +59,7 @@ import { SITE_DIAL_KEYS, isDialAccent, isSiteDialValue, type SiteDialKey } from 
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
-export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human'
+export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'services' | 'new-world'
 
 interface SiteThemeDef {
   id: SiteThemeId
@@ -159,11 +159,27 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
     description: 'Limewash and honey light: a gilt arch, a madder accent and a candle-dark night, for movement, ritual and the village around it.',
     defaultFonts: 'classic',
   },
+  {
+    // THE SERVICES THEME (id `services`, lib/theme/services.ts): night-first and glossy with a day register, for people who
+    // book, sell and show up for clients. Private like House of Fates until its surfaces ship (LIVE-1992 to 1996).
+    id: 'services',
+    label: 'Services',
+    description: 'Night-first and glossy, with a day register: for people who book, sell and show up for clients. Six accents, sixteen starter kits.',
+    defaultFonts: 'modern',
+  },
+  {
+    // THE NEW WORLD THEME (id `new-world`, lib/theme/new-world.ts): the mega template every new Space starts in. Private until its
+    // chrome, blocks and kits ship (LIVE-2055 to 2057), then it becomes the default (LIVE-2058). Separate from Services.
+    id: 'new-world',
+    label: 'New World',
+    description: 'The Frequency house look: Night and Day in one theme, Tide teal to start, and a kit for every kind of gathering.',
+    defaultFonts: 'modern',
+  },
 ]
 
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
  *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human'])
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human', 'services'])
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
@@ -209,6 +225,8 @@ export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
   midnight: { corners: 'square', spacing: 'airy', header: 'bar', footer: 'full' },
   designer: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   'free-human': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  services: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  'new-world': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
 }
 
 export interface SiteLook {
@@ -224,7 +242,7 @@ type SiteDialStore = Partial<Record<SiteDialKey | 'accent', string>>
 /** What the new dials resolve to before the owner changes anything. A theme's manifest default beats these. */
 const THEME_DIAL_FALLBACK: Record<SiteDialKey, string> = { register: 'day', type: 'caps', motion: 'full', hero: 'glow', image: 'glow' }
 /** Themes whose own register is night. */
-const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight'])
+const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight', 'new-world'])
 
 export interface SiteStyle {
   theme: SiteThemeId
@@ -249,7 +267,7 @@ const MAX_PAGE_THEMES = 30
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 export function isSiteThemeId(v: unknown): v is SiteThemeId {
-  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human'
+  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human' || v === 'services' || v === 'new-world'
 }
 
 export function readSiteStyle(preferences: unknown): SiteStyle {

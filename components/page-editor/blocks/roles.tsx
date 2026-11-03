@@ -111,9 +111,10 @@ function Name({ text, href, metadata }: { text: string; href?: string; metadata?
 function HeroBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('hero', p.variant, metadata)
   const src = img(p.image)
-  const media = <Media src={src} alt={str(p.alt)} />
+  const showMedia = variant !== 'glow' && variant !== 'minimal'
+  const media = showMedia ? <Media src={src} alt={str(p.alt)} /> : null
   return (
-    <Frame role="hero" p={p} variant={variant} media={!!src}>
+    <Frame role="hero" p={p} variant={variant} media={!!src && showMedia}>
       {variant === 'full' && media}
       <div data-part="copy">
         {str(p.eyebrow) && <p data-part="eyebrow">{str(p.eyebrow)}</p>}
@@ -151,7 +152,9 @@ function StepsBlock({ p, metadata }: Ctx) {
 
 function OfferingsBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('offerings', p.variant, metadata)
-  const items = arr(p.items).filter((s) => str(s.title))
+  const liveRows = liveAsked(p) ? liveOfferings(metadata) : []
+  if (emptyLive(p, metadata, liveRows.length > 0)) return null
+  const items = (liveRows.length ? liveRows : arr(p.items)).filter((s) => str(s.title))
   return (
     <Frame role="offerings" p={p} variant={variant}>
       <Heading p={p}>{str(p.actionLabel) && <div data-part="actions"><Cta label={str(p.actionLabel)} href={str(p.actionHref)} kind="secondary" metadata={metadata} /></div>}</Heading>
@@ -169,6 +172,66 @@ function OfferingsBlock({ p, metadata }: Ctx) {
       </ul>
     </Frame>
   )
+}
+
+// ── Live rows for the other roles (BLD-213) ────────────────────────────────────────────────
+// A live render carries the Space's own rows in `puck.metadata.space` (lib/spaces/content-data.ts). A role asked to be live
+// (the default) draws them; with none it falls back to the words the owner wrote, and a block still showing the sample copy
+// draws nothing at all, so no sample number or name ever reaches a live page. The editor canvas has no `space`, so it keeps the sample.
+const spaceOf = (metadata: Props | undefined) => metadata?.space as Record<string, unknown> | undefined
+const isLiveRender = (metadata: Props | undefined) => !!spaceOf(metadata) && typeof spaceOf(metadata)?.spaceId === 'string'
+const liveAsked = (p: Props) => p.live !== false
+/** True when this block is the sample copy on a live page and there is nothing real to put in its place. */
+const emptyLive = (p: Props, metadata: Props | undefined, haveLive: boolean) => isLiveRender(metadata) && p.sample === true && !haveLive
+
+function liveStats(metadata: Props | undefined) {
+  const raw = spaceOf(metadata)?.stats
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((s): s is { label: string; value: number } => !!s && typeof (s as { label?: unknown }).label === 'string' && Number.isFinite((s as { value?: unknown }).value) && (s as { value: number }).value > 0)
+    .slice(0, 6)
+    .map((s) => ({ value: s.value.toLocaleString('en-US'), label: s.label, note: '' }))
+}
+
+function liveReviews(metadata: Props | undefined) {
+  const raw = (spaceOf(metadata)?.reviews as { latest?: unknown } | undefined)?.latest
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((r): r is { body: string; rating: number; author: { displayName: string; avatarUrl: string | null } | null } => !!r && typeof (r as { body?: unknown }).body === 'string' && !!(r as { body: string }).body.trim())
+    .slice(0, 6)
+    .map((r) => ({ quote: r.body.trim(), name: r.author?.displayName ?? '', role: '', photo: r.author?.avatarUrl ?? '', rating: r.rating }))
+}
+
+function liveTeam(metadata: Props | undefined) {
+  const raw = spaceOf(metadata)?.team
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((m): m is { name: string; role: string; avatarUrl: string | null; handle: string | null } => !!m && typeof (m as { name?: unknown }).name === 'string' && !!(m as { name: string }).name.trim())
+    .slice(0, 12)
+    .map((m) => ({ name: m.name, role: m.role ? m.role.charAt(0).toUpperCase() + m.role.slice(1) : '', photo: m.avatarUrl ?? '', bio: '', href: m.handle ? `/u/${m.handle}` : '' }))
+}
+
+function liveChapters(metadata: Props | undefined) {
+  const raw = spaceOf(metadata)?.chapters
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((c): c is { name: string; city: string | null; tagline: string | null; slug: string } => !!c && typeof (c as { name?: unknown }).name === 'string' && typeof (c as { slug?: unknown }).slug === 'string')
+    .slice(0, 25)
+    .map((c) => ({ name: c.name, place: c.city ?? '', body: c.tagline ?? '', image: '', href: `/spaces/${c.slug}` }))
+}
+
+/** What the Space offers: its live practices, journeys and circles, in that order. */
+function liveOfferings(metadata: Props | undefined) {
+  const sp = spaceOf(metadata)
+  const named = (x: unknown): x is Record<string, unknown> => !!x && typeof (x as { title?: unknown; name?: unknown }).title === 'string' || !!x && typeof (x as { name?: unknown }).name === 'string'
+  const list = (v: unknown) => (Array.isArray(v) ? v.filter(named) : [])
+  const practices = (sp?.practices as { practices?: unknown; journeys?: unknown } | undefined) ?? {}
+  const rows = [
+    ...list(practices.practices).map((x) => ({ title: str(x.title), body: str(x.summary), href: `/practices/${str(x.id)}` })),
+    ...list(practices.journeys).map((x) => ({ title: str(x.title), body: str(x.summary), href: `/journeys/${str(x.slug)}` })),
+    ...list(sp?.community).map((x) => ({ title: str(x.name), body: str(x.about), href: `/circles/${str(x.slug)}` })),
+  ]
+  return rows.filter((r) => r.title).slice(0, 6).map((r) => ({ ...r, image: '', price: '' }))
 }
 
 // ── Gatherings ─────────────────────────────────────────────────────────────────────────────
@@ -213,11 +276,18 @@ function GatheringsBlock({ p, metadata, now = new Date() }: Ctx & { now?: Date }
       ))}
     </ul>
   )
+  // The agenda layout opens with a ribbon of the dates on offer (one chip per gathering, in order), then the rows.
+  const ribbon = variant === 'agenda' && rows.length > 0 && (
+    <ol data-part="ribbon" aria-hidden="true">
+      {rows.map((r, i) => <li key={i} data-part="chip"><b>{r.month}</b><span>{r.day}</span></li>)}
+    </ol>
+  )
   return (
     <Frame role="gatherings" p={p} variant={variant} media={!!src}>
       <Heading p={p}>{str(p.actionLabel) && <div data-part="actions"><Cta label={str(p.actionLabel)} href={str(p.actionHref)} kind="secondary" metadata={metadata} /></div>}</Heading>
       <div data-part="side">
         <Media src={src} alt={str(p.alt)} />
+        {ribbon}
         {rows.length ? list : str(p.empty) ? <p data-part="empty">{str(p.empty)}</p> : null}
       </div>
     </Frame>
@@ -262,7 +332,9 @@ function MembershipBlock({ p, metadata }: Ctx) {
 
 function ProofBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('proof', p.variant, metadata)
-  const all = arr(p.items).filter((q) => str(q.quote))
+  const liveRows = liveAsked(p) ? liveReviews(metadata) : []
+  if (emptyLive(p, metadata, liveRows.length > 0)) return null
+  const all = (liveRows.length ? liveRows : arr(p.items)).filter((q) => str(q.quote))
   const items = variant === 'quote' ? all.slice(0, 3) : variant === 'stats' ? all.slice(0, 1) : all
   const stats = variant === 'stats' ? arr(p.stats).filter((s) => str(s.value) && str(s.label)).slice(0, 4) : []
   const stars = (n: unknown) => { const r = Math.round(Number(n)); return r >= 1 && r <= 5 ? r : 0 }
@@ -413,7 +485,9 @@ function ContactBlock({ p, metadata }: Ctx) {
 
 function StatsBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('stats', p.variant, metadata)
-  const items = arr(p.items).filter((s) => str(s.value) && str(s.label)).slice(0, 6)
+  const liveRows = liveAsked(p) ? liveStats(metadata) : []
+  if (emptyLive(p, metadata, liveRows.length > 0)) return null
+  const items = (liveRows.length ? liveRows : arr(p.items)).filter((s) => str(s.value) && str(s.label)).slice(0, 6)
   return (
     <Frame role="stats" p={p} variant={variant}>
       <Heading p={p} />
@@ -482,7 +556,9 @@ function LibraryBlock({ p, metadata }: Ctx) {
 
 function PeopleBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('people', p.variant, metadata)
-  const all = arr(p.items).filter((s) => str(s.name))
+  const liveRows = liveAsked(p) ? liveTeam(metadata) : []
+  if (emptyLive(p, metadata, liveRows.length > 0)) return null
+  const all = (liveRows.length ? liveRows : arr(p.items)).filter((s) => str(s.name))
   const items = variant === 'founder' ? all.slice(0, 1) : all
   return (
     <Frame role="people" p={p} variant={variant}>
@@ -527,7 +603,9 @@ function GalleryBlock({ p, metadata }: Ctx) {
 
 function ChaptersBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('chapters', p.variant, metadata)
-  const items = arr(p.items).filter((s) => str(s.name))
+  const liveRows = liveAsked(p) ? liveChapters(metadata) : []
+  if (emptyLive(p, metadata, liveRows.length > 0)) return null
+  const items = (liveRows.length ? liveRows : arr(p.items)).filter((s) => str(s.name))
   return (
     <Frame role="chapters" p={p} variant={variant}>
       <Heading p={p}>{ctaOf(p, metadata)}</Heading>
@@ -543,6 +621,119 @@ function ChaptersBlock({ p, metadata }: Ctx) {
           </li>
         ))}
       </ul>
+    </Frame>
+  )
+}
+
+// ── The five roles the block builder names that the set lacked (BLD-210, docs/EDITOR-NEXT.md) ─────────────────
+// Words the owner writes, in the same parts every theme styles. Live rows (next openings, the Space's hours) arrive
+// with BLD-213; until then an owner types them, so nothing here states a number the owner did not write.
+
+function FirstVisitBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('firstvisit', p.variant, metadata)
+  const items = arr(p.items).filter((s) => str(s.title) || str(s.body))
+  return (
+    <Frame role="firstvisit" p={p} variant={variant}>
+      <Heading p={p} />
+      <ol data-part="list">
+        {items.map((s, i) => (
+          <li key={i} data-part="item" data-card={variant === 'grid' ? '' : undefined}>
+            <span data-part="index">{i + 1}</span>
+            <div data-part="text">
+              {str(s.title) && <h3 data-part="name">{str(s.title)}</h3>}
+              {str(s.body) && <p data-part="body">{str(s.body)}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </Frame>
+  )
+}
+
+function BookingBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('booking', p.variant, metadata)
+  // Openings are not a stored thing yet: a live page with only the sample copy draws nothing, and the owner's own typed times stay.
+  if (emptyLive(p, metadata, false)) return null
+  const items = arr(p.items).filter((s) => str(s.title)).slice(0, 6)
+  return (
+    <Frame role="booking" p={p} variant={variant}>
+      <Heading p={p}>{ctaOf(p, metadata)}</Heading>
+      <ul data-part="list">
+        {items.map((s, i) => {
+          const to = str(s.href) ? hrefOf(str(s.href), metadata) : null
+          return (
+            <li key={i} data-part="item" data-card={variant === 'cards' ? '' : undefined}>
+              <div data-part="when">
+                {str(s.day) && <b data-part="day">{str(s.day)}</b>}
+                {str(s.time) && <span data-part="time">{str(s.time)}</span>}
+              </div>
+              <div data-part="text">
+                <Name text={str(s.title)} href={str(s.href)} metadata={metadata} />
+                {str(s.note) && <p data-part="meta">{str(s.note)}</p>}
+              </div>
+              {to && <span data-part="go" aria-hidden="true">→</span>}
+            </li>
+          )
+        })}
+      </ul>
+    </Frame>
+  )
+}
+
+function LocationsBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('locations', p.variant, metadata)
+  const src = img(p.image)
+  const rows = arr(p.items).filter((r) => str(r.label) && str(r.value))
+  return (
+    <Frame role="locations" p={p} variant={variant} media={!!src && variant === 'split'}>
+      <div data-part="copy">
+        <Heading p={p} />
+        {str(p.address) && <address data-part="address">{str(p.address)}</address>}
+        {rows.length > 0 && (
+          <ul data-part="list">
+            {rows.map((r, i) => (
+              <li key={i} data-part="item"><span data-part="meta">{str(r.label)}</span><span data-part="value">{str(r.value)}</span></li>
+            ))}
+          </ul>
+        )}
+        {str(p.areas) && <p data-part="note">{str(p.areas)}</p>}
+        <Actions p={p} metadata={metadata} />
+      </div>
+      {variant === 'split' && <Media src={src} alt={str(p.alt)} />}
+    </Frame>
+  )
+}
+
+function BusinessBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('business', p.variant, metadata)
+  const items = arr(p.items).filter((s) => str(s.name))
+  return (
+    <Frame role="business" p={p} variant={variant}>
+      <Heading p={p} />
+      <ul data-part="list">
+        {items.map((s, i) => (
+          <li key={i} data-part="item" data-card={variant === 'grid' ? '' : undefined}>
+            <h3 data-part="name">{str(s.name)}</h3>
+            {str(s.body) && <p data-part="body">{str(s.body)}</p>}
+          </li>
+        ))}
+      </ul>
+    </Frame>
+  )
+}
+
+function StoryBlock({ p, metadata }: Ctx) {
+  const variant = roleVariant('story', p.variant, metadata)
+  const src = img(p.image)
+  const lines = arr(p.items).filter((s) => str(s.text))
+  return (
+    <Frame role="story" p={p} variant={variant} media={!!src && variant === 'split'}>
+      <div data-part="copy">
+        <Heading p={p} />
+        {lines.length > 0 && <div data-part="lines">{lines.map((s, i) => <p key={i} data-part="body">{str(s.text)}</p>)}</div>}
+        {str(p.quote) && <blockquote data-part="quote">{str(p.quote)}</blockquote>}
+      </div>
+      {variant === 'split' && <Media src={src} alt={str(p.alt)} />}
     </Frame>
   )
 }
@@ -589,6 +780,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
   }, StepsBlock),
   [ROLES.offerings.type]: role('offerings', {
     ...head, ...action,
+    live: yesNo('Use the Space\'s own practices, journeys and circles'),
     items: { type: 'array', label: 'Offerings', arrayFields: { image, title: text('Name'), body: area('Line under the name'), price: text('Price'), href: text('Link', LINK_HINT) } },
   }, OfferingsBlock),
   [ROLES.gatherings.type]: role('gatherings', {
@@ -604,6 +796,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     items: { type: 'array', label: 'Plans', hint: 'Mark one as the lead plan. The spotlight layout needs one.', arrayFields: { name: text('Name'), blurb: area('Line under the name'), price: text('Price'), per: text('After the price', 'Like / month.'), features: area('What it includes', 'One per line.'), badge: text('Badge'), featured: yesNo('Lead plan'), label: text('Button'), href: text('Link', LINK_HINT) } },
   }, MembershipBlock),
   [ROLES.proof.type]: role('proof', {
+    live: yesNo('Use the Space\'s own reviews'),
     ...head,
     items: { type: 'array', label: 'Quotes', arrayFields: { quote: area('Quote'), name: text('Name'), role: text('Role'), photo: { ...loomImageField, label: 'Face' }, rating: { type: 'number', label: 'Stars (1 to 5)', min: 1, max: 5 } } },
     stats: { type: 'array', label: 'Figures (quote beside figures only)', hint: 'Real numbers only.', arrayFields: { value: text('Number'), label: text('What it counts') } },
@@ -637,6 +830,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     note: text('Small print'),
   }, ContactBlock),
   [ROLES.stats.type]: role('stats', {
+    live: yesNo('Use the Space\'s own figures'),
     ...head,
     items: { type: 'array', label: 'Figures', hint: 'Real numbers only.', arrayFields: { value: text('Number'), label: text('What it counts'), note: text('Small line') } },
   }, StatsBlock),
@@ -649,6 +843,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     items: { type: 'array', label: 'Things to watch, read or do', arrayFields: { image, title: text('Name'), kind: text('Kind'), meta: text('Length or detail'), href: text('Link', LINK_HINT) } },
   }, LibraryBlock),
   [ROLES.people.type]: role('people', {
+    live: yesNo('Use the Space\'s own team'),
     ...head,
     items: { type: 'array', label: 'People', hint: 'The one-person layout shows the first.', arrayFields: { photo: { ...loomImageField, label: 'Photo' }, name: text('Name'), role: text('Role'), bio: area('A few words'), href: text('Link', LINK_HINT) } },
   }, PeopleBlock),
@@ -657,9 +852,36 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     items: { type: 'array', label: 'Photos', arrayFields: { image, alt: text('Photo description', 'For screen readers.'), caption: text('Caption') } },
   }, GalleryBlock),
   [ROLES.chapters.type]: role('chapters', {
+    live: yesNo('Use the Space\'s own chapters'),
     ...head, ...action,
     items: { type: 'array', label: 'Groups', arrayFields: { image, name: text('Name'), place: text('Place'), body: area('Line under the name'), href: text('Link', LINK_HINT) } },
   }, ChaptersBlock),
+  [ROLES.firstvisit.type]: role('firstvisit', {
+    ...head,
+    items: { type: 'array', label: 'Steps of a first visit', hint: 'Who is there, how long, what to bring, what happens at the door.', arrayFields: { title: text('Name'), body: area('Words') } },
+  }, FirstVisitBlock),
+  [ROLES.booking.type]: role('booking', {
+    ...head, ...action,
+    items: { type: 'array', label: 'Open times', hint: 'Type the times that have room. They are your words until the Space\'s own openings are connected.', arrayFields: { day: text('Day'), time: text('Time'), title: text('Name'), note: text('Small line'), href: text('Link', LINK_HINT) } },
+  }, BookingBlock),
+  [ROLES.locations.type]: role('locations', {
+    ...head,
+    address: text('Address'),
+    items: { type: 'array', label: 'Details', arrayFields: { label: text('Label'), value: text('Detail') } },
+    areas: area('Neighbourhoods people come from'),
+    image, alt: text('Photo description', 'For screen readers.'),
+    primaryLabel: text('Button'), primaryHref: text('Button: where it goes', LINK_HINT),
+  }, LocationsBlock),
+  [ROLES.business.type]: role('business', {
+    ...head,
+    items: { type: 'array', label: 'Tools', arrayFields: { name: text('Name'), body: area('Line under the name') } },
+  }, BusinessBlock),
+  [ROLES.story.type]: role('story', {
+    ...head,
+    items: { type: 'array', label: 'Lines of the story', arrayFields: { text: area('Words') } },
+    quote: area('The line by the door'),
+    image, alt: text('Photo description', 'For screen readers.'),
+  }, StoryBlock),
 }
 
 export const ROLE_CATEGORY_COMPONENTS = Object.keys(rolesComponents)

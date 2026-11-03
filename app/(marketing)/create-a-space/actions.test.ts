@@ -76,6 +76,12 @@ describe('the magic link', () => {
     expect(held[0]).toMatchObject({ intents: ['events'], answers: { spotlight: { name: 'Saltwater Collective', handle: 'saltwatercollective', theme: 'designer', host: 'Sam Rivera' } } })
   })
 
+  it('carries the server draft token in the hold, for the launch claim to stamp once they really sign in', async () => {
+    const res = await claimWithEmail(form({ email: 'sam@example.com', draft: draft({ leadToken: 'AbCdEfGhIjKlMnOpQrStUvWxYz012345' }) }))
+    expect(res.ok).toBe(true)
+    expect(held[0]).toMatchObject({ answers: { spotlight: { lead: 'AbCdEfGhIjKlMnOpQrStUvWxYz012345' } } })
+  })
+
   it('sends sign-in to the Create a Space form, with no keep-building link, while the launch is off', async () => {
     launchOpen = false
     const res = await claimWithEmail(form({ email: 'sam@example.com', draft: draft() }))

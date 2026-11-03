@@ -8,7 +8,7 @@
 .cs-pv-fit{position:relative;width:100%;aspect-ratio:1/.72}
 .cs-pv *{box-sizing:border-box}
 .cs-pv-site,.cs-pv-screen{background:var(--pv-bg);color:var(--pv-ink);font-family:var(--pv-font-body);transition:background .48s,color .48s}
-.cs-pv-site{position:absolute;left:0;top:0;width:84%;height:94%;border-radius:2.2cqi;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 50px 110px -50px color-mix(in oklab,var(--fq-bg-canvas) 85%,transparent),0 0 0 1px color-mix(in oklab,var(--fq-text-strong) 10%,transparent)}
+.cs-pv-site{position:absolute;left:0;top:0;width:84%;height:94%;border-radius:2.2cqi;overflow:hidden;display:flex;flex-direction:column;background-image:var(--pv-art);box-shadow:0 50px 110px -50px color-mix(in oklab,var(--fq-bg-canvas) 85%,transparent),0 0 0 1px color-mix(in oklab,var(--fq-text-strong) 10%,transparent)}
 .cs-pv-bar{height:4.6cqi;flex:none;display:flex;align-items:center;gap:.9cqi;padding:0 2cqi;background:var(--pv-chrome)}
 .cs-pv-bar i{width:1.2cqi;height:1.2cqi;border-radius:50%;background:var(--pv-line)}
 .cs-pv-url{margin-left:2cqi;flex:1;max-width:44cqi;height:2.7cqi;border-radius:999px;background:var(--pv-card);display:flex;align-items:center;padding:0 1.6cqi;font:500 1.4cqi/1 var(--pv-font-body);color:var(--pv-muted);white-space:nowrap;overflow:hidden}
@@ -23,7 +23,7 @@
 .cs-pv-eyebrow{display:flex;align-items:center;gap:1.2cqi;font-size:1.15cqi;letter-spacing:var(--pv-label-track);text-transform:uppercase;color:var(--pv-accent-ink);font-weight:500;transition:color .48s}
 .cs-pv-rule{width:var(--pv-rule-w);height:1px;background:var(--pv-accent);transition:background .48s}
 .cs-pv-h1{font-family:var(--pv-font-display);font-weight:var(--pv-display-weight);text-transform:var(--pv-display-case);font-size:5.4cqi;line-height:.98;letter-spacing:var(--pv-display-track);overflow-wrap:anywhere}
-.cs-pv em{font-style:italic;color:var(--pv-em-ink)}
+.cs-pv em{font-family:var(--pv-font-em);font-style:italic;font-weight:400;color:var(--pv-em-ink)}
 .cs-pv[data-long="1"] .cs-pv-h1{font-size:4.3cqi}
 .cs-pv[data-long="1"] .cs-pv-pname{font-size:2cqi}
 .cs-pv-lead{font-size:1.6cqi;line-height:1.6;font-weight:300;color:var(--pv-muted);max-width:34ch}
@@ -55,7 +55,8 @@
 
 /* Preview additions (v3): the logo slot, the host photo slot, the contact strip, the ghost state and the mock-up shimmer. */
 .cs-pv-logo{flex:1;min-width:0;display:flex;align-items:center;gap:1.1cqi;height:3.4cqi}
-.cs-pv-mono{width:3.4cqi;height:3.4cqi;flex:none;border-radius:50%;background:var(--pv-accent);color:var(--pv-on-accent);display:flex;align-items:center;justify-content:center;font-family:var(--pv-font-display);font-size:1.6cqi;transition:background .48s}
+.cs-pv-mono,.cs-pv-badge{width:3.4cqi;height:3.4cqi;flex:none;border-radius:50%;background:var(--pv-accent);color:var(--pv-on-accent);display:flex;align-items:center;justify-content:center;font-family:var(--pv-font-display);font-size:1.6cqi;transition:background .48s}
+.cs-pv-badge{display:var(--pv-badge)}
 .cs-pv-logo-img{position:relative;height:3.4cqi;width:16cqi}
 .cs-pv-logo-img img{object-fit:contain;object-position:left center}
 .cs-pv-initials{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--pv-accent);color:var(--pv-on-accent);font-family:var(--pv-font-display);font-size:5cqi;transition:background .48s}
@@ -112,7 +113,7 @@
 .cs-pill-tick,.cs-tick{width:24px;height:24px;flex:none;border-radius:50%;background:var(--fq-pa);color:var(--fq-bg-canvas);display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px color-mix(in oklab,var(--fq-accent-2) 35%,transparent)}
 .cs-pill-tick svg,.cs-tick svg{width:12px;height:12px;stroke-width:3}
 .cs-pill-dot{width:10px;height:10px;flex:none;border-radius:50%}
-@media (pointer:coarse){.cs-pill{height:44px}}
+@media (pointer:coarse){.cs-pill{height:44px}.cs-chip-btn{min-height:44px}}
 
 /* Step cards. */
 .cs-card{border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:0 30px 80px -40px color-mix(in oklab,var(--fq-accent-2) 32%,transparent);padding:clamp(18px,2vw,24px);display:flex;flex-direction:column;gap:14px;animation:cs-pop .42s var(--fq-ease-out) both}

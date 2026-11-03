@@ -114,9 +114,9 @@
     },
     "app/api/unsubscribe/route.ts": {
       "verdict": "delegated",
-      "reason": "RFC 8058 one-click unsubscribe. Mailbox providers POST with no session by spec. The handler forwards to processUnsubscribe / processSpaceUnsubscribe (app/unsubscribe/actions.ts), which verify the signed `t` token themselves; the route never touches the DB. 2026-09-05 (scan two L2-01): GET no longer forwards to POST; it redirects to the /unsubscribe confirm page, so only the RFC 8058 POST acts.",
-      "checked": "2026-09-05",
-      "digest": "a2d07c56b8f58fba"
+      "reason": "RFC 8058 one-click unsubscribe. Mailbox providers POST with no session by spec. The handler forwards to processUnsubscribe / processSpaceUnsubscribe (app/unsubscribe/actions.ts), which verify the signed `t` token themselves; the route never touches the DB. 2026-09-05 (scan two L2-01): GET no longer forwards to POST; it redirects to the /unsubscribe confirm page, so only the RFC 8058 POST acts. 2026-11-02 (LIVE-1968): a third branch, `d`, forwards to processDraftUnsubscribe, which verifies the draft's HMAC link token (lib/create-space/draft-io.ts unsubscribeDrafts) before it writes; the route still reads nothing and always answers 200.",
+      "checked": "2026-11-02",
+      "digest": "692952f43ff7bf61"
     },
     "app/api/vera/turn/route.ts": {
       "verdict": "public",
@@ -249,6 +249,18 @@
       "reason": "/sitemap.xml on a Space website's domain (Next treats a sitemap.xml folder as a metadata route, so proxy.ts rewrites here). Re-exports the GET of app/hosted/[host]/sitemap.xml/route.ts unchanged: the published site's own page URLs, 404 otherwise. No caller identity, no private data.",
       "checked": "2026-10-07",
       "digest": "6550d2cc6b5fe42c"
+    },
+    "app/api/create-space/draft/route.ts": {
+      "verdict": "public",
+      "reason": "The pagehide beacon of /create-a-space (LIVE-1967, ADR-1933): the last save of a signed-out visitor's own draft, the same write the saveDraftLead action makes. Anonymous by design: there is no account yet. Rate limits by IP and by the draft's mailbox (fail-open when the limiter is unconfigured, because a denied save loses the lead), refuses a body over 10KB, one that does not parse, a filled honeypot or a draft without an address, then calls saveDraft (lib/create-space/draft-io.ts), which updates only the row whose token hash matches the token the body carries or inserts a new row with a fresh token, and sends the address through the anon-granted capture_signup_lead RPC. Always 204 with no body, so it discloses nothing about any address or token.",
+      "checked": "2026-11-02",
+      "digest": "591411e95c647fa2"
+    },
+    "app/api/create-space/signal/route.ts": {
+      "verdict": "public",
+      "reason": "The funnel signal sink of /create-a-space (LIVE-1970, ADR-1933). Anonymous by design: a signed-out visitor has no account, and /api/track drops anonymous posts on purpose. Rate limits by IP (fail-open when the limiter is unconfigured, because a dropped signal costs a count, never a person), refuses a body over 2KB or one that does not parse, then admits only the nine createspace.* events through parseSignalBody (lib/create-space/signal.ts), which keeps a closed set of props per event (a kit id, a step id, an accent index, flags, intent ids) and drops everything else, so no typed text can be stored. Writes through track() with no actor and an exactly-once key per tab and event, so nothing counts twice. Always 204 with no body.",
+      "checked": "2026-11-02",
+      "digest": "beee64e20b837458"
     },
     "app/api/spotlight/click/route.ts": {
       "verdict": "public",

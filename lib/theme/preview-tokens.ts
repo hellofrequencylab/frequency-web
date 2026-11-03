@@ -10,6 +10,7 @@
 
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
+import { SITE_THEMES } from '@/lib/theme/site-style'
 import type { ThemeSurface } from '@/lib/theme/surface-vars'
 
 /** Every key SpacePreview may read from the theme. The runtime accent trio is added by `previewAccentVars`. */
@@ -18,20 +19,25 @@ export const PREVIEW_TOKEN_KEYS = [
   '--pv-font-display', '--pv-font-body', '--pv-display-weight', '--pv-display-case', '--pv-display-track', '--pv-label-track',
   '--pv-radius-btn', '--pv-radius-card', '--pv-radius-inner', '--pv-radius-photo',
   '--pv-mat', '--pv-shadow', '--pv-rule-w', '--pv-ring-opacity', '--pv-btn-bg', '--pv-btn-ink', '--pv-em-ink',
+  '--pv-font-em', '--pv-art', '--pv-badge',
 ] as const
 type PreviewTokenKey = (typeof PREVIEW_TOKEN_KEYS)[number]
 type PreviewTokens = Record<PreviewTokenKey, string>
 
 /** The kit order on the page. Designer first, and the default. */
-export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = [
-  'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
+/** The page's order once every kit is offered. A kit still hidden from the pickers (RETIRED_FROM_PICKERS in
+ *  lib/theme/site-style.ts, the one hidden flag) is left out here too, so New World and Services reach the builder the
+ *  moment that flag lets them go and never before. */
+const PREVIEW_KIT_PREFERENCE: readonly MegaThemeId[] = [
+  'new-world', 'services', 'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
 ]
+export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = PREVIEW_KIT_PREFERENCE.filter((id) => SITE_THEMES.some((t) => t.id === id))
 
 /** The faces the seven kits wear in the preview. The page asks Google Fonts for them only when it renders (the CSP
  *  allows it), the way the Space page does for a themed Space (lib/theme/site-faces.ts), so they register on no
  *  other route. Unbounded, Hanken Grotesk and Instrument Serif are the site's own. */
 export const PREVIEW_FONT_SHEET =
-  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Geist:wght@300..600&family=Jost:wght@300..500&family=Marcellus&family=Outfit:wght@300..500&display=swap'
+  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Geist:wght@300..600&family=Instrument+Serif:ital@1&family=Jost:wght@300..500&family=Lora:ital@1&family=Marcellus&family=Outfit:wght@300..500&display=swap'
 
 interface Shape {
   display: string; body: string; weight: string; textCase: string; track: string; label: string
@@ -40,11 +46,31 @@ interface Shape {
   /** A fixed primary button; undefined means the button wears the chosen accent. */
   button?: { bg: string; ink: string }
   em?: string
+  /** The face of the emphasised words (the kit's "one-word voice"); undefined means the display face. */
+  emFont?: string
+  /** Background art behind the website (the Network kit's contour lines); undefined means none. */
+  art?: (line: string) => string
+  /** A round accent badge beside the wordmark (the Network kit's mark). */
+  badge?: boolean
 }
 
 const hairline = (line: string) => `inset 0 0 0 1px ${line}`
 
-const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, 'temple-kit' | 'free-human'>, Shape> = {
+const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, 'free-human'>, Shape> = {
+  // New World (lib/theme/new-world.ts): Bricolage display and body, Lora italic for the one-word voice, the kit's 20px
+  // cards and pill buttons, on the Night register. Services (lib/theme/services.ts) shares the type system and the radii.
+  'new-world': {
+    display: "'Bricolage Grotesque', system-ui, sans-serif", body: "'Bricolage Grotesque', system-ui, sans-serif",
+    weight: '700', textCase: 'none', track: '-0.03em', label: '.08em',
+    btn: '999px', card: '20px', inner: '12px', photo: '20px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+    emFont: "'Lora', Georgia, serif",
+  },
+  services: {
+    display: "'Bricolage Grotesque', system-ui, sans-serif", body: "'Bricolage Grotesque', system-ui, sans-serif",
+    weight: '700', textCase: 'none', track: '-0.03em', label: '.08em',
+    btn: '999px', card: '20px', inner: '12px', photo: '20px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+    emFont: "'Lora', Georgia, serif",
+  },
   designer: {
     display: "'Cormorant', 'Cormorant Garamond', Georgia, serif", body: "'Jost', system-ui, sans-serif",
     weight: '400', textCase: 'none', track: '-0.01em', label: '.18em',
@@ -57,10 +83,15 @@ const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, '
     weight: '600', textCase: 'none', track: '-0.01em', label: '.08em',
     btn: '2px', card: '2px', inner: '2px', photo: '2px', mat: '0', shadow: hairline, rule: '0', ring: '0',
   },
+  // The Network kit (lib/theme/network-kit.ts): Bricolage display, Outfit body, Instrument Serif italic for the one-word
+  // voice, a round accent mark beside the wordmark, the arched hero picture and the contour lines of its hero.
   'network-kit': {
     display: "'Bricolage Grotesque', system-ui, sans-serif", body: "'Outfit', system-ui, sans-serif",
-    weight: '700', textCase: 'none', track: '-0.03em', label: '.08em',
-    btn: '999px', card: '14px', inner: '14px', photo: '18px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+    weight: '700', textCase: 'none', track: '-0.035em', label: '0',
+    btn: '999px', card: '14px', inner: '14px', photo: '18px 34% 18px 18px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+    emFont: "'Instrument Serif', Georgia, serif",
+    art: (line) => `repeating-radial-gradient(ellipse 140% 70% at 0% 100%, transparent 0 5.6cqi, ${line} 5.6cqi calc(5.6cqi + 1px))`,
+    badge: true,
   },
   network: {
     display: "'Bricolage Grotesque', system-ui, sans-serif", body: "'Outfit', system-ui, sans-serif",
@@ -71,6 +102,15 @@ const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, '
     display: "'Marcellus', Georgia, serif", body: "'Hanken Grotesk', system-ui, sans-serif",
     weight: '400', textCase: 'none', track: '0', label: '.08em',
     btn: '999px', card: '10px', inner: '10px', photo: '999px 999px 12px 12px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+  },
+  // The Temple kit (lib/theme/temple-kit.ts): Marcellus display, Jost body, wide labels, the arched picture, the clay
+  // on the emphasised word (--display-em-color), the kit's soft depth shadow in place of a hairline.
+  'temple-kit': {
+    display: "'Marcellus', Georgia, serif", body: "'Jost', system-ui, sans-serif",
+    weight: '400', textCase: 'none', track: '-0.015em', label: '.18em',
+    btn: '10px', card: '16px', inner: '10px', photo: '50% 50% 6px 6px / 42% 42% 6px 6px', mat: '0',
+    shadow: () => '0 2px 6px rgba(74,53,39,.07)', rule: '0', ring: '0',
+    em: '#9C4A2C', // token-ok: Temple kit clay 600, lib/theme/temple-kit.ts
   },
   bold: {
     display: "'Anton', Impact, sans-serif", body: "'Hanken Grotesk', system-ui, sans-serif",
@@ -98,9 +138,8 @@ const FREQUENCY_SURFACE: ThemeSurface = {
   semantic: { success: '#3C8C7C', info: '#4F8FC0', danger: '#B3402F' }, // token-ok: Frequency notes
 }
 
-/** A theme's flat surface; Temple kit wears Temple's until it is a Mega Theme of its own, and Network (classic) reads the Network kit's until it has a preview of its own. */
+/** A theme's flat surface; Network (classic) reads the Network kit's until it has a preview of its own. */
 function surfaceOf(id: MegaThemeId): ThemeSurface {
-  if (id === 'temple-kit') return MEGA_SURFACES.temple as ThemeSurface
   return MEGA_SURFACES[id] ?? (id === 'frequency' ? FREQUENCY_SURFACE : (MEGA_SURFACES['network-kit'] as ThemeSurface))
 }
 
@@ -132,6 +171,9 @@ export function previewTokens(id: MegaThemeId): PreviewTokens {
     '--pv-btn-bg': p.button?.bg ?? (id === 'designer' ? s.solid : 'var(--pv-accent)'),
     '--pv-btn-ink': p.button?.ink ?? (id === 'designer' ? s.onSolid : 'var(--pv-on-accent)'),
     '--pv-em-ink': p.em ?? 'var(--pv-accent-ink)',
+    '--pv-font-em': p.emFont ?? p.display,
+    '--pv-art': p.art ? p.art(s.border) : 'none',
+    '--pv-badge': p.badge ? 'inline-flex' : 'none',
   }
 }
 

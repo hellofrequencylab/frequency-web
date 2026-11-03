@@ -32,7 +32,7 @@ describe('exportAbandonedSignupLeadsCsv', () => {
     vi.mocked(listAbandonedSignupLeads).mockResolvedValue([
       {
         id: 'a', email: 'jo@example.com', name: null, handle: null, source: 'beta_induction',
-        stepReached: 2, stepLabel: 'Feature pick', summary: '', createdAt: 'c', updatedAt: 'u', ageDays: 1,
+        stepReached: 2, stepLabel: 'Feature pick', summary: '', createdAt: 'c', updatedAt: 'u', ageDays: 1, score: null, hot: false,
       },
     ])
     const r = await exportAbandonedSignupLeadsCsv({ sinceDays: 90 })

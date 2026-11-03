@@ -4083,6 +4083,100 @@ export type Database = {
           },
         ]
       }
+      create_space_drafts: {
+        Row: {
+          converted_at: string | null
+          created_at: string
+          draft: Json
+          email: string
+          handle: string | null
+          id: string
+          purge_after: string
+          saved_at: string
+          signup_lead_id: string | null
+          started_at: string | null
+          step_reached: number
+          token_hash: string
+          tz: string | null
+          unsubscribed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string
+          draft?: Json
+          email: string
+          handle?: string | null
+          id?: string
+          purge_after?: string
+          saved_at?: string
+          signup_lead_id?: string | null
+          started_at?: string | null
+          step_reached?: number
+          token_hash: string
+          tz?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string
+          draft?: Json
+          email?: string
+          handle?: string | null
+          id?: string
+          purge_after?: string
+          saved_at?: string
+          signup_lead_id?: string | null
+          started_at?: string | null
+          step_reached?: number
+          token_hash?: string
+          tz?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "create_space_drafts_signup_lead_id_fkey"
+            columns: ["signup_lead_id"]
+            isOneToOne: false
+            referencedRelation: "signup_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      create_space_draft_email_log: {
+        Row: {
+          draft_id: string
+          id: string
+          message_ref: string | null
+          sent_at: string
+          trigger_kind: string
+        }
+        Insert: {
+          draft_id: string
+          id?: string
+          message_ref?: string | null
+          sent_at?: string
+          trigger_kind: string
+        }
+        Update: {
+          draft_id?: string
+          id?: string
+          message_ref?: string | null
+          sent_at?: string
+          trigger_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "create_space_draft_email_log_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "create_space_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_tips: {
         Row: {
           content_id: string

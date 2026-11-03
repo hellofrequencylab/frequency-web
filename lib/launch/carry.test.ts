@@ -17,15 +17,15 @@ describe('what a visitor brings to the launch', () => {
   it('reads the v3 builder keys and drops a phone, place or photo token off-shape', () => {
     const full = { line: ' Weekly  pottery classes. ', phone: '+1 (760) 555-0100', where: 'Carlsbad', cover: 's2', logo: 'mono', profile: 'initials' }
     expect(readCarry(full)).toEqual({ ...full, line: 'Weekly pottery classes.' })
-    expect(readCarry({ phone: 'call me', where: '   ', cover: 'https://x', logo: 'drop table', profile: 's' })).toEqual({})
+    expect(readCarry({ phone: 'call me', where: '   ', cover: 'https://x', logo: 'drop table', profile: 's', lead: 'short' })).toEqual({})
     expect(readCarry({ line: 'x'.repeat(200) }).line).toHaveLength(160)
     expect(readCarry({ where: 'y'.repeat(100) }).where).toHaveLength(80)
   })
 
-  it('round-trips every key and keeps the Spotlight step inside the twelve keys the hold allows', () => {
-    const carry = { handle: 'saltwater', theme: 'designer', accent: '2', host: 'Sam', line: 'Pottery.', phone: '555 0100', where: 'Online', cover: 'up', logo: 'word', profile: 's1' }
+  it('round-trips every key and keeps the Spotlight step inside the thirteen keys the hold allows', () => {
+    const carry = { handle: 'saltwater', theme: 'designer', accent: '2', host: 'Sam', line: 'Pottery.', phone: '555 0100', where: 'Online', cover: 'up', logo: 'word', profile: 's1', lead: 'AbCdEfGhIjKlMnOpQrStUvWxYz012345' }
     expect(readCarry(carryFields(carry))).toEqual(carry)
-    expect(Object.keys(carryFields(carry)).length + ['name', 'link'].length).toBeLessThanOrEqual(12)
+    expect(Object.keys(carryFields(carry)).length + ['name', 'link'].length).toBeLessThanOrEqual(13)
   })
 
   it('writes only the keys that have a value, and what it writes reads back whole', () => {

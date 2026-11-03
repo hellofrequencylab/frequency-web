@@ -40,6 +40,7 @@ import { midnightComponents, MIDNIGHT_CATEGORY_COMPONENTS } from '@/components/p
 import { midnightPracticeComponents, MIDNIGHT_PRACTICE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight-practice'
 import { designerComponents, DESIGNER_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/designer'
 import { freeHumanBlocks } from '@/components/page-editor/blocks/free-human'
+import { servicesBlocks } from '@/components/page-editor/blocks/services'
 import { freeHumanCalendarBlocks } from '@/components/page-editor/blocks/free-human-calendar'
 import { freeHumanWheelBlocks } from '@/components/page-editor/blocks/free-human-wheel'
 import { rolesComponents, ROLE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/roles'
@@ -97,6 +98,7 @@ export const config: Config = {
     ...midnightPracticeComponents,
     ...designerComponents,
     ...freeHumanBlocks,
+    ...servicesBlocks,
     ...freeHumanCalendarBlocks,
     ...freeHumanWheelBlocks,
     ...rolesComponents,
@@ -229,6 +231,11 @@ export const config: Config = {
     freeHuman: {
       title: 'Free Human sections',
       components: [...Object.keys(freeHumanBlocks), ...Object.keys(freeHumanCalendarBlocks), ...Object.keys(freeHumanWheelBlocks)],
+    },
+    // The Services Theme Kit's section family (the Services design system): website pages only.
+    services: {
+      title: 'Services sections',
+      components: Object.keys(servicesBlocks),
     },
     // The role blocks (docs/THEME-COHESION.md, ADR-1923): Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ and CTA,
     // three layouts each, built on the core token contract so they wear every theme. Website pages only; opt-in.

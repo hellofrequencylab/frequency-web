@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2062",
+  "title": "Nocturne theme page: surface cards name themselves from their visible text",
+  "lane": "live",
+  "priority": "P3",
+  "size": "XS",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/site/pages/themes/frequency-midnight.tsx",
+    "ref": "Extra pass on /themes pages 2026-11-03: axe WCAG 2.1 AA at 1280 and 390 on nocturne, network, designer, temple"
+  },
+  "detail": "The four surface cards joined by dotted lines on /themes/nocturne carried aria-label 'Preview the website' and so on, which left the visible words (the sub-line) out of the accessible name (WCAG 2.5.3, four nodes). The label is gone; the name now comes from the card's own text. Axe is clean on all four theme pages at 1280 and 390 after this.\n\n Fixed 2026-11-03.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/nocturne-surface-cards-name.mjs"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}
