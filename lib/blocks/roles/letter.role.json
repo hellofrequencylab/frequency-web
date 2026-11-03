@@ -90,5 +90,11 @@
     "side",
     "text",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "draw"
+  }
 }
