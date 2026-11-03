@@ -40,7 +40,7 @@ import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-l
 import { postCreateLanding } from '@/lib/spaces/setup'
 import { startSpaceFromNiche } from '@/lib/spaces/niche-start'
 import { resolvePicker } from '@/lib/spaces/space-picker'
-import { isMegaThemeId, withMegaTheme } from '@/lib/theme/mega-theme'
+import { NEW_SPACE_THEME, isMegaThemeId, withMegaTheme } from '@/lib/theme/mega-theme'
 import { parseIntents, parsePlanHint, planWantsBilling } from '@/lib/spaces/create-wizard'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { sendOperatorEmailForSpace } from '@/lib/marketing/operator-lifecycle'
@@ -331,7 +331,16 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   if (!birth.presetId) await startSpaceFromNiche(spaceId, picked.niche)
   // The theme the owner chose on /themes dresses the new Space (LIVE-SYS-7). Best-effort and logged: a failed
   // theme write never blocks the Space, and the owner can pick the theme again from the editor.
-  if (isMegaThemeId(input.theme)) {
+  // No pick ("Pick later", a door with no theme) starts the Space in New World (LIVE-2058): website, email, Spotlight
+  // and the Tide accent. Only an explicit pick also publishes a starter website and adds the welcome sequence; the
+  // default dresses the Space and leaves publishing to the owner. Existing Spaces are never touched.
+  const pickedTheme = isMegaThemeId(input.theme)
+  if (!pickedTheme) {
+    const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
+    const applied = await applyMegaTheme(spaceId, NEW_SPACE_THEME).catch(() => null)
+    if (!applied?.ok) console.error('[createSpace] could not start the new space in the default theme')
+  }
+  if (pickedTheme) {
     // Their own accent first: applyMegaTheme fills the brand colour only while it is blank, so the pick must land before it.
     if (typeof input.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.accent)) {
       const { fillSpaceBrandAccent } = await import('@/lib/spaces/store')
