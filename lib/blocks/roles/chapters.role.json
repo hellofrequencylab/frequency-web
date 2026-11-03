@@ -130,5 +130,11 @@
     "name",
     "text",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "freeze"
+  }
 }

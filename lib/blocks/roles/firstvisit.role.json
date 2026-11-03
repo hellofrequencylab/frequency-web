@@ -108,5 +108,11 @@
     "text",
     "title"
   ],
-  "data": null
+  "data": null,
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "draw"
+  }
 }
