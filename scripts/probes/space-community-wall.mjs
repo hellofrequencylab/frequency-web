@@ -20,6 +20,7 @@ if (stage === 'w0') {
   if (!existsSync('app/(main)/spaces/[slug]/(profile)/community/page.tsx')) bad.push('the Space Community page does not exist')
   if (!existsSync('app/(main)/spaces/[slug]/manage/community/page.tsx')) bad.push('the owner has no wall settings and moderation page')
   if (!/calendar/i.test(read('app/(main)/spaces/[slug]/(profile)/community/page.tsx'))) bad.push('the Community page does not show the Space calendar (owner ruling 7)')
+  if (!/Who's here|Who&apos;s here/.test(read('app/(main)/spaces/[slug]/(profile)/community/page.tsx'))) bad.push('the Community side column has no About / Who is here panel from the design')
 } else if (stage === 'w3') {
   for (const f of ['lib/spaces/space-discussion.ts', 'components/spaces/space-circle-card.tsx', 'components/widgets/circles/circle-space-info.tsx'])
     if (existsSync(f)) bad.push(`${f} still exists`)

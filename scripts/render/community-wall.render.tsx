@@ -28,6 +28,13 @@ vi.mock('@/lib/spaces/community-wall', async (orig) => ({
   readWallSettings: async () => ({ readAccess: state.v === 'closed' ? 'members' : 'anyone', postAccess: 'members', followersInteract: false }),
   readWallStanding: async () => (state.v === 'signed-out' || state.v === 'closed' ? (state.v === 'closed' ? 'signed-out' : 'signed-out') : state.v === 'follower' ? 'follower' : state.v === 'empty-manager' ? 'owner' : 'member'),
 }))
+vi.mock('@/lib/calendar/public-month', () => ({ loadSpaceUpcomingFeed: async () => state.v === 'empty-manager' ? [] : [
+  { id: 'e1', slug: 'sunrise-flow-nov-8', title: 'Sunrise flow in the courtyard', starts_at: '2026-11-08T08:00:00', location: 'Bird Rock courtyard' },
+  { id: 'e2', slug: 'breathwork-nov-12', title: 'Breathwork night', starts_at: '2026-11-12T19:00:00', location: 'Studio B' },
+] }))
+vi.mock('@/lib/spaces/tagline', () => ({ readTagline: async () => 'Slow flow by the sea. Come as you are, leave a little lighter.' }))
+vi.mock('@/lib/spaces/memberships', () => ({ countActiveMembersByTier: async () => new Map([['t1', 38], ['t2', 12]]) }))
+vi.mock('@/lib/spaces/follows', () => ({ listSpaceFollowerIds: async () => Array.from({ length: 124 }, (_, i) => `f${i}`) }))
 vi.mock('@/lib/circles/store', () => ({
   listPublicSpaceCircles: async () => [
     { id: 'c1', slug: 'sunrise-flow', name: 'Sunrise flow', member_count: 41, is_space_primary: false },

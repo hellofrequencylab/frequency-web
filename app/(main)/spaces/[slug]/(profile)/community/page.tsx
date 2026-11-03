@@ -15,6 +15,13 @@ import {
   standingCanRead,
 } from '@/lib/spaces/community-wall'
 import { listPublicSpaceCircles } from '@/lib/circles/store'
+import { loadSpaceUpcomingFeed } from '@/lib/calendar/public-month'
+import { readTagline } from '@/lib/spaces/tagline'
+import { countActiveMembersByTier } from '@/lib/spaces/memberships'
+import { listSpaceFollowerIds } from '@/lib/spaces/follows'
+import { dayInZone } from '@/lib/time/zone'
+import { UpcomingEventRows } from '@/components/events/upcoming-event-rows'
+import { SectionHeader } from '@/components/ui/section-header'
 import { CommunityWallFeed } from '@/components/spaces/community-wall-feed'
 import { WallComposer } from '@/components/spaces/wall-composer'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -108,6 +115,12 @@ export default async function SpaceCommunityPage({ params }: { params: Promise<{
           </section>
 
           <aside aria-label="Beside the wall" className="min-w-0 space-y-4">
+            <Suspense fallback={null}>
+              <AboutTheSpace spaceId={space.id} slug={space.slug} brandName={brandName} standing={standing} />
+            </Suspense>
+            <Suspense fallback={null}>
+              <WhatsHappening spaceId={space.id} slug={space.slug} timeZone={space.timeZone ?? null} canManage={canManage} />
+            </Suspense>
             <Suspense fallback={null}>
               <TopicCircles spaceId={space.id} slug={space.slug} viewerProfileId={viewerProfileId} canManage={canManage} />
             </Suspense>
@@ -213,6 +226,84 @@ async function TopicCircles({
         <MessagesSquare className="h-3.5 w-3.5" aria-hidden />
         {topics.length > CIRCLES_SHOWN ? `All ${topics.length} circles` : 'Open Circles'}
       </Link>
+    </section>
+  )
+}
+
+/** EVENTS SHOWN beside the wall. The full calendar is its own tab. */
+const EVENTS_SHOWN = 3
+
+/**
+ * The Space calendar on the Community page (owner ruling 7, 2026-11-03): what is next, soonest first,
+ * composed from the same rows the Calendar tab's Up next band renders, under the calendar's one name
+ * (BLD-000 ruling 2: "What's Happening"). Honest-empty: a visitor sees nothing when nothing is
+ * scheduled; the team sees one line and a door to add something.
+ */
+async function WhatsHappening({
+  spaceId,
+  slug,
+  timeZone,
+  canManage,
+}: {
+  spaceId: string
+  slug: string
+  timeZone: string | null
+  canManage: boolean
+}) {
+  const rows = await loadSpaceUpcomingFeed(spaceId, dayInZone(new Date(), timeZone), EVENTS_SHOWN).catch(() => [])
+  if (rows.length === 0 && !canManage) return null
+  return (
+    <section aria-labelledby="community-whats-happening" className="rounded-card border border-border bg-surface p-4">
+      <SectionHeader id="community-whats-happening" title="What's Happening" count={rows.length || undefined} />
+      {rows.length > 0 ? (
+        <UpcomingEventRows events={rows} />
+      ) : (
+        <p className="text-body-sm text-muted">Nothing on the calendar yet. Add a gathering and it shows up here.</p>
+      )}
+      <Link href={`/spaces/${slug}/calendar`} className={buttonClasses('ghost', 'sm', 'mt-2')}>
+        Open the calendar
+      </Link>
+    </section>
+  )
+}
+
+/**
+ * ABOUT AND WHO'S HERE beside the wall (the Circles handoff's side column): the Space's own line,
+ * then how many people are in it, as counts only. Names and faces stay off a public page; the
+ * People tab is where a member meets the others. Counts are fail-safe to zero.
+ */
+async function AboutTheSpace({
+  spaceId,
+  slug,
+  brandName,
+  standing,
+}: {
+  spaceId: string
+  slug: string
+  brandName: string
+  standing: string
+}) {
+  const [tagline, byTier, followers] = await Promise.all([
+    readTagline(spaceId).catch(() => null),
+    countActiveMembersByTier(spaceId).catch(() => new Map<string, number>()),
+    listSpaceFollowerIds(spaceId).catch(() => [] as string[]),
+  ])
+  const members = [...byTier.values()].reduce((n, c) => n + c, 0)
+  const outside = standing === 'visitor' || standing === 'signed-out' || standing === 'follower'
+  return (
+    <section aria-labelledby="community-about" className="rounded-card border border-border bg-surface p-4">
+      <SectionHeader id="community-about" title={`About ${brandName}`} />
+      {tagline ? <p className="text-body-sm text-text">{tagline}</p> : null}
+      <h3 className="mt-3 text-meta font-semibold uppercase tracking-wide text-muted">Who&apos;s here</h3>
+      <p className="text-body-sm text-text">
+        {members} {members === 1 ? 'member' : 'members'} · {followers.length}{' '}
+        {followers.length === 1 ? 'follower' : 'followers'}
+      </p>
+      {outside ? (
+        <Link href={`/spaces/${slug}/memberships`} className={buttonClasses('secondary', 'sm', 'mt-3')}>
+          See how to join
+        </Link>
+      ) : null}
     </section>
   )
 }
