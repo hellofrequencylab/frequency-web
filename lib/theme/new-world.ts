@@ -13,7 +13,7 @@ import type { ThemeSurface } from "@/lib/theme/surface-vars";
 //  - The starting accent is Tide teal (Daniel, 2026-11-03), so the flare ramps are Tide, not the zip's violet.
 //  - The Stage inks are Frequency's own slate, not the zip's violet-tinted scale (the violet family is retired, ADR-1792).
 
-/** The owner accent presets that ship now. Tide is the starting accent; the rest wait on the owner. Id to the steps the site engine reads. */
+/** The owner accent presets that ship now (Tide, Signal, Bloom, Ember, Fern). Tide is the starting accent. Id to the steps the site engine reads. */
 export const NEW_WORLD_ACCENTS = {
   tide: {
     label: "Tide",
@@ -24,6 +24,47 @@ export const NEW_WORLD_ACCENTS = {
     deep: "#8EDBE8",
     glow2: "#FF3DAE",
     glow3: "#2FDCEE",
+  },
+  // Signal, Bloom, Ember and Fern reuse the Services preset values (owner, 2026-11-03: no violet, so no Iris).
+  signal: {
+    label: "Signal",
+    accent: "#2F7CF6",
+    hover: "#1F60CC",
+    text: "#6AA2FF",
+    soft: "#164593",
+    deep: "#A9C8FF",
+    glow2: "#22B8D6",
+    glow3: "#8B7BFF",
+  },
+  bloom: {
+    label: "Bloom",
+    accent: "#F05A73",
+    hover: "#CC3F58",
+    text: "#FF8398",
+    soft: "#8F2A3C",
+    deep: "#FFB8C3",
+    glow2: "#FF9466",
+    glow3: "#B57CFF",
+  },
+  ember: {
+    label: "Ember",
+    accent: "#F2643A",
+    hover: "#CC4A22",
+    text: "#FF9068",
+    soft: "#8F3316",
+    deep: "#FFC2A8",
+    glow2: "#F2557A",
+    glow3: "#FF9F5A",
+  },
+  fern: {
+    label: "Fern",
+    accent: "#1FAF6E",
+    hover: "#168C57",
+    text: "#4FD394",
+    soft: "#0F5E3B",
+    deep: "#9CE8C2",
+    glow2: "#2BB3A6",
+    glow3: "#8FD94A",
   },
 } as const;
 
