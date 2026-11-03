@@ -218,6 +218,36 @@
   [data-design="frequency"] [data-kit="site"] .ft2-cols div {
     gap: 0;
   }
+  /* The footer fold (menu strategy 2026-11-03): five quick links, then "More from Frequency". */
+  [data-design="frequency"] [data-kit="site"] .ft2-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+  [data-design="frequency"] [data-kit="site"] .ft2-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 24px;
+  }
+  [data-design="frequency"] [data-kit="site"] .ft2-quick a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--fq-hit-min);
+    font: 500 15px/1.3 var(--fq-font-sans);
+    text-decoration: none;
+  }
+  [data-design="frequency"] [data-kit="site"] .ft2-more > summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--fq-hit-min);
+    cursor: pointer;
+    font: 500 13px/1.3 var(--fq-font-sans);
+    opacity: 0.75;
+  }
+  [data-design="frequency"] [data-kit="site"] .ft2-more[open] > summary {
+    margin-bottom: 12px;
+  }
   [data-design="frequency"] [data-kit="site"] .crumbs {
     align-items: center;
   }

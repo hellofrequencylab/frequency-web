@@ -10,7 +10,7 @@ describe('public header projection and current editor defaults',()=>{
  it('keeps exact current coded fallback for missing/default and unedited modern seeds',()=>{
   expect(projectPublicHeader(frequencyHeaderDefaults(),{viewerRole:'visitor'})).toBeNull()
   expect(projectPublicHeader({...applyRegistryGates(frequencyHeaderDefaults()),isDefault:false},{viewerRole:'visitor'})).toBeNull()
-  expect(defaultMenu('header').categories.map(c=>c.label)).toEqual(['For people','For spaces','Features'])
+  expect(defaultMenu('header').categories.map(c=>c.label)).toEqual(['Discover','For Spaces'])
  })
  it('projects edited/new rows and preserves legitimate empty customization',()=>{
   const menu=custom();menu.rootItems=[item({label:'Renamed pricing',href:'/pricing'}),item({id:'new',label:'New guide',href:'/guides'})]
@@ -34,7 +34,7 @@ describe('public header projection and current editor defaults',()=>{
  })
  it('distinguishes canonical wings from feature jobs after a content-only edit',()=>{
   const menu=custom()
-  expect(projectPublicHeader(menu,{viewerRole:'visitor'})?.groups.map(g=>g.design)).toEqual(['people','spaces','packages'])
+  expect(projectPublicHeader(menu,{viewerRole:'visitor'})?.groups.map(g=>g.design)).toEqual(['people','spaces'])
  })
  it('does not project a gated parent even when its leaf itself is public',()=>{
   const menu=custom();menu.rootItems=[];menu.categories=[{id:'admin-group',label:'Private tools',position:0,colSpan:1,minAccess:'admin',items:[item()],children:[]}]
