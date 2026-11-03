@@ -1,0 +1,186 @@
+{
+ "theme": "wildheart",
+ "repoThemeId": "wildheart",
+ "note": "Same shape as docs/design-systems/free-human/rules.json. First match wins. The design names its semantic layer without a prefix (--bg-page, --gradient-violet); the repo keeps every Wildheart token under --wh-.",
+ "tokenSources": [
+  "WILDHEART_TOKENS_CSS"
+ ],
+ "baseline": "docs/design-systems/wildheart/baseline.json",
+ "tokenMap": [
+  {
+   "from": "--gradient-",
+   "to": "--wh-gradient-"
+  },
+  {
+   "from": "--wash-",
+   "to": "--wh-wash-"
+  },
+  {
+   "from": "--petal-",
+   "to": "--wh-petal-"
+  },
+  {
+   "from": "--symbol-",
+   "to": "--wh-symbol-"
+  },
+  {
+   "from": "--dur-",
+   "to": "--wh-dur-"
+  },
+  {
+   "from": "--tracking-",
+   "to": "--wh-tracking-"
+  },
+  {
+   "from": "--season",
+   "to": "--wh-season"
+  },
+  {
+   "from": "--texture-grain",
+   "to": "--wh-grain"
+  },
+  {
+   "from": "--texture-",
+   "to": "--wh-"
+  },
+  {
+   "from": "--shadow-",
+   "to": "--wh-shadow-"
+  },
+  {
+   "from": "--space-",
+   "to": "--wh-space-"
+  }
+ ],
+ "rules": [
+  {
+   "glob": "README.md",
+   "kind": "reference",
+   "reason": "Handoff text; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "SKILL.md",
+   "kind": "reference",
+   "reason": "Claude Design's skill note for the design system."
+  },
+  {
+   "glob": "brand-guide.md",
+   "kind": "reference",
+   "reason": "Brand guide; its rules are the README's, checked through tokens, copy and assets."
+  },
+  {
+   "glob": "theme.json",
+   "kind": "reference",
+   "reason": "The same values as tokens/*.css in machine-readable form; the tokens rule checks them."
+  },
+  {
+   "glob": "styles.css",
+   "kind": "reference",
+   "reason": "Prototype stylesheet that imports tokens/*.css."
+  },
+  {
+   "glob": "_ds_bundle.js",
+   "kind": "reference",
+   "reason": "Generated prototype bundle."
+  },
+  {
+   "glob": "support.js",
+   "kind": "reference",
+   "reason": "Prototype runtime."
+  },
+  {
+   "glob": "templates/*/support.js",
+   "kind": "reference",
+   "reason": "Prototype runtime."
+  },
+  {
+   "glob": "templates/*/ds-base.js",
+   "kind": "reference",
+   "reason": "Prototype loader."
+  },
+  {
+   "glob": "tokens/*.css",
+   "kind": "tokens"
+  },
+  {
+   "glob": "Website.html",
+   "kind": "reference",
+   "reason": "Self-contained copy of templates/website/Website.dc.html; the copy rule runs on the template."
+  },
+  {
+   "glob": "templates/website/Website.dc.html",
+   "kind": "copy",
+   "targets": [
+    "lib/sites",
+    "components/sites",
+    "components/page-editor/blocks",
+    "lib/themes"
+   ]
+  },
+  {
+   "glob": "Vision.html",
+   "kind": "reference",
+   "reason": "Wildheart program's leadership overview (an admin page for that program, not a theme surface)."
+  },
+  {
+   "glob": "Calendar.html",
+   "kind": "reference",
+   "reason": "Wrapper for templates/calendar/Calendar.dc.html."
+  },
+  {
+   "glob": "templates/executive-overview/ExecutiveOverview.dc.html",
+   "kind": "reference",
+   "reason": "Wildheart program's leadership overview (an admin page for that program, not a theme surface)."
+  },
+  {
+   "glob": "templates/calendar/Calendar.dc.html",
+   "kind": "reference",
+   "reason": "Wildheart program's 2027 ritual calendar admin page; the theme's calendar parts (SkyMap, NowLine, SeasonTrack) are checked as built components."
+  },
+  {
+   "glob": "assets/photos/*.jpg",
+   "kind": "asset",
+   "target": "public/brand/wildheart/photos/{base}"
+  },
+  {
+   "glob": "assets/wildheart-logo.svg",
+   "kind": "asset",
+   "target": "public/brand/wildheart/{base}"
+  },
+  {
+   "glob": "assets/wildheart-figure.svg",
+   "kind": "asset",
+   "target": "public/brand/wildheart/{base}"
+  },
+  {
+   "glob": "assets/*.png",
+   "kind": "reference",
+   "reason": "Raster copies of the logo; the site ships the SVG."
+  },
+  {
+   "glob": "fonts/IMFellEnglish-*.ttf",
+   "kind": "asset",
+   "target": "public/fonts/wildheart/{base}"
+  },
+  {
+   "glob": "components/calendar/SkyMap.*",
+   "kind": "built",
+   "target": "components/sites/wildheart-sky-map.tsx"
+  },
+  {
+   "glob": "components/calendar/NowLine.*",
+   "kind": "built",
+   "target": "components/sites/wildheart-now-line.tsx"
+  },
+  {
+   "glob": "components/core/LogoMark.*",
+   "kind": "built",
+   "target": "components/sites/wildheart-symbols.tsx"
+  },
+  {
+   "glob": "components/**",
+   "kind": "reference",
+   "reason": "Prototype component sources; Frequency's own components carry the restyle (README section 3)."
+  }
+ ]
+}
