@@ -34,7 +34,7 @@ export const NEW_WORLD_ACCENTS = {
     soft: "#164593",
     deep: "#A9C8FF",
     glow2: "#22B8D6",
-    glow3: "#8B7BFF",
+    glow3: "#40AAFF",
   },
   bloom: {
     label: "Bloom",
@@ -44,7 +44,7 @@ export const NEW_WORLD_ACCENTS = {
     soft: "#8F2A3C",
     deep: "#FFB8C3",
     glow2: "#FF9466",
-    glow3: "#B57CFF",
+    glow3: "#FF9F5A",
   },
   ember: {
     label: "Ember",
