@@ -1,10 +1,7 @@
 {
  "ledger": "LIVE-2042",
  "ids": [
-  "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#3d26a335",
   "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#5251606d",
-  "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#86ece231",
-  "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#c9c265f4",
   "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#db63b443",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#00c51d11",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#03029622",
@@ -68,9 +65,7 @@
   "missing:design_handoff_theme_editor/reference/tokens/base.css",
   "missing:design_handoff_theme_editor/reference/tokens/effects.css",
   "missing:design_handoff_theme_editor/reference/tokens/textures.css",
-  "missing:design_handoff_theme_editor/reference/ui_kits/products/Spotlight.jsx.txt",
   "missing:design_handoff_theme_editor/reference/ui_kits/site/Blocks.jsx.txt",
-  "missing:design_handoff_theme_editor/reference/ui_kits/site/Chrome.jsx.txt",
-  "missing:design_handoff_theme_editor/reference/ui_kits/site/record.js.txt"
+  "missing:design_handoff_theme_editor/reference/ui_kits/site/Chrome.jsx.txt"
  ]
 }
