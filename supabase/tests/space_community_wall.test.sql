@@ -64,8 +64,11 @@ insert into public.spaces (id, slug, name, type, entity_id, owner_profile_id, st
 insert into public.space_members (space_id, profile_id, role, status) values
   ('00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-b400-000000000002', 'moderator', 'active'),
   ('00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-b400-000000000003', 'viewer', 'active');
-insert into public.space_memberships (space_id, member_profile_id, status) values
-  ('00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-b400-000000000004', 'active');
+insert into public.space_membership_tiers (id, space_id, name, price_cents) values
+  ('00000000-0000-4000-f400-000000000001', '00000000-0000-4000-c400-00000000000a', 'Wall Tier', 0);
+insert into public.space_memberships (space_id, member_profile_id, tier_id, status) values
+  ('00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-b400-000000000004',
+   '00000000-0000-4000-f400-000000000001', 'active');
 insert into public.space_follows (space_id, follower_profile_id) values
   ('00000000-0000-4000-c400-00000000000a', '00000000-0000-4000-b400-000000000005');
 

@@ -8,8 +8,9 @@
 --
 -- WHAT THIS FILE DOES (additive and idempotent; nothing is dropped, moved or rewritten):
 --   1. posts.scope_space_id: the typed scope arc (H1-1, 20260829000000) gets its fourth target. A wall
---      post is an ordinary post whose scope_id is the Space id; sync_post_scope_arc derives the typed
---      column from it exactly as it does for circles, events and profiles. ON DELETE CASCADE: a
+--      post sets scope_id AND scope_space_id to the Space id explicitly. sync_post_scope_arc does NOT
+--      derive it from scope_id (existing space_update posts already use scope_id = Space id and must
+--      keep the old arms); it only keeps the arc in step on re-scope and fills scope_id from the arc. ON DELETE CASCADE: a
 --      deleted Space takes its wall with it, as it already takes its Circles.
 --   2. space_wall_settings: one row per Space, only when the owner changes a default. No row means the
 --      defaults: anyone reads, members post, followers may not interact.
@@ -38,7 +39,7 @@ alter table public.posts
   add column if not exists scope_space_id uuid references public.spaces(id) on delete cascade;
 
 comment on column public.posts.scope_space_id is
-  'Typed scope arc (ADR-1938): set when the post lives on a Space''s Community wall. Derived from scope_id by sync_post_scope_arc. Space posts are always visibility cluster; reads and writes go through private.can_read_space_wall / can_post_space_wall.';
+  'Typed scope arc (ADR-1938): set when the post lives on a Space''s Community wall. Set explicitly with scope_id by the wall writer (never derived). Space posts are always visibility cluster; reads and writes go through private.can_read_space_wall / can_post_space_wall.';
 
 create index if not exists posts_scope_space_created_idx
   on public.posts (scope_space_id, created_at desc) where scope_space_id is not null;
@@ -66,8 +67,6 @@ begin
       new.scope_event_id := new.scope_id;
     elsif exists (select 1 from public.profiles p where p.id = new.scope_id) then
       new.scope_profile_id := new.scope_id;
-    elsif exists (select 1 from public.spaces s where s.id = new.scope_id) then
-      new.scope_space_id := new.scope_id;
     end if;
   end if;
 
@@ -206,7 +205,7 @@ create policy "posts: read by visibility (crew+ or public)"
     (
       scope_space_id is null
       and (
-        ((private.get_my_role() >= 'member'::community_role) and ((visibility = 'public'::post_visibility) or ((visibility = 'region'::post_visibility) and (scope_id = private.get_my_region_id())) or ((visibility = 'group'::post_visibility) and (scope_id = any (private.get_my_circle_ids()))) or ((visibility = 'cluster'::post_visibility) and ((scope_id = any (private.get_my_circle_ids())) or (exists (select 1 from circles c where ((c.id = posts.scope_id) and (((c.hub_id is not null) and (c.hub_id = any (private.get_my_hub_ids()))) or ((c.hub_id is null) and (c.topical_channel_id = any (private.get_my_tuned_channel_ids()))))))) or private.is_member_of_circle_space(scope_id)))))
+        ((private.get_my_role() >= 'member'::community_role) and ((visibility = 'public'::post_visibility) or ((visibility = 'region'::post_visibility) and (scope_id = private.get_my_region_id())) or ((visibility = 'group'::post_visibility) and (scope_id = any (private.get_my_circle_ids()))) or ((visibility = 'cluster'::post_visibility) and ((scope_id = any (private.get_my_circle_ids())) or (exists ( select 1 from circles c where ((c.id = posts.scope_id) and (((c.hub_id is not null) and (c.hub_id = any (private.get_my_hub_ids()))) or ((c.hub_id is null) and ((c.topical_channel_id = any (private.get_my_tuned_channel_ids())) or (exists ( select 1 from circle_channels cc where ((cc.circle_id = c.id) and (cc.topical_channel_id = any (private.get_my_tuned_channel_ids()))))))))))) or private.is_member_of_circle_space(scope_id)))))
         or (((select auth.uid()) is null) and (visibility = 'public'::post_visibility) and (parent_id is null))
       )
     )
