@@ -1,0 +1,112 @@
+{
+  "role": "FirstVisit",
+  "type": "RoleFirstVisit",
+  "label": "Your first visit (all themes)",
+  "replaces": [
+    "CircleFirstNight",
+    "WildheartFirstNight"
+  ],
+  "slots": {
+    "required": {
+      "items": {
+        "type": "list",
+        "min": 2,
+        "max": 6,
+        "item": {
+          "title": "text<=60",
+          "body": "text<=240"
+        }
+      }
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280"
+    }
+  },
+  "variants": {
+    "thread": {
+      "label": "Numbered thread"
+    },
+    "grid": {
+      "label": "Cards"
+    }
+  },
+  "default": "thread",
+  "sample": {
+    "sample": true,
+    "eyebrow": "Your first visit",
+    "title": "Walking in alone is the *hard part*",
+    "lead": "Here is what happens, so nothing is a surprise.",
+    "items": [
+      {
+        "title": "Who is there",
+        "body": "Replace this with who you will meet and how many."
+      },
+      {
+        "title": "How long",
+        "body": "Replace this with how long it lasts and when you can leave."
+      },
+      {
+        "title": "What to bring",
+        "body": "Replace this with what to wear or bring, even if it is nothing."
+      },
+      {
+        "title": "At the door",
+        "body": "Replace this with who says hello and what they say."
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "body",
+    "eyebrow",
+    "heading",
+    "index",
+    "inner",
+    "item",
+    "lead",
+    "list",
+    "name",
+    "text",
+    "title"
+  ],
+  "data": null
+}

@@ -11,4 +11,9 @@ export default {
   cta: 'band',
   faq: 'stack',
   gallery: 'mosaic',
+  firstvisit: 'thread',
+  booking: 'board',
+  locations: 'card',
+  business: 'list',
+  story: 'center',
 } satisfies PresentationDefaults

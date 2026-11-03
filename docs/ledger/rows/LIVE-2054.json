@@ -1,0 +1,18 @@
+{
+ "id": "LIVE-2054",
+ "title": "Register New World as its own theme: id new-world, --nw-* tokens, theme contract entry, hidden",
+ "lane": "live",
+ "priority": "P1",
+ "size": "M",
+ "status": "open",
+ "source": {
+  "file": "docs/design-systems/new-world/rules.json",
+  "ref": "Daniel 2026-11-03: New World is the new mega template, default theme for every new Space"
+ },
+ "detail": "Separate from Services (id `services`, untouched). Adds NEW_WORLD_TOKENS_CSS (three tiers: Frequency core verbatim, alias tier, scoped data-th night|day registers, OKLCH accents with vividness), themes.New World in theme-contract.json, the editor theme, the manifest at schema 2, and the SiteThemeId. Coordinate with the Services thread, which edits site-style.ts registration. Theme fence: tokens scoped to [data-house-theme=\"new-world\"], stand-alone site render only.",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node -e \"process.exit(require('fs').existsSync('lib/theme/new-world.ts')?0:1)\""
+ },
+ "wave": "W7"
+}

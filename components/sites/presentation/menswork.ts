@@ -8,4 +8,9 @@ export default {
   offerings: 'cards',
   statement: 'band',
   proof: 'stats',
+  firstvisit: 'grid',
+  booking: 'board',
+  locations: 'split',
+  business: 'grid',
+  story: 'split',
 } satisfies PresentationDefaults

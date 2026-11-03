@@ -1,0 +1,452 @@
+[
+ {
+  "path": "design_handoff_theme_editor/IMPLEMENTATION-PLAN.md",
+  "bytes": 10453,
+  "sha256": "08e6bda80f02a68fe5adbdf30e8d21f6909df4bd4dca9e15a22e78e1b24c59db"
+ },
+ {
+  "path": "design_handoff_theme_editor/README.md",
+  "bytes": 11626,
+  "sha256": "fdb18f963630e5228ad690cf389829729730dbdeb6b1fc55d5e166433638c8c7"
+ },
+ {
+  "path": "design_handoff_theme_editor/THEME-EDITOR-FRAMEWORK.md",
+  "bytes": 13694,
+  "sha256": "68336972e621f7c8104abf8567e69dc7b7e2cb13b3ee83fa7768156e010b4518"
+ },
+ {
+  "path": "design_handoff_theme_editor/WHATS-NEW.md",
+  "bytes": 3239,
+  "sha256": "7b6d06c13c438b2f68da3230cc8325588eb1702177a50b4310ba71eef17c4594"
+ },
+ {
+  "path": "design_handoff_theme_editor/dials.json",
+  "bytes": 6751,
+  "sha256": "0e30c894f458bac2a1cf3a5a6770e77f614860669b3c0571529cdfd7604c72ec"
+ },
+ {
+  "path": "design_handoff_theme_editor/frequency/README.md",
+  "bytes": 1494,
+  "sha256": "85a1957b49d4b23f32277a4d29689b58880ce1c28ed743d29c932f2ca73e632b"
+ },
+ {
+  "path": "design_handoff_theme_editor/frequency/kits.services.json",
+  "bytes": 56626,
+  "sha256": "ba750e0289c8b77f19a3bc48f5c6204ba476f63dc1e27362b3bb9fdc5e4c739e"
+ },
+ {
+  "path": "design_handoff_theme_editor/frequency/theme-contract.services.json",
+  "bytes": 3542,
+  "sha256": "f09d9cde3783a4002081afac0c44646d3ebaf36050bddd949b9f4ebe0c3347e8"
+ },
+ {
+  "path": "design_handoff_theme_editor/manifest.schema.md",
+  "bytes": 5163,
+  "sha256": "556fb94993629cf9a803b6993fb3f45bfe0f9bc3a796f3043beb28c8d6d1b37d"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/Conformance.html",
+  "bytes": 10096,
+  "sha256": "964b0aa0c4e60df14c7aef51565eff57c62bc5e153f4541ea1fe7346d2264ff0"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/HANDOFF.md",
+  "bytes": 4532,
+  "sha256": "4cb09a8159e37ba0420f82b99804bd25bda53c18a4fbdba21b0c66fa2d2c2074"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/Kit Overview.html",
+  "bytes": 12396,
+  "sha256": "38d3d4e8ffac1a03f4a4ac474accd51cdf1a12ad400fcec0580eed30551a4821"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/Spotlight Layouts.html",
+  "bytes": 13507,
+  "sha256": "912cb8b6213f5b0eb0fff5adde131267242b715bc0555a7ab84b7f193530e6ea"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/Templates.html",
+  "bytes": 24341,
+  "sha256": "dbe3551b9dffee6c8622046ac289f31e6553905c78e50a706945cda38db32820"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/Theme Feature Page.html",
+  "bytes": 17187,
+  "sha256": "2cecf9655cabef9613527768b7875bd007fab39b4071b0b97638b2cb2c96c185"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/Web Theme.html",
+  "bytes": 5381,
+  "sha256": "949aeb3fcfacf7f555d3403763b63b6bf0336b1abd103278f53587562c4ef2ff"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/_ds_bundle.js.txt",
+  "bytes": 276933,
+  "sha256": "765b18334fa9c56e6026bb61e366adff2290aeee9a9afc9ff7a192a49e7391c3"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/assets/frequency-logo.png",
+  "bytes": 66065,
+  "sha256": "7f6043ad1e55b0056bcfc4707a94f6fc815befa9a933d0a750865f8086c36eef"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/brand/Logo.jsx.txt",
+  "bytes": 3142,
+  "sha256": "b26eb4e612ba023fc690733eab1b35f066e878741f046e1c3bcf0b47d7b71d48"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/brand/Logo.prompt.md",
+  "bytes": 598,
+  "sha256": "0b60d3fd462efe65dadbd093b88082fee3083f5ea45beec2e0db38a68abfbb69"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/brand/logo.card.html",
+  "bytes": 1439,
+  "sha256": "50da0f08bbefab5cd97e0f6459386ee7f686b3149ae4fba0d08e79fa830a418e"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/content/Accordion.jsx.txt",
+  "bytes": 2257,
+  "sha256": "a0ff2780ea875f2fe27987453d2933a79823ce420a5b9db3dbf77157c287404f"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/content/Accordion.prompt.md",
+  "bytes": 131,
+  "sha256": "a01a6516222f57953f9dfd1762e7afcef7206d9ac02fb96c0b824ab8ffefe3a3"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/content/OfferCard.jsx.txt",
+  "bytes": 3294,
+  "sha256": "2c9b50c44e36d8bc9851dd9691ba8b0ead6c0503f2359f456aa573021a2dbf9f"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/content/SectionHeader.jsx.txt",
+  "bytes": 1204,
+  "sha256": "dc43ae02ae585c90887d7f6d9d0c48ed7e8cec345ad5d0fd53c6259ad7090105"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/content/SectionHeader.prompt.md",
+  "bytes": 255,
+  "sha256": "2811a54f7067439e8f6a4af49fe1c8fdd323e50dc805871b51499c583dcd06df"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/content/ServiceCard.jsx.txt",
+  "bytes": 3181,
+  "sha256": "c8b721d1ec1bad874c526d055722d57c5bd4456d04028e0d7c471d1469be4c23"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/content/ServiceCard.prompt.md",
+  "bytes": 201,
+  "sha256": "ffd72a1e2025d035bb7ac98165bbf9fec09cfd80444150c60a3c0c75c47bdc01"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/content/content.card.html",
+  "bytes": 1980,
+  "sha256": "d464adaf6750c5f43e2d85ae80eba5700de9a1730ca8dce2b0eb19ba1c0ace74"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Arrow.jsx.txt",
+  "bytes": 734,
+  "sha256": "e850ed9e0d715cf1ab076c6a42419cfc4e9a7c3eb13ad13aa0e8a961f9394068"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Arrow.prompt.md",
+  "bytes": 131,
+  "sha256": "abca3253710ec9b8f8860ceafa8f4b105d3a6f2b29231a00be2d49bff49eb6e0"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Badge.jsx.txt",
+  "bytes": 1152,
+  "sha256": "a558c90ef21c7f7d13bd8c216badc541e13ed4f960ef28d9d998bff6773fe03f"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Badge.prompt.md",
+  "bytes": 141,
+  "sha256": "501562ce87ae1e08ece84f5885ff616e0b14270ea02124abcf83beae29726da1"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Button.jsx.txt",
+  "bytes": 3021,
+  "sha256": "10227838ff9a66acd387489fc593dee8fe7c847d6231973e177d4c65cb1509f6"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Button.prompt.md",
+  "bytes": 275,
+  "sha256": "3639f09740d7d754f11bbd751ef6e0155db67a0ac6e641fa4f7796fe95a45770"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Divider.jsx.txt",
+  "bytes": 1978,
+  "sha256": "fd789e4ed274d09343aa05d275cec93dc60a63b0562af54f742fb6a8e74b8d24"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Divider.prompt.md",
+  "bytes": 224,
+  "sha256": "76fa45d6537ca5f9c5d6ff7e3657c2b54b711d363a410eaba256b3192eba9dd1"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Eyebrow.jsx.txt",
+  "bytes": 819,
+  "sha256": "9eb72d07a3e10a9b632454ea77991824456394e5732f1282222fdf4094042b22"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Eyebrow.prompt.md",
+  "bytes": 174,
+  "sha256": "8bee79b775f6115109c04ca7058fde4852cceb8513c5b42457e42b49a262b987"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Icon.jsx.txt",
+  "bytes": 3206,
+  "sha256": "293e7734ca4272e9790914e95d9ddf49d0ec1e3520e494f6d75770220bdfe430"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/Icon.prompt.md",
+  "bytes": 428,
+  "sha256": "102124dcba37d0131026101434352367b6d887c430d20063665c93d040f713f3"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/IconButton.jsx.txt",
+  "bytes": 1101,
+  "sha256": "85f5789c6e78b0aa20a6691d9653dc3455996cd67a8767d79cc3393dde90fe41"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/IconButton.prompt.md",
+  "bytes": 134,
+  "sha256": "61fb6e1cd272759939e4d1aa93ba3cd79a7f11e23199d6bc8d43f6ca8acdf75f"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/core.card.html",
+  "bytes": 2408,
+  "sha256": "966b0c7a48b20226fb8d303091f25ce42818f869687832c4a0370accdea53553"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/core/icons.card.html",
+  "bytes": 1960,
+  "sha256": "ff9ef2fc0e018da5a1eb097af12761d283d4d10f196fc6c15cde216345856b6e"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/Checkbox.jsx.txt",
+  "bytes": 1093,
+  "sha256": "ee58fc8acc7979e53d571f4e9c522465f4f3012a120d6b2dc38f990d01337e3e"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/Checkbox.prompt.md",
+  "bytes": 114,
+  "sha256": "58bc2a4312cfd4144fdfa59aa04f23ee4d922352678ccb516ac6d550824b7b00"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/ChoiceGroup.jsx.txt",
+  "bytes": 2489,
+  "sha256": "d6e7f3f7a033031cd1c1e2ac07ff0c27e8e10434939db68cc49755e905d337da"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/ChoiceGroup.prompt.md",
+  "bytes": 172,
+  "sha256": "f61f4ca866489ba60d385d4758a901bbc37949045b4c33267fe7a66780eeac3f"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/Input.jsx.txt",
+  "bytes": 1417,
+  "sha256": "84fd268e262e06484fd227306bb4ad47f60b5c99d5821ff142cb1edd0efb7882"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/Input.prompt.md",
+  "bytes": 217,
+  "sha256": "496ca42a2f31d8fd4e82354bf95bfc88cce385c90dc83b91216d3edb3d09cf12"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/Select.jsx.txt",
+  "bytes": 1262,
+  "sha256": "2b4b531da510c2bc9d64be518b5196c3a856fe00de3119394dfa6468c72035b9"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/Select.prompt.md",
+  "bytes": 157,
+  "sha256": "8cc9ba4067c186e54df6ee6fdde53165ebcb21846a2988b5dfb03583ff88328a"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/Stepper.jsx.txt",
+  "bytes": 1311,
+  "sha256": "74f1e6c6031a7123330198096d24f3c7211b1e7286858a853c6a023a4c8f80a4"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/Stepper.prompt.md",
+  "bytes": 130,
+  "sha256": "9eba591790257f8b0ff673413ef844f4e6942388f23ec3c337ce12ffefe06321"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/components/forms/forms.card.html",
+  "bytes": 2083,
+  "sha256": "596c2b33d905b308515c17e31093e318d5d66090406a8ba84ba9337cbf2e4906"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/readme.md",
+  "bytes": 4626,
+  "sha256": "e4ce23e40adf09e96528fbe2f913a76302fd2002e9cee524ffa14f303510ed86"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/styles.css",
+  "bytes": 634,
+  "sha256": "962c5f93eef0ca8af7594e6865de7952f8674d7a431144731070f847d0b5e73e"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/base.css",
+  "bytes": 3927,
+  "sha256": "ce24e6291e81895fed574bd62622b88e2f7bebee2574abe48e7e2f5dc59b88e7"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/colors.css",
+  "bytes": 10963,
+  "sha256": "67acb476c145bf5efb3c8ecc36e995976438f1d646ffd22c34d45146a149b159"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/core/base.css",
+  "bytes": 8367,
+  "sha256": "0addf8039184cfee4ec4dbbebc75896e1adfaba938d553a46845f6b6c2ef2ea1"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/core/colors.css",
+  "bytes": 6286,
+  "sha256": "3a342f5cfa802e7eb3f806348ba3a93d4816225aff7e63a14cc114f1170ba67a"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/core/features.css",
+  "bytes": 7359,
+  "sha256": "c643eb9f4f6dd52ad57f66a8d13c050468061869c1c9154e669b72afc4dd899b"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/core/space-motion.css",
+  "bytes": 1583,
+  "sha256": "a9884f4175801d0e4f318466c92c7c29f0dfe09449e15dafac050d56d16780d9"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/core/themes.css",
+  "bytes": 5803,
+  "sha256": "aa2f5473b1859da30f5f7d43a9c8e75ac06ca4929c95e88ee05b7985e3a19709"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/core/typography.css",
+  "bytes": 1667,
+  "sha256": "bfb2dd92bab96b6321e5a45b4a3b474edd0a81f5f06381b3d37a9ccc9767f9a0"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/effects.css",
+  "bytes": 4744,
+  "sha256": "84e154dbf74ebabfe929452e2a6ee47305c9922331d3c468fe5e880b6345b3f6"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/frequency.css",
+  "bytes": 3676,
+  "sha256": "9ea68d5be66f32a8c6eec6d8423f6df901670701ca9a293c23d155a6fc39b0a2"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/spacing.css",
+  "bytes": 614,
+  "sha256": "01c24430b2cbfeb51fc1b59fc391e6e4d8c87a46780fa8544ae8dce3cf7397f4"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/textures.css",
+  "bytes": 2680,
+  "sha256": "b40c5dcf4fc66cfd4927d3973dacf8358ccb329841aa8e0e920829ce38e6ee94"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/tokens/typography.css",
+  "bytes": 1895,
+  "sha256": "8eb468ee1e2bc13769c6704c42f2aee669f281cac8fb17847dbbcfbd80453ee3"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/products/EmailPage.html",
+  "bytes": 11763,
+  "sha256": "fcb26ec8552393f12a3e5cb2c2827083441e48756d76757bd9089f1caa4abe9f"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/products/MobileSite.jsx.txt",
+  "bytes": 3370,
+  "sha256": "4fe5233958379267d251ca0d4f3f14c56e68bae90f7f20cbf7e4edff7709b4c0"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/products/SpacePage.html",
+  "bytes": 15632,
+  "sha256": "b6f0275c1aa37a0b4457c8b589878499370a1593d831c4d3faf691ec1362c747"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/products/Spotlight.jsx.txt",
+  "bytes": 1540,
+  "sha256": "10f10ba198d78bcab2f94abdcb20197b4b1b405d7503d890e7fe1f61a0257444"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/products/functions.jsx.txt",
+  "bytes": 8514,
+  "sha256": "86e48ebcf8e10af567e380c1229c4a8d2417963acf6e34cd69cd16aa7622aa15"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/products/ios-frame.jsx.txt",
+  "bytes": 16009,
+  "sha256": "918413c77ed0d0d063bd55dda915f421eece10c100bbed122a26a162f7221465"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/products/shared.jsx.txt",
+  "bytes": 9259,
+  "sha256": "908cd70ea6b56df5678e12448229eda969ec6c3b060f9093808e4f24d05f4910"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/About.jsx.txt",
+  "bytes": 7490,
+  "sha256": "ca5150872c201840ff9a2d3626aeff9e3e53c2ea04968e39b244c4ed5e582b2a"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/Blocks.jsx.txt",
+  "bytes": 26361,
+  "sha256": "019dcf9f368ec9cf091dbb000933b3fefdf139d8201512fab7cd8268290c3146"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/Book.jsx.txt",
+  "bytes": 7546,
+  "sha256": "9814d8bdba7cb34204a39234190118cd29b86251b2d940b7e7f6b394e3f7fcc4"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/Chrome.jsx.txt",
+  "bytes": 9324,
+  "sha256": "06a559761448aa39f9ab1aa3924b957064ac8f5f9a4f300e7c5669cda562f707"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/Home.jsx.txt",
+  "bytes": 2791,
+  "sha256": "ad6e43dd6048ffc1c435afcfd90306c50249e3f85a8fd21c61666638ae1b27eb"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/Sections.jsx.txt",
+  "bytes": 32609,
+  "sha256": "405b445ac737344b1637ca6275cc14f1cb024f0102a20446d2bd8b530b0473d1"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/Services.jsx.txt",
+  "bytes": 4345,
+  "sha256": "6bcec0f2d2983b8269767f01596fe59879fd99594b020c51883b34eee4fa92a5"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/WaysIn.jsx.txt",
+  "bytes": 4455,
+  "sha256": "9ef37b7c7e9a0adaf35c7eb7cb8814acd49d70aaba159f4d5829da4d5ff7f452"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/controls.jsx.txt",
+  "bytes": 17299,
+  "sha256": "072b0eb07422bc54b8e2cd74c957e981d804e809d3e706f429c8c9b6cabec5b6"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/image-slot.js.txt",
+  "bytes": 59896,
+  "sha256": "7ef7cc88be80c166c8afcb0c123ecb1823acf6dabb7cb6e911cb82baabd5283e"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/kits.js.txt",
+  "bytes": 30836,
+  "sha256": "cc2f87d5ce4b448f912468b916c5128da586a15e5e91319cc33d5990fa23b108"
+ },
+ {
+  "path": "design_handoff_theme_editor/reference/ui_kits/site/record.js.txt",
+  "bytes": 24204,
+  "sha256": "27f48a54bffef2bfb6ce28e7aa54d825c4e7581cf4f28f772df1a3981a3e5733"
+ }
+]
