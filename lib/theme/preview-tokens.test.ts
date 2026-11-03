@@ -8,9 +8,9 @@ describe('preview tokens', () => {
     for (const key of PREVIEW_TOKEN_KEYS) expect(tokens[key], `${id} ${key}`).toBeTruthy()
   })
 
-  it('offers every Mega Theme but the retired classic Network and Temple once, Designer first', () => {
-    expect([...PREVIEW_KIT_ORDER].sort()).toEqual(MEGA_THEMES.map((t) => t.id).filter((i) => i !== 'network' && i !== 'temple' && i !== 'free-human' && i !== 'services' && i !== 'new-world').sort())
-    expect(PREVIEW_KIT_ORDER[0]).toBe('designer')
+  it('offers every Mega Theme but the retired classic Network and Temple once, New World first', () => {
+    expect([...PREVIEW_KIT_ORDER].sort()).toEqual(MEGA_THEMES.map((t) => t.id).filter((i) => i !== 'network' && i !== 'temple' && i !== 'free-human').sort())
+    expect(PREVIEW_KIT_ORDER[0]).toBe('new-world')
   })
 
   it('Designer reads its own palette, with a charcoal primary', () => {

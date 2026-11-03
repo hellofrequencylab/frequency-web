@@ -25,14 +25,14 @@ type PreviewTokens = Record<PreviewTokenKey, string>
 
 /** The kit order on the page. Designer first, and the default. */
 export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = [
-  'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
+  'new-world', 'services', 'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart', 'frequency',
 ]
 
 /** The faces the seven kits wear in the preview. The page asks Google Fonts for them only when it renders (the CSP
  *  allows it), the way the Space page does for a themed Space (lib/theme/site-faces.ts), so they register on no
  *  other route. Unbounded, Hanken Grotesk and Instrument Serif are the site's own. */
 export const PREVIEW_FONT_SHEET =
-  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Geist:wght@300..600&family=Instrument+Serif:ital@1&family=Jost:wght@300..500&family=Marcellus&family=Outfit:wght@300..500&display=swap'
+  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Geist:wght@300..600&family=Instrument+Serif:ital@1&family=Jost:wght@300..500&family=Lora:ital@1&family=Marcellus&family=Outfit:wght@300..500&display=swap'
 
 interface Shape {
   display: string; body: string; weight: string; textCase: string; track: string; label: string
@@ -51,7 +51,21 @@ interface Shape {
 
 const hairline = (line: string) => `inset 0 0 0 1px ${line}`
 
-const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, 'free-human' | 'services' | 'new-world'>, Shape> = {
+const SHAPE: Partial<Record<MegaThemeId, Shape>> & Record<Exclude<MegaThemeId, 'free-human'>, Shape> = {
+  // New World (lib/theme/new-world.ts): Bricolage display and body, Lora italic for the one-word voice, the kit's 20px
+  // cards and pill buttons, on the Night register. Services (lib/theme/services.ts) shares the type system and the radii.
+  'new-world': {
+    display: "'Bricolage Grotesque', system-ui, sans-serif", body: "'Bricolage Grotesque', system-ui, sans-serif",
+    weight: '700', textCase: 'none', track: '-0.03em', label: '.08em',
+    btn: '999px', card: '20px', inner: '12px', photo: '20px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+    emFont: "'Lora', Georgia, serif",
+  },
+  services: {
+    display: "'Bricolage Grotesque', system-ui, sans-serif", body: "'Bricolage Grotesque', system-ui, sans-serif",
+    weight: '700', textCase: 'none', track: '-0.03em', label: '.08em',
+    btn: '999px', card: '20px', inner: '12px', photo: '20px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+    emFont: "'Lora', Georgia, serif",
+  },
   designer: {
     display: "'Cormorant', 'Cormorant Garamond', Georgia, serif", body: "'Jost', system-ui, sans-serif",
     weight: '400', textCase: 'none', track: '-0.01em', label: '.18em',

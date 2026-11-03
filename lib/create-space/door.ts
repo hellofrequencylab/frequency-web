@@ -31,7 +31,7 @@ export interface DoorArrival {
 }
 
 /** The kit a cold visit starts on. */
-export const COLD_KIT: MegaThemeId = 'frequency'
+export const COLD_KIT: MegaThemeId = 'new-world'
 
 const NAME_MAX = 80
 const MODE_RE = /^[a-z]+:[a-z]+$/

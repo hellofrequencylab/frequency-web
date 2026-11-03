@@ -143,13 +143,20 @@ export function suggestModeForIntents(picks: readonly string[], available: reado
   return null
 }
 
+/** The one-line pitch of a theme the library (lib/themes/library.ts) has no page for yet. */
+const WIZARD_HINTS: Partial<Record<MegaThemeId, string>> = {
+  'new-world': 'Night and Day in one look. Tide teal to start.',
+  services: 'Night-first and glossy. Built for bookings.',
+}
+
 /** The themes the look step offers: every Mega Theme, in the library's order, with its one-line pitch. Free Human is held back
- *  like the earlier Network and Temple: a private theme, loaded for the Spaces that wear it and offered to no one. */
-export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.filter(({ id }) => id !== 'network' && id !== 'temple' && id !== 'free-human' && id !== 'services' && id !== 'new-world').map(({ id }) => ({
+ *  like the earlier Network and Temple: a private theme, loaded for the Spaces that wear it and offered to no one. New World
+ *  and Services are offered (Daniel, 2026-11-03: New World is the default every Space starts in, Services is public). */
+export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.filter(({ id }) => id !== 'network' && id !== 'temple' && id !== 'free-human').map(({ id }) => ({
   id,
   // The site theme's own label, so Midnight reads as Nocturne (its saved id stays `midnight`).
-  label: id === 'frequency' ? 'Default' : id === 'network-kit' ? 'Network' : id === 'temple-kit' ? 'Temple' : (SITE_THEMES.find((t) => t.id === id)?.label ?? id.charAt(0).toUpperCase() + id.slice(1)),
-  hint: THEME_LIBRARY.find((t) => t.id === id)?.tagline ?? '',
+  label: id === 'frequency' ? 'Default' : id === 'network-kit' ? 'Network' : id === 'temple-kit' ? 'Temple' : id === 'new-world' ? 'New World' : (SITE_THEMES.find((t) => t.id === id)?.label ?? id.charAt(0).toUpperCase() + id.slice(1)),
+  hint: THEME_LIBRARY.find((t) => t.id === id)?.tagline ?? WIZARD_HINTS[id] ?? '',
 }))
 
 /** The theme the wizard sends: the owner's pick, else the one a /themes page named, else none. Total. PURE. */
