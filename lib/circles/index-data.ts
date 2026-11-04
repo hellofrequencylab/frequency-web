@@ -50,6 +50,8 @@ type CircleRow = CircleBase & {
   is_demo: boolean
   unlisted: boolean
   topical_channel_id: string | null
+  /** A Space's own built-in Circle (its member wall), listed on its own shelf. */
+  is_space_primary: boolean | null
   /** Every Channel the Circle carries (LIVE-666); position 1 is `topical_channel_id`. */
   circle_channels: CircleChannelLink[] | null
   channel: { name: string; pillar_id: string | null } | null
@@ -85,7 +87,7 @@ function toCardData(c: CircleRow): CircleCardData {
     imageUrl: c.image_url ?? (c.space && c.space.type !== 'root' ? c.space.cover_image_url : null),
     isDemo: c.is_demo,
     isFeatured: !!c.featured_at,
-    kind: circleKind({ slug: c.slug, spaceType: c.space?.type, featuredAt: c.featured_at, hubId: c.hub?.id }),
+    kind: circleKind({ slug: c.slug, spaceType: c.space?.type, featuredAt: c.featured_at, hubId: c.hub?.id, isSpacePrimary: c.is_space_primary }),
     latitude: c.latitude,
     longitude: c.longitude,
     channelIds: circleChannelIds(c),
@@ -209,7 +211,7 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
         .from('circles')
         .select(
           `id, name, slug, about, type, member_count, member_cap, status, created_at,
-           latitude, longitude, neighborhood, image_url, is_demo, unlisted, featured_at, topical_channel_id,
+           latitude, longitude, neighborhood, image_url, is_demo, unlisted, featured_at, topical_channel_id, is_space_primary,
            circle_channels ( topical_channel_id, position ),
            channel:topical_channels!topical_channel_id ( name, pillar_id ),
            space:spaces!space_id ( cover_image_url, type ),

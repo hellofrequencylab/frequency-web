@@ -20,6 +20,7 @@ create table if not exists public.retired_space_circles (
   space_id   uuid not null references public.spaces (id) on delete cascade,
   retired_at timestamptz not null default now()
 );
+create index if not exists retired_space_circles_space_id_idx on public.retired_space_circles (space_id);
 alter table public.retired_space_circles enable row level security;
 revoke all on public.retired_space_circles from anon, authenticated;
 comment on table public.retired_space_circles is

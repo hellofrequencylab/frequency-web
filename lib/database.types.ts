@@ -2533,6 +2533,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_demo: boolean
+          is_space_primary: boolean
           latitude: number | null
           longitude: number | null
           member_cap: number
@@ -2565,6 +2566,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_demo?: boolean
+          is_space_primary?: boolean
           latitude?: number | null
           longitude?: number | null
           member_cap?: number
@@ -2597,6 +2599,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_demo?: boolean
+          is_space_primary?: boolean
           latitude?: number | null
           longitude?: number | null
           member_cap?: number
@@ -15244,6 +15247,39 @@ export type Database = {
           },
         ]
       }
+      space_circle_optouts: {
+        Row: {
+          left_at: string
+          profile_id: string
+          space_id: string
+        }
+        Insert: {
+          left_at?: string
+          profile_id: string
+          space_id: string
+        }
+        Update: {
+          left_at?: string
+          profile_id?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_circle_optouts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_circle_optouts_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_collaborations: {
         Row: {
           collaborator_space_id: string
@@ -19926,7 +19962,18 @@ export type Database = {
           value: string
         }[]
       }
+      enrol_in_space_circle: {
+        Args: { p_profile_id: string; p_space_id: string }
+        Returns: boolean
+      }
       ensure_calendar_token: { Args: never; Returns: string }
+      ensure_space_circle: {
+        Args: {
+          p_space_id: string
+          p_status: Database["public"]["Enums"]["group_status"]
+        }
+        Returns: string
+      }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       event_calendar_feed: {
         Args: { _token: string }
@@ -21522,6 +21569,10 @@ export type Database = {
       st_wrapx: {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
+      }
+      sync_space_circle_roster: {
+        Args: { p_space_id: string }
+        Returns: number
       }
       transition_space_plan_stage: {
         Args: { p_plan_id: string; p_space_id: string; p_stage: string }

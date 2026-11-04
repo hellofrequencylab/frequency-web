@@ -37,9 +37,9 @@ vi.mock('@/lib/spaces/memberships', () => ({ countActiveMembersByTier: async () 
 vi.mock('@/lib/spaces/follows', () => ({ listSpaceFollowerIds: async () => Array.from({ length: 124 }, (_, i) => `f${i}`) }))
 vi.mock('@/lib/circles/store', () => ({
   listPublicSpaceCircles: async () => [
-    { id: 'c1', slug: 'sunrise-flow', name: 'Sunrise flow', member_count: 41 },
-    { id: 'c2', slug: 'breathwork-nights', name: 'Breathwork nights', member_count: 18 },
-    { id: 'c3', slug: 'teachers-circle', name: 'Teachers circle', member_count: 9 },
+    { id: 'c1', slug: 'sunrise-flow', name: 'Sunrise flow', member_count: 41, is_space_primary: false },
+    { id: 'c2', slug: 'breathwork-nights', name: 'Breathwork nights', member_count: 18, is_space_primary: false },
+    { id: 'c3', slug: 'teachers-circle', name: 'Teachers circle', member_count: 9, is_space_primary: false },
   ],
 }))
 vi.mock('@/lib/supabase/server', () => ({

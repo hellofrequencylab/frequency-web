@@ -592,7 +592,7 @@ const CIRCLE_DETAIL_MODULE_IDS = [
  *  same four boxes they showed before it existed, and only the 21 Space Circles show a fifth.
  *
  *  🔴 ADDING AN ID HERE IS A CLAIM, AND IT IS CHECKED AT RUNTIME, NOT JUST IN A COMMENT: the block
- *  must gate itself on a Space-only fact that refuses the root tenant and
+ *  must gate itself on `spaceCircleEventScope` (or an equivalent that refuses the root tenant) and
  *  return null when it resolves nothing. An always-on block put in this list to dodge the cap would
  *  be the well-meaning addition the cap was written to stop, so the cap test asserts the exemption
  *  against THIS list rather than against a number, and a block that is not genuinely Space-only
