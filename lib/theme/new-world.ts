@@ -9,9 +9,10 @@ import type { ThemeSurface } from "@/lib/theme/surface-vars";
 // Scope: these tokens live under [data-house-theme="new-world"] and are only ever emitted by the stand-alone site
 // render. A site theme never styles a member, Space console or admin area (ADR-1906).
 //
-// Two deliberate differences from the zip, both recorded in docs/design-systems/new-world/rules.json:
+// Three deliberate differences from the zip, recorded in docs/design-systems/new-world/rules.json:
 //  - The starting accent is Tide teal (Daniel, 2026-11-03), so the flare ramps are Tide, not the zip's violet.
 //  - The Stage inks are Frequency's own slate, not the zip's violet-tinted scale (the violet family is retired, ADR-1792).
+//  - Filled accent buttons carry white labels in both registers (Daniel, 2026-11-04); the zip's Night --text-on-accent was ink.
 
 /** The owner accent presets that ship now (Tide, Signal, Bloom, Ember, Fern). Tide is the starting accent. Id to the steps the site engine reads. */
 export const NEW_WORLD_ACCENTS = {
@@ -343,7 +344,8 @@ export const NEW_WORLD_SURFACE = {
   muted: "#C9D3E0",
   subtle: "#98A6BC",
   solid: "#1AA7C0",
-  onSolid: NEW_WORLD_ON_ACCENT,
+  // A solid Tide band carries body copy, not a button label, so it keeps ink (6.9:1); white is for the filled buttons.
+  onSolid: NEW_WORLD_INK_ON_ACCENT,
   dark: true,
   accent: {
     accent: "#1AA7C0",
