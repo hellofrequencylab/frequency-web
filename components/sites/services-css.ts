@@ -66,11 +66,12 @@ ${S} .sv-head .sv-display{font-size:clamp(40px,5vw,72px)}
 ${S} .sv-lede{margin:0;font-size:var(--sv-fs-body-l);line-height:1.55;color:var(--sv-text-secondary);max-width:560px;text-wrap:pretty}
 
 /* BUTTONS: filled accent (ink label), secondary outline, ghost. */
-${S} .sv-btn{position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;gap:10px;height:48px;padding:0 24px;border-radius:var(--sv-radius-pill);font-family:var(--sv-font-body);font-weight:var(--sv-fw-bold);font-size:15px;letter-spacing:var(--sv-ls-button);text-decoration:none;cursor:pointer;transition:background var(--sv-dur-fast),color var(--sv-dur-fast),border-color var(--sv-dur-fast)}
-${S} .sv-btn--lg{height:56px;padding:0 32px;font-size:16px}
-${S} .sv-btn--accent{background:var(--sv-accent);color:var(--sv-action-primary-text);border:1px solid transparent;box-shadow:var(--sv-shadow-glow)}
+${S} .sv-btn{position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:50px;padding:0 26px;border-radius:var(--sv-radius-pill);font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);text-transform:uppercase;white-space:nowrap;font-weight:var(--sv-fw-bold);font-size:11.5px;letter-spacing:var(--sv-ls-button);text-decoration:none;cursor:pointer;transition:background var(--sv-dur-fast),color var(--sv-dur-fast),border-color var(--sv-dur-fast)}
+${S} .sv-btn--lg{height:60px;padding:0 34px;font-size:12.5px}
+${S} .sv-btn--accent{background:var(--sv-accent);color:var(--sv-action-primary-text);border:1px solid var(--sv-accent)}
+${S} .sv-btn--accent:hover{box-shadow:var(--sv-shadow-glow)}
 ${S} .sv-btn--accent:hover{background:var(--sv-accent-hover);color:var(--sv-action-primary-text)}
-${S} .sv-btn--secondary{background:transparent;color:var(--sv-text-primary);border:1px solid var(--sv-border-strong)}
+${S} .sv-btn--secondary{background:color-mix(in oklab,var(--sv-chrome-50) 2%,transparent);color:var(--sv-text-primary);border:1px solid var(--sv-border-default);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 ${S} .sv-btn--secondary:hover{border-color:var(--sv-accent);color:var(--sv-text-primary)}
 ${S} .sv-btn:focus-visible,${S} .sv-card:focus-visible,${S} .sv-row:focus-visible{outline:2px solid var(--sv-focus-ring);outline-offset:3px}
 ${S} .sv-actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
@@ -119,24 +120,25 @@ ${S} .sv-hero-copy .sv-display{font-size:clamp(52px,8vw,132px)}
 ${S} .sv-hero--split .sv-hero-copy .sv-display{font-size:clamp(48px,6.4vw,100px)}
 ${S} .sv-hero--minimal .sv-hero-copy .sv-display{font-size:clamp(48px,7vw,112px)}
 ${S} .sv-hero-lead{margin:0;font-size:20px;line-height:1.55;max-width:560px;color:var(--sv-chrome-200);text-wrap:pretty}
-/* THE PHOTO HERO IN THE FOLD (owner, 2026-11-04, on the Vanta site). The Space document wraps every block in the page rhythm (py-8, space-y-14),
-   which sat a 40px ink band above the photo hero, pushed it out from under the header and opened gaps between sections; the design's
-   sections run flush and carry their own padding, so the wrapper adds nothing here (as Free Human and the Temple Kit do). The photo hero
-   then fits one viewport: a shorter top (the header's height plus air), a display size held by the viewport height, tighter gaps. A left
-   scrim keeps the copy readable on any photo, the eyebrow sits on a small glass chip, and the services box keeps its left edge and stops
-   at 440px so the photo's subject stays in view. */
+/* THE PHOTO HERO IN THE FOLD (owner, 2026-11-04, on the Vanta site), drawn as the kit's photo hero (Sections.jsx Hero, look photo).
+   The Space document wraps every block in the page rhythm (py-8, space-y-14), which sat a 40px ink band above the photo hero; the
+   design's sections run flush and carry their own padding, so the wrapper adds nothing here. The kit's own pieces: the overlay scrim
+   over the photo, the eyebrow as a flare dot and mono line, the italic lit with the shimmer gradient, the lead in chrome 200. The owner's
+   rules on top: everything in the first viewport (a shorter top and a display size held by the viewport height), and the services box
+   keeps its left edge and stops at 440px so the photo's subject stays in view. */
 ${S} [data-mw-own]>div{padding-block:0}
 ${S} [data-mw-own]>div>*{margin-block:0}
-${S} .sv-hero-bg--photo::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,color-mix(in oklab,var(--sv-ink-950) 62%,transparent) 0%,color-mix(in oklab,var(--sv-ink-950) 30%,transparent) 42%,transparent 68%)}
+${S} .sv-hero-bg--photo::before{content:"";position:absolute;inset:0;z-index:1;background:var(--sv-overlay-scrim)}
 ${S} .sv-hero--photo{min-height:min(100svh,980px)}
-${S} .sv-hero--photo .sv-hero-in{padding:clamp(104px,9vw,132px) ${GUT} clamp(40px,6vh,72px);gap:28px 72px}
-${S} .sv-hero--photo .sv-hero-copy{gap:22px}
-${S} .sv-hero--photo .sv-hero-copy .sv-display{font-size:clamp(48px,min(7vw,11.5vh),116px)}
-${S} .sv-hero--photo .sv-hero-lead{font-size:18px;color:var(--sv-chrome-50)}
-${S} .sv-hero--photo .sv-eyebrow{font-size:12px;letter-spacing:.16em;color:var(--sv-flare-300);padding:7px 14px 7px 12px;border-radius:var(--sv-radius-pill);background:color-mix(in oklab,var(--sv-ink-950) 62%,transparent);border:1px solid var(--sv-border-subtle);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+${S} .sv-hero--photo .sv-hero-in{padding:clamp(104px,9vw,132px) ${GUT} clamp(40px,6vh,72px);gap:36px 72px}
+${S} .sv-hero--photo .sv-hero-copy{gap:clamp(20px,3.3vh,30px)}
+${S} .sv-hero--photo .sv-hero-copy .sv-display{font-size:clamp(64px,min(9vw,11.5vh),148px)}
+${S} .sv-hero-copy .sv-display em{background:var(--sv-grad-lit) 0 0/200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.1em;animation:sv-shimmer 10s linear infinite}
+${S}[data-motion="off"] .sv-hero-copy .sv-display em{animation:none}
+@keyframes sv-shimmer{to{background-position:200% 0}}
+${S} .sv-hero-copy > .sv-eyebrow{gap:12px;font-size:13px;color:var(--sv-text-secondary)}
+${S} .sv-hero-copy > .sv-eyebrow::before{width:7px;height:7px;border-radius:9px;background:var(--sv-flare-500);box-shadow:0 0 12px color-mix(in oklab,var(--sv-flare-500) 80%,transparent)}
 ${S} .sv-hero--photo .sv-panel{justify-self:start;width:min(100%,440px)}
-${S}:has(.sv-hero-bg--photo) .hs-header{border-bottom:0}
-${S}:has(.sv-hero-bg--photo) .hs-header::after{display:none}
 ${S} .sv-proof{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--sv-chrome-200)}
 ${S} .sv-stars{display:inline-flex;gap:2px;color:var(--sv-flare-300)}
 ${S} .sv-panel{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:var(--sv-radius-lg);background:color-mix(in oklab,var(--sv-ink-900) 62%,transparent);border:1px solid var(--sv-border-default);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
@@ -320,16 +322,17 @@ ${S} .hs-footer-top a:hover{color:var(--sv-text-primary)}
 ${S} .hs-header{position:sticky;top:0;z-index:40;padding:0;background:linear-gradient(180deg,color-mix(in oklab,var(--sv-chrome-50) 3.5%,transparent),transparent),var(--sv-ink-950);border-bottom:var(--sv-border-hairline) solid var(--sv-border-subtle);box-shadow:0 20px 40px -24px color-mix(in oklab,var(--sv-ink-950) 70%,transparent)}
 ${S} .hs-header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent 0%,color-mix(in oklab,var(--sv-flare-400) 55%,transparent) 30%,color-mix(in oklab,var(--sv-halo-300) 50%,transparent) 55%,color-mix(in oklab,var(--sv-swell-300) 45%,transparent) 75%,transparent 100%);opacity:.7;pointer-events:none}
 ${S}:has(.sv-hero-bg--photo) .hs-header{position:absolute;left:0;right:0;background:linear-gradient(180deg,color-mix(in oklab,var(--sv-ink-950) 55%,transparent) 0%,transparent 100%);box-shadow:none}
-${S} .hs-pill{max-width:var(--sv-container-max);margin:0 auto;padding:18px var(--sv-gutter);border-radius:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;animation:none;overflow:visible}
+${S} .hs-pill{box-sizing:content-box;max-width:var(--sv-container-max);margin:0 auto;padding:18px var(--sv-gutter);border-radius:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;animation:none;overflow:visible}
 ${S} .hs-header .hs-brand{padding-left:0;color:var(--sv-chrome-50);text-decoration:none}
-${S} .sv-wordmark{display:block;font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-heavy);text-transform:uppercase;letter-spacing:.02em;line-height:1;font-size:clamp(24px,2.4vw,30px);color:var(--sv-chrome-50)}
+${S} .sv-wordmark{display:block;font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-heavy);text-transform:uppercase;letter-spacing:-.01em;line-height:.9;font-size:calc(112px / max(4.2, var(--sv-wm-len, 5) * .6));white-space:nowrap;color:var(--sv-chrome-50)}
 ${S} .hs-nav{-webkit-mask-image:none;mask-image:none}
 ${S} .hs-nav a,${S} .hs-nav-mega{display:inline-flex;align-items:center;gap:8px;${LABEL};letter-spacing:.14em;color:var(--sv-chrome-200);white-space:nowrap;transition:color var(--sv-dur-fast)}
 ${S} .hs-nav a::before{content:"";width:5px;height:5px;border-radius:9px;background:var(--sv-flare-500);opacity:0;transition:opacity var(--sv-dur-fast)}
 ${S} .hs-nav a:hover,${S} .hs-nav a[aria-current="page"]{color:var(--sv-chrome-50)}
 ${S} .hs-nav a:hover::before,${S} .hs-nav a[aria-current="page"]::before{opacity:1}
 ${S} .sv-head-phone{display:none;align-items:center;gap:8px;color:var(--sv-chrome-50);text-decoration:none;font-family:var(--sv-font-mono);font-size:11px;letter-spacing:.1em;white-space:nowrap}
-${S} .hs-header-actions .hs-btn{min-height:36px;padding:0 18px;font-size:11px}
+${S} .hs-header-actions .hs-btn{display:inline-flex;align-items:center;min-height:38px;height:38px;padding:0 18px;font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-bold);font-size:10.5px;letter-spacing:var(--sv-ls-button);text-transform:uppercase;white-space:nowrap;background:var(--sv-accent);color:var(--sv-action-primary-text);border:1px solid var(--sv-accent);box-shadow:none}
+${S} .hs-header-actions .hs-btn:hover{background:var(--sv-accent-hover);border-color:var(--sv-accent-hover);color:var(--sv-action-primary-text);box-shadow:var(--sv-shadow-glow)}
 @media (min-width:940px){${S} .hs-pill{grid-template-columns:auto minmax(0,1fr) auto;column-gap:32px}${S} .hs-nav{width:max-content;max-width:100%}
 ${S} .hs-nav{justify-self:end;padding:10px 22px;border-radius:var(--sv-radius-pill);border:var(--sv-border-hairline) solid var(--sv-border-subtle);background:linear-gradient(180deg,color-mix(in oklab,var(--sv-chrome-50) 5%,transparent),color-mix(in oklab,var(--sv-chrome-50) 1%,transparent));-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 color-mix(in oklab,var(--sv-chrome-50) 6%,transparent)}
 ${S} .hs-nav-track{gap:32px;padding:0}${S} .hs-nav a,${S} .hs-nav-mega{padding:0;background:none}${S} .hs-header-actions{gap:24px}}
