@@ -20,14 +20,9 @@ export type CircleDetail = {
   neighborhood: string | null
   city: string | null
   host: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
-  /** The Space Circle (ADR-1391): the one primary Circle a Space always has. Its page names the SPACE as
-   *  host; `host` above stays the person who runs it behind the scenes. */
-  is_space_primary?: boolean
-  /** The owning Space, for the Space Circle's host line. Null on a personal (root) Circle. */
+  /** The owning Space, for the "Part of <Space>" pill. Null on a personal (root) Circle. */
   space?: { slug: string; name: string; brand_name: string | null; type: string; cover_image_url?: string | null } | null
-  /** `circles.space_id` (ADR-857). Already selected by `loadCircleShell`; typed here because the
-   *  Space Circle's event arm reads it through `spaceCircleEventScope` (ADR-1393). Root on a
-   *  personal Circle, which is exactly why that resolver refuses a root Space. */
+  /** `circles.space_id` (ADR-857). Already selected by `loadCircleShell`. Root on a personal Circle. */
   space_id?: string | null
   hub: {
     id: string

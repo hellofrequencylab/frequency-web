@@ -174,3 +174,6 @@ share_link_opens
 
 # SEC-016: operator switches; every reader uses the service role, anon and authenticated are revoked.
 platform_flags
+
+# ADR-1938 (LIVE-2081): retired Space Circle slugs for the old-link redirect; read by the service role only.
+retired_space_circles
