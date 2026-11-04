@@ -10,7 +10,7 @@ import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { ROUTES } from '@/lib/frequency/site-nav'
-import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
+import { KIT_INDEX, PROFILE_KIT_INDEX, SERVICES_KIT_INDEX } from '@/lib/sites/kits/registry'
 import { ThemePicture } from './theme-picture'
 import './theme-index-shots.css'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
@@ -41,7 +41,7 @@ export const THEME_GALLERY: ThemeGalleryCard[] = SITE_THEMES.map((t) => {
     tagline: THEME_LIBRARY.find((l) => l.id === t.id)?.tagline ?? t.description,
     description: t.description,
     kits: KIT_INDEX.filter((k) => k.theme === editor).map((k) => ({ niche: k.niche, label: k.label, href: createSpaceHref(t.id) })),
-    kitCount: [...KIT_INDEX, ...PROFILE_KIT_INDEX].filter((k) => k.theme === editor).length,
+    kitCount: [...KIT_INDEX, ...PROFILE_KIT_INDEX, ...SERVICES_KIT_INDEX].filter((k) => k.theme === editor).length,
     href: themePagePath(t.id),
   }
 })
@@ -65,7 +65,7 @@ export function FrequencyThemes() {
             Your site should look like you. <em className="fq-iri-text">Pick a feel.</em>
           </h1>
           <p>
-            Seven looks for your website, with matching Spotlight and email surfaces where available. Pick a feel, then check what is ready
+            Eight looks for your website, with matching Spotlight and email surfaces where available. Pick a feel, then check what is ready
             and what is on the way.
           </p>
           <div className="ctas">
@@ -85,7 +85,7 @@ export function FrequencyThemes() {
         <div className="wrap">
           <div className="sh">
             <div className="label">
-              <b>The Theme Kits</b>Seven to start from
+              <b>The Theme Kits</b>Eight to start from
             </div>
             <h2 className="h-l">One look. A clear place to start.</h2>
             <p className="pb-note">
@@ -107,6 +107,11 @@ export function FrequencyThemes() {
                   <Link href={t.href} className="tg-shots two" aria-label={`See the ${t.label} kit`}>
                     <Image src="/themes/network-kit/shots/general-site.jpg" alt="Network website" width={1280} height={800} sizes="(max-width: 960px) 50vw, 25vw" />
                     <Image src="/themes/network-kit/shots/general-spot.jpg" alt="Network Spotlight" width={740} height={1648} sizes="(max-width: 960px) 25vw, 12vw" />
+                  </Link>
+                ) : t.id === 'services' ? (
+                  <Link href={t.href} className="tg-shots two" aria-label={`See the ${t.label} kit`}>
+                    <Image src="/brand/theme-pages/services/site.jpg" alt="Services website" width={1280} height={800} sizes="(max-width: 960px) 50vw, 25vw" />
+                    <Image src="/brand/theme-pages/services/spot.jpg" alt="Services Spotlight" width={780} height={1688} sizes="(max-width: 960px) 25vw, 12vw" />
                   </Link>
                 ) : t.id === 'temple-kit' ? (
                   <Link href={t.href} className="tg-shots two" aria-label={`See the ${t.label} kit`}>
