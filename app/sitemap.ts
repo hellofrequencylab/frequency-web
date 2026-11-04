@@ -243,18 +243,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1 },
     // /start MERGED into /join (2026-10-14): it 301s, so it is not listed. /join is the front door.
-    // /the-lab MERGED into /vision (owner ruling 2026-10-14): it 301s, so it is not listed.
-    // Frequency-only pages (ADR-1737): /vision exists in the Frequency design's site map and answers
-    // 404 under DAWN, so it is advertised only when the build wears Frequency. /stories is HIDDEN until
+    // /the-lab and /vision MERGED into /about, /system into /features and /networks into /for/networks
+    // (LIVE-2103, owner ruling 2026-11-03): each 301s, so none is listed.
+    // Frequency-only pages (ADR-1737) are advertised only when the build wears Frequency. /stories is HIDDEN until
     // three real stories exist (owner ruling 2026-10-14): it 302s to /the-community, so it is not listed.
     ...(SITE_DESIGN === "frequency"
       ? ([
-          { url: `${SITE_URL}/vision`, changeFrequency: "monthly", priority: 0.5 },
-          // /networks (SCAN-961): the Network plan's page, Frequency-only like /vision.
-          { url: `${SITE_URL}/networks`, changeFrequency: "monthly", priority: 0.6 },
           { url: `${SITE_URL}/create-a-space`, changeFrequency: "monthly", priority: 0.7 },
-          // /system (LIVE-1562): the whole system in one story.
-          { url: `${SITE_URL}/system`, changeFrequency: "monthly", priority: 0.6 },
           // /free-spotlight (VLS-05): listed only while the doorway is open; it answers 404 otherwise.
           ...(launchEntryEnabled() ? [{ url: `${SITE_URL}/free-spotlight`, changeFrequency: "monthly" as const, priority: 0.5 }] : []),
           // /themes (LIVE-1460): the theme gallery.

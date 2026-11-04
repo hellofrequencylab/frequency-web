@@ -56,6 +56,7 @@ export const NEW_WORLD_KIT_LAYOUTS_CSS = `
 .nws-letter form{display:flex;gap:8px;margin-top:14px}
 .nws-input{flex:1;min-width:0;height:38px;padding:0 14px;border:var(--nw-border-hairline) solid var(--nw-border-default);border-radius:var(--nw-radius-pill);background:color-mix(in oklab,var(--nw-chrome-50) 4%,transparent);color:var(--nw-text-primary);font:var(--nw-fw-regular) 14px var(--nw-font-body);outline:none}
 .nws-input:focus-visible{outline:2px solid var(--nw-focus-ring);outline-offset:2px}
+.nws-closing .nws-btn{width:100%;height:auto;min-height:52px;padding-block:14px;white-space:normal;text-align:center;line-height:1.25}
 .nws-foot{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 20px 26px}
 .nws-foot i{display:block;width:60%;height:1px;background:linear-gradient(90deg,transparent,var(--nw-flare-500),transparent)}
 .nws-wall-head{display:flex;flex-direction:column;gap:12px;padding:66px 20px 0}

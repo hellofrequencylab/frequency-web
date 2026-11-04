@@ -72,8 +72,8 @@ export const FREQUENCY_PAGE_SEO = {
     lede: 'Give your community a place to find the next class, Circle or event. Share your dates on the local calendar and keep in touch with people who come.',
     crumbs: [{ name: 'For spaces', path: '/spaces' }],
   },
-  // The three Frequency-only routes (DAWN answers 404 on each). /features and /vision keep the titles
-  // and descriptions they shipped with; the entry adds the WebPage node their visible hero supports.
+  // The Frequency-only routes (DAWN answers 404 on each). /features keeps the title and description it
+  // shipped with; the entry adds the WebPage node its visible hero supports.
   features: {
     path: '/features',
     // Not the bare word (SCAN-678): 'Features · Frequency' names nothing a query contains.
@@ -97,29 +97,6 @@ export const FREQUENCY_PAGE_SEO = {
     headline: 'Hosts and Spaces, in their own words.',
     lede: 'Host a Circle or run a community Space? Tell us what happened. We have no published stories here yet.',
     crumbs: [{ name: 'Stories', path: '/stories' }],
-  },
-  vision: {
-    path: '/vision',
-    title: 'Vision: plans for community spaces where people can meet',
-    description:
-      'Plans for community groups to meet in shared Frequency third spaces. The first Lab is planned for 2028. No building is open or bookable yet.',
-    shareTitle: 'Vision: plans for community spaces where people can meet',
-    headline: 'A community needs places to meet. Here’s what we’re planning.',
-    lede: 'For partners, investors, civic leaders and press. The vision for Frequency third spaces: the first is planned to open in 2028, and nothing is bookable yet.',
-    crumbs: [{ name: 'Vision', path: '/vision' }],
-  },
-  networks: {
-    path: '/networks',
-    title: 'Networks: run every chapter as one organization',
-    description:
-      'For organizations with chapters: shared membership, central admins, chapter leaders, one calendar and a roll-up report. Check plan and access details.',
-    shareTitle: 'Frequency Networks: run every chapter as one organization',
-    headline: 'Every chapter has its own day. Keep them connected.',
-    lede: 'For community groups with chapters or local teams. Share a calendar, give chapter leaders their own tools, and see the network together.',
-    crumbs: [
-      { name: 'Pricing', path: '/pricing' },
-      { name: 'Networks', path: '/networks' },
-    ],
   },
   themes: {
     path: '/themes',
@@ -145,19 +122,6 @@ export const FREQUENCY_PAGE_SEO = {
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Create a Space', path: '/create-a-space' },
-    ],
-  },
-  system: {
-    path: '/system',
-    title: 'One system for your website, Spotlight, people, events and payments',
-    description:
-      'Design it once. Your website, Spotlight, emails and sign-ups from one Theme Kit, and your people, events, tickets, payments and Circles behind one login.',
-    shareTitle: 'Frequency: the whole system, one account',
-    headline: 'Design it once. Launch when you like.',
-    lede: 'Your website, your Spotlight, your emails and your sign-ups, all from one theme. Your people, events, tickets, payments, Circles and teaching, all behind one login. Everything you run, with one account.',
-    crumbs: [
-      { name: 'For Spaces', path: '/spaces' },
-      { name: 'The system', path: '/system' },
     ],
   },
   // components/frequency/site/pages/launch/free-spotlight.tsx (VLS-05). Dark until LAUNCH_ENTRY_ENABLED is on.
