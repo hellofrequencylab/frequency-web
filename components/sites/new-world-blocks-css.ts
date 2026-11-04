@@ -11,3 +11,5 @@ import { SERVICES_CSS } from '@/components/sites/services-css'
 export const NEW_WORLD_BLOCKS_CSS = SERVICES_CSS.replaceAll('[data-house-theme="services"]', '[data-house-theme="new-world"]')
   .replace(/--sv-shadow-(sm|md|lg)\b/g, '--nw-depth-$1')
   .replace(/--sv-(?!min\b|ratio\b)/g, '--nw-')
+  // The design's frame is content-box: 1320 of content plus the gutter either side (--nw-frame), so every row lines up with the chrome.
+  .replaceAll('max-width:var(--nw-container-max)', 'max-width:var(--nw-frame)')

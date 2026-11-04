@@ -117,6 +117,7 @@ export const NEW_WORLD_TOKENS_CSS = `
 --nw-space-10:144px;
 --nw-container-max:1320px;
 --nw-gutter:clamp(20px,4vw,56px);
+--nw-frame:calc(var(--nw-container-max) + 2 * var(--nw-gutter));
 --nw-radius-none:0;
 --nw-radius-sm:6px;
 --nw-radius-md:12px;
