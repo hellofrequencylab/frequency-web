@@ -15,7 +15,7 @@ if (!dir) {
   console.error('usage: node scripts/render/theme-pages-shots.mjs <dir>')
   process.exit(2)
 }
-const themes = ['bold', 'wildheart']
+const themes = process.env.THEME_ONLY ? [process.env.THEME_ONLY] : ['bold', 'wildheart']
 const TYPES = { '.html': 'text/html', '.css': 'text/css', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' }
 const server = createServer((req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
@@ -34,7 +34,13 @@ await new Promise((r) => server.listen(0, '127.0.0.1', r))
 const base = `http://127.0.0.1:${server.address().port}`
 const shots = { site: { width: 1280, height: 800, scale: 1 }, spot: { width: 390, height: 844, scale: 2 }, email: { width: 900, height: 760, scale: 1 }, spacedesk: { width: 1280, height: 770, scale: 1 } }
 const FONTS_CSS = `@font-face{font-family:Unbounded;src:url(/fonts/unbounded/unbounded.woff2) format("woff2");font-weight:200 900}@font-face{font-family:"Hanken Grotesk";src:url(/fonts/hanken-grotesk/hanken-grotesk.woff2) format("woff2");font-weight:100 900}@font-face{font-family:"Instrument Serif";src:url(/fonts/instrument-serif/instrument-serif-italic.woff2) format("woff2");font-style:italic}`
-writeFileSync(join(dir, 'fonts.css'), FONTS_CSS)
+const bold = (fam, f, w) => `@font-face{font-family:"${fam}";src:url(/fonts/${f}) format("woff2");font-weight:${w}}`
+const BOLD_CSS =
+  bold('Sofia Sans Extra Condensed', 'sofia-sans-extra-condensed/sofia-sans-extra-condensed.woff2', '1 1000') +
+  [400, 500, 600].map((w) => bold('Barlow', `barlow/barlow-${w}.woff2`, w)).join('') +
+  [400, 500].map((w) => bold('IBM Plex Mono', `ibm-plex-mono/ibm-plex-mono-${w}.woff2`, w)).join('') +
+  ':root{--font-sofia-xc:"Sofia Sans Extra Condensed";--font-barlow:Barlow;--font-plex-mono:"IBM Plex Mono"}'
+writeFileSync(join(dir, 'fonts.css'), FONTS_CSS + BOLD_CSS)
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
 for (const t of themes) {
   mkdirSync(`public/brand/theme-pages/${t}`, { recursive: true })
