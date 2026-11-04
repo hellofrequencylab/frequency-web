@@ -443,7 +443,7 @@ export const siteStoryComponents: Record<string, ComponentConfig> = {
         image={(image as string) || undefined}
         alt={(alt as string) || undefined}
         indexLabel={(indexLabel as string) || undefined}
-        chapters={((chapters as ChapterLink[]) ?? []).map((c) => ({ ...c, href: c.href?.startsWith('#') ? c.href : safeHref(c.href ?? '') }))}
+        chapters={((chapters as ChapterLink[]) ?? []).map((c) => ({ ...c, href: c.href?.startsWith('#') ? c.href : (safeHref(c.href) ?? undefined) }))}
         vis={visClass(layout as LayoutValue)}
       />
     ),
