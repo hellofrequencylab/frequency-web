@@ -13,25 +13,22 @@ describe('the Theme Kits page', () => {
   it('sends every main button to the launch or the builder, and See the full kit to the theme page', () => {
     const links = themeShowcaseLinks()
     expect(Object.keys(links.kits)).toHaveLength(9)
-    // A kit the builder does not offer (CyberWitch, no theme yet; Services while it stays hidden) has no Use link; every other one carries its kit.
-    for (const [id, k] of Object.entries(links.kits) as [string, { use: string | null; kit: string | null; page: string | null }][]) {
-      if (!k.kit) {
-        expect(k.use).toBeNull()
-        expect(['cyberwitch', 'services']).toContain(id)
-      } else {
-        expect(k.use).toMatch(/^\/(launch\/start|create-a-space)/)
-        expect(k.use).toContain(`kit=${k.kit}`)
-      }
+    // Every kit is offered in the builder now, so every Use link carries its kit (a kit the builder drops gets use: null).
+    for (const k of Object.values(links.kits) as { use: string | null; kit: string | null; page: string | null }[]) {
+      expect(k.kit).toBeTruthy()
+      expect(k.use).toMatch(/^\/(launch\/start|create-a-space)/)
+      expect(k.use).toContain(`kit=${k.kit}`)
     }
     expect(links.kits.nocturne.page).toBe('/themes/nocturne')
-    expect(links.kits.cyberwitch.page).toBeNull()
+    expect(links.kits.cyberwitch.page).toBe('/themes/cyberwitch')
+    expect(links.kits.cyberwitch.use).toContain('kit=cyberwitch')
     expect(links.plans).toBe('/pricing')
   })
 
-  it('draws every kit, eight See the full kit links, and no em dashes', () => {
+  it('draws every kit, nine See the full kit links, and no em dashes', () => {
     const html = renderToStaticMarkup(<FrequencyThemes />)
     expect((html.match(/class="ks-kit"/g) ?? []).length).toBe(9)
-    expect((html.match(/See the full kit/g) ?? []).length).toBe(8)
+    expect((html.match(/See the full kit/g) ?? []).length).toBe(9)
     expect(html).not.toMatch(/—/)
   })
 })
