@@ -50,3 +50,19 @@ describe('builder state', () => {
     expect(builderV3Requested('classic', true)).toBe(false)
   })
 })
+
+describe('typing bursts (BLD-105)', () => {
+  it('folds keys in one field into one undo step, and a new field starts a new one', () => {
+    const doc = { root: { props: {} }, content: [] }
+    const init = { revision: 1, draft: { theme: 'NewWorld', pages: [{ slug: 'home', label: 'Home', doc, comments: [] }] }, published: null, versions: [] }
+    let s = builderInit(init as never)
+    const original = s.draft
+    const typed = (text: string, burst: string) => { s = builderReducer(s, { type: 'edit', draft: { ...s.draft, theme: text } as never, burst }) }
+    typed('a', 'props:x:title'); typed('ab', 'props:x:title'); typed('abc', 'props:x:title')
+    expect(s.past).toHaveLength(1)
+    typed('abcd', 'props:x:lead')
+    expect(s.past).toHaveLength(2)
+    s = builderReducer(builderReducer(s, { type: 'undo' }), { type: 'undo' })
+    expect(s.draft).toBe(original)
+  })
+})

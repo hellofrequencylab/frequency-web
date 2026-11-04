@@ -141,3 +141,25 @@ it('adds a section the Add tab offers, at the asked position, as one undo step o
   click('Undo')
   expect(await order()).toEqual(['hero', 'contact', 'about'])
 })
+
+it('previews the ticked lines on the page without touching the draft, and turns off on dismiss (LIVE-2141)', async () => {
+  const onLayout = vi.fn(async () => ({ ok: true as const, note: '', refused: [], changes: [
+    { kind: 'move' as const, sectionId: 'about', toPosition: 2 },
+    { kind: 'visibility' as const, sectionId: 'contact', device: 'phone' as const, visible: false },
+  ] }))
+  const { node, click, ask, order, onSave } = mount(onLayout)
+  await ask('Put my story first')
+  expect(node.querySelector('.vera-ghost')).toBeNull()
+  click('Preview on page')
+  expect(node.querySelector('.vera-ghost')?.textContent).toContain('Previewing 2 changes from Vera. Nothing is on your draft yet.')
+  expect(node.querySelector('[data-vera-layout] button[aria-pressed=true]')?.textContent).toBe('Hide preview')
+  act(() => node.querySelectorAll<HTMLInputElement>('[data-vera-layout] input[type=checkbox]')[1].click())
+  expect(node.querySelector('.vera-ghost')?.textContent).toContain('Previewing 1 change from Vera.')
+  expect(onSave).not.toHaveBeenCalled()
+  click('Back to your page')
+  expect(node.querySelector('.vera-ghost')).toBeNull()
+  click('Preview on page')
+  click('Dismiss')
+  expect(node.querySelector('.vera-ghost')).toBeNull()
+  expect(await order()).toEqual(['hero', 'contact', 'about'])
+})
