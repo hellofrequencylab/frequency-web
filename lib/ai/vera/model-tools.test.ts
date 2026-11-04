@@ -158,3 +158,32 @@ describe('an operator lookup (LIVE-2190)', () => {
     expect(results?.[0].content).toContain('Nothing was changed')
   })
 })
+
+describe('an operator ticket change (LIVE-2191)', () => {
+  const ops = {
+    switchable: () => false,
+    card: () => '',
+    lookup: async () => '',
+    ticketCard: (t: unknown, f: unknown, v: unknown) => (t === '1001' && f === 'status' && v === 'resolved' ? 'Mark support ticket #1001 resolved?' : null),
+  }
+
+  it('becomes a card with the ticket words on a staff turn', async () => {
+    const proposals: ProposedToolCall[] = []
+    const results = await handleModelToolCalls([{ id: 't', name: 'set_ticket', input: { ticket: '1001', field: 'status', value: 'resolved' } }], proposals, vi.fn(), ops)
+    expect(proposals).toEqual([{ tool: 'set_ticket', args: { ticket: '1001', field: 'status', value: 'resolved' }, label: 'Mark support ticket #1001 resolved?' }])
+    expect(results).toBeNull()
+  })
+
+  it('is refused off the list and on any turn without the operator checks', async () => {
+    for (const [input, sw] of [
+      [{ ticket: '1001', field: 'status', value: 'deleted' }, ops],
+      [{ ticket: '1001', field: 'status', value: 'resolved' }, undefined],
+      [{ ticket: '1001', field: 'status', value: 'resolved' }, { switchable: () => true, card: () => 'x' }],
+    ] as const) {
+      const proposals: ProposedToolCall[] = []
+      const results = await handleModelToolCalls([{ id: 't', name: 'set_ticket', input: { ...input } }], proposals, vi.fn(), sw)
+      expect(proposals).toEqual([])
+      expect(results?.[0].content).toContain('Nothing was changed')
+    }
+  })
+})

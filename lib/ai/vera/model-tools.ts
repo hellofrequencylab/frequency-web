@@ -23,6 +23,8 @@ interface SpaceSwitches {
   settingCard?: (setting: string, value: unknown) => string | null
   /** The operator lookup (LIVE-2190), present only when the caller's session is staff. It re-checks that itself. */
   lookup?: (question: unknown) => Promise<string>
+  /** The card words for a support ticket change (LIVE-2191), present only with the lookup. */
+  ticketCard?: (ticket: unknown, field: unknown, value: unknown) => string | null
 }
 
 export async function handleModelToolCalls(
@@ -61,6 +63,9 @@ export async function handleModelToolCalls(
     } else if (c.name === 'admin_lookup') {
       content = space?.lookup ? await space.lookup(c.input.question) : 'That lookup is for the Frequency team only. Nothing was read.'
       continueCoaching = true
+    } else if (c.name === 'set_ticket' && !space?.ticketCard?.(c.input.ticket, c.input.field, c.input.value)) {
+      content = 'That ticket change cannot be made from this chat. Point them to /admin/support. Nothing was changed.'
+      continueCoaching = true
     } else if (requiresConfirmation(c.name)) {
       if (!proposals.some((p) => p.tool === c.name && JSON.stringify(p.args) === JSON.stringify(c.input))) {
         // A Space switch carries its card words from the catalog, so the page never ships the catalog.
@@ -71,7 +76,9 @@ export async function handleModelToolCalls(
               ? (space?.roleCard?.(String(c.input.feature), String(c.input.role)) ?? undefined)
               : c.name === 'set_space_setting'
                 ? (space?.settingCard?.(String(c.input.setting), c.input.value) ?? undefined)
-                : undefined
+                : c.name === 'set_ticket'
+                  ? (space?.ticketCard?.(c.input.ticket, c.input.field, c.input.value) ?? undefined)
+                  : undefined
         proposals.push(label ? { tool: c.name, args: c.input, label } : { tool: c.name, args: c.input })
       }
       content = 'Proposed to the member for confirmation.'
