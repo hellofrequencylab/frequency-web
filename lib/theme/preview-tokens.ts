@@ -123,6 +123,8 @@ const SHAPE: Record<MegaThemeId, Shape> = {
   },
   // Bold (lib/theme/menswork.ts, design system docs/design-systems/bold): Sofia Sans Extra Condensed caps at 800,
   // Barlow body, mono-width label tracking and the design's square corners everywhere.
+  // The Create a Space handoff (docs/design-systems/create-a-space) drew Bold as 'Anton', Impact, sans-serif before the
+  // Bold design system (LIVE-2101) replaced it; the newer system wins here (LIVE-2173).
   bold: {
     display: "'Sofia Sans Extra Condensed', 'Arial Narrow', sans-serif", body: "'Barlow', system-ui, sans-serif",
     weight: '800', textCase: 'uppercase', track: '0.005em', label: '.12em',
