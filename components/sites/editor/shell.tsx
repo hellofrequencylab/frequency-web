@@ -258,8 +258,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => { if (!FQ_EDITOR) return; const timer = window.setInterval(() => setNow(Date.now()), 60000); return () => window.clearInterval(timer) }, [])
   const veraInput = useRef<HTMLInputElement>(null)
-  // Vera's bar can be put away (it covers the canvas): a small orb stays in its place, the choice is
-  // remembered on this device, and ⌘K or the orb brings it back. View state only, no effect on the draft.
+  // Vera is a tab at the bottom right that opens and closes (it covers the canvas when open); the choice is
+  // remembered on this device, and ⌘K or the tab brings it back. View state only, no effect on the draft.
   const veraHidden = useSyncExternalStore(subscribeVeraHidden, readVeraHidden, () => false)
   const focusVeraNext = useRef(false)
   function putVeraAway(hidden: boolean, focus = false) {
@@ -301,11 +301,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // keeps the current look until the legacy skin has loaded, so the swap is one commit and never draws bare.
   const [tryId, setTryId] = useState<SiteThemeId | null>(null)
   const pageDocs = useMemo(() => draft.pages.map((item) => item.doc), [draft.pages])
-  const trySkin = useTryItOnSkin(pageDocs, tryId)
+  // The contract skin also dresses the SAVED theme's foreign blocks (a Services hero on a Designer site): the published
+  // page sends it (site-page.tsx), so the canvas must too, or those blocks draw bare in the editor (Daniel, 2026-11-04).
+  const trySkin = useTryItOnSkin(pageDocs, tryId ?? lookStyle.theme)
   const trying = tryId && typeof trySkin === 'string' && EDITOR_THEME[tryId] !== resolvedTheme ? tryId : null
   const canvasTheme = trying ? EDITOR_THEME[trying] : resolvedTheme
   const canvasVars = trying ? websiteThemeVars(canvasTheme, render.accent) : resolvedVars
-  const trySheet = trying ? { css: trySkin as string, themeId: trying } : null
+  const trySheet = typeof trySkin === 'string' && trySkin ? { css: trySkin, themeId: trying ?? lookStyle.theme } : null
   const pageLookStyle = render.lookStyle
   const activeAccent = render.accent
   const accentValue = String(canvasVars['--th-accent' as keyof React.CSSProperties])
@@ -596,6 +598,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     accents: themeAccents(draft.theme).map((a) => ({ id: a.id, label: a.label })),
     accent: dialAccent ?? null,
     looks: themeUi.looks.filter((l) => l.id !== 'own').map((l) => ({ id: l.id, label: l.label, dials: l.dials })),
+    // LIVE-2135: the sections the Add tab offers on this page now (a block at its per-page cap is left out).
+    sections: [...new Map(groups.flatMap((g) => g.items).filter((c) => !c.disabled).map((c) => [c.type, { type: c.type, label: c.label }])).values()].slice(0, 80),
   }
   // THE VERA BAR'S ROUTER (LIVE-2097): a typed ask with no text selected is about the page's STRUCTURE and goes to
   // the layout proposal; selected text (and every chip) stays on the questions-only coaching path in askVera.
@@ -857,20 +861,18 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         </aside>
         <main className="stage" data-device={device} aria-label="Website editor canvas" style={{ ['--pe-zoom' as string]: preview ? 1 : zoom / 100 }}>
           {themeBar}
-          <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
+          <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} register={siteDials(pageLookStyle).register === 'day' ? 'day' : 'night'} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
           {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><FqIcon name="minus" /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><FqIcon name="plus" /></Icon></div>}
-          {!preview && veraHidden && <button type="button" className="vera-orb" aria-label="Show Vera" aria-keyshortcuts="Meta+K Control+K Meta+Backslash Control+Backslash" title="Show Vera (⌘K)" onClick={() => putVeraAway(false, true)}><span className="orb" aria-hidden /></button>}
-          {!preview && !veraHidden && <div className="vera">
-            <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is thinking…' : <><b>Vera</b>{veraStatus && <p>{veraStatus}</p>}{coachingQuestions.map(question => <p key={question}>{question}</p>)}{coachingQuestions.length > 0 && <button type="button" className="btn sm txt" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button>}{layoutLines && layoutProposal && <VeraLayoutProposal note={layoutProposal.note} lines={layoutLines} refused={layoutProposal.refused} onToggle={toggleLayoutLine} onApply={applyLayout} onDismiss={() => setLayoutProposal(null)} buttonClass="btn sm ink" dismissClass="btn sm txt" />}</>}</div>
+          {!preview && veraHidden && <button type="button" className="vera-orb vera-tab" aria-label="Show Vera" aria-expanded={false} aria-keyshortcuts="Meta+K Control+K Meta+Backslash Control+Backslash" title="Show Vera (⌘K)" onClick={() => putVeraAway(false, true)}><span className="orb" aria-hidden /><span>Vera</span></button>}
+          {!preview && !veraHidden && <section className="vera" aria-label="Vera">
+            <div className="vera-head"><span className="orb" aria-hidden /><b>Vera</b><span className="ctx">{veraContext}</span><button type="button" className="ib vera-hide" aria-label="Hide Vera" aria-expanded aria-keyshortcuts="Meta+Backslash Control+Backslash" title="Hide Vera (⌘\\)" onClick={() => putVeraAway(true)}><FqIcon name="close" /></button></div>
+            <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is thinking…' : <>{veraStatus && <p>{veraStatus}</p>}{coachingQuestions.map(question => <p key={question}>{question}</p>)}{coachingQuestions.length > 0 && <button type="button" className="btn sm txt" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button>}{layoutLines && layoutProposal && <VeraLayoutProposal note={layoutProposal.note} lines={layoutLines} refused={layoutProposal.refused} onToggle={toggleLayoutLine} onApply={applyLayout} onDismiss={() => setLayoutProposal(null)} buttonClass="btn sm ink" dismissClass="btn sm txt" />}</>}</div>
             <form className="bar" onSubmit={(e) => { e.preventDefault(); submitVera() }}>
-              <span className="orb" aria-hidden />
               <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder={onLayout ? 'Ask Vera a question, or to rearrange or restyle…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
-              <span className="ctx">{veraContext}</span>
               <button type="submit" className="btn sm ink" disabled={asking}>Ask</button>
-              <button type="button" className="ib vera-hide" aria-label="Hide Vera" aria-keyshortcuts="Meta+Backslash Control+Backslash" title="Hide Vera (⌘\\)" onClick={() => putVeraAway(true)}><FqIcon name="close" /></button>
             </form>
             <div className="chips">{suggestions.map((chip) => <button type="button" key={chip.label} disabled={asking || !selected} onClick={() => void askVera(chip.prompt, chip.fields)}>{chip.label}</button>)}</div>
-          </div>}
+          </section>}
         </main>
         <aside className="insp" aria-label="Inspector">
           {right && nothingSelected && <>{!!error && <div className="note err" role="alert">{error}{status === 'error' && <button type="button" className="row" onClick={() => void save()}>Retry save</button>}{status === 'conflict' && <button type="button" className="row" onClick={() => window.location.reload()}>Reload newer draft</button>}</div>}
@@ -945,7 +947,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     </aside>
     <main className="we-stage" data-device={device} aria-label="Website editor canvas">
       {themeBar}
-      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
+      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} register={siteDials(pageLookStyle).register === 'day' ? 'day' : 'night'} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
       {!preview && <div className="we-zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><Minus size={15} aria-hidden /></Icon><span>{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><Plus size={15} aria-hidden /></Icon></div>}
       {!preview && <VeraDock>
         {(asking || veraStatus || coachingQuestions.length > 0 || !!layoutLines) && <div className="we-thread">

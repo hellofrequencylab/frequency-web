@@ -212,6 +212,16 @@
   font-size: 13px;
 }
 
+/* BLD-216: the top bar fits at 390. It answers to its own width (a container query, not a viewport media query, which
+   rails.ts owns): Show as and Find leave first, then the device switch. */
+.top { container-type: inline-size; }
+@container (max-width: 839px) {
+  .wide { display: none; }
+}
+@container (max-width: 599px) {
+  .devices { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .root * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
 }

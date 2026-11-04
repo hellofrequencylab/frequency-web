@@ -193,8 +193,8 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         </div>
         <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Undo" title="Undo" disabled={!state.past.length} onClick={() => dispatch({ type: 'undo' })}><Undo2 size={16} aria-hidden /></button>
         <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Redo" title="Redo" disabled={!state.future.length} onClick={() => dispatch({ type: 'redo' })}><Redo2 size={16} aria-hidden /></button>
-        <button type="button" className={styles.btn} aria-haspopup="menu" disabled title="Show as: the other surfaces arrive with the surface switcher">Site · Visitor</button>
-        <button type="button" className={styles.btn} aria-label="Find, do or ask. Shortcut: command K" disabled title="The command bar arrives in a later pass"><span>Find</span><span className={styles.kbd}>⌘K</span></button>
+        <button type="button" className={`${styles.btn} ${styles.wide}`} aria-haspopup="menu" disabled title="Show as: the other surfaces arrive with the surface switcher">Site · Visitor</button>
+        <button type="button" className={`${styles.btn} ${styles.wide}`} aria-label="Find, do or ask. Shortcut: command K" disabled title="The command bar arrives in a later pass"><span>Find</span><span className={styles.kbd}>⌘K</span></button>
         <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Focus: hide both side panels" title="Focus (Esc to leave)" aria-pressed={rails.focus} onClick={() => railDispatch({ type: 'focus', on: !rails.focus })}><Maximize2 size={16} aria-hidden /></button>
         <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Preview" title="Preview" aria-pressed={state.preview} onClick={() => dispatch({ type: 'preview', on: !state.preview })}><Eye size={16} aria-hidden /></button>
         <button type="button" className={styles.publish} data-state={publishState} disabled={state.save === 'saving' || !dirty} onClick={() => void save(true)}>{dirty ? 'Publish' : 'Published'}</button>
