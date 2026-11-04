@@ -24,16 +24,17 @@ import {
 } from '@/lib/spaces/site-menu'
 
 // THE MENU EDITOR (lib/spaces/site-menu.ts). One component, mounted in the Space console's Page settings
-// and in the website editor's header settings, editing the ONE menu and header logo both platforms
-// read. It loads its own data (getSiteMenuEditorData re-gates the caller), so any surface can drop it
+// and in the website editor's header settings, editing the website menu and shared header logo.
+// The Frequency Space has its own fixed navigation. It loads its own data
+// (getSiteMenuEditorData re-gates the caller), so any surface can drop it
 // in with just the Space slug.
 //
 // A Free Space sees its automatic menu, locked, with the Business note. The logo choice is open to
 // every plan.
 
 const VISIBILITY: { value: MenuVisibility; label: string }[] = [
-  { value: 'both', label: 'Space page and website' },
-  { value: 'space', label: 'Space page only' },
+  { value: 'both', label: 'Website and Space Home links' },
+  { value: 'space', label: 'Space Home links only' },
   { value: 'website', label: 'Website only' },
 ]
 
@@ -93,7 +94,7 @@ export function SiteMenuEditor({ slug, className }: { slug: string; className?: 
       if (!('error' in r)) {
         setDirty(false)
         setData({ ...data, saved: true })
-        setMessage({ tone: 'ok', text: 'Saved. Your Space page and website now share this menu.' })
+        setMessage({ tone: 'ok', text: 'Saved. Your website menu is updated.' })
       } else setMessage({ tone: 'error', text: r.error })
     })
   const reset = () =>
@@ -114,19 +115,17 @@ export function SiteMenuEditor({ slug, className }: { slug: string; className?: 
       <section className="space-y-4" aria-labelledby="site-menu-heading">
         <div>
           <h3 id="site-menu-heading" className="text-body font-semibold text-text">
-            Menu
+            Website menu
           </h3>
           <p className="text-body-sm text-muted">
-            {data.hasWebsite
-              ? 'One menu for your Space page and your website. Edit it here or in the other one and both stay in sync.'
-              : 'The menu across the top of your Space page. When you publish a website, it uses this menu too.'}
+            Your website keeps its own pages and menu. Links shown on your Space appear below Home; its main menu stays Home, Community, Calendar and Program, with Manage separate for your team.
           </p>
         </div>
 
         {!data.canEdit && (
           <p className="flex items-start gap-2 rounded-card bg-surface-elevated px-4 py-3 text-body-sm text-muted">
             <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            Your menu builds itself from your pages and the features you turn on. Reordering, custom links and dropdowns come
+            Your website menu builds itself from your pages and the features you turn on. Reordering, custom links and dropdowns come
             with the Business plan.
           </p>
         )}
@@ -230,7 +229,7 @@ function MenuItemRow({
         {!isDropdown && (
           <TargetPicker label="Links to" target={item.target} options={options} disabled={readOnly} onChange={(target) => onChange({ target })} />
         )}
-        <Field label="Shows on" className="min-w-44">
+        <Field label="Shown in" className="min-w-44">
           <Select
             value={item.visibility}
             disabled={readOnly}
