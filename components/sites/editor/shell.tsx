@@ -301,11 +301,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // keeps the current look until the legacy skin has loaded, so the swap is one commit and never draws bare.
   const [tryId, setTryId] = useState<SiteThemeId | null>(null)
   const pageDocs = useMemo(() => draft.pages.map((item) => item.doc), [draft.pages])
-  const trySkin = useTryItOnSkin(pageDocs, tryId)
+  // The contract skin also dresses the SAVED theme's foreign blocks (a Services hero on a Designer site): the published
+  // page sends it (site-page.tsx), so the canvas must too, or those blocks draw bare in the editor (Daniel, 2026-11-04).
+  const trySkin = useTryItOnSkin(pageDocs, tryId ?? lookStyle.theme)
   const trying = tryId && typeof trySkin === 'string' && EDITOR_THEME[tryId] !== resolvedTheme ? tryId : null
   const canvasTheme = trying ? EDITOR_THEME[trying] : resolvedTheme
   const canvasVars = trying ? websiteThemeVars(canvasTheme, render.accent) : resolvedVars
-  const trySheet = trying ? { css: trySkin as string, themeId: trying } : null
+  const trySheet = typeof trySkin === 'string' && trySkin ? { css: trySkin, themeId: trying ?? lookStyle.theme } : null
   const pageLookStyle = render.lookStyle
   const activeAccent = render.accent
   const accentValue = String(canvasVars['--th-accent' as keyof React.CSSProperties])
