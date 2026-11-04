@@ -7,7 +7,7 @@ import { shareWebsiteAbout } from './share-about'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { readWebsiteEditor, nextWebsiteState, validWebsiteSnapshot, type WebsiteSnapshot, type WebsiteEditorState } from './state'
 import { readWebsiteVeraFacts } from './vera-guide'
-import { parseWebsiteVeraLayout, readWebsiteVeraStyleMenu, type WebsiteVeraChange, type WebsiteVeraSection } from './vera-layout'
+import { VERA_DESIGN_SETTINGS, parseWebsiteVeraLayout, readWebsiteVeraStyleMenu, type WebsiteVeraChange, type WebsiteVeraSection } from './vera-layout'
 
 
 export async function saveWebsiteDraft(host: string, expectedRevision: number, draft0: WebsiteSnapshot, publish = false, scheduledAt?: string | null): Promise<{ ok: true; state: WebsiteEditorState } | { ok: false; error: string; conflict?: boolean }> {
@@ -119,6 +119,12 @@ export async function proposeWebsiteText(host: string, request: string, value: s
   } catch { return { ok: false, error: 'Vera could not prepare coaching questions. Try again in a moment.' } }
 }
 
+/** The Design tab settings a section reports (LIVE-2162): known settings only, short strings. */
+function readDesign(value: unknown): WebsiteVeraSection['design'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter(([k, v]) => Object.hasOwn(VERA_DESIGN_SETTINGS, k) && typeof v === 'string').map(([k, v]) => [k, (v as string).slice(0, 20)]))
+}
+
 /** Read the outline the browser sent. It is the person's own page, but it crossed the network: shape and size only. */
 function readOutline(value: unknown): WebsiteVeraSection[] | null {
   if (!Array.isArray(value) || value.length === 0 || value.length > 60) return null
@@ -131,7 +137,8 @@ function readOutline(value: unknown): WebsiteVeraSection[] | null {
     if (typeof r.id !== 'string' || !r.id || r.id.length > 120 || typeof r.type !== 'string' || r.type.length > 80) return null
     out.push({ id: r.id, type: r.type, label: String(r.label ?? '').slice(0, 80), summary: String(r.summary ?? '').slice(0, 120), position: index + 1,
       tone: typeof r.tone === 'string' ? r.tone.slice(0, 20) : null, width: typeof r.width === 'string' ? r.width.slice(0, 20) : null,
-      shows: Object.fromEntries(devices.map((d) => [d, shows?.[d] !== false])) as WebsiteVeraSection['shows'] })
+      shows: Object.fromEntries(devices.map((d) => [d, shows?.[d] !== false])) as WebsiteVeraSection['shows'],
+      design: readDesign(r.design) })
   }
   return new Set(out.map((s) => s.id)).size === out.length ? out : null
 }
