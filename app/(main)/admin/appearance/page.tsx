@@ -144,7 +144,14 @@ export default async function ThemeStudioPage() {
       eyebrow="Operations · Appearance"
       description={`The design the platform wears, and the skins and occasions saved as data. Under ${DESIGN_LABEL} those rows are kept but do not apply.`}
       width="wide"
-      actions={<NewThemeLink />}
+      actions={
+        <span className="flex flex-wrap gap-2">
+          <Link href="/admin/appearance/conformance" className={buttonClasses('secondary', 'md')}>
+            New World checks
+          </Link>
+          <NewThemeLink />
+        </span>
+      }
     >
       {/* Under a design that overrides everything (Frequency, ADR-1737) nothing here reaches the site, so
           the page leads with the design the site does wear (SCAN-915), before any row that will not show. */}
