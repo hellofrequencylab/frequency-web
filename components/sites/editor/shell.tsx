@@ -596,6 +596,8 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     accents: themeAccents(draft.theme).map((a) => ({ id: a.id, label: a.label })),
     accent: dialAccent ?? null,
     looks: themeUi.looks.filter((l) => l.id !== 'own').map((l) => ({ id: l.id, label: l.label, dials: l.dials })),
+    // LIVE-2121: the sections the Add tab offers on this page now (a block at its per-page cap is left out).
+    sections: [...new Map(groups.flatMap((g) => g.items).filter((c) => !c.disabled).map((c) => [c.type, { type: c.type, label: c.label }])).values()].slice(0, 80),
   }
   // THE VERA BAR'S ROUTER (LIVE-2097): a typed ask with no text selected is about the page's STRUCTURE and goes to
   // the layout proposal; selected text (and every chip) stays on the questions-only coaching path in askVera.

@@ -6,7 +6,7 @@
 // the model proposes, the person ticks lines, and only ticked lines are applied, to the DRAFT, as ONE undo
 // step. Nothing here publishes: Publish stays a human button with no tool behind it.
 //
-// THE AUTHORSHIP LINE IS STRUCTURAL. No change kind carries words. Vera can move, show, hide, duplicate and
+// THE AUTHORSHIP LINE IS STRUCTURAL. No change kind carries words. Vera can move, show, hide, duplicate, add (LIVE-2121) and
 // restyle a section within the theme's own tone and width options; she cannot write or rewrite a heading, a
 // body, a button or any other text (owner ruling 2026-11-02, BLD-000 #1). A model reply that tries to set
 // text is refused line by line with a reason, never silently dropped.
@@ -19,7 +19,7 @@
 // because the reply crosses the network and is untrusted both ways.
 
 import type { Config, Data } from '@/lib/page-editor/types'
-import { buildOutline, findBlockDeep, moveBlockTo } from '@/components/page-editor/mobile/data-ops'
+import { addBlock, buildOutline, findBlockDeep, moveBlockTo } from '@/components/page-editor/mobile/data-ops'
 import { duplicateWebsiteSection } from './duplicate'
 import { patchSectionBase, sectionDisplay, sectionVisibility, setSectionVisibility, type Device } from './state'
 
@@ -45,7 +45,14 @@ type WebsiteVeraStyleChange =
   | { kind: 'accent'; accent: string }
   | { kind: 'look'; look: string }
 
-export type WebsiteVeraChange = WebsiteVeraSectionChange | WebsiteVeraStyleChange
+/** A new section of a kind the Add tab offers on this page (LIVE-2121). It arrives with the block's own placeholder
+ *  prompts ("Your headline goes here"), exactly as the Add tab inserts it; Vera never fills in words. */
+type WebsiteVeraAddChange = { kind: 'add'; blockType: string; toPosition: number }
+
+export type WebsiteVeraChange = WebsiteVeraSectionChange | WebsiteVeraStyleChange | WebsiteVeraAddChange
+
+/** The sections the Add tab offers on this page right now (not at a per-page cap), by block type and label. */
+type WebsiteVeraAddable = { type: string; label: string }[]
 
 const STYLE_KINDS = new Set(['style', 'accent', 'look'])
 const isWebsiteVeraStyleChange = (change: WebsiteVeraChange): change is WebsiteVeraStyleChange => STYLE_KINDS.has(change.kind)
@@ -61,6 +68,9 @@ export interface WebsiteVeraStyleMenu {
   accents: { id: string; label: string }[]
   accent: string | null
   looks: { id: string; label: string; dials: Record<string, string> }[]
+  /** LIVE-2121: the sections the Add tab offers on the page in view. The same rule as the style lines: Vera adds only
+   *  what the owner could have clicked. Absent means no adds. */
+  sections?: WebsiteVeraAddable
 }
 
 /** One top-level section as Vera reads it. `summary` is the owner's own text, sent as DATA, never as an instruction. */
@@ -92,6 +102,7 @@ export function websiteVeraOutline(doc: Data, config: Config): WebsiteVeraSectio
 }
 
 const ID = /^[a-z][a-z0-9-]{0,39}$/
+const BLOCK_TYPE = /^[A-Z][A-Za-z0-9]{0,59}$/
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '')
 const choices = (v: unknown): { id: string; label: string }[] | null => {
   if (!Array.isArray(v) || v.length > 24) return null
@@ -120,11 +131,21 @@ export function readWebsiteVeraStyleMenu(value: unknown): WebsiteVeraStyleMenu |
     const known = new Map(dials.map((d) => [d.id, new Set(d.options.map((o) => o.id))]))
     looks.push({ id: String(r.id), label: text(r.label, 60), dials: Object.fromEntries(Object.entries(r.dials as Record<string, unknown>).filter(([k, x]) => typeof x === 'string' && known.get(k)?.has(x))) as Record<string, string> })
   }
-  return { dials, accents, accent: typeof v.accent === 'string' ? v.accent.slice(0, 40) : null, looks }
+  let sections: WebsiteVeraAddable | undefined
+  if (v.sections != null) {
+    if (!Array.isArray(v.sections) || v.sections.length > 80) return null
+    sections = []
+    for (const s of v.sections as unknown[]) {
+      const r = (s ?? {}) as Record<string, unknown>
+      if (!BLOCK_TYPE.test(String(r.type))) return null
+      sections.push({ type: String(r.type), label: text(r.label, 60) })
+    }
+  }
+  return { dials, accents, accent: typeof v.accent === 'string' ? v.accent.slice(0, 40) : null, looks, ...(sections ? { sections } : {}) }
 }
 
 /** Keys a change may carry. Anything else (text, heading, props, css) is refused, not ignored. */
-const ALLOWED_KEYS = new Set(['kind', 'sectionId', 'toPosition', 'device', 'visible', 'tone', 'width', 'dial', 'option', 'accent', 'look'])
+const ALLOWED_KEYS = new Set(['kind', 'sectionId', 'blockType', 'toPosition', 'device', 'visible', 'tone', 'width', 'dial', 'option', 'accent', 'look'])
 const WORD_KEYS = /^(text|title|heading|headline|body|copy|label|button|caption|description|subtitle|value|content|props)$/i
 const AUTHORSHIP_REFUSAL = 'Vera does not write or rewrite your words, so that line was left out. Select the text and ask for coaching questions instead.'
 
@@ -136,6 +157,7 @@ type ParsedVeraLayout = { changes: WebsiteVeraChange[]; refused: string[] }
  */
 export function parseWebsiteVeraLayout(raw: unknown, sectionIds: ReadonlySet<string>, menu?: WebsiteVeraStyleMenu | null): ParsedVeraLayout {
   const out: ParsedVeraLayout = { changes: [], refused: [] }
+  let added = 0
   const list = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as { changes?: unknown }).changes : undefined
   if (!Array.isArray(list)) return out
   if (list.length > MAX_VERA_LAYOUT_CHANGES) out.refused.push(`Only the first ${MAX_VERA_LAYOUT_CHANGES} changes were kept. Ask again for the rest.`)
@@ -147,6 +169,15 @@ export function parseWebsiteVeraLayout(raw: unknown, sectionIds: ReadonlySet<str
     if (keys.some((k) => WORD_KEYS.test(k))) { out.refused.push(`${at}: ${AUTHORSHIP_REFUSAL}`); return }
     if (keys.some((k) => !ALLOWED_KEYS.has(k))) { out.refused.push(`${at} carried a setting Vera cannot change here.`); return }
     if (typeof o.kind === 'string' && STYLE_KINDS.has(o.kind)) { parseStyle(o, at, menu ?? null, out); return }
+    if (o.kind === 'add') {
+      const addable = menu?.sections
+      if (!addable) { out.refused.push(`${at} added a section, which is not open here.`); return }
+      if (!addable.some((a) => a.type === o.blockType)) { out.refused.push(`${at} asked for a section the Add tab does not offer on this page.`); return }
+      const to = typeof o.toPosition === 'number' && Number.isInteger(o.toPosition) ? o.toPosition : NaN
+      if (!(to >= 1 && to <= sectionIds.size + added + 1)) { out.refused.push(`${at} added a section at a position the page does not have.`); return }
+      added++
+      out.changes.push({ kind: 'add', blockType: o.blockType as string, toPosition: to }); return
+    }
     const sectionId = typeof o.sectionId === 'string' ? o.sectionId : ''
     if (!sectionIds.has(sectionId)) { out.refused.push(`${at} named a section that is not on this page.`); return }
     switch (o.kind) {
@@ -203,6 +234,7 @@ function sectionName(doc: Data, config: Config, id: string): string {
 /** The line a person reads before ticking. Every kind here is undone by the editor's Undo while it is a draft. */
 export function describeWebsiteVeraChange(change: WebsiteVeraChange, doc: Data, config: Config, menu?: WebsiteVeraStyleMenu | null): string {
   if (isWebsiteVeraStyleChange(change)) return describeStyle(change, menu ?? null)
+  if (change.kind === 'add') return `Add a ${String(config.components[change.blockType]?.label ?? change.blockType)} section at position ${change.toPosition}, with placeholder text for your words`
   const name = sectionName(doc, config, change.sectionId)
   switch (change.kind) {
     case 'move': return `Move ${name} to position ${change.toPosition}`
@@ -268,6 +300,13 @@ export function applyWebsiteVeraLayout(doc: Data, config: Config, changes: Websi
   for (const change of changes) {
     if (isWebsiteVeraStyleChange(change)) continue
     const line = describeWebsiteVeraChange(change, next, config)
+    if (change.kind === 'add') {
+      // The Add tab's own insert: the block's defaults and a fresh id, refused at the block's per-page cap.
+      const added = config.components[change.blockType] ? addBlock(next, config, change.blockType) : { data: next, id: '' }
+      if (!added.id) { results.push({ change, ok: false, line: `${line}: the page cannot take another one` }); continue }
+      next = moveBlockTo(added.data, config, added.id, { parentId: null, slotKey: null, index: Math.min(change.toPosition - 1, added.data.content.length - 1) })
+      results.push({ change, ok: true, line }); continue
+    }
     const index = next.content.findIndex((b) => b.props.id === change.sectionId)
     if (index < 0) { results.push({ change, ok: false, line: `${line}: that section is no longer on the page` }); continue }
     const before = next

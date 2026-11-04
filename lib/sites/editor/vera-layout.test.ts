@@ -155,3 +155,40 @@ describe('Vera style changes from the theme menu (LIVE-2098)', () => {
     expect(readWebsiteVeraStyleMenu('nope')).toBeNull()
   })
 })
+
+describe('Vera adds a section the Add tab offers (LIVE-2121)', () => {
+  const addConfig: Config = { components: { ...config.components, Gallery: { label: 'Gallery', fields: { title: { type: 'text' } }, defaultProps: { title: 'Your gallery title goes here' }, render: () => null } } }
+  const addable = [{ type: 'Gallery', label: 'Gallery' }]
+  it('parses an add from the addable list and refuses anything else', () => {
+    const parsed = parseWebsiteVeraLayout({ changes: [
+      { kind: 'add', blockType: 'Gallery', toPosition: 2 },
+      { kind: 'add', blockType: 'Shop', toPosition: 1 },
+      { kind: 'add', blockType: 'Gallery', toPosition: 9 },
+      { kind: 'add', blockType: 'Gallery', toPosition: 1, title: 'My words' },
+    ] }, ids, { dials: [], accents: [], accent: null, looks: [], sections: addable })
+    expect(parsed.changes).toEqual([{ kind: 'add', blockType: 'Gallery', toPosition: 2 }])
+    expect(parsed.refused).toHaveLength(3)
+    expect(parsed.refused[2]).toMatch(/does not write/)
+  })
+  it('refuses an add when no section list is open', () => {
+    expect(parseWebsiteVeraLayout({ changes: [{ kind: 'add', blockType: 'Gallery', toPosition: 1 }] }, ids).refused[0]).toMatch(/not open here/)
+    expect(parseWebsiteVeraLayout({ changes: [{ kind: 'add', blockType: 'Gallery', toPosition: 1 }] }, ids, { dials: [], accents: [], accent: null, looks: [] }).refused[0]).toMatch(/not open here/)
+  })
+  it('inserts the block with its own placeholder prompts at the position, and says so', () => {
+    const change = { kind: 'add', blockType: 'Gallery', toPosition: 2 } as const
+    expect(describeWebsiteVeraChange(change, doc, addConfig)).toBe('Add a Gallery section at position 2, with placeholder text for your words')
+    const { doc: next, results } = applyWebsiteVeraLayout(doc, addConfig, [change])
+    expect(results[0].ok).toBe(true)
+    expect(next.content.map((b) => b.type)).toEqual(['Hero', 'Gallery', 'Contact', 'About'])
+    expect(next.content[1].props.title).toBe('Your gallery title goes here')
+    expect(next.content[1].props.id).toBeTruthy()
+    expect(doc.content).toHaveLength(3)
+  })
+  it('reads the section list on a menu that crossed the network by shape', () => {
+    const menu = { dials: [], accents: [], accent: null, looks: [] }
+    expect(readWebsiteVeraStyleMenu({ ...menu, sections: addable })?.sections).toEqual(addable)
+    expect(readWebsiteVeraStyleMenu(menu)?.sections).toBeUndefined()
+    expect(readWebsiteVeraStyleMenu({ ...menu, sections: [{ type: 'gallery; drop', label: 'x' }] })).toBeNull()
+    expect(readWebsiteVeraStyleMenu({ ...menu, sections: 'Gallery' })).toBeNull()
+  })
+})
