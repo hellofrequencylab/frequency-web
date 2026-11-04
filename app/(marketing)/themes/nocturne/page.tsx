@@ -1,6 +1,7 @@
 // /themes/nocturne (LIVE-1380): the feature page for the Midnight mega theme. A Frequency-only route, like
 // /networks. app/sitemap.ts lists it. Static: no request data.
 import type { Metadata } from 'next'
+import { RememberKit } from '@/components/frequency/site/pages/themes/remember-kit'
 import { JsonLd } from '@/components/json-ld'
 import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '@/lib/seo/frequency-pages'
 import { launchEntryEnabled } from '@/lib/launch/enabled'
@@ -15,6 +16,7 @@ export default function MidnightThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.midnight)} />
+      <RememberKit kit="midnight" />
       <FrequencyMidnight spotlightHref={launchEntryEnabled() ? freeSpotlightHref('theme', 'nocturne') : null} />
     </>
   )

@@ -1,0 +1,19 @@
+{
+  "id": "SEC-023",
+  "title": "Contain four November 3 out-of-band backup tables",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "scripts/ops/secure-frequency-nov03-backups.sql",
+    "ref": "Read-only Frequency Community production catalog review, 2026-11-04"
+  },
+  "detail": "Four specific November 3 public backup tables were found with RLS disabled and effective anonymous and authenticated table or column privileges. Three contain a website_editor column and three contain a preferences column; no backup rows were read and API access was not tested. A permission-only operator transaction targets only these four, refuses unexpected preconditions, preserves postgres, service_role and operator effective table and individual column privileges, and verifies RLS and browser privilege removal. The committed script has not been applied; do not rerun earlier repairs. Default privileges can re-expose future backups, which requires separate compatibility-reviewed prevention.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-04",
+    "evidence": "OPEN: Production catalog metadata showed all four reviewed tables with RLS disabled and browser privileges present. After the exact operator file is on main and Daniel authorizes and executes it once in Frequency Community, verify all four named tables have RLS enabled, no anon/authenticated table or column privileges, preserved service/operator access and no unrelated data changes. Read metadata only, not backup rows. Keep open until actual postconditions are verified."
+  },
+  "wave": "W7"
+}

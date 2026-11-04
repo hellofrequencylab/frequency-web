@@ -909,7 +909,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
 export const ROLE_CATEGORY_COMPONENTS = Object.keys(rolesComponents)
 
 /** True when the Space has its own rows for this role (the same readers the live render uses). */
-function roleHasSpaceRows(id: RoleId, metadata: Props | undefined, now: Date): boolean {
+export function roleHasSpaceRows(id: RoleId, metadata: Props | undefined, now: Date): boolean {
   switch (id) {
     case 'gatherings': return liveEvents(metadata, now, 1).length > 0
     case 'faq': { const faqs = (metadata?.space as { faqs?: unknown } | undefined)?.faqs; return Array.isArray(faqs) && faqs.some((f) => !!f && !!str((f as Props).question)) }
