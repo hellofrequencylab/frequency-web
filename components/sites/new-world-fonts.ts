@@ -11,7 +11,16 @@ import localFont from 'next/font/local'
 
 const unbounded = localFont({ src: '../../app/fonts/unbounded/unbounded.woff2', variable: '--font-nw-unbounded', weight: '200 900', display: 'swap', preload: false })
 const hanken = localFont({ src: '../../app/fonts/hanken-grotesk/hanken-grotesk.woff2', variable: '--font-nw-hanken', weight: '100 900', display: 'swap', preload: false })
-const instrument = localFont({ src: '../../app/fonts/instrument-serif/instrument-serif-italic.woff2', variable: '--font-nw-instrument', weight: '400', style: 'italic', display: 'swap', preload: false })
+// The upright cut is the Editorial Type voice's headline face (LIVE-2175, new-world-dials-css.ts); a browser fetches it only on a page that uses it.
+const instrument = localFont({
+  src: [
+    { path: '../../app/fonts/instrument-serif/instrument-serif-italic.woff2', weight: '400', style: 'italic' },
+    { path: '../../app/fonts/instrument-serif/instrument-serif.woff2', weight: '400', style: 'normal' },
+  ],
+  variable: '--font-nw-instrument',
+  display: 'swap',
+  preload: false,
+})
 
 // The Detail pairing (Bricolage Grotesque, Lora, DM Mono; NEW_WORLD_DETAIL_CSS in lib/theme/new-world.ts) used to ask Google Fonts. These
 // three self-host the same way, under `--font-nwd-*`, so the Look needs no third-party request (BLD-214).
