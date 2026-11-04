@@ -53,3 +53,23 @@ it.each([null, [], 'model text'])('refuses non-object tool arguments without thr
   expect(proposals).toEqual([])
   expect(read).not.toHaveBeenCalled()
 })
+
+describe('a Space switch (LIVE-2157)', () => {
+  const space = { switchable: (fn: string) => fn === 'reviews', card: (fn: string, on: boolean) => `Turn ${fn} ${on ? 'on' : 'off'}?` }
+
+  it('becomes a card with the catalog words when the turn carries the Space switches', async () => {
+    const proposals: ProposedToolCall[] = []
+    const results = await handleModelToolCalls([{ id: 's', name: 'set_space_feature', input: { space: 'sunrise', feature: 'reviews', on: false } }], proposals, vi.fn(), space)
+    expect(proposals).toEqual([{ tool: 'set_space_feature', args: { space: 'sunrise', feature: 'reviews', on: false }, label: 'Turn reviews off?' }])
+    expect(results).toBeNull()
+  })
+
+  it('is refused for a money or unknown switch, and on a turn without the Space switches', async () => {
+    for (const [input, sw] of [[{ space: 'sunrise', feature: 'memberships', on: true }, space], [{ space: 'sunrise', feature: 'reviews', on: true }, undefined]] as const) {
+      const proposals: ProposedToolCall[] = []
+      const results = await handleModelToolCalls([{ id: 's', name: 'set_space_feature', input: { ...input } }], proposals, vi.fn(), sw)
+      expect(proposals).toEqual([])
+      expect(results?.[0].content).toContain('Nothing was changed')
+    }
+  })
+})
