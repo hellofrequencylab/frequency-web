@@ -11,12 +11,15 @@
 
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { ChevronLeft, Eye, Maximize2, Monitor, PanelLeft, PanelRight, Pin, PinOff, Redo2, Smartphone, Tablet, Undo2 } from 'lucide-react'
+import { ChevronLeft, Eye, ListTree, Maximize2, Monitor, PanelLeft, PanelRight, Pin, PinOff, Plus, Redo2, SlidersHorizontal, Smartphone, Sparkles, Tablet, Undo2 } from 'lucide-react'
+import { BREAKPOINTS } from '@/lib/theme/breakpoints'
 import type { WebsiteEditorShellProps } from '@/components/sites/editor/shell'
 import { SectionIcon } from '@/components/sites/editor/section-icon'
 import { updateBlockPropsDeep } from '@/components/page-editor/mobile/data-ops'
 import { sectionCommand } from '@/lib/builder/section-actions'
-import { TuneRail } from '@/components/builder/tune/tune-rail'
+import { TuneRail, type TuneFocus } from '@/components/builder/tune/tune-rail'
+import { tuneProjection } from '@/lib/builder/tune'
+import { focalFieldFor, pictureFieldFor } from '@/lib/builder/parts'
 import { CommandBar } from '@/components/builder/command/command-bar'
 import type { BuilderActionId } from '@/lib/builder/commands'
 import type { Data } from '@/lib/page-editor/types'
@@ -87,6 +90,8 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
     if (mode === 'pinned') return `${side === 'left' ? OUTLINE : rails.prefs.rightWidth}px`
     return width < 600 ? '0px' : `${STRIP}px`
   }
+  // Under the sm breakpoint (600) the rails become bottom sheets and a bottom bar opens them (BLD-107).
+  const phone = width < BREAKPOINTS.sm
   const gridVars = { '--rail-left': railColumn('left'), '--rail-right': railColumn('right'), '--rail-width': `${rails.prefs.rightWidth}px` } as CSSProperties
   const toggleRail = (side: RailSide) => railDispatch({ type: 'toggle', side, width, trigger: `builder-rail-${side}` })
   // Drag the panel's left edge to widen it (300 to 420); arrow keys do the same ten pixels at a time.
@@ -182,6 +187,20 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
     requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-spine-id="${CSS.escape(id)}"]`)?.focus())
   }
   const selected = sections.find((s) => s.props.id === state.selectedId) ?? null
+  // A picture clicked on the canvas (BLD-104) opens its own field in Tune, the media picker with its focal point
+  // lit beside it: one picker, in one place, editing the same draft as the canvas.
+  const [tuneFocus, setTuneFocus] = useState<(TuneFocus & { id: string }) | null>(null)
+  const openPicture = (id: string, src: string) => {
+    const block = builderPage(latest.current).doc.content.find((s) => s.props.id === id)
+    if (!block) return
+    const projection = tuneProjection(block.type, config)
+    const fields = [...projection.layer1, ...projection.layer2]
+    const picture = pictureFieldFor(fields, block.props as Record<string, unknown>, src)
+    if (!picture) return
+    const focal = focalFieldFor(fields, picture.key)
+    setTuneFocus({ id, keys: focal ? [picture.key, focal.key] : [picture.key], at: Date.now() })
+    if (modes.right !== 'pinned' && modes.right !== 'overlay') toggleRail('right')
+  }
 
   // The command bar (BLD-106): every action by its registry id, so ⌘K reaches everything a button does.
   const [commandOpen, setCommandOpen] = useState(false)
@@ -221,7 +240,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   }
 
   return (
-    <div className={`${styles.root} ${fontClass ?? ''}`} data-builder="v3" data-preview={state.preview} data-focus={rails.focus} style={gridVars} onKeyDown={keys}>
+    <div className={`${styles.root} ${fontClass ?? ''}`} data-builder="v3" data-preview={state.preview} data-focus={rails.focus} data-phone={phone || undefined} style={gridVars} onKeyDown={keys}>
       <header className={styles.top}>
         <a className={styles.back} href={`https://${host}/${page.slug === 'home' ? '' : page.slug}`} aria-label="Back to your website" title="Back to your website"><ChevronLeft size={18} aria-hidden /></a>
         <nav className={styles.crumbs} aria-label="Where you are">
@@ -275,7 +294,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
 
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
         <div className={styles.frame} style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)` }}>
-          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={() => {}} onDisplay={setDisplay} onVisibility={setVisible} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={() => {}} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
         </div>
       </main>
 
@@ -289,7 +308,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <div className={styles.panelBody}>
         {selected ? <>
           <h2>{config.components[selected.type]?.label ?? selected.type}</h2>
-          <TuneRail key={String(selected.props.id)} type={selected.type} props={selected.props as Record<string, unknown>} config={config} onChange={(key, value) => editProps(String(selected.props.id), { [key]: value })} />
+          <TuneRail key={String(selected.props.id)} type={selected.type} props={selected.props as Record<string, unknown>} config={config} focus={tuneFocus?.id === selected.props.id ? tuneFocus : null} onChange={(key, value) => editProps(String(selected.props.id), { [key]: value })} />
         </> : <>
           <h2>Nothing selected</h2>
           <p>Click a section on the page, or pick one in the outline.</p>
@@ -298,6 +317,12 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       </aside>
 
       <div className={styles.toastSlot} role="status" aria-live="polite">{toast && <div className={styles.toast}><span>{toast.say}</span>{toast.undo && <button type="button" className={styles.btn} onClick={() => { dispatch({ type: 'undo' }); setToast(null) }}>Undo</button>}</div>}</div>
+      {phone && !state.preview && <nav className={styles.bottomBar} aria-label="Builder tools">
+        <button type="button" data-action="rail-left" aria-pressed={modes.left === 'overlay'} onClick={() => toggleRail('left')}><ListTree size={20} aria-hidden /><span>Outline</span></button>
+        <button type="button" disabled title="Adding a section arrives with add by intent"><Plus size={20} aria-hidden /><span>Add</span></button>
+        <button type="button" data-action="rail-right" aria-pressed={modes.right === 'overlay'} onClick={() => toggleRail('right')}><SlidersHorizontal size={20} aria-hidden /><span>Tune</span></button>
+        <button type="button" onClick={() => setCommandOpen(true)}><Sparkles size={20} aria-hidden /><span>Vera</span></button>
+      </nav>}
       {commandOpen && <CommandBar sections={spine} pages={state.draft.pages} selected={!!state.selectedId} onRun={runCommand} onClose={() => setCommandOpen(false)} />}
       {state.preview && <div className={styles.previewPill} role="status">Previewing as a visitor · press Esc to edit</div>}
     </div>

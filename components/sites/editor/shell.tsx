@@ -46,7 +46,8 @@ import { WebsiteInspector, WebsiteChromeInspector } from './inspector'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
 import { VeraDock, VeraLayoutProposal } from './vera-dock'
 import { websiteVeraFacts, type WebsiteVeraFacts } from '@/lib/sites/editor/vera-guide'
-import { applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, websiteVeraGhost, websiteVeraOutline, websiteVeraStylePatch, type WebsiteVeraChange, type WebsiteVeraSection, type WebsiteVeraStyleMenu } from '@/lib/sites/editor/vera-layout'
+import { veraImageFrom, veraScreenshotFrom } from '@/lib/sites/editor/vera-screenshot'
+import { applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, websiteVeraBlockOptions, websiteVeraGhost, websiteVeraOutline, websiteVeraStylePatch, type WebsiteVeraChange, type WebsiteVeraSection, type WebsiteVeraStyleMenu } from '@/lib/sites/editor/vera-layout'
 import { SectionIcon, sectionLine } from './section-icon'
 import { FQ_EDITOR, k, on } from './skin'
 import './editor.css'
@@ -238,6 +239,9 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [pinPosition, setPinPosition] = useState<{ blockId: string; x: number; y: number } | null>(null)
   const [replies, setReplies] = useState<Record<string, string>>({})
   const [request, setRequest] = useState('')
+  // LIVE-2162: a screenshot the owner dropped, pasted or picked for the next ask, already shrunk. Sent once, never kept.
+  const [shot, setShot] = useState<string | null>(null)
+  const [shotOver, setShotOver] = useState(false)
   const [textSelection, setTextSelection] = useState<{ blockId: string; field: string; path: (string | number)[]; value: string } | null>(null)
   // The field the owner is typing in on the inspector, lit on the canvas (lib/sites/editor/field-sync.ts).
   const [fieldFocus, setFieldFocus] = useState<FieldFocus | null>(null)
@@ -600,15 +604,24 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     looks: themeUi.looks.filter((l) => l.id !== 'own').map((l) => ({ id: l.id, label: l.label, dials: l.dials })),
     // LIVE-2135: the sections the Add tab offers on this page now (a block at its per-page cap is left out).
     sections: [...new Map(groups.flatMap((g) => g.items).filter((c) => !c.disabled).map((c) => [c.type, { type: c.type, label: c.label }])).values()].slice(0, 80),
+    // LIVE-2162: each section's own design options on this page (a card's Accent surface, a title's alignment), read
+    // from the block config, so she can pick only what the section's own panel offers.
+    options: websiteVeraBlockOptions(page.doc, config),
+  }
+  async function takeShot(file: File | null) {
+    if (!file) return
+    const taken = await veraScreenshotFrom(file)
+    if (taken.ok) { setShot(taken.dataUrl); setVeraStatus('Vera will look at your screenshot with your next ask.') }
+    else setVeraStatus(taken.error)
   }
   // THE VERA BAR'S ROUTER (LIVE-2097): a typed ask with no text selected is about the page's STRUCTURE and goes to
   // the layout proposal; selected text (and every chip) stays on the questions-only coaching path in askVera.
   function submitVera() {
     const text = request
-    if (!onLayout || text.trim().startsWith('/') || (textSelection && textSelection.blockId === selectedId)) { void askVera(); return }
-    if (!text.trim() || asking) return
+    if (!onLayout || text.trim().startsWith('/') || (!shot && textSelection && textSelection.blockId === selectedId)) { void askVera(); return }
+    if ((!text.trim() && !shot) || asking) return
     setVeraStatus(''); setCoachingQuestions([]); setRequest(''); setLayoutProposal(null)
-    void askLayout(text)
+    void askLayout(text.trim() || 'Look at my screenshot. What is off, and which design choices would fix it?')
   }
   async function askLayout(text: string) {
     if (!onLayout) return
@@ -617,7 +630,9 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       const slug = page.slug
       const menu = veraStyleMenu
       // LIVE-2110: what she may know to answer a question: counts and labels about this draft, never its words.
-      const facts = websiteVeraFacts({ draft: latest.current, published: persisted.published, scheduledAt: persisted.scheduled?.at ?? null, pageInView: page.label, themeLabel: THEME_DRAFT_NAME[latest.current.theme], config })
+      // LIVE-2162: the screenshot rides this one ask with the facts and is let go once sent.
+      const facts = { ...websiteVeraFacts({ draft: latest.current, published: persisted.published, scheduledAt: persisted.scheduled?.at ?? null, pageInView: page.label, themeLabel: THEME_DRAFT_NAME[latest.current.theme], config }), ...(shot ? { screenshot: shot } : {}) }
+      setShot(null)
       const result = await onLayout(text, websiteVeraOutline(page.doc, config), menu, facts)
       if (!result.ok) { setVeraStatus(result.error); return }
       // The reply crossed the network: parse it again against THIS page's own sections before showing a line.
@@ -870,13 +885,16 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={ghost?.doc ?? page.doc} theme={canvasTheme} trySkin={trySheet} register={siteDials(pageLookStyle).register === 'day' ? 'day' : 'night'} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview || !!ghost} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
           {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><FqIcon name="minus" /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><FqIcon name="plus" /></Icon></div>}
           {!preview && veraHidden && <button type="button" className="vera-orb vera-tab" aria-label="Show Vera" aria-expanded={false} aria-keyshortcuts="Meta+K Control+K Meta+Backslash Control+Backslash" title="Show Vera (⌘K)" onClick={() => putVeraAway(false, true)}><span className="orb" aria-hidden /><span>Vera</span></button>}
-          {!preview && !veraHidden && <section className="vera" aria-label="Vera">
+          {!preview && !veraHidden && <section className={`vera${shotOver ? ' drop' : ''}`} aria-label="Vera" onDragOver={(e) => { if (onLayout && Array.from(e.dataTransfer.types).includes('Files')) { e.preventDefault(); setShotOver(true) } }} onDragLeave={() => setShotOver(false)} onDrop={(e) => { const file = veraImageFrom(e.dataTransfer); setShotOver(false); if (onLayout && file) { e.preventDefault(); void takeShot(file) } }}>
             <div className="vera-head"><span className="orb" aria-hidden /><b>Vera</b><span className="ctx">{veraContext}</span><button type="button" className="ib vera-hide" aria-label="Hide Vera" aria-expanded aria-keyshortcuts="Meta+Backslash Control+Backslash" title="Hide Vera (⌘\\)" onClick={() => putVeraAway(true)}><FqIcon name="close" /></button></div>
             <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is thinking…' : <>{veraStatus && <p>{veraStatus}</p>}{coachingQuestions.map(question => <p key={question}>{question}</p>)}{coachingQuestions.length > 0 && <button type="button" className="btn sm txt" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button>}{layoutLines && layoutProposal && <VeraLayoutProposal note={layoutProposal.note} lines={layoutLines} refused={layoutProposal.refused} onToggle={toggleLayoutLine} onApply={applyLayout} onDismiss={() => setLayoutProposal(null)} previewing={!!ghost} onPreview={toggleGhost} buttonClass="btn sm ink" dismissClass="btn sm txt" />}</>}</div>
             <form className="bar" onSubmit={(e) => { e.preventDefault(); submitVera() }}>
-              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder={onLayout ? 'Ask Vera a question, or to rearrange or restyle…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder={onLayout ? 'Ask Vera a question, or to rearrange or restyle…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} onPaste={(e) => { const file = veraImageFrom(e.clipboardData); if (onLayout && file) { e.preventDefault(); void takeShot(file) } }} />
+              {onLayout && <label className="ib vera-attach" title="Add a screenshot"><FqIcon name="photo" /><span className="sr-only">Add a screenshot for Vera</span><input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { void takeShot(e.target.files?.[0] ?? null); e.target.value = '' }} /></label>}
               <button type="submit" className="btn sm ink" disabled={asking}>Ask</button>
             </form>
+            {shot && <div className="vera-shot"><img src={shot} alt="Your screenshot for Vera" /><span>Vera will look at this with your next ask.</span><button type="button" className="btn sm txt" onClick={() => setShot(null)}>Remove</button></div>}
+            {onLayout && !shot && <p className="vera-drop-hint">Drop or paste a screenshot to show Vera what you mean.</p>}
             <div className="chips">{suggestions.map((chip) => <button type="button" key={chip.label} disabled={asking || !selected} onClick={() => void askVera(chip.prompt, chip.fields)}>{chip.label}</button>)}</div>
           </section>}
         </main>

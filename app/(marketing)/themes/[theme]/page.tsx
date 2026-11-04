@@ -11,6 +11,7 @@ import { FrequencyThemeFeature } from '@/components/frequency/site/pages/themes/
 import { isThemeFeatureId } from '@/lib/themes/theme-feature-data'
 import { SITE_THEMES } from '@/lib/theme/site-style'
 import { themeIdFromSlug, themeLibraryEntry, themeSlug } from '@/lib/themes/library'
+import { themeShareImage } from '@/lib/themes/share-cards'
 
 export const revalidate = 3600
 export const dynamicParams = false
@@ -38,6 +39,7 @@ function seoFor(slug: string): FrequencyPageSeo | null {
       { name: 'Themes', path: '/themes' },
       { name: site.label, path: `/themes/${slug}` },
     ],
+    shareImage: themeShareImage(theme),
   }
 }
 
