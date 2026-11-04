@@ -66,6 +66,7 @@ const NOCTURNE_PHOTO = (name: string) => `/sites/midnight/photos/${name}.jpg`
 const NEW_WORLD_PHOTO = (name: string) => `/sites/new-world/photos/${name}.webp`
 const CYBERWITCH_PHOTO = (name: string) => `/sites/cyberwitch/photos/${name}.jpg`
 const FREE_HUMAN_PHOTO = (name: string) => `/sites/free-human/photos/${name}.webp`
+const WILDHEART_PHOTO = (name: string) => `/brand/wildheart/photos/${name}.jpg`
 
 const FREQUENCY_IMAGERY: KitImagery = {
   hero: FREQUENCY_PHOTO(2), heroPos: 'center', portrait: FREQUENCY_PHOTO(1), portraitPos: 'center',
@@ -138,8 +139,16 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
     covers: [TEMPLE_KIT_PHOTO('02'), TEMPLE_KIT_PHOTO('10'), TEMPLE_KIT_PHOTO('11'), TEMPLE_KIT_PHOTO('05'), TEMPLE_KIT_PHOTO('13')],
     portraits: [TEMPLE_KIT_PHOTO('11'), TEMPLE_KIT_PHOTO('13')],
   },
+  // Bold has no library of its own yet (the Hearts on Fire photos belong to that program), so it wears the gathering photos.
   bold: FREQUENCY_IMAGERY,
-  wildheart: FREQUENCY_IMAGERY,
+  // Wildheart's own five pictures from the revised design system (the theme's blocks wear the same files). It has no
+  // portrait photography, so the host portrait stays the gathering photo, as Nocturne's does.
+  wildheart: {
+    hero: WILDHEART_PHOTO('sisters-shore'), heroPos: 'center 30%', portrait: FREQUENCY_PHOTO(1), portraitPos: 'center',
+    strip: [WILDHEART_PHOTO('cacao-circle'), WILDHEART_PHOTO('hands-together'), WILDHEART_PHOTO('huddle')], nav1: 'Gatherings', cta2: 'Come along',
+    covers: [WILDHEART_PHOTO('sisters-shore'), WILDHEART_PHOTO('huddle'), WILDHEART_PHOTO('cacao-circle'), WILDHEART_PHOTO('hands-together'), WILDHEART_PHOTO('forest-witch')],
+    portraits: [FREQUENCY_PHOTO(1)],
+  },
   frequency: FREQUENCY_IMAGERY,
 }
 

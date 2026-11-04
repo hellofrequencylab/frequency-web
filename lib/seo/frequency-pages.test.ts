@@ -20,7 +20,7 @@ const BODIES: Record<keyof typeof FREQUENCY_PAGE_SEO, string> = {
   features: 'components/frequency/site/pages/features/frequency-features.tsx',
   stories: 'components/frequency/site/pages/stories/frequency-stories.tsx',
   midnight: 'components/frequency/site/pages/themes/frequency-midnight.tsx',
-  themes: 'components/frequency/site/pages/themes/frequency-themes.tsx',
+  themes: 'components/frequency/site/pages/themes/kit-showcase/kit-showcase-view.tsx',
   designer: 'components/frequency/site/pages/themes/frequency-designer.tsx',
   createSpace: 'components/frequency/site/pages/create-space/create-space-studio.tsx',
   network: 'components/frequency/site/pages/themes/frequency-network.tsx',

@@ -2,6 +2,10 @@
   "role": "FirstVisit",
   "type": "RoleFirstVisit",
   "label": "Your first visit (all themes)",
+  "intent": "Explain a first visit",
+  "group": "Show up",
+  "icon": "door",
+  "live": false,
   "replaces": [
     "CircleFirstNight",
     "WildheartFirstNight"
@@ -22,14 +26,34 @@
       "eyebrow": "text<=40",
       "heading": "text<=120",
       "lead": "text<=280"
+    },
+    "labels": {
+      "items": {
+        "label": "First visit, step by step",
+        "hint": "What happens, in order, the first time someone comes."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      }
     }
   },
   "variants": {
     "thread": {
-      "label": "Numbered thread"
+      "label": "Numbered thread",
+      "thumb": "thread"
     },
     "grid": {
-      "label": "Cards"
+      "label": "Cards",
+      "thumb": "grid"
     }
   },
   "default": "thread",
