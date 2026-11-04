@@ -2,6 +2,10 @@
   "role": "Business",
   "type": "RoleBusiness",
   "label": "Tools behind it (all themes)",
+  "intent": "Show the tools behind it",
+  "group": "Answer",
+  "icon": "settings",
+  "live": false,
   "replaces": [
     "SpaceBusiness"
   ],
@@ -21,14 +25,34 @@
       "eyebrow": "text<=40",
       "heading": "text<=120",
       "lead": "text<=280"
+    },
+    "labels": {
+      "items": {
+        "label": "Tools",
+        "hint": "The tools and partners behind your work."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      }
     }
   },
   "variants": {
     "list": {
-      "label": "Ruled list"
+      "label": "Ruled list",
+      "thumb": "list"
     },
     "grid": {
-      "label": "Cards"
+      "label": "Cards",
+      "thumb": "grid"
     }
   },
   "default": "list",
