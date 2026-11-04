@@ -197,6 +197,18 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
       { name: 'on', type: 'boolean', required: true, description: 'true to turn it on, false to turn it off.' },
     ],
   },
+  {
+    key: 'set_space_role',
+    description:
+      'Propose the lowest role that can use one area of the Space they run. Use only a feature key from the "Switches you may propose" list, a role from the guide\'s role ladder, and the space slug the guide names. The person confirms on a card; nothing changes until they do.',
+    mode: 'write',
+    confirmLabel: 'Change who can use this',
+    params: [
+      { name: 'space', type: 'string', required: true, description: 'The Space slug from the guide.' },
+      { name: 'feature', type: 'string', required: true, description: 'A feature key from the switches list.' },
+      { name: 'role', type: 'string', required: true, description: 'The lowest role: viewer, editor, moderator or admin.' },
+    ],
+  },
 
   // ── Studio creation (ADR-988) ────────────────────────────────────────────────
   // The ONE governed create tool, BUILT from the Studio catalog (lib/studio/registry.ts) rather
@@ -226,7 +238,7 @@ export const MEMBER_CHAT_TOOL_KEYS: ReadonlySet<string> = new Set([
 
 /** The Space-settings tools (LIVE-2157): offered on top of the member set only when the Space guide names
  *  them, which it does only for that Space's owner or an admin. */
-export const SPACE_MANAGER_TOOL_KEYS: ReadonlySet<string> = new Set(['set_space_feature'])
+export const SPACE_MANAGER_TOOL_KEYS: ReadonlySet<string> = new Set(['set_space_feature', 'set_space_role'])
 
 export function getTool(key: string): VeraToolDef | undefined {
   return BY_KEY.get(key)
