@@ -75,7 +75,7 @@ export type NewWorldAccentId = keyof typeof NEW_WORLD_ACCENTS;
  *  very light accent). The zip's Night --text-on-accent was ink; that is overridden here on purpose. */
 export const NEW_WORLD_ON_ACCENT = "#FFFFFF";
 /** The label on an owner accent too light for white (white under 2:1 on it). */
-export const NEW_WORLD_INK_ON_ACCENT = "#0A0E16";
+const NEW_WORLD_INK_ON_ACCENT = "#0A0E16";
 
 /** The design system's token block: the plain scale first (compared value for value by the intake), then the Night register. */
 export const NEW_WORLD_TOKENS_CSS = `
