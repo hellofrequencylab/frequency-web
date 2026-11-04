@@ -3,6 +3,7 @@
   "type": "RoleStats",
   "label": "Figures (all themes)",
   "intent": "Show your numbers",
+  "why": "A few numbers that show you are real and active.",
   "group": "Welcome",
   "icon": "chart",
   "live": true,

@@ -3,6 +3,7 @@
   "type": "RoleGallery",
   "label": "Gallery (all themes)",
   "intent": "Show the room",
+  "why": "Photos of the room and the people in it.",
   "group": "Trust",
   "icon": "camera",
   "live": false,
