@@ -9,9 +9,10 @@ import type { CSSProperties } from 'react'
 // cannot read a media query, the stylesheet can). A remote photo (Supabase storage) passes through
 // untouched: the optimizer needs its host in next.config's remotePatterns, and the brand photos are
 // the ones that weigh anything.
-const OPTIMIZED_PREFIX = '/brand/'
+// The site gathering photos in /images/site are local stills too, so they take the same route.
+const OPTIMIZED_PREFIXES = ['/brand/', '/images/site/']
 export function optimizedPhoto(src: string, w: 256 | 384 | 640 | 1080 | 1920): string {
-  if (!src.startsWith(OPTIMIZED_PREFIX)) return src
+  if (!OPTIMIZED_PREFIXES.some((p) => src.startsWith(p))) return src
   return `/_next/image?url=${encodeURIComponent(src)}&w=${w}&q=75`
 }
 /** Inline style for a full-bleed `.bg`: the 1920px rendition, and 1080px under 860px wide. */

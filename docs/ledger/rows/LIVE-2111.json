@@ -1,0 +1,19 @@
+{
+ "id": "LIVE-2111",
+ "title": "CyberWitch theme suite: kit, website, Space page, Spotlight, email, /themes/cyberwitch, and every builder",
+ "lane": "live",
+ "priority": "P1",
+ "size": "L",
+ "status": "done",
+ "source": {
+  "file": "docs/DESIGN-SYSTEM-INTAKE.md",
+  "ref": "Daniel 2026-11-03: create a full theme suite from CyberWitch.zip, every surface, marketing page in the same format, in every builder system, validated and live"
+ },
+ "detail": "CyberWitch is its own theme (id `cyberwitch`, editor theme `CyberWitch`, tokens --cw-*): industrial street-punk witch, dark only, one neon accent, UnifrakturCook + Permanent Marker + Spectral. Built in stages, each its own PR, the theme hidden from every picker (RETIRED_FROM_PICKERS) until the last lands.\n\nStage 1 (this row's first PR): tokens (lib/theme/cyberwitch.ts), site skin and block sheet, registration in the site-style, mega-theme, surface, contract, editor, presentation, preview and Spotlight tables, theme contract entry, block-contract map, manifest. Deviation: Volt (#8A70FF) is a violet, so five accents ship, not six (violet family retired, ADR-1792). Stage 2: fonts, photos, six starter kits. Stage 3: Spotlight layouts, Space page face, emails. Stage 4: /themes/cyberwitch in the Nocturne page's format, design-system intake, probes, un-hide.\n\nShipped: stage 1 (tokens, skin, registration, six kits), stage 2 (UnifrakturCook, Permanent Marker and Spectral self-hosted, 11 photos for five accents, eleven emails, six Spotlight layouts), stage 3 (design-system intake in docs/design-systems/cyberwitch with an empty baseline, /themes/cyberwitch with four real renders, noindex). The Space page face is the shared member shell wearing CYBERWITCH_SURFACE (lib/theme/mega-surfaces.ts), as Services does. Un-hiding and the side-by-side passes moved to LIVE-2148.",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node -e \"const f=require('fs');const need=['lib/theme/cyberwitch.ts','components/sites/cyberwitch-css.ts','components/sites/cyberwitch-fonts.ts','lib/sites/kits/cyberwitch-variants.ts','lib/theme/cyberwitch-kit-email.ts','components/spotlight/cyberwitch-kit-layouts.tsx','app/(marketing)/themes/cyberwitch/page.tsx','docs/design-systems/cyberwitch/rules.json','lib/themes/manifests/cyberwitch.manifest.json'];const miss=need.filter(p=>!f.existsSync(p));if(miss.length){console.error('missing: '+miss.join(', '));process.exit(1)}\""
+ },
+ "wave": "W7",
+ "closed": "2026-11-04"
+}

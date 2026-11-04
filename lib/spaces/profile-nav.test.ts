@@ -317,8 +317,8 @@ describe('the #events anchor — Calendar and Events are one page (LIVE-520)', (
     expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#events')
     expect(tabs.filter((t) => t.label === 'Events')).toHaveLength(0)
     // ONE row, and it is the merged page.
-    expect(tabs.filter((t) => t.label === 'Calendar')).toHaveLength(1)
-    expect(hrefFor(tabs, 'Calendar')).toBe('/spaces/ojai/calendar')
+    expect(tabs.filter((t) => t.label === "What's Happening")).toHaveLength(1)
+    expect(hrefFor(tabs, "What's Happening")).toBe('/spaces/ojai/calendar')
   })
 })
 

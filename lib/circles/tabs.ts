@@ -61,6 +61,7 @@
 // Production's largest circle today holds 2 members. That is the size this is designed for.
 
 import type { UnderlineTabLink } from '@/components/ui/underline-tabs'
+import { CALENDAR_NAME } from '@/lib/calendar/name'
 
 export interface CircleTabFacts {
   slug: string
@@ -103,7 +104,7 @@ export function circleTabs(facts: CircleTabFacts): UnderlineTabLink[] {
   if (hasWhatsOn || facts.isMember || facts.canManage) {
     tabs.push({
       href: `${base}/whats-on`,
-      label: "What's Happening",
+      label: CALENDAR_NAME,
       ...(facts.upcomingEventCount > 0 ? { count: facts.upcomingEventCount } : {}),
     })
   }

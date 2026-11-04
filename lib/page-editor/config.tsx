@@ -41,6 +41,7 @@ import { midnightPracticeComponents, MIDNIGHT_PRACTICE_CATEGORY_COMPONENTS } fro
 import { designerComponents, DESIGNER_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/designer'
 import { freeHumanBlocks } from '@/components/page-editor/blocks/free-human'
 import { servicesBlocks } from '@/components/page-editor/blocks/services'
+import { newWorldBlocks } from '@/components/page-editor/blocks/new-world'
 import { freeHumanCalendarBlocks } from '@/components/page-editor/blocks/free-human-calendar'
 import { freeHumanWheelBlocks } from '@/components/page-editor/blocks/free-human-wheel'
 import { rolesComponents, ROLE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/roles'
@@ -100,6 +101,7 @@ export const config: Config = {
     ...designerComponents,
     ...freeHumanBlocks,
     ...servicesBlocks,
+    ...newWorldBlocks,
     ...freeHumanCalendarBlocks,
     ...freeHumanWheelBlocks,
     ...rolesComponents,
@@ -238,6 +240,11 @@ export const config: Config = {
     services: {
       title: 'Services sections',
       components: Object.keys(servicesBlocks),
+    },
+    // The New World theme's own section family (the New World design system, LIVE-2055): website pages only.
+    newWorld: {
+      title: 'New World sections',
+      components: Object.keys(newWorldBlocks),
     },
     // The role blocks (docs/THEME-COHESION.md, ADR-1923): Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ and CTA,
     // three layouts each, built on the core token contract so they wear every theme. Website pages only; opt-in.
