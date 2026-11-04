@@ -180,6 +180,24 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
     ],
   },
 
+  // ── Space settings (LIVE-2157, Vera assistants V3) ──────────────────────────
+  // Offered ONLY on a turn whose Space guide says the caller is that Space's owner or an admin. It proposes;
+  // the person taps the card; the Module Manager's own guarded action (setSpaceFeatureEnabled) re-checks
+  // their authority and writes. Money, the plan, the team list and deleting are never switchable here
+  // (veraSwitchable in space-guide.ts).
+  {
+    key: 'set_space_feature',
+    description:
+      'Propose turning one area of the Space they run on or off. Use only a feature key from the "Switches you may propose" list and the space slug the guide names. The person confirms on a card; nothing changes until they do.',
+    mode: 'write',
+    confirmLabel: 'Change this setting',
+    params: [
+      { name: 'space', type: 'string', required: true, description: 'The Space slug from the guide.' },
+      { name: 'feature', type: 'string', required: true, description: 'A feature key from the switches list.' },
+      { name: 'on', type: 'boolean', required: true, description: 'true to turn it on, false to turn it off.' },
+    ],
+  },
+
   // ── Studio creation (ADR-988) ────────────────────────────────────────────────
   // The ONE governed create tool, BUILT from the Studio catalog (lib/studio/registry.ts) rather
   // than re-listed here: a tool that could name an entity the catalog does not know is exactly
@@ -205,6 +223,10 @@ export const MEMBER_CHAT_TOOL_KEYS: ReadonlySet<string> = new Set([
   'draft_intro',
   'join_circle',
 ])
+
+/** The Space-settings tools (LIVE-2157): offered on top of the member set only when the Space guide names
+ *  them, which it does only for that Space's owner or an admin. */
+export const SPACE_MANAGER_TOOL_KEYS: ReadonlySet<string> = new Set(['set_space_feature'])
 
 export function getTool(key: string): VeraToolDef | undefined {
   return BY_KEY.get(key)
