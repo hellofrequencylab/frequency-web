@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2103",
+  "title": "Menu overhaul, part 2: merge /vision into /about, /system into /features, /networks into /for/networks",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "next.config.ts",
+    "ref": "Daniel 2026-11-03: menu overhaul picks 5A (fold /vision into /about, /system into /features) and the recommended cull; 17:23Z 'Implement all recommended options'. Strategy report: /mnt/project-files/menu-strategy-2026-11-03/REPORT.md"
+  },
+  "detail": "/vision and /the-lab 301 to /about, whose template gains the Lab's dated plan (Now, 2027, 2028) as a BuildTimeline block and three Lab answers in its one FAQ block. /networks 301s to /for/networks; the pricing Network links follow. /system 301s to /features on Frequency (307 to /pricing on DAWN); the Features, pricing, door and free Spotlight links that pointed at it now point at Features or Pricing. The three routes and their page components are deleted, and the sitemap, llms.txt, the page index, the SEO table and the footer drop them. Search Console showed no impressions on any of the four. Follow-up PR: /calm-down-fast into /mindless and the /for doors from 13 to 9. Probe: node scripts/probes/menu-merges.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/menu-merges.mjs"
+  },
+  "closed": "2026-11-03"
+}

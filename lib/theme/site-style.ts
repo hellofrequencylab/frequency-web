@@ -7,6 +7,7 @@ import { MIDNIGHT_ACCENT } from '@/lib/theme/midnight'
 import { TEMPLE_KIT_ACCENT } from '@/lib/theme/temple-kit'
 import { FREE_HUMAN_ACCENT } from '@/lib/theme/free-human'
 import { DESIGNER_ACCENT } from '@/lib/theme/designer'
+import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteFacesId } from '@/lib/theme/site-faces'
 import { readMegaTheme } from '@/lib/theme/mega-theme'
@@ -421,5 +422,6 @@ export function spacePageDefaultAccent(preferences: unknown, typeDefault: string
   if (style.theme === 'midnight') return MIDNIGHT_ACCENT.accent
   if (style.theme === 'designer') return DESIGNER_ACCENT.accent
   if (style.theme === 'free-human') return FREE_HUMAN_ACCENT.accent
+  if (style.theme === 'new-world') return NEW_WORLD_ACCENTS.tide.accent
   return style.theme === 'bold' ? MENSWORK_PALETTE.teal : style.theme === 'wildheart' ? WILDHEART_PALETTE.violet : typeDefault
 }
