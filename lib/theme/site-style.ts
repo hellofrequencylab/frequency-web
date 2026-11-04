@@ -190,7 +190,11 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
  *  `frequency` ("Default") left the pickers 2026-11-03: New World is the default (LIVE-2058); sites that saved it keep it.
  *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
 const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple', 'free-human', 'services', 'cyberwitch'])
+/** New World is the default, so it leads every picker (owner 2026-11-04); the rest keep their definition order. */
+const PICKER_FIRST: SiteThemeId = 'new-world'
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
+  .slice()
+  .sort((a, b) => Number(b.id === PICKER_FIRST) - Number(a.id === PICKER_FIRST))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
 

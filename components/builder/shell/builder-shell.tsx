@@ -17,6 +17,8 @@ import { SectionIcon } from '@/components/sites/editor/section-icon'
 import { updateBlockPropsDeep } from '@/components/page-editor/mobile/data-ops'
 import { sectionCommand } from '@/lib/builder/section-actions'
 import { TuneRail } from '@/components/builder/tune/tune-rail'
+import { CommandBar } from '@/components/builder/command/command-bar'
+import type { BuilderActionId } from '@/lib/builder/commands'
 import type { Data } from '@/lib/page-editor/types'
 import { moveSection, spineItems, stepSection } from '@/lib/builder/spine'
 import { railInit, railModes, railPinnable, railReducer, RAIL_PREFS_KEY, RAIL_WIDTH, type RailSide } from '@/lib/builder/rails'
@@ -181,8 +183,34 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   }
   const selected = sections.find((s) => s.props.id === state.selectedId) ?? null
 
+  // The command bar (BLD-106): every action by its registry id, so ⌘K reaches everything a button does.
+  const [commandOpen, setCommandOpen] = useState(false)
+  function runAction(id: BuilderActionId) {
+    const sel = state.selectedId
+    switch (id) {
+      case 'undo': case 'redo': dispatch({ type: id }); break
+      case 'preview': dispatch({ type: 'preview', on: !state.preview }); break
+      case 'focus': railDispatch({ type: 'focus', on: !rails.focus }); break
+      case 'publish': if (dirty) void save(true); break
+      case 'device-desktop': case 'device-tablet': case 'device-phone': dispatch({ type: 'device', device: id.slice(7) as BuilderDevice }); break
+      case 'rail-left': case 'rail-right': toggleRail(id === 'rail-left' ? 'left' : 'right'); break
+      case 'pin-left': case 'pin-right': railDispatch({ type: 'pin', side: id === 'pin-left' ? 'left' : 'right', pinned: true }); break
+      case 'section-up': case 'section-down': case 'section-copy': case 'section-hide': case 'section-delete':
+        if (sel) sectionAction(sel, ({ 'section-up': 'up', 'section-down': 'down', 'section-copy': 'copy', 'section-hide': 'hide', 'section-delete': 'delete' } as const)[id])
+        break
+    }
+  }
+  function runCommand(rowId: string) {
+    setCommandOpen(false)
+    if (rowId.startsWith('do:')) runAction(rowId.slice(3) as BuilderActionId)
+    else if (rowId.startsWith('go-section:')) { const id = rowId.slice(11); dispatch({ type: 'select', id }); requestAnimationFrame(() => document.querySelector(`[data-spine-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' })) }
+    else if (rowId.startsWith('go-page:')) dispatch({ type: 'page', slug: rowId.slice(8) })
+    else if (rowId === 'ask') setToast({ say: 'Vera arrives in the builder with BLD-402. Your question is kept for her.', undo: false })
+  }
+
   function keys(event: KeyboardEvent<HTMLDivElement>) {
     const mod = event.metaKey || event.ctrlKey
+    if (mod && event.key.toLowerCase() === 'k') { event.preventDefault(); setCommandOpen(true); return }
     const typing = event.target instanceof HTMLElement && (event.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName))
     if (event.key === 'Escape' && rails.open) { railDispatch({ type: 'close' }); return }
     if (event.key === 'Escape' && rails.focus) { railDispatch({ type: 'focus', on: false }); return }
@@ -206,21 +234,21 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <span className={styles.save} data-state={state.save} role="status"><i className={styles.dot} aria-hidden />{builderSaveLabel(state.save)}</span>
         <span className={styles.spacer} />
         <div className={styles.devices} role="group" aria-label="Device">
-          {DEVICES.map(({ id, label, Icon }) => <button key={id} type="button" className={`${styles.btn} ${styles.icon}`} aria-label={label} title={label} aria-pressed={state.device === id} onClick={() => dispatch({ type: 'device', device: id })}><Icon size={16} aria-hidden /></button>)}
+          {DEVICES.map(({ id, label, Icon }) => <button key={id} type="button" data-action={`device-${id}`} className={`${styles.btn} ${styles.icon}`} aria-label={label} title={label} aria-pressed={state.device === id} onClick={() => dispatch({ type: 'device', device: id })}><Icon size={16} aria-hidden /></button>)}
         </div>
-        <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Undo" title="Undo" disabled={!state.past.length} onClick={() => dispatch({ type: 'undo' })}><Undo2 size={16} aria-hidden /></button>
-        <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Redo" title="Redo" disabled={!state.future.length} onClick={() => dispatch({ type: 'redo' })}><Redo2 size={16} aria-hidden /></button>
+        <button type="button" data-action="undo" className={`${styles.btn} ${styles.icon}`} aria-label="Undo" title="Undo" disabled={!state.past.length} onClick={() => dispatch({ type: 'undo' })}><Undo2 size={16} aria-hidden /></button>
+        <button type="button" data-action="redo" className={`${styles.btn} ${styles.icon}`} aria-label="Redo" title="Redo" disabled={!state.future.length} onClick={() => dispatch({ type: 'redo' })}><Redo2 size={16} aria-hidden /></button>
         <button type="button" className={`${styles.btn} ${styles.wide}`} aria-haspopup="menu" disabled title="Show as: the other surfaces arrive with the surface switcher">Site · Visitor</button>
-        <button type="button" className={`${styles.btn} ${styles.wide}`} aria-label="Find, do or ask. Shortcut: command K" disabled title="The command bar arrives in a later pass"><span>Find</span><span className={styles.kbd}>⌘K</span></button>
-        <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Focus: hide both side panels" title="Focus (Esc to leave)" aria-pressed={rails.focus} onClick={() => railDispatch({ type: 'focus', on: !rails.focus })}><Maximize2 size={16} aria-hidden /></button>
-        <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Preview" title="Preview" aria-pressed={state.preview} onClick={() => dispatch({ type: 'preview', on: !state.preview })}><Eye size={16} aria-hidden /></button>
-        <button type="button" className={styles.publish} data-state={publishState} disabled={state.save === 'saving' || !dirty} onClick={() => void save(true)}>{dirty ? 'Publish' : 'Published'}</button>
+        <button id="builder-command" type="button" className={`${styles.btn} ${styles.wide}`} aria-label="Find, do or ask. Shortcut: command K" aria-haspopup="dialog" aria-expanded={commandOpen} onClick={() => setCommandOpen(true)}><span>Find</span><span className={styles.kbd}>⌘K</span></button>
+        <button type="button" data-action="focus" className={`${styles.btn} ${styles.icon}`} aria-label="Focus: hide both side panels" title="Focus (Esc to leave)" aria-pressed={rails.focus} onClick={() => railDispatch({ type: 'focus', on: !rails.focus })}><Maximize2 size={16} aria-hidden /></button>
+        <button type="button" data-action="preview" className={`${styles.btn} ${styles.icon}`} aria-label="Preview" title="Preview" aria-pressed={state.preview} onClick={() => dispatch({ type: 'preview', on: !state.preview })}><Eye size={16} aria-hidden /></button>
+        <button type="button" data-action="publish" className={styles.publish} data-state={publishState} disabled={state.save === 'saving' || !dirty} onClick={() => void save(true)}>{dirty ? 'Publish' : 'Published'}</button>
       </header>
 
       <nav className={styles.outline} aria-label="Page outline" data-mode={modes.left}>
         <div className={styles.railHead}>
-          <button id="builder-rail-left" type="button" className={`${styles.btn} ${styles.icon}`} aria-label={modes.left === 'pinned' || modes.left === 'overlay' ? 'Close the outline' : 'Open the outline'} aria-expanded={modes.left === 'pinned' || modes.left === 'overlay'} onClick={() => toggleRail('left')}><PanelLeft size={16} aria-hidden /></button>
-          {modes.left === 'overlay' && pinnable.left && <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Keep the outline open" title="Pin" onClick={() => railDispatch({ type: 'pin', side: 'left', pinned: true })}><Pin size={16} aria-hidden /></button>}
+          <button id="builder-rail-left" data-action="rail-left" type="button" className={`${styles.btn} ${styles.icon}`} aria-label={modes.left === 'pinned' || modes.left === 'overlay' ? 'Close the outline' : 'Open the outline'} aria-expanded={modes.left === 'pinned' || modes.left === 'overlay'} onClick={() => toggleRail('left')}><PanelLeft size={16} aria-hidden /></button>
+          {modes.left === 'overlay' && pinnable.left && <button type="button" data-action="pin-left" className={`${styles.btn} ${styles.icon}`} aria-label="Keep the outline open" title="Pin" onClick={() => railDispatch({ type: 'pin', side: 'left', pinned: true })}><Pin size={16} aria-hidden /></button>}
         </div>
         <div className={styles.caption}>On this page · {spine.length}</div>
         <p className={styles.hidden} role="status" aria-live="polite">{moved}</p>
@@ -254,9 +282,9 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       <aside className={styles.panel} aria-label="Section settings" data-mode={modes.right}>
         {modes.right === 'pinned' && <button type="button" className={styles.grip} role="separator" aria-orientation="vertical" aria-label="Panel width" aria-valuemin={RAIL_WIDTH.min} aria-valuemax={RAIL_WIDTH.max} aria-valuenow={rails.prefs.rightWidth} onPointerDown={resizeFrom} onKeyDown={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); railDispatch({ type: 'resize', width: rails.prefs.rightWidth + (e.key === 'ArrowLeft' ? 10 : -10) }) } }} />}
         <div className={styles.railHead}>
-          <button id="builder-rail-right" type="button" className={`${styles.btn} ${styles.icon}`} aria-label={modes.right === 'pinned' || modes.right === 'overlay' ? 'Close the settings' : 'Open the settings'} aria-expanded={modes.right === 'pinned' || modes.right === 'overlay'} onClick={() => toggleRail('right')}><PanelRight size={16} aria-hidden /></button>
-          {modes.right === 'overlay' && pinnable.right && <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Keep the settings open" title="Pin" onClick={() => railDispatch({ type: 'pin', side: 'right', pinned: true })}><Pin size={16} aria-hidden /></button>}
-          {modes.right === 'pinned' && <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Let the settings float" title="Unpin" onClick={() => railDispatch({ type: 'pin', side: 'right', pinned: false })}><PinOff size={16} aria-hidden /></button>}
+          <button id="builder-rail-right" data-action="rail-right" type="button" className={`${styles.btn} ${styles.icon}`} aria-label={modes.right === 'pinned' || modes.right === 'overlay' ? 'Close the settings' : 'Open the settings'} aria-expanded={modes.right === 'pinned' || modes.right === 'overlay'} onClick={() => toggleRail('right')}><PanelRight size={16} aria-hidden /></button>
+          {modes.right === 'overlay' && pinnable.right && <button type="button" data-action="pin-right" className={`${styles.btn} ${styles.icon}`} aria-label="Keep the settings open" title="Pin" onClick={() => railDispatch({ type: 'pin', side: 'right', pinned: true })}><Pin size={16} aria-hidden /></button>}
+          {modes.right === 'pinned' && <button type="button" data-action="rail-right" className={`${styles.btn} ${styles.icon}`} aria-label="Let the settings float" title="Unpin" onClick={() => railDispatch({ type: 'pin', side: 'right', pinned: false })}><PinOff size={16} aria-hidden /></button>}
         </div>
         <div className={styles.panelBody}>
         {selected ? <>
@@ -270,6 +298,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       </aside>
 
       <div className={styles.toastSlot} role="status" aria-live="polite">{toast && <div className={styles.toast}><span>{toast.say}</span>{toast.undo && <button type="button" className={styles.btn} onClick={() => { dispatch({ type: 'undo' }); setToast(null) }}>Undo</button>}</div>}</div>
+      {commandOpen && <CommandBar sections={spine} pages={state.draft.pages} selected={!!state.selectedId} onRun={runCommand} onClose={() => setCommandOpen(false)} />}
       {state.preview && <div className={styles.previewPill} role="status">Previewing as a visitor · press Esc to edit</div>}
     </div>
   )
