@@ -24,6 +24,13 @@ const out = process.env.RENDER_OUT
 const ROOT = process.cwd()
 const face = (fam: string, f: string, style = 'normal', w = '100 900') => `@font-face{font-family:"${fam}";src:url("file://${ROOT}/app/fonts/${f}") format("woff2");font-style:${style};font-weight:${w}}`
 const FACES = face('Bricolage Grotesque', 'bricolage-grotesque/bricolage-grotesque.woff2', 'normal', '200 800') + face('Lora', 'lora/lora.woff2', 'normal', '400 700') + face('DM Mono', 'dm-mono/dm-mono-400.woff2', 'normal', '400') + face('DM Mono', 'dm-mono/dm-mono-500.woff2', 'normal', '500') + face('Unbounded', 'unbounded/unbounded.woff2', 'normal', '200 900') + face('Hanken Grotesk', 'hanken-grotesk/hanken-grotesk.woff2') + face('Instrument Serif', 'instrument-serif/instrument-serif-italic.woff2', 'italic', '400')
+// Bold's three faces (Sofia Sans Extra Condensed, Barlow, IBM Plex Mono). next/font defines these as --font-* variables on <html>
+// in the app; a bare page has to name them, or Bold's headlines fall back to Arial (the 2026-11-04 audit: /themes/bold showed Arial).
+const BOLD_FACES =
+  face('Sofia Sans Extra Condensed', 'sofia-sans-extra-condensed/sofia-sans-extra-condensed.woff2', 'normal', '1 1000') +
+  [400, 500, 600].map((w) => face('Barlow', `barlow/barlow-${w}.woff2`, 'normal', String(w))).join('') +
+  [400, 500].map((w) => face('IBM Plex Mono', `ibm-plex-mono/ibm-plex-mono-${w}.woff2`, 'normal', String(w))).join('')
+const BOLD_VARS = '--font-sofia-xc:"Sofia Sans Extra Condensed";--font-barlow:Barlow;--font-plex-mono:"IBM Plex Mono";'
 const pub = (html: string) => html.replace(/ loading="lazy"/g, '').replace(/(src|href)="\/(sites|brand|themes|create-a-space)\//g, `$1="file://${ROOT}/public/$2/`)
 
 type Skin = { theme: 'menswork' | 'wildheart' | 'services'; season: 'fall' } | null
@@ -41,7 +48,7 @@ async function html(el: unknown): Promise<string> {
   return Buffer.concat(chunks).toString()
 }
 const shellDoc = (body: string) =>
-  `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
+  `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif;${BOLD_VARS}}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
 
 it('renders the Bold, Wildheart and Services surfaces', async () => {
   if (!out) throw new Error('set RENDER_OUT')
@@ -81,6 +88,8 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
     const home = r.snapshot.pages.find((p) => p.slug === 'home' || p.slug === '') ?? r.snapshot.pages[0]!
     for (const b of home.doc.content as { type: string; props: Record<string, unknown> }[]) {
       if (b.type === 'ServicesHero' || b.type === 'Hero') b.props.image = t.photo
+      // Bold's kit hero is text-only; the design puts the headline above a full-width photo, so the picture shows the photo variant.
+      if (b.type === 'PhotoHero' && t.id === 'bold') Object.assign(b.props, { variant: 'image', image: t.photo, alt: 'People gathered on a beach at sunset', height: 'medium', display: 'below' })
     }
     const links = { origin: 'https://example.com', slug: 'table-nine', siteBase: '', pages: ['home'], contactHref: null, bookHref: null, email: null }
     const body = h(WebsiteDocument as never, { doc: home.doc, theme: t.ed, config, live: { events: [], circles: [], journeys: [] }, links, origin: links.origin, title: 'Home', metadata: { space: { name: 'Table Nine', faqs: [] } } } as never)
@@ -108,7 +117,7 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
     const skinCss = t.skin === null ? FREQUENCY_PAGE_CSS : t.skin.theme === 'wildheart' ? FREQUENCY_PAGE_CSS + WILDHEART_CSS : t.skin.theme === 'services' ? FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS : MENSWORK_CSS + MENSWORK_PAGE_CSS
     // Services draws the owner's accent from the accent scope above its skin, the way the live site does (AccentScope).
     const accentVars = t.mega === 'services' ? Object.entries(servicesAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : ''
-    writeFileSync(`${out}/${t.id}-site.html`, pub(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file://${out}/app.css"><style>${FACES}${HOUSE_CSS}${WEBSITE_TOKEN_CSS}${skinCss}*,*::before,*::after{box-sizing:border-box}html{scrollbar-width:none}body{margin:0}</style></head><body><div style="${accentVars}"><div data-website-theme="${t.ed}" data-house-site style="${vars}">${site}</div></div></body></html>`))
+    writeFileSync(`${out}/${t.id}-site.html`, pub(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file://${out}/app.css"><style>${FACES}${BOLD_FACES}:root{${BOLD_VARS}}${HOUSE_CSS}${WEBSITE_TOKEN_CSS}${skinCss}*,*::before,*::after{box-sizing:border-box}html{scrollbar-width:none}body{margin:0}</style></head><body><div style="${accentVars}"><div data-website-theme="${t.ed}" data-house-site style="${vars}">${site}</div></div></body></html>`))
 
     // ---- Spotlight: the real shell on the theme's own preset.
     const preset = THEME_PRESETS.find((p) => p.id === t.mega)!.theme
@@ -117,7 +126,7 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
       hostedEvents: [], canTip: false, programs: { circles: [], journeys: [], spaces: [] }, layout: { blocks: [] },
       background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }, theme: preset, totalZaps: 0, contributionCounts: { eventsHosted: 0, journeysFinished: 0 }, guestbook: [], grid: null,
     }
-    const linkCards = ['Join the Thursday circle', 'This month’s dates', 'Book a first visit'].map((l) => h('a', { key: l, href: '#', style: { display: 'block', marginTop: 12, padding: 16, fontWeight: 600, color: 'var(--color-text)', background: 'var(--color-surface-elevated)', border: '1px solid color-mix(in srgb, var(--color-text) 18%, transparent)', borderRadius: ({ sm: 6, md: 12, lg: 18, xl: 28 } as Record<string, number>)[preset.card.radius] ?? 18, textDecoration: 'none' } }, l))
+    const linkCards = ['Join the Thursday circle', 'This month’s dates', 'Book a first visit'].map((l) => h('a', { key: l, href: '#', style: { display: 'block', marginTop: 12, padding: 16, fontWeight: 600, color: 'var(--color-text)', background: 'var(--color-surface-elevated)', border: '1px solid color-mix(in srgb, var(--color-text) 18%, transparent)', borderRadius: ({ none: 0, sm: 6, md: 12, lg: 18, xl: 28 } as Record<string, number>)[preset.card.radius] ?? 18, textDecoration: 'none' } }, l))
     const spot = await html(h(Shell as never, { data, showBio: true, sampleContent: true } as never, h('div', null, linkCards)))
     writeFileSync(`${out}/${t.id}-spot.html`, shellDoc(spot))
 

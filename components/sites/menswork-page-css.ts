@@ -75,6 +75,7 @@ ${M} .mw-hero-stack .mw-hero-copy .mw-display{font-size:clamp(3.75rem,8.5vw,7.5r
 @media (max-width:639px){${M} .mw-hero .mw-hero-copy .mw-display{font-size:clamp(2.25rem,10vw,3.75rem)}}
 ${M} .mw-hero-photo{width:100%;max-width:1248px;margin:clamp(40px,5vw,48px) auto 0;height:clamp(280px,38vw,480px)}
 ${M} .mw-hero-photo+*{margin-top:0}
+${M} .mw-hero-photo::after{content:"";position:absolute;right:0;bottom:0;width:40px;height:34.64px;background:var(--color-primary);clip-path:polygon(0 100%,100% 100%,50% 0);pointer-events:none}
 
 ${M} .mw-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:clamp(24px,5vw,48px);align-items:start}
 ${M} .mw-head-card{padding:clamp(24px,4vw,40px)}
