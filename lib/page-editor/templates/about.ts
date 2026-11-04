@@ -10,6 +10,9 @@ import { PLAN_STORY } from '@/lib/pricing/plan-story'
 // story beats on the reading measure, one PhotoBeat, the ink principles band,
 // the arc-top figure row, the numbered asks, and the dark close. Same structure,
 // same copy — the template render and the coded fallback are visually equivalent.
+// 2026-11-04 (LIVE-2163, owner: "make each a different layout"): the story beats are now photo-led
+// FounderChapters and the principles a PrincipleOrbit (components/page-editor/blocks/site-story.tsx);
+// same words, same H2s and H3s.
 //
 // CONTRACT:
 //  • One `const L` layout literal, reused on every block so the rhythm stays even.
@@ -59,34 +62,50 @@ export const data: Data = {
       },
     },
 
-    // ── The story, told in beats separated by the warm hairline. Prose deserves
-    // a rule, not a box (DAWN about.html). Continues past the hero dock. ────────
+    // ── The story, told as photo-led chapters on a dotted spine (owner 2026-11-04, "make each a
+    // different layout"): the founder's portrait opens it, then the cliff, the circle and the fade, each
+    // beat beside its own photograph. Same four beats, same words, same H2s (FounderChapters,
+    // components/page-editor/blocks/site-story.tsx). ──────────────────────────
     {
-      type: 'StoryBeats',
+      type: 'FounderChapters',
       props: {
         id: 'ab-story',
         eyebrow: 'Where it comes from',
         kicker: 'Most of a generation feels it. Almost nobody has a word for it.',
         items: [
           {
+            label: '01',
+            image: '/brand/frequency/photos/daniel-tyack.jpg',
+            alt: 'Daniel Tyack, founder of Frequency',
+            caption: 'Daniel Tyack, founder',
             title: 'A hunger nobody could name.',
             body: "We didn't set out to start a company. We set out to find each other, and discovered that the places built to hold people had quietly disappeared.\n\nThe corner café, the town square, the gathering ground: the third spaces that aren't home and aren't work, where you're known by name and missed when you don't show up. We traded them for feeds and followers, ended up surrounded yet unseen, and felt the loss long before we could explain it. No company is going to hand the third place back. People rebuild it, one Circle at a time, and it began the only honest way it could: with a handful of people on a cliff at dawn.",
           },
           {
+            label: '02',
+            image: '/images/site/PHOTO-2020-10-17-13-49-14.jpeg',
+            alt: 'A wide circle of people with their arms around each other on a clifftop above the ocean',
+            caption: '',
             title: 'It started on a cliff at dawn.',
             body: `In a season when everyone felt cut off, a few people in ${FOUNDING_PLACE} started meeting on the bluffs above Moonlight Beach. Just breath, cold air, and each other: no membership, no marketing, no one in charge.\n\nWord got out the way real things do: one person bringing another. Within eighteen months, close to a thousand people were showing up to breathe together at sunrise, drawn by nothing but a hunger for something real that none of them could quite name.`,
           },
           {
+            label: '03',
+            image: '/images/site/song-circle.jpg',
+            alt: 'People sitting in a circle on a seaside deck, two of them playing guitars',
+            caption: '',
             title: 'No stage. No followers. Just a circle.',
             body: "There was no guru on a stage and no audience in rows. People sat in a circle on the grass, passed instruments around, moved and breathed and actually talked. The point was never to watch someone perform belonging. It was to practice it together.\n\nThat shape mattered more than we understood at the time. A leader you follow can leave, burn out, or let you down. A circle holds itself. The thing we'd stumbled into wasn't a following at all. It was a community that could carry its own weight.",
           },
           {
+            label: '04',
+            image: '/images/site/sunset.jpg',
+            alt: 'The sun setting over the ocean beside a sandstone bluff and a lifeguard tower',
+            caption: '',
             title: 'And then it fell apart.',
             body: "A thousand people, and nowhere to put them. No home, no infrastructure, no way to hold what had been built. It ran entirely on a few people's energy, and energy runs out. When it faded, it faded fast.\n\nBut it left something behind: a painfully clear picture of exactly what to build so that next time, it could last. Not more hype. Not a bigger personality. A format anyone can run, a model that doesn't depend on anyone's stamina, a way to stay open to everyone, and a real home to grow into.",
           },
         ],
-        flow: 'cont',
-        tone: 'canvas',
         layout: L,
       },
     },
@@ -107,34 +126,34 @@ export const data: Data = {
       },
     },
 
-    // ── What we believe — the principles, on the ink band. ─────────────────────
+    // ── What we believe: the four principles held around one orb, the design system's orbit
+    // (PrincipleOrbit). Same H2, same four H3s and lines. ─────────────────────────
     {
-      type: 'ValueBand',
+      type: 'PrincipleOrbit',
       props: {
         id: 'ab-values',
         eyebrow: 'What we believe',
         title: "The principles we won't trade away.",
         titleAccent: '',
         kicker: 'Four hard rules, learned the hard way.',
-        columns: '2',
         items: [
           {
-            icon: 'Compass',
+            icon: 'compass',
             title: 'Guru-free',
             body: "No charismatic founder to follow, no one to put on a pedestal. The community is the point, not any single voice at the front of the room. A real person started this, and it's built to not need him.",
           },
           {
-            icon: 'Users',
+            icon: 'crew',
             title: 'Leaderful, not leader-dependent',
             body: "Everyone holds a piece of it. Leaders rise from the people who keep showing up. Designed to outlast any one person, so it can't collapse the moment a few people get tired.",
           },
           {
-            icon: 'HandHeart',
+            icon: 'wallet',
             title: 'One honest price',
             body: "Hosting is free, and selling starts at Business. Zero percent on your own people, always, plus card processing. We earn a small fee only on a customer the network introduces, once. One price, no surprise invoices, and your data leaves with you any month you want.",
           },
           {
-            icon: 'Home',
+            icon: 'home',
             title: 'A third place',
             body: "Not home, not work: a real place to exhale, reset, and be missed when you don't show up. Built to be returned to, not scrolled past.",
           },
