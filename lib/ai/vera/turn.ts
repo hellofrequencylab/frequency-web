@@ -24,6 +24,8 @@ import { SPACE_FUNCTIONS, spaceFunctionDef, spaceFunctionEnabled, spaceFunctionM
 import { veraSettingsGuide } from './space-settings'
 import type { Space } from '@/lib/spaces/types'
 import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
+import { readHeroConfig } from '@/lib/spaces/hero-config'
+import { readCoverScrim, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import type { VeraReader } from './reader-note'
 import { runVeraClaudeTurn, type VeraMessage } from './agent-claude'
 import type { EntitlementTier } from '@/lib/core/entitlement'
@@ -133,6 +135,17 @@ function settingsNow(space: Space): Record<string, string> {
   }
 }
 
+/** The Space page's look settings with their values now (LIVE-2187). Every Space has a page, so these always apply. */
+function pageLookNow(space: Space): Record<string, string> {
+  const hero = readHeroConfig(space.preferences)
+  return {
+    'page.cover_style': readCoverScrim(space.preferences),
+    'page.logo_backdrop': readLogoBackdrop(space.preferences),
+    'page.hero_height': hero.height ?? 'standard',
+    'page.hero_buttons': hero.buttonOrientation ?? 'row',
+  }
+}
+
 /** The settings guide for the Space page they are on (LIVE-2147). Their role comes from the Space's own
  *  capability resolver, never from the request; anyone who cannot edit the Space gets nothing. FAIL-SAFE:
  *  any miss is an empty guide and the turn goes on. */
@@ -147,7 +160,7 @@ async function spaceGuideFor(slug: string | undefined, profileId: string): Promi
     const space = { ...found, minRoles }
     const guide = veraSpaceGuide(space, await getSpaceCapabilities(space, profileId))
     // The settings she may propose (LIVE-2186) ride only an owner's or admin's guide, the one that offers changes.
-    return guide.includes('set_space_feature') ? [guide, veraSettingsGuide(found.slug, settingsNow(found))].filter(Boolean).join('\n') : guide
+    return guide.includes('set_space_feature') ? [guide, veraSettingsGuide(found.slug, { ...pageLookNow(found), ...settingsNow(found) })].filter(Boolean).join('\n') : guide
   } catch {
     return ''
   }

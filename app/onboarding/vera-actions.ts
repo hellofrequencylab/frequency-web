@@ -10,10 +10,13 @@ import { MEMBER_CHAT_TOOL_KEYS, requiresConfirmation, validateToolCall } from '@
 import { veraRoleCard, veraSwitchName, veraSwitchable } from '@/lib/ai/vera/space-guide'
 import { veraSettingValue, veraSettingWhere } from '@/lib/ai/vera/space-settings'
 import { setSpaceSkyMarkers, setSpaceTimeZone } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
+import { setSpaceCoverScrim, setSpaceHeroLook, setSpaceLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { setSpaceFeatureEnabled, setSpaceFeatureMinRole } from '@/app/(main)/spaces/[slug]/manage/modules/actions'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isError } from '@/lib/action-result'
+import { isError, type ActionResult } from '@/lib/action-result'
+import type { CoverScrim, LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import type { HeroButtonOrientation, HeroHeight } from '@/lib/spaces/hero-config'
 import { joinCircle } from '@/app/(main)/circles/actions'
 
 export type { ConciergeTurnResult }
@@ -125,6 +128,17 @@ async function setSpaceRole(args: Record<string, unknown>): Promise<{ ok: boolea
   return { ok: true, message: `Done. You can change who can use ${veraSwitchName(feature)} any time at /spaces/${slug}/manage/modules.` }
 }
 
+/** Each setting on Vera's list (lib/ai/vera/space-settings.ts) and the settings page action that writes it.
+ *  The value is already checked against the list's closed values before it gets here. */
+const SETTING_WRITERS: Record<string, (slug: string, value: string) => Promise<ActionResult>> = {
+  'calendar.time_zone': async (slug, value) => await setSpaceTimeZone(slug, value),
+  'calendar.sky_markers': async (slug, value) => await setSpaceSkyMarkers(slug, value === 'on'),
+  'page.cover_style': (slug, value) => setSpaceCoverScrim(slug, value as CoverScrim),
+  'page.logo_backdrop': (slug, value) => setSpaceLogoBackdrop(slug, value as LogoBackdrop),
+  'page.hero_height': (slug, value) => setSpaceHeroLook(slug, { height: value as HeroHeight }),
+  'page.hero_buttons': (slug, value) => setSpaceHeroLook(slug, { buttonOrientation: value as HeroButtonOrientation }),
+}
+
 /** Change one Space setting for someone who tapped Vera's card (LIVE-2186). Each setting goes through its
  *  settings page's OWN guarded action, which re-resolves the Space and re-checks the caller; a setting or value
  *  that is not on Vera's list is refused here whatever the request carries. */
@@ -134,12 +148,8 @@ async function setSpaceSetting(args: Record<string, unknown>): Promise<{ ok: boo
   const value = veraSettingValue(setting, args.value)
   if (value === null) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
   const slug = String(args.space)
-  const res =
-    setting === 'calendar.time_zone'
-      ? await setSpaceTimeZone(slug, value)
-      : setting === 'calendar.sky_markers'
-        ? await setSpaceSkyMarkers(slug, value === 'on')
-        : null
+  const write = Object.hasOwn(SETTING_WRITERS, setting) ? SETTING_WRITERS[setting] : null
+  const res = write ? await write(slug, value) : null
   if (!res) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
   if (isError(res)) return { ok: false, error: res.error }
   return { ok: true, message: `Done. You can change it back any time at ${veraSettingWhere(setting, slug)}.` }
