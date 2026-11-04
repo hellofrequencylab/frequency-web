@@ -5,16 +5,22 @@
 // EMAIL-SAFE BY CONSTRUCTION. Nested tables, inline styles and bgcolor attributes, so it holds in a client that
 // ignores a <style> block. Every colour is a literal (a mail client cannot resolve a CSS variable): the page and
 // card follow the register (Night or Day), the one accent is handed in already resolved for that register (the
-// theme's hue maths lives in lib/theme/new-world.ts, not here), and the button label is the register's ink: dark on
-// Night, white on Day. The type voice (charge, caps, editorial) and the corners (soft, subtle, square) follow the Space's
+// theme's hue maths lives in lib/theme/new-world.ts, not here), and the filled button carries a white label by the owner's
+// rule (ink only on an accent too light for white, the same test lib/theme/new-world.ts runs for the site). The type voice (charge, caps, editorial) and the corners (soft, subtle, square) follow the Space's
 // look. The faces are a progressive enhancement: Unbounded, Instrument Serif and Hanken Grotesk load from Google Fonts
 // where the client allows it, and every stack ends in Helvetica or Georgia. Rounded corners, the pill button and the page
 // glow are hints: Outlook draws square ones and the email still reads.
 //
 // THEME FENCE: this module is part of the New World kit and stays out of app/(main), components/spaces and every
 // member or admin area. A Space's emails reach it through the catalog and the email senders only.
+// KIT WORDS: newWorldKitEmailFrom reads the kit's own record (lib/spotlight/new-world-kit-content.ts), the same one the
+// Spotlight draws, so a kit's emails carry its name, button, first offer and quote, as the design's EmailPage does.
 // VOICE: the copy a Space owner supplies is theirs. The words this file adds are the labels (a kicker, a footer line,
 // a button when none is given), and they promise nothing on a schedule and state no count.
+
+import { contrastRatio } from '@/lib/spaces/accent'
+import type { NewWorldSpotlightContent } from '@/lib/spotlight/new-world-kit-content'
+import { NEW_WORLD_ON_ACCENT } from '@/lib/theme/new-world'
 
 /** The starting accent (Tide), resolved for the Night register: what a Space that has not chosen one wears. */
 export const NEW_WORLD_EMAIL_TIDE = { fill: '#1AA7C0', text: '#3FC1D6' }
@@ -65,6 +71,8 @@ interface NewWorldKitEmailFacts {
   /** A link the main button points at. Absent: the site. */
   ctaUrl?: string
   ctaLabel?: string
+  /** The Space's own booking button ("Book your first visit"): the welcome and letter emails lead with it. */
+  bookLabel?: string
   quote?: string
 }
 
@@ -93,6 +101,9 @@ const SERIF = "'Instrument Serif', Georgia, serif"
 const SANS = "'Hanken Grotesk', Helvetica, Arial, sans-serif"
 const MONO = DISP
 
+/** The filled button's label on this accent fill: white, unless the accent is too light to carry it. */
+const onAccent = (fill: string): string => (contrastRatio(NEW_WORLD_ON_ACCENT, fill) >= 2 ? NEW_WORLD_ON_ACCENT : NEW_WORLD_INK)
+
 // The register neutrals (the theme's own ink and chrome tokens in lib/theme/new-world.ts, as literals: a mail client cannot
 // resolve a variable). The Night card and hairline are derived from the page and text colours, a few steps lighter than the page.
 function mix(a: string, b: string, t: number): string {
@@ -101,8 +112,9 @@ function mix(a: string, b: string, t: number): string {
 }
 const NIGHT_BG = '#0A0E16'
 const NIGHT_TEXT = '#F2F5FA'
-const NIGHT = { page: '#06090F', bg: NIGHT_BG, card: mix(NIGHT_TEXT, NIGHT_BG, 0.06), text: NIGHT_TEXT, muted: '#C9D3E0', hair: mix(NIGHT_TEXT, NIGHT_BG, 0.14), on: NIGHT_BG }
-const DAY = { page: '#F7F6F3', bg: '#FFFFFF', card: '#F7F6F3', text: '#34312E', muted: '#7C766F', hair: '#ECE9E4', on: '#FFFFFF' }
+const NEW_WORLD_INK = NIGHT_BG
+const NIGHT = { page: '#06090F', bg: NIGHT_BG, card: mix(NIGHT_TEXT, NIGHT_BG, 0.06), text: NIGHT_TEXT, muted: '#C9D3E0', hair: mix(NIGHT_TEXT, NIGHT_BG, 0.14) }
+const DAY = { page: '#F7F6F3', bg: '#FFFFFF', card: '#F7F6F3', text: '#34312E', muted: '#7C766F', hair: '#ECE9E4' }
 
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -113,8 +125,26 @@ const href = (u: string): string => (/^(https:\/\/|mailto:)/i.test(u) ? esc(u) :
 const DEFAULT_SERVICE = { name: 'Signature service', meta: 'Our most-booked service, start to finish', price: 'From $120' }
 const DEFAULT_PLAN = { name: 'Plus', meta: 'Monthly visits and a yearly deep service', price: '$79 / mo' }
 
+/** What the owner is called in a sentence: the first name, or the whole placeholder ("Your name") on a template. */
+const firstName = (owner: string): string => (/^your\s/i.test(owner) ? owner : owner.split(' ')[0] || owner)
+
+/** The kit's own words for its emails: the brand lines and the facts, read from the record the Spotlight draws. */
+export function newWorldKitEmailFrom(c: NewWorldSpotlightContent): { brand: Pick<NewWorldKitEmailBrand, 'name' | 'descriptor' | 'owner' | 'role'>; facts: NewWorldKitEmailFacts } {
+  const o = c.offers[1] ?? c.offers[0]
+  const open = c.openings[0]
+  return {
+    brand: { name: c.name, descriptor: c.descriptor, owner: c.owner, role: c.role },
+    facts: {
+      bookLabel: c.cta.label,
+      ...(o ? { service: { name: o.name, meta: o.dur, price: o.price } } : {}),
+      ...(open ? { when: `${open.mon} ${Number(open.day)} · ${open.time}`, whenNote: open.where } : {}),
+      ...(c.quote ? { quote: c.quote.text } : {}),
+    },
+  }
+}
+
 function spec(type: NewWorldEmailType, b: NewWorldKitEmailBrand, f: NewWorldKitEmailFacts): Spec {
-  const first = b.owner.split(' ')[0] || b.owner
+  const first = firstName(b.owner)
   const s = f.service ?? DEFAULT_SERVICE
   const plan = f.plan ?? DEFAULT_PLAN
   const when = f.when ?? 'Your visit'
@@ -127,9 +157,9 @@ function spec(type: NewWorldEmailType, b: NewWorldKitEmailBrand, f: NewWorldKitE
     { lead: 'Where', title: f.where ?? b.city ?? 'At the address on your booking', sub: 'Reply to this email with access notes' },
   ]
   const steps = (rows.length ? rows : [
-    { lead: '', title: 'We read your message', sub: `${first} reads every one.` },
-    { lead: '', title: 'We reply with a plan', sub: 'A clear price and the open times.' },
-    { lead: '', title: 'You pick a time', sub: 'Book online whenever you are ready.' },
+    { lead: '', title: 'Pick a time', sub: 'Choose a group or a date from the calendar. It takes a minute.' },
+    { lead: '', title: 'We remind you', sub: 'The day before you get the facts: who is hosting, how long, what to bring.' },
+    { lead: '', title: 'The door', sub: 'Someone says hello, learns your name and walks you in.' },
   ]).slice(0, 3).map((r, i) => ({ ...r, lead: `0${i + 1}` }))
   const common = { ctaLabel: f.ctaLabel }
   const ctaOr = (d: string) => common.ctaLabel ?? d
@@ -141,7 +171,7 @@ function spec(type: NewWorldEmailType, b: NewWorldKitEmailBrand, f: NewWorldKitE
     case 'reminder':
       return { ...base, subject: 'See you tomorrow', title: 'Coming up', em: 'tomorrow.', lead: 'A quick reminder about your visit. If anything has changed, you can move it in one tap.', ctaLabel: ctaOr('Confirm I am coming'), kicker: 'Your booking', featureTitle: 'The details', rows: visit, featureCtaLabel: 'Reschedule' }
     case 'welcome':
-      return { quote: true, subject: `Welcome to ${b.name}`, title: 'Glad you are', em: 'here.', lead: `Thanks for getting in touch. ${first} reads every message and will reply.`, ctaLabel: ctaOr('Book a visit'), kicker: 'What happens next', featureTitle: 'Three steps', rows: steps, featureCtaLabel: 'See the ways in' }
+      return { quote: true, subject: `Welcome to ${b.name}`, title: 'Glad you’re', em: 'here.', lead: `Thanks for getting in touch. ${first} reads every message and will reply.`, ctaLabel: ctaOr(f.bookLabel ?? 'Book a visit'), kicker: 'What happens next', featureTitle: 'Three steps', rows: steps, featureCtaLabel: 'See the ways in' }
     case 'review':
       return { ...base, subject: 'How did we do?', title: 'How did we', em: 'do?', lead: `Thanks for booking with ${b.name}. A short review helps neighbors find us and takes about a minute.`, ctaLabel: ctaOr('Leave a review'), kicker: 'Your visit', featureTitle: s.name, rows: [{ lead: 'When', title: when, sub: 'Completed' }, { lead: 'Next', title: 'Book again', sub: 'Open times are shown live' }], featureCtaLabel: 'Book again' }
     case 'receipt':
@@ -157,7 +187,7 @@ function spec(type: NewWorldEmailType, b: NewWorldKitEmailBrand, f: NewWorldKitE
     case 'member':
       return { quote: true, subject: `Welcome to ${plan.name}`, title: "You're", em: 'in.', lead: `Your ${plan.name} plan starts today. ${plan.meta}.`, ctaLabel: ctaOr('Book your first visit'), kicker: 'Your plan', featureTitle: plan.name, rows: [{ lead: 'Includes', title: plan.meta, sub: '' }, { lead: 'Price', title: plan.price, sub: 'Pause or change any time' }, { lead: 'Next', title: 'Book your first visit', sub: 'Member times are held for you' }], featureCtaLabel: 'Manage plan' }
     case 'letter':
-      return { ...base, subject: `Open this month at ${b.name}`, title: 'Open this', em: 'month.', lead: `A few open times from ${first}, so you can pick one before it fills.`, ctaLabel: ctaOr('Book a visit'), kicker: 'Open this month', featureTitle: 'Next open times', rows, featureCtaLabel: 'See all times' }
+      return { ...base, subject: `Open this month at ${b.name}`, title: 'Open this', em: 'month.', lead: `A few open times from ${first}, so you can pick one before it fills.`, ctaLabel: ctaOr(f.bookLabel ?? 'Book a visit'), kicker: 'Open this month', featureTitle: 'Next open times', rows, featureCtaLabel: 'See all times' }
     case 'inquiry':
       return { ...base, subject: 'We got your message', title: 'Got', em: 'it.', lead: `Thanks for writing. ${first} reads every message and replies.`, ctaLabel: ctaOr('Book instead'), kicker: 'Meanwhile', featureTitle: 'Good to know', rows: steps, featureCtaLabel: 'All questions' }
   }
@@ -166,7 +196,7 @@ function spec(type: NewWorldEmailType, b: NewWorldKitEmailBrand, f: NewWorldKitE
 /** Build one of the eleven New World emails. Pure: same input, same bytes. */
 export function newWorldKitEmail(type: NewWorldEmailType, brand: NewWorldKitEmailBrand, facts: NewWorldKitEmailFacts = {}): NewWorldKitEmail {
   const sp = spec(type, brand, facts)
-  const first = brand.owner.split(' ')[0] || brand.owner
+  const first = firstName(brand.owner)
   const day = brand.register === 'day'
   const N = day ? DAY : NIGHT
   const A = brand.accent.fill
@@ -196,7 +226,7 @@ export function newWorldKitEmail(type: NewWorldEmailType, brand: NewWorldKitEmai
   const button = (label: string, url: string, ghost: boolean) => {
     const bg = ghost ? N.bg : A
     const edge = ghost ? `border:1px solid ${N.hair};` : ''
-    const ink = ghost ? N.text : N.on
+    const ink = ghost ? N.text : onAccent(A)
     return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="${bg}" style="background:${bg};${edge}border-radius:${BR};text-align:center"><a href="${href(url)}" style="display:block;padding:15px 28px;font:700 12px/1 ${DISP};letter-spacing:.12em;text-transform:uppercase;color:${ink};text-decoration:none">${esc(label)}</a></td></tr></table>`
   }
 
@@ -204,8 +234,8 @@ export function newWorldKitEmail(type: NewWorldEmailType, brand: NewWorldKitEmai
     `<tr><td style="padding:14px 0;border-top:1px solid ${N.hair}">${tbl(`<tr><td width="84" style="font:500 10px/1.4 ${MONO};letter-spacing:.14em;text-transform:uppercase;color:${N.muted};vertical-align:top;padding-top:3px">${esc(r.lead)}</td><td style="font:700 15px/1.35 ${SANS};color:${N.text};vertical-align:top">${esc(r.title)}${r.sub ? `<div style="font:400 13px/1.4 ${SANS};color:${N.muted};margin-top:4px">${esc(r.sub)}</div>` : ''}</td></tr>`)}</td></tr>`
 
   const mainUrl = facts.ctaUrl ?? brand.siteUrl
-  const quoteText = facts.quote ?? 'Do the job right, explain it clearly and leave the place better than we found it.'
-  const quote = sp.quote
+  const quoteText = facts.quote ?? ''
+  const quote = sp.quote && quoteText
     ? `<tr><td class="nw-pad" style="padding:0 32px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${N.card}" style="background:${N.card};border:1px solid ${N.hair};border-radius:${R}"><tr><td style="padding:26px 28px">${kicker(`From ${first}`)}<div style="font:700 21px/1.25 ${DISP};color:${N.text};margin-top:12px">&ldquo;${esc(quoteText)}&rdquo;</div><div style="font:500 11px/1 ${MONO};letter-spacing:.14em;text-transform:uppercase;color:${N.muted};margin-top:14px">${esc(brand.owner)}${brand.role ? ` &middot; ${esc(brand.role)}` : ''}</div></td></tr></table></td></tr>${spacer(36)}`
     : ''
 
@@ -220,7 +250,7 @@ export function newWorldKitEmail(type: NewWorldEmailType, brand: NewWorldKitEmai
 <span style="display:none;font-size:1px;color:${N.bg};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden">${esc(preheader)}</span>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${N.page}" style="background:${N.page}"><tr><td align="center" style="padding:24px 16px">
 <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="600"><tr><td><![endif]-->
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%" bgcolor="${N.bg}" style="width:100%;max-width:600px;margin:0 auto;background:${N.bg};background-image:linear-gradient(to bottom left,${A}30 0%,${A}14 24%,${A}00 58%);color:${N.text}">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%" bgcolor="${N.bg}" style="width:100%;max-width:600px;margin:0 auto;background:${N.bg};color:${N.text}">
 ${spacer(28)}
 ${row(tbl(`<tr><td style="font:600 20px/1 ${DISP};letter-spacing:-.03em;color:${N.text}">${esc(brand.name)}<div style="height:2px;width:80px;background:${A};margin-top:8px;font-size:0;line-height:0">&nbsp;</div></td>${brand.descriptor ? `<td align="right" style="font:500 10px/1 ${MONO};letter-spacing:.16em;text-transform:uppercase;color:${N.muted}">${esc(brand.descriptor)}</td>` : ''}</tr>`))}
 ${spacer(36)}
@@ -254,7 +284,7 @@ ${spacer(32)}
     sp.featureTitle,
     ...sp.rows.map((r) => `  ${r.lead}  ${r.title}${r.sub ? ` (${r.sub})` : ''}`),
     `${sp.featureCtaLabel}: ${mainUrl}`,
-    ...(sp.quote ? ['', `"${quoteText}" ${brand.owner}${brand.role ? `, ${brand.role}` : ''}`] : []),
+    ...(sp.quote && quoteText ? ['', `"${quoteText}" ${brand.owner}${brand.role ? `, ${brand.role}` : ''}`] : []),
     '',
     ...(brand.postalLine ? [brand.postalLine] : []),
     `${brand.siteLabel}: ${brand.siteUrl}`,
