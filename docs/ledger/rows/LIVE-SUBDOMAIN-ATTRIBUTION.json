@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-SUBDOMAIN-ATTRIBUTION",
+  "title": "Custom-domain redirects retain supported campaign attribution and matching page paths",
+  "status": "open",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "source": {
+    "file": "lib/sites/hosted.ts",
+    "ref": "Daniel 2026-11-04 audit and approved improvement scope"
+  },
+  "detail": "Current custom-domain subdomain308 redirects preserve paths but pass an empty query to subdomainSiteRedirect. Root and /book redirect verified live; ?utm_source is dropped. Prepare a tenant-bound, query-safe fix that preserves ISR/cache behavior, avoids uncached database work per request, does not leak credential/private query values, and does not alter unconfigured/unpublished/custom-domain eligibility. Coordinate with all custom-domain owners.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-04",
+    "evidence": "Live HEAD checks on danieltyack.frequencylocal.com verified308 to danieltyack.com and /book to /book, with UTM loss. Acceptance: all configured host mappings, allowed query tags, rejected sensitive query values, same-page destination, no loops, no cross-tenant redirects, cache/latency and canonical/sitemap consistency. Prototype remains pending."
+  },
+  "wave": "W7"
+}

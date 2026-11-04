@@ -8,31 +8,45 @@ import { describe, it, expect, vi } from 'vitest'
 //   • an empty / bare selector is nobody (fail-safe), never everybody.
 
 // In-memory contacts: subscribed + unsubscribed + a profile-less row + an unknown-consent row.
+const rootScope = vi.hoisted(() => ({ id: 'root-space' as string | null }))
+vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: async () => rootScope.id }))
+
 const contacts = [
-  { id: 'k1', email: 'a@x.com', profile_id: 'p1', consent_state: 'subscribed' },
-  { id: 'k2', email: 'b@x.com', profile_id: 'p2', consent_state: 'unsubscribed' },
-  { id: 'k3', email: 'c@x.com', profile_id: null, consent_state: 'subscribed' },
-  { id: 'k4', email: 'd@x.com', profile_id: 'p4', consent_state: 'unknown' },
+  { id: 'k1', email: 'a@x.com', profile_id: 'p1', consent_state: 'subscribed', space_id: 'root-space' },
+  { id: 'k2', email: 'b@x.com', profile_id: 'p2', consent_state: 'unsubscribed', space_id: 'root-space' },
+  { id: 'k3', email: 'c@x.com', profile_id: null, consent_state: 'subscribed', space_id: 'root-space' },
+  { id: 'k4', email: 'd@x.com', profile_id: 'p4', consent_state: 'unknown', space_id: null },
+  { id: 'private', email: 'private@x.com', profile_id: 'p1', consent_state: 'subscribed', source: 'signup', space_id: 'other-space' },
 ]
 
 function contactsBuilder() {
-  const state: { col?: string; vals?: string[] } = {}
+  const predicates: Array<(c: (typeof contacts)[number]) => boolean> = []
   const api = {
-    select() {
-      return api
-    },
+    select() { return api },
     in(col: string, vals: string[]) {
-      state.col = col
-      state.vals = vals
+      predicates.push((c) => vals.includes(String((c as Record<string, unknown>)[col])))
       return api
     },
-    neq(_col: string, val: string) {
-      const rows = contacts.filter((c) => {
-        const key = state.col === 'id' ? c.id : (c.profile_id as string | null)
-        const inSet = key != null && state.vals!.includes(key)
-        return inSet && c.consent_state !== val
-      })
-      return Promise.resolve({ data: rows, error: null })
+    neq(col: string, value: string) {
+      predicates.push((c) => (c as Record<string, unknown>)[col] !== value)
+      return api
+    },
+    not(col: string, _operator: string, value: null) {
+      predicates.push((c) => (c as Record<string, unknown>)[col] !== value)
+      return api
+    },
+    is(col: string, value: null) {
+      predicates.push((c) => (c as Record<string, unknown>)[col] === value)
+      return api
+    },
+    or(expression: string) {
+      const scope = /^space_id\.is\.null,space_id\.eq\.(.+)$/.exec(expression)
+      if (!scope) throw new Error(`unexpected or filter ${expression}`)
+      predicates.push((c) => c.space_id === null || c.space_id === scope[1])
+      return api
+    },
+    then(resolve: (r: { data: typeof contacts; error: null }) => void) {
+      resolve({ data: contacts.filter((c) => predicates.every((p) => p(c))), error: null })
     },
   }
   return api
@@ -95,5 +109,26 @@ describe('resolveSegment — fail-safe on empty selectors', () => {
     expect(await resolveSegment('profile:')).toEqual([])
     expect(await resolveSegment('contacts:')).toEqual([])
     expect(await resolveSegment('event:')).toEqual([])
+  })
+})
+
+describe('resolveSegment — platform contact boundary', () => {
+  it('refuses a directly named contact from another Space', async () => {
+    expect(await resolveSegment('contact:private')).toEqual([])
+  })
+
+  it('keeps only legacy null-scoped contacts when the root cannot resolve', async () => {
+    rootScope.id = null
+    try {
+      expect(await resolveSegment('profile:p1')).toEqual([])
+      expect(ids(await resolveSegment('profile:p4'))).toEqual(['k4'])
+      expect(await resolveSegment('contact:private')).toEqual([])
+    } finally {
+      rootScope.id = 'root-space'
+    }
+  })
+
+  it('an unknown built-in is nobody, never the default member audience', async () => {
+    expect(await resolveSegment('misspelled-members')).toEqual([])
   })
 })
