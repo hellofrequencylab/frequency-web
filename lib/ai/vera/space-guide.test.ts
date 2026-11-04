@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
-import { veraSpaceGuide } from './space-guide'
+import { veraSpaceGuide, veraSwitchable, veraSwitchCard, veraSwitchName } from './space-guide'
 
 const space = { name: 'Sunrise Studio', slug: 'sunrise', entitlements: {} }
 const owner = { isOwner: true, role: 'admin', canEditProfile: true }
@@ -39,5 +39,41 @@ describe('Vera knows the Space settings (LIVE-2147)', () => {
     const guide = veraSpaceGuide({ ...space, entitlements: ['nope'] }, { isOwner: false, role: 'editor', canEditProfile: true })
     expect(guide).not.toContain('Turned off')
     expect(guide).toContain('as an editor')
+  })
+})
+
+describe('Vera proposes a Space switch to its owner or an admin (LIVE-2157)', () => {
+  const admin = { isOwner: false, role: 'admin', canEditProfile: true, canManageMembers: true }
+
+  it('offers the switch tool and lists each switch with its state, for an owner or admin only', () => {
+    const guide = veraSpaceGuide({ ...space, entitlements: { reviews: false } }, admin)
+    expect(guide).toContain('set_space_feature tool (space "sunrise")')
+    expect(guide).toContain('nothing changes until they tap it')
+    expect(guide).not.toContain('You cannot change a setting from this chat')
+    expect(guide).toMatch(/Switches you may propose \(feature: now\): .*reviews: off/)
+    expect(guide).toMatch(/crm: on/)
+  })
+
+  it('keeps an editor on explain only', () => {
+    const guide = veraSpaceGuide(space, { isOwner: false, role: 'editor', canEditProfile: true, canManageMembers: false })
+    expect(guide).toContain('You cannot change a setting from this chat')
+    expect(guide).not.toContain('set_space_feature')
+    expect(guide).not.toContain('Switches you may propose')
+  })
+
+  it('never offers money, the plan, the team list or an unknown key', () => {
+    for (const fn of ['memberships', 'donations', 'shop', 'availability', 'billing', 'members', 'nope']) expect(veraSwitchable(fn), fn).toBe(false)
+    for (const fn of ['reviews', 'crm', 'circles', 'email']) expect(veraSwitchable(fn), fn).toBe(true)
+    const guide = veraSpaceGuide(space, admin)
+    const line = guide.split('\n').find((l) => l.startsWith('Switches you may propose'))!
+    for (const fn of ['memberships', 'donations', 'shop', 'availability', 'billing', 'members']) expect(line).not.toMatch(new RegExp(`\\b${fn}: `))
+  })
+
+  it('words the card from the catalog, naming every area the same switch carries', () => {
+    expect(veraSwitchName('reviews')).toBe('Reviews')
+    expect(veraSwitchCard('reviews', false)).toBe('Turn Reviews off in this Space?')
+    const crm = veraSwitchCard('crm', false)
+    expect(crm).toMatch(/^Turn CRM off in this Space\? This also turns off /)
+    expect(crm).toContain('Automation')
   })
 })
