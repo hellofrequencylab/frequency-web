@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { skinFamiliesIn, skinFamilyOf, type SkinFamily } from '@/lib/sites/skin-family'
+import { isForeignFamily, skinFamiliesIn, skinFamilyOf, type SkinFamily } from '@/lib/sites/skin-family'
 
 // TRY IT ON (docs/THEME-COHESION.md section 4, ADR-1923, LIVE-1863). Wearing another theme over the Space's own pages is
 // a client swap, never a server render: the canvas takes the candidate theme as one React commit, so its tokens, its
@@ -26,7 +26,7 @@ export function legacyBlocksOn(docs: readonly unknown[], themeId: string): { cou
   for (const doc of docs) {
     for (const m of JSON.stringify(doc ?? null).matchAll(/"type":"([A-Z][A-Za-z]+)"/g)) {
       const family = skinFamilyOf(m[1])
-      if (family && family !== themeId) { count += 1; found.add(family) }
+      if (family && isForeignFamily(family, themeId)) { count += 1; found.add(family) }
     }
   }
   return { count, families: [...found] }
@@ -38,7 +38,7 @@ export function useTryItOnSkin(docs: readonly unknown[], themeId: string | null)
   const families = useMemo(() => {
     if (!themeId) return []
     const all = new Set<SkinFamily>()
-    for (const doc of docs) for (const f of skinFamiliesIn(doc)) if (f !== themeId) all.add(f)
+    for (const doc of docs) for (const f of skinFamiliesIn(doc)) if (isForeignFamily(f, themeId)) all.add(f)
     return [...all]
   }, [docs, themeId])
   const key = `${themeId ?? ''}|${families.join(',')}`
