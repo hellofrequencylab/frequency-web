@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-2170",
+  "title": "The Find me locally call to action card reads on a New World site",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/sites/new-world-css.ts",
+    "ref": "Daniel 2026-11-04 05:40Z, screenshot of danieltyack.com Home section 8 in the website editor"
+  },
+  "detail": "On a New World site the shared page sheet paints the closing card (SpaceCTA, 'Call to action card') with --color-ink, and the New World bridge points ink at the owner's accent. The card went flat teal, its copy used accent-on-accent steps and the button was the same colour as its ground. It is now the register's Night card with the register's own text steps; the accent stays on the button, the label and the italic word. Services (ink is cream with dark text) and the other themes were checked and read correctly. Vera's screenshot drop and theme-style edits are a separate thread.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/sites/new-world-css.ts','utf8');process.exit(s.includes('.mw-closing.mw-closing{--color-ink:var(--nw-surface-card);--color-on-ink:var(--nw-text-primary)')?0:1)\"",
+    "checked": "2026-11-04",
+    "evidence": "The New World sheet re-points ink inside the closing card at the card surface and the text steps at the register's text colours."
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}
