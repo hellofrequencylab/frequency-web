@@ -1,4 +1,4 @@
-import { notFound, permanentRedirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getMyProfileId } from '@/lib/auth'
 import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
@@ -90,13 +90,6 @@ export default async function CircleHomePage({
   const shell = await loadCircleShell(slug)
   if (!shell) notFound()
   const { circle, members } = shell
-
-  // A Space Circle is retired (ADR-1938): the Space's Community wall replaced it. The cutover archives
-  // them all; until it has run on a database, one still open forwards its home tab to the wall too.
-  // The platform root lends no Space page.
-  if (circle.is_space_primary && circle.space && circle.space.type !== 'root') {
-    permanentRedirect(`/spaces/${circle.space.slug}/community`)
-  }
 
   // Member ids — used below for the circle's engagement signals (only read for a viewer
   // who can see the health panel).

@@ -54,9 +54,9 @@ export async function crossListingSubject(kind: CrossListingKind, id: string): P
   const admin = listingAdmin()
   const { data, error } = kind === 'journey'
     ? await admin.from('journey_plans').select('space_id,title,visibility,status').eq('id', id).maybeSingle()
-    : await admin.from('circles').select('space_id,name,status,unlisted,is_space_primary').eq('id', id).maybeSingle()
-  const subject=data as unknown as {space_id?:string;title?:string;name?:string;visibility?:string;status?:string;unlisted?:boolean;is_space_primary?:boolean}|null
-  if(error || !subject?.space_id || subject.is_space_primary || !crossListingVisible(kind,subject)) return null
+    : await admin.from('circles').select('space_id,name,status,unlisted').eq('id', id).maybeSingle()
+  const subject=data as unknown as {space_id?:string;title?:string;name?:string;visibility?:string;status?:string;unlisted?:boolean}|null
+  if(error || !subject?.space_id || !crossListingVisible(kind,subject)) return null
   const label=kind==='journey'?subject.title:subject.name
   return typeof label==='string'?{space_id:subject.space_id,label}:null
 }
@@ -73,7 +73,7 @@ export async function crossListingManagement(spaceId: string): Promise<{subjects
   const admin=listingAdmin()
   const [journeys,circles,shares,spaces]=await Promise.all([
     pages(()=>admin.from('journey_plans').select('id,title,visibility,status').eq('space_id',spaceId).neq('visibility','private') as unknown as PageQuery<{id:string;title:string;visibility:string;status:string}>).then(data=>({data})),
-    pages(()=>admin.from('circles').select('id,name,status,unlisted,is_space_primary').eq('space_id',spaceId).in('status',['active','forming']).or('unlisted.is.null,unlisted.eq.false') as unknown as PageQuery<{id:string;name:string;is_space_primary:boolean}>).then(data=>({data})),
+    pages(()=>admin.from('circles').select('id,name,status,unlisted').eq('space_id',spaceId).in('status',['active','forming']).or('unlisted.is.null,unlisted.eq.false') as unknown as PageQuery<{id:string;name:string}>).then(data=>({data})),
     pages(()=>admin.from('collective_cross_listings').select('*').or(`source_space_id.eq.${spaceId},space_id.eq.${spaceId}`).in('status',['pending','accepted']) as unknown as PageQuery<CrossListingRow>).then(data=>({data})),
     pages(()=>admin.from('spaces').select('id,slug,name,owner_profile_id,plan,status,visibility,parent_id,type').eq('status','active').neq('visibility','private').neq('id',spaceId) as unknown as PageQuery<CrossListingSpace>).then(data=>({data})),
   ])
@@ -88,7 +88,7 @@ export async function crossListingManagement(spaceId: string): Promise<{subjects
     if(space.type!=='root' && ((space.parent_id===null && isChapterParentPlan(space.plan)) || parent && parent.type!=='root' && parent.parent_id===null && parent.status==='active' && parent.owner_profile_id===space.owner_profile_id && isChapterParentPlan(parent.plan) || partnerTargets.has(space.id))) targets.push(space)
   }
   const js=(journeys.data ?? []) as Array<{id:string;title:string;visibility:string;status:string}>
-  const cs=(circles.data ?? []) as Array<{id:string;name:string;is_space_primary:boolean}>
+  const cs=(circles.data ?? []) as Array<{id:string;name:string}>
   const rows=(shares.data ?? []) as CrossListingRow[]
   const journeyIds=rows.filter(r=>r.kind==='journey').map(r=>r.subject_id)
   const circleIds=rows.filter(r=>r.kind==='circle').map(r=>r.subject_id)
@@ -122,5 +122,5 @@ export async function crossListingManagement(spaceId: string): Promise<{subjects
     row.sourceName=eligibleSources.has(row.source_space_id) && relatedById.get(row.source_space_id)?.owner_profile_id===row.requested_by?names.get(row.source_space_id):undefined
     row.targetName=eligibleSources.has(row.space_id)?names.get(row.space_id):undefined
   }
-  return { subjects:[...js.filter(j=>crossListingVisible('journey',j)).map(j=>({id:j.id,label:j.title,kind:'journey' as const})),...cs.filter(c=>!c.is_space_primary).map(c=>({id:c.id,label:c.name,kind:'circle' as const}))],rows,targets }
+  return { subjects:[...js.filter(j=>crossListingVisible('journey',j)).map(j=>({id:j.id,label:j.title,kind:'journey' as const})),...cs.map(c=>({id:c.id,label:c.name,kind:'circle' as const}))],rows,targets }
 }
