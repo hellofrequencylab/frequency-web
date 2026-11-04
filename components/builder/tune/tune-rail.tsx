@@ -5,7 +5,7 @@
 // It never names a block type: a new block or role shows up here with no change to this file. Every change goes
 // to the same draft the canvas edits, so a canvas edit shows here at once and an edit here shows on the canvas.
 
-import { useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -84,7 +84,7 @@ function List({ id, tune, value, onChange }: { id: string; tune: TuneField; valu
   )
 }
 
-function Row({ tune, props, onChange }: { tune: TuneField; props: Props; onChange: Change }) {
+function Row({ tune, props, onChange, lit }: { tune: TuneField; props: Props; onChange: Change; lit?: boolean }) {
   const id = `tune-${useId().replace(/:/g, '')}-${tune.key}`
   const value = props[tune.key]
   const set = (v: unknown) => onChange(tune.key, v)
@@ -97,14 +97,18 @@ function Row({ tune, props, onChange }: { tune: TuneField; props: Props; onChang
     case 'custom': control = tune.field.type === 'custom' ? tune.field.render({ field: tune.field, name: tune.key, id, value, onChange: set }) : null; break
   }
   return (
-    <div className={styles.field}>
+    <div className={styles.field} data-tune-key={tune.key} data-lit={lit || undefined}>
       <label id={`${id}-label`} htmlFor={id} className={styles.fieldLabel}>{tune.label}{tune.required && <span className={styles.req} aria-label="needed">·</span>}</label>
       {control}
     </div>
   )
 }
 
-export function TuneRail({ type, props, config, onChange }: { type: string; props: Props; config: Config; onChange: Change }) {
+/** Fields the canvas asked Tune to show (BLD-104): a picture clicked on the page opens its field and the focal point
+ *  beside it. `at` changes on every click, so clicking the same picture again brings it back into view. */
+export interface TuneFocus { keys: string[]; at: number }
+
+export function TuneRail({ type, props, config, onChange, focus }: { type: string; props: Props; config: Config; onChange: Change; focus?: TuneFocus | null }) {
   const projection = tuneProjection(type, config)
   // The builder renders on the client only (ssr: false), so the stored choice can seed the state directly.
   const [alwaysMore, setAlwaysMore] = useState(readMore)
@@ -114,13 +118,28 @@ export function TuneRail({ type, props, config, onChange }: { type: string; prop
     if (on) setMore(true)
     try { window.localStorage.setItem(MORE_KEY, on ? '1' : '0') } catch { /* private mode: this visit only */ }
   }
+  // A picture clicked on the canvas: open More when its field or focal point lives there, then bring the picker into
+  // view and put focus on it, so the next key press works the picker.
+  const root = useRef<HTMLDivElement>(null)
+  const lit = new Set(focus?.keys ?? [])
+  const wantMore = !!focus && projection.layer2.some((f) => lit.has(f.key))
+  // Closing More by hand wins over the click that opened it, until the next picture is clicked.
+  const [closedFor, setClosedFor] = useState<number | null>(null)
+  const showMore = more || (wantMore && closedFor !== focus?.at)
+  useEffect(() => {
+    if (!focus?.keys.length) return
+    const field = root.current?.querySelector<HTMLElement>(`[data-tune-key="${CSS.escape(focus.keys[0])}"]`)
+    if (!field) return
+    field.scrollIntoView({ block: 'nearest' })
+    field.querySelector<HTMLElement>('button, input, select, textarea, [tabindex]')?.focus({ preventScroll: true })
+  }, [focus, showMore])
   return (
-    <div className={styles.tune}>
-      {projection.layer1.map((tune) => <Row key={tune.key} tune={tune} props={props} onChange={onChange} />)}
+    <div className={styles.tune} ref={root}>
+      {projection.layer1.map((tune) => <Row key={tune.key} tune={tune} props={props} onChange={onChange} lit={lit.has(tune.key)} />)}
       {projection.layer2.length > 0 && <>
-        <button type="button" className={styles.more} aria-expanded={more} onClick={() => setMore(!more)}>More · {projection.layer2.length}</button>
-        {more && <div className={styles.layer2}>
-          {projection.layer2.map((tune) => <Row key={tune.key} tune={tune} props={props} onChange={onChange} />)}
+        <button type="button" className={styles.more} aria-expanded={showMore} onClick={() => { if (showMore) { setMore(false); setClosedFor(focus?.at ?? null) } else setMore(true) }}>More · {projection.layer2.length}</button>
+        {showMore && <div className={styles.layer2}>
+          {projection.layer2.map((tune) => <Row key={tune.key} tune={tune} props={props} onChange={onChange} lit={lit.has(tune.key)} />)}
           <Checkbox wrapperClassName={styles.always} label="Always show more" checked={alwaysMore} onChange={(e) => keepMore(e.target.checked)} />
         </div>}
       </>}

@@ -174,3 +174,11 @@ describe('Bold email shape', () => {
     expect(other.square).toBeUndefined()
   })
 })
+
+describe('Wildheart email shape', () => {
+  it('a Wildheart Space gets the serif wordmark and others keep Frequency\'s', async () => {
+    const { spaceEmailBrand } = await import('./email-colors')
+    expect(spaceEmailBrand({ name: 'T', preferences: { megaTheme: { theme: 'wildheart' } } }).serif).toBe(true)
+    expect(spaceEmailBrand({ name: 'T', preferences: { megaTheme: { theme: 'bold' } } }).serif).toBeUndefined()
+  })
+})

@@ -11,13 +11,14 @@ import { FrequencyThemeFeature } from '@/components/frequency/site/pages/themes/
 import { isThemeFeatureId } from '@/lib/themes/theme-feature-data'
 import { SITE_THEMES } from '@/lib/theme/site-style'
 import { themeIdFromSlug, themeLibraryEntry, themeSlug } from '@/lib/themes/library'
+import { themeShareImage } from '@/lib/themes/share-cards'
 
 export const revalidate = 3600
 export const dynamicParams = false
 
 export function generateStaticParams() {
-  // Designer, Network, Temple, New World and Services have their own static pages (/themes/designer, /themes/network, /themes/temple, /themes/new-world, /themes/services), which win over this segment.
-  return THEME_KIT_PAGE_IDS.filter((id: string) => id !== 'designer' && id !== 'network-kit' && id !== 'temple-kit' && id !== 'new-world' && id !== 'services').map((id) => ({ theme: themeSlug(id) }))
+  // Designer, Network, Temple, New World, Services and CyberWitch have their own static pages (/themes/designer, /themes/network, /themes/temple, /themes/new-world, /themes/services, /themes/cyberwitch), which win over this segment.
+  return THEME_KIT_PAGE_IDS.filter((id: string) => id !== 'designer' && id !== 'network-kit' && id !== 'temple-kit' && id !== 'new-world' && id !== 'services' && id !== 'cyberwitch').map((id) => ({ theme: themeSlug(id) }))
 }
 
 // The address is not always the id: the Network Theme Kit (`network-kit`) lives at /themes/network (themeSlug in
@@ -38,6 +39,7 @@ function seoFor(slug: string): FrequencyPageSeo | null {
       { name: 'Themes', path: '/themes' },
       { name: site.label, path: `/themes/${slug}` },
     ],
+    shareImage: themeShareImage(theme),
   }
 }
 
