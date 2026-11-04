@@ -6,7 +6,7 @@
 import { isPreviewKit } from './preview-site'
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 
-export const LAST_KIT_COOKIE = 'fq_last_kit'
+const LAST_KIT_COOKIE = 'fq_last_kit'
 const MAX_AGE = 60 * 60 * 24 * 30
 
 /** The kit in a cookie header or document.cookie string, or null. Total. */
