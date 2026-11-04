@@ -104,8 +104,6 @@ const INTENTIONALLY_EXCLUDED = new Map([
   // (LIVE-912, LIVE-913) read the file by path, and a next.config rule would shadow a live route.
   ['/what-is-frequency', 'permanentRedirect stub to /about (SCAN-1017); file kept for the LIVE-912 probe'],
   ['/tools-for-community-builders', 'permanentRedirect stub to /how-to-build-community (SCAN-1017); file kept for the LIVE-912 probe'],
-  // HIDDEN THEME (LIVE-2111): CyberWitch is registered but not offered in the pickers until its last stage lands, so its page is noindex too.
-  ['/themes/cyberwitch', 'robots noindex while the CyberWitch theme is not offered in the pickers (LIVE-2111)'],
 ])
 
 // ── Route helpers ─────────────────────────────────────────────────────────────

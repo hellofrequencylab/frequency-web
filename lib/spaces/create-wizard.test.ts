@@ -61,7 +61,7 @@ describe('the look step (LIVE-1531)', () => {
     expect(withLookStep(createWizardSteps(SPACE_MANIFEST)).map((s) => s.key)).toEqual(['intents', 'model', 'identity', 'look', 'start'])
   })
   it('offers every Mega Theme with a pitch, New World first and Designer second (owner 2026-11-04, Pin 11)', () => {
-    expect(WIZARD_THEMES.map((t) => t.id)).toEqual(['new-world', 'designer', 'frequency', 'bold', 'wildheart', 'network-kit', 'temple-kit', 'midnight', 'services'].filter((id) => SITE_THEMES.some((t) => t.id === id)))
+    expect(WIZARD_THEMES.map((t) => t.id)).toEqual(['new-world', 'designer', 'frequency', 'bold', 'wildheart', 'network-kit', 'temple-kit', 'midnight', 'services', 'cyberwitch'].filter((id) => SITE_THEMES.some((t) => t.id === id)))
     for (const t of WIZARD_THEMES) expect(t.hint.length, t.id).toBeGreaterThan(0)
   })
   it("sends the owner's pick, else the theme a /themes page named, else none", () => {

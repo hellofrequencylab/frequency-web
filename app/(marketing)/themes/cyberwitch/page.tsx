@@ -13,7 +13,7 @@ const SEO: FrequencyPageSeo = {
   path: '/themes/cyberwitch',
   title: 'CyberWitch: a dark look with some edge',
   description:
-    'CyberWitch is a dark, industrial theme with blackletter headlines and one neon accent, for readers, makers, bands and anyone whose work has an edge. Your Spotlight, Space, website and emails wear one look.',
+    'A dark, industrial theme with blackletter headlines and one neon accent, for work with an edge. Your Spotlight, Space, website and emails wear one look.',
   shareTitle: 'CyberWitch: a dark look with some edge',
   headline: 'Concrete, chain-link and a spell book.',
   lede: 'Plain and polite gets scrolled past. CyberWitch is a dark look with a blackletter headline and one neon accent, read from one profile across your website, Spotlight, Space and emails.',
@@ -24,7 +24,7 @@ const SEO: FrequencyPageSeo = {
   ],
 }
 
-export const metadata: Metadata = { ...frequencyPageMetadata(SEO), robots: { index: false, follow: true } }
+export const metadata: Metadata = frequencyPageMetadata(SEO)
 
 export default function CyberWitchThemePage() {
   return (

@@ -189,7 +189,7 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
  *  `frequency` ("Default") left the pickers 2026-11-03: New World is the default (LIVE-2058); sites that saved it keep it.
  *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple', 'free-human', 'cyberwitch'])
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple', 'free-human'])
 /** New World is the default, so it leads every picker, and Designer comes second (owner 2026-11-04); the rest keep their
  *  definition order. The create-a-space look step follows this order. */
 const PICKER_LEAD: readonly SiteThemeId[] = ['new-world', 'designer']
