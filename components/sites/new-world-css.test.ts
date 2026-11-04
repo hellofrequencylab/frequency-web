@@ -10,4 +10,7 @@ describe('New World site skin', () => {
   it('keeps hero words light over the photo in both registers', () => {
     expect(NEW_WORLD_CSS).toMatch(/\.hs-hero\{--color-ink:var\(--nw-ink-950\);--color-on-ink:var\(--nw-chrome-50\)/)
   })
+  it('draws the closing card as a Night card, never flat accent with an accent button', () => {
+    expect(NEW_WORLD_CSS).toMatch(/\.mw-closing\.mw-closing\{--color-ink:var\(--nw-surface-card\);--color-on-ink:var\(--nw-text-primary\);--color-on-ink-muted:var\(--nw-text-secondary\)/)
+  })
 })
