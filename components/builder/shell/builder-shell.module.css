@@ -225,3 +225,7 @@
 @media (prefers-reduced-motion: reduce) {
   .root * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
 }
+
+/* THE OUTLINE'S ROWS (BLD-103): dimmed where hidden on this device, a line where a drag would drop. */
+.list li[data-hidden] .row { opacity: .5; }
+.list li[data-drop] { box-shadow: inset 0 2px 0 var(--editor-select); }

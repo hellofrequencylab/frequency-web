@@ -13,9 +13,10 @@ import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { ChevronLeft, Eye, Maximize2, Monitor, PanelLeft, PanelRight, Pin, PinOff, Redo2, Smartphone, Tablet, Undo2 } from 'lucide-react'
 import type { WebsiteEditorShellProps } from '@/components/sites/editor/shell'
-import { SectionIcon, sectionLine } from '@/components/sites/editor/section-icon'
+import { SectionIcon } from '@/components/sites/editor/section-icon'
 import { nudgeBlock, removeBlockDeep, updateBlockPropsDeep } from '@/components/page-editor/mobile/data-ops'
 import type { Data } from '@/lib/page-editor/types'
+import { moveSection, spineItems, stepSection } from '@/lib/builder/spine'
 import { railInit, railModes, railPinnable, railReducer, RAIL_PREFS_KEY, RAIL_WIDTH, type RailSide } from '@/lib/builder/rails'
 import { builderDirty, builderInit, builderPage, builderReducer, builderSaveLabel, BUILDER_DEVICE_WIDTH, type BuilderDevice } from '@/lib/builder/state'
 import { siteCanvasVars, siteRenderStyle } from '@/lib/sites/site-render-style'
@@ -146,6 +147,21 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   const dirty = builderDirty(state)
   const publishState = !dirty ? 'live' : 'clean'
   const sections = page.doc.content
+  // The spine and outline (BLD-103): one list, reordered by drag or by Alt and an arrow, through one pure move.
+  const spine = useMemo(() => spineItems(page.doc, config, state.device), [page.doc, config, state.device])
+  const dragId = useRef<string | null>(null)
+  const [dropAt, setDropAt] = useState<number | null>(null)
+  const [moved, setMoved] = useState('')
+  const announce = (doc: Data, id: string) => {
+    const at = doc.content.findIndex((s) => s.props.id === id)
+    setMoved(`Moved to ${at + 1} of ${doc.content.length}.`)
+  }
+  const reorder = (id: string, to: number) => editDoc((doc) => { const next = moveSection(doc, id, to); announce(next, id); return next })
+  const step = (id: string, delta: -1 | 1) => {
+    editDoc((doc) => { const next = stepSection(doc, id, delta); announce(next, id); return next })
+    // Keep focus on the row that moved, so the next arrow moves it again.
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-spine-id="${CSS.escape(id)}"]`)?.focus())
+  }
   const selected = sections.find((s) => s.props.id === state.selectedId) ?? null
 
   function keys(event: KeyboardEvent<HTMLDivElement>) {
@@ -189,25 +205,32 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
           <button id="builder-rail-left" type="button" className={`${styles.btn} ${styles.icon}`} aria-label={modes.left === 'pinned' || modes.left === 'overlay' ? 'Close the outline' : 'Open the outline'} aria-expanded={modes.left === 'pinned' || modes.left === 'overlay'} onClick={() => toggleRail('left')}><PanelLeft size={16} aria-hidden /></button>
           {modes.left === 'overlay' && pinnable.left && <button type="button" className={`${styles.btn} ${styles.icon}`} aria-label="Keep the outline open" title="Pin" onClick={() => railDispatch({ type: 'pin', side: 'left', pinned: true })}><Pin size={16} aria-hidden /></button>}
         </div>
-        <div className={styles.caption}>On this page · {sections.length}</div>
+        <div className={styles.caption}>On this page · {spine.length}</div>
+        <p className={styles.hidden} role="status" aria-live="polite">{moved}</p>
         <ul className={styles.list} role="list">
-          {sections.map((section, index) => {
-            const label = config.components[section.type]?.label ?? section.type
-            return (
-              <li key={section.props.id}>
-                <button type="button" className={styles.row} aria-current={state.selectedId === section.props.id ? 'true' : undefined} aria-label={`${index + 1} of ${sections.length}. ${label}`} onClick={() => { dispatch({ type: 'select', id: section.props.id ?? null }); if (modes.left === 'overlay') railDispatch({ type: 'close' }) }}>
-                  <span className={styles.tile}><SectionIcon type={section.type} /></span>
-                  <span className={styles.rowText}><b>{label}</b><small>{sectionLine(section.props as Record<string, unknown>)}</small></span>
-                </button>
-              </li>
-            )
-          })}
+          {spine.map((item, index) => (
+            <li key={item.id} data-hidden={item.hidden || undefined} data-drop={dropAt === index || undefined}
+              onDragOver={(e) => { if (dragId.current) { e.preventDefault(); setDropAt(index) } }}
+              onDragLeave={() => setDropAt((at) => (at === index ? null : at))}
+              onDrop={(e) => { e.preventDefault(); if (dragId.current) reorder(dragId.current, index); dragId.current = null; setDropAt(null) }}>
+              <button type="button" className={styles.row} data-spine-id={item.id} draggable aria-current={state.selectedId === item.id ? 'true' : undefined}
+                aria-label={`${index + 1} of ${spine.length}. ${item.name}${item.title ? `: ${item.title}` : ''}${item.hidden ? `, hidden on ${state.device}` : ''}. Alt and an arrow key moves it.`}
+                aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                onDragStart={(e) => { dragId.current = item.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', item.name) }}
+                onDragEnd={() => { dragId.current = null; setDropAt(null) }}
+                onKeyDown={(e) => { if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); step(item.id, e.key === 'ArrowUp' ? -1 : 1) } }}
+                onClick={() => { dispatch({ type: 'select', id: item.id || null }); if (modes.left === 'overlay') railDispatch({ type: 'close' }) }}>
+                <span className={styles.tile}><SectionIcon type={item.type} /></span>
+                <span className={styles.rowText}><b>{item.name}</b><small>{item.title}</small></span>
+              </button>
+            </li>
+          ))}
         </ul>
       </nav>
 
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
         <div className={styles.frame} style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)` }}>
-          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={() => {}} onDisplay={() => {}} onReorder={() => {}} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={() => {}} onDisplay={() => {}} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
         </div>
       </main>
 
