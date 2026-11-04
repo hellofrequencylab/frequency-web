@@ -256,7 +256,6 @@ space_bookings                       authenticated
 space_calendar_day_notes             authenticated
 space_calendar_entries               authenticated
 space_calendar_private_feeds         authenticated
-space_circle_optouts                 authenticated
 space_collaborations                 internal
 space_donation_asks                  authenticated
 space_domain_purchases               internal

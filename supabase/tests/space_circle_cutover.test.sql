@@ -1,10 +1,11 @@
 -- THE SPACE CIRCLE IS RETIRED (ADR-1938, LIVE-2080). A Space's conversation is its Community wall now, so
 -- creating a Space makes no Circle, a Space membership enrols nobody into one, and leaving a Circle records
 -- no decline. Replaces space_circle.test.sql (ADR-1391) and space_circle_auto_enrol.test.sql (ADR-1395),
--- whose triggers 20270346029500 drops.
+-- whose triggers 20270346029500 drops. 20270346029700 then drops the flag, its guard, the roster
+-- functions and the opt-out table, and puts every Circle under one cap rule.
 
 begin;
-select plan(4);
+select plan(6);
 
 -- ── Fixture ──────────────────────────────────────────────────────────────────────────────────
 insert into auth.users (id, email) values
@@ -58,11 +59,23 @@ delete from public.memberships
  where profile_id = '00000000-0000-4000-b396-000000000002'
    and circle_id = '00000000-0000-4000-e396-000000000001';
 
-select is(
-  (select count(*)::int from public.space_circle_optouts
-    where space_id = '00000000-0000-4000-c396-000000000001'),
-  0,
-  'leaving a Circle records no decline'
+select ok(
+  to_regclass('public.space_circle_optouts') is null
+  and not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'circles' and column_name = 'is_space_primary'),
+  'the opt-out table and the Space Circle flag are gone'
+);
+
+-- ── One cap rule for every Circle ────────────────────────────────────────────────────────────
+select throws_ok(
+  $$ update public.circles set member_cap = 300 where id = '00000000-0000-4000-e396-000000000001' $$,
+  '23514', null,
+  'an in-person Circle cannot go past 50, the old Space Circle 300 is gone'
+);
+
+select ok(
+  to_regclass('public.retired_space_circles') is not null,
+  'the retired Space Circle slugs have a home for the old-link redirect'
 );
 
 select * from finish();
