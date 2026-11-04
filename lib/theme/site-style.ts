@@ -319,6 +319,9 @@ export function siteDials(style: SiteStyle, own: Partial<Record<SiteDialKey, str
   return { register: style.dials?.register ?? base.register, type: style.dials?.type ?? base.type, motion: style.dials?.motion ?? base.motion, hero: style.dials?.hero ?? base.hero, image: style.dials?.image ?? base.image, accent: style.dials?.accent ?? null }
 }
 
+/** The three root switches the Services sheet reads (data-type, data-motion, data-image), from resolved dial values. */
+export const servicesDials = (d: Record<SiteDialKey, string>): { type: string; motion: string; image: string } => ({ type: d.type, motion: d.motion, image: d.image })
+
 function readPageThemes(raw: unknown): Record<string, SiteThemeId> {
   if (!record(raw)) return {}
   const out: Record<string, SiteThemeId> = {}
