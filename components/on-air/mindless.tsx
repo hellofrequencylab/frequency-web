@@ -117,25 +117,27 @@ interface ResumeInfo {
   secondsTarget: number
 }
 
+type LoadingState = {
+  phase: 'loading'
+  setup?: boolean
+  minutesOverride?: number
+  practiceId?: string
+  movementMode?: MovementMode
+  resume?: ResumeInfo
+  /** A crash-recovery open forces the mode so the engine that owns the saved record mounts. */
+  forceMode?: TimerMode
+  /** A practice-select launch auto-starts the countdown (skips setup). */
+  autoStart?: boolean
+  /** A per-step warm-up message override (P5), carried to the session's pre-roll. */
+  warmupMessage?: string
+  /** A sequenced run's ordered practice ids + this leg's index (P6). */
+  queue?: string[]
+  queueIndex?: number
+}
+
 type OverlayState =
   | { phase: 'closed' }
-  | {
-      phase: 'loading'
-      setup?: boolean
-      minutesOverride?: number
-      practiceId?: string
-      movementMode?: MovementMode
-      resume?: ResumeInfo
-      /** A crash-recovery open forces the mode so the engine that owns the saved record mounts. */
-      forceMode?: TimerMode
-      /** A practice-select launch auto-starts the countdown (skips setup). */
-      autoStart?: boolean
-      /** A per-step warm-up message override (P5), carried to the session's pre-roll. */
-      warmupMessage?: string
-      /** A sequenced run's ordered practice ids + this leg's index (P6). */
-      queue?: string[]
-      queueIndex?: number
-    }
+  | LoadingState
   | {
       phase: 'ready'
       setup?: boolean
@@ -158,7 +160,7 @@ type OverlayState =
       queue?: string[]
       queueIndex?: number
     }
-  | { phase: 'error' }
+  | { phase: 'error'; request: LoadingState }
 
 /** The mode to open in, routed from the opened practice's timer_kind. A 'movement' practice
  *  opens Get Moving; 'mindless' / 'none' open Be Still. A crash-recovery open forces the mode.
@@ -313,12 +315,12 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
       try {
         result = await loadOnAirSession(requestedPracticeId)
       } catch {
-        if (live) setState({ phase: 'error' })
+        if (live) setState({ phase: 'error', request: state })
         return
       }
       if (!live) return
       if (isError(result)) {
-        setState({ phase: 'error' })
+        setState({ phase: 'error', request: state })
         return
       }
       const mode = routeInitialMode(result.data, requestedPracticeId, forcedMovementMode, forceMode)
@@ -434,7 +436,11 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             <p className="text-body-sm font-medium text-text">That didn&rsquo;t open. Give it another go.</p>
             <Button
               type="button"
-              onClick={() => open()}
+              onClick={() => {
+                void requestAppFullscreen()
+                // Retry this leg, including its partial/queue context, rather than opening a new generic sit.
+                setState((current) => current.phase === 'error' ? current.request : current)
+              }}
             >
               Try again
             </Button>
