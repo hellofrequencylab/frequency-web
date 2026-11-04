@@ -178,3 +178,13 @@ describe('createChipsFilter (streaming-safe chip stripping, ADR-1287)', () => {
     expect(out).toBe('First.\nSecond.')
   })
 })
+
+describe('buildVeraSystem carries the Space settings guide (LIVE-2147)', () => {
+  it('puts the guide in the volatile half only, and leaves it out when empty', () => {
+    const withGuide = buildVeraSystem(null, DEFAULT_VERA_CONFIG, undefined, null, null, 'THE SPACE THEY ARE IN: "Sunrise"')
+    const without = buildVeraSystem(null, DEFAULT_VERA_CONFIG, undefined, null, null, '')
+    expect(withGuide.volatile).toContain('THE SPACE THEY ARE IN: "Sunrise"')
+    expect(withGuide.stable).toBe(without.stable)
+    expect(without.volatile).not.toContain('THE SPACE THEY ARE IN')
+  })
+})

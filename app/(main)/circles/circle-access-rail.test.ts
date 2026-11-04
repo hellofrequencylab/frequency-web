@@ -122,9 +122,9 @@ describe('the rail offers only the modes the trigger will accept', () => {
   })
 
   it('the circle`s CURRENT mode stays listed even when this picker no longer offers it', async () => {
-    // A Space Circle only offers two doors. A hub already sitting on `tier` keeps that mode
-    // listed so the select does not claim the circle is something it is not.
-    seed({ access: 'tier', is_space_primary: true }, FREE_SPACE)
+    // A free Space no longer sells `tier`. A Circle already sitting on it keeps that mode listed so
+    // the select does not claim the circle is something it is not.
+    seed({ access: 'tier' }, FREE_SPACE)
     const data = await getCircleAdminData('sound-bath')
     expect(data?.access).toBe('tier')
     expect(data?.access_modes).toContain('tier')

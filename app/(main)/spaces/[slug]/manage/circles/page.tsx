@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { retiredSpaceCircleIds } from '@/lib/circles/retired-space-circle'
 import Link from 'next/link'
 import { UsersRound, Users, Route, PlayCircle, Eye, MessagesSquare } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
@@ -45,13 +46,14 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
   if (!caps.canEditProfile) notFound()
 
   // The Circles this Space owns (with any active Run), and the Journeys it can start a Run of.
-  const [allCircles, offered] = await Promise.all([
+  const [allCircles, offered, retired] = await Promise.all([
     listSpaceCirclesWithRuns(space.id, 50),
     journeysOfferedBySpace(space.id),
+    retiredSpaceCircleIds(space.id),
   ])
-  // A legacy Space Circle is not a topic Circle: the Space's conversation is its Community wall now
-  // (ADR-1938, LIVE-2078), so it is left out of this list until the cutover archives it.
-  const circles = allCircles.filter((c) => !c.is_space_primary)
+  // The retired Space Circle (ADR-1938) is archived, not a room the owner runs: the Space's
+  // conversation is its Community wall now.
+  const circles = allCircles.filter((c) => !retired.has(c.id))
 
   // A pending handoff BLOCKS the circle: `circle_transfer_offers` carries a unique partial index
   // allowing one pending offer per circle (migration 20261230000000), and the failure text tells

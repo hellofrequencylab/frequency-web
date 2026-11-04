@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-386",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const mig=fs.readFileSync(\"supabase/migrations/20270345005800_space_circle_auto_enrol.sql\",\"utf8\");if(!mig.includes(\"create table if not exists public.space_circle_optouts\"))fail(\"no decline memory, so leaving a Space Circle would not stick\");if(!/from public\\.space_circle_optouts o/.test(mig))fail(\"enrolment does not consult the declines\");const cut=fs.readFileSync(\"supabase/migrations/20270346029500_space_circle_cutover.sql\",\"utf8\");for(const t of [\"space_memberships_enrol_space_circle\",\"memberships_space_circle_optout\"])if(!new RegExp(\"^drop trigger if exists \"+t,\"m\").test(cut))fail(\"the Space Circle retirement (ADR-1938) does not drop \"+t+\", so members could still be enrolled into a retired Circle\");const t=fs.readFileSync(\"supabase/tests/space_circle_cutover.test.sql\",\"utf8\");if(!t.includes(\"an active Space membership puts its member on no Circle\"))fail(\"no test holds that a Space membership enrols nobody after the retirement\")'",
+      "note": "Space Circle auto-enrol, as built and as retired by ADR-1938."
+    }
+  },
+  "append": {
+    "detail": " Pin rewrite 2026-11-04 (ADR-1938, LIVE-2080): Space Circles are retired, so their auto-enrol is too. The probe keeps the original opt-out migration checks and now measures the retirement: the cutover drops both roster triggers and a test holds that a Space membership enrols nobody. The on/off switch, its roster sweep and the old enrol test suite are gone."
+  }
+}

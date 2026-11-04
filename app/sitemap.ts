@@ -265,7 +265,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/themes/network`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/temple (LIVE-1870): the Temple Theme Kit's feature page.
           { url: `${SITE_URL}/themes/temple`, changeFrequency: "monthly", priority: 0.5 },
-          ...['frequency', 'bold', 'wildheart'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
+          ...['bold', 'wildheart'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
         ] satisfies MetadataRoute.Sitemap)
       : []),
     { url: `${SITE_URL}/the-community`, lastModified: GUIDE_LAST_MODIFIED["the-community"], changeFrequency: "monthly", priority: 0.8 },
@@ -341,7 +341,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/loneliness`, lastModified: GUIDE_LAST_MODIFIED["loneliness"], changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/friendship-as-an-adult`, lastModified: GUIDE_LAST_MODIFIED["friendship-as-an-adult"], changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/how-to-build-community`, lastModified: GUIDE_LAST_MODIFIED["how-to-build-community"], changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/calm-down-fast`, lastModified: GUIDE_LAST_MODIFIED["calm-down-fast"], changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/mindless`, changeFrequency: "monthly", priority: 0.6 },
     // Leader-track pillar (CONTENT-VOICE §7b.2): the activation guide for the
     // natural connector — answer-first, HowTo + FAQ schema.

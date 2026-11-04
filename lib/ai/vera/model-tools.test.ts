@@ -53,3 +53,79 @@ it.each([null, [], 'model text'])('refuses non-object tool arguments without thr
   expect(proposals).toEqual([])
   expect(read).not.toHaveBeenCalled()
 })
+
+describe('a Space switch (LIVE-2157)', () => {
+  const space = { switchable: (fn: string) => fn === 'reviews', card: (fn: string, on: boolean) => `Turn ${fn} ${on ? 'on' : 'off'}?` }
+
+  it('becomes a card with the catalog words when the turn carries the Space switches', async () => {
+    const proposals: ProposedToolCall[] = []
+    const results = await handleModelToolCalls([{ id: 's', name: 'set_space_feature', input: { space: 'sunrise', feature: 'reviews', on: false } }], proposals, vi.fn(), space)
+    expect(proposals).toEqual([{ tool: 'set_space_feature', args: { space: 'sunrise', feature: 'reviews', on: false }, label: 'Turn reviews off?' }])
+    expect(results).toBeNull()
+  })
+
+  it('is refused for a money or unknown switch, and on a turn without the Space switches', async () => {
+    for (const [input, sw] of [[{ space: 'sunrise', feature: 'memberships', on: true }, space], [{ space: 'sunrise', feature: 'reviews', on: true }, undefined]] as const) {
+      const proposals: ProposedToolCall[] = []
+      const results = await handleModelToolCalls([{ id: 's', name: 'set_space_feature', input: { ...input } }], proposals, vi.fn(), sw)
+      expect(proposals).toEqual([])
+      expect(results?.[0].content).toContain('Nothing was changed')
+    }
+  })
+})
+
+describe('a Space role change (LIVE-2185)', () => {
+  const space = {
+    switchable: (fn: string) => fn === 'crm',
+    card: (fn: string, on: boolean) => `Turn ${fn} ${on ? 'on' : 'off'}?`,
+    roleCard: (fn: string, role: string) => (role === 'moderator' ? `Let moderators and up use ${fn}?` : null),
+  }
+
+  it('becomes a card with the role words when the turn carries the Space switches', async () => {
+    const proposals: ProposedToolCall[] = []
+    const results = await handleModelToolCalls([{ id: 'r', name: 'set_space_role', input: { space: 'sunrise', feature: 'crm', role: 'moderator' } }], proposals, vi.fn(), space)
+    expect(proposals).toEqual([{ tool: 'set_space_role', args: { space: 'sunrise', feature: 'crm', role: 'moderator' }, label: 'Let moderators and up use crm?' }])
+    expect(results).toBeNull()
+  })
+
+  it('is refused for a money switch, a role off the ladder, and on a turn without the Space switches', async () => {
+    for (const [input, sw] of [
+      [{ space: 'sunrise', feature: 'memberships', role: 'moderator' }, space],
+      [{ space: 'sunrise', feature: 'crm', role: 'owner' }, space],
+      [{ space: 'sunrise', feature: 'crm', role: 'moderator' }, undefined],
+    ] as const) {
+      const proposals: ProposedToolCall[] = []
+      const results = await handleModelToolCalls([{ id: 'r', name: 'set_space_role', input: { ...input } }], proposals, vi.fn(), sw)
+      expect(proposals).toEqual([])
+      expect(results?.[0].content).toContain('Nothing was changed')
+    }
+  })
+})
+
+describe('a Space setting (LIVE-2186)', () => {
+  const space = {
+    switchable: () => false,
+    card: () => '',
+    settingCard: (id: string, value: unknown) => (id === 'calendar.sky_markers' && value === 'on' ? 'Turn sky markers on?' : null),
+  }
+
+  it('becomes a card with the setting words when the turn carries the Space settings', async () => {
+    const proposals: ProposedToolCall[] = []
+    const results = await handleModelToolCalls([{ id: 's', name: 'set_space_setting', input: { space: 'sunrise', setting: 'calendar.sky_markers', value: 'on' } }], proposals, vi.fn(), space)
+    expect(proposals).toEqual([{ tool: 'set_space_setting', args: { space: 'sunrise', setting: 'calendar.sky_markers', value: 'on' }, label: 'Turn sky markers on?' }])
+    expect(results).toBeNull()
+  })
+
+  it('is refused for a setting or value off the list, and on a turn without the Space settings', async () => {
+    for (const [input, sw] of [
+      [{ space: 'sunrise', setting: 'payments.payouts', value: 'on' }, space],
+      [{ space: 'sunrise', setting: 'calendar.sky_markers', value: 'maybe' }, space],
+      [{ space: 'sunrise', setting: 'calendar.sky_markers', value: 'on' }, undefined],
+    ] as const) {
+      const proposals: ProposedToolCall[] = []
+      const results = await handleModelToolCalls([{ id: 's', name: 'set_space_setting', input: { ...input } }], proposals, vi.fn(), sw)
+      expect(proposals).toEqual([])
+      expect(results?.[0].content).toContain('Nothing was changed')
+    }
+  })
+})

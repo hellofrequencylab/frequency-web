@@ -1,6 +1,6 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-explicit-any -- a straight port of the Theme Kits design file's Component class (design_handoff_theme_kits/Theme Kits.dc.html). */
-// The Theme Kits page's state and view model (LIVE-2140): which accent each kit wears, the look filter, which device sits in front
+// The Theme Kits page's state and view model (LIVE-2188): which accent each kit wears, the look filter, which device sits in front
 // of each kit's cloud, the full-size view, and the hero cloud's parallax and click-to-zoom. The shapes it returns are what the
 // design's template reads, so the view (kit-showcase-view.tsx) stays the design's own markup.
 import { useCallback, useEffect, useState } from 'react'

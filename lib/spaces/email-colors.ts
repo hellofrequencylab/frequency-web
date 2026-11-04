@@ -21,6 +21,7 @@
 import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
 import type { EmailBrand } from '@/lib/email-studio/shell'
 import { emailSurface } from '@/lib/theme/surface'
+import { readMegaTheme } from '@/lib/theme/mega-theme'
 import type { ThemeSurface } from '@/lib/theme/surface-vars'
 
 /** A 6-digit hex (`#rrggbb`). The only shape the brand color picker emits and the only shape this module
@@ -219,5 +220,9 @@ export function spaceEmailBrand(space: SpaceEmailBrandInput): EmailBrand {
     colors: spaceEmailColors(space),
     wordmark: space.brandName ?? space.name,
     logoUrl,
+    // Bold's email has square corners (its design: radius 0; no clip-path survives a mail client).
+    ...(readMegaTheme(space.preferences).theme === 'bold' ? { square: true } : {}),
+    // Wildheart's email wears a serif wordmark and the petal corner (its design: one square corner among rounded ones).
+    ...(readMegaTheme(space.preferences).theme === 'wildheart' ? { serif: true } : {}),
   }
 }

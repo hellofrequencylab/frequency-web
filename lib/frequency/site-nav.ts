@@ -362,7 +362,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: '/how-to-start-a-circle', label: 'Start a Circle' },
       { href: '/how-to-build-community', label: 'Build community' },
       { href: '/how-to-be-more-social', label: 'Be more social' },
-      { href: '/calm-down-fast', label: 'Calm down fast' },
+      { href: '/mindless', label: 'Calm down fast' },
       { href: '/vs', label: 'Frequency vs the rest' },
     ],
   },

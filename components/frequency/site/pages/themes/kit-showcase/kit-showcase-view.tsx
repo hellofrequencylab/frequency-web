@@ -1,5 +1,5 @@
 /* generated from the design template, see below. */
-// The Theme Kits page markup (LIVE-2140), converted element for element from design_handoff_theme_kits/Theme Kits.dc.html: the
+// The Theme Kits page markup (LIVE-2188), converted element for element from design_handoff_theme_kits/Theme Kits.dc.html: the
 // hero with its device cloud, the sticky kit bar, the nine kit sections and the full-size view. Each kit section is drawn in that
 // kit's own design system through the per-kit skin (skins.ts), so the colours live in kit data and inline values, never on
 // Frequency's chrome. Frequency's header and footer come from the site shell around this page.

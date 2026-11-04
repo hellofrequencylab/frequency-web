@@ -174,9 +174,9 @@
   color: var(--fq-text-strong);
 }
 .row[aria-current='true'] .tile { background: var(--fq-text-strong); color: var(--fq-surface-raised); }
-.rowText { display: grid; min-width: 0; }
+.rowText { flex: 1; display: grid; justify-items: start; min-width: 0; text-align: left; }
 .rowText b { font-weight: 600; font-size: 13px; }
-.rowText small { color: var(--fq-text-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rowText small { max-width: 100%; color: var(--fq-text-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .canvas { grid-area: canvas; min-width: 0; min-height: 0; overflow: auto; padding: 24px; }
 .frame {
@@ -212,6 +212,79 @@
   font-size: 13px;
 }
 
+/* BLD-216: the top bar fits at 390. It answers to its own width (a container query, not a viewport media query, which
+   rails.ts owns): Show as and Find leave first, then the device switch. */
+.top { container-type: inline-size; }
+@container (max-width: 839px) {
+  .wide { display: none; }
+}
+@container (max-width: 599px) {
+  .devices { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .root * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
 }
+
+/* THE OUTLINE'S ROWS (BLD-103): dimmed where hidden on this device, a line where a drag would drop. */
+.list li[data-hidden] .row { opacity: .5; }
+.list li[data-drop] { box-shadow: inset 0 2px 0 var(--editor-select); }
+
+/* THE TOAST (BLD-104): what a section action did, with Undo after a delete. */
+.toastSlot { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 4; }
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border-radius: var(--r-pill);
+  background: var(--fq-text-strong);
+  color: var(--fq-surface-raised);
+  font-size: 13px;
+  box-shadow: var(--fq-shadow-float);
+}
+.toast .btn { height: 30px; border-radius: var(--r-pill); }
+
+/* PHONE (BLD-107): under 600 the rails open as bottom sheets over the canvas, opened from a bottom bar with
+   44px targets. The sheets carry the same two Tune layers as the side panel. */
+.root[data-phone] { grid-template-rows: 56px minmax(0, 1fr) 64px; grid-template-areas: 'top top top' 'outline canvas panel' 'bar bar bar'; }
+.root[data-phone] .top { gap: 4px; padding: 0 8px; overflow-x: auto; }
+.root[data-phone] .crumbs > span, .root[data-phone] .devices, .root[data-phone] .save,
+.root[data-phone] .top [data-action='focus'], .root[data-phone] .top [aria-haspopup='menu'], .root[data-phone] #builder-command { display: none; }
+.root[data-phone] .btn { min-height: 44px; min-width: 44px; }
+.root[data-phone] .canvas { padding: 8px; }
+.root[data-phone] .outline[data-mode='overlay'],
+.root[data-phone] .panel[data-mode='overlay'] {
+  top: auto;
+  left: 0;
+  right: 0;
+  bottom: 64px;
+  width: auto;
+  max-height: min(72vh, calc(100dvh - 140px));
+  overflow: auto;
+  border-radius: var(--r-panel) var(--r-panel) 0 0;
+}
+.root[data-phone] .row, .root[data-phone] .railHead button { min-height: 44px; }
+.bottomBar {
+  grid-area: bar;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--fq-surface-raised);
+  border-top: 1px solid var(--fq-border-hair);
+}
+.bottomBar button {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--fq-text-muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.bottomBar button[aria-pressed='true'] { color: var(--fq-text-strong); box-shadow: inset 0 2px 0 var(--editor-select); }
+.bottomBar button:disabled { opacity: .45; cursor: default; }
+.bottomBar button:focus-visible { outline: 2px solid var(--fq-text-strong); outline-offset: -4px; }

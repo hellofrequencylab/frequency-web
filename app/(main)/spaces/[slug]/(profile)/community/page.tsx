@@ -26,6 +26,8 @@ import { CommunityWallFeed } from '@/components/spaces/community-wall-feed'
 import { WallComposer } from '@/components/spaces/wall-composer'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
+import { JsonLd } from '@/components/json-ld'
+import { SITE_URL } from '@/lib/site'
 
 // A SPACE'S COMMUNITY WALL (ADR-1938, LIVE-2077). The Space's public communications hub, a wall in
 // the Facebook sense: the team and its members post, everyone the owner lets in reads, replies sit
@@ -129,6 +131,20 @@ export default async function SpaceCommunityPage({ params }: { params: Promise<{
       ) : (
         <ClosedWall standing={standing} brandName={brandName} slug={space.slug} />
       )}
+
+      {/* The wall as a page a crawler can name (LIVE-2079): a CollectionPage about the Space. Only a
+          wall anyone may read gets it; a members-only or private wall describes nothing to a visitor. */}
+      {settings.readAccess === 'anyone' && visibility !== 'private' ? (
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: `Community at ${brandName}`,
+            url: `${SITE_URL}/spaces/${space.slug}/community`,
+            about: { '@type': 'Organization', name: brandName, url: `${SITE_URL}/spaces/${space.slug}` },
+          }}
+        />
+      ) : null}
     </div>
   )
 }
@@ -188,8 +204,7 @@ async function TopicCircles({
   canManage: boolean
 }) {
   const all = await listPublicSpaceCircles(spaceId, { viewerProfileId, limit: 20, includeHidden: canManage })
-  // The Space Circle is on its way out (ADR-1938); it is never listed as a topic circle.
-  const topics = all.filter((c) => c.is_space_primary !== true)
+  const topics = all
   const shown = topics.slice(0, CIRCLES_SHOWN)
 
   return (

@@ -1,21 +1,15 @@
 {
   "id": "LIVE-2140",
-  "title": "The /themes page is the Theme Kits design: nine kits, launch button, See the kit",
+  "title": "Services blocks draw on every theme: the Services family joins the contract skin, and the editor sends it for the saved theme",
   "lane": "live",
-  "priority": "P1",
-  "size": "L",
+  "priority": "P0",
+  "size": "M",
   "status": "done",
-  "source": {
-    "file": "components/frequency/site/pages/themes/frequency-themes.tsx",
-    "ref": "Design handoff Templates page rebuild.zip; owner, 2026-11-04: make every detail of the templates page match the design; main button launches the 12-minute experience, View kit goes to the theme page"
-  },
-  "detail": "/themes now renders the Theme Kits design converted to the repo's own tokens and Stage surface: hero with the accent picker, a kit bar, nine kit sections (New World, Network, Services, Designer, Bold, Temple, Cyber Witch, Wildheart, Nocturne) with website, Spotlight, Space and email devices, and a closing call to action. The main button goes to freeSpotlightHref('themes', slug), the launch doorway, when LAUNCH_ENTRY_ENABLED is on, and to the Create a Space builder otherwise. 'See the kit' goes to /themes/<theme>; Cyber Witch has none until its theme page lands. Pictures are the design's own, shipped as WebP under public/themes-index. check-tokens gets a scoped exemption for the kit colours.",
+  "source": { "file": "lib/sites/skin-family.ts", "ref": "Daniel 2026-11-04: only New World works for danieltyack.com; Designer shows Services blocks as raw text" },
+  "detail": "The contract skin dressed six theme-named block families on a foreign theme; the Services block family (ServicesHero, ServicesStory and the rest, the blocks every kit composes) was not one, so on any theme except Services and New World they drew as raw text. Services is now the seventh family (components/sites/contract-skin-css.ts, palette and faces read from the host) and New World counts it as native. The website editor also sent the skin only while a theme was being tried on; it now sends it for the saved theme too, as the published page already did. Audit 2026-11-04 of every Space with a website: each live site's blocks are native to its theme (Designer, Midnight, Network, Temple, Wildheart, Services, New World) or shared blocks only (Bold, Free Human).",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/themes-kit-page.mjs",
-    "checked": "2026-11-04",
-    "evidence": "Fails on main (no kit-showcase), passes on the branch."
+    "cmd": "node -e \"const f=require('fs'),a=f.readFileSync('lib/sites/skin-family.ts','utf8'),b=f.readFileSync('components/sites/contract-skin-css.ts','utf8'),c=f.readFileSync('components/sites/editor/shell.tsx','utf8');if(!/\\['Services', 'services'\\]/.test(a)||!/services: \\{ id: 'services'/.test(b)||!/useTryItOnSkin\\(pageDocs, tryId \\?\\? lookStyle\\.theme\\)/.test(c))process.exit(1)\""
   },
-  "closed": "2026-11-04",
   "wave": "W7"
 }

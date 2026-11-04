@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-1460 (ADR-1895), restated for the Theme Kits page (LIVE-2140): /themes shows every kit, from one data file.
+// LIVE-1460 (ADR-1895), restated for the Theme Kits page (LIVE-2188): /themes shows every kit, from one data file.
 //
 // Fails when the page route, its SEO entry or its sitemap line goes, when the page stops rendering the kit showcase
 // with a kit map to the product themes, or when the page file grows CSS or a raw colour of its own.

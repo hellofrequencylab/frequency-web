@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Config, Data } from '@/lib/page-editor/types'
 import { sectionDisplay, sectionVisibility } from './state'
-import { VERA_SECTION_TONES, VERA_SECTION_WIDTHS, MAX_VERA_LAYOUT_CHANGES, applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, readWebsiteVeraStyleMenu, websiteVeraOutline, websiteVeraStylePatch, type WebsiteVeraStyleMenu } from './vera-layout'
+import { VERA_SECTION_TONES, VERA_SECTION_WIDTHS, MAX_VERA_LAYOUT_CHANGES, applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, readWebsiteVeraStyleMenu, websiteVeraGhost, websiteVeraOutline, websiteVeraStylePatch, type WebsiteVeraStyleMenu } from './vera-layout'
 
 const config: Config = { components: {
   Hero: { label: 'Hero', fields: { title: { type: 'text' } }, render: () => null },
@@ -153,5 +153,63 @@ describe('Vera style changes from the theme menu (LIVE-2098)', () => {
     expect(readWebsiteVeraStyleMenu({ ...menu, dials: [{ id: 'Bad Id', label: 'x', options: [{ id: 'a', label: 'A' }] }] })).toBeNull()
     expect(readWebsiteVeraStyleMenu({ ...menu, dials: [{ id: 'corners', label: 'x', options: [] }] })).toBeNull()
     expect(readWebsiteVeraStyleMenu('nope')).toBeNull()
+  })
+})
+
+describe('Vera adds a section the Add tab offers (LIVE-2135)', () => {
+  const addConfig: Config = { components: { ...config.components, Gallery: { label: 'Gallery', fields: { title: { type: 'text' } }, defaultProps: { title: 'Your gallery title goes here' }, render: () => null } } }
+  const addable = [{ type: 'Gallery', label: 'Gallery' }]
+  it('parses an add from the addable list and refuses anything else', () => {
+    const parsed = parseWebsiteVeraLayout({ changes: [
+      { kind: 'add', blockType: 'Gallery', toPosition: 2 },
+      { kind: 'add', blockType: 'Shop', toPosition: 1 },
+      { kind: 'add', blockType: 'Gallery', toPosition: 9 },
+      { kind: 'add', blockType: 'Gallery', toPosition: 1, title: 'My words' },
+    ] }, ids, { dials: [], accents: [], accent: null, looks: [], sections: addable })
+    expect(parsed.changes).toEqual([{ kind: 'add', blockType: 'Gallery', toPosition: 2 }])
+    expect(parsed.refused).toHaveLength(3)
+    expect(parsed.refused[2]).toMatch(/does not write/)
+  })
+  it('refuses an add when no section list is open', () => {
+    expect(parseWebsiteVeraLayout({ changes: [{ kind: 'add', blockType: 'Gallery', toPosition: 1 }] }, ids).refused[0]).toMatch(/not open here/)
+    expect(parseWebsiteVeraLayout({ changes: [{ kind: 'add', blockType: 'Gallery', toPosition: 1 }] }, ids, { dials: [], accents: [], accent: null, looks: [] }).refused[0]).toMatch(/not open here/)
+  })
+  it('inserts the block with its own placeholder prompts at the position, and says so', () => {
+    const change = { kind: 'add', blockType: 'Gallery', toPosition: 2 } as const
+    expect(describeWebsiteVeraChange(change, doc, addConfig)).toBe('Add a Gallery section at position 2, with placeholder text for your words')
+    const { doc: next, results } = applyWebsiteVeraLayout(doc, addConfig, [change])
+    expect(results[0].ok).toBe(true)
+    expect(next.content.map((b) => b.type)).toEqual(['Hero', 'Gallery', 'Contact', 'About'])
+    expect(next.content[1].props.title).toBe('Your gallery title goes here')
+    expect(next.content[1].props.id).toBeTruthy()
+    expect(doc.content).toHaveLength(3)
+  })
+  it('reads the section list on a menu that crossed the network by shape', () => {
+    const menu = { dials: [], accents: [], accent: null, looks: [] }
+    expect(readWebsiteVeraStyleMenu({ ...menu, sections: addable })?.sections).toEqual(addable)
+    expect(readWebsiteVeraStyleMenu(menu)?.sections).toBeUndefined()
+    expect(readWebsiteVeraStyleMenu({ ...menu, sections: [{ type: 'gallery; drop', label: 'x' }] })).toBeNull()
+    expect(readWebsiteVeraStyleMenu({ ...menu, sections: 'Gallery' })).toBeNull()
+  })
+})
+
+describe('Vera previews her proposal on the page before it is applied (LIVE-2141)', () => {
+  it('draws only the ticked section lines and leaves the page itself untouched', () => {
+    const before = JSON.stringify(doc)
+    const ghost = websiteVeraGhost(doc, config, [
+      { kind: 'move', sectionId: 'about', toPosition: 2 },
+      { kind: 'move', sectionId: 'contact', toPosition: 1 },
+      { kind: 'accent', accent: 'tide' },
+    ], [true, false, true])
+    expect(ghost.doc.content.map((b) => b.props.id)).toEqual(['hero', 'about', 'contact'])
+    expect(ghost.changed).toBe(1)
+    expect(ghost.styleLines).toBe(1)
+    expect(JSON.stringify(doc)).toBe(before)
+  })
+
+  it('shows the page as it is when nothing is ticked', () => {
+    const ghost = websiteVeraGhost(doc, config, [{ kind: 'move', sectionId: 'about', toPosition: 1 }], [false])
+    expect(ghost.doc.content.map((b) => b.props.id)).toEqual(['hero', 'contact', 'about'])
+    expect(ghost.changed).toBe(0)
   })
 })

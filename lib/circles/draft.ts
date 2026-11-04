@@ -156,9 +156,8 @@ export async function getCircleDraft(circleId: string): Promise<CircleDraft | nu
 }
 
 /** The member_cap ceiling the circles_cap_check constraint enforces for each type
- *  (supabase/migrations/20270345005600_space_circle.sql); a Space's primary Circle gets 300. */
+ *  (supabase/migrations/20270346029700_retire_space_circle_column.sql). */
 const CIRCLE_CAP_BY_TYPE = { 'in-person': 50, online: 100 } as const
-const SPACE_PRIMARY_CAP = 300
 
 /** What a failed draft write says to the host. The builder's catch and the Vera rail show it. */
 export const CIRCLE_DRAFT_SAVE_ERROR = "Couldn't save that change. Try again."
@@ -188,13 +187,13 @@ export async function saveCircleDraft(circleId: string, patch: CircleDraftPatch)
     // existing member_cap above what the constraint allows.
     const { data: row, error } = await admin
       .from('circles')
-      .select('type, member_cap, is_space_primary')
+      .select('type, member_cap')
       .eq('id', circleId)
       .maybeSingle()
     if (error) throw new Error(CIRCLE_DRAFT_SAVE_ERROR)
-    const current = (row ?? {}) as { type?: string | null; member_cap?: number | null; is_space_primary?: boolean | null }
+    const current = (row ?? {}) as { type?: string | null; member_cap?: number | null }
     const resultingType = (circleUpdate.type as string | undefined) ?? (current.type === 'online' ? 'online' : 'in-person')
-    const ceiling = current.is_space_primary ? SPACE_PRIMARY_CAP : CIRCLE_CAP_BY_TYPE[resultingType as 'in-person' | 'online']
+    const ceiling = CIRCLE_CAP_BY_TYPE[resultingType as 'in-person' | 'online']
     const requested = Number((circleUpdate.member_cap as number | undefined) ?? current.member_cap ?? 12)
     const cap = Math.min(ceiling, Math.max(2, Number.isFinite(requested) ? Math.round(requested) : 12))
     if ('memberCap' in patch || (current.member_cap ?? 0) > ceiling) circleUpdate.member_cap = cap
@@ -311,61 +310,4 @@ export async function createBlankCircleDraft(input: {
   await ensureHostOnOwnership(input.profileId)
 
   return { circleId, slug }
-}
-
-/**
- * Turn a Space's Space Circle on (`active`) or off (`inactive`), ADR-1391. It is always attached, so
- * this is the whole of "turning it off": hidden from every public reader, members kept. Returns the
- * Circle's slug, or null when the Space has none or the write failed.
- *
- * Switching it ON also sweeps the Space's members onto the roster (ADR-1395); see the note inside.
- *
- * 🔴 AUTHZ-DELEGATED: service role. The caller must already have established that the viewer edits
- * this Space (the Space Circles console's `requireSpaceEditor`).
- */
-export async function setSpaceCircleOn(spaceId: string, on: boolean): Promise<string | null> {
-  const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('circles')
-    .update({ status: on ? 'active' : 'inactive' })
-    .eq('space_id', spaceId)
-    .eq('is_space_primary', true)
-    .select('slug')
-  if (error || !data?.length) return null
-
-  // ── SWITCHING IT ON CATCHES UP THE ROSTER (ADR-1395) ──────────────────────────────────────────
-  //
-  // Enrolment is trigger-driven on `space_memberships`, so a member who joined the Space WHILE its
-  // hub was off was never enrolled by anything: the trigger fired, `enrol_in_space_circle` found
-  // the Circle, and the member was added — but a Space that had its hub off for months and gains
-  // members through a path the trigger did not exist for yet (or predates this migration) needs a
-  // catch-up. `sync_space_circle_roster` is that catch-up, and running it here is what makes
-  // turning the hub on open a populated room instead of an empty one.
-  //
-  // ONLY ON THE WAY ON. Turning it OFF keeps its members (ADR-1391) and must not sweep.
-  //
-  // 🔴 A FAILED SWEEP MUST NOT FAIL THE SWITCH. The operator asked for the hub to be on; it is on,
-  // the write above already succeeded, and reporting failure now would tell them the opposite of
-  // what the database says. The sweep is idempotent, so the next switch-on retries it for free —
-  // and it is logged rather than swallowed silently, because a fail-safe nobody can see fired is
-  // an invisible regression (AGENTS.md).
-  if (on) {
-    // The RPC postdates the generated lib/database.types.ts, so it is reached through a localized
-    // method cast, the repo convention for a not-yet-typed RPC (ADR-246, as lib/traits/refresh.ts
-    // and lib/billing/bundle-seats.ts do). The cast is on the CALL, not on the client, so nothing
-    // else in this module loses its types.
-    const { error: sweepError } = await (
-      admin as unknown as {
-        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>
-      }
-    ).rpc('sync_space_circle_roster', { p_space_id: spaceId })
-    if (sweepError) {
-      console.error('[setSpaceCircleOn] roster sweep failed', {
-        spaceId,
-        message: sweepError.message,
-      })
-    }
-  }
-
-  return data[0].slug
 }

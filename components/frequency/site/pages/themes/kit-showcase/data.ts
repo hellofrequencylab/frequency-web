@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- data: a straight port of the Theme Kits design file (design_handoff_theme_kits/Theme Kits.dc.html), whose per-kit data is loosely shaped on purpose. */
-// The Theme Kits page data: nine kits, their accents, fonts, surface status and cover photos (LIVE-2140).
+// The Theme Kits page data: nine kits, their accents, fonts, surface status and cover photos (LIVE-2188).
 // Every value is the design's, unedited, except asset paths (public/themes-index) and the two live kits, which are static
 // renders of the design's own surface pages (Services, Cyber Witch).
 export type Any = any

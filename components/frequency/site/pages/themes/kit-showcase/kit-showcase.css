@@ -1,4 +1,4 @@
-/* The Theme Kits page (LIVE-2140): the hover states the design writes as style-hover, and the kit sections' paint containment.
+/* The Theme Kits page (LIVE-2188): the hover states the design writes as style-hover, and the kit sections' paint containment.
    Kit colours come from the per-kit skin as inline values; nothing here sets one. */
 .sh1:hover{background:color-mix(in oklab,var(--fq-text-strong) 8%,transparent) !important;color:var(--fq-text-strong) !important}
 .sh2:hover{transform:scale(1.1) !important}

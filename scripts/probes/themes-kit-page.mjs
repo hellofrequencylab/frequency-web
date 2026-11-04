@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2140: /themes is the Theme Kits page from the owner's design: nine kit sections, the main button goes to the launch
+// LIVE-2188: /themes is the Theme Kits page from the owner's design: nine kit sections, the main button goes to the launch
 // doorway and "See the kit" to that theme's page. Fails on main (the old gallery has no kit-showcase).
 import { existsSync, readFileSync } from 'node:fs'
 

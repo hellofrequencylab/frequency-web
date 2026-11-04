@@ -1,5 +1,5 @@
 'use client'
-// The Theme Kits page's client shell (LIVE-2140): holds the page state (use-kit-showcase.ts) and draws the design's markup
+// The Theme Kits page's client shell (LIVE-2188): holds the page state (use-kit-showcase.ts) and draws the design's markup
 // (kit-showcase-view.tsx) on the Stage surface the marketing site already wears.
 import './kit-showcase.css'
 import { KIT_FONT_SHEET } from './data'
