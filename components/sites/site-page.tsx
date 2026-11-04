@@ -35,7 +35,6 @@ import { FREE_HUMAN_CSS } from '@/components/sites/free-human-css'
 import { NEW_WORLD_CSS } from '@/components/sites/new-world-css'
 import { NEW_WORLD_FONT_CLASS } from '@/components/sites/new-world-fonts'
 import { CYBERWITCH_CSS } from '@/components/sites/cyberwitch-css'
-import { CYBERWITCH_FONT_CLASS } from '@/components/sites/cyberwitch-fonts'
 import { SERVICES_SITE_CSS } from '@/components/sites/services-css'
 import { SERVICES_FONT_CLASS } from '@/components/sites/services-fonts'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
@@ -258,7 +257,7 @@ export async function SitePage({
                   : servicesSite
                     ? { theme: 'services' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const) }
                     : null
-  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : newWorldSite ? NEW_WORLD_FONT_CLASS : servicesSite ? SERVICES_FONT_CLASS : cyberwitchSite ? CYBERWITCH_FONT_CLASS : undefined
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : newWorldSite ? NEW_WORLD_FONT_CLASS : servicesSite ? SERVICES_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
   const lookOverrides = siteLookOverrides(render.lookStyle)
   const fullFooter = siteLook(render.lookStyle).footer === 'full'

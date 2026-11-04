@@ -65,8 +65,6 @@ import { networkKitDatesEmail, networkKitNoteEmail, networkKitReceiptEmail, netw
 import { templeKitDatesEmail, templeKitNoteEmail, templeKitReceiptEmail, templeKitWelcomeEmail, type TempleKitEmailBrand } from '@/lib/theme/temple-kit-email'
 import { SERVICES_SURFACE } from '@/lib/theme/services'
 import { SERVICES_EMAIL_TYPES, servicesKitEmail, type ServicesKitEmailBrand } from '@/lib/theme/services-kit-email'
-import { CYBERWITCH_SURFACE } from '@/lib/theme/cyberwitch'
-import { CYBERWITCH_EMAIL_TYPES, cyberwitchKitEmail, type CyberWitchKitEmailBrand } from '@/lib/theme/cyberwitch-kit-email'
 import { NEW_WORLD_EMAIL_TIDE, NEW_WORLD_EMAIL_TYPES, newWorldKitEmail } from '@/lib/theme/new-world-kit-email'
 import { freeHumanDatesEmail, freeHumanNoteEmail, freeHumanReceiptEmail, freeHumanWelcomeEmail, type FreeHumanEmailBrand } from '@/lib/theme/free-human-email'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
@@ -253,11 +251,6 @@ const SERVICES_BRAND: ServicesKitEmailBrand = {
   accent: { fill: SERVICES_SURFACE.accent.accent, text: SERVICES_SURFACE.accent.text }, register: 'night', postalLine: PLATFORM_POSTAL_LINE,
   siteUrl: 'https://harborhomecare.example', siteLabel: 'harborhomecare.example', unsubscribeUrl: `${SITE}/unsubscribe/s`,
 }
-const CYBERWITCH_BRAND: CyberWitchKitEmailBrand = {
-  name: 'Ash & Ember', descriptor: 'Readings, ritual and spellwork', owner: 'Mara Quill', role: 'Reader', city: 'San Diego', phone: '(619) 555-0100',
-  accent: { fill: CYBERWITCH_SURFACE.accent.accent, text: CYBERWITCH_SURFACE.accent.text }, postalLine: PLATFORM_POSTAL_LINE,
-  siteUrl: 'https://ashandember.example', siteLabel: 'ashandember.example', unsubscribeUrl: `${SITE}/unsubscribe/s`,
-}
 const FREE_HUMAN_COVER = `${SITE}/sites/free-human/email/place-sea-sunset.jpg`
 const FREE_HUMAN_DATES = [
   { lead: '20', title: 'New moon circle', sub: '7:00 PM · The long room' },
@@ -363,6 +356,5 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'free-human-dates', group: 'Spaces and campaigns', run: () => { const out = freeHumanDatesEmail(FREE_HUMAN_BRAND, { dates: FREE_HUMAN_DATES, ctaUrl: 'https://freehumanmovement.example/calendar' }); return { to: TO, ...out } } },
   { id: 'free-human-receipt', group: 'Spaces and campaigns', run: () => { const out = freeHumanReceiptEmail(FREE_HUMAN_BRAND, { what: 'New moon circle', when: 'Thursday, November 20 · 7:00 PM', where: 'The long room', who: 'One place', whoNote: 'Reserved under your name', paid: '$25', paidNote: 'Card ending 4242 · Receipt no. 1047', calendarUrl: 'https://freehumanmovement.example/calendar.ics', manageUrl: 'https://freehumanmovement.example/bookings' }); return { to: TO, ...out } } },
   ...NEW_WORLD_EMAIL_TYPES.map((type) => ({ id: `new-world-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...newWorldKitEmail(type, { ...SERVICES_BRAND, accent: NEW_WORLD_EMAIL_TIDE }) }) })),
-  ...CYBERWITCH_EMAIL_TYPES.map((type) => ({ id: `cyberwitch-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...cyberwitchKitEmail(type, CYBERWITCH_BRAND) }) })),
   ...SERVICES_EMAIL_TYPES.map((type) => ({ id: `services-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...servicesKitEmail(type, SERVICES_BRAND) }) })),
 ]
