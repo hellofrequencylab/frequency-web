@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2135",
+  "title": "Vera adds a new section in the website editor, only of a kind the Add tab offers on that page, with the block's own placeholder prompts, on the draft",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner ask 2026-11-03 16:38Z (Vera makes the changes the user directs, inside the editor, confirm before write) and 20:39Z (I approve everything, get this done); Vera assistants plan /mnt/project-files/vera-assistants-2026-11-03/REPORT.md, phase V2 structure verbs (insert empty). Builds on LIVE-2097, LIVE-2098 and LIVE-2110."
+  },
+  "detail": "Vera could rearrange, hide, duplicate and restyle sections but not add one, so \"add a gallery after the hero\" came back empty. Add an add kind: the editor sends the sections the Add tab offers on the page in view (a block at its per-page cap is left out) on the menu it already sends, the server reads that list by shape and refuses a malformed one, and only a type on it at a position the page has becomes a tickable line. Apply inserts the block exactly as the Add tab does (its defaultProps prompts and a fresh id, refused at its cap) in the same one-undo-step commit as the other lines. Vera writes no words: the line says the section arrives with placeholder text for the owner's words.\n\nShipped: the add kind in vera-layout.ts, the section list on the Vera menu, tests and probe.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/vera-add.mjs"
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

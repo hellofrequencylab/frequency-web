@@ -17,6 +17,9 @@ import { isStaff, type WebRole } from '@/lib/core/roles'
 import { getMemberContext } from '@/lib/ai/memory'
 import { supportSummaryForVera } from '@/lib/support/store'
 import { runVeraTurn } from './loop'
+import { getSpaceBySlug } from '@/lib/spaces/store'
+import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { veraSpaceGuide } from './space-guide'
 import type { VeraReader } from './reader-note'
 import { runVeraClaudeTurn, type VeraMessage } from './agent-claude'
 import type { EntitlementTier } from '@/lib/core/entitlement'
@@ -64,15 +67,17 @@ export async function runConciergeTurn(
      *  (SCAN-736). A null profile and no ip means nobody is throttled, which is the hole both
      *  doors used to have. */
     ip?: string | null
+    /** The Space page they are on (LIVE-2147): its settings guide joins the prompt when they help run it. */
+    space?: string
   } = {},
 ): Promise<ConciergeTurnResult> {
   if (aiEnabled()) {
     const ident = await callerIdentity()
     const profileId = ident?.id ?? null
     const actorKey = profileId ?? (opts.ip ? `ip:${opts.ip}` : null)
-    const [memberContext, supportSummary, reader] = profileId
-      ? await Promise.all([getMemberContext(profileId), supportSummaryForVera(profileId).catch(() => ''), readerFor(profileId)])
-      : [null, '', null]
+    const [memberContext, supportSummary, reader, spaceGuide] = profileId
+      ? await Promise.all([getMemberContext(profileId), supportSummaryForVera(profileId).catch(() => ''), readerFor(profileId), spaceGuideFor(opts.space, profileId)])
+      : [null, '', null, '']
     const viewer = ident
       ? { isOperator: isStaff(ident.webRole), roleLabel: isStaff(ident.webRole) ? ident.webRole : ident.communityRole }
       : null
@@ -86,6 +91,7 @@ export async function runConciergeTurn(
       tier: ident?.tier ?? null,
       viewer,
       reader,
+      spaceGuide,
       onText: opts.onText,
     })
     if (live) return { message: live.reply, stage: 'chat', proposals: live.proposals, suggestions: live.suggestions, done: false }
@@ -109,5 +115,19 @@ async function readerFor(profileId: string): Promise<VeraReader | null> {
     }
   } catch {
     return null
+  }
+}
+
+/** The settings guide for the Space page they are on (LIVE-2147). Their role comes from the Space's own
+ *  capability resolver, never from the request; anyone who cannot edit the Space gets nothing. FAIL-SAFE:
+ *  any miss is an empty guide and the turn goes on. */
+async function spaceGuideFor(slug: string | undefined, profileId: string): Promise<string> {
+  if (!slug) return ''
+  try {
+    const space = await getSpaceBySlug(slug)
+    if (!space) return ''
+    return veraSpaceGuide(space, await getSpaceCapabilities(space, profileId))
+  } catch {
+    return ''
   }
 }

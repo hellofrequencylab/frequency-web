@@ -28,7 +28,7 @@ export const WEBSITE_EDITOR_GUIDE: readonly string[] = [
   'Publish opens the publish window: the checks, the list of changes, Publish now or schedule it for later, and Published versions to restore an earlier one into the draft.',
   'Share copies the live website address.',
   'Theme drafts, at the top of the Theme tab, let you keep more than one theme over the same pages and publish the one you like.',
-  'Vera: Cmd or Ctrl+K opens the bar. With nothing selected she can propose layout and style changes for you to tick. With text selected she asks coaching questions about your own words. She never writes your words and never publishes.',
+  'Vera: Cmd or Ctrl+K opens the bar. With nothing selected she can propose layout and style changes, or a new section from the Add tab, for you to tick. With text selected she asks coaching questions about your own words. She never writes your words and never publishes.',
 ]
 
 /** What Vera may know about this draft. Counts and labels only: never a section's words. */

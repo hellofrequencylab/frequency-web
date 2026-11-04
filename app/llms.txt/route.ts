@@ -144,7 +144,8 @@ const GUIDES: { path: string; label: string; desc: string }[] = [
   { path: '/loneliness', label: 'Loneliness and third places', desc: 'High-functioning loneliness, third places and third spaces, and life after the feed: why you can feel lonely with friends, why third places got rare, how to quit doomscrolling, and what to do about it.' },
   { path: '/friendship-as-an-adult', label: 'How to make friends as an adult', desc: 'Why it gets hard to make friends after 30, how to meet people in a new city, how to find like-minded people, and how to reconnect with old friends.' },
   { path: '/how-to-be-more-social', label: 'How to be more social', desc: 'How to be more social without a new personality: feel less awkward in groups and build a social life without drinking. Pick one recurring thing and become a regular.' },
-  { path: '/calm-down-fast', label: 'How to calm down fast', desc: 'What to do when you are wired and cannot switch off, and the quiet fix underneath it.' },
+  // /calm-down-fast merged into /mindless (LIVE-2093): the five-minute breathing timer, no account needed.
+  { path: '/mindless', label: 'Calm down fast: a 5-minute breathing timer', desc: 'Wired and cannot switch off? Follow the rings for five calm minutes. Free, no sign-up, nothing to install.' },
   // The operator track. /tools-for-community-builders merged into this guide (SCAN-1017), which now
   // carries the four jobs a community builder's tools do.
   { path: '/how-to-build-community', label: 'How to build community', desc: 'How to build community that lasts, step by step: host a recurring gathering, run a community space without burning out, and the four tools a builder actually needs.' },
