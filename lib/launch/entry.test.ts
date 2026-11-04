@@ -22,3 +22,10 @@ describe('freeSpotlightHref', () => {
     expect(FREE_SPOTLIGHT_LABEL).toBe('Get a Free Spotlight')
   })
 })
+
+describe('freeSpotlightHref kit', () => {
+  it('carries the kit it was pressed on, and only a slug', () => {
+    expect(new URL(freeSpotlightHref('themes', 'temple', 'temple-kit'), 'https://x.test').searchParams.get('kit')).toBe('temple-kit')
+    expect(freeSpotlightHref('themes', 'temple', 'Bad Kit!')).not.toContain('kit=')
+  })
+})

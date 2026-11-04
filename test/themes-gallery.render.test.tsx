@@ -13,7 +13,16 @@ describe('the Theme Kits page', () => {
   it('sends every main button to the launch or the builder, and See the full kit to the theme page', () => {
     const links = themeShowcaseLinks()
     expect(Object.keys(links.kits)).toHaveLength(9)
-    for (const k of Object.values(links.kits) as { use: string; page: string | null }[]) expect(k.use).toMatch(/^\/(launch\/start|create-a-space)/)
+    // A kit the builder does not offer (CyberWitch, no theme yet; Services while it stays hidden) has no Use link; every other one carries its kit.
+    for (const [id, k] of Object.entries(links.kits) as [string, { use: string | null; kit: string | null; page: string | null }][]) {
+      if (!k.kit) {
+        expect(k.use).toBeNull()
+        expect(['cyberwitch', 'services']).toContain(id)
+      } else {
+        expect(k.use).toMatch(/^\/(launch\/start|create-a-space)/)
+        expect(k.use).toContain(`kit=${k.kit}`)
+      }
+    }
     expect(links.kits.nocturne.page).toBe('/themes/nocturne')
     expect(links.kits.cyberwitch.page).toBeNull()
     expect(links.plans).toBe('/pricing')
