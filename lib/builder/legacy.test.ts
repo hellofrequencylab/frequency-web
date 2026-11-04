@@ -64,3 +64,43 @@ describe('update to new layouts in the builder (BLD-205)', () => {
     for (const b of [...doc.content, ...applied.content]) expect(known(b.type), b.type).toBe(true)
   })
 })
+
+
+describe('legacy conversion preserves unsupported authored content', () => {
+  const authored = [
+    ['DesignerHero', { strip: [{ label: 'Featured project', value: 'Cedar House', image: '/cedar.jpg', href: '/projects/cedar' }] }],
+    ['DesignerClosing', { nextEyebrow: 'Next project', next: { title: 'Harbor Studio', location: 'Encinitas', year: '2026', image: '/harbor.jpg', href: '/projects/harbor' } }],
+    ['TempleKitHero', { live: false, cardTitle: 'Monthly sound bath', cardWhen: 'Thursday 7pm', cardImage: '/sound.jpg', cardHref: '/book/sound' }],
+    ['MidnightLetter', { title: 'A note for', em: 'the quiet hours', successMessage: 'You are on our list' }],
+    ['DesignerStatement', { title: 'Our approach', meta: 'Independent since 2016' }],
+  ] as const
+
+  it.each(authored)('keeps %s unchanged instead of dropping saved words, photos or links', (type, values) => {
+    const block = { type, props: { ...config.components[type].defaultProps, id: 'authored', ...values } }
+    const doc = { root: { props: {} }, content: [block] } as Data
+    expect(applyLegacy(doc, new Set(['authored']))).toBe(doc)
+    const plan = legacyPlan(doc, config)
+    expect(plan.rows).toEqual([])
+    expect(plan.kept.map((b) => b.id)).toEqual(['authored'])
+  })
+
+  it('keeps a deliberate false live-source choice', () => {
+    const doc = { root: { props: {} }, content: [{ type: 'TempleKitHero', props: { id: 'h', title: 'Welcome', live: false } }] } as Data
+    expect(applyLegacy(doc, new Set(['h']))).toBe(doc)
+  })
+
+  it('updates a picked safe section while preserving authored zoned content and the original document', () => {
+    const unsafe = { type: 'DesignerHero', props: { id: 'z', title: 'Work', strip: [{ label: 'Project', value: 'Cedar House', href: '/cedar' }] } }
+    const doc = { root: { props: {} }, content: [{ type: 'MidnightCTA', props: { id: 'c', title: 'Visit', buttonLabel: 'Book', buttonHref: '/book' } }], zones: { 'container:body': [unsafe] } } as Data
+    const snapshot = JSON.stringify(doc)
+    const after = applyLegacy(doc, new Set(['c', 'z']))
+    expect(after.content[0].type).toBe(ROLES.cta.type)
+    expect(after.zones?.['container:body']?.[0]).toBe(unsafe)
+    expect(JSON.stringify(doc)).toBe(snapshot)
+  })
+
+  it('retains the sample-content protection marker on a safe conversion', () => {
+    const doc = { root: { props: {} }, content: [{ type: 'MidnightHero', props: { id: 'h', title: 'Sample welcome', sample: true } }] } as Data
+    expect(applyLegacy(doc, new Set(['h'])).content[0].props.sample).toBe(true)
+  })
+})

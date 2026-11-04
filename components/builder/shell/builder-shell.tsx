@@ -347,7 +347,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <div className={styles.devices} role="group" aria-label="Device">
           {DEVICES.map(({ id, label, Icon }) => <button key={id} type="button" data-action={`device-${id}`} className={`${styles.btn} ${styles.icon}`} aria-label={label} title={label} aria-pressed={state.device === id} onClick={() => dispatch({ type: 'device', device: id })}><Icon size={16} aria-hidden /></button>)}
         </div>
-        <button type="button" data-action="undo" className={`${styles.btn} ${styles.icon}`} aria-label="Undo" title="Undo" disabled={!state.past.length} onClick={() => dispatch({ type: 'undo' })}><Undo2 size={16} aria-hidden /></button>
+        <button type="button" data-action="undo" id="builder-undo" className={`${styles.btn} ${styles.icon}`} aria-label="Undo" title="Undo" disabled={!state.past.length} onClick={() => dispatch({ type: 'undo' })}><Undo2 size={16} aria-hidden /></button>
         <button type="button" data-action="redo" className={`${styles.btn} ${styles.icon}`} aria-label="Redo" title="Redo" disabled={!state.future.length} onClick={() => dispatch({ type: 'redo' })}><Redo2 size={16} aria-hidden /></button>
         <button type="button" className={`${styles.btn} ${styles.wide}`} aria-haspopup="menu" disabled title="Show as: the other surfaces arrive with the surface switcher">Site · Visitor</button>
         <button id="builder-command" type="button" className={`${styles.btn} ${styles.wide}`} aria-label="Find, do or ask. Shortcut: command K" aria-haspopup="dialog" aria-expanded={commandOpen} onClick={() => setCommandOpen(true)}><span>Find</span><span className={styles.kbd}>⌘K</span></button>
@@ -420,7 +420,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <button type="button" onClick={() => setCommandOpen(true)}><Sparkles size={20} aria-hidden /><span>Vera</span></button>
       </nav>}
       {addAt !== null && <AddSheet cards={cards} doc={page.doc} at={addAt} onPick={pickSection} onAsk={() => { setAddAt(null); setToast({ say: 'Vera arrives in the builder with BLD-402. Your question is kept for her.', undo: false }) }} onClose={() => setAddAt(null)} preview={previewOf} />}
-      {plan && <UpdateLayoutsSheet plan={plan} pageLabel={page.label} preview={previewBlock} onApply={applyLayouts} onClose={() => setLayoutsOpen(false)} />}
+      {plan && <UpdateLayoutsSheet plan={plan} pageLabel={page.label} preview={previewBlock} onApply={applyLayouts} onClose={() => setLayoutsOpen(false)} focusFallbackId="builder-undo" />}
       {sheetOpen && <PublishSheet readiness={ready} onFix={(item) => { setSheetOpen(false); goTo(item) }} onPublish={(keep) => { if (canPublish(ready, keep)) { setSheetOpen(false); void save(true) } }} onClose={() => setSheetOpen(false)} />}
       {commandOpen && <CommandBar sections={spine} pages={state.draft.pages} selected={!!state.selectedId} onRun={runCommand} onClose={() => setCommandOpen(false)} />}
       {state.preview && <div className={styles.previewPill} role="status">Previewing as a visitor · press Esc to edit</div>}

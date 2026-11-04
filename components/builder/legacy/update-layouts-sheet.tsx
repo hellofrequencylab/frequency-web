@@ -11,13 +11,15 @@ import type { LegacyPlan, LegacyRow } from '@/lib/builder/legacy'
 import { Checkbox } from '@/components/ui/checkbox'
 import styles from './update-layouts-sheet.module.css'
 
-export function UpdateLayoutsSheet({ plan, pageLabel, preview, onApply, onClose }: {
+export function UpdateLayoutsSheet({ plan, pageLabel, preview, onApply, onClose, focusFallbackId }: {
   plan: LegacyPlan
   pageLabel: string
   /** Draws one block on this page's canvas. */
   preview: (block: LegacyRow['before'], key: string) => ReactNode
   onApply: (ids: Set<string>) => void
   onClose: () => void
+  /** Applying every conversion removes the outline opener; restore focus to a stable builder control. */
+  focusFallbackId?: string
 }) {
   const [picked, setPicked] = useState(() => new Set(plan.rows.map((r) => r.id)))
   const [activeId, setActiveId] = useState(plan.rows[0]?.id ?? null)
@@ -27,8 +29,14 @@ export function UpdateLayoutsSheet({ plan, pageLabel, preview, onApply, onClose 
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null
     dialog.current?.querySelector<HTMLElement>('input, button')?.focus()
-    return () => { before?.focus?.() }
-  }, [])
+    return () => {
+      if (before?.isConnected && before !== document.body && before !== document.documentElement) {
+        before.focus()
+        if (document.activeElement === before) return
+      }
+      if (focusFallbackId) document.getElementById(focusFallbackId)?.focus()
+    }
+  }, [focusFallbackId])
 
   function keys(e: KeyboardEvent<HTMLDivElement>) {
     e.stopPropagation()
@@ -64,7 +72,7 @@ export function UpdateLayoutsSheet({ plan, pageLabel, preview, onApply, onClose 
             </ul>
             {plan.kept.length > 0 && <>
               <h3 className={styles.cap}>Staying as they are</h3>
-              <ul role="list">{plan.kept.map((k) => <li key={k.id} className={styles.kept}>{k.name}<small>its lists do not fit a new layout yet</small></li>)}</ul>
+              <ul role="list">{plan.kept.map((k) => <li key={k.id} className={styles.kept}>{k.name}<small>its saved content does not fit a new layout yet</small></li>)}</ul>
             </>}
           </div>
           {active && <div className={styles.compare} aria-label={`Before and after: ${active.from}`} role="group">
