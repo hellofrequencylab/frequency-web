@@ -13,6 +13,7 @@ import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
 import { FREE_HUMAN_PROFILES } from '@/lib/theme/free-human'
 import { SERVICES_ACCENTS } from '@/lib/theme/services'
 import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
+import { CYBERWITCH_ACCENTS } from '@/lib/theme/cyberwitch'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 
@@ -63,6 +64,7 @@ const NETWORK_PHOTO = (n: string) => `/sites/network-kit/photos/photo-${n}.jpg`
 const TEMPLE_KIT_PHOTO = (n: string) => `/sites/temple-kit/photos/photo-${n}.jpg`
 const NOCTURNE_PHOTO = (name: string) => `/sites/midnight/photos/${name}.jpg`
 const NEW_WORLD_PHOTO = (name: string) => `/sites/new-world/photos/${name}.webp`
+const CYBERWITCH_PHOTO = (name: string) => `/sites/cyberwitch/photos/${name}.jpg`
 const FREE_HUMAN_PHOTO = (name: string) => `/sites/free-human/photos/${name}.webp`
 const WILDHEART_PHOTO = (name: string) => `/brand/wildheart/photos/${name}.jpg`
 
@@ -96,6 +98,14 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
     strip: [FREE_HUMAN_PHOTO('place-daisies'), FREE_HUMAN_PHOTO('light-sun'), FREE_HUMAN_PHOTO('light-floating-candles')], nav1: 'Program', cta2: 'See the program',
     covers: [FREE_HUMAN_PHOTO('heritage-a-virgin'), FREE_HUMAN_PHOTO('place-daisies'), FREE_HUMAN_PHOTO('light-sun'), FREE_HUMAN_PHOTO('light-floating-candles'), FREE_HUMAN_PHOTO('light-lanterns')],
     portraits: [FREE_HUMAN_PHOTO('founder-audrey'), FREE_HUMAN_PHOTO('light-honey-dipper')],
+  },
+  // CyberWitch's own pictures (the zip's assets/imagery): the sprayed hero is its hero, the founder its portrait. Every photo follows the
+  // accent, so the Hex set stands in until the owner picks another.
+  cyberwitch: {
+    hero: CYBERWITCH_PHOTO('hero-hex'), heroPos: 'center 40%', portrait: CYBERWITCH_PHOTO('founder-hex'), portraitPos: 'center 30%',
+    strip: [CYBERWITCH_PHOTO('story'), CYBERWITCH_PHOTO('hero-ice'), CYBERWITCH_PHOTO('hero-absinthe')], nav1: 'Work with me', cta2: 'See the work',
+    covers: [CYBERWITCH_PHOTO('hero-hex'), CYBERWITCH_PHOTO('story'), CYBERWITCH_PHOTO('hero-ice'), CYBERWITCH_PHOTO('hero-blood')],
+    portraits: [CYBERWITCH_PHOTO('founder-hex'), CYBERWITCH_PHOTO('founder-ice')],
   },
   designer: {
     hero: DESIGNER_PHOTO('dz-designer-kitchen-hero'), heroPos: '38% center',
@@ -202,6 +212,8 @@ const KIT_ACCENTS: Record<MegaThemeId, readonly PreviewAccent[]> = {
   services: (['tide', 'signal', 'bloom', 'ember', 'fern', 'iris'] as const).map((id) => ({ name: SERVICES_ACCENTS[id].label, fill: SERVICES_ACCENTS[id].accent, text: null })),
   // New World's presets (lib/theme/new-world.ts): Tide, until the owner adds more.
   'new-world': (Object.keys(NEW_WORLD_ACCENTS) as (keyof typeof NEW_WORLD_ACCENTS)[]).map((id) => ({ name: NEW_WORLD_ACCENTS[id].label, fill: NEW_WORLD_ACCENTS[id].accent, text: null })),
+  // CyberWitch's five presets (lib/theme/cyberwitch.ts), Hex first. Dark only: the fill reads as text, so no text step.
+  cyberwitch: (Object.keys(CYBERWITCH_ACCENTS) as (keyof typeof CYBERWITCH_ACCENTS)[]).map((id) => ({ name: CYBERWITCH_ACCENTS[id].label, fill: CYBERWITCH_ACCENTS[id].accent, text: null })),
   bold: [
     { name: 'Volt', fill: '#D4FF3D', text: null }, { name: 'Flare', fill: '#FF5A36', text: null },
     { name: 'Ice', fill: '#3DD9FF', text: null }, { name: 'Gold', fill: '#FFD23D', text: null },

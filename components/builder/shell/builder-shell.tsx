@@ -17,7 +17,9 @@ import type { WebsiteEditorShellProps } from '@/components/sites/editor/shell'
 import { SectionIcon } from '@/components/sites/editor/section-icon'
 import { updateBlockPropsDeep } from '@/components/page-editor/mobile/data-ops'
 import { sectionCommand } from '@/lib/builder/section-actions'
-import { TuneRail } from '@/components/builder/tune/tune-rail'
+import { TuneRail, type TuneFocus } from '@/components/builder/tune/tune-rail'
+import { tuneProjection } from '@/lib/builder/tune'
+import { focalFieldFor, pictureFieldFor } from '@/lib/builder/parts'
 import { CommandBar } from '@/components/builder/command/command-bar'
 import type { BuilderActionId } from '@/lib/builder/commands'
 import type { Data } from '@/lib/page-editor/types'
@@ -185,6 +187,20 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
     requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-spine-id="${CSS.escape(id)}"]`)?.focus())
   }
   const selected = sections.find((s) => s.props.id === state.selectedId) ?? null
+  // A picture clicked on the canvas (BLD-104) opens its own field in Tune, the media picker with its focal point
+  // lit beside it: one picker, in one place, editing the same draft as the canvas.
+  const [tuneFocus, setTuneFocus] = useState<(TuneFocus & { id: string }) | null>(null)
+  const openPicture = (id: string, src: string) => {
+    const block = builderPage(latest.current).doc.content.find((s) => s.props.id === id)
+    if (!block) return
+    const projection = tuneProjection(block.type, config)
+    const fields = [...projection.layer1, ...projection.layer2]
+    const picture = pictureFieldFor(fields, block.props as Record<string, unknown>, src)
+    if (!picture) return
+    const focal = focalFieldFor(fields, picture.key)
+    setTuneFocus({ id, keys: focal ? [picture.key, focal.key] : [picture.key], at: Date.now() })
+    if (modes.right !== 'pinned' && modes.right !== 'overlay') toggleRail('right')
+  }
 
   // The command bar (BLD-106): every action by its registry id, so ⌘K reaches everything a button does.
   const [commandOpen, setCommandOpen] = useState(false)
@@ -278,7 +294,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
 
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
         <div className={styles.frame} style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)` }}>
-          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={() => {}} onDisplay={setDisplay} onVisibility={setVisible} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={() => {}} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
         </div>
       </main>
 
@@ -292,7 +308,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <div className={styles.panelBody}>
         {selected ? <>
           <h2>{config.components[selected.type]?.label ?? selected.type}</h2>
-          <TuneRail key={String(selected.props.id)} type={selected.type} props={selected.props as Record<string, unknown>} config={config} onChange={(key, value) => editProps(String(selected.props.id), { [key]: value })} />
+          <TuneRail key={String(selected.props.id)} type={selected.type} props={selected.props as Record<string, unknown>} config={config} focus={tuneFocus?.id === selected.props.id ? tuneFocus : null} onChange={(key, value) => editProps(String(selected.props.id), { [key]: value })} />
         </> : <>
           <h2>Nothing selected</h2>
           <p>Click a section on the page, or pick one in the outline.</p>

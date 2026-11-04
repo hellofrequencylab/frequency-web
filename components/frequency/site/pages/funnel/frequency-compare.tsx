@@ -10,46 +10,77 @@ import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { COMPARISONS, comparisonCopy, comparisonPath, type Comparison } from '@/lib/marketing/comparisons'
-import { FnHead, FnHero, FnPhotoHero } from './parts'
+import { FnHead, FnPhotoHero } from './parts'
+import { photoImg } from '../shared/parts'
 
-/** The /vs hub: every comparison, as links. */
+// A Circle that keeps meeting, on the beach at golden hour: the photo inside the hub's second circle.
+const HERO_STILL = '/brand/frequency/photos/gathering-12.jpg'
+
+/** The /vs hub: every comparison, as links. The hero pairs the copy with two circles, an outline for the
+ *  one-off and a photo of a Circle that meets again; each comparison is a split card, the other tool on the
+ *  plain half and Frequency on the glass half, both read from the registry's first row ("What it is"). */
 export function FrequencyCompareIndex() {
   return (
     <>
-      <FnHero
-        kicker="Compare"
-        title={
-          <>
-            How Frequency <em className="fq-iri-text">compares.</em>
-          </>
-        }
-        lede="Most tools help you throw one event, share one link, or sell one ticket. Frequency is the standing room underneath: a small Circle that keeps meeting in person. Hosting is free, selling starts at Business, and your own people are always free. Here is how it stacks up against the tools you already know."
-      >
-        <div className="ctas">
-          <Link className="btn fq-iri-btn" href="/discover">
-            Find a Circle near you →
-          </Link>
-          <Link className="btn btn-ghost fq-iri-rim" href="/pricing">
-            See the honest pricing
-          </Link>
+      <section className="fn-hero fv-hero" data-screen-label="01 Hero">
+        <span className="rings" aria-hidden="true" />
+        <div className="fq-aura" style={{ '--fq-aura-opacity': 0.22 } as React.CSSProperties} aria-hidden="true" />
+        <div className="wrap fv-grid">
+          <div className="fv-copy">
+            <div className="label">
+              <b>Compare</b>
+            </div>
+            <h1 className="h-xl">
+              How Frequency <em className="fq-iri-text">compares.</em>
+            </h1>
+            <p className="fn-lede">
+              Most tools help you throw one event, share one link, or sell one ticket. Frequency is the standing room underneath: a
+              small Circle that keeps meeting in person. Hosting is free, selling starts at Business, and your own people are always
+              free. Here is how it stacks up against the tools you already know.
+            </p>
+            <div className="ctas">
+              <Link className="btn fq-iri-btn" href="/discover">
+                Find a Circle near you →
+              </Link>
+              <Link className="btn btn-ghost fq-iri-rim" href="/pricing">
+                See the honest pricing
+              </Link>
+            </div>
+          </div>
+          <div className="fv-venn" aria-hidden="true">
+            <span className="fv-once" />
+            <span className="fv-again fq-iri-rim">
+              {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes the circle's img itself */}
+              <img decoding="async" {...photoImg(HERO_STILL, '(max-width: 860px) 60vw, 420px')} alt="" />
+              <span className="fq-grain" />
+            </span>
+            <i className="fv-vs">vs</i>
+          </div>
         </div>
-      </FnHero>
+      </section>
 
       <section className="fn-sec" data-screen-label="02 Comparisons">
         <div className="wrap">
           <FnHead label="Every comparison" title="Pick the tool you know." />
-          <div className="qa fn-links">
-            {COMPARISONS.map((c) => (
-              <Link key={c.slug} className="hp-a" href={comparisonPath(c.slug)}>
-                <span>
-                  <b>Frequency vs {c.name}</b>
-                  <small>{c.category}</small>
-                </span>
-                <span className="ar" aria-hidden="true">
-                  →
-                </span>
-              </Link>
-            ))}
+          <div className="fv-cards">
+            {COMPARISONS.map((c) => {
+              const row = c.contrast[0]
+              return (
+                <Link key={c.slug} className="fv-card" href={comparisonPath(c.slug)}>
+                  <span className="fv-them">
+                    <small>{c.category}</small>
+                    {row && <span>{row.them}</span>}
+                  </span>
+                  <span className="fv-us fq-glass">
+                    <b>Frequency vs {c.name}</b>
+                    {row && <span>{row.us}</span>}
+                    <span className="ar" aria-hidden="true">
+                      →
+                    </span>
+                  </span>
+                </Link>
+              )
+            })}
           </div>
         </div>
       </section>
