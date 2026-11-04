@@ -84,6 +84,17 @@ describe('New World Kit Spotlight layouts', () => {
     }
   })
 
+  it('draws the design\'s default type voice and the rating line, and keeps the name clear of a long hero title', () => {
+    expect(NEW_WORLD_KIT_LAYOUTS_CSS).toMatch(/\.nws-d\{[^}]*text-transform:none/)
+    expect(NEW_WORLD_KIT_LAYOUTS_CSS).not.toMatch(/\.nws-hero-top\{[^}]*position:absolute/)
+    const c = newWorldKitSpotlightContent('general')
+    expect(c.rating).toBe('3 sessions a week')
+    for (const key of ['stack', 'card-wall', 'profile'] as const) {
+      expect(renderToStaticMarkup(<NewWorldKitSpotlightLayout layout={`new-world-kit:${key}`} content={c} />), key).toContain('3 sessions a week')
+    }
+    expect(newWorldKitSpotlightContent('general', { sample: false }).rating).toBeNull()
+  })
+
   it('uses the owner name and photo when given', () => {
     const c = newWorldKitSpotlightContent('general', { name: 'Harbor Plumbing', photo: '/p.jpg' })
     const html = renderToStaticMarkup(<NewWorldKitSpotlightLayout layout="new-world-kit:story" content={c} />)
