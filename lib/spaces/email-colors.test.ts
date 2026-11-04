@@ -164,3 +164,21 @@ describe('a Space on the Midnight theme', () => {
     expect(spaceEmailColors({ preferences: { megaTheme: { theme: 'frequency' } } }).canvas).toBe(DEFAULT_EMAIL_COLORS.canvas)
   })
 })
+
+describe('Bold email shape', () => {
+  it('a Bold Space gets square corners and others keep the round card', async () => {
+    const { spaceEmailBrand } = await import('./email-colors')
+    const bold = spaceEmailBrand({ name: 'T', preferences: { megaTheme: { theme: 'bold' } } })
+    const other = spaceEmailBrand({ name: 'T', preferences: { megaTheme: { theme: 'wildheart' } } })
+    expect(bold.square).toBe(true)
+    expect(other.square).toBeUndefined()
+  })
+})
+
+describe('Wildheart email shape', () => {
+  it('a Wildheart Space gets the serif wordmark and others keep Frequency\'s', async () => {
+    const { spaceEmailBrand } = await import('./email-colors')
+    expect(spaceEmailBrand({ name: 'T', preferences: { megaTheme: { theme: 'wildheart' } } }).serif).toBe(true)
+    expect(spaceEmailBrand({ name: 'T', preferences: { megaTheme: { theme: 'bold' } } }).serif).toBeUndefined()
+  })
+})

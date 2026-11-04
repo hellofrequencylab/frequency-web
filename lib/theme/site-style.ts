@@ -7,6 +7,7 @@ import { MIDNIGHT_ACCENT } from '@/lib/theme/midnight'
 import { TEMPLE_KIT_ACCENT } from '@/lib/theme/temple-kit'
 import { FREE_HUMAN_ACCENT } from '@/lib/theme/free-human'
 import { DESIGNER_ACCENT } from '@/lib/theme/designer'
+import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteFacesId } from '@/lib/theme/site-faces'
 import { readMegaTheme } from '@/lib/theme/mega-theme'
@@ -59,7 +60,7 @@ import { SITE_DIAL_KEYS, isDialAccent, isSiteDialValue, type SiteDialKey } from 
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
-export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'services' | 'new-world'
+export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'services' | 'new-world' | 'cyberwitch'
 
 interface SiteThemeDef {
   id: SiteThemeId
@@ -175,12 +176,25 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
     description: 'The Frequency house look: Night and Day in one theme, Tide teal to start, and a kit for every kind of gathering.',
     defaultFonts: 'modern',
   },
+  {
+    // THE CYBERWITCH THEME (id `cyberwitch`, lib/theme/cyberwitch.ts): industrial street-punk witch, dark only, one neon accent, blackletter,
+    // marker and Spectral. Hidden from every picker until its pages, emails, Spotlight and Space page ship, then it leaves RETIRED_FROM_PICKERS.
+    id: 'cyberwitch',
+    label: 'CyberWitch',
+    description: 'Concrete and chain-link under a blackletter grimoire, one neon accent sprayed over everything. Dark only, five accents, six starter kits.',
+    defaultFonts: 'classic',
+  },
 ]
 
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
+ *  `frequency` ("Default") left the pickers 2026-11-03: New World is the default (LIVE-2058); sites that saved it keep it.
  *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human', 'services'])
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple', 'free-human', 'services', 'cyberwitch'])
+/** New World is the default, so it leads every picker (owner 2026-11-04); the rest keep their definition order. */
+const PICKER_FIRST: SiteThemeId = 'new-world'
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
+  .slice()
+  .sort((a, b) => Number(b.id === PICKER_FIRST) - Number(a.id === PICKER_FIRST))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
 
@@ -227,6 +241,7 @@ export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
   'free-human': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   services: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   'new-world': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  cyberwitch: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
 }
 
 export interface SiteLook {
@@ -242,7 +257,7 @@ type SiteDialStore = Partial<Record<SiteDialKey | 'accent', string>>
 /** What the new dials resolve to before the owner changes anything. A theme's manifest default beats these. */
 const THEME_DIAL_FALLBACK: Record<SiteDialKey, string> = { register: 'day', type: 'caps', motion: 'full', hero: 'glow', image: 'glow' }
 /** Themes whose own register is night. */
-const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight', 'new-world', 'services'])
+const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight', 'new-world', 'services', 'cyberwitch'])
 
 export interface SiteStyle {
   theme: SiteThemeId
@@ -267,7 +282,7 @@ const MAX_PAGE_THEMES = 30
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 export function isSiteThemeId(v: unknown): v is SiteThemeId {
-  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human' || v === 'services' || v === 'new-world'
+  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human' || v === 'services' || v === 'new-world' || v === 'cyberwitch'
 }
 
 export function readSiteStyle(preferences: unknown): SiteStyle {
@@ -412,5 +427,6 @@ export function spacePageDefaultAccent(preferences: unknown, typeDefault: string
   if (style.theme === 'midnight') return MIDNIGHT_ACCENT.accent
   if (style.theme === 'designer') return DESIGNER_ACCENT.accent
   if (style.theme === 'free-human') return FREE_HUMAN_ACCENT.accent
+  if (style.theme === 'new-world') return NEW_WORLD_ACCENTS.tide.accent
   return style.theme === 'bold' ? MENSWORK_PALETTE.teal : style.theme === 'wildheart' ? WILDHEART_PALETTE.violet : typeDefault
 }

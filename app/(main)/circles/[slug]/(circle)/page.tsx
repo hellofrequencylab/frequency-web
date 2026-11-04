@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getMyProfileId } from '@/lib/auth'
 import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
@@ -10,7 +10,6 @@ import { loadCircleShell } from '@/lib/circles/store'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { setCircleContext } from '@/lib/circles/active-circle'
-import { FqModules } from '@/components/frequency/members/modules'
 import { FqCircleFeed } from '@/components/frequency/members/circle/circle-feed'
 
 // ── THE FEED TAB (the default tab) ──────────────────────────────────────────────────────────────
@@ -42,11 +41,6 @@ import { FqCircleFeed } from '@/components/frequency/members/circle/circle-feed'
 // belong once the tab routes are known to lib/widgets.
 
 
-/** The blocks the Feed tab still draws after the posts. The rest of the old subset moved to where the
- *  redesigned page puts them (templates/circles/Circles.dc.html): "How we meet" and Circle health are in the
- *  side column, the practice is on What's Happening, and the Challenges are on Circle Stats. Only a Space
- *  Circle's info board stays here: it is the Space's own hub (ADR-1393). */
-const FQ_FEED_MODULE_IDS = ['circle-space-info'] as const
 
 export async function generateMetadata({
   params,
@@ -97,12 +91,11 @@ export default async function CircleHomePage({
   if (!shell) notFound()
   const { circle, members } = shell
 
-  // A Space's DEFAULT Circle is that Space's conversation (owner, 2026-10-14, SCAN-901): it is listed like any
-  // Circle in the directory, but its home is the Space's community page, where the conversation leads
-  // (app/(main)/spaces/[slug]/(profile)/circles, #discussion). The Circle's other tabs (members, events) and its
-  // settings stay where they are; only the home tab forwards. The platform root lends no Space page.
+  // A Space Circle is retired (ADR-1938): the Space's Community wall replaced it. The cutover archives
+  // them all; until it has run on a database, one still open forwards its home tab to the wall too.
+  // The platform root lends no Space page.
   if (circle.is_space_primary && circle.space && circle.space.type !== 'root') {
-    redirect(`/spaces/${circle.space.slug}/circles#discussion`)
+    permanentRedirect(`/spaces/${circle.space.slug}/community`)
   }
 
   // Member ids — used below for the circle's engagement signals (only read for a viewer
@@ -177,7 +170,6 @@ export default async function CircleHomePage({
   return (
     <div id="circle-post" className="stack">
       <FqCircleFeed />
-      <FqModules ids={FQ_FEED_MODULE_IDS} />
     </div>
   )
 }

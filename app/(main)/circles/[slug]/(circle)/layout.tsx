@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
 import { Settings } from 'lucide-react'
 import { getCachedUser, getMyProfileId } from '@/lib/auth'
@@ -16,6 +16,7 @@ import { QrShareDropdown } from '@/modules/qr'
 import { BoostButton } from '@/components/crew/boost-button'
 import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { loadCircleShell } from '@/lib/circles/store'
+import { retiredSpaceCircleHome } from '@/lib/circles/retired-space-circle'
 import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 import { circleTabs } from '@/lib/circles/tabs'
 import {
@@ -204,7 +205,12 @@ export default async function CircleDetailLayout({
   // Round 1. The circle + roster and the viewer, request-memoized: the tab page under `children`
   // calls the same loaders and gets memo hits, so the shell costs no extra reads.
   const [shell, myProfileId] = await Promise.all([loadCircleShell(slug), getMyProfileId()])
-  if (!shell) notFound()
+  if (!shell) {
+    // A retired Space Circle (archived by the cutover, ADR-1938) forwards to its Space's wall.
+    const home = await retiredSpaceCircleHome(slug)
+    if (home) permanentRedirect(home)
+    notFound()
+  }
   // 🔴 `canEnter` AND ITS REASON ARE READ HERE NOW (LIVE-519). Every consumer used to destructure
   // around them, so a Circle this viewer may see but not enter rendered as a Circle with ZERO
   // MEMBERS: the shell blanks the roster on purpose (public face keeps the COUNT, never the

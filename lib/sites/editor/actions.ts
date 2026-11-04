@@ -6,7 +6,8 @@ import { authorizeWebsiteEditor } from './authorization'
 import { shareWebsiteAbout } from './share-about'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { readWebsiteEditor, nextWebsiteState, validWebsiteSnapshot, type WebsiteSnapshot, type WebsiteEditorState } from './state'
-import { parseWebsiteVeraLayout, type WebsiteVeraChange, type WebsiteVeraSection } from './vera-layout'
+import { readWebsiteVeraFacts } from './vera-guide'
+import { VERA_DESIGN_SETTINGS, parseWebsiteVeraLayout, readWebsiteVeraStyleMenu, type WebsiteVeraChange, type WebsiteVeraSection } from './vera-layout'
 
 
 export async function saveWebsiteDraft(host: string, expectedRevision: number, draft0: WebsiteSnapshot, publish = false, scheduledAt?: string | null): Promise<{ ok: true; state: WebsiteEditorState } | { ok: false; error: string; conflict?: boolean }> {
@@ -118,6 +119,12 @@ export async function proposeWebsiteText(host: string, request: string, value: s
   } catch { return { ok: false, error: 'Vera could not prepare coaching questions. Try again in a moment.' } }
 }
 
+/** The Design tab settings a section reports (LIVE-2162): known settings only, short strings. */
+function readDesign(value: unknown): WebsiteVeraSection['design'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter(([k, v]) => Object.hasOwn(VERA_DESIGN_SETTINGS, k) && typeof v === 'string').map(([k, v]) => [k, (v as string).slice(0, 20)]))
+}
+
 /** Read the outline the browser sent. It is the person's own page, but it crossed the network: shape and size only. */
 function readOutline(value: unknown): WebsiteVeraSection[] | null {
   if (!Array.isArray(value) || value.length === 0 || value.length > 60) return null
@@ -130,16 +137,21 @@ function readOutline(value: unknown): WebsiteVeraSection[] | null {
     if (typeof r.id !== 'string' || !r.id || r.id.length > 120 || typeof r.type !== 'string' || r.type.length > 80) return null
     out.push({ id: r.id, type: r.type, label: String(r.label ?? '').slice(0, 80), summary: String(r.summary ?? '').slice(0, 120), position: index + 1,
       tone: typeof r.tone === 'string' ? r.tone.slice(0, 20) : null, width: typeof r.width === 'string' ? r.width.slice(0, 20) : null,
-      shows: Object.fromEntries(devices.map((d) => [d, shows?.[d] !== false])) as WebsiteVeraSection['shows'] })
+      shows: Object.fromEntries(devices.map((d) => [d, shows?.[d] !== false])) as WebsiteVeraSection['shows'],
+      design: readDesign(r.design) })
   }
   return new Set(out.map((s) => s.id)).size === out.length ? out : null
 }
 
 /** Vera proposes LAYOUT changes for the page in view (LIVE-2097). Nothing is written here: the browser shows the lines,
  *  the person ticks them, and the editor applies them to its draft as one undo step. */
-export async function proposeWebsiteLayout(host: string, request: string, outline0: unknown): Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }> {
+export async function proposeWebsiteLayout(host: string, request: string, outline0: unknown, menu0?: unknown, facts0?: unknown): Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }> {
   const outline = readOutline(outline0)
-  if (typeof request !== 'string' || !request.trim() || request.length > 2000 || !outline) return { ok: false, error: 'Say what you want to change on this page, then ask again.' }
+  // The theme's style menu is optional (LIVE-2098); a malformed one is a bad request, not a silent drop.
+  const menu = menu0 == null ? null : readWebsiteVeraStyleMenu(menu0)
+  // The draft's facts and the editor guide let her answer questions (LIVE-2110); malformed facts are a bad request.
+  const facts = facts0 == null ? null : readWebsiteVeraFacts(facts0)
+  if (typeof request !== 'string' || !request.trim() || request.length > 2000 || !outline || (menu0 != null && !menu) || (facts0 != null && !facts)) return { ok: false, error: 'Say what you want to change on this page, then ask again.' }
   const auth = await authorizeWebsiteEditor(host)
   if (!auth) return { ok: false, error: 'Reopen the builder to sign in before asking Vera.' }
   const [{ proposeWebsiteLayoutWithModel }, { aiEnabled }, { aiRateLimited }, { featureOverBudget }, { stripEmDashes }] = await Promise.all([
@@ -149,13 +161,13 @@ export async function proposeWebsiteLayout(host: string, request: string, outlin
   if (!aiEnabled()) return { ok: false, error: 'Vera is unavailable right now. You can keep editing on the page.' }
   if (await aiRateLimited(feature, auth.profileId) || await featureOverBudget(feature, auth.space.id)) return { ok: false, error: 'Vera has reached its limit for now. Try again later.' }
   try {
-    const input = await proposeWebsiteLayoutWithModel({ request, outline, profileId: auth.profileId, spaceId: auth.space.id })
+    const input = await proposeWebsiteLayoutWithModel({ request, outline, menu, facts, profileId: auth.profileId, spaceId: auth.space.id })
     const current = await authorizeWebsiteEditor(host)
     if (!current || current.profileId !== auth.profileId || current.space.id !== auth.space.id) return { ok: false, error: 'Your editing access changed. Reopen the builder before asking Vera.' }
     if (input === null) return { ok: false, error: 'Vera could not turn that into changes. Try naming the section.' }
-    const parsed = parseWebsiteVeraLayout(input, new Set(outline.map((s) => s.id)))
+    const parsed = parseWebsiteVeraLayout(input, new Set(outline.map((s) => s.id)), menu)
     const rawNote = (input as { note?: unknown } | null)?.note
-    const note = typeof rawNote === 'string' ? stripEmDashes(rawNote).slice(0, 240) : ''
+    const note = typeof rawNote === 'string' ? stripEmDashes(rawNote).slice(0, 500) : ''
     return { ok: true, changes: parsed.changes, refused: parsed.refused, note }
   } catch { return { ok: false, error: 'Vera could not prepare changes. Try again in a moment.' } }
 }

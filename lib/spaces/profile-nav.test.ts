@@ -45,20 +45,6 @@ vi.mock('@/lib/spaces/memberships', () => ({
 }))
 
 const hub = { live: false }
-vi.mock('@/lib/spaces/space-discussion', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./space-discussion')>()),
-  getLiveSpaceCircle: async () =>
-    hub.live
-      ? {
-          id: 'hub',
-          slug: 'ojai-hub',
-          name: 'Ojai',
-          status: 'active',
-          is_space_primary: true,
-          space_id: 's1',
-        }
-      : null,
-}))
 
 import { buildSpaceProfileNav } from './profile-nav'
 
@@ -331,8 +317,8 @@ describe('the #events anchor — Calendar and Events are one page (LIVE-520)', (
     expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#events')
     expect(tabs.filter((t) => t.label === 'Events')).toHaveLength(0)
     // ONE row, and it is the merged page.
-    expect(tabs.filter((t) => t.label === 'Calendar')).toHaveLength(1)
-    expect(hrefFor(tabs, 'Calendar')).toBe('/spaces/ojai/calendar')
+    expect(tabs.filter((t) => t.label === "What's Happening")).toHaveLength(1)
+    expect(hrefFor(tabs, "What's Happening")).toBe('/spaces/ojai/calendar')
   })
 })
 

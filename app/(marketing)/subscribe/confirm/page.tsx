@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   robots: { index: false },
 }
 
+// A warm still behind the confirm step: a song circle on blankets, the same feeling as the notes themselves.
+const CONFIRM_STILL = '/images/site/song-circle.jpg'
+
 export const dynamic = 'force-dynamic'
 
 // SPEED (PAGE-FRAMEWORK §5.3): `searchParams` is read INSIDE the boundary, not at the page level, so
@@ -42,13 +45,14 @@ async function SubscribeConfirmOutcome({
 
     if (tokenOk) {
     return (
-      <FnStage>
+      <FnStage image={CONFIRM_STILL}>
         <FrequencyConfirmSubscribe e={email} x={x as string} t={t as string} />
       </FnStage>
     )
   }
   return (
     <FnOutcomePage
+      image={CONFIRM_STILL}
       tone="danger"
       icon="close"
       title="This link didn't work."

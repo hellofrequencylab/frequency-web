@@ -85,12 +85,11 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
   { path: '/', label: 'Home', desc: `${SITE_NAME}. ${CATEGORY_LINE} The short version of who it is for and how it works.` },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
   { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, hosting is free with Crew, and you pay when you start charging. You keep 100% of your own bookings, after card processing. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
-  // /features and /vision are Frequency-design routes (they 404 under DAWN, and app/sitemap.ts lists
-  // them only under Frequency), so this list names them only when the deploy serves them.
+  // /features is a Frequency-design route (it 404s under DAWN, and app/sitemap.ts lists it only under
+  // Frequency), so this list names it only when the deploy serves it. /vision merged into /about.
   ...(SITE_DESIGN === 'frequency'
     ? [
         { path: '/features', label: 'Features', desc: "Everything Frequency does for people and for Spaces: What's happening (the calendar), Circles, Events, door check-in, programs, contacts, email, tickets, memberships and tips." },
-        { path: '/vision', label: 'Vision', desc: 'For partners, investors, civic leaders and press: the plan for Frequency third spaces. The first is planned for 2028, and nothing is bookable yet.' },
       ]
     : []),
   // /what-is-frequency merged into /about (SCAN-1017): one explainer, with the FAQ on it.
@@ -145,7 +144,8 @@ const GUIDES: { path: string; label: string; desc: string }[] = [
   { path: '/loneliness', label: 'Loneliness and third places', desc: 'High-functioning loneliness, third places and third spaces, and life after the feed: why you can feel lonely with friends, why third places got rare, how to quit doomscrolling, and what to do about it.' },
   { path: '/friendship-as-an-adult', label: 'How to make friends as an adult', desc: 'Why it gets hard to make friends after 30, how to meet people in a new city, how to find like-minded people, and how to reconnect with old friends.' },
   { path: '/how-to-be-more-social', label: 'How to be more social', desc: 'How to be more social without a new personality: feel less awkward in groups and build a social life without drinking. Pick one recurring thing and become a regular.' },
-  { path: '/calm-down-fast', label: 'How to calm down fast', desc: 'What to do when you are wired and cannot switch off, and the quiet fix underneath it.' },
+  // /calm-down-fast merged into /mindless (LIVE-2093): the five-minute breathing timer, no account needed.
+  { path: '/mindless', label: 'Calm down fast: a 5-minute breathing timer', desc: 'Wired and cannot switch off? Follow the rings for five calm minutes. Free, no sign-up, nothing to install.' },
   // The operator track. /tools-for-community-builders merged into this guide (SCAN-1017), which now
   // carries the four jobs a community builder's tools do.
   { path: '/how-to-build-community', label: 'How to build community', desc: 'How to build community that lasts, step by step: host a recurring gathering, run a community space without burning out, and the four tools a builder actually needs.' },

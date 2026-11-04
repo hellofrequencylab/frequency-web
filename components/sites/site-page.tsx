@@ -34,11 +34,13 @@ import { FREE_HUMAN_FONT_CLASS } from '@/components/sites/free-human-fonts'
 import { FREE_HUMAN_CSS } from '@/components/sites/free-human-css'
 import { NEW_WORLD_CSS } from '@/components/sites/new-world-css'
 import { NEW_WORLD_FONT_CLASS } from '@/components/sites/new-world-fonts'
+import { CYBERWITCH_CSS } from '@/components/sites/cyberwitch-css'
+import { CYBERWITCH_FONT_CLASS } from '@/components/sites/cyberwitch-fonts'
 import { SERVICES_SITE_CSS } from '@/components/sites/services-css'
 import { SERVICES_FONT_CLASS } from '@/components/sites/services-fonts'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
 import { contractSkinCss } from '@/components/sites/contract-skin-css'
-import { skinFamiliesIn } from '@/lib/sites/skin-family'
+import { isForeignFamily, skinFamiliesIn } from '@/lib/sites/skin-family'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -224,6 +226,8 @@ export async function SitePage({
   const newWorldSite = siteStyle.theme === 'new-world'
   // Services (lib/theme/services.ts): the Vanta design system's night-first, glossy look with a Day register; Tide to start.
   const servicesSite = siteStyle.theme === 'services'
+  // CyberWitch (lib/theme/cyberwitch.ts): iron and bone, one neon accent, dark only. Its faces ride the website root.
+  const cyberwitchSite = siteStyle.theme === 'cyberwitch'
   // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
   const theme = render.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
@@ -249,10 +253,12 @@ export async function SitePage({
                 ? { theme: 'free-human' as const, season: mensworkSeason(new Date()) }
                 : newWorldSite
                   ? { theme: 'new-world' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const) }
+                  : cyberwitchSite
+                    ? { theme: 'cyberwitch' as const, season: mensworkSeason(new Date()) }
                   : servicesSite
                     ? { theme: 'services' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const) }
                     : null
-  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : newWorldSite ? NEW_WORLD_FONT_CLASS : servicesSite ? SERVICES_FONT_CLASS : undefined
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : newWorldSite ? NEW_WORLD_FONT_CLASS : servicesSite ? SERVICES_FONT_CLASS : cyberwitchSite ? CYBERWITCH_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
   const lookOverrides = siteLookOverrides(render.lookStyle)
   const fullFooter = siteLook(render.lookStyle).footer === 'full'
@@ -270,7 +276,7 @@ export async function SitePage({
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
           <div data-house-theme={skin.theme} data-th={skin.theme === 'new-world' || skin.theme === 'services' ? skin.register ?? 'night' : undefined} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
-            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : newWorldSite ? NEW_WORLD_CSS : servicesSite ? SERVICES_SITE_CSS : MENSWORK_CSS}</style>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : newWorldSite ? NEW_WORLD_CSS : cyberwitchSite ? CYBERWITCH_CSS : servicesSite ? SERVICES_SITE_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
@@ -431,7 +437,7 @@ export async function SitePage({
   ) : null
 
   // Theme-named block families on a site that does not wear that theme (the contract skin sheet below).
-  const foreignFamilies = [...skinFamiliesIn(websitePage?.doc ?? mwBlocks)].filter((family) => family !== siteStyle.theme)
+  const foreignFamilies = [...skinFamiliesIn(websitePage?.doc ?? mwBlocks)].filter((family) => isForeignFamily(family, siteStyle.theme))
 
   return (
     // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578), so the site wears the

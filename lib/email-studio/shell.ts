@@ -12,6 +12,8 @@ import { palette } from '@/lib/theme/palette'
 
 const FONT_STACK = emailType.sans
 const DISPLAY_STACK = emailType.display
+const SERIF_DISPLAY = "'IM Fell English',Georgia,'Times New Roman',serif"
+const SQUARE_DISPLAY = "'Sofia Sans Extra Condensed','Arial Narrow',Impact,sans-serif"
 
 /** The sender BRAND an email document is themed with. Every field optional so a default Frequency-branded
  *  shell renders with no config; the send agent can pass a per-Space brand later. */
@@ -28,6 +30,11 @@ export interface EmailBrand {
   baseUrl?: string
   /** Palette override (defaults to DEFAULT_EMAIL_COLORS). */
   colors?: EmailColors
+  /** Square corners and the condensed caps wordmark: Bold's email (the Bold design system: radius 0, one chamfer, Sofia Sans Extra Condensed).
+   *  A mail client cannot cut a 60 degree corner, so the card is plain square. Faces fall back to Arial Narrow and Impact where a client drops web fonts. */
+  square?: boolean
+  /** The serif wordmark and the petal corner: Wildheart's email. A mail client that drops web fonts shows Georgia, which keeps the same hand. */
+  serif?: boolean
 }
 
 const DEFAULT_BASE_URL = 'https://frequencylocal.com'
@@ -80,7 +87,7 @@ function header(brand: EmailBrand, colors: EmailColors, baseUrl: string): string
   const alt = brand.wordmark ?? `Frequency, ${DEFAULT_TAGLINE}`
   const inner = logoUrl
     ? `<a href="${escapeHtml(baseUrl)}" style="text-decoration:none;"><img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(alt)}" width="${brand.logoUrl ? 168 : emailType.wordmark.width}" height="${brand.logoUrl ? 30 : emailType.wordmark.height}" data-fq="fq-logo" style="display:block;border:0;width:${brand.logoUrl ? 168 : emailType.wordmark.width}px;height:auto;font-family:${DISPLAY_STACK};font-size:16px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;color:${colors.heading ?? colors.text};text-decoration:none;"></a>`
-    : `<a href="${escapeHtml(baseUrl)}" data-fq="fq-logo" style="font-family:${DISPLAY_STACK};font-size:18px;font-weight:600;letter-spacing:-0.03em;color:${colors.heading ?? colors.text};text-decoration:none;">${escapeHtml(brand.wordmark ?? 'Frequency')}</a>`
+    : `<a href="${escapeHtml(baseUrl)}" data-fq="fq-logo" style="font-family:${brand.square ? SQUARE_DISPLAY : brand.serif ? SERIF_DISPLAY : DISPLAY_STACK};font-size:${brand.square ? 24 : brand.serif ? 26 : 18}px;font-weight:${brand.square ? 800 : brand.serif ? 400 : 600};letter-spacing:${brand.square ? '0.005em' : brand.serif ? '0' : '-0.03em'};${brand.square ? 'text-transform:uppercase;' : ''}color:${colors.heading ?? colors.text};text-decoration:none;">${escapeHtml(brand.wordmark ?? 'Frequency')}</a>`
   const tagline = brand.logoUrl || !brand.wordmark ? '' : (brand.tagline ?? '')
   const tag = tagline
     ? `<p data-fq="fq-muted" style="font-family:${DISPLAY_STACK};font-size:11px;font-weight:500;color:${colors.subtle};letter-spacing:0.14em;text-transform:uppercase;line-height:1;margin:6px 0 0;">${escapeHtml(tagline)}</p>`
@@ -120,7 +127,7 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
   const manageHref = input.manageUrl ?? manageFallback
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
     <tr><td align="center" data-fq="fq-foot" style="font-family:${FONT_STACK};padding:28px 20px 0;text-align:center;color:${colors.muted};">
-      <p style="margin:0 0 2px;font-family:${DISPLAY_STACK};font-size:14px;font-weight:${emailType.displayWeight};letter-spacing:-0.02em;color:${colors.heading ?? colors.text};" data-fq="fq-strong">${name}</p>
+      <p style="margin:0 0 2px;font-family:${brand.serif ? SERIF_DISPLAY : DISPLAY_STACK};font-size:${brand.serif ? 17 : 14}px;font-weight:${brand.serif ? 400 : emailType.displayWeight};letter-spacing:${brand.serif ? '0' : '-0.02em'};color:${colors.heading ?? colors.text};" data-fq="fq-strong">${name}</p>
       ${desc ? `<p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>`}
       <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${links}</p>
       <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${mutedLink(unsubscribeHref, 'Unsubscribe')}${sep}${mutedLink(manageHref, 'Manage emails')}</p>
@@ -215,7 +222,7 @@ ${night}
       <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;border-collapse:collapse;">
         ${hero ? '' : `<tr><td data-fq="fq-head" style="padding:0 20px 22px;text-align:left;">${header(brand, colors, baseUrl)}</td></tr>`}
-        <tr><td data-fq="fq-card" style="background:${colors.surface};border:1px solid ${colors.border};border-radius:24px;padding:0;overflow:hidden;font-family:${FONT_STACK};${emailType.cardShadow ? `box-shadow:${emailType.cardShadow};` : ''}">
+        <tr><td data-fq="fq-card" style="background:${colors.surface};border:1px solid ${colors.border};border-radius:${brand.square ? '0' : brand.serif ? '24px 24px 6px 24px' : '24px'};padding:0;overflow:hidden;font-family:${FONT_STACK};${emailType.cardShadow ? `box-shadow:${emailType.cardShadow};` : ''}">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
             ${hero}
             <tr><td data-fq="fq-body" style="padding:40px 40px 32px;font-family:${FONT_STACK};">

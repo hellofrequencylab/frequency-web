@@ -13,7 +13,11 @@ import { NetworkKitSpotlightLayout } from './network-kit-layouts'
 import { networkKitSpotlightContent } from '@/lib/spotlight/network-kit-content'
 import { DesignerKitSpotlightLayout } from './designer-kit-layouts'
 import { designerKitSpotlightContent } from '@/lib/spotlight/designer-kit-content'
-import { isDesignerKitLayout, isFreeHumanLayout, isNewWorldKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { isCyberWitchKitLayout, isDesignerKitLayout, isFreeHumanLayout, isNewWorldKitLayout, isServicesKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { ServicesKitSpotlightLayout } from './services-kit-layouts'
+import { CyberWitchKitSpotlightLayout } from './cyberwitch-kit-layouts'
+import { cyberwitchKitSpotlightContent } from '@/lib/spotlight/cyberwitch-kit-content'
+import { servicesKitSpotlightContent } from '@/lib/spotlight/services-kit-content'
 import { NewWorldKitSpotlightLayout } from './new-world-kit-layouts'
 import { newWorldKitSpotlightContent } from '@/lib/spotlight/new-world-kit-content'
 import { TempleKitSpotlightLayout } from './temple-kit-layouts'
@@ -83,6 +87,28 @@ export function SpotlightShell({
         <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
           <main className="relative mx-auto max-w-xl">
             <NewWorldKitSpotlightLayout layout={theme.layout} content={content} />
+          </main>
+        </div>
+      )
+    }
+    if (isCyberWitchKitLayout(theme.layout)) {
+      // The CyberWitch theme draws its own page inside the same wrapper and footer.
+      const content = cyberwitchKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <main className="relative mx-auto max-w-xl">
+            <CyberWitchKitSpotlightLayout layout={theme.layout} content={content} />
+          </main>
+        </div>
+      )
+    }
+    if (isServicesKitLayout(theme.layout)) {
+      // The Services theme draws its own page inside the same wrapper and footer (LIVE-1994).
+      const content = servicesKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <main className="relative mx-auto max-w-xl">
+            <ServicesKitSpotlightLayout layout={theme.layout} content={content} />
           </main>
         </div>
       )
