@@ -3,6 +3,7 @@
   "type": "RoleFirstVisit",
   "label": "Your first visit (all themes)",
   "intent": "Explain a first visit",
+  "why": "What happens the first time someone walks in.",
   "group": "Show up",
   "icon": "door",
   "live": false,

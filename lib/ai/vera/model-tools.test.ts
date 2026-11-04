@@ -129,3 +129,61 @@ describe('a Space setting (LIVE-2186)', () => {
     }
   })
 })
+
+describe('an operator lookup (LIVE-2190)', () => {
+  it('runs the handed-in lookup and feeds the answer back, proposing nothing', async () => {
+    const lookup = vi.fn().mockResolvedValue('3 reports are waiting for review at /admin/moderation.')
+    const read = vi.fn()
+    const proposals: ProposedToolCall[] = []
+    const results = await handleModelToolCalls([{ id: 'a', name: 'admin_lookup', input: { question: 'open_reports' } }], proposals, read, { switchable: () => false, card: () => '', lookup })
+    expect(lookup).toHaveBeenCalledWith('open_reports')
+    expect(read).not.toHaveBeenCalled()
+    expect(proposals).toEqual([])
+    expect(results?.[0].content).toBe('3 reports are waiting for review at /admin/moderation.')
+  })
+
+  it('reads nothing on a turn without the lookup (a member, or an invented call)', async () => {
+    for (const sw of [undefined, { switchable: () => true, card: () => 'x' }]) {
+      const read = vi.fn()
+      const results = await handleModelToolCalls([{ id: 'a', name: 'admin_lookup', input: { question: 'open_reports' } }], [], read, sw)
+      expect(read).not.toHaveBeenCalled()
+      expect(results?.[0].content).toContain('Nothing was read')
+    }
+  })
+
+  it('refuses arguments off the tool shape before any lookup', async () => {
+    const lookup = vi.fn()
+    const results = await handleModelToolCalls([{ id: 'a', name: 'admin_lookup', input: { question: 'open_reports', sql: 'select 1' } }], [], vi.fn(), { switchable: () => false, card: () => '', lookup })
+    expect(lookup).not.toHaveBeenCalled()
+    expect(results?.[0].content).toContain('Nothing was changed')
+  })
+})
+
+describe('an operator ticket change (LIVE-2191)', () => {
+  const ops = {
+    switchable: () => false,
+    card: () => '',
+    lookup: async () => '',
+    ticketCard: (t: unknown, f: unknown, v: unknown) => (t === '1001' && f === 'status' && v === 'resolved' ? 'Mark support ticket #1001 resolved?' : null),
+  }
+
+  it('becomes a card with the ticket words on a staff turn', async () => {
+    const proposals: ProposedToolCall[] = []
+    const results = await handleModelToolCalls([{ id: 't', name: 'set_ticket', input: { ticket: '1001', field: 'status', value: 'resolved' } }], proposals, vi.fn(), ops)
+    expect(proposals).toEqual([{ tool: 'set_ticket', args: { ticket: '1001', field: 'status', value: 'resolved' }, label: 'Mark support ticket #1001 resolved?' }])
+    expect(results).toBeNull()
+  })
+
+  it('is refused off the list and on any turn without the operator checks', async () => {
+    for (const [input, sw] of [
+      [{ ticket: '1001', field: 'status', value: 'deleted' }, ops],
+      [{ ticket: '1001', field: 'status', value: 'resolved' }, undefined],
+      [{ ticket: '1001', field: 'status', value: 'resolved' }, { switchable: () => true, card: () => 'x' }],
+    ] as const) {
+      const proposals: ProposedToolCall[] = []
+      const results = await handleModelToolCalls([{ id: 't', name: 'set_ticket', input: { ...input } }], proposals, vi.fn(), sw)
+      expect(proposals).toEqual([])
+      expect(results?.[0].content).toContain('Nothing was changed')
+    }
+  })
+})

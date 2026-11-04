@@ -1,1 +1,42 @@
-{}
+{
+  "new-world": {
+    "dials": {
+      "register": { "supported": true, "default": "night" },
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "type": { "supported": true, "default": "caps" },
+      "motion": { "supported": true, "default": "full" },
+      "image": { "supported": true, "default": "glow" },
+      "hero": "fixed",
+      "accent": "fixed"
+    },
+    "looks": [
+      { "id": "studio", "label": "Studio", "dials": { "register": "day", "type": "quiet", "motion": "calm", "header": "pill", "image": "clean", "corners": "soft", "spacing": "airy", "footer": "minimal" } },
+      { "id": "nightline", "label": "Nightline", "dials": { "register": "night", "type": "caps", "motion": "full", "header": "bar", "image": "glow", "corners": "soft", "spacing": "airy", "footer": "full" } },
+      { "id": "paper", "label": "Paper", "dials": { "register": "day", "type": "editorial", "motion": "off", "image": "mono", "corners": "square", "spacing": "balanced", "footer": "minimal" } },
+      { "id": "trade", "label": "Trade", "dials": { "register": "night", "type": "caps", "motion": "calm", "header": "bar", "image": "grain", "corners": "subtle", "spacing": "compact", "footer": "full" } }
+    ]
+  },
+  "services": {
+    "dials": {
+      "register": { "supported": true, "default": "night" },
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "type": { "supported": true, "default": "caps" },
+      "motion": { "supported": true, "default": "full" },
+      "image": { "supported": true, "default": "glow" },
+      "hero": "fixed",
+      "accent": "fixed"
+    },
+    "looks": [
+      { "id": "studio", "label": "Studio", "dials": { "register": "day", "type": "quiet", "motion": "calm", "header": "pill", "image": "clean", "corners": "soft" } },
+      { "id": "nightline", "label": "Nightline", "dials": { "register": "night", "type": "caps", "motion": "full", "header": "bar", "image": "glow" } },
+      { "id": "paper", "label": "Paper", "dials": { "register": "day", "type": "editorial", "motion": "off", "image": "mono", "corners": "square", "spacing": "balanced" } },
+      { "id": "trade", "label": "Trade", "dials": { "register": "night", "type": "caps", "motion": "calm", "header": "bar", "image": "grain", "corners": "subtle", "spacing": "compact" } }
+    ]
+  }
+}

@@ -3,6 +3,7 @@
   "type": "RoleChapters",
   "label": "Chapters (all themes)",
   "intent": "Show your groups",
+  "why": "Every group you run, and where each one meets.",
   "group": "Show up",
   "icon": "circle",
   "live": true,

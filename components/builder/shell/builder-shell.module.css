@@ -119,15 +119,6 @@
 .btn[aria-pressed='true'] { background: var(--fq-text-strong); color: var(--fq-surface-raised); border-color: var(--fq-text-strong); }
 .icon { width: 36px; padding: 0; justify-content: center; }
 .kbd { font-size: 11px; color: var(--fq-text-muted); border: 1px solid var(--fq-border-hair); border-radius: var(--r-1); padding: 1px 5px; }
-.publish {
-  composes: btn;
-  border: 0;
-  font-weight: 600;
-  background: var(--fq-text-strong);
-  color: var(--fq-surface-raised);
-}
-.publish[data-state='clean'] { background: var(--fq-pa); color: var(--fq-text-on-accent); }
-.publish[data-state='live'] { background: var(--fq-presence-soft); color: var(--fq-text-strong); }
 .devices { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--r-control); background: var(--fq-bg-sunken); }
 .devices .btn { border: 0; background: transparent; height: 32px; }
 .devices .btn[aria-pressed='true'] { background: var(--fq-surface-raised); color: var(--fq-text-strong); box-shadow: var(--fq-shadow-1); }
@@ -145,7 +136,7 @@
   background: var(--fq-surface-raised);
   border-right: 1px solid var(--fq-border-hair);
 }
-.caption { padding: 16px 16px 8px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--fq-text-muted); }
+.caption { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 10px 4px 16px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--fq-text-muted); }
 .list { list-style: none; margin: 0; padding: 0 8px 16px; overflow: auto; }
 .row {
   display: flex;
@@ -174,6 +165,9 @@
   color: var(--fq-text-strong);
 }
 .row[aria-current='true'] .tile { background: var(--fq-text-strong); color: var(--fq-surface-raised); }
+.tile { position: relative; }
+/* A section with readiness issues (BLD-204): a 5px dot in the tile's corner (spec §2 outline rail). */
+.issueDot { position: absolute; top: 3px; right: 3px; width: 5px; height: 5px; border-radius: var(--r-pill); background: var(--fq-warning); }
 .rowText { flex: 1; display: grid; justify-items: start; min-width: 0; text-align: left; }
 .rowText b { font-weight: 600; font-size: 13px; }
 .rowText small { max-width: 100%; color: var(--fq-text-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

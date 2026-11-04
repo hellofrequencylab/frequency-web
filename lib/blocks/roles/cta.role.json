@@ -3,6 +3,7 @@
   "type": "RoleCta",
   "label": "Closing call (all themes)",
   "intent": "Invite people in",
+  "why": "One clear invitation to end the page on.",
   "group": "Answer",
   "icon": "arrow",
   "live": false,

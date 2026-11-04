@@ -4,11 +4,12 @@
 //
 // WHAT IT PROVES, per role file:
 //   R1  the file is registered in ROLES (lib/blocks/roles/roles.ts) under its own file name, and `type` is unique.
-//   R2  `intent` is a short owner-facing phrase, unique across roles, with no em dash.
+//   R2  `intent` is a short owner-facing phrase, unique across roles, and `why` is its one-line card text; no em dashes.
 //   R3  `group` is one of ROLE_GROUPS and `live` is a boolean.
 //   R4  `icon` is a <symbol> in the Frequency sprite or the editor sprite (public/brand/frequency/), so it draws.
 //   R5  every variant has a label and a `thumb` from ROLE_THUMBS; `default` names a variant; every `needs` names a slot or an item field.
 //   R6  `slots.labels` names exactly the role's slots, each with a non-empty label and hint and no em dash.
+//   R7  every ROLE_THUMBS name has a sketch the layout chips draw (components/builder/canvas/variants/thumbs.tsx).
 //
 // CANNOT SEE: whether the sketch a thumb names looks like the variant (the visual suite's job). Exit 1 on any problem.
 
@@ -16,6 +17,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROLES_DIR = 'lib/blocks/roles'
+const THUMBS_FILE = 'components/builder/canvas/variants/thumbs.tsx'
 const SPRITES = ['public/brand/frequency/frequency-icons.svg', 'public/brand/frequency/frequency-editor-icons.svg']
 
 /** A `const NAME = [...] as const` string list, read from the TypeScript source (the script runs without a TS loader). */
@@ -42,6 +44,8 @@ export function roleProblems(id, r, { groups, thumbs, icons }) {
     if (r.intent.length > 40) at(`intent "${r.intent}" is over 40 characters`)
     if (r.intent.includes('—')) at('intent has an em dash')
   }
+  if (!text(r.why)) at('no why line')
+  else if (r.why.includes('\u2014')) at('why line has an em dash')
   if (!groups.includes(r.group)) at(`group "${r.group}" is not one of ${groups.join(', ')}`)
   if (typeof r.live !== 'boolean') at('live is not true or false')
   if (!icons.has(r.icon)) at(`icon "${r.icon}" is not in the sprite`)
@@ -68,8 +72,11 @@ export function roleProblems(id, r, { groups, thumbs, icons }) {
 export function checkRoles() {
   const source = readFileSync(`${ROLES_DIR}/roles.ts`, 'utf8')
   const vocab = { groups: constList(source, 'ROLE_GROUPS'), thumbs: constList(source, 'ROLE_THUMBS'), icons: spriteIcons() }
-  const files = readdirSync(ROLES_DIR).filter((f) => f.endsWith('.role.json')).sort()
   const problems = []
+  // R7: every thumb the contract allows has a sketch the chip can draw (BLD-203).
+  const sketches = readFileSync(THUMBS_FILE, 'utf8')
+  for (const thumb of vocab.thumbs) if (!new RegExp(`^\\s+'?${thumb}'?: \\{`, 'm').test(sketches)) problems.push(`thumb ${thumb} has no sketch in ${THUMBS_FILE}`)
+  const files = readdirSync(ROLES_DIR).filter((f) => f.endsWith('.role.json')).sort()
   const types = new Map()
   const intents = new Map()
   if (!files.length) problems.push('no role files found: a gate that finds nothing must say so')

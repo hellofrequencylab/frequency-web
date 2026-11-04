@@ -3,6 +3,7 @@
   "type": "RoleSteps",
   "label": "Steps (all themes)",
   "intent": "Explain how it works",
+  "why": "How it works, in a few short steps.",
   "group": "Show up",
   "icon": "program",
   "live": false,

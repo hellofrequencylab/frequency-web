@@ -20,6 +20,7 @@ import { DESIGNER_CSS } from './designer-css'
 import { FREE_HUMAN_CSS } from './free-human-css'
 import { NEW_WORLD_CSS } from './new-world-css'
 import { CYBERWITCH_CSS } from './cyberwitch-css'
+import { NEW_WORLD_DIALS_CSS } from './new-world-dials-css'
 import { SERVICES_SITE_CSS } from './services-css'
 import { Clock, Mail, MapPin, Phone } from 'lucide-react'
 import { InlineText } from './inline-text'
@@ -105,6 +106,8 @@ interface SiteSkin {
   scheme?: NetworkSchemeId
   /** New World: the register the owner's Register dial picked (Night by default). */
   register?: 'night' | 'day'
+  /** New World and Services: the Type voice, Motion and Images dials (LIVE-1997 schema 2), written as data-type, data-motion and data-image. */
+  dials?: { type: string; motion: string; image: string }
 }
 
 function skinCss(skin: SiteSkin | null, look = ''): string {
@@ -118,7 +121,7 @@ function skinCss(skin: SiteSkin | null, look = ''): string {
   if (skin.theme === 'midnight') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MIDNIGHT_CSS
   if (skin.theme === 'designer') return HOUSE_CSS + FREQUENCY_PAGE_CSS + DESIGNER_CSS
   if (skin.theme === 'free-human') return HOUSE_CSS + FREQUENCY_PAGE_CSS + FREE_HUMAN_CSS
-  if (skin.theme === 'new-world') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NEW_WORLD_CSS
+  if (skin.theme === 'new-world') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS
   if (skin.theme === 'cyberwitch') return HOUSE_CSS + FREQUENCY_PAGE_CSS + CYBERWITCH_CSS
   if (skin.theme === 'services') return HOUSE_CSS + FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
@@ -246,7 +249,7 @@ export function SiteChrome({
       megaChevron={fh ? <FreeHumanGlyph name="chevron-down" size={14} /> : null}
       defaultMega={fh ? previewMega : null}
       menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}
-      brandMark={sv ? <span className="sv-wordmark">{brandName}</span> : wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? FREE_HUMAN_CHROME_COPY.wordmark.tagline} logoUrl={logoUrl} /> : null}
+      brandMark={sv ? <span className="sv-wordmark" style={{ ['--sv-wm-len' as string]: brandName.length }}>{brandName}</span> : wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? FREE_HUMAN_CHROME_COPY.wordmark.tagline} logoUrl={logoUrl} /> : null}
     />
   )
   const year = new Date().getFullYear()
@@ -282,6 +285,9 @@ export function SiteChrome({
       data-house-fonts={themeFonts ? 'theme' : 'house'}
       data-house-theme={skin?.theme}
       data-th={skin?.theme === 'new-world' || skin?.theme === 'services' ? skin.register ?? 'night' : undefined}
+      data-type={skin?.dials?.type}
+      data-motion={skin?.dials?.motion}
+      data-image={skin?.dials?.image}
       data-season={net || nk ? undefined : skin?.season}
       data-scheme={net || nk ? skin?.scheme : undefined}
       data-sign={skin?.theme === 'wildheart' ? sky(new Date()).sign : undefined}

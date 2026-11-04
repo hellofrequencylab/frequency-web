@@ -3,6 +3,7 @@
   "type": "RoleGatherings",
   "label": "Gatherings (all themes)",
   "intent": "Show what's happening",
+  "why": "Your next gatherings, straight from your calendar.",
   "group": "Show up",
   "icon": "event",
   "live": true,

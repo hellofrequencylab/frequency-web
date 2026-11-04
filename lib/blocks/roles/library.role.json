@@ -3,6 +3,7 @@
   "type": "RoleLibrary",
   "label": "Library (all themes)",
   "intent": "Share what you write",
+  "why": "Posts, guides and recordings you have made.",
   "group": "Trust",
   "icon": "lesson",
   "live": false,

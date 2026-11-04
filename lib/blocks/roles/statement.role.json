@@ -3,6 +3,7 @@
   "type": "RoleStatement",
   "label": "Statement (all themes)",
   "intent": "Say what you stand for",
+  "why": "One line about what you believe.",
   "group": "More",
   "icon": "flag",
   "live": false,

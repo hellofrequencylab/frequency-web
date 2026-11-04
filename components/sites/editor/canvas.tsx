@@ -51,6 +51,7 @@ html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
 // Appended after CANVAS_CSS only when SITE_DESIGN is frequency.
 // THE PARTS OUTLINE (BLD-104): under the pointer, the innermost part (a role block's data-part, or a picture) wears a
 // dashed accent line, so the owner sees what a click will pick before clicking. The new builder only.
+const TAG_CSS = `.we-tag{position:absolute;right:12px;top:8px;z-index:5;min-height:28px;padding:0 10px;border:1px solid var(--th-muted);border-radius:999px;background:var(--th-raised,var(--th-bg));color:var(--th-text);box-shadow:0 6px 16px -10px var(--th-text);font:600 12px var(--th-body-render);cursor:pointer}.we-section[data-selected=true] .we-tag{display:none}@media(pointer:coarse){.we-tag{min-height:44px}}`
 const PARTS_CSS = `[data-parts] .we-section [data-part]:hover:not(:has([data-part]:hover)),[data-parts] .we-section img:hover{outline:1px dashed color-mix(in srgb,var(--th-accent) 70%,transparent);outline-offset:2px}[data-parts] .we-section img{cursor:pointer}`
 
 const FQ_CANVAS_CSS = `
@@ -86,7 +87,7 @@ function inlineMarkdown(node: Node): string {
   return text
 }
 
-export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onVisibility, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, focusField = null, look = {}, fullFooter = true, zoom = 100, themeVars, spaceTheme, trySkin, register = 'night', parts = false, onImage }: {
+export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onVisibility, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, focusField = null, look = {}, fullFooter = true, zoom = 100, themeVars, spaceTheme, trySkin, register = 'night', parts = false, onImage, dials, tags }: {
   /** The stage zoom, 50 to 100 percent (Site Editor handoff). */
   zoom?: number
   doc: Data; theme: WebsiteTheme; device: Device; config: Config; metadata?: Metadata; live: MwLive; links: SiteLinkMap; origin: string
@@ -100,6 +101,8 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   trySkin?: { css: string; themeId: string } | null
   /** New World and Services: the register the Register dial picked. Their sheet keys every colour off `data-th`. */
   register?: 'night' | 'day'
+  /** New World and Services: the Type voice, Motion and Images dials, so the preview wears them like the published site. */
+  dials?: { type: string; motion: string; image: string }
   nav: { slug: string; label: string }[]
   selectedId: string | null; preview: boolean; comments: SiteComment[]
   onSelect: (id: string) => void; onEdit: (id: string, field: string, value: unknown) => void
@@ -123,6 +126,8 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   parts?: boolean
   /** The new builder (BLD-104): a click on a picture opens its field, the media picker with its focal point. */
   onImage?: (id: string, src: string) => void
+  /** Readiness tags (BLD-204): section id to a short pill, "Sample words · not yours yet" or "Needs a number". */
+  tags?: Record<string, string>
 }) {
   // Resolved by the same server reader as the public site.
   const chrome = metadata?.websiteChrome as Partial<Pick<ComponentProps<typeof SiteChrome>, 'cta' | 'tagline' | 'seasonNow' | 'admin' | 'themeFonts'>> | undefined
@@ -391,7 +396,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
     // Match and edit the words the owner SEES: a kit's `{{story|...}}` token is resolved first (lib/spaces/content-slots.ts),
     // so a click finds its field, and typing over the line saves the typed words in place of the token.
     const block: ContentItem = { ...stored, props: bindSlots(stored.props, readSlots(metadata?.space)) }
-    if (preview || editing.current || (event.target as HTMLElement).closest('.we-micro,.we-section-label,.we-pin,.we-layout-handles,.we-spacing-handle')) return false
+    if (preview || editing.current || (event.target as HTMLElement).closest('.we-micro,.we-section-label,.we-pin,.we-tag,.we-layout-handles,.we-spacing-handle')) return false
     const schema = config.components[block.type]?.fields ?? {}
     const fields = { ...schema }
     if (block.type === 'SpaceOfferings' && Array.isArray(metadata?.space?.profile?.offerings) && metadata.space.profile.offerings.length > 0) {
@@ -517,6 +522,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
             <span>Text size</span><div role="group" aria-label="Inline text size" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)' }}>{[0,16,20,24,32,40,48,56,64,80,96,120].map((size) => <button type="button" key={size} aria-label={size ? `${size} pixels` : 'Theme size'} onClick={() => onDisplay?.(id, { ...sectionDeviceLayout(doc, id, device), [/^H[1-6]$/.test(textTarget.node.tagName) ? 'textSize' : 'bodySize']: size })}>{size || 'Auto'}</button>)}</div><button type="button" aria-label="Done editing" onClick={() => { textTarget.node.blur(); if (!textTarget.editing) { textTarget.node.removeAttribute('data-site-text-selected'); setTextTarget(null) } }}>Done</button>
           </div></details>
         </div>}
+        {tags?.[id] && !selected && <button type="button" className="we-tag" aria-label={`${label}: ${tags[id]}. Select it`} onClick={(e) => { e.stopPropagation(); onSelect(id) }}>{tags[id]}</button>}
         {node}
         {people.filter((person) => person.cursor?.pageSlug === pageSlug && person.cursor.blockId === id).map((person) => <div key={person.profileId} className="we-collaborator-cursor" aria-label={`${person.name} is editing this section`} style={{ left: `${Math.min(1, Math.max(0, person.cursor!.x)) * 100}%`, top: `${Math.min(1, Math.max(0, person.cursor!.y)) * 100}%` }}><span aria-hidden>↖</span><span>{person.name}</span></div>)}
         {pins.map((pin, index) => <button key={pin.id} className="we-pin" style={{ left: `${(pin.x ?? .88) * 100}%`, top: `${(pin.y ?? .25) * 100}%`, right: 'auto' }} type="button" aria-label={`Open comment ${index + 1} on ${label}`} onClick={(e) => { e.stopPropagation(); onSelect(pin.blockId); onAction(pin.blockId, 'comment') }}>{index + 1}</button>)}
@@ -525,10 +531,10 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   }
   return <iframe ref={frame} className={k('we-frame')} title={`${title}, ${device} website canvas`} srcDoc="<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head><body></body></html>" sandbox="allow-same-origin" onLoad={attach}>
     {mount && createPortal(<div data-website-theme={theme} data-space-theme={spaceTheme} style={themeVars ?? websiteThemeVars(theme, brandAccent)} className="we-canvas-root" data-parts={parts && !preview ? true : undefined} onClickCapture={(e) => { const anchor = (e.target as HTMLElement).closest('a'); if (!preview && onChromeSelect && (e.target as HTMLElement).closest('.hs-header,.hs-footer,.hs-footer-top')) { onChromeSelect((e.target as HTMLElement).closest('.hs-header') ? 'header' : 'footer'); onTextSelect?.(null) } if (!anchor) return; e.preventDefault(); if (preview) { const href = safeUrl(anchor.getAttribute('href')); if (href) window.open(new URL(href, origin).href, '_blank', 'noopener,noreferrer') } }}>
-      <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' || theme === 'Network' || theme === 'Temple' ? '' : FREQUENCY_PAGE_CSS) + (theme !== 'Network' && docHasNetworkBlocks(doc) ? NETWORK_BLOCK_CSS : '') + (FQ_EDITOR ? FQ_CANVAS_CSS : '') + (parts ? PARTS_CSS : '')}</style>
+      <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' || theme === 'Network' || theme === 'Temple' ? '' : FREQUENCY_PAGE_CSS) + (theme !== 'Network' && docHasNetworkBlocks(doc) ? NETWORK_BLOCK_CSS : '') + (FQ_EDITOR ? FQ_CANVAS_CSS : '') + (parts ? PARTS_CSS : '') + (tags ? TAG_CSS : '')}</style>
       {trySkin && <TryItOnSheet css={trySkin.css} themeId={trySkin.themeId} />}
       {!preview && onChromeSelect && <button className="we-chrome-edit" type="button" onClick={() => { onTextSelect?.(null); onChromeSelect('header') }}>Edit header</button>}
-      <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' || theme === 'FreeHuman' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : theme === 'Network' ? { theme: 'network', season: mensworkSeason(new Date()), scheme: networkScheme(brandAccent) } : theme === 'Temple' ? { theme: 'temple', season: mensworkSeason(new Date()) } : theme === 'Midnight' ? { theme: 'midnight', season: mensworkSeason(new Date()) } : theme === 'Designer' ? { theme: 'designer', season: mensworkSeason(new Date()) } : theme === 'FreeHuman' ? { theme: 'free-human', season: mensworkSeason(new Date()) } : theme === 'NewWorld' ? { theme: 'new-world', season: mensworkSeason(new Date()), register } : theme === 'Services' ? { theme: 'services', season: mensworkSeason(new Date()), register } : theme === 'TempleKit' ? { theme: 'temple-kit', season: mensworkSeason(new Date()) } : theme === 'NetworkKit' ? { theme: 'network-kit', season: mensworkSeason(new Date()), scheme: networkKitScheme(brandAccent) } : null}>
+      <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' || theme === 'FreeHuman' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : theme === 'Network' ? { theme: 'network', season: mensworkSeason(new Date()), scheme: networkScheme(brandAccent) } : theme === 'Temple' ? { theme: 'temple', season: mensworkSeason(new Date()) } : theme === 'Midnight' ? { theme: 'midnight', season: mensworkSeason(new Date()) } : theme === 'Designer' ? { theme: 'designer', season: mensworkSeason(new Date()) } : theme === 'FreeHuman' ? { theme: 'free-human', season: mensworkSeason(new Date()) } : theme === 'NewWorld' ? { theme: 'new-world', season: mensworkSeason(new Date()), register, dials } : theme === 'Services' ? { theme: 'services', season: mensworkSeason(new Date()), register, dials } : theme === 'TempleKit' ? { theme: 'temple-kit', season: mensworkSeason(new Date()) } : theme === 'NetworkKit' ? { theme: 'network-kit', season: mensworkSeason(new Date()), scheme: networkKitScheme(brandAccent) } : null}>
         <WebsiteDocument doc={doc} theme={theme} config={config} metadata={metadata} live={live} links={links} origin={origin} title={title} wrapSection={wrap} />
         {!preview && <div className="we-addend"><button className="we-insert" type="button" aria-label="Insert section at end of page" onClick={() => onInsert(doc.content.length)}>+ Add section</button></div>}
       </SiteChrome>

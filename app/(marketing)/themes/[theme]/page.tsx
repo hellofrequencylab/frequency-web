@@ -4,6 +4,7 @@
 // at build time and anything else is a 404.
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { RememberKit } from '@/components/frequency/site/pages/themes/remember-kit'
 import { JsonLd } from '@/components/json-ld'
 import { frequencyPageJsonLd, frequencyPageMetadata, type FrequencyPageSeo } from '@/lib/seo/frequency-pages'
 import { FrequencyThemeKit, THEME_KIT_PAGE_IDS } from '@/components/frequency/site/pages/themes/frequency-theme-kit'
@@ -56,6 +57,7 @@ export default async function ThemeKitPage({ params }: { params: Promise<{ theme
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(seo)} />
+      <RememberKit kit={id} />
       {isThemeFeatureId(id) ? <FrequencyThemeFeature theme={id} /> : <FrequencyThemeKit theme={id} />}
     </>
   )
