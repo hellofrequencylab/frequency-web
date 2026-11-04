@@ -358,77 +358,95 @@ const FAQ = [
 ]
 
 function pages(s: Spec, niche: NewWorldKitNiche): KitPage[] {
-  const offers = s.offers.map((o, i) => ({
-    name: slot(`offer${i + 1}Title`, o.name), meta: o.dur, body: slot(`offer${i + 1}Blurb`, o.meta), price: slot(`offer${i + 1}Price`, o.price), href: '~/booking',
-  }))
-  const team: Block = {
-    type: 'ServicesTeam',
-    props: { ...head(copy(s, 'team'), 'The team'), rows: s.team.map(([name, role], i) => ({ name: slot(`person${i + 1}Name`, i === 0 ? s.owner : name), role: i === 0 ? s.role : role, image: '', alt: '' })) },
-  }
-  const posts: Block = {
-    type: 'ServicesPosts',
-    props: { eyebrow: 'Notes', title: 'Worth *a read.*', lede: '', buttonLabel: '', buttonHref: '', rows: s.posts.map(([kind, title]) => ({ meta: kind, title, body: '', price: '', href: '', image: '', alt: '' })) },
-  }
-  const plans: Block | null = s.plans
-    ? { type: 'ServicesPlans', props: { ...head(copy(s, 'plans'), 'Plans'), rows: s.plans.map(([title, body], i) => ({ meta: '', title, body, price: 'Set your price', href: '~/booking', featured: i === 1 })) } }
-    : null
-  const shop: Block | null = s.products
-    ? { type: 'ServicesShop', props: { ...head(copy(s, 'shop'), 'Shop'), buttonLabel: 'Open the shop', buttonHref: '~/services', rows: s.products.map(([title, body]) => ({ meta: '', title, body, price: 'Set your price', href: '', image: '', alt: '' })) } }
-    : null
-  const list: Block = {
-    type: 'ServicesList',
-    props: { ...head(copy(s, 'services'), 'Services'), buttonLabel: 'See open times', buttonHref: '~/booking', rows: offers.map((o) => ({ meta: o.meta, name: o.name, body: o.body, price: o.price, href: o.href })) },
-  }
-  const faq: Block = {
-    type: 'ServicesFaq',
-    props: {
-      eyebrow: 'Questions', title: 'Good to *know.*', lede: 'Anything else, ask. A real person answers.',
-      rows: [
-        { question: 'Do I need to book?', answer: 'You can. Booking holds your spot and sends a reminder. Say here if people can also just walk in.' },
-        { question: 'What if I cannot make it?', answer: 'Change or cancel from the confirmation email. Say how late is too late.' },
-        { question: 'Is it okay to come alone?', answer: 'Say yes if it is, and say what happens when someone does.' },
-      ],
-      facts: [], areas: [],
-    },
-  }
-  const band: Block = {
-    type: 'ServicesBand',
-    props: { eyebrow: 'Next opening', title: star(copy(s, 'cta')), primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: '', secondaryHref: '' },
-  }
-  const story: Block = {
-    type: 'ServicesStory',
-    props: { eyebrow: 'Our story', title: `${s.story2[0]} *${s.story2[1]}*`, paragraphs: s.story, buttonLabel: 'Meet the people', buttonHref: '~/about', image: '', alt: '' },
-  }
-  const booking: Block = {
-    type: 'ServicesBooking',
-    props: {
-      eyebrow: 'Book online', title: 'Next *openings.*', lede: 'Live availability. Pick a time, see the total, get a confirmation.', buttonLabel: s.cta, buttonHref: '~/booking',
-      rows: s.groups.map(([name, when, line]) => ({ day: when, title: name, meta: line, time: '', href: '~/booking' })),
-    },
-  }
-  const contact: Block = {
-    type: 'ServicesContact',
-    props: { eyebrow: 'Get in touch', title: 'Ask us *anything.*', lede: 'A person answers. Usually the same day.', body: '', buttonLabel: 'Send a message', buttonHref: '~/booking', secondaryLabel: '', secondaryHref: '' },
-  }
-  const locations: Block = {
-    type: 'ServicesLocations',
-    props: {
-      eyebrow: 'Locations and hours', title: 'Where to *find us.*', lede: '', address: slot('address', 'Your street, Your City'), phone: slot('phone', 'Your phone'),
-      email: slot('email', 'Your email'), hours: [], areas: [], image: '', alt: '',
-    },
-  }
-  const letter: Block = {
-    type: 'ServicesLetter',
-    props: { eyebrow: 'Newsletter', title: 'Stay in *the loop.*', lede: 'A short note when something is coming up. Nothing else.', buttonLabel: 'Join the list', buttonHref: '~/booking' },
-  }
-  const compact = (xs: (Block | null)[]) => xs.filter((b): b is Block => b !== null)
   const home = newWorldHome(s, niche)
+  // The pages reuse Home's own sections (team, notes, plans, questions, closer) so a change an owner makes to one reads the same everywhere.
+  const from = (type: string, patch: Record<string, unknown> = {}): Block => {
+    const b = home.find((x) => x.type === type)!
+    return { type, props: { ...b.props, ...patch } }
+  }
+  const has = (type: string) => home.some((x) => x.type === type)
+  const icons = ['users', 'calendar', 'award', 'tag']
+  const pics = GALLERY.filter((g) => !PHOTOS[niche].includes(g))
+  const ways = s.offers.map((o, i) => ({
+    icon: icons[i % icons.length]!, tags: 'Way in', name: slot(`offer${i + 1}Title`, o.name), body: slot(`offer${i + 1}Blurb`, o.meta), price: slot(`offer${i + 1}Price`, o.price),
+    when: o.dur, image: pic(pics[i % pics.length]!), alt: PHOTO_ALT[pics[i % pics.length]!] ?? '', buttonLabel: /^free$/i.test(o.price) ? 'Come once' : 'Save my spot', href: '~/booking',
+  }))
+  const [, storyPic] = PHOTOS[niche]
+  const owner = slot('person1Name', s.owner)
+  const c = (k: Section) => copy(s, k)
+  const shop: Block | null = s.products
+    ? {
+        type: 'NewWorldOffers',
+        props: { index: '', ...head(c('shop'), 'Shop'), buttonLabel: '', buttonHref: '', rows: s.products.map(([name, body], i) => ({ icon: ['tag', 'heart', 'sparkle'][i % 3], meta: 'Set your price', name, body, price: '', href: '' })), register: 'auto' },
+      }
+    : null
+  const services: (Block | null)[] = [
+    { type: 'NewWorldPageHead', props: { index: '', ...head(c('services'), 'Ways in'), register: 'auto' } },
+    { type: 'NewWorldWayRows', props: { costLabel: 'Cost', whenLabel: 'When', buttonLabel: 'Save my spot', buttonHref: '~/booking', secondaryLabel: 'Questions', secondaryHref: '#faq', rows: ways, register: 'auto' } },
+    has('NewWorldPlans') ? from('NewWorldPlans', { index: '' }) : null,
+    shop,
+    {
+      type: 'NewWorldAlways',
+      props: { index: '', eyebrow: 'Every visit', title: 'Always *true here.*', items: s.trust.map(([t]) => t), register: 'auto' },
+    },
+    from('NewWorldFaq', { index: '' }),
+    from('NewWorldCloser'),
+  ]
+  const about: Block[] = [
+    {
+      type: 'NewWorldAboutHero',
+      props: {
+        eyebrow: `Our story · ${slot('name', s.name)}`, title: `${s.story2[0]} *${s.story2[1]}*`, lead: s.story[0] ?? '',
+        chips: s.trust.slice(0, 3).map(([t], i) => ({ icon: ['check', 'users', 'heart'][i], text: t })),
+        primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: s.cta2, secondaryHref: '~/',
+        image: pic(storyPic), alt: PHOTO_ALT[storyPic] ?? '', name: owner, role: s.role, register: 'auto',
+      },
+    },
+    {
+      type: 'NewWorldLongStory',
+      props: {
+        index: '01', eyebrow: 'The story', title: 'How this *room works.*',
+        paragraphs: [...s.story, 'Most of what happens here is free to walk into. The things that cost money say so plainly. Behind the scenes it all runs on Frequency: the groups, the calendar, the door and the memberships live in one place, and the people stay ours.'],
+        register: 'auto',
+      },
+    },
+    { type: 'NewWorldQuote', props: { label: `In ${owner}'s words`, quote: s.quote.replace(/\s(\S+)$/, ' *$1*'), by: `${owner} · ${s.role}`, register: 'auto' } },
+    {
+      type: 'NewWorldPromises',
+      props: {
+        index: '02', eyebrow: 'What you can count on', title: 'Three *promises.*', lede: '',
+        rows: [
+          { icon: 'check', title: 'Open doors', body: 'Joining is free. No velvet rope, nothing members-only.' },
+          { icon: 'users', title: 'Same faces', body: 'Groups meet at the same time in the same place, so coming back is easy and someone notices when you do.' },
+          { icon: 'heart', title: 'Bring someone', body: 'A first visit with a friend is celebrated. Word of mouth is how this room fills.' },
+        ],
+        register: 'auto',
+      },
+    },
+    from('NewWorldTeam', { index: '03' }),
+    from('NewWorldPosts', { index: '04' }),
+    from('NewWorldCloser'),
+  ]
+  const calendar = (home.find((x) => x.type === 'NewWorldCalendar')?.props?.rows ?? []) as Record<string, unknown>[]
+  const booking: Block[] = [
+    {
+      type: 'NewWorldBook',
+      props: {
+        eyebrow: 'Save a spot', title: 'Pick a night *and come.*', lede: 'Live spots, what it costs (often nothing) and a reminder the day before with the facts.',
+        summaryLabel: 'Every booking', facts: [{ label: 'Reminder', value: 'The day before' }, { label: 'Changes', value: 'Any time, from the email' }, { label: 'Bring someone', value: 'Say so when you book' }],
+        waysLabel: 'Choose a way in', ways: s.offers.map((o, i) => ({ name: slot(`offer${i + 1}Title`, o.name), body: slot(`offer${i + 1}Blurb`, o.meta), meta: `${slot(`offer${i + 1}Price`, o.price)} · ${o.dur}`, href: '' })),
+        timesLabel: 'Next open times', useEvents: true, rows: calendar.slice(0, 4), note: 'Change or cancel any time. No one minds.', buttonLabel: '', buttonHref: '', register: 'auto',
+      },
+    },
+    from('NewWorldAsk', { index: '' }),
+  ]
+  const compact = (xs: (Block | null)[]) => xs.filter((b): b is Block => b !== null)
   const seo = (title: string, description: string) => ({ title, description })
   return [
     { slug: 'home', label: 'Home', seo: seo(s.name, s.descriptor), blocks: home },
-    { slug: 'services', label: 'Services', seo: seo('Services', `${s.name}: what is on and what it costs.`), blocks: compact([list, plans, shop, faq, band]) },
-    { slug: 'about', label: 'About', seo: seo('About', `Who is behind ${s.name}.`), blocks: compact([story, team, posts, locations, letter]) },
-    { slug: 'booking', label: 'Book', seo: seo('Book', `Pick a time at ${s.name}.`), blocks: compact([booking, contact]) },
+    { slug: 'services', label: 'Ways in', seo: seo('Ways in', `${s.name}: every way in and what it costs.`), blocks: compact(services) },
+    { slug: 'about', label: 'Our story', seo: seo('Our story', `Who is behind ${s.name}.`), blocks: about },
+    { slug: 'booking', label: 'Book', seo: seo('Book', `Pick a time at ${s.name}.`), blocks: booking },
   ]
 }
 
