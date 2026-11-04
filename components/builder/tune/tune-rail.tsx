@@ -7,6 +7,9 @@
 
 import { useId, useState, type ReactNode } from 'react'
 import { Minus, Plus } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { tuneProjection, type TuneField } from '@/lib/builder/tune'
 import type { Config, Field } from '@/lib/page-editor/types'
 import styles from './tune-rail.module.css'
@@ -31,8 +34,8 @@ function Words({ id, kind, value, limit, onChange }: { id: string; kind: 'text' 
   const text = typeof value === 'string' ? value : ''
   return <>
     {kind === 'text'
-      ? <input id={id} className={styles.input} value={text} onChange={(e) => onChange(e.target.value)} />
-      : <textarea id={id} className={styles.input} rows={3} value={text} onChange={(e) => onChange(e.target.value)} />}
+      ? <Input id={id} value={text} onChange={(e) => onChange(e.target.value)} />
+      : <Textarea id={id} rows={3} value={text} onChange={(e) => onChange(e.target.value)} />}
     <Count value={text} limit={limit} />
   </>
 }
@@ -41,10 +44,12 @@ function Choice({ id, field, value, onChange }: { id: string; field: Field; valu
   const options = 'options' in field ? [...field.options] : []
   const at = options.findIndex((o) => JSON.stringify(o.value) === JSON.stringify(value))
   return (
-    <select id={id} className={styles.input} value={at < 0 ? '' : String(at)} onChange={(e) => onChange(options[Number(e.target.value)]?.value)}>
-      {at < 0 && <option value="">Theme default</option>}
-      {options.map((o, i) => <option key={i} value={String(i)}>{o.label}</option>)}
-    </select>
+    <Select
+      id={id}
+      value={at < 0 ? '' : String(at)}
+      onChange={(e) => onChange(options[Number(e.target.value)]?.value)}
+      options={[...(at < 0 ? [{ value: '', label: 'Theme default' }] : []), ...options.map((o, i) => ({ value: String(i), label: o.label }))]}
+    />
   )
 }
 
@@ -89,7 +94,7 @@ function Row({ tune, props, onChange }: { tune: TuneField; props: Props; onChang
   switch (tune.kind) {
     case 'text': case 'textarea': control = <Words id={id} kind={tune.kind} value={value} limit={tune.limit} onChange={set} />; break
     case 'choice': control = <Choice id={id} field={tune.field} value={value} onChange={set} />; break
-    case 'number': control = <input id={id} className={styles.input} type="number" value={typeof value === 'number' ? value : ''} onChange={(e) => set(e.target.value === '' ? undefined : Number(e.target.value))} />; break
+    case 'number': control = <Input id={id} type="number" value={typeof value === 'number' ? value : ''} onChange={(e) => set(e.target.value === '' ? undefined : Number(e.target.value))} />; break
     case 'list': control = <List id={id} tune={tune} value={value} onChange={set} />; break
     case 'custom': control = tune.field.type === 'custom' ? tune.field.render({ field: tune.field, name: tune.key, id, value, onChange: set }) : null; break
   }
@@ -118,7 +123,7 @@ export function TuneRail({ type, props, config, onChange }: { type: string; prop
         <button type="button" className={styles.more} aria-expanded={more} onClick={() => setMore(!more)}>More · {projection.layer2.length}</button>
         {more && <div className={styles.layer2}>
           {projection.layer2.map((tune) => <Row key={tune.key} tune={tune} props={props} onChange={onChange} />)}
-          <label className={styles.always}><input type="checkbox" checked={alwaysMore} onChange={(e) => keepMore(e.target.checked)} />Always show more</label>
+          <Checkbox wrapperClassName={styles.always} label="Always show more" checked={alwaysMore} onChange={(e) => keepMore(e.target.checked)} />
         </div>}
       </>}
     </div>

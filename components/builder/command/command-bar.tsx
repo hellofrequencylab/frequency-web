@@ -7,6 +7,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { commandRows, rememberCommand, type CommandRow } from '@/lib/builder/commands'
+import { Input } from '@/components/ui/field'
 import styles from './command-bar.module.css'
 
 const RECENT_KEY = 'frequency.builder.commands.recent.v1'
@@ -63,7 +64,7 @@ export function CommandBar({ sections, pages, selected, onRun, onClose }: {
   return (
     <div className={styles.scrim} onPointerDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div ref={dialog} className={styles.dialog} role="dialog" aria-modal="true" aria-label="Find, do or ask" onKeyDown={keys}>
-        <input ref={input} className={styles.input} role="combobox" aria-label="Find, do or ask" aria-expanded="true" aria-controls={listId} aria-activedescendant={rows[at] ? `${listId}-${at}` : undefined} placeholder="Find a section, do something, or ask Vera" value={query} onChange={(e) => { setQuery(e.target.value); setActive(0) }} />
+        <Input ref={input} variant="seamless" className={styles.input} role="combobox" aria-label="Find, do or ask" aria-expanded="true" aria-controls={listId} aria-activedescendant={rows[at] ? `${listId}-${at}` : undefined} placeholder="Find a section, do something, or ask Vera" value={query} onChange={(e) => { setQuery(e.target.value); setActive(0) }} />
         <ul id={listId} className={styles.list} role="listbox" aria-label="Commands">
           {rows.map((row, i) => {
             const head = i === 0 || rows[i - 1].group !== row.group ? row.group : null
