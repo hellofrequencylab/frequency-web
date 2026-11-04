@@ -6,8 +6,8 @@ import { CaptureForm } from '@/components/crm/leads/capture-form'
 import { captureCheckIn } from './actions'
 
 // FRONT DOOR #3 — event / attendance capture. A host points attendees here (a printed QR, a link on
-// the screen). Leaving a name + email checks them in and drops them into the Space CRM with the event
-// as their entry point. Not marketing consent, so it never promises email. Noindex (transactional).
+// the screen). Name + email are captured in the Space CRM with the event label; this is not the
+// event attendance ledger. Not marketing consent, so it never promises email. Noindex (transactional).
 export const metadata: Metadata = {
   title: 'Check in',
   robots: { index: false },
@@ -37,7 +37,7 @@ export default async function CheckInPage({ searchParams }: { searchParams: Prom
     <CaptureShell
       eyebrow={spaceName}
       title={eventTitle ? `Check in to ${eventTitle}.` : 'Check in.'}
-      description="Leave your name so the host knows you came. That's it."
+      description="Leave your contact information for the host. Ask them if you need attendance confirmation."
     >
       <CaptureForm
         token={t as string}
@@ -45,7 +45,7 @@ export default async function CheckInPage({ searchParams }: { searchParams: Prom
         submitLabel="Check me in"
         showPhone
         consentNote={
-          <>Checking in just tells the host you were here. We won&apos;t add you to any email list for it.</>
+          <>Your details go to the host. We won&apos;t add you to any email list for it.</>
         }
       />
     </CaptureShell>
