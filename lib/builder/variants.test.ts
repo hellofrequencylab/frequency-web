@@ -64,7 +64,7 @@ describe('every variant renders non-empty with sample content on every theme (BL
       for (const theme of THEMES) for (const variant of Object.keys(ROLES[role].variants)) {
         const html = renderToStaticMarkup(createElement(() => render({ ...fill(role, variant), puck: { metadata: { theme } } })))
         expect(html, `${role} ${variant} on ${theme}`).toContain(`data-variant="${variant}"`)
-        expect(html.replace(/<[^>]+>/g, '').trim().length, `${role} ${variant} on ${theme}`).toBeGreaterThan(0)
+        expect(/>[^<]*\S[^<]*</.test(html), `${role} ${variant} on ${theme} draws words`).toBe(true)
       }
     })
   }
