@@ -9,6 +9,7 @@ import { isPreviewKit } from '@/lib/create-space/preview-site'
 import { launchEntryEnabled } from '@/lib/launch/enabled'
 import { freeSpotlightHref } from '@/lib/launch/entry'
 import { themePagePath } from '@/lib/themes/library'
+import { LastKitLink } from './last-kit-link'
 import { KitShowcase } from './kit-showcase/kit-showcase'
 import type { ShowcaseLinks } from './kit-showcase/use-kit-showcase'
 
@@ -41,7 +42,12 @@ export function themeShowcaseLinks(): ShowcaseLinks {
 }
 
 export function FrequencyThemes() {
-  return <KitShowcase links={themeShowcaseLinks()} />
+  return (
+    <>
+      <KitShowcase links={themeShowcaseLinks()} />
+      <LastKitLink />
+    </>
+  )
 }
 
 
