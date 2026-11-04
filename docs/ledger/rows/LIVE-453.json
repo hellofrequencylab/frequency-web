@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-453",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const t=fs.readFileSync(\"lib/database.types.ts\",\"utf8\");const rowOf=(tbl)=>{const i=t.indexOf(\"\\n      \"+tbl+\": {\");if(i<0)return null;const r=t.indexOf(\"Row: {\",i);return t.slice(r,t.indexOf(\"\\n        }\",r))};for(const tbl of [\"space_plans\",\"space_plan_shares\",\"space_plan_playbooks\",\"space_calendar_private_feeds\"])if(!rowOf(tbl))fail(tbl+\" has no Tables block in lib/database.types.ts again, so every read and write of it is invisible to tsc and check:schema-contract must be told to look away\");const need={space_calendar_entries:[\"plan_id\",\"published_event_id\"],crm_tasks:[\"plan_id\",\"due_offset_days\"]};for(const tbl in need){const row=rowOf(tbl)||\"\";for(const c of need[tbl])if(!new RegExp(\"\\\\n\\\\s+\"+c+\"\\\\??:\").test(row))fail(tbl+\".\"+c+\" is missing from the generated types again, so the Plan spine reads a column the compiler cannot see\")}const g=fs.readFileSync(\"scripts/check-schema-contract.mjs\",\"utf8\");for(const tbl of [\"space_plans\",\"space_plan_shares\",\"space_plan_playbooks\",\"space_calendar_private_feeds\"])if(g.includes(\"table: \\u0027\"+tbl+\"\\u0027\"))fail(\"check-schema-contract.mjs allowlists \"+tbl+\" again, so the guard is back to being told to look away from the Plan call sites\");const ps=fs.readFileSync(\"lib/calendar/plans-store.ts\",\"utf8\");if(/type Untyped\\s*=/.test(ps))fail(\"lib/calendar/plans-store.ts declares a hand-written structural client type again, so the whole Plan IO layer bypasses the generated Database type and a renamed column fails at runtime instead of at tsc\");if(/as unknown as Untyped/.test(ps))fail(\"plans-store.ts casts the Supabase client away again\");'"
+    }
+  },
+  "append": {
+    "detail": "2026-11-04 (ADR-1938, LIVE-2081): space_circle_optouts was dropped with the Space Circle, so the probe no longer requires its Tables block. The four Plan tables and columns are still pinned."
+  }
+}
