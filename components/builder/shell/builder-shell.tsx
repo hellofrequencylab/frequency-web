@@ -22,6 +22,7 @@ import { tuneProjection } from '@/lib/builder/tune'
 import { focalFieldFor, pictureFieldFor } from '@/lib/builder/parts'
 import { CommandBar } from '@/components/builder/command/command-bar'
 import { AddSheet } from '@/components/builder/add/add-sheet'
+import { LayoutChips } from '@/components/builder/canvas/variants/layout-chips'
 import { addCards, insertSection, type AddCard } from '@/lib/builder/add'
 import { makeItem } from '@/components/page-editor/mobile/data-ops'
 import { rolePreviewMetadata } from '@/components/page-editor/blocks/roles'
@@ -343,6 +344,9 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <div className={styles.panelBody}>
         {selected ? <>
           <h2>{config.components[selected.type]?.label ?? selected.type}</h2>
+          <LayoutChips type={selected.type} props={selected.props as Record<string, unknown>} theme={canvasTheme}
+            onChange={(patch) => { const id = String(selected.props.id); editDoc((doc) => updateBlockPropsDeep(doc, config, id, patch)) }}
+            onFill={(field) => setTuneFocus({ id: String(selected.props.id), keys: [field], at: Date.now() })} />
           <TuneRail key={String(selected.props.id)} type={selected.type} props={selected.props as Record<string, unknown>} config={config} focus={tuneFocus?.id === selected.props.id ? tuneFocus : null} onChange={(key, value) => editProps(String(selected.props.id), { [key]: value })} />
         </> : <>
           <h2>Nothing selected</h2>

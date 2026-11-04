@@ -34,6 +34,9 @@ interface TuneProjection {
 const SLOT_ALIASES: Record<string, string[]> = { heading: ['title'], body: ['lead'] }
 
 const OWNED_ELSEWHERE = new Set(['layout'])
+/** A role block's layout is picked with the Layout chips (BLD-203, components/builder/canvas/variants), not a select. */
+const OWNED_BY_CHIPS = new Set(['variant'])
+const ownedElsewhere = (key: string, role: RoleId | null) => OWNED_ELSEWHERE.has(key) || (!!role && OWNED_BY_CHIPS.has(key))
 
 function kindOf(field: Field): TuneKind | null {
   switch (field.type) {
@@ -78,7 +81,7 @@ export function tuneProjection(type: string, config: Config): TuneProjection {
   const layer1: TuneField[] = []
   const taken = new Set<string>()
   const take = (key: string, extra: Partial<TuneField>) => {
-    if (taken.has(key) || OWNED_ELSEWHERE.has(key) || !fields[key]) return
+    if (taken.has(key) || ownedElsewhere(key, role) || !fields[key]) return
     const e = entry(key, fields[key], extra)
     if (e) { layer1.push(e); taken.add(key) }
   }
@@ -91,7 +94,7 @@ export function tuneProjection(type: string, config: Config): TuneProjection {
   }
   const layer2: TuneField[] = []
   for (const [key, field] of Object.entries(fields)) {
-    if (taken.has(key) || OWNED_ELSEWHERE.has(key)) continue
+    if (taken.has(key) || ownedElsewhere(key, role)) continue
     const e = entry(key, field)
     if (e) layer2.push(e)
   }
@@ -101,5 +104,6 @@ export function tuneProjection(type: string, config: Config): TuneProjection {
 /** The fields a block declares that the Tune rail must draw: all of them but the ones owned elsewhere. */
 export function tuneDeclared(type: string, config: Config): string[] {
   const fields = ((config.components as Record<string, { fields?: Record<string, Field> }>)[type]?.fields ?? {}) as Record<string, Field>
-  return Object.entries(fields).filter(([key, f]) => !OWNED_ELSEWHERE.has(key) && kindOf(f)).map(([key]) => key)
+  const role = roleOfType(type)
+  return Object.entries(fields).filter(([key, f]) => !ownedElsewhere(key, role) && kindOf(f)).map(([key]) => key)
 }
