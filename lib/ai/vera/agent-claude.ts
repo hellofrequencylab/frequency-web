@@ -185,6 +185,7 @@ export function buildVeraSystem(
   supportSummary?: string,
   viewer?: VeraViewer | null,
   reader?: VeraReader | null,
+  spaceGuide?: string,
 ): { stable: string; volatile: string } {
   const facts = ctx?.facts
   const known: string[] = []
@@ -241,7 +242,10 @@ Quick replies: end EVERY reply with one final line in exactly this format, CHIPS
 
 Read the room on tone: gentle if they're nervous, playful (volley, never mean) if they're a smartass, but always on their side, always quietly moving them toward each other and toward their best expression.`)
 
-  const volatile = `${grounding}${support}${register}${style}${length}${greeting}${viewerNote}`.trim()
+  // The Space they are in (LIVE-2147): its settings and where each lives, only for someone who helps run it.
+  const space = spaceGuide?.trim() ? `\n\n${spaceGuide.trim()}` : ''
+
+  const volatile = `${grounding}${support}${register}${style}${length}${greeting}${viewerNote}${space}`.trim()
   return { stable, volatile }
 }
 
@@ -265,6 +269,8 @@ export async function runVeraClaudeTurn(input: {
   viewer?: VeraViewer | null
   /** Who signed up (ADR-1715): the persona and archetype from profiles.meta. */
   reader?: VeraReader | null
+  /** The settings guide for the Space they are in (LIVE-2147), empty unless they help run it. */
+  spaceGuide?: string
   /** Stream the prose as it is generated (the CHIPS line is held back). Each round of the tool
    *  loop is a fresh reply, so a consumer resets its draft when `round` moves. */
   onText?: (delta: string, round: number) => void
@@ -286,7 +292,7 @@ export async function runVeraClaudeTurn(input: {
     if (await veraDailyCapReached(input.profileId ?? null, input.tier ?? null)) return null
 
     const cfg = await getVeraConfig()
-    const system: SystemPrompt = buildVeraSystem(input.memberContext, cfg, input.supportSummary, input.viewer, input.reader)
+    const system: SystemPrompt = buildVeraSystem(input.memberContext, cfg, input.supportSummary, input.viewer, input.reader, input.spaceGuide)
     // The MEMBER chat set only (SCAN-738): the operator playbook tools and create_entity are not
     // confirmable from a member session, so offering them produced proposals the client rendered
     // as empty Remember cards and the server then refused. Every turn also paid for their schemas.
