@@ -59,6 +59,7 @@ export const MEGA_THEMES: readonly MegaThemeDef[] = [
   { id: 'free-human', editor: 'FreeHuman', site: 'free-human' },
   { id: 'services', editor: 'Services', site: 'services' },
   { id: 'new-world', editor: 'NewWorld', site: 'new-world' },
+  { id: 'cyberwitch', editor: 'CyberWitch', site: 'cyberwitch' },
 ]
 
 /** THE THEME EVERY NEW SPACE STARTS IN (LIVE-2058, owner 2026-11-03: "New World is the new mega template"). A Space created

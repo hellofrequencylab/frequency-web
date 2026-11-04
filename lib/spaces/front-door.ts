@@ -69,13 +69,13 @@ export function spaceFrontDoor(input: SpaceFrontDoorInput): SpaceFrontDoorCopy |
   switch (viewer) {
     case 'member':
       // THE HALF THE OWNER ASKED FOR AND THE CODE NEVER HAD. A member who lands on Home was shown
-      // the same brochure as a stranger. Their place is the conversation, so this points at it.
-      // `#discussion` is the band the Space Circle feed mounts under on the Circles page
-      // (LIVE-523, ADR-1534), which is where a Space's life actually happens.
+      // the same brochure as a stranger. Their place is the conversation, so this points at it:
+      // the Space's Community wall (ADR-1938), which replaced the Space Circle feed that used to sit
+      // under `#discussion` on the Circles page.
       return {
         title: `You are a member of ${place}`,
         body: 'The conversation and the circles are where the people are. Home is the shop window, so here is the door through to the rest.',
-        action: { href: `/spaces/${spaceSlug}/circles#discussion`, label: 'Open the conversation' },
+        action: { href: `/spaces/${spaceSlug}/community`, label: 'Open the conversation' },
       }
 
     case 'waitlist':

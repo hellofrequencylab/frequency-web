@@ -202,7 +202,7 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
             <p className="text-meta text-muted">{proposalLabel(p)}</p>
             <div className="mt-2 flex gap-2">
               <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-control bg-success-bg px-3 py-1.5 text-meta font-semibold text-success transition-colors hover:opacity-80">
-                <Check className="h-3.5 w-3.5" aria-hidden /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'set_space_feature' ? 'Change it' : 'Allow'}
+                <Check className="h-3.5 w-3.5" aria-hidden /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'set_space_feature' || p.tool === 'set_space_role' || p.tool === 'set_space_setting' ? 'Change it' : 'Allow'}
               </button>
               <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-control bg-surface px-3 py-1.5 text-meta font-medium text-muted transition-colors hover:text-danger">
                 <X className="h-3.5 w-3.5" aria-hidden /> Skip

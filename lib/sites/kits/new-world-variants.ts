@@ -1,19 +1,20 @@
 import type { MegaNicheId } from '@/lib/theme/mega-theme'
 import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import type { KitPage, SiteKit } from './types'
+import NEW_WORLD_PHOTOS from '@/lib/sites/new-world-photos.json'
 
 // New World's seven niche kits (design system "New World", revision 2, ui_kits/site/kits.js): one sample business per niche, written in
 // that niche's own language. Seven kits: the General template ("Your place") and the six niche doors. They moved here from the Services
 // folder (LIVE-2056) when Daniel ruled that New World is its own theme; Services rebuilds its own sixteen trade kits.
 //
-// INTERIM BLOCKS. Until New World's own blocks land (LIVE-2055) the pages are still built from the Services block family
-// (components/page-editor/blocks/services.tsx). The theme is hidden, so nothing renders them yet; LIVE-2055 swaps the block types.
+// BLOCKS. Home is drawn with New World's own blocks (components/page-editor/blocks/new-world.tsx, LIVE-2055). Services, About and
+// Book still compose the Services block family (components/page-editor/blocks/services.tsx) until LIVE-2056 re-cuts them.
 //
 // HOUSE VOICE (docs/marketing/voice-and-language-guide.md): the design's own words, except where they make a claim. Numbers that
 // were sample facts ("38 checked in last week", "7 in 10 come back") became plain statements; reviews are prompts to write a real
 // one, never a made-up quote with a made-up name; prices on the plans and the shop are left for the owner to set. The three offers,
 // the first three people and the first three events are `{{slot|sample words}}` tokens (lib/spaces/content-slots.ts), so a Space that
-// has filled in its own offers and people shows those instead. No photos: the design's picture names have no files in this repo.
+// has filled in its own offers and people shows those instead. Home wears the theme's own photos (lib/sites/new-world-photos.json).
 
 /** The Frequency tools a kit turns on (design record.js FUNCTIONS[].tool). Lane A reads them to build a Spotlight's doors. */
 type NewWorldTool = 'book' | 'sell' | 'belong' | 'publish' | 'gather' | 'learn'
@@ -211,38 +212,155 @@ const star = (c: { title: string; em: string }) => (c.em ? `${c.title} *${c.em}*
 const copy = (s: Spec, k: Section): SectionCopy => s.copy[k] ?? COPY[k]
 const head = (c: SectionCopy, eyebrow: string) => ({ eyebrow, title: star(c), lede: c.lede ?? '' })
 
-function pages(s: Spec): KitPage[] {
+// ── Home, drawn with New World's own blocks (LIVE-2055) in the design's order: hero, numbers, story, groups, calendar, first visit,
+// the regulars' words, the hosts, ways in, plans, open spots, gallery, posts, how a first time goes, where, ask, letter, questions,
+// the tools and the closer. Photos are the theme's own set (lib/sites/new-world-photos.json, Daniel's uploads); the team keeps empty
+// frames because a starter must never put a stranger's face on someone's host. Section numbers count the numbered sections only.
+
+/** The theme's photo per kit for the hero, the story and the groups card, then the gallery's five. */
+const PHOTOS: Record<NewWorldKitNiche, readonly [string, string, string]> = {
+  general: ['circle-sunrise', 'fire-circle', 'garden-picnic'],
+  coaches: ['beach-move', 'hands-up', 'beach-joy'],
+  studios: ['backyard-class', 'beach-gong', 'circle-sunrise'],
+  hosts: ['garden-picnic', 'fire-circle', 'cafe-table'],
+  venues: ['hands-up', 'beach-dance', 'fire-crew'],
+  nonprofits: ['workshop-table', 'garden-picnic', 'hands-up'],
+  networks: ['cafe-table', 'circle-sunrise', 'beach-joy'],
+}
+const GALLERY = ['hands-up', 'beach-joy', 'garden-picnic', 'backyard-class', 'fire-circle', 'beach-dance', 'workshop-table', 'group-hug', 'beach-gong']
+const PHOTO_ALT: Record<string, string> = Object.fromEntries(Object.entries(NEW_WORLD_PHOTOS as Record<string, { alt: string }>).map(([k, v]) => [k, v.alt]))
+const pic = (name: string) => `/sites/new-world/photos/${name}.webp`
+const AREAS = ['Downtown', 'Northside', 'Riverside', 'Oak Park', 'Lakeview', 'Hillcrest', 'Westfield', 'Eastgate']
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+/** "Tuesdays · 7pm" → Tue; "First Sunday · 4pm" → Sun; "Tue & Thu · 6:30am" → Tue. */
+const weekday = (when: string) => WEEKDAYS.find((d) => when.toLowerCase().includes(d.toLowerCase())) ?? ''
+const [whenDay, whenTime] = [(w: string) => w.split(' · ')[0] ?? w, (w: string) => w.split(' · ')[1] ?? '']
+
+function newWorldHome(s: Spec, niche: NewWorldKitNiche): Block[] {
+  const [heroPic, storyPic, groupPic] = PHOTOS[niche]
+  const offers = s.offers.map((o, i) => ({ name: slot(`offer${i + 1}Title`, o.name), meta: o.dur, body: slot(`offer${i + 1}Blurb`, o.meta), price: slot(`offer${i + 1}Price`, o.price) }))
+  const n = (i: number) => String(i).padStart(2, '0')
+  const sessions = s.groups.map(([name, when, line]) => ({ weekday: weekday(when), mon: /^first/i.test(when) ? 'First' : 'Every', day: weekday(when), title: name, body: line, time: when, where: '', spots: 'Open', kind: 'session', href: '~/booking' }))
+  const oneOffs = s.events.map(([title, body], i) => ({ weekday: ['Fri', 'Sat', 'Sun'][i] ?? '', mon: 'Next', day: ['Fri', 'Sat', 'Sun'][i] ?? '', title: slot(`event${i + 1}Title`, title), body, time: '', where: '', spots: 'Spots open', kind: 'event', href: '~/booking' }))
+  const c = (k: Section) => copy(s, k)
+  const [stat3, stat4] = [s.offers[1], s.trust[3]]
+  return [
+    {
+      type: 'NewWorldHero',
+      props: {
+        eyebrow: s.hero.eyebrow, title: `${s.hero.title} *${s.hero.em}*`, lead: s.hero.body,
+        primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: s.cta2, secondaryHref: '#events',
+        proof: s.firstVisit[0]?.[1] ?? '', aside: s.quote, image: pic(heroPic), alt: PHOTO_ALT[heroPic] ?? '', badge: 'Doors open this week',
+        useEvents: true, rows: sessions.slice(0, 3), areas: AREAS, register: 'auto',
+      },
+    },
+    {
+      type: 'NewWorldStats',
+      props: {
+        items: [
+          { icon: 'users', value: String(s.groups.length), label: 'groups every week', note: 'On the calendar' },
+          { icon: 'calendar', value: offers[0]!.price, label: s.offers[0]!.name.toLowerCase(), note: s.offers[0]!.meta },
+          { icon: 'heart', value: offers[1]!.price, label: stat3 ? stat3.name.toLowerCase() : '', note: stat3?.meta ?? '' },
+          { icon: 'check', value: stat4 ? stat4[0] : '', label: '', note: stat4 ? stat4[1] : '' },
+        ],
+        register: 'auto',
+      },
+    },
+    {
+      type: 'NewWorldStory',
+      props: {
+        index: n(1), eyebrow: 'Our story', title: `${s.story2[0]} *${s.story2[1]}*`, paragraphs: s.story, buttonLabel: 'Read the whole story', buttonHref: '~/about',
+        secondaryLabel: 'Meet the people', secondaryHref: '#team', image: pic(storyPic), alt: PHOTO_ALT[storyPic] ?? '', quote: s.quote, quoteBy: `${slot('person1Name', s.owner)} · ${s.role}`, register: 'auto',
+      },
+    },
+    {
+      type: 'NewWorldGroups',
+      props: {
+        index: n(2), ...head(c('circles'), 'Groups'), image: pic(groupPic), alt: PHOTO_ALT[groupPic] ?? '', featureLabel: 'Open to new faces', featureName: s.groups[s.groups.length - 1]![0],
+        featureButtonLabel: 'Come once', featureButtonHref: '~/booking',
+        rows: s.groups.map(([name, when, line], i) => ({ day: whenDay(when), time: whenTime(when), name, body: line, people: '', open: i === s.groups.length - 1, href: '~/booking' })), register: 'auto',
+      },
+    },
+    { type: 'NewWorldCalendar', props: { index: n(3), ...head(c('events'), "What's Happening"), buttonLabel: '', buttonHref: '', rowLabel: 'Save a spot', count: '6', useEvents: true, rows: [...sessions.slice(0, 3), ...oneOffs], register: 'auto' } },
+    { type: 'NewWorldFirstVisit', props: { index: n(4), ...head(c('firstnight'), 'Walking in'), note: 'Half the people here were new once. Someone will say hello before you have to.', rows: s.firstVisit.map(([title, body]) => ({ title, body })), register: 'auto' } },
+    {
+      type: 'NewWorldReviews',
+      props: { index: n(5), ...head(c('reviews'), 'In their words'), lede: '', proof: '', rows: s.reviewsAbout.map((what, i) => ({ quote: `Replace with a real quote from a real ${s.person}. Specific beats glowing.`, who: `${s.person[0]!.toUpperCase()}${s.person.slice(1)} ${['one', 'two', 'three'][i] ?? i + 1}`, what })), register: 'auto' },
+    },
+    {
+      type: 'NewWorldTeam',
+      props: { index: n(6), ...head(c('team'), 'The team'), note: 'Real people. Replace these with photos from your room.', rows: s.team.map(([name, role], i) => ({ name: slot(`person${i + 1}Name`, i === 0 ? s.owner : name), role: i === 0 ? s.role : role, image: '', alt: '' })), register: 'auto' },
+    },
+    {
+      type: 'NewWorldOffers',
+      props: { index: n(7), ...head(c('services'), 'Ways in'), buttonLabel: 'All ways in', buttonHref: '~/services', rows: offers.map((o, i) => ({ icon: ['users', 'calendar', 'award'][i] ?? 'tag', meta: o.meta, name: o.name, body: o.body, price: o.price, href: '~/booking' })), register: 'auto' },
+    },
+    ...(s.plans
+      ? [{ type: 'NewWorldPlans', props: { index: n(8), ...head(c('plans'), 'Memberships and plans'), aside: 'Free to join. Pay for what you choose.', featuredLabel: 'Most chosen', note: 'Pause, change or cancel from your account any time.', rows: s.plans.map(([name, body], i) => ({ name, body, price: '', featured: i === 1, buttonLabel: `Choose ${name}`, href: '~/booking' })), register: 'auto' } }]
+      : []),
+    { type: 'NewWorldOpenings', props: { index: n(9), eyebrow: 'Save a spot', title: 'Open *this week.*', lede: 'Pick a time, see what it costs (often nothing) and get a reminder.', buttonLabel: s.cta, buttonHref: '~/booking', fullLabel: 'Waitlist', useEvents: true, rows: sessions.slice(0, 3), register: 'auto' } },
+    { type: 'NewWorldGallery', props: { index: n(10), eyebrow: 'Gallery', title: 'Real *nights.*', lede: 'Photos from people who were there.', images: GALLERY.filter((g) => !PHOTOS[niche].includes(g)).slice(0, 5).map((g) => ({ image: pic(g), alt: PHOTO_ALT[g] ?? '' })), register: 'auto' } },
+    { type: 'NewWorldPosts', props: { index: n(11), eyebrow: 'Notes', title: 'Good to *read.*', lede: 'Notes from the room, written by the people in it.', buttonLabel: '', buttonHref: '', rows: s.posts.map(([kind, title]) => ({ kind, title, meta: '', href: '' })), register: 'auto' } },
+    {
+      type: 'NewWorldProcess',
+      props: {
+        index: n(12), eyebrow: 'How it works', title: 'How a first time *goes.*', lede: '',
+        rows: [
+          { icon: 'calendar', title: 'Pick a time', body: 'Choose a group or a date from the calendar. It takes a minute.' },
+          { icon: 'message', title: 'We remind you', body: 'The day before you get the facts: who is hosting, how long, what to bring.' },
+          { icon: 'users', title: 'The door', body: 'Someone says hello, learns your name and walks you in. Check-in is one tap.' },
+          { icon: 'heart', title: 'Come back', body: 'Same place, same time. The second visit is when it starts to feel like yours.' },
+        ],
+        register: 'auto',
+      },
+    },
+    {
+      type: 'NewWorldWhere',
+      props: {
+        index: n(13), eyebrow: 'Where we meet', title: 'Where to *find us.*', lede: '', address: slot('address', 'Your street, Your City'), phone: slot('phone', 'Your phone'), email: slot('email', 'Your email'),
+        hours: [{ day: 'Hours', time: slot('hours', 'Your hours') }], areas: AREAS, image: '', alt: '', mapLabel: 'Map · where we meet', register: 'auto',
+      },
+    },
+    { type: 'NewWorldAsk', props: { index: n(14), eyebrow: 'Say hello', title: 'Ask us *anything.*', lede: 'A person answers.', buttonLabel: 'Send', successMessage: 'Thanks. A person will reply soon.', register: 'auto' } },
+    { type: 'NewWorldLetter', props: { eyebrow: 'Newsletter', title: 'Stay in *the loop.*', lede: 'A short note when something is coming up. Nothing else.', placeholder: 'you@email.com', buttonLabel: 'Join', successMessage: 'Thanks. You are on the list.', register: 'auto' } },
+    {
+      type: 'NewWorldFaq',
+      props: {
+        index: n(15), eyebrow: 'Questions', title: 'Good to *know.*', lede: 'Anything else, ask. A real person answers.', phone: slot('phone', 'Your phone'), email: slot('email', 'Your email'), hours: slot('hours', 'Your hours'),
+        areasLabel: 'Where we meet', areas: AREAS, rows: FAQ, register: 'auto',
+      },
+    },
+    {
+      type: 'NewWorldTools',
+      props: {
+        index: n(16), eyebrow: 'Behind the door', title: 'The tools that *run this place.*', lede: 'A calendar, check-in at the door, memberships, your member list and a page you edit yourself. It all runs on Frequency, and your people stay yours.',
+        buttonLabel: '', buttonHref: '', secondaryLabel: '', secondaryHref: '', note: '',
+        rows: [
+          { icon: 'users', title: 'Groups', body: 'Recurring gatherings with their own page and members' },
+          { icon: 'calendar', title: 'Calendar', body: 'Every event on your site and in the app' },
+          { icon: 'check', title: 'The door', body: 'A QR code that turns walk-ins into contacts' },
+          { icon: 'award', title: 'Memberships', body: 'Sold from day one, with the member dropped into their group' },
+          { icon: 'tag', title: 'Tickets', body: 'A guest list, refunds and money paid to you' },
+          { icon: 'heart', title: 'Your people', body: 'Yours to keep. Export any time.' },
+        ],
+        register: 'auto',
+      },
+    },
+    { type: 'NewWorldCloser', props: { aside: s.quote, title: star(c('cta')), primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: 'Bring someone', secondaryHref: '~/booking', note: '', register: 'auto' } },
+  ]
+}
+
+const FAQ = [
+  { question: 'I do not know anyone. Is that a problem?', answer: 'No. Most people walk in alone the first time. Say here who meets them at the door.' },
+  { question: 'Do I need to book?', answer: 'You can. Booking holds your spot and sends a reminder. Say here if people can also just walk in.' },
+  { question: 'What if I cannot make it?', answer: 'Change or cancel from the confirmation email. Say how late is too late.' },
+  { question: 'Can I bring someone?', answer: 'Say yes if they can, and what it costs them the first time.' },
+]
+
+function pages(s: Spec, niche: NewWorldKitNiche): KitPage[] {
   const offers = s.offers.map((o, i) => ({
     name: slot(`offer${i + 1}Title`, o.name), meta: o.dur, body: slot(`offer${i + 1}Blurb`, o.meta), price: slot(`offer${i + 1}Price`, o.price), href: '~/booking',
   }))
-  const hero: Block = {
-    type: 'ServicesHero',
-    props: {
-      look: 'split', eyebrow: s.hero.eyebrow, title: `${s.hero.title} *${s.hero.em}*`, lead: s.hero.body,
-      primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: s.cta2, secondaryHref: '~/services', proof: '', image: '', alt: '',
-      panelTitle: 'Book online', panelNote: 'Pick a time', offers: offers.map((o) => ({ name: o.name, meta: o.meta, price: o.price, href: o.href })), areas: [],
-    },
-  }
-  const trust: Block = { type: 'ServicesTrust', props: { items: s.trust.map(([title, line]) => ({ title, line })) } }
-  const groups: Block = {
-    type: 'ServicesList',
-    props: { ...head(copy(s, 'circles'), 'Groups'), buttonLabel: 'Book a spot', buttonHref: '~/booking', rows: s.groups.map(([name, when, line]) => ({ meta: when, name, body: line, price: '', href: '~/booking' })) },
-  }
-  const first: Block = { type: 'ServicesSteps', props: { ...head(copy(s, 'firstnight'), 'Your first visit'), rows: s.firstVisit.map(([title, body]) => ({ title, body })) } }
-  const events: Block = {
-    type: 'ServicesEvents',
-    props: {
-      ...head(copy(s, 'events'), 'Events'), buttonLabel: '', buttonHref: '',
-      rows: s.events.map(([title, body], i) => ({ meta: '', title: slot(`event${i + 1}Title`, title), body, price: '', href: '~/booking', featured: i === 0 })),
-    },
-  }
-  const reviews: Block = {
-    type: 'ServicesReviews',
-    props: {
-      ...head(copy(s, 'reviews'), 'Reviews'), proof: '',
-      rows: s.reviewsAbout.map((what, i) => ({ quote: `Replace with a real quote from a real ${s.person}. Specific beats glowing.`, who: `${s.person[0].toUpperCase()}${s.person.slice(1)} ${['one', 'two', 'three'][i] ?? i + 1}`, what })),
-    },
-  }
   const team: Block = {
     type: 'ServicesTeam',
     props: { ...head(copy(s, 'team'), 'The team'), rows: s.team.map(([name, role], i) => ({ name: slot(`person${i + 1}Name`, i === 0 ? s.owner : name), role: i === 0 ? s.role : role, image: '', alt: '' })) },
@@ -304,9 +422,10 @@ function pages(s: Spec): KitPage[] {
     props: { eyebrow: 'Newsletter', title: 'Stay in *the loop.*', lede: 'A short note when something is coming up. Nothing else.', buttonLabel: 'Join the list', buttonHref: '~/booking' },
   }
   const compact = (xs: (Block | null)[]) => xs.filter((b): b is Block => b !== null)
+  const home = newWorldHome(s, niche)
   const seo = (title: string, description: string) => ({ title, description })
   return [
-    { slug: 'home', label: 'Home', seo: seo(s.name, s.descriptor), blocks: compact([hero, trust, groups, first, events, reviews, band]) },
+    { slug: 'home', label: 'Home', seo: seo(s.name, s.descriptor), blocks: home },
     { slug: 'services', label: 'Services', seo: seo('Services', `${s.name}: what is on and what it costs.`), blocks: compact([list, plans, shop, faq, band]) },
     { slug: 'about', label: 'About', seo: seo('About', `Who is behind ${s.name}.`), blocks: compact([story, team, posts, locations, letter]) },
     { slug: 'booking', label: 'Book', seo: seo('Book', `Pick a time at ${s.name}.`), blocks: compact([booking, contact]) },
@@ -320,6 +439,6 @@ export function newWorldKit(niche: NewWorldKitNiche): NewWorldKit {
     palette: s.palette, tools: s.tools,
     // Tide (#1AA7C0, a brand accent is a hex) is the one shipped accent that matches a kit's palette (blue). The rest wait on LIVE-2041.
     ...(s.palette === 'blue' ? { accent: NEW_WORLD_ACCENTS.tide.accent } : {}),
-    pages: pages(s),
+    pages: pages(s, niche),
   }
 }

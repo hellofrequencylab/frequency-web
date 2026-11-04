@@ -8,8 +8,7 @@
 //       scripts/seed-the-group.sql in the tree is that output; regenerate it after editing the content.
 //
 // Shapes are copied from the product's own writers, the way scripts/seed-wildheart.mts copies them:
-// lib/spaces/provision.ts createSpace (the Space row, the owner's admin membership), the
-// spaces_ensure_space_circle trigger (each new Space's primary circle), set_collective_member_space
+// lib/spaces/provision.ts createSpace (the Space row, the owner's admin membership), set_collective_member_space
 // (a chapter is a member Space: parent_id, same owner, active, network-visible), lib/event-recurrence.ts
 // (an anchor with its RRULE plus the first HORIZON_DAYS of occurrences), lib/commerce/products.ts
 // createProduct (the merch), lib/spaces/memberships.ts setMembershipTiers (the tiers), and
@@ -220,8 +219,9 @@ export const NETWORK_CIRCLES = [
 ] as const
 
 /** The circle a seeded event is placed in (task E, SCAN-949): the first circle whose `match` its title carries,
- *  else null, which places it in the hosting Space's own Space Circle (the chapter's for a chapter meeting, the
- *  Network's for a network-wide event). Case-insensitive; apostrophes are ignored so Swami's matches Swami’s. */
+ *  else null, which makes it a Space event of the hosting Space (the chapter for a chapter meeting, the Network
+ *  for a network-wide event): a Space has no built-in Circle since ADR-1938. Case-insensitive; apostrophes are
+ *  ignored so Swami's matches Swami’s. */
 export function circleFor(title: string): string | null {
   const fold = (t: string) => t.toLowerCase().replace(/[’']/g, '')
   const hit = [...CIRCLES, ...NETWORK_CIRCLES].find((c) => fold(title).includes(fold(c.match)))
@@ -289,7 +289,7 @@ export interface SeedEvent {
   location: string
   /** The chapter Space that hosts it, or null for the Network itself. */
   chapter: Chapter['key'] | null
-  /** The circle it is placed in (a CIRCLES or NETWORK_CIRCLES key), or null for the host Space's Space Circle. */
+  /** The circle it is placed in (a CIRCLES or NETWORK_CIRCLES key), or null for a Space event of the host Space. */
   circle: string | null
   category: string
   energy: string | null
@@ -827,17 +827,19 @@ on conflict (slug) do update set name = excluded.name, status = 'active', networ
 where spaces.owner_profile_id = ${q(OWNER_ID)};`
 }
 
-/** Every event is placed in a circle (task E, SCAN-949), the same three columns lib/events/placement.ts
- *  livePlacementPatch writes: a member-led series in its own circle, a chapter meeting in the chapter's Space
- *  Circle, a network-wide one in the Network's. Tenancy (space_id) and hosting (host_space_id) do not move. */
-function circleRef(e: SeedEvent, hostSpace: string): string {
-  return e.circle ? q(circleId(e.circle)) : `(select id from circles where space_id = ${hostSpace} and is_space_primary order by created_at limit 1)`
+/** Where an event sits (task E, SCAN-949, ADR-1938): a member-led series in its own circle (the columns
+ *  lib/events/placement.ts livePlacementPatch writes), anything else a Space event of the host Space, the shape
+ *  the event builder writes (scope_type 'public' + the region, app/(main)/events/actions.ts). Tenancy (space_id)
+ *  and hosting (host_space_id) carry the Space either way. */
+function placement(e: SeedEvent): { scopeId: string; scopeType: string; circle: string } {
+  if (e.circle) return { scopeId: q(circleId(e.circle)), scopeType: 'circle', circle: q(circleId(e.circle)) }
+  return { scopeId: '(select region_id from _tg)', scopeType: 'public', circle: 'null' }
 }
 
 function eventInsert(e: SeedEvent, hostSpace: string): string {
-  const circle = circleRef(e, hostSpace)
+  const at = placement(e)
   return `insert into events (slug, title, description, host_id, scope_id, scope_type, scope_circle_id, starts_at, ends_at, time_zone, location, visibility, status, published_at, join_mode, category, energy_tag, attendance_mode, source, space_id, host_space_id, recurrence_type, recurrence_rule, is_cancelled)
-values (${q(e.slug)}, ${q(e.title)}, ${q(e.description)}, ${q(OWNER_ID)}, ${circle}, 'circle', ${circle}, ${pt(e.date, e.start)}, ${pt(e.date, e.end)}, ${q(TZ)}, ${q(e.location)}, 'public', 'published', now(), 'rsvp', ${q(e.category)}, ${q(e.energy)}, 'in_person', 'manual', ${q(SPACE_ID)}, ${hostSpace}, ${q(e.rule ? (e.rule.startsWith('FREQ=MONTHLY') ? 'monthly' : 'weekly') : 'none')}, ${q(e.rule)}, false)
+values (${q(e.slug)}, ${q(e.title)}, ${q(e.description)}, ${q(OWNER_ID)}, ${at.scopeId}, ${q(at.scopeType)}, ${at.circle}, ${pt(e.date, e.start)}, ${pt(e.date, e.end)}, ${q(TZ)}, ${q(e.location)}, 'public', 'published', now(), 'rsvp', ${q(e.category)}, ${q(e.energy)}, 'in_person', 'manual', ${q(SPACE_ID)}, ${hostSpace}, ${q(e.rule ? (e.rule.startsWith('FREQ=MONTHLY') ? 'monthly' : 'weekly') : 'none')}, ${q(e.rule)}, false)
 on conflict (slug) do update set title = excluded.title, description = excluded.description, host_id = excluded.host_id, scope_id = excluded.scope_id, scope_type = excluded.scope_type, scope_circle_id = excluded.scope_circle_id, starts_at = excluded.starts_at, ends_at = excluded.ends_at, time_zone = excluded.time_zone, location = excluded.location, visibility = excluded.visibility, status = excluded.status, published_at = coalesce(events.published_at, excluded.published_at), join_mode = excluded.join_mode, category = excluded.category, energy_tag = excluded.energy_tag, space_id = excluded.space_id, host_space_id = excluded.host_space_id, recurrence_type = excluded.recurrence_type, recurrence_rule = excluded.recurrence_rule;`
 }
 
@@ -892,7 +894,7 @@ export function renderSql(): string {
     '  end if;',
     'end $guard$;',
     '',
-    '-- 1. The Network. Inserting it fires spaces_ensure_space_circle: its primary circle is minted here.',
+    '-- 1. The Network. A Space has no built-in Circle (ADR-1938): its Community wall needs no row until the owner changes a setting.',
     spaceUpsert(SPACE_ID, SLUG, NAME, BRAND, TAGLINE, ABOUT, PLAN, null, buildPreferences(), LOGO, PHOTO('hero-market')),
     '',
     '-- 2. The six chapters, member Spaces of the Network (set_collective_member_space\'s rules: same owner,',
@@ -906,10 +908,8 @@ export function renderSql(): string {
     `select s.id, ${q(OWNER_ID)}, 'admin', 'active' from spaces s where s.slug in (${[SLUG, ...CHAPTERS.map(chapterSlug)].map(q).join(', ')})`,
     'on conflict (space_id, profile_id) do nothing;',
     '',
-    '-- 4. Circles. Each Space\'s primary circle was minted by the trigger; here it gets its words. The member-led',
-    '--    circles (the handoff\'s twelve) live on the Network, or on the chapter they meet in.',
-    `update circles set about = ${q('Feel Good Fridays at Fox Point Farms, Encinitas: every Friday, 9:00–10:10 AM. No pressure. No pitch. Come find your people.')}, neighborhood = 'Encinitas', timezone = ${q(TZ)}, primary_pillar = 'mind' where space_id = ${q(SPACE_ID)} and is_space_primary;`,
-    ...CHAPTERS.map((c) => `update circles set about = ${q(`${c.meeting} · ${c.when}. ${c.where}.`)}, neighborhood = ${q(c.short)}, timezone = ${q(TZ)}, primary_pillar = 'mind' where space_id = ${q(chapterId(c))} and is_space_primary;`),
+    '-- 4. Circles. The member-led circles (the handoff\'s twelve) live on the Network, or on the chapter they meet in.',
+    '--    A chapter\'s own weekly meeting is a Space event of the chapter (step 7), not a Circle (ADR-1938).',
     ...CIRCLES.flatMap((c) => [
       `insert into circles (id, name, slug, about, type, member_cap, member_count, status, host_id, space_id, neighborhood, city, primary_pillar, timezone, access)`,
       `values (${q(circleId(c.key))}, ${q(circleName(c.name))}, ${q(`tg-${c.key}`)}, ${q(c.body)}, 'in-person', 50, 0, 'active', ${q(OWNER_ID)}, ${chapterRef(c.chapter)}, ${q(c.area)}, ${q(c.area)}, 'mind', ${q(TZ)}, 'open')`,
@@ -946,16 +946,16 @@ on conflict (id) do update set title = excluded.title, description = excluded.de
     '--    calendar holds every chapter; a chapter\'s own meetings are hosted by its Space (host_space_id), so each',
     '--    chapter\'s calendar shows its own. Recurring series are anchors with an RRULE plus the first 60 days of',
     '--    occurrences (lib/event-recurrence.ts); the daily job rolls the window forward from here.',
-    '--    Every row is placed in a circle (task E, SCAN-949): a member-led series in its circle, a chapter meeting',
-    '--    in the chapter\'s Space Circle, a network-wide event in the Network\'s (lib/events/placement.ts).',
+    '--    A member-led series sits in its circle (task E, SCAN-949); a chapter meeting or a network-wide event is a',
+    '--    Space event of its host Space (scope public + region, ADR-1938).',
     ...events.flatMap((e) => [eventInsert(e, chapterRef(e.chapter)), occurrencesInsert(e)].filter(Boolean)),
     '',
     `-- VERIFY: select slug, plan, parent_id is not null as chapter, preferences->'siteStyle'->>'theme' as theme from spaces where slug like 'the-group%' order by slug;`,
     `-- EXPECT: 7 rows: the-group (network, theme network) and six chapters with parent_id set.`,
     `-- VERIFY: select count(*) from events where space_id = '${SPACE_ID}';`,
     `-- EXPECT: ${events.length + events.reduce((n, e) => n + e.occurrences.length, 0)}`,
-    `-- VERIFY: select count(*) from events where space_id = '${SPACE_ID}' and (scope_type is distinct from 'circle' or scope_circle_id is null);`,
-    '-- EXPECT: 0 (every event sits in a circle)',
+    `-- VERIFY: select count(*) from events where space_id = '${SPACE_ID}' and scope_type = 'circle' and scope_circle_id is null;`,
+    '-- EXPECT: 0 (a circle event names its circle; every other event is a Space event)',
     '',
     'commit;',
   )

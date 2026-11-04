@@ -20,6 +20,12 @@ import { runVeraTurn } from './loop'
 import { getSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { veraSpaceGuide } from './space-guide'
+import { SPACE_FUNCTIONS, spaceFunctionDef, spaceFunctionEnabled, spaceFunctionMinRole } from '@/lib/spaces/functions'
+import { veraSettingsGuide } from './space-settings'
+import type { Space } from '@/lib/spaces/types'
+import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
+import { readHeroConfig } from '@/lib/spaces/hero-config'
+import { readCoverScrim, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import type { VeraReader } from './reader-note'
 import { runVeraClaudeTurn, type VeraMessage } from './agent-claude'
 import type { EntitlementTier } from '@/lib/core/entitlement'
@@ -118,15 +124,43 @@ async function readerFor(profileId: string): Promise<VeraReader | null> {
   }
 }
 
+/** Each Space setting Vera may propose that applies to this Space, with its value now (LIVE-2186). The calendar
+ *  settings apply only while the Calendar is on, the same door the calendar page uses. */
+function settingsNow(space: Space): Record<string, string> {
+  const events = spaceFunctionDef('events')
+  if (!events || !spaceFunctionEnabled(space, events)) return {}
+  return {
+    'calendar.time_zone': space.timeZone ?? 'not set (dates use America/Los_Angeles)',
+    'calendar.sky_markers': readSkyMarkersEnabled(space.preferences) ? 'on' : 'off',
+  }
+}
+
+/** The Space page's look settings with their values now (LIVE-2187). Every Space has a page, so these always apply. */
+function pageLookNow(space: Space): Record<string, string> {
+  const hero = readHeroConfig(space.preferences)
+  return {
+    'page.cover_style': readCoverScrim(space.preferences),
+    'page.logo_backdrop': readLogoBackdrop(space.preferences),
+    'page.hero_height': hero.height ?? 'standard',
+    'page.hero_buttons': hero.buttonOrientation ?? 'row',
+  }
+}
+
 /** The settings guide for the Space page they are on (LIVE-2147). Their role comes from the Space's own
  *  capability resolver, never from the request; anyone who cannot edit the Space gets nothing. FAIL-SAFE:
  *  any miss is an empty guide and the turn goes on. */
 async function spaceGuideFor(slug: string | undefined, profileId: string): Promise<string> {
   if (!slug) return ''
   try {
-    const space = await getSpaceBySlug(slug)
-    if (!space) return ''
-    return veraSpaceGuide(space, await getSpaceCapabilities(space, profileId))
+    const found = await getSpaceBySlug(slug)
+    if (!found) return ''
+    // Each area's lowest role now (LIVE-2185), so Vera can say who can use it before proposing a change.
+    const minRoles: Record<string, string> = {}
+    for (const fn of SPACE_FUNCTIONS) minRoles[fn.key] = spaceFunctionMinRole(found, fn.key) ?? fn.defaultMinRole
+    const space = { ...found, minRoles }
+    const guide = veraSpaceGuide(space, await getSpaceCapabilities(space, profileId))
+    // The settings she may propose (LIVE-2186) ride only an owner's or admin's guide, the one that offers changes.
+    return guide.includes('set_space_feature') ? [guide, veraSettingsGuide(found.slug, { ...pageLookNow(found), ...settingsNow(found) })].filter(Boolean).join('\n') : guide
   } catch {
     return ''
   }
