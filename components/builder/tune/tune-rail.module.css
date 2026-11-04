@@ -1,7 +1,9 @@
 /* THE TUNE RAIL (BLD-105): Commons tokens and the builder's shape tokens (BLD-002) only. */
 
 .tune { display: grid; gap: 14px; }
-.field { display: grid; gap: 6px; }
+.field { display: grid; gap: 6px; border-radius: var(--r-control); }
+/* A picture clicked on the canvas lights its field and the focal point beside it (BLD-104). */
+.field[data-lit] { outline: 2px solid var(--editor-select); outline-offset: 6px; }
 .fieldLabel { font-size: 12px; font-weight: 600; color: var(--fq-text-strong); }
 .req { margin-left: 4px; color: var(--editor-select); }
 .input {
