@@ -67,7 +67,6 @@ const ROUTES = {
   'how-to-build-community': 'app/(marketing)/how-to-build-community/page.tsx',
   loneliness: 'app/(marketing)/loneliness/page.tsx',
   'friendship-as-an-adult': 'app/(marketing)/friendship-as-an-adult/page.tsx',
-  'calm-down-fast': 'app/(marketing)/calm-down-fast/page.tsx',
   'how-to-be-more-social': 'app/(marketing)/how-to-be-more-social/page.tsx',
   // tools-for-community-builders and what-is-frequency merged away (SCAN-1017): their page files are
   // redirect stubs now, out of EDITABLE_PAGES, so they are not scored.
