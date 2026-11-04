@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2173",
+  "title": "Create a Space builder: Bold and Wildheart previews wear their revised design systems' faces and corners; Wildheart wears its own photos",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/theme/preview-tokens.ts",
+    "ref": "Finish every theme overnight (Daniel 2026-11-04 07:14Z): every theme fully developed and plugged into the builder"
+  },
+  "detail": "After the Bold intake (LIVE-2101) and the Wildheart restyle (LIVE-2084), the signed-out builder preview still drew both in their old faces: Bold in Anton over Hanken Grotesk, Wildheart in Cormorant Garamond with generic petal corners, and Wildheart borrowed the three gathering photos although it has five of its own. The preview now reads each design system: Bold is Sofia Sans Extra Condensed caps at 800 over Barlow with .12em labels and square corners; Wildheart is IM Fell English over EB Garamond with .16em labels, its petal card and control corners, the arch on its pictures and its soft shadow. The font sheet loads Sofia Sans Extra Condensed 800, Barlow, IM Fell English and EB Garamond and drops Anton, which no kit wears now. Wildheart's preview wears sisters-shore as its hero and its other four photos in the strip and the Photos step; the host portrait stays the gathering photo, as Nocturne's does, because the theme has no portrait photography. Bold keeps the gathering photos until it has its own library (the Hearts on Fire photos stay out). Renders at 390, 1280, 1440, 1920 and 2000 in /mnt/project-files/themes-overnight-2026-11-04/renders/after/.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/bold-wildheart-builder-preview.mjs"
+  },
+  "closed": "2026-11-04"
+}
