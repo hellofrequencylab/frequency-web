@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Config, Data } from '@/lib/page-editor/types'
 import { sectionDisplay, sectionVisibility } from './state'
-import { VERA_SECTION_TONES, VERA_SECTION_WIDTHS, MAX_VERA_LAYOUT_CHANGES, applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, readWebsiteVeraStyleMenu, websiteVeraOutline, websiteVeraStylePatch, type WebsiteVeraStyleMenu } from './vera-layout'
+import { VERA_SECTION_TONES, VERA_SECTION_WIDTHS, MAX_VERA_LAYOUT_CHANGES, applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, readWebsiteVeraStyleMenu, websiteVeraGhost, websiteVeraOutline, websiteVeraStylePatch, type WebsiteVeraStyleMenu } from './vera-layout'
 
 const config: Config = { components: {
   Hero: { label: 'Hero', fields: { title: { type: 'text' } }, render: () => null },
@@ -190,5 +190,26 @@ describe('Vera adds a section the Add tab offers (LIVE-2135)', () => {
     expect(readWebsiteVeraStyleMenu(menu)?.sections).toBeUndefined()
     expect(readWebsiteVeraStyleMenu({ ...menu, sections: [{ type: 'gallery; drop', label: 'x' }] })).toBeNull()
     expect(readWebsiteVeraStyleMenu({ ...menu, sections: 'Gallery' })).toBeNull()
+  })
+})
+
+describe('Vera previews her proposal on the page before it is applied (LIVE-2141)', () => {
+  it('draws only the ticked section lines and leaves the page itself untouched', () => {
+    const before = JSON.stringify(doc)
+    const ghost = websiteVeraGhost(doc, config, [
+      { kind: 'move', sectionId: 'about', toPosition: 2 },
+      { kind: 'move', sectionId: 'contact', toPosition: 1 },
+      { kind: 'accent', accent: 'tide' },
+    ], [true, false, true])
+    expect(ghost.doc.content.map((b) => b.props.id)).toEqual(['hero', 'about', 'contact'])
+    expect(ghost.changed).toBe(1)
+    expect(ghost.styleLines).toBe(1)
+    expect(JSON.stringify(doc)).toBe(before)
+  })
+
+  it('shows the page as it is when nothing is ticked', () => {
+    const ghost = websiteVeraGhost(doc, config, [{ kind: 'move', sectionId: 'about', toPosition: 1 }], [false])
+    expect(ghost.doc.content.map((b) => b.props.id)).toEqual(['hero', 'contact', 'about'])
+    expect(ghost.changed).toBe(0)
   })
 })

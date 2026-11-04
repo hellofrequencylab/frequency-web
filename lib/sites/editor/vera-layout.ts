@@ -322,3 +322,12 @@ export function applyWebsiteVeraLayout(doc: Data, config: Config, changes: Websi
   }
   return { doc: next, results }
 }
+
+/** THE GHOST PREVIEW (LIVE-2141): the page as it would look with the ticked SECTION lines applied, for the canvas
+ *  to draw read-only while the proposal is open. Nothing is committed and the draft is untouched; style lines are
+ *  counted, not drawn, so the banner can say they show once applied. */
+export function websiteVeraGhost(doc: Data, config: Config, changes: readonly WebsiteVeraChange[], ticked: readonly boolean[]): { doc: Data; changed: number; styleLines: number } {
+  const chosen = changes.filter((_, i) => ticked[i])
+  const { doc: next, results } = applyWebsiteVeraLayout(doc, config, chosen)
+  return { doc: next, changed: results.filter((r) => r.ok).length, styleLines: chosen.filter(isWebsiteVeraStyleChange).length }
+}
