@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { readSitePageStyle, servicesDials, siteLook, siteDials, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
+import { readSitePageStyle, servicesDials, siteRootDials, siteLook, siteDials, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
 import { themeEditor } from '@/lib/themes/editor-dials'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -34,6 +34,7 @@ import { DESIGNER_CSS } from '@/components/sites/designer-css'
 import { FREE_HUMAN_FONT_CLASS } from '@/components/sites/free-human-fonts'
 import { FREE_HUMAN_CSS } from '@/components/sites/free-human-css'
 import { NEW_WORLD_CSS } from '@/components/sites/new-world-css'
+import { NEW_WORLD_DIALS_CSS } from '@/components/sites/new-world-dials-css'
 import { NEW_WORLD_FONT_CLASS } from '@/components/sites/new-world-fonts'
 import { CYBERWITCH_CSS } from '@/components/sites/cyberwitch-css'
 import { CYBERWITCH_FONT_CLASS } from '@/components/sites/cyberwitch-fonts'
@@ -253,7 +254,7 @@ export async function SitePage({
               : freeHumanSite
                 ? { theme: 'free-human' as const, season: mensworkSeason(new Date()) }
                 : newWorldSite
-                  ? { theme: 'new-world' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const) }
+                  ? { theme: 'new-world' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const), dials: siteRootDials(siteDials(siteStyle, themeEditor('new-world').own)) }
                   : cyberwitchSite
                     ? { theme: 'cyberwitch' as const, season: mensworkSeason(new Date()) }
                   : servicesSite
@@ -277,7 +278,7 @@ export async function SitePage({
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
           <div data-house-theme={skin.theme} data-th={skin.theme === 'new-world' || skin.theme === 'services' ? skin.register ?? 'night' : undefined} data-type={skin.dials?.type} data-motion={skin.dials?.motion} data-image={skin.dials?.image} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
-            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : newWorldSite ? NEW_WORLD_CSS : cyberwitchSite ? CYBERWITCH_CSS : servicesSite ? SERVICES_SITE_CSS : MENSWORK_CSS}</style>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : newWorldSite ? NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS : cyberwitchSite ? CYBERWITCH_CSS : servicesSite ? SERVICES_SITE_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
