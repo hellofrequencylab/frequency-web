@@ -45,7 +45,7 @@ function assertAlias(from, to) {
 }
 
 if (mode === 'freshness') {
-  for (const slug of ['how-to-start-a-circle', 'how-to-build-community', 'loneliness', 'calm-down-fast', 'friendship-as-an-adult', 'how-to-be-more-social']) {
+  for (const slug of ['how-to-start-a-circle', 'how-to-build-community', 'loneliness', 'friendship-as-an-adult', 'how-to-be-more-social']) {
     const route = loadProbeModule(`app/(marketing)/${slug}/page.tsx`, dependencies)
     publishedAt = '2099-12-31T10:00:00Z'
     const block = findNode(await route.default(), BlockDocJsonLd)
