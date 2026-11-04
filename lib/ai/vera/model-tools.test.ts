@@ -73,3 +73,31 @@ describe('a Space switch (LIVE-2157)', () => {
     }
   })
 })
+
+describe('a Space role change (LIVE-2185)', () => {
+  const space = {
+    switchable: (fn: string) => fn === 'crm',
+    card: (fn: string, on: boolean) => `Turn ${fn} ${on ? 'on' : 'off'}?`,
+    roleCard: (fn: string, role: string) => (role === 'moderator' ? `Let moderators and up use ${fn}?` : null),
+  }
+
+  it('becomes a card with the role words when the turn carries the Space switches', async () => {
+    const proposals: ProposedToolCall[] = []
+    const results = await handleModelToolCalls([{ id: 'r', name: 'set_space_role', input: { space: 'sunrise', feature: 'crm', role: 'moderator' } }], proposals, vi.fn(), space)
+    expect(proposals).toEqual([{ tool: 'set_space_role', args: { space: 'sunrise', feature: 'crm', role: 'moderator' }, label: 'Let moderators and up use crm?' }])
+    expect(results).toBeNull()
+  })
+
+  it('is refused for a money switch, a role off the ladder, and on a turn without the Space switches', async () => {
+    for (const [input, sw] of [
+      [{ space: 'sunrise', feature: 'memberships', role: 'moderator' }, space],
+      [{ space: 'sunrise', feature: 'crm', role: 'owner' }, space],
+      [{ space: 'sunrise', feature: 'crm', role: 'moderator' }, undefined],
+    ] as const) {
+      const proposals: ProposedToolCall[] = []
+      const results = await handleModelToolCalls([{ id: 'r', name: 'set_space_role', input: { ...input } }], proposals, vi.fn(), sw)
+      expect(proposals).toEqual([])
+      expect(results?.[0].content).toContain('Nothing was changed')
+    }
+  })
+})

@@ -20,6 +20,7 @@ import { runVeraTurn } from './loop'
 import { getSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { veraSpaceGuide } from './space-guide'
+import { SPACE_FUNCTIONS, spaceFunctionMinRole } from '@/lib/spaces/functions'
 import type { VeraReader } from './reader-note'
 import { runVeraClaudeTurn, type VeraMessage } from './agent-claude'
 import type { EntitlementTier } from '@/lib/core/entitlement'
@@ -124,8 +125,12 @@ async function readerFor(profileId: string): Promise<VeraReader | null> {
 async function spaceGuideFor(slug: string | undefined, profileId: string): Promise<string> {
   if (!slug) return ''
   try {
-    const space = await getSpaceBySlug(slug)
-    if (!space) return ''
+    const found = await getSpaceBySlug(slug)
+    if (!found) return ''
+    // Each area's lowest role now (LIVE-2185), so Vera can say who can use it before proposing a change.
+    const minRoles: Record<string, string> = {}
+    for (const fn of SPACE_FUNCTIONS) minRoles[fn.key] = spaceFunctionMinRole(found, fn.key) ?? fn.defaultMinRole
+    const space = { ...found, minRoles }
     return veraSpaceGuide(space, await getSpaceCapabilities(space, profileId))
   } catch {
     return ''

@@ -7,8 +7,8 @@ import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { runConciergeTurn, type ConciergeTurnResult } from '@/lib/ai/vera/turn'
 import { VERA_TURN_BODY } from '@/lib/ai/vera/turn-input'
 import { MEMBER_CHAT_TOOL_KEYS, requiresConfirmation, validateToolCall } from '@/lib/ai/vera/tools'
-import { veraSwitchName, veraSwitchable } from '@/lib/ai/vera/space-guide'
-import { setSpaceFeatureEnabled } from '@/app/(main)/spaces/[slug]/manage/modules/actions'
+import { veraRoleCard, veraSwitchName, veraSwitchable } from '@/lib/ai/vera/space-guide'
+import { setSpaceFeatureEnabled, setSpaceFeatureMinRole } from '@/app/(main)/spaces/[slug]/manage/modules/actions'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isError } from '@/lib/action-result'
@@ -77,6 +77,7 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   // Space from the slug and re-checks that the caller is its owner or an admin. Money, the plan, the team
   // list and deleting are refused here as well as in the chat, whatever the request carries.
   if (tool === 'set_space_feature') return setSpaceSwitch(args)
+  if (tool === 'set_space_role') return setSpaceRole(args)
 
   // The member-facing confirm path may run ONLY the small set of member-SAFE, self-scoped
   // tools. executeConfirmedTool ALSO dispatches the operator-only Resonance Engine playbook
@@ -106,6 +107,19 @@ async function setSpaceSwitch(args: Record<string, unknown>): Promise<{ ok: bool
   const res = await setSpaceFeatureEnabled(slug, feature, on)
   if (isError(res)) return { ok: false, error: res.error }
   return { ok: true, message: `Done. ${veraSwitchName(feature)} is ${on ? 'on' : 'off'}. You can switch it back any time at /spaces/${slug}/manage/modules.` }
+}
+
+/** Set the lowest role that can use one area of a Space, for the owner or an admin who tapped Vera's card
+ *  (LIVE-2185). Same refusals as a switch; the Module Manager's own action re-checks the caller and the role. */
+async function setSpaceRole(args: Record<string, unknown>): Promise<{ ok: boolean; error?: string; message?: string }> {
+  if (!validateToolCall('set_space_role', args).ok) return { ok: false, error: 'That change was not complete. Ask Vera again?' }
+  const feature = String(args.feature)
+  const role = String(args.role)
+  if (!veraSwitchable(feature) || !veraRoleCard(feature, role)) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
+  const slug = String(args.space)
+  const res = await setSpaceFeatureMinRole(slug, feature, role)
+  if (isError(res)) return { ok: false, error: res.error }
+  return { ok: true, message: `Done. You can change who can use ${veraSwitchName(feature)} any time at /spaces/${slug}/manage/modules.` }
 }
 
 /** Resolve a circle (by slug, then name) and join the member via the canonical
