@@ -20,7 +20,7 @@ import { UpdateLayouts } from './update-layouts'
 import { upgradableCount } from '@/lib/blocks/roles/legacy-map'
 import { TryItOnBar, legacyBlocksOn, useTryItOnSkin } from '../theme-preview-swap'
 import { ThemeDraftsPanel } from './theme-drafts-panel'
-import { activeThemeDraftId, addThemeDraft, draftDials, draftLook, liveThemeDraftId, removeThemeDraft, renameThemeDraft, switchThemeDraft, themeDrafts } from '@/lib/sites/editor/theme-drafts'
+import { THEME_DRAFT_NAME, activeThemeDraftId, addThemeDraft, draftDials, draftLook, liveThemeDraftId, removeThemeDraft, renameThemeDraft, switchThemeDraft, themeDrafts } from '@/lib/sites/editor/theme-drafts'
 import type { KitChanges } from '@/lib/sites/kits/apply'
 import type { KitApplyMode, KitNiche } from '@/lib/sites/kits/types'
 import { editorBlockMeta, editorPickerGroups, VERA_SUGGESTIONS } from '@/lib/sites/editor/block-meta'
@@ -45,6 +45,7 @@ import type { FieldFocus } from '@/lib/sites/editor/field-sync'
 import { WebsiteInspector, WebsiteChromeInspector } from './inspector'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
 import { VeraDock, VeraLayoutProposal } from './vera-dock'
+import { websiteVeraFacts, type WebsiteVeraFacts } from '@/lib/sites/editor/vera-guide'
 import { applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, websiteVeraOutline, websiteVeraStylePatch, type WebsiteVeraChange, type WebsiteVeraSection, type WebsiteVeraStyleMenu } from '@/lib/sites/editor/vera-layout'
 import { SectionIcon, sectionLine } from './section-icon'
 import { FQ_EDITOR, k, on } from './skin'
@@ -82,7 +83,7 @@ export interface WebsiteEditorShellProps {
   onPresence?: (cursor: WebsitePresence['cursor']) => Promise<{ ok: true; people: WebsitePresence[] } | { ok: false; error: string }>
   onPropose?: (request: string, value: string) => Promise<{ ok: true; promptIds: WebsiteCoachingPromptId[] } | { ok: false; error: string }>
   /** Vera's layout proposals (LIVE-2097): structure and the theme's own styles (LIVE-2098), applied by the person to the draft. */
-  onLayout?: (request: string, outline: WebsiteVeraSection[], styleMenu?: WebsiteVeraStyleMenu) => Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }>
+  onLayout?: (request: string, outline: WebsiteVeraSection[], styleMenu?: WebsiteVeraStyleMenu, facts?: WebsiteVeraFacts) => Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }>
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
   onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>>; pages?: Record<string, SiteThemeId | null> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
@@ -611,14 +612,16 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     try {
       const slug = page.slug
       const menu = veraStyleMenu
-      const result = await onLayout(text, websiteVeraOutline(page.doc, config), menu)
+      // LIVE-2110: what she may know to answer a question: counts and labels about this draft, never its words.
+      const facts = websiteVeraFacts({ draft: latest.current, published: persisted.published, scheduledAt: persisted.scheduled?.at ?? null, pageInView: page.label, themeLabel: THEME_DRAFT_NAME[latest.current.theme], config })
+      const result = await onLayout(text, websiteVeraOutline(page.doc, config), menu, facts)
       if (!result.ok) { setVeraStatus(result.error); return }
       // The reply crossed the network: parse it again against THIS page's own sections before showing a line.
       const current = latest.current.pages.find((p) => p.slug === slug)
       const ids = new Set((current?.doc.content ?? []).map((block) => String(block.props.id ?? '')))
       const parsed = parseWebsiteVeraLayout({ changes: result.changes }, ids, menu)
       const refused = [...new Set([...(Array.isArray(result.refused) ? result.refused.filter((r): r is string => typeof r === 'string').slice(0, 12) : []), ...parsed.refused])]
-      const note = typeof result.note === 'string' ? result.note.slice(0, 240) : ''
+      const note = typeof result.note === 'string' ? result.note.slice(0, 500) : ''
       if (!parsed.changes.length && !refused.length) { setVeraStatus(note || 'Vera had no change for that. Try naming the section or the style.'); return }
       setLayoutProposal({ slug, menu, note, changes: parsed.changes, ticked: parsed.changes.map(() => true), refused })
     } catch { setVeraStatus('Vera could not reply. Try again in a moment.') }
@@ -861,7 +864,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
             <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is thinking…' : <><b>Vera</b>{veraStatus && <p>{veraStatus}</p>}{coachingQuestions.map(question => <p key={question}>{question}</p>)}{coachingQuestions.length > 0 && <button type="button" className="btn sm txt" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button>}{layoutLines && layoutProposal && <VeraLayoutProposal note={layoutProposal.note} lines={layoutLines} refused={layoutProposal.refused} onToggle={toggleLayoutLine} onApply={applyLayout} onDismiss={() => setLayoutProposal(null)} buttonClass="btn sm ink" dismissClass="btn sm txt" />}</>}</div>
             <form className="bar" onSubmit={(e) => { e.preventDefault(); submitVera() }}>
               <span className="orb" aria-hidden />
-              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder={onLayout ? 'Ask Vera to rearrange or restyle your site…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder={onLayout ? 'Ask Vera a question, or to rearrange or restyle…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
               <span className="ctx">{veraContext}</span>
               <button type="submit" className="btn sm ink" disabled={asking}>Ask</button>
               <button type="button" className="ib vera-hide" aria-label="Hide Vera" aria-keyshortcuts="Meta+Backslash Control+Backslash" title="Hide Vera (⌘\\)" onClick={() => putVeraAway(true)}><FqIcon name="close" /></button>
@@ -950,7 +953,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         <div className="we-suggestions"><button type="button" onClick={() => void askVera('Help me decide which details to keep in this passage.')}>Review length</button><button type="button" onClick={() => void askVera('What should I consider about welcoming tone while writing in my own words?')}>Review tone</button><button type="button" onClick={() => void askVera('Which questions should I consider while writing my own heading for this section?')}>Review the heading</button><button type="button" onClick={() => insert(page.doc.content.length)}>Add a section</button></div>
         <form className="we-vera-bar" onSubmit={(e) => { e.preventDefault(); submitVera() }}>
           <span className="we-orb" aria-hidden />
-          <Input variant="seamless" aria-label="Ask Vera" placeholder={onLayout ? 'Ask Vera to rearrange or restyle your site…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+          <Input variant="seamless" aria-label="Ask Vera" placeholder={onLayout ? 'Ask Vera a question, or to rearrange or restyle…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
           <span className="we-context" title={textSelection ? `Selected text · ${textSelection.field}` : undefined}>{textSelection ? 'Selected text' : selected ? config.components[selected.type]?.label ?? selected.type : page.label}</span>
           <button type="submit" className="we-action ink sm" disabled={asking}>Ask</button>
         </form>
