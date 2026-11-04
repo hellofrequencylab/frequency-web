@@ -28,6 +28,7 @@ import { readHeroConfig } from '@/lib/spaces/hero-config'
 import { readCoverScrim, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import type { VeraReader } from './reader-note'
 import { runVeraClaudeTurn, type VeraMessage } from './agent-claude'
+import { runAdminLookup } from './admin-lookups'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { ConciergeStage, ProposedToolCall } from './concierge'
 
@@ -59,6 +60,12 @@ async function callerIdentity(): Promise<{ id: string; communityRole: string; we
     // The billing tier feeds the vera_unlimited daily-cap gate (ADR-370). INERT while billing is OFF.
     tier: ((data.membership_tier as EntitlementTier | null) ?? 'free'),
   }
+}
+
+/** Whether the caller's own session is staff right now (LIVE-2188), re-read for every operator lookup. */
+async function staffNow(): Promise<boolean> {
+  const now = await callerIdentity()
+  return !!now && isStaff(now.webRole)
 }
 
 /** Run one concierge turn. Live loop when the kernel is on (grounded in memory, with the bounded
@@ -98,6 +105,8 @@ export async function runConciergeTurn(
       viewer,
       reader,
       spaceGuide,
+      // The live operator answers (LIVE-2188): only for a staff session, and each lookup re-reads the session.
+      adminLookup: viewer?.isOperator ? (question) => runAdminLookup(question, staffNow) : undefined,
       onText: opts.onText,
     })
     if (live) return { message: live.reply, stage: 'chat', proposals: live.proposals, suggestions: live.suggestions, done: false }

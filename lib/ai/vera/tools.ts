@@ -9,6 +9,7 @@
 // confirms, the code executes. This file is the contract that makes that enforceable.
 
 import { createEntityToolDef } from './create-tools'
+import { adminQuestionList } from './admin-questions'
 
 type ToolMode = 'read' | 'write'
 export type ParamType = 'string' | 'number' | 'boolean'
@@ -222,6 +223,13 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
     ],
   },
 
+  {
+    key: 'admin_lookup',
+    description: `Look up one live number for a Frequency team member, from this closed list only: ${adminQuestionList()}. Only for questions about running Frequency. Use the answer as given; if it says it could not look it up, point them to the admin page it names.`,
+    mode: 'read',
+    params: [{ name: 'question', type: 'string', required: true, description: 'One question id from the list.' }],
+  },
+
   // ── Studio creation (ADR-988) ────────────────────────────────────────────────
   // The ONE governed create tool, BUILT from the Studio catalog (lib/studio/registry.ts) rather
   // than re-listed here: a tool that could name an entity the catalog does not know is exactly
@@ -251,6 +259,10 @@ export const MEMBER_CHAT_TOOL_KEYS: ReadonlySet<string> = new Set([
 /** The Space-settings tools (LIVE-2157): offered on top of the member set only when the Space guide names
  *  them, which it does only for that Space's owner or an admin. */
 export const SPACE_MANAGER_TOOL_KEYS: ReadonlySet<string> = new Set(['set_space_feature', 'set_space_role', 'set_space_setting'])
+
+/** The operator read (LIVE-2188): offered only when the caller's own session is staff, and the lookup itself
+ *  re-checks that before it reads. */
+export const OPERATOR_TOOL_KEYS: ReadonlySet<string> = new Set(['admin_lookup'])
 
 export function getTool(key: string): VeraToolDef | undefined {
   return BY_KEY.get(key)

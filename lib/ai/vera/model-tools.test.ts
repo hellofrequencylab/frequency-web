@@ -129,3 +129,32 @@ describe('a Space setting (LIVE-2186)', () => {
     }
   })
 })
+
+describe('an operator lookup (LIVE-2188)', () => {
+  it('runs the handed-in lookup and feeds the answer back, proposing nothing', async () => {
+    const lookup = vi.fn().mockResolvedValue('3 reports are waiting for review at /admin/moderation.')
+    const read = vi.fn()
+    const proposals: ProposedToolCall[] = []
+    const results = await handleModelToolCalls([{ id: 'a', name: 'admin_lookup', input: { question: 'open_reports' } }], proposals, read, { switchable: () => false, card: () => '', lookup })
+    expect(lookup).toHaveBeenCalledWith('open_reports')
+    expect(read).not.toHaveBeenCalled()
+    expect(proposals).toEqual([])
+    expect(results?.[0].content).toBe('3 reports are waiting for review at /admin/moderation.')
+  })
+
+  it('reads nothing on a turn without the lookup (a member, or an invented call)', async () => {
+    for (const sw of [undefined, { switchable: () => true, card: () => 'x' }]) {
+      const read = vi.fn()
+      const results = await handleModelToolCalls([{ id: 'a', name: 'admin_lookup', input: { question: 'open_reports' } }], [], read, sw)
+      expect(read).not.toHaveBeenCalled()
+      expect(results?.[0].content).toContain('Nothing was read')
+    }
+  })
+
+  it('refuses arguments off the tool shape before any lookup', async () => {
+    const lookup = vi.fn()
+    const results = await handleModelToolCalls([{ id: 'a', name: 'admin_lookup', input: { question: 'open_reports', sql: 'select 1' } }], [], vi.fn(), { switchable: () => false, card: () => '', lookup })
+    expect(lookup).not.toHaveBeenCalled()
+    expect(results?.[0].content).toContain('Nothing was changed')
+  })
+})
