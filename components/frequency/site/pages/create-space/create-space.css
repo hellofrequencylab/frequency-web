@@ -348,3 +348,50 @@ section.cs-close h2.cs-close-h{margin:0;font:700 clamp(36px,5vw,72px)/1.02 var(-
 @media (prefers-reduced-motion:reduce){.cs-pain,.cs-tool{transition:none}}
 .cs-free-link .fq-icon{width:16px;height:16px}
 .cs-close .cs-go .fq-icon{width:18px;height:18px}
+
+/* ---- Below the builder, each section its own shape (marketing evolution, lane B) ----
+   Sound familiar: a photo collage, the first pain large with the iridescent rim, each line on glass over its
+   photo; a scroll-snap rail on a phone. Day one: the heading holds still on the left while the tools scroll on
+   the right, under a signal line. Free to operate: the rimmed glass panel over a full-bleed photo with grain.
+   Questions: the heading holds still beside the list. Closing: a night still under the aura. */
+.cs-pains{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);grid-auto-rows:minmax(300px,auto);gap:20px}
+.cs-pain{position:relative;display:block;min-height:300px;border-radius:var(--fq-radius-xl)}
+.cs-pain-lead{grid-row:span 2;min-height:620px}
+.cs-pain-pic{position:absolute;inset:0;aspect-ratio:auto;border-radius:inherit}
+.cs-pain-fade{inset:0;height:auto;background:linear-gradient(180deg,transparent 35%,color-mix(in oklab,var(--fq-bg-canvas) 78%,transparent) 100%)}
+.cs-pain-text{position:absolute;left:14px;right:14px;bottom:14px;z-index:1;padding:18px 20px;border-radius:var(--fq-radius-l);gap:8px}
+.cs-pain-lead .cs-pain-text{left:20px;right:auto;bottom:20px;max-width:440px;padding:24px 26px}
+article.cs-pain-lead h3.cs-pain-h{font-size:clamp(24px,2.4vw,32px)}
+.cs-pain-text .cs-pain-p{color:var(--fq-text-strong)}
+
+.cs-signal{position:absolute;left:0;right:0;top:-1px;height:2px;z-index:2;background:linear-gradient(90deg,transparent,var(--fq-side,var(--fq-accent-2)) 30%,var(--fq-accent-2) 70%,transparent);opacity:.75}
+.cs-signal i{position:absolute;left:30%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--fq-ig-orb);box-shadow:var(--fq-ig-glow);animation:fq-breath var(--fq-pulse) var(--fq-ease-breath) infinite}
+.cs-dayone-in{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:40px clamp(40px,6vw,88px);align-items:start}
+.cs-dayone-top{position:sticky;top:120px;grid-template-columns:minmax(0,1fr);align-items:start}
+.cs-tools{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cs-tool{display:grid;grid-template-columns:48px minmax(0,1fr);gap:4px 16px;align-items:start}
+.cs-tool .fq-icon-tile{grid-row:span 2}
+.cs-tool-h{align-self:end}
+
+.cs-free-sec{position:relative;overflow:hidden;isolation:isolate;padding:clamp(80px,11vw,150px) clamp(18px,4vw,40px)}
+.cs-band-pic{position:absolute;inset:0;z-index:-1}
+.cs-band-shade{position:absolute;inset:0;background:linear-gradient(180deg,var(--fq-bg-canvas) 0%,color-mix(in oklab,var(--fq-bg-canvas) 62%,transparent) 28%,color-mix(in oklab,var(--fq-bg-canvas) 62%,transparent) 72%,var(--fq-bg-canvas) 100%)}
+.cs-band-pic .fq-grain{opacity:.16}
+.cs-free{background:var(--fq-surface-glass);box-shadow:0 40px 80px -40px var(--fq-uv-void)}
+.cs-close .cs-band-shade{background:radial-gradient(ellipse 70% 80% at center,color-mix(in oklab,var(--fq-bg-canvas) 55%,transparent),var(--fq-bg-canvas) 82%)}
+.cs-close .fq-aura{opacity:.3}
+
+.cs-faq{grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr)}
+.cs-faq .cs-sec-intro{position:sticky;top:120px}
+
+@media (max-width:980px){
+.cs-dayone-in,.cs-faq{grid-template-columns:minmax(0,1fr)}
+.cs-dayone-top,.cs-faq .cs-sec-intro{position:static}}
+@media (max-width:700px){
+.cs-pains{display:grid;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:84%;grid-auto-rows:auto;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;margin:0 calc(-1 * clamp(18px,4vw,40px));padding:0 clamp(18px,4vw,40px) 8px;scroll-padding:0 clamp(18px,4vw,40px);scrollbar-width:none}
+.cs-pains::-webkit-scrollbar{display:none}
+.cs-pain,.cs-pain-lead{grid-row:auto;min-height:440px;scroll-snap-align:start}
+.cs-pain-lead .cs-pain-text{right:14px;left:14px;bottom:14px;padding:18px 20px}
+.cs-tools{grid-template-columns:minmax(0,1fr);gap:8px}
+.cs-tool{padding:14px 16px}}
+@media (prefers-reduced-motion:reduce){.cs-signal i{animation:none}}

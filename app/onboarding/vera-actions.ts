@@ -6,7 +6,9 @@ import { createClient } from '@/lib/supabase/server'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { runConciergeTurn, type ConciergeTurnResult } from '@/lib/ai/vera/turn'
 import { VERA_TURN_BODY } from '@/lib/ai/vera/turn-input'
-import { MEMBER_CHAT_TOOL_KEYS, requiresConfirmation } from '@/lib/ai/vera/tools'
+import { MEMBER_CHAT_TOOL_KEYS, requiresConfirmation, validateToolCall } from '@/lib/ai/vera/tools'
+import { veraSwitchName, veraSwitchable } from '@/lib/ai/vera/space-guide'
+import { setSpaceFeatureEnabled } from '@/app/(main)/spaces/[slug]/manage/modules/actions'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isError } from '@/lib/action-result'
@@ -55,8 +57,9 @@ export async function conciergeTurn(stage: string, memberText: string, history: 
   return runConciergeTurn(body.stage, body.text, body.history, { ip: await callerIp() })
 }
 
-/** The member confirmed a proposed write — execute it (consent-gated). */
-export async function confirmProposal(tool: string, argsJson: string): Promise<{ ok: boolean; error?: string }> {
+/** The member confirmed a proposed write — execute it (consent-gated). `message` is what Vera says once a
+ *  change landed, when there is something to say (a Space switch says where to switch it back). */
+export async function confirmProposal(tool: string, argsJson: string): Promise<{ ok: boolean; error?: string; message?: string }> {
   const profileId = await callerProfileId()
   if (!profileId) return { ok: false, error: 'Not signed in.' }
   let args: Record<string, unknown>
@@ -69,6 +72,11 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   // join_circle is an app-level action (capacity checks + rewards + redirect), so it's
   // handled here rather than in the lib executor.
   if (tool === 'join_circle') return joinCircleForMember(String(args.circle ?? ''))
+
+  // A Space switch (LIVE-2157) goes through the Module Manager's OWN guarded action, which re-resolves the
+  // Space from the slug and re-checks that the caller is its owner or an admin. Money, the plan, the team
+  // list and deleting are refused here as well as in the chat, whatever the request carries.
+  if (tool === 'set_space_feature') return setSpaceSwitch(args)
 
   // The member-facing confirm path may run ONLY the small set of member-SAFE, self-scoped
   // tools. executeConfirmedTool ALSO dispatches the operator-only Resonance Engine playbook
@@ -86,6 +94,18 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
     revalidatePath('/people', 'layout')
   }
   return result
+}
+
+/** Turn one area of a Space on or off for the owner or an admin who tapped Vera's card (LIVE-2157). */
+async function setSpaceSwitch(args: Record<string, unknown>): Promise<{ ok: boolean; error?: string; message?: string }> {
+  if (!validateToolCall('set_space_feature', args).ok) return { ok: false, error: 'That change was not complete. Ask Vera again?' }
+  const feature = String(args.feature)
+  if (!veraSwitchable(feature)) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
+  const slug = String(args.space)
+  const on = args.on === true
+  const res = await setSpaceFeatureEnabled(slug, feature, on)
+  if (isError(res)) return { ok: false, error: res.error }
+  return { ok: true, message: `Done. ${veraSwitchName(feature)} is ${on ? 'on' : 'off'}. You can switch it back any time at /spaces/${slug}/manage/modules.` }
 }
 
 /** Resolve a circle (by slug, then name) and join the member via the canonical
