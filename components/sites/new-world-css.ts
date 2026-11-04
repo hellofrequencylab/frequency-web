@@ -50,6 +50,10 @@ ${N} .hs-nav-track{gap:32px;padding:0}${N} .hs-nav a,${N} .hs-nav-mega{padding:0
 ${N} .hs-logo{flex:none;display:block;height:clamp(28px,6vw,36px);width:auto;max-width:160px;object-fit:contain;border-radius:var(--nw-radius-sm)}
 /* A hero is a photo under a wash: the wash is Night ink and the words are light in both registers (the bridge above points ink at the accent for bands, which turned the wash teal and the headline dark). */
 ${N} .hs-hero{--color-ink:var(--nw-ink-950);--color-on-ink:var(--nw-chrome-50);--color-on-ink-muted:var(--nw-chrome-200)}
+/* THE CLOSING CARD ("Find me locally", a Call to action card): the shared page sheet paints it with --color-ink, and here the bridge above points ink at the accent, so the card went flat accent with accent-on-accent copy and a button the same colour as its ground. It is a Night card instead: the register's card colour, its own text steps, and the accent kept for the button and the italic word. */
+${N} .mw-closing.mw-closing{--color-ink:var(--nw-surface-card);--color-on-ink:var(--nw-text-primary);--color-on-ink-muted:var(--nw-text-secondary);background:var(--nw-surface-card);color:var(--nw-text-primary);border:var(--nw-border-hairline) solid var(--nw-border-subtle);box-shadow:var(--nw-depth-md)}
+${N} .mw-closing .mw-kicker{color:var(--color-primary-strong)}
+${N} .mw-closing .mw-display em{color:var(--color-primary-strong)}
 ${N} .hs-nav a,${N} .hs-nav-mega{display:inline-flex;align-items:center;gap:8px;${LABEL};letter-spacing:.14em;color:var(--nw-chrome-200);white-space:nowrap}
 ${N} .hs-nav a::before{content:"";width:5px;height:5px;border-radius:var(--nw-radius-pill);background:var(--color-primary);opacity:0;transition:opacity var(--nw-dur-fast) ${EASE}}
 ${N} .hs-nav a:hover,${N} .hs-nav a[aria-current="page"]{color:var(--nw-chrome-50)}

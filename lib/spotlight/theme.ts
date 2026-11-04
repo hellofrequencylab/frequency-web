@@ -160,8 +160,8 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   // The Free Human Theme Kit (lib/theme/free-human.ts): limewash ground, umber type, one madder accent, soft cards. Cormorant and
   // Hanken Grotesk load on websites and on its Spotlight layouts only, so the nearest allowlisted faces stand in for the block body.
   { id: 'free-human', label: 'Free Human', theme: { ...surfacePreset('free-human', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'free-human:stack', kit: 'general' } },
-  // Services (lib/theme/services.ts): the Night register, one Tide accent, soft cards. Its own Spotlight layouts follow with LIVE-1994.
-  { id: 'services', label: 'Services', theme: { ...surfacePreset('services', { heading: 'display', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) } },
+  // Services (lib/theme/services.ts): the Night register, one Tide accent, soft cards, starting on its own Stack Spotlight layout (LIVE-1994).
+  { id: 'services', label: 'Services', theme: { ...surfacePreset('services', { heading: 'display', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'services-kit:stack', kit: 'general' } },
   // New World (lib/theme/new-world.ts): the Night register, one Tide accent, soft cards. Its own Spotlight layouts follow with LIVE-2057.
   { id: 'new-world', label: 'New World', theme: { ...surfacePreset('new-world', { heading: 'display', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'new-world-kit:stack', kit: 'general' } },
   {
