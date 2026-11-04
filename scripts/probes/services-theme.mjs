@@ -43,7 +43,9 @@ const checks = {
     need('lib/theme/site-style.ts', /services/, 'Space page faces and default accent')
   },
   picker() {
-    need('app/themes/services/page.tsx', /Services/, '/themes/services on the Nocturne page layout')
+    need('app/(marketing)/themes/services/page.tsx', /<FrequencyThemeFeature theme="services"/, '/themes/services on the Nocturne page layout')
+    need('lib/theme/site-style.ts', /RETIRED_FROM_PICKERS[^\n]*new Set\((?![^)]*'services')/, 'Services offered in the pickers')
+    need('app/sitemap.ts', /\/themes\/services/, '/themes/services in the sitemap')
   },
   dials() {
     need('lib/theme/dials.json', /"corners"/, 'dial registry')

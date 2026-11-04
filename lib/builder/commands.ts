@@ -9,6 +9,7 @@ export const BUILDER_ACTIONS = {
   preview: { label: 'Preview as a visitor', keys: '⌘\\', needs: null },
   focus: { label: 'Focus: hide both side panels', keys: null, needs: null },
   publish: { label: 'Publish', keys: null, needs: null },
+  add: { label: 'Add a section', keys: null, needs: null },
   'device-desktop': { label: 'Show the desktop size', keys: null, needs: null },
   'device-tablet': { label: 'Show the tablet size', keys: null, needs: null },
   'device-phone': { label: 'Show the phone size', keys: null, needs: null },

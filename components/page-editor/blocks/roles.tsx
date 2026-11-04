@@ -907,3 +907,27 @@ export const rolesComponents: Record<string, ComponentConfig> = {
 }
 
 export const ROLE_CATEGORY_COMPONENTS = Object.keys(rolesComponents)
+
+/** True when the Space has its own rows for this role (the same readers the live render uses). */
+function roleHasSpaceRows(id: RoleId, metadata: Props | undefined, now: Date): boolean {
+  switch (id) {
+    case 'gatherings': return liveEvents(metadata, now, 1).length > 0
+    case 'faq': { const faqs = (metadata?.space as { faqs?: unknown } | undefined)?.faqs; return Array.isArray(faqs) && faqs.some((f) => !!f && !!str((f as Props).question)) }
+    case 'offerings': return liveOfferings(metadata).length > 0
+    case 'proof': return liveReviews(metadata).length > 0
+    case 'stats': return liveStats(metadata).length > 0
+    case 'people': return liveTeam(metadata).length > 0
+    case 'chapters': return liveChapters(metadata).length > 0
+    case 'locations': return liveLocation(metadata) !== null
+    default: return false
+  }
+}
+
+/** The metadata an Add-sheet preview renders with (BLD-202): the Space's own rows when this role is live and the Space has
+ *  some, else no Space at all, so the block draws its flagged sample instead of an empty live section. */
+export function rolePreviewMetadata(id: RoleId, metadata: Props | undefined, now = new Date()): Props | undefined {
+  if (ROLES[id].live && roleHasSpaceRows(id, metadata, now)) return metadata
+  if (!metadata || !('space' in metadata)) return metadata
+  const { space: _space, ...rest } = metadata
+  return rest
+}

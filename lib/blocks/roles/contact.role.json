@@ -3,6 +3,7 @@
   "type": "RoleContact",
   "label": "Contact (all themes)",
   "intent": "Take questions",
+  "why": "An easy way for people to reach you.",
   "group": "Answer",
   "icon": "contacts",
   "live": false,

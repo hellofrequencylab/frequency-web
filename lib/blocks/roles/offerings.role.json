@@ -3,6 +3,7 @@
   "type": "RoleOfferings",
   "label": "Offerings (all themes)",
   "intent": "List ways in",
+  "why": "The things people can join, book or try.",
   "group": "Show up",
   "icon": "compass",
   "live": true,

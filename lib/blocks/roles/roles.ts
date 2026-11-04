@@ -59,6 +59,8 @@ interface RoleDefinition {
   label: string
   /** What the section does, in the owner's words: the builder's name for it ("Say who you are"). */
   intent: string
+  /** One line under the intent on its Add card: what the section is for. */
+  why: string
   /** The Add-a-section heading it sits under. */
   group: RoleGroup
   /** A glyph in the Frequency sprite or the editor sprite (check:roles proves it resolves). */
