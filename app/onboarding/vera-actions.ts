@@ -8,6 +8,8 @@ import { runConciergeTurn, type ConciergeTurnResult } from '@/lib/ai/vera/turn'
 import { VERA_TURN_BODY } from '@/lib/ai/vera/turn-input'
 import { MEMBER_CHAT_TOOL_KEYS, requiresConfirmation, validateToolCall } from '@/lib/ai/vera/tools'
 import { veraRoleCard, veraSwitchName, veraSwitchable } from '@/lib/ai/vera/space-guide'
+import { veraSettingValue, veraSettingWhere } from '@/lib/ai/vera/space-settings'
+import { setSpaceSkyMarkers, setSpaceTimeZone } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
 import { setSpaceFeatureEnabled, setSpaceFeatureMinRole } from '@/app/(main)/spaces/[slug]/manage/modules/actions'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -78,6 +80,7 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   // list and deleting are refused here as well as in the chat, whatever the request carries.
   if (tool === 'set_space_feature') return setSpaceSwitch(args)
   if (tool === 'set_space_role') return setSpaceRole(args)
+  if (tool === 'set_space_setting') return setSpaceSetting(args)
 
   // The member-facing confirm path may run ONLY the small set of member-SAFE, self-scoped
   // tools. executeConfirmedTool ALSO dispatches the operator-only Resonance Engine playbook
@@ -120,6 +123,26 @@ async function setSpaceRole(args: Record<string, unknown>): Promise<{ ok: boolea
   const res = await setSpaceFeatureMinRole(slug, feature, role)
   if (isError(res)) return { ok: false, error: res.error }
   return { ok: true, message: `Done. You can change who can use ${veraSwitchName(feature)} any time at /spaces/${slug}/manage/modules.` }
+}
+
+/** Change one Space setting for someone who tapped Vera's card (LIVE-2186). Each setting goes through its
+ *  settings page's OWN guarded action, which re-resolves the Space and re-checks the caller; a setting or value
+ *  that is not on Vera's list is refused here whatever the request carries. */
+async function setSpaceSetting(args: Record<string, unknown>): Promise<{ ok: boolean; error?: string; message?: string }> {
+  if (!validateToolCall('set_space_setting', args).ok) return { ok: false, error: 'That change was not complete. Ask Vera again?' }
+  const setting = String(args.setting)
+  const value = veraSettingValue(setting, args.value)
+  if (value === null) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
+  const slug = String(args.space)
+  const res =
+    setting === 'calendar.time_zone'
+      ? await setSpaceTimeZone(slug, value)
+      : setting === 'calendar.sky_markers'
+        ? await setSpaceSkyMarkers(slug, value === 'on')
+        : null
+  if (!res) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
+  if (isError(res)) return { ok: false, error: res.error }
+  return { ok: true, message: `Done. You can change it back any time at ${veraSettingWhere(setting, slug)}.` }
 }
 
 /** Resolve a circle (by slug, then name) and join the member via the canonical

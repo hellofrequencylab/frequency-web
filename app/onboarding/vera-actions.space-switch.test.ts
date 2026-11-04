@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // caller is the Space's owner or an admin), money and the team list are refused whatever the request
 // carries, and a member's other confirms are untouched.
 
-const mocks = vi.hoisted(() => ({ setSpaceFeatureEnabled: vi.fn(), setSpaceFeatureMinRole: vi.fn(), profileId: 'p1' as string | null }))
+const mocks = vi.hoisted(() => ({ setSpaceFeatureEnabled: vi.fn(), setSpaceFeatureMinRole: vi.fn(), setSpaceTimeZone: vi.fn(), setSpaceSkyMarkers: vi.fn(), profileId: 'p1' as string | null }))
 
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }))
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }))
@@ -20,11 +20,15 @@ vi.mock('@/lib/ai/vera/execute', () => ({ executeConfirmedTool: vi.fn() }))
 vi.mock('@/app/(main)/circles/actions', () => ({ joinCircle: vi.fn() }))
 vi.mock('@/app/(main)/spaces/[slug]/manage/modules/actions', () => ({ setSpaceFeatureEnabled: mocks.setSpaceFeatureEnabled, setSpaceFeatureMinRole: mocks.setSpaceFeatureMinRole }))
 
+vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/entry-actions', () => ({ setSpaceTimeZone: mocks.setSpaceTimeZone, setSpaceSkyMarkers: mocks.setSpaceSkyMarkers }))
+
 import { confirmProposal } from './vera-actions'
 
 beforeEach(() => {
   mocks.setSpaceFeatureEnabled.mockReset()
   mocks.setSpaceFeatureMinRole.mockReset()
+  mocks.setSpaceTimeZone.mockReset()
+  mocks.setSpaceSkyMarkers.mockReset()
   mocks.profileId = 'p1'
 })
 
@@ -89,5 +93,37 @@ describe('confirming who can use an area (LIVE-2185)', () => {
       expect(res.ok).toBe(false)
     }
     expect(mocks.setSpaceFeatureMinRole).not.toHaveBeenCalled()
+  })
+})
+
+describe('confirming a Space setting (LIVE-2186)', () => {
+  it('runs the calendar page own actions and says where to change it back', async () => {
+    mocks.setSpaceTimeZone.mockResolvedValue({ data: undefined })
+    mocks.setSpaceSkyMarkers.mockResolvedValue({ data: undefined })
+    const zone = await confirmProposal('set_space_setting', JSON.stringify({ space: 'sunrise', setting: 'calendar.time_zone', value: 'America/Chicago' }))
+    expect(mocks.setSpaceTimeZone).toHaveBeenCalledWith('sunrise', 'America/Chicago')
+    expect(zone).toEqual({ ok: true, message: 'Done. You can change it back any time at /spaces/sunrise/settings/calendar.' })
+    await confirmProposal('set_space_setting', JSON.stringify({ space: 'sunrise', setting: 'calendar.sky_markers', value: 'off' }))
+    expect(mocks.setSpaceSkyMarkers).toHaveBeenCalledWith('sunrise', false)
+  })
+
+  it('passes the page action refusal through', async () => {
+    mocks.setSpaceSkyMarkers.mockResolvedValue({ error: 'You do not have access to this calendar.' })
+    const res = await confirmProposal('set_space_setting', JSON.stringify({ space: 'someone-else', setting: 'calendar.sky_markers', value: 'on' }))
+    expect(res).toEqual({ ok: false, error: 'You do not have access to this calendar.' })
+  })
+
+  it('refuses a setting or value off the list and malformed args without writing', async () => {
+    for (const args of [
+      { space: 'sunrise', setting: 'payments.payouts', value: 'on' },
+      { space: 'sunrise', setting: 'calendar.time_zone', value: 'Mars/Olympus' },
+      { space: 'sunrise', setting: 'calendar.sky_markers', value: true },
+      { space: 'sunrise', setting: 'calendar.sky_markers' },
+    ]) {
+      const res = await confirmProposal('set_space_setting', JSON.stringify(args))
+      expect(res.ok).toBe(false)
+    }
+    expect(mocks.setSpaceTimeZone).not.toHaveBeenCalled()
+    expect(mocks.setSpaceSkyMarkers).not.toHaveBeenCalled()
   })
 })

@@ -101,3 +101,31 @@ describe('a Space role change (LIVE-2185)', () => {
     }
   })
 })
+
+describe('a Space setting (LIVE-2186)', () => {
+  const space = {
+    switchable: () => false,
+    card: () => '',
+    settingCard: (id: string, value: unknown) => (id === 'calendar.sky_markers' && value === 'on' ? 'Turn sky markers on?' : null),
+  }
+
+  it('becomes a card with the setting words when the turn carries the Space settings', async () => {
+    const proposals: ProposedToolCall[] = []
+    const results = await handleModelToolCalls([{ id: 's', name: 'set_space_setting', input: { space: 'sunrise', setting: 'calendar.sky_markers', value: 'on' } }], proposals, vi.fn(), space)
+    expect(proposals).toEqual([{ tool: 'set_space_setting', args: { space: 'sunrise', setting: 'calendar.sky_markers', value: 'on' }, label: 'Turn sky markers on?' }])
+    expect(results).toBeNull()
+  })
+
+  it('is refused for a setting or value off the list, and on a turn without the Space settings', async () => {
+    for (const [input, sw] of [
+      [{ space: 'sunrise', setting: 'payments.payouts', value: 'on' }, space],
+      [{ space: 'sunrise', setting: 'calendar.sky_markers', value: 'maybe' }, space],
+      [{ space: 'sunrise', setting: 'calendar.sky_markers', value: 'on' }, undefined],
+    ] as const) {
+      const proposals: ProposedToolCall[] = []
+      const results = await handleModelToolCalls([{ id: 's', name: 'set_space_setting', input: { ...input } }], proposals, vi.fn(), sw)
+      expect(proposals).toEqual([])
+      expect(results?.[0].content).toContain('Nothing was changed')
+    }
+  })
+})

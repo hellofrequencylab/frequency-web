@@ -209,6 +209,18 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
       { name: 'role', type: 'string', required: true, description: 'The lowest role: viewer, editor, moderator or admin.' },
     ],
   },
+  {
+    key: 'set_space_setting',
+    description:
+      'Propose one setting of the Space they run, from the settings list the guide names, with a value of the kind it says. The person confirms on a card; nothing changes until they do.',
+    mode: 'write',
+    confirmLabel: 'Change this setting',
+    params: [
+      { name: 'space', type: 'string', required: true, description: 'The Space slug from the guide.' },
+      { name: 'setting', type: 'string', required: true, description: 'A setting id from the settings list.' },
+      { name: 'value', type: 'string', required: true, description: 'The new value, of the kind the list says.' },
+    ],
+  },
 
   // ── Studio creation (ADR-988) ────────────────────────────────────────────────
   // The ONE governed create tool, BUILT from the Studio catalog (lib/studio/registry.ts) rather
@@ -238,7 +250,7 @@ export const MEMBER_CHAT_TOOL_KEYS: ReadonlySet<string> = new Set([
 
 /** The Space-settings tools (LIVE-2157): offered on top of the member set only when the Space guide names
  *  them, which it does only for that Space's owner or an admin. */
-export const SPACE_MANAGER_TOOL_KEYS: ReadonlySet<string> = new Set(['set_space_feature', 'set_space_role'])
+export const SPACE_MANAGER_TOOL_KEYS: ReadonlySet<string> = new Set(['set_space_feature', 'set_space_role', 'set_space_setting'])
 
 export function getTool(key: string): VeraToolDef | undefined {
   return BY_KEY.get(key)
