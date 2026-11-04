@@ -294,7 +294,7 @@ the decision, so they are stated here and not only in the file:
 
 | # | Number | Reads | Not |
 |---|---|---|---|
-| 11.1 | **Circles per Space** | listable circles (`forming`, `active`, not demo) a Space **started**, over active non-root Spaces (the population `space_standing` scores) | the provisioned Space Circle (`is_space_primary`, [ADR-1391](DECISIONS.md)): a trigger made it, so counting it would move the number on provisioning, not on behaviour |
+| 11.1 | **Circles per Space** | listable circles (`forming`, `active`, not demo) a Space **started**, over active non-root Spaces (the population `space_standing` scores) | the retired Space Circles ([ADR-1938](DECISIONS.md), listed in `retired_space_circles`): a trigger made them and they are archived now, so the status test drops them and the number moves on behaviour, not on provisioning |
 | 11.2 | **Gatherings held** | published, not cancelled, not removed, not demo, start passed, trailing 42 days (the same rule as `space_standing.gatherings_held`), and beside it how many of those had anyone marked present | a cancelled date, a draft, a demo row |
 | 11.3 | **Attendance** | seats a host marked present, `attended_at` on `event_rsvps` and `event_tickets` (PROG-GD4, [ADR-1332](DECISIONS.md)), trailing 42 days | the engagement ledger. Before PROG-GD4 that ledger was the only trace of attendance, written by the path that pays Zaps; the instrument never reads it, so no decision about the game can move this number |
 
