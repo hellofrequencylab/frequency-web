@@ -93,6 +93,7 @@ export const SERVICES_TOKENS_CSS = `
 --sv-text-on-light:var(--sv-ink-900);--sv-text-on-light-muted:var(--sv-salt-700);
 --sv-border-subtle:color-mix(in oklab,var(--sv-chrome-50) 8%,transparent);--sv-border-default:color-mix(in oklab,var(--sv-chrome-50) 16%,transparent);--sv-border-strong:color-mix(in oklab,var(--sv-chrome-50) 50%,transparent);--sv-border-light:color-mix(in oklab,var(--sv-ink-900) 12%,transparent);
 --sv-accent:var(--sv-flare-500);--sv-accent-hover:var(--sv-flare-600);--sv-accent-text:#0B0F13;--sv-accent-tint:color-mix(in oklab,var(--sv-flare-500) 12%,transparent);
+--sv-grad-lit:linear-gradient(100deg,var(--sv-halo-300) 0%,var(--sv-chrome-50) 30%,var(--sv-swell-300) 55%,var(--sv-flare-400) 78%,var(--sv-halo-300) 100%);
 --sv-action-primary:var(--sv-chrome-50);--sv-action-primary-text:var(--sv-ink-900);
 --sv-focus-ring:var(--sv-flare-400);
 --sv-grad-sunset:linear-gradient(115deg,var(--sv-flare-500) 0%,var(--sv-swell-300) 100%);
