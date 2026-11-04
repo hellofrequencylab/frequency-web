@@ -53,10 +53,6 @@ vi.mock('@/lib/spaces/collaborations', () => ({ spaceHasCollaborators: async () 
 // appears and the assertion below catches it. A `false` mock would hide exactly that regression.
 vi.mock('@/lib/spaces/member-directory', () => ({ viewerCanSeeSpaceMemberDirectory: async () => true }))
 vi.mock('@/lib/spaces/memberships', () => ({ spaceHasActiveMembershipTiers: async () => false }))
-vi.mock('@/lib/spaces/space-discussion', () => ({
-  getLiveSpaceCircle: async () => null,
-  canSeeSpaceDiscussionTab: () => false,
-}))
 
 const { buildPublicSpaceProfileNav, buildSpaceProfileNav } = await import('@/lib/spaces/profile-nav')
 

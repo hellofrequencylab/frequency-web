@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// LIVE-1561 probe: the seven business profiles each have a /for door. A door is a FunnelConfig in the registry, a
+// LIVE-1561 probe: the business profiles each have a /for door (seven until LIVE-2093 folded creators,
+// schools, wellness and markets into their nearest survivors, leaving three). A door is a FunnelConfig in the registry, a
 // NICHE_DESIGN entry (the funnel-design test pins the headline match), and a Start free destination row keyed by
 // the profile id, so the door lands a finished operator in a real Space Mode and never on the directory fallback.
 import { readFileSync } from 'node:fs'
@@ -11,12 +12,8 @@ const index = readFileSync('components/frequency/site/pages/funnel/frequency-for
 
 const doors = [
   ['general', 'local-businesses'],
-  ['creators', 'creators'],
-  ['schools', 'schools-and-programs'],
   ['clubs', 'clubs-and-groups'],
   ['faith', 'spiritual-community'],
-  ['wellness', 'wellness-and-retreats'],
-  ['markets', 'markets-and-festivals'],
 ]
 const bad = []
 const registry = config.slice(config.indexOf('return {'), config.indexOf('}\n}', config.indexOf('return {')))
@@ -28,11 +25,11 @@ for (const [niche, slug] of doors) {
 }
 // Every door's trust line carries the card-processing clause (the fee promise stays checkable).
 const trustLines = [...config.matchAll(/trustLine:\s*(['"`])(.*?)\1/g)].map((m) => m[2])
-if (trustLines.length < 13) bad.push(`expected 13 door trustLines, found ${trustLines.length}`)
+if (trustLines.length < 9) bad.push(`expected 9 door trustLines, found ${trustLines.length}`)
 // The index counts the doors it renders instead of saying "six".
 if (/Six doors/.test(index)) bad.push('the /for index still says "Six doors"')
 if (bad.length) {
   console.error('LIVE-1561 probe failed:\n- ' + bad.join('\n- '))
   process.exit(1)
 }
-console.log('LIVE-1561: the seven profile doors are live')
+console.log('LIVE-1561: the three profile doors are live')

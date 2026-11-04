@@ -7,6 +7,7 @@ import { MIDNIGHT_ACCENT } from '@/lib/theme/midnight'
 import { TEMPLE_KIT_ACCENT } from '@/lib/theme/temple-kit'
 import { FREE_HUMAN_ACCENT } from '@/lib/theme/free-human'
 import { DESIGNER_ACCENT } from '@/lib/theme/designer'
+import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteFacesId } from '@/lib/theme/site-faces'
 import { readMegaTheme } from '@/lib/theme/mega-theme'
@@ -178,8 +179,9 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
 ]
 
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
+ *  `frequency` ("Default") left the pickers 2026-11-03: New World is the default (LIVE-2058); sites that saved it keep it.
  *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human', 'services'])
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple', 'free-human', 'services'])
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
@@ -412,5 +414,6 @@ export function spacePageDefaultAccent(preferences: unknown, typeDefault: string
   if (style.theme === 'midnight') return MIDNIGHT_ACCENT.accent
   if (style.theme === 'designer') return DESIGNER_ACCENT.accent
   if (style.theme === 'free-human') return FREE_HUMAN_ACCENT.accent
+  if (style.theme === 'new-world') return NEW_WORLD_ACCENTS.tide.accent
   return style.theme === 'bold' ? MENSWORK_PALETTE.teal : style.theme === 'wildheart' ? WILDHEART_PALETTE.violet : typeDefault
 }

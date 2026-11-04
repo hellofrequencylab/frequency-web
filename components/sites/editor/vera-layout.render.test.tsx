@@ -60,7 +60,9 @@ it('shows ticked lines, applies only the ticked ones as one undo step, and keeps
   expect(onPropose).not.toHaveBeenCalled()
   expect(onLayout).toHaveBeenCalledWith('Put my story before the contact form', expect.arrayContaining([expect.objectContaining({ id: 'about', position: 3 })]),
     // LIVE-2098: the theme's own style menu rides along, so Vera can only pick what the Style panel offers.
-    expect.objectContaining({ dials: expect.arrayContaining([expect.objectContaining({ id: 'corners', options: expect.arrayContaining([expect.objectContaining({ id: 'square' })]) })]) }))
+    expect.objectContaining({ dials: expect.arrayContaining([expect.objectContaining({ id: 'corners', options: expect.arrayContaining([expect.objectContaining({ id: 'square' })]) })]) }),
+    // LIVE-2110: the draft's facts ride along too, as counts and labels, never the page's words.
+    expect.objectContaining({ pageInView: 'Home', pages: [{ label: 'Home', sections: 3, searchDescription: false }] }))
   const boxes = Array.from(node.querySelectorAll<HTMLInputElement>('[data-vera-layout] input[type=checkbox]'))
   expect(boxes.map((b) => b.closest('label')?.textContent)).toEqual(['Move About to position 2', 'Hide Contact on phones'])
   expect(node.querySelector('[data-vera-layout]')?.textContent).toContain('does not write or rewrite your words')
@@ -104,4 +106,38 @@ it('applies a section move and a site style together as one undo step, on the dr
   click('Undo')
   expect(await order()).toEqual(['hero', 'contact', 'about'])
   expect(onSave.mock.calls.at(-1)![1].look ?? {}).toEqual({})
+})
+
+it('shows a question\'s answer as Vera\'s reply, with nothing to tick and nothing applied (LIVE-2110)', async () => {
+  const onLayout = vi.fn(async () => ({ ok: true as const, note: 'Open the Site tab and fill in the Description under Search and sharing.', refused: [], changes: [] }))
+  const { node, ask, order, onSave } = mount(onLayout)
+  await ask('Is my site ready to publish?')
+  const facts = (onLayout.mock.calls[0] as unknown[])[3] as { checks: { ok: boolean; text: string }[] }
+  expect(facts.checks.some((c) => !c.ok && /search description/.test(c.text))).toBe(true)
+  expect(JSON.stringify(facts)).not.toContain('My own story.')
+  expect(node.textContent).toContain('Open the Site tab and fill in the Description under Search and sharing.')
+  expect(node.querySelector('[data-vera-layout]')).toBeNull()
+  expect(onSave).not.toHaveBeenCalled()
+  expect(await order()).toEqual(['hero', 'contact', 'about'])
+})
+
+it('adds a section the Add tab offers, at the asked position, as one undo step on the draft (LIVE-2135)', async () => {
+  const onLayout = vi.fn(async (...args: unknown[]) => {
+    const addable = (args[2] as { sections: { type: string; label: string }[] }).sections
+    return { ok: true as const, note: '', refused: [], changes: [{ kind: 'add' as const, blockType: addable[0].type, toPosition: 1 }, { kind: 'add' as const, blockType: 'NotOffered', toPosition: 1 }] }
+  })
+  const { node, click, ask, order, onSave } = mount(onLayout)
+  await ask('Add a section at the top')
+  const added = ((onLayout.mock.calls[0] as unknown[])[2] as { sections: { type: string; label: string }[] }).sections[0]
+  const boxes = Array.from(node.querySelectorAll<HTMLInputElement>('[data-vera-layout] input[type=checkbox]'))
+  expect(boxes.map((b) => b.closest('label')?.textContent)).toEqual([`Add a ${added.label} section at position 1, with placeholder text for your words`])
+  expect(node.querySelector('[data-vera-layout]')?.textContent).toContain('does not offer on this page')
+  click('Apply to draft')
+  const content = (await order())
+  expect(content).toHaveLength(4)
+  expect(content.slice(1)).toEqual(['hero', 'contact', 'about'])
+  expect(onSave.mock.calls.at(-1)![1].pages[0].doc.content[0].type).toBe(added.type)
+  expect(onSave.mock.calls.at(-1)![2]).toBe(false)
+  click('Undo')
+  expect(await order()).toEqual(['hero', 'contact', 'about'])
 })

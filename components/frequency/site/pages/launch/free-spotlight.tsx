@@ -105,7 +105,7 @@ export function FreeSpotlightLanding() {
         body="Free, and yours."
         kicker="Free Spotlight"
         primary={{ href: freeSpotlightHref('landing'), label: FREE_SPOTLIGHT_LABEL }}
-        secondary={{ href: '/system', label: 'See the whole system' }}
+        secondary={{ href: '/features', label: 'See every feature' }}
       />
     </>
   )

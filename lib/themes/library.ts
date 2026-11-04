@@ -60,13 +60,6 @@ const surfaces = (spotlight: SurfaceStatus, email: SurfaceStatus): ThemeSurface[
 
 export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
   {
-    id: 'frequency',
-    tagline: 'Warm, bright and easy. The house look.',
-    madeFor: 'anyone who wants a friendly site with nothing to fight',
-    signature: 'Soft cards, a frosted menu bar, Unbounded headlines and Instrument Serif italics.',
-    surfaces: surfaces('soon', 'soon'),
-  },
-  {
     id: 'bold',
     tagline: 'Dark, graphic and direct. Say it loud.',
     madeFor: 'training, men’s work, fitness and anyone who runs a tough room',
