@@ -43,6 +43,8 @@ export interface NewWorldSpotlightContent {
   secondReview: NewWorldReview | null
   quote: { text: string; who: string; role: string } | null
   proof: { icon: IconName; label: string; sub: string } | null
+  /** The one count under the hero's stars (the design's TRUST[1], "3 sessions a week"). Sample only. */
+  rating: string | null
   letter: { title: string; em: string; body: string; action: string } | null
   headings: { openings: { title: string; em: string }; services: { title: string; em: string } }
   defaultLayout: NewWorldLayoutKey
@@ -55,7 +57,7 @@ interface KitSource {
   name: string; descriptor: string; owner: string; role: string; accent: string; cta: string; cta2: string
   tools: Tool[]; has: Has[]
   hero: { eyebrow: string; title: string; em: string; body: string }
-  story: string; quote: string; proof: [IconName, string, string]
+  story: string; quote: string; proof: [IconName, string, string]; rating: string
   offers: [string, string, string, IconName][]
   groups: [string, string][]
   reviews: [string, string, string][]
@@ -67,7 +69,7 @@ const KITS: Record<string, KitSource> = {
     name: 'Your Place', descriptor: 'What you do, in four words', owner: 'Your name', role: 'Owner', accent: 'purple', cta: 'Book your first visit', cta2: 'See the calendar',
     tools: ['belong', 'gather', 'publish', 'book'], has: ['events', 'plans', 'posts', 'team'],
     hero: { eyebrow: 'Your street · Your City', title: 'Say what happens here', em: 'and who it is for.', body: 'This is the template. Replace every line with your own: what you do, who shows up, how someone new gets started. Keep it to two sentences.' },
-    story: 'The beginning: the thing you noticed, the room you wanted to exist, the first few people who came.', quote: 'The line you would paint on the wall by the door.', proof: ['check', 'First visit free', 'Always'],
+    story: 'The beginning: the thing you noticed, the room you wanted to exist, the first few people who came.', quote: 'The line you would paint on the wall by the door.', proof: ['check', 'First visit free', 'Always'], rating: '3 sessions a week',
     offers: [['First visit', 'Free', '60 min', 'users'], ['Drop in', '$18', '60 min', 'calendar'], ['Membership', '$24 / mo', 'Monthly', 'award']],
     groups: [['Weekly session', 'Tuesdays · 7pm'], ['Morning session', 'Saturdays · 8am'], ['Open workshop', 'Thursdays · 6:30pm']],
     reviews: [['Replace with a real quote from a real member. Specific beats glowing.', 'Member one', 'Weekly session'], ['A second one. What changed for them after a month here.', 'Member two', 'Membership']],
@@ -77,7 +79,7 @@ const KITS: Record<string, KitSource> = {
     name: 'Morning Crew', descriptor: 'Run club & small-group strength', owner: 'Dre Walker', role: 'Head coach', accent: 'yellow', cta: 'Book a free session', cta2: 'This week’s sessions',
     tools: ['belong', 'gather', 'book', 'learn'], has: ['events', 'plans', 'posts', 'team'],
     hero: { eyebrow: 'Riverside track · Your City', title: 'Train with people', em: 'who know your name.', body: 'Saturday 5k for every pace. Strength in groups of eight midweek. Book a session in two taps, check in at the track, and your coach already knows what you did last week.' },
-    story: 'Four runners kept meeting on the same loop. Now it is a Saturday club with coffee after and three strength groups during the week.', quote: 'Strong is a habit, and habits are easier with company.', proof: ['check', 'Every pace', 'A coach in every group'],
+    story: 'Four runners kept meeting on the same loop. Now it is a Saturday club with coffee after and three strength groups during the week.', quote: 'Strong is a habit, and habits are easier with company.', proof: ['check', 'Every pace', 'A coach in every group'], rating: '6 sessions a week',
     offers: [['First session', 'Free', '60 min', 'bolt'], ['Small-group strength', '$22', '50 min', 'users'], ['8-week base', '$160', '8 weeks', 'award']],
     groups: [['Saturday 5k', 'Saturdays · 8am'], ['Strength AM', 'Tue & Thu · 6:30am'], ['Back of the Pack', 'Saturdays · 8am']],
     reviews: [['I came for the running. I stayed for the diner afterwards.', 'Tasha B.', 'Long Run'], ['Fifty-two and stronger than at thirty. Eight per group makes that possible.', 'Carla F.', 'Strength AM']],
@@ -87,7 +89,7 @@ const KITS: Record<string, KitSource> = {
     name: 'Still House', descriptor: 'Movement & breath studio', owner: 'Maya Chen', role: 'Founder', accent: 'red', cta: 'Book a class', cta2: 'See the schedule',
     tools: ['belong', 'gather', 'book', 'learn', 'sell'], has: ['events', 'products', 'plans', 'posts', 'team'],
     hero: { eyebrow: 'Hill Street · Your City', title: 'Small classes.', em: 'No mirrors.', body: 'Twelve mats, a wooden floor and the same faces most weeks. Book a class from the schedule, check in at the desk, and your first one is free.' },
-    story: 'Still House is one room with a wooden floor and no mirrors. It opened because a few of us wanted somewhere to breathe that was not an app.', quote: 'Everyone deserves an hour where nothing is asked of them.', proof: ['check', 'First class free', 'Always'],
+    story: 'Still House is one room with a wooden floor and no mirrors. It opened because a few of us wanted somewhere to breathe that was not an app.', quote: 'Everyone deserves an hour where nothing is asked of them.', proof: ['check', 'First class free', 'Always'], rating: '12 classes a week',
     offers: [['First class', 'Free', '60 min', 'leaf'], ['Drop in', '$18', '60 min', 'heart'], ['Beginners series', '$60', '4 weeks', 'award']],
     groups: [['Tuesday Quiet', 'Tuesdays · 7pm'], ['Friday Loud', 'Fridays · 8pm'], ['Sunday Reset', 'Sundays · 10am']],
     reviews: [['The only hour of my week where my phone is in a basket and nobody minds.', 'Ana P.', 'Tuesday Quiet'], ['I was sure I was not a Friday Loud person. I am a Friday Loud person.', 'Chris W.', 'Friday Loud']],
@@ -97,7 +99,7 @@ const KITS: Record<string, KitSource> = {
     name: 'Thursday Supper', descriptor: 'A supper club', owner: 'Sofia Marini', role: 'Host', accent: 'blue', cta: 'Take a seat', cta2: 'See the next menus',
     tools: ['belong', 'gather', 'sell', 'publish'], has: ['events', 'products', 'posts', 'team'],
     hero: { eyebrow: 'Thursdays · a different kitchen each month', title: 'Twenty seats.', em: 'One long table.', body: 'A seasonal menu, a borrowed kitchen and strangers who become regulars. Seats go on the calendar Monday morning and usually go by lunch.' },
-    story: 'Thursday Supper began as eight people in a borrowed kitchen. It is now a table of twenty that moves around the city, hosted wherever there is a room big enough.', quote: 'Cook one pot, light the candles, and let the table do the rest.', proof: ['check', 'Sit anywhere', 'No plus-one needed'],
+    story: 'Thursday Supper began as eight people in a borrowed kitchen. It is now a table of twenty that moves around the city, hosted wherever there is a room big enough.', quote: 'Cook one pot, light the candles, and let the table do the rest.', proof: ['check', 'Sit anywhere', 'No plus-one needed'], rating: '5 tables a month',
     offers: [['A seat at the table', '$45', 'Evening', 'heart'], ['Pasta Sunday', '$38', '3 hr', 'sparkle'], ['Host a table', 'Free', 'One evening', 'users']],
     groups: [['The Table', 'Thursdays · 7:30pm'], ['Sunday Pasta', 'Last Sunday · 2pm'], ['Host a Table', 'Monthly']],
     reviews: [['Came alone, sat between a nurse and a carpenter, left with both their numbers.', 'Hugo D.', 'The Table'], ['The one afternoon a month I cook with other people. It fixed something.', 'Ariana V.', 'Sunday Pasta']],
@@ -107,7 +109,7 @@ const KITS: Record<string, KitSource> = {
     name: 'The Annex', descriptor: 'Music & listening room', owner: 'Jordan Pike', role: 'Owner', accent: 'red', cta: 'Get tickets', cta2: 'This week at the Annex',
     tools: ['gather', 'sell', 'belong', 'publish'], has: ['events', 'products', 'plans', 'posts', 'team'],
     hero: { eyebrow: 'Market Lane · doors most nights', title: 'Loud nights.', em: 'Quiet ones too.', body: 'A 200-cap room with a serious system. Live bands Fridays, one album start to finish on Mondays, open stage Wednesdays. Tickets on the calendar, cheap on purpose.' },
-    story: 'The Annex is a converted print shop with a sound system that was someone’s life savings. The door is kind by policy.', quote: 'A good room is a kind door and a sound system you can feel in your chest.', proof: ['check', 'Kind door', 'Always'],
+    story: 'The Annex is a converted print shop with a sound system that was someone’s life savings. The door is kind by policy.', quote: 'A good room is a kind door and a sound system you can feel in your chest.', proof: ['check', 'Kind door', 'Always'], rating: '5 nights a week',
     offers: [['Friday ticket', '$15', 'Night', 'bolt'], ['Listening Club', 'Free', '90 min', 'heart'], ['Annex regular', '$20 / mo', 'Monthly', 'award']],
     groups: [['Listening Club', 'Mondays · 8pm'], ['Open Stage', 'Wednesdays · 7pm'], ['Sunday Slow', 'Sundays · 11am']],
     reviews: [['I came to the listening night alone because it meant I did not have to talk. Then I did.', 'Grace Y.', 'Listening Club'], ['Open stage gave me my first ten minutes. The room was so kind it hurt.', 'Dmitri V.', 'Open Stage']],
@@ -117,7 +119,7 @@ const KITS: Record<string, KitSource> = {
     name: 'Northside Neighbours', descriptor: 'A neighbourhood association', owner: 'Amara Diallo', role: 'Coordinator', accent: 'blue', cta: 'RSVP to the next one', cta2: 'See the calendar',
     tools: ['gather', 'belong', 'publish', 'sell'], has: ['events', 'products', 'posts', 'team'],
     hero: { eyebrow: 'Northside · Your City', title: 'Fix the park.', em: 'Meet the street.', body: 'A repair café, a tool library, a park crew and a street dinner every month. No forms, no dues. RSVP to one thing and you are a neighbour.' },
-    story: 'Northside Neighbours began with a street dinner that closed one road for one evening. Forty people came. Most had never spoken.', quote: 'Everyone has something to fix and something to lend.', proof: ['check', 'No dues', 'Ever'],
+    story: 'Northside Neighbours began with a street dinner that closed one road for one evening. Forty people came. Most had never spoken.', quote: 'Everyone has something to fix and something to lend.', proof: ['check', 'No dues', 'Ever'], rating: '3 crews',
     offers: [['Show up once', 'Free', 'A morning', 'users'], ['Tool library card', 'Free', 'Yearly', 'wrench'], ['Keep the kettle on', 'From $5 / mo', 'Monthly', 'heart']],
     groups: [['Repair Café', 'Second Saturday · 10am'], ['Park Crew', 'Sundays · 9am'], ['Street Dinner Crew', 'Monthly']],
     reviews: [['I fixed a lamp and met the woman three doors down I had never spoken to in six years.', 'Elena R.', 'Repair Café'], ['The park crew is the only exercise I keep up with.', 'Jamal W.', 'Park Crew']],
@@ -127,7 +129,7 @@ const KITS: Record<string, KitSource> = {
     name: 'Third Place', descriptor: 'Twelve small groups across the city', owner: 'Hollis Grant', role: 'Steward', accent: 'purple', cta: 'Join a group', cta2: 'See every group',
     tools: ['belong', 'gather', 'publish', 'learn'], has: ['events', 'plans', 'posts', 'team'],
     hero: { eyebrow: 'Twelve groups · six neighbourhoods', title: 'Small groups', em: 'near you.', body: 'Walkers, readers, potluck cooks, new arrivals, early dads, bad sketchers. Each group is under twenty people and meets at the same time in the same place. Join one. Then another.' },
-    story: 'Third Place is not a venue. It is twelve small groups meeting in borrowed rooms across the city, held together by hosts who were once the new person.', quote: 'Open doors, small rooms, familiar faces.', proof: ['check', 'Free, always', 'Supporters keep rooms booked'],
+    story: 'Third Place is not a venue. It is twelve small groups meeting in borrowed rooms across the city, held together by hosts who were once the new person.', quote: 'Open doors, small rooms, familiar faces.', proof: ['check', 'Free, always', 'Supporters keep rooms booked'], rating: '12 groups',
     offers: [['Join a group', 'Free', 'Any week', 'users'], ['Host a group', 'Free', 'Monthly check-in', 'award'], ['Six weeks in', 'Free', '6 weeks', 'heart']],
     groups: [['Westside Walkers', 'Saturdays · 9am'], ['Book & Beer', 'Second Tuesday · 7pm'], ['Sunday Potluck', 'Sundays · 1pm']],
     reviews: [['Three groups in, I have people to call on a Tuesday. Actual people.', 'Ellie K.', 'Book & Beer'], ['New in Town got me through my first winter here.', 'Marco D.', 'New in Town']],
@@ -205,6 +207,7 @@ export function newWorldKitSpotlightContent(kit: string, opts: { name?: string; 
     secondReview: sample && k.reviews[1] ? { q: k.reviews[1][0], who: k.reviews[1][1], what: k.reviews[1][2] } : null,
     quote: sample ? { text: k.quote, who: k.owner, role: k.role } : null,
     proof: sample ? { icon: k.proof[0], label: k.proof[1], sub: k.proof[2] } : null,
+    rating: sample ? k.rating : null,
     letter: ids.includes('letter') && sample ? { title: 'Stay in', em: 'the loop.', body: 'A short note when something is coming up. Nothing else.', action: '/letter' } : null,
     headings: { openings: pair(k.headings.openings, { title: 'Open', em: 'this week.' }), services: pair(k.headings.services, { title: 'Ways', em: 'in.' }) },
     defaultLayout: 'stack',
