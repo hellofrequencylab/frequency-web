@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { JSDOM } from 'jsdom'
 import { articleComponents, ARTICLE_BLOCK_TYPES } from './article'
 import { howToStepsSchema } from './dawn'
 import { config } from '@/lib/page-editor/config'
@@ -75,9 +76,10 @@ describe('each designed article keeps the article grammar', () => {
       })
 
       it('renders every question as an H2, in spec order', () => {
-        const h2 = [...html.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/g)].map((m) => m[1].replace(/<[^>]+>/g, ''))
-        const questions = h2.filter((t) => spec.sections.some((s) => s.question.replace(/'/g, '&#x27;') === t))
-        expect(questions).toEqual(spec.sections.map((s) => s.question.replace(/'/g, '&#x27;')))
+        // Parse the markup and read each H2's text, rather than stripping tags from the HTML string.
+        const h2 = [...new JSDOM(html).window.document.querySelectorAll('h2')].map((el) => el.textContent ?? '')
+        const asked = new Set(spec.sections.map((s) => s.question))
+        expect(h2.filter((t) => asked.has(t))).toEqual(spec.sections.map((s) => s.question))
       })
 
       it('keeps the FAQ and one HowTo node per track', () => {
