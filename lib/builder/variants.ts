@@ -13,7 +13,7 @@ import { presentationDefault } from '@/components/sites/presentation'
 
 type Props = Record<string, unknown>
 
-export interface LayoutChip {
+interface LayoutChip {
   id: string
   label: string
   thumb: string
