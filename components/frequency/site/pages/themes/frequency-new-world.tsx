@@ -171,7 +171,9 @@ export function FrequencyNewWorld() {
               <div className="label">
                 <b>Theme</b>New World · by Frequency
               </div>
-              <h1 className="nwf-h1 nwf-name">New World</h1>
+              <h1 className="nwf-h1 nwf-name" style={vars({ '--nwf-chars': 'New World'.length })}>
+                New World
+              </h1>
               <p className="nwf-aft">A Frequency Theme</p>
               <p className="nwf-tagline">
                 Design it once.

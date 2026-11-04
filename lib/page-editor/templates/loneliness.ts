@@ -63,9 +63,14 @@ const PLACE_IMAGE = '/images/site/outdoor-group.jpg'
 const FEED_IMAGE = '/images/site/PHOTO-2020-09-09-16-38-27.jpeg'
 const BUILD_IMAGE = '/images/site/community-1.jpg'
 const TABLE_IMAGE = '/images/site/community-dinner.jpg'
+// Two more real gatherings for the quiet layout's lines over photos (not in the Article node).
+const SPREAD_IMAGE = '/brand/frequency/photos/gathering-14.jpg'
+const RING_IMAGE = '/images/site/meditation-circle.jpg'
 
 export const spec: ArticleSpec = {
   slug: 'loneliness',
+  // Quiet, intimate, photo-led and spacious: the subject is a feeling, so the page slows down.
+  design: 'quiet',
   eyebrow: 'Belonging',
   title: 'Lonely but not alone',
   subtitle:
@@ -83,6 +88,8 @@ export const spec: ArticleSpec = {
     kind: 'statement',
     text: 'A full phone is not the same as someone to call on a Tuesday.',
     accent: 'someone to call on a Tuesday.',
+    image: SPREAD_IMAGE,
+    alt: 'People sitting far apart on their own blankets across a quiet beach on an overcast morning',
   },
 
   sections: [
@@ -161,6 +168,8 @@ export const spec: ArticleSpec = {
         kind: 'statement',
         text: 'You will not out-willpower the feed. You replace it with somewhere to be.',
         accent: 'You replace it with somewhere to be.',
+        image: RING_IMAGE,
+        alt: 'People seated in a wide ring on a seaside patio, facing each other at golden hour',
       },
     },
     // ── The answer: steps → the HowTo below sits right here (default placement) ─

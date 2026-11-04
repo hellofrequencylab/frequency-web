@@ -119,6 +119,24 @@ ${S} .sv-hero-copy .sv-display{font-size:clamp(52px,8vw,132px)}
 ${S} .sv-hero--split .sv-hero-copy .sv-display{font-size:clamp(48px,6.4vw,100px)}
 ${S} .sv-hero--minimal .sv-hero-copy .sv-display{font-size:clamp(48px,7vw,112px)}
 ${S} .sv-hero-lead{margin:0;font-size:20px;line-height:1.55;max-width:560px;color:var(--sv-chrome-200);text-wrap:pretty}
+/* THE PHOTO HERO IN THE FOLD (owner, 2026-11-04, on the Vanta site). The Space document wraps every block in the page rhythm (py-8, space-y-14),
+   which sat a 40px ink band above the photo hero, pushed it out from under the header and opened gaps between sections; the design's
+   sections run flush and carry their own padding, so the wrapper adds nothing here (as Free Human and the Temple Kit do). The photo hero
+   then fits one viewport: a shorter top (the header's height plus air), a display size held by the viewport height, tighter gaps. A left
+   scrim keeps the copy readable on any photo, the eyebrow sits on a small glass chip, and the services box keeps its left edge and stops
+   at 440px so the photo's subject stays in view. */
+${S} [data-mw-own]>div{padding-block:0}
+${S} [data-mw-own]>div>*{margin-block:0}
+${S} .sv-hero-bg--photo::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,color-mix(in oklab,var(--sv-ink-950) 62%,transparent) 0%,color-mix(in oklab,var(--sv-ink-950) 30%,transparent) 42%,transparent 68%)}
+${S} .sv-hero--photo{min-height:min(100svh,980px)}
+${S} .sv-hero--photo .sv-hero-in{padding:clamp(104px,9vw,132px) ${GUT} clamp(40px,6vh,72px);gap:28px 72px}
+${S} .sv-hero--photo .sv-hero-copy{gap:22px}
+${S} .sv-hero--photo .sv-hero-copy .sv-display{font-size:clamp(48px,min(7vw,11.5vh),116px)}
+${S} .sv-hero--photo .sv-hero-lead{font-size:18px;color:var(--sv-chrome-50)}
+${S} .sv-hero--photo .sv-eyebrow{font-size:12px;letter-spacing:.16em;color:var(--sv-flare-300);padding:7px 14px 7px 12px;border-radius:var(--sv-radius-pill);background:color-mix(in oklab,var(--sv-ink-950) 62%,transparent);border:1px solid var(--sv-border-subtle);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+${S} .sv-hero--photo .sv-panel{justify-self:start;width:min(100%,440px)}
+${S}:has(.sv-hero-bg--photo) .hs-header{border-bottom:0}
+${S}:has(.sv-hero-bg--photo) .hs-header::after{display:none}
 ${S} .sv-proof{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--sv-chrome-200)}
 ${S} .sv-stars{display:inline-flex;gap:2px;color:var(--sv-flare-300)}
 ${S} .sv-panel{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:var(--sv-radius-lg);background:color-mix(in oklab,var(--sv-ink-900) 62%,transparent);border:1px solid var(--sv-border-default);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}

@@ -2,6 +2,11 @@
   "role": "Story",
   "type": "RoleStory",
   "label": "Our story (all themes)",
+  "intent": "Tell your story",
+  "why": "Why you started, in your own words.",
+  "group": "Welcome",
+  "icon": "page",
+  "live": false,
   "replaces": [
     "NetworkKitInnerStory",
     "TempleKitInnerStory",
@@ -25,14 +30,46 @@
       "quote": "text<=160",
       "image": "image",
       "alt": "text<=120"
+    },
+    "labels": {
+      "items": {
+        "label": "Paragraphs",
+        "hint": "Your story, a paragraph at a time."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "quote": {
+        "label": "Pull quote",
+        "hint": "One line from your story worth reading twice."
+      },
+      "image": {
+        "label": "Photo",
+        "hint": "A real photo of your people or your place."
+      },
+      "alt": {
+        "label": "Photo description",
+        "hint": "Say what is in the photo for people who cannot see it."
+      }
     }
   },
   "variants": {
     "split": {
-      "label": "Words beside a photo"
+      "label": "Words beside a photo",
+      "thumb": "split"
     },
     "center": {
-      "label": "Centered"
+      "label": "Centered",
+      "thumb": "center"
     }
   },
   "default": "split",

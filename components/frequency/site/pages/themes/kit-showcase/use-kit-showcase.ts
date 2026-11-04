@@ -166,7 +166,7 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
       accentLabel: a.label,
       accentMeaning: a.meaning || '',
       glow: A + '2B',
-      useHref: link?.use ?? props.links.start,
+      useHref: link ? link.use : props.links.start,
       kitHref: link?.page ?? null,
       mailBg: th.mailBg || th.t.bg,
       mailW: th.id === 'new-world' ? '150%' : '100%',
