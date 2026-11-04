@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-SPACE-NAV",
+  "title": "Space navigation has four page destinations and clearly separated role-based management",
+  "status": "open",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "source": {
+    "file": "docs/MENU-CONTRACT.md",
+    "ref": "Daniel 2026-11-04 audit and approved improvement scope"
+  },
+  "detail": "Daniel approved Home, Community, Calendar and Program as fixed Frequency Space navigation, all published Programs/Journeys/Practices under Program, custom pages remaining in website menus. Remove section-anchor items from Space primary navigation only; preserve accessibility skip links and old deep links. Every existing function needs a reachable contextual destination. Preserve independent website navigation and plan entitlements. Live metadata found stored custom page slugs program(1), calendar(1), circles(2); a new static Program route must not shadow or delete them. Preserve server role/function/visibility gates; do not grant access through display logic. Coordinate community and shared chrome with Claude.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-04",
+    "evidence": "Signed-in production Daniel Tyack Space currently displays twelve public/menu links, including Offerings #offerings, Book #booking, FAQ #faq and Business #business, plus Manage. Source profile-nav.ts derives anchors and paid saved-menu links. Acceptance: keyboard/mobile and guest/member/editor/moderator/admin/owner/staff matrix; no primary fragment links; published-only learning hub; collision preservation; website custom-menu regression; exact READY deployment and live checks."
+  },
+  "wave": "W7"
+}
