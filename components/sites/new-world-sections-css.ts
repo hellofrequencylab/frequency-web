@@ -40,6 +40,11 @@ ${N} .nw-fine{margin:24px 0 0;font-size:13px;color:var(--nw-text-muted);text-ali
 
 /* SECTIONS: a band on the page ground with one corner spread, a glow line on top, an orb, and the wrap. Day halves the spread. */
 const SECTION = `
+/* THE DOCUMENT WRAPPER: a Space page wraps each block in its own rhythm (py-8 sm:py-10, lib/page-editor/config.tsx root), which drew an
+ * ink band under the menu and gaps between the sections. New World's sections run flush and pad themselves, so the wrapper adds nothing
+ * (the same reset as Free Human, the Temple kit and Services). */
+${N} [data-mw-own]>div{padding-block:0}
+${N} [data-mw-own]>div>*{margin-block:0}
 ${N} .nw-sec{position:relative;isolation:isolate;overflow:clip;background:var(--nw-surface-page);color:var(--nw-text-primary)}
 ${N} .nw-sec::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,color-mix(in oklab,var(--nw-flare-400) 55%,transparent),transparent);pointer-events:none;z-index:1}
 ${N} .nw-sec::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.55}
