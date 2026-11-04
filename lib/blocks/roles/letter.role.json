@@ -3,6 +3,7 @@
   "type": "RoleLetter",
   "label": "Letter (all themes)",
   "intent": "Collect emails",
+  "why": "A sign-up so people hear from you.",
   "group": "Answer",
   "icon": "send",
   "live": false,

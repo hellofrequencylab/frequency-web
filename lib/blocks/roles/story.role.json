@@ -3,6 +3,7 @@
   "type": "RoleStory",
   "label": "Our story (all themes)",
   "intent": "Tell your story",
+  "why": "Why you started, in your own words.",
   "group": "Welcome",
   "icon": "page",
   "live": false,

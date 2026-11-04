@@ -3,6 +3,7 @@
   "type": "RoleMembership",
   "label": "Membership (all themes)",
   "intent": "Offer memberships",
+  "why": "Your ways to join, side by side with their prices.",
   "group": "Show up",
   "icon": "membership",
   "live": false,
