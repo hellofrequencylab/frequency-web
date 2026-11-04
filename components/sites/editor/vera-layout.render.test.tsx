@@ -121,7 +121,7 @@ it('shows a question\'s answer as Vera\'s reply, with nothing to tick and nothin
   expect(await order()).toEqual(['hero', 'contact', 'about'])
 })
 
-it('adds a section the Add tab offers, at the asked position, as one undo step on the draft (LIVE-2121)', async () => {
+it('adds a section the Add tab offers, at the asked position, as one undo step on the draft (LIVE-2135)', async () => {
   const onLayout = vi.fn(async (...args: unknown[]) => {
     const addable = (args[2] as { sections: { type: string; label: string }[] }).sections
     return { ok: true as const, note: '', refused: [], changes: [{ kind: 'add' as const, blockType: addable[0].type, toPosition: 1 }, { kind: 'add' as const, blockType: 'NotOffered', toPosition: 1 }] }

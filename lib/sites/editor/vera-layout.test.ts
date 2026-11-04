@@ -156,7 +156,7 @@ describe('Vera style changes from the theme menu (LIVE-2098)', () => {
   })
 })
 
-describe('Vera adds a section the Add tab offers (LIVE-2121)', () => {
+describe('Vera adds a section the Add tab offers (LIVE-2135)', () => {
   const addConfig: Config = { components: { ...config.components, Gallery: { label: 'Gallery', fields: { title: { type: 'text' } }, defaultProps: { title: 'Your gallery title goes here' }, render: () => null } } }
   const addable = [{ type: 'Gallery', label: 'Gallery' }]
   it('parses an add from the addable list and refuses anything else', () => {

@@ -6,7 +6,7 @@
 // the model proposes, the person ticks lines, and only ticked lines are applied, to the DRAFT, as ONE undo
 // step. Nothing here publishes: Publish stays a human button with no tool behind it.
 //
-// THE AUTHORSHIP LINE IS STRUCTURAL. No change kind carries words. Vera can move, show, hide, duplicate, add (LIVE-2121) and
+// THE AUTHORSHIP LINE IS STRUCTURAL. No change kind carries words. Vera can move, show, hide, duplicate, add (LIVE-2135) and
 // restyle a section within the theme's own tone and width options; she cannot write or rewrite a heading, a
 // body, a button or any other text (owner ruling 2026-11-02, BLD-000 #1). A model reply that tries to set
 // text is refused line by line with a reason, never silently dropped.
@@ -45,7 +45,7 @@ type WebsiteVeraStyleChange =
   | { kind: 'accent'; accent: string }
   | { kind: 'look'; look: string }
 
-/** A new section of a kind the Add tab offers on this page (LIVE-2121). It arrives with the block's own placeholder
+/** A new section of a kind the Add tab offers on this page (LIVE-2135). It arrives with the block's own placeholder
  *  prompts ("Your headline goes here"), exactly as the Add tab inserts it; Vera never fills in words. */
 type WebsiteVeraAddChange = { kind: 'add'; blockType: string; toPosition: number }
 
@@ -68,7 +68,7 @@ export interface WebsiteVeraStyleMenu {
   accents: { id: string; label: string }[]
   accent: string | null
   looks: { id: string; label: string; dials: Record<string, string> }[]
-  /** LIVE-2121: the sections the Add tab offers on the page in view. The same rule as the style lines: Vera adds only
+  /** LIVE-2135: the sections the Add tab offers on the page in view. The same rule as the style lines: Vera adds only
    *  what the owner could have clicked. Absent means no adds. */
   sections?: WebsiteVeraAddable
 }

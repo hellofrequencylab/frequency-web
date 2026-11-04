@@ -4,7 +4,7 @@ import vm from 'node:vm'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 
-// LIVE-2121: Vera adds a section only from what the Add tab offers on this page, at the asked position, with the
+// LIVE-2135: Vera adds a section only from what the Add tab offers on this page, at the asked position, with the
 // block's own placeholder prompts and a fresh id, on the draft. Runs the real modules: a type outside the list, a
 // word-carrying line and a malformed list are refused, and the editor sends the list on the menu it already sends.
 const root = process.cwd()
@@ -50,4 +50,4 @@ const action = fs.readFileSync(path.join(root, 'lib/sites/editor/actions.ts'), '
 assert.match(shell, /filter\(\(c\) => !c\.disabled\)/, 'the editor leaves out a block at its per-page cap')
 assert.match(shell, /sections: \[\.\.\.new Map\(groups\.flatMap/, 'the editor sends the Add tab list on the menu')
 assert.match(action, /parseWebsiteVeraLayout\(input, new Set\(outline\.map\(\(s\) => s\.id\)\), menu\)/, 'the server parses adds against that menu')
-console.log('LIVE-2121 ok: Vera adds only sections the Add tab offers, with their own placeholders, on the draft')
+console.log('LIVE-2135 ok: Vera adds only sections the Add tab offers, with their own placeholders, on the draft')

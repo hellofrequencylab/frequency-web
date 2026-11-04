@@ -204,7 +204,7 @@ describe('Vera answers questions from the guide and the draft facts (LIVE-2110)'
   })
 })
 
-describe('Vera adds only sections the Add tab offers (LIVE-2121)', () => {
+describe('Vera adds only sections the Add tab offers (LIVE-2135)', () => {
   const menu = { dials: [], accents: [], accent: null, looks: [] }
   const outline = [{ id: 'hero', type: 'Hero', label: 'Hero', summary: '', position: 1, tone: null, width: null, shows: { desktop: true, tablet: true, phone: true } }]
   beforeEach(() => { mocks.raw.mockReset(); mocks.enabled = true; mocks.limited = false; mocks.overBudget = false; mocks.host = 'hearts.example'; mocks.staff = false; mocks.allowed = true; mocks.opens = true; mocks.preferences = {}; mocks.rpc.mockReset() })
