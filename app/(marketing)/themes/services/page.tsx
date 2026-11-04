@@ -3,6 +3,7 @@
 // pickers (LIVE-1996, owner 2026-11-04), so the page is indexed and in the sitemap.
 // Its words come from THEME_FEATURES.services, so the SEO lives here, the way /themes/[theme] builds Bold's and Wildheart's.
 import type { Metadata } from 'next'
+import { RememberKit } from '@/components/frequency/site/pages/themes/remember-kit'
 import { JsonLd } from '@/components/json-ld'
 import { frequencyPageJsonLd, frequencyPageMetadata, type FrequencyPageSeo } from '@/lib/seo/frequency-pages'
 import { FrequencyThemeFeature } from '@/components/frequency/site/pages/themes/frequency-theme-feature'
@@ -30,6 +31,7 @@ export default function ServicesThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(SEO)} />
+      <RememberKit kit="services" />
       <FrequencyThemeFeature theme="services" />
     </>
   )
