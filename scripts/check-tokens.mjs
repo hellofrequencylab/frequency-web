@@ -97,6 +97,10 @@ const ALLOWLIST = [
   { match: (p) => p === 'components/frequency/site/pages/create-space/create-space-claim.tsx', kinds: ['hex color'] },
   // The Create a Space preview's per-kit accent swatches: each kit's own palette stands in the picker, so the fills are data, not UI styling.
   { match: (p) => p === 'lib/create-space/preview-site.ts', kinds: ['hex color'] },
+  // The Theme Kits page's kit sections (LIVE-2188): each of the nine kits is drawn in its own design system (Cyber Witch's neon on
+  // concrete, Wildheart's parchment), so the kit skins, mock surfaces and Stage chrome carry the design's own hex. They are
+  // per-kit colour data spliced into the page's inline CSS strings, not Frequency UI chrome; the type scale stays governed.
+  { match: (p) => p.startsWith('components/frequency/site/pages/themes/kit-showcase/'), kinds: ['hex color', 'inline rgb()/rgba()'] },
   // print stylesheet: a print document renders literal CSS, not the app's CSS-var cascade.
   (p) => p.startsWith('app/print/'),
   // map markers: *-map.tsx / *map*.tsx
