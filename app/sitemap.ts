@@ -260,6 +260,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/themes/designer`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/new-world (LIVE-2065): the New World Theme Kit's feature page, public now that New World is offered in the pickers.
           { url: `${SITE_URL}/themes/new-world`, changeFrequency: "monthly", priority: 0.5 },
+          // /themes/services (LIVE-1996): the Services theme's feature page, public now that Services is offered in the pickers.
+          { url: `${SITE_URL}/themes/services`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/cyberwitch (LIVE-2148): the CyberWitch Theme Kit's feature page, public now that CyberWitch is offered in the pickers.
           { url: `${SITE_URL}/themes/cyberwitch`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/[theme] (LIVE-1514): the other six themes' kit pages.

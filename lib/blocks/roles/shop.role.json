@@ -3,6 +3,7 @@
   "type": "RoleShop",
   "label": "Shop (all themes)",
   "intent": "Sell a few things",
+  "why": "A few things people can buy from you.",
   "group": "More",
   "icon": "tag",
   "live": false,

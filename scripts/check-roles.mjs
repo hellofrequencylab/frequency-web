@@ -4,7 +4,7 @@
 //
 // WHAT IT PROVES, per role file:
 //   R1  the file is registered in ROLES (lib/blocks/roles/roles.ts) under its own file name, and `type` is unique.
-//   R2  `intent` is a short owner-facing phrase, unique across roles, with no em dash.
+//   R2  `intent` is a short owner-facing phrase, unique across roles, and `why` is its one-line card text; no em dashes.
 //   R3  `group` is one of ROLE_GROUPS and `live` is a boolean.
 //   R4  `icon` is a <symbol> in the Frequency sprite or the editor sprite (public/brand/frequency/), so it draws.
 //   R5  every variant has a label and a `thumb` from ROLE_THUMBS; `default` names a variant; every `needs` names a slot or an item field.
@@ -42,6 +42,8 @@ export function roleProblems(id, r, { groups, thumbs, icons }) {
     if (r.intent.length > 40) at(`intent "${r.intent}" is over 40 characters`)
     if (r.intent.includes('—')) at('intent has an em dash')
   }
+  if (!text(r.why)) at('no why line')
+  else if (r.why.includes('\u2014')) at('why line has an em dash')
   if (!groups.includes(r.group)) at(`group "${r.group}" is not one of ${groups.join(', ')}`)
   if (typeof r.live !== 'boolean') at('live is not true or false')
   if (!icons.has(r.icon)) at(`icon "${r.icon}" is not in the sprite`)

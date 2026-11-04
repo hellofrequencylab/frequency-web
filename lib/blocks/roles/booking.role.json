@@ -3,6 +3,7 @@
   "type": "RoleBooking",
   "label": "Save a spot (all themes)",
   "intent": "Let people save a spot",
+  "why": "Times people can save without a back and forth.",
   "group": "Show up",
   "icon": "ticket",
   "live": false,
