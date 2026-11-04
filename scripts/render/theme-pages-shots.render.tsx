@@ -81,6 +81,8 @@ it('renders the Bold and Wildheart surfaces', async () => {
     const home = r.snapshot.pages.find((p) => p.slug === 'home' || p.slug === '') ?? r.snapshot.pages[0]!
     for (const b of home.doc.content as { type: string; props: Record<string, unknown> }[]) {
       if (b.type === 'ServicesHero' || b.type === 'Hero') b.props.image = t.photo
+      // Bold's kit hero is text-only; the design puts the headline above a full-width photo, so the picture shows the photo variant.
+      if (b.type === 'PhotoHero' && t.id === 'bold') Object.assign(b.props, { variant: 'image', image: t.photo, alt: 'People gathered on a beach at sunset', height: 'medium', display: 'below' })
     }
     const links = { origin: 'https://example.com', slug: 'table-nine', siteBase: '', pages: ['home'], contactHref: null, bookHref: null, email: null }
     const body = h(WebsiteDocument as never, { doc: home.doc, theme: t.ed, config, live: { events: [], circles: [], journeys: [] }, links, origin: links.origin, title: 'Home', metadata: { space: { name: 'Table Nine', faqs: [] } } } as never)

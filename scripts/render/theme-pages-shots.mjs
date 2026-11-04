@@ -45,10 +45,12 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 for (const t of themes) {
   mkdirSync(`public/brand/theme-pages/${t}`, { recursive: true })
   for (const [name, { width, height, scale }] of Object.entries(shots)) {
-    const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: scale })
+    // Bold's website picture is taken at 1.25x the frame and scaled back, so the headline AND the photo under it sit in the window.
+    const zoom = t === 'bold' && name === 'site' ? 1.25 : 1
+    const page = await browser.newPage({ viewport: { width: width * zoom, height: height * zoom }, deviceScaleFactor: scale / zoom })
     await page.goto(name === 'spacedesk' || name === 'spot' ? `${base}/${t}-${name}.html` : pathToFileURL(`${dir}/${t}-${name}.html`).href, { waitUntil: 'load' })
     await page.waitForTimeout(600)
-    await page.screenshot({ path: `public/brand/theme-pages/${t}/${name}.jpg`, type: 'jpeg', quality: 82, clip: { x: 0, y: 0, width, height } })
+    await page.screenshot({ path: `public/brand/theme-pages/${t}/${name}.jpg`, type: 'jpeg', quality: 82, clip: { x: 0, y: 0, width: width * zoom, height: height * zoom } })
     await page.close()
   }
 }
