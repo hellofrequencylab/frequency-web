@@ -3,6 +3,7 @@
 // offered in the pickers yet, so the page stays out of search and the sitemap until it is, the way /themes/services does.
 // Its words come from THEME_FEATURES.cyberwitch, so the SEO lives here, the way /themes/[theme] builds Bold's and Wildheart's.
 import type { Metadata } from 'next'
+import { RememberKit } from '@/components/frequency/site/pages/themes/remember-kit'
 import { JsonLd } from '@/components/json-ld'
 import { frequencyPageJsonLd, frequencyPageMetadata, type FrequencyPageSeo } from '@/lib/seo/frequency-pages'
 import { FrequencyThemeFeature } from '@/components/frequency/site/pages/themes/frequency-theme-feature'
@@ -30,6 +31,7 @@ export default function CyberWitchThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(SEO)} />
+      <RememberKit kit="cyberwitch" />
       <FrequencyThemeFeature theme="cyberwitch" />
     </>
   )
