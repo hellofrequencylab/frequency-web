@@ -1,4 +1,4 @@
-import { ROLES, ROLE_IDS, type RoleId } from '@/lib/blocks/roles/roles'
+import { ROLES, roleOfType, type RoleId } from '@/lib/blocks/roles/roles'
 import type { Config, Field } from '@/lib/page-editor/types'
 
 // THE TUNE RAIL'S PROJECTION (BLD-105; spec docs/EDITOR-NEXT.md#bld-105). The settings panel is generated, never
@@ -30,7 +30,6 @@ interface TuneProjection {
   layer2: TuneField[]
 }
 
-const ROLE_OF_TYPE = new Map<string, RoleId>(ROLE_IDS.map((r) => [ROLES[r].type, r]))
 /** Slot names the role contract uses where the block field carries another name. */
 const SLOT_ALIASES: Record<string, string[]> = { heading: ['title'], body: ['lead'] }
 
@@ -75,7 +74,7 @@ function slotExtra(spec: unknown, required: boolean): Partial<TuneField> {
 
 export function tuneProjection(type: string, config: Config): TuneProjection {
   const fields = ((config.components as Record<string, { fields?: Record<string, Field> }>)[type]?.fields ?? {}) as Record<string, Field>
-  const role = ROLE_OF_TYPE.get(type) ?? null
+  const role = roleOfType(type)
   const layer1: TuneField[] = []
   const taken = new Set<string>()
   const take = (key: string, extra: Partial<TuneField>) => {

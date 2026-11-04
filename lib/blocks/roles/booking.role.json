@@ -2,6 +2,10 @@
   "role": "Booking",
   "type": "RoleBooking",
   "label": "Save a spot (all themes)",
+  "intent": "Let people save a spot",
+  "group": "Show up",
+  "icon": "ticket",
+  "live": false,
   "replaces": [
     "SpaceBooking",
     "NetworkKitInnerBook"
@@ -26,14 +30,38 @@
       "heading": "text<=120",
       "lead": "text<=280",
       "action": "link"
+    },
+    "labels": {
+      "items": {
+        "label": "Times to book",
+        "hint": "Each one a day and time people can save."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "action": {
+        "label": "Link under the section",
+        "hint": "Where people go to see more."
+      }
     }
   },
   "variants": {
     "board": {
-      "label": "Board"
+      "label": "Board",
+      "thumb": "board"
     },
     "cards": {
-      "label": "Cards"
+      "label": "Cards",
+      "thumb": "cards"
     }
   },
   "default": "board",
