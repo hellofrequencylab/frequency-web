@@ -1,10 +1,10 @@
-// Data for the Nocturne-layout theme pages of Bold and Wildheart (/themes/bold, /themes/wildheart). Default is not a theme people
+// Data for the Nocturne-layout theme pages of Bold, Wildheart and Services (/themes/bold, /themes/wildheart, /themes/services). Default is not a theme people
 // pick (New World is the default, owner ruling 2026-11-03), so it has no page here.
 // The pictures are renders of each theme's own surfaces, stored under public/brand/theme-pages/<id>: the Website through the real
 // site chrome and blocks, the Spotlight through the real shell on the theme's preset, the Space inside the real member shell and the
 // Email through the real campaign mail (scripts/render/theme-pages-shots.render.tsx). Copy follows docs/marketing/voice-and-language-guide.md.
 
-export type ThemeFeatureId = 'bold' | 'wildheart'
+export type ThemeFeatureId = 'bold' | 'wildheart' | 'services'
 export type ThemeFeatureSurface = 'site' | 'spotlight' | 'space' | 'email'
 
 export const THEME_FEATURE_SURFACES: readonly { id: ThemeFeatureSurface; label: string; qual?: string; shot: 'site' | 'spot' | 'spacedesk' | 'email'; width: number; height: number }[] = [
@@ -71,6 +71,25 @@ export const THEME_FEATURES: Record<ThemeFeatureId, ThemeFeatureCopy> = {
       ['What does it cost?', 'Free to start. Business when you charge.'],
     ],
   },
+  services: {
+    id: 'services',
+    name: 'Services',
+    accentVar: 'var(--fq-x-aqua-neon)',
+    tagline: ['Good work, done right.', 'Booked in a tap.'],
+    lead:
+      'People pick the one they trust, and they decide fast. Services puts your prices, your hours and a book button up front, with a ' +
+      'glossy night look and a day register for bright rooms, read from one profile. It suits trades, salons, studios, clinics and anyone who shows up for clients.',
+    signature: 'Night first and glossy, with a day register, one accent from six, and your services with a price and a length.',
+    madeFor: 'trades, salons, studios, clinics and anyone who books, sells and shows up for clients',
+    faq: [
+      ['Is Services only for trades?', 'No. It has sixteen starter kits, from plumbers and cleaners to salons, tutors, trainers and clinics. Pick the closest one and change the words.'],
+      ['Does it have a light version?', 'Yes. Night is the default, and Day flips the whole look for bright rooms. Switch any time from your editor.'],
+      ['Can I change it later?', 'Press Change theme in your editor. Your words, offers and photos stay saved. Services is only the dress they wear.'],
+      ['Will my Space look exactly like my website?', 'Your Space keeps Frequency’s page frame, so people on the network always know where they are. It wears your name, fonts, accent and offers.'],
+      ['Who owns my contacts?', 'You do. Bookings, quotes and sign-ups build your list, and your list stays yours.'],
+      ['What does it cost?', 'Free to start. Business when you charge.'],
+    ],
+  },
 }
 
-export const isThemeFeatureId = (id: string | null | undefined): id is ThemeFeatureId => id === 'bold' || id === 'wildheart'
+export const isThemeFeatureId = (id: string | null | undefined): id is ThemeFeatureId => id === 'bold' || id === 'wildheart' || id === 'services'
