@@ -37,8 +37,8 @@ describe('the query reads each number from a record money and the game cannot to
     expect(PROVE_IT_QUERY).not.toMatch(/engagement_events|practice\.verified|event_attend/)
   })
 
-  it('does not count the provisioned Space Circle as a circle the Space started', () => {
-    expect(PROVE_IT_QUERY).toMatch(/not c\.is_space_primary/)
+  it('counts only live circles, so a retired (archived) Space Circle is never one the Space started', () => {
+    expect(PROVE_IT_QUERY).not.toMatch(/is_space_primary/)
     expect(PROVE_IT_QUERY).toMatch(/c\.status in \('forming', 'active'\)/)
   })
 

@@ -15,9 +15,8 @@
 // One SELECT, three numbers, each from a record that money and the game cannot touch:
 //
 //   1. CIRCLES PER SPACE. Listable circles (forming or active, not demo) that a Space STARTED,
-//      over active non-root Spaces. 🔴 The Space Circle every Space is provisioned with
-//      (`circles.is_space_primary`, ADR-1391) is NOT counted: it exists because a trigger made it,
-//      so counting it would make the number move on provisioning instead of on behaviour. The
+//      over active non-root Spaces. The Space Circle every Space used to be provisioned with is
+//      retired and archived (ADR-1938), so the status test alone leaves it out. The
 //      denominator is the population the standing rollup scores (lib/spaces/standing-rollup.ts):
 //      active Spaces that are not the personal root.
 //   2. GATHERINGS HELD, in the trailing window. Published, not cancelled, not removed, not demo,
@@ -77,11 +76,10 @@ with spaces as (
      and s.type <> 'root'
 ),
 circles as (
-  -- Circles a Space STARTED. The provisioned Space Circle (is_space_primary) is not one of them.
+  -- Circles a Space STARTED. The retired Space Circles are archived, so the status test drops them.
   select count(*) as n
     from public.circles c
    where c.space_id is not null
-     and not c.is_space_primary
      and not c.is_demo
      and c.status in ('forming', 'active')
 ),

@@ -1,3 +1,4 @@
+import type { FqEditorIconName, FqIconName } from '@/components/frequency/icon'
 import hero from './hero.role.json'
 import steps from './steps.role.json'
 import offerings from './offerings.role.json'
@@ -31,8 +32,20 @@ export type RoleId = 'hero' | 'steps' | 'offerings' | 'gatherings' | 'membership
   | 'statement' | 'letter' | 'contact' | 'stats' | 'shop' | 'library' | 'people' | 'gallery' | 'chapters'
   | 'firstvisit' | 'booking' | 'locations' | 'business' | 'story'
 
+/** The Add-a-section headings (docs/design/frequency-builder-v3/block-editor-spec.md §6), in the order the sheet draws them. */
+export const ROLE_GROUPS = ['Welcome', 'Show up', 'Trust', 'Answer', 'More'] as const
+type RoleGroup = (typeof ROLE_GROUPS)[number]
+
+/** The layout sketches a variant chip or an Add card draws (64×48, BLD-202, BLD-203). Several variants share one sketch. */
+export const ROLE_THUMBS = ['split', 'full', 'center', 'glow', 'minimal', 'band', 'card', 'inline', 'grid', 'cards', 'list', 'rows',
+  'agenda', 'timeline', 'strip', 'stack', 'mosaic', 'carousel', 'quote', 'wall', 'figures', 'tiers', 'table', 'spotlight', 'profile',
+  'map', 'timetable', 'board', 'pull', 'ticker', 'thread', 'rail', 'featured', 'bar'] as const
+type RoleThumb = (typeof ROLE_THUMBS)[number]
+
 interface RoleVariant {
   label: string
+  /** The layout sketch for this variant's chip. */
+  thumb: RoleThumb
   min?: number
   max?: number
   /** Slots the variant cannot draw without. */
@@ -44,9 +57,18 @@ interface RoleDefinition {
   /** The block type registered in the page editor. */
   type: string
   label: string
+  /** What the section does, in the owner's words: the builder's name for it ("Say who you are"). */
+  intent: string
+  /** The Add-a-section heading it sits under. */
+  group: RoleGroup
+  /** A glyph in the Frequency sprite or the editor sprite (check:roles proves it resolves). */
+  icon: FqIconName | FqEditorIconName
+  /** Draws the Space's own rows on a live page (BLD-213) when the block asks for them. */
+  live: boolean
   /** Legacy block types this role stands in for (read by the legacy resolver, LIVE-1860). */
   replaces: string[]
-  slots: { required: Record<string, unknown>; optional: Record<string, unknown> }
+  /** Slot specs stay strings or list objects (lib/builder/tune.ts reads them); `labels` names every slot for the owner. */
+  slots: { required: Record<string, unknown>; optional: Record<string, unknown>; labels: Record<string, { label: string; hint: string }> }
   variants: Record<string, RoleVariant>
   default: string
   /** The Space rows a live role reads when its block asks for them: events or faqs. */
@@ -88,6 +110,10 @@ export const ROLES: Readonly<Record<RoleId, RoleDefinition>> = {
 }
 
 export const ROLE_IDS = Object.keys(ROLES) as RoleId[]
+
+const ROLE_BY_TYPE = new Map<string, RoleId>(ROLE_IDS.map((r) => [ROLES[r].type, r]))
+/** The role a registered block type stands for, or null for a legacy type. */
+export const roleOfType = (type: string): RoleId | null => ROLE_BY_TYPE.get(type) ?? null
 
 /** The variant a block draws: the owner's pick when it is one this role has, else the theme's default for the role
  *  (LIVE-1861, components/sites/presentation) when it is one this role has, else the role's own default. */
