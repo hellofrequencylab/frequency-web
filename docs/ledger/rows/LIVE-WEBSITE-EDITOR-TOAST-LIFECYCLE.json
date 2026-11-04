@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-WEBSITE-EDITOR-TOAST-LIFECYCLE",
+  "title": "Stop website editor toast work when the editor closes",
+  "lane": "live",
+  "priority": "P2",
+  "size": "XS",
+  "status": "open",
+  "source": {
+    "file": "components/sites/editor/shell.tsx",
+    "ref": "CI run 41907827177, test job 126847922617, docs PR #4666 head 059aeba8e6531bb457350d2552018770e52c731d: 2,485 files and 27,944 tests passed, but an unhandled ReferenceError from the toast callback after shell.frequency.test.tsx teardown failed the job. Source review on main a6ad4cd1369d53d83c12368f2becdbe72af4ea01 confirms the timer has no unmount cleanup."
+  },
+  "detail": "Give the existing toast timer the website editor shell's lifecycle: reset the mounted marker on effect setup, cancel and clear the timer handle on cleanup, and ignore toast-only work after the shell unmounts. This also prevents a late clipboard, publish or Vera completion from scheduling a new toast after cleanup. Keep the 2,600 ms duration, replacement timing, visible messages and save/publish/Vera request semantics unchanged. Do not mask window errors or change test environments, timeouts, probes, pins or thresholds. Source and local consequence checks do not close this row; exact CI, READY preview and appropriate production verification remain required.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-04",
+    "evidence": "35 unchanged existing editor tests pass before and after the local fix. Five disposable tests exercise the actual shell with mocked IO: pending-toast unmount cleanup, the unchanged 2,600 ms lifetime, replacement timing, deferred clipboard completion after unmount, and StrictMode setup/cleanup/replay. All five pass on the candidate; pristine source fails the three teardown/late-completion cases while the two duration/replacement controls pass. Tests remain outside the repository. No full-CI, READY-preview or production fix is claimed yet."
+  },
+  "wave": "W7"
+}
