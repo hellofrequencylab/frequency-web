@@ -47,7 +47,7 @@ it('renders the New World Website, Spotlight and Email for each kit', async () =
     const photo = PHOTO[niche]!
     const c = newWorldKitSpotlightContent(niche, { photo: `/sites/new-world/photos/${photo}.webp` })
     for (const b of home.doc.content as { type: string; props: Record<string, unknown> }[]) {
-      if (b.type === 'ServicesHero') { b.props.image = `/sites/new-world/photos/${photo}.webp`; b.props.alt = photos[photo]!.alt }
+      if (b.type === 'ServicesHero' || b.type === 'NewWorldHero') { b.props.image = `/sites/new-world/photos/${photo}.webp`; b.props.alt = photos[photo]!.alt }
     }
     const body = h('div', { style: { ['--x' as string]: 0 } }, h(BlockRender, { config, data: home.doc } as never))
     const site = renderToStaticMarkup(
@@ -56,7 +56,7 @@ it('renders the New World Website, Spotlight and Email for each kit', async () =
         {
           brandName: c.name,
           homeHref: '/',
-          links: [{ label: 'Services', href: '/services' }, { label: 'Events', href: '/events' }, { label: 'About', href: '/about' }, { label: 'Contact', href: '/contact' }],
+          links: [{ label: 'Ways in', href: '/services' }, { label: 'Our story', href: '/about' }, { label: 'Book', href: '/booking' }],
           cta: { href: '/book', label: c.cta.label, external: false },
           themeFonts: false,
           skin: { theme: 'new-world', season: 'fall', register: 'night' },

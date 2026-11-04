@@ -19,6 +19,7 @@ import { primitivesComponents } from '@/components/page-editor/blocks/primitives
 import { dynamicComponents } from '@/components/page-editor/blocks/dynamic'
 import { marketingComponents } from '@/components/page-editor/blocks/marketing'
 import { dawnComponents } from '@/components/page-editor/blocks/dawn'
+import { articleComponents, ARTICLE_BLOCK_TYPES } from '@/components/page-editor/blocks/article'
 import { productStoryComponents } from '@/components/page-editor/blocks/product-story'
 import { circlesComponents } from '@/components/page-editor/blocks/circles'
 import { linktreeComponents, LINKTREE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/linktree'
@@ -78,6 +79,7 @@ export const config: Config = {
     ...mediaComponents,
     ...marketingComponents,
     ...dawnComponents,
+    ...articleComponents,
     ...productStoryComponents,
     ...dynamicComponents,
     ...circlesComponents,
@@ -259,6 +261,14 @@ export const config: Config = {
     siteStory: {
       title: 'Site story',
       components: [...SITE_STORY_CATEGORY_COMPONENTS],
+    },
+    // The seeker-article layouts (components/page-editor/blocks/article.tsx, owner 2026-11-04 "make each a
+    // different layout"): a question, a line, a story, steps. Drawn in the Frequency public site kit
+    // (site-blocks.css §7), so the marketing editor offers them and no Space website theme does
+    // (lib/page-editor/palette-scope.ts).
+    article: {
+      title: 'Article layouts',
+      components: [...ARTICLE_BLOCK_TYPES],
     },
   },
 }

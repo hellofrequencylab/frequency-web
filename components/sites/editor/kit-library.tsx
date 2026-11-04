@@ -12,6 +12,13 @@ const MODES: { mode: KitApplyMode; label: string; help: string }[] = [
   { mode: 'theme', label: 'Look only', help: 'Takes the kit’s theme and leaves your pages alone.' },
 ]
 
+/** The starter kits offered for a theme (every kit when none is named). The earlier Temple's kits (Royal Temple's) are
+ *  offered nowhere, so they never list; the Temple Theme Kit lists its thirteen. The kit for the door this Space came in
+ *  through (its saved niche) leads the list; the rest keep their order. */
+export function starterKits(theme?: SiteKit['theme'], suggestedNiche?: KitNiche | null) {
+  return (theme === 'Designer' ? [...KIT_INDEX, ...DESIGNER_PROFILE_KIT_INDEX] : theme === 'NetworkKit' ? NETWORK_KIT_PROFILE_KIT_INDEX : theme === 'TempleKit' ? TEMPLE_KIT_PROFILE_KIT_INDEX : KIT_INDEX).filter((kit) => (!theme || kit.theme === theme) && kit.theme !== 'Temple').sort((a, b) => Number(b.niche === suggestedNiche) - Number(a.niche === suggestedNiche))
+}
+
 /** The Theme tab's starter kits. A kit is a starting point written into the draft once: it is one undo step,
  *  its words are placeholders, and nothing reaches the live site until the owner publishes. */
 export function KitLibrary({ onApply, onPreview, suggestedNiche, theme }: { theme?: SiteKit['theme']; onApply: (id: string, mode: KitApplyMode) => Promise<string>; onPreview?: (id: string) => Promise<KitChanges | string>; suggestedNiche?: KitNiche | null }) {
@@ -31,9 +38,7 @@ export function KitLibrary({ onApply, onPreview, suggestedNiche, theme }: { them
     setBusy(false); setConfirm(false); setOpen(null); setChanges(null)
   }
 
-  // The earlier Temple's kits (Royal Temple's) are offered nowhere, so they never list; the Temple Theme Kit lists its thirteen.
-  // The kit for the door this Space came in through (its saved niche) leads the list; the rest keep their order.
-  const kits = (theme === 'Designer' ? [...KIT_INDEX, ...DESIGNER_PROFILE_KIT_INDEX] : theme === 'NetworkKit' ? NETWORK_KIT_PROFILE_KIT_INDEX : theme === 'TempleKit' ? TEMPLE_KIT_PROFILE_KIT_INDEX : KIT_INDEX).filter((kit) => (!theme || kit.theme === theme) && kit.theme !== 'Temple').sort((a, b) => Number(b.niche === suggestedNiche) - Number(a.niche === suggestedNiche))
+  const kits = starterKits(theme, suggestedNiche)
 
   if (!kits.length) return null
   return <>

@@ -18,7 +18,7 @@ import { ModuleSection } from './section'
 // the same page the Events block composed the real EventCard, cover photo and all, so a Space's
 // Home read as two different design systems stacked on top of each other. The circles were not
 // missing data either — `listPublicSpaceCircles`' own COLS has always selected image_url, type,
-// member_cap, access, status, neighborhood and is_space_primary; the block's projection
+// member_cap, access, status and neighborhood; the block's projection
 // (SpaceCircleItem) simply threw all of it away and then drew what little was left. So this is not
 // a new card: it is the existing one, finally fed.
 //

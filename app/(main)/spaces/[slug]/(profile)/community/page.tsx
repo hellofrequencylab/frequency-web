@@ -204,8 +204,7 @@ async function TopicCircles({
   canManage: boolean
 }) {
   const all = await listPublicSpaceCircles(spaceId, { viewerProfileId, limit: 20, includeHidden: canManage })
-  // The Space Circle is on its way out (ADR-1938); it is never listed as a topic circle.
-  const topics = all.filter((c) => c.is_space_primary !== true)
+  const topics = all
   const shown = topics.slice(0, CIRCLES_SHOWN)
 
   return (
