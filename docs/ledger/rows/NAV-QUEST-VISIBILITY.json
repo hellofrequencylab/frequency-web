@@ -1,0 +1,19 @@
+{
+  "id": "NAV-QUEST-VISIBILITY",
+  "title": "Restore My Quest access for every authenticated member by repairing its exact stale page setting",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "scripts/ops/repair-root-quest-page-visibility.sql",
+    "ref": "Read-only Frequency Community root page_settings metadata and current admission source, 2026-11-04."
+  },
+  "detail": "Actual authenticated /crew redirected to /feed. Production metadata confirms exactly one root Space and its /crew page_settings row is published, visibility_role=crew, updated_at=2026-06-22 15:21:37.887+00. The community crew rung is retired and separate from paid Crew entitlement. Current Quest matrix and docs/ROLES.md grant every signed-in member full Quest access, while the shared layout still honors this stale operator visibility gate. PROPOSAL ONLY: exact operator transaction resolves one root, locks only /crew, refuses unless status/visibility/updated_at still match this reviewed snapshot, sets native visibility_role NULL (any authenticated member) and updated_at, verifies one row and unchanged remaining columns. No generic page gate, auth, RLS, role or unrelated route changes. The exact SQL passed eleven disposable PGlite 0.4.0 / PostgreSQL 17.5-compatible fixture cases, including unchanged unrelated rows and rollback/refusal cases; this is not hosted Supabase equivalence. Fresh compare-and-set preflight, exact main-committed SQL hash review/authorization and actual production postconditions are still required before any production execution. Never execute twice; an already-null or changed row refuses. Acceptance: authenticated member /crew reaches My Quest, guest remains signed out, other host-only/draft routes and other Space settings stay enforced.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-04",
+    "evidence": "Read-only production gate/schema metadata confirms PK(space_id,route), nullable text visibility_role, published root /crew with crew restriction and exact updated_at. Unchanged committed operator SQL SHA-256 258956ee13d656f2b67959fc9a4c3c15690dc3e6a1740d0ced9d2127e1e43cec passes eleven isolated PGlite/PostgreSQL 17.5-compatible scenarios: valid one-row repair with other tenant/host/draft rows unchanged; missing/stale/wrong/already-cleared/ambiguous targets and unexpected target-column trigger changes refuse/roll back. Nine actual-source gate/nav controls keep other draft/host gates and Admin/preview framing intact. This is fixture/source proof, not hosted Supabase/browser/session evidence. Production operator SQL NOT EXECUTED and no setting changed. Keep open until fresh authorized repair/postconditions and member/guest production proof."
+  },
+  "wave": "W7"
+}
