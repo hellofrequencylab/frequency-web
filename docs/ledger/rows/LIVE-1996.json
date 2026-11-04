@@ -1,0 +1,6 @@
+{
+ "id": "LIVE-1996",
+ "append": {
+  "detail": "\n\n2026-11-03: /themes/services shipped as LIVE-2130 at app/(marketing)/themes/services/page.tsx. This row's probe still looks for app/themes/services/page.tsx; repointing it waits on the owner's phrase. The picker entry stays hidden like House of Fates until Services is offered."
+ }
+}
