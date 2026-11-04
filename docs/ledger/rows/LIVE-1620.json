@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-1620",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/circles-space-shelf.mjs"
+    }
+  },
+  "append": {
+    "detail": "2026-11-04 (ADR-1938, LIVE-2081): the Space Circle is retired, so the separate shelf went with it. Probe rewritten to pin the consequence that still matters: no Space wall, kind, flag or shelf is mixed into /circles."
+  }
+}

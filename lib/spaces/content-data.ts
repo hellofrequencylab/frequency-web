@@ -189,8 +189,6 @@ export type SpaceCircleItem = {
   imageUrl: string | null
   /** The place line. Null for an online circle, where the card says "Online" on its own. */
   neighborhood: string | null
-  /** The Space Circle (ADR-1391/1393) — it leads the list, and the card can say so. */
-  isSpacePrimary: boolean
 }
 
 /** A Space-admin reply published under a member review (Reviews redesign). Null on a review with no
@@ -940,7 +938,6 @@ export async function getSpaceCommunity(spaceId: string): Promise<SpaceCircleIte
       access: c.access ?? null,
       imageUrl: c.image_url ?? null,
       neighborhood: c.neighborhood ?? null,
-      isSpacePrimary: c.is_space_primary === true,
     }))
   } catch {
     return []

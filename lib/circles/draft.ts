@@ -156,9 +156,8 @@ export async function getCircleDraft(circleId: string): Promise<CircleDraft | nu
 }
 
 /** The member_cap ceiling the circles_cap_check constraint enforces for each type
- *  (supabase/migrations/20270345005600_space_circle.sql); a Space's primary Circle gets 300. */
+ *  (supabase/migrations/20270346029700_retire_space_circle_column.sql). */
 const CIRCLE_CAP_BY_TYPE = { 'in-person': 50, online: 100 } as const
-const SPACE_PRIMARY_CAP = 300
 
 /** What a failed draft write says to the host. The builder's catch and the Vera rail show it. */
 export const CIRCLE_DRAFT_SAVE_ERROR = "Couldn't save that change. Try again."
@@ -188,13 +187,13 @@ export async function saveCircleDraft(circleId: string, patch: CircleDraftPatch)
     // existing member_cap above what the constraint allows.
     const { data: row, error } = await admin
       .from('circles')
-      .select('type, member_cap, is_space_primary')
+      .select('type, member_cap')
       .eq('id', circleId)
       .maybeSingle()
     if (error) throw new Error(CIRCLE_DRAFT_SAVE_ERROR)
-    const current = (row ?? {}) as { type?: string | null; member_cap?: number | null; is_space_primary?: boolean | null }
+    const current = (row ?? {}) as { type?: string | null; member_cap?: number | null }
     const resultingType = (circleUpdate.type as string | undefined) ?? (current.type === 'online' ? 'online' : 'in-person')
-    const ceiling = current.is_space_primary ? SPACE_PRIMARY_CAP : CIRCLE_CAP_BY_TYPE[resultingType as 'in-person' | 'online']
+    const ceiling = CIRCLE_CAP_BY_TYPE[resultingType as 'in-person' | 'online']
     const requested = Number((circleUpdate.member_cap as number | undefined) ?? current.member_cap ?? 12)
     const cap = Math.min(ceiling, Math.max(2, Number.isFinite(requested) ? Math.round(requested) : 12))
     if ('memberCap' in patch || (current.member_cap ?? 0) > ceiling) circleUpdate.member_cap = cap
