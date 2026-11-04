@@ -127,7 +127,7 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
   const manageHref = input.manageUrl ?? manageFallback
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
     <tr><td align="center" data-fq="fq-foot" style="font-family:${FONT_STACK};padding:28px 20px 0;text-align:center;color:${colors.muted};">
-      <p style="margin:0 0 2px;font-family:${DISPLAY_STACK};font-size:14px;font-weight:${emailType.displayWeight};letter-spacing:-0.02em;color:${colors.heading ?? colors.text};" data-fq="fq-strong">${name}</p>
+      <p style="margin:0 0 2px;font-family:${brand.serif ? SERIF_DISPLAY : DISPLAY_STACK};font-size:${brand.serif ? 17 : 14}px;font-weight:${brand.serif ? 400 : emailType.displayWeight};letter-spacing:${brand.serif ? '0' : '-0.02em'};color:${colors.heading ?? colors.text};" data-fq="fq-strong">${name}</p>
       ${desc ? `<p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>`}
       <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${links}</p>
       <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${mutedLink(unsubscribeHref, 'Unsubscribe')}${sep}${mutedLink(manageHref, 'Manage emails')}</p>

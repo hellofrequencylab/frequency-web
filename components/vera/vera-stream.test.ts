@@ -14,7 +14,7 @@ vi.mock('@/app/onboarding/vera-actions', () => ({
   }),
 }))
 
-import { createLineReader, parseTurnEvent, streamConciergeTurn } from './vera-stream'
+import { createLineReader, parseTurnEvent, spaceSlugFromPath, streamConciergeTurn } from './vera-stream'
 
 function bodyOf(chunks: string[]): ReadableStream<Uint8Array> {
   const enc = new TextEncoder()
@@ -112,5 +112,16 @@ describe('streamConciergeTurn', () => {
     const r = await streamConciergeTurn('chat', 'hi', [], { onDelta: () => {} })
     expect(r.message).toBe('whole reply')
     expect(action.calls).toBe(1)
+  })
+})
+
+describe('spaceSlugFromPath (LIVE-2147)', () => {
+  it('reads the Space slug from a Space page and nothing else', () => {
+    expect(spaceSlugFromPath('/spaces/sunrise/manage')).toBe('sunrise')
+    expect(spaceSlugFromPath('/spaces/sunrise')).toBe('sunrise')
+    expect(spaceSlugFromPath('/spaces/sunrise-yoga/settings/email')).toBe('sunrise-yoga')
+    expect(spaceSlugFromPath('/spaces')).toBeUndefined()
+    expect(spaceSlugFromPath('/circles/sunrise')).toBeUndefined()
+    expect(spaceSlugFromPath('/spaces/Bad%20Slug/x')).toBeUndefined()
   })
 })

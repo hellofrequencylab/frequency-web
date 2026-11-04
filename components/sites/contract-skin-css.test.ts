@@ -93,3 +93,23 @@ describe('what a theme switch changes', () => {
     expect(foreignBlocksFor(null, 'bold')).toEqual([])
   })
 })
+
+describe('the Services family on foreign hosts', () => {
+  it('is a family: ServicesHero and its kin are Services blocks, wherever they sit', () => {
+    expect(skinFamilyOf('ServicesHero')).toBe('services')
+    expect(skinFamilyOf('ServicesStory')).toBe('services')
+  })
+  it('needs the skin on Designer, Frequency and the rest, and none on Services or New World (which draws its own)', () => {
+    const doc = { content: [{ type: 'ServicesHero', props: {} }] }
+    expect(foreignBlocksFor(doc, 'designer')).toEqual([{ family: 'services', count: 1 }])
+    expect(foreignBlocksFor(doc, 'frequency')).toEqual([{ family: 'services', count: 1 }])
+    expect(foreignBlocksFor(doc, 'services')).toEqual([])
+    expect(foreignBlocksFor(doc, 'new-world')).toEqual([])
+  })
+  it('re-scopes the block sheet to the family island and leaves the host its own contract', () => {
+    const css = contractSkinCss(['services'])
+    expect(css).toContain('.sv-')
+    expect(css).toContain('[data-skin-family="services"]')
+    expect(css.replaceAll(':not([data-house-theme="services"] *)', '')).not.toMatch(/\[data-house-theme="services"\]/)
+  })
+})

@@ -1,5 +1,5 @@
-// FIXTURE RENDER: the Website, Spotlight, Space and Email pictures for the Bold and Wildheart theme pages
-// (/themes/bold, /themes/wildheart), as bare HTML pages. Same four surfaces as /themes/new-world and
+// FIXTURE RENDER: the Website, Spotlight, Space and Email pictures for the Bold, Wildheart and Services theme pages
+// (/themes/bold, /themes/wildheart, /themes/services), as bare HTML pages. Same four surfaces as /themes/new-world and
 // the same real components: the Website is the theme's starter kit Home through the real SiteChrome, blocks and skin; the
 // Spotlight is the real SpotlightShell on the theme's own preset; the Space is a Space page inside the real member shell
 // (only the Space area wears the theme's faces and accent); the Email is the real campaign mail in the theme's colours.
@@ -17,10 +17,13 @@ vi.mock('next/link', () => ({ default: (p: Record<string, unknown>) => h('a', { 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push() {}, replace() {}, refresh() {} }), usePathname: () => '/spaces/table-nine', useSearchParams: () => new URLSearchParams() }))
 vi.mock('@/lib/theme/design', async (orig) => ({ ...(await orig<object>()), SITE_DESIGN: 'frequency' }))
 
+import { SERVICES_ACCENTS } from '@/lib/theme/services'
+
+const SERVICES_TIDE = SERVICES_ACCENTS.tide.accent
 const out = process.env.RENDER_OUT
 const ROOT = process.cwd()
 const face = (fam: string, f: string, style = 'normal', w = '100 900') => `@font-face{font-family:"${fam}";src:url("file://${ROOT}/app/fonts/${f}") format("woff2");font-style:${style};font-weight:${w}}`
-const FACES = face('Unbounded', 'unbounded/unbounded.woff2', 'normal', '200 900') + face('Hanken Grotesk', 'hanken-grotesk/hanken-grotesk.woff2') + face('Instrument Serif', 'instrument-serif/instrument-serif-italic.woff2', 'italic', '400')
+const FACES = face('Bricolage Grotesque', 'bricolage-grotesque/bricolage-grotesque.woff2', 'normal', '200 800') + face('Lora', 'lora/lora.woff2', 'normal', '400 700') + face('DM Mono', 'dm-mono/dm-mono-400.woff2', 'normal', '400') + face('DM Mono', 'dm-mono/dm-mono-500.woff2', 'normal', '500') + face('Unbounded', 'unbounded/unbounded.woff2', 'normal', '200 900') + face('Hanken Grotesk', 'hanken-grotesk/hanken-grotesk.woff2') + face('Instrument Serif', 'instrument-serif/instrument-serif-italic.woff2', 'italic', '400')
 // Bold's three faces (Sofia Sans Extra Condensed, Barlow, IBM Plex Mono). next/font defines these as --font-* variables on <html>
 // in the app; a bare page has to name them, or Bold's headlines fall back to Arial (the 2026-11-04 audit: /themes/bold showed Arial).
 const BOLD_FACES =
@@ -38,10 +41,12 @@ const WH_FACES =
 const WH_VARS = '--font-wh-fell:"IM Fell English";--font-wh-garamond:"EB Garamond";--font-wh-hanken:"Hanken Grotesk";--font-wh-symbols:"Noto Sans Symbols";--font-playfair:"Playfair Display";'
 const pub = (html: string) => html.replace(/ loading="lazy"/g, '').replace(/(src|href)="\/(sites|brand|themes|create-a-space)\//g, `$1="file://${ROOT}/public/$2/`)
 
-type Skin = { theme: 'menswork' | 'wildheart'; season: 'fall' } | null
-const THEMES: { ed: 'Menswork' | 'Wildheart'; id: string; mega: 'bold' | 'wildheart'; kit: string; skin: Skin; photo: string; cover: string; accent: string }[] = [
+type Skin = { theme: 'menswork' | 'wildheart' | 'services'; season: 'fall' } | null
+const THEMES: { ed: 'Menswork' | 'Wildheart' | 'Services'; id: string; mega: 'bold' | 'wildheart' | 'services'; kit: string; skin: Skin; photo: string; cover: string; accent: string }[] = [
   { ed: 'Menswork', id: 'bold', mega: 'bold', kit: 'bold-coaches', skin: { theme: 'menswork', season: 'fall' }, photo: '/brand/frequency/photos/gathering-10.jpg', cover: '/brand/frequency/photos/gathering-12.jpg', accent: '#1F8A8A' },
   { ed: 'Wildheart', id: 'wildheart', mega: 'wildheart', kit: 'wildheart-coaches', skin: { theme: 'wildheart', season: 'fall' }, photo: '/brand/wildheart/photos/huddle.jpg', cover: '/brand/wildheart/photos/sisters-shore.jpg', accent: '#6E4D96' },
+  // Services: the General kit on Night, in its Tide starting accent (SERVICES_ACCENTS.tide).
+  { ed: 'Services', id: 'services', mega: 'services', kit: 'services-general', skin: { theme: 'services', season: 'fall' }, photo: '/brand/frequency/photos/gathering-10.jpg', cover: '/brand/frequency/photos/gathering-12.jpg', accent: SERVICES_TIDE },
 ]
 
 async function html(el: unknown): Promise<string> {
@@ -53,7 +58,7 @@ async function html(el: unknown): Promise<string> {
 const shellDoc = (body: string) =>
   `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif;${BOLD_VARS}${WH_VARS}}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
 
-it('renders the Bold and Wildheart surfaces', async () => {
+it('renders the Bold, Wildheart and Services surfaces', async () => {
   if (!out) throw new Error('set RENDER_OUT')
   const only = process.env.THEME_ONLY
   const { WebsiteDocument } = await import('@/components/sites/website-document')
@@ -67,6 +72,8 @@ it('renders the Bold and Wildheart surfaces', async () => {
   const { MENSWORK_CSS } = await import('@/components/sites/menswork-css')
   const { MENSWORK_PAGE_CSS } = await import('@/components/sites/menswork-page-css')
   const { WILDHEART_CSS } = await import('@/components/sites/wildheart-css')
+  const { SERVICES_SITE_CSS } = await import('@/components/sites/services-css')
+  const { servicesAccentVars } = await import('@/lib/theme/services')
   const { SpotlightShell: Shell } = await import('@/components/spotlight/spotlight-shell')
   const { THEME_PRESETS } = await import('@/lib/spotlight/theme')
   const { FqSpaceChrome } = await import('@/components/frequency/members/space/space-chrome')
@@ -118,13 +125,15 @@ it('renders the Bold and Wildheart surfaces', async () => {
       ),
     )
     const vars = Object.entries(websiteThemeVars(t.ed as never, null, new Date('2026-10-15'))).map(([k, v]) => `${k}:${v}`).join(';').replace(/"/g, "'")
-    const skinCss = t.skin === null ? FREQUENCY_PAGE_CSS : t.skin.theme === 'wildheart' ? FREQUENCY_PAGE_CSS + WILDHEART_CSS : MENSWORK_CSS + MENSWORK_PAGE_CSS
-    writeFileSync(`${out}/${t.id}-site.html`, pub(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file://${out}/app.css"><style>${FACES}${BOLD_FACES}${WH_FACES}:root{${BOLD_VARS}${WH_VARS}}${HOUSE_CSS}${WEBSITE_TOKEN_CSS}${skinCss}*,*::before,*::after{box-sizing:border-box}html{scrollbar-width:none}body{margin:0}</style></head><body><div data-website-theme="${t.ed}" data-house-site style="${vars}">${site}</div></body></html>`))
+    const skinCss = t.skin === null ? FREQUENCY_PAGE_CSS : t.skin.theme === 'wildheart' ? FREQUENCY_PAGE_CSS + WILDHEART_CSS : t.skin.theme === 'services' ? FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS : MENSWORK_CSS + MENSWORK_PAGE_CSS
+    // Services draws the owner's accent from the accent scope above its skin, the way the live site does (AccentScope).
+    const accentVars = t.mega === 'services' ? Object.entries(servicesAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : ''
+    writeFileSync(`${out}/${t.id}-site.html`, pub(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file://${out}/app.css"><style>${FACES}${BOLD_FACES}${WH_FACES}:root{${BOLD_VARS}${WH_VARS}}${HOUSE_CSS}${WEBSITE_TOKEN_CSS}${skinCss}*,*::before,*::after{box-sizing:border-box}html{scrollbar-width:none}body{margin:0}</style></head><body><div style="${accentVars}"><div data-website-theme="${t.ed}" data-house-site style="${vars}">${site}</div></div></body></html>`))
 
     // ---- Spotlight: the real shell on the theme's own preset.
     const preset = THEME_PRESETS.find((p) => p.id === t.mega)!.theme
     const data = {
-      profile: { display_name: 'Maya Torres', handle: 'maya', bio: 'I host small movement circles on the coast. Come as you are.', avatar_url: null, header_image_url: t.cover, community_role: null, nexus_regions: { name: 'North County San Diego' }, profile_theme: null },
+      profile: { display_name: 'Maya Torres', handle: 'maya', bio: 'I host small movement circles on the coast. Come as you are.', avatar_url: t.id === 'wildheart' ? '/brand/wildheart/photos/forest-witch.jpg' : null, header_image_url: t.cover, community_role: null, nexus_regions: { name: 'North County San Diego' }, profile_theme: null },
       hostedEvents: [], canTip: false, programs: { circles: [], journeys: [], spaces: [] }, layout: { blocks: [] },
       background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }, theme: preset, totalZaps: 0, contributionCounts: { eventsHosted: 0, journeysFinished: 0 }, guestbook: [], grid: null,
     }
@@ -172,6 +181,14 @@ it('renders the Bold and Wildheart surfaces', async () => {
     writeFileSync(`${out}/${t.id}-spacedesk.html`, shellDoc(await html(shell)))
 
     // ---- Email: a Space campaign wearing the theme's colours.
+    // Services has its own kit email (lib/theme/services-kit-email.ts), the one its Spaces send: a welcome on Night in the Tide accent.
+    if (t.mega === 'services') {
+      const { servicesKitEmail } = await import('@/lib/theme/services-kit-email')
+      const { SERVICES_SURFACE } = await import('@/lib/theme/services')
+      const sv = servicesKitEmail('welcome', { name: 'Table Nine', descriptor: 'Home repair & maintenance', owner: 'Maya Torres', role: 'Owner', city: 'San Diego', accent: { fill: SERVICES_SURFACE.accent.accent, text: SERVICES_SURFACE.accent.text }, register: 'night', postalLine: 'Table Nine, San Diego', siteUrl: 'https://example.com', siteLabel: 'tablenine.example', unsubscribeUrl: 'https://example.com/unsubscribe' })
+      writeFileSync(`${out}/${t.id}-email.html`, sv.html)
+      continue
+    }
     const brand = spaceEmailBrand({ name: 'Table Nine', brandName: 'Table Nine', brandAccent: t.accent, preferences: prefs } as never)
     const mail = renderCampaignHtml('Hi there,\n\nThe Thursday circle is back this week at 6:30 pm. Bring a friend and a layer, we will bring the tea.\n\nNew this month: a Saturday morning walk for anyone who wants an easy start to the weekend. No sign-up needed, just show up.\n\nSee you there,\nMaya', { brand, sentWithFrequency: true })
     writeFileSync(`${out}/${t.id}-email.html`, mail.replace(/https:\/\/frequencylocal\.com\/(brand|sites)\//g, `file://${ROOT}/public/$1/`))
