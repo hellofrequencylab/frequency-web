@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-SPACE-OVERVIEW-CONTRAST",
+  "title": "Keep the Space overview New event control readable in its embedded management panel",
+  "lane": "live",
+  "priority": "P1",
+  "size": "XS",
+  "status": "open",
+  "source": {
+    "file": "app/themes/frequency/admin-pages.css",
+    "ref": "UXJ-01, 2026-11-04 production comparison: the full Daniel Space console retains the approved sky and ink control; the same overview inside ?panel=manage falls back to white on Lagoon. Daniel already approved fixed sky and dark ink for this control."
+  },
+  "detail": "The overview has one New event producer, .btn.pa.ad-overview-new-event. Its existing approved sky/ink rule was limited to the admin shell even though the overview is also embedded under the member Space profile. Scope the same token values to that unique anchor in either shell, with enough specificity to beat the Space accent in either stylesheet order. Keep other Space accents, site buttons, theme files, tests and probes unchanged. The local candidate requires preview and production acceptance before this row can close.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-04",
+    "evidence": "Production baseline checked by the audit: /spaces/danieltyack/manage New event is sky and ink at 10.95:1; /spaces/danieltyack?panel=manage is white on Lagoon at 2.46:1. Candidate verification pending: test both shells at desktop and phone widths, default and hover, with both stylesheet orders; require the approved sky/ink pair and at least 4.5:1 while an unrelated accent button keeps its existing colors. Then verify the exact READY preview and production deployment. No production fix is claimed here."
+  },
+  "wave": "W7"
+}
