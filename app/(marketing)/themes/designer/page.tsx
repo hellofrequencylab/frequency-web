@@ -2,6 +2,7 @@
 // /themes/nocturne: a static segment wins over /themes/[theme], and app/sitemap.ts already lists the address.
 // Static: no request data.
 import type { Metadata } from 'next'
+import { RememberKit } from '@/components/frequency/site/pages/themes/remember-kit'
 import { JsonLd } from '@/components/json-ld'
 import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '@/lib/seo/frequency-pages'
 import { FrequencyDesigner } from '@/components/frequency/site/pages/themes/frequency-designer'
@@ -14,6 +15,7 @@ export default function DesignerThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.designer)} />
+      <RememberKit kit="designer" />
       <FrequencyDesigner />
     </>
   )
