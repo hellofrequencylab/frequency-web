@@ -14,13 +14,15 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSS
 import { ChevronLeft, Eye, Maximize2, Monitor, PanelLeft, PanelRight, Pin, PinOff, Redo2, Smartphone, Tablet, Undo2 } from 'lucide-react'
 import type { WebsiteEditorShellProps } from '@/components/sites/editor/shell'
 import { SectionIcon } from '@/components/sites/editor/section-icon'
-import { nudgeBlock, removeBlockDeep, updateBlockPropsDeep } from '@/components/page-editor/mobile/data-ops'
+import { updateBlockPropsDeep } from '@/components/page-editor/mobile/data-ops'
+import { sectionCommand } from '@/lib/builder/section-actions'
+import { TuneRail } from '@/components/builder/tune/tune-rail'
 import type { Data } from '@/lib/page-editor/types'
 import { moveSection, spineItems, stepSection } from '@/lib/builder/spine'
 import { railInit, railModes, railPinnable, railReducer, RAIL_PREFS_KEY, RAIL_WIDTH, type RailSide } from '@/lib/builder/rails'
 import { builderDirty, builderInit, builderPage, builderReducer, builderSaveLabel, BUILDER_DEVICE_WIDTH, type BuilderDevice } from '@/lib/builder/state'
 import { siteCanvasVars, siteRenderStyle } from '@/lib/sites/site-render-style'
-import { resolveWebsiteBrand, type WebsiteSnapshot } from '@/lib/sites/editor/state'
+import { resolveWebsiteBrand, setSectionVisibility, updateSectionDisplay, type SectionDisplay, type WebsiteSnapshot } from '@/lib/sites/editor/state'
 import { sitePageStyle, siteLook, siteLookOverrides, type SiteStyle } from '@/lib/theme/site-style'
 import { EDITOR_THEME_OF } from '@/lib/sites/site-render-style'
 import { Select } from '@/components/ui/select'
@@ -131,18 +133,33 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   const canvasVars = useMemo(() => (render ? siteCanvasVars(render) : undefined), [render])
   const canvasTheme = render?.editorTheme ?? (style ? EDITOR_THEME_OF[style.theme] : state.draft.theme)
 
-  const edit = useCallback((next: WebsiteSnapshot) => dispatch({ type: 'edit', draft: next }), [])
-  const editDoc = useCallback((change: (doc: Data) => Data) => {
+  const edit = useCallback((next: WebsiteSnapshot, burst?: string) => dispatch({ type: 'edit', draft: next, burst }), [])
+  const editDoc = useCallback((change: (doc: Data) => Data, burst?: string) => {
     const now = latest.current
     const current = builderPage(now)
-    edit({ ...now.draft, pages: now.draft.pages.map((p) => (p.slug === current.slug ? { ...p, doc: change(p.doc) } : p)) })
+    edit({ ...now.draft, pages: now.draft.pages.map((p) => (p.slug === current.slug ? { ...p, doc: change(p.doc) } : p)) }, burst)
   }, [edit])
-  const editProps = useCallback((id: string, patch: Record<string, unknown>) => editDoc((doc) => updateBlockPropsDeep(doc, config, id, patch)), [config, editDoc])
-  // The canvas's own section toolbar: move and delete work now; copy, comment and hide arrive with BLD-104.
+  // Typing into one field is one undo step (the burst), whether the words were typed on the canvas or in Tune.
+  const editProps = useCallback((id: string, patch: Record<string, unknown>) => editDoc((doc) => updateBlockPropsDeep(doc, config, id, patch), `props:${id}:${Object.keys(patch).join(',')}`), [config, editDoc])
+  // The section toolbar (BLD-104): move, duplicate, hide on this device and delete, each one edit and one undo.
+  // A delete says so in a toast with Undo; the toast leaves on its own after a few seconds.
+  const [toast, setToast] = useState<{ say: string; undo: boolean } | null>(null)
+  useEffect(() => {
+    if (!toast) return
+    const timer = window.setTimeout(() => setToast(null), 6000)
+    return () => window.clearTimeout(timer)
+  }, [toast])
   const sectionAction = useCallback((id: string, action: 'up' | 'down' | 'copy' | 'comment' | 'delete' | 'hide') => {
-    if (action === 'up' || action === 'down') editDoc((doc) => nudgeBlock(doc, config, id, action === 'up' ? -1 : 1))
-    else if (action === 'delete') { editDoc((doc) => removeBlockDeep(doc, config, id).data); dispatch({ type: 'select', id: null }) }
+    if (action === 'comment') return
+    const now = latest.current
+    const result = sectionCommand(builderPage(now).doc, config, id, action, now.device)
+    if (!result) return
+    editDoc(() => result.doc)
+    if (result.select !== undefined) dispatch({ type: 'select', id: result.select })
+    setToast({ say: result.say, undo: !!result.undo })
   }, [config, editDoc])
+  const setVisible = useCallback((id: string, visible: boolean) => editDoc((doc) => setSectionVisibility(doc, id, latest.current.device, visible)), [editDoc])
+  const setDisplay = useCallback((id: string, value: SectionDisplay) => editDoc((doc) => updateSectionDisplay(doc, id, latest.current.device, value)), [editDoc])
 
   const dirty = builderDirty(state)
   const publishState = !dirty ? 'live' : 'clean'
@@ -230,7 +247,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
 
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
         <div className={styles.frame} style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)` }}>
-          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={() => {}} onDisplay={() => {}} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={() => {}} onDisplay={setDisplay} onVisibility={setVisible} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
         </div>
       </main>
 
@@ -244,7 +261,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <div className={styles.panelBody}>
         {selected ? <>
           <h2>{config.components[selected.type]?.label ?? selected.type}</h2>
-          <p>Click any words on the page to change them. The full settings for this section arrive in the next builder pass.</p>
+          <TuneRail key={String(selected.props.id)} type={selected.type} props={selected.props as Record<string, unknown>} config={config} onChange={(key, value) => editProps(String(selected.props.id), { [key]: value })} />
         </> : <>
           <h2>Nothing selected</h2>
           <p>Click a section on the page, or pick one in the outline.</p>
@@ -252,6 +269,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         </div>
       </aside>
 
+      <div className={styles.toastSlot} role="status" aria-live="polite">{toast && <div className={styles.toast}><span>{toast.say}</span>{toast.undo && <button type="button" className={styles.btn} onClick={() => { dispatch({ type: 'undo' }); setToast(null) }}>Undo</button>}</div>}</div>
       {state.preview && <div className={styles.previewPill} role="status">Previewing as a visitor · press Esc to edit</div>}
     </div>
   )
