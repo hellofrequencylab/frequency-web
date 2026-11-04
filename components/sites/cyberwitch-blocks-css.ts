@@ -59,6 +59,8 @@ ${C}{
 --cw-spread-tl:linear-gradient(to bottom right,color-mix(in oklab,var(--cw-flare-500) 16%,var(--cw-ink-900)) 0%,transparent 70%);
 --cw-spread-br:linear-gradient(to top left,color-mix(in oklab,var(--cw-clash-500) 14%,var(--cw-ink-900)) 0%,transparent 70%);
 --cw-overlay-bottom:linear-gradient(180deg,transparent 35%,color-mix(in oklab,var(--cw-ink-950) 95%,transparent) 100%);
+--cw-overlay-scrim:linear-gradient(90deg,color-mix(in oklab,var(--cw-ink-950) 90%,transparent) 0%,color-mix(in oklab,var(--cw-ink-950) 60%,transparent) 45%,color-mix(in oklab,var(--cw-ink-950) 20%,transparent) 100%);
+--cw-grad-lit:linear-gradient(100deg,var(--cw-flare-300) 0%,var(--cw-chrome-50) 30%,var(--cw-clash-300) 55%,var(--cw-flare-400) 78%,var(--cw-flare-300) 100%);
 }`
 
 export const CYBERWITCH_BLOCKS_CSS = `${CYBERWITCH_BLOCK_ALIASES}

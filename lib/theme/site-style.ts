@@ -319,8 +319,11 @@ export function siteDials(style: SiteStyle, own: Partial<Record<SiteDialKey, str
   return { register: style.dials?.register ?? base.register, type: style.dials?.type ?? base.type, motion: style.dials?.motion ?? base.motion, hero: style.dials?.hero ?? base.hero, image: style.dials?.image ?? base.image, accent: style.dials?.accent ?? null }
 }
 
-/** The three root switches the Services sheet reads (data-type, data-motion, data-image), from resolved dial values. */
-export const servicesDials = (d: Record<SiteDialKey, string>): { type: string; motion: string; image: string } => ({ type: d.type, motion: d.motion, image: d.image })
+/** The three root switches a schema 2 theme's sheet reads (data-type, data-motion, data-image), from resolved dial values.
+ *  Shared by every theme that draws them: Services (LIVE-2210) and New World (LIVE-2175). */
+export const siteRootDials = (d: Record<SiteDialKey, string>): { type: string; motion: string; image: string } => ({ type: d.type, motion: d.motion, image: d.image })
+/** Services' name for the same switches (LIVE-2210). */
+export const servicesDials = siteRootDials
 
 function readPageThemes(raw: unknown): Record<string, SiteThemeId> {
   if (!record(raw)) return {}
