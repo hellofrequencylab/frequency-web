@@ -18,12 +18,14 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push() {}, replace() {},
 vi.mock('@/lib/theme/design', async (orig) => ({ ...(await orig<object>()), SITE_DESIGN: 'frequency' }))
 
 import { SERVICES_ACCENTS } from '@/lib/theme/services'
+import { CYBERWITCH_ACCENTS } from '@/lib/theme/cyberwitch'
 
 const SERVICES_TIDE = SERVICES_ACCENTS.tide.accent
+const CYBERWITCH_HEX = CYBERWITCH_ACCENTS.hex.accent
 const out = process.env.RENDER_OUT
 const ROOT = process.cwd()
 const face = (fam: string, f: string, style = 'normal', w = '100 900') => `@font-face{font-family:"${fam}";src:url("file://${ROOT}/app/fonts/${f}") format("woff2");font-style:${style};font-weight:${w}}`
-const FACES = face('Bricolage Grotesque', 'bricolage-grotesque/bricolage-grotesque.woff2', 'normal', '200 800') + face('Lora', 'lora/lora.woff2', 'normal', '400 700') + face('DM Mono', 'dm-mono/dm-mono-400.woff2', 'normal', '400') + face('DM Mono', 'dm-mono/dm-mono-500.woff2', 'normal', '500') + face('Unbounded', 'unbounded/unbounded.woff2', 'normal', '200 900') + face('Hanken Grotesk', 'hanken-grotesk/hanken-grotesk.woff2') + face('Instrument Serif', 'instrument-serif/instrument-serif-italic.woff2', 'italic', '400')
+const FACES = face('Bricolage Grotesque', 'bricolage-grotesque/bricolage-grotesque.woff2', 'normal', '200 800') + face('Lora', 'lora/lora.woff2', 'normal', '400 700') + face('DM Mono', 'dm-mono/dm-mono-400.woff2', 'normal', '400') + face('DM Mono', 'dm-mono/dm-mono-500.woff2', 'normal', '500') + face('Unbounded', 'unbounded/unbounded.woff2', 'normal', '200 900') + face('Hanken Grotesk', 'hanken-grotesk/hanken-grotesk.woff2') + face('Instrument Serif', 'instrument-serif/instrument-serif-italic.woff2', 'italic', '400') + face('UnifrakturCook', 'unifrakturcook/unifrakturcook-700.woff2', 'normal', '700') + face('Permanent Marker', 'permanent-marker/permanent-marker-400.woff2', 'normal', '400') + face('Spectral', 'spectral/spectral-400.woff2', 'normal', '400') + face('Spectral', 'spectral/spectral-500.woff2', 'normal', '500') + face('Spectral', 'spectral/spectral-600.woff2', 'normal', '600') + face('Spectral', 'spectral/spectral-700.woff2', 'normal', '700')
 // Bold's three faces (Sofia Sans Extra Condensed, Barlow, IBM Plex Mono). next/font defines these as --font-* variables on <html>
 // in the app; a bare page has to name them, or Bold's headlines fall back to Arial (the 2026-11-04 audit: /themes/bold showed Arial).
 const BOLD_FACES =
@@ -31,14 +33,24 @@ const BOLD_FACES =
   [400, 500, 600].map((w) => face('Barlow', `barlow/barlow-${w}.woff2`, 'normal', String(w))).join('') +
   [400, 500].map((w) => face('IBM Plex Mono', `ibm-plex-mono/ibm-plex-mono-${w}.woff2`, 'normal', String(w))).join('')
 const BOLD_VARS = '--font-sofia-xc:"Sofia Sans Extra Condensed";--font-barlow:Barlow;--font-plex-mono:"IBM Plex Mono";'
+// Wildheart's faces (IM Fell English display, EB Garamond body, Hanken labels, Noto Sans Symbols for the zodiac glyphs) and Playfair,
+// which the Spotlight 'serif' font reads as --font-playfair. next/font sets these variables in the app; a bare page names them here.
+const ttf = (fam: string, f: string, style: string) => `@font-face{font-family:"${fam}";src:url("file://${ROOT}/public/fonts/wildheart/${f}") format("truetype");font-style:${style};font-weight:400}`
+const WH_FACES =
+  ttf('IM Fell English', 'IMFellEnglish-Regular.ttf', 'normal') + ttf('IM Fell English', 'IMFellEnglish-Italic.ttf', 'italic') +
+  face('EB Garamond', 'eb-garamond/eb-garamond.woff2', 'normal', '400 800') + face('EB Garamond', 'eb-garamond/eb-garamond-italic.woff2', 'italic', '400 800') +
+  face('Noto Sans Symbols', 'noto-sans-symbols/noto-sans-symbols.woff2') + face('Playfair Display', 'playfair-display/playfair-display.woff2', 'normal', '400 900')
+const WH_VARS = '--font-wh-fell:"IM Fell English";--font-wh-garamond:"EB Garamond";--font-wh-hanken:"Hanken Grotesk";--font-wh-symbols:"Noto Sans Symbols";--font-playfair:"Playfair Display";'
 const pub = (html: string) => html.replace(/ loading="lazy"/g, '').replace(/(src|href)="\/(sites|brand|themes|create-a-space)\//g, `$1="file://${ROOT}/public/$2/`)
 
-type Skin = { theme: 'menswork' | 'wildheart' | 'services'; season: 'fall' } | null
-const THEMES: { ed: 'Menswork' | 'Wildheart' | 'Services'; id: string; mega: 'bold' | 'wildheart' | 'services'; kit: string; skin: Skin; photo: string; cover: string; accent: string }[] = [
+type Skin = { theme: 'menswork' | 'wildheart' | 'services' | 'cyberwitch'; season: 'fall' } | null
+const THEMES: { ed: 'Menswork' | 'Wildheart' | 'Services' | 'CyberWitch'; id: string; mega: 'bold' | 'wildheart' | 'services' | 'cyberwitch'; kit: string; skin: Skin; photo: string; cover: string; accent: string }[] = [
   { ed: 'Menswork', id: 'bold', mega: 'bold', kit: 'bold-coaches', skin: { theme: 'menswork', season: 'fall' }, photo: '/brand/frequency/photos/gathering-10.jpg', cover: '/brand/frequency/photos/gathering-12.jpg', accent: '#1F8A8A' },
-  { ed: 'Wildheart', id: 'wildheart', mega: 'wildheart', kit: 'wildheart-coaches', skin: { theme: 'wildheart', season: 'fall' }, photo: '/brand/wildheart/photos/huddle.jpg', cover: '/brand/wildheart/photos/sisters-shore.jpg', accent: '#6D4AFF' },
+  { ed: 'Wildheart', id: 'wildheart', mega: 'wildheart', kit: 'wildheart-coaches', skin: { theme: 'wildheart', season: 'fall' }, photo: '/brand/wildheart/photos/huddle.jpg', cover: '/brand/wildheart/photos/sisters-shore.jpg', accent: '#6E4D96' },
   // Services: the General kit on Night, in its Tide starting accent (SERVICES_ACCENTS.tide).
   { ed: 'Services', id: 'services', mega: 'services', kit: 'services-general', skin: { theme: 'services', season: 'fall' }, photo: '/brand/frequency/photos/gathering-10.jpg', cover: '/brand/frequency/photos/gathering-12.jpg', accent: SERVICES_TIDE },
+  // CyberWitch: the General kit in its Hex starting accent (CYBERWITCH_ACCENTS.hex), dark only.
+  { ed: 'CyberWitch', id: 'cyberwitch', mega: 'cyberwitch', kit: 'cyberwitch-general', skin: { theme: 'cyberwitch', season: 'fall' }, photo: '/sites/cyberwitch/photos/founder-hex.jpg', cover: '/sites/cyberwitch/photos/hero-hex.jpg', accent: CYBERWITCH_HEX },
 ]
 
 async function html(el: unknown): Promise<string> {
@@ -48,7 +60,7 @@ async function html(el: unknown): Promise<string> {
   return Buffer.concat(chunks).toString()
 }
 const shellDoc = (body: string) =>
-  `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif;${BOLD_VARS}}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
+  `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif;${BOLD_VARS}${WH_VARS}}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
 
 it('renders the Bold, Wildheart and Services surfaces', async () => {
   if (!out) throw new Error('set RENDER_OUT')
@@ -66,6 +78,8 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
   const { WILDHEART_CSS } = await import('@/components/sites/wildheart-css')
   const { SERVICES_SITE_CSS } = await import('@/components/sites/services-css')
   const { servicesAccentVars } = await import('@/lib/theme/services')
+  const { CYBERWITCH_CSS } = await import('@/components/sites/cyberwitch-css')
+  const { cyberwitchAccentVars } = await import('@/lib/theme/cyberwitch')
   const { SpotlightShell: Shell } = await import('@/components/spotlight/spotlight-shell')
   const { THEME_PRESETS } = await import('@/lib/spotlight/theme')
   const { FqSpaceChrome } = await import('@/components/frequency/members/space/space-chrome')
@@ -89,8 +103,11 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
     for (const b of home.doc.content as { type: string; props: Record<string, unknown> }[]) {
       if (b.type === 'ServicesHero' || b.type === 'Hero') b.props.image = t.photo
       // Bold's kit hero is text-only; the design puts the headline above a full-width photo, so the picture shows the photo variant.
+      if (b.type === 'PhotoHero' && t.id === 'wildheart') Object.assign(b.props, { variant: 'image', image: t.cover, alt: 'Women gathered on a beach in warm light', height: 'medium', display: 'below' })
       if (b.type === 'PhotoHero' && t.id === 'bold') Object.assign(b.props, { variant: 'image', image: t.photo, alt: 'People gathered on a beach at sunset', height: 'medium', display: 'below' })
     }
+    // The Wildheart chrome already carries the sky line under the menu; the kit's own line block would print it twice in one frame.
+    if (t.id === 'wildheart') home.doc.content = (home.doc.content as { type: string }[]).filter((b) => b.type !== 'WildheartNowLine') as never
     const links = { origin: 'https://example.com', slug: 'table-nine', siteBase: '', pages: ['home'], contactHref: null, bookHref: null, email: null }
     const body = h(WebsiteDocument as never, { doc: home.doc, theme: t.ed, config, live: { events: [], circles: [], journeys: [] }, links, origin: links.origin, title: 'Home', metadata: { space: { name: 'Table Nine', faqs: [] } } } as never)
     const site = renderToStaticMarkup(
@@ -114,17 +131,17 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
       ),
     )
     const vars = Object.entries(websiteThemeVars(t.ed as never, null, new Date('2026-10-15'))).map(([k, v]) => `${k}:${v}`).join(';').replace(/"/g, "'")
-    const skinCss = t.skin === null ? FREQUENCY_PAGE_CSS : t.skin.theme === 'wildheart' ? FREQUENCY_PAGE_CSS + WILDHEART_CSS : t.skin.theme === 'services' ? FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS : MENSWORK_CSS + MENSWORK_PAGE_CSS
+    const skinCss = t.skin === null ? FREQUENCY_PAGE_CSS : t.skin.theme === 'wildheart' ? FREQUENCY_PAGE_CSS + WILDHEART_CSS : t.skin.theme === 'services' ? FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS : t.skin.theme === 'cyberwitch' ? FREQUENCY_PAGE_CSS + CYBERWITCH_CSS : MENSWORK_CSS + MENSWORK_PAGE_CSS
     // Services draws the owner's accent from the accent scope above its skin, the way the live site does (AccentScope).
-    const accentVars = t.mega === 'services' ? Object.entries(servicesAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : ''
-    writeFileSync(`${out}/${t.id}-site.html`, pub(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file://${out}/app.css"><style>${FACES}${BOLD_FACES}:root{${BOLD_VARS}}${HOUSE_CSS}${WEBSITE_TOKEN_CSS}${skinCss}*,*::before,*::after{box-sizing:border-box}html{scrollbar-width:none}body{margin:0}</style></head><body><div style="${accentVars}"><div data-website-theme="${t.ed}" data-house-site style="${vars}">${site}</div></div></body></html>`))
+    const accentVars = t.mega === 'services' ? Object.entries(servicesAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : t.mega === 'cyberwitch' ? Object.entries(cyberwitchAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : ''
+    writeFileSync(`${out}/${t.id}-site.html`, pub(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file://${out}/app.css"><style>${FACES}${BOLD_FACES}${WH_FACES}:root{${BOLD_VARS}${WH_VARS}}${HOUSE_CSS}${WEBSITE_TOKEN_CSS}${skinCss}*,*::before,*::after{box-sizing:border-box}html{scrollbar-width:none}body{margin:0}</style></head><body><div style="${accentVars}"><div data-website-theme="${t.ed}" data-house-site style="${vars}">${site}</div></div></body></html>`))
 
     // ---- Spotlight: the real shell on the theme's own preset.
     const preset = THEME_PRESETS.find((p) => p.id === t.mega)!.theme
     const data = {
-      profile: { display_name: 'Maya Torres', handle: 'maya', bio: 'I host small movement circles on the coast. Come as you are.', avatar_url: null, header_image_url: t.cover, community_role: null, nexus_regions: { name: 'North County San Diego' }, profile_theme: null },
+      profile: { display_name: 'Maya Torres', handle: 'maya', bio: 'I host small movement circles on the coast. Come as you are.', avatar_url: t.id === 'wildheart' ? '/brand/wildheart/photos/forest-witch.jpg' : null, header_image_url: t.cover, community_role: null, nexus_regions: { name: 'North County San Diego' }, profile_theme: null },
       hostedEvents: [], canTip: false, programs: { circles: [], journeys: [], spaces: [] }, layout: { blocks: [] },
-      background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }, theme: preset, totalZaps: 0, contributionCounts: { eventsHosted: 0, journeysFinished: 0 }, guestbook: [], grid: null,
+      background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }, theme: t.mega === 'cyberwitch' ? { ...preset, layout: 'cyberwitch-kit:stack', kit: 'general' } : preset, totalZaps: 0, contributionCounts: { eventsHosted: 0, journeysFinished: 0 }, guestbook: [], grid: null,
     }
     const linkCards = ['Join the Thursday circle', 'This month’s dates', 'Book a first visit'].map((l) => h('a', { key: l, href: '#', style: { display: 'block', marginTop: 12, padding: 16, fontWeight: 600, color: 'var(--color-text)', background: 'var(--color-surface-elevated)', border: '1px solid color-mix(in srgb, var(--color-text) 18%, transparent)', borderRadius: ({ none: 0, sm: 6, md: 12, lg: 18, xl: 28 } as Record<string, number>)[preset.card.radius] ?? 18, textDecoration: 'none' } }, l))
     const spot = await html(h(Shell as never, { data, showBio: true, sampleContent: true } as never, h('div', null, linkCards)))
@@ -171,6 +188,13 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
 
     // ---- Email: a Space campaign wearing the theme's colours.
     // Services has its own kit email (lib/theme/services-kit-email.ts), the one its Spaces send: a welcome on Night in the Tide accent.
+    if (t.mega === 'cyberwitch') {
+      const { cyberwitchKitEmail } = await import('@/lib/theme/cyberwitch-kit-email')
+      const { CYBERWITCH_SURFACE } = await import('@/lib/theme/cyberwitch')
+      const cw = cyberwitchKitEmail('welcome', { name: 'Ash & Ember', descriptor: 'Readings, ritual and spellwork', owner: 'Mara Quill', role: 'Reader', city: 'San Diego', accent: { fill: CYBERWITCH_SURFACE.accent.accent, text: CYBERWITCH_SURFACE.accent.text }, postalLine: 'Ash & Ember, San Diego', siteUrl: 'https://example.com', siteLabel: 'ashandember.example', unsubscribeUrl: 'https://example.com/unsubscribe' })
+      writeFileSync(`${out}/${t.id}-email.html`, cw.html)
+      continue
+    }
     if (t.mega === 'services') {
       const { servicesKitEmail } = await import('@/lib/theme/services-kit-email')
       const { SERVICES_SURFACE } = await import('@/lib/theme/services')
