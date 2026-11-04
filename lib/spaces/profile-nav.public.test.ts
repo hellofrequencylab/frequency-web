@@ -91,7 +91,7 @@ describe('the signed-out share URL builds a menu without reading a cookie', () =
 
   it('offers the visitor the doors a visitor can use', async () => {
     const { tabs } = await buildPublicSpaceProfileNav(space())
-    expect(tabs.map((t) => t.label)).toContain('Calendar')
+    expect(tabs.map((t) => t.label)).toContain("What's Happening")
   })
 
   it('never offers People, even though the directory reader would say yes', async () => {
