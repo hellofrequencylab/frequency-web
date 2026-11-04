@@ -13,7 +13,7 @@ export type NewWorldHas = 'events' | 'products' | 'plans' | 'posts' | 'team' | '
 type EmailType = (typeof NEW_WORLD_EMAIL_TYPES)[number]
 type Icon = 'calendar' | 'tag' | 'star' | 'briefcase' | 'users' | 'heart' | 'award' | 'mail' | 'eye' | 'pin' | 'message'
 
-export interface NewWorldFunction {
+interface NewWorldFunction {
   id: string
   tool: NewWorldTool
   label: string
