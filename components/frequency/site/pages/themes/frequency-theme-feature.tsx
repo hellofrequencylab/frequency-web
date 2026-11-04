@@ -12,7 +12,7 @@ import { FreeSpotlightButton } from '@/components/marketing/free-spotlight-butto
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { createSpaceHref } from '@/lib/create-space/href'
-import { KIT_INDEX, PROFILE_KIT_INDEX, SERVICES_KIT_INDEX, CYBERWITCH_KIT_INDEX } from '@/lib/sites/kits/registry'
+import { KIT_INDEX, PROFILE_KIT_INDEX, SERVICES_KIT_INDEX } from '@/lib/sites/kits/registry'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { THEME_LOOK_CONTROLS, THEME_TOOLS } from '@/lib/themes/library'
 import { THEME_FEATURES, themeFeatureShot, type ThemeFeatureId, type ThemeFeatureSurface } from '@/lib/themes/theme-feature-data'
@@ -75,7 +75,7 @@ export function FrequencyThemeFeature({ theme }: { theme: ThemeFeatureId }) {
   const name = copy.name
   const START_HREF = createSpaceHref(theme)
   const editor = MEGA_THEMES.find((m) => m.id === theme)?.editor
-  const kits = [...KIT_INDEX, ...PROFILE_KIT_INDEX, ...SERVICES_KIT_INDEX, ...CYBERWITCH_KIT_INDEX].filter((k) => k.theme === editor)
+  const kits = [...KIT_INDEX, ...PROFILE_KIT_INDEX, ...SERVICES_KIT_INDEX].filter((k) => k.theme === editor)
   const places: { n: string; name: string; qual?: string; surface: ThemeFeatureSurface; body: string; lives: string; wears: string; changes: string }[] = [
     {
       n: '01 · Day one',

@@ -107,8 +107,6 @@ const INTENTIONALLY_EXCLUDED = new Map([
   // HIDDEN THEME (LIVE-2130): Services is registered but not offered in the pickers yet, so its feature page is robots noindex and
   // stays out of the sitemap the way /themes/new-world did until New World was offered (#4544). Moves to app/sitemap.ts when offered.
   ['/themes/services', 'robots noindex while the Services theme is not offered in the pickers (LIVE-2130)'],
-  // HIDDEN THEME (LIVE-2111): CyberWitch is registered but not offered in the pickers until its last stage lands, so its page is noindex too.
-  ['/themes/cyberwitch', 'robots noindex while the CyberWitch theme is not offered in the pickers (LIVE-2111)'],
 ])
 
 // ── Route helpers ─────────────────────────────────────────────────────────────
