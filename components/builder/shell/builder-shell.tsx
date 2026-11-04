@@ -25,7 +25,10 @@ import { AddSheet } from '@/components/builder/add/add-sheet'
 import { LayoutChips } from '@/components/builder/canvas/variants/layout-chips'
 import { addCards, insertSection, type AddCard } from '@/lib/builder/add'
 import { makeItem } from '@/components/page-editor/mobile/data-ops'
-import { rolePreviewMetadata } from '@/components/page-editor/blocks/roles'
+import { rolePreviewMetadata, roleHasSpaceRows } from '@/components/page-editor/blocks/roles'
+import { PublishRing } from '@/components/builder/readiness/publish-ring'
+import { PublishSheet } from '@/components/builder/readiness/publish-sheet'
+import { canPublish, nextReadinessItem, ownEdit, readiness, readinessTags, type ReadinessItem } from '@/lib/builder/readiness'
 import type { BuilderActionId } from '@/lib/builder/commands'
 import type { Data } from '@/lib/page-editor/types'
 import { moveSection, spineItems, stepSection } from '@/lib/builder/spine'
@@ -152,7 +155,8 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
     edit({ ...now.draft, pages: now.draft.pages.map((p) => (p.slug === current.slug ? { ...p, doc: change(p.doc) } : p)) }, burst)
   }, [edit])
   // Typing into one field is one undo step (the burst), whether the words were typed on the canvas or in Tune.
-  const editProps = useCallback((id: string, patch: Record<string, unknown>) => editDoc((doc) => updateBlockPropsDeep(doc, config, id, patch), `props:${id}:${Object.keys(patch).join(',')}`), [config, editDoc])
+  // Editing any slot or item makes a kit's sample section the owner's (BLD-204, §4): the same edit clears `sample`.
+  const editProps = useCallback((id: string, patch: Record<string, unknown>) => editDoc((doc) => updateBlockPropsDeep(doc, config, id, ownEdit(doc.content.find((b) => b.props.id === id)?.props as Record<string, unknown> | undefined, patch)), `props:${id}:${Object.keys(patch).join(',')}`), [config, editDoc])
   // The section toolbar (BLD-104): move, duplicate, hide on this device and delete, each one edit and one undo.
   // A delete says so in a toast with Undo; the toast leaves on its own after a few seconds.
   const [toast, setToast] = useState<{ say: string; undo: boolean } | null>(null)
@@ -174,7 +178,17 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   const setDisplay = useCallback((id: string, value: SectionDisplay) => editDoc((doc) => updateSectionDisplay(doc, id, latest.current.device, value)), [editDoc])
 
   const dirty = builderDirty(state)
-  const publishState = !dirty ? 'live' : 'clean'
+  // Readiness (BLD-204): one model for the ring, the canvas tags, the outline dots and the Publish sheet.
+  const liveFigures = useMemo(() => roleHasSpaceRows('stats', metadata as Record<string, unknown> | undefined, new Date()), [metadata])
+  const ready = useMemo(() => readiness(state.draft.pages, config, { liveFigures }), [state.draft.pages, config, liveFigures])
+  const tags = useMemo(() => readinessTags(ready, page.slug), [ready, page.slug])
+  const issuesOf = useMemo(() => {
+    const n = new Map<string, number>()
+    for (const item of ready.items) if (item.pageSlug === page.slug && item.sectionId) n.set(item.sectionId, (n.get(item.sectionId) ?? 0) + 1)
+    return n
+  }, [ready, page.slug])
+  const [stepAt, setStepAt] = useState(-1)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const sections = page.doc.content
   // The spine and outline (BLD-103): one list, reordered by drag or by Alt and an arrow, through one pure move.
   const spine = useMemo(() => spineItems(page.doc, config, state.device), [page.doc, config, state.device])
@@ -205,6 +219,30 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
     const focal = focalFieldFor(fields, picture.key)
     setTuneFocus({ id, keys: focal ? [picture.key, focal.key] : [picture.key], at: Date.now() })
     if (modes.right !== 'pinned' && modes.right !== 'overlay') toggleRail('right')
+  }
+
+  // Go to one readiness item: its page, its section, and for a figure or a photo the field that fills it.
+  const goTo = (item: ReadinessItem) => {
+    if (item.pageSlug !== builderPage(latest.current).slug) dispatch({ type: 'page', slug: item.pageSlug })
+    if (!item.sectionId) { setToast({ say: `${item.say}. Search descriptions are set in the page settings of the current editor for now.`, undo: false }); return }
+    const id = item.sectionId
+    dispatch({ type: 'select', id })
+    const block = latest.current.draft.pages.find((p) => p.slug === item.pageSlug)?.doc.content.find((b) => b.props.id === id)
+    const field = item.kind === 'number' ? (block?.type === 'RoleProof' ? 'stats' : 'items') : item.kind === 'alt' ? 'alt' : null
+    if (field) { setTuneFocus({ id, keys: [field], at: Date.now() }); if (modes.right !== 'pinned' && modes.right !== 'overlay') toggleRail('right') }
+    requestAnimationFrame(() => document.querySelector(`[data-spine-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' }))
+  }
+  const stepReadiness = () => {
+    const next = nextReadinessItem(ready, stepAt)
+    setStepAt(next)
+    if (next >= 0) goTo(ready.items[next])
+  }
+  // Publish goes only through the gate: a clean draft publishes; anything left opens the sheet, where sample words
+  // need the owner's explicit keep and a missing number has no way through.
+  const publish = () => {
+    if (!dirty) return
+    if (ready.gate === 'clear') void save(true)
+    else setSheetOpen(true)
   }
 
   // Add a section by intent (BLD-202): the canvas's + gives the position; the outline, the phone bar and ⌘K add after
@@ -245,7 +283,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       case 'undo': case 'redo': dispatch({ type: id }); break
       case 'preview': dispatch({ type: 'preview', on: !state.preview }); break
       case 'focus': railDispatch({ type: 'focus', on: !rails.focus }); break
-      case 'publish': if (dirty) void save(true); break
+      case 'publish': publish(); break
       case 'add': openAdd(); break
       case 'device-desktop': case 'device-tablet': case 'device-phone': dispatch({ type: 'device', device: id.slice(7) as BuilderDevice }); break
       case 'rail-left': case 'rail-right': toggleRail(id === 'rail-left' ? 'left' : 'right'); break
@@ -297,7 +335,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <button id="builder-command" type="button" className={`${styles.btn} ${styles.wide}`} aria-label="Find, do or ask. Shortcut: command K" aria-haspopup="dialog" aria-expanded={commandOpen} onClick={() => setCommandOpen(true)}><span>Find</span><span className={styles.kbd}>⌘K</span></button>
         <button type="button" data-action="focus" className={`${styles.btn} ${styles.icon}`} aria-label="Focus: hide both side panels" title="Focus (Esc to leave)" aria-pressed={rails.focus} onClick={() => railDispatch({ type: 'focus', on: !rails.focus })}><Maximize2 size={16} aria-hidden /></button>
         <button type="button" data-action="preview" className={`${styles.btn} ${styles.icon}`} aria-label="Preview" title="Preview" aria-pressed={state.preview} onClick={() => dispatch({ type: 'preview', on: !state.preview })}><Eye size={16} aria-hidden /></button>
-        <button type="button" data-action="publish" className={styles.publish} data-state={publishState} disabled={state.save === 'saving' || !dirty} onClick={() => void save(true)}>{dirty ? 'Publish' : 'Published'}</button>
+        <PublishRing readiness={ready} dirty={dirty} saving={state.save === 'saving'} onStep={stepReadiness} onPublish={() => publish()} />
       </header>
 
       <nav className={styles.outline} aria-label="Page outline" data-mode={modes.left}>
@@ -314,13 +352,13 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
               onDragLeave={() => setDropAt((at) => (at === index ? null : at))}
               onDrop={(e) => { e.preventDefault(); if (dragId.current) reorder(dragId.current, index); dragId.current = null; setDropAt(null) }}>
               <button type="button" className={styles.row} data-spine-id={item.id} draggable aria-current={state.selectedId === item.id ? 'true' : undefined}
-                aria-label={`${index + 1} of ${spine.length}. ${item.name}${item.title ? `: ${item.title}` : ''}${item.hidden ? `, hidden on ${state.device}` : ''}. Alt and an arrow key moves it.`}
+                aria-label={`${index + 1} of ${spine.length}. ${item.name}${item.title ? `: ${item.title}` : ''}${item.hidden ? `, hidden on ${state.device}` : ''}${issuesOf.get(item.id) ? `. ${issuesOf.get(item.id)} to fix` : ''}. Alt and an arrow key moves it.`}
                 aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
                 onDragStart={(e) => { dragId.current = item.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', item.name) }}
                 onDragEnd={() => { dragId.current = null; setDropAt(null) }}
                 onKeyDown={(e) => { if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); step(item.id, e.key === 'ArrowUp' ? -1 : 1) } }}
                 onClick={() => { dispatch({ type: 'select', id: item.id || null }); if (modes.left === 'overlay') railDispatch({ type: 'close' }) }}>
-                <span className={styles.tile}><SectionIcon type={item.type} /></span>
+                <span className={styles.tile}><SectionIcon type={item.type} />{issuesOf.get(item.id) ? <i className={styles.issueDot} aria-hidden /> : null}</span>
                 <span className={styles.rowText}><b>{item.name}</b><small>{item.title}</small></span>
               </button>
             </li>
@@ -330,7 +368,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
 
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
         <div className={styles.frame} style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)` }}>
-          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={state.preview ? undefined : tags} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
         </div>
       </main>
 
@@ -363,6 +401,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <button type="button" onClick={() => setCommandOpen(true)}><Sparkles size={20} aria-hidden /><span>Vera</span></button>
       </nav>}
       {addAt !== null && <AddSheet cards={cards} doc={page.doc} at={addAt} onPick={pickSection} onAsk={() => { setAddAt(null); setToast({ say: 'Vera arrives in the builder with BLD-402. Your question is kept for her.', undo: false }) }} onClose={() => setAddAt(null)} preview={previewOf} />}
+      {sheetOpen && <PublishSheet readiness={ready} onFix={(item) => { setSheetOpen(false); goTo(item) }} onPublish={(keep) => { if (canPublish(ready, keep)) { setSheetOpen(false); void save(true) } }} onClose={() => setSheetOpen(false)} />}
       {commandOpen && <CommandBar sections={spine} pages={state.draft.pages} selected={!!state.selectedId} onRun={runCommand} onClose={() => setCommandOpen(false)} />}
       {state.preview && <div className={styles.previewPill} role="status">Previewing as a visitor · press Esc to edit</div>}
     </div>
