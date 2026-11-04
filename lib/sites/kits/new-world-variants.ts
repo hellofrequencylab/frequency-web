@@ -9,7 +9,7 @@ import { newWorldFunctionsFor, newWorldSectionFunction, type NewWorldHas, type N
 // folder (LIVE-2056) when Daniel ruled that New World is its own theme; Services rebuilds its own sixteen trade kits.
 //
 // BLOCKS. Every page is drawn with New World's own blocks (components/page-editor/blocks/new-world.tsx, LIVE-2055 and LIVE-2056).
-// FUNCTIONS. Home keeps a function's section only when the kit turns that function on (LIVE-2188, lib/sites/new-world-functions.ts),
+// FUNCTIONS. Home keeps a function's section only when the kit turns that function on (LIVE-2189, lib/sites/new-world-functions.ts),
 // the same list the kit's Spotlight doors are built from, so a kit without the Book tool has no open-times or ways-in section on Home.
 //
 // HOUSE VOICE (docs/marketing/voice-and-language-guide.md): the design's own words, except where they make a claim. Numbers that
@@ -249,7 +249,7 @@ function cutToFunctions(blocks: Block[], on: readonly string[]): Block[] {
   let i = 0
   return blocks
     .filter((b) => { const fn = newWorldSectionFunction(b.type); return !fn || on.includes(fn) })
-    .map((b) => (typeof b.props.index === 'string' && b.props.index !== '' ? { ...b, props: { ...b.props, index: String(++i).padStart(2, '0') } } : b))
+    .map((b) => (typeof b.props?.index === 'string' && b.props.index !== '' ? { ...b, props: { ...b.props, index: String(++i).padStart(2, '0') } } : b))
 }
 
 function newWorldHome(s: Spec, niche: NewWorldKitNiche): Block[] {

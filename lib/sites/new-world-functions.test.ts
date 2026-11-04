@@ -5,7 +5,7 @@ import { NEW_WORLD_KIT_IDS, newWorldKitSpotlightContent } from '@/lib/spotlight/
 import { NEW_WORLD_KIT_NICHES, newWorldKit } from '@/lib/sites/kits/new-world-variants'
 import { NEW_WORLD_ALWAYS, NEW_WORLD_FUNCTIONS, NEW_WORLD_NEEDS, newWorldSectionFunction } from './new-world-functions'
 
-// LIVE-2188: one function list drives every surface, so the website Home and the Spotlight cannot drift apart.
+// LIVE-2189: one function list drives every surface, so the website Home and the Spotlight cannot drift apart.
 
 /** The functions a kit's Spotlight turns on, read back from what it draws. */
 function spotlightFunctions(kit: string): string[] {
@@ -47,7 +47,7 @@ describe('the New World functions', () => {
     expect(home.map((b) => b.type)).not.toContain('NewWorldOpenings')
     expect(home.map((b) => b.type)).not.toContain('NewWorldOffers')
     expect(home.map((b) => b.type)).toContain('NewWorldShop')
-    const index = home.map((b) => b.props.index).filter((x): x is string => typeof x === 'string' && x !== '')
+    const index = home.map((b) => b.props?.index).filter((x): x is string => typeof x === 'string' && x !== '')
     expect(index).toEqual(index.map((_, i) => String(i + 1).padStart(2, '0')))
   })
 })
