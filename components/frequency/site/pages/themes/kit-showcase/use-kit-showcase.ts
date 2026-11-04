@@ -12,7 +12,7 @@ export interface ShowcaseLinks {
   start: string
   plans: string
   /** Per design kit id: where "Use <kit>" goes, and the kit's own page (null when it has none yet). */
-  kits: Record<string, { use: string; page: string | null }>
+  kits: Record<string, { use: string | null; page: string | null }>
 }
 
 const SN: Record<string, string> = { website: 'Website', email: 'Email', spotlight: 'Spotlight', space: 'Space page' }
