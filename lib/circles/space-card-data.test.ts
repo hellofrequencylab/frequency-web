@@ -21,7 +21,6 @@ function item(over: Partial<SpaceCircleItem> = {}): SpaceCircleItem {
     access: 'open',
     imageUrl: 'https://example.test/c.jpg',
     neighborhood: 'Vista',
-    isSpacePrimary: false,
     ...over,
   }
 }

@@ -13,6 +13,7 @@ import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
 import { deriveModuleSectionNav } from '@/lib/spaces/module-section-nav'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { spaceHasPublicUpcomingEvents } from '@/lib/events/store'
+import { CALENDAR_NAME } from '@/lib/calendar/name'
 import { spaceHasCollaborators } from '@/lib/spaces/collaborations'
 import { viewerCanSeeSpaceMemberDirectory } from '@/lib/spaces/member-directory'
 import { canSeeSpaceContactTab, readContactFormContent } from '@/lib/spaces/contact-tab'
@@ -186,14 +187,14 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
   const autoTabs: (SpaceProfileTab & { key: string })[] = [
     { key: 'home', href: base, label: pages[0]?.label ?? 'Home' },
     ...sections.map((s) => ({ key: `anchor:${s.anchor}`, href: `${base}#${s.anchor}`, label: s.label })),
-    // The Calendar tab — THE MERGED CALENDAR AND EVENTS PAGE (LIVE-520). The Up next feed, the month
-    // grid, the agenda, and the subscribable feed, on one page and behind ONE menu row; the `#events`
-    // anchor that used to sit beside it is suppressed above. The label stays "Calendar" because the
-    // URL, the `.ics` feed, the page metadata and every operator deep link (`?view=`, `?console=1`)
-    // all say calendar, and a menu word that disagreed with all of them would be a second name for
-    // one thing. Shown only when the Space has upcoming PUBLIC events (the exact set the grid
-    // renders), so the tab never opens onto an empty calendar.
-    ...(hasCalendarEvents ? [{ key: 'feature:calendar', href: `${base}/calendar`, label: 'Calendar' }] : []),
+    // The What's Happening tab: THE MERGED CALENDAR AND EVENTS PAGE (LIVE-520). The Up next feed, the
+    // month grid, the agenda, and the subscribable feed, on one page and behind ONE menu row; the
+    // `#events` anchor that used to sit beside it is suppressed above. The owner named it "What's
+    // Happening" everywhere (BLD-000 ruling 2, applied by BLD-004): the tab, the Space function and the
+    // page title say it; the URL, the `.ics` feed and the operator deep links keep `calendar`, which a
+    // visitor reads as an address, not a name. Shown only when the Space has upcoming PUBLIC events
+    // (the exact set the grid renders), so the tab never opens onto an empty calendar.
+    ...(hasCalendarEvents ? [{ key: 'feature:calendar', href: `${base}/calendar`, label: CALENDAR_NAME }] : []),
     // The plan decides one tab, never both (SCAN-982): a Collective is many owners, so it shows
     // Partners; a Network is one owner's chapters, so it shows Network.
     ...(planTab === 'partners' ? [{ key: 'feature:partners', href: `${base}/partners`, label: 'Partners' }] : []),

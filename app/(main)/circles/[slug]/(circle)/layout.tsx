@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
 import { Settings } from 'lucide-react'
 import { getCachedUser, getMyProfileId } from '@/lib/auth'
@@ -16,6 +16,7 @@ import { QrShareDropdown } from '@/modules/qr'
 import { BoostButton } from '@/components/crew/boost-button'
 import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { loadCircleShell } from '@/lib/circles/store'
+import { retiredSpaceCircleHome } from '@/lib/circles/retired-space-circle'
 import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 import { circleTabs } from '@/lib/circles/tabs'
 import {
@@ -27,7 +28,6 @@ import {
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { listPublicPractices } from '@/lib/practices'
 import { circleEventInsider, loadCircleContentFacts, loadCircleUpcomingEvents } from './tab-facts'
-import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 import { sisterCircleOffer } from '@/lib/circles/sister'
 import { SisterCirclePrompt } from '@/components/circles/sister-circle-prompt'
 import { FqCircleShell } from '@/components/frequency/members/circle/circle-shell'
@@ -204,7 +204,12 @@ export default async function CircleDetailLayout({
   // Round 1. The circle + roster and the viewer, request-memoized: the tab page under `children`
   // calls the same loaders and gets memo hits, so the shell costs no extra reads.
   const [shell, myProfileId] = await Promise.all([loadCircleShell(slug), getMyProfileId()])
-  if (!shell) notFound()
+  if (!shell) {
+    // A retired Space Circle (archived by the cutover, ADR-1938) forwards to its Space's wall.
+    const home = await retiredSpaceCircleHome(slug)
+    if (home) permanentRedirect(home)
+    notFound()
+  }
   // 🔴 `canEnter` AND ITS REASON ARE READ HERE NOW (LIVE-519). Every consumer used to destructure
   // around them, so a Circle this viewer may see but not enter rendered as a Circle with ZERO
   // MEMBERS: the shell blanks the roster on purpose (public face keeps the COUNT, never the
@@ -226,11 +231,7 @@ export default async function CircleDetailLayout({
     circleCapabilities(circle.id),
     // `insider` keys the memoized events read, and it is derived from the roster (not from caps)
     // so the Events tab can derive the SAME key and hit the memo. See circleEventInsider.
-    loadCircleContentFacts(
-      circle.id,
-      circleEventInsider({ isMember, isHost }),
-      spaceCircleEventScope(circle),
-    ),
+    loadCircleContentFacts(circle.id, circleEventInsider({ isMember, isHost })),
     // The identity band's chrome through the ONE resolver (PROG-P5, ADR-1136): the same ladder as
     // every entity cover — the Circle's own image_url on rung 1, the operator's /circles Settings
     // image behind it — plus the element-resolved variant/height (ADR-793) this layout used to
@@ -309,17 +310,13 @@ export default async function CircleDetailLayout({
   })
   // Memo hit: loadCircleContentFacts asked the same question with the same key above.
   const [upcoming, rootSpaceId] = await Promise.all([
-    loadCircleUpcomingEvents(circle.id, circleEventInsider({ isMember, isHost }), spaceCircleEventScope(circle)),
+    loadCircleUpcomingEvents(circle.id, circleEventInsider({ isMember, isHost })),
     loadRootSpaceId(),
   ])
   // A Circle that belongs to a Space (its space_id, the root excluded) keeps its own cover, as the
   // design draws it, and wears a "Part of <Space>" pill that links to the Space.
   const owner = owningSpaceSlug(circle, rootSpaceId)
   const spaceDisplayName = circle.space ? circle.space.brand_name || circle.space.name : null
-  const spaceName =
-    circle.is_space_primary && circle.space && circle.space.type !== 'root'
-      ? circle.space.brand_name || circle.space.name
-      : null
   const place = circle.neighborhood ?? circle.city ?? null
 
   // The viewer's own view of this page: the same four the design draws (templates/circles/Circles.dc.html).
@@ -329,7 +326,7 @@ export default async function CircleDetailLayout({
   const insight = insightAffordance(insightAccess)
   const showsHealth = canManage || insight.visible
   const hostFirstName =
-    circle.is_space_primary || !circle.host?.display_name ? null : (circle.host.display_name.split(/\s+/)[0] ?? null)
+    !circle.host?.display_name ? null : (circle.host.display_name.split(/\s+/)[0] ?? null)
   // Meetup answers, who is going (the roster sees names), the viewer's attendance, and the manager's health numbers.
   const [picks, attendance, health] = await Promise.all([
     canEnter ? loadMeetupPicks(upcoming.events, myProfileId, isMember || canManage) : Promise.resolve([]),
@@ -420,11 +417,7 @@ export default async function CircleDetailLayout({
       channels={pageFacts.channels}
       rhythm={pageFacts.rhythm}
       hostedBy={
-        spaceName && circle.space ? (
-          <>
-            Hosted by <Link href={`/spaces/${circle.space.slug}`}>{spaceName}</Link>
-          </>
-        ) : circle.host ? (
+        circle.host ? (
           <>
             Hosted by <Link href={`/people/${circle.host.handle}`}>{circle.host.display_name}</Link>
           </>
@@ -472,11 +465,7 @@ export default async function CircleDetailLayout({
       }
       about={circle.about}
       hostLine={
-        spaceName && circle.space ? (
-          <>
-            Hosted by <Link href={`/spaces/${circle.space.slug}`}>{spaceName}</Link>
-          </>
-        ) : circle.host ? (
+        circle.host ? (
           <>
             Host <Link href={`/people/${circle.host.handle}`}>{circle.host.display_name}</Link>
           </>

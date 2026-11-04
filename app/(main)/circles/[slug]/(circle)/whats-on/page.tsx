@@ -14,9 +14,9 @@ import {
   loadCirclePractice,
   loadCircleUpcomingEvents,
 } from '../tab-facts'
-import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 import { CircleTasksSection } from '@/app/(main)/crew/circle-tasks-section'
 import { FqWhatsOnPane } from '@/components/frequency/members/circle/whats-on-pane'
+import { CALENDAR_NAME } from '@/lib/calendar/name'
 
 // ── THE PROGRAM TAB ─────────────────────────────────────────────────────────────────────────────
 //
@@ -47,7 +47,7 @@ import { FqWhatsOnPane } from '@/components/frequency/members/circle/whats-on-pa
 // MEMBER COPY SAYS "RUN", NEVER "COHORT" (docs/NAMING.md). `getCohortProgress` is the internal name
 // of the read; nothing it produces is labelled that way on screen.
 
-export const metadata = { title: "What's Happening" }
+export const metadata = { title: CALENDAR_NAME }
 
 export default async function CircleWhatsOnPage({
   params,
@@ -71,11 +71,7 @@ export default async function CircleWhatsOnPage({
   // memo. See circleEventInsider.
   const [practice, events, run] = await Promise.all([
     loadCirclePractice(circle.id),
-    loadCircleUpcomingEvents(
-      circle.id,
-      circleEventInsider({ isMember, isHost }),
-      spaceCircleEventScope(circle),
-    ),
+    loadCircleUpcomingEvents(circle.id, circleEventInsider({ isMember, isHost })),
     loadCircleActiveRun(circle.id),
   ])
 

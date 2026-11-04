@@ -11,6 +11,11 @@
 // set_space_feature tool. She never changes one herself: the proposal is a card, the person taps it, and the
 // Module Manager's own guarded action does the write. Money paths, the plan, the team list and deleting are
 // never offered (veraSwitchable). An editor keeps explain only.
+//
+// WHO CAN USE IT (LIVE-2185, phase V3): the same owner or admin may also PROPOSE the lowest role that can use
+// one of those same areas with the set_space_role tool, from the role ladder the Module Manager's picker
+// offers. The caller hands in each area's role now (space.minRoles), so this file still loads only the
+// catalog; the tap goes through the Module Manager's own guarded setSpaceFeatureMinRole.
 
 import { SPACE_MODULES, isModuleEnabled, spaceModuleManifest } from '@/lib/admin/modules/space-modules'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
@@ -46,12 +51,25 @@ export function veraSwitchCard(fn: string, on: boolean): string {
   return `Turn ${veraSwitchName(fn)} ${on ? 'on' : 'off'} in this Space?${also}`
 }
 
+/** The role ladder the Module Manager's "lowest role" picker offers, lowest first, with its own labels. */
+const ROLE_LADDER: Record<string, string> = { viewer: 'Member', editor: 'Editor', moderator: 'Moderator', admin: 'Admin' }
+
+/** Who a lowest role lets in, in the card's words. */
+const ROLE_WHO: Record<string, string> = { viewer: 'every member', editor: 'editors and up', moderator: 'moderators and up', admin: 'only admins' }
+
+/** The plain words on the confirm card for a lowest-role change, or null for a role the ladder does not
+ *  have. Server-checked again on confirm. */
+export function veraRoleCard(fn: string, role: string): string | null {
+  const who = Object.hasOwn(ROLE_WHO, role) ? ROLE_WHO[role] : null
+  return who ? `Let ${who} use ${veraSwitchName(fn)} in this Space?` : null
+}
+
 const ROLE_WORDS: Record<string, string> = { admin: 'an admin', editor: 'an editor', moderator: 'a moderator', member: 'a member' }
 
 /** The settings guide for one Space, as the lines Vera's prompt carries. Empty when the viewer cannot help run
  *  it, so a plain member or a visitor never gets the back office read to them. */
 export function veraSpaceGuide(
-  space: { name: string; slug: string; entitlements: unknown },
+  space: { name: string; slug: string; entitlements: unknown; minRoles?: Record<string, string> },
   viewer: { isOwner: boolean; role: string | null; canEditProfile: boolean; canManageMembers?: boolean },
 ): string {
   if (!viewer.canEditProfile) return ''
@@ -67,7 +85,7 @@ export function veraSpaceGuide(
     `THE SPACE THEY ARE IN: "${space.name}" (/spaces/${space.slug}). They help run it as ${who}.`,
     'They may ask what a setting does or where to find it. Answer from the list below, name the exact place, and offer the link.',
     viewer.canManageMembers
-      ? `You can PROPOSE turning one of the switches below on or off with the set_space_feature tool (space "${space.slug}"). It shows them a card and nothing changes until they tap it, so never say you changed it. Any other setting you cannot change from this chat: tell them exactly where to do it. If a setting is not on this list, say you do not know rather than guess.`
+      ? `You can PROPOSE turning one of the switches below on or off with the set_space_feature tool (space "${space.slug}"), and the lowest role that can use one of them with the set_space_role tool (roles, lowest first: ${Object.entries(ROLE_LADDER).map(([k, v]) => `${k} = ${v}`).join(', ')}). It shows them a card and nothing changes until they tap it, so never say you changed it. Any other setting you cannot change from this chat: tell them exactly where to do it. If a setting is not on this list, say you do not know rather than guess.`
       : 'You cannot change a setting from this chat. Say so plainly and tell them exactly where to do it; never say you changed one. If a setting is not on this list, say you do not know rather than guess.',
     'Money, the plan and billing, and deleting the Space are always changed by the owner by hand.',
     'Its settings (what each does, and where it lives):',
@@ -75,6 +93,9 @@ export function veraSpaceGuide(
     off.length ? `Turned off in this Space (turn one on from ${home}/modules): ${off.join(', ')}.` : '',
     viewer.canManageMembers && switches.length
       ? `Switches you may propose (feature: now): ${switches.map((fn) => `${fn}: ${entitlements[fn as SpaceFunctionKey] === false ? 'off' : 'on'}`).join(', ')}.`
+      : '',
+    viewer.canManageMembers && switches.length && space.minRoles
+      ? `Who can use each now (feature: lowest role): ${switches.filter((fn) => space.minRoles?.[fn]).map((fn) => `${fn}: ${space.minRoles?.[fn]}`).join(', ')}.`
       : '',
   ].filter(Boolean).join('\n')
 }

@@ -45,7 +45,7 @@ export type EditorSurface = 'marketing' | 'space' | 'website'
  *  The generic kit (blocks, layout, content, sections, productStory, media, dynamic) renders from
  *  its own props on every surface — verified block by block — so both surfaces keep all of it. */
 export const SURFACE_CATEGORIES: Record<EditorSurface, readonly string[]> = {
-  website: ['blocks', 'layout', 'content', 'sections', 'productStory', 'media', 'dynamic', 'profile', 'spaceContent', 'wildheart', 'network', 'networkKit', 'temple', 'templeKit', 'midnight', 'midnightPractice', 'designer', 'freeHuman', 'services', 'roles'],
+  website: ['blocks', 'layout', 'content', 'sections', 'productStory', 'media', 'dynamic', 'profile', 'spaceContent', 'wildheart', 'network', 'networkKit', 'temple', 'templeKit', 'midnight', 'midnightPractice', 'designer', 'freeHuman', 'services', 'newWorld', 'roles'],
   marketing: [
     'blocks',
     'layout',
@@ -101,6 +101,7 @@ const FAMILY_OWNER: Record<string, string> = {
   designer: 'Designer',
   freeHuman: 'FreeHuman',
   services: 'Services',
+  newWorld: 'NewWorld',
 }
 
 /** Every family category the palette scopes by theme. palette-scope.test.ts pins this against the config, so a new

@@ -15,7 +15,7 @@ export async function loadLaunchRows(spaceId: string, ownerProfileId: string, wi
   const [spaceRes, eventCount, circleCount, journeyCount, contactCount, connect] = await Promise.all([
     db.from('spaces').select('preferences, tagline, about').eq('id', spaceId).maybeSingle(),
     count(db.from('events').select('id', { count: 'exact', head: true }).or(`space_id.eq.${spaceId},host_space_id.eq.${spaceId}`).eq('is_cancelled', false).is('removed_at', null)),
-    count(db.from('circles').select('id', { count: 'exact', head: true }).eq('space_id', spaceId).eq('is_space_primary', false)),
+    count(db.from('circles').select('id', { count: 'exact', head: true }).eq('space_id', spaceId).neq('status', 'archived')),
     count(db.from('journey_plans').select('id', { count: 'exact', head: true }).eq('space_id', spaceId)),
     count(db.from('contacts').select('id', { count: 'exact', head: true }).eq('space_id', spaceId)),
     getConnectStatus(ownerProfileId).catch(() => null),

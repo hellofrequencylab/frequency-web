@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
-import { veraSpaceGuide, veraSwitchable, veraSwitchCard, veraSwitchName } from './space-guide'
+import { veraSpaceGuide, veraSwitchable, veraRoleCard, veraSwitchCard, veraSwitchName } from './space-guide'
 
 const space = { name: 'Sunrise Studio', slug: 'sunrise', entitlements: {} }
 const owner = { isOwner: true, role: 'admin', canEditProfile: true }
@@ -75,5 +75,35 @@ describe('Vera proposes a Space switch to its owner or an admin (LIVE-2157)', ()
     const crm = veraSwitchCard('crm', false)
     expect(crm).toMatch(/^Turn CRM off in this Space\? This also turns off /)
     expect(crm).toContain('Automation')
+  })
+})
+
+describe('Vera proposes who can use an area of a Space (LIVE-2185)', () => {
+  const admin = { isOwner: false, role: 'admin', canEditProfile: true, canManageMembers: true }
+  const withRoles = { ...space, minRoles: { reviews: 'viewer', crm: 'admin', members: 'editor', memberships: 'admin' } }
+
+  it('offers the role tool with the Module Manager ladder and each area role now, for an owner or admin only', () => {
+    const guide = veraSpaceGuide(withRoles, admin)
+    expect(guide).toContain('set_space_role tool (roles, lowest first: viewer = Member, editor = Editor, moderator = Moderator, admin = Admin)')
+    const line = guide.split('\n').find((l) => l.startsWith('Who can use each now'))!
+    expect(line).toMatch(/reviews: viewer/)
+    expect(line).toMatch(/crm: admin/)
+    expect(line).not.toMatch(/\bmembers: /)
+    expect(line).not.toMatch(/\bmemberships: /)
+  })
+
+  it('keeps an editor on explain only, and leaves the line out when the turn carries no roles', () => {
+    const editor = veraSpaceGuide(withRoles, { isOwner: false, role: 'editor', canEditProfile: true, canManageMembers: false })
+    expect(editor).not.toContain('set_space_role')
+    expect(editor).not.toContain('Who can use each')
+    expect(veraSpaceGuide(space, admin)).not.toContain('Who can use each')
+  })
+
+  it('words the card by who gets in, and has no card for a role off the ladder', () => {
+    expect(veraRoleCard('reviews', 'viewer')).toBe('Let every member use Reviews in this Space?')
+    expect(veraRoleCard('reviews', 'editor')).toBe('Let editors and up use Reviews in this Space?')
+    expect(veraRoleCard('crm', 'moderator')).toBe('Let moderators and up use CRM in this Space?')
+    expect(veraRoleCard('crm', 'admin')).toBe('Let only admins use CRM in this Space?')
+    for (const role of ['owner', 'member', '', 'toString']) expect(veraRoleCard('crm', role), role).toBeNull()
   })
 })
