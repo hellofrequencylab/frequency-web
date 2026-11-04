@@ -31,7 +31,7 @@ export default function ServicesThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(SEO)} />
-      <RememberKit kit=\"services" />
+      <RememberKit kit="services" />
       <FrequencyThemeFeature theme="services" />
     </>
   )

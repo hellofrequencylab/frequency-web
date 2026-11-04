@@ -31,7 +31,7 @@ export default function CyberWitchThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(SEO)} />
-      <RememberKit kit=\"cyberwitch" />
+      <RememberKit kit="cyberwitch" />
       <FrequencyThemeFeature theme="cyberwitch" />
     </>
   )

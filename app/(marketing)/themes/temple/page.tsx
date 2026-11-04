@@ -15,7 +15,7 @@ export default function TempleThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.temple)} />
-      <RememberKit kit=\"temple-kit" />
+      <RememberKit kit="temple-kit" />
       <FrequencyTemple />
     </>
   )

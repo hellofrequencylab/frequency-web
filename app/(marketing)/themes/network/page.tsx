@@ -15,7 +15,7 @@ export default function NetworkThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.network)} />
-      <RememberKit kit=\"network-kit" />
+      <RememberKit kit="network-kit" />
       <FrequencyNetwork />
     </>
   )

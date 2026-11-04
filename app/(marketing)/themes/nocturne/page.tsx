@@ -16,7 +16,7 @@ export default function MidnightThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.midnight)} />
-      <RememberKit kit=\"midnight" />
+      <RememberKit kit="midnight" />
       <FrequencyMidnight spotlightHref={launchEntryEnabled() ? freeSpotlightHref('theme', 'nocturne') : null} />
     </>
   )

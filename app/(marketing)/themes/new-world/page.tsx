@@ -14,7 +14,7 @@ export default function NewWorldThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.newWorld)} />
-      <RememberKit kit=\"new-world" />
+      <RememberKit kit="new-world" />
       <FrequencyNewWorld />
     </>
   )

@@ -15,7 +15,7 @@ export default function DesignerThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.designer)} />
-      <RememberKit kit=\"designer" />
+      <RememberKit kit="designer" />
       <FrequencyDesigner />
     </>
   )
