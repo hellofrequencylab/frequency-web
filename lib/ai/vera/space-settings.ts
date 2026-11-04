@@ -1,4 +1,4 @@
-// VERA CHANGES A SPACE SETTING (LIVE-2186, Vera assistants plan phase V3: toggles, choices and numbers inside a
+// VERA CHANGES A SPACE SETTING (LIVE-2186, the page look settings LIVE-2187, Vera assistants plan phase V3: toggles, choices and numbers inside a
 // Space's settings sections). The small, typed list of settings Vera may PROPOSE, each with what it means, where
 // it lives, how a value is checked, and the plain words on the confirm card. The confirm path maps each id to the
 // settings page's OWN guarded action, so a tap is the same write the page makes, re-checked against the caller.
@@ -25,6 +25,21 @@ interface VeraSpaceSetting {
 
 const onOff = (value: string): string | null => (value === 'on' || value === 'off' ? value : null)
 
+/** A closed choice: each value with the words the card uses for it. */
+function choice(words: Record<string, string>): Pick<VeraSpaceSetting, 'read' | 'values'> & { say: (value: string) => string } {
+  return {
+    read: (value) => (Object.hasOwn(words, value) ? value : null),
+    values: `one of ${Object.keys(words).join(', ')}`,
+    say: (value) => words[value],
+  }
+}
+
+const COVER = choice({ none: 'a clean photo', shade: 'a dark shade over the photo', blend: 'a photo that fades into the page' })
+const BACKDROP = choice({ plate: 'on its plate', none: 'straight on the cover' })
+const HEIGHT = choice({ short: 'short', standard: 'standard', tall: 'tall' })
+const BUTTONS = choice({ row: 'side by side', stacked: 'one above the other' })
+const pageLook = (slug: string) => `/spaces/${slug}/manage/layout`
+
 const SETTINGS: Record<string, VeraSpaceSetting> = {
   'calendar.time_zone': {
     label: 'Calendar time zone',
@@ -41,6 +56,38 @@ const SETTINGS: Record<string, VeraSpaceSetting> = {
     read: onOff,
     card: (value) => `${value === 'on' ? 'Show' : 'Hide'} sky markers on this Space's calendar?`,
     values: 'on or off',
+  },
+  'page.cover_style': {
+    label: 'Cover style',
+    meaning: 'How the cover photo at the top of the Space page is treated (none = clean photo, shade = darkened, blend = fades into the page).',
+    where: pageLook,
+    read: COVER.read,
+    card: (value) => `Show ${COVER.say(value)} at the top of this Space's page?`,
+    values: COVER.values,
+  },
+  'page.logo_backdrop': {
+    label: 'Logo backdrop',
+    meaning: 'Whether the logo sits on its plate or bare on the cover (bare suits a logo with a see-through background).',
+    where: pageLook,
+    read: BACKDROP.read,
+    card: (value) => `Put this Space's logo ${BACKDROP.say(value)}?`,
+    values: BACKDROP.values,
+  },
+  'page.hero_height': {
+    label: 'Top of page height',
+    meaning: 'How tall the cover at the top of the Space page is.',
+    where: pageLook,
+    read: HEIGHT.read,
+    card: (value) => `Make the top of this Space's page ${HEIGHT.say(value)}?`,
+    values: HEIGHT.values,
+  },
+  'page.hero_buttons': {
+    label: 'Top buttons',
+    meaning: 'Whether the buttons at the top of the Space page sit side by side or one above the other.',
+    where: pageLook,
+    read: BUTTONS.read,
+    card: (value) => `Lay the buttons at the top of this Space's page ${BUTTONS.say(value)}?`,
+    values: BUTTONS.values,
   },
 }
 
