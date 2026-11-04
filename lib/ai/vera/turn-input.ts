@@ -12,5 +12,8 @@ export const VERA_TURN_BODY = z.object({
     .array(z.object({ role: z.enum(['user', 'assistant']), text: z.string().max(8000) }))
     .max(60)
     .default([]),
+  /** The Space page they are on (LIVE-2147), read from the address bar, so Vera can explain that Space's
+   *  settings to someone who helps run it. A slug only; the turn checks their role itself. */
+  space: z.string().regex(/^[a-z0-9][a-z0-9-]{0,79}$/).optional(),
 })
 
