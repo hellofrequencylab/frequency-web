@@ -4,6 +4,7 @@
 // of each kit's cloud, the full-size view, and the hero cloud's parallax and click-to-zoom. The shapes it returns are what the
 // design's template reads, so the view (kit-showcase-view.tsx) stays the design's own markup.
 import { useCallback, useEffect, useState } from 'react'
+import { rememberKit } from '@/lib/create-space/last-kit'
 import { FILTERS, LAY, SPD, SURF, THEMES, type Any } from './data'
 import { BASE, SKIN, lum, onA, resolveDeco } from './skins'
 
@@ -78,6 +79,24 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
     setLeft(false)
     setFeat((s) => ({ ...s, hero: n }))
   }, [])
+  // The kit whose section holds the middle of the window is the last kit looked at: the 12 minute launch starts from it.
+  // A kit the builder does not offer has a null kit and is skipped.
+  const linkKits = props.links.kits
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue
+          const kit = linkKits[e.target.id.replace(/^kit-/, '')]?.kit
+          if (kit) rememberKit(kit)
+        }
+      },
+      { rootMargin: '-45% 0px -45% 0px' },
+    )
+    document.querySelectorAll('[id^="kit-"]').forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [linkKits])
   const holdHero = useCallback(() => setLeft(false), [])
   const releaseHero = useCallback(() => setLeft(true), [])
   // A device brought to the front stays up while hovered, and goes back 1.4s after the mouse leaves it.
