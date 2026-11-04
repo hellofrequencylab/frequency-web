@@ -13,8 +13,9 @@ import type { NewWorldLayoutKey, NewWorldSpotlightContent } from '@/lib/spotligh
 // THE NEW WORLD KIT SPOTLIGHT LAYOUTS: the six whole-page layouts of the design's Spotlight Layouts page (Stack,
 // Card wall, Story, Calendar first, Shop front, Profile). Server Component, no hooks. Reads NewWorldSpotlightContent
 // (lib/spotlight/new-world-kit-content.ts) and the theme's --nw-* tokens only: the root carries data-house-theme="new-world",
-// the register (data-th) and the accent (data-accent), and the styles read var(--nw-*). Filled buttons carry ink, never
-// white. Photos are the owner's or the theme's gradient surface; nothing is invented. Registered with New World's
+// the register (data-th) and the accent (data-accent), and the styles read var(--nw-*). Display type is the design's
+// default voice (mixed case, the accent face for the em). Filled accent buttons carry the theme's on-accent label, white by
+// the owner's rule. Photos are the owner's or the theme's gradient surface; nothing is invented. Registered with New World's
 // Spotlight wiring (LIVE-2057), which maps a stored `new-world-kit:<name>` id to a layout here.
 
 type C = NewWorldSpotlightContent
@@ -79,20 +80,26 @@ function Quote({ c }: { c: C }) {
     </div></div>
   )
 }
-function Review({ r }: { r: NonNullable<C['review']> }) {
-  return <div className="nws-card nws-review"><p>“{r.q}”</p><div className="nws-mono"><span>{r.who}</span> · {r.what}</div></div>
+/** Five stars and the kit's one count (the design's Rating, TRUST[1]): sample only, so a live page shows none. */
+function Rating({ c }: { c: C }) {
+  if (!c.rating) return null
+  return <div className="nws-rating"><span aria-hidden>{[0, 1, 2, 3, 4].map((i) => <Star key={i} size={12} fill="currentColor" strokeWidth={0} />)}</span>{c.rating}</div>
+}
+function Review({ r, c }: { r: NonNullable<C['review']>; c: C }) {
+  return <div className="nws-card nws-review"><Rating c={c} /><p>“{r.q}”</p><div className="nws-mono"><span>{r.who}</span> · {r.what}</div></div>
 }
 function Photo({ c }: { c: C }) {
   return c.hero.photo ? <Image src={c.hero.photo} alt="" fill sizes="(max-width: 640px) 100vw, 640px" style={{ objectPosition: '70% 30%' }} /> : null
 }
 function Hero({ c, height }: { c: C; height: number }) {
   return (
-    <section className="nws-hero" style={{ height }} data-photo={c.hero.photo ? '' : undefined}>
+    <section className="nws-hero" style={{ minHeight: height }} data-photo={c.hero.photo ? '' : undefined}>
       <Photo c={c} />
       <div className="nws-hero-top"><Name c={c} /></div>
       <div className="nws-hero-body">
         <Eyebrow>{c.hero.eyebrow}</Eyebrow>
         <h1 className="nws-d">{c.hero.title} <em>{c.hero.em}</em></h1>
+        <Rating c={c} />
         <div style={{ marginTop: 18 }}><Btn href={c.cta.href}>{c.cta.label}<ArrowRight size={14} aria-hidden /></Btn></div>
       </div>
     </section>
@@ -118,7 +125,7 @@ function CardWall({ c }: { c: C }) {
   const f = c.featured
   return (
     <>
-      <div className="nws-wall-head"><Name c={c} size={22} /><Display title={c.hero.title} em={c.hero.em} size={34} className="big" /></div>
+      <div className="nws-wall-head"><Name c={c} size={22} /><Display title={c.hero.title} em={c.hero.em} size={34} className="big" /><Rating c={c} /></div>
       <div className="nws-grid">
         <div className="nws-card nws-sq nws-wide">
           <Eyebrow accent>{f.eyebrow}</Eyebrow>
@@ -218,7 +225,7 @@ function Profile({ c }: { c: C }) {
         <Socials size={14} />
       </div>
       <div className="nws-pad" style={{ paddingTop: 22 }}><Btn href={c.cta.href}>{c.cta.label}<ArrowRight size={14} aria-hidden /></Btn></div>
-      {c.secondReview && <div className="nws-pad" style={{ paddingTop: 22 }}><Review r={c.secondReview} /></div>}
+      {c.secondReview && <div className="nws-pad" style={{ paddingTop: 22 }}><Review r={c.secondReview} c={c} /></div>}
       <div className="nws-pad" style={{ paddingTop: 22 }}>
         <Eyebrow>Where to start</Eyebrow>
         <div className="nws-card nws-list">
