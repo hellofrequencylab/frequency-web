@@ -274,6 +274,15 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [dropId, setDropId] = useState<string | null>(null)
   const [toast, setToast] = useState('')
   const toastTimer = useRef<number | undefined>(undefined)
+  const toastMounted = useRef(true)
+  useEffect(() => {
+    toastMounted.current = true
+    return () => {
+      toastMounted.current = false
+      window.clearTimeout(toastTimer.current)
+      toastTimer.current = undefined
+    }
+  }, [])
   // When the draft last saved, for the design's "Draft saved · 2 min ago"; the clock ticks once a minute.
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
@@ -292,6 +301,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const pickRef = useRef<HTMLDivElement>(null)
   const uid = useId()
   function say(message: string) {
+    if (!toastMounted.current) return
     setToast(message)
     window.clearTimeout(toastTimer.current)
     toastTimer.current = window.setTimeout(() => setToast(''), 2600)
