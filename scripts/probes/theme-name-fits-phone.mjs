@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2188: the theme name on the Nocturne-layout theme pages (/themes/cyberwitch, /themes/wildheart, /themes/bold, /themes/services,
+// LIVE-2189: the theme name on the Nocturne-layout theme pages (/themes/cyberwitch, /themes/wildheart, /themes/bold, /themes/services,
 // /themes/new-world) fits its column at every width. At 390 "CyberWitch" at 17cqw measured 414px in a 339px column and was cut to
 // "CyberWitc"; at 1280 all three long names ran past their 509px column. The heading now carries --nwf-chars and the sheet caps the size
 // at 130cqw per character. Fails on the old tree (no --nwf-chars, flat 17cqw clamp).
