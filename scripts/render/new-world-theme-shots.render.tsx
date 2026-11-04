@@ -36,7 +36,7 @@ it('renders the New World Website, Spotlight and Email for each kit', async () =
   const { newWorldKitSpotlightContent } = await import('@/lib/spotlight/new-world-kit-content')
   const { NewWorldKitSpotlightLayout } = await import('@/components/spotlight/new-world-kit-layouts')
   const photos = (await import('@/lib/sites/new-world-photos.json')).default as Record<string, { alt: string }>
-  const { newWorldKitEmail, NEW_WORLD_EMAIL_TIDE } = await import('@/lib/theme/new-world-kit-email')
+  const { newWorldKitEmail, newWorldKitEmailFrom, NEW_WORLD_EMAIL_TIDE } = await import('@/lib/theme/new-world-kit-email')
 
   const accent = Object.entries(newWorldAccentVars(null)).map(([k, v]) => `${k}:${v}`).join(';')
   for (const niche of NEW_WORLD_KIT_NICHES) {
@@ -83,7 +83,8 @@ it('renders the New World Website, Spotlight and Email for each kit', async () =
       }
     }
 
-    const mail = newWorldKitEmail('welcome', { name: c.name, descriptor: c.descriptor, owner: c.owner, role: c.role, accent: NEW_WORLD_EMAIL_TIDE, register: 'night', siteUrl: 'https://example.com', siteLabel: 'example.com', unsubscribeUrl: 'https://example.com/unsubscribe' })
+    const k = newWorldKitEmailFrom(c)
+    const mail = newWorldKitEmail('welcome', { ...k.brand, accent: NEW_WORLD_EMAIL_TIDE, register: 'night', siteUrl: 'https://example.com', siteLabel: 'example.com', unsubscribeUrl: 'https://example.com/unsubscribe' }, k.facts)
     writeFileSync(`${out}/${niche}-email.html`, mail.html)
   }
 })
