@@ -1,0 +1,19 @@
+{
+ "id": "LIVE-2210",
+ "title": "Services on manifest schema 2: Type voice, Motion and Images dials reach the site, so the Services sheet's switches are live",
+ "lane": "live",
+ "priority": "P1",
+ "size": "S",
+ "status": "done",
+ "closed": "2026-11-04",
+ "source": {
+  "file": "lib/theme/dials.json",
+  "ref": "LIVE-1997 framework; overnight theme gap list 2026-11-04"
+ },
+ "detail": "lib/themes/editor-schema2.json gains the first entry: services declares register (Night), corners, spacing, header, footer, type (caps), motion (full) and image (glow), with the Studio, Nightline, Paper and Trade Looks from the registry example. Hero and accent are fixed: the Services hero's variants are per block, and the accent is set by the theme's own accent picker. The generated manifest becomes schema 2. SiteSkin carries the three values (servicesDials over siteDials with the theme's own defaults) and the site root writes data-type, data-motion and data-image in site-chrome, the coming-soon page and the editor canvas, so the rules in components/sites/services-css.ts that were dead now apply. Every other theme root is unchanged (components/sites/services-dials.render.test.tsx).",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node scripts/probes/services-dials.mjs"
+ },
+ "wave": "W7"
+}

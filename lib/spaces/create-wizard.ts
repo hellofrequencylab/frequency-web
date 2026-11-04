@@ -152,9 +152,9 @@ const WIZARD_HINTS: Partial<Record<MegaThemeId, string>> = {
 
 /** The themes the look step offers: every Mega Theme the pickers offer (SITE_THEMES, which drops RETIRED_FROM_PICKERS: the
  *  earlier Network and Temple, private Free Human, and New World and Services until each is un-hidden), in the library's
- *  order with New World first (the default, owner 2026-11-04), with its one-line pitch. One hidden flag: a theme that leaves RETIRED_FROM_PICKERS is offered here the same moment;
+ *  pickers' order (New World first, Designer second, owner 2026-11-04), with its one-line pitch. One hidden flag: a theme that leaves RETIRED_FROM_PICKERS is offered here the same moment;
  *  Free Human is named too, because it stays private whatever the pickers do (LIVE-1910). */
-export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.filter(({ id }) => id !== 'free-human' && SITE_THEMES.some((t) => t.id === id)).slice().sort((a, b) => Number(b.id === 'new-world') - Number(a.id === 'new-world')).map(({ id }) => ({
+export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: string }[] = MEGA_THEMES.filter(({ id }) => id !== 'free-human' && SITE_THEMES.some((t) => t.id === id)).slice().sort((a, b) => SITE_THEMES.findIndex((t) => t.id === a.id) - SITE_THEMES.findIndex((t) => t.id === b.id)).map(({ id }) => ({
   id,
   // The site theme's own label, so Midnight reads as Nocturne (its saved id stays `midnight`).
   label: id === 'frequency' ? 'Default' : id === 'network-kit' ? 'Network' : id === 'temple-kit' ? 'Temple' : id === 'new-world' ? 'New World' : (SITE_THEMES.find((t) => t.id === id)?.label ?? id.charAt(0).toUpperCase() + id.slice(1)),

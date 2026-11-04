@@ -145,7 +145,7 @@
   background: var(--fq-surface-raised);
   border-right: 1px solid var(--fq-border-hair);
 }
-.caption { padding: 16px 16px 8px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--fq-text-muted); }
+.caption { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 10px 4px 16px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--fq-text-muted); }
 .list { list-style: none; margin: 0; padding: 0 8px 16px; overflow: auto; }
 .row {
   display: flex;

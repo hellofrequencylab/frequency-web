@@ -55,6 +55,8 @@ export const SURFACE_CATEGORIES: Record<EditorSurface, readonly string[]> = {
     'media',
     'dynamic',
     'circles',
+    'siteStory',
+    'article',
   ],
   space: [
     'blocks',
@@ -101,7 +103,15 @@ const FAMILY_OWNER: Record<string, string> = {
   designer: 'Designer',
   freeHuman: 'FreeHuman',
   services: 'Services',
+  // The site story blocks are drawn in the Frequency public site kit (app/themes/frequency/site-pages-story.css),
+  // not in any Space website theme, so their owner is a name no website theme carries: the marketing editor
+  // offers them (SURFACE_CATEGORIES above) and a Space website never does.
+  siteStory: 'FrequencySite',
   newWorld: 'NewWorld',
+  // The seeker-article layouts are drawn in the Frequency public site kit (app/themes/frequency/site-blocks.css
+  // §7), not in any Space website theme, so their owner is a name no website theme carries: the marketing
+  // editor offers them (SURFACE_CATEGORIES above) and a Space website never does.
+  article: 'FrequencySite',
 }
 
 /** Every family category the palette scopes by theme. palette-scope.test.ts pins this against the config, so a new

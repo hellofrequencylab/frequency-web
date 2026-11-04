@@ -12,7 +12,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { restoreDraft, saveDraftLead } from '@/app/(marketing)/create-a-space/actions'
@@ -30,6 +30,8 @@ import {
 } from '@/lib/create-space/builder'
 import type { BuilderDraft, BuilderMove } from '@/lib/create-space/builder'
 import { doorArrival } from '@/lib/create-space/door'
+import { lastKitFrom } from '@/lib/create-space/last-kit'
+import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import type { DoorArrival } from '@/lib/create-space/door'
 import { isHandleShape } from '@/lib/create-space/handle'
 import { intentsFromOffer } from '@/lib/create-space/intents-from-offer'
@@ -551,9 +553,15 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
   )
 }
 
+const noopSubscribe = () => () => {}
+
 function FromUrl() {
   const params = useSearchParams()
-  const arrival = doorArrival((k) => params.get(k))
+  const asked = doorArrival((k) => params.get(k))
+  // No kit in the address: start on the one they last looked at (lib/create-space/last-kit.ts). Read after mount,
+  // because this page is static. An explicit ?kit= wins.
+  const last = useSyncExternalStore(noopSubscribe, () => lastKitFrom(document.cookie), () => null as MegaThemeId | null)
+  const arrival = asked.chosen || !last ? asked : { ...asked, kit: last, chosen: true }
   return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} draftToken={params.get('draft')} />
 }
 

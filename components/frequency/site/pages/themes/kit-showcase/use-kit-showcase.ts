@@ -12,7 +12,7 @@ export interface ShowcaseLinks {
   start: string
   plans: string
   /** Per design kit id: where "Use <kit>" goes, and the kit's own page (null when it has none yet). */
-  kits: Record<string, { use: string; page: string | null }>
+  kits: Record<string, { use: string | null; page: string | null; /** The builder's kit id, for rememberKit() (lib/create-space/last-kit.ts) when this kit's section is in view. */ kit: string | null }>
 }
 
 const SN: Record<string, string> = { website: 'Website', email: 'Email', spotlight: 'Spotlight', space: 'Space page' }
@@ -166,7 +166,7 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
       accentLabel: a.label,
       accentMeaning: a.meaning || '',
       glow: A + '2B',
-      useHref: link?.use ?? props.links.start,
+      useHref: link ? link.use : props.links.start,
       kitHref: link?.page ?? null,
       mailBg: th.mailBg || th.t.bg,
       mailW: th.id === 'new-world' ? '150%' : '100%',

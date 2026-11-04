@@ -1,6 +1,6 @@
 // /themes/services (LIVE-2130): the feature page for the Services theme, on Nocturne's layout with a real render of every surface
-// (frequency-theme-feature.tsx). A Frequency-only route; a static segment wins over /themes/[theme]. Services is registered but not
-// offered in the pickers yet, so the page stays out of search and the sitemap until it is, the way /themes/new-world did (#4544).
+// (frequency-theme-feature.tsx). A Frequency-only route; a static segment wins over /themes/[theme]. Services is offered in the
+// pickers (LIVE-1996, owner 2026-11-04), so the page is indexed and in the sitemap.
 // Its words come from THEME_FEATURES.services, so the SEO lives here, the way /themes/[theme] builds Bold's and Wildheart's.
 import type { Metadata } from 'next'
 import { JsonLd } from '@/components/json-ld'
@@ -24,7 +24,7 @@ const SEO: FrequencyPageSeo = {
   ],
 }
 
-export const metadata: Metadata = { ...frequencyPageMetadata(SEO), robots: { index: false, follow: true } }
+export const metadata: Metadata = frequencyPageMetadata(SEO)
 
 export default function ServicesThemePage() {
   return (

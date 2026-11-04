@@ -5,6 +5,7 @@
 // kit's own /themes/<theme> page. The page markup and per-kit skins live in ./kit-showcase; Frequency's header and footer come
 // from the site shell. Copy follows docs/marketing/voice-and-language-guide.md.
 import { createSpaceHref } from '@/lib/create-space/href'
+import { isPreviewKit } from '@/lib/create-space/preview-site'
 import { launchEntryEnabled } from '@/lib/launch/enabled'
 import { freeSpotlightHref } from '@/lib/launch/entry'
 import { themePagePath } from '@/lib/themes/library'
@@ -30,8 +31,11 @@ export function themeShowcaseLinks(): ShowcaseLinks {
   const kits: ShowcaseLinks['kits'] = {}
   for (const [id, k] of Object.entries(KIT_THEMES)) {
     kits[id] = {
-      use: launch ? freeSpotlightHref('themes', k.slug) : createSpaceHref(k.theme),
+      // null: the builder does not offer this kit (hidden, or no theme yet), so "Use" is hidden rather than start the
+      // visitor on a different look.
+      use: k.theme && isPreviewKit(k.theme) ? (launch ? freeSpotlightHref('themes', k.slug, k.theme) : createSpaceHref(k.theme)) : null,
       page: k.theme ? themePagePath(k.theme) : null,
+      kit: k.theme && isPreviewKit(k.theme) ? k.theme : null,
     }
   }
   return { start: launch ? freeSpotlightHref('themes') : createSpaceHref(), plans: '/pricing', kits }

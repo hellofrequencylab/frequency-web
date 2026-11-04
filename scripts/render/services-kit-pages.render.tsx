@@ -18,6 +18,9 @@ const ROOT = process.cwd()
 const slugs = (process.env.RENDER_PAGES ?? 'home,services,about,booking').split(',')
 const face = (fam: string, f: string, style = 'normal', w = '100 900') => `@font-face{font-family:"${fam}";src:url("file://${ROOT}/app/fonts/${f}") format("woff2");font-style:${style};font-weight:${w}}`
 const FACES = face('Bricolage Grotesque', 'bricolage-grotesque/bricolage-grotesque.woff2', 'normal', '200 800') + face('Lora', 'lora/lora.woff2', 'normal', '400 700') + face('Lora', 'lora/lora-italic.woff2', 'italic', '400 700') + face('DM Mono', 'dm-mono/dm-mono-400.woff2', 'normal', '400') + face('DM Mono', 'dm-mono/dm-mono-500.woff2', 'normal', '500')
+// RENDER_DIALS=type,motion,image (e.g. editorial,off,mono) draws the pages with those dial values on the root (LIVE-2189).
+const [dType, dMotion, dImage] = (process.env.RENDER_DIALS ?? '').split(',')
+const dials = process.env.RENDER_DIALS ? { type: dType, motion: dMotion, image: dImage } : null
 const pub = (html: string) => html.replace(/ loading="lazy"/g, '').replace(/(src|href)="\/(sites|brand|themes)\//g, `$1="file://${ROOT}/public/$2/`)
 
 it('renders the Services trade kit pages', async () => {
@@ -53,7 +56,7 @@ it('renders the Services trade kit pages', async () => {
               links: r.snapshot.pages.map((p) => ({ label: p.label ?? p.slug, href: `/${p.slug}` })),
               cta: { href: '/booking', label: 'Book now', external: false },
               themeFonts: false,
-              skin: { theme: 'services', season: 'fall', register },
+              skin: { theme: 'services', season: 'fall', register, ...(dials ? { dials } : {}) },
               tagline: null,
               seasonNow: null,
               footer: { columns: [], blurb: kit.description, line: null, note: null, copyright: null, suffix: null, subscribe: null, utility: null },

@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { readSitePageStyle, siteLook, siteDials, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
+import { readSitePageStyle, servicesDials, siteLook, siteDials, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
+import { themeEditor } from '@/lib/themes/editor-dials'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
@@ -256,7 +257,7 @@ export async function SitePage({
                   : cyberwitchSite
                     ? { theme: 'cyberwitch' as const, season: mensworkSeason(new Date()) }
                   : servicesSite
-                    ? { theme: 'services' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const) }
+                    ? { theme: 'services' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const), dials: servicesDials(siteDials(siteStyle, themeEditor('services').own)) }
                     : null
   const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : newWorldSite ? NEW_WORLD_FONT_CLASS : servicesSite ? SERVICES_FONT_CLASS : cyberwitchSite ? CYBERWITCH_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
@@ -275,7 +276,7 @@ export async function SitePage({
     return (
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
-          <div data-house-theme={skin.theme} data-th={skin.theme === 'new-world' || skin.theme === 'services' ? skin.register ?? 'night' : undefined} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
+          <div data-house-theme={skin.theme} data-th={skin.theme === 'new-world' || skin.theme === 'services' ? skin.register ?? 'night' : undefined} data-type={skin.dials?.type} data-motion={skin.dials?.motion} data-image={skin.dials?.image} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
             <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : newWorldSite ? NEW_WORLD_CSS : cyberwitchSite ? CYBERWITCH_CSS : servicesSite ? SERVICES_SITE_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>

@@ -189,12 +189,17 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
  *  `frequency` ("Default") left the pickers 2026-11-03: New World is the default (LIVE-2058); sites that saved it keep it.
  *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple', 'free-human', 'services', 'cyberwitch'])
-/** New World is the default, so it leads every picker (owner 2026-11-04); the rest keep their definition order. */
-const PICKER_FIRST: SiteThemeId = 'new-world'
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple', 'free-human'])
+/** New World is the default, so it leads every picker, and Designer comes second (owner 2026-11-04); the rest keep their
+ *  definition order. The create-a-space look step follows this order. */
+const PICKER_LEAD: readonly SiteThemeId[] = ['new-world', 'designer']
+function pickerRank(id: SiteThemeId): number {
+  const at = PICKER_LEAD.indexOf(id)
+  return at < 0 ? PICKER_LEAD.length : at
+}
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
   .slice()
-  .sort((a, b) => Number(b.id === PICKER_FIRST) - Number(a.id === PICKER_FIRST))
+  .sort((a, b) => pickerRank(a.id) - pickerRank(b.id))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
 
@@ -313,6 +318,9 @@ export function siteDials(style: SiteStyle, own: Partial<Record<SiteDialKey, str
   const base = { ...THEME_DIAL_FALLBACK, ...(NIGHT_THEMES.has(style.theme) ? { register: 'night' } : {}), ...own }
   return { register: style.dials?.register ?? base.register, type: style.dials?.type ?? base.type, motion: style.dials?.motion ?? base.motion, hero: style.dials?.hero ?? base.hero, image: style.dials?.image ?? base.image, accent: style.dials?.accent ?? null }
 }
+
+/** The three root switches the Services sheet reads (data-type, data-motion, data-image), from resolved dial values. */
+export const servicesDials = (d: Record<SiteDialKey, string>): { type: string; motion: string; image: string } => ({ type: d.type, motion: d.motion, image: d.image })
 
 function readPageThemes(raw: unknown): Record<string, SiteThemeId> {
   if (!record(raw)) return {}
