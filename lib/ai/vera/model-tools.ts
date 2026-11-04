@@ -21,7 +21,7 @@ interface SpaceSwitches {
   roleCard?: (feature: string, role: string) => string | null
   /** The card words for a Space setting (LIVE-2186), or null for a setting or value Vera may not propose. */
   settingCard?: (setting: string, value: unknown) => string | null
-  /** The operator lookup (LIVE-2188), present only when the caller's session is staff. It re-checks that itself. */
+  /** The operator lookup (LIVE-2190), present only when the caller's session is staff. It re-checks that itself. */
   lookup?: (question: unknown) => Promise<string>
 }
 

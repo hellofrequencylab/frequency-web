@@ -1,4 +1,4 @@
-// THE OPERATOR QUESTIONS VERA CAN ANSWER WITH LIVE NUMBERS (LIVE-2188, Vera assistants plan phase V4, the Admin
+// THE OPERATOR QUESTIONS VERA CAN ANSWER WITH LIVE NUMBERS (LIVE-2190, Vera assistants plan phase V4, the Admin
 // Assistant). A closed list: the model names one of these ids and the server runs a fixed, read-only query for it
 // (lib/ai/vera/admin-lookups.ts). There is no free-form query, so she can never read a table the list does not
 // name, and she never invents a number: an unknown id is refused and she points at the admin page instead.

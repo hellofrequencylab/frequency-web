@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import assert from 'node:assert/strict'
 
-// LIVE-2188: Vera answers a Frequency team member's questions about running the place with live numbers, from a
+// LIVE-2190: Vera answers a Frequency team member's questions about running the place with live numbers, from a
 // closed list of fixed read-only lookups. Reads the wiring: the list is closed, the lookup refuses an id off it and
 // re-checks the caller's session before it reads, the turn hands the lookup in only for a staff session, the agent
 // offers the tool only to an operator, and the model chokepoint reads nothing on a turn without it.
@@ -33,4 +33,4 @@ assert.match(agent, /\(managerChecks && SPACE_MANAGER_TOOL_KEYS\.has\(t\.key\)\)
 
 const chokepoint = read('lib/ai/vera/model-tools.ts')
 assert.match(chokepoint, /content = space\?\.lookup \? await space\.lookup\(c\.input\.question\) : 'That lookup is for the Frequency team only\. Nothing was read\.'/, 'an invented call on a member turn reads nothing')
-console.log('LIVE-2188 ok: Vera answers operator questions with live numbers from a closed list, for staff only, read only')
+console.log('LIVE-2190 ok: Vera answers operator questions with live numbers from a closed list, for staff only, read only')

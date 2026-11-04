@@ -1,6 +1,6 @@
 import 'server-only'
 
-// THE LIVE NUMBERS BEHIND VERA'S OPERATOR ANSWERS (LIVE-2188). One fixed, read-only query per question on the
+// THE LIVE NUMBERS BEHIND VERA'S OPERATOR ANSWERS (LIVE-2190). One fixed, read-only query per question on the
 // closed list in admin-questions.ts. The agent hands this in only when the caller's own session is staff
 // (isStaff on the profile's web role), and each run re-checks that before it reads, so a replayed or invented
 // call from anyone else gets nothing. Results are short plain lines the model folds into its answer; member

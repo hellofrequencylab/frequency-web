@@ -75,9 +75,16 @@ const PLAY_IMAGE = '/images/site/PHOTO-2020-10-07-14-38-02.jpeg'
 const HOOP_IMAGE = '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg'
 const SHARED_IMAGE = '/images/site/song-circle.jpg'
 const CITY_IMAGE = '/images/site/outdoor-group.jpg'
+// The second card in each overlapping pair (the conversation layout). Not in the Article node.
+const PARACHUTE_IMAGE = '/brand/frequency/photos/day-parachute-play.jpg'
+const BACKYARD_IMAGE = '/brand/frequency/photos/gathering-03.jpg'
+const FRIENDS_IMAGE = '/images/site/group-of-friends.jpg'
+const HOOPS_IMAGE = '/images/site/hula-hoop-party.jpg'
 
 export const spec: ArticleSpec = {
   slug: 'friendship-as-an-adult',
+  // Warm and conversational: the questions are asked and answered, the photos overlap like snapshots.
+  design: 'conversation',
   eyebrow: 'Adult friendship',
   title: 'How to make friends as an adult',
   subtitle:
@@ -107,6 +114,8 @@ export const spec: ArticleSpec = {
         kind: 'media',
         image: PLAY_IMAGE,
         alt: 'Friends playing together on the beach',
+        image2: PARACHUTE_IMAGE,
+        alt2: 'Adults holding the edge of a rainbow parachute together on a grassy bluff by the sea',
         eyebrow: 'What actually builds it',
         title: 'Repetition, not chemistry.',
         body: 'The myth is that you make a friend in one magic conversation. The reality is that friendship is built from repetition: the same faces, the same room, enough times that small talk wears a groove into something real.\n\nA one-off mixer almost never produces a friend. A thing that meets every Thursday eventually does, almost without you noticing. The chemistry shows up after the reps, not before them.',
@@ -148,6 +157,8 @@ export const spec: ArticleSpec = {
           kind: 'media',
           image: SHARED_IMAGE,
           alt: 'A group of people sitting in a circle singing together',
+          image2: BACKYARD_IMAGE,
+          alt2: 'People sitting on rugs and cushions in a leafy backyard, gathered in easy conversation',
           eyebrow: 'What actually works',
           title: 'Lead with the thing, not the search.',
           body: 'The mistake is to go looking for like-minded people directly, as if they were the goal you walk in for. They are almost never found that way. They are found sideways, as the people who happen to be in the room you came to for the thing itself.\n\nA room organized around a shared thing has already done the hard filtering. The people who keep showing up for it are, almost by definition, your kind of people. If it feels like nobody gets you, it is usually because the rooms you are in were chosen by accident, not around what you care about most.',
@@ -184,6 +195,8 @@ export const spec: ArticleSpec = {
         kind: 'media',
         image: CITY_IMAGE,
         alt: 'A group of people gathered together outside on a sunny day',
+        image2: FRIENDS_IMAGE,
+        alt2: 'A group of friends sitting close together on a low wall, smiling for the camera',
         eyebrow: 'If you work from home',
         title: 'Build the contact your commute used to hand you.',
         body: 'When there is no office and no shared hallway, nobody is handing you faces on repeat. So a standing weekly group is not a nice-to-have, it is the main way you will meet anyone at all. Put one recurring thing in your week and protect it like a meeting.\n\nIt does not have to be big. One small group, same time each week, is enough to turn a city full of strangers into a few people who know your name. This is the same engine that makes friendship work at any age, just run in a place where you are starting from scratch.',
@@ -238,6 +251,8 @@ export const spec: ArticleSpec = {
         kind: 'media',
         image: HOOP_IMAGE,
         alt: 'People hooping together next to a palm tree',
+        image2: HOOPS_IMAGE,
+        alt2: 'Friends hula hooping together on a lawn above the coast',
         eyebrow: 'Where this lands',
         title: 'A standing room with the same faces.',
         body: 'A Circle is a small group around something you care about that meets on a set rhythm, so the same handful of people keep ending up in the same room. That is the repetition that makes friends, built in on purpose, and it is exactly the sorting a new city or a random social calendar never does for you.\n\nA Channel is what the Circle is about: one of the seven topics, from movement to creative to human relating. You pick what you practice, and the standing time does the slow work of turning a room of strangers into your people. Reach out to an old friend, then bring them into a room that meets again, so a friendship never has to rebuild from zero a second time.',

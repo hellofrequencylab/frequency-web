@@ -476,3 +476,471 @@
 /* A heading-only continuation band has no artwork to crop. Preserve its zero-gap rhythm
    while letting display glyphs paint beyond the line box at the band edge. */
 [data-design="frequency"] [data-kit="site"] [data-site-blocks] section:has(> div.mx-auto:only-child > :is(h1,h2,h3).font-display):not(:has(> :not(div.mx-auto))):not(:has(> div.mx-auto > :not(:is(h1,h2,h3).font-display,p[data-text-role="eyebrow"],p.text-lead.italic))):not(:has(img,picture,svg,video,audio,canvas,iframe,object,embed)){overflow:visible}
+
+/* ══ 7. THE SEEKER-ARTICLE LAYOUTS (components/page-editor/blocks/article.tsx) ══════════════════════════
+   Four layouts over one article grammar (templates/article.ts `design`). The blocks set the structure in
+   Tailwind; this is the Stage look: grain on photos, glass over photos, the mood aura behind steps, the
+   iridescent rim on key cards, dotted connectors on the path, signal-line dividers. Pink, lilac and sky
+   only, from the mood hues (--fq-m1..3) and the aura tokens. Every animation stops under reduced motion. */
+
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.art {
+  overflow: clip; /* not hidden: a sticky side heading needs the page to stay its scroller */
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art .art-grain {
+  z-index: 1;
+  opacity: 0.18;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art .art-photo {
+  background: var(--fq-uv-900);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art .art-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--fq-uv-void) 10%, transparent) 30%, color-mix(in oklab, var(--fq-uv-void) 88%, transparent) 100%);
+}
+/* Reading copy in the article blocks: the kit's body ink, a measured line. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art :is(.art-body, .art-note, .art-step-card > div, .art-tile-tip) {
+  color: var(--fq-text-body);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art .art-answer {
+  color: var(--fq-text-strong);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art h3.text-body-lg {
+  font-family: var(--fq-font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--fq-text-strong);
+}
+
+/* ── quiet: a centred column with room around it. The answer is the serif voice, a signal line opens
+   each question, a breathing orb sits behind each line. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.art-q-quiet {
+  padding-block: clamp(72px, 10vw, 140px);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-quiet .art-answer {
+  font-family: var(--fq-font-serif);
+  font-size: clamp(21px, 2.1vw, 27px);
+  line-height: 1.42;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-quiet .art-lede {
+  font-size: clamp(23px, 2.5vw, 32px);
+  line-height: 1.38;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-quiet .art-signal {
+  position: relative;
+  display: block;
+  width: min(220px, 60%);
+  height: 1px;
+  margin-bottom: clamp(32px, 4vw, 48px);
+  background: linear-gradient(90deg, transparent, var(--fq-m1, var(--fq-aura-1)) 30%, var(--fq-m2, var(--fq-aura-2)) 70%, transparent);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-quiet .art-signal::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fq-text-strong);
+  box-shadow: 0 0 14px var(--fq-m1, var(--fq-aura-1));
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-line-quiet .art-orb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(560px, 90vw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 40% 38%, color-mix(in oklab, var(--fq-m1, var(--fq-aura-1)) 34%, transparent), transparent 62%),
+    radial-gradient(circle at 64% 66%, color-mix(in oklab, var(--fq-m2, var(--fq-aura-2)) 26%, transparent), transparent 60%);
+  filter: blur(30px);
+  opacity: 0.55;
+}
+
+/* ── a line over a photograph: the void under it, grain on it, the accent in the iridescent sweep. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-line-frame {
+  background: var(--fq-uv-void);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-line-frame .art-photo img {
+  opacity: 0.62;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-line-frame .art-scrim {
+  background: radial-gradient(70% 70% at 50% 50%, color-mix(in oklab, var(--fq-uv-void) 62%, transparent), color-mix(in oklab, var(--fq-uv-void) 25%, transparent));
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-line-frame .art-line-text {
+  color: var(--fq-text-strong);
+  text-shadow: 0 2px 30px color-mix(in oklab, var(--fq-uv-void) 70%, transparent);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-line-frame .art-line-text > span {
+  background: var(--fq-iridescent-sweep);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  animation: fq-sweep 9s linear infinite;
+}
+
+/* ── a full-bleed photo chapter: the photo IS the section, its heading on glass over it. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-chapter-frame .art-photo img {
+  opacity: 0.82;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-chapter-frame .art-glass {
+  border-radius: var(--fq-radius-l);
+  box-shadow: 0 30px 80px -30px color-mix(in oklab, var(--fq-uv-void) 90%, transparent);
+}
+
+/* ── conversation: the question is asked in a glass bubble, the answer replied in the mood wash. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-talk .art-ask {
+  padding: clamp(22px, 3vw, 34px) clamp(22px, 3vw, 38px);
+  border-radius: 30px 30px 30px 8px; /* token-ok: a speech bubble's tail corner */
+  background: var(--fq-surface-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-talk .art-reply {
+  padding: clamp(20px, 2.6vw, 30px) clamp(22px, 3vw, 36px);
+  border-radius: 30px 30px 8px 30px; /* token-ok: a speech bubble's tail corner */
+  background:
+    linear-gradient(120deg, color-mix(in oklab, var(--fq-m1, var(--fq-aura-1)) 22%, transparent), color-mix(in oklab, var(--fq-m2, var(--fq-aura-2)) 18%, transparent)),
+    var(--fq-surface-card);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fq-m1, var(--fq-aura-1)) 30%, transparent);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-talk .art-reply:only-child {
+  margin-inline: auto;
+  max-width: 48rem;
+}
+@media (max-width: 639px) {
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-talk .art-ask { margin-right: 8%; }
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-talk .art-reply:not(:only-child) { margin-left: 8%; }
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-talk .art-talk-body {
+  margin-top: clamp(28px, 4vw, 44px);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-line-bubble .art-bubble {
+  padding: clamp(28px, 4vw, 52px) clamp(24px, 4vw, 56px);
+  border-radius: 36px 36px 36px 10px; /* token-ok: a speech bubble's tail corner */
+  background: var(--fq-surface-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair), 0 40px 90px -50px var(--fq-m1, var(--fq-aura-1));
+}
+
+/* ── overlapping photo cards: two snapshots, slightly turned, the text card laid over them in glass. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-story-overlap .art-card-a {
+  border-radius: var(--fq-radius-l);
+  transform: rotate(-2deg);
+  box-shadow: 0 40px 90px -40px color-mix(in oklab, var(--fq-uv-void) 90%, transparent);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-story-overlap .art-card-b {
+  z-index: 3;
+  border-radius: var(--fq-radius-l);
+  transform: rotate(3deg);
+  box-shadow: 0 0 0 6px var(--fq-bg-canvas), 0 30px 70px -30px color-mix(in oklab, var(--fq-uv-void) 90%, transparent);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section.bg-marketing-canvas.art-story-overlap .art-card-b {
+  box-shadow: 0 0 0 6px var(--fq-bg-sunken), 0 30px 70px -30px color-mix(in oklab, var(--fq-uv-void) 90%, transparent);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-story-overlap .art-overlap-text.rounded-card.border {
+  background-color: var(--fq-surface-glass);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+/* ── the path: a dotted rail down the page, a numbered node per question, a pin per signpost. The rail
+   sits at the centre of the block's first column (44px on a phone, 72px from sm), wherever the 64rem
+   column lands. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] section:is(.art-q-path, .art-line-signpost)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(max(16px, (100% - 64rem) / 2) + 21px);
+  border-left: 2px dotted var(--fq-ig-dash);
+}
+@media (min-width: 640px) {
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] section:is(.art-q-path, .art-line-signpost)::before {
+    left: calc(max(24px, (100% - 64rem) / 2) + 35px);
+  }
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art .art-node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--fq-ig-node);
+  box-shadow: 0 0 0 1.5px var(--fq-side), 0 0 22px -4px var(--fq-side);
+  color: var(--fq-text-strong);
+  font-size: 13px; /* token-ok: the infographic path node numeral */
+  font-weight: 600;
+}
+@media (min-width: 640px) {
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art .art-node {
+    width: 72px;
+    height: 72px;
+    font-size: 20px; /* token-ok: the infographic path node numeral, large */
+  }
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art .art-pin {
+  position: relative;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  margin-top: 0.6em;
+  border-radius: 50%;
+  background: var(--fq-side);
+  box-shadow: 0 0 0 6px var(--fq-bg-canvas), 0 0 18px var(--fq-side);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-line-signpost .art-sign {
+  padding-left: clamp(16px, 2vw, 24px);
+  border-left: 2px solid var(--fq-side);
+}
+
+/* ── the tips bento: a lit title tile, photo tiles with grain, numbered tip tiles. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-bento .art-tile-head {
+  background:
+    radial-gradient(80% 90% at 0% 0%, color-mix(in oklab, var(--fq-m1, var(--fq-aura-1)) 30%, transparent), transparent 70%),
+    radial-gradient(70% 80% at 100% 100%, color-mix(in oklab, var(--fq-m2, var(--fq-aura-2)) 24%, transparent), transparent 70%),
+    var(--fq-surface-card);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-bento .art-tile-photo {
+  border-radius: var(--fq-radius-l);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-bento .art-tip-num {
+  display: block;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--fq-side);
+}
+
+/* ── the manual: a sticky number and question beside a checklist panel, a check on its edge. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-panel .art-num {
+  margin-bottom: 16px;
+  font-size: clamp(56px, 7vw, 104px);
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+  background: var(--fq-iridescent-sweep);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: fq-sweep 9s linear infinite;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art .art-panel.rounded-card.border {
+  background-color: var(--fq-surface-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art .art-check {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--fq-pa);
+  color: var(--fq-uv-void);
+  box-shadow: var(--fq-pa-glow);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-panel .art-panel > .art-check {
+  top: -18px;
+  left: clamp(24px, 3vw, 40px);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-story-pinned li.art-panel > .art-check {
+  top: 24px;
+  left: 16px;
+}
+@media (min-width: 640px) {
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-story-pinned li.art-panel > .art-check { top: 30px; left: 24px; }
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-story-pinned .art-pinned-photo {
+  border-radius: var(--fq-radius-l);
+}
+
+/* ── steps: the mood aura behind, then one of four shapes. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps .art-steps-aura {
+  --fq-aura-opacity: 0.22;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps .art-step-num {
+  color: var(--fq-side);
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+/* trail: a quiet numbered list, serif numerals, hairlines between. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-trail > li {
+  display: grid;
+  grid-template-columns: clamp(52px, 7vw, 88px) minmax(0, 1fr);
+  gap: 16px;
+  padding-block: clamp(24px, 3vw, 36px);
+  border-top: 1px solid var(--fq-border-hair);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-trail > li:last-child {
+  border-bottom: 1px solid var(--fq-border-hair);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-trail .art-step-num {
+  font-family: var(--fq-font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(40px, 5vw, 64px);
+}
+/* stack: notes laid on top of each other, alternating, turned a degree. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-stack > li {
+  position: relative;
+  max-width: 36rem;
+  padding: clamp(22px, 3vw, 34px);
+  border-radius: var(--fq-radius-l);
+  background: var(--fq-surface-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair), 0 30px 70px -40px color-mix(in oklab, var(--fq-uv-void) 95%, transparent);
+  transform: rotate(-0.6deg);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-stack > li + li {
+  margin-top: -14px;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-stack > li:nth-child(even) {
+  margin-left: auto;
+  transform: rotate(0.8deg);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-stack .art-step-num {
+  display: block;
+  margin-bottom: 10px;
+  font-size: clamp(30px, 3.4vw, 44px);
+}
+@media (max-width: 639px) {
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-stack > li { width: 94%; }
+}
+/* path: numbered nodes joined by dotted connectors, across on a wide screen, down on a phone. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-path > li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 18px;
+  padding-bottom: 28px;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-path > li::after {
+  content: "";
+  position: absolute;
+  top: 56px;
+  bottom: 0;
+  left: 27px;
+  border-left: 2px dotted var(--fq-ig-dash);
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-path > li:last-child::after {
+  display: none;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(.art-steps-list-path, .art-steps-list-timeline) .art-step-num {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--fq-ig-node);
+  box-shadow: 0 0 0 1.5px var(--fq-side), 0 0 24px -4px var(--fq-side);
+  color: var(--fq-text-strong);
+  font-size: 16px; /* token-ok: the infographic path node numeral */
+  font-weight: 600;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-path .art-step-card {
+  padding: 22px 24px;
+  border-radius: var(--fq-radius-l);
+  background: var(--fq-surface-glass);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair);
+}
+@media (min-width: 900px) {
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-path {
+    display: grid;
+    grid-template-columns: repeat(var(--art-n, 3), minmax(0, 1fr));
+    gap: 24px;
+  }
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-path > li {
+    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: 0;
+  }
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-path > li::after {
+    top: 27px;
+    bottom: auto;
+    left: 64px;
+    right: -16px;
+    border-left: 0;
+    border-top: 2px dotted var(--fq-ig-dash);
+  }
+}
+/* timeline: a signal spine, the nodes on it, the cards alternating either side on a wide screen. */
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-timeline {
+  position: relative;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-timeline::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 27px;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, var(--fq-m1, var(--fq-aura-1)) 10%, var(--fq-m2, var(--fq-aura-2)) 55%, var(--fq-m3, var(--fq-aura-3)) 90%, transparent);
+  box-shadow: 0 0 16px var(--fq-m2, var(--fq-aura-2));
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-timeline > li {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 18px;
+  padding-bottom: 28px;
+}
+[data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-timeline .art-step-card {
+  padding: clamp(22px, 2.6vw, 30px);
+  border-radius: var(--fq-radius-l);
+  background: var(--fq-surface-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--fq-border-hair);
+}
+@media (min-width: 900px) {
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-timeline::before {
+    left: calc(50% - 1px);
+  }
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-timeline > li {
+    grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr);
+    gap: 32px;
+    padding-bottom: 8px;
+  }
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-timeline > li > .art-step-num {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-timeline > li > .art-step-card {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-steps-list-timeline > li:nth-child(even) > .art-step-card {
+    grid-column: 3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-line-frame .art-line-text > span,
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-panel .art-num {
+    animation: none;
+  }
+}

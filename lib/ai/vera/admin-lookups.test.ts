@@ -23,7 +23,7 @@ beforeEach(() => {
   createAdminClient.mockClear()
 })
 
-describe('runAdminLookup (LIVE-2188)', () => {
+describe('runAdminLookup (LIVE-2190)', () => {
   it('refuses a question off the list before it reads anything', async () => {
     const isStaffNow = vi.fn(staff)
     for (const q of ['all_member_emails', 'toString', 42, undefined]) {

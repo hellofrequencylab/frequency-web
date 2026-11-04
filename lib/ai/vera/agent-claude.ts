@@ -276,7 +276,7 @@ export async function runVeraClaudeTurn(input: {
   reader?: VeraReader | null
   /** The settings guide for the Space they are in (LIVE-2147), empty unless they help run it. */
   spaceGuide?: string
-  /** The live operator lookup (LIVE-2188), handed in by the turn for a staff caller. Offered to the model only
+  /** The live operator lookup (LIVE-2190), handed in by the turn for a staff caller. Offered to the model only
    *  when `viewer.isOperator` too, and the lookup re-checks the session before it reads. */
   adminLookup?: (question: unknown) => Promise<string>
   /** Stream the prose as it is generated (the CHIPS line is held back). Each round of the tool
@@ -307,7 +307,7 @@ export async function runVeraClaudeTurn(input: {
     // The Space switch (LIVE-2157) rides along only when the Space guide offers it, which it does only for
     // that Space's owner or an admin; the confirm path re-checks their authority before anything is written.
     const managerChecks = input.spaceGuide?.includes('set_space_feature') ? { switchable: veraSwitchable, card: veraSwitchCard, roleCard: veraRoleCard, settingCard: veraSettingCard } : undefined
-    // The operator lookup (LIVE-2188) rides the same checks object; a staff caller outside a Space they run gets
+    // The operator lookup (LIVE-2190) rides the same checks object; a staff caller outside a Space they run gets
     // the lookup and no Space change at all.
     const adminLookup = input.viewer?.isOperator ? input.adminLookup : undefined
     const spaceSwitches = adminLookup ? { ...(managerChecks ?? NO_SPACE_CHANGES), lookup: adminLookup } : managerChecks

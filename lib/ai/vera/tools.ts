@@ -260,7 +260,7 @@ export const MEMBER_CHAT_TOOL_KEYS: ReadonlySet<string> = new Set([
  *  them, which it does only for that Space's owner or an admin. */
 export const SPACE_MANAGER_TOOL_KEYS: ReadonlySet<string> = new Set(['set_space_feature', 'set_space_role', 'set_space_setting'])
 
-/** The operator read (LIVE-2188): offered only when the caller's own session is staff, and the lookup itself
+/** The operator read (LIVE-2190): offered only when the caller's own session is staff, and the lookup itself
  *  re-checks that before it reads. */
 export const OPERATOR_TOOL_KEYS: ReadonlySet<string> = new Set(['admin_lookup'])
 

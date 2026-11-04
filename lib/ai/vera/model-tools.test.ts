@@ -130,7 +130,7 @@ describe('a Space setting (LIVE-2186)', () => {
   })
 })
 
-describe('an operator lookup (LIVE-2188)', () => {
+describe('an operator lookup (LIVE-2190)', () => {
   it('runs the handed-in lookup and feeds the answer back, proposing nothing', async () => {
     const lookup = vi.fn().mockResolvedValue('3 reports are waiting for review at /admin/moderation.')
     const read = vi.fn()
