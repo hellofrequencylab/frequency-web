@@ -49,7 +49,6 @@ export const EDITABLE_PAGES = [
   { slug: 'how-to-build-community', title: 'How to build community', path: '/how-to-build-community' },
   { slug: 'loneliness', title: 'Loneliness', path: '/loneliness' },
   { slug: 'friendship-as-an-adult', title: 'Adult friendship', path: '/friendship-as-an-adult' },
-  { slug: 'calm-down-fast', title: 'Calm down fast', path: '/calm-down-fast' },
   { slug: 'how-to-be-more-social', title: 'How to be more social', path: '/how-to-be-more-social' },
   // tools-for-community-builders and what-is-frequency MERGED (SCAN-1017) into how-to-build-community
   // and about: their routes 308 there, so they are no longer editable pages. Their templates stay as

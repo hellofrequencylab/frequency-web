@@ -27,7 +27,9 @@ if (stage === 'w0') {
 } else if (stage === 'w4') {
   const cfg = read('next.config.ts')
   if (/source:\s*'\/spaces\/:slug\/community'[\s\S]{0,120}destination:\s*'\/spaces\/:slug\/circles'/.test(cfg)) bad.push('/spaces/:slug/community still redirects to /circles')
-  if (!/\/community`|\/community"|\/community'/.test(read('app/sitemap.ts').split('\n').filter((l) => /spaces/.test(l) || /slug/.test(l)).join('\n'))) bad.push('sitemap has no Space Community URL')
+  // The sitemap emits Space tab URLs from listNetworkedSpaceProfileTabs, so the Community segment lives there.
+  if (!/push\('community'\)/.test(read('lib/spaces/discovery.ts'))) bad.push('sitemap has no Space Community URL (no community segment in listNetworkedSpaceProfileTabs)')
+  if (!/CollectionPage/.test(read('app/(main)/spaces/[slug]/(profile)/community/page.tsx'))) bad.push('the Community page carries no structured data naming the Space')
 } else if (stage === 'w5') {
   const live = (sql) => sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
   if (!migrations().some(([f, sql]) => f > '20270346028700' && /drop trigger[^;]*spaces_ensure_space_circle/i.test(live(sql)))) bad.push('no migration stops creating a Space Circle per new Space')
