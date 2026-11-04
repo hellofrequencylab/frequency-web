@@ -120,3 +120,24 @@ it('shows a question\'s answer as Vera\'s reply, with nothing to tick and nothin
   expect(onSave).not.toHaveBeenCalled()
   expect(await order()).toEqual(['hero', 'contact', 'about'])
 })
+
+it('adds a section the Add tab offers, at the asked position, as one undo step on the draft (LIVE-2135)', async () => {
+  const onLayout = vi.fn(async (...args: unknown[]) => {
+    const addable = (args[2] as { sections: { type: string; label: string }[] }).sections
+    return { ok: true as const, note: '', refused: [], changes: [{ kind: 'add' as const, blockType: addable[0].type, toPosition: 1 }, { kind: 'add' as const, blockType: 'NotOffered', toPosition: 1 }] }
+  })
+  const { node, click, ask, order, onSave } = mount(onLayout)
+  await ask('Add a section at the top')
+  const added = ((onLayout.mock.calls[0] as unknown[])[2] as { sections: { type: string; label: string }[] }).sections[0]
+  const boxes = Array.from(node.querySelectorAll<HTMLInputElement>('[data-vera-layout] input[type=checkbox]'))
+  expect(boxes.map((b) => b.closest('label')?.textContent)).toEqual([`Add a ${added.label} section at position 1, with placeholder text for your words`])
+  expect(node.querySelector('[data-vera-layout]')?.textContent).toContain('does not offer on this page')
+  click('Apply to draft')
+  const content = (await order())
+  expect(content).toHaveLength(4)
+  expect(content.slice(1)).toEqual(['hero', 'contact', 'about'])
+  expect(onSave.mock.calls.at(-1)![1].pages[0].doc.content[0].type).toBe(added.type)
+  expect(onSave.mock.calls.at(-1)![2]).toBe(false)
+  click('Undo')
+  expect(await order()).toEqual(['hero', 'contact', 'about'])
+})
