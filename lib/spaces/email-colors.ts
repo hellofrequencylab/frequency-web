@@ -222,5 +222,7 @@ export function spaceEmailBrand(space: SpaceEmailBrandInput): EmailBrand {
     logoUrl,
     // Bold's email has square corners (its design: radius 0; no clip-path survives a mail client).
     ...(readMegaTheme(space.preferences).theme === 'bold' ? { square: true } : {}),
+    // Wildheart's email wears a serif wordmark and the petal corner (its design: one square corner among rounded ones).
+    ...(readMegaTheme(space.preferences).theme === 'wildheart' ? { serif: true } : {}),
   }
 }

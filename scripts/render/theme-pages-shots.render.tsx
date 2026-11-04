@@ -28,12 +28,20 @@ const BOLD_FACES =
   [400, 500, 600].map((w) => face('Barlow', `barlow/barlow-${w}.woff2`, 'normal', String(w))).join('') +
   [400, 500].map((w) => face('IBM Plex Mono', `ibm-plex-mono/ibm-plex-mono-${w}.woff2`, 'normal', String(w))).join('')
 const BOLD_VARS = '--font-sofia-xc:"Sofia Sans Extra Condensed";--font-barlow:Barlow;--font-plex-mono:"IBM Plex Mono";'
+// Wildheart's faces (IM Fell English display, EB Garamond body, Hanken labels, Noto Sans Symbols for the zodiac glyphs) and Playfair,
+// which the Spotlight 'serif' font reads as --font-playfair. next/font sets these variables in the app; a bare page names them here.
+const ttf = (fam: string, f: string, style: string) => `@font-face{font-family:"${fam}";src:url("file://${ROOT}/public/fonts/wildheart/${f}") format("truetype");font-style:${style};font-weight:400}`
+const WH_FACES =
+  ttf('IM Fell English', 'IMFellEnglish-Regular.ttf', 'normal') + ttf('IM Fell English', 'IMFellEnglish-Italic.ttf', 'italic') +
+  face('EB Garamond', 'eb-garamond/eb-garamond.woff2', 'normal', '400 800') + face('EB Garamond', 'eb-garamond/eb-garamond-italic.woff2', 'italic', '400 800') +
+  face('Noto Sans Symbols', 'noto-sans-symbols/noto-sans-symbols.woff2') + face('Playfair Display', 'playfair-display/playfair-display.woff2', 'normal', '400 900')
+const WH_VARS = '--font-wh-fell:"IM Fell English";--font-wh-garamond:"EB Garamond";--font-wh-hanken:"Hanken Grotesk";--font-wh-symbols:"Noto Sans Symbols";--font-playfair:"Playfair Display";'
 const pub = (html: string) => html.replace(/ loading="lazy"/g, '').replace(/(src|href)="\/(sites|brand|themes|create-a-space)\//g, `$1="file://${ROOT}/public/$2/`)
 
 type Skin = { theme: 'menswork' | 'wildheart'; season: 'fall' } | null
 const THEMES: { ed: 'Menswork' | 'Wildheart'; id: string; mega: 'bold' | 'wildheart'; kit: string; skin: Skin; photo: string; cover: string; accent: string }[] = [
   { ed: 'Menswork', id: 'bold', mega: 'bold', kit: 'bold-coaches', skin: { theme: 'menswork', season: 'fall' }, photo: '/brand/frequency/photos/gathering-10.jpg', cover: '/brand/frequency/photos/gathering-12.jpg', accent: '#1F8A8A' },
-  { ed: 'Wildheart', id: 'wildheart', mega: 'wildheart', kit: 'wildheart-coaches', skin: { theme: 'wildheart', season: 'fall' }, photo: '/brand/wildheart/photos/huddle.jpg', cover: '/brand/wildheart/photos/sisters-shore.jpg', accent: '#6D4AFF' },
+  { ed: 'Wildheart', id: 'wildheart', mega: 'wildheart', kit: 'wildheart-coaches', skin: { theme: 'wildheart', season: 'fall' }, photo: '/brand/wildheart/photos/huddle.jpg', cover: '/brand/wildheart/photos/sisters-shore.jpg', accent: '#6E4D96' },
 ]
 
 async function html(el: unknown): Promise<string> {
@@ -43,7 +51,7 @@ async function html(el: unknown): Promise<string> {
   return Buffer.concat(chunks).toString()
 }
 const shellDoc = (body: string) =>
-  `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif;${BOLD_VARS}}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
+  `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif;${BOLD_VARS}${WH_VARS}}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
 
 it('renders the Bold and Wildheart surfaces', async () => {
   if (!out) throw new Error('set RENDER_OUT')
@@ -82,8 +90,11 @@ it('renders the Bold and Wildheart surfaces', async () => {
     for (const b of home.doc.content as { type: string; props: Record<string, unknown> }[]) {
       if (b.type === 'ServicesHero' || b.type === 'Hero') b.props.image = t.photo
       // Bold's kit hero is text-only; the design puts the headline above a full-width photo, so the picture shows the photo variant.
+      if (b.type === 'PhotoHero' && t.id === 'wildheart') Object.assign(b.props, { variant: 'image', image: t.cover, alt: 'Women gathered on a beach in warm light', height: 'medium', display: 'below' })
       if (b.type === 'PhotoHero' && t.id === 'bold') Object.assign(b.props, { variant: 'image', image: t.photo, alt: 'People gathered on a beach at sunset', height: 'medium', display: 'below' })
     }
+    // The Wildheart chrome already carries the sky line under the menu; the kit's own line block would print it twice in one frame.
+    if (t.id === 'wildheart') home.doc.content = (home.doc.content as { type: string }[]).filter((b) => b.type !== 'WildheartNowLine') as never
     const links = { origin: 'https://example.com', slug: 'table-nine', siteBase: '', pages: ['home'], contactHref: null, bookHref: null, email: null }
     const body = h(WebsiteDocument as never, { doc: home.doc, theme: t.ed, config, live: { events: [], circles: [], journeys: [] }, links, origin: links.origin, title: 'Home', metadata: { space: { name: 'Table Nine', faqs: [] } } } as never)
     const site = renderToStaticMarkup(
@@ -108,7 +119,7 @@ it('renders the Bold and Wildheart surfaces', async () => {
     )
     const vars = Object.entries(websiteThemeVars(t.ed as never, null, new Date('2026-10-15'))).map(([k, v]) => `${k}:${v}`).join(';').replace(/"/g, "'")
     const skinCss = t.skin === null ? FREQUENCY_PAGE_CSS : t.skin.theme === 'wildheart' ? FREQUENCY_PAGE_CSS + WILDHEART_CSS : MENSWORK_CSS + MENSWORK_PAGE_CSS
-    writeFileSync(`${out}/${t.id}-site.html`, pub(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file://${out}/app.css"><style>${FACES}${BOLD_FACES}:root{${BOLD_VARS}}${HOUSE_CSS}${WEBSITE_TOKEN_CSS}${skinCss}*,*::before,*::after{box-sizing:border-box}html{scrollbar-width:none}body{margin:0}</style></head><body><div data-website-theme="${t.ed}" data-house-site style="${vars}">${site}</div></body></html>`))
+    writeFileSync(`${out}/${t.id}-site.html`, pub(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file://${out}/app.css"><style>${FACES}${BOLD_FACES}${WH_FACES}:root{${BOLD_VARS}${WH_VARS}}${HOUSE_CSS}${WEBSITE_TOKEN_CSS}${skinCss}*,*::before,*::after{box-sizing:border-box}html{scrollbar-width:none}body{margin:0}</style></head><body><div data-website-theme="${t.ed}" data-house-site style="${vars}">${site}</div></body></html>`))
 
     // ---- Spotlight: the real shell on the theme's own preset.
     const preset = THEME_PRESETS.find((p) => p.id === t.mega)!.theme
