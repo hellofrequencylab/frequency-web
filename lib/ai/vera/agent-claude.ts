@@ -30,6 +30,7 @@ import type { MemberContext } from '@/lib/ai/memory'
 import { VERA_TOOLS, MEMBER_CHAT_TOOL_KEYS, OPERATOR_TOOL_KEYS, SPACE_MANAGER_TOOL_KEYS, type VeraToolDef } from './tools'
 import { veraRoleCard, veraSwitchCard, veraSwitchable } from './space-guide'
 import { veraSettingCard } from './space-settings'
+import { ticketCard } from './admin-changes'
 import { handleModelToolCalls } from './model-tools'
 import { getVeraConfig, type VeraConfig } from './config'
 import { withVoice } from '@/lib/ai/voice'
@@ -310,7 +311,7 @@ export async function runVeraClaudeTurn(input: {
     // The operator lookup (LIVE-2190) rides the same checks object; a staff caller outside a Space they run gets
     // the lookup and no Space change at all.
     const adminLookup = input.viewer?.isOperator ? input.adminLookup : undefined
-    const spaceSwitches = adminLookup ? { ...(managerChecks ?? NO_SPACE_CHANGES), lookup: adminLookup } : managerChecks
+    const spaceSwitches = adminLookup ? { ...(managerChecks ?? NO_SPACE_CHANGES), lookup: adminLookup, ticketCard } : managerChecks
     const memberTools = VERA_TOOLS.filter(
       (t) => MEMBER_CHAT_TOOL_KEYS.has(t.key) || (managerChecks && SPACE_MANAGER_TOOL_KEYS.has(t.key)) || (adminLookup && OPERATOR_TOOL_KEYS.has(t.key)),
     )

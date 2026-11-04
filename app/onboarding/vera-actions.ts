@@ -9,6 +9,10 @@ import { VERA_TURN_BODY } from '@/lib/ai/vera/turn-input'
 import { MEMBER_CHAT_TOOL_KEYS, requiresConfirmation, validateToolCall } from '@/lib/ai/vera/tools'
 import { veraRoleCard, veraSwitchName, veraSwitchable } from '@/lib/ai/vera/space-guide'
 import { veraSettingValue, veraSettingWhere } from '@/lib/ai/vera/space-settings'
+import { ticketChange } from '@/lib/ai/vera/admin-changes'
+import { setTicketFields } from '@/app/(main)/admin/support/actions'
+import { getCallerProfile } from '@/lib/auth'
+import { isStaff } from '@/lib/core/roles'
 import { setSpaceSkyMarkers, setSpaceTimeZone } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
 import { setSpaceCoverScrim, setSpaceHeroLook, setSpaceLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { setSpaceFeatureEnabled, setSpaceFeatureMinRole } from '@/app/(main)/spaces/[slug]/manage/modules/actions'
@@ -17,6 +21,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { CoverScrim, LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import type { HeroButtonOrientation, HeroHeight } from '@/lib/spaces/hero-config'
+import type { TicketPriority, TicketStatus } from '@/lib/support/types'
 import { joinCircle } from '@/app/(main)/circles/actions'
 
 export type { ConciergeTurnResult }
@@ -84,6 +89,8 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   if (tool === 'set_space_feature') return setSpaceSwitch(args)
   if (tool === 'set_space_role') return setSpaceRole(args)
   if (tool === 'set_space_setting') return setSpaceSetting(args)
+  // A ticket change (LIVE-2191) is for the Frequency team only and goes through the support console's own action.
+  if (tool === 'set_ticket') return setTicket(args)
 
   // The member-facing confirm path may run ONLY the small set of member-SAFE, self-scoped
   // tools. executeConfirmedTool ALSO dispatches the operator-only Resonance Engine playbook
@@ -153,6 +160,21 @@ async function setSpaceSetting(args: Record<string, unknown>): Promise<{ ok: boo
   if (!res) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
   if (isError(res)) return { ok: false, error: res.error }
   return { ok: true, message: `Done. You can change it back any time at ${veraSettingWhere(setting, slug)}.` }
+}
+
+/** Change one support ticket's status or priority for a team member who tapped Vera's card (LIVE-2191). Only a
+ *  staff session finds the ticket at all, and the support console's own setTicketFields re-checks the caller. */
+async function setTicket(args: Record<string, unknown>): Promise<{ ok: boolean; error?: string; message?: string }> {
+  if (!validateToolCall('set_ticket', args).ok) return { ok: false, error: 'That change was not complete. Ask Vera again?' }
+  const change = ticketChange(args.ticket, args.field, args.value)
+  if (!change) return { ok: false, error: 'That ticket change can only be made by hand at /admin/support.' }
+  const me = await getCallerProfile()
+  if (!me || !isStaff(me.webRole)) return { ok: false, error: 'That action is not available here.' }
+  const { data } = await createAdminClient().from('support_tickets').select('id').eq('ref', change.ref).maybeSingle()
+  if (!data?.id) return { ok: false, error: `There is no support ticket #${change.ref}.` }
+  const res = await setTicketFields(data.id, change.field === 'status' ? { status: change.value as TicketStatus } : { priority: change.value as TicketPriority })
+  if (isError(res)) return { ok: false, error: res.error }
+  return { ok: true, message: `Done. Ticket #${change.ref} is updated. You can change it back any time at /admin/support/${data.id}.` }
 }
 
 /** Resolve a circle (by slug, then name) and join the member via the canonical
