@@ -40,7 +40,14 @@ export interface WebsiteVeraFacts {
   unpublished: string[]
   published: boolean
   scheduledFor: string | null
+  /** LIVE-2162: a screenshot the owner dropped into Vera's tab with this ask, as a JPEG or PNG data URL. It is shown
+   *  to the model as a picture, never read as instructions, and it is not stored anywhere. */
+  screenshot?: string
 }
+
+/** The biggest screenshot she takes: the browser shrinks a drop to fit well under this before sending. */
+export const MAX_VERA_SCREENSHOT = 1_500_000
+const SCREENSHOT = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/
 
 export function websiteVeraFacts(p: { draft: WebsiteSnapshot; published: WebsiteSnapshot | null; scheduledAt?: string | null; pageInView: string; themeLabel: string; config: Config }): WebsiteVeraFacts {
   return {
@@ -74,5 +81,6 @@ export function readWebsiteVeraFacts(value: unknown): WebsiteVeraFacts | null {
     checks.push({ ok: (row as { ok?: unknown }).ok === true, text: text((row as { text?: unknown }).text, 160) })
   }
   const scheduledFor = typeof v.scheduledFor === 'string' && Number.isFinite(Date.parse(v.scheduledFor)) ? v.scheduledFor : null
-  return { theme: text(v.theme, 40), pageInView: text(v.pageInView, 80), pages, checks, unpublished: v.unpublished.map((l) => text(l, 80)), published: v.published === true, scheduledFor }
+  if (v.screenshot != null && (typeof v.screenshot !== 'string' || v.screenshot.length > MAX_VERA_SCREENSHOT || !SCREENSHOT.test(v.screenshot))) return null
+  return { theme: text(v.theme, 40), pageInView: text(v.pageInView, 80), pages, checks, unpublished: v.unpublished.map((l) => text(l, 80)), published: v.published === true, scheduledFor, ...(typeof v.screenshot === 'string' ? { screenshot: v.screenshot } : {}) }
 }
