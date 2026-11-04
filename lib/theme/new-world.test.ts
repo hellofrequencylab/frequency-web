@@ -24,9 +24,10 @@ describe('New World theme tokens', () => {
   it('offers Tide, Signal, Bloom, Ember and Fern, and no violet (Iris stays out)', () => {
     expect(Object.keys(NEW_WORLD_ACCENTS)).toEqual(['tide', 'signal', 'bloom', 'ember', 'fern'])
   })
-  it('starts in Tide teal and carries ink on it, at least 4.5:1 (white on Tide is not enough)', () => {
-    for (const id of Object.keys(NEW_WORLD_ACCENTS) as NewWorldAccentId[]) expect(contrastRatio(NEW_WORLD_ON_ACCENT, NEW_WORLD_ACCENTS[id].accent), id).toBeGreaterThanOrEqual(4.5)
-    expect(contrastRatio('#FFFFFF', NEW_WORLD_ACCENTS.tide.accent)).toBeLessThan(3)
+  it('starts in Tide teal and carries white on every preset accent (Daniel 2026-11-04: white labels, ink only on a very light accent)', () => {
+    expect(NEW_WORLD_ON_ACCENT).toBe('#FFFFFF')
+    expect(NEW_WORLD_TOKENS_CSS).toContain('--nw-text-on-accent:#FFFFFF')
+    for (const id of Object.keys(NEW_WORLD_ACCENTS) as NewWorldAccentId[]) expect(contrastRatio(NEW_WORLD_ON_ACCENT, NEW_WORLD_ACCENTS[id].accent), id).toBeGreaterThanOrEqual(2)
     expect(NEW_WORLD_SURFACE.accent.accent).toBe(NEW_WORLD_ACCENTS.tide.accent)
   })
   it('carries white on the deep Tide the Day register uses, at least 4.5:1', () => {
