@@ -25,6 +25,9 @@ ${N} .hs-h1,${N} .hs-h2,${N} .hs-brand{font-family:var(--nw-font-display);font-s
 ${R}{--fq-text-strong:var(--color-text)}
 ${N} .hs-h1 em,${N} .hs-h2 em{font-family:var(--nw-font-accent);font-style:italic;font-weight:var(--nw-fw-regular);font-size:var(--nw-em-size);letter-spacing:-.01em;color:var(--color-primary-strong)}
 ${N} .hs-eyebrow,${N} .hs-label,${N} .hs-badge{${LABEL}}
+/* Filled accent buttons carry white labels (Daniel, 2026-11-04). The shared Services button reads --action-primary-text, which on a Night
+   site is the ink of the white pill; the accent fill reads the on-accent token instead. */
+${N} .sv-btn--accent,${N} .sv-btn--accent:hover{color:var(--nw-text-on-accent)}
 ${N} .hs-card{background:var(--nw-surface-card);border:var(--nw-border-hairline) solid var(--nw-border-subtle);border-radius:var(--nw-radius-lg);box-shadow:var(--nw-depth-md)}
 ${N} a{transition:color var(--nw-dur-fast) ${EASE}}
 ${N} a:hover{color:var(--nw-text-link-hover)}

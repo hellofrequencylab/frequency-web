@@ -22,8 +22,8 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
 
 /** The themes that get this template. Nocturne keeps its own richer page at /themes/nocturne. */
 // Midnight (Nocturne) and New World keep their own static pages (/themes/nocturne, /themes/new-world), which the generic kit page never draws.
-// The theme pages keep the library's definition order; only the pickers lead with New World and Designer.
-export const THEME_KIT_PAGE_IDS = SITE_THEME_DEFS.filter((d) => SITE_THEMES.some((t) => t.id === d.id)).map((t) => t.id).filter((id) => id !== 'midnight' && id !== 'new-world')
+// The theme pages keep the library's definition order; only the pickers lead with New World and Designer. Services has its own page.
+export const THEME_KIT_PAGE_IDS = SITE_THEME_DEFS.filter((d) => SITE_THEMES.some((t) => t.id === d.id)).map((t) => t.id).filter((id) => id !== 'midnight' && id !== 'new-world' && id !== 'services')
 
 const THEME_KIT_FAQ: { q: string; a: (name: string) => string }[] = [
   {

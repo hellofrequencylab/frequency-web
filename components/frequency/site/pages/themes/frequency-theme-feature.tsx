@@ -138,7 +138,9 @@ export function FrequencyThemeFeature({ theme }: { theme: ThemeFeatureId }) {
               <div className="label">
                 <b>Theme</b>{name} · by Frequency
               </div>
-              <h1 className="nwf-h1 nwf-name">{name}</h1>
+              <h1 className="nwf-h1 nwf-name" style={vars({ '--nwf-chars': name.length })}>
+                {name}
+              </h1>
               <p className="nwf-aft">A Frequency Theme</p>
               <p className="nwf-tagline">
                 {copy.tagline[0]}
