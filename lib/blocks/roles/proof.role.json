@@ -3,6 +3,7 @@
   "type": "RoleProof",
   "label": "Proof (all themes)",
   "intent": "Show what members say",
+  "why": "Words from the people who already come.",
   "group": "Trust",
   "icon": "message",
   "live": true,

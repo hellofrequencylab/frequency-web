@@ -3,6 +3,7 @@
   "type": "RoleHero",
   "label": "Hero (all themes)",
   "intent": "Say who you are",
+  "why": "The first thing people see: who you are and what to do next.",
   "group": "Welcome",
   "icon": "photo",
   "live": false,

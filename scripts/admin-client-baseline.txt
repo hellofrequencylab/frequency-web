@@ -776,6 +776,7 @@ lib/ai/memory.ts
 lib/ai/poster-observer.ts
 lib/ai/room-search.ts
 lib/ai/usage.ts
+lib/ai/vera/admin-lookups.ts
 lib/ai/vera/autonomous-send.ts
 lib/ai/vera/autonomy-config.ts
 lib/ai/vera/circuit-breaker.ts

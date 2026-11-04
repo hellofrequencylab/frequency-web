@@ -3,6 +3,7 @@
   "type": "RolePeople",
   "label": "People (all themes)",
   "intent": "Introduce your hosts",
+  "why": "The faces people will meet when they show up.",
   "group": "Trust",
   "icon": "host",
   "live": true,

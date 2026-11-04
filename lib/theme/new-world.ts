@@ -9,9 +9,10 @@ import type { ThemeSurface } from "@/lib/theme/surface-vars";
 // Scope: these tokens live under [data-house-theme="new-world"] and are only ever emitted by the stand-alone site
 // render. A site theme never styles a member, Space console or admin area (ADR-1906).
 //
-// Two deliberate differences from the zip, both recorded in docs/design-systems/new-world/rules.json:
+// Three deliberate differences from the zip, recorded in docs/design-systems/new-world/rules.json:
 //  - The starting accent is Tide teal (Daniel, 2026-11-03), so the flare ramps are Tide, not the zip's violet.
 //  - The Stage inks are Frequency's own slate, not the zip's violet-tinted scale (the violet family is retired, ADR-1792).
+//  - Filled accent buttons carry white labels in both registers (Daniel, 2026-11-04); the zip's Night --text-on-accent was ink.
 
 /** The owner accent presets that ship now (Tide, Signal, Bloom, Ember, Fern). Tide is the starting accent. Id to the steps the site engine reads. */
 export const NEW_WORLD_ACCENTS = {
@@ -70,8 +71,11 @@ export const NEW_WORLD_ACCENTS = {
 
 export type NewWorldAccentId = keyof typeof NEW_WORLD_ACCENTS;
 
-/** Night-register filled accent buttons carry ink, never white (the zip's --text-on-accent). Day carries white. */
-export const NEW_WORLD_ON_ACCENT = "#0A0E16";
+/** Filled accent buttons carry white labels in both registers (Daniel, 2026-11-04: accent buttons carry white labels; ink only on a
+ *  very light accent). The zip's Night --text-on-accent was ink; that is overridden here on purpose. */
+export const NEW_WORLD_ON_ACCENT = "#FFFFFF";
+/** The label on an owner accent too light for white (white under 2:1 on it). */
+const NEW_WORLD_INK_ON_ACCENT = "#0A0E16";
 
 /** The design system's token block: the plain scale first (compared value for value by the intake), then the Night register. */
 export const NEW_WORLD_TOKENS_CSS = `
@@ -182,8 +186,8 @@ export const NEW_WORLD_TOKENS_CSS = `
 --nw-danger-500:#FF6A5B;
 --nw-text-accent:var(--nw-flare-400);
 --nw-accent-hover:var(--nw-flare-400);
---nw-accent-text:var(--nw-ink-900);
---nw-text-on-accent:var(--nw-ink-900);
+--nw-accent-text:#FFFFFF;
+--nw-text-on-accent:#FFFFFF;
 --nw-action-primary:var(--nw-chrome-50);
 --nw-action-primary-text:var(--nw-ink-900);
 --nw-action-primary-hover:#FFFFFF;
@@ -340,7 +344,8 @@ export const NEW_WORLD_SURFACE = {
   muted: "#C9D3E0",
   subtle: "#98A6BC",
   solid: "#1AA7C0",
-  onSolid: NEW_WORLD_ON_ACCENT,
+  // A solid Tide band carries body copy, not a button label, so it keeps ink (6.9:1); white is for the filled buttons.
+  onSolid: NEW_WORLD_INK_ON_ACCENT,
   dark: true,
   accent: {
     accent: "#1AA7C0",
@@ -370,6 +375,6 @@ export function newWorldAccentVars(brandAccent: string | null | undefined): Acce
     "--color-primary-hover": `color-mix(in srgb, ${accent} 80%, white)`,
     "--color-primary-strong": `color-mix(in srgb, ${accent} 70%, white)`,
     "--color-primary-bg": `color-mix(in srgb, ${accent} 22%, ${NEW_WORLD_SURFACE.canvas})`,
-    "--color-text-on-primary": contrastRatio(NEW_WORLD_ON_ACCENT, accent) >= 4.5 ? NEW_WORLD_ON_ACCENT : "#FFFFFF",
+    "--color-text-on-primary": contrastRatio(NEW_WORLD_ON_ACCENT, accent) >= 2 ? NEW_WORLD_ON_ACCENT : NEW_WORLD_INK_ON_ACCENT,
   };
 }
