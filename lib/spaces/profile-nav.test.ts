@@ -45,20 +45,6 @@ vi.mock('@/lib/spaces/memberships', () => ({
 }))
 
 const hub = { live: false }
-vi.mock('@/lib/spaces/space-discussion', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./space-discussion')>()),
-  getLiveSpaceCircle: async () =>
-    hub.live
-      ? {
-          id: 'hub',
-          slug: 'ojai-hub',
-          name: 'Ojai',
-          status: 'active',
-          is_space_primary: true,
-          space_id: 's1',
-        }
-      : null,
-}))
 
 import { buildSpaceProfileNav } from './profile-nav'
 

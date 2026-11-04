@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2138",
+  "title": "The website editor canvas draws Services and New World blocks in their own sheet",
+  "status": "done",
+  "priority": "P0",
+  "lane": "live",
+  "detail": "The editor canvas gave SiteChrome a skin only for the older themes, so a Space on Services or New World showed its blocks as raw text in the editor (the live site was unaffected: site-page.tsx already chose the skin). The canvas now passes the Services, New World, Temple kit and Network kit skins, with the Register dial.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/sites/editor/canvas.tsx','utf8');if(!/theme === 'Services' \\? \\{ theme: 'services'/.test(s)||!/theme === 'NewWorld' \\? \\{ theme: 'new-world'/.test(s))process.exit(1)\""
+  },
+  "size": "S",
+  "source": {
+    "file": "components/sites/editor/canvas.tsx",
+    "ref": "Daniel 2026-11-04 unstyled builder canvas"
+  },
+  "wave": "W7"
+}

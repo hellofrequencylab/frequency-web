@@ -60,5 +60,5 @@ for (const name of ['cpuBefore', 'cpuAfter']) assert.equal(constants.get(name)?.
 assert.ok(ts.isConditionalExpression(constants.get('guardCpuMs')))
 assert.equal(constants.get('guardCpuMs').whenFalse.getText(ast), 'cpuAfter - cpuBefore')
 assert.ok(totalCpuAssertion && probeCpuAssertion, 'Both CPU consequence ceilings must still be asserted')
-for (const [name, expected] of [['PER_PROBE_CEILING_MS', 4500], ['BASE_CPU_MS', 2000], ['PER_PROBE_ALLOWANCE_MS', 180]]) assert.equal(Number(constants.get(name)?.getText(ast).replace(/_/g, '')), expected, name)
-console.log('Actual proc CPU parser and budget assertions measure reaped CPU; non-Linux stays indeterminate and ceilings are unchanged')
+for (const [name, expected] of [['PER_PROBE_CEILING_MS', 6500], ['BASE_CPU_MS', 2000], ['PER_PROBE_ALLOWANCE_MS', 180]]) assert.equal(Number(constants.get(name)?.getText(ast).replace(/_/g, '')), expected, name)
+console.log('Actual proc CPU parser and budget assertions measure reaped CPU; non-Linux stays indeterminate and the ceilings are the ones pinned above (per-probe 6500 since 2026-11-03)')

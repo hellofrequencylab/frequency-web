@@ -8,7 +8,8 @@
   z-index: 40;
   display: grid;
   grid-template-rows: 60px minmax(0, 1fr);
-  grid-template-columns: 264px minmax(0, 1fr) 320px;
+  /* The rail columns come from lib/builder/rails.ts through --rail-left and --rail-right (BLD-102). */
+  grid-template-columns: var(--rail-left, 264px) minmax(0, 1fr) var(--rail-right, 320px);
   grid-template-areas: 'top top top' 'outline canvas panel';
   background: var(--editor-canvas);
   color: var(--fq-text-strong);
@@ -19,18 +20,36 @@
 .root[data-preview='true'] .outline,
 .root[data-preview='true'] .panel { visibility: hidden; }
 
-/* Under the shared lg breakpoint (1200, lib/theme/breakpoints.ts) the outline folds to its tile strip and the
-   panel floats over the canvas (§2: "under 1080px always floats"; rounded to the shared step). */
-@media (max-width: 1199px) {
-  .root { grid-template-columns: 72px minmax(0, 1fr) 0; }
-  .outline .rowText, .outline .caption { display: none; }
-  .panel { position: fixed; right: 12px; top: 72px; bottom: 12px; width: min(320px, calc(100vw - 96px)); z-index: 2; box-shadow: var(--fq-shadow-float); }
+/* THE RAILS (BLD-102). Each rail wears the mode railModes() gives it: pinned (open beside the canvas), strip (a thin
+   bar with its toggle), overlay (open over the canvas) or hidden. The breakpoints live in lib/builder/rails.ts, not
+   in media queries here, so the table test is the whole truth. */
+.outline[data-mode='strip'] .rowText, .outline[data-mode='strip'] .caption,
+.panel[data-mode='strip'] .panelBody { display: none; }
+.outline[data-mode='hidden'], .panel[data-mode='hidden'] { visibility: hidden; }
+.outline[data-mode='overlay'], .panel[data-mode='overlay'] {
+  position: fixed;
+  top: 60px;
+  bottom: 0;
+  z-index: 3;
+  box-shadow: var(--fq-shadow-float);
 }
-/* Under md (840) the outline hides; the canvas takes the width (BLD-107 builds the phone sheets). */
-@media (max-width: 839px) {
-  .root { grid-template-columns: 0 minmax(0, 1fr) 0; }
-  .outline { visibility: hidden; }
+.outline[data-mode='overlay'] { left: 0; width: min(264px, 86vw); }
+.panel[data-mode='overlay'] { right: 0; width: min(var(--rail-width, 320px), 92vw); }
+.railHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 8px 0; }
+.panel .railHead { padding: 0 0 8px; }
+.panel[data-mode='strip'] { padding: 10px 8px; }
+.grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  border: 0;
+  padding: 0;
 }
+.grip:hover, .grip:focus-visible { background: var(--editor-select); outline: none; }
 
 .top {
   grid-area: top;
@@ -112,7 +131,7 @@
 .devices { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--r-control); background: var(--fq-bg-sunken); }
 .devices .btn { border: 0; background: transparent; height: 32px; }
 .devices .btn[aria-pressed='true'] { background: var(--fq-surface-raised); color: var(--fq-text-strong); box-shadow: var(--fq-shadow-1); }
-.btn:focus-visible, .back:focus-visible, .row:focus-visible, .crumbs select:focus-visible {
+.btn:focus-visible, .back:focus-visible, .grip:focus-visible, .row:focus-visible, .crumbs select:focus-visible {
   outline: 2px solid var(--fq-text-strong);
   outline-offset: 2px;
   box-shadow: 0 0 0 5px var(--editor-ring);
@@ -170,6 +189,7 @@
 
 .panel {
   grid-area: panel;
+  position: relative;
   min-height: 0;
   overflow: auto;
   padding: 20px;
@@ -192,6 +212,20 @@
   font-size: 13px;
 }
 
+/* BLD-216: the top bar fits at 390. It answers to its own width (a container query, not a viewport media query, which
+   rails.ts owns): Show as and Find leave first, then the device switch. */
+.top { container-type: inline-size; }
+@container (max-width: 839px) {
+  .wide { display: none; }
+}
+@container (max-width: 599px) {
+  .devices { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .root * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
 }
+
+/* THE OUTLINE'S ROWS (BLD-103): dimmed where hidden on this device, a line where a drag would drop. */
+.list li[data-hidden] .row { opacity: .5; }
+.list li[data-drop] { box-shadow: inset 0 2px 0 var(--editor-select); }
