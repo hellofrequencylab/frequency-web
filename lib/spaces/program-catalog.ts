@@ -6,7 +6,7 @@ export const LEARNING_KINDS = ['program', 'journey', 'practice'] as const
 export type LearningKind = (typeof LEARNING_KINDS)[number]
 export const LEARNING_PAGE_SIZE = 12
 
-export interface SpaceLearningItem {
+interface SpaceLearningItem {
   id: string
   title: string
   summary: string | null
