@@ -10,7 +10,7 @@ import { PLAN_STORY } from '@/lib/pricing/plan-story'
 // story beats on the reading measure, one PhotoBeat, the ink principles band,
 // the arc-top figure row, the numbered asks, and the dark close. Same structure,
 // same copy — the template render and the coded fallback are visually equivalent.
-// 2026-11-04 (LIVE-2163, owner: "make each a different layout"): the story beats are now photo-led
+// 2026-11-04 (LIVE-2166, owner: "make each a different layout"): the story beats are now photo-led
 // FounderChapters and the principles a PrincipleOrbit (components/page-editor/blocks/site-story.tsx);
 // same words, same H2s and H3s.
 //

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2163 probe: lane D of the marketing evolution (Daniel 2026-11-04: "they are all really flat and text
+// LIVE-2166 probe: lane D of the marketing evolution (Daniel 2026-11-04: "they are all really flat and text
 // based. Make each a different layout"). /about tells its story as photo-led founder chapters and holds its
 // principles around an orb; /how-to-build-community is a playbook with a cover index, numbered chapters and a
 // tool-stack panel; /pricing puts photos beside and behind the plans with glass cards and a held questions
@@ -46,7 +46,7 @@ if (/#5B3FD0/i.test(css)) bad.push('the banned violet is back')
 if (!read('app/themes/active/site-pages-story.ts').includes("import '../frequency/site-pages-story.css'")) bad.push('the site-pages-story stub does not load the sheet')
 
 if (bad.length) {
-  console.error('LIVE-2163 probe failed:\n- ' + bad.join('\n- '))
+  console.error('LIVE-2166 probe failed:\n- ' + bad.join('\n- '))
   process.exit(1)
 }
-console.log('LIVE-2163: /about, /how-to-build-community and /pricing each wear their own layout, with photos used once')
+console.log('LIVE-2166: /about, /how-to-build-community and /pricing each wear their own layout, with photos used once')
