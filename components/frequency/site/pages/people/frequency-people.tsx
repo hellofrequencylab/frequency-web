@@ -143,7 +143,9 @@ export async function FrequencyPeople() {
       </section>
 
       <div className="folk-marq" aria-hidden="true">
-        <div className="folk-marq-track">
+        {/* The track runs past both edges by design; it carries aria-hidden itself so the @overflow gate
+            (test/e2e/overflow.spec.ts) reads it as the decorative bleed it is, not a clipped box. */}
+        <div className="folk-marq-track" aria-hidden="true">
           {[...MARQUEE, ...MARQUEE].map((src, i) => (
             // eslint-disable-next-line @next/next/no-img-element -- decorative strip, sized by .folk-marq img
             <img key={`${src}-${i}`} loading="lazy" decoding="async" {...photoImg(src, '240px')} alt="" />

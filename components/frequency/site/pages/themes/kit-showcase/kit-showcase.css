@@ -1,0 +1,12 @@
+/* The Theme Kits page (LIVE-2188): the hover states the design writes as style-hover, and the kit sections' paint containment.
+   Kit colours come from the per-kit skin as inline values; nothing here sets one. */
+.sh1:hover{background:color-mix(in oklab,var(--fq-text-strong) 8%,transparent) !important;color:var(--fq-text-strong) !important}
+.sh2:hover{transform:scale(1.1) !important}
+.sh3:hover{transform:rotate(0deg) translateY(-1px) !important}
+.sh4:hover{gap:12px !important}
+.sh5:hover{transform:translateY(-4px) !important}
+.sh6:hover{transform:translateY(-4px) !important}
+.sh7:hover{transform:translateY(-4px) !important}
+.sh8:hover{transform:translateY(-4px) !important}
+.sh9:hover{box-shadow:inset 0 0 0 1px currentColor !important}
+.ks-kit{content-visibility:auto;contain-intrinsic-size:auto 900px}

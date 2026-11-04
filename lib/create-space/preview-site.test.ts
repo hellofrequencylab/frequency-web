@@ -36,6 +36,13 @@ describe('preview site', () => {
     expect(kitImagery('temple-kit').hero).toMatch(/^\/sites\/temple-kit\/photos\//)
   })
 
+  it('Wildheart wears its own five pictures, never the gathering photos (LIVE-2173)', () => {
+    const wh = kitImagery('wildheart')
+    expect(wh.hero).toBe('/brand/wildheart/photos/sisters-shore.jpg')
+    expect(wh.covers).toHaveLength(5)
+    for (const c of [...wh.covers, ...wh.strip]) expect(c).toMatch(/^\/brand\/wildheart\/photos\//)
+  })
+
   it('Free Human wears its own library; Services wears New World\'s until it has one (LIVE-2102)', () => {
     const fh = kitImagery('free-human')
     expect(fh.hero).toBe('/sites/free-human/photos/heritage-a-virgin.webp')

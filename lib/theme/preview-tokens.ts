@@ -37,7 +37,7 @@ export const PREVIEW_KIT_ORDER: readonly MegaThemeId[] = PREVIEW_KIT_PREFERENCE.
  *  allows it), the way the Space page does for a themed Space (lib/theme/site-faces.ts), so they register on no
  *  other route. Unbounded, Hanken Grotesk and Instrument Serif are the site's own. */
 export const PREVIEW_FONT_SHEET =
-  'https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Geist:wght@300..600&family=Instrument+Serif:ital@1&family=Jost:wght@300..500&family=Lora:ital@1&family=Marcellus&family=Outfit:wght@300..500&family=Permanent+Marker&family=Spectral:ital,wght@0,400;0,600;1,400&family=UnifrakturCook:wght@700&display=swap'
+  'https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Bodoni+Moda:wght@400;600&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Cormorant:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=EB+Garamond:ital,wght@0,400;1,400&family=Geist:wght@300..600&family=IM+Fell+English:ital@0;1&family=Instrument+Serif:ital@1&family=Jost:wght@300..500&family=Lora:ital@1&family=Marcellus&family=Outfit:wght@300..500&family=Permanent+Marker&family=Sofia+Sans+Extra+Condensed:wght@800&family=Spectral:ital,wght@0,400;0,600;1,400&family=UnifrakturCook:wght@700&display=swap'
 
 interface Shape {
   display: string; body: string; weight: string; textCase: string; track: string; label: string
@@ -128,16 +128,22 @@ const SHAPE: Record<MegaThemeId, Shape> = {
     shadow: () => '0 2px 6px rgba(74,53,39,.07)', rule: '0', ring: '0',
     em: '#9C4A2C', // token-ok: Temple kit clay 600, lib/theme/temple-kit.ts
   },
+  // Bold (lib/theme/menswork.ts, design system docs/design-systems/bold): Sofia Sans Extra Condensed caps at 800,
+  // Barlow body, mono-width label tracking and the design's square corners everywhere.
+  // The Create a Space handoff (docs/design-systems/create-a-space) drew Bold as 'Anton', Impact, sans-serif before the
+  // Bold design system (LIVE-2101) replaced it; the newer system wins here (LIVE-2173).
   bold: {
-    display: "'Anton', Impact, sans-serif", body: "'Hanken Grotesk', system-ui, sans-serif",
-    weight: '400', textCase: 'uppercase', track: '0.01em', label: '.08em',
+    display: "'Sofia Sans Extra Condensed', 'Arial Narrow', sans-serif", body: "'Barlow', system-ui, sans-serif",
+    weight: '800', textCase: 'uppercase', track: '0.005em', label: '.12em',
     btn: '0', card: '0', inner: '0', photo: '0', mat: '0', shadow: hairline, rule: '0', ring: '0',
   },
+  // Wildheart (lib/theme/wildheart.ts, the revised design system): IM Fell English display, EB Garamond body, the
+  // petal card and control corners, the arch on its pictures and its soft shadow.
   wildheart: {
-    display: "'Cormorant Garamond', Georgia, serif", body: "'Hanken Grotesk', system-ui, sans-serif",
-    weight: '600', textCase: 'none', track: '-0.01em', label: '.08em',
-    btn: '999px', card: '22px 6px 22px 6px', inner: '22px 6px 22px 6px', photo: '40% 40% 18px 18px', mat: '0',
-    shadow: hairline, rule: '0', ring: '0',
+    display: "'IM Fell English', Georgia, serif", body: "'EB Garamond', Garamond, Georgia, serif",
+    weight: '400', textCase: 'none', track: '-0.005em', label: '.16em',
+    btn: '999px', card: '24px 24px 6px 24px', inner: '14px 14px 4px 14px', photo: '999px 999px 24px 24px', mat: '0',
+    shadow: () => '0 1px 2px rgba(58,46,41,.04),0 8px 28px rgba(58,46,41,.06)', rule: '0', ring: '0', // token-ok: Wildheart --shadow-soft
   },
   frequency: {
     display: "'Unbounded', system-ui, sans-serif", body: "'Hanken Grotesk', system-ui, sans-serif",

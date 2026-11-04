@@ -311,7 +311,6 @@ ${N} .nw-input::placeholder{color:var(--nw-text-muted)}
 ${N} .nw-textarea{min-height:110px;resize:vertical}
 ${N} .nw-input--pill{border-radius:var(--nw-radius-pill);padding:0 18px;flex:1}
 ${N} .nw-check{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--nw-text-secondary)}
-${N} .nw-check input{accent-color:var(--color-primary);width:16px;height:16px}
 ${N} .nw-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 ${N} .nw-form-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 ${N} .nw-form-note{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--nw-text-muted)}
@@ -347,4 +346,74 @@ ${N}[data-motion="off"] .nw-orb,${N}[data-motion="off"] .nw-ticker-track,${N}[da
 @media (prefers-reduced-motion:reduce){${N} .nw-orb,${N} .nw-ticker-track,${N} .nw-track i,${N} .nw-lit em,${N} .nw-pulse{animation:none}}
 `
 
-export const NEW_WORLD_SECTIONS_CSS = `${ACCENT}${TYPE}${SECTION}${PARTS}${HERO}${HOME}${MORE}${REST}`
+/* PAGES: Ways in, Our story and Book (ui_kits/site/WaysIn.jsx, About.jsx, Book.jsx). */
+const PAGES = `
+${N} .nw-display--md{font-size:clamp(36px,3.6vw,52px)}
+${N} .nw-display--lg{font-size:clamp(44px,4.4vw,64px);text-wrap:balance}
+${N} .nw-display--page{font-size:clamp(52px,7vw,96px)}
+${N} .nw-sec--top::after{background:radial-gradient(60% 50% at 50% 0%,color-mix(in oklab,var(--nw-flare-500) 18%,transparent),transparent 70%)}
+${N} .nw-pagehead{position:relative;isolation:isolate;overflow:clip;background:var(--nw-spread-top),var(--nw-spread-tr),var(--nw-surface-page);color:var(--nw-text-primary)}
+${N} .nw-pagehead .nw-wrap{padding-top:clamp(80px,9vw,120px);padding-bottom:clamp(48px,6vw,80px)}
+${N} .nw-ways{padding:0}
+${N} .nw-way{position:relative;border-top:1px solid var(--nw-border-subtle)}
+${N} .nw-way:nth-child(odd){background:var(--nw-spread-top)}
+${N} .nw-way-in{display:grid;gap:clamp(32px,5vw,64px);align-items:stretch;padding-top:72px;padding-bottom:72px}
+@media (min-width:900px){${N} .nw-way-in{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}${N} .nw-way.is-flipped .nw-way-photo{order:2}}
+${N} .nw-way-photo{min-height:clamp(260px,32vw,420px);height:100%}
+${N} .nw-way-copy{justify-content:center;gap:24px;padding:16px 0}
+${N} .nw-way-top{display:flex;align-items:center;gap:16px}
+${N} .nw-way-body{margin:0;font-size:18px;line-height:1.55;color:var(--nw-text-secondary);max-width:480px;text-wrap:pretty}
+${N} .nw-way-facts{margin:0;display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--nw-border-subtle);border-bottom:1px solid var(--nw-border-subtle)}
+${N} .nw-way-facts div{display:flex;flex-direction:column;gap:6px;padding:16px 0}
+${N} .nw-way-facts div+div{padding-left:20px;border-left:1px solid var(--nw-border-subtle)}
+${N} .nw-way-facts dt{${MONO};font-size:10px;color:var(--nw-text-muted)}
+${N} .nw-way-facts dd{margin:0;font-size:clamp(22px,2vw,28px)}
+${N} .nw-always .nw-wrap{padding-top:96px;padding-bottom:96px}
+${N} .nw-ticks{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));column-gap:32px}
+${N} .nw-ticks li{display:flex;align-items:center;gap:12px;padding:18px 0;border-top:1px solid var(--nw-border-default);font-size:16px}
+${N} .nw-ticks svg{flex:none;color:var(--nwa-text);filter:drop-shadow(0 0 6px currentColor)}
+${N} .nw-ticks li:nth-child(even) svg{color:var(--nw-swell-300)}
+${N} .nw-chips{display:flex;flex-wrap:wrap;gap:10px}
+${N} .nw-chips span{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:var(--nw-radius-pill);border:1px solid var(--nw-border-default);background:linear-gradient(180deg,color-mix(in oklab,var(--nw-chrome-50) 6%,transparent),color-mix(in oklab,var(--nw-chrome-50) 1%,transparent));${MONO};font-size:10.5px;color:var(--nw-chrome-200)}
+${N} .nw-chips svg{color:var(--nwa-text)}
+${N} .nw-about-hero .nw-hero-art{padding-bottom:0}
+${N} .nw-frame-glow{padding:1px;border-radius:var(--nw-radius-xl);background:linear-gradient(150deg,color-mix(in oklab,var(--nw-flare-300) 70%,transparent) 0%,color-mix(in oklab,var(--nw-chrome-50) 12%,transparent) 35%,color-mix(in oklab,var(--nw-flare-500) 8%,transparent) 65%,color-mix(in oklab,var(--nw-swell-300) 55%,transparent) 100%);box-shadow:var(--nw-depth-lg),0 30px 80px -40px color-mix(in oklab,var(--nw-flare-500) 60%,transparent)}
+${N} .nw-photo--portrait{aspect-ratio:4/5;border:0;border-radius:calc(var(--nw-radius-xl) - 1px)}
+${N} .nw-photo .nw-namecard{position:absolute;left:16px;right:16px;bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:var(--nw-radius-md);background:color-mix(in oklab,var(--nw-ink-900) 55%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--nw-border-subtle);text-align:left;color:var(--nw-text-primary);font:inherit;letter-spacing:0;text-transform:none}
+${N} .nw-namecard span{display:flex;flex-direction:column;gap:3px}
+${N} .nw-namecard b{font-size:16px;color:var(--nw-chrome-50)}
+${N} .nw-namecard small{${MONO};font-size:10px;color:var(--nw-text-muted)}
+${N} .nw-prose{display:flex;flex-direction:column;gap:28px;max-width:680px}
+${N} .nw-prose p{margin:0;font-size:19px;line-height:1.6;color:var(--nw-text-secondary);text-wrap:pretty}
+${N} .nw-quoteband{background:var(--nw-ink-950)}
+${N} .nw-quoteband .nw-center{gap:36px}
+${N} .nw-quoteband blockquote{margin:0;font-size:clamp(34px,4.2vw,60px);max-width:1000px;text-wrap:balance}
+${N} .nw-rule-label{display:flex;align-items:center;gap:16px;width:100%;max-width:520px;${MONO};color:var(--nw-text-secondary);white-space:nowrap}
+${N} .nw-rule-label i{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--nw-border-strong))}
+${N} .nw-rule-label i:last-child{background:linear-gradient(270deg,transparent,var(--nw-border-strong))}
+${N} .nw-promises{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:40px;border-top:1px solid var(--nw-border-subtle)}
+${N} .nw-promises article{padding-top:36px;display:flex;flex-direction:column;gap:16px}
+${N} .nw-promise-top{display:flex;align-items:center;justify-content:space-between}
+${N} .nw-promise-top small{${MONO};color:var(--nwa-text)}
+${N} .nw-promises h3{font-size:26px}
+${N} .nw-promises p{margin:0;font-size:16px;line-height:1.55;color:var(--nw-text-secondary);max-width:340px}
+${N} .nw-book .nw-wrap{padding-top:clamp(80px,8vw,96px)}
+${N} .nw-book .nw-display em{display:block}
+${N} .nw-summary{padding:22px;gap:14px}
+${N} .nw-summary dl{margin:0;display:flex;flex-direction:column;gap:12px}
+${N} .nw-summary dl div{display:flex;justify-content:space-between;gap:12px;padding-top:12px;border-top:1px solid var(--nw-border-subtle);font-size:15px}
+${N} .nw-summary dt{color:var(--nw-text-muted)}
+${N} .nw-summary dd{margin:0;font-weight:var(--nw-fw-bold);text-align:right}
+${N} .nw-book-card{padding:clamp(24px,3vw,40px);gap:32px;border-radius:var(--nw-radius-xl)}
+${N} .nw-choices{display:flex;flex-direction:column;gap:8px}
+${N} .nw-choice{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:16px;align-items:center;padding:16px 18px;border-radius:var(--nw-radius-md);border:1px solid var(--nw-border-default);background:color-mix(in oklab,var(--nw-chrome-50) 3%,transparent);color:inherit;text-decoration:none;transition:border-color var(--nw-dur-base),background-color var(--nw-dur-base)}
+${N} a.nw-choice:hover,${N} .nw-choice.is-first{border-color:color-mix(in oklab,var(--color-primary) 55%,transparent);background:var(--nw-accent-tint)}
+${N} .nw-choice-text{display:flex;flex-direction:column;gap:3px;min-width:0}
+${N} .nw-choice-text b{font-size:16px}
+${N} .nw-choice-text small{font-size:13px;color:var(--nw-text-muted)}
+${N} .nw-slots--flat{display:flex;flex-direction:column;padding:0}
+${N} .nw-book-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding-top:24px;border-top:1px solid var(--nw-border-subtle)}
+@media (max-width:640px){${N} .nw-choice{grid-template-columns:minmax(0,1fr) auto}${N} .nw-choice .nw-mono{grid-column:1;grid-row:2}${N} .nw-slots .nw-slot{grid-template-columns:56px minmax(0,1fr);padding:12px 8px}${N} .nw-slots .nw-slot>.nw-badge,${N} .nw-slots .nw-slot>.nw-mono{grid-column:2;justify-self:start}}
+`
+
+export const NEW_WORLD_SECTIONS_CSS = `${ACCENT}${TYPE}${SECTION}${PARTS}${HERO}${HOME}${MORE}${REST}${PAGES}`

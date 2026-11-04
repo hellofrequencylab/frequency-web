@@ -115,12 +115,9 @@ export default async function SpaceCirclesProfilePage({
 
   const brandName = space.brandName ?? space.name
 
-  // ── TOPIC CIRCLES ONLY (ADR-1938, LIVE-2078) ────────────────────────────────────────────────
-  //
-  // A Space's conversation is its Community wall now (`/spaces/<slug>/community`), not a built-in
-  // Space Circle. This tab lists the topic Circles the Space runs and nothing else, so a legacy
-  // Space Circle that has not been archived yet is filtered out rather than listed as one more room.
-  const others = everything.filter((c) => c.is_space_primary !== true)
+  // A Space's conversation is its Community wall (`/spaces/<slug>/community`, ADR-1938); this tab
+  // lists the topic Circles the Space runs.
+  const others = everything
 
   // HONEST EMPTY, and the nav agrees: `spaceHasVisibleCircles` gates the menu item on the same
   // reader, so a visitor is never offered this tab over an empty page. A direct hit still resolves
