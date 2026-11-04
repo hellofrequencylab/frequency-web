@@ -37,13 +37,13 @@ for (const m of ['art-signal', 'art-ask', 'art-reply', 'art-node', 'art-check', 
   if (!blocks.includes(m)) bad.push(`blocks/article.tsx is missing "${m}"`)
 }
 const config = read('lib/page-editor/config.tsx')
-if (!config.includes('...articleComponents') || !config.includes('...ARTICLE_BLOCK_TYPES')) bad.push('the article blocks are not registered and categorised in the block config')
+if (!config.includes('...articleComponents') || !config.includes('...ARTICLE_BLOCK_TYPES') || !read('lib/page-editor/palette-scope.ts').includes("article: 'FrequencySite'")) bad.push('the article blocks are not registered and categorised in the block config')
 const css = read('app/themes/frequency/site-blocks.css')
 for (const sel of ['.art-q-quiet .art-signal', '.art-q-talk .art-ask', 'section:is(.art-q-path, .art-line-signpost)::before', '.art-steps-list-timeline::before', '.art-bento .art-tile-head', '.art-story-overlap .art-card-b', '.art-q-panel .art-num']) {
   if (!css.includes(sel)) bad.push(`site-blocks.css does not draw ${sel}`)
 }
 if ((css.match(/dotted var\(--fq-ig-dash\)/g) || []).length < 3) bad.push('site-blocks.css has no dotted connectors on the path')
-if (!/prefers-reduced-motion: reduce\)[^}]*\.art-line-frame \.art-line-text > span, \.art-q-panel \.art-num/.test(css)) bad.push('the article sweeps ignore reduced motion')
+if (!/prefers-reduced-motion: reduce\)[^}]*\.art-line-frame \.art-line-text > span,[^}]*\.art-q-panel \.art-num \{\s*animation: none/.test(css)) bad.push('the article sweeps ignore reduced motion')
 if (/#5B3FD0/i.test(css + blocks)) bad.push('the banned violet is back')
 const route = read('app/(marketing)/loneliness/page.tsx')
 if (/<section/.test(route)) bad.push('a coded section reached an editor-backed route')

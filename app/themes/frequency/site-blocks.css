@@ -939,7 +939,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(.art-line-frame .art-line-text > span, .art-q-panel .art-num) {
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-line-frame .art-line-text > span,
+  [data-design="frequency"] [data-kit="site"] [data-site-blocks] .art-q-panel .art-num {
     animation: none;
   }
 }

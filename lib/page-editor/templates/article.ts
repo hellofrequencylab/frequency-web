@@ -288,7 +288,7 @@ type ArticleHowTo = {
  *   · conversation — the question asked and the answer replied, overlapping photo cards.
  *   · path         — numbered sections on a dotted path, steps with connectors, a tips bento.
  *   · manual       — sticky side headings beside checklist panels, a timeline of steps. */
-export type ArticleDesign = 'quiet' | 'conversation' | 'path' | 'manual'
+type ArticleDesign = 'quiet' | 'conversation' | 'path' | 'manual'
 
 export type ArticleSpec = {
   /** The article's slug. Only used to key block ids, so they stay stable per page. */

@@ -121,8 +121,7 @@ export const config: Config = {
     },
     content: {
       title: 'Content',
-      // The seeker-article layouts (blocks/article.tsx) are content blocks: a question, a line, a story, steps.
-      components: ['Heading', 'Text', 'Statement', 'StoryBeats', 'Quote', 'Buttons', ...ARTICLE_BLOCK_TYPES],
+      components: ['Heading', 'Text', 'Statement', 'StoryBeats', 'Quote', 'Buttons'],
     },
     sections: {
       title: 'Sections',
@@ -245,6 +244,14 @@ export const config: Config = {
     roles: {
       title: 'Sections for any theme',
       components: [...ROLE_CATEGORY_COMPONENTS],
+    },
+    // The seeker-article layouts (components/page-editor/blocks/article.tsx, owner 2026-11-04 "make each a
+    // different layout"): a question, a line, a story, steps. Drawn in the Frequency public site kit
+    // (site-blocks.css §7), so the marketing editor offers them and no Space website theme does
+    // (lib/page-editor/palette-scope.ts).
+    article: {
+      title: 'Article layouts',
+      components: [...ARTICLE_BLOCK_TYPES],
     },
   },
 }

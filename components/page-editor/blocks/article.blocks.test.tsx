@@ -27,7 +27,7 @@ describe('the article blocks are well-formed and registered', () => {
       const fields = new Set(Object.keys(block.fields ?? {}))
       for (const key of Object.keys(block.defaultProps ?? {})) expect(fields.has(key), `${type}.${key}`).toBe(true)
       expect(config.components[type]).toBe(block)
-      expect(config.categories?.content?.components).toContain(type)
+      expect(config.categories?.article?.components).toContain(type)
     })
   }
 })
