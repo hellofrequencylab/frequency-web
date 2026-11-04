@@ -20,7 +20,7 @@ const themes = ['bold', 'wildheart', 'services'].filter((t) => !process.env.THEM
 const TYPES = { '.html': 'text/html', '.css': 'text/css', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' }
 const server = createServer((req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
-  const file = /^\/(brand|sites|themes|create-a-space)\//.test(path) ? join('public', path) : path.startsWith('/fonts/') ? join('app', path) : join(dir, path)
+  const file = /^\/(brand|sites|themes|create-a-space)\//.test(path) ? join('public', path) : path.startsWith('/fonts/wildheart/') ? join('public', path) : path.startsWith('/fonts/') ? join('app', path) : join(dir, path)
   // One read, no existence check first: a check then a read is a race (CodeQL js/file-system-race).
   let body
   try {
@@ -41,13 +41,16 @@ const BOLD_CSS =
   [400, 500, 600].map((w) => bold('Barlow', `barlow/barlow-${w}.woff2`, w)).join('') +
   [400, 500].map((w) => bold('IBM Plex Mono', `ibm-plex-mono/ibm-plex-mono-${w}.woff2`, w)).join('') +
   ':root{--font-sofia-xc:"Sofia Sans Extra Condensed";--font-barlow:Barlow;--font-plex-mono:"IBM Plex Mono"}'
-writeFileSync(join(dir, 'fonts.css'), FONTS_CSS + BOLD_CSS)
+const WH_CSS =
+  ['Regular:normal', 'Italic:italic'].map((v) => `@font-face{font-family:"IM Fell English";src:url(/fonts/wildheart/IMFellEnglish-${v.split(':')[0]}.ttf) format("truetype");font-style:${v.split(':')[1]};font-weight:400}`).join('') +
+  `@font-face{font-family:"EB Garamond";src:url(/fonts/eb-garamond/eb-garamond.woff2) format("woff2");font-weight:400 800}@font-face{font-family:"EB Garamond";src:url(/fonts/eb-garamond/eb-garamond-italic.woff2) format("woff2");font-style:italic;font-weight:400 800}@font-face{font-family:"Noto Sans Symbols";src:url(/fonts/noto-sans-symbols/noto-sans-symbols.woff2) format("woff2");font-weight:100 900}@font-face{font-family:"Playfair Display";src:url(/fonts/playfair-display/playfair-display.woff2) format("woff2");font-weight:400 900}`
+writeFileSync(join(dir, 'fonts.css'), FONTS_CSS + BOLD_CSS + WH_CSS)
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
 for (const t of themes) {
   mkdirSync(`public/brand/theme-pages/${t}`, { recursive: true })
   for (const [name, { width, height, scale }] of Object.entries(shots)) {
     // Bold's website picture is taken at 1.25x the frame and scaled back, so the headline AND the photo under it sit in the window.
-    const zoom = t === 'bold' && name === 'site' ? 1.25 : 1
+    const zoom = (t === 'bold' || t === 'wildheart') && name === 'site' ? 1.25 : 1
     const page = await browser.newPage({ viewport: { width: width * zoom, height: height * zoom }, deviceScaleFactor: scale / zoom })
     await page.goto(name === 'spacedesk' || name === 'spot' ? `${base}/${t}-${name}.html` : pathToFileURL(`${dir}/${t}-${name}.html`).href, { waitUntil: 'load' })
     await page.waitForTimeout(600)
