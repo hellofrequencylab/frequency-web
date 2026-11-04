@@ -282,3 +282,8 @@
 .bottomBar button[aria-pressed='true'] { color: var(--fq-text-strong); box-shadow: inset 0 2px 0 var(--editor-select); }
 .bottomBar button:disabled { opacity: .45; cursor: default; }
 .bottomBar button:focus-visible { outline: 2px solid var(--fq-text-strong); outline-offset: -4px; }
+
+/* Update to new layouts (BLD-205): the outline's prompt when this page still has theme-named blocks. */
+.legacy { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: calc(100% - 16px); min-height: 44px; margin: 0 8px 8px; padding: 8px 10px; border: 1px dashed var(--fq-border-strong); border-radius: var(--r-2); background: var(--fq-bg-sunken); color: var(--fq-text-strong); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.legacy span { flex: none; font-weight: 600; text-decoration: underline; }
+.legacy:focus-visible { outline: 2px solid var(--fq-text-strong); outline-offset: 2px; box-shadow: 0 0 0 5px var(--editor-ring); }

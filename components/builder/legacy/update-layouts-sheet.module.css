@@ -1,0 +1,66 @@
+/* UPDATE TO NEW LAYOUTS (BLD-205): Commons tokens and the builder's shape tokens (BLD-002) only. */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  padding: 6vh 16px 16px;
+  background: color-mix(in oklab, var(--fq-text-strong) 28%, transparent);
+}
+.sheet {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(1080px, 100%);
+  max-height: 88vh;
+  border-radius: var(--r-panel);
+  background: var(--fq-surface-raised);
+  color: var(--fq-text-strong);
+  box-shadow: var(--fq-shadow-float);
+  overflow: hidden;
+}
+.head { padding: 18px 18px 12px; border-bottom: 1px solid var(--fq-border-hair); }
+.head h2 { margin: 0; font-size: 20px; }
+.head p { margin: 4px 0 0; font-size: 13px; color: var(--fq-text-muted); }
+.body { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); min-height: 0; }
+.list { overflow: auto; padding: 8px 10px 16px; border-right: 1px solid var(--fq-border-hair); }
+.list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.row { padding: 6px 8px; border-radius: var(--r-2); }
+.row[aria-current='true'] { background: var(--fq-bg-sunken); }
+.pick { width: 100%; font-size: 14px; }
+.hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.cap { margin: 14px 8px 6px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--fq-text-muted); font-weight: 600; }
+.kept { display: grid; gap: 2px; padding: 8px; font-size: 14px; }
+.kept small { font-size: 12px; color: var(--fq-text-muted); }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; min-height: 0; overflow: auto; background: var(--editor-canvas); }
+.compare figure { margin: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; min-width: 0; }
+.compare figcaption { font-size: 12px; font-weight: 600; color: var(--fq-text-muted); }
+.frame { overflow: auto; min-height: 280px; border-radius: var(--r-2); background: var(--fq-surface-raised); pointer-events: none; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--fq-border-hair); }
+.quiet, .go {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--fq-border-hair);
+  border-radius: var(--r-control);
+  background: var(--fq-surface-raised);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.go { border: 0; background: var(--fq-text-strong); color: var(--fq-surface-raised); }
+.go:disabled { opacity: .5; cursor: default; }
+.quiet:focus-visible, .go:focus-visible { outline: 2px solid var(--fq-text-strong); outline-offset: 2px; box-shadow: 0 0 0 5px var(--editor-ring); }
+
+/* Under the sm breakpoint the sheet fills the screen; the comparison stacks under the list. */
+@media (max-width: 599px) {
+  .scrim { padding: 0; align-items: end; }
+  .sheet { max-height: 94vh; border-radius: var(--r-panel) var(--r-panel) 0 0; }
+  .body { grid-template-columns: 1fr; overflow: auto; }
+  .list { border-right: 0; overflow: visible; }
+  .compare { grid-template-columns: 1fr; overflow: visible; }
+  .actions > * { flex: 1; }
+}
