@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2188",
+  "title": "Theme pages: the theme name ran past the phone edge (CyberWitch) and past its column on desktop",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/site/pages/themes/new-world-feature.css",
+    "ref": "Double check of the 2026-11-04 production deploy 5d65566 (Daniel: 'Double check everything'), rendered at 390, 1280 and 2000. Report: /mnt/project-files/double-check-2026-11-04/REPORT.md"
+  },
+  "detail": "The Nocturne-layout theme pages size the theme name at clamp(44px,17cqw,112px), which assumes a short name. At 390, CyberWitch measured 414px in a 339px column and the page clipped it to 'CyberWitc'; at 1280 CyberWitch (621px), New World (558px) and Wildheart (516px) all ran past their 509px column, the last letters under the surface chips and the browser frame. The heading now sets --nwf-chars to its length and the sheet caps the size at 130cqw per character (min 40px), so a name shrinks only when it would not fit: Bold is unchanged, the three long names fit at 390, 1280 and 2000 (measured 316/475/469px for CyberWitch). Probe: node scripts/probes/theme-name-fits-phone.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/theme-name-fits-phone.mjs"
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}
