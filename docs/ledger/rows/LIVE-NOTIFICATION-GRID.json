@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-NOTIFICATION-GRID",
+  "title": "Notification setting controls align and expose their descriptions accessibly",
+  "status": "open",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "source": {
+    "file": "app/(main)/settings/notifications/form.tsx",
+    "ref": "Daniel 2026-11-04 audit and approved improvement scope"
+  },
+  "detail": "Local source-only candidate75ec93a85 adds alignment and description association. Existing 11 tests and focused lint passed in prior candidate evidence. Reconcile current main before publication; no old branch overwrite.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-04",
+    "evidence": "Local candidate and patch exist; no browser geometry, full CI, preview or production proof. Acceptance: desktop/mobile control alignment, accessible help associations, save/reload and unchanged notification choices."
+  },
+  "wave": "W7"
+}
