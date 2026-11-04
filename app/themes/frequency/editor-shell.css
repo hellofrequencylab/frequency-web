@@ -70,6 +70,14 @@
 [data-design="frequency"] [data-kit="editor"] .stage .vera .bar{padding:6px 6px 6px 12px;border-radius:var(--fq-radius-m);background:var(--fq-surface-raised);backdrop-filter:none;box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="editor"] .stage .vera .chips{justify-content:flex-start}
 [data-design="frequency"] [data-kit="editor"] .stage .vera .reply{box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+/* A screenshot for Vera (LIVE-2162): drop it on the panel, paste it in the ask, or pick it with the photo button. */
+[data-design="frequency"] [data-kit="editor"] .stage .vera.drop{box-shadow:0 24px 48px -24px var(--fq-ink),inset 0 0 0 2px var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .vera-attach{flex:none;cursor:pointer;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .vera-attach .fq-icon{width:17px;height:17px}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .vera-shot{display:flex;align-items:center;gap:10px;padding:6px;border-radius:var(--fq-radius-m);box-shadow:inset 0 0 0 1px var(--fq-border-hair);font:var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .vera-shot img{width:64px;height:44px;flex:none;object-fit:cover;border-radius:var(--fq-radius-s)}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .vera-shot span{flex:1;min-width:0}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .vera-drop-hint{margin:0;font:var(--fq-text-meta)/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
 /* Sprite icons (components/frequency/icon.tsx) where the kit sizes an inline svg by its parent. */
 [data-design="frequency"] [data-kit="editor"] .search .fq-icon{width:17px;height:17px;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="editor"] .pick>button .fq-icon, [data-design="frequency"] [data-kit="editor"] .chg .fq-icon{width:16px;height:16px}

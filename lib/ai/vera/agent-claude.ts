@@ -27,7 +27,8 @@ import { runToolLoop, type CompleteMessage, type SystemPrompt } from '@/lib/ai/c
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { aiRateLimited } from '@/lib/ai/rate-limit'
 import type { MemberContext } from '@/lib/ai/memory'
-import { VERA_TOOLS, MEMBER_CHAT_TOOL_KEYS, type VeraToolDef } from './tools'
+import { VERA_TOOLS, MEMBER_CHAT_TOOL_KEYS, SPACE_MANAGER_TOOL_KEYS, type VeraToolDef } from './tools'
+import { veraSwitchCard, veraSwitchable } from './space-guide'
 import { handleModelToolCalls } from './model-tools'
 import { getVeraConfig, type VeraConfig } from './config'
 import { withVoice } from '@/lib/ai/voice'
@@ -296,7 +297,10 @@ export async function runVeraClaudeTurn(input: {
     // The MEMBER chat set only (SCAN-738): the operator playbook tools and create_entity are not
     // confirmable from a member session, so offering them produced proposals the client rendered
     // as empty Remember cards and the server then refused. Every turn also paid for their schemas.
-    const memberTools = VERA_TOOLS.filter((t) => MEMBER_CHAT_TOOL_KEYS.has(t.key))
+    // The Space switch (LIVE-2157) rides along only when the Space guide offers it, which it does only for
+    // that Space's owner or an admin; the confirm path re-checks their authority before anything is written.
+    const spaceSwitches = input.spaceGuide?.includes('set_space_feature') ? { switchable: veraSwitchable, card: veraSwitchCard } : undefined
+    const memberTools = VERA_TOOLS.filter((t) => MEMBER_CHAT_TOOL_KEYS.has(t.key) || (spaceSwitches && SPACE_MANAGER_TOOL_KEYS.has(t.key)))
     const tools = toAnthropicTools(memberTools)
     const messages: CompleteMessage[] = [
       ...input.history.map((m) => ({ role: m.role, content: m.text })),
@@ -336,7 +340,7 @@ export async function runVeraClaudeTurn(input: {
       tools,
       messages,
       onText,
-      onToolCalls: (toolCalls) => handleModelToolCalls(toolCalls, proposals),
+      onToolCalls: (toolCalls) => handleModelToolCalls(toolCalls, proposals, undefined, spaceSwitches),
     })
 
     // Release any prose the chips filter was still holding when the last round ended.

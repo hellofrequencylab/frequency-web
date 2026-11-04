@@ -1,4 +1,5 @@
-// The Group seed places every event in a circle (handoff task E, SCAN-949; LIVE-952).
+// The Group seed places a member-led series in its circle and every other event on its host Space
+// (handoff task E, SCAN-949; LIVE-952; ADR-1938 retired the Space Circle).
 import { describe, expect, it } from 'vitest'
 import { buildEvents, circleFor, circleId, CIRCLES, NETWORK_CIRCLES, renderSql } from '../scripts/seed-the-group.mts'
 
@@ -10,7 +11,7 @@ describe('the-group seed: events into circles', () => {
     for (const c of CIRCLES) expect(placed, c.name).toContain(c.key)
   })
 
-  it('a title is matched case-insensitively and across apostrophes, a chapter meeting falls back to the Space Circle', () => {
+  it('a title is matched case-insensitively and across apostrophes, a chapter meeting is a Space event', () => {
     expect(circleFor('Swami’s Beach Gathering in the Grass')).toBe('swamis')
     expect(circleFor("Women's Group Coffee Meetup ☕️")).toBe('womens-coffee')
     expect(circleFor('The Wellness Club')).toBe('wellness')
@@ -18,17 +19,16 @@ describe('the-group seed: events into circles', () => {
     expect(circleFor('Team Up Tuesday at Maya Moon')).toBeNull()
   })
 
-  it('the SQL writes the placement columns livePlacementPatch writes, and never a public scope', () => {
+  it('the SQL writes a circle event as livePlacementPatch does and anything else as a Space event', () => {
     const sql = renderSql()
     const inserts = sql.split('\n').filter((l) => l.startsWith('insert into events (slug, title'))
     expect(inserts.length).toBe(events.length)
-    expect(sql).not.toMatch(/\(select region_id from _tg\), 'public'/)
+    expect(sql).not.toMatch(/is_space_primary/)
     for (const e of events) {
-      const ref = e.circle ? `'${circleId(e.circle)}'` : 'is_space_primary'
       const at = sql.indexOf(`values ('${e.slug}'`)
       const row = sql.slice(at, sql.indexOf('\non conflict (slug)', at))
-      expect(row, e.slug).toContain(ref)
-      expect(row, e.slug).toContain(", 'circle', ")
+      if (e.circle) expect(row, e.slug).toContain(`'${circleId(e.circle)}', 'circle', '${circleId(e.circle)}'`)
+      else expect(row, e.slug).toContain("(select region_id from _tg), 'public', null")
     }
     expect(sql).toContain('scope_type = excluded.scope_type, scope_circle_id = excluded.scope_circle_id')
     expect(sql).toContain('a.scope_type, a.scope_circle_id,')
