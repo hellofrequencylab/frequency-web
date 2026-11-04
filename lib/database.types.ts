@@ -14049,6 +14049,42 @@ export type Database = {
           },
         ]
       }
+      retired_space_circles: {
+        Row: {
+          circle_id: string
+          retired_at: string
+          slug: string
+          space_id: string
+        }
+        Insert: {
+          circle_id: string
+          retired_at?: string
+          slug: string
+          space_id: string
+        }
+        Update: {
+          circle_id?: string
+          retired_at?: string
+          slug?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retired_space_circles_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: true
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retired_space_circles_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reward_grants: {
         Row: {
           amount: number

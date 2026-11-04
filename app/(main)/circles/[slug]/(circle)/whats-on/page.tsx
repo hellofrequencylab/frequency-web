@@ -14,7 +14,6 @@ import {
   loadCirclePractice,
   loadCircleUpcomingEvents,
 } from '../tab-facts'
-import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 import { CircleTasksSection } from '@/app/(main)/crew/circle-tasks-section'
 import { FqWhatsOnPane } from '@/components/frequency/members/circle/whats-on-pane'
 import { CALENDAR_NAME } from '@/lib/calendar/name'
@@ -72,11 +71,7 @@ export default async function CircleWhatsOnPage({
   // memo. See circleEventInsider.
   const [practice, events, run] = await Promise.all([
     loadCirclePractice(circle.id),
-    loadCircleUpcomingEvents(
-      circle.id,
-      circleEventInsider({ isMember, isHost }),
-      spaceCircleEventScope(circle),
-    ),
+    loadCircleUpcomingEvents(circle.id, circleEventInsider({ isMember, isHost })),
     loadCircleActiveRun(circle.id),
   ])
 

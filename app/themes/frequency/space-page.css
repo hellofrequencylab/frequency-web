@@ -120,6 +120,11 @@
 [data-design="frequency"] [data-space-fonts="free-human"] { --space-display-track: -0.005em; --space-display-scale: 1.12; }
 [data-design="frequency"] [data-space-fonts="free-human"] :is(.fqs-hero h1, .fqs-card-t, .fqs-date b, [data-space-page] .font-display, [data-space-page] .font-section) { font-weight: 500; }
 [data-design="frequency"] [data-space-fonts="free-human"] .fqs-id .h1 { font-family: var(--space-font-display), var(--fq-font-display); font-weight: 500; letter-spacing: var(--space-display-track); }
+/* Wildheart display: IM Fell English 400, its only weight, so nothing is bolded into a fake face. The Space name takes it too, and the scale lifts
+   it a size because Fell sets smaller than Unbounded at the same size. */
+[data-design="frequency"] [data-space-fonts="wildheart"] { --space-display-scale: 1.12; }
+[data-design="frequency"] [data-space-fonts="wildheart"] :is(.fqs-hero h1, .fqs-card-t, .fqs-date b, [data-space-page] .font-display, [data-space-page] .font-section) { font-weight: 400; }
+[data-design="frequency"] [data-space-fonts="wildheart"] .fqs-id .h1 { font-family: var(--space-font-display), var(--fq-font-display); font-weight: 400; letter-spacing: var(--space-display-track); }
 [data-design="frequency"] [data-space-fonts="menswork"] { --space-display-track: 0.005em; --space-display-scale: 1.18; }
 
 /* ══ 1. TYPE: Unbounded titles, Hanken body, Instrument Serif italic accents ══════════════════════ */
