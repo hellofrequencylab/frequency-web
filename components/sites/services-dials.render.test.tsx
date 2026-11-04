@@ -4,7 +4,7 @@ import { SiteChrome } from './site-chrome'
 import { readSiteStyle, servicesDials, siteDials } from '@/lib/theme/site-style'
 import { themeEditor } from '@/lib/themes/editor-dials'
 
-// SERVICES ON SCHEMA 2 (LIVE-2189): the Type voice, Motion and Images dials reach the site root as data-type, data-motion and
+// SERVICES ON SCHEMA 2 (LIVE-2210): the Type voice, Motion and Images dials reach the site root as data-type, data-motion and
 // data-image, the three switches the Services sheet (services-css.ts) is keyed on. Before this, nothing wrote them, so those rules were dead.
 const base = { themeFonts: false, brandName: 'Harbor Plumbing', homeHref: '/', links: [], cta: null }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2189: Services is the first theme on manifest schema 2 (LIVE-1997). Its editor-schema2.json entry declares Type voice,
+// LIVE-2210: Services is the first theme on manifest schema 2 (LIVE-1997). Its editor-schema2.json entry declares Type voice,
 // Motion and Images with defaults, and the site root (site-chrome, the coming-soon page and the editor canvas) writes data-type,
 // data-motion and data-image, the switches the Services sheet is keyed on. Fails on main: editor-schema2.json is {} and no root writes them.
 import { readFileSync } from 'node:fs'

@@ -3,6 +3,7 @@
   "type": "RoleFaq",
   "label": "Questions (all themes)",
   "intent": "Answer questions",
+  "why": "Answers to what people ask before they come.",
   "group": "Answer",
   "icon": "help",
   "live": true,

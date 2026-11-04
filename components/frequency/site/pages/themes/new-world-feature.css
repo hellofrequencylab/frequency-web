@@ -162,7 +162,9 @@
 @media (max-width:560px){.nwf-cmp{grid-template-columns:minmax(0,1.15fr) repeat(4,minmax(0,1fr))}.nwf-cmp-row>.hd{padding:12px 2px;justify-content:center;font-size:9px;letter-spacing:.02em}.nwf-cmp-row>.hd:first-child{padding:0}.nwf-cmp-row>div{padding:12px 6px}.nwf-cmp-row>.y,.nwf-cmp-row>.p{justify-content:center}}
 
 /* The Nocturne hero: the theme's name large, a small descriptor, then the tagline; the four surfaces follow, joined by a dotted line. */
-.nwf-name{font-size:clamp(44px,17cqw,112px);line-height:.92;letter-spacing:-.06em}
+/* The name must fit on one line at every width: the page sets --nwf-chars to its length, and a long one-word name (CyberWitch) shrinks
+   instead of running past the phone edge; short names keep the 17cqw size. 130cqw per character fits Unbounded 700 at -.06em with room. */
+.nwf-name{font-size:min(clamp(44px,17cqw,112px),max(40px,calc(130cqw / var(--nwf-chars,8))));line-height:.92;letter-spacing:-.06em}
 .nwf-aft{margin:-4px 0 0;font:600 clamp(15px,1.6vw,20px)/1.2 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
 .nwf-tagline{margin:6px 0 0;font:700 clamp(22px,2.4vw,36px)/1.08 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
 .nwf-tagline em{font-style:italic;display:inline-block;padding:0 .08em .06em 0}

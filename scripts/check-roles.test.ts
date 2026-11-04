@@ -3,7 +3,7 @@ import { checkRoles, roleProblems } from './check-roles.mjs'
 
 const vocab = { groups: ['Welcome'], thumbs: ['split'], icons: new Set(['photo']) }
 const good = {
-  type: 'RoleX', intent: 'Say who you are', group: 'Welcome', icon: 'photo', live: false, default: 'split',
+  type: 'RoleX', intent: 'Say who you are', why: 'The first thing people see.', group: 'Welcome', icon: 'photo', live: false, default: 'split',
   variants: { split: { label: 'Split', thumb: 'split', needs: ['image'] } },
   slots: { required: { title: 'text<=120' }, optional: { image: 'image' }, labels: { title: { label: 'Headline', hint: 'The first line.' }, image: { label: 'Photo', hint: 'A real photo.' } } },
 }

@@ -1512,6 +1512,23 @@ export const newWorldBlocks: Record<string, ComponentConfig> = {
     },
     Offers,
   ),
+  // The shop is the ways-in card set wearing the shop's words (record.js `shop`): its own block so the kit can turn it on and off by
+  // the Sell tool alone (lib/sites/new-world-functions.ts) without touching the ways in.
+  NewWorldShop: block(
+    "New World shop",
+    { ...head, ...links("button"), rows: rows({ icon, meta: text("Small line"), name: text("Name"), body: area("Line"), price: text("Price"), href: text("Link", LINK_HINT) }), register },
+    {
+      index: "",
+      eyebrow: "Shop",
+      title: "Take some *home.*",
+      lede: "A few things we make. Picked up at the door or sent.",
+      buttonLabel: "",
+      buttonHref: "",
+      rows: [],
+      register: "auto",
+    },
+    Offers,
+  ),
   NewWorldPlans: block(
     "New World plans",
     {

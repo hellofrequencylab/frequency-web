@@ -3,6 +3,7 @@
   "type": "RoleBusiness",
   "label": "Tools behind it (all themes)",
   "intent": "Show the tools behind it",
+  "why": "The tools and partners that keep it running.",
   "group": "Answer",
   "icon": "settings",
   "live": false,
