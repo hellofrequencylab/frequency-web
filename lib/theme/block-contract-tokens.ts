@@ -128,4 +128,7 @@ export const TH_TO_CONTRACT: Readonly<Record<string, CoreTokenName | null>> = {
   '--th-gilt': null,
   '--th-on-gilt': null,
   '--th-arch': null,
+  '--th-r-lg': null,
+  '--th-r-sm': null,
+  '--th-scrawl': null,
 }
