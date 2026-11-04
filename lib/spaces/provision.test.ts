@@ -99,6 +99,10 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: () => builder() }),
 }))
 
+// ── The theme write at birth (LIVE-2058): spy on it, so no Space row is read back ───────────
+const applyMegaTheme = vi.fn(async (_spaceId: string, _theme: string) => ({ ok: false as const, error: 'test' }))
+vi.mock('@/lib/theme/apply-mega-theme', () => ({ applyMegaTheme: (id: string, theme: string) => applyMegaTheme(id, theme) }))
+
 import { createSpace } from './provision'
 
 beforeEach(() => {
@@ -106,6 +110,7 @@ beforeEach(() => {
   store.slugs = new Set()
   store.inserts = []
   addSpaceMember.mockClear()
+  applyMegaTheme.mockClear()
 })
 
 /** Run createSpace and capture either the returned ActionResult or the redirect URL it threw. */
@@ -262,5 +267,16 @@ describe('createSpace — directory KIND seed (ADR-887)', () => {
     const row = store.inserts[0]!
     expect(row.mode_variant).toBeNull()
     expect('preferences' in row).toBe(false)
+  })
+})
+
+describe('createSpace — the theme a new Space starts in (LIVE-2058)', () => {
+  it('starts a Space with no pick in New World, and never on the read fallback', async () => {
+    await run(VALID)
+    expect(applyMegaTheme).toHaveBeenCalledWith('new-space-id', 'new-world')
+  })
+  it('keeps the theme the owner picked', async () => {
+    await run({ ...VALID, slug: 'river-yoga-2', theme: 'midnight' })
+    expect(applyMegaTheme.mock.calls.map((c) => c[1])).toEqual(['midnight'])
   })
 })
