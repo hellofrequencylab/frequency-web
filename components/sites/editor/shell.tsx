@@ -14,7 +14,9 @@ import { resetDocumentPlacements, sectionDeviceLayout } from '@/lib/sites/editor
 import { pendingChangeLabels, publishChecks } from '@/lib/sites/editor/publish-checks'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
-import { KitLibrary } from './kit-library'
+import { KitLibrary, starterKits } from './kit-library'
+import { ThemeFirstPick, type FirstPickAccent } from './theme-first-pick'
+import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { ThemeChanger } from './theme-changer'
 import { UpdateLayouts } from './update-layouts'
 import { upgradableCount } from '@/lib/blocks/roles/legacy-map'
@@ -40,6 +42,7 @@ import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import dynamic from 'next/dynamic'
 // The canvas loads on the client; until it does the stage says so instead of standing empty.
+const noSubscribe = () => () => {}
 const WebsiteCanvas = dynamic(() => import('./canvas').then((module) => module.WebsiteCanvas), { ssr: false, loading: () => <div className="we-canvas-loading" role="status">Loading your page…</div> })
 import type { FieldFocus } from '@/lib/sites/editor/field-sync'
 import { WebsiteInspector, WebsiteChromeInspector } from './inspector'
@@ -86,6 +89,8 @@ export interface WebsiteEditorShellProps {
   onLayout?: (request: string, outline: WebsiteVeraSection[], styleMenu?: WebsiteVeraStyleMenu, facts?: WebsiteVeraFacts) => Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }>
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
+  /** The website has never been saved or published: open on Pick your look (LIVE-2043). */
+  firstOpen?: boolean
   onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>>; pages?: Record<string, SiteThemeId | null> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
   /** The Space type's default accent (defaultAccentForType): what the live site paints when no brand accent is set. */
   defaultAccent?: string | null
@@ -139,7 +144,7 @@ const TABS: { label: Tab; icon: typeof FileText }[] = [{ label: 'Pages', icon: F
 const TAB_ICON: Record<Tab, FqIconName | FqEditorIconName> = { Pages: 'page', Layers: 'layers', Add: 'plus', Theme: 'palette', Site: 'settings' }
 const DEVICES: { id: Device; icon: typeof Monitor; label: string }[] = [{ id: 'desktop', icon: Monitor, label: 'Desktop' }, { id: 'tablet', icon: Tablet, label: 'Tablet' }, { id: 'phone', icon: Smartphone, label: 'Phone' }]
 
-function Dialog({ label, children }: { label: string; children: ReactNode }) {
+function Dialog({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
@@ -154,14 +159,14 @@ function Dialog({ label, children }: { label: string; children: ReactNode }) {
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
   }
-  return <div ref={root} className={k('we-modal')} role="dialog" aria-modal="true" aria-label={label} onKeyDown={trap} onClick={(event) => event.stopPropagation()}>{children}</div>
+  return <div ref={root} className={className ? `${k('we-modal')} ${className}` : k('we-modal')} role="dialog" aria-modal="true" aria-label={label} onKeyDown={trap} onClick={(event) => event.stopPropagation()}>{children}</div>
 }
 
 function Icon({ label, hint, children, className = '', ...props }: { label: string; hint?: string; children: ReactNode; className?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button type="button" className={k(`we-icon ${className}`)} aria-label={label} title={hint ?? label} {...props}>{children}</button>
 }
 
-export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onLayout, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain }: WebsiteEditorShellProps) {
+export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onLayout, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain, firstOpen = false }: WebsiteEditorShellProps) {
   const [people, setPeople] = useState<WebsitePresence[]>([])
   const cursor = useRef<WebsitePresence['cursor']>(null)
   useEffect(() => {
@@ -230,6 +235,18 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [pageMenu, setPageMenu] = useState(false)
   const [modal, setModal] = useState<'publish' | 'templates' | 'insert' | 'delete-page' | 'menu' | 'theme' | 'layouts' | null>(null)
   const [filter, setFilter] = useState('')
+  // PICK YOUR LOOK (LIVE-2043): a website that has never been saved or published (the page says so: `firstOpen`) opens on the first-pick sheet. A skip
+  // or an open marks it seen on this browser, and any pick saves the draft, so it does not come back.
+  const firstPickKey = `fq-first-pick:${host}`
+  // Read on the client only (the server snapshot says "seen"), so the server render and hydration agree.
+  const firstPickSeen = useSyncExternalStore(noSubscribe, () => { try { return window.localStorage.getItem(firstPickKey) === '1' } catch { return false } }, () => true)
+  const [firstPickChoice, setFirstPickChoice] = useState<'open' | 'closed' | null>(null)
+  const firstPick = firstPickChoice ? firstPickChoice === 'open' : FQ_EDITOR && firstOpen && !firstPickSeen
+  const setFirstPick = (open: boolean) => setFirstPickChoice(open ? 'open' : 'closed')
+  function closeFirstPick() {
+    try { window.localStorage.setItem(firstPickKey, '1') } catch { /* storage blocked: the saved draft keeps it closed */ }
+    setFirstPick(false)
+  }
   const [insertAt, setInsertAt] = useState<number | null>(null)
   const [pageName, setPageName] = useState('')
   const [publishWhen, setPublishWhen] = useState<'now' | 'schedule'>('now')
@@ -729,6 +746,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {draftsPanel}
     <div className="cap">Theme</div>
     {changeThemeButton}
+    <button type="button" className="row" onClick={() => setFirstPick(true)}><span className="ic"><FqIcon name="settings" /></span><span className="t">Pick your look<small>Theme, colour, Night or Day and look on one sheet</small></span></button>
     {SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className={`theme${on(draft.theme === theme)}`} aria-pressed={draft.theme === theme} onClick={() => pickTheme(t)}>
       <span className="sw" style={websiteThemeVars(theme)} aria-hidden><i data-swatch="bg" /><i data-swatch="accent" /></span><span><b>{WEBSITE_THEME_LABEL[theme]}</b><small>{t.description}</small></span></button> })}
     <KitLibrary onApply={applyKitChoice} onPreview={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />
@@ -747,6 +765,34 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <div className="acts"><button type="button" className="btn sm" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="btn sm" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } }, { label: 'Logo' })}>Remove logo</button>}</div>
     <div className="note">A theme or style you pick changes this draft only. Visitors see it when you publish. Words and photos stay; blocks take on the new colors and type.</div>
   </>
+  // PICK YOUR LOOK (LIVE-2043): the Theme tab's own parts on one sheet, each pick through the Theme tab's own handler.
+  // New World offers its five accents as the brand colour (Tide is its own, so it stores nothing); a theme with named
+  // accents offers those. Night or Day shows for the themes that carry both registers.
+  const pickAccents: FirstPickAccent[] = draft.theme === 'NewWorld'
+    ? Object.entries(NEW_WORLD_ACCENTS).map(([id, a], index) => ({ id, label: a.label, swatch: a.accent, value: index === 0 ? null : a.accent, on: index === 0 ? !draft.brand?.accent || draft.brand.accent.toUpperCase() === a.accent : draft.brand?.accent?.toUpperCase() === a.accent }))
+    : themeAccents(draft.theme).map((a) => ({ id: a.id, label: a.label, swatch: a.swatch, value: a.swatch, on: draft.brand?.accent?.toLowerCase() === a.swatch.toLowerCase() }))
+  const twoRegisters = lookStyle.theme === 'new-world' || lookStyle.theme === 'services'
+  const firstPickSheet = <ThemeFirstPick
+    themes={SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return { id: t.id, label: WEBSITE_THEME_LABEL[theme], description: t.description, swatch: websiteThemeVars(theme), on: draft.theme === theme } })}
+    onTheme={(id) => { const t = SITE_THEMES.find((x) => x.id === id); if (t) pickTheme(t) }}
+    accents={pickAccents}
+    onAccent={(value) => commit({ ...draft, brand: { ...draft.brand, accent: value } }, { label: 'Accent' })}
+    register={twoRegisters ? (dialNow.register === 'day' ? 'day' : 'night') : null}
+    onRegister={(value) => changeDials({ register: value === dialOwn.register ? null : value })}
+    looks={(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => ({ key, label: LOOK_LABEL[key], options: SITE_LOOK_OPTIONS[key].map((o) => ({ id: o.id, label: o.label, on: siteLook(lookStyle)[key] === o.id })) }))}
+    onLook={(key, id) => { const look = key as SiteLookKey; setLook(look, id === THEME_LOOK[lookStyle.theme][look] ? null : id) }}
+    kits={starterKits(draft.theme, metadata?.niche as KitNiche | null | undefined)}
+    preview={<WebsiteCanvas pageSlug={page.slug} doc={page.doc} theme={canvasTheme} trySkin={trySheet} register={siteDials(pageLookStyle).register === 'day' ? 'day' : 'night'} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={null} preview comments={[]} chrome={draft.chrome} onSelect={() => {}} onEdit={() => {}} onAction={() => {}} onInsert={() => {}} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} />}
+    onOpen={async (kitId) => {
+      if (kitId) {
+        // A first open replaces the empty starter pages; reopened later, a kit adds its pages beside the owner's.
+        const message = await applyKitChoice(kitId, firstOpen ? 'replace' : 'add')
+        if (!message.endsWith('Undo takes it back.')) return message
+      }
+      closeFirstPick()
+      return ''
+    }}
+    onSkip={closeFirstPick} />
   // ── The rail tabs and inspector panels, shared by both designs. Under DAWN the rail tabs are the Site Editor's
   // (LIVE-907); under Frequency, the kit's. Class names go through k() (skin.ts). The handlers are the same either way.
   const pressedChoice = (pressed: boolean) => (FQ_EDITOR ? on(pressed).trim() || undefined : 'we-action secondary')
@@ -893,6 +939,10 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       </div>
       {logoPicker}
       <div className={`toast${on(!!toast)}`} role="status" aria-live="polite">{toast}</div>
+      {firstPick && !modal && <div className="ov on" onClick={closeFirstPick}><Dialog label="Pick your look" className="fp">
+        <Icon label="Close" className="x" onClick={closeFirstPick}><FqIcon name="close" /></Icon>
+        {firstPickSheet}
+      </Dialog></div>}
       {modal && <div className="ov on" onClick={() => setModal(null)}><Dialog label={modalLabel}>
         <Icon label="Close dialog" className="x" onClick={() => setModal(null)}><FqIcon name="close" /></Icon>
         {modal === 'publish' && <span className="eyebrow">{draft.chrome?.name || brandName} · {page.label}</span>}

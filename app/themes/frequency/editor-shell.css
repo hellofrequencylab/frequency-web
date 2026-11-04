@@ -278,3 +278,25 @@
 [data-design="frequency"] [data-kit="editor"] .stage .vera-ghost{left:12px;right:12px;width:auto;transform:none;flex-wrap:wrap}
 [data-design="frequency"] [data-kit="editor"] .stage:has(.vera-ghost) .vera{max-height:calc(100% - 210px)}
 }
+/* PICK YOUR LOOK (LIVE-2043, components/sites/editor/theme-first-pick.tsx): the Theme tab's parts on one wide sheet.
+   One compact column at the editor rail's width (264px), the theme and kit lines clamped to two rows; the home page
+   canvas fills the right. Stacked at phone width, preview under the choices. */
+[data-design="frequency"] [data-kit="editor"] .modal.fp{width:min(1400px,100%);max-height:92vh}
+[data-design="frequency"] [data-kit="editor"] .fp .fp-sub{margin:8px 0 20px;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="editor"] .fp .fp-grid{display:grid;grid-template-columns:264px minmax(0,1fr);gap:24px}
+[data-design="frequency"] [data-kit="editor"] .fp .fp-steps{max-height:74vh;overflow:auto;padding-right:4px}
+[data-design="frequency"] [data-kit="editor"] .fp .fp-themes{display:grid;gap:4px}
+[data-design="frequency"] [data-kit="editor"] .fp .fp-themes .theme{padding:6px 8px;margin:0;gap:10px;border-radius:12px}
+[data-design="frequency"] [data-kit="editor"] .fp .fp-themes .theme .sw{width:36px;height:24px;border-radius:7px}
+[data-design="frequency"] [data-kit="editor"] .fp .fp-themes .theme>span:last-child{min-width:0}
+[data-design="frequency"] [data-kit="editor"] .fp .fp-themes .theme small,[data-design="frequency"] [data-kit="editor"] .fp .row small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;white-space:normal;line-height:1.35}
+[data-design="frequency"] [data-kit="editor"] .fp .cap{margin-top:14px}
+[data-design="frequency"] [data-kit="editor"] .fp .fld{margin-bottom:6px}
+[data-design="frequency"] [data-kit="editor"] .fp .row{padding:6px 8px;min-height:0}
+[data-design="frequency"] [data-kit="editor"] .fp .fp-steps .note{margin:6px 0}
+[data-design="frequency"] [data-kit="editor"] .fp .fp-frame{height:74vh;overflow:auto;border-radius:16px;box-shadow:inset 0 0 0 1px var(--fq-border-hair);background:var(--fq-surface-card)}
+@media (max-width:820px){
+  [data-design="frequency"] [data-kit="editor"] .fp .fp-grid{grid-template-columns:1fr}
+  [data-design="frequency"] [data-kit="editor"] .fp .fp-steps{max-height:none;overflow:visible}
+  [data-design="frequency"] [data-kit="editor"] .fp .fp-frame{height:70vh}
+}
