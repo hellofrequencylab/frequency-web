@@ -106,7 +106,6 @@ const LEAD: IndexedPage[] = present([
   blocks('loneliness'),
   blocks('friendship-as-an-adult'),
   blocks('how-to-be-more-social'),
-  blocks('calm-down-fast'),
   blocks('how-to-start-a-circle'),
   blocks('how-to-build-community'),
   blocks('tools-for-community-builders'),
