@@ -250,9 +250,10 @@
 [data-design="frequency"] [data-kit="admin"] .ad-main .bg-primary.text-on-primary:not(:is([data-space-theme], [data-space-page]) *) {
   color: var(--fq-ink);
 }
-/* A hand-built primary button is the kit's `.btn.pa`: a pill in the iridescent fill, ink text. */
-[data-design="frequency"] [data-kit="admin"] .ad-main .btn.pa.ad-overview-new-event,
-[data-design="frequency"] [data-kit="admin"] .ad-main .btn.pa.ad-overview-new-event:hover {
+/* The shared Space overview also renders in the member shell. Keep this control readable above
+   the Space accent without changing the other primary buttons. */
+[data-design="frequency"] a.btn.pa.ad-overview-new-event,
+[data-design="frequency"] a.btn.pa.ad-overview-new-event:hover {
   color: var(--fq-ink);
   background: var(--fq-x-sky-neon);
 }
