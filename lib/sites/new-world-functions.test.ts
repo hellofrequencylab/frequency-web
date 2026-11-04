@@ -5,7 +5,7 @@ import { NEW_WORLD_KIT_IDS, newWorldKitSpotlightContent } from '@/lib/spotlight/
 import { NEW_WORLD_KIT_NICHES, newWorldKit } from '@/lib/sites/kits/new-world-variants'
 import { NEW_WORLD_ALWAYS, NEW_WORLD_FUNCTIONS, NEW_WORLD_NEEDS, newWorldSectionFunction } from './new-world-functions'
 
-// LIVE-2189: one function list drives every surface, so the website Home and the Spotlight cannot drift apart.
+// LIVE-2193: one function list drives every surface, so the website Home and the Spotlight cannot drift apart.
 
 /** The functions a kit's Spotlight turns on, read back from what it draws. */
 function spotlightFunctions(kit: string): string[] {

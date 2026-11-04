@@ -1,6 +1,6 @@
 import type { NEW_WORLD_EMAIL_TYPES } from '@/lib/theme/new-world-kit-email'
 
-// THE TWELVE NEW WORLD FUNCTIONS (LIVE-2189): each Frequency function as one synced block set, the way the design system's
+// THE TWELVE NEW WORLD FUNCTIONS (LIVE-2193): each Frequency function as one synced block set, the way the design system's
 // Kit Overview draws it (ui_kits/site/record.js FUNCTIONS and ui_kits/products/functions.jsx). One row names all four
 // surfaces a function shows up on: the website section(s), the Spotlight door, the Space tab and the email it sends. The
 // Spotlight content (lib/spotlight/new-world-kit-content.ts) builds its doors from this list and the kit builder
