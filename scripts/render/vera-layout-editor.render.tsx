@@ -35,12 +35,12 @@ it('renders the editor with a Vera layout proposal', async () => {
   ]
   const menu = { dials: [{ id: 'corners', label: 'Corners', options: [{ id: 'soft', label: 'Soft' }, { id: 'square', label: 'Square' }], current: 'soft', own: 'soft' }], accents, accent: null, looks: [] }
   const lines = changes.map((c, i) => ({ line: describeWebsiteVeraChange(c, doc as never, config, menu), ticked: i !== 2 }))
-  const proposal = renderToStaticMarkup(<VeraLayoutProposal note="Your offerings move up under the hero, the last section stays off phones, and the site gets square corners and a new accent." lines={lines} refused={['Change 4: Vera does not write or rewrite your words, so that line was left out. Select the text and ask for coaching questions instead.']} onToggle={() => {}} onApply={() => {}} onDismiss={() => {}} buttonClass="btn sm ink" dismissClass="btn sm txt" />)
+  const proposal = renderToStaticMarkup(<VeraLayoutProposal note="Your offerings move up under the hero, the last section stays off phones, and the site gets square corners and a new accent." lines={lines} refused={['Change 4: Vera does not write or rewrite your words, so that line was left out. Select the text and ask for coaching questions instead.']} onToggle={() => {}} onApply={() => {}} onDismiss={() => {}} previewing onPreview={() => {}} buttonClass="btn sm ink" dismissClass="btn sm txt" />)
   const initial = { v: 1 as const, revision: 0, published: null, versions: [], draft: { theme: 'NewWorld' as const, pages: [{ slug: 'home', label: 'Home', seo: { title: '', description: '' }, comments: [], doc }] } }
   let html = renderToStaticMarkup(<WebsiteEditorShell host="sunrise.frequencylocal.com" brandName="Sunrise Studio" author="Owner Person" initial={initial as never} config={config} live={{ events: [], circles: [], journeys: [] }} links={{ origin: 'https://frequencylocal.com', slug: 'sunrise', siteBase: '', pages: ['home'], contactHref: null, bookHref: null, email: null }} origin="https://frequencylocal.com" onSave={async () => ({ ok: false, error: '' })} onLayout={async () => ({ ok: false, error: '' })} />)
-  const reply = '<div class="reply" role="status"><b>Vera</b>'
+  const reply = '<div class="reply" role="status">'
   if (!html.includes(reply)) throw new Error('reply card not found')
-  html = html.replace(reply, `<div class="reply on" role="status"><b>Vera</b>${proposal}`)
+  html = html.replace(reply, `<div class="reply on" role="status">${proposal}`)
   // On a phone the editor folds both rails after mount (a matchMedia effect a server render does not run).
   const page = (body: string) => `<!doctype html><html data-design="frequency"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${readFileSync(cssFile, 'utf8')}</style></head><body>${body}</body></html>`
   writeFileSync(`${out}/vera-layout-phone.html`, page(html.replace('data-lf="0" data-rf="0"', 'data-lf="1" data-rf="1"')))

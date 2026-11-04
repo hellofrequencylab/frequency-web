@@ -17,7 +17,7 @@ const read = (f) => (existsSync(f) ? readFileSync(f, 'utf8') : (fail(`${f} is go
 // 1. Mindless doors
 if (!existsSync('app/(marketing)/mindless/page.tsx')) fail('/mindless has no page, so the doors would 404')
 const doors = [
-  ['lib/page-editor/templates/calm-down-fast.ts', /label: 'Open Mindless', href: '([^']+)'/],
+  // The calm-down-fast guide's link left with the guide: /calm-down-fast is now /mindless itself (LIVE-2093).
   ['lib/page-editor/templates/the-quest.ts', /ctaLabel: 'Open Mindless',\s*ctaHref: '([^']+)'/],
 ]
 for (const [f, re] of doors) {

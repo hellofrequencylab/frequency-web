@@ -2,7 +2,6 @@
  "ledger": "LIVE-1990",
  "ids": [
   "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#2780147d",
-  "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#7caa245b",
   "copy:design_handoff_theme_editor/reference/Spotlight Layouts.html#b3fc3253",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#00c51d11",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#03029622",
@@ -13,7 +12,6 @@
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#1c448570",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#1f9cf552",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#23f2f9a9",
-  "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#24230be2",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#330fde00",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#34092cf6",
   "copy:design_handoff_theme_editor/reference/Theme Feature Page.html#3573f805",
@@ -58,8 +56,6 @@
   "copy:design_handoff_theme_editor/reference/ui_kits/products/EmailPage.html#f31732c9",
   "copy:design_handoff_theme_editor/reference/ui_kits/products/SpacePage.html#8b6cdb59",
   "copy:design_handoff_theme_editor/reference/ui_kits/products/SpacePage.html#de2d3e0c",
-  "missing:design_handoff_theme_editor/reference/Theme Feature Page.html",
-  "missing:design_handoff_theme_editor/reference/ui_kits/products/Spotlight.jsx",
-  "missing:design_handoff_theme_editor/reference/ui_kits/site/record.js"
+  "missing:design_handoff_theme_editor/reference/Theme Feature Page.html"
  ]
 }

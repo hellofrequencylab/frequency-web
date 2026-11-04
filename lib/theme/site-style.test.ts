@@ -38,9 +38,8 @@ describe('the site style', () => {
     expect(prefs.siteStyle).toEqual({ theme: 'frequency', synced: true, spaceFonts: 'classic' })
   })
 
-  it('offers the eight themes Default, Bold, Wildheart, Network, Temple, Nocturne, Designer and New World (the Temple Theme Kit is the Temple), each with its own default fonts', () => {
+  it('offers the seven themes Bold, Wildheart, Network, Temple, Nocturne, Designer and New World (the Temple Theme Kit is the Temple), each with its own default fonts; Default is no longer offered (owner 2026-11-03)', () => {
     expect(SITE_THEMES.map((t) => [t.id, t.label, t.defaultFonts])).toEqual([
-      ['frequency', 'Default', 'frequency'],
       ['bold', 'Bold', 'menswork'],
       ['wildheart', 'Wildheart', 'classic'],
       ['network-kit', 'Network', 'modern'],

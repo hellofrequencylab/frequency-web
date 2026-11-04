@@ -16,8 +16,8 @@ export const revalidate = 3600
 export const dynamicParams = false
 
 export function generateStaticParams() {
-  // Designer, Network, Temple and New World have their own static pages (/themes/designer, /themes/network, /themes/temple, /themes/new-world), which win over this segment.
-  return THEME_KIT_PAGE_IDS.filter((id: string) => id !== 'designer' && id !== 'network-kit' && id !== 'temple-kit' && id !== 'new-world').map((id) => ({ theme: themeSlug(id) }))
+  // Designer, Network, Temple, New World and Services have their own static pages (/themes/designer, /themes/network, /themes/temple, /themes/new-world, /themes/services), which win over this segment.
+  return THEME_KIT_PAGE_IDS.filter((id: string) => id !== 'designer' && id !== 'network-kit' && id !== 'temple-kit' && id !== 'new-world' && id !== 'services').map((id) => ({ theme: themeSlug(id) }))
 }
 
 // The address is not always the id: the Network Theme Kit (`network-kit`) lives at /themes/network (themeSlug in

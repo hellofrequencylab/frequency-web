@@ -54,13 +54,22 @@
 /* Compact floating utilities share the bottom edge without covering the site header or reserving an
    empty artboard strip. A narrow canvas stacks them rather than shrinking the writing field away. */
 [data-design="frequency"] [data-kit="editor"] .zoom{bottom:12px;left:12px}
-[data-design="frequency"] [data-kit="editor"] .vera{left:auto;right:12px;bottom:12px;transform:none;width:min(600px,calc(100% - 156px))}
+/* Vera is a tab docked at the bottom right (Daniel, 2026-11-04): open, it is a panel with its own header and
+   close; closed, only the small "Vera" tab stays (shell.tsx, putVeraAway). */
+[data-design="frequency"] [data-kit="editor"] .stage .vera{left:auto;right:12px;bottom:12px;transform:none;width:min(440px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;gap:10px;padding:12px;border-radius:var(--fq-radius-l);background:var(--fq-surface-raised);box-shadow:0 24px 48px -24px var(--fq-ink),inset 0 0 0 1px var(--fq-border-hair)}
 @container (max-width:600px){
-[data-design="frequency"] [data-kit="editor"] .vera{width:calc(100% - 24px);bottom:60px}
+[data-design="frequency"] [data-kit="editor"] .stage .vera{bottom:60px}
 }
 @media (max-width:820px){
-[data-design="frequency"] [data-kit="editor"] .vera{width:calc(100% - 24px);bottom:12px}
+[data-design="frequency"] [data-kit="editor"] .stage .vera{bottom:12px}
 }
+[data-design="frequency"] [data-kit="editor"] .stage .vera .vera-head{display:flex;align-items:center;gap:8px;min-width:0}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .vera-head b{font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .vera-head .ctx{margin-left:auto}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .vera-head .orb{width:22px;height:22px}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .bar{padding:6px 6px 6px 12px;border-radius:var(--fq-radius-m);background:var(--fq-surface-raised);backdrop-filter:none;box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .chips{justify-content:flex-start}
+[data-design="frequency"] [data-kit="editor"] .stage .vera .reply{box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 /* Sprite icons (components/frequency/icon.tsx) where the kit sizes an inline svg by its parent. */
 [data-design="frequency"] [data-kit="editor"] .search .fq-icon{width:17px;height:17px;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="editor"] .pick>button .fq-icon, [data-design="frequency"] [data-kit="editor"] .chg .fq-icon{width:16px;height:16px}
@@ -251,10 +260,21 @@
 [data-design="frequency"] [data-kit="editor"] .rail .row .ic{width:28px;height:28px;flex:none;border-radius:var(--fq-radius-s)}
 [data-design="frequency"] [data-kit="editor"] .rail .row .meta{flex:none;font:400 var(--fq-text-meta)/1 var(--fq-font-sans);font-variant-numeric:tabular-nums;color:var(--fq-text-faint)}
 
-/* Vera put away: the bar leaves the canvas and a small orb stays where it was (shell.tsx, putVeraAway). */
-[data-design="frequency"] [data-kit="editor"] .vera .bar .vera-hide{flex:none;width:28px;height:28px;border-radius:var(--fq-radius-orb);color:var(--fq-text-muted)}
-[data-design="frequency"] [data-kit="editor"] .vera-orb{position:absolute;right:12px;bottom:12px;z-index:20;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:var(--fq-radius-orb);background:var(--fq-surface-raised);box-shadow:0 12px 28px -14px var(--fq-ink),inset 0 0 0 1px var(--fq-border-hair);transition:transform var(--fq-dur-fast) var(--fq-ease-out)}
+/* Vera closed: the panel leaves the canvas and the "Vera" tab stays at the bottom right (shell.tsx, putVeraAway). */
+[data-design="frequency"] [data-kit="editor"] .vera .vera-hide{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:var(--fq-radius-orb);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="editor"] .stage .vera-orb{position:absolute;right:12px;bottom:12px;z-index:20;display:flex;align-items:center;gap:8px;height:44px;padding:0 16px 0 10px;border:0;border-radius:var(--fq-radius-orb);font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-strong);background:var(--fq-surface-raised);box-shadow:0 12px 28px -14px var(--fq-ink),inset 0 0 0 1px var(--fq-border-hair);transition:transform var(--fq-dur-fast) var(--fq-ease-out)}
 [data-design="frequency"] [data-kit="editor"] .vera-orb:hover{transform:translateY(-2px)}
 [data-design="frequency"] [data-kit="editor"] .vera-orb .orb{width:24px;height:24px;border-radius:50%;background:var(--fq-pa-orb)}
 [data-design="frequency"] [data-kit="editor"] [data-vera-layout] fieldset{display:grid;gap:6px;margin:0 0 10px;padding:0;border:0}
 [data-design="frequency"] [data-kit="editor"] [data-vera-layout] ul{margin:6px 0 10px;padding-left:18px}
+
+/* Vera's ghost preview (LIVE-2141, shell.tsx ghostBanner): a strip across the top of the canvas while the
+   page draws her ticked lines read-only. */
+[data-design="frequency"] [data-kit="editor"] .stage .vera-ghost{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:21;display:flex;align-items:center;gap:10px;width:max-content;max-width:min(760px,calc(100% - 24px));padding:6px 6px 6px 14px;border-radius:var(--fq-radius-l);background:var(--fq-surface-raised);box-shadow:0 12px 28px -14px var(--fq-ink),inset 0 0 0 1px var(--fq-border-hair);font:500 var(--fq-text-body-s)/1.35 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="editor"] .stage .vera-ghost .btn{flex:none}
+/* The open panel starts under the strip so neither covers the other. */
+[data-design="frequency"] [data-kit="editor"] .stage:has(.vera-ghost) .vera{max-height:calc(100% - 112px)}
+@media (max-width:820px){
+[data-design="frequency"] [data-kit="editor"] .stage .vera-ghost{left:12px;right:12px;width:auto;transform:none;flex-wrap:wrap}
+[data-design="frequency"] [data-kit="editor"] .stage:has(.vera-ghost) .vera{max-height:calc(100% - 210px)}
+}
