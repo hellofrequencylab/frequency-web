@@ -20,6 +20,7 @@ import { DESIGNER_CSS } from './designer-css'
 import { FREE_HUMAN_CSS } from './free-human-css'
 import { NEW_WORLD_CSS } from './new-world-css'
 import { CYBERWITCH_CSS } from './cyberwitch-css'
+import { NEW_WORLD_DIALS_CSS } from './new-world-dials-css'
 import { SERVICES_SITE_CSS } from './services-css'
 import { Clock, Mail, MapPin, Phone } from 'lucide-react'
 import { InlineText } from './inline-text'
@@ -105,7 +106,7 @@ interface SiteSkin {
   scheme?: NetworkSchemeId
   /** New World: the register the owner's Register dial picked (Night by default). */
   register?: 'night' | 'day'
-  /** Services: the Type voice, Motion and Images dials (LIVE-1997 schema 2), written as data-type, data-motion and data-image. */
+  /** New World and Services: the Type voice, Motion and Images dials (LIVE-1997 schema 2), written as data-type, data-motion and data-image. */
   dials?: { type: string; motion: string; image: string }
 }
 
@@ -120,7 +121,7 @@ function skinCss(skin: SiteSkin | null, look = ''): string {
   if (skin.theme === 'midnight') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MIDNIGHT_CSS
   if (skin.theme === 'designer') return HOUSE_CSS + FREQUENCY_PAGE_CSS + DESIGNER_CSS
   if (skin.theme === 'free-human') return HOUSE_CSS + FREQUENCY_PAGE_CSS + FREE_HUMAN_CSS
-  if (skin.theme === 'new-world') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NEW_WORLD_CSS
+  if (skin.theme === 'new-world') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS
   if (skin.theme === 'cyberwitch') return HOUSE_CSS + FREQUENCY_PAGE_CSS + CYBERWITCH_CSS
   if (skin.theme === 'services') return HOUSE_CSS + FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
