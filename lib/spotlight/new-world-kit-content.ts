@@ -2,14 +2,16 @@
 // What the six Spotlight layouts (components/spotlight/new-world-kit-layouts.tsx) show for each of the seven New World
 // kits (design revision 2). Ported from the design's kits.js and record.js (reference/ui_kits/site): the hero, the
 // services, the open times, the groups and the doors. The doors are built exactly as record.js builds DOORS: the booking door first, one door per service,
-// then one per Frequency function the kit's tools turn on, in the design's order. Everything a kit invents (prices,
+// then one per Frequency function the kit's tools turn on, in the design's order (lib/sites/new-world-functions.ts, the
+// same list the website Home is cut from). Everything a kit invents (prices,
 // open times, reviews, the quote) is sample content: a live page passes `sample: false` and gets none of it, so no
 // invented price, time or testimonial ships. The kit holds words and rows only; colour and type are the theme's.
 
 import { NEW_WORLD_ACCENTS, type NewWorldAccentId } from '@/lib/theme/new-world'
+import { newWorldFunctionsFor, type NewWorldHas, type NewWorldTool } from '@/lib/sites/new-world-functions'
 
-type Tool = 'publish' | 'gather' | 'belong' | 'book' | 'learn' | 'sell'
-type Has = 'events' | 'products' | 'plans' | 'posts' | 'team' | 'groups'
+type Tool = NewWorldTool
+type Has = NewWorldHas
 /** The design's icon names; the layouts map each to a lucide icon. */
 type IconName = 'message' | 'sparkle' | 'calendar' | 'shield' | 'star' | 'award' | 'wrench' | 'home' | 'clock' | 'leaf' | 'heart' | 'chart' | 'briefcase' | 'tag' | 'bolt' | 'car' | 'droplet' | 'users' | 'sun' | 'user' | 'mail' | 'eye' | 'pin' | 'check'
 
@@ -133,28 +135,6 @@ const KITS: Record<string, KitSource> = {
   },
 }
 
-/** The twelve Frequency functions (record.js FUNCTIONS): the tool each belongs to, the door it makes and what it says. */
-const FUNCTIONS: { id: string; tool: Tool; icon: IconName; door: string; why: string; href: string }[] = [
-  { id: 'booking', tool: 'book', icon: 'calendar', door: 'Book online', why: 'Live open times, an upfront total and instant confirmation', href: '/book' },
-  { id: 'services', tool: 'book', icon: 'tag', door: 'Services & prices', why: 'Every service shows a price and a length before anyone commits', href: '/services' },
-  { id: 'reviews', tool: 'publish', icon: 'star', door: 'Read reviews', why: 'Proof near the main button, and an automatic request after each visit', href: '/reviews' },
-  { id: 'posts', tool: 'publish', icon: 'briefcase', door: 'Guides & posts', why: 'Guides and stories that answer the questions people search for', href: '/library' },
-  { id: 'events', tool: 'gather', icon: 'calendar', door: "What's happening", why: 'Open nights, workshops and one-offs with RSVP and a reminder', href: '/events' },
-  { id: 'shop', tool: 'sell', icon: 'tag', door: 'Shop', why: 'Gift cards, kits and add-ons that sell between visits', href: '/shop' },
-  { id: 'circles', tool: 'belong', icon: 'users', door: 'Find your people', why: 'The small rooms where the same faces meet again', href: '/groups' },
-  { id: 'firstnight', tool: 'belong', icon: 'heart', door: 'What a first visit is like', why: 'Who is there, how long, what to bring, who meets you at the door', href: '/about' },
-  { id: 'plans', tool: 'belong', icon: 'award', door: 'Plans', why: 'Recurring care on a schedule, with member pricing', href: '/plans' },
-  { id: 'letter', tool: 'publish', icon: 'mail', door: 'Get the letter', why: 'A short note when something opens up or is due', href: '/letter' },
-  { id: 'gallery', tool: 'publish', icon: 'eye', door: 'See the work', why: 'Real photos of real jobs, before and after', href: '/gallery' },
-  { id: 'team', tool: 'publish', icon: 'users', door: 'Meet the team', why: 'Faces and names before anyone opens the door', href: '/team' },
-  { id: 'locations', tool: 'publish', icon: 'pin', door: 'Find us', why: 'Where, when and how to get there, on every surface', href: '/contact' },
-  { id: 'forms', tool: 'book', icon: 'message', door: 'Ask a question', why: 'A short form that reaches a person, with a reply time stated', href: '/contact' },
-]
-/** Functions every kit gets whatever its tools (record.js build). */
-const ALWAYS = ['reviews', 'team', 'locations', 'forms', 'letter', 'gallery', 'posts', 'circles', 'firstnight']
-/** A function that needs the kit to carry its rows (record.js drops it when the kit has none). */
-const NEEDS: Record<string, Has> = { posts: 'posts', team: 'team', events: 'events', shop: 'products', plans: 'plans', circles: 'groups', firstnight: 'groups' }
-
 const SAMPLE_OPENINGS = [{ mon: 'Nov', day: '06', time: '7:00p', left: 4 }, { mon: 'Nov', day: '08', time: '8:00a', left: 0 }, { mon: 'Nov', day: '11', time: '6:30p', left: 2 }]
 
 /** The first word of the owner's name, with a title ("Dr.") kept to the name after it. */
@@ -181,7 +161,7 @@ export function newWorldKitSpotlightContent(kit: string, opts: { name?: string; 
   const offers: NewWorldOffer[] = sample ? k.offers.map(([name, price, dur, icon]) => ({ name, price, dur, icon })) : []
   const groups = k.groups.length ? k.groups : []
   const has = (h: Has) => (h === 'groups' ? groups.length > 0 : k.has.includes(h))
-  const fns = FUNCTIONS.filter((f) => (k.tools.includes(f.tool) || ALWAYS.includes(f.id)) && (!NEEDS[f.id] || has(NEEDS[f.id]!)))
+  const fns = newWorldFunctionsFor(k.tools, has)
   const ids = fns.map((f) => f.id)
   const doors: NewWorldDoor[] = [
     ...offers.map((o, i): NewWorldDoor => ({ id: `offer-${i}`, key: 'book', icon: o.icon, title: o.name, meta: `${o.price} · ${o.dur}`, href: '/services' })),

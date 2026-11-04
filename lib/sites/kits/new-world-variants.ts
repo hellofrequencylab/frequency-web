@@ -2,13 +2,15 @@ import type { MegaNicheId } from '@/lib/theme/mega-theme'
 import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import type { KitPage, SiteKit } from './types'
 import NEW_WORLD_PHOTOS from '@/lib/sites/new-world-photos.json'
+import { newWorldFunctionsFor, newWorldSectionFunction, type NewWorldHas, type NewWorldTool } from '@/lib/sites/new-world-functions'
 
 // New World's seven niche kits (design system "New World", revision 2, ui_kits/site/kits.js): one sample business per niche, written in
 // that niche's own language. Seven kits: the General template ("Your place") and the six niche doors. They moved here from the Services
 // folder (LIVE-2056) when Daniel ruled that New World is its own theme; Services rebuilds its own sixteen trade kits.
 //
-// BLOCKS. Home is drawn with New World's own blocks (components/page-editor/blocks/new-world.tsx, LIVE-2055). Services, About and
-// Book still compose the Services block family (components/page-editor/blocks/services.tsx) until LIVE-2056 re-cuts them.
+// BLOCKS. Every page is drawn with New World's own blocks (components/page-editor/blocks/new-world.tsx, LIVE-2055 and LIVE-2056).
+// FUNCTIONS. Home keeps a function's section only when the kit turns that function on (LIVE-2188, lib/sites/new-world-functions.ts),
+// the same list the kit's Spotlight doors are built from, so a kit without the Book tool has no open-times or ways-in section on Home.
 //
 // HOUSE VOICE (docs/marketing/voice-and-language-guide.md): the design's own words, except where they make a claim. Numbers that
 // were sample facts ("38 checked in last week", "7 in 10 come back") became plain statements; reviews are prompts to write a real
@@ -16,8 +18,6 @@ import NEW_WORLD_PHOTOS from '@/lib/sites/new-world-photos.json'
 // the first three people and the first three events are `{{slot|sample words}}` tokens (lib/spaces/content-slots.ts), so a Space that
 // has filled in its own offers and people shows those instead. Home wears the theme's own photos (lib/sites/new-world-photos.json).
 
-/** The Frequency tools a kit turns on (design record.js FUNCTIONS[].tool). Lane A reads them to build a Spotlight's doors. */
-type NewWorldTool = 'book' | 'sell' | 'belong' | 'publish' | 'gather' | 'learn'
 /** The design's palette name for a kit. Only 'blue' has a shipped accent (tide) until the other presets land (LIVE-2041). */
 type NewWorldPalette = 'purple' | 'yellow' | 'red' | 'blue'
 export type NewWorldKitNiche = Extract<MegaNicheId, 'general' | 'coaches' | 'studios' | 'hosts' | 'venues' | 'nonprofits' | 'networks'>
@@ -236,7 +236,27 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const weekday = (when: string) => WEEKDAYS.find((d) => when.toLowerCase().includes(d.toLowerCase())) ?? ''
 const [whenDay, whenTime] = [(w: string) => w.split(' · ')[0] ?? w, (w: string) => w.split(' · ')[1] ?? '']
 
+/** The Frequency functions a kit turns on (lib/sites/new-world-functions.ts): the same list its Spotlight doors are built from. */
+function newWorldKitFunctionIds(s: Pick<Spec, 'tools' | 'groups' | 'events' | 'posts' | 'team' | 'plans' | 'products'>): string[] {
+  const has = (h: NewWorldHas): boolean =>
+    ({ events: s.events.length > 0 || s.groups.length > 0, products: !!s.products?.length, plans: !!s.plans?.length, posts: s.posts.length > 0, team: s.team.length > 0, groups: s.groups.length > 0 })[h]
+  return newWorldFunctionsFor(s.tools, has).map((f) => f.id)
+}
+
+/** Home keeps a function's section only when the kit turns that function on (the design's Home: `ALWAYS.includes(id) || has(id)`),
+ *  then renumbers the numbered sections so the count reads 01, 02, 03 with no gaps. */
+function cutToFunctions(blocks: Block[], on: readonly string[]): Block[] {
+  let i = 0
+  return blocks
+    .filter((b) => { const fn = newWorldSectionFunction(b.type); return !fn || on.includes(fn) })
+    .map((b) => (typeof b.props.index === 'string' && b.props.index !== '' ? { ...b, props: { ...b.props, index: String(++i).padStart(2, '0') } } : b))
+}
+
 function newWorldHome(s: Spec, niche: NewWorldKitNiche): Block[] {
+  return cutToFunctions(newWorldHomeAll(s, niche), newWorldKitFunctionIds(s))
+}
+
+function newWorldHomeAll(s: Spec, niche: NewWorldKitNiche): Block[] {
   const [heroPic, storyPic, groupPic] = PHOTOS[niche]
   const offers = s.offers.map((o, i) => ({ name: slot(`offer${i + 1}Title`, o.name), meta: o.dur, body: slot(`offer${i + 1}Blurb`, o.meta), price: slot(`offer${i + 1}Price`, o.price) }))
   const n = (i: number) => String(i).padStart(2, '0')
@@ -301,6 +321,9 @@ function newWorldHome(s: Spec, niche: NewWorldKitNiche): Block[] {
     { type: 'NewWorldOpenings', props: { index: n(9), eyebrow: 'Save a spot', title: 'Open *this week.*', lede: 'Pick a time, see what it costs (often nothing) and get a reminder.', buttonLabel: s.cta, buttonHref: '~/booking', fullLabel: 'Waitlist', useEvents: true, rows: sessions.slice(0, 3), register: 'auto' } },
     { type: 'NewWorldGallery', props: { index: n(10), eyebrow: 'Gallery', title: 'Real *nights.*', lede: 'Photos from people who were there.', images: GALLERY.filter((g) => !PHOTOS[niche].includes(g)).slice(0, 5).map((g) => ({ image: pic(g), alt: PHOTO_ALT[g] ?? '' })), register: 'auto' } },
     { type: 'NewWorldPosts', props: { index: n(11), eyebrow: 'Notes', title: 'Good to *read.*', lede: 'Notes from the room, written by the people in it.', buttonLabel: '', buttonHref: '', rows: s.posts.map(([kind, title]) => ({ kind, title, meta: '', href: '' })), register: 'auto' } },
+    ...(s.products
+      ? [{ type: 'NewWorldShop', props: { index: n(11), ...head(c('shop'), 'Shop'), buttonLabel: '', buttonHref: '', rows: s.products.map(([name, body], i) => ({ icon: ['tag', 'heart', 'sparkle'][i % 3], meta: 'Set your price', name, body, price: '', href: '' })), register: 'auto' } }]
+      : []),
     {
       type: 'NewWorldProcess',
       props: {
@@ -360,9 +383,9 @@ const FAQ = [
 function pages(s: Spec, niche: NewWorldKitNiche): KitPage[] {
   const home = newWorldHome(s, niche)
   // The pages reuse Home's own sections (team, notes, plans, questions, closer) so a change an owner makes to one reads the same everywhere.
-  const from = (type: string, patch: Record<string, unknown> = {}): Block => {
-    const b = home.find((x) => x.type === type)!
-    return { type, props: { ...b.props, ...patch } }
+  const from = (type: string, patch: Record<string, unknown> = {}): Block | null => {
+    const b = home.find((x) => x.type === type)
+    return b ? { type, props: { ...b.props, ...patch } } : null
   }
   const has = (type: string) => home.some((x) => x.type === type)
   const icons = ['users', 'calendar', 'award', 'tag']
@@ -374,12 +397,7 @@ function pages(s: Spec, niche: NewWorldKitNiche): KitPage[] {
   const [, storyPic] = PHOTOS[niche]
   const owner = slot('person1Name', s.owner)
   const c = (k: Section) => copy(s, k)
-  const shop: Block | null = s.products
-    ? {
-        type: 'NewWorldOffers',
-        props: { index: '', ...head(c('shop'), 'Shop'), buttonLabel: '', buttonHref: '', rows: s.products.map(([name, body], i) => ({ icon: ['tag', 'heart', 'sparkle'][i % 3], meta: 'Set your price', name, body, price: '', href: '' })), register: 'auto' },
-      }
-    : null
+  const shop = from('NewWorldShop', { index: '' })
   const services: (Block | null)[] = [
     { type: 'NewWorldPageHead', props: { index: '', ...head(c('services'), 'Ways in'), register: 'auto' } },
     { type: 'NewWorldWayRows', props: { costLabel: 'Cost', whenLabel: 'When', buttonLabel: 'Save my spot', buttonHref: '~/booking', secondaryLabel: 'Questions', secondaryHref: '#faq', rows: ways, register: 'auto' } },
@@ -392,7 +410,7 @@ function pages(s: Spec, niche: NewWorldKitNiche): KitPage[] {
     from('NewWorldFaq', { index: '' }),
     from('NewWorldCloser'),
   ]
-  const about: Block[] = [
+  const about: (Block | null)[] = [
     {
       type: 'NewWorldAboutHero',
       props: {
@@ -428,7 +446,7 @@ function pages(s: Spec, niche: NewWorldKitNiche): KitPage[] {
     from('NewWorldCloser'),
   ]
   const calendar = (home.find((x) => x.type === 'NewWorldCalendar')?.props?.rows ?? []) as Record<string, unknown>[]
-  const booking: Block[] = [
+  const booking: (Block | null)[] = [
     {
       type: 'NewWorldBook',
       props: {
@@ -445,8 +463,8 @@ function pages(s: Spec, niche: NewWorldKitNiche): KitPage[] {
   return [
     { slug: 'home', label: 'Home', seo: seo(s.name, s.descriptor), blocks: home },
     { slug: 'services', label: 'Ways in', seo: seo('Ways in', `${s.name}: every way in and what it costs.`), blocks: compact(services) },
-    { slug: 'about', label: 'Our story', seo: seo('Our story', `Who is behind ${s.name}.`), blocks: about },
-    { slug: 'booking', label: 'Book', seo: seo('Book', `Pick a time at ${s.name}.`), blocks: booking },
+    { slug: 'about', label: 'Our story', seo: seo('Our story', `Who is behind ${s.name}.`), blocks: compact(about) },
+    { slug: 'booking', label: 'Book', seo: seo('Book', `Pick a time at ${s.name}.`), blocks: compact(booking) },
   ]
 }
 
