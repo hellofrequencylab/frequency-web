@@ -20,6 +20,19 @@ const defaults: ComponentProps<typeof WebsiteCanvas> = {
 beforeAll(() => { Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true }) })
 afterAll(() => { Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: false }) })
 
+describe('website canvas skins', () => {
+  it.each([['Services', 'services'], ['NewWorld', 'new-world']] as const)('hands %s its own skin and the register, so its sheet is drawn', (theme, id) => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    chromeRender.mockClear()
+    act(() => root.render(<WebsiteCanvas {...defaults} theme={theme} register="day" />))
+    expect(chromeRender.mock.calls.at(-1)?.[0]).toMatchObject({ skin: { theme: id, register: 'day' } })
+    act(() => root.unmount())
+    container.remove()
+  })
+})
+
 // SSR can load srcDoc before hydration attaches React's onLoad callback.
 describe('website canvas iframe hydration', () => {
   it('mounts an available iframe body without requiring its load event', () => {

@@ -11,6 +11,7 @@ import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { mensworkSeason } from '@/lib/theme/menswork'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { networkScheme } from '@/lib/theme/network'
+import { networkKitScheme } from '@/lib/theme/network-kit'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { fieldTextTargets, type FieldFocus } from '@/lib/sites/editor/field-sync'
 import { findInlineTextMatch, inlineTextValue, inlineFieldValue, replaceInlineField, replaceInlineTextSegment, type InlineTextMatch } from '@/lib/sites/editor/inline-edit'
@@ -81,7 +82,7 @@ function inlineMarkdown(node: Node): string {
   return text
 }
 
-export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onVisibility, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, focusField = null, look = {}, fullFooter = true, zoom = 100, themeVars, spaceTheme, trySkin }: {
+export function WebsiteCanvas({ doc, theme, device, config, metadata, live, links, nav, origin, title, brandName, logo, brandAccent, selectedId, preview, comments, onSelect, onEdit, onAction, onInsert, onDisplay, onVisibility, onReorder, onCommentPin, people = [], pageSlug = 'home', onCursor, chrome: chromeDraft, onChromeSelect, onTextSelect, focusField = null, look = {}, fullFooter = true, zoom = 100, themeVars, spaceTheme, trySkin, register = 'night' }: {
   /** The stage zoom, 50 to 100 percent (Site Editor handoff). */
   zoom?: number
   doc: Data; theme: WebsiteTheme; device: Device; config: Config; metadata?: Metadata; live: MwLive; links: SiteLinkMap; origin: string
@@ -93,6 +94,8 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   spaceTheme?: SpaceThemeId
   /** Try it on: the contract skin for the legacy blocks the candidate theme carries (components/sites/theme-preview-swap.tsx). */
   trySkin?: { css: string; themeId: string } | null
+  /** New World and Services: the register the Register dial picked. Their sheet keys every colour off `data-th`. */
+  register?: 'night' | 'day'
   nav: { slug: string; label: string }[]
   selectedId: string | null; preview: boolean; comments: SiteComment[]
   onSelect: (id: string) => void; onEdit: (id: string, field: string, value: unknown) => void
@@ -517,7 +520,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
       <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' || theme === 'Network' || theme === 'Temple' ? '' : FREQUENCY_PAGE_CSS) + (theme !== 'Network' && docHasNetworkBlocks(doc) ? NETWORK_BLOCK_CSS : '') + (FQ_EDITOR ? FQ_CANVAS_CSS : '')}</style>
       {trySkin && <TryItOnSheet css={trySkin.css} themeId={trySkin.themeId} />}
       {!preview && onChromeSelect && <button className="we-chrome-edit" type="button" onClick={() => { onTextSelect?.(null); onChromeSelect('header') }}>Edit header</button>}
-      <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' || theme === 'FreeHuman' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : theme === 'Network' ? { theme: 'network', season: mensworkSeason(new Date()), scheme: networkScheme(brandAccent) } : theme === 'Temple' ? { theme: 'temple', season: mensworkSeason(new Date()) } : theme === 'Midnight' ? { theme: 'midnight', season: mensworkSeason(new Date()) } : theme === 'Designer' ? { theme: 'designer', season: mensworkSeason(new Date()) } : theme === 'FreeHuman' ? { theme: 'free-human', season: mensworkSeason(new Date()) } : null}>
+      <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' || theme === 'FreeHuman' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : theme === 'Network' ? { theme: 'network', season: mensworkSeason(new Date()), scheme: networkScheme(brandAccent) } : theme === 'Temple' ? { theme: 'temple', season: mensworkSeason(new Date()) } : theme === 'Midnight' ? { theme: 'midnight', season: mensworkSeason(new Date()) } : theme === 'Designer' ? { theme: 'designer', season: mensworkSeason(new Date()) } : theme === 'FreeHuman' ? { theme: 'free-human', season: mensworkSeason(new Date()) } : theme === 'NewWorld' ? { theme: 'new-world', season: mensworkSeason(new Date()), register } : theme === 'Services' ? { theme: 'services', season: mensworkSeason(new Date()), register } : theme === 'TempleKit' ? { theme: 'temple-kit', season: mensworkSeason(new Date()) } : theme === 'NetworkKit' ? { theme: 'network-kit', season: mensworkSeason(new Date()), scheme: networkKitScheme(brandAccent) } : null}>
         <WebsiteDocument doc={doc} theme={theme} config={config} metadata={metadata} live={live} links={links} origin={origin} title={title} wrapSection={wrap} />
         {!preview && <div className="we-addend"><button className="we-insert" type="button" aria-label="Insert section at end of page" onClick={() => onInsert(doc.content.length)}>+ Add section</button></div>}
       </SiteChrome>

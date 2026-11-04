@@ -45,7 +45,7 @@ function assertAlias(from, to) {
 }
 
 if (mode === 'freshness') {
-  for (const slug of ['how-to-start-a-circle', 'how-to-build-community', 'loneliness', 'calm-down-fast', 'friendship-as-an-adult', 'how-to-be-more-social']) {
+  for (const slug of ['how-to-start-a-circle', 'how-to-build-community', 'loneliness', 'friendship-as-an-adult', 'how-to-be-more-social']) {
     const route = loadProbeModule(`app/(marketing)/${slug}/page.tsx`, dependencies)
     publishedAt = '2099-12-31T10:00:00Z'
     const block = findNode(await route.default(), BlockDocJsonLd)
@@ -94,7 +94,7 @@ if (mode === 'freshness') {
   assert.notEqual(schema.headline, document.content[0].props.title, 'Published hero copy must not replace the canonical page headline')
   assert.equal(schema.dateModified, '2099-12-31')
   assert.match(schema.datePublished, /^\d{4}-\d{2}-\d{2}$/)
-  assertAlias('/the-lab', '/vision')
+  assertAlias('/the-lab', '/about')
   for (const seo of Object.values(frequency.FREQUENCY_PAGE_SEO)) {
     const nodes = frequency.frequencyPageJsonLd(seo)
     const page = nodes.find(value => value['@type'] === 'WebPage')

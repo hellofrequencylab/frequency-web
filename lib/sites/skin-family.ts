@@ -7,7 +7,7 @@
 // family sheets to send. Network is not here: its sections carry their own island (components/sites/network-css.ts).
 
 /** The family ids are the website theme ids that own each family (the site's `data-house-theme`). */
-export const SKIN_FAMILIES = ['wildheart', 'network-kit', 'temple-kit', 'temple', 'midnight', 'designer'] as const
+export const SKIN_FAMILIES = ['wildheart', 'network-kit', 'temple-kit', 'temple', 'midnight', 'designer', 'services'] as const
 export type SkinFamily = (typeof SKIN_FAMILIES)[number]
 
 /** Longest prefix first: NetworkKit and TempleKit are named inside Network and Temple. */
@@ -18,7 +18,15 @@ const PREFIXES: readonly (readonly [string, SkinFamily])[] = [
   ['Midnight', 'midnight'],
   ['Designer', 'designer'],
   ['Wildheart', 'wildheart'],
+  ['Services', 'services'],
 ]
+
+/** Whether a family's blocks are foreign on `theme`: they need the contract skin to be drawn. A theme's own family never is,
+ *  and New World draws the Services blocks itself (components/sites/new-world-blocks-css.ts), so they are native there too. */
+export function isForeignFamily(family: SkinFamily, theme: string): boolean {
+  if (family === theme) return false
+  return !(theme === 'new-world' && family === 'services')
+}
 
 /** The family a block type belongs to, or null for a shared block (and for Network, which is its own island). */
 export function skinFamilyOf(type: string): SkinFamily | null {
@@ -32,7 +40,7 @@ export function foreignBlocksFor(doc: unknown, theme: string): readonly { family
   const counts = new Map<SkinFamily, number>()
   for (const m of JSON.stringify(doc ?? null).matchAll(/"type":"([A-Z][A-Za-z]+)"/g)) {
     const family = skinFamilyOf(m[1])
-    if (family && family !== theme) counts.set(family, (counts.get(family) ?? 0) + 1)
+    if (family && isForeignFamily(family, theme)) counts.set(family, (counts.get(family) ?? 0) + 1)
   }
   return [...counts].map(([family, count]) => ({ family, count }))
 }

@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2121",
+  "title": "Retire Default from the theme pickers: New World is the default",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/theme/site-style.ts",
+    "ref": "Daniel 2026-11-03 17:20Z: \"Default doesn't exist. New World is the default theme.\""
+  },
+  "detail": "frequency (\"Default\") joins RETIRED_FROM_PICKERS and leaves THEME_LIBRARY, so the site gallery, editor Theme tab, signed-out wizard and /themes index no longer offer it; /themes/frequency 308s to /themes/new-world and leaves the sitemap. The id, label and every render map stay, so sites that saved it render unchanged. Four pins rewritten on the owner's phrases (2026-11-03 17:55Z): site-style offered themes, the editor Theme tab list, the theme library list, and the create-a-space design-system baseline accepting the Default card's tagline as gone.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const f=require('fs');const s=f.readFileSync('lib/theme/site-style.ts','utf8');const m=s.match(/RETIRED_FROM_PICKERS[^=]*=\\s*new Set\\(\\[([^\\]]*)\\]\\)/);const c=f.readFileSync('next.config.ts','utf8');process.exit(m&&m[1].includes(\\\"'frequency'\\\")&&c.includes(\\\"source: '/themes/frequency', destination: '/themes/new-world'\\\")?0:1)\""
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

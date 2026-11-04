@@ -184,3 +184,40 @@ describe('Vera layout proposals (LIVE-2097)', () => {
     expect(await proposeWebsiteLayout('hearts.example', 'Duplicate the hero', outline)).toMatchObject({ ok: false })
   })
 })
+
+describe('Vera answers questions from the guide and the draft facts (LIVE-2110)', () => {
+  const outline = [{ id: 'hero', type: 'Hero', label: 'Hero', summary: '', position: 1, tone: null, width: null, shows: { desktop: true, tablet: true, phone: true } }]
+  const facts = { theme: 'New World', pageInView: 'Home', pages: [{ label: 'Home', sections: 1, searchDescription: false }], checks: [{ ok: false, text: 'Add a search description to Home' }], unpublished: ['Updated Home'], published: true, scheduledFor: null }
+  beforeEach(() => { mocks.raw.mockReset(); mocks.enabled = true; mocks.limited = false; mocks.overBudget = false; mocks.host = 'hearts.example'; mocks.staff = false; mocks.allowed = true; mocks.opens = true; mocks.preferences = {}; mocks.rpc.mockReset() })
+  it('sends the guide and facts as data, returns the answer as a note, and writes nothing', async () => {
+    mocks.raw.mockResolvedValue({ content: [{ type: 'tool_use', id: 't', name: 'propose_layout', input: { note: 'Open the Site tab and fill in the Description under Search and sharing.', changes: [] } }], text: '', tier: 'sonnet', usage: {} })
+    const result = await proposeWebsiteLayout('hearts.example', 'Is my site ready to publish?', outline, null, facts)
+    expect(result).toMatchObject({ ok: true, changes: [], note: 'Open the Site tab and fill in the Description under Search and sharing.' })
+    const sent = JSON.parse((mocks.raw.mock.calls[0][0] as { messages: { content: string }[] }).messages[0].content)
+    expect(sent.facts).toEqual(facts)
+    expect(sent.guide.join(' ')).toContain('Search and sharing')
+    expect(mocks.rpc).not.toHaveBeenCalled()
+  })
+  it('refuses malformed facts before any model call', async () => {
+    expect(await proposeWebsiteLayout('hearts.example', 'Ready?', outline, null, { pages: 'all of them' })).toMatchObject({ ok: false })
+    expect(mocks.raw).not.toHaveBeenCalled()
+  })
+})
+
+describe('Vera adds only sections the Add tab offers (LIVE-2135)', () => {
+  const menu = { dials: [], accents: [], accent: null, looks: [] }
+  const outline = [{ id: 'hero', type: 'Hero', label: 'Hero', summary: '', position: 1, tone: null, width: null, shows: { desktop: true, tablet: true, phone: true } }]
+  beforeEach(() => { mocks.raw.mockReset(); mocks.enabled = true; mocks.limited = false; mocks.overBudget = false; mocks.host = 'hearts.example'; mocks.staff = false; mocks.allowed = true; mocks.opens = true; mocks.preferences = {}; mocks.rpc.mockReset() })
+  it('sends the section list and keeps only adds from it', async () => {
+    mocks.raw.mockResolvedValue({ content: [{ type: 'tool_use', id: 't', name: 'propose_layout', input: { note: '', changes: [{ kind: 'add', blockType: 'Gallery', toPosition: 2 }, { kind: 'add', blockType: 'Shop', toPosition: 1 }] } }], text: '', tier: 'sonnet', usage: {} })
+    const result = await proposeWebsiteLayout('hearts.example', 'Add a gallery after the hero', outline, { ...menu, sections: [{ type: 'Gallery', label: 'Gallery' }] })
+    expect(result).toMatchObject({ ok: true, changes: [{ kind: 'add', blockType: 'Gallery', toPosition: 2 }] })
+    expect((result as { refused: string[] }).refused).toHaveLength(1)
+    const sent = JSON.parse((mocks.raw.mock.calls[0][0] as { messages: { content: string }[] }).messages[0].content)
+    expect(sent.style.sections).toEqual([{ type: 'Gallery', label: 'Gallery' }])
+  })
+  it('refuses a malformed section list before any model call', async () => {
+    expect(await proposeWebsiteLayout('hearts.example', 'Add a gallery', outline, { ...menu, sections: [{ type: '<script>' }] })).toMatchObject({ ok: false })
+    expect(mocks.raw).not.toHaveBeenCalled()
+  })
+})
