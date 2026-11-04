@@ -19,6 +19,8 @@ interface SpaceSwitches {
   card: (feature: string, on: boolean) => string
   /** The card words for a lowest-role change (LIVE-2185), or null for a role the ladder does not have. */
   roleCard?: (feature: string, role: string) => string | null
+  /** The card words for a Space setting (LIVE-2186), or null for a setting or value Vera may not propose. */
+  settingCard?: (setting: string, value: unknown) => string | null
 }
 
 export async function handleModelToolCalls(
@@ -51,6 +53,9 @@ export async function handleModelToolCalls(
     } else if (c.name === 'set_space_role' && !(space?.switchable(String(c.input.feature)) && space.roleCard?.(String(c.input.feature), String(c.input.role)))) {
       content = 'That setting cannot be changed from this chat. Tell them exactly where to change it. Nothing was changed.'
       continueCoaching = true
+    } else if (c.name === 'set_space_setting' && !space?.settingCard?.(String(c.input.setting), c.input.value)) {
+      content = 'That setting or value cannot be changed from this chat. Tell them exactly where to change it. Nothing was changed.'
+      continueCoaching = true
     } else if (requiresConfirmation(c.name)) {
       if (!proposals.some((p) => p.tool === c.name && JSON.stringify(p.args) === JSON.stringify(c.input))) {
         // A Space switch carries its card words from the catalog, so the page never ships the catalog.
@@ -59,7 +64,9 @@ export async function handleModelToolCalls(
             ? space?.card(String(c.input.feature), c.input.on === true)
             : c.name === 'set_space_role'
               ? (space?.roleCard?.(String(c.input.feature), String(c.input.role)) ?? undefined)
-              : undefined
+              : c.name === 'set_space_setting'
+                ? (space?.settingCard?.(String(c.input.setting), c.input.value) ?? undefined)
+                : undefined
         proposals.push(label ? { tool: c.name, args: c.input, label } : { tool: c.name, args: c.input })
       }
       content = 'Proposed to the member for confirmation.'
