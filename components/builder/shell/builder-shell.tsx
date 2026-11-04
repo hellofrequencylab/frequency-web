@@ -27,6 +27,9 @@ import { addCards, insertSection, type AddCard } from '@/lib/builder/add'
 import { makeItem } from '@/components/page-editor/mobile/data-ops'
 import { rolePreviewMetadata, roleHasSpaceRows } from '@/components/page-editor/blocks/roles'
 import { PublishRing } from '@/components/builder/readiness/publish-ring'
+import { UpdateLayoutsSheet } from '@/components/builder/legacy/update-layouts-sheet'
+import { applyLegacy, legacyPlan } from '@/lib/builder/legacy'
+import { upgradableCount } from '@/lib/blocks/roles/legacy-map'
 import { PublishSheet } from '@/components/builder/readiness/publish-sheet'
 import { canPublish, nextReadinessItem, ownEdit, readiness, readinessTags, type ReadinessItem } from '@/lib/builder/readiness'
 import type { BuilderActionId } from '@/lib/builder/commands'
@@ -275,6 +278,20 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
     return <WebsiteCanvas key={card.type} pageSlug={page.slug} doc={{ ...page.doc, content: [item] }} theme={canvasTheme} device="phone" config={config} metadata={meta} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={card.intent} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={null} preview comments={[]} chrome={state.draft.chrome} onSelect={() => {}} onEdit={() => {}} onAction={() => {}} onInsert={() => {}} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={false} />
   }
 
+  // Update to new layouts (BLD-205): the outline says how many sections on this page can move to role blocks; the sheet
+  // shows each one beside its role version, and the owner's pick lands as one edit, so one undo takes it back.
+  const legacyN = useMemo(() => upgradableCount([page.doc]), [page.doc])
+  const [layoutsOpen, setLayoutsOpen] = useState(false)
+  const plan = useMemo(() => (layoutsOpen ? legacyPlan(page.doc, config) : null), [layoutsOpen, page.doc, config])
+  const previewBlock = (block: { type: string; props: Record<string, unknown> }, key: string) => (
+    <WebsiteCanvas key={key} pageSlug={page.slug} doc={{ ...page.doc, content: [block as Data['content'][number]] }} theme={canvasTheme} device="phone" config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={null} preview comments={[]} chrome={state.draft.chrome} onSelect={() => {}} onEdit={() => {}} onAction={() => {}} onInsert={() => {}} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={false} />
+  )
+  const applyLayouts = (ids: Set<string>) => {
+    setLayoutsOpen(false)
+    editDoc((doc) => applyLegacy(doc, ids))
+    setToast({ say: `Updated ${ids.size} ${ids.size === 1 ? 'section' : 'sections'} to the new layouts.`, undo: true })
+  }
+
   // The command bar (BLD-106): every action by its registry id, so ⌘K reaches everything a button does.
   const [commandOpen, setCommandOpen] = useState(false)
   function runAction(id: BuilderActionId) {
@@ -285,6 +302,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       case 'focus': railDispatch({ type: 'focus', on: !rails.focus }); break
       case 'publish': publish(); break
       case 'add': openAdd(); break
+      case 'update-layouts': if (legacyN) setLayoutsOpen(true); break
       case 'device-desktop': case 'device-tablet': case 'device-phone': dispatch({ type: 'device', device: id.slice(7) as BuilderDevice }); break
       case 'rail-left': case 'rail-right': toggleRail(id === 'rail-left' ? 'left' : 'right'); break
       case 'pin-left': case 'pin-right': railDispatch({ type: 'pin', side: id === 'pin-left' ? 'left' : 'right', pinned: true }); break
@@ -344,6 +362,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
           {modes.left === 'overlay' && pinnable.left && <button type="button" data-action="pin-left" className={`${styles.btn} ${styles.icon}`} aria-label="Keep the outline open" title="Pin" onClick={() => railDispatch({ type: 'pin', side: 'left', pinned: true })}><Pin size={16} aria-hidden /></button>}
         </div>
         <div className={styles.caption}>On this page · {spine.length}<button type="button" data-action="add" className={`${styles.btn} ${styles.icon}`} aria-label="Add a section" title="Add a section" onClick={() => openAdd()}><Plus size={16} aria-hidden /></button></div>
+        {legacyN > 0 && <button type="button" data-action="update-layouts" className={styles.legacy} aria-haspopup="dialog" onClick={() => setLayoutsOpen(true)}>{legacyN} {legacyN === 1 ? 'section' : 'sections'} can use the new layouts<span>Review</span></button>}
         <p className={styles.hidden} role="status" aria-live="polite">{moved}</p>
         <ul className={styles.list} role="list">
           {spine.map((item, index) => (
@@ -401,6 +420,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <button type="button" onClick={() => setCommandOpen(true)}><Sparkles size={20} aria-hidden /><span>Vera</span></button>
       </nav>}
       {addAt !== null && <AddSheet cards={cards} doc={page.doc} at={addAt} onPick={pickSection} onAsk={() => { setAddAt(null); setToast({ say: 'Vera arrives in the builder with BLD-402. Your question is kept for her.', undo: false }) }} onClose={() => setAddAt(null)} preview={previewOf} />}
+      {plan && <UpdateLayoutsSheet plan={plan} pageLabel={page.label} preview={previewBlock} onApply={applyLayouts} onClose={() => setLayoutsOpen(false)} />}
       {sheetOpen && <PublishSheet readiness={ready} onFix={(item) => { setSheetOpen(false); goTo(item) }} onPublish={(keep) => { if (canPublish(ready, keep)) { setSheetOpen(false); void save(true) } }} onClose={() => setSheetOpen(false)} />}
       {commandOpen && <CommandBar sections={spine} pages={state.draft.pages} selected={!!state.selectedId} onRun={runCommand} onClose={() => setCommandOpen(false)} />}
       {state.preview && <div className={styles.previewPill} role="status">Previewing as a visitor · press Esc to edit</div>}
