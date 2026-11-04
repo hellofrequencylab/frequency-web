@@ -16,7 +16,7 @@ if (!dir) {
   process.exit(2)
 }
 // THEME_ONLY=<id> writes one theme's pictures and leaves the others as they are.
-const themes = ['bold', 'wildheart', 'services'].filter((t) => !process.env.THEME_ONLY || t === process.env.THEME_ONLY)
+const themes = ['bold', 'wildheart', 'services', 'cyberwitch'].filter((t) => !process.env.THEME_ONLY || t === process.env.THEME_ONLY)
 const TYPES = { '.html': 'text/html', '.css': 'text/css', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' }
 const server = createServer((req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
@@ -44,7 +44,10 @@ const BOLD_CSS =
 const WH_CSS =
   ['Regular:normal', 'Italic:italic'].map((v) => `@font-face{font-family:"IM Fell English";src:url(/fonts/wildheart/IMFellEnglish-${v.split(':')[0]}.ttf) format("truetype");font-style:${v.split(':')[1]};font-weight:400}`).join('') +
   `@font-face{font-family:"EB Garamond";src:url(/fonts/eb-garamond/eb-garamond.woff2) format("woff2");font-weight:400 800}@font-face{font-family:"EB Garamond";src:url(/fonts/eb-garamond/eb-garamond-italic.woff2) format("woff2");font-style:italic;font-weight:400 800}@font-face{font-family:"Noto Sans Symbols";src:url(/fonts/noto-sans-symbols/noto-sans-symbols.woff2) format("woff2");font-weight:100 900}@font-face{font-family:"Playfair Display";src:url(/fonts/playfair-display/playfair-display.woff2) format("woff2");font-weight:400 900}`
-writeFileSync(join(dir, 'fonts.css'), FONTS_CSS + BOLD_CSS + WH_CSS)
+const CW_CSS =
+  '@font-face{font-family:UnifrakturCook;src:url(/fonts/unifrakturcook/unifrakturcook-700.woff2) format("woff2");font-weight:700}@font-face{font-family:"Permanent Marker";src:url(/fonts/permanent-marker/permanent-marker-400.woff2) format("woff2");font-weight:400}' +
+  [400, 500, 600, 700].map((w) => `@font-face{font-family:Spectral;src:url(/fonts/spectral/spectral-${w}.woff2) format("woff2");font-weight:${w}}`).join('')
+writeFileSync(join(dir, 'fonts.css'), FONTS_CSS + BOLD_CSS + WH_CSS + CW_CSS)
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
 for (const t of themes) {
   mkdirSync(`public/brand/theme-pages/${t}`, { recursive: true })
