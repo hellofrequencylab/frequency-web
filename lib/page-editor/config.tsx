@@ -19,6 +19,7 @@ import { primitivesComponents } from '@/components/page-editor/blocks/primitives
 import { dynamicComponents } from '@/components/page-editor/blocks/dynamic'
 import { marketingComponents } from '@/components/page-editor/blocks/marketing'
 import { dawnComponents } from '@/components/page-editor/blocks/dawn'
+import { articleComponents, ARTICLE_BLOCK_TYPES } from '@/components/page-editor/blocks/article'
 import { productStoryComponents } from '@/components/page-editor/blocks/product-story'
 import { circlesComponents } from '@/components/page-editor/blocks/circles'
 import { linktreeComponents, LINKTREE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/linktree'
@@ -76,6 +77,7 @@ export const config: Config = {
     ...mediaComponents,
     ...marketingComponents,
     ...dawnComponents,
+    ...articleComponents,
     ...productStoryComponents,
     ...dynamicComponents,
     ...circlesComponents,
@@ -119,7 +121,8 @@ export const config: Config = {
     },
     content: {
       title: 'Content',
-      components: ['Heading', 'Text', 'Statement', 'StoryBeats', 'Quote', 'Buttons'],
+      // The seeker-article layouts (blocks/article.tsx) are content blocks: a question, a line, a story, steps.
+      components: ['Heading', 'Text', 'Statement', 'StoryBeats', 'Quote', 'Buttons', ...ARTICLE_BLOCK_TYPES],
     },
     sections: {
       title: 'Sections',

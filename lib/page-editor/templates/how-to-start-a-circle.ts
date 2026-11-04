@@ -54,6 +54,8 @@ const DESCRIPTION =
 
 export const spec: ArticleSpec = {
   slug: 'how-to-start-a-circle',
+  // A how-to: sticky side headings beside checklist panels, and the five steps as a timeline.
+  design: 'manual',
   eyebrow: 'For the natural connector',
   title: 'How to start a Circle',
   subtitle:
