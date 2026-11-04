@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2189: each kit on /themes fits the first view and offers one clear way in. A kit section is held to the window
+// LIVE-2200: each kit on /themes fits the first view and offers one clear way in. A kit section is held to the window
 // height under the kit bar, short windows drop the quieter rows before the buttons, the primary button says "Use theme",
 // the text link beside it says "See the full kit", and a kit with no builder address shows no button. Fails on main
 // (no fold rules, the old "See the kit" wording).
