@@ -23,6 +23,6 @@ describe('theme share cards', () => {
   })
 
   it('a page with no card keeps the root card', () => {
-    expect(JSON.stringify(frequencyPageMetadata(FREQUENCY_PAGE_SEO.themes).openGraph?.images)).not.toContain('/themes/')
+    expect(JSON.stringify(frequencyPageMetadata(FREQUENCY_PAGE_SEO.themes).openGraph?.images)).not.toContain('/brand/theme-share/')
   })
 })

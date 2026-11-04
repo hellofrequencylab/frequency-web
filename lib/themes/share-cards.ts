@@ -21,7 +21,7 @@ const card = (id: string, name: string, line: string, cover: string): ThemeShare
   name,
   line,
   cover,
-  image: `/themes/${id}/share.jpg`,
+  image: `/brand/theme-share/${id}.jpg`,
 })
 
 export const THEME_SHARE_CARDS: readonly ThemeShareCard[] = [

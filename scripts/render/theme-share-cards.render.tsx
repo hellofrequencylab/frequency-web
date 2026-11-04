@@ -1,5 +1,5 @@
 // THEME SHARE CARDS (LIVE-2114): the link preview for every /themes page, drawn by the one Stage share
-// card (lib/og/stage-card.tsx) and saved as static files under public/themes/<id>/share.jpg. Static on
+// card (lib/og/stage-card.tsx) and saved as static files under public/brand/theme-share/<id>.jpg (outside public/themes, whose folders lib/themes/library.test.ts reserves for owner-made assets). Static on
 // purpose: a new opengraph-image route fans out into the build (check:og-trace, check:build-fanout) and
 // the production build already runs near its memory ceiling. Re-run after a theme's name, tagline or
 // cover photo changes:

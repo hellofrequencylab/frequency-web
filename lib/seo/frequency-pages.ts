@@ -145,7 +145,7 @@ export const FREQUENCY_PAGE_SEO = {
     shareTitle: 'Nocturne: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
     lede: 'One complete theme for any business that gathers people. Your link in bio, your Space on Frequency, your own website and your emails, all reading one profile. Change it once and every surface follows.',
-    shareImage: '/themes/midnight/share.jpg',
+    shareImage: '/brand/theme-share/midnight.jpg',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
@@ -160,7 +160,7 @@ export const FREQUENCY_PAGE_SEO = {
     shareTitle: 'Designer: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
     lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Designer Theme Kit gives studios, interiors, architecture, gardens and brands one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
-    shareImage: '/themes/designer/share.jpg',
+    shareImage: '/brand/theme-share/designer.jpg',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
@@ -175,7 +175,7 @@ export const FREQUENCY_PAGE_SEO = {
     shareTitle: 'Network: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
     lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Network Theme Kit gives networking groups, clubs, mixers, coworking spaces and the people who run them one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
-    shareImage: '/themes/network-kit/share.jpg',
+    shareImage: '/brand/theme-share/network-kit.jpg',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
@@ -190,7 +190,7 @@ export const FREQUENCY_PAGE_SEO = {
     shareTitle: 'Temple: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
     lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Temple Theme Kit gives temples, studios, retreats, clubs, markets and anyone who brings people together one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
-    shareImage: '/themes/temple-kit/share.jpg',
+    shareImage: '/brand/theme-share/temple-kit.jpg',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
@@ -205,7 +205,7 @@ export const FREQUENCY_PAGE_SEO = {
     shareTitle: 'New World: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
     lede: 'Your link in bio, your Space, your website and your emails each look a little different. New World is the theme every new Space starts in: studios, coaches, hosts, venues, non-profits and networks, one look to wear on all four, read from one profile. Night to start, Day when you want it. Change it once and every surface follows.',
-    shareImage: '/themes/new-world/share.jpg',
+    shareImage: '/brand/theme-share/new-world.jpg',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
