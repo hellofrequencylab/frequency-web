@@ -234,6 +234,7 @@ resonance_density_cells              internal
 resonance_edges                      internal
 resonance_embeddings                 internal
 resonance_matches                    internal
+retired_space_circles                internal
 reward_grants                        authenticated
 room_members                         authenticated
 room_messages                        authenticated

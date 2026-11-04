@@ -999,6 +999,300 @@ function Closer({ p, metadata, pad, vis }: Common) {
   );
 }
 
+// ── Ways in, Our story, Book ───────────────────────────────────────────────────────────────
+
+/** A page's own head: the big title a Ways in or Book page opens with, under the site header. */
+function PageHead({ p, pad, vis }: Common) {
+  return (
+    <section data-th={regOf(p.register, undefined)} className={cls("nw-pagehead", pad, vis)}>
+      <i className="nw-orb nw-orb--a" aria-hidden="true" />
+      <div className="nw-wrap nw-stack nw-stack--lg">
+        <Eyebrow index={str(p.index)} label={str(p.eyebrow)} />
+        <h1 className="nw-display nw-display--page nw-lit">
+          <InlineText text={str(p.title)} />
+        </h1>
+        {str(p.lede) && <p className="nw-hero-lead">{str(p.lede)}</p>}
+      </div>
+    </section>
+  );
+}
+
+/** The ways in, one per row, photo and words trading sides, each with its cost and when. */
+function WayRows({ p, metadata, pad, vis }: Common) {
+  const rows = arr(p.rows).filter((r) => str(r.name));
+  return (
+    <Sec id="ways-in" p={p} glow="none" className="nw-ways" pad={pad} vis={vis}>
+      {rows.length === 0 && (
+        <div className="nw-wrap">
+          <Empty what="way in" />
+        </div>
+      )}
+      {rows.map((r, i) => (
+        <div key={i} className={cls("nw-way", i % 2 === 1 && "is-flipped")}>
+          <div className="nw-wrap nw-way-in">
+            <Photo src={img(r.image)} alt={str(r.alt)} label={`Photo · ${str(r.name)} · a real night`} className="nw-way-photo" />
+            <div className="nw-stack nw-way-copy">
+              <div className="nw-way-top">
+                <Icon name={str(r.icon) || ICON_NAMES[i % 4]!} tile />
+                <Eyebrow index={two(i)} label={str(r.tags)} />
+              </div>
+              <h2 className="nw-display nw-display--lg">{str(r.name)}</h2>
+              {str(r.body) && <p className="nw-way-body">{str(r.body)}</p>}
+              {(str(r.price) || str(r.when)) && (
+                <dl className="nw-way-facts">
+                  <div>
+                    <dt>{str(p.costLabel) || "Cost"}</dt>
+                    <dd className="nw-display">{str(r.price) || "Ask"}</dd>
+                  </div>
+                  <div>
+                    <dt>{str(p.whenLabel) || "When"}</dt>
+                    <dd className="nw-display">{str(r.when) || "Ask"}</dd>
+                  </div>
+                </dl>
+              )}
+              <div className="nw-actions">
+                <Btn label={str(r.buttonLabel) || str(p.buttonLabel)} href={str(r.href) || str(p.buttonHref)} metadata={metadata} arrow />
+                <Btn label={str(p.secondaryLabel)} href={str(p.secondaryHref)} metadata={metadata} kind="ghost" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </Sec>
+  );
+}
+
+/** "Always true here": a short heading beside the promises every visit keeps, ticked in two columns. */
+function Always({ p, pad, vis }: Common) {
+  const items = lines(p.items);
+  return (
+    <Sec id="always" p={p} glow="top" className="nw-always" pad={pad} vis={vis}>
+      <div className="nw-wrap nw-cols nw-cols--5-7">
+        <div className="nw-stack">
+          <Eyebrow index={str(p.index)} label={str(p.eyebrow)} />
+          {str(p.title) && (
+            <h2 className="nw-display nw-display--md">
+              <InlineText text={str(p.title)} />
+            </h2>
+          )}
+        </div>
+        {items.length === 0 ? (
+          <Empty what="promise" />
+        ) : (
+          <ul className="nw-ticks">
+            {items.map((t, i) => (
+              <li key={i}>
+                <Check size={18} strokeWidth={2} aria-hidden="true" />
+                {t}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Sec>
+  );
+}
+
+/** Our story's opening: the title, the first line of the story, three plain facts and the owner's portrait with their name on it. */
+function AboutHero({ p, metadata, pad, vis }: Common) {
+  const chips = arr(p.chips).filter((c) => str(c.text));
+  return (
+    <section data-th={regOf(p.register, undefined)} className={cls("nw-hero nw-about-hero", pad, vis)}>
+      <div className="nw-hero-sky" aria-hidden="true" />
+      <i className="nw-orb nw-orb--a" aria-hidden="true" />
+      <div className="nw-hero-in">
+        <div className="nw-hero-copy">
+          <Eyebrow label={str(p.eyebrow)} />
+          <h1 className="nw-display nw-lit nw-break">
+            <InlineText text={str(p.title)} />
+          </h1>
+          {str(p.lead) && <p className="nw-hero-lead">{str(p.lead)}</p>}
+          {chips.length > 0 && (
+            <div className="nw-chips">
+              {chips.map((c, i) => (
+                <span key={i}>
+                  <Icon name={str(c.icon) || "check"} size={14} />
+                  {str(c.text)}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="nw-actions">
+            <Btn label={str(p.primaryLabel)} href={str(p.primaryHref)} metadata={metadata} size="lg" arrow />
+            <Btn label={str(p.secondaryLabel)} href={str(p.secondaryHref)} metadata={metadata} kind="secondary" size="lg" />
+          </div>
+        </div>
+        <div className="nw-hero-art">
+          <div className="nw-frame-glow">
+            <Photo src={img(p.image)} alt={str(p.alt)} label={`Portrait · ${str(p.name) || "you"}`} className="nw-photo--portrait">
+              {str(p.name) && (
+                <figcaption className="nw-glass nw-namecard">
+                  <span>
+                    <b>{str(p.name)}</b>
+                    {str(p.role) && <small>{str(p.role)}</small>}
+                  </span>
+                  <Icon name="users" tile size={15} />
+                </figcaption>
+              )}
+            </Photo>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** The long story: a sticky heading beside the paragraphs. */
+function LongStory({ p, pad, vis }: Common) {
+  const paras = lines(p.paragraphs);
+  return (
+    <Sec id="story" p={p} glow="br" pad={pad} vis={vis}>
+      <div className="nw-wrap nw-cols nw-cols--5-7">
+        <div className="nw-stack nw-sticky">
+          <Eyebrow index={str(p.index)} label={str(p.eyebrow)} />
+          {str(p.title) && (
+            <h2 className="nw-display nw-display--md nw-break">
+              <InlineText text={str(p.title)} />
+            </h2>
+          )}
+        </div>
+        <div className="nw-prose">
+          {paras.length === 0 && <Empty what="story" />}
+          {paras.map((t, i) => (
+            <p key={i}>{t}</p>
+          ))}
+        </div>
+      </div>
+    </Sec>
+  );
+}
+
+/** One line in the owner's own words, big and centred. */
+function QuoteBand({ p, pad, vis }: Common) {
+  if (!str(p.quote)) return null;
+  return (
+    <Sec id="words" p={p} glow="top" className="nw-quoteband" pad={pad} vis={vis}>
+      <div className="nw-wrap nw-center">
+        {str(p.label) && (
+          <span className="nw-rule-label">
+            <i aria-hidden="true" />
+            {str(p.label)}
+            <i aria-hidden="true" />
+          </span>
+        )}
+        <blockquote className="nw-display nw-lit">
+          <InlineText text={str(p.quote)} />
+        </blockquote>
+        {str(p.by) && <span className="nw-mono">{str(p.by)}</span>}
+      </div>
+    </Sec>
+  );
+}
+
+/** Three promises, each with its mark and number. */
+function Promises({ p, pad, vis }: Common) {
+  const rows = arr(p.rows).filter((r) => str(r.title));
+  return (
+    <Sec id="promises" p={p} glow="tl" pad={pad} vis={vis}>
+      <div className="nw-wrap">
+        <Head p={p} />
+        <div className="nw-promises">
+          {rows.length === 0 && <Empty what="promise" />}
+          {rows.map((r, i) => (
+            <article key={i}>
+              <span className="nw-promise-top">
+                <Icon name={str(r.icon) || "check"} tile />
+                <small>{two(i)}</small>
+              </span>
+              <h3 className="nw-display">{str(r.title)}</h3>
+              {str(r.body) && <p>{str(r.body)}</p>}
+            </article>
+          ))}
+        </div>
+      </div>
+    </Sec>
+  );
+}
+
+/** The Book page: what a booking holds on the left, and on the right the ways in to choose from and the next open times, each
+ *  going to the Space's own booking. No pretend checkout: every row is a real link, and a list with no rows says so. */
+function Book({ p, metadata, now = new Date(), pad, vis }: Common) {
+  const ways = arr(p.ways).filter((w) => str(w.name));
+  const facts = arr(p.facts).filter((f) => str(f.label));
+  const next = dated(p, metadata, now, 4);
+  return (
+    <Sec id="book" p={p} glow="tr" className="nw-book" pad={pad} vis={vis}>
+      <div className="nw-wrap nw-cols nw-cols--5-7">
+        <div className="nw-stack nw-stack--lg nw-sticky">
+          <Eyebrow label={str(p.eyebrow)} />
+          <h1 className="nw-display nw-display--lg nw-lit nw-break">
+            <InlineText text={str(p.title)} />
+          </h1>
+          {str(p.lede) && <p className="nw-lede">{str(p.lede)}</p>}
+          {facts.length > 0 && (
+            <div className="nw-card nw-summary">
+              {str(p.summaryLabel) && <small className="nw-mono">{str(p.summaryLabel)}</small>}
+              <dl>
+                {facts.map((f, i) => (
+                  <div key={i}>
+                    <dt>{str(f.label)}</dt>
+                    <dd>{str(f.value)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+        </div>
+        <div className="nw-card nw-book-card">
+          <div className="nw-stack">
+            {str(p.waysLabel) && <small className="nw-mono">{str(p.waysLabel)}</small>}
+            {ways.length === 0 && <Empty what="way in" />}
+            <div className="nw-choices">
+              {ways.map((w, i) => (
+                <Tap key={i} to={hrefOf(str(w.href) || str(p.buttonHref), metadata)} className={cls("nw-choice", i === 0 && "is-first")}>
+                  <span className="nw-choice-text">
+                    <b>{str(w.name)}</b>
+                    {str(w.body) && <small>{str(w.body)}</small>}
+                  </span>
+                  {str(w.meta) && <span className="nw-mono">{str(w.meta)}</span>}
+                  <i className="nw-round nw-round--sm" aria-hidden="true">
+                    <ArrowRight size={13} />
+                  </i>
+                </Tap>
+              ))}
+            </div>
+          </div>
+          {str(p.timesLabel) && (
+            <div className="nw-stack">
+              <small className="nw-mono">{str(p.timesLabel)}</small>
+              {next.length === 0 && <Empty what="open time" />}
+              <div className="nw-slots nw-slots--flat">
+                {next.map((o, i) => (
+                  <Tap key={i} to={o.href} className="nw-slot">
+                    <span className="nw-date">
+                      <small>{o.mon}</small>
+                      <b>{o.day}</b>
+                    </span>
+                    <span className="nw-slot-text">
+                      <b>{o.title}</b>
+                      <small>{[o.time, o.body].filter(Boolean).join(" · ")}</small>
+                    </span>
+                    {o.spots && <span className="nw-badge nw-badge--plain">{o.spots}</span>}
+                  </Tap>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="nw-book-foot">
+            {str(p.note) && <span className="nw-form-note">{str(p.note)}</span>}
+            <Btn label={str(p.buttonLabel)} href={str(p.buttonHref)} metadata={metadata} arrow />
+          </div>
+        </div>
+      </div>
+    </Sec>
+  );
+}
+
 // ── Registry ────────────────────────────────────────────────────────────────────────────────
 
 const register = {
@@ -1386,5 +1680,132 @@ export const newWorldBlocks: Record<string, ComponentConfig> = {
       register: "auto",
     },
     Closer,
+  ),
+  NewWorldPageHead: block(
+    "New World page title",
+    { ...head, register },
+    { index: "", eyebrow: "Ways in", title: "Ways *in.*", lede: "Everything here is priced in plain sight. Most of it is free to walk into.", register: "auto" },
+    PageHead,
+  ),
+  NewWorldWayRows: block(
+    "New World ways in, one per row",
+    {
+      costLabel: text("Word over the cost"),
+      whenLabel: text("Word over when"),
+      ...links("button", "Button on every row"),
+      ...links("secondary", "Second button"),
+      rows: rows({ icon, tags: text("Small line"), name: text("Name"), body: area("Line"), price: text("Cost"), when: text("When"), image, alt: text("Photo description"), buttonLabel: text("Button"), href: text("Link", LINK_HINT) }),
+      register,
+    },
+    { costLabel: "Cost", whenLabel: "When", buttonLabel: "Save my spot", buttonHref: "~/booking", secondaryLabel: "Questions", secondaryHref: "~/#faq", rows: [], register: "auto" },
+    WayRows,
+  ),
+  NewWorldAlways: block(
+    "New World always true here",
+    { index: head.index, eyebrow: head.eyebrow, title: head.title, items: list("Promises"), register },
+    {
+      index: "",
+      eyebrow: "Every visit",
+      title: "Always *true here.*",
+      items: ["Free to join, always", "A host at the door who learns your name", "A reminder the day before, with the facts", "Bring someone: their first visit is on us"],
+      register: "auto",
+    },
+    Always,
+  ),
+  NewWorldAboutHero: block(
+    "New World story opening",
+    {
+      eyebrow: head.eyebrow,
+      title: area("Heading", VOICE_HINT),
+      lead: area("Line under the heading"),
+      chips: rows({ icon, text: text("Fact") }, "Facts"),
+      ...links("primary", "Main button"),
+      ...links("secondary", "Second button"),
+      image,
+      alt: text("Photo description"),
+      name: text("Name on the portrait"),
+      role: text("Role under the name"),
+      register,
+    },
+    {
+      eyebrow: "Our story",
+      title: "Our *story.*",
+      lead: "The beginning: the thing you noticed, the room you wanted to exist, the first few people who came.",
+      chips: [],
+      primaryLabel: "Book your first visit",
+      primaryHref: "~/booking",
+      secondaryLabel: "",
+      secondaryHref: "",
+      image: "",
+      alt: "",
+      name: "",
+      role: "",
+      register: "auto",
+    },
+    AboutHero,
+  ),
+  NewWorldLongStory: block(
+    "New World the whole story",
+    { index: head.index, eyebrow: head.eyebrow, title: head.title, paragraphs: list("Paragraphs"), register },
+    { index: "01", eyebrow: "The story", title: "How this *room works.*", paragraphs: [], register: "auto" },
+    LongStory,
+  ),
+  NewWorldQuote: block(
+    "New World quote",
+    { label: text("Small line above"), quote: area("Quote", "Wrap the last word in *stars* to set it in italic."), by: text("Who said it"), register },
+    { label: "In their words", quote: "", by: "", register: "auto" },
+    QuoteBand,
+  ),
+  NewWorldPromises: block(
+    "New World promises",
+    { ...head, rows: rows({ icon, title: text("Title"), body: area("Line") }), register },
+    {
+      index: "02",
+      eyebrow: "What you can count on",
+      title: "Three *promises.*",
+      lede: "",
+      rows: [
+        { icon: "check", title: "Open doors", body: "Joining is free. No velvet rope, nothing members-only." },
+        { icon: "users", title: "Same faces", body: "Groups meet at the same time in the same place, so coming back is easy and someone notices when you do." },
+        { icon: "heart", title: "Bring someone", body: "A first visit with a friend is celebrated. Word of mouth is how this room fills." },
+      ],
+      register: "auto",
+    },
+    Promises,
+  ),
+  NewWorldBook: block(
+    "New World book (live)",
+    {
+      eyebrow: head.eyebrow,
+      title: area("Heading", VOICE_HINT),
+      lede: area("Line under the heading"),
+      summaryLabel: text("Label over the facts"),
+      facts: rows({ label: text("Label"), value: text("Value") }, "Facts"),
+      waysLabel: text("Label over the ways in"),
+      ways: rows({ name: text("Name"), body: text("Line"), meta: text("Cost and length"), href: text("Link", LINK_HINT) }, "Ways in"),
+      timesLabel: text("Label over the open times", "Leave empty to hide the open times."),
+      useEvents,
+      rows: rows(datedRow, "Open times"),
+      note: text("Small line at the bottom"),
+      ...links("button"),
+      register,
+    },
+    {
+      eyebrow: "Save a spot",
+      title: "Pick a night *and come.*",
+      lede: "Live spots, what it costs (often nothing) and a reminder the day before with the facts.",
+      summaryLabel: "Your booking",
+      facts: [],
+      waysLabel: "Choose a way in",
+      ways: [],
+      timesLabel: "Next open times",
+      useEvents: true,
+      rows: [],
+      note: "Change or cancel any time. No one minds.",
+      buttonLabel: "",
+      buttonHref: "",
+      register: "auto",
+    },
+    Book,
   ),
 };
