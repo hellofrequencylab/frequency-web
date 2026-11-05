@@ -170,7 +170,7 @@ export function kitImagery(kit: MegaThemeId, accentAt?: number): KitImagery {
   }
 }
 /** Every kit's accents are its own: no kit falls back to another kit's family (Daniel, 2026-11-03). */
-export const kitAccents = (kit: MegaThemeId): readonly PreviewAccent[] => KIT_ACCENTS[kit]
+export const kitAccents = (kit: MegaThemeId): readonly PreviewAccent[] => KIT_ACCENT_LISTS[kit]
 
 /** The hex a kit's accent choice stands for, as the launch hold carries it (lib/launch/carry.ts `accent`, the place in the
  *  kit's list as digits). Null when the kit or the place is not one of ours, so a hand-edited hold writes no colour. */
@@ -252,6 +252,25 @@ const KIT_ACCENTS: Record<MegaThemeId, readonly PreviewAccent[]> = {
     { name: 'Fern', fill: '#3C8C7C', text: null }, { name: 'Sun', fill: '#9A6200', text: null },
   ],
 }
+
+/** The accents the kit's /themes page offers that the builder's own list lacks (the Theme Kits design's swatches), added
+ *  after the kit's own so its default stays first. Picking one on /themes and pressing Use lands on that colour. */
+const THEMES_PAGE_ACCENTS: Partial<Record<MegaThemeId, readonly PreviewAccent[]>> = {
+  // New World's Violet swatch is left out: the violet-family probe (LIVE-962) bars the hex outside the files it names.
+  'new-world': [{ name: 'Magenta', fill: '#FF3DAE', text: null }, { name: 'Sun', fill: '#FFC46B', text: null }, { name: 'Ember bright', fill: '#FF6A2B', text: null }],
+  'network-kit': [{ name: 'Lagoon', fill: '#22796E', text: null }, { name: 'Ink', fill: '#22303A', text: null }],
+  designer: [{ name: 'Moss', fill: '#6F7A3E', text: '#5A6332' }, { name: 'Slate', fill: '#4E6E71', text: null }, { name: 'Denim', fill: '#4F6A8A', text: null }],
+  bold: [{ name: 'Fall', fill: '#D4703E', text: null }, { name: 'Cyan', fill: '#00A6C8', text: null }, { name: 'Spring', fill: '#93B57A', text: null }, { name: 'Summer', fill: '#DDB24E', text: null }, { name: 'Winter', fill: '#97A3D4', text: null }],
+  'temple-kit': [{ name: 'Olive', fill: '#565C33', text: null }, { name: 'Aegean', fill: '#2F6E80', text: null }, { name: 'Plum', fill: '#7A4257', text: null }, { name: 'Saffron', fill: '#B2792A', text: '#8A5A16' }],
+  wildheart: [{ name: 'Madder', fill: '#94505E', text: null }, { name: 'Winter', fill: '#46518A', text: null }, { name: 'Spring', fill: '#4C6B37', text: null }, { name: 'Summer', fill: '#7A5A16', text: null }],
+  midnight: [{ name: 'Mint', fill: '#86D99A', text: null }, { name: 'Amber', fill: '#FFB04A', text: null }, { name: 'Sea', fill: '#5FD3C1', text: null }, { name: 'Orchid', fill: '#FF8FD2', text: null }],
+}
+const KIT_ACCENT_LISTS = Object.fromEntries(
+  (Object.keys(KIT_ACCENTS) as MegaThemeId[]).map((k) => {
+    const have = new Set(KIT_ACCENTS[k].map((a) => a.fill.toLowerCase()))
+    return [k, [...KIT_ACCENTS[k], ...(THEMES_PAGE_ACCENTS[k] ?? []).filter((a) => !have.has(a.fill.toLowerCase()))]]
+  }),
+) as unknown as Record<MegaThemeId, readonly PreviewAccent[]>
 
 /** The kits the page offers, in the page's order, with the wizard's labels and pitches. */
 export const PREVIEW_KITS = PREVIEW_KIT_ORDER.map((id) => {

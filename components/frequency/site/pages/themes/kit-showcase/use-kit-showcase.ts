@@ -202,7 +202,7 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
       accentMeaning: a.meaning || '',
       glow: A + '2B',
       // The accent picked here rides the Use button, so the builder (and the Space it makes) starts on it.
-      useHref: link ? withAccent(link.use, a.id || a.label) : props.links.start,
+      useHref: link ? withAccent(link.use, typeof a.hex === 'string' ? a.hex.replace('#', '') : a.id || a.label) : props.links.start,
       kitHref: link?.page ?? null,
       mailBg: th.mailBg || th.t.bg,
       mailW: th.id === 'new-world' ? '150%' : '100%',
