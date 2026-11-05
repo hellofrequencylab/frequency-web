@@ -17,6 +17,9 @@ import { NEW_WORLD_FONT_CLASS } from '@/components/sites/new-world-fonts'
 import { newWorldLinkPageContent } from '@/lib/spotlight/new-world-kit-content'
 import { safeUrl } from '@/lib/entity-blocks/block-content'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
+import { CyberWitchKitSpotlightLayout } from '@/components/spotlight/cyberwitch-kit-layouts'
+import { CYBERWITCH_FONT_CLASS } from '@/components/sites/cyberwitch-fonts'
+import { cyberwitchSpacePage } from '@/lib/spotlight/cyberwitch-space-page'
 
 // THE SPACE SPOTLIGHT PAGE: a Space's one-column link page (lib/spaces/spotlight.ts). The identity header
 // mirrors the member Spotlight's (logo, name, tagline, centered), wearing the Space's own accent and page
@@ -100,6 +103,17 @@ export async function SpaceSpotlight({
   markSpotlightRender()
   const saved = spaceSpotlightGrid(readSpaceSpotlight(space.preferences))
   const grid = appOrigin ? spotlightSiteGrid(saved) : saved
+
+  const cyberwitch = cyberwitchSpacePage(space, tagline, saved.content, appOrigin)
+  if (cyberwitch) {
+    return (
+      <SpotlightAccent space={space}>
+        <main className={`min-h-screen ${CYBERWITCH_FONT_CLASS}`}>
+          <CyberWitchKitSpotlightLayout layout="cyberwitch-kit:stack" content={cyberwitch} />
+        </main>
+      </SpotlightAccent>
+    )
+  }
 
   const linkPage = newWorldLinkPage(space, tagline, saved)
   if (linkPage) {

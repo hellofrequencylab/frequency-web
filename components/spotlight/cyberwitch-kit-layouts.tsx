@@ -53,7 +53,7 @@ function Logo({ c, width = 220, descriptor = true }: { c: C; width?: number; des
   return (
     <span className="cws-logo">
       <span className="cws-logo-name" style={{ fontSize: size }}>{c.name}</span>
-      {descriptor && <span className="cws-logo-desc"><i />{c.descriptor}<i /></span>}
+      {descriptor && c.descriptor && <span className="cws-logo-desc"><i />{c.descriptor}<i /></span>}
     </span>
   )
 }
