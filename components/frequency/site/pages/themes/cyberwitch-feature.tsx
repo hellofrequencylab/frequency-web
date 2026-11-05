@@ -11,7 +11,7 @@ import { createSpaceHref } from '@/lib/create-space/href'
 import { CYBERWITCH_KIT_INDEX } from '@/lib/sites/kits/cyberwitch-profile-index'
 import { CYBERWITCH_ACCENT_CSS, CYBERWITCH_DIALS_CSS, CYBERWITCH_TOKENS_CSS } from '@/lib/theme/cyberwitch'
 import { THEME_FEATURES } from '@/lib/themes/theme-feature-data'
-import { CYBERWITCH_FEATURE_CSS } from './cyberwitch-feature-css'
+import { CYBERWITCH_FEATURE_CSS } from '@/components/sites/cyberwitch-feature-css'
 import { CyberWitchAccentDial, CyberWitchAccentImage, CyberWitchAccentRoot, CyberWitchAccentTags } from './cyberwitch-accent'
 
 const NEEDS: [LucideIcon, string, string][] = [
