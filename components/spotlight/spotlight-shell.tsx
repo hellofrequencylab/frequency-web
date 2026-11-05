@@ -12,7 +12,7 @@ import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
 import { NetworkKitSpotlightLayout } from './network-kit-layouts'
 import { networkKitSpotlightContent } from '@/lib/spotlight/network-kit-content'
 import { DesignerKitSpotlightLayout } from './designer-kit-layouts'
-import { designerKitSpotlightContent } from '@/lib/spotlight/designer-kit-content'
+import { designerKitSpotlightContent, designerProfileForAccent } from '@/lib/spotlight/designer-kit-content'
 import { isCyberWitchKitLayout, isDesignerKitLayout, isFreeHumanLayout, isNewWorldKitLayout, isServicesKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
 import { ServicesKitSpotlightLayout } from './services-kit-layouts'
 import { CyberWitchKitSpotlightLayout } from './cyberwitch-kit-layouts'
@@ -68,7 +68,7 @@ export function SpotlightShell({
   if (theme.layout) {
     if (isDesignerKitLayout(theme.layout)) {
       // The Designer kit draws its own full-width plaster page and keeps the column inside it.
-      const content = designerKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+      const content = designerKitSpotlightContent(designerProfileForAccent(theme.accent) ?? theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
       return (
         <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
           <DesignerKitSpotlightLayout layout={theme.layout} content={content} />

@@ -18,9 +18,9 @@ export function pickThemeSpaceAccent(rows: readonly { brand_accent: string | nul
 }
 
 // A themed Spotlight layout's id starts with its kit's name; the Space that wears the same theme is the one whose accent it
-// borrows. Designer is left out: its profile ramps are the design's own data (lib/spotlight/designer-kit-content.ts).
+// borrows.
 const LAYOUT_THEME: Record<string, string> = {
-  'new-world-kit': 'new-world', 'services-kit': 'services', 'temple-kit': 'temple-kit', 'free-human': 'free-human', 'network-kit': 'network-kit', 'cyberwitch-kit': 'cyberwitch',
+  'new-world-kit': 'new-world', 'services-kit': 'services', 'temple-kit': 'temple-kit', 'free-human': 'free-human', 'network-kit': 'network-kit', 'cyberwitch-kit': 'cyberwitch', 'designer-kit': 'designer',
 }
 /** The site theme whose Space accent a Spotlight layout wears, or null for a layout that keeps its own. Pure. */
 export function themeOfLayout(layout: string | null | undefined): string | null {
