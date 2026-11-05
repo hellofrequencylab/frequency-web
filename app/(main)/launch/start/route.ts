@@ -6,7 +6,6 @@ import { readPendingLaunch, writePendingLaunch } from '@/lib/launch/pending-io'
 import { launchHomeHref } from '@/lib/launch/destination'
 import { getActiveLaunch, startLaunch } from '@/lib/launch/store'
 import { cookies } from 'next/headers'
-import { createSpaceHref } from '@/lib/create-space/href'
 import { isPreviewKit, kitAccentIndex } from '@/lib/create-space/preview-site'
 import { lastKitFrom } from '@/lib/create-space/last-kit'
 import { resolvePicker } from '@/lib/spaces/space-picker'
@@ -34,8 +33,7 @@ export async function GET(request: Request) {
   const answers = kitId ? { ...held?.answers, spotlight: { ...held?.answers?.spotlight, theme: kitId, ...accent } } : (held?.answers ?? {})
   if (!profileId) {
     await writePendingLaunch({ niche: niche ?? held?.niche ?? null, intents: held?.intents ?? [], answers })
-    // A button that named its kit and accent opens the builder on them (lib/create-space/door.ts reads both).
-    redirect(isPreviewKit(asked) && accentAt !== null ? createSpaceHref(asked, q.get('accent')) : launchHomeHref({ signedIn: false }))
+    redirect(launchHomeHref({ signedIn: false }))
   }
   if (kitId) await writePendingLaunch({ niche: niche ?? held?.niche ?? null, intents: held?.intents ?? [], answers })
 
