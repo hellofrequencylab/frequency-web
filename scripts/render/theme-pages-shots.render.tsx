@@ -51,7 +51,7 @@ const THEMES: { ed: 'Menswork' | 'Wildheart' | 'Services' | 'CyberWitch'; id: st
   { ed: 'Menswork', id: 'bold', mega: 'bold', kit: 'bold-coaches', skin: { theme: 'menswork', season: 'fall' }, photo: '/brand/frequency/photos/gathering-10.jpg', cover: '/brand/frequency/photos/gathering-12.jpg', accent: '#1F8A8A' },
   { ed: 'Wildheart', id: 'wildheart', mega: 'wildheart', kit: 'wildheart-coaches', skin: { theme: 'wildheart', season: 'fall' }, photo: '/brand/wildheart/photos/huddle.jpg', cover: '/brand/wildheart/photos/sisters-shore.jpg', accent: '#6E4D96' },
   // Services: the General kit on Night, in its Tide starting accent (SERVICES_ACCENTS.tide).
-  { ed: 'Services', id: 'services', mega: 'services', kit: 'services-general', skin: { theme: 'services', season: 'fall' }, photo: '/brand/frequency/photos/gathering-10.jpg', cover: '/brand/frequency/photos/gathering-12.jpg', accent: SERVICES_TIDE },
+  { ed: 'Services', id: 'services', mega: 'services', kit: 'services-general', skin: { theme: 'services', season: 'fall' }, photo: '/sites/services/hero-squeegee.webp', cover: '/sites/services/hero-squeegee.webp', accent: SERVICES_TIDE },
   // CyberWitch: the General kit in its Hex starting accent (CYBERWITCH_ACCENTS.hex), dark only.
   { ed: 'CyberWitch', id: 'cyberwitch', mega: 'cyberwitch', kit: 'cyberwitch-general', skin: { theme: 'cyberwitch', season: 'fall' }, photo: `/sites/cyberwitch/photos/founder-${CW}.jpg`, cover: `/sites/cyberwitch/photos/hero-${CW}.jpg`, accent: CYBERWITCH_HEX },
 ]
